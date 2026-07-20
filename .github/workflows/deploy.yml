@@ -1,5 +1,5 @@
 name: Deploy Production Release
-# Promotion attestation: AI-CRM 0d09af5a / ID validation 9b0e0bd9.
+# Promotion attestation: AI-CRM fd9e4229 / ID validation 11e7eb37.
 
 on:
   workflow_call:

@@ -2,15 +2,15 @@
   "version": 1,
   "source": {
     "repository": "qianlan333/AI-CRM-ID-refactor",
-    "release_sha": "9b0e0bd9c622a8324fef61800e36b922c488fdd6",
-    "pull_request": 181,
-    "ci_run_id": 29576717396,
-    "deploy_run_id": 29577153435
+    "release_sha": "11e7eb3736f2da21ba14538e469aa4abfcce73b3",
+    "pull_request": 213,
+    "ci_run_id": 29757174285,
+    "deploy_run_id": 29757744149
   },
   "target": {
     "repository": "qianlan333/AI-CRM",
-    "candidate_sha": "0d09af5ad2f1e94881572f8e6a68cadb2a8730bd",
-    "pull_request": 1738
+    "candidate_sha": "fd9e4229d536722f0609a78363f15ea5a8424c25",
+    "pull_request": 1741
   },
   "allowed_post_candidate_paths": [
     ".github/workflows/deploy.yml",
