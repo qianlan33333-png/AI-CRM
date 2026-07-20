@@ -36,9 +36,6 @@ from aicrm_next.shared.signed_session import (
     verify_state_payload,
 )
 
-from .application import ListExternalContactOwnerCandidatesQuery
-
-
 router = APIRouter()
 DEFAULT_SIDEBAR_JSSDK_ALLOWED_HOSTS = {"youcangogogo.com", "www.youcangogogo.com"}
 SIDEBAR_OAUTH_ENABLE_ENV = "AICRM_SIDEBAR_WECOM_OAUTH_ENABLE_REAL"
@@ -211,9 +208,6 @@ def sidebar_oauth_callback(request: Request) -> Response:
     viewer_userid = str(user_payload.get("UserId") or user_payload.get("userid") or user_payload.get("user_id") or "").strip()
     if not viewer_userid:
         return _sidebar_oauth_error_redirect(next_path, "wecom_userid_missing")
-    owner_candidates = _owner_userids_from_external_userid(external_userid)
-    if not owner_candidates or viewer_userid not in owner_candidates:
-        return _sidebar_oauth_error_redirect(next_path, "viewer_not_in_contact_owner_scope")
 
     response = RedirectResponse(
         _append_query(next_path, {"sidebar_oauth": "1"}),
@@ -246,7 +240,6 @@ def _with_sidebar_owner_context(request: Request, payload: dict) -> dict:
     viewer_session = _viewer_session_from_request(request)
     viewer_userid = str(viewer_session.get("wecom_userid") or "").strip()
     external_userid = _external_userid_from_request(request)
-    owner_candidates = _owner_userids_from_external_userid(external_userid)
     source = "sidebar_jssdk_oauth_session"
     status = "issued"
     if not viewer_userid:
@@ -256,7 +249,6 @@ def _with_sidebar_owner_context(request: Request, payload: dict) -> dict:
             status="viewer_session_required",
             external_userid=external_userid,
             source="sidebar_jssdk_viewer_required",
-            owner_candidates_count=len(owner_candidates),
         )
     if str(viewer_session.get("external_userid") or "").strip() != external_userid:
         return _without_sidebar_owner_token(
@@ -265,16 +257,6 @@ def _with_sidebar_owner_context(request: Request, payload: dict) -> dict:
             status="viewer_session_customer_mismatch",
             external_userid=external_userid,
             source="sidebar_jssdk_viewer_scope_rejected",
-            owner_candidates_count=len(owner_candidates),
-        )
-    if not owner_candidates or viewer_userid not in owner_candidates:
-        return _without_sidebar_owner_token(
-            request,
-            result,
-            status="viewer_not_in_contact_owner_scope",
-            external_userid=external_userid,
-            source="sidebar_jssdk_viewer_scope_rejected",
-            owner_candidates_count=len(owner_candidates),
         )
     ttl_seconds = sidebar_owner_context_ttl_seconds()
     result["sidebar_owner_token"] = build_sidebar_owner_context_token(
@@ -293,7 +275,6 @@ def _with_sidebar_owner_context(request: Request, payload: dict) -> dict:
         "external_userid": _external_userid_from_request(request),
         "expires_in": ttl_seconds,
         "source": source,
-        "owner_candidates_count": len(owner_candidates),
     }
     return result
 
@@ -305,12 +286,11 @@ def _without_sidebar_owner_token(
     status: str,
     external_userid: str = "",
     source: str = "missing",
-    owner_candidates_count: int = 0,
 ) -> dict:
     result = dict(payload)
     result["sidebar_owner_token"] = ""
     result["sidebar_owner_token_status"] = status
-    context = {"source": source, "owner_candidates_count": owner_candidates_count}
+    context = {"source": source}
     if external_userid:
         context["external_userid"] = external_userid
     oauth = _sidebar_oauth_metadata(request, external_userid)
@@ -348,16 +328,6 @@ def _external_userid_from_request(request: Request) -> str:
         if normalized:
             return normalized
     return ""
-
-
-def _owner_userids_from_external_userid(external_userid: str) -> set[str]:
-    normalized_external = str(external_userid or "").strip()
-    if not normalized_external:
-        return set()
-    try:
-        return ListExternalContactOwnerCandidatesQuery()(external_userid=normalized_external)
-    except Exception:
-        return set()
 
 
 def _sidebar_oauth_metadata(request: Request, external_userid: str) -> dict[str, str]:
