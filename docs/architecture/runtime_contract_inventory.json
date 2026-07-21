@@ -1335,6 +1335,12 @@
     },
     {
       "accessor": "os.getenv",
+      "file": "scripts/ops/relay_id_validation_wecom_callback.py",
+      "key": "DATABASE_URL",
+      "line": 340
+    },
+    {
+      "accessor": "os.getenv",
       "file": "scripts/precheck_retired_automation_tables.py",
       "key": "DATABASE_URL",
       "line": 326
