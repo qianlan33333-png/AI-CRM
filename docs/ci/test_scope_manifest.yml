@@ -816,6 +816,7 @@
         "scripts/ops/prepare_wecom_callback_ingress_cutover.py",
         "scripts/ops/recover_identity_resolution_worker_deadlock.py",
         "scripts/ops/reconcile_wecom_callback_runtime.py",
+        "scripts/ops/relay_id_validation_wecom_callback.py",
         "scripts/run_wecom_callback_inbox_worker.py",
         "tests/test_identity_*.py",
         "tests/test_channel_entry_*.py",
@@ -825,6 +826,8 @@
         "tests/test_wecom_callback_*.py",
         "tests/test_wecom_callback_external_effect_boundary.py",
         "tests/test_wecom_callback_inbox.py",
+        "tests/test_id_validation_callback_relay_workflow.py",
+        "tests/test_relay_id_validation_wecom_callback.py",
         "tests/test_auth_wecom_*.py",
         "tests/test_identity_resolution_backfill_worker.py"
       ],
@@ -840,7 +843,9 @@
         "tests/test_wecom_callback_cutover_plan.py",
         "tests/test_wecom_callback_deploy_smoke.py",
         "tests/test_wecom_callback_ingress_runtime.py",
-        "tests/test_wecom_callback_permanent_fix_readiness.py"
+        "tests/test_wecom_callback_permanent_fix_readiness.py",
+        "tests/test_id_validation_callback_relay_workflow.py",
+        "tests/test_relay_id_validation_wecom_callback.py"
       ],
       "needs_postgres": true,
       "architecture_gate": "db"
