@@ -1,365 +1,114 @@
 {% extends "admin_console/base.html" %}
-
-{% block content %}
-<section class="admin-card">
-  <div class="admin-card-head">
-    <div><h2>任务列表</h2></div>
-    <div>
-      <form method="GET" class="admin-filter-grid">
-        <select name="status">
-          <option value="">全部状态</option>
-          <option value="waiting_approval" {% if filters.statuses and 'waiting_approval' in filters.statuses %}selected{% endif %}>待审批</option>
-          <option value="queued" {% if filters.statuses and 'queued' in filters.statuses %}selected{% endif %}>排队中</option>
-          <option value="claimed" {% if filters.statuses and 'claimed' in filters.statuses %}selected{% endif %}>执行中</option>
-          <option value="sent" {% if filters.statuses and 'sent' in filters.statuses %}selected{% endif %}>已发送</option>
-          <option value="failed" {% if filters.statuses and 'failed' in filters.statuses %}selected{% endif %}>失败</option>
-          <option value="cancelled" {% if filters.statuses and 'cancelled' in filters.statuses %}selected{% endif %}>已取消</option>
-        </select>
-        <select name="source_type">
-          <option value="">全部来源</option>
-          <option value="campaign" {% if filters.source_types and 'campaign' in filters.source_types %}selected{% endif %}>营销活动</option>
-          <option value="sop" {% if filters.source_types and 'sop' in filters.source_types %}selected{% endif %}>标准运营流程</option>
-          <option value="workflow" {% if filters.source_types and 'workflow' in filters.source_types %}selected{% endif %}>自动化流程</option>
-          <option value="cloud_plan" {% if filters.source_types and 'cloud_plan' in filters.source_types %}selected{% endif %}>智能助手方案</option>
-          <option value="focus_send" {% if filters.source_types and 'focus_send' in filters.source_types %}selected{% endif %}>重点触达</option>
-          <option value="deferred" {% if filters.source_types and 'deferred' in filters.source_types %}selected{% endif %}>延迟任务</option>
-          <option value="manual" {% if filters.source_types and 'manual' in filters.source_types %}selected{% endif %}>手动群发</option>
-        </select>
-        <button type="submit" class="admin-button admin-button--primary">筛选</button>
-        <button type="button" class="admin-button admin-button--secondary" data-feishu-open>飞书监控配置</button>
-      </form>
-    </div>
-  </div>
-  <div class="admin-table-wrap">
-    <table class="admin-table">
-      <thead>
-        <tr>
-          <th>编号</th>
-          <th>来源</th>
-          <th>业务归类</th>
-          <th>状态</th>
-          <th>目标人数</th>
-          <th>目标摘要</th>
-          <th>内容摘要</th>
-          <th>计划时间</th>
-          <th>发送结果</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for job in jobs %}
-        <tr>
-          <td>#{{ job.id }}</td>
-          <td>
-            <span class="admin-inline-chip">{{ job.source_type_label }}</span>
-            <div class="admin-muted-text">{{ job.source_detail_label }}</div>
-          </td>
-          <td>
-            <span class="admin-inline-chip">{{ job.business_domain_label }}</span>
-            <div class="admin-muted-text">{{ job.channel_label }} · {{ job.target_kind_label }}</div>
-          </td>
-          <td><span class="admin-inline-chip admin-inline-chip--{{ job.status_tone }}">{{ job.status_label }}</span></td>
-          <td>{{ job.target_count }}</td>
-          <td>{{ job.target_summary_label }}</td>
-          <td title="{{ job.content_summary_label }}">{{ job.content_summary_label[:42] }}{% if job.content_summary_label|length > 42 %}…{% endif %}</td>
-          <td>{{ job.scheduled_for_label }}</td>
-          <td>
-            {% if job.status == 'sent' %}
-            已发 {{ job.sent_count }}，失败 {{ job.failed_count }}
-            {% elif job.status == 'failed' %}
-            {{ job.last_error[:50] }}
-            {% elif job.status == 'cancelled' %}
-            {{ job.cancel_reason or "已取消" }}
-            {% else %}
-            —
-            {% endif %}
-          </td>
-          <td>
-            {% if job.status == 'waiting_approval' %}
-            <button class="admin-button admin-button--primary" onclick="broadcastJobAction({{ job.id }}, 'approve')">审批通过</button>
-            <button class="admin-button admin-button--secondary" onclick="broadcastJobAction({{ job.id }}, 'cancel')">取消</button>
-            {% elif job.status == 'queued' %}
-            <button class="admin-button admin-button--secondary" onclick="broadcastJobAction({{ job.id }}, 'cancel')">取消</button>
-            {% else %}
-            —
-            {% endif %}
-          </td>
-        </tr>
-        {% else %}
-        <tr><td colspan="10" style="text-align:center;color:#999">暂无任务</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% if jobs|length >= filters.limit %}
-  <div style="padding:12px;text-align:center">
-    <a class="admin-button admin-button--secondary" href="?offset={{ filters.offset + filters.limit }}&status={{ (filters.statuses or [''])|join(',') }}&source_type={{ (filters.source_types or [''])|join(',') }}">下一页</a>
-  </div>
-  {% endif %}
-</section>
-
-<div class="broadcast-feishu-overlay" data-feishu-overlay hidden>
-  <div class="broadcast-feishu-modal" data-feishu-monitor-settings role="dialog" aria-modal="true" aria-labelledby="feishu-monitor-title">
-    <div class="admin-card-head">
-      <div>
-        <h2 id="feishu-monitor-title">飞书监控配置</h2>
-        <p>配置后，系统会每小时统计上一小时的群发任务，并在有任务时推送任务总数、成功数和失败数。</p>
-      </div>
-      <button type="button" class="admin-button admin-button--secondary" data-feishu-close>关闭</button>
-    </div>
-    <div class="admin-form-stack">
-      <div class="admin-stat-inline-grid">
-        <article class="admin-mini-stat">
-          <div class="admin-card-label">是否启用</div>
-          <div class="admin-mini-stat-value" data-feishu-enabled>读取中</div>
-        </article>
-        <article class="admin-mini-stat">
-          <div class="admin-card-label">验证状态</div>
-          <div class="admin-mini-stat-value" data-feishu-validation-status>读取中</div>
-        </article>
-        <article class="admin-mini-stat">
-          <div class="admin-card-label">上次验证时间</div>
-          <div class="admin-mini-stat-value" data-feishu-validated-at>-</div>
-        </article>
-        <article class="admin-mini-stat">
-          <div class="admin-card-label">最近验证错误</div>
-          <div class="admin-mini-stat-value admin-mini-stat-value--small" data-feishu-last-error>-</div>
-        </article>
-      </div>
-      <label class="admin-check-line">
-        <input type="checkbox" data-feishu-enabled-input>
-        <span>启用飞书监控</span>
-      </label>
-      <label class="admin-field">
-        <span>脱敏地址</span>
-        <input type="text" data-feishu-masked readonly value="读取中">
-      </label>
-      <label class="admin-field">
-        <span>飞书机器人地址</span>
-        <input type="url" data-feishu-webhook-input placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/xxxxxxxx" autocomplete="off">
-      </label>
-      <div class="admin-toolbar">
-        <button type="button" class="admin-button admin-button--primary" data-feishu-save>保存</button>
-        <button type="button" class="admin-button admin-button--secondary" data-feishu-validate>验证地址</button>
-      </div>
-      <div class="admin-alert" style="display:none" data-feishu-message></div>
-    </div>
-  </div>
-</div>
-{% endblock %}
+{% from "admin_console/_execution_components.html" import execution_action_dialog %}
 
 {% block head_extra %}
-<style>
-.broadcast-feishu-overlay[hidden] {
-  display: none;
-}
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/admin_execution_ui.css') }}?v=20260717">
+{% endblock %}
 
-.broadcast-feishu-overlay {
-  align-items: center;
-  background: rgba(17, 24, 39, 0.45);
-  display: flex;
-  inset: 0;
-  justify-content: center;
-  padding: 24px;
-  position: fixed;
-  z-index: 1000;
-}
+{% block content %}
+<section class="execution-page" data-execution-page="broadcast-list" data-route-owner="ai_crm_next" data-operator-actor="{{ operator_actor }}">
+  <section class="admin-card">
+    <div class="execution-card-head">
+      <div>
+        <h2>任务列表</h2>
+        <p class="admin-muted-text">群发专属审批与批次视图；外部执行证据可从详情跳转到推送中心。</p>
+      </div>
+      <div class="admin-muted-text">共 {{ total }} 条</div>
+    </div>
+    <form method="GET" class="execution-filters">
+      <label class="admin-field">状态
+        <select name="status">
+          <option value="">全部状态</option>
+          {% for option in status_options %}
+          <option value="{{ option.key }}" {% if filters.statuses and option.key in filters.statuses %}selected{% endif %}>{{ option.label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="admin-field">来源
+        <select name="source_type">
+          <option value="">全部来源</option>
+          {% for option in source_type_options %}
+          <option value="{{ option.key }}" {% if filters.source_types and option.key in filters.source_types %}selected{% endif %}>{{ option.label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <div class="execution-filter-actions">
+        <button type="submit" class="admin-button admin-button--primary">筛选</button>
+        <a class="admin-button admin-button--secondary" href="/admin/broadcast-jobs">重置</a>
+        <button type="button" class="admin-button admin-button--secondary" data-feishu-open>飞书监控配置</button>
+      </div>
+    </form>
 
-.broadcast-feishu-modal {
-  background: var(--panel-strong);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow);
-  max-height: min(760px, calc(100vh - 48px));
-  max-width: 920px;
-  overflow: auto;
-  padding: 24px;
-  width: min(920px, 100%);
-}
-</style>
-<script>
-const FEISHU_SETTINGS_API = '/api/admin/broadcast-jobs/notification-settings/feishu';
-const FEISHU_VALIDATE_API = '/api/admin/broadcast-jobs/notification-settings/feishu/validate';
+    <div class="admin-alert admin-alert--error" data-page-error hidden></div>
+    <div class="admin-table-wrap">
+      <table class="admin-table execution-table">
+        <thead><tr><th>编号</th><th>来源</th><th>业务归类</th><th>状态</th><th>目标人数</th><th>目标摘要</th><th>内容摘要</th><th>计划时间</th><th>发送结果</th><th>操作</th></tr></thead>
+        <tbody>
+          {% for job in jobs %}
+          <tr>
+            <td><a class="execution-table-link" href="/admin/broadcast-jobs/{{ job.id }}">#{{ job.id }}</a></td>
+            <td><span class="admin-inline-chip">{{ job.source_type_label }}</span><div class="admin-muted-text">{{ job.source_detail_label }}</div></td>
+            <td><span class="admin-inline-chip">{{ job.business_domain_label }}</span><div class="admin-muted-text">{{ job.channel_label }} · {{ job.target_kind_label }}</div></td>
+            <td><span class="admin-inline-chip admin-inline-chip--{{ job.status_tone }}">{{ job.status_label }}</span></td>
+            <td>{{ job.target_count }}</td>
+            <td>{{ job.target_summary_label }}</td>
+            <td title="{{ job.content_summary_label }}">{{ job.content_summary_label[:42] }}{% if job.content_summary_label|length > 42 %}…{% endif %}</td>
+            <td>{{ job.scheduled_for_label }}</td>
+            <td>
+              {% if job.status == 'sent' %}已发 {{ job.sent_count }}，失败 {{ job.failed_count }}
+              {% elif job.status == 'simulated' %}模拟执行，未真实发送
+              {% elif job.status in ['failed', 'failed_retryable', 'failed_terminal', 'blocked', 'unknown_after_dispatch'] %}{{ job.last_error[:50] or job.status_label }}
+              {% elif job.status == 'cancelled' %}{{ job.cancel_reason or "已取消" }}
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if job.can_approve %}<button class="admin-button admin-button--primary" type="button" data-broadcast-action="approve" data-job-id="{{ job.id }}" data-row-version="{{ job.row_version or 1 }}">审批通过</button>{% endif %}
+              {% if job.can_cancel %}<button class="admin-button admin-button--secondary" type="button" data-broadcast-action="cancel" data-job-id="{{ job.id }}" data-row-version="{{ job.row_version or 1 }}">取消</button>{% endif %}
+              {% if not job.can_approve and not job.can_cancel %}—{% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="10" class="admin-empty-cell">暂无任务</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="execution-pagination">
+      <span class="admin-muted-text">第 {{ (filters.offset // filters.limit) + 1 }} 页</span>
+      {% if filters.offset > 0 %}
+      <a class="admin-button admin-button--secondary" href="?offset={{ [filters.offset - filters.limit, 0]|max }}&limit={{ filters.limit }}&status={{ (filters.statuses or [''])|join(',') }}&source_type={{ (filters.source_types or [''])|join(',') }}">上一页</a>
+      {% endif %}
+      {% if filters.offset + filters.limit < total %}
+      <a class="admin-button admin-button--secondary" href="?offset={{ filters.offset + filters.limit }}&limit={{ filters.limit }}&status={{ (filters.statuses or [''])|join(',') }}&source_type={{ (filters.source_types or [''])|join(',') }}">下一页</a>
+      {% endif %}
+    </div>
+  </section>
 
-function feishuAdminToken() {
-  return document.body.dataset.adminActionToken || '{{ admin_action_token }}';
-}
+  <div class="broadcast-feishu-overlay" data-feishu-overlay hidden>
+    <div class="broadcast-feishu-modal" data-feishu-monitor-settings role="dialog" aria-modal="true" aria-labelledby="feishu-monitor-title">
+      <div class="admin-card-head">
+        <div><h2 id="feishu-monitor-title">飞书监控配置</h2><p>配置后，系统会每小时统计上一小时的群发任务，并在有任务时推送任务总数、成功数和失败数。</p></div>
+        <button type="button" class="admin-button admin-button--secondary" data-feishu-close>关闭</button>
+      </div>
+      <div class="admin-form-stack">
+        <div class="admin-stat-inline-grid">
+          <article class="admin-mini-stat"><div class="admin-card-label">是否启用</div><div class="admin-mini-stat-value" data-feishu-enabled>读取中</div></article>
+          <article class="admin-mini-stat"><div class="admin-card-label">验证状态</div><div class="admin-mini-stat-value" data-feishu-validation-status>读取中</div></article>
+          <article class="admin-mini-stat"><div class="admin-card-label">上次验证时间</div><div class="admin-mini-stat-value" data-feishu-validated-at>-</div></article>
+          <article class="admin-mini-stat"><div class="admin-card-label">最近验证错误</div><div class="admin-mini-stat-value admin-mini-stat-value--small" data-feishu-last-error>-</div></article>
+        </div>
+        <label class="admin-check-line"><input type="checkbox" data-feishu-enabled-input><span>启用飞书监控</span></label>
+        <label class="admin-field"><span>脱敏地址</span><input type="text" data-feishu-masked readonly value="读取中"></label>
+        <label class="admin-field"><span>飞书机器人地址</span><input type="url" data-feishu-webhook-input placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/xxxxxxxx" autocomplete="off"></label>
+        <div class="admin-toolbar"><button type="button" class="admin-button admin-button--primary" data-feishu-save>保存</button><button type="button" class="admin-button admin-button--secondary" data-feishu-validate>验证地址</button></div>
+        <div class="admin-alert" data-feishu-message hidden></div>
+      </div>
+    </div>
+  </div>
+  {{ execution_action_dialog() }}
+</section>
+{% endblock %}
 
-function feishuStatusLabel(status) {
-  if (status === 'unconfigured') return '未配置';
-  if (status === 'unverified') return '未验证';
-  if (status === 'valid') return '验证成功';
-  if (status === 'invalid') return '验证失败';
-  return status || '-';
-}
-
-function feishuDisplayTime(value) {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value).replace(/[+-]\d{2}:?\d{2}$|Z$/, '').replace('T', ' ').slice(0, 16) || '-';
-  return date.toLocaleString('zh-CN', {
-    timeZone: 'Asia/Shanghai',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  }).replace(/\//g, '-');
-}
-
-function feishuRender(setting) {
-  const root = document.querySelector('[data-feishu-monitor-settings]');
-  if (!root) return;
-  root.querySelector('[data-feishu-enabled]').textContent = setting.enabled ? '已启用' : '已停用';
-  root.querySelector('[data-feishu-validation-status]').textContent = feishuStatusLabel(setting.validationStatus);
-  root.querySelector('[data-feishu-validated-at]').textContent = feishuDisplayTime(setting.validatedAt);
-  root.querySelector('[data-feishu-last-error]').textContent = setting.lastValidationError || '-';
-  root.querySelector('[data-feishu-enabled-input]').checked = !!setting.enabled;
-  root.querySelector('[data-feishu-masked]').value = setting.webhookMasked || '未配置';
-}
-
-function feishuShowMessage(message, ok) {
-  const node = document.querySelector('[data-feishu-message]');
-  if (!node) return;
-  node.textContent = message;
-  node.className = 'admin-alert ' + (ok ? 'admin-alert--success' : 'admin-alert--error');
-  node.style.display = 'block';
-}
-
-function feishuSetLoading(button, loading, label) {
-  if (!button) return;
-  if (!button.dataset.originalText) button.dataset.originalText = button.textContent;
-  button.disabled = loading;
-  button.textContent = loading ? label : button.dataset.originalText;
-}
-
-function feishuPayload(root) {
-  return {
-    enabled: root.querySelector('[data-feishu-enabled-input]').checked,
-    webhookUrl: root.querySelector('[data-feishu-webhook-input]').value.trim(),
-    admin_action_token: feishuAdminToken()
-  };
-}
-
-async function feishuReadSettings() {
-  const response = await fetch(FEISHU_SETTINGS_API, {
-    headers: {'X-Admin-Action-Token': feishuAdminToken()}
-  });
-  const data = await response.json();
-  if (!response.ok || data.ok === false) throw new Error(data.error || '读取飞书配置失败');
-  feishuRender(data);
-}
-
-async function feishuSaveSettings() {
-  const root = document.querySelector('[data-feishu-monitor-settings]');
-  const button = root.querySelector('[data-feishu-save]');
-  const body = feishuPayload(root);
-  if (!body.webhookUrl) {
-    feishuShowMessage('请填写飞书机器人地址。', false);
-    return;
-  }
-  feishuSetLoading(button, true, '保存中...');
-  try {
-    const response = await fetch(FEISHU_SETTINGS_API, {
-      method: 'PUT',
-      headers: {'Content-Type': 'application/json', 'X-Admin-Action-Token': feishuAdminToken()},
-      body: JSON.stringify(body)
-    });
-    const data = await response.json();
-    if (!response.ok || data.ok === false) throw new Error(data.error || '保存失败');
-    feishuRender(data);
-    root.querySelector('[data-feishu-webhook-input]').value = '';
-    feishuShowMessage('飞书机器人地址已保存，验证前不会用于监控推送。', true);
-  } catch (error) {
-    feishuShowMessage(error.message || '保存失败', false);
-  } finally {
-    feishuSetLoading(button, false, '');
-  }
-}
-
-async function feishuValidateSettings() {
-  const root = document.querySelector('[data-feishu-monitor-settings]');
-  const button = root.querySelector('[data-feishu-validate]');
-  const body = feishuPayload(root);
-  if (!body.webhookUrl) {
-    feishuShowMessage('请填写飞书机器人地址后再验证。', false);
-    return;
-  }
-  feishuSetLoading(button, true, '验证中...');
-  try {
-    const response = await fetch(FEISHU_VALIDATE_API, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json', 'X-Admin-Action-Token': feishuAdminToken()},
-      body: JSON.stringify(body)
-    });
-    const data = await response.json();
-    if (response.ok && data.ok) {
-      feishuRender({
-        enabled: body.enabled,
-        webhookMasked: data.webhookMasked,
-        validationStatus: data.validationStatus,
-        validatedAt: data.validatedAt,
-        lastValidationError: null
-      });
-      root.querySelector('[data-feishu-webhook-input]').value = '';
-      feishuShowMessage('验证成功，测试消息已发送到飞书群。', true);
-      return;
-    }
-    feishuRender({
-      enabled: body.enabled,
-      webhookMasked: data.webhookMasked || root.querySelector('[data-feishu-masked]').value,
-      validationStatus: data.validationStatus || 'invalid',
-      validatedAt: null,
-      lastValidationError: data.message || '飞书 webhook 验证失败'
-    });
-    feishuShowMessage('验证失败，请检查飞书机器人地址或机器人配置。', false);
-  } catch (error) {
-    feishuShowMessage('验证失败，请检查飞书机器人地址或机器人配置。', false);
-  } finally {
-    feishuSetLoading(button, false, '');
-  }
-}
-
-function feishuOpenModal() {
-  const overlay = document.querySelector('[data-feishu-overlay]');
-  if (!overlay) return;
-  overlay.hidden = false;
-  feishuReadSettings().catch(error => feishuShowMessage(error.message || '读取飞书配置失败', false));
-}
-
-function feishuCloseModal() {
-  const overlay = document.querySelector('[data-feishu-overlay]');
-  if (overlay) overlay.hidden = true;
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  const root = document.querySelector('[data-feishu-monitor-settings]');
-  if (!root) return;
-  root.querySelector('[data-feishu-save]').addEventListener('click', feishuSaveSettings);
-  root.querySelector('[data-feishu-validate]').addEventListener('click', feishuValidateSettings);
-  document.querySelector('[data-feishu-open]')?.addEventListener('click', feishuOpenModal);
-  document.querySelector('[data-feishu-close]')?.addEventListener('click', feishuCloseModal);
-  document.querySelector('[data-feishu-overlay]')?.addEventListener('click', event => {
-    if (event.target === event.currentTarget) feishuCloseModal();
-  });
-});
-
-function broadcastJobAction(jobId, action) {
-  const token = document.body.dataset.adminActionToken || '{{ admin_action_token }}';
-  if (!confirm(action === 'approve' ? '确认审批通过？' : '确认取消此任务？')) return;
-  const body = {operator: 'admin_ui', admin_action_token: token};
-  if (action === 'cancel') {
-    body.reason = window.prompt('取消原因（可选）', '') || '';
-  }
-  fetch('/api/admin/broadcast-jobs/' + jobId + '/' + action, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json', 'X-Admin-Action-Token': token},
-    body: JSON.stringify(body)
-  }).then(r => r.json()).then(data => {
-    if (data.ok) location.reload();
-    else alert(data.error || 'failed');
-  }).catch(e => alert(e.message));
-}
-</script>
+{% block scripts_extra %}
+<script defer src="{{ url_for('static', filename='admin_console/admin_execution_ui.js') }}?v=20260717"></script>
 {% endblock %}

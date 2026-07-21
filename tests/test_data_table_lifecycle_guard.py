@@ -166,6 +166,23 @@ def test_lifecycle_manifest_registers_pr10_scope() -> None:
             assert entry.get("write_owner"), table_name
 
 
+def test_automation_agent_audit_tables_are_additive_versioned_evidence() -> None:
+    tables = _table_entries()
+
+    for table_name in (
+        "automation_agent_output",
+        "automation_agent_llm_call_log",
+    ):
+        entry = tables[table_name]
+        assert entry["domain"] == "ai_audience_ops"
+        assert entry["lifecycle"] == "audit"
+        assert entry["write_owner"] == "aicrm_next.ai_audience_ops"
+        assert entry["drop_candidate"] is False
+        assert entry["migration_source"] == (
+            "migrations/versions/0124_automation_agent_audit_tables.py"
+        )
+
+
 def test_retired_tables_have_no_next_runtime_sql_references() -> None:
     tables = _table_entries()
     retired_tables = sorted(

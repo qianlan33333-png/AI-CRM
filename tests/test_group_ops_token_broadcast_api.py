@@ -9,6 +9,8 @@ pytest_plugins = ("tests.group_ops_test_helpers",)
 
 
 PNG_BYTES = b"\x89PNG\r\n\x1a\n" + b"synthetic-png-payload"
+
+
 @pytest.fixture(autouse=True)
 def _broadcast_runtime(monkeypatch):
     monkeypatch.setenv("AICRM_ROUTE_POLICY_ENFORCED", "true")
@@ -70,8 +72,9 @@ def test_group_ops_broadcast_requires_internal_bearer_token(group_ops_api_client
         {"text": "machine auth without admin session"},
         idempotency_key="machine-auth-no-admin-session",
     )
-    assert machine_authorized.status_code == 200
-    assert machine_authorized.json()["status"] == "simulated"
+    assert machine_authorized.status_code == 202
+    assert machine_authorized.json()["status"] == "ready"
+    assert machine_authorized.json()["real_external_call_executed"] is False
 
 
 def test_group_ops_broadcast_requires_idempotency_and_content(group_ops_api_client):
@@ -91,13 +94,15 @@ def test_group_ops_broadcast_requires_idempotency_and_content(group_ops_api_clie
 def test_group_ops_broadcast_sends_text_only(group_ops_api_client):
     response = _post_json(group_ops_api_client, {"recommendation_text": "text-only group broadcast"})
 
-    assert response.status_code == 200
+    assert response.status_code == 202
     body = response.json()
     assert body["ok"] is True
-    assert body["status"] == "simulated"
+    assert body["status"] == "ready"
     assert body["external_effect_job_id"] > 0
-    assert body["requested_chat_count"] == 1
-    assert body["exact_target_verified"] is True
+    assert body["execution_id"].startswith("exe_group_ops_")
+    assert body["status_url"] == f"/api/admin/executions/{body['execution_id']}"
+    assert body["job_ids"] == [body["external_effect_job_id"]]
+    assert body["upload_effect_job_ids"] == []
     assert body["content"]["text_present"] is True
     assert body["content"]["uploaded_image_count"] == 0
     assert body["content"]["card_attached"] is False
@@ -111,10 +116,12 @@ def test_group_ops_broadcast_accepts_multipart_images(group_ops_api_client):
         files=[("images", ("cover.png", PNG_BYTES, "image/png"))],
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 202
     body = response.json()
     assert body["ok"] is True
-    assert body["status"] == "simulated"
+    assert body["status"] == "waiting_dependencies"
+    assert len(body["upload_effect_job_ids"]) == 1
+    assert body["job_ids"] == [*body["upload_effect_job_ids"], body["final_effect_job_id"]]
     assert body["content"]["text_present"] is False
     assert body["content"]["uploaded_image_count"] == 1
     assert body["content"]["image_count"] == 1
@@ -148,7 +155,7 @@ def test_group_ops_broadcast_accepts_card_and_combined_content(group_ops_api_cli
         files=[("images", ("detail.png", PNG_BYTES, "image/png"))],
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 202
     body = response.json()
     assert body["ok"] is True
     assert body["content"]["card_attached"] is True
@@ -156,12 +163,10 @@ def test_group_ops_broadcast_accepts_card_and_combined_content(group_ops_api_cli
     assert body["content"]["uploaded_image_count"] == 1
     card_only = _post_json(
         group_ops_api_client,
-        {
-            "card_path": "pages/article/article?lesson_id=2fe19357-3b07-4547-9a3f-c14696cc81f5&from=learn"
-        },
+        {"card_path": "pages/article/article?lesson_id=2fe19357-3b07-4547-9a3f-c14696cc81f5&from=learn"},
         idempotency_key="card-only",
     )
-    assert card_only.status_code == 200
+    assert card_only.status_code == 202
     assert card_only.json()["content"]["text_present"] is False
     assert card_only.json()["content"]["card_attached"] is True
     assert card_only.json()["content"]["card_title"] == "黄小璨 AI 日课"
@@ -204,10 +209,7 @@ def test_group_ops_broadcast_rejects_more_than_three_images(group_ops_api_client
     response = group_ops_api_client.post(
         "/api/automation/group-ops/broadcast",
         headers=_machine_headers(group_ops_api_client),
-        files=[
-            ("images", (f"image-{index}.png", PNG_BYTES, "image/png"))
-            for index in range(4)
-        ],
+        files=[("images", (f"image-{index}.png", PNG_BYTES, "image/png")) for index in range(4)],
     )
 
     assert response.status_code == 400
@@ -218,8 +220,9 @@ def test_group_ops_broadcast_idempotency_does_not_send_twice(group_ops_api_clien
     first = _post_json(group_ops_api_client, {"text": "idempotent broadcast"}, idempotency_key="same-request")
     duplicate = _post_json(group_ops_api_client, {"text": "changed text"}, idempotency_key="same-request")
 
-    assert first.status_code == 200
-    assert duplicate.status_code == 200
+    assert first.status_code == 202
+    assert duplicate.status_code == 202
     assert first.json()["external_effect_job_id"] == duplicate.json()["external_effect_job_id"]
     assert duplicate.json()["duplicate"] is True
-    assert duplicate.json()["status"] == "simulated"
+    assert duplicate.json()["status"] == "ready"
+    assert first.json()["execution_id"] == duplicate.json()["execution_id"]

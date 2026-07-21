@@ -36,6 +36,7 @@ from .commerce.api import router as commerce_router
 from .commerce.coupons.admin_api import router as coupons_admin_api_router
 from .commerce.coupons.admin_pages import router as coupons_admin_pages_router
 from .commerce.coupons.public_api import router as coupons_public_router
+from .commerce.coupons.sidebar_api import router as coupons_sidebar_router
 from .common_operation_members import router as common_operation_members_router
 from .customer_read_model.admin_pages import router as customer_admin_pages_router
 from .customer_read_model.api import router as customer_router
@@ -62,6 +63,7 @@ from .owner_migration.api import router as owner_migration_router
 from .platform_foundation.api import router as platform_router
 from .platform_foundation.auth_platform.api import router as auth_platform_router
 from .platform_foundation.external_effects.api import router as external_effects_router
+from .platform_foundation.execution_runtime.api import router as execution_runtime_router
 from .platform_foundation.internal_events.api import router as internal_events_router
 from .platform_foundation.push_center.api import router as push_center_router
 from .platform_foundation.verification_files import router as verification_files_router
@@ -88,6 +90,12 @@ ROUTER_SPECS: tuple[RouterSpec, ...] = (
     RouterSpec("platform_foundation", "platform", platform_router, "foundation health and shell contracts"),
     RouterSpec("platform_foundation", "auth_platform", auth_platform_router, "unified OAuth 2.0 and OIDC platform"),
     RouterSpec("platform_foundation", "external_effects", external_effects_router, "external effects job/admin APIs"),
+    RouterSpec(
+        "platform_foundation",
+        "execution_runtime",
+        execution_runtime_router,
+        "lane runtime and unified execution timeline read APIs",
+    ),
     RouterSpec("platform_foundation", "internal_events", internal_events_router, "internal event center APIs"),
     RouterSpec("platform_foundation", "push_center", push_center_router, "push center APIs"),
     RouterSpec("platform_foundation", "webhook_inbox", webhook_inbox_router, "webhook inbox metrics and operations APIs"),
@@ -139,6 +147,7 @@ ROUTER_SPECS: tuple[RouterSpec, ...] = (
     RouterSpec("commerce", "coupons_admin_pages", coupons_admin_pages_router, "fixed-amount coupon admin pages"),
     RouterSpec("commerce", "coupons_admin_api", coupons_admin_api_router, "fixed-amount coupon admin APIs"),
     RouterSpec("commerce", "coupons_public", coupons_public_router, "coupon claim and availability APIs"),
+    RouterSpec("commerce", "coupons_sidebar", coupons_sidebar_router, "signed sidebar coupon read API"),
     RouterSpec("media_library", "media_library", media_library_router),
     RouterSpec("media_library", "media_library_admin_pages", media_library_admin_pages_router),
     RouterSpec("ai_assist", "ai_assist", ai_assist_router),

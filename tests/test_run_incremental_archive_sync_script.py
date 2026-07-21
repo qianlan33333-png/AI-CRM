@@ -75,6 +75,7 @@ def test_run_incremental_archive_sync_uses_internal_http_helper(monkeypatch, cap
 def test_run_incremental_archive_sync_defaults_to_direct_process(monkeypatch, capsys):
     module = _load_script_module()
     captured: dict[str, object] = {}
+    repository = object()
 
     def fake_execute(**kwargs):
         captured.update(kwargs)
@@ -85,7 +86,8 @@ def test_run_incremental_archive_sync_defaults_to_direct_process(monkeypatch, ca
     monkeypatch.setenv("WECOM_ARCHIVE_SYNC_LIMIT", "100")
     monkeypatch.setenv("WECOM_ARCHIVE_SYNC_MAX_PAGES", "3")
     monkeypatch.delenv("WECOM_ARCHIVE_SYNC_MODE", raising=False)
-    monkeypatch.setattr("aicrm_next.message_archive.sync_service.execute_archive_sync", fake_execute)
+    monkeypatch.setattr("aicrm_next.admin_jobs_archive_sync_gateway._execute_archive_sync", fake_execute)
+    monkeypatch.setattr("aicrm_next.admin_jobs_archive_sync_gateway._build_archive_sync_repository", lambda: repository)
 
     body = module.run()
 
@@ -94,4 +96,5 @@ def test_run_incremental_archive_sync_defaults_to_direct_process(monkeypatch, ca
     assert captured["cursor"] == "30651"
     assert captured["limit"] == 100
     assert captured["max_pages"] == 3
+    assert captured["repo"] is repository
     assert json.loads(capsys.readouterr().out.strip())["reply_monitor_skipped"] is True

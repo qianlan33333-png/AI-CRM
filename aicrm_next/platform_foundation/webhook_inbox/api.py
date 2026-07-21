@@ -12,8 +12,21 @@ from starlette.concurrency import run_in_threadpool
 
 from aicrm_next.shared.admin_action_runtime import ensure_admin_action_token, validate_admin_action_token
 from aicrm_next.admin_shell import admin_path_for, shell_context
+from aicrm_next.platform_foundation.auth_platform.context import AuthContext
 from aicrm_next.platform_foundation.external_effects import ExternalEffectService
 from aicrm_next.platform_foundation.internal_events import InternalEventService
+from aicrm_next.platform_foundation.execution_runtime.api_command import (
+    QueueCommandPayloadError,
+    accepted_queue_command_payload,
+    authenticated_queue_actor,
+    parse_manual_queue_command,
+    submit_manual_queue_action,
+    submit_manual_queue_command,
+)
+from aicrm_next.platform_foundation.execution_runtime.commands import (
+    QueueCommandConflict,
+    QueueRuntimeCommandService,
+)
 
 from .repository import build_webhook_inbox_repository
 from .service import WebhookInboxService
@@ -27,6 +40,11 @@ templates = Jinja2Templates(directory=[_TEMPLATES_DIR, _FRONTEND_COMPAT_TEMPLATE
 
 def _text(value: Any) -> str:
     return str(value or "").strip()
+
+
+def _authenticated_actor(request: Request) -> str:
+    context = getattr(request.state, "auth_context", None)
+    return _text(context.sub) if isinstance(context, AuthContext) else ""
 
 
 def _int(value: Any, *, default: int, minimum: int = 0, maximum: int = 200) -> int:
@@ -86,11 +104,100 @@ def _repo():
     return build_webhook_inbox_repository()
 
 
+def _queue_command_service(request: Request) -> QueueRuntimeCommandService:
+    service = getattr(request.app.state, "queue_runtime_command_service", None)
+    return service if service is not None else QueueRuntimeCommandService()
+
+
 def _worker(request: Request, repository: Any) -> Any:
     factory = getattr(request.app.state, "wecom_callback_inbox_worker_factory", None)
     if not callable(factory):
         raise RuntimeError("WeCom callback inbox worker composition is unavailable")
     return factory(repository)
+
+
+def _command_payload_error(exc: QueueCommandPayloadError) -> JSONResponse:
+    return _json(
+        {
+            "ok": False,
+            "error": "manual_queue_command_fields_required",
+            "missing_fields": list(exc.missing_fields),
+        },
+        status_code=422,
+    )
+
+
+async def _preview_webhook_item(
+    request: Request,
+    repository: Any,
+    inbox_id: int,
+    *,
+    reason: str,
+) -> dict[str, Any]:
+    return await run_in_threadpool(
+        _worker(request, repository).dispatch_one,
+        int(inbox_id),
+        dry_run=True,
+        reason=reason,
+    )
+
+
+async def _preview_webhook_due(
+    request: Request,
+    repository: Any,
+    *,
+    limit: int,
+) -> dict[str, Any]:
+    return await run_in_threadpool(
+        _worker(request, repository).preview_due,
+        limit=limit,
+    )
+
+
+async def _accepted_command_response(
+    service: QueueRuntimeCommandService,
+    target: Any,
+    command: Any,
+    *,
+    source_route: str,
+) -> JSONResponse:
+    try:
+        result = await run_in_threadpool(
+            submit_manual_queue_command,
+            service,
+            target,
+            command,
+            source_route=source_route,
+        )
+    except QueueCommandConflict:
+        return _json({"ok": False, "error": "queue_command_cas_conflict"}, status_code=409)
+    except ValueError:
+        return _json({"ok": False, "error": "queue_command_target_not_eligible"}, status_code=409)
+    return _json(accepted_queue_command_payload(result, command), status_code=202)
+
+
+async def _accepted_manual_action_response(
+    service: QueueRuntimeCommandService,
+    target: Any,
+    command: Any,
+    *,
+    action: str,
+    source_route: str,
+) -> JSONResponse:
+    try:
+        result = await run_in_threadpool(
+            submit_manual_queue_action,
+            service,
+            target,
+            command,
+            action=action,
+            source_route=source_route,
+        )
+    except QueueCommandConflict:
+        return _json({"ok": False, "error": "queue_command_cas_conflict"}, status_code=409)
+    except ValueError:
+        return _json({"ok": False, "error": "queue_command_target_not_eligible"}, status_code=409)
+    return _json(accepted_queue_command_payload(result, command), status_code=202)
 
 
 def _filters(**kwargs: Any) -> dict[str, Any]:
@@ -100,6 +207,13 @@ def _filters(**kwargs: Any) -> dict[str, Any]:
 def _item_payload(row: dict[str, Any]) -> dict[str, Any]:
     return {
         "id": int(row.get("id") or 0),
+        "execution_id": _text(row.get("execution_id")),
+        "parent_execution_id": _text(row.get("parent_execution_id")),
+        "lane": _text(row.get("lane")),
+        "available_at": row.get("available_at"),
+        "hold_reason": _text(row.get("hold_reason")),
+        "policy_version": _text(row.get("policy_version")),
+        "row_version": _text(row.get("row_version")),
         "provider": _text(row.get("provider")),
         "event_family": _text(row.get("event_family")),
         "route": _text(row.get("route")),
@@ -219,6 +333,7 @@ def _page_context(request: Request) -> dict[str, Any]:
                 {"label": "Dry-run", "href": "#run-due-preview", "variant": "secondary"},
             ],
             "admin_action_token": ensure_admin_action_token(),
+            "operator_actor": _authenticated_actor(request),
             "url_for": admin_path_for,
         }
     )
@@ -302,10 +417,28 @@ async def retry_webhook_inbox_item(inbox_id: int, request: Request) -> JSONRespo
     token_error = _action_or_internal_token_error(request, payload)
     if token_error:
         return _json({"ok": False, "error": token_error}, status_code=401)
-    row = _repo().mark_retryable_now(int(inbox_id), reason=_text(payload.get("reason")))
-    if not row:
-        return _json({"ok": False, "error": "webhook_inbox_item_not_retryable_or_not_found"}, status_code=404)
-    return _json({"ok": True, "item": _item_payload(row)})
+    try:
+        command = parse_manual_queue_command(
+            payload,
+            authenticated_actor=authenticated_queue_actor(request),
+        )
+    except QueueCommandPayloadError as exc:
+        return _command_payload_error(exc)
+    service = _queue_command_service(request)
+    target = await run_in_threadpool(
+        service.read_webhook_inbox_target,
+        int(inbox_id),
+        provider="wecom",
+    )
+    if target is None:
+        return _json({"ok": False, "error": "webhook_inbox_item_not_found"}, status_code=404)
+    return await _accepted_manual_action_response(
+        service,
+        target,
+        command,
+        action="retry",
+        source_route="/api/admin/webhook-inbox/{inbox_id}/retry",
+    )
 
 
 @router.post("/api/admin/webhook-inbox/{inbox_id}/skip")
@@ -314,10 +447,28 @@ async def skip_webhook_inbox_item(inbox_id: int, request: Request) -> JSONRespon
     token_error = _action_or_internal_token_error(request, payload)
     if token_error:
         return _json({"ok": False, "error": token_error}, status_code=401)
-    row = _repo().mark_ignored(int(inbox_id), reason=_text(payload.get("reason")))
-    if not row:
+    try:
+        command = parse_manual_queue_command(
+            payload,
+            authenticated_actor=authenticated_queue_actor(request),
+        )
+    except QueueCommandPayloadError as exc:
+        return _command_payload_error(exc)
+    service = _queue_command_service(request)
+    target = await run_in_threadpool(
+        service.read_webhook_inbox_target,
+        int(inbox_id),
+        provider="wecom",
+    )
+    if target is None:
         return _json({"ok": False, "error": "webhook_inbox_item_not_found"}, status_code=404)
-    return _json({"ok": True, "item": _item_payload(row)})
+    return await _accepted_manual_action_response(
+        service,
+        target,
+        command,
+        action="skip",
+        source_route="/api/admin/webhook-inbox/{inbox_id}/skip",
+    )
 
 
 @router.post("/api/admin/webhook-inbox/{inbox_id}/dispatch")
@@ -328,16 +479,38 @@ async def dispatch_webhook_inbox_item(inbox_id: int, request: Request) -> JSONRe
         return _json({"ok": False, "error": token_error}, status_code=401)
     repo = _repo()
     dry_run = _bool(payload.get("dry_run"), default=True)
-    result = await run_in_threadpool(
-        _worker(request, repo).dispatch_one,
+    if dry_run:
+        result = await _preview_webhook_item(
+            request,
+            repo,
+            int(inbox_id),
+            reason=_text(payload.get("reason")) or "admin_dispatch_one",
+        )
+        status_code = 200 if result.get("ok") else (404 if result.get("status") == "not_found" else 409)
+        result["route_owner"] = ROUTE_OWNER
+        result["real_external_call_executed"] = False
+        return _json(result, status_code=status_code)
+    try:
+        command = parse_manual_queue_command(
+            payload,
+            authenticated_actor=authenticated_queue_actor(request),
+        )
+    except QueueCommandPayloadError as exc:
+        return _command_payload_error(exc)
+    service = _queue_command_service(request)
+    target = await run_in_threadpool(
+        service.read_webhook_inbox_target,
         int(inbox_id),
-        dry_run=dry_run,
-        reason=_text(payload.get("reason")) or "admin_dispatch_one",
+        provider="wecom",
     )
-    status_code = 200 if result.get("ok") else (404 if result.get("status") == "not_found" else 409)
-    result["route_owner"] = ROUTE_OWNER
-    result["real_external_call_executed"] = False
-    return _json(result, status_code=status_code)
+    if target is None:
+        return _json({"ok": False, "error": "webhook_inbox_item_not_found"}, status_code=404)
+    return await _accepted_command_response(
+        service,
+        target,
+        command,
+        source_route="/api/admin/webhook-inbox/{inbox_id}/dispatch",
+    )
 
 
 @router.post("/api/admin/webhook-inbox/run-due")
@@ -351,14 +524,56 @@ async def run_webhook_inbox_due(request: Request) -> JSONResponse:
         return _json({"ok": False, "error": "webhook_inbox_provider_not_supported"}, status_code=400)
     repo = _repo()
     dry_run = _bool(payload.get("dry_run"), default=True)
-    result = await run_in_threadpool(
-        _worker(request, repo).run_due,
-        limit=_int(payload.get("batch_size") or payload.get("limit"), default=20, minimum=1),
-        dry_run=dry_run,
+    if dry_run:
+        result = await _preview_webhook_due(
+            request,
+            repo,
+            limit=_int(payload.get("batch_size") or payload.get("limit"), default=20, minimum=1),
+        )
+        result["route_owner"] = ROUTE_OWNER
+        result["real_external_call_executed"] = False
+        return _json(result)
+    try:
+        command = parse_manual_queue_command(
+            payload,
+            authenticated_actor=authenticated_queue_actor(request),
+        )
+    except QueueCommandPayloadError as exc:
+        return _command_payload_error(exc)
+    try:
+        item_id = int(payload.get("item_id") or 0)
+    except (TypeError, ValueError):
+        item_id = 0
+    if item_id <= 0:
+        return _json(
+            {
+                "ok": False,
+                "error": "manual_queue_command_fields_required",
+                "missing_fields": ["item_id"],
+            },
+            status_code=422,
+        )
+    service = _queue_command_service(request)
+    target = await run_in_threadpool(
+        service.read_webhook_inbox_target,
+        item_id,
+        provider=provider,
     )
-    result["route_owner"] = ROUTE_OWNER
-    result["real_external_call_executed"] = False
-    return _json(result)
+    if target is None:
+        return _json({"ok": False, "error": "webhook_inbox_item_not_found"}, status_code=404)
+    try:
+        result = await run_in_threadpool(
+            submit_manual_queue_command,
+            service,
+            target,
+            command,
+            source_route="/api/admin/webhook-inbox/run-due",
+        )
+    except QueueCommandConflict:
+        return _json({"ok": False, "error": "queue_command_cas_conflict"}, status_code=409)
+    except ValueError:
+        return _json({"ok": False, "error": "queue_command_target_not_eligible"}, status_code=409)
+    return _json(accepted_queue_command_payload(result, command), status_code=202)
 
 
 @router.get("/api/admin/wecom/callback/reconciliation")

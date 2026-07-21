@@ -19,7 +19,7 @@ def test_coupon_routes_are_next_owned_and_admin_writes_issue_bound_action_grants
     routes = _routes()
     coupon_routes = [route for route in routes if "coupon" in route["route_name"]]
 
-    assert len(coupon_routes) == 20
+    assert len(coupon_routes) == 21
     assert {route["runtime_owner"] for route in coupon_routes} == {"ai_crm_next"}
     assert {route["capability_owner"] for route in coupon_routes} == {"commerce"}
 

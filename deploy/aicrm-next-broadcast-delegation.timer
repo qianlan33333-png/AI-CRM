@@ -1,0 +1,10 @@
+[Unit]
+Description=Run AI-CRM Next Broadcast Delegation every minute
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+Persistent=true
+Unit=aicrm-next-broadcast-delegation.service
+
+[Install]
+WantedBy=timers.target

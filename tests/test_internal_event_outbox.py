@@ -76,6 +76,15 @@ def _database_url() -> str:
     return str(os.getenv("AICRM_TEST_DATABASE_URL") or os.getenv("DATABASE_URL") or "").strip()
 
 
+def _enable_internal_event_worker(monkeypatch: pytest.MonkeyPatch, *consumer_names: str) -> None:
+    monkeypatch.setenv("AICRM_INTERNAL_EVENTS_ENABLED", "1")
+    monkeypatch.setenv("AICRM_INTERNAL_EVENTS_AUTO_EXECUTE", "1")
+    monkeypatch.setenv("AICRM_INTERNAL_EVENTS_AUTO_EXECUTE_MAX_BATCH_SIZE", "10")
+    monkeypatch.setenv("AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_TYPES", EVENT_TYPE)
+    monkeypatch.setenv("AICRM_INTERNAL_EVENTS_ALLOWED_CONSUMERS", ",".join(consumer_names))
+    monkeypatch.delenv("AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_CONSUMERS", raising=False)
+
+
 def test_reconciliation_script_supports_direct_file_entrypoint() -> None:
     environment = dict(os.environ)
     environment.pop("PYTHONPATH", None)
@@ -389,7 +398,8 @@ def test_manifest_reconciliation_never_falls_back_when_stored_hash_is_invalid() 
     assert repo.list_consumer_runs({"event_id": event.event_id}) == ([], 0)
 
 
-def test_scoped_worker_is_consumer_only_and_cannot_relay_pending_outbox() -> None:
+def test_scoped_worker_is_consumer_only_and_cannot_relay_pending_outbox(monkeypatch) -> None:
+    _enable_internal_event_worker(monkeypatch, "projection-a")
     repo = InMemoryInternalEventRepository()
     registry = _registry("projection-a")
     record = repo.enqueue_outbox(_request("transactional-event:scoped-worker"))
@@ -421,7 +431,8 @@ def test_scoped_worker_is_consumer_only_and_cannot_relay_pending_outbox() -> Non
     assert repo.list_due_outbox(limit=10) == []
 
 
-def test_terminal_and_blocked_are_manual_only_and_do_not_gain_attempts() -> None:
+def test_terminal_and_blocked_are_manual_only_and_do_not_gain_attempts(monkeypatch) -> None:
+    _enable_internal_event_worker(monkeypatch, "terminal", "blocked")
     repo = InMemoryInternalEventRepository()
     registry = InternalEventConsumerRegistry()
     registry.register(EVENT_TYPE, "terminal", lambda event, run: InternalEventConsumerResult(status="failed_terminal", error_code="invalid"))

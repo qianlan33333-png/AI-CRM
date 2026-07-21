@@ -7,12 +7,24 @@ from sqlalchemy import text
 
 from aicrm_next.automation_agents.context_builder import referenced_context_keys
 from aicrm_next.automation_agents.worker import AutomationAgentWorker
-from aicrm_next.external_effect_composition import build_external_effect_continuation_registry
+from aicrm_next.ai_audience_ops.event_types import INBOUND_RECEIVED_EVENT
+from aicrm_next.external_effect_composition import (
+    AUTOMATION_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
+    build_external_effect_continuation_consumers,
+    build_external_effect_continuation_registry,
+)
+from aicrm_next.internal_event_composition import build_internal_event_consumer_registry
 from aicrm_next.platform_foundation.command_bus.models import CommandContext
 from aicrm_next.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry, WebhookAdapter
 from aicrm_next.platform_foundation.external_effects.models import WEBHOOK_GENERIC_PUSH
+from aicrm_next.platform_foundation.external_effects.completion_events import (
+    EXTERNAL_EFFECT_COMPLETED_EVENT_TYPE,
+)
 from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
 from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
+from aicrm_next.platform_foundation.internal_events import InternalEventService
+from aicrm_next.platform_foundation.internal_events.outbox import InternalEventOutboxRelay
+from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
 from aicrm_next.platform_foundation.auth_platform.webhook_hmac import WebhookHmacSigner
 from aicrm_next.shared.db_session import get_session_factory
 from tests.webhook_hmac_test_helpers import (
@@ -40,6 +52,23 @@ def _insert_package(session, *, package_key: str = "agent_callback_pkg") -> int:
         .one()
     )
     return int(row["id"])
+
+
+def _dispatch_ai_audience_inbound_events() -> list[dict]:
+    registry = build_internal_event_consumer_registry()
+    relayed = InternalEventOutboxRelay(consumer_registry=registry).relay_due(limit=100)
+    assert relayed["ok"] is True
+    events, _ = InternalEventService().list_events({"event_type": INBOUND_RECEIVED_EVENT}, limit=100)
+    worker = InternalEventWorker(consumer_registry=registry)
+    results: list[dict] = []
+    for event in events:
+        runs, _ = InternalEventService().list_consumer_runs({"event_id": event.event_id}, limit=100)
+        for run in runs:
+            if run.status in {"pending", "failed_retryable"}:
+                results.append(worker.dispatch_one(run))
+    assert results
+    assert {item["consumer_run"]["status"] for item in results} == {"succeeded"}
+    return results
 
 
 def _insert_agent(
@@ -340,6 +369,10 @@ def test_worker_fake_mode_generates_package_and_enqueues_send_plan(next_client, 
     assert result["status"] == "succeeded"
     assert seen_keys["keys"] == {"tags", "recent_messages"}
     with get_session_factory()() as session:
+        assert int(session.execute(text("SELECT COUNT(*) FROM cloud_broadcast_plans")).scalar() or 0) == 0
+        assert int(session.execute(text("SELECT COUNT(*) FROM internal_event_outbox WHERE event_type = :event_type"), {"event_type": INBOUND_RECEIVED_EVENT}).scalar() or 0) == 1
+    _dispatch_ai_audience_inbound_events()
+    with get_session_factory()() as session:
         item = session.execute(text("SELECT * FROM automation_agent_webhook_item")).mappings().one()
         plan_count = int(session.execute(text("SELECT COUNT(*) FROM cloud_broadcast_plans")).scalar() or 0)
         message = session.execute(text("SELECT * FROM cloud_broadcast_plan_recipient_messages")).mappings().one()
@@ -518,9 +551,23 @@ def test_external_effect_agent_webhook_continuation_enqueues_broadcast_job(next_
 
     assert result["counts"]["succeeded_count"] == 1
     assert len(calls) == 1
-    item_result = result["items"][0]["post_success_continuation"]
-    assert item_result["ok"] is True
-    assert item_result["broadcast_enqueue"]["approved_count"] == 1
+    assert result["items"][0]["post_success_continuation"]["reason"] == "durable_completion_event_pending"
+    registry = build_internal_event_consumer_registry()
+    relayed = InternalEventOutboxRelay(consumer_registry=registry).relay_due(limit=1)
+    assert relayed["counts"]["relayed_count"] == 1
+    completion_event = InternalEventService().list_events({"event_type": EXTERNAL_EFFECT_COMPLETED_EVENT_TYPE})[0][0]
+    completion_runs, completion_run_count = InternalEventService().list_consumer_runs({"event_id": completion_event.event_id})
+    assert completion_run_count == len(build_external_effect_continuation_consumers())
+    internal_worker = InternalEventWorker(consumer_registry=registry)
+    completion_results = {
+        run.consumer_name: internal_worker.dispatch_one(run)
+        for run in completion_runs
+    }
+    assert {item["consumer_run"]["status"] for item in completion_results.values()} == {"succeeded"}
+    completion_result = completion_results[AUTOMATION_EXTERNAL_EFFECT_CONTINUATION_CONSUMER]
+    assert completion_result["ok"] is True
+    assert completion_result["consumer_run"]["result_summary_json"]["continuation"] == "dict"
+    _dispatch_ai_audience_inbound_events()
     with get_session_factory()() as session:
         job_row = session.execute(text("SELECT * FROM external_effect_job WHERE id = :job_id"), {"job_id": job["id"]}).mappings().one()
         attempt = session.execute(text("SELECT * FROM external_effect_attempt WHERE job_id = :job_id"), {"job_id": job["id"]}).mappings().one()
@@ -532,7 +579,8 @@ def test_external_effect_agent_webhook_continuation_enqueues_broadcast_job(next_
     response_summary = _json_mapping(attempt["response_summary_json"])
     assert job_row["status"] == "succeeded"
     assert response_summary["automation_agent_batch_id"].startswith("agent_batch_")
-    assert response_summary["post_success_continuation"] == "dict"
+    assert response_summary["provider_result_received"] is True
+    assert "post_success_continuation" not in response_summary
     assert item["status"] == "callback_succeeded"
     assert recipient["approval_status"] == "approved"
     assert recipient["send_status"] == "queued"
@@ -587,6 +635,7 @@ def test_worker_fixed_script_uses_configured_text_without_agent_generation(next_
 
     assert result["status"] == "succeeded"
     assert seen_keys["keys"] == set()
+    _dispatch_ai_audience_inbound_events()
     with get_session_factory()() as session:
         item = session.execute(text("SELECT * FROM automation_agent_webhook_item")).mappings().one()
         message = session.execute(text("SELECT * FROM cloud_broadcast_plan_recipient_messages")).mappings().one()

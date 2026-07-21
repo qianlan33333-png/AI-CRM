@@ -5,7 +5,12 @@ from typing import Any
 
 import pytest
 
-from aicrm_next.platform_foundation.external_effects import ExternalEffectService, WECOM_MESSAGE_GROUP_SEND, reset_external_effect_fixture_state
+from aicrm_next.platform_foundation.external_effects import (
+    ExternalEffectService,
+    WECOM_MEDIA_UPLOAD,
+    WECOM_MESSAGE_GROUP_SEND,
+    reset_external_effect_fixture_state,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -88,6 +93,10 @@ def _run(repo, now=None):
 
 def _wecom_group_jobs():
     return ExternalEffectService().list_jobs({"effect_type": WECOM_MESSAGE_GROUP_SEND}, limit=20)[0]
+
+
+def _wecom_media_jobs():
+    return ExternalEffectService().list_jobs({"effect_type": WECOM_MEDIA_UPLOAD}, limit=20)[0]
 
 
 def test_active_standard_plan_due_node_enqueues_external_effect_job():
@@ -227,6 +236,57 @@ def test_scheduler_is_idempotent_on_repeated_runs():
     assert second["group_ops_skipped_duplicate"] == 1
     assert len(_wecom_group_jobs()) == 1
 
+
+def test_node_revision_creates_new_graph_and_cancels_old_pre_provider_effect():
+    repo = FakeGroupOpsRepo(
+        plans=[_plan(updated_at="2026-05-28T01:00:00Z")],
+        groups={1: [_group(updated_at="2026-05-28T01:00:00Z")]},
+        nodes={1: [_node(text_content="old content", updated_at="2026-05-28T01:00:00Z")]},
+    )
+    now = datetime(2026, 5, 28, 2, 1, tzinfo=timezone.utc)
+
+    first = _run(repo, now=now)
+    repo.nodes[1] = [_node(text_content="new content", updated_at="2026-05-28T01:05:00Z")]
+    second = _run(repo, now=now)
+    jobs = _wecom_group_jobs()
+
+    assert first["group_ops_external_effect_jobs"] == 1
+    assert second["group_ops_external_effect_jobs"] == 1
+    status_by_content = {
+        job.payload_json["content_payload"]["text"]["content"]: job.status
+        for job in jobs
+    }
+    assert status_by_content == {"old content": "cancelled", "new content": "queued"}
+
+
+def test_group_binding_revision_replaces_old_target_set_without_reusing_graph():
+    repo = FakeGroupOpsRepo(
+        plans=[_plan(updated_at="2026-05-28T01:00:00Z")],
+        groups={
+            1: [
+                _group("chat_001", updated_at="2026-05-28T01:00:00Z"),
+                _group("chat_002", updated_at="2026-05-28T01:00:00Z"),
+            ]
+        },
+        nodes={1: [_node(updated_at="2026-05-28T01:00:00Z")]},
+    )
+    now = datetime(2026, 5, 28, 2, 1, tzinfo=timezone.utc)
+
+    _run(repo, now=now)
+    repo.groups[1] = [_group("chat_001", updated_at="2026-05-28T01:05:00Z")]
+    revised = _run(repo, now=now)
+    jobs = _wecom_group_jobs()
+
+    assert revised["group_ops_external_effect_jobs"] == 1
+    status_by_targets = {
+        tuple(job.payload_json["chat_ids"]): job.status
+        for job in jobs
+    }
+    assert status_by_targets == {
+        ("chat_001", "chat_002"): "cancelled",
+        ("chat_001",): "queued",
+    }
+
 def test_group_ops_scheduler_idempotent_after_timezone_fix():
     repo = FakeGroupOpsRepo(
         plans=[_plan(created_at="2026-05-29T05:05:00+00:00")],
@@ -307,17 +367,10 @@ def test_group_ops_content_package_text_enqueues():
     assert jobs[0].payload_json["content_payload"]["text"]["content"] == "package hello group"
 
 
-def test_group_ops_content_package_text_and_resolved_attachments_enqueue(monkeypatch):
+def test_group_ops_content_package_text_and_durable_media_dependencies_enqueue(monkeypatch):
     from aicrm_next.automation_engine.group_ops import scheduler
 
-    def fake_resolve(content_package):
-        assert content_package["content_text"] == "package hello group"
-        return (
-            [{"msgtype": "file", "file": {"media_id": "file-media-001"}}],
-            ["img-media-001"],
-        )
-
-    monkeypatch.setattr(scheduler, "resolve_group_ops_content_package_materials", fake_resolve)
+    monkeypatch.setattr(scheduler, "production_data_ready", lambda: True)
     repo = FakeGroupOpsRepo(
         plans=[_plan()],
         groups={1: [_group()]},
@@ -347,9 +400,45 @@ def test_group_ops_content_package_text_and_resolved_attachments_enqueue(monkeyp
     assert content_payload["sender"] == "owner_001"
     assert content_payload["channel"] == "wecom_customer_group"
     assert content_payload["attachments"] == [
-        {"msgtype": "file", "file": {"media_id": "file-media-001"}},
-        {"msgtype": "image", "image": {"media_id": "img-media-001"}},
+        {"msgtype": "image", "image": {"media_dependency_key": "image-library:1"}},
+        {"msgtype": "file", "file": {"media_dependency_key": "attachment-library:2"}},
     ]
+    assert len(_wecom_media_jobs()) == 2
+
+
+def test_group_ops_media_only_package_plans_upload_before_final_effect(monkeypatch):
+    from aicrm_next.automation_engine.group_ops import scheduler
+
+    monkeypatch.setattr(scheduler, "production_data_ready", lambda: True)
+    repo = FakeGroupOpsRepo(
+        plans=[_plan()],
+        groups={1: [_group()]},
+        nodes={
+            1: [
+                _node(
+                    text_content="",
+                    attachments=[],
+                    content_package_json={
+                        "content_text": "",
+                        "image_library_ids": [404],
+                        "miniprogram_library_ids": [],
+                        "attachment_library_ids": [],
+                    },
+                )
+            ]
+        },
+    )
+
+    summary = _run(repo, now=datetime(2026, 5, 28, 2, 1, tzinfo=timezone.utc))
+
+    jobs = _wecom_group_jobs()
+    assert summary["group_ops_external_effect_jobs"] == 1
+    assert summary["errors"] == []
+    assert jobs[0].status == "planned"
+    assert jobs[0].payload_json["content_payload"]["attachments"] == [
+        {"msgtype": "image", "image": {"media_dependency_key": "image-library:404"}},
+    ]
+    assert len(_wecom_media_jobs()) == 1
 
 
 def test_group_ops_text_and_attachment_enqueues():
@@ -379,6 +468,7 @@ def test_group_ops_bad_node_does_not_block_good_node(monkeypatch):
         raise RuntimeError(f"image_library_resolve_failed:id={image_id}:missing image {image_id}")
 
     monkeypatch.setattr(scheduler, "resolve_group_ops_content_package_materials", fail_resolve)
+    monkeypatch.setattr(scheduler, "production_data_ready", lambda: False)
     repo = FakeGroupOpsRepo(
         plans=[_plan()],
         groups={1: [_group()]},
@@ -428,6 +518,7 @@ def test_group_ops_unresolvable_content_package_records_node_error(monkeypatch):
         "resolve_group_ops_content_package_materials",
         fake_resolve,
     )
+    monkeypatch.setattr(scheduler, "production_data_ready", lambda: False)
     repo = FakeGroupOpsRepo(
         plans=[_plan()],
         groups={1: [_group()]},

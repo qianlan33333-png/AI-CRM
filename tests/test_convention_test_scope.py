@@ -102,6 +102,67 @@ def test_unknown_runtime_path_falls_back_to_full_but_docs_do_not(tmp_path: Path)
     assert docs["architecture_gate"] == "none"
 
 
+@pytest.mark.parametrize(
+    ("runtime_path", "test_path", "import_source"),
+    [
+        (
+            "scripts/ops/arm_wecom_callback_canary.py",
+            "tests/test_arm_wecom_callback_canary.py",
+            "from scripts.ops import arm_wecom_callback_canary as arm\n",
+        ),
+        (
+            "tools/check_questionnaire_h5_oauth_readiness.py",
+            "tests/test_questionnaire_h5_oauth_readiness.py",
+            "from tools import check_questionnaire_h5_oauth_readiness as readiness\n",
+        ),
+    ],
+)
+def test_long_runtime_script_stem_matches_its_importing_contract_test(
+    runtime_path: str,
+    test_path: str,
+    import_source: str,
+    tmp_path: Path,
+) -> None:
+    _write(tmp_path, test_path, import_source)
+
+    result = select_convention_scope(_policy(), [runtime_path], root=tmp_path)
+
+    assert result["python_tests"] == [test_path]
+    assert result["runtime_paths_without_test_match"] == []
+    assert "runtime_path_without_test_match" not in result["fallback_reasons"]
+
+
+def test_static_runtime_checker_uses_bounded_policy_override(tmp_path: Path) -> None:
+    test_path = "tests/test_identity_customer_event_driven_postgres.py"
+    _write(tmp_path, test_path, "import psycopg\n")
+
+    result = select_convention_scope(
+        _policy(),
+        ["scripts/ops/check_identity_customer_event_driven.py"],
+        root=tmp_path,
+    )
+
+    assert result["python_tests"] == [test_path]
+    assert result["runtime_paths_without_test_match"] == []
+    assert result["needs_postgres"] is True
+
+
+def test_runtime_test_override_requires_a_rationale(tmp_path: Path) -> None:
+    test_path = "tests/test_static_checker.py"
+    _write(tmp_path, test_path, "def test_checker(): pass\n")
+    policy = _policy()
+    policy["runtime_test_overrides"] = [
+        {
+            "paths": ["scripts/ops/static_checker.py"],
+            "python_tests": [test_path],
+            "rationale": "",
+        }
+    ]
+
+    with pytest.raises(SystemExit, match="rationale"):
+        select_convention_scope(policy, ["scripts/ops/static_checker.py"], root=tmp_path)
+
+
 def test_deleted_file_uses_safe_full_regression_fallback(tmp_path: Path) -> None:
     (tmp_path / "tests").mkdir()
     deleted = "aicrm_next/data_health/retired.py"

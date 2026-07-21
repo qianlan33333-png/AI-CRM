@@ -1,0 +1,10 @@
+[Unit]
+Description=Run AI-CRM Next Group Ops Planning every minute
+
+[Timer]
+OnCalendar=*-*-* *:*:20
+Persistent=true
+Unit=aicrm-next-group-ops-planning.service
+
+[Install]
+WantedBy=timers.target

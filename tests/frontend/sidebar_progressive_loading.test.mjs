@@ -13,20 +13,32 @@ assert.equal(source.includes(bootMarker), true, "workbench boot marker changed; 
 
 function createNode() {
   return {
+    attributes: {},
     className: "",
     dataset: {},
     disabled: false,
     innerHTML: "",
     parentElement: null,
+    style: {},
     textContent: "",
     value: "",
     addEventListener() {},
-    appendChild() {},
+    appendChild(child) {
+      child.parentElement = this;
+    },
+    removeChild(child) {
+      child.parentElement = null;
+    },
     closest() {
       return null;
     },
+    focus() {},
     querySelector() {
       return null;
+    },
+    select() {},
+    setAttribute(name, value) {
+      this.attributes[name] = String(value);
     },
     classList: {
       add() {},
@@ -46,8 +58,10 @@ function jsonResponse(payload, status = 200) {
   };
 }
 
-function loadHarness(fetchImpl) {
+function loadHarness(fetchImpl, options = {}) {
   const nodes = new Map();
+  const copiedValues = [];
+  let fallbackCopyCalls = 0;
   const node = (id) => {
     if (!nodes.has(id)) nodes.set(id, createNode());
     return nodes.get(id);
@@ -56,14 +70,24 @@ function loadHarness(fetchImpl) {
     debugEnabled: "false",
     jssdkConfigUrl: "/api/sidebar/jssdk-config",
     materialsUrl: "/api/sidebar/v2/materials",
+    periodicOrdersUrl: "/api/sidebar/v2/periodic-orders",
+    couponsUrl: "/api/sidebar/v2/coupons",
+    radarLinksUrl: "/api/sidebar/v2/radar-links",
+    timelineUrl: "/api/sidebar/v2/timeline",
     questionnairesUrl: "/api/sidebar/v2/questionnaires",
     ordersUrl: "/api/sidebar/v2/orders",
     workbenchUrl: "/api/sidebar/v2/workbench",
   };
 
   const document = {
+    body: createNode(),
     createElement() {
       return createNode();
+    },
+    execCommand(command) {
+      if (command !== "copy") return false;
+      fallbackCopyCalls += 1;
+      return options.fallbackCopyResult !== false;
     },
     getElementById(id) {
       return node(id);
@@ -85,13 +109,23 @@ function loadHarness(fetchImpl) {
       search: "",
     },
     open() {},
+    navigator: options.clipboardWrite
+      ? {
+          clipboard: {
+            async writeText(value) {
+              copiedValues.push(value);
+              return options.clipboardWrite(value);
+            },
+          },
+        }
+      : {},
     setTimeout(callback, delay, ...args) {
       return nativeSetTimeout(callback, delay === 420 ? 0 : delay, ...args);
     },
   };
   const instrumented = source.replace(
     bootMarker,
-    "  globalThis.__sidebarTestApi = { jssdkConfigUrl, loadWorkbench, requestJssdkConfig, requestPanelJson, switchTab, switchMaterialType: typeof switchMaterialType === 'function' ? switchMaterialType : null, state };\n})();",
+    "  globalThis.__sidebarTestApi = { jssdkConfigUrl, loadWorkbench, requestJssdkConfig, requestPanelJson, switchTab, switchMaterialType, switchOrderType, switchProfileView, loadMoreTimeline, refreshTimeline, copyLink, state };\n})();",
   );
   const context = {
     AbortController,
@@ -107,7 +141,11 @@ function loadHarness(fetchImpl) {
   vm.runInNewContext(instrumented, context);
   return {
     api: context.__sidebarTestApi,
+    copiedValues,
     nodes,
+    get fallbackCopyCalls() {
+      return fallbackCopyCalls;
+    },
     advanceTime(ms) {
       nowMs += ms;
     },
@@ -239,25 +277,25 @@ test("non-profile tabs cannot request panels before the workbench is ready", asy
   assert.equal(api.state.activeTab, "orders");
 });
 
-test("a failed material subtype has a manual retry path", async () => {
+test("a failed radar subtype has a manual retry path", async () => {
   let materialCalls = 0;
   const { api, nodes } = loadHarness(async (url) => {
-    if (!String(url).includes("/materials")) throw new Error(`unexpected URL: ${url}`);
+    if (!String(url).includes("/radar-links")) throw new Error(`unexpected URL: ${url}`);
     materialCalls += 1;
-    if (materialCalls === 1) return jsonResponse({ ok: false, error: "mini failed" }, 503);
-    return jsonResponse({ ok: true, materials: [{ id: "mini-1", type: "mini", title: "Mini Ready" }] });
+    if (materialCalls === 1) return jsonResponse({ ok: false, error: "radar failed" }, 503);
+    return jsonResponse({ ok: true, items: [{ id: "radar-1", type_label: "链接", title: "Radar Ready" }] });
   });
   api.state.status = "ready";
   api.state.workbench = { customer: {}, profile: {}, workflow: {} };
   api.state.activeTab = "materials";
 
-  await api.switchMaterialType("mini");
+  await api.switchMaterialType("radar");
   assert.equal(materialCalls, 1);
-  assert.equal(nodes.get("content").innerHTML.includes('data-retry-material-type="mini"'), true);
+  assert.equal(nodes.get("content").innerHTML.includes('data-retry-material-type="radar"'), true);
 
-  await api.switchMaterialType("mini");
+  await api.switchMaterialType("radar");
   assert.equal(materialCalls, 2);
-  assert.equal(nodes.get("content").innerHTML.includes("Mini Ready"), true);
+  assert.equal(nodes.get("content").innerHTML.includes("Radar Ready"), true);
 });
 
 test("an old material subtype error cannot replace a newer subtype", async () => {
@@ -266,32 +304,31 @@ test("an old material subtype error cannot replace a newer subtype", async () =>
     releaseImage = resolve;
   });
   const { api, nodes } = loadHarness(async (url) => {
-    const type = new URL(String(url)).searchParams.get("type");
-    if (type === "image") return pendingImage;
-    if (type === "mini") return jsonResponse({ ok: true, materials: [{ id: "mini-2", type: "mini", title: "New Mini" }] });
-    throw new Error(`unexpected material type: ${type}`);
+    if (String(url).includes("/materials")) return pendingImage;
+    if (String(url).includes("/radar-links")) return jsonResponse({ ok: true, items: [{ id: "radar-2", title: "New Radar" }] });
+    throw new Error(`unexpected URL: ${url}`);
   });
   api.state.status = "ready";
   api.state.workbench = { customer: {}, profile: {}, workflow: {} };
   api.state.activeTab = "materials";
 
   const oldType = api.switchMaterialType("image");
-  await api.switchMaterialType("mini");
+  await api.switchMaterialType("radar");
   const currentPanel = nodes.get("content").innerHTML;
   releaseImage(jsonResponse({ ok: false, error: "old image failed" }, 503));
   await oldType;
 
-  assert.equal(api.state.materialType, "mini");
+  assert.equal(api.state.materialType, "radar");
   assert.equal(nodes.get("content").innerHTML, currentPanel);
 });
 
 test("an old material subtype result cannot replace a later tab", async () => {
-  let releasePdf;
-  const pendingPdf = new Promise((resolve) => {
-    releasePdf = resolve;
+  let releaseImage;
+  const pendingImage = new Promise((resolve) => {
+    releaseImage = resolve;
   });
   const { api, nodes } = loadHarness(async (url) => {
-    if (String(url).includes("/materials")) return pendingPdf;
+    if (String(url).includes("/materials")) return pendingImage;
     if (String(url).includes("/orders")) return jsonResponse({ ok: true, orders: [] });
     throw new Error(`unexpected URL: ${url}`);
   });
@@ -299,10 +336,10 @@ test("an old material subtype result cannot replace a later tab", async () => {
   api.state.workbench = { customer: {}, profile: {}, workflow: {} };
   api.state.activeTab = "materials";
 
-  const oldType = api.switchMaterialType("pdf");
+  const oldType = api.switchMaterialType("image");
   await api.switchTab("orders");
   const currentPanel = nodes.get("content").innerHTML;
-  releasePdf(jsonResponse({ ok: true, materials: [{ id: "pdf-1", type: "pdf", title: "Old PDF" }] }));
+  releaseImage(jsonResponse({ ok: true, materials: [{ id: "image-1", type: "image", title: "Old Image" }] }));
   await oldType;
 
   assert.equal(api.state.activeTab, "orders");
@@ -378,4 +415,194 @@ test("an old tab failure cannot replace the currently active tab", async () => {
 
   assert.equal(api.state.activeTab, "orders");
   assert.equal(nodes.get("content").innerHTML, currentPanel);
+});
+
+test("workbench startup does not prefetch orders, coupons, radar, or timeline", async () => {
+  const fetchedUrls = [];
+  const { api } = loadHarness(async (url) => {
+    fetchedUrls.push(String(url));
+    if (String(url).includes("/workbench")) {
+      return jsonResponse({
+        ok: true,
+        customer: { external_userid: "wm_lazy", owner_userid: "sales_01" },
+        profile: {},
+        workflow: {},
+        diagnostics: {},
+      });
+    }
+    throw new Error(`unexpected startup URL: ${url}`);
+  });
+  api.state.external_userid = "wm_lazy";
+  api.state.owner_userid = "sales_01";
+
+  await api.loadWorkbench();
+
+  assert.equal(fetchedUrls.length, 1);
+  assert.equal(fetchedUrls[0].includes("/workbench"), true);
+  for (const path of ["/orders", "/periodic-orders", "/coupons", "/radar-links", "/timeline"]) {
+    assert.equal(fetchedUrls.some((url) => url.includes(path)), false, `${path} must stay lazy`);
+  }
+});
+
+test("order secondary tabs lazy-load regular and periodic APIs independently", async () => {
+  const fetchedUrls = [];
+  const { api, nodes } = loadHarness(async (url) => {
+    fetchedUrls.push(String(url));
+    if (String(url).includes("/periodic-orders")) {
+      return jsonResponse({ ok: true, periodic_orders: [{ id: "period-1", title: "周期权益", remaining_days: 12 }] });
+    }
+    if (String(url).includes("/orders")) {
+      return jsonResponse({ ok: true, orders: [{ id: "order-1", title: "普通订单" }] });
+    }
+    throw new Error(`unexpected URL: ${url}`);
+  });
+  api.state.external_userid = "wm_orders";
+  api.state.owner_userid = "sales_01";
+  api.state.status = "ready";
+  api.state.workbench = { customer: {}, profile: {}, workflow: {} };
+
+  await api.switchTab("orders");
+  assert.equal(fetchedUrls.filter((url) => url.includes("/orders")).length, 1);
+  assert.equal(fetchedUrls.some((url) => url.includes("/periodic-orders")), false);
+  assert.equal(nodes.get("content").innerHTML.includes("普通订单"), true);
+
+  await api.switchOrderType("periodic");
+  assert.equal(fetchedUrls.filter((url) => url.includes("/periodic-orders")).length, 1);
+  assert.equal(nodes.get("content").innerHTML.includes("周期权益"), true);
+  assert.equal(nodes.get("content").innerHTML.includes("data-periodic-order-remark"), true);
+
+  await api.switchOrderType("regular");
+  assert.equal(fetchedUrls.filter((url) => url.includes("/orders")).length, 1, "regular orders reuse their loaded state");
+});
+
+test("timeline refreshes on entry and paginates twenty items at a time", async () => {
+  const offsets = [];
+  const { api, nodes } = loadHarness(async (url) => {
+    if (!String(url).includes("/timeline")) throw new Error(`unexpected URL: ${url}`);
+    const offset = Number(new URL(String(url)).searchParams.get("offset"));
+    offsets.push(offset);
+    if (offset === 0) {
+      return jsonResponse({
+        ok: true,
+        items: [{ event_type: "channel_entry", title: "最新渠道", event_time: "2026-07-17T10:00:00Z" }],
+        total: 21,
+        has_more: true,
+        next_offset: 20,
+      });
+    }
+    return jsonResponse({
+      ok: true,
+      items: [{ event_type: "radar_opened", title: "更早雷达", event_time: "2026-07-16T10:00:00Z" }],
+      total: 21,
+      has_more: false,
+      next_offset: 21,
+    });
+  });
+  api.state.external_userid = "wm_timeline";
+  api.state.owner_userid = "sales_01";
+  api.state.status = "ready";
+  api.state.workbench = { customer: {}, profile: {}, workflow: {} };
+
+  await api.switchProfileView("timeline");
+  assert.deepEqual(offsets, [0]);
+  assert.equal(nodes.get("content").innerHTML.includes("最新渠道"), true);
+  assert.equal(nodes.get("content").innerHTML.includes("加载更多"), true);
+
+  await api.loadMoreTimeline();
+  assert.deepEqual(offsets, [0, 20]);
+  assert.equal(nodes.get("content").innerHTML.indexOf("最新渠道") < nodes.get("content").innerHTML.indexOf("更早雷达"), true);
+
+  await api.refreshTimeline();
+  assert.deepEqual(offsets, [0, 20, 0]);
+  assert.equal(nodes.get("content").innerHTML.includes("更早雷达"), false, "refresh replaces the previous page set");
+});
+
+test("coupon and radar links use clipboard copy without any send request", async () => {
+  let fetchCalls = 0;
+  const { api, copiedValues } = loadHarness(
+    async () => {
+      fetchCalls += 1;
+      throw new Error("copy must not request an API");
+    },
+    { clipboardWrite: async () => undefined },
+  );
+
+  assert.equal(await api.copyLink("/c/coupon-1"), true);
+  assert.equal(await api.copyLink("https://id-dev.youcangogogo.com/r/radar-1"), true);
+  assert.deepEqual(copiedValues, [
+    "https://crm.example.test/c/coupon-1",
+    "https://id-dev.youcangogogo.com/r/radar-1",
+  ]);
+  assert.equal(fetchCalls, 0);
+});
+
+test("copy link falls back to a hidden textarea when Clipboard API is unavailable", async () => {
+  const harness = loadHarness(async () => {
+    throw new Error("copy must not request an API");
+  });
+
+  assert.equal(await harness.api.copyLink("/r/fallback"), true);
+  assert.equal(harness.fallbackCopyCalls, 1);
+});
+
+test("coupons and radar links remain lazy until their exact views are opened", async () => {
+  const fetchedUrls = [];
+  const { api, nodes } = loadHarness(async (url) => {
+    fetchedUrls.push(String(url));
+    if (String(url).includes("/coupons")) return jsonResponse({ ok: true, items: [] });
+    if (String(url).includes("/materials")) return jsonResponse({ ok: true, materials: [] });
+    if (String(url).includes("/radar-links")) return jsonResponse({ ok: true, items: [] });
+    throw new Error(`unexpected URL: ${url}`);
+  });
+  api.state.external_userid = "wm_lazy_views";
+  api.state.owner_userid = "sales_01";
+  api.state.status = "ready";
+  api.state.workbench = { customer: {}, profile: {}, workflow: {} };
+
+  await api.switchTab("coupons");
+  assert.equal(fetchedUrls.filter((url) => url.includes("/coupons")).length, 1);
+  assert.equal(fetchedUrls.some((url) => url.includes("/radar-links")), false);
+  assert.equal(nodes.get("content").innerHTML.includes("暂无可领取优惠券"), true);
+
+  await api.switchTab("materials");
+  assert.equal(fetchedUrls.filter((url) => url.includes("/materials")).length, 1);
+  assert.equal(fetchedUrls.some((url) => url.includes("/radar-links")), false);
+
+  await api.switchMaterialType("radar");
+  assert.equal(fetchedUrls.filter((url) => url.includes("/radar-links")).length, 1);
+  assert.equal(nodes.get("content").innerHTML.includes("暂无启用中的雷达链接"), true);
+});
+
+test("timeline exposes error retry and legal empty states", async () => {
+  let timelineCalls = 0;
+  const { api, nodes } = loadHarness(async (url) => {
+    if (!String(url).includes("/timeline")) throw new Error(`unexpected URL: ${url}`);
+    timelineCalls += 1;
+    if (timelineCalls === 1) return jsonResponse({ ok: false, error: "timeline unavailable" }, 503);
+    return jsonResponse({ ok: true, items: [], total: 0, has_more: false, next_offset: 0 });
+  });
+  api.state.external_userid = "wm_timeline_error";
+  api.state.owner_userid = "sales_01";
+  api.state.status = "ready";
+  api.state.workbench = { customer: {}, profile: {}, workflow: {} };
+
+  await api.switchProfileView("timeline");
+  assert.equal(nodes.get("content").innerHTML.includes("timeline unavailable"), true);
+  assert.equal(nodes.get("content").innerHTML.includes("data-refresh-timeline"), true);
+
+  await api.switchProfileView("timeline");
+  assert.equal(nodes.get("content").innerHTML.includes("暂无用户时间线记录"), true);
+});
+
+test("copy link reports a clear failure when both copy mechanisms are unavailable", async () => {
+  const harness = loadHarness(
+    async () => {
+      throw new Error("copy must not request an API");
+    },
+    { fallbackCopyResult: false },
+  );
+
+  assert.equal(await harness.api.copyLink("/r/unavailable"), false);
+  assert.equal(harness.fallbackCopyCalls, 2);
+  assert.equal(harness.nodes.get("toast").textContent, "复制失败，请长按链接复制");
 });

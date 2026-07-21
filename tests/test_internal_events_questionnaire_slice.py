@@ -28,14 +28,16 @@ from aicrm_next.questionnaire.repo import reset_questionnaire_fixture_state
 from tests.wechat_identity_test_support import authorize_wechat_client
 
 
-QUESTIONNAIRE_CONSUMERS = [
+QUESTIONNAIRE_CONSUMERS = frozenset({
     "ai_audience_source_poke_consumer",
     "automation_questionnaire_consumer",
+    "customer_read_model_dirty_consumer",
+    "customer_timeline_projection_consumer",
     "customer_summary_consumer",
     "questionnaire_projection_consumer",
     "questionnaire_tag_consumer",
     "questionnaire_webhook_consumer",
-]
+})
 
 
 def _reset() -> None:
@@ -129,8 +131,8 @@ def test_questionnaire_submit_emits_single_event_and_expected_consumer_runs(monk
     assert events[0].payload_summary_json["answer_count"] == 3
     assert "13800138000" not in str(events[0].payload_summary_json)
     assert "openid_flag-on" not in str(events[0].payload_summary_json)
-    assert run_total == 6
-    assert sorted(run.consumer_name for run in runs) == QUESTIONNAIRE_CONSUMERS
+    assert run_total == len(QUESTIONNAIRE_CONSUMERS)
+    assert {run.consumer_name for run in runs} == QUESTIONNAIRE_CONSUMERS
 
 
 def test_questionnaire_projection_consumer_succeeds() -> None:
@@ -408,15 +410,16 @@ def test_internal_event_api_redacts_questionnaire_summary_and_hides_payload(monk
 def test_internal_events_admin_page_contains_reconciliation_ui(monkeypatch) -> None:
     client = _client(monkeypatch, questionnaire_enabled=True)
 
-    response = client.get("/admin/internal-events")
-    body = response.text
+    list_response = client.get("/admin/internal-events")
+    detail_response = client.get("/admin/internal-events/questionnaire-reconciliation-contract")
 
-    assert response.status_code == 200
-    assert "业务效果核对" in body
-    assert "External Effect Job" in body
-    assert "Placeholder Consumers (not actionable)" in body
-    assert "未执行" in body
-    assert "占位" in body
+    assert list_response.status_code == 200
+    assert 'data-execution-page="internal-list"' in list_response.text
+    assert detail_response.status_code == 200
+    assert 'data-execution-page="internal-detail"' in detail_response.text
+    assert "业务效果核对" in detail_response.text
+    assert "消费者执行与对账证据" in detail_response.text
+    assert "admin_execution_ui.js" in detail_response.text
 
 
 def test_worker_payment_allowlist_does_not_scan_questionnaire_until_explicitly_allowed(monkeypatch) -> None:

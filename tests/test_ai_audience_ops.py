@@ -23,12 +23,14 @@ from aicrm_next.ai_audience_ops.event_types import (
     SOURCE_POKE_CONSUMER,
 )
 from aicrm_next.ai_audience_ops.outbound_service import AudienceOutboundService
+from aicrm_next.ai_audience_ops.refresh_intents import AudienceRefreshIntentRepository, AudienceRefreshIntentService
 from aicrm_next.ai_audience_ops.repository import build_audience_repository, next_daily_refresh_at
 from aicrm_next.ai_audience_ops.scheduler import ai_audience_event_consumer_pairs, emit_due_ticks
 from aicrm_next.ai_audience_ops.service import AudiencePackageService
 from aicrm_next.ai_audience_ops.sql_catalog import ALLOWED_VIEWS, schema_catalog_payload
 from aicrm_next.ai_audience_ops.sql_linter import lint_sql
 from aicrm_next.ai_audience_ops.test_agent_service import AudienceTestAgentService, TEST_AGENT_MESSAGE_TEXT
+from aicrm_next.ai_audience_ops.webhook_service import AudienceInboundWebhookService
 from aicrm_next.platform_foundation.external_effects import ExternalEffectService, WEBHOOK_GENERIC_PUSH, WECOM_MESSAGE_PRIVATE_SEND
 from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
 from aicrm_next.shared.db_session import get_session_factory
@@ -80,6 +82,16 @@ def _valid_snapshot_sql(*, include_test_user: bool = True) -> str:
 def _external_effect_signature(secret: str, payload: dict) -> str:
     canonical = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hmac.new(secret.encode("utf-8"), canonical, hashlib.sha256).hexdigest()
+
+
+def _execute_latest_refresh_intent(package_id: int) -> dict[str, Any]:
+    intent = AudienceRefreshIntentRepository().get(int(package_id))
+    assert intent is not None
+    assert intent["status"] in {"waiting", "retry_wait"}
+    return AudienceRefreshIntentService().process_requested(
+        package_id=int(package_id),
+        signal_generation=int(intent["signal_generation"]),
+    )
 
 
 def test_sql_linter_blocks_dangerous_and_non_catalog_sql() -> None:
@@ -409,7 +421,8 @@ def test_daily_snapshot_publish_latest_version_can_exit_member(next_client, monk
         json={"run_type": "daily", "params": {"test_external_userid": test_user}},
     )
     assert entered_resp.status_code == 200
-    assert entered_resp.json()["entered_count"] == 1
+    assert entered_resp.json()["accepted"] is True
+    assert _execute_latest_refresh_intent(package_id)["entered_count"] == 1
 
     v2_resp = next_client.post(
         f"/api/ai/audience/packages/{package_id}/versions",
@@ -428,7 +441,8 @@ def test_daily_snapshot_publish_latest_version_can_exit_member(next_client, monk
         json={"run_type": "daily", "params": {"test_external_userid": test_user}},
     )
     assert exited_resp.status_code == 200
-    assert exited_resp.json()["exited_count"] == 1
+    assert exited_resp.json()["accepted"] is True
+    assert _execute_latest_refresh_intent(package_id)["exited_count"] == 1
 
     repeat_resp = next_client.post(
         f"/api/ai/audience/packages/{package_id}/refresh",
@@ -436,7 +450,8 @@ def test_daily_snapshot_publish_latest_version_can_exit_member(next_client, monk
         json={"run_type": "daily", "params": {"test_external_userid": test_user}},
     )
     assert repeat_resp.status_code == 200
-    assert repeat_resp.json()["exited_count"] == 0
+    assert repeat_resp.json()["accepted"] is True
+    assert _execute_latest_refresh_intent(package_id)["exited_count"] == 0
 
     with session_factory() as session:
         package_row = (
@@ -523,8 +538,9 @@ def test_publish_auto_refreshes_package_on_first_launch(next_client, monkeypatch
     assert body["launch_refresh"]["ok"] is True
     assert body["launch_refresh"]["trigger"] == "package_launch"
     assert body["launch_refresh"]["run_type"] == "incremental"
-    assert body["launch_refresh"]["entered_count"] == 1
+    assert body["launch_refresh"]["signal_created"] is True
     assert body["launch_refresh"]["real_external_call_executed"] is False
+    assert _execute_latest_refresh_intent(package_id)["entered_count"] == 1
 
     with session_factory() as session:
         member_row = (
@@ -611,6 +627,7 @@ def test_publish_does_not_repeat_launch_refresh_for_active_package(next_client, 
     publish_resp = next_client.post(f"/api/ai/audience/packages/{package_id}/publish", headers=_auth(), json={})
     assert publish_resp.status_code == 200
     assert publish_resp.json()["launch_refresh"]["ok"] is True
+    assert _execute_latest_refresh_intent(package_id)["ok"] is True
 
     version_resp = next_client.post(
         f"/api/ai/audience/packages/{package_id}/versions",
@@ -788,8 +805,15 @@ def test_ai_audience_test_agent_webhook_business_guards_and_plans_private_messag
     assert body["external_userid"] == "wm_test_agent"
     assert body["sender_userid"] == "HuangYouCan"
     assert body["simulated_message"] == TEST_AGENT_MESSAGE_TEXT
-    assert body["record_only"] is False
-    assert body["external_effect_job_id"]
+    assert body["record_only"] is True
+    assert body["external_effect_job_id"] is None
+    planned = AudienceInboundWebhookService().process_record(
+        int(body["inbound_result"]["recorded"]["id"]),
+        parent_execution_id=body["inbound_result"]["execution_id"],
+    )
+    assert planned["ok"] is True
+    assert planned["external_effect_job_id"]
+    external_effect_job_id = int(planned["external_effect_job_id"])
 
     jobs, total = ExternalEffectService().list_jobs(
         {
@@ -801,7 +825,7 @@ def test_ai_audience_test_agent_webhook_business_guards_and_plans_private_messag
     )
     assert total == 1
     assert len(jobs) == 1
-    assert jobs[0].id == body["external_effect_job_id"]
+    assert jobs[0].id == external_effect_job_id
     assert jobs[0].target_id == "wm_test_agent"
     assert jobs[0].payload_json["owner_userid"] == "HuangYouCan"
     assert jobs[0].payload_json["content_text"] == TEST_AGENT_MESSAGE_TEXT
@@ -811,7 +835,7 @@ def test_ai_audience_test_agent_webhook_business_guards_and_plans_private_messag
         json=payload,
     )
     assert duplicate_resp.status_code == 200
-    assert duplicate_resp.json()["external_effect_job_id"] == body["external_effect_job_id"]
+    assert duplicate_resp.json()["external_effect_job_id"] == external_effect_job_id
     duplicate_jobs, duplicate_total = ExternalEffectService().list_jobs(
         {
             "effect_type": WECOM_MESSAGE_PRIVATE_SEND,
@@ -821,7 +845,7 @@ def test_ai_audience_test_agent_webhook_business_guards_and_plans_private_messag
         limit=10,
     )
     assert duplicate_total == 1
-    assert duplicate_jobs[0].id == body["external_effect_job_id"]
+    assert duplicate_jobs[0].id == external_effect_job_id
 
 
 @pytest.mark.usefixtures("next_pg_schema")
@@ -1008,9 +1032,22 @@ def test_package_refresh_uses_internal_event_and_external_effect_queue(next_clie
     assert refresh_resp.status_code == 200
     body = refresh_resp.json()
     assert body["ok"] is True
+    assert body["accepted"] is True
+    body = _execute_latest_refresh_intent(package_id)
     assert body["entered_count"] == 2
     assert body["member_event_count"] == 2
-    run_event_id = body["run_event"]["event"]["event_id"]
+    completion_outbox = body["completion"]["completion_event"]
+    from aicrm_next.platform_foundation.internal_events.outbox import InternalEventOutboxRelay
+
+    relay = InternalEventOutboxRelay(
+        consumer_registry=next_client.app.state.internal_event_consumer_registry,
+    )
+    relayed = relay.relay_due(limit=100)
+    run_event_id = next(
+        item["event_id"]
+        for item in relayed["items"]
+        if item.get("outbox_id") == completion_outbox["outbox_id"]
+    )
 
     with session_factory() as session:
         member_events = (
@@ -1064,6 +1101,8 @@ def test_package_refresh_uses_internal_event_and_external_effect_queue(next_clie
     assert len(jobs) == 1
     assert jobs[0]["effect_type"] == WEBHOOK_GENERIC_PUSH
     assert jobs[0]["business_type"] == "ai_audience_package_run"
+    assert jobs[0]["parent_execution_id"] == completion_outbox["execution_id"]
+    assert jobs[0]["lane"] == "outbound_webhook"
     assert jobs[0]["payload_json"]["body"] == ["wm_ai_audience_001", "wm_ai_audience_002"]
     assert jobs[0]["payload_json"]["headers"]["X-AICRM-Package-Key"] == "q101_submitted_added_wecom"
     assert jobs[0]["payload_json"]["headers"]["X-AICRM-Event-Type"] == "audience.incremental.entered"
@@ -1071,6 +1110,7 @@ def test_package_refresh_uses_internal_event_and_external_effect_queue(next_clie
     assert jobs[0]["payload_json"]["headers"]["X-AICRM-Idempotency-Key"]
     assert "X-AICRM-Signature" not in jobs[0]["payload_json"]["headers"]
     assert "package_key" not in jobs[0]["payload_json"]["body"]
+    assert ExternalEffectService().list_attempts(int(jobs[0]["id"])) == []
 
 
 @pytest.mark.usefixtures("next_pg_schema")
@@ -1122,6 +1162,8 @@ def test_refresh_run_compensates_questionnaire_member_after_late_wecom_identity(
         headers=_auth(),
         json={"run_type": "incremental", "params": {"questionnaire_id": 991}},
     ).json()
+    assert first_refresh["accepted"] is True
+    first_refresh = _execute_latest_refresh_intent(package_id)
     assert first_refresh["entered_count"] == 1
     first_run_id = int(first_refresh["run"]["id"])
     repo = build_audience_repository()
@@ -1159,6 +1201,8 @@ def test_refresh_run_compensates_questionnaire_member_after_late_wecom_identity(
         headers=_auth(),
         json={"run_type": "incremental", "params": {"questionnaire_id": 991}},
     ).json()
+    assert second_refresh["accepted"] is True
+    second_refresh = _execute_latest_refresh_intent(package_id)
     assert second_refresh["entered_count"] == 0
     second_run_id = int(second_refresh["run"]["id"])
 

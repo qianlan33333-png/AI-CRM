@@ -74,6 +74,8 @@ class InMemoryInternalEventRepository(InternalEventRepository):
             "trace_id": _text(request.context.trace_id),
             "request_id": _text(request.context.request_id),
             "correlation_id": _text(request.correlation_id),
+            "execution_id": _text(request.execution_id) or f"exe_internal_{self._next_event_id}",
+            "parent_execution_id": _text(request.parent_execution_id),
             "occurred_at": public_datetime(request.occurred_at or now),
             "payload_json": dict(request.payload or {}),
             "payload_summary_json": payload_summary,
@@ -140,6 +142,12 @@ class InMemoryInternalEventRepository(InternalEventRepository):
             "event_id": event.event_id,
             "consumer_name": consumer_name,
             "consumer_type": _text(consumer_type) or "projection",
+            "execution_id": f"exe_internal_run_{self._next_run_id}",
+            "parent_execution_id": event.execution_id,
+            "lane": "internal_financial" if event.event_type.startswith(("payment.", "refund.", "order.")) else "internal_general",
+            "available_at": now,
+            "ordering_key": f"{event.aggregate_type}:{event.aggregate_id}",
+            "fairness_key": event.event_type,
             "status": "pending",
             "attempt_count": 0,
             "max_attempts": max(1, int(max_attempts or 5)),
@@ -147,6 +155,11 @@ class InMemoryInternalEventRepository(InternalEventRepository):
             "locked_at": "",
             "locked_by": "",
             "lease_token": "",
+            "lease_expires_at": "",
+            "heartbeat_at": "",
+            "worker_generation": 0,
+            "policy_version": "queue-v1",
+            "row_version": str(self._next_run_id),
             "last_attempt_id": "",
             "last_error_code": "",
             "last_error_message": "",
@@ -154,6 +167,8 @@ class InMemoryInternalEventRepository(InternalEventRepository):
             "created_at": now,
             "updated_at": now,
             "finished_at": "",
+            "hold_reason": "",
+            "hold_at": "",
         }
         self._next_run_id += 1
         self._runs.append(row)
@@ -167,6 +182,22 @@ class InMemoryInternalEventRepository(InternalEventRepository):
         total = len(rows)
         window = rows[max(0, int(offset or 0)) : max(0, int(offset or 0)) + max(1, min(int(limit or 100), 200))]
         return [run for row in window if (run := _public_run(row)) is not None], total
+
+    def list_consumer_runs_for_events(
+        self,
+        event_ids: list[str],
+    ) -> dict[str, list[InternalEventConsumerRun]]:
+        normalized_ids = list(dict.fromkeys(_text(event_id) for event_id in event_ids if _text(event_id)))
+        grouped: dict[str, list[InternalEventConsumerRun]] = {event_id: [] for event_id in normalized_ids}
+        for row in sorted(
+            (row for row in self._runs if _text(row.get("event_id")) in grouped),
+            key=lambda item: (item.get("created_at") or "", int(item.get("id") or 0)),
+            reverse=True,
+        ):
+            run = _public_run(row)
+            if run:
+                grouped[run.event_id].append(run)
+        return grouped
 
     def get_consumer_run(self, event_id: str, consumer_name: str) -> InternalEventConsumerRun | None:
         for row in self._runs:
@@ -190,6 +221,8 @@ class InMemoryInternalEventRepository(InternalEventRepository):
             if row.get("event_id") != _text(event_id) or row.get("consumer_name") != _text(consumer_name):
                 continue
             if force:
+                if _text(row.get("hold_reason")):
+                    return None
                 if row.get("status") not in {"pending", "failed_retryable", "failed_terminal", "blocked", "succeeded", "skipped"}:
                     return None
                 if row.get("locked_at") and self._dt(row.get("locked_at")) > now - LEASE_TIMEOUT:
@@ -216,7 +249,26 @@ class InMemoryInternalEventRepository(InternalEventRepository):
 
     def queue_metrics(self, filters: dict[str, Any] | None = None) -> dict[str, Any]:
         now = utcnow()
-        rows = list(self._filtered_runs(filters or {}))
+        normalized_filters = dict(filters or {})
+        rows = list(self._filtered_runs(normalized_filters))
+        if _text(normalized_filters.get("consumer_status")):
+            rows = [row for row in rows if _text(row.get("status")) == _text(normalized_filters.get("consumer_status"))]
+        event_filter_keys = {
+            "event_section",
+            "event_type",
+            "aggregate_type",
+            "aggregate_id",
+            "subject_type",
+            "subject_id",
+            "trace_id",
+            "idempotency_key",
+            "source_module",
+            "created_from",
+            "created_to",
+        }
+        if any(normalized_filters.get(key) not in (None, "") for key in event_filter_keys):
+            event_ids = {row.get("event_id") for row in self._filtered_events(normalized_filters)}
+            rows = [row for row in rows if row.get("event_id") in event_ids]
         event_type_set = {_text(item) for item in (filters or {}).get("event_types") or [] if _text(item)}
         consumer_set = {_text(item) for item in (filters or {}).get("consumer_names") or [] if _text(item)}
         pair_set = self._event_consumer_pair_set((filters or {}).get("event_consumers"))
@@ -241,7 +293,27 @@ class InMemoryInternalEventRepository(InternalEventRepository):
             by_event_type[event_type] = by_event_type.get(event_type, 0) + 1
             by_consumer[consumer_name] = by_consumer.get(consumer_name, 0) + 1
         return {
+            "raw_open_count": len([row for row in rows if row.get("status") in {"pending", "running", "failed_retryable"}]),
+            "held_count": len([
+                row for row in rows
+                if _text(row.get("hold_reason")) and row.get("status") in {"pending", "running", "failed_retryable"}
+            ]),
             "due_count": len(due_rows),
+            "eligible_due_count": len(due_rows),
+            "scheduled_count": 0,
+            "retry_wait_count": len([
+                row for row in rows
+                if not _text(row.get("hold_reason")) and row.get("status") == "failed_retryable"
+                and row.get("next_retry_at") and self._dt(row.get("next_retry_at")) > now
+            ]),
+            "rate_limited_count": 0,
+            "in_flight_count": len([
+                row for row in rows
+                if not _text(row.get("hold_reason")) and row.get("status") == "running"
+                and row.get("locked_at") and self._dt(row.get("locked_at")) > now - LEASE_TIMEOUT
+            ]),
+            "unknown_count": 0,
+            "dlq_count": len([row for row in rows if row.get("status") in {"failed_terminal", "blocked"}]),
             "failed_retryable_count": len([row for row in rows if row.get("status") == "failed_retryable"]),
             "failed_terminal_count": len([row for row in rows if row.get("status") == "failed_terminal"]),
             "oldest_pending_age_seconds": max(0, int((now - oldest).total_seconds())) if oldest else 0,
@@ -299,9 +371,12 @@ class InMemoryInternalEventRepository(InternalEventRepository):
         *,
         locked_by: str,
         expected_lease_token: str = "",
+        expected_generation: int = 0,
     ) -> InternalEventConsumerRun | None:
         row = self._find_run(run_id)
         if not row or (_text(expected_lease_token) and _text(row.get("lease_token")) != _text(expected_lease_token)):
+            return None
+        if expected_generation and int(row.get("worker_generation") or 0) != int(expected_generation):
             return None
         return self._mutate(run_id, status="running", locked_by=_text(locked_by), locked_at=public_datetime(utcnow()))
 
@@ -316,12 +391,15 @@ class InMemoryInternalEventRepository(InternalEventRepository):
         error_message: str = "",
         next_retry_at: datetime | None = None,
         expected_lease_token: str = "",
+        expected_generation: int = 0,
     ) -> InternalEventConsumerRun | None:
         status = _text(status)
         if status not in {"succeeded", "failed_retryable", "failed_terminal", "blocked", "skipped"}:
             status = "blocked"
         row = self._find_run(run_id)
         if not row or (_text(expected_lease_token) and _text(row.get("lease_token")) != _text(expected_lease_token)):
+            return None
+        if expected_generation and int(row.get("worker_generation") or 0) != int(expected_generation):
             return None
         if row:
             row["attempt_count"] = int(row.get("attempt_count") or 0) + 1
@@ -372,6 +450,7 @@ class InMemoryInternalEventRepository(InternalEventRepository):
             error_message=error_message,
             next_retry_at=next_retry_at,
             expected_lease_token=run.lease_token,
+            expected_generation=run.worker_generation,
         )
         return (updated, attempt) if updated else None
 
@@ -520,6 +599,8 @@ class InMemoryInternalEventRepository(InternalEventRepository):
             "payload_json": dict(request.payload or {}),
             "payload_summary_json": dict(request.payload_summary or {}) or _payload_summary(request.payload),
             "status": "pending",
+            "hold_reason": "",
+            "hold_at": "",
             "attempt_count": 0,
             "max_attempts": 10,
             "next_retry_at": "",

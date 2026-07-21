@@ -25,6 +25,7 @@ ExternalEffectStatus = Literal[
 ]
 ExternalEffectExecutionMode = Literal["disabled", "shadow", "plan_only", "execute", "execute_dryrun"]
 ExternalEffectAttemptStatus = Literal[
+    "dispatching",
     "succeeded",
     "simulated",
     "unknown_after_dispatch",
@@ -48,6 +49,7 @@ WECOM_WELCOME_MESSAGE_SEND = "wecom.welcome_message.send"
 WECOM_CONTACT_TAG_MARK = "wecom.contact.tag.mark"
 WECOM_CONTACT_TAG_UNMARK = "wecom.contact.tag.unmark"
 WECOM_PROFILE_UPDATE = "wecom.profile.update"
+WECOM_EXTERNAL_CONTACT_DETAIL_FETCH = "wecom.external_contact.detail.fetch"
 GROUP_OPS_MESSAGE_LOOPBACK = "group_ops.message.loopback"
 GROUP_OPS_WEBHOOK_ACTION_LOOPBACK = "group_ops.webhook.action.loopback"
 PAYMENT_WECHAT_ORDER_QUERY = "payment.wechat.order.query"
@@ -100,12 +102,32 @@ class ExternalEffectCreateRequest:
     requires_approval: bool = False
     execution_mode: ExternalEffectExecutionMode = "execute"
     scheduled_at: datetime | None = None
+    available_at: datetime | None = None
     priority: int = 100
     max_attempts: int = 5
     tenant_id: str = DEFAULT_TENANT_ID
     status: ExternalEffectStatus = "queued"
     idempotency_key: str = ""
     correlation_id: str = ""
+    execution_id: str = ""
+    parent_execution_id: str = ""
+    lane: str = ""
+    ordering_key: str = ""
+    fairness_key: str = ""
+    rate_scope_key: str = ""
+
+    def __post_init__(self) -> None:
+        """Strip CAS-owned canary fields from every ordinary enqueue path."""
+
+        if not str(self.effect_type or "").strip().startswith("wecom."):
+            return
+        payload = dict(self.payload or {})
+        summary = dict(self.payload_summary or {})
+        if str(payload.get("execution_scope") or "").strip() == "allowlisted_canary":
+            payload.pop("execution_scope", None)
+        summary.pop("canary_authorization", None)
+        object.__setattr__(self, "payload", payload)
+        object.__setattr__(self, "payload_summary", summary)
 
 
 @dataclass(frozen=True)
@@ -127,6 +149,8 @@ class ExternalEffectJob:
     trace_id: str = ""
     request_id: str = ""
     correlation_id: str = ""
+    execution_id: str = ""
+    parent_execution_id: str = ""
     idempotency_key: str = ""
     actor_id: str = ""
     actor_type: str = "system"
@@ -136,8 +160,14 @@ class ExternalEffectJob:
     payload_json: dict[str, Any] = field(default_factory=dict)
     payload_summary_json: dict[str, Any] = field(default_factory=dict)
     status: ExternalEffectStatus = "queued"
+    row_version: int = 1
     priority: int = 100
     scheduled_at: str = ""
+    lane: str = ""
+    available_at: str = ""
+    ordering_key: str = ""
+    fairness_key: str = ""
+    rate_scope_key: str = ""
     attempt_count: int = 0
     max_attempts: int = 5
     next_retry_at: str = ""
@@ -145,7 +175,11 @@ class ExternalEffectJob:
     locked_by: str = ""
     lease_token: str = ""
     lease_expires_at: str = ""
+    heartbeat_at: str = ""
+    worker_generation: int = 0
+    policy_version: str = ""
     dispatch_started_at: str = ""
+    provider_call_started_at: str = ""
     last_attempt_id: str = ""
     last_error_code: str = ""
     last_error_message: str = ""
@@ -159,6 +193,11 @@ class ExternalEffectJob:
     executed_at: str = ""
     completed_at: str = ""
     cancelled_at: str = ""
+    cancel_requested_at: str = ""
+    cancel_requested_by: str = ""
+    cancel_reason: str = ""
+    hold_reason: str = ""
+    hold_at: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -174,6 +213,10 @@ class ExternalEffectAttempt:
     operation: str = ""
     trace_id: str = ""
     request_id: str = ""
+    lease_token: str = ""
+    request_hash: str = ""
+    provider_call_started_at: str = ""
+    worker_generation: int = 0
     status: ExternalEffectAttemptStatus = "skipped"
     request_summary_json: dict[str, Any] = field(default_factory=dict)
     response_summary_json: dict[str, Any] = field(default_factory=dict)
@@ -219,6 +262,7 @@ class ExternalEffectDispatchResult:
     adapter_mode: str = "none"
     request_summary: dict[str, Any] = field(default_factory=dict)
     response_summary: dict[str, Any] = field(default_factory=dict)
+    provider_result: dict[str, Any] = field(default_factory=dict)
     error_code: str = ""
     error_message: str = ""
     retry_after_seconds: int | None = None

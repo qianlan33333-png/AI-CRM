@@ -656,5 +656,5 @@ async def execute_group_ops_token_broadcast(request: Request) -> JSONResponse:
             },
             status_code=exc.status_code,
         )
-    status_code = 200 if result.get("ok") else 502
+    status_code = 202 if result.get("ok") else 502
     return _broadcast_json(result, status_code=status_code)

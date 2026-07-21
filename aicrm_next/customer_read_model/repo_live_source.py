@@ -19,6 +19,20 @@ from .repo import (
     _normalize_bool_filter,
 )
 
+
+def _external_userids_statement(session: Session, sql: str):
+    """Bind one customer scope without expanding it past driver limits."""
+
+    if is_sqlite_session(session):
+        return text(sql).bindparams(bindparam("external_userids", expanding=True))
+    return text(
+        sql.replace(
+            "IN :external_userids",
+            "= ANY(CAST(:external_userids AS TEXT[]))",
+        )
+    )
+
+
 class LiveSourceCustomerReadRepository:
     """Read live customer data from production source tables when projections are not ready."""
 
@@ -173,7 +187,8 @@ class LiveSourceCustomerReadRepository:
         normalized = [str(value or "").strip() for value in unionids if str(value or "").strip()]
         if not normalized:
             return {}
-        stmt = text(
+        stmt = _external_userids_statement(
+            self._session,
             """
             WITH ranked AS (
                 SELECT id, msgid, chat_type, unionid, owner_userid, msgtype, content,
@@ -195,8 +210,8 @@ class LiveSourceCustomerReadRepository:
             FROM ranked
             WHERE row_number <= :per_customer_limit
             ORDER BY unionid ASC, send_time DESC, id DESC
-            """
-        ).bindparams(bindparam("external_userids", expanding=True))
+            """,
+        )
         rows = self._session.execute(
             stmt,
             {
@@ -219,6 +234,211 @@ class LiveSourceCustomerReadRepository:
                     "owner_userid": row.get("owner_userid") or "",
                     "chat_type": row.get("chat_type") or "single",
                     "source_id": str(row.get("id") or ""),
+                }
+            )
+        return result
+
+    def snapshot_customer_activity_by_unionid(
+        self,
+        unionids: list[str],
+        *,
+        per_customer_limit: int = 500,
+    ) -> dict[str, list[JsonDict]]:
+        """Reconcile four business event types with one set-based source query."""
+
+        normalized = [str(value or "").strip() for value in unionids if str(value or "").strip()]
+        if not normalized:
+            return {}
+        sqlite = is_sqlite_session(self._session)
+        statement_sql = """
+            WITH __REQUESTED_UNIONIDS_CTE__ source_events AS (
+                SELECT
+                    'channel_entry:' || entry.event_log_id::text AS event_id,
+                    entry.unionid,
+                    'channel_entry'::text AS event_type,
+                    entry.created_at AS event_time,
+                    '扫码进入渠道' || CASE WHEN COALESCE(channel.channel_name, '') <> '' THEN ' · ' || channel.channel_name ELSE '' END AS title,
+                    COALESCE(NULLIF(channel.channel_name, ''), NULLIF(entry.scene_value, ''), '通过渠道码进入') AS summary,
+                    'automation_channel_entry_effect_log'::text AS source_table,
+                    entry.event_log_id::text AS source_id,
+                    jsonb_build_object(
+                        'channel_name', COALESCE(channel.channel_name, ''),
+                        'channel_code', COALESCE(NULLIF(channel.channel_code, ''), entry.scene_value, '')
+                    ) AS metadata_json
+                FROM (
+                    SELECT DISTINCT ON (event_log_id, unionid)
+                           event_log_id, unionid, channel_id, scene_value, created_at
+                    FROM automation_channel_entry_effect_log
+                    WHERE event_log_id IS NOT NULL
+                      AND unionid __REQUESTED_UNIONIDS_FILTER__
+                    ORDER BY event_log_id, unionid, created_at ASC, id ASC
+                ) entry
+                LEFT JOIN automation_channel channel ON channel.id = entry.channel_id
+
+                UNION ALL
+
+                SELECT
+                    'questionnaire:' || submission.id::text,
+                    submission.unionid,
+                    'questionnaire_submitted',
+                    COALESCE(submission.submitted_at, submission.created_at),
+                    '提交问卷 · ' || COALESCE(NULLIF(questionnaire.title, ''), NULLIF(questionnaire.name, ''), '问卷'),
+                    '已完成问卷提交',
+                    'questionnaire_submissions',
+                    submission.id::text,
+                    jsonb_build_object(
+                        'questionnaire_id', submission.questionnaire_id::text,
+                        'questionnaire_title', COALESCE(NULLIF(questionnaire.title, ''), NULLIF(questionnaire.name, ''), '问卷')
+                    )
+                FROM questionnaire_submissions submission
+                LEFT JOIN questionnaires questionnaire ON questionnaire.id = submission.questionnaire_id
+                WHERE submission.unionid __REQUESTED_UNIONIDS_FILTER__
+
+                UNION ALL
+
+                SELECT
+                    'product:payment:' || payment.out_trade_no,
+                    payment.unionid,
+                    'product_enrolled',
+                    COALESCE(payment.paid_at, payment.updated_at, payment.created_at),
+                    '报名或支付成功 · ' || COALESCE(NULLIF(payment.product_name, ''), NULLIF(payment.product_code, ''), '商品'),
+                    '已完成商品报名或支付',
+                    'wechat_pay_orders',
+                    payment.out_trade_no,
+                    jsonb_build_object(
+                        'product_id', COALESCE(payment.product_code, ''),
+                        'product_title', COALESCE(NULLIF(payment.product_name, ''), NULLIF(payment.product_code, ''), '商品'),
+                        'product_type', 'standard_product'
+                    )
+                FROM wechat_pay_orders payment
+                WHERE payment.unionid __REQUESTED_UNIONIDS_FILTER__
+                  AND (payment.status = 'paid' OR payment.trade_state = 'SUCCESS')
+                  AND COALESCE(payment.out_trade_no, '') <> ''
+
+                UNION ALL
+
+                SELECT
+                    'product:wechat_shop:' || shop_order.order_id,
+                    shop_order.unionid,
+                    'product_enrolled',
+                    COALESCE(shop_order.paid_at, shop_order.updated_at, shop_order.created_at),
+                    '报名或支付成功 · ' || COALESCE(NULLIF(shop_order.product_name, ''), NULLIF(shop_order.product_code, ''), '微信小店商品'),
+                    '已完成商品报名或支付',
+                    'wechat_shop_orders',
+                    shop_order.order_id,
+                    jsonb_build_object(
+                        'product_id', COALESCE(shop_order.product_code, ''),
+                        'product_title', COALESCE(NULLIF(shop_order.product_name, ''), NULLIF(shop_order.product_code, ''), '微信小店商品'),
+                        'product_type', 'wechat_shop'
+                    )
+                FROM wechat_shop_orders shop_order
+                WHERE shop_order.unionid __REQUESTED_UNIONIDS_FILTER__
+                  AND shop_order.deal_recorded IS TRUE
+                  AND COALESCE(shop_order.order_id, '') <> ''
+
+                UNION ALL
+
+                SELECT
+                    CASE WHEN COALESCE(period_event.out_trade_no, '') <> ''
+                         THEN 'product:payment:' || period_event.out_trade_no
+                         ELSE 'product:service_period:' || period_event.event_id END,
+                    period_event.unionid,
+                    'product_enrolled',
+                    period_event.created_at,
+                    '报名或支付成功 · ' || COALESCE(NULLIF(trade_product.name, ''), NULLIF(trade_product.product_code, ''), '周期商品'),
+                    '已确认周期商品报名或激活',
+                    'service_period_events',
+                    period_event.event_id,
+                    jsonb_build_object(
+                        'product_id', period_event.trade_product_id::text,
+                        'product_title', COALESCE(NULLIF(trade_product.name, ''), NULLIF(trade_product.product_code, ''), '周期商品'),
+                        'product_type', 'service_period'
+                    )
+                FROM service_period_events period_event
+                LEFT JOIN wechat_pay_products trade_product ON trade_product.id = period_event.trade_product_id
+                WHERE period_event.unionid __REQUESTED_UNIONIDS_FILTER__
+                  AND period_event.event_type IN ('activated', 'renewed', 'admin_adjusted')
+
+                UNION ALL
+
+                SELECT
+                    'radar:' || click_event.id::text,
+                    click_event.unionid,
+                    'radar_opened',
+                    click_event.created_at,
+                    '打开雷达 · ' || COALESCE(NULLIF(radar.title, ''), '雷达内容'),
+                    '已打开追踪链接',
+                    'radar_click_events',
+                    click_event.id::text,
+                    jsonb_build_object(
+                        'radar_id', click_event.link_id::text,
+                        'radar_title', COALESCE(NULLIF(radar.title, ''), '雷达内容'),
+                        'target_type', COALESCE(NULLIF(click_event.target_type_snapshot, ''), radar.target_type, 'link')
+                    )
+                FROM radar_click_events click_event
+                JOIN radar_links radar ON radar.id = click_event.link_id
+                WHERE click_event.unionid __REQUESTED_UNIONIDS_FILTER__
+                  AND (
+                    click_event.stage = 'authorized'
+                    OR (click_event.stage = 'landing' AND COALESCE(click_event.unionid, '') <> '')
+                  )
+            ), ranked AS (
+                SELECT source_events.*,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY unionid
+                           ORDER BY event_time DESC, event_id DESC
+                       ) AS row_number
+                FROM source_events
+            )
+            SELECT event_id, unionid, event_type, event_time, title, summary,
+                   source_table, source_id, metadata_json
+            FROM ranked
+            WHERE row_number <= :per_customer_limit
+            ORDER BY unionid ASC, event_time DESC, event_id DESC
+            """
+        if sqlite:
+            statement_sql = statement_sql.replace("__REQUESTED_UNIONIDS_CTE__", "").replace(
+                "__REQUESTED_UNIONIDS_FILTER__",
+                "IN :external_userids",
+            )
+            statement = text(statement_sql).bindparams(bindparam("external_userids", expanding=True))
+        else:
+            statement_sql = statement_sql.replace(
+                "__REQUESTED_UNIONIDS_CTE__",
+                """
+                requested_unionids AS (
+                    SELECT DISTINCT requested.unionid
+                    FROM unnest(CAST(:external_userids AS TEXT[])) AS requested(unionid)
+                ),
+                """,
+            ).replace(
+                "__REQUESTED_UNIONIDS_FILTER__",
+                "IN (SELECT unionid FROM requested_unionids)",
+            )
+            statement = text(statement_sql)
+        rows = self._session.execute(
+            statement,
+            {
+                "external_userids": normalized,
+                "per_customer_limit": max(1, min(int(per_customer_limit or 500), 2_000)),
+            },
+        ).mappings()
+        result: dict[str, list[JsonDict]] = {}
+        for row in rows:
+            unionid = str(row.get("unionid") or "").strip()
+            if not unionid:
+                continue
+            result.setdefault(unionid, []).append(
+                {
+                    "event_id": str(row.get("event_id") or ""),
+                    "unionid": unionid,
+                    "event_type": str(row.get("event_type") or ""),
+                    "event_time": _iso(row.get("event_time")),
+                    "title": str(row.get("title") or ""),
+                    "summary": str(row.get("summary") or ""),
+                    "source_table": str(row.get("source_table") or ""),
+                    "source_id": str(row.get("source_id") or ""),
+                    "metadata": dict(row.get("metadata_json") or {}),
                 }
             )
         return result
@@ -597,5 +817,5 @@ class LiveSourceCustomerReadRepository:
         normalized = [str(value or "").strip() for value in values if str(value or "").strip()]
         if not normalized:
             return []
-        stmt = text(sql).bindparams(bindparam("external_userids", expanding=True))
+        stmt = _external_userids_statement(self._session, sql)
         return [dict(row) for row in self._session.execute(stmt, {"external_userids": normalized}).mappings()]

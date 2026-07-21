@@ -1,0 +1,11 @@
+[Unit]
+Description=AI-CRM Queue Runtime Read-only Invariant Check
+After=network.target openclaw-wecom-postgres.service
+Requires=openclaw-wecom-postgres.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/极简 crm
+EnvironmentFile=/home/ubuntu/.openclaw-wecom-pg.env
+ExecStart=/bin/bash -lc 'source /home/ubuntu/venvs/openclaw/bin/activate; exec python scripts/ops/check_queue_runtime_invariants.py'

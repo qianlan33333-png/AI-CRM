@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from aicrm_next.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform_foundation.execution_runtime.commands import QueueRuntimeCommandService
 from aicrm_next.platform_foundation.internal_events import (
     InternalEventConsumerRegistry,
     InternalEventConsumerResult,
@@ -125,6 +126,9 @@ def test_internal_event_admin_api_lists_filters_and_redacts_payload(next_client:
     assert body["items"][0]["succeeded_count"] == 1
     assert body["items"][0]["failed_count"] == 1
     assert body["items"][0]["skipped_count"] == 1
+    assert body["counts"]["total"] == 1
+    assert body["counts"]["failed_retryable"] == 1
+    assert body["counts"]["failed_terminal"] == 0
     assert body["items"][0]["payload_summary_json"]["phone"] == "[redacted]"
     assert body["items"][0]["payload_summary_json"]["openid"] == "[redacted]"
     assert body["items"][0]["payload_summary_json"]["unionid"] == "[redacted]"
@@ -137,9 +141,13 @@ def test_internal_event_admin_api_lists_filters_and_redacts_payload(next_client:
     assert "token-secret" not in str(body)
 
 
-def test_internal_event_admin_detail_attempts_retry_skip_and_diagnostics(next_client: TestClient, monkeypatch) -> None:
+def test_internal_event_admin_detail_attempts_retry_skip_and_diagnostics(
+    next_client: TestClient,
+    next_pg_schema,
+    monkeypatch,
+) -> None:
     event_id = _seed_payment_event()
-    del monkeypatch
+    del next_pg_schema, monkeypatch
     tokens = install_admin_action_tokens(
         next_client,
         ("POST", "/api/admin/internal-events/{event_id}/consumers/{consumer_name}/retry"),
@@ -148,17 +156,34 @@ def test_internal_event_admin_detail_attempts_retry_skip_and_diagnostics(next_cl
 
     detail = next_client.get(f"/api/admin/internal-events/{event_id}")
     diagnostics = next_client.get("/api/admin/internal-events/diagnostics")
+    command_service = QueueRuntimeCommandService()
+    retry_target = command_service.read_internal_consumer_target(
+        event_id,
+        "webhook_order_paid_consumer",
+    )
+    skip_target = command_service.read_internal_consumer_target(
+        event_id,
+        "ai_assist_notify_consumer",
+    )
+    assert retry_target is not None
+    assert skip_target is not None
     unauthorized = next_client.post(f"/api/admin/internal-events/{event_id}/consumers/webhook_order_paid_consumer/retry", json={})
     retried = next_client.post(
         f"/api/admin/internal-events/{event_id}/consumers/webhook_order_paid_consumer/retry",
         headers={"X-Admin-Action-Token": tokens[("POST", "/api/admin/internal-events/{event_id}/consumers/{consumer_name}/retry")]},
-        json={"reason": "approved retry after timeout review"},
+        json={
+            "actor": "pytest-operator",
+            "reason": "approved retry after timeout review",
+            "expected_version": retry_target.version_token,
+        },
     )
     skipped = next_client.post(
         f"/api/admin/internal-events/{event_id}/consumers/ai_assist_notify_consumer/skip",
         json={
             "admin_action_token": tokens[("POST", "/api/admin/internal-events/{event_id}/consumers/{consumer_name}/skip")],
+            "actor": "pytest-operator",
             "reason": "manual_noop",
+            "expected_version": skip_target.version_token,
         },
     )
 
@@ -175,8 +200,9 @@ def test_internal_event_admin_detail_attempts_retry_skip_and_diagnostics(next_cl
     assert diagnostics.status_code == 200
     assert "due_count" in diagnostics.json()
     assert unauthorized.status_code == 401
-    assert retried.status_code == 200
-    assert retried.json()["consumer_run"]["status"] == "pending"
-    assert skipped.status_code == 200
-    assert skipped.json()["consumer_run"]["status"] == "skipped"
-    assert skipped.json()["attempt"]["response_summary_json"]["reason"] == "manual_noop"
+    assert retried.status_code == 202
+    assert retried.json()["action"] == "retry"
+    assert retried.json()["status"] == "pending"
+    assert skipped.status_code == 202
+    assert skipped.json()["action"] == "skip"
+    assert skipped.json()["status"] == "skipped"

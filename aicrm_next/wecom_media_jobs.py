@@ -12,11 +12,33 @@ from aicrm_next.platform_foundation.external_effects import (
 )
 from aicrm_next.platform_foundation.external_effects.repo import build_external_effect_repository
 from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
-from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
+from aicrm_next.platform_foundation.external_effects.wecom_canary_policy import (
+    WECOM_PROVIDER_TARGET_POLICY_KEY,
+    wecom_canary_job_gate_error,
+)
 from aicrm_next.shared.runtime import production_data_ready, production_environment
+from aicrm_next.shared.runtime_settings import runtime_setting
+from aicrm_next.shared.sensitive_data import redact_sensitive_text
 
 
 ADAPTER_NAME = "wecom_media_upload"
+
+
+def _safe_int(value: Any) -> int:
+    if isinstance(value, bool):
+        return 0
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _safe_code(value: Any, *, default: str = "") -> str:
+    normalized = str(value or "").strip()
+    allowed = set("_.:-")
+    if normalized and len(normalized) <= 128 and all(character.isalnum() or character in allowed for character in normalized):
+        return normalized
+    return default
 
 
 def _utc(value: datetime | None = None) -> datetime:
@@ -50,8 +72,55 @@ class WeComMediaUploadAdapter:
                 error_message="WeCom media upload adapter received an unsupported effect type.",
                 real_external_call_executed=False,
             )
+        expected_target = (
+            f"{request_summary['material_kind']}:{request_summary['material_id']}:{request_summary['upload_kind']}"
+        )
+        if job.target_type != "media_library_material" or str(job.target_id or "").strip() != expected_target:
+            gate_error = "target_mismatch"
+        elif job.execution_mode in {"disabled", "shadow", "plan_only", "execute_dryrun"}:
+            gate_error = "shadow_only"
+        elif runtime_setting(WECOM_PROVIDER_TARGET_POLICY_KEY, "").strip():
+            gate_error = wecom_canary_job_gate_error(job)
+        else:
+            gate_error = ""
+        if gate_error:
+            return ExternalEffectDispatchResult(
+                status="failed_terminal",
+                adapter_mode=job.execution_mode or "execute",
+                request_summary=request_summary,
+                response_summary={
+                    "blocked": True,
+                    "execution_gate": gate_error,
+                    "real_external_call_executed": False,
+                    "wecom_media_upload_executed": False,
+                },
+                error_code=gate_error,
+                error_message="WeCom media upload is blocked before provider dispatch.",
+                real_external_call_executed=False,
+            )
         try:
-            lease = self._build_manager().ensure_ready(
+            manager = self._build_manager()
+        except Exception:
+            return ExternalEffectDispatchResult(
+                status="failed_retryable",
+                adapter_mode="execute",
+                request_summary=request_summary,
+                response_summary={
+                    "real_external_call_executed": False,
+                    "wecom_media_upload_executed": False,
+                    "provider_result_received": False,
+                    "errcode": 0,
+                    "errmsg_present": False,
+                    "provider_error_classification": "",
+                    "provider_stage": "",
+                },
+                error_code="local_execution_error",
+                error_message="local_execution_error",
+                real_external_call_executed=False,
+                provider_result_received=False,
+            )
+        try:
+            lease = manager.ensure_ready(
                 request_summary["material_kind"],
                 request_summary["material_id"],
                 upload_kind=request_summary["upload_kind"],
@@ -59,8 +128,9 @@ class WeComMediaUploadAdapter:
             )
         except Exception as exc:
             retryable = bool(getattr(exc, "retryable", False))
-            error_code = str(getattr(exc, "code", "wecom_media_upload_failed") or "wecom_media_upload_failed")
-            external_call_executed = error_code in {"wecom_media_upload_failed", "empty_media_id"}
+            error_code = _safe_code(getattr(exc, "code", ""), default="external_call_unknown")
+            external_call_executed = bool(getattr(exc, "provider_call_executed", True))
+            provider_result_received = bool(getattr(exc, "provider_result_received", False))
             return ExternalEffectDispatchResult(
                 status="failed_retryable" if retryable else "failed_terminal",
                 adapter_mode="execute",
@@ -68,12 +138,16 @@ class WeComMediaUploadAdapter:
                 response_summary={
                     "real_external_call_executed": external_call_executed,
                     "wecom_media_upload_executed": external_call_executed,
-                    "provider_result_received": False,
+                    "provider_result_received": provider_result_received,
+                    "errcode": _safe_int(getattr(exc, "provider_errcode", 0)),
+                    "errmsg_present": bool(getattr(exc, "errmsg_present", False)),
+                    "provider_error_classification": _safe_code(getattr(exc, "provider_error_classification", "")),
+                    "provider_stage": _safe_code(getattr(exc, "provider_stage", "")),
                 },
                 error_code=error_code,
-                error_message=str(exc)[:500],
+                error_message=redact_sensitive_text(str(exc))[:500],
                 real_external_call_executed=external_call_executed,
-                provider_result_received=False,
+                provider_result_received=provider_result_received,
             )
         return ExternalEffectDispatchResult(
             status="succeeded",
@@ -156,6 +230,8 @@ def sync_uploaded_material(
     actor: str,
     idempotency_key: str,
 ) -> dict[str, Any]:
+    """Enqueue one durable media-upload effect without dispatching inline."""
+
     if not production_data_ready():
         return {"status": "skipped", "reason": "production_data_not_ready", "real_external_call_executed": False}
     repo = build_external_effect_repository()
@@ -169,17 +245,17 @@ def sync_uploaded_material(
         force_refresh=True,
         repository=repo,
     )
-    result = ExternalEffectWorker(
-        repo,
-        build_wecom_media_upload_adapter_registry(),
-        locked_by=f"media-upload-inline-{material_kind}-{material_id}",
-    ).dispatch_one(int(job.get("id") or 0))
-    current = (result.get("job") or {}) if isinstance(result, dict) else {}
+    job_id = int(job.get("id") or 0)
+    execution_id = str(job.get("execution_id") or "").strip()
     return {
-        "status": str(current.get("status") or "unknown"),
-        "job_id": int(current.get("id") or job.get("id") or 0),
-        "real_external_call_executed": bool(result.get("real_external_call_executed")),
-        "error_code": str(current.get("last_error_code") or ""),
+        "accepted": job_id > 0,
+        "status": str(job.get("status") or "queued"),
+        "job_id": job_id,
+        "execution_id": execution_id,
+        "status_url": f"/api/admin/executions/{execution_id}" if execution_id else "",
+        "lane": str(job.get("lane") or "wecom_media"),
+        "real_external_call_executed": False,
+        "error_code": str(job.get("last_error_code") or ""),
     }
 
 
@@ -187,15 +263,27 @@ def enqueue_due_media_refreshes(
     *,
     dry_run: bool = False,
     now: datetime | None = None,
-    operator: str = "automation_ops_scheduler",
+    operator: str = "manual_media_repair",
     limit: int = 50,
     manager=None,
     repository=None,
+    repair_authorized: bool = False,
 ) -> dict[str, Any]:
+    """Run an explicit repair/backfill scan, never a normal timer path."""
+
+    if not repair_authorized or not str(operator or "").strip() or operator == "automation_ops_scheduler":
+        return {
+            "component": "wecom_media_lease_repair",
+            "status": "blocked",
+            "reason": "manual_repair_authorization_required",
+            "candidate_count": 0,
+            "enqueued_count": 0,
+            "errors": [],
+        }
     scanned_at = _utc(now)
     if production_environment() and not production_data_ready():
         return {
-            "component": "wecom_media_lease_refresher",
+            "component": "wecom_media_lease_repair",
             "status": "failed",
             "candidate_count": 0,
             "enqueued_count": 0,
@@ -205,7 +293,7 @@ def enqueue_due_media_refreshes(
     candidates = lease_manager.list_due_materials(limit=limit)
     if dry_run:
         return {
-            "component": "wecom_media_lease_refresher",
+            "component": "wecom_media_lease_repair",
             "status": "skipped",
             "reason": "dry_run",
             "candidate_count": len(candidates),
@@ -225,14 +313,14 @@ def enqueue_due_media_refreshes(
             material_id=material_id,
             upload_kind=upload_kind,
             actor=operator,
-            source_route="automation_ops_scheduler:wecom_media_lease_refresher",
+            source_route="manual_repair:wecom_media_lease_backfill",
             idempotency_key=f"media-refresh:{kind}:{material_id}:{upload_kind}:{bucket}",
             force_refresh=True,
             repository=repo,
         )
         enqueued.append({"job_id": int(job.get("id") or 0), **candidate})
     return {
-        "component": "wecom_media_lease_refresher",
+        "component": "wecom_media_lease_repair",
         "status": "ok",
         "candidate_count": len(candidates),
         "enqueued_count": len(enqueued),

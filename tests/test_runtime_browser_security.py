@@ -36,6 +36,7 @@ def test_deploy_runtime_environment_persists_secure_non_secret_defaults(tmp_path
         "EXISTING='kept'\n"
         "AICRM_NEXT_ENV='old'\n"
         "AICRM_QUESTIONNAIRE_EXTERNAL_PUSH_MODE='queue'\n"
+        "AICRM_NEXT_WECOM_REAL_CALLS_ENABLED='true'\n"
         "AICRM_EXTERNAL_EFFECT_WECOM_EXECUTE='1'\n"
         "AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES='wecom.contact.tag.mark'\n"
         "AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS='legacy-owner'\n",
@@ -62,6 +63,7 @@ def test_deploy_runtime_environment_persists_secure_non_secret_defaults(tmp_path
     assert "AICRM_PUBLIC_BASE_URL='https://www.youcangogogo.com'" in body
     assert "AICRM_ALLOW_MISSING_WECHAT_SHOP_CALLBACK_TOKEN='1'" in body
     assert "AICRM_QUESTIONNAIRE_EXTERNAL_PUSH_MODE" not in body
+    assert "AICRM_NEXT_WECOM_REAL_CALLS_ENABLED" not in body
     assert "AICRM_EXTERNAL_EFFECT_WECOM_EXECUTE" not in body
     assert "AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES" not in body
     assert "AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS" not in body

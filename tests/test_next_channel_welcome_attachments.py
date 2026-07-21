@@ -14,6 +14,23 @@ def _base(monkeypatch, channel):
     monkeypatch.setattr("aicrm_next.channel_entry.repo.upsert_channel_entry_effect_log", lambda **kwargs: effects.append(kwargs) or {"ok": True})
     monkeypatch.setattr("aicrm_next.channel_entry.repo.save_tag_snapshot", lambda *args, **kwargs: None)
 
+    class WelcomeGraph:
+        def plan(self, request):
+            return {
+                "execution_id": f"welcome-{request.external_userid}",
+                "status": "waiting_dependencies" if any(item.get("material_id") for item in request.attachments) else "ready",
+                "final_effect_job_id": 9001,
+                "external_effect_job_ids": [9001],
+                "upload_effect_job_ids": [],
+                "status_url": f"/api/admin/executions/welcome-{request.external_userid}",
+                "duplicate": False,
+            }
+
+    monkeypatch.setattr(
+        "aicrm_next.channel_entry.application.build_welcome_effect_graph_repository",
+        lambda: WelcomeGraph(),
+    )
+
     class Adapter:
         def send_welcome_msg(self, payload):
             sent.append(payload)

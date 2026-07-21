@@ -71,9 +71,7 @@ def _install_fake_wecom_group_message_adapter(monkeypatch) -> list[dict]:
     monkeypatch.setitem(
         DEFAULT_ADAPTER_REGISTRY._adapters,  # type: ignore[attr-defined]
         "wecom_group_message",
-        WeComGroupMessageExternalEffectAdapter(
-            adapter_factory=lambda: FakeWeComGroupMessageAdapter()
-        ),
+        WeComGroupMessageExternalEffectAdapter(adapter_factory=lambda: FakeWeComGroupMessageAdapter()),
     )
     return calls
 
@@ -294,7 +292,8 @@ def test_group_ops_legacy_bundle_external_effect_creates_wecom_group_job(group_o
     assert jobs[0].operation == "send_group_message"
     assert jobs[0].status == "queued"
     assert jobs[0].execution_mode == "execute"
-    assert jobs[0].business_type == "group_ops_plan"
+    assert jobs[0].business_type == "group_ops_effect_graph"
+    assert jobs[0].parent_execution_id == response.json()["execution_id"]
     assert jobs[0].payload_json["webhook_key"] == "daily-lesson-8f3a"
     assert jobs[0].payload_json["owner_userid"] == "owner_001"
     assert jobs[0].payload_json["mention_all"] is False
@@ -307,6 +306,8 @@ def test_wecom_group_external_effect_requires_typed_execution_gate(group_ops_api
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES", WECOM_MESSAGE_GROUP_SEND)
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_GROUP_OPS_WEBHOOK_KEYS", "daily-lesson-8f3a")
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS", "owner_001")
+    monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_GROUP_CHAT_IDS", "wrOgAAA001")
+    monkeypatch.setenv("AICRM_WECOM_PROVIDER_TARGET_POLICY", "allowlisted_canary")
     wecom_calls = _install_fake_wecom_group_message_adapter(monkeypatch)
 
     response = group_ops_api_client.post(
@@ -329,16 +330,34 @@ def test_wecom_group_external_effect_requires_typed_execution_gate(group_ops_api
     assert wecom_calls == []
 
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_WECOM_EXECUTE", "1")
-    response = group_ops_api_client.post(
-        "/api/automation/group-ops/webhooks/daily-lesson-8f3a",
-        headers={"Authorization": "Bearer fixture-webhook-token"},
-        json={
-            "idempotency_key": "daily-lesson-wecom-gated-success",
-            "send_mode": "queued",
-            "content": {"text": "synthetic successful group effect", "attachments": []},
+    planned = ExternalEffectService().plan_effect(
+        effect_type=WECOM_MESSAGE_GROUP_SEND,
+        adapter_name="wecom_group_message",
+        operation="send_group_message",
+        target_type="group_ops_webhook_event",
+        target_id="canary-success",
+        business_type="group_ops_plan",
+        business_id="1",
+        payload={
+            "execution_scope": "allowlisted_canary",
+            "webhook_key": "daily-lesson-8f3a",
+            "owner_userid": "owner_001",
+            "chat_ids": ["wrOgAAA001"],
+            "content_payload": {"text": {"content": "synthetic successful group effect"}, "attachments": []},
+            "mention_all": False,
         },
+        execution_mode="execute",
+        status="queued",
+        idempotency_key="daily-lesson-wecom-gated-success",
     )
-    job = ExternalEffectService().get(response.json()["external_effect_job_ids"][0])
+    job = ExternalEffectService().get(planned["id"])
+    assert job is not None
+    assert ExternalEffectService().authorize_allowlisted_canary(
+        job.id,
+        actor="pytest",
+        reason="explicit group canary authorization",
+        expected_version=job.row_version,
+    )
     preview = ExternalEffectWorker().run_due(batch_size=1, dry_run=True, effect_types=[WECOM_MESSAGE_GROUP_SEND], test_only=False)
     dry_run = ExternalEffectWorker().run_due(batch_size=1, dry_run=True, effect_types=[WECOM_MESSAGE_GROUP_SEND], test_only=False)
     executed = ExternalEffectWorker().run_due(batch_size=1, dry_run=False, effect_types=[WECOM_MESSAGE_GROUP_SEND], test_only=False)
@@ -361,6 +380,8 @@ def test_wecom_group_external_effect_adapter_sends_multiple_group_chats(monkeypa
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES", WECOM_MESSAGE_GROUP_SEND)
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_GROUP_OPS_WEBHOOK_KEYS", "daily-lesson-8f3a")
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS", "owner_001")
+    monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_GROUP_CHAT_IDS", "chat_001,chat_002,chat_003")
+    monkeypatch.setenv("AICRM_WECOM_PROVIDER_TARGET_POLICY", "allowlisted_canary")
     wecom_calls = _install_fake_wecom_group_message_adapter(monkeypatch)
 
     service = ExternalEffectService()
@@ -373,6 +394,7 @@ def test_wecom_group_external_effect_adapter_sends_multiple_group_chats(monkeypa
         business_type="group_ops_plan",
         business_id="11",
         payload={
+            "execution_scope": "allowlisted_canary",
             "webhook_key": "daily-lesson-8f3a",
             "owner_userid": "owner_001",
             "chat_ids": ["chat_001", "chat_002", "chat_003"],
@@ -388,6 +410,12 @@ def test_wecom_group_external_effect_adapter_sends_multiple_group_chats(monkeypa
         execution_mode="execute",
         status="queued",
         idempotency_key="group-ops-wecom-multi-group-success",
+    )
+    assert service.authorize_allowlisted_canary(
+        job["id"],
+        actor="pytest",
+        reason="explicit multi-group canary authorization",
+        expected_version=job["row_version"],
     )
 
     executed = ExternalEffectWorker().run_due(batch_size=1, dry_run=False, effect_types=[WECOM_MESSAGE_GROUP_SEND], test_only=False)
@@ -423,11 +451,13 @@ def test_wecom_group_external_effect_requires_batch_size_one(group_ops_api_clien
     assert result["real_external_call_executed"] is False
 
 
-def test_wecom_group_external_effect_ignores_allowlist_and_mention_all_gates(group_ops_api_client, monkeypatch):
+def test_wecom_group_external_effect_enforces_allowlist_and_mention_all_gates(group_ops_api_client, monkeypatch):
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_WECOM_EXECUTE", "1")
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES", WECOM_MESSAGE_GROUP_SEND)
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_GROUP_OPS_WEBHOOK_KEYS", "other-webhook")
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS", "owner_001")
+    monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_GROUP_CHAT_IDS", "wrOgAAA001")
+    monkeypatch.setenv("AICRM_WECOM_PROVIDER_TARGET_POLICY", "allowlisted_canary")
     wecom_calls = _install_fake_wecom_group_message_adapter(monkeypatch)
     service = ExternalEffectService()
     job = service.plan_effect(
@@ -439,6 +469,7 @@ def test_wecom_group_external_effect_ignores_allowlist_and_mention_all_gates(gro
         business_type="group_ops_plan",
         business_id="2",
         payload={
+            "execution_scope": "allowlisted_canary",
             "webhook_key": "daily-lesson-8f3a",
             "owner_userid": "owner_001",
             "chat_ids": ["wrOgAAA001"],
@@ -453,11 +484,11 @@ def test_wecom_group_external_effect_ignores_allowlist_and_mention_all_gates(gro
     executed = ExternalEffectWorker().run_due(batch_size=1, dry_run=False, effect_types=[WECOM_MESSAGE_GROUP_SEND], test_only=False)
     executed_job = ExternalEffectService().get(job["id"])
 
-    assert executed["counts"]["succeeded_count"] == 1
-    assert executed["real_external_call_executed"] is True
+    assert executed["counts"]["blocked_count"] == 1
+    assert executed["real_external_call_executed"] is False
     assert executed_job is not None
-    assert executed_job.status == "succeeded"
-    assert len(wecom_calls) == 1
+    assert executed_job.status == "blocked"
+    assert wecom_calls == []
 
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_GROUP_OPS_WEBHOOK_KEYS", "daily-lesson-8f3a")
     service.plan_effect(
@@ -469,6 +500,7 @@ def test_wecom_group_external_effect_ignores_allowlist_and_mention_all_gates(gro
         business_type="group_ops_plan",
         business_id="2",
         payload={
+            "execution_scope": "allowlisted_canary",
             "webhook_key": "daily-lesson-8f3a",
             "owner_userid": "owner_001",
             "chat_ids": ["wrOgAAA001"],
@@ -481,9 +513,9 @@ def test_wecom_group_external_effect_ignores_allowlist_and_mention_all_gates(gro
         idempotency_key="group-ops-wecom-mention-all",
     )
     mention_executed = ExternalEffectWorker().run_due(batch_size=1, dry_run=False, effect_types=[WECOM_MESSAGE_GROUP_SEND], test_only=False)
-    assert mention_executed["counts"]["succeeded_count"] == 1
-    assert mention_executed["real_external_call_executed"] is True
-    assert len(wecom_calls) == 2
+    assert mention_executed["counts"]["blocked_count"] == 1
+    assert mention_executed["real_external_call_executed"] is False
+    assert wecom_calls == []
 
 
 def test_group_ops_loopback_2xx_succeeds_with_receipt(group_ops_api_client, monkeypatch):

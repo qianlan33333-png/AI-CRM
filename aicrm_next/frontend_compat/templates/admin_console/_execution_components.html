@@ -1,0 +1,28 @@
+{% macro execution_action_dialog() -%}
+<dialog class="execution-action-dialog" data-execution-action-dialog>
+  <form method="dialog" class="execution-action-dialog__form">
+    <div>
+      <h2 data-execution-dialog-title>确认操作</h2>
+      <p class="admin-muted-text" data-execution-dialog-description>请先核对执行预览，再确认是否继续。</p>
+    </div>
+    <dl class="admin-definition-list execution-action-preview">
+      <div><dt>当前操作人</dt><dd data-execution-dialog-actor>-</dd></div>
+      <div><dt>预期版本</dt><dd data-execution-dialog-version>-</dd></div>
+      <div><dt>外部调用</dt><dd>仅提交队列命令；此页面不直接调用 provider</dd></div>
+    </dl>
+    <label class="admin-field" data-execution-dialog-reason-field hidden>
+      <span>操作原因</span>
+      <textarea rows="3" maxlength="500" data-execution-dialog-reason></textarea>
+    </label>
+    <label class="admin-check-line" data-execution-dialog-duplicate-risk-field hidden>
+      <input type="checkbox" data-execution-dialog-duplicate-risk>
+      <span>我已核对服务商记录，并确认继续操作存在重复触达风险</span>
+    </label>
+    <div class="admin-alert admin-alert--error" data-execution-dialog-error hidden></div>
+    <div class="admin-toolbar">
+      <button type="button" class="admin-button admin-button--secondary" data-execution-dialog-cancel>返回</button>
+      <button type="submit" class="admin-button admin-button--primary" data-execution-dialog-confirm>确认</button>
+    </div>
+  </form>
+</dialog>
+{%- endmacro %}

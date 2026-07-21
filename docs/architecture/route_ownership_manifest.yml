@@ -273,7 +273,7 @@ routes:
   runtime_owner: ai_crm_next
   layer: api
   external_effects: staging_disabled
-  data_source: external_adapter
+  data_source: command
   requires_auth: true
   rollback: previous_release
   audience: admin
@@ -577,7 +577,7 @@ routes:
   runtime_owner: ai_crm_next
   layer: api
   external_effects: staging_disabled
-  data_source: external_adapter
+  data_source: command
   requires_auth: true
   rollback: previous_release
   audience: admin
@@ -601,7 +601,7 @@ routes:
   runtime_owner: ai_crm_next
   layer: api
   external_effects: staging_disabled
-  data_source: external_adapter
+  data_source: command
   requires_auth: true
   rollback: previous_release
   audience: admin
@@ -621,6 +621,26 @@ routes:
   methods:
   - GET
   route_name: api.admin_internal_events_page
+  capability_owner: platform_foundation
+  runtime_owner: ai_crm_next
+  layer: admin_page
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: admin_read
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /admin/internal-events/{event_id}
+  methods:
+  - GET
+  route_name: api.admin_internal_event_page
   capability_owner: platform_foundation
   runtime_owner: ai_crm_next
   layer: admin_page
@@ -837,10 +857,70 @@ routes:
   service_audience: internal_worker
   service_capability: internal_event_execute
   client_purpose: automation_worker
+- path: /api/admin/execution-runtime
+  methods:
+  - GET
+  route_name: get_execution_runtime
+  capability_owner: platform_foundation
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: admin_read
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/executions/{execution_id}
+  methods:
+  - GET
+  route_name: get_execution_timeline
+  capability_owner: platform_foundation
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: admin_read
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
 - path: /admin/push-center
   methods:
   - GET
   route_name: api.admin_push_center_page
+  capability_owner: platform_foundation
+  runtime_owner: ai_crm_next
+  layer: admin_page
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: admin_read
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /admin/push-center/jobs/{job_id}
+  methods:
+  - GET
+  route_name: api.admin_push_center_job_page
   capability_owner: platform_foundation
   runtime_owner: ai_crm_next
   layer: admin_page
@@ -4479,6 +4559,66 @@ routes:
   methods:
   - GET
   route_name: get_sidebar_marketing_status
+  capability_owner: customer_read_model
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: sidebar
+  auth_scheme: sidebar_grant
+  capability: sidebar_read
+  access_scope: owner
+  pii_level: sensitive
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/sidebar/v2/coupons
+  methods:
+  - GET
+  route_name: api.sidebar_v2_coupons
+  capability_owner: commerce
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: sidebar
+  auth_scheme: sidebar_grant
+  capability: sidebar_read
+  access_scope: owner
+  pii_level: sensitive
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/sidebar/v2/radar-links
+  methods:
+  - GET
+  route_name: api.sidebar_v2_radar_links
+  capability_owner: radar_links
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: sidebar
+  auth_scheme: sidebar_grant
+  capability: sidebar_read
+  access_scope: owner
+  pii_level: sensitive
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/sidebar/v2/timeline
+  methods:
+  - GET
+  route_name: get_sidebar_v2_timeline
   capability_owner: customer_read_model
   runtime_owner: ai_crm_next
   layer: api
@@ -13786,10 +13926,50 @@ routes:
   rate_limit: authenticated
   principal_types:
   - human
+- path: /admin/broadcast-jobs/{job_id}
+  methods:
+  - GET
+  route_name: api.admin_broadcast_job_page
+  capability_owner: admin_jobs
+  runtime_owner: ai_crm_next
+  layer: admin_page
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: admin_read
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
 - path: /api/admin/broadcast-jobs
   methods:
   - GET
   route_name: api_admin_broadcast_jobs
+  capability_owner: admin_jobs
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: admin_read
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/broadcast-jobs/{job_id}
+  methods:
+  - GET
+  route_name: api_admin_broadcast_job_detail
   capability_owner: admin_jobs
   runtime_owner: ai_crm_next
   layer: api

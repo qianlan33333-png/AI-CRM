@@ -16,8 +16,23 @@ def _patch_repo(monkeypatch, *, channel_status="active", bindings=None):
     calls: list[str] = []
     monkeypatch.setattr("aicrm_next.channel_entry.application.resolve_channel_for_scene", lambda **kwargs: (channel, {"match_type": "current_scene", "matched_scene": "scene-a", "channel_id": 10}))
     monkeypatch.setattr("aicrm_next.channel_entry.repo.upsert_channel_contact", lambda **kwargs: calls.append("contact") or {"ok": True})
-    monkeypatch.setattr("aicrm_next.channel_entry.repo.upsert_channel_entry_runtime", lambda **kwargs: calls.append("runtime") or {"ok": True, **kwargs})
-    monkeypatch.setattr("aicrm_next.channel_entry.repo.enqueue_channel_entry_identity_resolution", lambda **kwargs: calls.append("identity_queue"))
+    def fake_upsert_channel_entry_runtime(**kwargs):
+        calls.append("runtime_with_identity_effect" if kwargs.get("enqueue_identity_resolution") else "runtime")
+        return {
+            "ok": True,
+            **kwargs,
+            "identity_resolution_queue": {
+                "external_effect_job_id": 901,
+                "execution_id": "exec-identity-901",
+                "execution_owner": "external_effect_job",
+            },
+        }
+
+    monkeypatch.setattr("aicrm_next.channel_entry.repo.upsert_channel_entry_runtime", fake_upsert_channel_entry_runtime)
+    monkeypatch.setattr(
+        "aicrm_next.channel_entry.repo.enqueue_channel_entry_identity_resolution",
+        lambda **kwargs: (_ for _ in ()).throw(AssertionError("identity effect must be persisted atomically with the runtime row")),
+    )
     monkeypatch.setattr("aicrm_next.channel_entry.repo.get_channel_entry_effect_log", lambda *args: None)
     monkeypatch.setattr("aicrm_next.channel_entry.repo.upsert_channel_entry_effect_log", lambda **kwargs: {"ok": True})
     monkeypatch.setattr("aicrm_next.channel_entry.repo.save_tag_snapshot", lambda *args, **kwargs: None)
@@ -100,10 +115,20 @@ def test_entry_without_unionid_still_queues_external_userid_effects(monkeypatch)
     reset_external_effect_fixture_state()
     runtime_entries: list[dict] = []
     calls, previous = _patch_repo(monkeypatch)
-    monkeypatch.setattr(
-        "aicrm_next.channel_entry.repo.upsert_channel_entry_runtime",
-        lambda **kwargs: calls.append("runtime") or runtime_entries.append(kwargs) or {"ok": True, **kwargs},
-    )
+    def fake_upsert_runtime(**kwargs):
+        calls.append("runtime_with_identity_effect")
+        runtime_entries.append(kwargs)
+        return {
+            "ok": True,
+            **kwargs,
+            "identity_resolution_queue": {
+                "external_effect_job_id": 902,
+                "execution_id": "exec-identity-902",
+                "execution_owner": "external_effect_job",
+            },
+        }
+
+    monkeypatch.setattr("aicrm_next.channel_entry.repo.upsert_channel_entry_runtime", fake_upsert_runtime)
     monkeypatch.setattr("aicrm_next.channel_entry.application.wake_external_effect_job", lambda *args, **kwargs: False)
     try:
         result = process_channel_entry(
@@ -123,7 +148,9 @@ def test_entry_without_unionid_still_queues_external_userid_effects(monkeypatch)
     assert runtime_entries[0]["external_userid"] == "wm-no-union"
     assert result["channel_contact"] == {"attempted": False, "deferred": True, "reason": "identity_pending_unionid"}
     assert result["channel_entry_internal_event"] == {"ok": False, "deferred": True, "reason": "identity_pending_unionid"}
-    assert calls[:2] == ["runtime", "identity_queue"]
+    assert calls == ["runtime_with_identity_effect"]
+    assert runtime_entries[0]["enqueue_identity_resolution"] is True
+    assert result["runtime_entry"]["identity_resolution_queue"]["execution_owner"] == "external_effect_job"
     assert "contact" not in calls
     assert result["welcome_message"]["queued"] is True
     assert result["entry_tag"]["queued"] is True
@@ -140,6 +167,42 @@ def test_entry_without_unionid_still_queues_external_userid_effects(monkeypatch)
     assert tag_jobs[0].target_type == "external_userid"
     assert "target_unionid" not in welcome_jobs[0].payload_json
     assert "target_unionid" not in tag_jobs[0].payload_json
+
+
+def test_tag_idempotency_is_scoped_to_the_relationship_event(monkeypatch):
+    reset_external_effect_fixture_state()
+    _calls, previous = _patch_repo(monkeypatch)
+    monkeypatch.setattr("aicrm_next.channel_entry.application.wake_external_effect_job", lambda *args, **kwargs: False)
+
+    def enter(event_log_id: int):
+        return process_channel_entry(
+            ProcessChannelEntryCommand(
+                external_contact_id="wm-relationship-epoch",
+                follow_user_userid="sales",
+                payload_json={"corp_id": "ww-test", "State": "scene-a", "WelcomeCode": "wc"},
+                send_welcome_message=True,
+                event_log_id=event_log_id,
+            )
+        )
+
+    try:
+        first = enter(5101)
+        duplicate = enter(5101)
+        readded = enter(5102)
+    finally:
+        set_wecom_adapter(previous)
+
+    assert first["entry_tag"]["external_effect_job_id"] == duplicate["entry_tag"]["external_effect_job_id"]
+    assert readded["entry_tag"]["external_effect_job_id"] != first["entry_tag"]["external_effect_job_id"]
+
+    tag_jobs, total = ExternalEffectService().list_jobs(
+        {"effect_type": WECOM_CONTACT_TAG_MARK, "target_id": "wm-relationship-epoch"},
+        limit=10,
+    )
+    assert total == 2
+    assert len(tag_jobs) == 2
+    assert len({job.idempotency_key for job in tag_jobs}) == 2
+    assert all("relationship_event:" in job.idempotency_key for job in tag_jobs)
 
 
 def test_channel_disabled_has_no_baseline_side_effects(monkeypatch):
@@ -164,7 +227,9 @@ def test_channel_entry_without_unionid_records_runtime_entry(monkeypatch):
     assert result["handled"] is True
     assert result["mode"] == "channel_runtime_only"
     assert result["reason"] == "channel_entry_runtime_recorded"
-    assert calls == ["runtime", "identity_queue"]
+    assert calls == ["runtime_with_identity_effect"]
+    assert result["runtime_entry"]["enqueue_identity_resolution"] is True
+    assert result["runtime_entry"]["identity_resolution_queue"]["execution_owner"] == "external_effect_job"
     assert result["channel_contact"] == {"attempted": False, "deferred": True, "reason": "identity_pending_unionid"}
     assert result["welcome_message"]["queued"] is True
     assert result["entry_tag"]["queued"] is True

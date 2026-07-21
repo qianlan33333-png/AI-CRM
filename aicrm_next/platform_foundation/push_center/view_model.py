@@ -8,6 +8,7 @@ from . import ROUTE_OWNER
 from .projection import EFFECTIVE_STATUS_LABELS
 from .repository import PushCenterRepository
 from .status_mapper import status_definitions_payload
+from .sql_read_model import InvalidPushCenterCursor
 
 FILTER_KEYS = (
     "section",
@@ -56,7 +57,42 @@ def job_list_item(job: dict[str, Any], *, include_linked_records: bool = False) 
     payload.setdefault("effective_status", payload.get("status"))
     payload.setdefault("effective_status_label", EFFECTIVE_STATUS_LABELS.get(_text(payload.get("effective_status")), _text(payload.get("status_label"))))
     payload.setdefault("status_label", payload.get("effective_status_label"))
+    payload.setdefault("execution_id", "")
+    payload.setdefault("lane", "")
+    payload.setdefault("available_at", payload.get("next_retry_at") or payload.get("scheduled_at") or payload.get("created_at"))
+    payload.setdefault("queue_state", _queue_state(payload))
+    payload.setdefault("delivery_state", _delivery_state(payload))
+    payload.setdefault("row_version", 0)
     return payload
+
+
+def _queue_state(payload: dict[str, Any]) -> str:
+    raw_status = _text(payload.get("raw_status") or payload.get("status"))
+    if raw_status == "unknown_after_dispatch":
+        return "unknown"
+    if raw_status in {"claimed", "running", "dispatching"}:
+        return "running"
+    if raw_status == "failed_retryable":
+        return "retry_wait"
+    if raw_status in {"planned", "approved", "waiting_approval", "blocked"}:
+        return "held"
+    if raw_status in {"queued", "pending"}:
+        return "waiting"
+    return "terminal"
+
+
+def _delivery_state(payload: dict[str, Any]) -> str:
+    raw_status = _text(payload.get("raw_status") or payload.get("status"))
+    effect_type = _text(payload.get("effect_type"))
+    if raw_status == "unknown_after_dispatch":
+        return "unknown"
+    if raw_status in {"failed", "failed_retryable", "failed_terminal", "blocked", "cancelled", "expired"}:
+        return "failed"
+    if raw_status in {"succeeded", "sent"}:
+        if effect_type.startswith("wecom.message.") or effect_type in {"wecom.welcome_message.send", "broadcast_job", "broadcast_job.group", "broadcast_job.group_ops", "broadcast_job.private"}:
+            return "provider_accepted"
+        return "not_applicable"
+    return "pending"
 
 
 def build_sections_payload(params: dict[str, Any] | None = None, *, repository: PushCenterRepository | None = None) -> dict[str, Any]:
@@ -80,8 +116,31 @@ def build_jobs_payload(params: dict[str, Any] | None = None, *, repository: Push
     filters = push_center_filters(params)
     limit = _int((params or {}).get("limit"), default=50, minimum=1, maximum=200)
     offset = _int((params or {}).get("offset"), default=0, minimum=0, maximum=100000)
+    cursor = _text((params or {}).get("cursor"))
     try:
-        jobs, total, counts, sections = repository.list_jobs_with_summary(filters, limit=limit, offset=offset)
+        jobs, total, counts, sections, next_cursor, has_more = repository.list_jobs_with_summary(
+            filters,
+            limit=limit,
+            offset=offset,
+            cursor=cursor,
+        )
+    except InvalidPushCenterCursor:
+        return {
+            "ok": False,
+            "error": "invalid_push_center_cursor",
+            "items": [],
+            "total": 0,
+            "counts": {},
+            "sections": [],
+            "status_definitions": status_definitions_payload(),
+            "filters": public_filters(filters),
+            "limit": limit,
+            "offset": 0,
+            "next_cursor": "",
+            "has_more": False,
+            "route_owner": ROUTE_OWNER,
+            "real_external_call_executed": False,
+        }
     except Exception as exc:
         return _read_unavailable_payload(filters, exc, limit=limit, offset=offset, include_sections=True)
     return {
@@ -94,6 +153,9 @@ def build_jobs_payload(params: dict[str, Any] | None = None, *, repository: Push
         "filters": public_filters(filters),
         "limit": limit,
         "offset": offset,
+        "cursor": cursor,
+        "next_cursor": next_cursor,
+        "has_more": bool(has_more),
         "route_owner": ROUTE_OWNER,
         "real_external_call_executed": False,
     }
@@ -215,6 +277,13 @@ def _reconciliation_decision(job: dict[str, Any], attempts: list[dict[str, Any]]
             "operator_action_required": False,
             "next_action_label": "无需操作",
         }
+    if effective_status == "succeeded":
+        return {
+            "business_explanation": "外部动作已成功完成；这不代表消息已经送达，需结合 delivery_state 或服务商回执判断。",
+            "retryable": False,
+            "operator_action_required": False,
+            "next_action_label": "查看交付状态",
+        }
     if effective_status == "sent_with_shadow_warning":
         return {
             "business_explanation": "主发送链路已完成，但影子链路或观测链路存在异常；不要把它误判为业务发送失败。",
@@ -252,16 +321,16 @@ def _reconciliation_decision(job: dict[str, Any], attempts: list[dict[str, Any]]
         }
     if effective_status == "running":
         return {
-            "business_explanation": "任务已被调度器或外部动作 worker 领取，等待执行结果。",
+            "business_explanation": "任务已被外部动作 worker 领取，等待执行结果。",
             "retryable": False,
             "operator_action_required": False,
             "next_action_label": "等待执行完成",
         }
     return {
-        "business_explanation": "任务已进入推送中心，等待调度器扫描、审批或前置条件满足。",
+        "business_explanation": "任务已进入推送中心；有空闲产能时立即领取，否则等待审批、前置条件或所属通道产能。",
         "retryable": False,
         "operator_action_required": bool(has_attempt_failure and not has_broadcast_sent),
-        "next_action_label": "等待调度",
+        "next_action_label": "正常排队",
     }
 
 

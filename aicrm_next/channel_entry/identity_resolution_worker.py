@@ -198,6 +198,7 @@ def _runtime_reserve(conn: Any, *, limit: int, max_attempts: int) -> int:
             SELECT 1
             FROM automation_channel_entry_runtime
             WHERE identity_status IN ('pending', 'pending_identity', 'failed')
+              AND identity_external_effect_job_id IS NULL
               AND COALESCE(identity_attempt_count, 0) < %s
               AND (identity_next_attempt_at IS NULL OR identity_next_attempt_at <= CURRENT_TIMESTAMP)
         ) AS runtime_due
@@ -218,6 +219,7 @@ def _claim_queue_rows(conn: Any, *, limit: int, locked_by: str, lease_seconds: i
             SELECT id
             FROM crm_user_identity_resolution_queue
             WHERE status = 'pending'
+              AND external_effect_job_id IS NULL
               AND (next_attempt_at IS NULL OR next_attempt_at <= CURRENT_TIMESTAMP)
             ORDER BY COALESCE(next_attempt_at, first_seen_at, created_at) ASC, id ASC
             LIMIT %s
@@ -259,6 +261,7 @@ def _claim_runtime_rows(
             SELECT id
             FROM automation_channel_entry_runtime
             WHERE identity_status IN ('pending', 'pending_identity', 'failed')
+              AND identity_external_effect_job_id IS NULL
               AND COALESCE(identity_attempt_count, 0) < %s
               AND (identity_next_attempt_at IS NULL OR identity_next_attempt_at <= CURRENT_TIMESTAMP)
             ORDER BY COALESCE(identity_next_attempt_at, updated_at) ASC, id ASC

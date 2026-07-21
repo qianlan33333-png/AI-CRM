@@ -16,12 +16,13 @@ from aicrm_next.platform_foundation.internal_events.worker import InternalEventW
 from aicrm_next.sidebar_write.application import reset_sidebar_write_fixture_state
 from tests.sidebar_auth_test_helpers import install_sidebar_auth
 
-PHONE_BOUND_CONSUMERS = [
+PHONE_BOUND_CONSUMERS = frozenset({
     "automation_phone_bound_consumer",
     "customer_identity_ai_assist_notify_consumer",
     "customer_identity_projection_consumer",
+    "customer_read_model_dirty_consumer",
     "customer_summary_consumer",
-]
+})
 
 
 def _reset() -> None:
@@ -152,8 +153,8 @@ def test_customer_phone_bound_emits_single_event_and_expected_consumers(monkeypa
     assert event.payload_summary_json["mobile_masked"] == "138****2001"
     assert "13800132001" not in str(event.payload_summary_json)
     assert "wm_phone_bound_slice_201" not in str(event.payload_summary_json)
-    assert run_total == 4
-    assert sorted(run.consumer_name for run in runs) == PHONE_BOUND_CONSUMERS
+    assert run_total == len(PHONE_BOUND_CONSUMERS)
+    assert {run.consumer_name for run in runs} == PHONE_BOUND_CONSUMERS
     assert all(run.status == "pending" for run in runs)
     assert all(run.attempt_count == 0 for run in runs)
 
@@ -175,7 +176,7 @@ def test_sidebar_bind_mobile_emits_phone_bound_event_and_expected_consumers(monk
     assert result["ok"] is True
     assert result["internal_event_status"] == "emitted"
     assert result["internal_event_id"] == event.event_id
-    assert result["internal_event_consumer_run_count"] == 4
+    assert result["internal_event_consumer_run_count"] == len(PHONE_BOUND_CONSUMERS)
     assert result["binding"]["binding_status"] == "bound"
     assert event.event_type == CUSTOMER_PHONE_BOUND_EVENT_TYPE
     assert event.aggregate_type == "customer"
@@ -189,8 +190,8 @@ def test_sidebar_bind_mobile_emits_phone_bound_event_and_expected_consumers(monk
     assert event.payload_summary_json["mobile_masked"] == "138****8124"
     assert "13800138124" not in str(event.payload_summary_json)
     assert "wx_ext_002" not in str(event.payload_summary_json)
-    assert run_total == 4
-    assert sorted(run.consumer_name for run in runs) == PHONE_BOUND_CONSUMERS
+    assert run_total == len(PHONE_BOUND_CONSUMERS)
+    assert {run.consumer_name for run in runs} == PHONE_BOUND_CONSUMERS
     assert all(run.status == "pending" for run in runs)
     assert all(run.attempt_count == 0 for run in runs)
 
@@ -218,8 +219,8 @@ def test_sidebar_bind_mobile_duplicate_does_not_duplicate_phone_bound_event(monk
     assert total == 1
     assert len(events) == 1
     assert first["internal_event_id"] == second["internal_event_id"] == events[0].event_id
-    assert run_total == 4
-    assert sorted(run.consumer_name for run in runs) == PHONE_BOUND_CONSUMERS
+    assert run_total == len(PHONE_BOUND_CONSUMERS)
+    assert {run.consumer_name for run in runs} == PHONE_BOUND_CONSUMERS
 
 
 def test_customer_phone_bound_fallback_idempotency_does_not_expose_external_userid(monkeypatch) -> None:

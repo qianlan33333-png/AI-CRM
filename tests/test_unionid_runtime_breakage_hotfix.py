@@ -60,16 +60,18 @@ def test_alipay_admin_transactions_after_unionid_cleanup() -> None:
         assert forbidden not in select_source
 
 
-def test_group_ops_dispatcher_writes_target_unionids() -> None:
+def test_group_ops_dispatcher_plans_one_external_effect_with_unionid_link() -> None:
     source = _read("aicrm_next/automation_engine/group_ops/action_dispatcher.py")
-    insert_source = _function_source(source, "_insert_broadcast_job")
     enqueue_source = _function_source(source, "enqueue_private_message")
 
-    assert "target_unionids_json" in insert_source
-    assert "'unionid'" in insert_source
-    assert "target_external_userids" not in insert_source
+    assert "_insert_broadcast_job" not in source
+    assert "WECOM_MESSAGE_PRIVATE_SEND" in enqueue_source
+    assert "self._external_effect_service.plan_effect" in enqueue_source
+    assert 'adapter_name="wecom_private_message"' in enqueue_source
     assert "\"unionids\"" in enqueue_source
-    assert "\"external_userid\"" not in enqueue_source
+    assert '"external_userids"' in enqueue_source
+    assert '"target_unionid"' in enqueue_source
+    assert '"execution_owner": "external_effect_job"' in enqueue_source
 
 
 def test_cloud_broadcast_plan_dispatch_uses_unionid() -> None:
@@ -161,8 +163,8 @@ def test_unionid_runtime_sql_guard_blocks_removed_identity_columns() -> None:
             "o.respondent_key",
             ],
         ),
-        "group_ops_broadcast_job": (
-            _function_source(group_ops_source, "_insert_broadcast_job"),
+        "group_ops_external_effect_owner": (
+            _function_source(group_ops_source, "enqueue_private_message"),
             [
             "target_external_userids",
             "'external_userid', '{}'::jsonb",

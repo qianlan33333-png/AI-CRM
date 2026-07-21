@@ -15,6 +15,20 @@ from aicrm_next.public_product import h5_wechat_pay
 from aicrm_next.public_product.h5_wechat_pay import _apply_transaction
 
 
+PAYMENT_CONSUMERS = frozenset({
+    "ai_assist_notify_consumer",
+    "ai_audience_source_poke_consumer",
+    "customer_business_summary_consumer",
+    "customer_read_model_dirty_consumer",
+    "customer_timeline_projection_consumer",
+    "dnd_policy_consumer",
+    "order_projection_consumer",
+    "product_paid_wecom_tag_consumer",
+    "service_period_entitlement_consumer",
+    "webhook_order_paid_consumer",
+})
+
+
 class _FakeCursor:
     def __init__(self, row):
         self._row = row
@@ -209,26 +223,8 @@ def test_payment_success_emits_payment_succeeded_and_duplicate_notify_is_idempot
     assert events[0].payload_summary_json["mobile_masked"] == "138****1234"
     assert "13800001234" not in str(events[0].payload_summary_json)
     consumer_names = {run.consumer_name for run in runs}
-    assert run_total == len(consumer_names)
-    assert {
-        "ai_assist_notify_consumer",
-        "customer_business_summary_consumer",
-        "dnd_policy_consumer",
-        "order_projection_consumer",
-        "product_paid_wecom_tag_consumer",
-        "service_period_entitlement_consumer",
-        "webhook_order_paid_consumer",
-    }.issubset(consumer_names)
-    assert consumer_names <= {
-        "ai_assist_notify_consumer",
-        "ai_audience_source_poke_consumer",
-        "customer_business_summary_consumer",
-        "dnd_policy_consumer",
-        "order_projection_consumer",
-        "product_paid_wecom_tag_consumer",
-        "service_period_entitlement_consumer",
-        "webhook_order_paid_consumer",
-    }
+    assert run_total == len(PAYMENT_CONSUMERS)
+    assert consumer_names == PAYMENT_CONSUMERS
 
 
 def test_webhook_order_paid_consumer_creates_external_effect_job_without_external_call(monkeypatch) -> None:

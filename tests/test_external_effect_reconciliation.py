@@ -77,6 +77,12 @@ def test_internal_automation_side_effect_is_valid_delivery_evidence() -> None:
     job = _plan(repo, "r07-internal-side-effect")
     claimed = repo.acquire_job(job["id"], locked_by="internal-adapter")
     assert claimed is not None
+    begun = repo.begin_provider_attempt(
+        job=claimed,
+        request_summary={"provider_boundary": "internal_automation"},
+    )
+    assert begun is not None
+    claimed, _attempt = begun
     completed = repo.complete_dispatch(
         job=claimed,
         result=ExternalEffectDispatchResult(

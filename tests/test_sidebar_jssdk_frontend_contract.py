@@ -16,7 +16,7 @@ def test_frontend_declares_and_consumes_jssdk_config_contract() -> None:
     script = SCRIPT.read_text(encoding="utf-8")
 
     assert 'data-jssdk-config-url="/api/sidebar/jssdk-config"' in template
-    assert "sidebar_workbench.js?v=20260714-progressive-loading" in template
+    assert "sidebar_workbench.js?v=20260717-capability-optimization" in template
     assert "jssdkConfigUrl()" in script
     assert "jssdkConfigRequests: new Map()" in script
     assert "jssdkConfigCache: new Map()" in script

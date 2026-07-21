@@ -38,10 +38,16 @@ from .models import (
     WECOM_MESSAGE_PRIVATE_SEND,
     WECOM_WELCOME_MESSAGE_SEND,
     WECOM_PROFILE_UPDATE,
+    WECOM_EXTERNAL_CONTACT_DETAIL_FETCH,
     ExternalEffectDispatchResult,
     ExternalEffectJob,
 )
 from .retry_policy import http_error_code
+from .wecom_canary_policy import (
+    WECOM_PROVIDER_TARGET_POLICY_KEY,
+    wecom_canary_job_gate_error,
+    wecom_canary_policy_snapshot,
+)
 
 LOW_RISK_WEBHOOK_EFFECT_TYPES = frozenset(
     {
@@ -60,6 +66,7 @@ WECOM_EFFECT_TYPES = (
     WECOM_MESSAGE_PRIVATE_SEND,
     WECOM_MESSAGE_GROUP_SEND,
     WECOM_PROFILE_UPDATE,
+    WECOM_EXTERNAL_CONTACT_DETAIL_FETCH,
     WECOM_MEDIA_UPLOAD,
 )
 
@@ -133,6 +140,27 @@ def _safe_error_message(value: Any, *, limit: int = 500) -> str:
     return redact_sensitive_text(value)[: max(0, int(limit))]
 
 
+def _safe_int(value: Any, *, default: int = 0) -> int:
+    if isinstance(value, bool):
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _safe_list_count(value: Any) -> int:
+    return len(value) if isinstance(value, list) else 0
+
+
+def _configured_wecom_provider_gate(job: ExternalEffectJob) -> str:
+    """Apply the explicit target policy without changing legacy prod defaults."""
+
+    if not runtime_setting(WECOM_PROVIDER_TARGET_POLICY_KEY, "").strip():
+        return ""
+    return wecom_canary_job_gate_error(job)
+
+
 def _wecom_provider_failure(
     exc: Exception,
     *,
@@ -198,11 +226,16 @@ def wecom_execution_settings() -> dict[str, Any]:
     enabled_types, enabled_types_source = _enabled_wecom_effect_types()
     default_sender = _configured_wecom_sender()
     deprecated_settings_present = list(config.deprecated_settings_present)
+    explicit_provider_policy = runtime_setting(WECOM_PROVIDER_TARGET_POLICY_KEY, "").strip()
+    provider_policy = wecom_canary_policy_snapshot() if explicit_provider_policy else None
     blocking_reasons: list[str] = list(config.blocking_reasons)
     if execution_mode == "execute" and not enabled_types:
         blocking_reasons.append("wecom_enabled_effect_types_empty")
     if execution_mode == "execute" and not default_sender:
         blocking_reasons.append("default_sender_userid_missing")
+    if execution_mode == "execute" and provider_policy is not None:
+        blocking_reasons.extend(provider_policy["blocking_reasons"])
+    blocking_reasons = list(dict.fromkeys(blocking_reasons))
     return {
         "enabled": execution_mode == "execute" and not blocking_reasons,
         "execution_mode": execution_mode,
@@ -210,10 +243,21 @@ def wecom_execution_settings() -> dict[str, Any]:
         "allowed_types": enabled_types,
         "enabled_effect_types": enabled_types,
         "enabled_effect_types_source": enabled_types_source,
-        "allowed_target_external_userids": "all",
-        "allowed_group_ops_webhook_keys": "all",
-        "allowed_owner_userids": [default_sender] if default_sender else [],
-        "allowed_group_chat_ids": "all",
+        **(
+            {
+                "provider_target_policy": provider_policy["provider_target_policy"],
+                "required_execution_scope": provider_policy["required_execution_scope"],
+                "allowlisted_canary_enabled": provider_policy["allowlisted_canary_enabled"],
+                "allowlist_counts": provider_policy["allowlist_counts"],
+            }
+            if provider_policy is not None
+            else {
+                "allowed_target_external_userids": "all",
+                "allowed_group_ops_webhook_keys": "all",
+                "allowed_owner_userids": [default_sender] if default_sender else [],
+                "allowed_group_chat_ids": "all",
+            }
+        ),
         "supported_types": list(WECOM_EFFECT_TYPES),
         "corp_id_present": bool(config.corp_id),
         "contact_secret_present": bool(config.contact_secret),
@@ -394,7 +438,20 @@ class WebhookAdapter:
             status = "failed_retryable"
         else:
             status = "failed_terminal"
-        response_summary = {"status_code": status_code, "real_external_call_executed": True}
+        retry_after_seconds = None
+        if status_code == 429:
+            try:
+                retry_after_seconds = max(
+                    0,
+                    min(int(float(str(response.headers.get("Retry-After") or "").strip())), 86400),
+                )
+            except (TypeError, ValueError):
+                retry_after_seconds = None
+        response_summary = {
+            "status_code": status_code,
+            "real_external_call_executed": True,
+            **({"retry_after_seconds": retry_after_seconds} if retry_after_seconds is not None else {}),
+        }
         response_json_summary = _safe_response_json_summary(response)
         if response_json_summary:
             response_summary["response_json"] = response_json_summary
@@ -407,6 +464,7 @@ class WebhookAdapter:
             response_summary=response_summary,
             error_code="" if status == "succeeded" else http_error_code(status_code),
             error_message="" if status == "succeeded" else _safe_error_message(response.text),
+            retry_after_seconds=retry_after_seconds,
             real_external_call_executed=True,
             provider_result_received=True,
         )
@@ -588,7 +646,7 @@ class WeComPrivateMessageAdapter:
         has_attachments = isinstance(payload.get("attachments"), list) and bool(payload.get("attachments"))
         if not has_text and not has_attachments:
             return "payload_invalid"
-        return ""
+        return _configured_wecom_provider_gate(job)
 
 
 class WeComGroupMessageExternalEffectAdapter:
@@ -639,13 +697,28 @@ class WeComGroupMessageExternalEffectAdapter:
             "mode": result.get("mode"),
             "operation": result.get("operation"),
             "audit_id": result.get("audit_id"),
-            "requested_chat_count": int(result.get("requested_chat_count") or len(list(result.get("requested_chat_ids") or []))),
+            "requested_chat_count": _safe_int(
+                result.get("requested_chat_count"),
+                default=_safe_list_count(result.get("requested_chat_ids")),
+            ),
             "exact_target_required": bool(result.get("exact_target_required")),
             "exact_target_verified": bool(result.get("exact_target_verified")),
             "wecom_msgid_present": bool(str(result.get("wecom_msgid") or "").strip()),
             "real_external_call_executed": bool(result.get("side_effect_executed")),
             "wecom_send_executed": bool(result.get("side_effect_executed")),
         }
+        provider_result = dict(result.get("result") or {}) if isinstance(result.get("result"), dict) else {}
+        response_summary.update(
+            {
+                "errcode": _safe_int(result.get("provider_errcode") or provider_result.get("errcode")),
+                "errmsg_present": bool(str(provider_result.get("errmsg") or result.get("error_message") or "").strip()),
+                "provider_error_classification": str(result.get("provider_error_classification") or ""),
+                "failed_chat_count": _safe_int(
+                    result.get("failed_chat_count"),
+                    default=_safe_list_count(provider_result.get("fail_list")),
+                ),
+            }
+        )
         if result.get("ok") and result.get("exact_target_verified") is True:
             return ExternalEffectDispatchResult(
                 status="succeeded",
@@ -659,7 +732,7 @@ class WeComGroupMessageExternalEffectAdapter:
             )
         error_code = str(result.get("error_code") or "wecom_group_message_failed").strip()
         return ExternalEffectDispatchResult(
-            status="failed_terminal",
+            status="failed_retryable" if result.get("retryable") is True else "failed_terminal",
             adapter_mode="execute",
             request_summary=request_summary,
             response_summary=response_summary,
@@ -700,7 +773,7 @@ class WeComGroupMessageExternalEffectAdapter:
         attachments = content_payload.get("attachments") if isinstance(content_payload.get("attachments"), list) else []
         if not str(text.get("content") or "").strip() and not attachments:
             return "payload_invalid"
-        return ""
+        return _configured_wecom_provider_gate(job)
 
     def _chat_ids(self, payload: dict[str, Any]) -> list[str]:
         return [str(item or "").strip() for item in list(payload.get("chat_ids") or []) if str(item or "").strip()]
@@ -716,7 +789,9 @@ class WeComGroupMessageExternalEffectAdapter:
 class WeComWelcomeMessageAdapter:
     def __init__(self, adapter_factory=None, material_resolver=None) -> None:
         self._adapter_factory = adapter_factory
-        self._material_resolver = material_resolver
+        # Compatibility-only argument: media dependencies must already be
+        # resolved before the single provider dispatch boundary.
+        del material_resolver
 
     def dispatch(self, job: ExternalEffectJob) -> ExternalEffectDispatchResult:
         payload = dict(job.payload_json or {})
@@ -792,7 +867,26 @@ class WeComWelcomeMessageAdapter:
         has_attachments = isinstance(payload.get("attachments"), list) and bool(payload.get("attachments"))
         if not has_text and not has_attachments:
             return "payload_invalid"
-        return ""
+        if has_attachments and any(not self._provider_attachment_ready(item) for item in payload.get("attachments") or []):
+            return "unresolved_material_dependency"
+        return _configured_wecom_provider_gate(job)
+
+    @staticmethod
+    def _provider_attachment_ready(item: Any) -> bool:
+        if not isinstance(item, dict) or item.get("material_id") not in (None, ""):
+            return False
+        msgtype = str(item.get("msgtype") or "").strip()
+        nested = item.get(msgtype) if isinstance(item.get(msgtype), dict) else {}
+        encoded = str(item)
+        if "dependency_key" in encoded:
+            return False
+        if msgtype in {"image", "file"}:
+            return bool(str(nested.get("media_id") or "").strip())
+        if msgtype == "miniprogram":
+            return all(str(nested.get(field) or "").strip() for field in ("appid", "page", "title", "pic_media_id"))
+        if msgtype == "link":
+            return bool(str(nested.get("title") or "").strip() and str(nested.get("url") or "").strip())
+        return False
 
     def _wecom_payload(self, payload: dict[str, Any]) -> dict[str, Any]:
         result: dict[str, Any] = {"welcome_code": str(payload.get("welcome_code") or "").strip()}
@@ -800,11 +894,6 @@ class WeComWelcomeMessageAdapter:
             result["text"] = dict(payload.get("text") or {})
         attachments = list(payload.get("attachments") or []) if isinstance(payload.get("attachments"), list) else []
         if attachments:
-            unresolved = any(isinstance(item, dict) and item.get("material_id") not in (None, "") for item in attachments)
-            if unresolved:
-                if self._material_resolver is None:
-                    raise RuntimeError("wecom_welcome_material_adapter_composition_missing")
-                attachments = list(self._material_resolver(attachments) or [])
             result["attachments"] = attachments
         return result
 
@@ -913,7 +1002,7 @@ class WeComContactTagAdapter:
             return "add_tags_missing"
         if job.effect_type == WECOM_CONTACT_TAG_UNMARK and not remove_tags:
             return "remove_tags_missing"
-        return ""
+        return _configured_wecom_provider_gate(job)
 
     def _build_adapter(self):
         if self._adapter_factory is None:
@@ -1032,7 +1121,7 @@ class WeComProfileUpdateAdapter:
             return "owner_userid_missing"
         if not any(str(payload.get(key) or "").strip() for key in ("remark", "description", "remark_company")) and not payload.get("remark_mobiles"):
             return "profile_update_payload_missing"
-        return ""
+        return _configured_wecom_provider_gate(job)
 
     def _build_adapter(self):
         if self._adapter_factory is None:
@@ -1054,6 +1143,119 @@ class WeComProfileUpdateAdapter:
             error_message=error_message,
             real_external_call_executed=bool(response_summary.get("real_external_call_executed")),
         )
+
+
+class WeComExternalContactDetailAdapter:
+    """Canonical provider-read boundary for identity resolution."""
+
+    def __init__(self, adapter_factory=None) -> None:
+        self._adapter_factory = adapter_factory
+
+    def dispatch(self, job: ExternalEffectJob) -> ExternalEffectDispatchResult:
+        payload = dict(job.payload_json or {})
+        external_userid = str(payload.get("external_userid") or "").strip()
+        request_summary = {
+            "effect_type": job.effect_type,
+            "operation": job.operation,
+            "target_type": job.target_type,
+            "target_hash": "sha256:" + hashlib.sha256(external_userid.encode("utf-8")).hexdigest()
+            if external_userid
+            else "",
+            "external_userid_present": bool(external_userid),
+            "queue_link_present": int(payload.get("queue_id") or 0) > 0,
+            "event_link_present": int(payload.get("event_log_id") or 0) > 0,
+        }
+        gate_error = self._execution_gate_error(job, payload=payload, external_userid=external_userid)
+        if gate_error:
+            return ExternalEffectDispatchResult(
+                status="failed_terminal",
+                adapter_mode=job.execution_mode or "execute",
+                request_summary=request_summary,
+                response_summary={
+                    "blocked": True,
+                    "execution_gate": gate_error,
+                    "real_external_call_executed": False,
+                    "provider_result_received": False,
+                },
+                error_code=gate_error,
+                error_message="WeCom external-contact detail fetch is blocked before provider dispatch.",
+                real_external_call_executed=False,
+                provider_result_received=False,
+            )
+        try:
+            if self._adapter_factory is None:
+                raise RuntimeError("wecom_external_contact_detail_adapter_composition_missing")
+            result = self._adapter_factory().get_external_contact_detail(external_userid)
+        except Exception as exc:
+            error_code, error_message, retryable, response_summary = _wecom_provider_failure(
+                exc,
+                default_error_code="wecom_external_contact_detail_failed",
+                executed_key="wecom_external_contact_detail_executed",
+            )
+            return ExternalEffectDispatchResult(
+                status="failed_retryable" if retryable else "failed_terminal",
+                adapter_mode="execute",
+                request_summary=request_summary,
+                response_summary=response_summary,
+                error_code=error_code,
+                error_message=error_message,
+                real_external_call_executed=bool(response_summary.get("real_external_call_executed")),
+                provider_result_received=False,
+            )
+        detail = dict(result or {})
+        errcode = int(detail.get("errcode") or 0)
+        if errcode != 0:
+            return ExternalEffectDispatchResult(
+                status="failed_terminal",
+                adapter_mode="execute",
+                request_summary=request_summary,
+                response_summary={
+                    "errcode": errcode,
+                    "errmsg_present": bool(str(detail.get("errmsg") or "").strip()),
+                    "real_external_call_executed": True,
+                    "provider_result_received": True,
+                },
+                error_code=f"wecom_errcode_{errcode}",
+                error_message=_safe_error_message(detail.get("errmsg") or "WeCom external-contact detail fetch failed."),
+                real_external_call_executed=True,
+                provider_result_received=True,
+            )
+        provider_detail = {
+            "external_contact": dict(detail.get("external_contact") or {}),
+            "follow_user": [dict(item or {}) for item in list(detail.get("follow_user") or []) if isinstance(item, dict)],
+        }
+        return ExternalEffectDispatchResult(
+            status="succeeded",
+            adapter_mode="execute",
+            request_summary=request_summary,
+            response_summary={
+                "errcode": 0,
+                "provider_detail_present": bool(provider_detail["external_contact"]),
+                "follow_user_count": len(provider_detail["follow_user"]),
+                "real_external_call_executed": True,
+                "provider_result_received": True,
+            },
+            provider_result=provider_detail,
+            real_external_call_executed=True,
+            provider_result_received=True,
+        )
+
+    @staticmethod
+    def _execution_gate_error(
+        job: ExternalEffectJob,
+        *,
+        payload: dict[str, Any],
+        external_userid: str,
+    ) -> str:
+        if job.execution_mode in {"disabled", "shadow", "plan_only", "execute_dryrun"}:
+            return "shadow_only"
+        if job.effect_type != WECOM_EXTERNAL_CONTACT_DETAIL_FETCH:
+            return "unsupported_effect_type"
+        if job.target_type != "external_user" or not external_userid or job.target_id != external_userid:
+            return "target_mismatch"
+        if job.operation != "get_external_contact_detail":
+            return "operation_not_allowed"
+        return _configured_wecom_provider_gate(job)
 
 
 class WeChatPaymentAdapter:

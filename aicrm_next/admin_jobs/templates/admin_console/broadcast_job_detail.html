@@ -1,0 +1,19 @@
+{% extends "admin_console/base.html" %}
+{% from "admin_console/_execution_components.html" import execution_action_dialog %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/admin_execution_ui.css') }}?v=20260717">
+{% endblock %}
+
+{% block content %}
+<section class="execution-page" data-execution-page="broadcast-detail" data-detail-id="{{ job_id }}" data-route-owner="ai_crm_next" data-operator-actor="{{ operator_actor }}">
+  <div class="admin-alert admin-alert--error" data-page-error hidden></div>
+  <div class="admin-state admin-state--loading" data-detail-loading>正在读取群发任务...</div>
+  <section class="execution-detail-grid" data-detail-content hidden></section>
+  {{ execution_action_dialog() }}
+</section>
+{% endblock %}
+
+{% block scripts_extra %}
+<script defer src="{{ url_for('static', filename='admin_console/admin_execution_ui.js') }}?v=20260717"></script>
+{% endblock %}

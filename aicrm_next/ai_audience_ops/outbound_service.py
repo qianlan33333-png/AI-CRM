@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 from typing import Any
+from uuid import uuid4
 
 from aicrm_next.platform_foundation.command_bus.models import CommandContext
 from aicrm_next.platform_foundation.external_effects import ExternalEffectService, WEBHOOK_GENERIC_PUSH
@@ -18,13 +19,13 @@ class AudienceOutboundService:
         self._repo = repository or build_audience_repository()
         self._external_effects = external_effects or ExternalEffectService()
 
-    def plan_for_member_event(self, member_event_id: int) -> dict[str, Any]:
+    def plan_for_member_event(self, member_event_id: int, *, parent_execution_id: str = "", source_event_id: str = "") -> dict[str, Any]:
         event = self._repo.get_member_event(int(member_event_id))
         if not event:
             return {"ok": False, "error": "member_event_not_found", "real_external_call_executed": False}
         run_id = int(event.get("run_id") or 0)
         if run_id > 0 and _text(event.get("event_type")) == "entered":
-            return self.plan_for_run(run_id)
+            return self.plan_for_run(run_id, parent_execution_id=parent_execution_id, source_event_id=source_event_id)
         package = self._repo.get_package(int(event["package_id"]))
         if not package:
             return {"ok": False, "error": "package_not_found", "real_external_call_executed": False}
@@ -64,7 +65,12 @@ class AudienceOutboundService:
                 business_type="ai_audience_member_event",
                 business_id=str(event["id"]),
                 source_module="ai_audience_ops.outbound_service",
-                source_event_id=_text(event.get("internal_event_id")),
+                source_event_id=_text(source_event_id) or _text(event.get("internal_event_id")),
+                execution_id="exe_ai_audience_effect_" + uuid4().hex,
+                parent_execution_id=_text(parent_execution_id),
+                lane="outbound_webhook",
+                ordering_key=f"subscription:{int(subscription['id'])}",
+                fairness_key=_text(package.get("package_key")) or str(package.get("id")),
                 risk_level="medium",
                 requires_approval=bool(subscription.get("requires_approval")),
                 execution_mode=_text(subscription.get("execution_mode")) or "execute",
@@ -87,7 +93,7 @@ class AudienceOutboundService:
             "real_external_call_executed": False,
         }
 
-    def plan_for_run(self, run_id: int) -> dict[str, Any]:
+    def plan_for_run(self, run_id: int, *, parent_execution_id: str = "", source_event_id: str = "") -> dict[str, Any]:
         pending_loader = getattr(self._repo, "list_pending_entered_outbound_batches", None)
         run_loader = getattr(self._repo, "get_run", None)
         if callable(pending_loader) and callable(run_loader):
@@ -98,15 +104,25 @@ class AudienceOutboundService:
             if not package:
                 return {"ok": False, "error": "package_not_found", "real_external_call_executed": False}
             batches = pending_loader(int(package["id"]), run_id=int(run_id), limit=100)
-            return self._plan_pending_batches(package, batches, trigger_run_id=int(run_id))
+            return self._plan_pending_batches(
+                package,
+                batches,
+                trigger_run_id=int(run_id),
+                parent_execution_id=parent_execution_id,
+                source_event_id=source_event_id,
+            )
 
-        return self._plan_for_run_legacy(int(run_id))
+        return self._plan_for_run_legacy(
+            int(run_id),
+            parent_execution_id=parent_execution_id,
+            source_event_id=source_event_id,
+        )
 
-    def plan_for_refresh_run(self, run_id: int) -> dict[str, Any]:
+    def plan_for_refresh_run(self, run_id: int, *, parent_execution_id: str = "", source_event_id: str = "") -> dict[str, Any]:
         run_loader = getattr(self._repo, "get_run", None)
         pending_loader = getattr(self._repo, "list_pending_entered_outbound_batches", None)
         if not callable(run_loader) or not callable(pending_loader):
-            return self.plan_for_run(int(run_id))
+            return self.plan_for_run(int(run_id), parent_execution_id=parent_execution_id, source_event_id=source_event_id)
         run = run_loader(int(run_id))
         if not run:
             return {"ok": False, "error": "run_not_found", "real_external_call_executed": False}
@@ -114,7 +130,13 @@ class AudienceOutboundService:
         if not package:
             return {"ok": False, "error": "package_not_found", "real_external_call_executed": False}
         batches = pending_loader(int(package["id"]), limit=100)
-        return self._plan_pending_batches(package, batches, trigger_run_id=int(run_id))
+        return self._plan_pending_batches(
+            package,
+            batches,
+            trigger_run_id=int(run_id),
+            parent_execution_id=parent_execution_id,
+            source_event_id=source_event_id,
+        )
 
     def _plan_pending_batches(
         self,
@@ -122,6 +144,8 @@ class AudienceOutboundService:
         batches: list[dict[str, Any]],
         *,
         trigger_run_id: int,
+        parent_execution_id: str = "",
+        source_event_id: str = "",
     ) -> dict[str, Any]:
         planned: list[dict[str, Any]] = []
         source_run_ids: set[int] = set()
@@ -173,7 +197,12 @@ class AudienceOutboundService:
                 business_type="ai_audience_package_run",
                 business_id=str(source_run_id),
                 source_module="ai_audience_ops.outbound_service",
-                source_event_id="",
+                source_event_id=_text(source_event_id),
+                execution_id="exe_ai_audience_effect_" + uuid4().hex,
+                parent_execution_id=_text(parent_execution_id),
+                lane="outbound_webhook",
+                ordering_key=f"subscription:{subscription_id}",
+                fairness_key=_text(package.get("package_key")) or str(package.get("id")),
                 risk_level="medium",
                 requires_approval=bool(batch.get("requires_approval")),
                 execution_mode=_text(batch.get("execution_mode")) or "execute",
@@ -201,7 +230,7 @@ class AudienceOutboundService:
             "real_external_call_executed": False,
         }
 
-    def _plan_for_run_legacy(self, run_id: int) -> dict[str, Any]:
+    def _plan_for_run_legacy(self, run_id: int, *, parent_execution_id: str = "", source_event_id: str = "") -> dict[str, Any]:
         entered_events = self._repo.list_member_events_for_run(int(run_id), event_type="entered")
         if not entered_events:
             return {"ok": True, "run_id": int(run_id), "planned_count": 0, "external_effect_jobs": [], "real_external_call_executed": False}
@@ -263,7 +292,12 @@ class AudienceOutboundService:
                 business_type="ai_audience_package_run",
                 business_id=str(run_id),
                 source_module="ai_audience_ops.outbound_service",
-                source_event_id="",
+                source_event_id=_text(source_event_id),
+                execution_id="exe_ai_audience_effect_" + uuid4().hex,
+                parent_execution_id=_text(parent_execution_id),
+                lane="outbound_webhook",
+                ordering_key=f"subscription:{int(subscription['id'])}",
+                fairness_key=_text(package.get("package_key")) or str(package.get("id")),
                 risk_level="medium",
                 requires_approval=bool(subscription.get("requires_approval")),
                 execution_mode=_text(subscription.get("execution_mode")) or "execute",

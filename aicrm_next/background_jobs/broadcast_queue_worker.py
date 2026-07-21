@@ -6,6 +6,13 @@ import json
 from datetime import datetime, timedelta, timezone
 from typing import Any, Protocol
 
+from aicrm_next.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform_foundation.external_effects import (
+    WECOM_MESSAGE_GROUP_SEND,
+    WECOM_MESSAGE_PRIVATE_SEND,
+)
+from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
+
 from aicrm_next.platform_foundation.external_effects.execution_gates import (
     WECOM_EXECUTION_DISABLED_CODE,
     explicit_wecom_execution_disabled,
@@ -36,12 +43,19 @@ class BroadcastQueueRepository(Protocol):
 
 
 class SafeSkippedBroadcastDispatcher:
+    """Compatibility planner; provider ownership belongs to External Effect."""
+
+    def __init__(self, service: ExternalEffectService | None = None) -> None:
+        # Production defers effect insertion to the Broadcast repository so
+        # the owner link and effect rows cross one durability boundary.
+        self._service = service
+
     def dispatch(self, job: dict[str, Any]) -> dict[str, Any]:
         payload = _json_dict(job.get("content_payload"))
         if _is_wecom_private_job(job, payload):
-            return _dispatch_wecom_private(job, payload)
+            return self._plan_private_effects(job, payload)
         if _is_wecom_customer_group_job(job, payload):
-            return _dispatch_wecom_customer_group(job, payload)
+            return self._plan_group_effect(job, payload)
         return {
             "ok": False,
             "status": "skipped",
@@ -54,9 +68,177 @@ class SafeSkippedBroadcastDispatcher:
             "payload_channel": str(payload.get("channel") or ""),
         }
 
+    def _plan_private_effects(self, job: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
+        payload = _with_cloud_plan_recipient_message(payload)
+        target_unionids = _extract_target_unionids(job, payload)
+        external_userids, missing_unionids = _resolve_private_targets_by_unionid(target_unionids)
+        sender = _extract_private_sender(payload)
+        content_text = _extract_private_text(payload)
+        attachments = _json_list(payload.get("attachments")) or _json_list(payload.get("attachments_json"))
+        validation_error = ""
+        if not target_unionids:
+            validation_error = "target_unionids_missing"
+        elif int_value(job.get("target_count")) != len(target_unionids):
+            validation_error = "target_count_mismatch"
+        elif missing_unionids or not external_userids:
+            validation_error = "identity_external_userid_missing"
+        elif not sender:
+            validation_error = "sender_userid_missing"
+        elif not content_text and not attachments:
+            validation_error = "content_text_or_attachment_missing"
+        if validation_error:
+            return {
+                "ok": False,
+                "status": "failed_terminal",
+                "failure_type": "validation_failed",
+                "error": validation_error,
+                "side_effect_executed": False,
+                "provider_result_received": False,
+            }
+        effect_plan_requests: list[dict[str, Any]] = []
+        for target in external_userids:
+            effect_plan_requests.append(
+                _effect_plan_request(
+                    job=job,
+                    effect_type=WECOM_MESSAGE_PRIVATE_SEND,
+                    adapter_name="wecom_private_message",
+                    operation="send_private_message",
+                    target_type="external_contact",
+                    target_id=target,
+                    payload={
+                        "channel": "wecom_private",
+                        "owner_userid": sender,
+                        "sender": sender,
+                        "external_userids": [target],
+                        "content_text": content_text,
+                        "attachments": attachments,
+                        "source": "broadcast_read_model_delegate",
+                    },
+                    payload_summary={
+                        "broadcast_job_id": int_value(job.get("id")),
+                        "external_userid_count": 1,
+                        "content_text_length": len(content_text),
+                        "attachment_count": len(attachments),
+                    },
+                    idempotency_suffix=f"private:{target}",
+                    ordering_key=f"external_contact:{target}",
+                )
+            )
+        effect_ids = self._plan_for_injected_repository(effect_plan_requests)
+        return {
+            "ok": True,
+            "status": "delegated",
+            "task_type": "broadcast_job/external_effect_delegate",
+            "external_effect_job_ids": effect_ids,
+            "effect_plan_requests": [] if effect_ids else effect_plan_requests,
+            "target_count": len(effect_plan_requests),
+            "side_effect_executed": False,
+            "provider_result_received": False,
+            "request_payload": {"broadcast_job_id": int_value(job.get("id"))},
+            "response_payload": {"external_effect_job_ids": effect_ids} if effect_ids else {},
+        }
+
+    def _plan_group_effect(self, job: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
+        chat_ids = [_text(item) for item in _json_list(payload.get("chat_ids")) if _text(item)]
+        sender = _text(payload.get("sender") or payload.get("owner_userid"))
+        if not chat_ids or not sender:
+            return {
+                "ok": False,
+                "status": "failed_terminal",
+                "failure_type": "broadcast_external_effect_contract_invalid",
+                "error": "broadcast job could not be converted to a group external effect",
+                "side_effect_executed": False,
+                "provider_result_received": False,
+            }
+        effect_plan_requests = [
+            _effect_plan_request(
+                job=job,
+                effect_type=WECOM_MESSAGE_GROUP_SEND,
+                adapter_name="wecom_group_message",
+                operation="send_group_message",
+                target_type="broadcast_job",
+                target_id=str(int_value(job.get("id"))),
+                payload={
+                    "chat_ids": chat_ids,
+                    "owner_userid": sender,
+                    "sender": sender,
+                    "content_payload": payload,
+                    "mention_all": False,
+                    "source": "broadcast_read_model_delegate",
+                },
+                payload_summary={
+                    "broadcast_job_id": int_value(job.get("id")),
+                    "chat_count": len(chat_ids),
+                },
+                idempotency_suffix="group",
+                ordering_key=f"broadcast_job:{int_value(job.get('id'))}",
+            )
+        ]
+        effect_ids = self._plan_for_injected_repository(effect_plan_requests)
+        return {
+            "ok": True,
+            "status": "delegated",
+            "task_type": "broadcast_job/external_effect_delegate",
+            "external_effect_job_ids": effect_ids,
+            "effect_plan_requests": [] if effect_ids else effect_plan_requests,
+            "target_count": len(chat_ids),
+            "side_effect_executed": False,
+            "provider_result_received": False,
+            "request_payload": {"broadcast_job_id": int_value(job.get("id"))},
+            "response_payload": {"external_effect_job_ids": effect_ids} if effect_ids else {},
+        }
+
+    def _plan_for_injected_repository(self, requests: list[dict[str, Any]]) -> list[int]:
+        if self._service is None:
+            return []
+        return [int(self._service.plan_effect(**request)["id"]) for request in requests]
+
+
+def _effect_plan_request(
+    *,
+    job: dict[str, Any],
+    effect_type: str,
+    adapter_name: str,
+    operation: str,
+    target_type: str,
+    target_id: str,
+    payload: dict[str, Any],
+    payload_summary: dict[str, Any],
+    idempotency_suffix: str,
+    ordering_key: str,
+) -> dict[str, Any]:
+    job_id = int_value(job.get("id"))
+    return {
+        "effect_type": effect_type,
+        "adapter_name": adapter_name,
+        "operation": operation,
+        "target_type": target_type,
+        "target_id": target_id,
+        "business_type": "broadcast_job",
+        "business_id": str(job_id),
+        "payload": payload,
+        "payload_summary": payload_summary,
+        "context": CommandContext(
+            actor_id=_text(job.get("created_by")) or "broadcast_effect_delegate",
+            actor_type="system",
+            request_id=_text(job.get("idempotency_key")),
+            trace_id=_text(job.get("trace_id")),
+            source_route="broadcast_effect_delegate",
+        ),
+        "source_module": "background_jobs.broadcast_effect_delegate",
+        "source_command_id": str(job_id),
+        "status": "queued",
+        "idempotency_key": f"broadcast-effect:{job_id}:{idempotency_suffix}",
+        "parent_execution_id": _text(job.get("execution_id")),
+        "lane": "wecom_bulk",
+        "ordering_key": ordering_key,
+        "fairness_key": f"broadcast:{_text(job.get('batch_key')) or job_id}",
+    }
+
 
 class PostgresBroadcastQueueRepository:
     _FINAL_STATUSES = {
+        "delegated",
         "sent",
         "simulated",
         "failed_retryable",
@@ -80,6 +262,8 @@ class PostgresBroadcastQueueRepository:
                     SELECT id
                     FROM broadcast_jobs
                     WHERE scheduled_for <= %s
+                      AND hold_reason = ''
+                      AND attempt_count < max_attempts
                       AND (
                         status = 'queued'
                         OR (
@@ -124,6 +308,7 @@ class PostgresBroadcastQueueRepository:
                     reconciliation_required = FALSE,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = %s
+                  AND hold_reason = ''
                   AND status = 'claimed'
                   AND claim_token = %s
                 RETURNING *
@@ -187,6 +372,12 @@ class PostgresBroadcastQueueRepository:
         reconciliation_required = final_status == "unknown_after_dispatch"
         request_payload = _json_dict(outcome.get("request_payload"))
         response_payload = _json_dict(outcome.get("response_payload"))
+        external_effect_job_ids = [
+            int_value(item)
+            for item in _json_list(outcome.get("external_effect_job_ids") or response_payload.get("external_effect_job_ids"))
+            if int_value(item) > 0
+        ]
+        external_effect_job_id = external_effect_job_ids[0] if external_effect_job_ids else None
         wecom_task_id = _text(
             outcome.get("wecom_msgid")
             or response_payload.get("wecom_msgid")
@@ -210,6 +401,20 @@ class PostgresBroadcastQueueRepository:
             ).fetchone()
             if not job:
                 return None
+            deferred_effect_requests = [item for item in list(outcome.get("effect_plan_requests") or []) if isinstance(item, dict)]
+            if deferred_effect_requests:
+                external_effect_job_ids = [int(ExternalEffectService().plan_effect(connection=conn, **request)["id"]) for request in deferred_effect_requests]
+                external_effect_job_id = external_effect_job_ids[0]
+                response_payload = {
+                    **response_payload,
+                    "external_effect_job_ids": external_effect_job_ids,
+                }
+                outcome["external_effect_job_ids"] = external_effect_job_ids
+            if final_status == "failed_retryable" and int_value(job.get("attempt_count")) >= max(1, int_value(job.get("max_attempts"))):
+                final_status = "failed_terminal"
+                failure_type = failure_type or "max_attempts_exhausted"
+                if not error_text:
+                    error_text = "Broadcast retry budget exhausted before provider dispatch succeeded."
             self._fault("before_outbound_task")
             outbound_task = conn.execute(
                 """
@@ -289,12 +494,14 @@ class PostgresBroadcastQueueRepository:
                     provider_result_received = %s,
                     result_summary_json = CAST(%s AS jsonb),
                     reconciliation_required = %s,
+                    external_effect_job_id = COALESCE(external_effect_job_id, %s),
+                    execution_owner = CASE WHEN CAST(%s AS BIGINT) IS NULL THEN execution_owner ELSE 'external_effect_job' END,
                     claim_token = '',
                     lease_expires_at = NULL
                     ,next_retry_at = CASE WHEN %s = 'failed_retryable'
                         THEN CURRENT_TIMESTAMP + (%s * INTERVAL '1 second') ELSE NULL END
                     ,sent_at = CASE WHEN %s = 'sent' THEN CURRENT_TIMESTAMP ELSE NULL END
-                    ,completed_at = CASE WHEN %s = 'failed_retryable' THEN NULL ELSE CURRENT_TIMESTAMP END
+                    ,completed_at = CASE WHEN %s IN ('failed_retryable', 'delegated') THEN NULL ELSE CURRENT_TIMESTAMP END
                     ,updated_at = CURRENT_TIMESTAMP
                 WHERE id = %s
                   AND status = 'dispatching'
@@ -312,6 +519,8 @@ class PostgresBroadcastQueueRepository:
                     provider_result_received,
                     _json_dumps(result_summary),
                     reconciliation_required,
+                    external_effect_job_id,
+                    external_effect_job_id,
                     final_status,
                     retry_delay_seconds,
                     final_status,
@@ -427,6 +636,7 @@ def _summary(*, limit: int, dry_run: bool) -> dict[str, Any]:
         "dry_run": bool(dry_run),
         "scanned_at": utcnow().isoformat(),
         "claimed": 0,
+        "delegated": 0,
         "sent_ok": 0,
         "simulated": 0,
         "sent_failed": 0,
@@ -474,14 +684,15 @@ def _normalize_dispatch_outcome(job: dict[str, Any], raw: Any) -> dict[str, Any]
         if provider_explicit
         else side_effect_executed
         and bool(
-            _json_dict(response_payload.get("result"))
-            or outcome.get("wecom_msgid")
-            or response_payload.get("wecom_msgid")
-            or response_payload.get("msgid")
+            _json_dict(response_payload.get("result")) or outcome.get("wecom_msgid") or response_payload.get("wecom_msgid") or response_payload.get("msgid")
         )
     )
     simulated = raw_status == "simulated" or _is_simulated_success(outcome)
-    if simulated:
+    if raw_status == "delegated" and outcome.get("ok"):
+        final_status = "delegated"
+        side_effect_executed = False
+        provider_result_received = False
+    elif simulated:
         final_status = "simulated"
         side_effect_executed = False
         provider_result_received = False
@@ -510,7 +721,7 @@ def _normalize_dispatch_outcome(job: dict[str, Any], raw: Any) -> dict[str, Any]
     if final_status == "sent" and sent_count == 0:
         sent_count = target_count
     failed_count = int_value(outcome.get("failed_count"))
-    if final_status not in {"sent", "simulated"} and failed_count == 0:
+    if final_status not in {"delegated", "sent", "simulated"} and failed_count == 0:
         failed_count = target_count
     return {
         **outcome,
@@ -621,22 +832,12 @@ def _resolve_private_targets_by_unionid(unionids: list[str]) -> tuple[list[str],
 def _extract_private_text(payload: dict[str, Any]) -> str:
     rendered = payload.get("rendered_content") if isinstance(payload.get("rendered_content"), dict) else {}
     step = payload.get("step") if isinstance(payload.get("step"), dict) else {}
-    return _text(
-        rendered.get("content_text")
-        or rendered.get("text")
-        or payload.get("content_text")
-        or payload.get("text")
-        or step.get("content_text")
-    )
+    return _text(rendered.get("content_text") or rendered.get("text") or payload.get("content_text") or payload.get("text") or step.get("content_text"))
 
 
 def _configured_wecom_sender(fallback: str = "") -> str:
     raw = runtime_setting("AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS", "")
-    candidates = [
-        item.strip()
-        for item in raw.replace("\n", ",").replace(" ", ",").split(",")
-        if item.strip()
-    ]
+    candidates = [item.strip() for item in raw.replace("\n", ",").replace(" ", ",").split(",") if item.strip()]
     return candidates[0] if candidates else _text(fallback)
 
 
@@ -742,7 +943,9 @@ def _extract_private_content_package(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def _resolve_private_attachments(content_package: dict[str, Any]) -> list[dict[str, Any]]:
-    if not any(_json_list(content_package.get(key)) for key in ("image_library_ids", "miniprogram_library_ids", "attachment_library_ids", "group_invite_library_ids")):
+    if not any(
+        _json_list(content_package.get(key)) for key in ("image_library_ids", "miniprogram_library_ids", "attachment_library_ids", "group_invite_library_ids")
+    ):
         return []
     from aicrm_next.automation_engine.group_ops.integration_gateway import resolve_group_ops_content_package_materials
 
@@ -771,8 +974,7 @@ def _normalize_private_attachments_for_wecom(attachments: list[dict[str, Any]]) 
 
 
 def _dispatch_wecom_private(job: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
-    from aicrm_next.integration_gateway.wecom_private_adapter import build_wecom_private_message_adapter
-
+    raise RuntimeError("retired_direct_broadcast_dispatch_use_external_effect")
     if explicit_wecom_execution_disabled():
         return {
             "ok": False,
@@ -879,10 +1081,7 @@ def _dispatch_wecom_private(job: dict[str, Any], payload: dict[str, Any]) -> dic
         adapter_payload["text"] = {"content": content_text}
     if attachments:
         adapter_payload["attachments"] = attachments
-    result = build_wecom_private_message_adapter().create_private_message_task(
-        adapter_payload,
-        idempotency_key=_text(job.get("idempotency_key") or job.get("trace_id") or job.get("id")),
-    )
+    result: dict[str, Any] = {}
     failure_type = _text(result.get("error_code")) or "handler_error"
     simulated = _is_simulated_success(result)
     side_effect_executed = bool(result.get("side_effect_executed"))
@@ -922,8 +1121,7 @@ def _dispatch_wecom_private(job: dict[str, Any], payload: dict[str, Any]) -> dic
 
 
 def _dispatch_wecom_customer_group(job: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
-    from aicrm_next.integration_gateway.wecom_group_adapter import build_wecom_group_message_adapter
-
+    raise RuntimeError("retired_direct_broadcast_dispatch_use_external_effect")
     if explicit_wecom_execution_disabled():
         return {
             "ok": False,
@@ -934,10 +1132,7 @@ def _dispatch_wecom_customer_group(job: dict[str, Any], payload: dict[str, Any])
             "task_type": "broadcast_job/wecom_group",
         }
     try:
-        result = build_wecom_group_message_adapter().create_group_message_task(
-            payload,
-            idempotency_key=str(job.get("idempotency_key") or job.get("trace_id") or job.get("id") or ""),
-        )
+        result: dict[str, Any] = {}
     except ValueError as exc:
         return {
             "ok": False,
@@ -1008,7 +1203,12 @@ def run_broadcast_queue_worker(
     if int(limit) <= 0:
         return {**summary, "ok": False, "errors": [{"code": "invalid_limit", "message": "limit must be >= 1"}]}
     if dry_run and repo is None:
-        return {**summary, "status": "skipped", "skipped": 1, "skipped_components": [{"component": "postgres_repository", "status": "skipped", "reason": "dry_run"}]}
+        return {
+            **summary,
+            "status": "skipped",
+            "skipped": 1,
+            "skipped_components": [{"component": "postgres_repository", "status": "skipped", "reason": "dry_run"}],
+        }
     if repo is None and not has_database_url():
         return {**summary, "ok": False, "errors": [{"code": "database_url_missing", "message": "DATABASE_URL is required"}]}
 
@@ -1088,6 +1288,8 @@ def run_broadcast_queue_worker(
                 status = _text(outcome.get("status"))
                 if status == "sent":
                     summary["sent_ok"] += 1
+                elif status == "delegated":
+                    summary["delegated"] += 1
                 elif status == "simulated":
                     summary["simulated"] += 1
                 else:
@@ -1100,6 +1302,14 @@ def run_broadcast_queue_worker(
                 result_item = {"id": job_id, "status": status}
                 if status == "sent":
                     result_item["sent_count"] = int_value(outcome.get("sent_count"))
+                elif status == "delegated":
+                    result_item.update(
+                        {
+                            "target_count": int_value(outcome.get("target_count")),
+                            "external_effect_job_ids": list(outcome.get("external_effect_job_ids") or []),
+                            "side_effect_executed": False,
+                        }
+                    )
                 elif status == "simulated":
                     result_item.update(
                         {

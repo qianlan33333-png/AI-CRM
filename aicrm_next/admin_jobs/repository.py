@@ -37,6 +37,7 @@ class AdminJobsRepository(Protocol):
     def message_batch_counts(self) -> dict[str, int]: ...
     def get_message_batch(self, batch_id: int) -> dict[str, Any] | None: ...
     def list_batch_messages(self, batch_id: int, *, limit: int = 50) -> list[dict[str, Any]]: ...
+    def count_batch_messages(self, batch_id: int) -> int: ...
     def ack_message_batch(self, batch_id: int, *, ack_note: str, acked_by: str) -> dict[str, Any] | None: ...
     def list_deferred_jobs(self, *, status: str = "", owner_userid: str = "", external_userid: str = "", limit: int = 20) -> list[dict[str, Any]]: ...
     def deferred_job_counts(self) -> dict[str, int]: ...
@@ -46,7 +47,8 @@ class AdminJobsRepository(Protocol):
     def update_webhook_delivery(self, delivery_id: int, updates: dict[str, Any]) -> dict[str, Any] | None: ...
     def due_webhook_deliveries(self, *, limit: int) -> list[dict[str, Any]]: ...
     def list_broadcast_jobs(self, *, statuses: list[str] | None = None, source_types: list[str] | None = None, limit: int = 50, offset: int = 0) -> list[dict[str, Any]]: ...
-    def broadcast_counts(self) -> dict[str, int]: ...
+    def broadcast_total(self, *, statuses: list[str] | None = None, source_types: list[str] | None = None) -> int: ...
+    def broadcast_counts(self, *, statuses: list[str] | None = None, source_types: list[str] | None = None) -> dict[str, int]: ...
     def get_broadcast_job(self, job_id: int) -> dict[str, Any] | None: ...
     def approve_broadcast_job(self, job_id: int, *, approved_by: str) -> dict[str, Any] | None: ...
     def cancel_broadcast_job(self, job_id: int, *, cancelled_by: str, reason: str) -> dict[str, Any] | None: ...
@@ -248,6 +250,10 @@ class PostgresAdminJobsRepository:
             (batch_id, limit),
         )
 
+    def count_batch_messages(self, batch_id: int) -> int:
+        row = self._one("SELECT COUNT(*) AS total FROM broadcast_job_events WHERE job_id = %s", (batch_id,))
+        return int((row or {}).get("total") or 0)
+
     def ack_message_batch(self, batch_id: int, *, ack_note: str, acked_by: str) -> dict[str, Any] | None:
         return self._execute_returning(
             """
@@ -402,8 +408,47 @@ class PostgresAdminJobsRepository:
             tuple(params),
         )
 
-    def broadcast_counts(self) -> dict[str, int]:
-        return _status_counts(self._rows("SELECT status, COUNT(*) AS cnt FROM broadcast_jobs GROUP BY status"))
+    def broadcast_total(
+        self,
+        *,
+        statuses: list[str] | None = None,
+        source_types: list[str] | None = None,
+    ) -> int:
+        where: list[str] = []
+        params: list[Any] = []
+        if statuses:
+            where.append("status = ANY(%s)")
+            params.append(statuses)
+        if source_types:
+            where.append("source_type = ANY(%s)")
+            params.append(source_types)
+        where_sql = " WHERE " + " AND ".join(where) if where else ""
+        row = self._one("SELECT COUNT(*) AS total FROM broadcast_jobs" + where_sql, tuple(params))
+        return int((row or {}).get("total") or 0)
+
+    def broadcast_counts(
+        self,
+        *,
+        statuses: list[str] | None = None,
+        source_types: list[str] | None = None,
+    ) -> dict[str, int]:
+        where: list[str] = []
+        params: list[Any] = []
+        if statuses:
+            where.append("status = ANY(%s)")
+            params.append(statuses)
+        if source_types:
+            where.append("source_type = ANY(%s)")
+            params.append(source_types)
+        where_sql = " WHERE " + " AND ".join(where) if where else ""
+        return _status_counts(
+            self._rows(
+                "SELECT status, COUNT(*) AS cnt FROM broadcast_jobs"
+                + where_sql
+                + " GROUP BY status",
+                tuple(params),
+            )
+        )
 
     def broadcast_hourly_summary(self, *, window_start: datetime, window_end: datetime) -> dict[str, int]:
         row = self._one(
@@ -554,9 +599,16 @@ def _count_row(row: dict[str, Any] | None) -> dict[str, int]:
 
 
 def _status_counts(rows: list[dict[str, Any]]) -> dict[str, int]:
-    counts = {status: 0 for status in (*BROADCAST_STATUSES, "pending", "running", "success", "conflict", "skipped")}
+    statuses = (*BROADCAST_STATUSES, "pending", "running", "success", "conflict", "skipped")
+    counts = {status: 0 for status in statuses}
+    counts.update({f"{status}_count": 0 for status in statuses})
+    counts["total_count"] = 0
     for row in rows:
-        counts[str(row.get("status") or "")] = int(row.get("cnt") or row.get("count") or 0)
+        status = str(row.get("status") or "")
+        value = int(row.get("cnt") or row.get("count") or 0)
+        counts[status] = value
+        counts[f"{status}_count"] = value
+        counts["total_count"] += value
     return counts
 
 
@@ -641,6 +693,9 @@ class FixtureAdminJobsRepository:
     def list_batch_messages(self, batch_id: int, *, limit: int = 50) -> list[dict[str, Any]]:
         return copy.deepcopy((self.messages.get(int(batch_id)) or [])[:limit])
 
+    def count_batch_messages(self, batch_id: int) -> int:
+        return len(self.messages.get(int(batch_id)) or [])
+
     def ack_message_batch(self, batch_id: int, *, ack_note: str, acked_by: str) -> dict[str, Any] | None:
         for row in self.batches:
             if int(row["id"]) == int(batch_id):
@@ -682,8 +737,37 @@ class FixtureAdminJobsRepository:
             rows = [row for row in rows if row["source_type"] in source_types]
         return copy.deepcopy(rows[offset : offset + limit])
 
-    def broadcast_counts(self) -> dict[str, int]:
-        return _simple_counts(self.broadcast_jobs, "status", total_name="total_count")
+    def broadcast_total(
+        self,
+        *,
+        statuses: list[str] | None = None,
+        source_types: list[str] | None = None,
+    ) -> int:
+        rows = self.broadcast_jobs
+        if statuses:
+            rows = [row for row in rows if row["status"] in statuses]
+        if source_types:
+            rows = [row for row in rows if row["source_type"] in source_types]
+        return len(rows)
+
+    def broadcast_counts(
+        self,
+        *,
+        statuses: list[str] | None = None,
+        source_types: list[str] | None = None,
+    ) -> dict[str, int]:
+        rows = self.broadcast_jobs
+        if statuses:
+            rows = [row for row in rows if row["status"] in statuses]
+        if source_types:
+            rows = [row for row in rows if row["source_type"] in source_types]
+        grouped: dict[str, int] = {}
+        for row in rows:
+            status = str(row.get("status") or "")
+            grouped[status] = grouped.get(status, 0) + 1
+        return _status_counts(
+            [{"status": status, "cnt": count} for status, count in grouped.items()]
+        )
 
     def broadcast_hourly_summary(self, *, window_start: datetime, window_end: datetime) -> dict[str, int]:
         rows = []

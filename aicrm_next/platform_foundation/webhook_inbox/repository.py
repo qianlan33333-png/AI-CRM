@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 import json
 from typing import Any, Protocol
-from uuid import UUID
+from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
 
 from aicrm_next.shared.runtime import raw_database_url
@@ -50,11 +50,7 @@ def _filter_datetime(value: Any) -> datetime | None:
 
 def _is_time_sensitive_callback(row: dict[str, Any]) -> bool:
     summary = row.get("payload_summary_json") or {}
-    return bool(
-        isinstance(summary, dict)
-        and summary.get("welcome_code_present") is True
-        and summary.get("state_present") is True
-    )
+    return bool(isinstance(summary, dict) and summary.get("welcome_code_present") is True and summary.get("state_present") is True)
 
 
 def _due_priority(row: dict[str, Any], *, now: datetime) -> tuple[int, datetime, int]:
@@ -120,8 +116,7 @@ def _json(value: Any) -> Any:
 
 
 class WebhookInboxRepository(Protocol):
-    def ingest(self, **kwargs: Any) -> dict[str, Any]:
-        ...
+    def ingest(self, **kwargs: Any) -> dict[str, Any]: ...
 
     def upsert_received(
         self,
@@ -143,50 +138,52 @@ class WebhookInboxRepository(Protocol):
         payload_json: dict[str, Any],
         payload_summary_json: dict[str, Any],
         max_attempts: int = 8,
-    ) -> dict[str, Any]:
-        ...
+    ) -> dict[str, Any]: ...
 
-    def preview_due(self, *, provider: str, limit: int = 50) -> list[dict[str, Any]]:
-        ...
+    def preview_due(self, *, provider: str, limit: int = 50) -> list[dict[str, Any]]: ...
 
-    def list_items(self, filters: dict[str, Any] | None = None, *, limit: int = 50, offset: int = 0) -> list[dict[str, Any]]:
-        ...
+    def list_items(self, filters: dict[str, Any] | None = None, *, limit: int = 50, offset: int = 0) -> list[dict[str, Any]]: ...
 
-    def get_item(self, inbox_id: int) -> dict[str, Any] | None:
-        ...
+    def get_item(self, inbox_id: int) -> dict[str, Any] | None: ...
 
-    def claim_due(self, *, provider: str, limit: int = 50, locked_by: str = "webhook-inbox-worker") -> list[dict[str, Any]]:
-        ...
+    def claim_due(self, *, provider: str, limit: int = 50, locked_by: str = "webhook-inbox-worker") -> list[dict[str, Any]]: ...
 
-    def claim_one(self, inbox_id: int, *, locked_by: str = "webhook-inbox-worker") -> dict[str, Any] | None:
-        ...
+    def claim_one(self, inbox_id: int, *, locked_by: str = "webhook-inbox-worker") -> dict[str, Any] | None: ...
 
-    def acquire_due(self, *, provider: str, limit: int = 50, locked_by: str = "webhook-inbox-worker") -> list[dict[str, Any]]:
-        ...
+    def acquire_due(self, *, provider: str, limit: int = 50, locked_by: str = "webhook-inbox-worker") -> list[dict[str, Any]]: ...
 
-    def mark_succeeded(self, inbox_id: int, *, processing_summary_json: dict[str, Any] | None = None) -> dict[str, Any] | None:
-        ...
+    def mark_succeeded(
+        self,
+        inbox_id: int,
+        *,
+        processing_summary_json: dict[str, Any] | None = None,
+        expected_lease_token: str = "",
+        expected_generation: int = 0,
+    ) -> dict[str, Any] | None: ...
 
-    def mark_failed(self, inbox_id: int, *, error_code: str, error_message: str, retryable: bool, next_retry_at: datetime | None = None) -> dict[str, Any] | None:
-        ...
+    def mark_failed(
+        self,
+        inbox_id: int,
+        *,
+        error_code: str,
+        error_message: str,
+        retryable: bool,
+        next_retry_at: datetime | None = None,
+        expected_lease_token: str = "",
+        expected_generation: int = 0,
+    ) -> dict[str, Any] | None: ...
 
-    def mark_failed_retryable(self, inbox_id: int, *, error_code: str, error_message: str, next_retry_at: datetime | None = None) -> dict[str, Any] | None:
-        ...
+    def mark_failed_retryable(self, inbox_id: int, *, error_code: str, error_message: str, next_retry_at: datetime | None = None) -> dict[str, Any] | None: ...
 
-    def mark_failed_terminal(self, inbox_id: int, *, error_code: str, error_message: str) -> dict[str, Any] | None:
-        ...
+    def mark_failed_terminal(self, inbox_id: int, *, error_code: str, error_message: str) -> dict[str, Any] | None: ...
 
-    def mark_dead_letter(self, inbox_id: int, *, error_code: str = "", error_message: str = "") -> dict[str, Any] | None:
-        ...
+    def mark_dead_letter(self, inbox_id: int, *, error_code: str = "", error_message: str = "") -> dict[str, Any] | None: ...
 
-    def mark_retryable_now(self, inbox_id: int, *, reason: str = "") -> dict[str, Any] | None:
-        ...
+    def mark_retryable_now(self, inbox_id: int, *, reason: str = "") -> dict[str, Any] | None: ...
 
-    def mark_ignored(self, inbox_id: int, *, reason: str = "") -> dict[str, Any] | None:
-        ...
+    def mark_ignored(self, inbox_id: int, *, reason: str = "") -> dict[str, Any] | None: ...
 
-    def queue_metrics(self, filters: dict[str, Any] | None = None) -> dict[str, Any]:
-        ...
+    def queue_metrics(self, filters: dict[str, Any] | None = None) -> dict[str, Any]: ...
 
 
 class PostgresWebhookInboxRepository:
@@ -223,6 +220,8 @@ class PostgresWebhookInboxRepository:
                 INSERT INTO webhook_inbox (
                     provider, event_family, route, method, tenant_id, corp_id,
                     event_type, change_type, external_event_id, idempotency_key,
+                    execution_id, parent_execution_id, lane, available_at,
+                    ordering_key, fairness_key, policy_version,
                     raw_query_json, raw_headers_json, raw_body, payload_xml,
                     payload_json, payload_summary_json, processing_summary_json, status, max_attempts,
                     received_at, last_seen_at, created_at, updated_at
@@ -230,6 +229,8 @@ class PostgresWebhookInboxRepository:
                 VALUES (
                     %s, %s, %s, %s, %s, %s,
                     %s, %s, %s, %s,
+                    %s, '', 'webhook_inbox', CURRENT_TIMESTAMP, %s, %s,
+                    (SELECT policy_version FROM queue_runtime_control WHERE singleton = TRUE FOR SHARE),
                     %s, %s, %s, %s,
                     %s, %s, '{}'::jsonb, 'received', %s,
                     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
@@ -257,6 +258,14 @@ class PostgresWebhookInboxRepository:
                     _text(change_type),
                     _text(external_event_id),
                     _text(idempotency_key),
+                    "exe_" + uuid4().hex,
+                    ":".join(
+                        (
+                            _text(provider),
+                            _text(corp_id) or _text(external_event_id) or _text(idempotency_key),
+                        )
+                    ),
+                    f"{_text(provider)}:{_text(event_family)}",
                     _json(raw_query_json),
                     _json(raw_headers_json),
                     bytes(raw_body or b""),
@@ -274,9 +283,10 @@ class PostgresWebhookInboxRepository:
         with _connect(self._database_url) as conn, conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT *
+                SELECT webhook_inbox.*, xmin::text AS row_version
                 FROM webhook_inbox
                 WHERE provider = %s
+                  AND hold_reason = ''
                   AND (
                     (
                       status IN ('received', 'failed_retryable')
@@ -328,7 +338,7 @@ class PostgresWebhookInboxRepository:
         with _connect(self._database_url) as conn, conn.cursor() as cur:
             cur.execute(
                 f"""
-                SELECT *
+                SELECT webhook_inbox.*, xmin::text AS row_version
                 FROM webhook_inbox
                 {where_sql}
                 ORDER BY received_at DESC, id DESC
@@ -342,7 +352,7 @@ class PostgresWebhookInboxRepository:
         with _connect(self._database_url) as conn, conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT *
+                SELECT webhook_inbox.*, xmin::text AS row_version
                 FROM webhook_inbox
                 WHERE id = %s
                 LIMIT 1
@@ -360,6 +370,7 @@ class PostgresWebhookInboxRepository:
                     SELECT id
                     FROM webhook_inbox
                     WHERE provider = %s
+                      AND hold_reason = ''
                       AND (
                         (
                           status IN ('received', 'failed_retryable')
@@ -410,6 +421,7 @@ class PostgresWebhookInboxRepository:
                     started_at = COALESCE(started_at, CURRENT_TIMESTAMP),
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = %s
+                  AND hold_reason = ''
                   AND status IN ('received', 'failed_retryable')
                   AND (next_retry_at IS NULL OR next_retry_at <= CURRENT_TIMESTAMP)
                   AND (locked_at IS NULL OR locked_at <= CURRENT_TIMESTAMP - INTERVAL '5 minutes')
@@ -424,7 +436,14 @@ class PostgresWebhookInboxRepository:
     def acquire_due(self, *, provider: str, limit: int = 50, locked_by: str = "webhook-inbox-worker") -> list[dict[str, Any]]:
         return self.claim_due(provider=provider, limit=limit, locked_by=locked_by)
 
-    def mark_succeeded(self, inbox_id: int, *, processing_summary_json: dict[str, Any] | None = None) -> dict[str, Any] | None:
+    def mark_succeeded(
+        self,
+        inbox_id: int,
+        *,
+        processing_summary_json: dict[str, Any] | None = None,
+        expected_lease_token: str = "",
+        expected_generation: int = 0,
+    ) -> dict[str, Any] | None:
         with _connect(self._database_url) as conn, conn.cursor() as cur:
             cur.execute(
                 """
@@ -436,20 +455,48 @@ class PostgresWebhookInboxRepository:
                     END,
                     locked_at = NULL,
                     locked_by = '',
+                    lease_token = '',
+                    lease_expires_at = NULL,
+                    heartbeat_at = NULL,
                     last_error_code = '',
                     last_error_message = '',
                     finished_at = CURRENT_TIMESTAMP,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = %s
+                  AND (%s = 0 OR status = 'processing')
+                  AND (%s = '' OR lease_token = %s)
+                  AND (
+                      %s = 0
+                      OR (worker_generation = %s AND lease_expires_at > CURRENT_TIMESTAMP)
+                  )
                 RETURNING *
                 """,
-                (processing_summary_json is not None, _json(processing_summary_json or {}), int(inbox_id)),
+                (
+                    processing_summary_json is not None,
+                    _json(processing_summary_json or {}),
+                    int(inbox_id),
+                    int(expected_generation),
+                    _text(expected_lease_token),
+                    _text(expected_lease_token),
+                    int(expected_generation),
+                    int(expected_generation),
+                ),
             )
             row = cur.fetchone()
             conn.commit()
             return dict(row) if row else None
 
-    def mark_failed(self, inbox_id: int, *, error_code: str, error_message: str, retryable: bool, next_retry_at: datetime | None = None) -> dict[str, Any] | None:
+    def mark_failed(
+        self,
+        inbox_id: int,
+        *,
+        error_code: str,
+        error_message: str,
+        retryable: bool,
+        next_retry_at: datetime | None = None,
+        expected_lease_token: str = "",
+        expected_generation: int = 0,
+    ) -> dict[str, Any] | None:
         status_sql = """
             CASE
                 WHEN NOT %s THEN 'failed_terminal'
@@ -467,8 +514,19 @@ class PostgresWebhookInboxRepository:
                         WHEN %s AND attempt_count + 1 < max_attempts THEN %s
                         ELSE NULL
                     END,
+                    available_at = CASE
+                        WHEN %s AND attempt_count + 1 < max_attempts THEN %s
+                        ELSE available_at
+                    END,
                     locked_at = NULL,
                     locked_by = '',
+                    lease_token = '',
+                    lease_expires_at = NULL,
+                    heartbeat_at = NULL,
+                    worker_generation = CASE
+                        WHEN %s AND attempt_count + 1 < max_attempts THEN 0
+                        ELSE worker_generation
+                    END,
                     last_error_code = %s,
                     last_error_message = %s,
                     finished_at = CASE
@@ -477,16 +535,30 @@ class PostgresWebhookInboxRepository:
                     END,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = %s
+                  AND (%s = 0 OR status = 'processing')
+                  AND (%s = '' OR lease_token = %s)
+                  AND (
+                      %s = 0
+                      OR (worker_generation = %s AND lease_expires_at > CURRENT_TIMESTAMP)
+                  )
                 RETURNING *
                 """,
                 (
                     bool(retryable),
                     bool(retryable),
                     next_retry_at,
+                    bool(retryable),
+                    next_retry_at,
+                    bool(retryable),
                     _text(error_code)[:120],
                     _text(error_message)[:2000],
                     bool(retryable),
                     int(inbox_id),
+                    int(expected_generation),
+                    _text(expected_lease_token),
+                    _text(expected_lease_token),
+                    int(expected_generation),
+                    int(expected_generation),
                 ),
             )
             row = cur.fetchone()
@@ -540,8 +612,13 @@ class PostgresWebhookInboxRepository:
                 UPDATE webhook_inbox
                 SET status = 'failed_retryable',
                     next_retry_at = CURRENT_TIMESTAMP,
+                    available_at = CURRENT_TIMESTAMP,
                     locked_at = NULL,
                     locked_by = '',
+                    lease_token = '',
+                    lease_expires_at = NULL,
+                    heartbeat_at = NULL,
+                    worker_generation = 0,
                     last_error_code = 'operator_retry',
                     last_error_message = %s,
                     finished_at = NULL,
@@ -605,18 +682,39 @@ class PostgresWebhookInboxRepository:
                 f"""
                 SELECT
                     COUNT(*) FILTER (
+                        WHERE status IN ('received', 'processing', 'failed_retryable')
+                    ) AS raw_open_count,
+                    COUNT(*) FILTER (
+                        WHERE hold_reason <> '' AND status IN ('received', 'processing', 'failed_retryable')
+                    ) AS held_count,
+                    COUNT(*) FILTER (
                         WHERE (
+                          hold_reason = ''
+                          AND
                           (
-                            status IN ('received', 'failed_retryable')
-                            AND (next_retry_at IS NULL OR next_retry_at <= CURRENT_TIMESTAMP)
-                            AND (locked_at IS NULL OR locked_at <= CURRENT_TIMESTAMP - INTERVAL '5 minutes')
-                          )
-                          OR (
-                            status = 'processing'
-                            AND locked_at <= CURRENT_TIMESTAMP - INTERVAL '5 minutes'
+                            (
+                              status IN ('received', 'failed_retryable')
+                              AND (next_retry_at IS NULL OR next_retry_at <= CURRENT_TIMESTAMP)
+                              AND (locked_at IS NULL OR locked_at <= CURRENT_TIMESTAMP - INTERVAL '5 minutes')
+                            )
+                            OR (
+                              status = 'processing'
+                              AND locked_at <= CURRENT_TIMESTAMP - INTERVAL '5 minutes'
+                            )
                           )
                         )
                     ) AS due_count,
+                    0::BIGINT AS scheduled_count,
+                    COUNT(*) FILTER (
+                        WHERE hold_reason = '' AND status = 'failed_retryable'
+                          AND next_retry_at > CURRENT_TIMESTAMP
+                    ) AS retry_wait_count,
+                    0::BIGINT AS rate_limited_count,
+                    COUNT(*) FILTER (
+                        WHERE hold_reason = '' AND status = 'processing'
+                          AND locked_at > CURRENT_TIMESTAMP - INTERVAL '5 minutes'
+                    ) AS in_flight_count,
+                    0::BIGINT AS unknown_count,
                     COUNT(*) FILTER (WHERE status = 'processing') AS processing_count,
                     COUNT(*) FILTER (WHERE status = 'failed_retryable') AS failed_retryable_count,
                     COUNT(*) FILTER (WHERE status = 'dead_letter') AS dead_letter_count,
@@ -652,10 +750,7 @@ class PostgresWebhookInboxRepository:
                 """,
                 tuple(params),
             )
-            provider_distribution = [
-                {"provider": str(item.get("provider") or ""), "count": int(item.get("count") or 0)}
-                for item in cur.fetchall() or []
-            ]
+            provider_distribution = [{"provider": str(item.get("provider") or ""), "count": int(item.get("count") or 0)} for item in cur.fetchall() or []]
             cur.execute(
                 f"""
                 SELECT route, COUNT(*) AS count
@@ -667,10 +762,7 @@ class PostgresWebhookInboxRepository:
                 """,
                 tuple(params),
             )
-            route_distribution = [
-                {"route": str(item.get("route") or ""), "count": int(item.get("count") or 0)}
-                for item in cur.fetchall() or []
-            ]
+            route_distribution = [{"route": str(item.get("route") or ""), "count": int(item.get("count") or 0)} for item in cur.fetchall() or []]
             cur.execute(
                 f"""
                 SELECT
@@ -681,7 +773,7 @@ class PostgresWebhookInboxRepository:
                     MAX(updated_at) AS last_seen_at
                 FROM webhook_inbox
                 {where_sql}
-                {'AND' if where_sql else 'WHERE'} last_error_code <> ''
+                {"AND" if where_sql else "WHERE"} last_error_code <> ''
                 GROUP BY status, last_error_code, last_error_message
                 ORDER BY last_seen_at DESC, count DESC
                 LIMIT 10
@@ -700,7 +792,16 @@ class PostgresWebhookInboxRepository:
             ]
         oldest_age = row.get("oldest_received_age_seconds")
         return {
+            "raw_open_count": int(row.get("raw_open_count") or 0),
+            "held_count": int(row.get("held_count") or 0),
             "due_count": int(row.get("due_count") or 0),
+            "eligible_due_count": int(row.get("due_count") or 0),
+            "scheduled_count": int(row.get("scheduled_count") or 0),
+            "retry_wait_count": int(row.get("retry_wait_count") or 0),
+            "rate_limited_count": int(row.get("rate_limited_count") or 0),
+            "in_flight_count": int(row.get("in_flight_count") or 0),
+            "unknown_count": int(row.get("unknown_count") or 0),
+            "dlq_count": int(row.get("dead_letter_count") or 0),
             "processing_count": int(row.get("processing_count") or 0),
             "failed_retryable_count": int(row.get("failed_retryable_count") or 0),
             "dead_letter_count": int(row.get("dead_letter_count") or 0),
@@ -753,6 +854,17 @@ class InMemoryWebhookInboxRepository:
             "change_type": _text(kwargs.get("change_type")),
             "external_event_id": _text(kwargs.get("external_event_id")),
             "idempotency_key": key,
+            "execution_id": "exe_" + uuid4().hex,
+            "parent_execution_id": "",
+            "lane": "webhook_inbox",
+            "available_at": now,
+            "ordering_key": ":".join(
+                (
+                    provider,
+                    _text(kwargs.get("corp_id")) or _text(kwargs.get("external_event_id")) or key,
+                )
+            ),
+            "fairness_key": f"{provider}:{_text(kwargs.get('event_family'))}",
             "raw_query_json": deepcopy(kwargs.get("raw_query_json") or {}),
             "raw_headers_json": deepcopy(kwargs.get("raw_headers_json") or {}),
             "raw_body": bytes(kwargs.get("raw_body") or b""),
@@ -761,11 +873,19 @@ class InMemoryWebhookInboxRepository:
             "payload_summary_json": deepcopy(kwargs.get("payload_summary_json") or {}),
             "processing_summary_json": {},
             "status": "received",
+            "hold_reason": "",
+            "hold_at": None,
             "attempt_count": 0,
             "max_attempts": max(1, int(kwargs.get("max_attempts") or 8)),
             "next_retry_at": None,
             "locked_at": None,
             "locked_by": "",
+            "lease_token": "",
+            "lease_expires_at": None,
+            "heartbeat_at": None,
+            "worker_generation": 0,
+            "policy_version": "queue-v1",
+            "row_version": "1",
             "last_error_code": "",
             "last_error_message": "",
             "received_at": now,
@@ -784,6 +904,8 @@ class InMemoryWebhookInboxRepository:
         now = datetime.now(timezone.utc)
 
         def is_due(row: dict[str, Any]) -> bool:
+            if _text(row.get("hold_reason")):
+                return False
             status = row.get("status")
             locked_expired = bool(row.get("locked_at") and row["locked_at"] <= now - timedelta(minutes=5))
             if status == "processing":
@@ -794,11 +916,7 @@ class InMemoryWebhookInboxRepository:
                 and (not row.get("locked_at") or locked_expired)
             )
 
-        due = [
-            row
-            for row in self.rows
-            if row.get("provider") == provider and is_due(row)
-        ]
+        due = [row for row in self.rows if row.get("provider") == provider and is_due(row)]
         due.sort(key=lambda item: _due_priority(item, now=now))
         return [deepcopy(row) for row in due[: max(1, int(limit or 50))]]
 
@@ -855,7 +973,8 @@ class InMemoryWebhookInboxRepository:
                 continue
             locked_expired = bool(row.get("locked_at") and row["locked_at"] <= now - timedelta(minutes=5))
             if (
-                row.get("status") in {"received", "failed_retryable"}
+                not _text(row.get("hold_reason"))
+                and row.get("status") in {"received", "failed_retryable"}
                 and (not row.get("next_retry_at") or row["next_retry_at"] <= now)
                 and (not row.get("locked_at") or locked_expired)
             ):
@@ -870,14 +989,35 @@ class InMemoryWebhookInboxRepository:
     def acquire_due(self, *, provider: str, limit: int = 50, locked_by: str = "webhook-inbox-worker") -> list[dict[str, Any]]:
         return self.claim_due(provider=provider, limit=limit, locked_by=locked_by)
 
-    def mark_succeeded(self, inbox_id: int, *, processing_summary_json: dict[str, Any] | None = None) -> dict[str, Any] | None:
+    def mark_succeeded(
+        self,
+        inbox_id: int,
+        *,
+        processing_summary_json: dict[str, Any] | None = None,
+        expected_lease_token: str = "",
+        expected_generation: int = 0,
+    ) -> dict[str, Any] | None:
         now = datetime.now(timezone.utc)
         for row in self.rows:
             if int(row.get("id") or 0) == int(inbox_id):
+                if expected_generation and row.get("status") != "processing":
+                    return None
+                if expected_lease_token and row.get("lease_token") != expected_lease_token:
+                    return None
+                if expected_generation and int(row.get("worker_generation") or 0) != int(expected_generation):
+                    return None
+                if expected_generation and (
+                    not isinstance(row.get("lease_expires_at"), datetime)
+                    or row["lease_expires_at"] <= now
+                ):
+                    return None
                 update = {
                     "status": "succeeded",
                     "locked_at": None,
                     "locked_by": "",
+                    "lease_token": "",
+                    "lease_expires_at": None,
+                    "heartbeat_at": None,
                     "last_error_code": "",
                     "last_error_message": "",
                     "finished_at": now,
@@ -931,8 +1071,12 @@ class InMemoryWebhookInboxRepository:
                 row.update(
                     status="failed_retryable",
                     next_retry_at=now,
+                    available_at=now,
                     locked_at=None,
                     locked_by="",
+                    lease_token="",
+                    lease_expires_at=None,
+                    heartbeat_at=None,
                     last_error_code="operator_retry",
                     last_error_message=_text(reason)[:2000],
                     finished_at=None,
@@ -981,6 +1125,8 @@ class InMemoryWebhookInboxRepository:
         rows = [row for row in self.rows if matches(row)]
 
         def is_due(row: dict[str, Any]) -> bool:
+            if _text(row.get("hold_reason")):
+                return False
             status = row.get("status")
             locked_expired = bool(row.get("locked_at") and row["locked_at"] <= now - timedelta(minutes=5))
             if status == "processing":
@@ -991,11 +1137,7 @@ class InMemoryWebhookInboxRepository:
                 and (not row.get("locked_at") or locked_expired)
             )
 
-        due_rows = [
-            row
-            for row in rows
-            if is_due(row)
-        ]
+        due_rows = [row for row in rows if is_due(row)]
         active_rows = [row for row in rows if row.get("status") in {"received", "failed_retryable", "processing"}]
         oldest_received_at = min((row.get("received_at") for row in active_rows if row.get("received_at")), default=None)
         status_counts: dict[str, int] = {}
@@ -1024,25 +1166,34 @@ class InMemoryWebhookInboxRepository:
                     },
                 )
                 current["count"] = int(current.get("count") or 0) + 1
-                if row.get("updated_at") and (
-                    not current.get("last_seen_at") or row.get("updated_at") > current.get("last_seen_at")
-                ):
+                if row.get("updated_at") and (not current.get("last_seen_at") or row.get("updated_at") > current.get("last_seen_at")):
                     current["last_seen_at"] = row.get("updated_at")
-        provider_distribution = [
-            {"provider": key, "count": count}
-            for key, count in sorted(provider_counts.items(), key=lambda item: (-item[1], item[0]))[:10]
-        ]
-        route_distribution = [
-            {"route": key, "count": count}
-            for key, count in sorted(route_counts.items(), key=lambda item: (-item[1], item[0]))[:10]
-        ]
+        provider_distribution = [{"provider": key, "count": count} for key, count in sorted(provider_counts.items(), key=lambda item: (-item[1], item[0]))[:10]]
+        route_distribution = [{"route": key, "count": count} for key, count in sorted(route_counts.items(), key=lambda item: (-item[1], item[0]))[:10]]
         recent_errors = sorted(
             error_counts.values(),
             key=lambda item: (item.get("last_seen_at") or datetime.min.replace(tzinfo=timezone.utc), int(item.get("count") or 0)),
             reverse=True,
         )[:10]
         return {
+            "raw_open_count": len(active_rows),
+            "held_count": len([row for row in active_rows if _text(row.get("hold_reason"))]),
             "due_count": len(due_rows),
+            "eligible_due_count": len(due_rows),
+            "scheduled_count": 0,
+            "retry_wait_count": len([
+                row for row in rows
+                if not _text(row.get("hold_reason")) and row.get("status") == "failed_retryable"
+                and row.get("next_retry_at") and row.get("next_retry_at") > now
+            ]),
+            "rate_limited_count": 0,
+            "in_flight_count": len([
+                row for row in rows
+                if not _text(row.get("hold_reason")) and row.get("status") == "processing"
+                and row.get("locked_at") and row.get("locked_at") > now - timedelta(minutes=5)
+            ]),
+            "unknown_count": 0,
+            "dlq_count": len([row for row in rows if row.get("status") in {"dead_letter", "failed_terminal"}]),
             "processing_count": len([row for row in rows if row.get("status") == "processing"]),
             "failed_retryable_count": len([row for row in rows if row.get("status") == "failed_retryable"]),
             "dead_letter_count": len([row for row in rows if row.get("status") == "dead_letter"]),
@@ -1053,10 +1204,31 @@ class InMemoryWebhookInboxRepository:
             "recent_errors": recent_errors,
         }
 
-    def mark_failed(self, inbox_id: int, *, error_code: str, error_message: str, retryable: bool, next_retry_at: datetime | None = None) -> dict[str, Any] | None:
+    def mark_failed(
+        self,
+        inbox_id: int,
+        *,
+        error_code: str,
+        error_message: str,
+        retryable: bool,
+        next_retry_at: datetime | None = None,
+        expected_lease_token: str = "",
+        expected_generation: int = 0,
+    ) -> dict[str, Any] | None:
         now = datetime.now(timezone.utc)
         for row in self.rows:
             if int(row.get("id") or 0) == int(inbox_id):
+                if expected_generation and row.get("status") != "processing":
+                    return None
+                if expected_lease_token and row.get("lease_token") != expected_lease_token:
+                    return None
+                if expected_generation and int(row.get("worker_generation") or 0) != int(expected_generation):
+                    return None
+                if expected_generation and (
+                    not isinstance(row.get("lease_expires_at"), datetime)
+                    or row["lease_expires_at"] <= now
+                ):
+                    return None
                 attempt_count = int(row.get("attempt_count") or 0) + 1
                 row["attempt_count"] = attempt_count
                 if not retryable:
@@ -1068,8 +1240,12 @@ class InMemoryWebhookInboxRepository:
                 row.update(
                     status=status,
                     next_retry_at=next_retry_at if status == "failed_retryable" else None,
+                    available_at=next_retry_at if status == "failed_retryable" and next_retry_at else row.get("available_at"),
                     locked_at=None,
                     locked_by="",
+                    lease_token="",
+                    lease_expires_at=None,
+                    heartbeat_at=None,
                     last_error_code=_text(error_code)[:120],
                     last_error_message=_text(error_message)[:2000],
                     finished_at=now if status in {"failed_terminal", "dead_letter"} else row.get("finished_at"),

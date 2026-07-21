@@ -42,6 +42,8 @@ EXPECTED_INDEXES = [
     "idx_external_effect_attempt_trace",
     "idx_external_effect_job_lease_due",
     "idx_external_effect_job_reconciliation",
+    "uq_external_effect_attempt_open_job",
+    "idx_external_effect_job_cancel_requested",
 ]
 PROBLEM_STATUSES = {"failed_retryable", "failed_terminal", "blocked", "dispatching", "unknown_after_dispatch"}
 REDACTED = SECRET_MASK
@@ -115,7 +117,9 @@ def redact_external_effect_admin_response(value: Any) -> Any:
         for item_key, item_value in value.items():
             if item_key == "payload_json" and isinstance(item_value, dict):
                 redacted[item_key] = redact_external_effect_payload(item_value)
-            elif item_key in {"payload_summary_json", "request_summary_json", "response_summary_json", "body_json", "headers_summary_json"} and isinstance(item_value, dict):
+            elif item_key in {"payload_summary_json", "request_summary_json", "response_summary_json", "body_json", "headers_summary_json"} and isinstance(
+                item_value, dict
+            ):
                 redacted[item_key] = redact_external_effect_payload(item_value)
             else:
                 redacted[item_key] = redact_external_effect_admin_response(redact_external_effect_payload(item_value, key=str(item_key)))
@@ -139,6 +143,7 @@ def external_effect_job_list_item(job: ExternalEffectJob) -> dict[str, Any]:
         "adapter_name": job.adapter_name,
         "operation": job.operation,
         "status": job.status,
+        "row_version": job.row_version,
         "execution_mode": job.execution_mode,
         "target_type": job.target_type,
         "target_id": _safe_value(job.target_id, key="target_id"),
@@ -177,6 +182,9 @@ def external_effect_job_list_item(job: ExternalEffectJob) -> dict[str, Any]:
         "executed_at": job.executed_at,
         "completed_at": job.completed_at,
         "cancelled_at": job.cancelled_at,
+        "cancel_requested_at": job.cancel_requested_at,
+        "cancel_requested_by": _safe_value(job.cancel_requested_by, key="cancel_requested_by"),
+        "cancel_reason": _safe_value(job.cancel_reason, key="cancel_reason"),
         "payload_summary_json": redact_external_effect_payload(dict(job.payload_summary_json or {})),
         "payload_redacted": True,
         "payload_json_redacted": True,
@@ -419,7 +427,9 @@ def build_troubleshooting_summary_payload(
 ) -> dict[str, Any]:
     service = service or ExternalEffectService()
     filters = _troubleshooting_filters(params)
-    base_filters = {key: value for key, value in filters.items() if key in {"effect_type", "status", "target_type", "target_id", "business_type", "business_id", "trace_id"}}
+    base_filters = {
+        key: value for key, value in filters.items() if key in {"effect_type", "status", "target_type", "target_id", "business_type", "business_id", "trace_id"}
+    }
     counts = service.count_jobs(base_filters)
     queue_metrics = service.queue_metrics(base_filters)
     by_status = dict(counts.get("by_status") or {})
@@ -447,7 +457,9 @@ def build_troubleshooting_jobs_payload(
 ) -> dict[str, Any]:
     service = service or ExternalEffectService()
     filters = _troubleshooting_filters(params)
-    base_filters = {key: value for key, value in filters.items() if key in {"effect_type", "status", "target_type", "target_id", "business_type", "business_id", "trace_id"}}
+    base_filters = {
+        key: value for key, value in filters.items() if key in {"effect_type", "status", "target_type", "target_id", "business_type", "business_id", "trace_id"}
+    }
     limit = _bounded_int((params or {}).get("limit"), default=50, minimum=1, maximum=200)
     offset = _bounded_int((params or {}).get("offset"), default=0, minimum=0, maximum=100000)
     problem_only = _problem_only(params)

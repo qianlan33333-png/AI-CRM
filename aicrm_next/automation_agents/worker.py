@@ -34,7 +34,20 @@ class AutomationAgentWorker:
 
     def run_batch_and_enqueue_broadcast_jobs(self, batch_id: str, *, operator: str = "automation_agent_queue_bridge") -> dict[str, Any]:
         batch_result = self.run_batch(batch_id)
-        enqueue_result = self.enqueue_batch_broadcast_jobs(batch_id, operator=operator)
+        # The callback is record-and-signal only.  The ai_audience.inbound.received
+        # consumer owns send-plan creation and approval after the callback
+        # transaction commits; attempting approval here races that consumer.
+        enqueue_result = {
+            "ok": True,
+            "status": "deferred_to_ai_audience_inbound_consumer",
+            "operator": operator,
+            "approved_count": 0,
+            "skipped_count": 0,
+            "failed_count": 0,
+            "approved": [],
+            "skipped": [],
+            "failed": [],
+        }
         return {
             "ok": bool(batch_result.get("ok")) and int(enqueue_result.get("failed_count") or 0) == 0,
             "batch_id": batch_id,

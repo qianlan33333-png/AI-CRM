@@ -4,9 +4,6 @@ import os
 from datetime import datetime, timezone
 from typing import Any, Callable
 
-from aicrm_next.shared.runtime import production_data_ready
-
-
 def _utc(value: datetime | None = None) -> datetime:
     current = value or datetime.now(timezone.utc)
     if current.tzinfo is None:
@@ -24,16 +21,6 @@ def _run_group_ops(*, now: datetime, operator: str, dry_run: bool) -> dict[str, 
     from aicrm_next.automation_engine.group_ops.scheduler import run_group_ops_due_scheduler
 
     return {"component": "group_ops_scheduler", "status": "ok", **run_group_ops_due_scheduler(now=now, operator=operator)}
-
-
-def _run_media_refresh(*, now: datetime, operator: str, dry_run: bool) -> dict[str, Any]:
-    if dry_run:
-        return _skipped("wecom_media_lease_refresher", "dry_run")
-    if not production_data_ready():
-        return _skipped("wecom_media_lease_refresher", "production_data_not_ready")
-    from aicrm_next.wecom_media_jobs import enqueue_due_media_refreshes
-
-    return enqueue_due_media_refreshes(now=now, operator=operator)
 
 
 def run_automation_ops_scheduler(
@@ -58,14 +45,11 @@ def run_automation_ops_scheduler(
         errors.append({"scope": "group_ops_scheduler", "error": str(exc)})
         components.append({"component": "group_ops_scheduler", "status": "failed", "error": str(exc)})
 
-    try:
-        runner = media_refresh_runner or _run_media_refresh
-        media_refresh = runner(now=scanned_at, operator=actor, dry_run=dry_run)
-        components.append(media_refresh)
-        errors.extend(list(media_refresh.get("errors") or []))
-    except Exception as exc:
-        errors.append({"scope": "wecom_media_lease_refresher", "error": str(exc)})
-        components.append({"component": "wecom_media_lease_refresher", "status": "failed", "error": str(exc)})
+    # Media preparation is now created on demand as a durable dependency of
+    # the business effect. Keep this parameter for one compatibility release,
+    # but a periodic timer must never invoke it again.
+    del media_refresh_runner
+    components.append(_skipped("wecom_media_lease_refresher", "retired_manual_repair_only"))
 
     return {
         "ok": not errors,

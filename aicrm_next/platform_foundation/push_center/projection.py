@@ -15,13 +15,15 @@ from aicrm_next.platform_foundation.external_effects import (
 from aicrm_next.platform_foundation.external_effects.models import ExternalEffectAttempt, ExternalEffectJob, public_datetime
 from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
 from aicrm_next.shared.db_session import get_session_factory
-from aicrm_next.shared.runtime import production_environment
+from aicrm_next.shared.runtime import production_data_ready, production_environment
 
 from .section_mapper import label_for_section, section_for_job
 from .status_mapper import standard_push_status
+from .sql_read_model import SQLPushCenterReadModel
 
 EFFECTIVE_PENDING = "pending"
 EFFECTIVE_RUNNING = "running"
+EFFECTIVE_SUCCEEDED = "succeeded"
 EFFECTIVE_SENT = "sent"
 EFFECTIVE_SIMULATED = "simulated"
 EFFECTIVE_UNKNOWN_AFTER_DISPATCH = "unknown_after_dispatch"
@@ -32,6 +34,7 @@ EFFECTIVE_SHADOW_FAILED_NOT_BUSINESS_FAILED = "shadow_failed_not_business_failed
 EFFECTIVE_STATUS_LABELS = {
     EFFECTIVE_PENDING: "待执行",
     EFFECTIVE_RUNNING: "执行中",
+    EFFECTIVE_SUCCEEDED: "执行成功",
     EFFECTIVE_SENT: "已发送",
     EFFECTIVE_SIMULATED: "模拟执行",
     EFFECTIVE_UNKNOWN_AFTER_DISPATCH: "结果待核对",
@@ -66,7 +69,8 @@ def _is_missing_projection_table(exc: SQLAlchemyError) -> bool:
     return (
         "no such table: broadcast_jobs" in message
         or "no such table: outbound_tasks" in message
-        or "undefinedtable" in message and ("broadcast_jobs" in message or "outbound_tasks" in message)
+        or "undefinedtable" in message
+        and ("broadcast_jobs" in message or "outbound_tasks" in message)
     )
 
 
@@ -141,6 +145,11 @@ def owner_userid_for_job(job: ExternalEffectJob) -> str:
     return _text(job.actor_id)
 
 
+def _execution_id(value: ExternalEffectJob | dict[str, Any]) -> str:
+    payload = value.to_dict() if isinstance(value, ExternalEffectJob) else dict(value or {})
+    return _text(payload.get("parent_execution_id")) or _text(payload.get("execution_id"))
+
+
 def _external_job_item(job: ExternalEffectJob) -> dict[str, Any]:
     section = section_for_job(job)
     return {
@@ -153,6 +162,7 @@ def _external_job_item(job: ExternalEffectJob) -> dict[str, Any]:
         "adapter_name": job.adapter_name,
         "operation": job.operation,
         "raw_status": job.status,
+        "row_version": job.row_version,
         "execution_mode": job.execution_mode,
         "business_type": job.business_type,
         "business_id": job.business_id,
@@ -160,6 +170,13 @@ def _external_job_item(job: ExternalEffectJob) -> dict[str, Any]:
         "target_id": job.target_id,
         "external_userid": external_userid_for_job(job),
         "owner_userid": owner_userid_for_job(job),
+        "execution_id": job.execution_id,
+        "parent_execution_id": job.parent_execution_id,
+        "root_execution_id": _execution_id(job),
+        "lane": job.lane,
+        "available_at": job.available_at,
+        "hold_reason": job.hold_reason,
+        "policy_version": job.policy_version,
         "source_module": job.source_module,
         "source_route": job.source_route,
         "source_event_id": job.source_event_id,
@@ -182,6 +199,9 @@ def _external_job_item(job: ExternalEffectJob) -> dict[str, Any]:
         "updated_at": job.updated_at,
         "executed_at": job.executed_at,
         "cancelled_at": job.cancelled_at,
+        "cancel_requested_at": job.cancel_requested_at,
+        "cancel_requested_by": job.cancel_requested_by,
+        "cancel_reason": job.cancel_reason,
         "payload_summary": scrub_summary(dict(job.payload_summary_json or {})),
         "payload_summary_json": scrub_summary(dict(job.payload_summary_json or {})),
     }
@@ -264,6 +284,9 @@ def _broadcast_job_item(row: dict[str, Any]) -> dict[str, Any]:
         "target_id": target_id,
         "external_userid": "",
         "owner_userid": _text(row.get("created_by")),
+        "execution_id": _text(row.get("execution_id")),
+        "parent_execution_id": "",
+        "root_execution_id": _execution_id(row),
         "source_module": "broadcast_jobs",
         "source_route": "/api/admin/broadcast-jobs",
         "source_event_id": _text(row.get("source_id")),
@@ -313,7 +336,7 @@ class ExternalEffectAdapter:
     def __init__(self, service: ExternalEffectService | None = None) -> None:
         self._service = service or ExternalEffectService()
 
-    def list_jobs(self, filters: dict[str, Any] | None = None, *, limit: int = 1000) -> list[ExternalEffectJob]:
+    def list_jobs(self, filters: dict[str, Any] | None = None, *, limit: int = 200) -> list[ExternalEffectJob]:
         jobs, _total = self._service.list_jobs(filters or {}, limit=limit, offset=0)
         return list(jobs)
 
@@ -324,25 +347,21 @@ class ExternalEffectAdapter:
         return list(self._service.list_attempts(job_id))
 
     def list_attempts_for_jobs(self, job_ids: list[int]) -> dict[int, list[ExternalEffectAttempt]]:
-        return {
-            int(job_id): list(attempts)
-            for job_id, attempts in self._service.list_attempts_for_jobs(job_ids).items()
-        }
+        return {int(job_id): list(attempts) for job_id, attempts in self._service.list_attempts_for_jobs(job_ids).items()}
 
 
 class BroadcastJobAdapter:
     def __init__(self, session_factory: Any | None = None) -> None:
         self._session_factory = session_factory or get_session_factory()
 
-    def list_jobs(self, filters: dict[str, Any] | None = None, *, limit: int = 1000) -> list[dict[str, Any]]:
+    def list_jobs(self, filters: dict[str, Any] | None = None, *, limit: int = 200) -> list[dict[str, Any]]:
         filters = dict(filters or {})
         clauses: list[str] = []
-        params: dict[str, Any] = {"limit": int(limit or 1000)}
+        params: dict[str, Any] = {"limit": max(1, min(int(limit or 200), 200))}
         if _text(filters.get("business_id")):
-            clauses.append("(bj.source_id = :business_source OR bj.source_id LIKE :business_webhook OR bj.trace_id LIKE :business_trace)")
+            clauses.append("(bj.source_id = :business_source OR bj.source_id LIKE :business_webhook)")
             params["business_source"] = _text(filters.get("business_id"))
             params["business_webhook"] = f"{_text(filters.get('business_id'))}:webhook:%"
-            params["business_trace"] = f"%:{_text(filters.get('business_id'))}:%"
         if _text(filters.get("trace_id")):
             clauses.append("bj.trace_id = :trace_id")
             params["trace_id"] = _text(filters.get("trace_id"))
@@ -357,7 +376,7 @@ class BroadcastJobAdapter:
               ot.wecom_task_id AS outbound_task_wecom_task_id,
               ot.response_payload AS outbound_task_response_payload,
               ot.trace_id AS outbound_task_trace_id,
-              ot.created_at AS outbound_task_created_at
+              bj.updated_at AS outbound_task_created_at
             FROM broadcast_jobs bj
             LEFT JOIN outbound_tasks ot ON ot.id = bj.outbound_task_id
             """
@@ -376,43 +395,44 @@ class BroadcastJobAdapter:
             return []
 
     def get_job(self, job_id: int) -> dict[str, Any] | None:
-        jobs = self.list_jobs({}, limit=1000)
-        for row in jobs:
-            if int(row.get("id") or 0) == int(job_id):
-                return row
-        return None
+        statement = text(
+            """
+            SELECT
+              bj.*,
+              ot.id AS outbound_task_id,
+              ot.task_type AS outbound_task_type,
+              ot.status AS outbound_task_status,
+              ot.wecom_task_id AS outbound_task_wecom_task_id,
+              ot.response_payload AS outbound_task_response_payload,
+              ot.trace_id AS outbound_task_trace_id,
+              bj.updated_at AS outbound_task_created_at
+            FROM broadcast_jobs bj
+            LEFT JOIN outbound_tasks ot ON ot.id = bj.outbound_task_id
+            WHERE bj.id = :job_id
+            LIMIT 1
+            """
+        )
+        try:
+            with self._session_factory() as session:
+                row = session.execute(statement, {"job_id": int(job_id)}).mappings().fetchone()
+                return dict(row) if row else None
+        except SQLAlchemyError as exc:
+            if _is_missing_projection_table(exc):
+                return None
+            if production_environment():
+                raise
+            return None
 
 
 class BusinessCorrelationService:
     def keys_for_external_job(self, job: ExternalEffectJob | dict[str, Any]) -> set[str]:
         value = job.to_dict() if isinstance(job, ExternalEffectJob) else dict(job)
-        keys = self._base_keys(value)
-        source_command_id = _text(value.get("source_command_id"))
-        if source_command_id:
-            keys.add(f"source:{source_command_id}")
-        if _text(value.get("business_type")) == "group_ops_plan" and _text(value.get("target_id")):
-            keys.add(f"group_ops_webhook:{value.get('business_id')}:{value.get('target_id')}")
-        elif _text(value.get("business_type")) and _text(value.get("business_id")):
-            keys.add(f"business:{value.get('business_type')}:{value.get('business_id')}")
-        return keys
+        execution_id = _execution_id(value)
+        return {f"execution:{execution_id}"} if execution_id else {f"external_effect_job:{int(value.get('id') or 0)}"}
 
     def keys_for_broadcast_job(self, row: dict[str, Any]) -> set[str]:
-        keys = self._base_keys(row)
-        source_id = _text(row.get("source_id"))
-        if source_id:
-            keys.add(f"source:{source_id}")
-        if ":webhook:" in source_id:
-            plan_id, event_id = source_id.split(":webhook:", 1)
-            keys.add(f"group_ops_webhook:{plan_id}:{event_id}")
-        return keys
-
-    def _base_keys(self, value: dict[str, Any]) -> set[str]:
-        keys: set[str] = set()
-        for key_name, prefix in (("trace_id", "trace"), ("idempotency_key", "idempotency"), ("batch_key", "batch")):
-            value_text = _text(value.get(key_name))
-            if value_text:
-                keys.add(f"{prefix}:{value_text}")
-        return keys
+        execution_id = _execution_id(row)
+        return {f"execution:{execution_id}"} if execution_id else {f"broadcast_job:{int(row.get('id') or 0)}"}
 
 
 class PushCenterProjectionService:
@@ -422,12 +442,23 @@ class PushCenterProjectionService:
         external_adapter: ExternalEffectAdapter | None = None,
         broadcast_adapter: BroadcastJobAdapter | None = None,
         correlation: BusinessCorrelationService | None = None,
+        sql_read_model: SQLPushCenterReadModel | None = None,
     ) -> None:
         self._external = external_adapter or ExternalEffectAdapter()
         self._broadcast = broadcast_adapter or BroadcastJobAdapter()
         self._correlation = correlation or BusinessCorrelationService()
+        self._sql = (
+            sql_read_model
+            if sql_read_model is not None
+            else SQLPushCenterReadModel()
+            if external_adapter is None and broadcast_adapter is None and production_data_ready()
+            else None
+        )
 
     def list_projections(self, filters: dict[str, Any] | None = None, *, limit: int = 50, offset: int = 0) -> tuple[list[dict[str, Any]], int]:
+        if self._sql is not None:
+            page = self._sql.query(filters or {}, limit=limit, legacy_offset=offset)
+            return page.items, page.total
         records = self._matching_projections(filters or {})
         return self._page(records, limit=limit, offset=offset)
 
@@ -437,13 +468,20 @@ class PushCenterProjectionService:
         *,
         limit: int = 50,
         offset: int = 0,
-    ) -> tuple[list[dict[str, Any]], int, dict[str, Any], list[dict[str, Any]]]:
+        cursor: str = "",
+    ) -> tuple[list[dict[str, Any]], int, dict[str, Any], list[dict[str, Any]], str, bool]:
+        if self._sql is not None:
+            page = self._sql.query(filters or {}, limit=limit, cursor=cursor, legacy_offset=offset)
+            return page.items, page.total, page.counts, page.sections, page.next_cursor, page.has_more
         records = self._matching_projections(filters or {})
         items, total = self._page(records, limit=limit, offset=offset)
         counts = self._counts_for_records(records)
-        return items, total, counts, self._sections_for_counts(counts)
+        return items, total, counts, self._sections_for_counts(counts), "", offset + len(items) < total
 
     def summary(self, filters: dict[str, Any] | None = None) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+        if self._sql is not None:
+            page = self._sql.query(filters or {}, limit=1)
+            return page.counts, page.sections
         records = self._matching_projections(filters or {})
         counts = self._counts_for_records(records)
         return counts, self._sections_for_counts(counts)
@@ -462,22 +500,42 @@ class PushCenterProjectionService:
         return records[start : start + size], len(records)
 
     def get_projection(self, projection_id: str) -> dict[str, Any] | None:
+        if self._sql is not None:
+            return self._sql.get(projection_id)
         kind, raw_id = self._parse_projection_id(projection_id)
         if kind == "external_effect_job":
             job = self._external.get_job(int(raw_id))
             if not job:
                 return None
             groups = self._groups_for_seed(external_job=job)
-            return self._projection_item(groups[0]) if groups else None
+            group = next(
+                (
+                    item
+                    for item in groups
+                    if any(int(record.get("id") or 0) == int(job.id) for record in item.external_effect_jobs)
+                ),
+                None,
+            )
+            return self._projection_item(group) if group else None
         if kind == "broadcast_job":
             job = self._broadcast.get_job(int(raw_id))
             if not job:
                 return None
             groups = self._groups_for_seed(broadcast_job=job)
-            return self._projection_item(groups[0]) if groups else None
+            group = next(
+                (
+                    item
+                    for item in groups
+                    if any(int(record.get("id") or 0) == int(job.get("id") or 0) for record in item.broadcast_jobs)
+                ),
+                None,
+            )
+            return self._projection_item(group) if group else None
         return None
 
     def counts(self, filters: dict[str, Any] | None = None) -> dict[str, Any]:
+        if self._sql is not None:
+            return self._sql.query(filters or {}, limit=1).counts
         return self._counts_for_records(self._matching_projections(filters or {}))
 
     @staticmethod
@@ -497,7 +555,7 @@ class PushCenterProjectionService:
             "pending": by_status.get(EFFECTIVE_PENDING, 0),
             "running": by_status.get(EFFECTIVE_RUNNING, 0),
             "sent": by_status.get(EFFECTIVE_SENT, 0) + by_status.get(EFFECTIVE_SENT_WITH_SHADOW_WARNING, 0),
-            "succeeded": by_status.get(EFFECTIVE_SENT, 0) + by_status.get(EFFECTIVE_SENT_WITH_SHADOW_WARNING, 0),
+            "succeeded": by_status.get(EFFECTIVE_SUCCEEDED, 0),
             "failed": by_status.get(EFFECTIVE_FAILED, 0),
             "shadow_warning": by_status.get(EFFECTIVE_SENT_WITH_SHADOW_WARNING, 0) + by_status.get(EFFECTIVE_SHADOW_FAILED_NOT_BUSINESS_FAILED, 0),
         }
@@ -514,14 +572,15 @@ class PushCenterProjectionService:
         return [{**section, "count": int(by_section.get(section["key"], 0)), "label": label_for_section(section["key"])} for section in all_sections()]
 
     def _groups(self, filters: dict[str, Any]) -> list[ProjectionGroup]:
+        # This adapter path exists only for fixture/custom-adapter tests.
+        # Database-backed runtime always uses SQLPushCenterReadModel and never
+        # builds a capped two-sided Python merge.
         external_filters = {
-            key: filters.get(key)
-            for key in ("effect_type", "business_type", "business_id", "target_type", "target_id", "trace_id")
-            if _text(filters.get(key))
+            key: filters.get(key) for key in ("effect_type", "business_type", "business_id", "target_type", "target_id", "trace_id") if _text(filters.get(key))
         }
-        external_jobs = self._external.list_jobs(external_filters, limit=1000)
+        external_jobs = self._external.list_jobs(external_filters, limit=200)
         attempts_by_job = self._external.list_attempts_for_jobs([job.id for job in external_jobs])
-        broadcast_jobs = self._broadcast.list_jobs(filters, limit=1000)
+        broadcast_jobs = self._broadcast.list_jobs(filters, limit=200)
         return self._merge_groups(external_jobs, broadcast_jobs, attempts_by_job=attempts_by_job)
 
     def _groups_for_seed(self, *, external_job: ExternalEffectJob | None = None, broadcast_job: dict[str, Any] | None = None) -> list[ProjectionGroup]:
@@ -615,12 +674,9 @@ class PushCenterProjectionService:
         primary_sent = any(job.get("raw_status") == "sent" for job in group.broadcast_jobs)
         primary_simulated = any(job.get("raw_status") == "simulated" for job in group.broadcast_jobs)
         primary_unknown = any(job.get("raw_status") == "unknown_after_dispatch" for job in group.broadcast_jobs)
-        primary_failed = any(
-            job.get("raw_status") in {"failed", "failed_retryable", "failed_terminal", "blocked", "cancelled"}
-            for job in group.broadcast_jobs
-        )
+        primary_failed = any(job.get("raw_status") in {"failed", "failed_retryable", "failed_terminal", "blocked", "cancelled"} for job in group.broadcast_jobs)
         primary_running = any(job.get("raw_status") in {"claimed", "running", "dispatching"} for job in group.broadcast_jobs)
-        primary_pending = any(job.get("raw_status") in {"queued", "waiting_approval", "pending"} for job in group.broadcast_jobs)
+        primary_pending = any(job.get("raw_status") in {"queued", "waiting_approval", "pending", "delegated"} for job in group.broadcast_jobs)
         shadow_failed = any(self._is_shadow_failed(job) for job in group.external_effect_jobs)
         external_sent = any(job.get("raw_status") == "succeeded" and not self._is_shadow_job(job) for job in group.external_effect_jobs)
         external_simulated = any(job.get("raw_status") == "simulated" for job in group.external_effect_jobs)
@@ -631,7 +687,7 @@ class PushCenterProjectionService:
         if primary_sent and shadow_failed:
             return EFFECTIVE_SENT_WITH_SHADOW_WARNING
         if primary_sent or external_sent:
-            return EFFECTIVE_SENT
+            return EFFECTIVE_SENT if primary_sent else EFFECTIVE_SUCCEEDED
         if primary_unknown or external_unknown:
             return EFFECTIVE_UNKNOWN_AFTER_DISPATCH
         if primary_simulated or external_simulated:
@@ -658,14 +714,28 @@ class PushCenterProjectionService:
         status = _text(filters.get("status"))
         if status and not self._status_matches(_text(item.get("effective_status")), status):
             return False
-        for key in ("effect_type", "business_type", "business_id", "target_type", "target_id", "trace_id", "idempotency_key", "source_module", "source_route", "external_userid", "owner_userid"):
+        for key in (
+            "effect_type",
+            "business_type",
+            "business_id",
+            "target_type",
+            "target_id",
+            "trace_id",
+            "idempotency_key",
+            "source_module",
+            "source_route",
+            "external_userid",
+            "owner_userid",
+        ):
             expected = _text(filters.get(key))
             if expected and expected not in _text(item.get(key)):
                 return False
         return True
 
     def _status_matches(self, effective_status: str, expected: str) -> bool:
-        if expected in {"succeeded", "sent"}:
+        if expected == "succeeded":
+            return effective_status == EFFECTIVE_SUCCEEDED
+        if expected == "sent":
             return effective_status in SENT_EFFECTIVE_STATUSES
         if expected == "failed":
             return effective_status in BUSINESS_FAILED_EFFECTIVE_STATUSES

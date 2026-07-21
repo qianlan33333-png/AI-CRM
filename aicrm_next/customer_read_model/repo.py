@@ -6,9 +6,11 @@ import os
 import re
 from copy import deepcopy
 from datetime import datetime, timezone
-from typing import Protocol
+from typing import Any, Protocol
 
 from sqlalchemy import Text, bindparam, cast, delete, func, insert, or_, select, text
+from sqlalchemy.dialects.postgresql import insert as postgresql_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
@@ -29,6 +31,8 @@ from .models import (
 from .sql_dialect import is_sqlite_session, json_text_expression
 
 _DEFAULT_LIVE_SOURCE_LIST_LIMIT = 200
+# Ten binds per row today; leave wide headroom below PostgreSQL's 65,535 limit.
+_TIMELINE_UPSERT_BATCH_SIZE = 1_000
 
 
 class CustomerReadRepository(Protocol):
@@ -79,6 +83,8 @@ class CustomerReadRepository(Protocol):
         offset: int = 0,
     ) -> list[JsonDict]: ...
 
+    def count_timeline_by_unionid(self, unionid: str, filters: JsonDict | None = None) -> int: ...
+
     def list_recent_messages_by_unionid(self, unionid: str, *, limit: int | None = None) -> list[JsonDict]: ...
 
     def customer_exists(self, external_userid: str) -> bool: ...
@@ -118,13 +124,76 @@ class SqlAlchemyCustomerReadModelRepository:
         timeline_by_external_userid: dict[str, list[JsonDict]] | None = None,
         messages_by_external_userid: dict[str, list[JsonDict]] | None = None,
     ) -> None:
-        self.clear()
+        self._session.execute(delete(customer_recent_message_next))
+        self._session.execute(delete(customer_detail_snapshot_next))
+        self._session.execute(delete(customer_list_index_next))
         self.seed(
             customers=customers,
-            timeline_by_external_userid=timeline_by_external_userid,
+            timeline_by_external_userid={},
             messages_by_external_userid=messages_by_external_userid,
         )
+        customer_by_key: dict[str, JsonDict] = {}
+        for customer in customers:
+            unionid = str(customer.get("unionid") or dict(customer.get("identity") or {}).get("unionid") or "").strip()
+            external_userid = str(customer.get("external_userid") or "").strip()
+            if unionid:
+                customer_by_key[unionid] = customer
+            if external_userid:
+                customer_by_key[external_userid] = customer
+        events: list[JsonDict] = []
+        for projection_key, rows in (timeline_by_external_userid or {}).items():
+            customer = customer_by_key.get(str(projection_key)) or {}
+            fallback_unionid = str(customer.get("unionid") or dict(customer.get("identity") or {}).get("unionid") or "").strip()
+            for item in rows:
+                events.append({**dict(item), "unionid": str(item.get("unionid") or fallback_unionid).strip()})
+        self.upsert_timeline_events(events, commit=False)
         self._session.commit()
+
+    def upsert_timeline_events(self, events: list[JsonDict], *, commit: bool = True) -> int:
+        deduplicated: dict[str, dict[str, Any]] = {}
+        for item in events:
+            event_id = str(item.get("event_id") or "").strip()
+            unionid = str(item.get("unionid") or "").strip()
+            event_type = str(item.get("event_type") or "").strip()
+            if not event_id or not unionid or not event_type:
+                continue
+            deduplicated[event_id] = {
+                "event_id": event_id,
+                "unionid": unionid,
+                "event_type": event_type,
+                "event_time": _coerce_datetime(item.get("event_time")),
+                "title": str(item.get("title") or ""),
+                "summary": str(item.get("summary") or ""),
+                "source_table": str(item.get("source_table") or ""),
+                "source_id": str(item.get("source_id") or ""),
+                "metadata_json": dict(item.get("metadata") or item.get("metadata_json") or {}),
+                "created_at": _coerce_datetime(item.get("created_at") or item.get("event_time")),
+            }
+        rows = list(deduplicated.values())
+        if not rows:
+            return 0
+        dialect = str(self._session.get_bind().dialect.name)
+        insert_builder = sqlite_insert if dialect == "sqlite" else postgresql_insert
+        for offset in range(0, len(rows), _TIMELINE_UPSERT_BATCH_SIZE):
+            batch = rows[offset : offset + _TIMELINE_UPSERT_BATCH_SIZE]
+            statement = insert_builder(customer_timeline_event_next).values(batch)
+            statement = statement.on_conflict_do_update(
+                index_elements=[customer_timeline_event_next.c.event_id],
+                set_={
+                    "unionid": statement.excluded.unionid,
+                    "event_type": statement.excluded.event_type,
+                    "event_time": statement.excluded.event_time,
+                    "title": statement.excluded.title,
+                    "summary": statement.excluded.summary,
+                    "source_table": statement.excluded.source_table,
+                    "source_id": statement.excluded.source_id,
+                    "metadata_json": statement.excluded.metadata_json,
+                },
+            )
+            self._session.execute(statement)
+        if commit:
+            self._session.commit()
+        return len(rows)
 
     def seed_from_fixture(self, fixture: FixtureCustomerReadRepository | None = None) -> None:
         fixture = fixture or FixtureCustomerReadRepository()
@@ -323,11 +392,24 @@ class SqlAlchemyCustomerReadModelRepository:
     ) -> list[JsonDict]:
         stmt = select(customer_timeline_event_next).where(customer_timeline_event_next.c.unionid == unionid)
         event_type = str((filters or {}).get("event_type") or "").strip()
+        event_types = [str(value).strip() for value in (filters or {}).get("event_types") or [] if str(value).strip()]
         if event_type:
             stmt = stmt.where(customer_timeline_event_next.c.event_type == event_type)
-        stmt = stmt.order_by(customer_timeline_event_next.c.id.asc())
+        elif event_types:
+            stmt = stmt.where(customer_timeline_event_next.c.event_type.in_(event_types))
+        stmt = stmt.order_by(customer_timeline_event_next.c.event_time.desc(), customer_timeline_event_next.c.id.desc())
         rows = [self._timeline_row_to_dict(row) for row in self._session.execute(stmt).mappings()]
         return _apply_page(rows, limit=limit, offset=offset)
+
+    def count_timeline_by_unionid(self, unionid: str, filters: JsonDict | None = None) -> int:
+        stmt = select(func.count()).select_from(customer_timeline_event_next).where(customer_timeline_event_next.c.unionid == unionid)
+        event_type = str((filters or {}).get("event_type") or "").strip()
+        event_types = [str(value).strip() for value in (filters or {}).get("event_types") or [] if str(value).strip()]
+        if event_type:
+            stmt = stmt.where(customer_timeline_event_next.c.event_type == event_type)
+        elif event_types:
+            stmt = stmt.where(customer_timeline_event_next.c.event_type.in_(event_types))
+        return int(self._session.execute(stmt).scalar_one() or 0)
 
     def list_recent_messages_by_unionid(self, unionid: str, *, limit: int | None = None) -> list[JsonDict]:
         stmt = (

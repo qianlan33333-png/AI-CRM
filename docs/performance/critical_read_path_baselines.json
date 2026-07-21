@@ -52,6 +52,20 @@
         "sync_runs",
         "wecom_external_contact_event_logs"
       ]
+    },
+    "push_center": {
+      "route": "/api/admin/push-center/jobs",
+      "owner": "platform_foundation.push_center",
+      "dataset_rows": 100000,
+      "sample_count": 20,
+      "max_query_count": 1,
+      "page_limit": 100,
+      "baseline_p95_ms": 450.0,
+      "max_seq_scan_rows": 1000,
+      "allowed_large_seq_scan_relations": [
+        "external_effect_job",
+        "broadcast_jobs"
+      ]
     }
   }
 }

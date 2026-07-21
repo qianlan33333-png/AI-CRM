@@ -241,7 +241,10 @@ def test_wecom_callback_inbox_worker_processes_claimed_rows():
         return {
             "handled": True,
             "event_log": {"id": 42},
-            "identity_sync": {"status": "success"},
+            "identity_sync": {
+                "status": "success",
+                "external_effect_job_id": 100,
+            },
             "entry_result": {
                 "mode": "channel_baseline_only",
                 "reason": "channel_entry_baseline_recorded",
@@ -260,7 +263,7 @@ def test_wecom_callback_inbox_worker_processes_claimed_rows():
     assert repo.rows[0]["status"] == "succeeded"
     assert repo.rows[0]["processing_summary_json"]["event_log_id"] == 42
     assert repo.rows[0]["processing_summary_json"]["internal_event_id"] == "iev_42"
-    assert repo.rows[0]["processing_summary_json"]["external_effect_job_ids"] == [101, 102]
+    assert repo.rows[0]["processing_summary_json"]["external_effect_job_ids"] == [101, 102, 100]
     assert result["items"][0]["internal_event_id"] == "iev_42"
     assert processed[0].event_data["ExternalUserID"] == "wm-a"
 

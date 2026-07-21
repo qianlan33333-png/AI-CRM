@@ -3,32 +3,29 @@ from __future__ import annotations
 import os
 import re
 from dataclasses import dataclass
-from datetime import timedelta
 from typing import Any
 from urllib.parse import parse_qs, urlsplit
 from uuid import UUID
 
-from aicrm_next.cloud_orchestrator.media_upload import (
-    CloudOrchestratorMediaUploadError,
-    build_upload_command,
-)
 from aicrm_next.integration_gateway.lesson_card_cover_client import (
     LessonCardCoverClientError,
     build_lesson_card_cover_client,
 )
-from aicrm_next.platform_foundation.external_effects import WECOM_MESSAGE_GROUP_SEND
 from aicrm_next.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry
 from aicrm_next.platform_foundation.external_effects.models import utcnow
 from aicrm_next.platform_foundation.external_effects.repo import (
     ExternalEffectRepository,
     build_external_effect_repository,
 )
-from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
-from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
 
-from .application import ReceiveTrustedGroupOpsBroadcastCommand
+from .durable_effects_repository import (
+    GroupOpsEffectGraphRepository,
+    GroupOpsEffectGraphRequest,
+    GroupOpsEffectMaterial,
+    build_group_ops_effect_graph_repository,
+)
 from .domain import clean_text
-from .dto import GroupOpsTokenBroadcastRequest, GroupOpsWebhookReceiveRequest
+from .dto import GroupOpsTokenBroadcastRequest
 from .repo import GroupOpsRepository, build_group_ops_repository
 
 
@@ -144,10 +141,15 @@ class ExecuteGroupOpsTokenBroadcastCommand:
         group_repo: GroupOpsRepository | None = None,
         external_effect_repo: ExternalEffectRepository | None = None,
         external_effect_adapter_registry: ExternalEffectAdapterRegistry | None = None,
+        effect_graph_repo: GroupOpsEffectGraphRepository | None = None,
     ) -> None:
         self._group_repo = group_repo or build_group_ops_repository()
         self._external_effect_repo = external_effect_repo or build_external_effect_repository()
-        self._external_effect_service = ExternalEffectService(self._external_effect_repo)
+        self._effect_graph_repo = effect_graph_repo or build_group_ops_effect_graph_repository(
+            external_effect_repo=self._external_effect_repo,
+        )
+        # Retained only as a constructor compatibility parameter. HTTP no
+        # longer owns a worker or provider adapter.
         self._external_effect_adapter_registry = external_effect_adapter_registry
 
     def __call__(
@@ -190,71 +192,78 @@ class ExecuteGroupOpsTokenBroadcastCommand:
             raise GroupOpsBroadcastError("broadcast_plan_inactive", "configured group broadcast plan is not active", status_code=409)
         if not self._group_repo.list_bound_groups(plan_id):
             raise GroupOpsBroadcastError("broadcast_groups_missing", "configured group broadcast plan has no bound groups", status_code=409)
-        duplicate_event = self._group_repo.find_webhook_event(plan_id, key)
-        if duplicate_event:
-            return self._existing_result(duplicate_event)
-
-        media_ids = list(existing_media_ids)
+        attachments: list[dict[str, Any]] = [{"msgtype": "image", "image": {"media_id": media_id}} for media_id in existing_media_ids]
+        materials: list[GroupOpsEffectMaterial] = []
         for index, image in enumerate(uploaded_images):
             normalized = validate_image(image)
-            media_ids.append(
-                self._upload_image(
-                    image=normalized,
-                    idempotency_key=f"{key}:image:{index + 1}",
-                    actor_id=actor_id,
+            materials.append(
+                GroupOpsEffectMaterial(
+                    material_key=f"image:{index + 1}",
+                    role="image",
+                    file_name=normalized.file_name,
+                    content_type=normalized.content_type,
+                    file_bytes=normalized.file_bytes,
                 )
             )
 
-        card_media_id = ""
         card_title = ""
         if parsed_card:
             card_image = self._download_lesson_cover(parsed_card.lesson_id)
-            card_media_id = self._upload_image(
-                image=card_image,
-                idempotency_key=f"{key}:card-cover",
-                actor_id=actor_id,
-            )
             card_title = derive_card_title(text, request.card_title)
-
-        attachments: list[dict[str, Any]] = [{"msgtype": "image", "image": {"media_id": media_id}} for media_id in media_ids]
-        if parsed_card:
-            attachments.append(
-                {
-                    "msgtype": "miniprogram",
-                    "miniprogram": {
+            materials.append(
+                GroupOpsEffectMaterial(
+                    material_key="card-cover",
+                    role="card_cover",
+                    file_name=card_image.file_name,
+                    content_type=card_image.content_type,
+                    file_bytes=card_image.file_bytes,
+                    attachment_payload={
                         "appid": self._miniprogram_appid(),
                         "page": parsed_card.normalized_path,
                         "title": card_title,
-                        "pic_media_id": card_media_id,
                     },
-                }
+                )
             )
-
-        enqueue = ReceiveTrustedGroupOpsBroadcastCommand(self._group_repo)(
-            plan_id,
-            GroupOpsWebhookReceiveRequest(
-                idempotency_key=key,
-                send_mode="queued",
-                scheduled_at=(utcnow() + timedelta(minutes=2)).isoformat(),
-                event="group_ops_api_broadcast",
-                source="group_ops_token_broadcast_api",
-                content={"text": text, "attachments": attachments},
-            ),
-            idempotency_key=key,
+        chat_ids = [clean_text(item.get("chat_id")) for item in self._group_repo.list_bound_groups(plan_id) if clean_text(item.get("chat_id"))]
+        graph = self._effect_graph_repo.plan(
+            GroupOpsEffectGraphRequest(
+                idempotency_key=f"group-ops-token-broadcast:{plan_id}:{key}",
+                source_kind="direct_send",
+                plan_id=plan_id,
+                chat_ids=chat_ids,
+                content_payload={
+                    "channel": "wecom_customer_group",
+                    "sender": clean_text(plan.get("owner_userid")),
+                    "chat_ids": chat_ids,
+                    "text": {"content": text} if text else {},
+                    "attachments": attachments,
+                },
+                content_summary=text or f"{len(attachments) + len(materials)} attachments",
+                actor_id=clean_text(actor_id) or "external_group_ops_api",
+                owner_userid=clean_text(plan.get("owner_userid")),
+                webhook_key=clean_text(plan.get("webhook_key")),
+                source_module="automation_engine.group_ops.token_broadcast",
+                source_route=SOURCE_ROUTE,
+                source_command_id=f"group-ops-token-broadcast:{key}",
+                scheduled_at=utcnow(),
+                materials=tuple(materials),
+            )
         )
-        job_ids = [int(item) for item in list(enqueue.get("external_effect_job_ids") or []) if int(item or 0) > 0]
-        if len(job_ids) != 1:
-            raise GroupOpsBroadcastError("broadcast_job_not_created", "group broadcast job was not created", status_code=503)
-        return self._dispatch_result(
-            job_ids[0],
-            event_id=int((enqueue.get("event") or {}).get("id") or 0),
-            duplicate=False,
-            text_present=bool(text),
-            image_count=len(media_ids),
-            uploaded_image_count=len(uploaded_images),
-            card_attached=bool(parsed_card),
-            card_title=card_title,
-        )
+        return {
+            "ok": True,
+            "accepted": True,
+            **graph,
+            "external_effect_job_id": int(graph["final_effect_job_id"]),
+            "event_id": 0,
+            "content": {
+                "text_present": bool(text),
+                "image_count": len(existing_media_ids) + len(uploaded_images),
+                "uploaded_image_count": len(uploaded_images),
+                "card_attached": bool(parsed_card),
+                "card_title": card_title,
+            },
+            "route_owner": ROUTE_OWNER,
+        }
 
     def _plan_id(self) -> int:
         try:
@@ -283,96 +292,3 @@ class ExecuteGroupOpsTokenBroadcastCommand:
                 file_bytes=cover.file_bytes,
             )
         )
-
-    def _upload_image(self, *, image: BroadcastImage, idempotency_key: str, actor_id: str) -> str:
-        try:
-            result = build_upload_command(
-                idempotency_key=idempotency_key,
-                actor_id=clean_text(actor_id) or "external_group_ops_api",
-                actor_type="machine_api",
-                trace_id=idempotency_key,
-            )(
-                file_name=image.file_name,
-                file_bytes=image.file_bytes,
-                content_type=image.content_type,
-            )
-        except (CloudOrchestratorMediaUploadError, ValueError) as exc:
-            raise GroupOpsBroadcastError("media_upload_failed", "WeCom media upload failed", status_code=502) from exc
-        media_id = clean_text(result.get("media_id"))
-        if not media_id:
-            raise GroupOpsBroadcastError("media_upload_failed", "WeCom media upload returned no media id", status_code=502)
-        return media_id
-
-    def _existing_result(self, event: dict[str, Any]) -> dict[str, Any]:
-        job = self._external_effect_service.find_existing_job(
-            effect_type=WECOM_MESSAGE_GROUP_SEND,
-            target_type="group_ops_webhook_event",
-            target_id=str(int(event.get("id") or 0)),
-            business_type="group_ops_plan",
-            business_id=str(int(event.get("plan_id") or self._plan_id())),
-        )
-        if job is None:
-            raise GroupOpsBroadcastError("broadcast_job_not_found", "idempotent broadcast job was not found", status_code=503)
-        return self._job_result(job.id, event_id=int(event.get("id") or 0), duplicate=True)
-
-    def _dispatch_result(
-        self,
-        job_id: int,
-        *,
-        event_id: int,
-        duplicate: bool,
-        text_present: bool,
-        image_count: int,
-        uploaded_image_count: int,
-        card_attached: bool,
-        card_title: str,
-    ) -> dict[str, Any]:
-        ExternalEffectWorker(
-            self._external_effect_repo,
-            self._external_effect_adapter_registry,
-            locked_by=f"group-ops-broadcast-{job_id}",
-        ).dispatch_one(job_id)
-        return self._job_result(
-            job_id,
-            event_id=event_id,
-            duplicate=duplicate,
-            content={
-                "text_present": text_present,
-                "image_count": image_count,
-                "uploaded_image_count": uploaded_image_count,
-                "card_attached": card_attached,
-                "card_title": card_title,
-            },
-        )
-
-    def _job_result(
-        self,
-        job_id: int,
-        *,
-        event_id: int,
-        duplicate: bool,
-        content: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        job = self._external_effect_service.get(job_id)
-        attempts = self._external_effect_service.list_attempts(job_id)
-        attempt = attempts[-1] if attempts else None
-        summary = dict(attempt.response_summary_json or {}) if attempt else {}
-        status = clean_text(job.status if job else "")
-        ok = status in {"succeeded", "simulated"} and bool(summary.get("exact_target_verified"))
-        return {
-            "ok": ok,
-            "status": status or "unknown",
-            "duplicate": bool(duplicate),
-            "event_id": int(event_id or 0),
-            "external_effect_job_id": int(job_id),
-            "attempt_status": clean_text(attempt.status if attempt else ""),
-            "error_code": clean_text((attempt.error_code if attempt else "") or (job.last_error_code if job else "")),
-            "error_message": clean_text((attempt.error_message if attempt else "") or (job.last_error_message if job else "")),
-            "requested_chat_count": int(summary.get("requested_chat_count") or 0),
-            "exact_target_verified": bool(summary.get("exact_target_verified")),
-            "wecom_msgid_present": bool(summary.get("wecom_msgid_present")),
-            "real_external_call_executed": bool(summary.get("real_external_call_executed")),
-            "wecom_send_executed": bool(summary.get("wecom_send_executed")),
-            "content": dict(content or {}),
-            "route_owner": ROUTE_OWNER,
-        }

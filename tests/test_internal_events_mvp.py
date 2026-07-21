@@ -5,6 +5,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from aicrm_next.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform_foundation.execution_runtime.commands import QueueRuntimeCommandService
 from aicrm_next.platform_foundation.internal_events import (
     InMemoryInternalEventRepository,
     InternalEventConsumerRegistry,
@@ -219,8 +220,12 @@ def test_retry_consumer_run_only_allows_failed_retryable_terminal_and_blocked() 
         assert audit.status == "manual_retry"
 
 
-def test_diagnostics_and_admin_api_return_internal_event_metrics(next_client: TestClient, monkeypatch) -> None:
-    del monkeypatch
+def test_diagnostics_and_admin_api_return_internal_event_metrics(
+    next_client: TestClient,
+    next_pg_schema,
+    monkeypatch,
+) -> None:
+    del next_pg_schema, monkeypatch
     registry = next_client.app.state.internal_event_consumer_registry
     registry.clear()
     tokens = install_admin_action_tokens(
@@ -256,19 +261,28 @@ def test_diagnostics_and_admin_api_return_internal_event_metrics(next_client: Te
             json={"batch_size": 10, "dry_run": False, "event_types": [EVENT_TYPE]},
         )
         diagnostics_after = next_client.get("/api/admin/internal-events/diagnostics")
+        command_target = QueueRuntimeCommandService().read_internal_consumer_target(
+            emitted["event"]["event_id"],
+            "api_consumer",
+        )
+        assert command_target is not None
         retry = next_client.post(
             f"/api/admin/internal-events/{emitted['event']['event_id']}/consumers/api_consumer/retry",
             json={
-                "admin_action_token": tokens[("POST", "/api/admin/internal-events/{event_id}/consumers/{consumer_name}/retry")],
-                "reason": "approved operator retry",
-            },
+                    "admin_action_token": tokens[("POST", "/api/admin/internal-events/{event_id}/consumers/{consumer_name}/retry")],
+                    "actor": "pytest-operator",
+                    "reason": "approved operator retry",
+                    "expected_version": command_target.version_token,
+                },
         )
         skip = next_client.post(
             f"/api/admin/internal-events/{emitted['event']['event_id']}/consumers/api_consumer/skip",
             json={
-                "admin_action_token": tokens[("POST", "/api/admin/internal-events/{event_id}/consumers/{consumer_name}/skip")],
-                "reason": "operator decided no-op",
-            },
+                    "admin_action_token": tokens[("POST", "/api/admin/internal-events/{event_id}/consumers/{consumer_name}/skip")],
+                    "actor": "pytest-operator",
+                    "reason": "operator decided no-op",
+                    "expected_version": command_target.version_token,
+                },
         )
 
         assert listed.status_code == 200
@@ -284,15 +298,19 @@ def test_diagnostics_and_admin_api_return_internal_event_metrics(next_client: Te
         assert preview.status_code == 200
         assert preview.json()["dry_run"] is True
         assert preview.json()["counts"]["candidate_count"] == 1
-        assert run_due.status_code == 200
-        assert run_due.json()["counts"]["failed_retryable_count"] == 1
-        assert calls == ["api_consumer"]
-        assert diagnostics_after.json()["due_count"] == 0
-        assert diagnostics_after.json()["failed_retryable_count"] == 1
-        assert retry.status_code == 200
-        assert retry.json()["consumer_run"]["status"] == "pending"
-        assert skip.status_code == 200
-        assert skip.json()["consumer_run"]["status"] == "skipped"
-        assert skip.json()["attempt"]["status"] == "skipped"
+        assert run_due.status_code == 422
+        assert set(run_due.json()["missing_fields"]) == {
+            "actor",
+            "reason",
+            "expected_version",
+        }
+        assert calls == []
+        assert diagnostics_after.json()["due_count"] == 1
+        assert diagnostics_after.json()["failed_retryable_count"] == 0
+        assert retry.status_code == 409
+        assert retry.json()["error"] == "queue_command_cas_conflict"
+        assert skip.status_code == 202
+        assert skip.json()["action"] == "skip"
+        assert skip.json()["status"] == "skipped"
     finally:
         registry.clear()

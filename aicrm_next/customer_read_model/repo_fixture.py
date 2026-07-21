@@ -413,8 +413,12 @@ class FixtureCustomerReadRepository:
     ) -> list[JsonDict]:
         rows = [deepcopy(item) for item in self._timeline.get(external_userid, [])]
         event_type = str((filters or {}).get("event_type") or "").strip()
+        event_types = {str(value).strip() for value in (filters or {}).get("event_types") or [] if str(value).strip()}
         if event_type:
             rows = [item for item in rows if item.get("event_type") == event_type]
+        elif event_types:
+            rows = [item for item in rows if item.get("event_type") in event_types]
+        rows.sort(key=lambda item: (str(item.get("event_time") or ""), str(item.get("event_id") or "")), reverse=True)
         return _apply_page(rows, limit=limit, offset=offset)
 
     get_customer_timeline = list_timeline
@@ -440,6 +444,9 @@ class FixtureCustomerReadRepository:
         customer = self.get_customer_by_unionid(unionid)
         external_userid = str((customer or {}).get("external_userid") or "")
         return self.list_recent_messages(external_userid, limit=limit) if external_userid else []
+
+    def count_timeline_by_unionid(self, unionid: str, filters: JsonDict | None = None) -> int:
+        return len(self.list_timeline_by_unionid(unionid, filters, limit=None, offset=0))
 
     def customer_exists(self, external_userid: str) -> bool:
         return self.get_customer(external_userid) is not None

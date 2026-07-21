@@ -8,6 +8,15 @@ effects:
     migration_target: aicrm_next/integration_gateway/wecom_channel_entry_client.py
     idempotency_required: true
     audit_required: true
+  - effect_key: wecom.external_contact.detail.fetch
+    provider: wecom
+    owner: identity_contact
+    boundary: platform_foundation.external_effects
+    allowed_runtime: real_requires_approval
+    adapter_module: aicrm_next/platform_foundation/external_effects/adapters.py
+    migration_target: aicrm_next/platform_foundation/external_effects/adapters.py
+    idempotency_required: true
+    audit_required: true
   - effect_key: wechat_pay.commerce.api
     provider: wechat_pay
     owner: commerce

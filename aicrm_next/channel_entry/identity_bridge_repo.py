@@ -384,7 +384,8 @@ class PostgresIdentityBridgeRepository:
     def enqueue_identity_resolution(self, record: dict[str, Any], *, reason: str) -> None:
         external_userid = _text(record.get("external_userid"))
         source_key = external_userid or _text(record.get("openid")) or _text(record.get("mobile"))
-        get_db().execute(
+        db = get_db()
+        cursor = db.execute(
             """
             INSERT INTO crm_user_identity_resolution_queue (
                 source_type,
@@ -425,6 +426,7 @@ class PostgresIdentityBridgeRepository:
                 reason = EXCLUDED.reason,
                 last_seen_at = NOW(),
                 updated_at = NOW()
+            RETURNING *
             """,
             (
                 source_key,
@@ -436,7 +438,16 @@ class PostgresIdentityBridgeRepository:
                 _text(reason) or "identity_unresolved",
             ),
         )
-        get_db().commit()
+        row = cursor.fetchone()
+        if row:
+            from aicrm_next.identity_contact.resolution_effects import plan_identity_resolution_effect
+
+            plan_identity_resolution_effect(
+                db,
+                dict(row),
+                source_route="channel_entry.identity_bridge_resolution.enqueue",
+            )
+        db.commit()
 
     def mark_identity_resolution_resolved(self, *, external_userid: str, unionid: str) -> None:
         external = _text(external_userid)

@@ -9,6 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SELECTOR = ROOT / "scripts" / "ci" / "select_test_scope.py"
+MANIFEST = ROOT / "docs" / "ci" / "test_scope_manifest.yml"
 
 
 def _select(
@@ -170,6 +171,23 @@ def test_root_design_qa_artifact_is_mapped_to_docs_only_scope() -> None:
     assert result["needs_full_ci"] is False
 
 
+def test_duration_baseline_only_change_reuses_full_regression_provenance_without_repeating_it() -> None:
+    result = _select("docs/ci/pytest_duration_baseline.json")
+
+    assert result["matched_scopes"] == ["pytest_duration_baseline"]
+    assert result["unmatched_files"] == []
+    assert result["python_tests"] == [
+        "tests/test_pytest_duration_baseline_builder.py",
+        "tests/test_pytest_duration_baseline_pr_validation.py",
+        "tests/test_pytest_shard_selector.py",
+        "tests/test_test_inventory_audit.py",
+        "tests/test_ci_workflow_contract.py",
+    ]
+    assert result["needs_postgres"] is False
+    assert result["architecture_gate"] == "fast"
+    assert result["needs_full_ci"] is False
+
+
 def test_live_runtime_readiness_replacement_has_permanent_full_ci_scope() -> None:
     result = _select(
         "tools/check_live_runtime_readiness.py",
@@ -184,6 +202,41 @@ def test_live_runtime_readiness_replacement_has_permanent_full_ci_scope() -> Non
     assert "live_runtime_readiness" in result["matched_scopes"]
     assert "tests/test_runtime_readiness.py" in result["python_tests"]
     assert "tests/test_admin_read_model_boundary.py" in result["python_tests"]
+    assert result["needs_full_ci"] is True
+    assert result["architecture_gate"] == "full"
+
+
+def test_expression_length_guard_has_permanent_full_ci_scope() -> None:
+    result = _select(
+        "scripts/ci/check_github_actions_expression_length.py",
+        "tests/test_github_actions_expression_length.py",
+    )
+
+    assert result["unmatched_files"] == []
+    assert "ci_deploy" in result["matched_scopes"]
+    assert "tests/test_deploy_workflow_contract.py" in result["python_tests"]
+    assert "tests/test_ci_workflow_contract.py" in result["python_tests"]
+    assert "tests/test_ai_audience_runtime_hotfixes.py" in result["python_tests"]
+    assert "tests/test_identity_cutover_reconciliation_contract.py" in result["python_tests"]
+    assert "tests/test_github_actions_expression_length.py" in result["python_tests"]
+    assert result["needs_full_ci"] is True
+    assert result["architecture_gate"] == "full"
+
+
+def test_production_queue_operations_have_permanent_postgres_full_ci_scope() -> None:
+    changed_paths = (
+        "scripts/ops/manage_queue_runtime_soak.py",
+        "scripts/ops/transition_queue_runtime_scope.py",
+        "tests/test_queue_runtime_cutover.py",
+        "tests/test_queue_runtime_cutover_postgres.py",
+    )
+
+    result = _select(*changed_paths)
+
+    assert result["unmatched_files"] == []
+    assert "postgres_execution_runtime" in result["matched_scopes"]
+    assert set(changed_paths[2:]) <= set(result["python_tests"])
+    assert result["needs_postgres"] is True
     assert result["needs_full_ci"] is True
     assert result["architecture_gate"] == "full"
 
@@ -325,7 +378,8 @@ def test_wecom_callback_ops_change_selects_identity_contact_slice() -> None:
     assert "tests/test_wecom_callback_permanent_fix_readiness.py" in result["python_tests"]
     assert result["unmatched_files"] == []
     assert result["needs_postgres"] is True
-    assert result["architecture_gate"] == "db"
+    assert result["architecture_gate"] == "full"
+    assert result["needs_full_ci"] is True
 
 
 def test_identity_worker_deadlock_recovery_has_permanent_deploy_and_identity_scope() -> None:
@@ -379,6 +433,25 @@ def test_r06_internal_event_outbox_files_force_full_postgres_ci() -> None:
     assert result["needs_full_ci"] is True
 
 
+def test_automation_agent_audit_schema_repair_routes_to_full_postgres_contracts() -> None:
+    result = _select(
+        "migrations/versions/0124_automation_agent_audit_tables.py",
+        "docs/architecture/data_table_lifecycle_manifest.yml",
+        "tests/test_database_bootstrap.py",
+        "tests/test_deploy_workflow_contract.py",
+    )
+
+    assert {"migration_db", "ci_deploy"} <= set(result["matched_scopes"])
+    assert result["unmatched_files"] == []
+    assert "tests/test_alembic_revision_chain.py" in result["python_tests"]
+    assert "tests/test_database_bootstrap.py" in result["python_tests"]
+    assert "tests/test_data_table_lifecycle_guard.py" in result["python_tests"]
+    assert "tests/test_deploy_workflow_contract.py" in result["python_tests"]
+    assert result["needs_postgres"] is True
+    assert result["architecture_gate"] == "full"
+    assert result["needs_full_ci"] is True
+
+
 def test_r07_external_effect_delivery_files_force_full_postgres_ci() -> None:
     result = _select(
         "aicrm_next/platform_foundation/external_effects/worker.py",
@@ -415,8 +488,19 @@ def test_external_effect_continuation_composition_has_a_permanent_full_ci_scope(
         "aicrm_next/external_effect_composition.py",
         "aicrm_next/automation_agents/external_effect_continuation.py",
         "aicrm_next/automation_agents/internal_webhook_adapter.py",
+        "aicrm_next/shared/automation_agent_webhook_contract.py",
+        "aicrm_next/channel_entry/identity_external_effect.py",
+        "aicrm_next/external_push/external_effect_continuation.py",
+        "aicrm_next/internal_event_composition.py",
         "aicrm_next/questionnaire/external_effect_continuation.py",
+        "aicrm_next/platform_foundation/external_effects/completion_events.py",
         "aicrm_next/platform_foundation/external_effects/continuations.py",
+        "aicrm_next/platform_foundation/external_effects/provider_result_repository.py",
+        "aicrm_next/platform_foundation/external_effects/repo_contract.py",
+        "aicrm_next/platform_foundation/external_effects/repo_memory.py",
+        "deploy/openclaw-internal-event-worker.service",
+        "migrations/versions/0131_external_effect_continuation_fanout.py",
+        "tests/test_external_effect_completion_event.py",
         "tests/test_automation_agent_internal_webhook_adapter.py",
         "tests/test_external_effect_continuation_composition.py",
     )
@@ -424,10 +508,68 @@ def test_external_effect_continuation_composition_has_a_permanent_full_ci_scope(
     assert "external_effect_continuation_composition" in result["matched_scopes"]
     assert result["unmatched_files"] == []
     assert "tests/test_external_effect_continuation_composition.py" in result["python_tests"]
+    assert "tests/test_external_effect_completion_event.py" in result["python_tests"]
+    assert "tests/test_internal_event_registry_composition.py" in result["python_tests"]
+    assert "tests/test_database_bootstrap.py" in result["python_tests"]
+    assert "tests/test_alembic_revision_chain.py" in result["python_tests"]
     assert "tests/test_external_effects_mvp.py" in result["python_tests"]
     assert "tests/test_questionnaire_h5_final_tags_real_wecom.py" in result["python_tests"]
     assert "tests/test_automation_agents_webhook_execution.py" in result["python_tests"]
     assert "tests/test_automation_agent_internal_webhook_adapter.py" in result["python_tests"]
+    assert result["needs_postgres"] is True
+    assert result["needs_full_ci"] is True
+    assert result["architecture_gate"] == "full"
+
+
+def test_welcome_media_dependency_migration_has_a_permanent_postgres_scope() -> None:
+    result = _select(
+        "aicrm_next/channel_entry/welcome_media_effects_repository.py",
+        "migrations/versions/0130_welcome_media_dependencies.py",
+        "scripts/ci/check_welcome_media_effect_ownership.py",
+        "tests/test_channel_welcome_media_dependencies_postgres.py",
+    )
+
+    assert result["unmatched_files"] == []
+    assert "identity_contact" in result["matched_scopes"]
+    assert "tests/test_channel_welcome_media_dependencies_postgres.py" in result["python_tests"]
+    assert "tests/test_database_bootstrap.py" in result["python_tests"]
+    assert result["needs_postgres"] is True
+    assert result["needs_full_ci"] is True
+    assert result["architecture_gate"] == "full"
+
+
+def test_execution_runtime_policy_and_timeline_migrations_have_a_permanent_postgres_scope() -> None:
+    result = _select(
+        "migrations/versions/0132_external_claim_scope_policy.py",
+        "migrations/versions/0134_execution_timeline_graph_indexes.py",
+        "migrations/versions/0135_queue_scope_transition_audit.py",
+        "migrations/versions/0136_queue_runtime_validation_soak.py",
+        "scripts/ci/check_queue_runtime_cutover_kernel.py",
+        "tests/test_execution_timeline_graph_postgres.py",
+    )
+
+    assert result["unmatched_files"] == []
+    assert "postgres_execution_runtime" in result["matched_scopes"]
+    assert "tests/test_execution_runtime_postgres.py" in result["python_tests"]
+    assert "tests/test_execution_timeline_graph_postgres.py" in result["python_tests"]
+    assert "tests/test_queue_runtime_cutover_postgres.py" in result["python_tests"]
+    assert "tests/test_database_bootstrap.py" in result["python_tests"]
+    assert "tests/test_alembic_revision_chain.py" in result["python_tests"]
+    assert result["needs_postgres"] is True
+    assert result["needs_full_ci"] is True
+    assert result["architecture_gate"] == "full"
+
+
+def test_admin_queue_commands_have_a_permanent_postgres_runtime_scope() -> None:
+    result = _select(
+        "tests/test_admin_queue_command_api.py",
+        "tests/test_admin_queue_command_boundary.py",
+    )
+
+    assert result["unmatched_files"] == []
+    assert "postgres_execution_runtime" in result["matched_scopes"]
+    assert "tests/test_admin_queue_command_api.py" in result["python_tests"]
+    assert "tests/test_admin_queue_command_boundary.py" in result["python_tests"]
     assert result["needs_postgres"] is True
     assert result["needs_full_ci"] is True
     assert result["architecture_gate"] == "full"
@@ -590,6 +732,17 @@ def test_internal_event_registry_composition_has_permanent_full_ci_scope() -> No
     assert "tests/test_internal_events_mvp.py" in result["python_tests"]
     assert "tests/test_internal_event_worker_exit.py" in result["python_tests"]
     assert "tests/test_runtime_contract_inventory.py" in result["python_tests"]
+    assert result["needs_postgres"] is True
+    assert result["needs_full_ci"] is True
+    assert result["architecture_gate"] == "full"
+
+
+def test_group_provider_diagnostics_have_full_postgres_scope() -> None:
+    result = _select("tests/test_wecom_group_provider_diagnostics.py")
+
+    assert result["unmatched_files"] == []
+    assert "external_effect_delivery_reliability" in result["matched_scopes"]
+    assert "tests/test_wecom_group_provider_diagnostics.py" in result["python_tests"]
     assert result["needs_postgres"] is True
     assert result["needs_full_ci"] is True
     assert result["architecture_gate"] == "full"
@@ -873,7 +1026,6 @@ def test_ci_change_selects_contract_tests_and_full_gate() -> None:
 
 def test_ci_shard_selector_test_change_selects_full_gate() -> None:
     for changed_path in (
-        "docs/ci/pytest_duration_baseline.json",
         "tests/test_pytest_duration_baseline_builder.py",
         "tests/test_pytest_shard_selector.py",
     ):
@@ -906,6 +1058,7 @@ def test_runtime_units_change_selects_deploy_contract_tests() -> None:
         "deploy/production_runtime_units.json",
         "scripts/ops/check_runtime_secret_readiness.py",
         "scripts/ops/manage_production_runtime_units.py",
+        "tests/test_active_deploy_services_next_native.py",
         "tests/test_architecture_size_budgets.py",
         "tests/test_runtime_secret_readiness.py",
         "tests/test_runtime_units_autostart.py",
@@ -913,6 +1066,7 @@ def test_runtime_units_change_selects_deploy_contract_tests() -> None:
 
     assert "ci_deploy" in result["matched_scopes"]
     assert "commerce_fulfillment_reliability" in result["matched_scopes"]
+    assert "tests/test_active_deploy_services_next_native.py" in result["python_tests"]
     assert "tests/test_architecture_size_budgets.py" in result["python_tests"]
     assert "tests/test_deploy_workflow_contract.py" in result["python_tests"]
     assert "tests/test_identity_cutover_reconciliation_contract.py" in result["python_tests"]
@@ -921,6 +1075,16 @@ def test_runtime_units_change_selects_deploy_contract_tests() -> None:
     assert result["unmatched_files"] == []
     assert result["needs_postgres"] is True
     assert result["architecture_gate"] == "full"
+
+
+def test_root_gitignore_change_selects_deploy_contract_tests() -> None:
+    result = _select(".gitignore")
+
+    assert "ci_deploy" in result["matched_scopes"]
+    assert "tests/test_deploy_workflow_contract.py" in result["python_tests"]
+    assert result["architecture_gate"] == "full"
+    assert result["unmatched_files"] == []
+    assert result["needs_postgres"] is False
 
 
 def test_database_baseline_and_ownership_change_selects_required_postgres_slice() -> None:
@@ -960,15 +1124,22 @@ def test_ci_selector_governance_change_selects_both_selector_contracts() -> None
     result = _select(
         "docs/ci/test_scope_manifest.yml",
         "docs/ci/test_scope_policy.yml",
+        "docs/ci/test_scope_legacy_only_review.yml",
+        "scripts/ci/audit_test_inventory.py",
         "scripts/ci/select_test_scope_v2.py",
+        "scripts/ci/summarize_test_scope_shadow.py",
         "tests/test_convention_test_scope.py",
         "tests/test_select_test_scope.py",
+        "tests/test_test_inventory_audit.py",
+        "tests/test_test_scope_shadow_summary.py",
     )
 
     assert result["matched_scopes"] == ["ci_scope_selector"]
     assert result["python_tests"] == [
         "tests/test_convention_test_scope.py",
         "tests/test_select_test_scope.py",
+        "tests/test_test_inventory_audit.py",
+        "tests/test_test_scope_shadow_summary.py",
         "tests/test_ci_workflow_contract.py",
     ]
     assert result["unmatched_files"] == []
@@ -984,6 +1155,20 @@ def test_pytest_marker_configuration_change_forces_full_ci() -> None:
     assert result["unmatched_files"] == []
     assert result["architecture_gate"] == "full"
     assert result["needs_full_ci"] is True
+
+
+def test_ci_manifest_only_references_existing_test_files() -> None:
+    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+
+    missing = sorted(
+        (scope["name"], test_path)
+        for scope in manifest["scopes"]
+        for key in ("python_tests", "frontend_tests")
+        for test_path in scope.get(key, [])
+        if not (ROOT / test_path).is_file()
+    )
+
+    assert missing == []
 
 
 def test_frontend_typescript_change_runs_frontend_tests_and_build() -> None:
@@ -1114,7 +1299,6 @@ def test_private_auth_cutover_maps_every_runtime_caller_and_regression_file() ->
         "tests/test_cloud_orchestrator_run_due_preview.py",
         "tests/test_external_orders_api.py",
         "tests/test_internal_oauth_client_purpose.py",
-        "tests/test_internal_service_token_purpose.py",
         "tests/test_next_admin_jobs_native.py",
         "tests/test_run_message_activity_sync_script.py",
         "tests/test_wecom_tag_read_selectors.py",

@@ -1,0 +1,22 @@
+{% extends "admin_console/base.html" %}
+{% from "admin_console/_execution_components.html" import execution_action_dialog %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/admin_execution_ui.css') }}?v=20260717">
+{% endblock %}
+
+{% block content %}
+<section class="execution-page" data-execution-page="internal-detail" data-detail-id="{{ event_id }}" data-route-owner="ai_crm_next" data-operator-actor="{{ operator_actor }}">
+  <section class="admin-alert">
+    <strong>业务效果核对：</strong>此页展示消费者执行与对账证据；消费者成功不等于消息、Webhook 或标签已经交付。
+  </section>
+  <div class="admin-alert admin-alert--error" data-page-error hidden></div>
+  <div class="admin-state admin-state--loading" data-detail-loading>正在读取事件...</div>
+  <section class="execution-detail-grid" data-detail-content hidden></section>
+  {{ execution_action_dialog() }}
+</section>
+{% endblock %}
+
+{% block scripts_extra %}
+<script defer src="{{ url_for('static', filename='admin_console/admin_execution_ui.js') }}?v=20260717"></script>
+{% endblock %}

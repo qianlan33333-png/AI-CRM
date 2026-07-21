@@ -73,12 +73,20 @@ def static_boundary_state(root: Path = REPO_ROOT) -> dict[str, int]:
     manifest = json.loads((root / "deploy/production_runtime_units.json").read_text(encoding="utf-8"))
     retired = set(manifest.get("retired_forbidden") or [])
     active_services = {str(item.get("service") or "") for item in manifest.get("active_services") or []}
+    cutover_managed = manifest.get("cutover_managed_legacy") or {}
+    managed_legacy_services = {
+        str(item.get("service") or "")
+        for item in cutover_managed.get("persistent_services") or []
+    }
     return {
         "inline_dispatch_reference_count": callback_source.count("process_time_sensitive") + callback_source.count("ingress-inline") + ingress_source.count("process_time_sensitive"),
         "process_local_executor_reference_count": realtime_source.count("ThreadPoolExecutor") + realtime_source.count("_EXECUTOR.submit"),
         "welcome_fallback_cancel_reference_count": application_source.count("welcome_realtime_not_scheduled") + application_source.count("channel_entry_welcome_fallback"),
         "retired_timer_manifest_count": int("openclaw-wecom-callback-inbox-worker.timer" in retired),
-        "persistent_worker_manifest_count": int("openclaw-wecom-callback-inbox-worker.service" in active_services),
+        "durable_inbox_runtime_manifest_count": int("aicrm-inbox-queue-runtime.service" in active_services),
+        "persistent_worker_manifest_count": int("aicrm-inbox-queue-runtime.service" in active_services),
+        "legacy_persistent_worker_active_count": int("openclaw-wecom-callback-inbox-worker.service" in active_services),
+        "legacy_persistent_worker_managed_count": int("openclaw-wecom-callback-inbox-worker.service" in managed_legacy_services),
     }
 
 
@@ -105,7 +113,9 @@ def run(argv: list[str] | None = None) -> dict[str, Any]:
         + int(static["process_local_executor_reference_count"])
         + int(static["welcome_fallback_cancel_reference_count"])
         + int(static["retired_timer_manifest_count"] != 1)
-        + int(static["persistent_worker_manifest_count"] != 1)
+        + int(static["durable_inbox_runtime_manifest_count"] != 1)
+        + int(static["legacy_persistent_worker_active_count"] != 0)
+        + int(static["legacy_persistent_worker_managed_count"] != 1)
         + int(retired_timer.get("active") is True)
         + int(config.get("conflict") is True)
     )

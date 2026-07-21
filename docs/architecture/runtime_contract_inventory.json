@@ -23,7 +23,7 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/commerce/coupons/admin_api.py",
       "key": "AICRM_ADMIN_AUTH_ENFORCED",
-      "line": 92
+      "line": 66
     },
     {
       "accessor": "os.getenv",
@@ -71,7 +71,7 @@
       "accessor": "runtime_bool",
       "file": "aicrm_next/ai_audience_ops/webhook_service.py",
       "key": "AICRM_AI_AUDIENCE_INBOUND_ACTION_EXECUTE",
-      "line": 53
+      "line": 180
     },
     {
       "accessor": "os.getenv",
@@ -275,7 +275,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/admin_jobs/application.py",
       "key": "AICRM_AUTH_MCP_CLIENT_ID",
-      "line": 281
+      "line": 282
     },
     {
       "accessor": "declared_runtime_environment_key",
@@ -333,51 +333,57 @@
     },
     {
       "accessor": "os.getenv",
-      "file": "aicrm_next/data_health/checks.py",
-      "key": "AICRM_DATA_HEALTH_BROADCAST_BLOCKED_MAX_COUNT",
-      "line": 28
+      "file": "scripts/run_customer_read_model_refresh.py",
+      "key": "AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED",
+      "line": 98
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/data_health/checks.py",
-      "key": "AICRM_DATA_HEALTH_BROADCAST_RETRYABLE_DUE_MAX_COUNT",
+      "key": "AICRM_DATA_HEALTH_BROADCAST_BLOCKED_MAX_COUNT",
       "line": 29
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/data_health/checks.py",
+      "key": "AICRM_DATA_HEALTH_BROADCAST_RETRYABLE_DUE_MAX_COUNT",
+      "line": 30
+    },
+    {
+      "accessor": "os.getenv",
+      "file": "aicrm_next/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_BROADCAST_TERMINAL_LOOKBACK_HOURS",
-      "line": 32
+      "line": 33
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_RETRYABLE_DUE_MAX_COUNT",
-      "line": 34
+      "line": 35
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS",
-      "line": 37
+      "line": 38
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_PROJECTION_FRESHNESS_MAX_MINUTES",
-      "line": 27
+      "line": 28
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/admin_jobs/application.py",
       "key": "AICRM_ENABLE_IN_PROCESS_ARCHIVE_SYNC",
-      "line": 396
+      "line": 397
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/message_archive/api.py",
       "key": "AICRM_ENABLE_IN_PROCESS_ARCHIVE_SYNC",
-      "line": 146
+      "line": 148
     },
     {
       "accessor": "os.getenv",
@@ -386,15 +392,33 @@
       "line": 202
     },
     {
+      "accessor": "declared_runtime_environment_key",
+      "file": "aicrm_next/shared/wecom_runtime.py",
+      "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_GROUP_CHAT_IDS",
+      "line": 19
+    },
+    {
+      "accessor": "declared_runtime_environment_key",
+      "file": "aicrm_next/shared/wecom_runtime.py",
+      "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_GROUP_OPS_WEBHOOK_KEYS",
+      "line": 19
+    },
+    {
       "accessor": "runtime_setting",
       "file": "aicrm_next/background_jobs/broadcast_queue_worker.py",
       "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS",
-      "line": 634
+      "line": 839
     },
     {
       "accessor": "declared_runtime_environment_key",
       "file": "aicrm_next/shared/wecom_runtime.py",
       "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS",
+      "line": 19
+    },
+    {
+      "accessor": "declared_runtime_environment_key",
+      "file": "aicrm_next/shared/wecom_runtime.py",
+      "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_TARGET_EXTERNAL_USERIDS",
       "line": 19
     },
     {
@@ -404,16 +428,10 @@
       "line": 19
     },
     {
-      "accessor": "runtime_bool",
-      "file": "aicrm_next/platform_foundation/external_effects/realtime.py",
-      "key": "AICRM_EXTERNAL_EFFECT_WEBHOOK_EXECUTE",
-      "line": 37
-    },
-    {
       "accessor": "runtime_setting",
       "file": "aicrm_next/platform_foundation/external_effects/adapters.py",
       "key": "AICRM_EXTERNAL_EFFECT_WEBHOOK_TIMEOUT_SECONDS",
-      "line": 310
+      "line": 354
     },
     {
       "accessor": "declared_runtime_environment_key",
@@ -431,19 +449,19 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/automation_engine/group_ops/broadcast.py",
       "key": "AICRM_GROUP_OPS_BROADCAST_PLAN_ID",
-      "line": 261
+      "line": 270
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/automation_engine/group_ops/broadcast.py",
       "key": "AICRM_GROUP_OPS_MINIPROGRAM_APPID",
-      "line": 269
+      "line": 278
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/automation_engine/group_ops/scheduler.py",
       "key": "AICRM_GROUP_OPS_TIMEZONE",
-      "line": 23
+      "line": 30
     },
     {
       "accessor": "os.getenv",
@@ -540,6 +558,12 @@
       "file": "aicrm_next/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENT_WORKER_BATCH_SIZE",
       "line": 186
+    },
+    {
+      "accessor": "os.getenv",
+      "file": "aicrm_next/platform_foundation/execution_runtime/listener.py",
+      "key": "AICRM_LISTENER_DATABASE_URL",
+      "line": 34
     },
     {
       "accessor": "runtime_setting",
@@ -833,7 +857,7 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/ai_audience_ops/service.py",
       "key": "AICRM_PUBLIC_BASE_URL",
-      "line": 633
+      "line": 611
     },
     {
       "accessor": "os.getenv",
@@ -843,15 +867,15 @@
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/commerce/coupons/admin_api.py",
-      "key": "AICRM_PUBLIC_BASE_URL",
-      "line": 54
-    },
-    {
-      "accessor": "runtime_setting",
       "file": "aicrm_next/public_product/h5_wechat_pay.py",
       "key": "AICRM_PUBLIC_BASE_URL",
       "line": 125
+    },
+    {
+      "accessor": "runtime_setting",
+      "file": "aicrm_next/shared/public_url.py",
+      "key": "AICRM_PUBLIC_BASE_URL",
+      "line": 15
     },
     {
       "accessor": "os.getenv",
@@ -887,7 +911,7 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/commerce/coupons/admin_api.py",
       "key": "AICRM_ROUTE_POLICY_ENFORCED",
-      "line": 91
+      "line": 65
     },
     {
       "accessor": "os.getenv",
@@ -988,6 +1012,12 @@
     {
       "accessor": "declared_runtime_environment_key",
       "file": "aicrm_next/shared/wecom_runtime.py",
+      "key": "AICRM_WECOM_CANARY_ALLOWED_MEDIA_TARGETS",
+      "line": 19
+    },
+    {
+      "accessor": "declared_runtime_environment_key",
+      "file": "aicrm_next/shared/wecom_runtime.py",
       "key": "AICRM_WECOM_DEFAULT_SENDER_USERID",
       "line": 19
     },
@@ -995,7 +1025,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/integration_gateway/wecom_group_adapter.py",
       "key": "AICRM_WECOM_GROUP_ADAPTER_MODE",
-      "line": 22
+      "line": 23
     },
     {
       "accessor": "runtime_setting",
@@ -1014,6 +1044,12 @@
       "file": "aicrm_next/integration_gateway/wecom_private_adapter.py",
       "key": "AICRM_WECOM_PRIVATE_ADAPTER_MODE",
       "line": 20
+    },
+    {
+      "accessor": "declared_runtime_environment_key",
+      "file": "aicrm_next/shared/wecom_runtime.py",
+      "key": "AICRM_WECOM_PROVIDER_TARGET_POLICY",
+      "line": 19
     },
     {
       "accessor": "runtime_setting",
@@ -1053,15 +1089,15 @@
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/commerce/coupons/admin_api.py",
-      "key": "APP_BASE_URL",
-      "line": 56
-    },
-    {
-      "accessor": "runtime_setting",
       "file": "aicrm_next/public_product/h5_wechat_pay.py",
       "key": "APP_BASE_URL",
       "line": 127
+    },
+    {
+      "accessor": "runtime_setting",
+      "file": "aicrm_next/shared/public_url.py",
+      "key": "APP_BASE_URL",
+      "line": 17
     },
     {
       "accessor": "os.getenv",
@@ -1097,19 +1133,19 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/background_jobs/automation_ops_scheduler.py",
       "key": "AUTOMATION_OPS_SCHEDULER_OPERATOR",
-      "line": 48
+      "line": 35
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/background_jobs/broadcast_queue_worker.py",
       "key": "BROADCAST_QUEUE_LEASE_SECONDS",
-      "line": 1020
+      "line": 1220
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/background_jobs/broadcast_queue_worker.py",
       "key": "BROADCAST_QUEUE_RETRY_DELAY_SECONDS",
-      "line": 198
+      "line": 389
     },
     {
       "accessor": "_env_flag",
@@ -1133,19 +1169,19 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/customer_read_model/api.py",
       "key": "CUSTOMER_READ_MODEL_REPO_BACKEND",
-      "line": 58
+      "line": 55
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/customer_read_model/repo.py",
       "key": "CUSTOMER_READ_MODEL_REPO_BACKEND",
-      "line": 592
+      "line": 674
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/admin_jobs/repository.py",
       "key": "DATABASE_URL",
-      "line": 78
+      "line": 80
     },
     {
       "accessor": "os.getenv",
@@ -1169,7 +1205,7 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/cloud_orchestrator/repository.py",
       "key": "DATABASE_URL",
-      "line": 348
+      "line": 356
     },
     {
       "accessor": "os.getenv",
@@ -1269,6 +1305,18 @@
     },
     {
       "accessor": "os.getenv",
+      "file": "scripts/ops/check_ai_audience_refresh_owner.py",
+      "key": "DATABASE_URL",
+      "line": 111
+    },
+    {
+      "accessor": "os.getenv",
+      "file": "scripts/ops/check_ai_audience_refresh_owner.py",
+      "key": "DATABASE_URL",
+      "line": 140
+    },
+    {
+      "accessor": "os.getenv",
       "file": "scripts/ops/check_auth_readiness.py",
       "key": "DATABASE_URL",
       "line": 177
@@ -1278,6 +1326,12 @@
       "file": "scripts/ops/check_callback_quick_ack_state.py",
       "key": "DATABASE_URL",
       "line": 115
+    },
+    {
+      "accessor": "os.getenv",
+      "file": "scripts/ops/check_identity_customer_event_driven.py",
+      "key": "DATABASE_URL",
+      "line": 187
     },
     {
       "accessor": "os.getenv",
@@ -1443,15 +1497,15 @@
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/commerce/coupons/admin_api.py",
-      "key": "PUBLIC_BASE_URL",
-      "line": 55
-    },
-    {
-      "accessor": "runtime_setting",
       "file": "aicrm_next/public_product/h5_wechat_pay.py",
       "key": "PUBLIC_BASE_URL",
       "line": 126
+    },
+    {
+      "accessor": "runtime_setting",
+      "file": "aicrm_next/shared/public_url.py",
+      "key": "PUBLIC_BASE_URL",
+      "line": 16
     },
     {
       "accessor": "os.getenv",
@@ -1475,7 +1529,7 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/commerce/coupons/admin_api.py",
       "key": "PYTEST_CURRENT_TEST",
-      "line": 90
+      "line": 64
     },
     {
       "accessor": "os.getenv",
@@ -1511,7 +1565,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/radar_links/api.py",
       "key": "SECRET_KEY",
-      "line": 187
+      "line": 223
     },
     {
       "accessor": "runtime_setting",
@@ -1685,37 +1739,37 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/commerce/wechat_shop_service.py",
       "key": "WECHAT_SHOP_API_BASE",
-      "line": 112
+      "line": 115
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/commerce/wechat_shop_service.py",
       "key": "WECHAT_SHOP_APPID",
-      "line": 110
+      "line": 113
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/commerce/wechat_shop_service.py",
       "key": "WECHAT_SHOP_APPID",
-      "line": 700
+      "line": 703
     },
     {
       "accessor": "runtime_setting",
       "file": "aicrm_next/commerce/wechat_shop_service.py",
       "key": "WECHAT_SHOP_APPSECRET",
-      "line": 96
+      "line": 99
     },
     {
       "accessor": "runtime_setting",
       "file": "aicrm_next/commerce/wechat_shop_service.py",
       "key": "WECHAT_SHOP_APPSECRET",
-      "line": 111
+      "line": 114
     },
     {
       "accessor": "runtime_setting",
       "file": "aicrm_next/commerce/wechat_shop_service.py",
       "key": "WECHAT_SHOP_CALLBACK_TOKEN",
-      "line": 96
+      "line": 99
     },
     {
       "accessor": "runtime_setting",
@@ -1733,7 +1787,7 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/commerce/wechat_shop_service.py",
       "key": "WECHAT_SHOP_HTTP_TIMEOUT_SECONDS",
-      "line": 107
+      "line": 110
     },
     {
       "accessor": "os.getenv",
@@ -1752,6 +1806,18 @@
       "file": "aicrm_next/integration_gateway/wecom_jssdk_adapter.py",
       "key": "WECOM_AGENT_ID",
       "line": 82
+    },
+    {
+      "accessor": "os.getenv",
+      "file": "aicrm_next/platform_foundation/external_effects/rate_limit.py",
+      "key": "WECOM_AGENT_ID",
+      "line": 59
+    },
+    {
+      "accessor": "os.getenv",
+      "file": "aicrm_next/platform_foundation/external_effects/repo_contract.py",
+      "key": "WECOM_AGENT_ID",
+      "line": 200
     },
     {
       "accessor": "os.getenv",
@@ -1811,7 +1877,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/channel_entry/application.py",
       "key": "WECOM_CALLBACK_AES_KEY",
-      "line": 54
+      "line": 58
     },
     {
       "accessor": "os.getenv",
@@ -1841,7 +1907,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/channel_entry/application.py",
       "key": "WECOM_CALLBACK_TOKEN",
-      "line": 53
+      "line": 57
     },
     {
       "accessor": "os.getenv",
@@ -1895,19 +1961,13 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/channel_entry/application.py",
       "key": "WECOM_CORP_ID",
-      "line": 52
+      "line": 56
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/channel_entry/identity_bridge_service.py",
       "key": "WECOM_CORP_ID",
       "line": 18
-    },
-    {
-      "accessor": "os.getenv",
-      "file": "aicrm_next/customer_read_model/api.py",
-      "key": "WECOM_CORP_ID",
-      "line": 383
     },
     {
       "accessor": "os.getenv",
@@ -1941,6 +2001,18 @@
     },
     {
       "accessor": "os.getenv",
+      "file": "aicrm_next/platform_foundation/external_effects/rate_limit.py",
+      "key": "WECOM_CORP_ID",
+      "line": 51
+    },
+    {
+      "accessor": "os.getenv",
+      "file": "aicrm_next/platform_foundation/external_effects/repo_contract.py",
+      "key": "WECOM_CORP_ID",
+      "line": 186
+    },
+    {
+      "accessor": "os.getenv",
       "file": "aicrm_next/questionnaire/application.py",
       "key": "WECOM_CORP_ID",
       "line": 305
@@ -1950,6 +2022,12 @@
       "file": "aicrm_next/questionnaire/application.py",
       "key": "WECOM_CORP_ID",
       "line": 309
+    },
+    {
+      "accessor": "os.getenv",
+      "file": "aicrm_next/shared/sidebar_access.py",
+      "key": "WECOM_CORP_ID",
+      "line": 34
     },
     {
       "accessor": "declared_runtime_environment_key",
@@ -1973,7 +2051,7 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/admin_jobs/application.py",
       "key": "WECOM_DEFAULT_OWNER_USERID",
-      "line": 82
+      "line": 83
     },
     {
       "accessor": "os.getenv",
@@ -2033,13 +2111,13 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/channel_entry/application.py",
       "key": "WORKER_RELEASE_SHA",
-      "line": 976
+      "line": 1029
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/channel_entry/application.py",
       "key": "WORKER_RELEASE_SHA",
-      "line": 1194
+      "line": 1247
     },
     {
       "accessor": "os.getenv",
@@ -2088,6 +2166,7 @@
     "AICRM_AUTH_SESSION_HASH_PEPPER",
     "AICRM_COMPLETION_URL_LINK_API_PATH_PREFIXES",
     "AICRM_COMPLETION_URL_LINK_TIMEOUT_SECONDS",
+    "AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED",
     "AICRM_DATA_HEALTH_BROADCAST_BLOCKED_MAX_COUNT",
     "AICRM_DATA_HEALTH_BROADCAST_RETRYABLE_DUE_MAX_COUNT",
     "AICRM_DATA_HEALTH_BROADCAST_TERMINAL_LOOKBACK_HOURS",
@@ -2096,9 +2175,11 @@
     "AICRM_DATA_HEALTH_PROJECTION_FRESHNESS_MAX_MINUTES",
     "AICRM_ENABLE_IN_PROCESS_ARCHIVE_SYNC",
     "AICRM_ENV_FILE",
+    "AICRM_EXTERNAL_EFFECT_ALLOWED_GROUP_CHAT_IDS",
+    "AICRM_EXTERNAL_EFFECT_ALLOWED_GROUP_OPS_WEBHOOK_KEYS",
     "AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS",
+    "AICRM_EXTERNAL_EFFECT_ALLOWED_TARGET_EXTERNAL_USERIDS",
     "AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES",
-    "AICRM_EXTERNAL_EFFECT_WEBHOOK_EXECUTE",
     "AICRM_EXTERNAL_EFFECT_WEBHOOK_TIMEOUT_SECONDS",
     "AICRM_EXTERNAL_EFFECT_WECOM_EXECUTE",
     "AICRM_FORCE_FULL_CI",
@@ -2120,6 +2201,7 @@
     "AICRM_INTERNAL_EVENTS_LEGACY_PATH_RETIRE_AFTER_DAYS",
     "AICRM_INTERNAL_EVENTS_WORKER_BATCH_SIZE",
     "AICRM_INTERNAL_EVENT_WORKER_BATCH_SIZE",
+    "AICRM_LISTENER_DATABASE_URL",
     "AICRM_NEXT_ACTION_TOKEN_SECRET",
     "AICRM_NEXT_ADMIN_AUTH_USER_COUNT",
     "AICRM_NEXT_ALIPAY_MODE",
@@ -2172,10 +2254,12 @@
     "AICRM_USER_OPS_SEND_RISK_LEVEL",
     "AICRM_WECOM_ADMIN_AUTH_TIMEOUT",
     "AICRM_WECOM_API_BASE",
+    "AICRM_WECOM_CANARY_ALLOWED_MEDIA_TARGETS",
     "AICRM_WECOM_DEFAULT_SENDER_USERID",
     "AICRM_WECOM_GROUP_ADAPTER_MODE",
     "AICRM_WECOM_OPERATION_MEMBERS_TIMEOUT",
     "AICRM_WECOM_PRIVATE_ADAPTER_MODE",
+    "AICRM_WECOM_PROVIDER_TARGET_POLICY",
     "AICRM_WECOM_TAG_AGENT_SECRET",
     "AICRM_WECOM_TAG_API_BASE",
     "AICRM_WECOM_TAG_CORP_ID",
@@ -2285,6 +2369,17 @@
       "migration_target": "aicrm_next/integration_gateway/wecom_channel_entry_client.py",
       "owner": "channel_entry",
       "provider": "wecom"
+    },
+    {
+      "adapter_module": "aicrm_next/platform_foundation/external_effects/adapters.py",
+      "allowed_runtime": "real_requires_approval",
+      "audit_required": true,
+      "boundary": "platform_foundation.external_effects",
+      "effect_key": "wecom.external_contact.detail.fetch",
+      "idempotency_required": true,
+      "migration_target": "aicrm_next/platform_foundation/external_effects/adapters.py",
+      "owner": "identity_contact",
+      "provider": "wecom"
     }
   ],
   "external_effects": [
@@ -2365,6 +2460,10 @@
       "effect_type": "wecom.contact.tag.unmark"
     },
     {
+      "constant": "WECOM_EXTERNAL_CONTACT_DETAIL_FETCH",
+      "effect_type": "wecom.external_contact.detail.fetch"
+    },
+    {
       "constant": "WECOM_MEDIA_UPLOAD",
       "effect_type": "wecom.media.upload"
     },
@@ -2392,6 +2491,13 @@
   "fixture_records_included": false,
   "internal_event_consumers": [
     {
+      "consumer_name": "ai_audience_inbound_action_planner",
+      "consumer_type": "external_effect_planner",
+      "event_type": "ai_audience.inbound.received",
+      "handler_registered": true,
+      "max_attempts": 5
+    },
+    {
       "consumer_name": "ai_audience_daily_refresh_consumer",
       "consumer_type": "orchestration",
       "event_type": "ai_audience.refresh.daily_tick",
@@ -2404,6 +2510,13 @@
       "event_type": "ai_audience.refresh.incremental_tick",
       "handler_registered": true,
       "max_attempts": 5
+    },
+    {
+      "consumer_name": "ai_audience_refresh_intent_consumer",
+      "consumer_type": "orchestration",
+      "event_type": "ai_audience.refresh.requested",
+      "handler_registered": true,
+      "max_attempts": 10
     },
     {
       "consumer_name": "ai_audience_outbound_effect_planner",
@@ -2546,6 +2659,27 @@
       "max_attempts": 5
     },
     {
+      "consumer_name": "customer_read_model_dirty_consumer",
+      "consumer_type": "projection",
+      "event_type": "channel_entry.entered",
+      "handler_registered": true,
+      "max_attempts": 10
+    },
+    {
+      "consumer_name": "customer_timeline_projection_consumer",
+      "consumer_type": "projection",
+      "event_type": "channel_entry.entered",
+      "handler_registered": true,
+      "max_attempts": 10
+    },
+    {
+      "consumer_name": "customer_timeline_projection_consumer",
+      "consumer_type": "projection",
+      "event_type": "commerce.product_enrolled",
+      "handler_registered": true,
+      "max_attempts": 10
+    },
+    {
       "consumer_name": "automation_phone_bound_consumer",
       "consumer_type": "orchestration",
       "event_type": "customer.phone_bound",
@@ -2565,6 +2699,13 @@
       "event_type": "customer.phone_bound",
       "handler_registered": true,
       "max_attempts": 5
+    },
+    {
+      "consumer_name": "customer_read_model_dirty_consumer",
+      "consumer_type": "projection",
+      "event_type": "customer.phone_bound",
+      "handler_registered": true,
+      "max_attempts": 10
     },
     {
       "consumer_name": "customer_summary_consumer",
@@ -2616,11 +2757,130 @@
       "max_attempts": 5
     },
     {
+      "consumer_name": "customer_read_model_refresh_intent_consumer",
+      "consumer_type": "projection",
+      "event_type": "customer_read_model.refresh.requested",
+      "handler_registered": true,
+      "max_attempts": 5
+    },
+    {
+      "consumer_name": "customer_read_model_refresh_completed_audit_consumer",
+      "consumer_type": "projection",
+      "event_type": "customer_read_model.refreshed",
+      "handler_registered": true,
+      "max_attempts": 3
+    },
+    {
+      "consumer_name": "external_effect_automation_continuation_consumer",
+      "consumer_type": "orchestration",
+      "event_type": "external_effect.completed",
+      "handler_registered": true,
+      "max_attempts": 5
+    },
+    {
+      "consumer_name": "external_effect_broadcast_continuation_consumer",
+      "consumer_type": "orchestration",
+      "event_type": "external_effect.completed",
+      "handler_registered": true,
+      "max_attempts": 5
+    },
+    {
+      "consumer_name": "external_effect_completion_continuation_consumer",
+      "consumer_type": "handler_alias",
+      "event_type": "external_effect.completed",
+      "handler_registered": true,
+      "max_attempts": null
+    },
+    {
+      "consumer_name": "external_effect_external_push_continuation_consumer",
+      "consumer_type": "orchestration",
+      "event_type": "external_effect.completed",
+      "handler_registered": true,
+      "max_attempts": 5
+    },
+    {
+      "consumer_name": "external_effect_group_ops_continuation_consumer",
+      "consumer_type": "orchestration",
+      "event_type": "external_effect.completed",
+      "handler_registered": true,
+      "max_attempts": 5
+    },
+    {
+      "consumer_name": "external_effect_identity_continuation_consumer",
+      "consumer_type": "orchestration",
+      "event_type": "external_effect.completed",
+      "handler_registered": true,
+      "max_attempts": 5
+    },
+    {
+      "consumer_name": "external_effect_questionnaire_continuation_consumer",
+      "consumer_type": "orchestration",
+      "event_type": "external_effect.completed",
+      "handler_registered": true,
+      "max_attempts": 5
+    },
+    {
+      "consumer_name": "external_effect_welcome_media_continuation_consumer",
+      "consumer_type": "orchestration",
+      "event_type": "external_effect.completed",
+      "handler_registered": true,
+      "max_attempts": 5
+    },
+    {
+      "consumer_name": "external_effect_broadcast_settlement_consumer",
+      "consumer_type": "projection",
+      "event_type": "external_effect.settled",
+      "handler_registered": true,
+      "max_attempts": 5
+    },
+    {
+      "consumer_name": "external_effect_external_push_settlement_consumer",
+      "consumer_type": "projection",
+      "event_type": "external_effect.settled",
+      "handler_registered": true,
+      "max_attempts": 5
+    },
+    {
+      "consumer_name": "external_effect_group_ops_settlement_consumer",
+      "consumer_type": "projection",
+      "event_type": "external_effect.settled",
+      "handler_registered": true,
+      "max_attempts": 5
+    },
+    {
+      "consumer_name": "external_effect_identity_settlement_consumer",
+      "consumer_type": "projection",
+      "event_type": "external_effect.settled",
+      "handler_registered": true,
+      "max_attempts": 5
+    },
+    {
+      "consumer_name": "external_effect_welcome_settlement_consumer",
+      "consumer_type": "projection",
+      "event_type": "external_effect.settled",
+      "handler_registered": true,
+      "max_attempts": 5
+    },
+    {
       "consumer_name": "ai_audience_source_poke_consumer",
       "consumer_type": "projection",
       "event_type": "external_form.submitted",
       "handler_registered": true,
       "max_attempts": 5
+    },
+    {
+      "consumer_name": "customer_read_model_dirty_consumer",
+      "consumer_type": "projection",
+      "event_type": "identity.resolved",
+      "handler_registered": true,
+      "max_attempts": 10
+    },
+    {
+      "consumer_name": "customer_read_model_dirty_consumer",
+      "consumer_type": "projection",
+      "event_type": "message_archive.batch_ingested",
+      "handler_registered": true,
+      "max_attempts": 10
     },
     {
       "consumer_name": "ai_assist_notify_consumer",
@@ -2712,6 +2972,20 @@
       "event_type": "payment.succeeded",
       "handler_registered": true,
       "max_attempts": 5
+    },
+    {
+      "consumer_name": "customer_read_model_dirty_consumer",
+      "consumer_type": "projection",
+      "event_type": "payment.succeeded",
+      "handler_registered": true,
+      "max_attempts": 10
+    },
+    {
+      "consumer_name": "customer_timeline_projection_consumer",
+      "consumer_type": "projection",
+      "event_type": "payment.succeeded",
+      "handler_registered": true,
+      "max_attempts": 10
     },
     {
       "consumer_name": "dnd_policy_consumer",
@@ -2819,11 +3093,25 @@
       "max_attempts": 5
     },
     {
+      "consumer_name": "customer_read_model_dirty_consumer",
+      "consumer_type": "projection",
+      "event_type": "questionnaire.submitted",
+      "handler_registered": true,
+      "max_attempts": 10
+    },
+    {
       "consumer_name": "customer_summary_consumer",
       "consumer_type": "projection",
       "event_type": "questionnaire.submitted",
       "handler_registered": true,
       "max_attempts": 5
+    },
+    {
+      "consumer_name": "customer_timeline_projection_consumer",
+      "consumer_type": "projection",
+      "event_type": "questionnaire.submitted",
+      "handler_registered": true,
+      "max_attempts": 10
     },
     {
       "consumer_name": "questionnaire_projection_consumer",
@@ -2845,6 +3133,20 @@
       "event_type": "questionnaire.submitted",
       "handler_registered": true,
       "max_attempts": 5
+    },
+    {
+      "consumer_name": "queue_runtime_command_audit_consumer",
+      "consumer_type": "diagnostic",
+      "event_type": "queue.runtime.command.applied",
+      "handler_registered": true,
+      "max_attempts": 3
+    },
+    {
+      "consumer_name": "customer_timeline_projection_consumer",
+      "consumer_type": "projection",
+      "event_type": "radar.opened",
+      "handler_registered": true,
+      "max_attempts": 10
     },
     {
       "consumer_name": "service_period_refund_consumer",
@@ -2911,7 +3213,7 @@
     }
   ],
   "migration_heads": [
-    "0123_required_physical_schema_repair"
+    "0136_queue_runtime_validation_soak"
   ],
   "openapi_components": {
     "schemas": {
@@ -6319,6 +6621,55 @@
       "route_group": "admin_jobs"
     },
     {
+      "capability_owner": "admin_jobs",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.admin_jobs.routes.admin_broadcast_job_page",
+      "include_in_schema": true,
+      "kind": "page",
+      "methods": [
+        "GET"
+      ],
+      "name": "api.admin_broadcast_job_page",
+      "operation_id": "api.admin_broadcast_job_page:GET:/admin/broadcast-jobs/{job_id}",
+      "path": "/admin/broadcast-jobs/{job_id}",
+      "route_group": "admin_jobs"
+    },
+    {
       "capability_owner": "automation_engine",
       "contract": {
         "parameters": [],
@@ -7498,6 +7849,55 @@
       "route_group": "internal_events"
     },
     {
+      "capability_owner": "platform_foundation",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "event_id",
+            "required": true,
+            "schema": {
+              "title": "Event Id",
+              "type": "string"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.platform_foundation.internal_events.api.admin_internal_event_page",
+      "include_in_schema": true,
+      "kind": "page",
+      "methods": [
+        "GET"
+      ],
+      "name": "api.admin_internal_event_page",
+      "operation_id": "api.admin_internal_event_page:GET:/admin/internal-events/{event_id}",
+      "path": "/admin/internal-events/{event_id}",
+      "route_group": "internal_events"
+    },
+    {
       "capability_owner": "admin_jobs",
       "contract": {
         "parameters": [],
@@ -7855,6 +8255,55 @@
       "name": "api.admin_push_center_page",
       "operation_id": "api.admin_push_center_page:GET:/admin/push-center",
       "path": "/admin/push-center",
+      "route_group": "push_center"
+    },
+    {
+      "capability_owner": "platform_foundation",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "string"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.platform_foundation.push_center.api.admin_push_center_job_page",
+      "include_in_schema": true,
+      "kind": "page",
+      "methods": [
+        "GET"
+      ],
+      "name": "api.admin_push_center_job_page",
+      "operation_id": "api.admin_push_center_job_page:GET:/admin/push-center/jobs/{job_id}",
+      "path": "/admin/push-center/jobs/{job_id}",
       "route_group": "push_center"
     },
     {
@@ -13851,6 +14300,53 @@
           }
         }
       },
+      "endpoint": "aicrm_next.admin_jobs.routes.api_admin_broadcast_job_detail",
+      "include_in_schema": true,
+      "kind": "api",
+      "methods": [
+        "GET"
+      ],
+      "name": "api_admin_broadcast_job_detail",
+      "operation_id": "api_admin_broadcast_job_detail:GET:/api/admin/broadcast-jobs/{job_id}",
+      "path": "/api/admin/broadcast-jobs/{job_id}",
+      "route_group": "admin_jobs"
+    },
+    {
+      "capability_owner": "admin_jobs",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "job_id",
+            "required": true,
+            "schema": {
+              "title": "Job Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
       "endpoint": "aicrm_next.admin_jobs.routes.api_admin_broadcast_jobs_approve",
       "include_in_schema": true,
       "kind": "api",
@@ -18798,6 +19294,80 @@
       "operation_id": "create_admin_direct_wecom_private_send:POST:/api/admin/direct-send/wecom-private",
       "path": "/api/admin/direct-send/wecom-private",
       "route_group": "ai_assist"
+    },
+    {
+      "capability_owner": "platform_foundation",
+      "contract": {
+        "parameters": [],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.platform_foundation.execution_runtime.api.get_execution_runtime",
+      "include_in_schema": true,
+      "kind": "api",
+      "methods": [
+        "GET"
+      ],
+      "name": "get_execution_runtime",
+      "operation_id": "get_execution_runtime:GET:/api/admin/execution-runtime",
+      "path": "/api/admin/execution-runtime",
+      "route_group": "execution_runtime"
+    },
+    {
+      "capability_owner": "platform_foundation",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "execution_id",
+            "required": true,
+            "schema": {
+              "title": "Execution Id",
+              "type": "string"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.platform_foundation.execution_runtime.api.get_execution_timeline",
+      "include_in_schema": true,
+      "kind": "api",
+      "methods": [
+        "GET"
+      ],
+      "name": "get_execution_timeline",
+      "operation_id": "get_execution_timeline:GET:/api/admin/executions/{execution_id}",
+      "path": "/api/admin/executions/{execution_id}",
+      "route_group": "execution_runtime"
     },
     {
       "capability_owner": "commerce",
@@ -24989,6 +25559,16 @@
               "title": "Offset",
               "type": "integer"
             }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Cursor",
+              "type": "string"
+            }
           }
         ],
         "request_body": null,
@@ -24996,11 +25576,7 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "title": "Response Push Center Jobs Api Admin Push Center Jobs Get",
-                  "type": "object"
-                }
+                "schema": {}
               }
             },
             "description": "Successful Response"
@@ -42568,6 +43144,33 @@
       "route_group": "customer_read_model"
     },
     {
+      "capability_owner": "commerce",
+      "contract": {
+        "parameters": [],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.commerce.coupons.sidebar_api.list_sidebar_coupons",
+      "include_in_schema": true,
+      "kind": "api",
+      "methods": [
+        "GET"
+      ],
+      "name": "api.sidebar_v2_coupons",
+      "operation_id": "api.sidebar_v2_coupons:GET:/api/sidebar/v2/coupons",
+      "path": "/api/sidebar/v2/coupons",
+      "route_group": "coupons_sidebar"
+    },
+    {
       "capability_owner": "customer_read_model",
       "contract": {
         "parameters": [
@@ -43195,6 +43798,94 @@
       "name": "get_sidebar_v2_questionnaires",
       "operation_id": "get_sidebar_v2_questionnaires:GET:/api/sidebar/v2/questionnaires",
       "path": "/api/sidebar/v2/questionnaires",
+      "route_group": "customer_read_model"
+    },
+    {
+      "capability_owner": "radar_links",
+      "contract": {
+        "parameters": [],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.radar_links.api.list_sidebar_radar_links",
+      "include_in_schema": true,
+      "kind": "api",
+      "methods": [
+        "GET"
+      ],
+      "name": "api.sidebar_v2_radar_links",
+      "operation_id": "api.sidebar_v2_radar_links:GET:/api/sidebar/v2/radar-links",
+      "path": "/api/sidebar/v2/radar-links",
+      "route_group": "radar_links"
+    },
+    {
+      "capability_owner": "customer_read_model",
+      "contract": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.customer_read_model.api.get_sidebar_v2_timeline",
+      "include_in_schema": true,
+      "kind": "api",
+      "methods": [
+        "GET"
+      ],
+      "name": "get_sidebar_v2_timeline",
+      "operation_id": "get_sidebar_v2_timeline:GET:/api/sidebar/v2/timeline",
+      "path": "/api/sidebar/v2/timeline",
       "route_group": "customer_read_model"
     },
     {
@@ -44691,6 +45382,13 @@
   "runtime_units": [
     {
       "kind": "timer",
+      "owner_inventory": "pr3",
+      "service": "aicrm-ai-audience-daily-intent.service",
+      "state": "cutover_replacement_autostart",
+      "unit": "aicrm-ai-audience-daily-intent.timer"
+    },
+    {
+      "kind": "timer",
       "service": "aicrm-archive-sync.service",
       "state": "approval_required",
       "unit": "aicrm-archive-sync.timer"
@@ -44716,10 +45414,53 @@
       "unit": "aicrm-campaign-run-due.timer"
     },
     {
+      "health_url": "",
+      "kind": "service",
+      "state": "active",
+      "stop_for_migration": true,
+      "unit": "aicrm-external-queue-runtime.service"
+    },
+    {
       "kind": "timer",
       "service": "aicrm-huangyoucan-usage-sync.service",
       "state": "approval_required",
       "unit": "aicrm-huangyoucan-usage-sync.timer"
+    },
+    {
+      "health_url": "",
+      "kind": "service",
+      "state": "active",
+      "stop_for_migration": true,
+      "unit": "aicrm-inbox-queue-runtime.service"
+    },
+    {
+      "health_url": "",
+      "kind": "service",
+      "state": "active",
+      "stop_for_migration": true,
+      "unit": "aicrm-internal-queue-runtime.service"
+    },
+    {
+      "kind": "timer",
+      "owner_inventory": "pr3",
+      "service": "aicrm-next-broadcast-delegation.service",
+      "state": "cutover_replacement_autostart",
+      "unit": "aicrm-next-broadcast-delegation.timer"
+    },
+    {
+      "kind": "timer",
+      "owner_inventory": "pr3",
+      "service": "aicrm-next-group-ops-planning.service",
+      "state": "cutover_replacement_autostart",
+      "unit": "aicrm-next-group-ops-planning.timer"
+    },
+    {
+      "kick_after_timer_restart": false,
+      "kick_failure_fatal": false,
+      "kind": "timer",
+      "service": "aicrm-queue-invariant-check.service",
+      "state": "active_autostart",
+      "unit": "aicrm-queue-invariant-check.timer"
     },
     {
       "kind": "service",
@@ -44753,11 +45494,10 @@
       "unit": "aicrm-wechat-shop-order-sync.timer"
     },
     {
-      "kick_after_timer_restart": true,
-      "kick_failure_fatal": false,
       "kind": "timer",
+      "owner_inventory": "pr3",
       "service": "openclaw-ai-audience-scheduler.service",
-      "state": "active_autostart",
+      "state": "cutover_managed_legacy",
       "unit": "openclaw-ai-audience-scheduler.timer"
     },
     {
@@ -44771,11 +45511,10 @@
       "unit": "openclaw-automation-conversion-due-runner.timer"
     },
     {
-      "kick_after_timer_restart": false,
-      "kick_failure_fatal": false,
       "kind": "timer",
+      "owner_inventory": "pr3",
       "service": "openclaw-automation-ops-scheduler.service",
-      "state": "active_autostart",
+      "state": "cutover_managed_legacy",
       "unit": "openclaw-automation-ops-scheduler.timer"
     },
     {
@@ -44785,19 +45524,17 @@
       "unit": "openclaw-broadcast-hourly-feishu-report.timer"
     },
     {
-      "kick_after_timer_restart": true,
-      "kick_failure_fatal": false,
       "kind": "timer",
+      "owner_inventory": "pr3",
       "service": "openclaw-broadcast-queue-worker.service",
-      "state": "active_autostart",
+      "state": "cutover_managed_legacy",
       "unit": "openclaw-broadcast-queue-worker.timer"
     },
     {
-      "kick_after_timer_restart": true,
-      "kick_failure_fatal": true,
       "kind": "timer",
+      "owner_inventory": "pr3",
       "service": "openclaw-customer-read-model-refresh.service",
-      "state": "active_autostart",
+      "state": "cutover_managed_legacy",
       "unit": "openclaw-customer-read-model-refresh.timer"
     },
     {
@@ -44813,11 +45550,10 @@
       "unit": "openclaw-external-contact-sync.timer"
     },
     {
-      "kick_after_timer_restart": false,
-      "kick_failure_fatal": false,
       "kind": "timer",
+      "owner_inventory": "pr3",
       "service": "openclaw-external-effect-worker.service",
-      "state": "active_autostart",
+      "state": "cutover_managed_legacy",
       "unit": "openclaw-external-effect-worker.timer"
     },
     {
@@ -44831,19 +45567,17 @@
       "unit": "openclaw-external-push-worker.timer"
     },
     {
-      "kick_after_timer_restart": false,
-      "kick_failure_fatal": false,
       "kind": "timer",
+      "owner_inventory": "pr3",
       "service": "openclaw-identity-resolution-worker.service",
-      "state": "active_autostart",
+      "state": "cutover_managed_legacy",
       "unit": "openclaw-identity-resolution-worker.timer"
     },
     {
-      "kick_after_timer_restart": true,
-      "kick_failure_fatal": false,
       "kind": "timer",
+      "owner_inventory": "pr3",
       "service": "openclaw-internal-event-worker.service",
-      "state": "active_autostart",
+      "state": "cutover_managed_legacy",
       "unit": "openclaw-internal-event-worker.timer"
     },
     {
@@ -44855,9 +45589,10 @@
       "unit": "openclaw-wechat-pay-order-reconciliation-worker.timer"
     },
     {
-      "health_url": "",
       "kind": "service",
-      "state": "active",
+      "owner_inventory": "pr3",
+      "persistent": true,
+      "state": "cutover_managed_legacy",
       "unit": "openclaw-wecom-callback-inbox-worker.service"
     },
     {
@@ -44869,6 +45604,7 @@
       "health_url": "http://127.0.0.1:5002/health",
       "kind": "service",
       "state": "active",
+      "stop_for_migration": false,
       "unit": "openclaw-wecom-callback-ingress.service"
     },
     {
@@ -45066,6 +45802,31 @@
         "aicrm_next.ai_audience_ops"
       ],
       "table": "ai_audience_package_version",
+      "write_owner": "aicrm_next.ai_audience_ops"
+    },
+    {
+      "domain": "ai_audience_ops",
+      "drop_candidate": false,
+      "lifecycle": "canonical",
+      "migration_source": "0128_ai_audience_refresh_intents",
+      "pii_level": "restricted_business_payload",
+      "read_owners": [
+        "aicrm_next.ai_audience_ops",
+        "aicrm_next.platform_foundation.execution_runtime"
+      ],
+      "table": "ai_audience_refresh_intent",
+      "write_owner": "aicrm_next.ai_audience_ops"
+    },
+    {
+      "domain": "ai_audience_ops",
+      "drop_candidate": false,
+      "lifecycle": "audit",
+      "migration_source": "0128_ai_audience_refresh_intents",
+      "pii_level": "none",
+      "read_owners": [
+        "aicrm_next.ai_audience_ops"
+      ],
+      "table": "ai_audience_refresh_source_receipt",
       "write_owner": "aicrm_next.ai_audience_ops"
     },
     {
@@ -45302,7 +46063,7 @@
       "domain": "ai_audience_ops",
       "drop_candidate": false,
       "lifecycle": "audit",
-      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "migration_source": "migrations/versions/0124_automation_agent_audit_tables.py",
       "pii_level": "internal_contact",
       "read_owners": [
         "aicrm_next.admin_read_model"
@@ -45314,7 +46075,7 @@
       "domain": "ai_audience_ops",
       "drop_candidate": false,
       "lifecycle": "audit",
-      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "migration_source": "migrations/versions/0124_automation_agent_audit_tables.py",
       "pii_level": "internal_contact",
       "read_owners": [
         "aicrm_next.admin_read_model"
@@ -45519,7 +46280,7 @@
       "domain": "channel_entry",
       "drop_candidate": false,
       "lifecycle": "queue",
-      "migration_source": "0088_channel_entry_identity_best_effort, hardened by 0092_channel_entry_runtime_identity_backoff",
+      "migration_source": "0088_channel_entry_identity_best_effort, hardened by 0092_channel_entry_runtime_identity_backoff and 0129_identity_customer_event_driven",
       "pii_level": "internal_contact",
       "read_owners": [
         "aicrm_next.channel_entry.repo"
@@ -45629,6 +46390,45 @@
       ],
       "table": "automation_frequency_consumption",
       "write_owner": "aicrm_next.automation_engine"
+    },
+    {
+      "domain": "automation_engine_group_ops",
+      "drop_candidate": false,
+      "lifecycle": "queue",
+      "migration_source": "0127_group_ops_durable_effect_graph",
+      "pii_level": "none",
+      "read_owners": [
+        "Group Ops media completion continuation",
+        "execution runtime consistency audit"
+      ],
+      "table": "automation_group_ops_effect_dependency",
+      "write_owner": "aicrm_next.automation_engine.group_ops.durable_effects_repository"
+    },
+    {
+      "domain": "automation_engine_group_ops",
+      "drop_candidate": false,
+      "lifecycle": "canonical",
+      "migration_source": "0127_group_ops_durable_effect_graph",
+      "pii_level": "none",
+      "read_owners": [
+        "Group Ops execution status API",
+        "unified execution timeline"
+      ],
+      "table": "automation_group_ops_effect_graph",
+      "write_owner": "aicrm_next.automation_engine.group_ops.durable_effects_repository"
+    },
+    {
+      "domain": "automation_engine_group_ops",
+      "drop_candidate": false,
+      "lifecycle": "canonical",
+      "migration_source": "0127_group_ops_durable_effect_graph",
+      "pii_level": "none",
+      "read_owners": [
+        "Group Ops execution detail",
+        "Group Ops media completion continuation"
+      ],
+      "table": "automation_group_ops_effect_material",
+      "write_owner": "aicrm_next.automation_engine.group_ops.durable_effects_repository"
     },
     {
       "domain": "automation_group_ops",
@@ -46349,6 +47149,34 @@
       "write_owner": "aicrm_next.cloud_orchestrator.repository"
     },
     {
+      "domain": "channel_entry",
+      "drop_candidate": false,
+      "lifecycle": "queue",
+      "migration_source": "0130_welcome_media_dependencies",
+      "pii_level": "internal_contact",
+      "read_owners": [
+        "channel welcome completion continuation",
+        "execution runtime consistency audit",
+        "unified execution timeline"
+      ],
+      "table": "channel_welcome_effect_dependency",
+      "write_owner": "aicrm_next.channel_entry.welcome_media_effects_repository"
+    },
+    {
+      "domain": "channel_entry",
+      "drop_candidate": false,
+      "lifecycle": "canonical",
+      "migration_source": "0130_welcome_media_dependencies",
+      "pii_level": "internal_contact",
+      "read_owners": [
+        "channel welcome completion continuation",
+        "execution runtime consistency audit",
+        "unified execution timeline"
+      ],
+      "table": "channel_welcome_effect_graph",
+      "write_owner": "aicrm_next.channel_entry.welcome_media_effects_repository"
+    },
+    {
       "domain": "legacy_customer_tags",
       "drop_candidate": false,
       "lifecycle": "legacy",
@@ -46615,7 +47443,7 @@
       "domain": "identity_contact",
       "drop_candidate": false,
       "lifecycle": "queue",
-      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql, event-driven effect ownership added by 0129_identity_customer_event_driven",
       "pii_level": "internal_contact",
       "read_owners": [
         "aicrm_next.channel_entry"
@@ -46682,6 +47510,31 @@
       ],
       "table": "customer_read_model_current",
       "write_owner": "legacy.production_runtime"
+    },
+    {
+      "domain": "customer_read_model",
+      "drop_candidate": false,
+      "lifecycle": "canonical",
+      "migration_source": "0129_identity_customer_event_driven",
+      "pii_level": "aggregate_only",
+      "read_owners": [
+        "aicrm_next.customer_read_model.events",
+        "aicrm_next.data_health"
+      ],
+      "table": "customer_read_model_refresh_intent",
+      "write_owner": "aicrm_next.customer_read_model.refresh_intents"
+    },
+    {
+      "domain": "customer_read_model",
+      "drop_candidate": false,
+      "lifecycle": "audit",
+      "migration_source": "0129_identity_customer_event_driven",
+      "pii_level": "none",
+      "read_owners": [
+        "aicrm_next.customer_read_model.refresh_intents"
+      ],
+      "table": "customer_read_model_refresh_source_receipt",
+      "write_owner": "aicrm_next.customer_read_model.refresh_intents"
     },
     {
       "domain": "customer_read_model",
@@ -46773,10 +47626,11 @@
       "domain": "external_effects",
       "drop_candidate": false,
       "lifecycle": "audit",
-      "migration_source": "0039_external_effect_queue",
+      "migration_source": "0039_external_effect_queue, private provider-result handoff added by 0129_identity_customer_event_driven",
       "pii_level": "",
       "read_owners": [
         "admin external effect APIs",
+        "aicrm_next.platform_foundation.execution_runtime.read_model",
         "push center projection"
       ],
       "table": "external_effect_attempt",
@@ -46790,6 +47644,7 @@
       "pii_level": "internal_contact",
       "read_owners": [
         "admin external effect APIs",
+        "aicrm_next.platform_foundation.execution_runtime.read_model",
         "aicrm_next.platform_foundation.external_effects.reconciliation",
         "aicrm_next.platform_foundation.external_effects.worker",
         "push center projection"
@@ -46960,6 +47815,19 @@
       "write_owner": "aicrm_next.user_ops"
     },
     {
+      "domain": "identity_contact",
+      "drop_candidate": false,
+      "lifecycle": "audit",
+      "migration_source": "0129_identity_customer_event_driven",
+      "pii_level": "aggregate_only",
+      "read_owners": [
+        "aicrm_next.channel_entry.identity_external_effect",
+        "identity resolution reconciliation"
+      ],
+      "table": "identity_resolution_completion_receipt",
+      "write_owner": "aicrm_next.channel_entry.identity_external_effect"
+    },
+    {
       "domain": "media_library",
       "drop_candidate": false,
       "lifecycle": "canonical",
@@ -46996,6 +47864,7 @@
       "migration_source": "0043_internal_event_queue, fan-out manifest added by 0122_internal_event_fanout_manifest",
       "pii_level": "",
       "read_owners": [
+        "aicrm_next.platform_foundation.execution_runtime.read_model",
         "aicrm_next.platform_foundation.internal_events.worker",
         "internal event admin/reconciliation APIs"
       ],
@@ -47009,6 +47878,7 @@
       "migration_source": "0043_internal_event_queue, manual retry audit hardened by 0099_internal_event_outbox_and_consumer_lease",
       "pii_level": "",
       "read_owners": [
+        "aicrm_next.platform_foundation.execution_runtime.read_model",
         "internal event admin/reconciliation APIs"
       ],
       "table": "internal_event_consumer_attempt",
@@ -47021,6 +47891,7 @@
       "migration_source": "0043_internal_event_queue, lease CAS hardened by 0099_internal_event_outbox_and_consumer_lease",
       "pii_level": "",
       "read_owners": [
+        "aicrm_next.platform_foundation.execution_runtime.read_model",
         "internal event admin/reconciliation APIs"
       ],
       "table": "internal_event_consumer_run",
@@ -47034,6 +47905,7 @@
       "pii_level": "restricted_business_payload",
       "read_owners": [
         "aicrm_next.commerce.fulfillment_reconciliation",
+        "aicrm_next.platform_foundation.execution_runtime.read_model",
         "aicrm_next.platform_foundation.internal_events.reconciliation",
         "aicrm_next.platform_foundation.internal_events.worker"
       ],
@@ -47498,6 +48370,175 @@
       "write_owner": "aicrm_next.questionnaire.repo"
     },
     {
+      "domain": "platform_foundation",
+      "drop_candidate": false,
+      "lifecycle": "read_model",
+      "migration_source": "0126_postgres_execution_runtime",
+      "pii_level": "none",
+      "read_owners": [
+        "PostgreSQL execution runtime fair claim selector",
+        "execution runtime admin read model"
+      ],
+      "table": "queue_fairness_cursor",
+      "write_owner": "aicrm_next.platform_foundation.execution_runtime.repository"
+    },
+    {
+      "domain": "platform_foundation",
+      "drop_candidate": false,
+      "lifecycle": "audit",
+      "migration_source": "0125_execution_runtime_correctness",
+      "pii_level": "none",
+      "read_owners": [
+        "execution runtime consistency audit",
+        "queue history classification operations snapshot"
+      ],
+      "table": "queue_history_classification",
+      "write_owner": "migrations.0125_execution_runtime_correctness"
+    },
+    {
+      "domain": "platform_foundation",
+      "drop_candidate": false,
+      "lifecycle": "config",
+      "migration_source": "0126_postgres_execution_runtime",
+      "pii_level": "none",
+      "read_owners": [
+        "PostgreSQL execution runtime lane capacity gate",
+        "execution runtime admin read model"
+      ],
+      "table": "queue_lane_policy",
+      "write_owner": "aicrm_next.platform_foundation.execution_runtime"
+    },
+    {
+      "domain": "platform_foundation",
+      "drop_candidate": false,
+      "lifecycle": "config",
+      "migration_source": "0126_postgres_execution_runtime",
+      "pii_level": "none",
+      "read_owners": [
+        "PostgreSQL execution runtime policy resolver",
+        "execution runtime admin read model"
+      ],
+      "table": "queue_policy_snapshot",
+      "write_owner": "aicrm_next.platform_foundation.execution_runtime"
+    },
+    {
+      "domain": "platform_foundation",
+      "drop_candidate": false,
+      "lifecycle": "queue",
+      "migration_source": "0126_postgres_execution_runtime",
+      "pii_level": "none",
+      "read_owners": [
+        "PostgreSQL execution runtime external-effect claim selector",
+        "execution runtime admin read model"
+      ],
+      "table": "queue_rate_scope_cooldown",
+      "write_owner": "aicrm_next.platform_foundation.execution_runtime.repository"
+    },
+    {
+      "domain": "platform_foundation",
+      "drop_candidate": false,
+      "lifecycle": "audit",
+      "migration_source": "0135_queue_scope_transition_audit",
+      "pii_level": "none",
+      "read_owners": [
+        "ID-validation queue operation evidence",
+        "execution runtime consistency audit"
+      ],
+      "table": "queue_runtime_canary_config_audit",
+      "write_owner": "scripts.ops.configure_wecom_canary"
+    },
+    {
+      "domain": "platform_foundation",
+      "drop_candidate": false,
+      "lifecycle": "config",
+      "migration_source": "0126_postgres_execution_runtime",
+      "pii_level": "none",
+      "read_owners": [
+        "PostgreSQL execution runtime generation gate",
+        "execution runtime admin read model"
+      ],
+      "table": "queue_runtime_control",
+      "write_owner": "aicrm_next.platform_foundation.execution_runtime"
+    },
+    {
+      "domain": "platform_foundation",
+      "drop_candidate": false,
+      "lifecycle": "audit",
+      "migration_source": "0136_queue_runtime_validation_soak",
+      "pii_level": "none",
+      "read_owners": [
+        "ID-validation 72-hour soak gate",
+        "execution runtime consistency audit"
+      ],
+      "table": "queue_runtime_lease_recovery_event",
+      "write_owner": "aicrm_next.platform_foundation.execution_runtime.repository"
+    },
+    {
+      "domain": "platform_foundation",
+      "drop_candidate": false,
+      "lifecycle": "audit",
+      "migration_source": "0135_queue_scope_transition_audit",
+      "pii_level": "none",
+      "read_owners": [
+        "ID-validation queue operation evidence",
+        "execution runtime consistency audit"
+      ],
+      "table": "queue_runtime_scope_transition_audit",
+      "write_owner": "aicrm_next.platform_foundation.execution_runtime.cutover"
+    },
+    {
+      "domain": "platform_foundation",
+      "drop_candidate": false,
+      "lifecycle": "canonical",
+      "migration_source": "0136_queue_runtime_validation_soak",
+      "pii_level": "none",
+      "read_owners": [
+        "15-minute soak snapshot service",
+        "ID-validation queue operation status"
+      ],
+      "table": "queue_runtime_soak_run",
+      "write_owner": "scripts.ops.manage_queue_runtime_soak"
+    },
+    {
+      "domain": "platform_foundation",
+      "drop_candidate": false,
+      "lifecycle": "audit",
+      "migration_source": "0136_queue_runtime_validation_soak",
+      "pii_level": "none",
+      "read_owners": [
+        "ID-validation 72-hour soak completion gate",
+        "execution runtime consistency audit"
+      ],
+      "table": "queue_runtime_soak_snapshot",
+      "write_owner": "scripts.ops.manage_queue_runtime_soak"
+    },
+    {
+      "domain": "platform_foundation",
+      "drop_candidate": false,
+      "lifecycle": "audit",
+      "migration_source": "0136_queue_runtime_validation_soak",
+      "pii_level": "none",
+      "read_owners": [
+        "ID-validation 72-hour soak gate",
+        "execution runtime consistency audit"
+      ],
+      "table": "queue_runtime_validation_evidence",
+      "write_owner": "aicrm_next.platform_foundation.execution_runtime.validation"
+    },
+    {
+      "domain": "platform_foundation",
+      "drop_candidate": false,
+      "lifecycle": "read_model",
+      "migration_source": "0126_postgres_execution_runtime",
+      "pii_level": "none",
+      "read_owners": [
+        "execution runtime admin read model",
+        "execution runtime consistency audit"
+      ],
+      "table": "queue_worker_heartbeat",
+      "write_owner": "aicrm_next.platform_foundation.execution_runtime"
+    },
+    {
       "domain": "radar",
       "drop_candidate": false,
       "lifecycle": "event",
@@ -47924,6 +48965,7 @@
       "migration_source": "0054_webhook_inbox",
       "pii_level": "internal_contact",
       "read_owners": [
+        "aicrm_next.platform_foundation.execution_runtime.read_model",
         "historical schema drift guard"
       ],
       "table": "webhook_inbox",

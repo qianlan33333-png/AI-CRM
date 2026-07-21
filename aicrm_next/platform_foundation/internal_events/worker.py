@@ -662,6 +662,7 @@ class InternalEventWorker:
             run.id,
             locked_by=self._locked_by,
             expected_lease_token=run.lease_token,
+            expected_generation=run.worker_generation,
         )
         if running is None:
             return {

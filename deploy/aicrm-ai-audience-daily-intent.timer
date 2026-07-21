@@ -1,0 +1,10 @@
+[Unit]
+Description=Write AI Audience daily refresh intents at 02:00 Asia/Shanghai
+
+[Timer]
+OnCalendar=*-*-* 02:00:00 Asia/Shanghai
+Persistent=true
+Unit=aicrm-ai-audience-daily-intent.service
+
+[Install]
+WantedBy=timers.target

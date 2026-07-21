@@ -243,3 +243,40 @@ def test_recent_message_snapshot_supports_legacy_text_send_time(next_pg_schema):
         transaction.rollback()
         connection.close()
         engine.dispose()
+
+
+def test_recent_message_snapshot_large_postgres_scope_uses_one_array_parameter(next_pg_schema):
+    engine = create_engine(get_sqlalchemy_database_url(os.environ["DATABASE_URL"]), future=True)
+    connection = engine.connect()
+    transaction = connection.begin()
+    session = sessionmaker(bind=connection, future=True)()
+    try:
+        session.execute(
+            text(
+                """
+                CREATE TEMPORARY TABLE archived_messages (
+                    id BIGINT PRIMARY KEY,
+                    msgid TEXT,
+                    chat_type TEXT,
+                    unionid TEXT,
+                    owner_userid TEXT,
+                    msgtype TEXT,
+                    content TEXT,
+                    send_time TEXT,
+                    created_at TIMESTAMPTZ NOT NULL
+                ) ON COMMIT DROP
+                """
+            )
+        )
+
+        snapshot = LiveSourceCustomerReadRepository(session).snapshot_recent_messages_by_unionid(
+            [f"union-large-{index}" for index in range(70_000)],
+            per_customer_limit=100,
+        )
+
+        assert snapshot == {}
+    finally:
+        session.close()
+        transaction.rollback()
+        connection.close()
+        engine.dispose()

@@ -4,6 +4,10 @@ from scripts.ops import check_wecom_callback_objective_coverage as coverage
 
 
 def test_objective_coverage_local_contract_is_ready_without_production_completion() -> None:
+    assert coverage.REQUIRED_TEST_PROOFS["external_effect_stale_dispatching_quarantine"] == (
+        "tests/test_external_effect_delivery_lease.py",
+        "test_stale_post_provider_dispatch_is_quarantined_as_unknown",
+    )
     payload = coverage.run([])
 
     assert payload["local_contract_ready"] is True
@@ -36,10 +40,10 @@ def test_objective_coverage_local_contract_is_ready_without_production_completio
         ]
         is True
     )
-    assert payload["test_proofs"]["external_effect_realtime_unknown_quarantine"]["ok"] is True
+    assert payload["test_proofs"]["external_effect_realtime_signal_only"]["ok"] is True
     assert (
         payload["objective_requirements"]["real_outbound_effect_boundary"]["test_evidence"][
-            "external_effect_realtime_unknown_quarantine"
+            "external_effect_realtime_signal_only"
         ]
         is True
     )

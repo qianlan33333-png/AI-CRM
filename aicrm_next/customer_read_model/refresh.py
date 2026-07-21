@@ -86,6 +86,12 @@ class CustomerReadModelRefreshService:
                 if callable(snapshot_loader)
                 else {}
             )
+            activity_loader = getattr(source, "snapshot_customer_activity_by_unionid", None)
+            activity_by_unionid = (
+                activity_loader(unionids, per_customer_limit=500)
+                if callable(activity_loader)
+                else {}
+            )
             messages_by_projection_key: dict[str, list[dict[str, Any]]] = {}
             timeline_by_projection_key: dict[str, list[dict[str, Any]]] = {}
             for customer in customers:
@@ -93,7 +99,7 @@ class CustomerReadModelRefreshService:
                 projection_key = str(customer.get("external_userid") or "").strip() or unionid
                 messages = list(recent_messages_by_unionid.get(unionid) or [])
                 messages_by_projection_key[projection_key] = messages
-                timeline_by_projection_key[projection_key] = [
+                message_events = [
                     {
                         "event_id": f"message:{item.get('source_id') or item.get('msgid')}",
                         "event_type": "message",
@@ -105,6 +111,10 @@ class CustomerReadModelRefreshService:
                         "metadata": dict(item),
                     }
                     for item in messages
+                ]
+                timeline_by_projection_key[projection_key] = [
+                    *message_events,
+                    *[dict(item) for item in activity_by_unionid.get(unionid) or []],
                 ]
 
             target_count_before = int(target.count_customers() or 0)

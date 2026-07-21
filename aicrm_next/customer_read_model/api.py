@@ -12,10 +12,7 @@ from aicrm_next.shared.config import get_settings
 from aicrm_next.shared.db_session import get_db
 from aicrm_next.shared.errors import NotFoundError
 from aicrm_next.shared.runtime import database_mode, production_data_ready
-from aicrm_next.shared.signed_context import (
-    SIDEBAR_VIEWER_SESSION_COOKIE,
-    validate_sidebar_owner_context,
-)
+from aicrm_next.shared.sidebar_access import sidebar_owner_context_from_request as _sidebar_owner_context_from_request
 from aicrm_next.service_period.application import UpdateServicePeriodMemberRemarkCommand
 
 from . import application as customer_application
@@ -48,10 +45,10 @@ from .sidebar_v2 import (
     SidebarWorkbenchReadModel,
     verify_sidebar_identity_snapshot_owner_scope,
 )
+from .sidebar_timeline import SidebarCustomerTimelineQuery
 
 router = APIRouter()
 _SQL_REPO_BACKENDS = {"sql", "sqlalchemy", "postgres", "postgresql"}
-SIDEBAR_OWNER_TOKEN_HEADER = "x-aicrm-sidebar-owner-token"
 
 
 def _customer_read_model_sql_backend_enabled() -> bool:
@@ -363,48 +360,6 @@ def _verify_sidebar_owner_scope(
         owner_userid=str(owner_userid or "").strip(),
         owner_verified=owner_verified,
     )
-
-
-def _sidebar_owner_context_from_request(
-    request: Request,
-    *,
-    external_userid: str | None = None,
-    owner_userid: str | None = None,
-    current_userid: str | None = None,
-    bind_by_userid: str | None = None,
-) -> dict[str, Any]:
-    context = dict(getattr(request.state, "sidebar_context", {}) or {})
-    token_status = "valid"
-    if not context:
-        token_result = validate_sidebar_owner_context(
-            token=str(request.headers.get(SIDEBAR_OWNER_TOKEN_HEADER) or "").strip(),
-            viewer_session_cookie=str(request.cookies.get(SIDEBAR_VIEWER_SESSION_COOKIE) or "").strip(),
-            external_userid=str(external_userid or "").strip(),
-            expected_corp_id=str(os.getenv("WECOM_CORP_ID") or "").strip(),
-        )
-        if not token_result.get("ok"):
-            raise HTTPException(status_code=403, detail="sidebar context required")
-        context = dict(token_result.get("context") or {})
-        token_status = str(token_result.get("status") or "valid")
-    viewer = str(context.get("viewer_userid") or context.get("owner_userid") or "").strip()
-    context_external = str(context.get("external_userid") or "").strip()
-    if external_userid and context_external != str(external_userid or "").strip():
-        raise HTTPException(status_code=403, detail="sidebar customer scope forbidden")
-    claimed_values = {
-        str(value or "").strip()
-        for value in (owner_userid, current_userid, bind_by_userid)
-        if str(value or "").strip()
-    }
-    if any(value != viewer for value in claimed_values):
-        raise HTTPException(status_code=403, detail="sidebar owner scope forbidden")
-    return {
-        "owner_userid": viewer,
-        "bind_by_userid": viewer,
-        "owner_verified": True,
-        "external_userid": context_external,
-        "source": str(context.get("source") or "signed_sidebar_owner_context"),
-        "token_status": token_status,
-    }
 
 
 async def _sidebar_json_body(request: Request) -> dict[str, Any]:
@@ -921,6 +876,42 @@ def get_sidebar_v2_questionnaires(
     except Exception as exc:
         return _sidebar_read_unavailable(exc)
     return {**payload, "route_owner": "ai_crm_next"}
+
+
+@router.get("/api/sidebar/v2/timeline")
+def get_sidebar_v2_timeline(
+    request: Request,
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db, scope="function"),
+):
+    owner_context = _sidebar_owner_context_from_request(request)
+    external_userid = str(owner_context.get("external_userid") or "").strip()
+    owner_userid = str(owner_context.get("owner_userid") or "").strip()
+    if not external_userid:
+        return _sidebar_forbidden_error("sidebar customer scope required")
+    customer_repo, live_source_repo = _request_scoped_customer_repositories(db)
+    try:
+        _verify_sidebar_owner_scope(
+            _sidebar_customer_context_query(customer_repo, live_source_repo),
+            external_userid=external_userid,
+            owner_userid=owner_userid,
+            owner_verified=bool(owner_context.get("owner_verified")),
+        )
+        payload = SidebarCustomerTimelineQuery(customer_repo)(
+            external_userid=external_userid,
+            limit=limit,
+            offset=offset,
+        )
+    except CustomerScopeForbiddenError:
+        return _sidebar_forbidden_error()
+    except NotFoundError as exc:
+        return _sidebar_lookup_error(str(exc) or "customer not found")
+    except ValueError as exc:
+        return _sidebar_input_error(str(exc))
+    except Exception as exc:
+        return _sidebar_read_unavailable(exc)
+    return {**payload, "route_owner": "ai_crm_next", "fallback_used": False}
 
 
 @router.get("/api/sidebar/v2/materials")

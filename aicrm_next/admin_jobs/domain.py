@@ -16,7 +16,15 @@ BROADCAST_STATUSES = (
     "waiting_approval",
     "queued",
     "claimed",
+    "dispatching",
+    "delegated",
+    "simulated",
     "sent",
+    "failed_retryable",
+    "failed_terminal",
+    "blocked",
+    "unknown_after_dispatch",
+    # Compatibility for rows written before the delivery state machine.
     "failed",
     "cancelled",
 )
@@ -86,11 +94,25 @@ def normalized_bool(value: Any) -> bool:
 
 def status_tone(status: str) -> str:
     normalized = normalized_text(status).lower()
-    if normalized in {"success", "acked", "enabled", "healthy", "sent", "queued"}:
+    if normalized in {"success", "acked", "enabled", "healthy", "sent"}:
         return "ok"
-    if normalized in {"failed", "disabled", "error", "exhausted", "cancelled"}:
+    if normalized in {"failed", "failed_terminal", "blocked", "disabled", "error", "exhausted", "cancelled"}:
         return "danger"
-    if normalized in {"pending", "running", "processing", "conflict", "skipped", "retry_scheduled", "waiting_approval", "claimed"}:
+    if normalized in {
+        "pending",
+        "running",
+        "processing",
+        "conflict",
+        "skipped",
+        "retry_scheduled",
+        "waiting_approval",
+        "queued",
+        "claimed",
+        "dispatching",
+        "delegated",
+        "failed_retryable",
+        "unknown_after_dispatch",
+    }:
         return "warn"
     return "neutral"
 
@@ -114,7 +136,14 @@ def status_label(status: Any) -> str:
         "waiting_approval": "待审批",
         "queued": "排队中",
         "claimed": "执行中",
+        "dispatching": "发送中",
+        "delegated": "已委托外部动作",
+        "simulated": "模拟执行",
         "sent": "已发送",
+        "failed_retryable": "失败可重试",
+        "failed_terminal": "失败不可重试",
+        "blocked": "执行受阻",
+        "unknown_after_dispatch": "结果待核对",
         "cancelled": "已取消",
     }
     normalized = normalized_text(status).lower()

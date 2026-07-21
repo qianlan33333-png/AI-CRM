@@ -16,7 +16,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from sqlalchemy import create_engine, event
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from aicrm_next.admin_jobs.application import build_jobs_payload
 from aicrm_next.admin_jobs.repository import PostgresAdminJobsRepository
@@ -29,6 +29,7 @@ from aicrm_next.platform_foundation.performance_contracts import (
     load_read_path_baselines,
     percentile,
 )
+from aicrm_next.platform_foundation.push_center.sql_read_model import SQLPushCenterReadModel
 from aicrm_next.questionnaire.repo import PostgresQuestionnaireReadRepository
 from aicrm_next.shared.db_session import get_sqlalchemy_database_url
 
@@ -124,7 +125,8 @@ def _seed_dataset(database_url: str) -> None:
                 "TRUNCATE TABLE customer_list_index_next, questionnaire_questions, "
                 "questionnaire_submissions, questionnaires, sidebar_customer_profile_fields, "
                 "crm_user_identity, sync_runs, wecom_external_contact_event_logs, "
-                "broadcast_jobs, outbound_webhook_deliveries RESTART IDENTITY CASCADE"
+                "external_effect_job, broadcast_jobs, outbound_webhook_deliveries "
+                "RESTART IDENTITY CASCADE"
             )
             conn.execute(
                 """
@@ -238,9 +240,39 @@ def _seed_dataset(database_url: str) -> None:
                 """
             )
             conn.execute(
+                """
+                INSERT INTO external_effect_job (
+                    effect_type, adapter_name, operation, target_type, target_id,
+                    business_type, business_id, source_module, source_route,
+                    trace_id, idempotency_key, execution_mode, payload_summary_json,
+                    status, scheduled_at, execution_id, lane, available_at,
+                    created_at, updated_at
+                )
+                SELECT
+                    CASE WHEN n % 5 = 0 THEN 'wecom.media.upload' ELSE 'wecom.contact.tag.mark' END,
+                    'performance_adapter', 'execute', 'external_userid', 'perf_external_' || n,
+                    'performance_fixture', 'perf_effect_' || n,
+                    'performance_fixture', '/performance/push-center',
+                    'perf_effect_trace_' || n, 'perf_effect_idempotency_' || n,
+                    'execute', jsonb_build_object(
+                        'external_userid', 'perf_external_' || n,
+                        'owner_userid', 'owner_' || (n % 20),
+                        'execution_id', 'perf_execution_' || n
+                    ),
+                    'queued', CURRENT_TIMESTAMP - (n || ' seconds')::interval,
+                    'exe_perf_' || n,
+                    CASE WHEN n % 5 = 0 THEN 'wecom_media' ELSE 'wecom_interactive' END,
+                    CURRENT_TIMESTAMP - (n || ' seconds')::interval,
+                    CURRENT_TIMESTAMP - (n || ' seconds')::interval,
+                    CURRENT_TIMESTAMP - (n || ' seconds')::interval
+                FROM generate_series(1, 95000) AS n
+                """
+            )
+            conn.execute(
                 "ANALYZE customer_list_index_next, questionnaires, questionnaire_questions, "
                 "questionnaire_submissions, crm_user_identity, sidebar_customer_profile_fields, "
-                "sync_runs, wecom_external_contact_event_logs, broadcast_jobs, outbound_webhook_deliveries"
+                "sync_runs, wecom_external_contact_event_logs, external_effect_job, "
+                "broadcast_jobs, outbound_webhook_deliveries"
             )
         finally:
             conn.execute("SELECT pg_advisory_unlock(%s)", (LOCK_KEY,))
@@ -351,6 +383,47 @@ def _run_admin_jobs(database_url: str, profile: ReadPathBaseline):
             os.environ["DATABASE_URL"] = previous
 
 
+def _run_push_center(database_url: str, profile: ReadPathBaseline):
+    engine = create_engine(get_sqlalchemy_database_url(database_url), future=True)
+    factory = sessionmaker(bind=engine, class_=Session, expire_on_commit=False)
+    read_model = SQLPushCenterReadModel(session_factory=factory)
+    previous_cursor_secret = os.environ.get("AICRM_PUSH_CENTER_CURSOR_SECRET")
+    os.environ["AICRM_PUSH_CENTER_CURSOR_SECRET"] = "critical-read-performance-cursor-secret"
+    verified = False
+
+    def invoke(captured: list[CapturedQuery]) -> int:
+        nonlocal verified
+        listener = _sqlalchemy_recorder(engine, captured)
+        try:
+            first = read_model.query({}, limit=profile.page_limit)
+            if not verified:
+                second = read_model.query({}, limit=profile.page_limit, cursor=first.next_cursor)
+                filtered = read_model.query({"section": "integrations"}, limit=profile.page_limit)
+                first_ids = {item["projection_id"] for item in first.items}
+                second_ids = {item["projection_id"] for item in second.items}
+                if first.total != profile.dataset_rows:
+                    raise RuntimeError(
+                        f"push_center: expected {profile.dataset_rows} rows, got {first.total}"
+                    )
+                if first_ids & second_ids:
+                    raise RuntimeError("push_center: keyset pages overlap")
+                if filtered.total != 19000 or filtered.counts["by_section"] != {"integrations": 19000}:
+                    raise RuntimeError("push_center: SQL section filter/count mismatch")
+                verified = True
+            return len(first.items)
+        finally:
+            event.remove(engine, "before_cursor_execute", listener)
+
+    try:
+        return _measure(profile, invoke)
+    finally:
+        if previous_cursor_secret is None:
+            os.environ.pop("AICRM_PUSH_CENTER_CURSOR_SECRET", None)
+        else:
+            os.environ["AICRM_PUSH_CENTER_CURSOR_SECRET"] = previous_cursor_secret
+        engine.dispose()
+
+
 def _explain(database_url: str, queries: list[CapturedQuery]) -> list[dict[str, Any]]:
     import psycopg
 
@@ -375,6 +448,7 @@ def run(database_url: str) -> dict[str, Any]:
         "sidebar_workbench": _run_sidebar_workbench,
         "questionnaire_admin": _run_questionnaire_admin,
         "admin_jobs": _run_admin_jobs,
+        "push_center": _run_push_center,
     }
     reports: dict[str, Any] = {}
     failures: list[str] = []

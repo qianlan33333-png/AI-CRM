@@ -185,6 +185,44 @@ def test_rollout_gated_internal_event_history_does_not_raise_business_backlog_wa
     assert queues["metrics"]["internal_event_rollout_gated_pending_count"] == 900
 
 
+def test_held_history_is_reported_but_only_eligible_age_drives_readiness_warning(monkeypatch) -> None:
+    monkeypatch.setenv("AICRM_READINESS_MAX_QUEUE_AGE_SECONDS", "60")
+    metrics = dict(_Connection().queue_metrics)
+    metrics.update(
+        {
+            "queue_raw_open_count": 3033,
+            "queue_held_count": 3033,
+            "queue_eligible_count": 0,
+            "queue_scheduled_count": 0,
+            "queue_retry_wait_count": 0,
+            "queue_rate_limited_count": 0,
+            "queue_in_flight_count": 0,
+            "queue_unknown_count": 0,
+            "queue_dlq_count": 0,
+            "webhook_oldest_pending_age_seconds": 86400,
+            "webhook_eligible_oldest_pending_age_seconds": 0,
+            "external_effect_oldest_pending_age_seconds": 86400,
+            "external_effect_eligible_oldest_pending_age_seconds": 0,
+        }
+    )
+
+    payload = runtime_readiness_payload(
+        database_url="postgresql://readiness",
+        connection_factory=_factory(_Connection(queue_metrics=metrics)),
+        expected_heads=("0104_auth_platform",),
+        wecom_diagnostics=WECOM_OK,
+        release_sha=FULL_SHA,
+        production=True,
+    )
+
+    queues = payload["components"]["queues"]
+    assert queues["status"] == "ok"
+    assert queues["warnings"] == []
+    assert queues["metrics"]["queue_raw_open_count"] == 3033
+    assert queues["metrics"]["queue_held_count"] == 3033
+    assert queues["metrics"]["queue_eligible_count"] == 0
+
+
 def test_system_health_returns_readiness_http_status(monkeypatch) -> None:
     monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.setenv("AICRM_NEXT_ENV", "test")

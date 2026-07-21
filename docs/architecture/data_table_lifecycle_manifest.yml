@@ -622,12 +622,12 @@ tables:
     runtime_entrypoints:
       - channel entry callback runtime buffer
       - unresolved channel entry identity reconciliation
-    migration_source: 0088_channel_entry_identity_best_effort, hardened by 0092_channel_entry_runtime_identity_backoff
+    migration_source: 0088_channel_entry_identity_best_effort, hardened by 0092_channel_entry_runtime_identity_backoff and 0129_identity_customer_event_driven
     pii_level: internal_contact
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_channel_entry_identity_best_effort_contract.py::test_channel_entry_identity_best_effort_runtime_table_is_governed
-    notes: Runtime staging table keyed by WeCom external_userid/follow_user_userid/scene until unionid canonicalization writes automation_channel_contact.
+    notes: Runtime staging table keyed by WeCom external_userid/follow_user_userid/scene until unionid canonicalization writes automation_channel_contact. Revision 0129 links new rows to one canonical wecom_interactive external effect in the same transaction; pre-cutover unresolved rows are held for manual classification and are never replayed automatically.
 
   wechat_shop_orders:
     domain: commerce
@@ -1362,6 +1362,9 @@ tables:
     domain: media_library
     lifecycle: canonical
     write_owner: aicrm_next.media_library.postgres_repo
+    write_owners:
+      - aicrm_next.automation_engine.group_ops.durable_effects_repository
+      - aicrm_next.media_library.postgres_repo
     read_owners:
       - aicrm_next.media_library.postgres_repo
       - aicrm_next.send_content.postgres_repo
@@ -1733,6 +1736,7 @@ tables:
     lifecycle: event
     write_owner: aicrm_next.platform_foundation.internal_events.service
     read_owners:
+      - aicrm_next.platform_foundation.execution_runtime.read_model
       - aicrm_next.platform_foundation.internal_events.worker
       - internal event admin/reconciliation APIs
     replacement: none; canonical internal event bus
@@ -1742,6 +1746,7 @@ tables:
       - internal event publish
       - internal event worker
       - internal event admin API
+      - unified execution timeline
     migration_source: 0043_internal_event_queue, fan-out manifest added by 0122_internal_event_fanout_manifest
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
@@ -1755,11 +1760,13 @@ tables:
     write_owners:
       - aicrm_next.commerce.fulfillment_reconciliation
       - aicrm_next.commerce.admin_transactions
+      - aicrm_next.platform_foundation.execution_runtime.repository
       - aicrm_next.platform_foundation.internal_events.outbox
       - aicrm_next.public_product.h5_wechat_pay
     status_enum:
       column: status
     read_owners:
+      - aicrm_next.platform_foundation.execution_runtime.read_model
       - aicrm_next.platform_foundation.internal_events.worker
       - aicrm_next.platform_foundation.internal_events.reconciliation
       - aicrm_next.commerce.fulfillment_reconciliation
@@ -1772,21 +1779,26 @@ tables:
       - internal event outbox relay
       - internal event outbox reconciliation
       - commerce fulfillment reconciliation repair
+      - unified execution timeline
     migration_source: 0099_internal_event_outbox_and_consumer_lease
     pii_level: restricted_business_payload
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_event_effect_table_lineage.py
       - tests/test_internal_event_outbox.py
-    notes: Technical outbox only; payment and refund state share this durability boundary. scripts/run_internal_event_worker.py is the only relay owner; scoped schedulers are consumer-only. Commerce and internal-event repair only ensure idempotent technical continuations and never execute consumers or providers.
+    notes: Technical outbox only; payment and refund state share this durability boundary. scripts/run_internal_event_worker.py is the only relay owner; scoped schedulers are consumer-only. Commerce and internal-event repair only ensure idempotent technical continuations and never execute consumers or providers. Revision 0125 makes available_at mandatory and constrains lane to internal_general or internal_financial. Unified timeline reads payload_summary_json only and applies centralized sensitive-data redaction; full payload_json is excluded.
 
   internal_event_consumer_run:
     domain: internal_events
     lifecycle: queue
     write_owner: aicrm_next.platform_foundation.internal_events.worker
+    write_owners:
+      - aicrm_next.platform_foundation.execution_runtime.repository
+      - aicrm_next.platform_foundation.internal_events.worker
     status_enum:
       column: status
     read_owners:
+      - aicrm_next.platform_foundation.execution_runtime.read_model
       - internal event admin/reconciliation APIs
     replacement: none; canonical internal consumer queue
     drop_candidate: false
@@ -1794,39 +1806,325 @@ tables:
     runtime_entrypoints:
       - internal event consumer scheduling
       - internal event worker retry
+      - unified execution timeline
     migration_source: 0043_internal_event_queue, lease CAS hardened by 0099_internal_event_outbox_and_consumer_lease
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_event_effect_table_lineage.py
-    notes: Tracks consumer execution state for internal_event. Relay creates the exact manifest-declared set atomically; manifest-aware reconciliation may only restore missing declared rows without executing handlers. Automatic due is limited to pending, due failed_retryable, and stale running; failed_terminal/blocked require audited manual action.
+    notes: Tracks consumer execution state for internal_event. Relay creates the exact manifest-declared set atomically; manifest-aware reconciliation may only restore missing declared rows without executing handlers. Each external_effect.completed continuation owns an independent success-only row and retry budget; external_effect.settled independently fans every terminal status to the Identity, Group Ops, Welcome, Broadcast, and External Push parent projections without provider-result access. Predicate misses succeed as no-op, while the former first-match consumer name is a history-only handler alias excluded from new manifests. Revision 0131 holds and classifies all nonterminal work created under the former contract. Automatic due is limited to pending, due failed_retryable, and stale running; failed_terminal/blocked require audited manual action. Revision 0125 makes available_at mandatory and constrains lane to internal_general or internal_financial.
 
   internal_event_consumer_attempt:
     domain: internal_events
     lifecycle: audit
     write_owner: aicrm_next.platform_foundation.internal_events.worker
     read_owners:
+      - aicrm_next.platform_foundation.execution_runtime.read_model
       - internal event admin/reconciliation APIs
     replacement: none; canonical internal consumer attempt audit
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
       - internal event worker attempt logging
+      - unified execution timeline
     migration_source: 0043_internal_event_queue, manual retry audit hardened by 0099_internal_event_outbox_and_consumer_lease
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_event_effect_table_lineage.py
-    notes: Attempt audit for internal_event_consumer_run.
+    notes: Attempt audit for internal_event_consumer_run. external_effect.completed sibling attempts are independent, so one failed continuation cannot overwrite provider truth or a sibling result. Unified timeline combines request/response summaries only and applies centralized sensitive-data redaction; restricted provider payload is never copied into these summaries.
+
+  queue_history_classification:
+    domain: platform_foundation
+    lifecycle: audit
+    write_owner: migrations.0125_execution_runtime_correctness
+    read_owners:
+      - queue history classification operations snapshot
+      - execution runtime consistency audit
+    replacement: none; immutable cutover evidence for pre-runtime queue history
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - scripts/ops/snapshot_queue_history_classification.py
+    migration_source: 0125_execution_runtime_correctness
+    pii_level: none
+    guard_tests:
+      - tests/test_queue_history_freeze.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Append-only classification of the exact pre-cutover rows, including revision 0131 completion outbox and legacy first-match consumer work. It stores queue kind, numeric row id, source status, classification and non-sensitive evidence only; update and delete are rejected by a database trigger, and no automatic release path exists.
+
+  queue_runtime_control:
+    domain: platform_foundation
+    lifecycle: config
+    write_owner: aicrm_next.platform_foundation.execution_runtime
+    read_owners:
+      - PostgreSQL execution runtime generation gate
+      - execution runtime admin read model
+    replacement: none; canonical singleton generation and global claim gate
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - execution runtime claim authorization
+      - generation cutover command
+      - execution runtime admin API
+    migration_source: 0126_postgres_execution_runtime
+    pii_level: none
+    guard_tests:
+      - tests/test_execution_runtime_postgres.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Fail-closed singleton control row. A generation must match and claim_enabled plus rollout policy must authorize a claim; deployment labels alone never activate execution.
+
+  queue_lane_policy:
+    domain: platform_foundation
+    lifecycle: config
+    write_owner: aicrm_next.platform_foundation.execution_runtime
+    read_owners:
+      - PostgreSQL execution runtime lane capacity gate
+      - execution runtime admin read model
+    replacement: none; canonical per-lane capacity and rollout policy
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - execution runtime claim authorization
+      - lane policy administration
+      - execution runtime admin API
+    migration_source: 0126_postgres_execution_runtime
+    pii_level: none
+    guard_tests:
+      - tests/test_execution_runtime_postgres.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Stores reserved per-lane capacity and explicit rollout mode. outbound_webhook is seeded blocked and must remain fail-closed without separate approval.
+
+  queue_policy_snapshot:
+    domain: platform_foundation
+    lifecycle: config
+    write_owner: aicrm_next.platform_foundation.execution_runtime
+    read_owners:
+      - PostgreSQL execution runtime policy resolver
+      - execution runtime admin read model
+    replacement: none; canonical versioned queue policy snapshot
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - execution runtime policy resolution
+      - execution runtime health and statistics
+    migration_source: 0126_postgres_execution_runtime
+    pii_level: none
+    guard_tests:
+      - tests/test_execution_runtime_postgres.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Versioned non-secret policy document shared by claim and read paths so health metrics and execution decisions use the same policy snapshot. It is append-only at the database boundary; UPDATE and DELETE are rejected by a trigger.
+
+  queue_fairness_cursor:
+    domain: platform_foundation
+    lifecycle: read_model
+    write_owner: aicrm_next.platform_foundation.execution_runtime.repository
+    read_owners:
+      - PostgreSQL execution runtime fair claim selector
+      - execution runtime admin read model
+    replacement: none; durable scheduler fairness projection
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - execution runtime claim_one
+      - execution runtime queue diagnostics
+    migration_source: 0126_postgres_execution_runtime
+    pii_level: none
+    guard_tests:
+      - tests/test_execution_runtime_postgres.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Derived scheduling state only. fairness_key must be a non-secret operational partition key and must not contain message content or personal contact data.
+
+  queue_rate_scope_cooldown:
+    domain: platform_foundation
+    lifecycle: queue
+    write_owner: aicrm_next.platform_foundation.execution_runtime.repository
+    write_owners:
+      - aicrm_next.platform_foundation.execution_runtime.repository
+      - aicrm_next.platform_foundation.external_effects.rate_limit
+    read_owners:
+      - PostgreSQL execution runtime external-effect claim selector
+      - execution runtime admin read model
+    replacement: none; canonical provider rate-scope cooldown state
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - provider rate-limit result handling
+      - execution runtime external-effect claim_one
+      - execution runtime admin API
+    migration_source: 0126_postgres_execution_runtime
+    pii_level: none
+    guard_tests:
+      - tests/test_execution_runtime_postgres.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Durable rate-scope deadline releases worker capacity instead of sleeping. The external-effect rate_limit helper persists 429 cooldown in the same transaction as attempt and job result state. It records provider/corp/app/operation identifiers and audit reason only; request payload, recipient identity, content and secrets are forbidden.
+
+  queue_worker_heartbeat:
+    domain: platform_foundation
+    lifecycle: read_model
+    write_owner: aicrm_next.platform_foundation.execution_runtime
+    read_owners:
+      - execution runtime admin read model
+      - execution runtime consistency audit
+    replacement: none; canonical worker and listener liveness projection
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - execution runtime worker heartbeat
+      - listener reconnect and drain tracking
+      - execution runtime admin API
+    migration_source: 0126_postgres_execution_runtime
+    pii_level: none
+    guard_tests:
+      - tests/test_execution_runtime_postgres.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Operational liveness projection keyed by service and worker. It exposes generation, release SHA, listener and drain timestamps without queue payloads or customer identifiers.
+
+  queue_runtime_scope_transition_audit:
+    domain: platform_foundation
+    lifecycle: audit
+    write_owner: aicrm_next.platform_foundation.execution_runtime.cutover
+    read_owners:
+      - ID-validation queue operation evidence
+      - execution runtime consistency audit
+    replacement: none; immutable scope and policy transition evidence
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - scripts/ops/transition_queue_runtime_scope.py
+    migration_source: 0135_queue_scope_transition_audit
+    pii_level: none
+    guard_tests:
+      - tests/test_queue_runtime_cutover_postgres.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Append-only evidence for each drained test_loopback to allowlisted transition or rollback. Policy JSON is non-secret and target identifiers are not stored.
+
+  queue_runtime_canary_config_audit:
+    domain: platform_foundation
+    lifecycle: audit
+    write_owner: scripts.ops.configure_wecom_canary
+    read_owners:
+      - ID-validation queue operation evidence
+      - execution runtime consistency audit
+    replacement: none; immutable canary configuration hash and count evidence
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - scripts/ops/configure_wecom_canary.py
+    migration_source: 0135_queue_scope_transition_audit
+    pii_level: none
+    guard_tests:
+      - tests/test_wecom_canary_configuration.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Append-only before and after configuration hashes plus allowlist counts. Exact target values and secrets are forbidden.
+
+  queue_runtime_validation_evidence:
+    domain: platform_foundation
+    lifecycle: audit
+    write_owner: aicrm_next.platform_foundation.execution_runtime.validation
+    read_owners:
+      - ID-validation 72-hour soak gate
+      - execution runtime consistency audit
+    replacement: none; immutable canary and fault-drill evidence
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - scripts/ops/run_test_loopback_canary.py
+      - scripts/ops/plan_wecom_canary.py
+      - scripts/ops/attest_queue_runtime_validation.py
+      - scripts/ops/run_queue_runtime_fault_drill.py
+    migration_source: 0136_queue_runtime_validation_soak
+    pii_level: none
+    guard_tests:
+      - tests/test_queue_runtime_validation.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Append-only redacted proof bound to release SHA, generation and immutable policy. It stores execution and numeric job IDs, outcome booleans and counts only, never provider targets, content or credentials.
+
+  queue_runtime_lease_recovery_event:
+    domain: platform_foundation
+    lifecycle: audit
+    write_owner: aicrm_next.platform_foundation.execution_runtime.repository
+    read_owners:
+      - ID-validation 72-hour soak gate
+      - execution runtime consistency audit
+    replacement: none; immutable lease-loss occurrence evidence
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - aicrm_next.platform_foundation.execution_runtime.repository
+      - scripts/ops/manage_queue_runtime_soak.py
+    migration_source: 0136_queue_runtime_validation_soak
+    pii_level: none
+    guard_tests:
+      - tests/test_execution_runtime_postgres.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Append-only recovery occurrence rows written before an expired queue lease is mutated. Stores queue kind, numeric row ID, generation, error code and timestamps only; no payload, target, lease token or credential.
+
+  queue_runtime_soak_run:
+    domain: platform_foundation
+    lifecycle: canonical
+    write_owner: scripts.ops.manage_queue_runtime_soak
+    read_owners:
+      - ID-validation queue operation status
+      - 15-minute soak snapshot service
+    replacement: none; canonical 72-hour validation state machine
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - scripts/ops/manage_queue_runtime_soak.py
+      - aicrm-queue-soak-snapshot.service
+    migration_source: 0136_queue_runtime_validation_soak
+    pii_level: none
+    guard_tests:
+      - tests/test_queue_runtime_validation.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: CAS-controlled running, passed, failed or invalidated soak identity bound to one release, migration, generation, scope and configuration hash.
+
+  queue_runtime_soak_snapshot:
+    domain: platform_foundation
+    lifecycle: audit
+    write_owner: scripts.ops.manage_queue_runtime_soak
+    read_owners:
+      - ID-validation 72-hour soak completion gate
+      - execution runtime consistency audit
+    replacement: none; immutable periodic soak metrics
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - aicrm-queue-soak-snapshot.service
+      - scripts/ops/manage_queue_runtime_soak.py
+    migration_source: 0136_queue_runtime_validation_soak
+    pii_level: none
+    guard_tests:
+      - tests/test_queue_runtime_validation.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Append-only 15-minute operational metrics and invariant violations. It has a foreign key to the canonical soak run and contains no task payload or customer identity.
 
   external_effect_job:
     domain: external_effects
     lifecycle: queue
     write_owner: aicrm_next.platform_foundation.external_effects.service
     write_owners:
+      - aicrm_next.automation_engine.group_ops.durable_effects_repository
+      - aicrm_next.channel_entry.welcome_media_effects_repository
+      - aicrm_next.platform_foundation.execution_runtime.repository
       - aicrm_next.platform_foundation.external_effects.service
       - aicrm_next.platform_foundation.external_effects.transactional
     status_enum:
       column: status
     read_owners:
+      - aicrm_next.platform_foundation.execution_runtime.read_model
       - aicrm_next.platform_foundation.external_effects.worker
       - aicrm_next.platform_foundation.external_effects.reconciliation
       - push center projection
@@ -1840,18 +2138,23 @@ tables:
       - payment external-push planner transaction
       - external effect worker
       - push center reconciliation
+      - unified execution timeline
     migration_source: 0039_external_effect_queue, hardened by 0100_external_effect_delivery_lease and R08 transactional producers
     pii_level: internal_contact
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_event_effect_table_lineage.py
-    notes: Canonical queue for real external side effects. Scheduler, realtime, and manual dispatch share lease-token CAS; uncertain outcomes are quarantined for reconciliation and fake outcomes are simulated.
+    notes: Canonical queue for real external side effects. Scheduler, realtime, and manual dispatch share lease-token CAS; uncertain outcomes are quarantined for reconciliation and fake outcomes are simulated. Every new runtime terminal transition transactionally emits payload-minimal external_effect.settled; succeeded also retains the provider-result-gated external_effect.completed hand-off. Revision 0125 makes available_at mandatory and constrains lane to the four external-effect lanes. Unified timeline reads summary projections only and applies centralized sensitive-data redaction; provider request payloads are excluded.
 
   external_effect_attempt:
     domain: external_effects
     lifecycle: audit
     write_owner: aicrm_next.platform_foundation.external_effects.worker
+    write_owners:
+      - aicrm_next.platform_foundation.execution_runtime.repository
+      - aicrm_next.platform_foundation.external_effects.worker
     read_owners:
+      - aicrm_next.platform_foundation.execution_runtime.read_model
       - push center projection
       - admin external effect APIs
     replacement: none; canonical external side-effect attempt audit
@@ -1859,11 +2162,12 @@ tables:
     drop_after: ""
     runtime_entrypoints:
       - external effect worker attempt logging
-    migration_source: 0039_external_effect_queue
+      - unified execution timeline
+    migration_source: 0039_external_effect_queue, private provider-result handoff added by 0129_identity_customer_event_driven
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_event_effect_table_lineage.py
-    notes: Append-only attempt audit for external_effect_job execution. Provider result and job state are committed atomically under the active lease.
+    notes: Append-only public attempt audit for external_effect_job execution. Provider result and job state are committed atomically under the active lease. Revision 0129 adds a repository-only restricted provider-result handoff; it is absent from ExternalEffectAttempt, Push Center, timeline, and admin API models, and is loaded only by the explicitly allowlisted identity continuation after predicate plus job/attempt/tenant linkage validation, then cleared after its idempotent local receipt commits. Revision 0125 freezes a historical dispatching attempt as unknown_after_dispatch when its parent job has already left dispatching, recording historical_freeze_orphan evidence instead of replaying it. Unified timeline redacts combined request/response summaries before returning them.
 
   owner_migration_import_sessions:
     domain: owner_migration
@@ -2025,6 +2329,46 @@ tables:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
     notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+
+  ai_audience_refresh_intent:
+    domain: ai_audience_ops
+    lifecycle: canonical
+    write_owner: aicrm_next.ai_audience_ops
+    read_owners:
+      - aicrm_next.ai_audience_ops
+      - aicrm_next.platform_foundation.execution_runtime
+    replacement: none; one coalescing durable refresh intent per package
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - AI Audience source event dirty marking
+      - PostgreSQL internal event refresh consumer
+      - daily clock intent writer
+    migration_source: 0128_ai_audience_refresh_intents
+    pii_level: restricted_business_payload
+    guard_tests:
+      - tests/test_ai_audience_refresh_intents_postgres.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Stores generation, execution links, scheduling state, refresh query parameters, and redacted failure metadata. Public summaries exclude parameter payloads and error text is centrally redacted.
+
+  ai_audience_refresh_source_receipt:
+    domain: ai_audience_ops
+    lifecycle: audit
+    write_owner: aicrm_next.ai_audience_ops
+    read_owners:
+      - aicrm_next.ai_audience_ops
+    replacement: none; idempotent source-event to package-generation evidence
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - AI Audience source event dirty marking
+      - daily and manual refresh intent creation
+    migration_source: 0128_ai_audience_refresh_intents
+    pii_level: none
+    guard_tests:
+      - tests/test_ai_audience_refresh_intents_postgres.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Stores only SHA-256 opaque source identifiers and execution links; never stores raw contact identity, message content, or provider secrets.
 
   ai_audience_member_current:
     domain: ai_audience_ops
@@ -2299,7 +2643,7 @@ tables:
     runtime_entrypoints:
       - AI audience agent execution
       - admin AI assistant diagnostics
-    migration_source: migrations/baselines/0001_post_legacy.sql
+    migration_source: migrations/versions/0124_automation_agent_audit_tables.py
     pii_level: internal_contact
     guard_tests:
       - tests/test_ai_audience_agent_copywriting.py
@@ -2317,7 +2661,7 @@ tables:
     runtime_entrypoints:
       - AI audience agent execution
       - admin AI assistant diagnostics
-    migration_source: migrations/baselines/0001_post_legacy.sql
+    migration_source: migrations/versions/0124_automation_agent_audit_tables.py
     pii_level: internal_contact
     guard_tests:
       - tests/test_ai_audience_agent_copywriting.py
@@ -2904,14 +3248,33 @@ tables:
     drop_after: ""
     runtime_entrypoints:
       - existing production runtime
-    migration_source: migrations/baselines/0001_post_legacy.sql
+    migration_source: migrations/baselines/0001_post_legacy.sql, event-driven effect ownership added by 0129_identity_customer_event_driven
     pii_level: internal_contact
     status_enum:
       column: status
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Existing unresolved identity boundary. Missing aliases remain pending/failed/conflict here and must never be treated as a canonical identity or successful consumer outcome.
+    notes: Durable unresolved identity intent. Revision 0129 gives each new eligible row an execution_id and exactly one canonical wecom_interactive external effect; linked rows are excluded from the legacy poller. All pre-cutover pending/polling rows are held for manual classification and never auto-replayed. Missing aliases remain held/conflict and must never be treated as a canonical identity or successful consumer outcome.
+
+  identity_resolution_completion_receipt:
+    domain: identity_contact
+    lifecycle: audit
+    write_owner: aicrm_next.channel_entry.identity_external_effect
+    read_owners:
+      - aicrm_next.channel_entry.identity_external_effect
+      - identity resolution reconciliation
+    replacement: none; idempotent local continuation evidence after provider success
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - external_effect.completed identity continuation
+    migration_source: 0129_identity_customer_event_driven
+    pii_level: aggregate_only
+    guard_tests:
+      - tests/test_identity_customer_event_driven_postgres.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: One receipt per canonical external effect. It stores only result status, execution links, internal row ids, and a boolean/count summary; raw provider detail is never copied here.
 
   customer_detail_snapshot_next:
     domain: customer_read_model
@@ -3415,21 +3778,24 @@ tables:
     lifecycle: canonical
     write_owner: aicrm_next.webhook_ingress
     write_owners:
+      - aicrm_next.platform_foundation.execution_runtime.repository
       - aicrm_next.platform_foundation.webhook_inbox
       - aicrm_next.webhook_ingress
     read_owners:
+      - aicrm_next.platform_foundation.execution_runtime.read_model
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
       - existing production runtime
+      - unified execution timeline
     migration_source: 0054_webhook_inbox
     pii_level: internal_contact
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes. Revision 0125 makes available_at mandatory and constrains lane to webhook_inbox. Unified timeline reads summary projections only and applies centralized sensitive-data redaction; raw callback bodies are excluded.
 
   commerce_coupons:
     domain: commerce
@@ -3982,6 +4348,46 @@ tables:
       - tests/test_data_table_lifecycle_guard.py
     notes: Count-only refresh evidence. It contains no customer identifiers or payloads.
 
+  customer_read_model_refresh_intent:
+    domain: customer_read_model
+    lifecycle: canonical
+    write_owner: aicrm_next.customer_read_model.refresh_intents
+    read_owners:
+      - aicrm_next.customer_read_model.events
+      - aicrm_next.data_health
+    replacement: none; singleton coalescing generation owner for projection refresh
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - customer source-event dirty consumer
+      - customer_read_model.refresh.requested consumer
+      - compatibility clock intent writer
+    migration_source: 0129_identity_customer_event_driven
+    pii_level: aggregate_only
+    guard_tests:
+      - tests/test_identity_customer_event_driven_postgres.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Global singleton generation intent. Source events only advance dirty_generation and create at most one outstanding signal; the internal consumer owns the local projection refresh, and dirty-during-run creates one explicit continuation generation.
+
+  customer_read_model_refresh_source_receipt:
+    domain: customer_read_model
+    lifecycle: audit
+    write_owner: aicrm_next.customer_read_model.refresh_intents
+    read_owners:
+      - aicrm_next.customer_read_model.refresh_intents
+    replacement: none; idempotent source-event dirty-mark evidence
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - customer source-event dirty consumer
+      - manual or compatibility refresh intent request
+    migration_source: 0129_identity_customer_event_driven
+    pii_level: none
+    guard_tests:
+      - tests/test_identity_customer_event_driven_postgres.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Stores only a SHA-256 opaque source event key, source event type, generation, and execution links. It never stores customer identifiers, messages, questionnaire answers, payment payloads, or provider results.
+
   admin_sso_states:
     <<: *legacy_production_table_defaults
     domain: legacy_auth
@@ -4352,3 +4758,120 @@ tables:
     guard_tests:
       - tests/test_operation_cycles_migration.py
       - tests/test_data_table_lifecycle_guard.py
+
+  automation_group_ops_effect_graph:
+    domain: automation_engine_group_ops
+    lifecycle: canonical
+    write_owner: aicrm_next.automation_engine.group_ops.durable_effects_repository
+    read_owners:
+      - Group Ops execution status API
+      - unified execution timeline
+    replacement: none; canonical root and version record for one durable Group Ops effect graph
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - Group Ops direct send command
+      - Group Ops future plan materializer
+      - Group Ops media completion continuation
+      - external_effect.settled terminal continuation
+    migration_source: 0127_group_ops_durable_effect_graph
+    pii_level: none
+    guard_tests:
+      - tests/test_group_ops_durable_effect_graph.py
+      - tests/test_group_ops_durable_effect_graph_postgres.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Stores public execution identifiers, revision-aware plan and node versions, schedule and the final External Effect link. Content, owner, schedule and active-binding changes cancel the old pre-provider graph before materializing a new version; provider-boundary truth is preserved. Terminal child settlements close the graph and cancel unreleased siblings transactionally. Provider payload and recipient content remain in their canonical execution facts.
+
+  automation_group_ops_effect_material:
+    domain: automation_engine_group_ops
+    lifecycle: canonical
+    write_owner: aicrm_next.automation_engine.group_ops.durable_effects_repository
+    read_owners:
+      - Group Ops media completion continuation
+      - Group Ops execution detail
+    replacement: none; canonical material reference for a Group Ops effect dependency
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - Group Ops direct send command
+      - Group Ops future plan materializer
+      - Group Ops media completion continuation
+    migration_source: 0127_group_ops_durable_effect_graph
+    pii_level: none
+    guard_tests:
+      - tests/test_group_ops_durable_effect_graph_postgres.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: References durable media-library source rows and stores only non-secret attachment metadata; uploaded bytes remain in image_library.
+
+  automation_group_ops_effect_dependency:
+    domain: automation_engine_group_ops
+    lifecycle: queue
+    write_owner: aicrm_next.automation_engine.group_ops.durable_effects_repository
+    read_owners:
+      - Group Ops media completion continuation
+      - execution runtime consistency audit
+    replacement: none; canonical prerequisite edge from media upload effect to final send effect
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - Group Ops effect graph planning
+      - external_effect.completed continuation
+      - external_effect.settled continuation
+    migration_source: 0127_group_ops_durable_effect_graph
+    pii_level: none
+    status_enum:
+      column: status
+    guard_tests:
+      - tests/test_group_ops_durable_effect_graph.py
+      - tests/test_group_ops_durable_effect_graph_postgres.py
+      - tests/test_data_table_lifecycle_guard.py
+      - tests/test_data_health_checks.py::test_migrated_schema_matches_lifecycle_manifest
+    notes: CAS-updated dependency state. Only every prerequisite succeeded may release the final planned effect; failed, cancelled and superseded graphs cannot release. A non-success prerequisite settlement marks the graph terminal and emits attemptless settlements for every sibling cancelled before provider dispatch.
+
+  channel_welcome_effect_graph:
+    domain: channel_entry
+    lifecycle: canonical
+    write_owner: aicrm_next.channel_entry.welcome_media_effects_repository
+    read_owners:
+      - channel welcome completion continuation
+      - unified execution timeline
+      - execution runtime consistency audit
+    replacement: none; canonical root for one welcome-message media dependency graph
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - channel welcome effect planning
+      - external_effect.completed continuation
+      - external_effect.settled continuation
+      - channel welcome cancellation command
+    migration_source: 0130_welcome_media_dependencies
+    pii_level: internal_contact
+    guard_tests:
+      - tests/test_channel_welcome_media_dependencies_postgres.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Stores only the public execution link, channel reference and final effect owner. Non-success child settlements close the graph and transactionally settle siblings cancelled before the provider boundary. Provider identity, payload and content remain in the external-effect boundary.
+
+  channel_welcome_effect_dependency:
+    domain: channel_entry
+    lifecycle: queue
+    write_owner: aicrm_next.channel_entry.welcome_media_effects_repository
+    read_owners:
+      - channel welcome completion continuation
+      - unified execution timeline
+      - execution runtime consistency audit
+    replacement: none; canonical prerequisite edge from one media upload effect to the held welcome effect
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - channel welcome effect planning
+      - external_effect.completed continuation
+      - channel welcome cancellation command
+    migration_source: 0130_welcome_media_dependencies
+    pii_level: internal_contact
+    status_enum:
+      column: status
+    guard_tests:
+      - tests/test_channel_welcome_media_dependencies_postgres.py
+      - tests/test_data_table_lifecycle_guard.py
+      - tests/test_data_health_checks.py::test_migrated_schema_matches_lifecycle_manifest
+    notes: CAS-updated dependency state. The final welcome effect is released only after every prerequisite succeeds and is never released by cancelled or failed graphs.

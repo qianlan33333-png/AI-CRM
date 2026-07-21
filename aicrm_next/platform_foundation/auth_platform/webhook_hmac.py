@@ -160,6 +160,10 @@ def runtime_outbound_webhook_signer() -> WebhookHmacSigner | None:
         return None
 
 
+def runtime_outbound_webhook_signer_ready() -> bool:
+    return runtime_outbound_webhook_signer() is not None
+
+
 def _resolve_secret(reference: str) -> str:
     if not is_secret_reference(reference):
         raise ValueError("webhook secret must be stored as a secret reference")

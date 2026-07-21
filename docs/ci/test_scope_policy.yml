@@ -2,6 +2,15 @@
   "version": 1,
   "mode": "shadow",
   "description": "Convention-driven CI selector policy. The legacy manifest remains authoritative until an explicit cutover is approved.",
+  "cutover_criteria": {
+    "minimum_pull_request_samples": 20,
+    "minimum_observation_days": 14,
+    "minimum_scoped_samples": 8,
+    "minimum_high_risk_samples": 5,
+    "maximum_normal_path_fallback_samples": 0,
+    "maximum_high_risk_downgrades": 0,
+    "maximum_unreviewed_legacy_only_tests": 0
+  },
   "high_risk_rules": [
     {
       "name": "ci_and_dependency_runtime",
@@ -9,6 +18,7 @@
         ".github/**",
         "scripts/ci/**",
         "docs/ci/test_scope_manifest.yml",
+        "docs/ci/test_scope_legacy_only_review.yml",
         "requirements*.txt",
         "requirements.lock",
         "pyproject.toml",
@@ -30,12 +40,10 @@
         "scripts/ops/resolve_id_validation_release_base.sh",
         "scripts/ops/ensure_production_public_release_route.py",
         "scripts/ops/manage_production_runtime_units.py",
-        "scripts/ops/validate_production_promotion.py",
         "scripts/ops/recover_*.py",
         "scripts/ops/reconcile_wecom_callback_runtime.py",
         "tests/test_deploy*.py",
         "tests/test_id_validation*.py",
-        "tests/test_production_promotion*.py",
         "tests/test_database_bootstrap.py",
         "tests/test_alembic_revision_chain.py"
       ]
@@ -113,6 +121,17 @@
     "public_product": ["public_product", "wechat_pay", "checkout"],
     "service_period": ["service_period", "entitlement"]
   },
+  "runtime_test_overrides": [
+    {
+      "paths": [
+        "scripts/ops/check_identity_customer_event_driven.py"
+      ],
+      "python_tests": [
+        "tests/test_identity_customer_event_driven_postgres.py"
+      ],
+      "rationale": "The static rollout checker reads repository files instead of importing its protected PostgreSQL contract, so source conventions cannot discover that relationship."
+    }
+  ],
   "frontend_build_paths": [
     "frontend/admin/**/*.ts",
     "tsconfig.frontend.json",

@@ -16,6 +16,7 @@ PUSH_STATUS_SHADOW_FAILED_NOT_BUSINESS_FAILED = "shadow_failed_not_business_fail
 STANDARD_PUSH_STATUSES = (
     PUSH_STATUS_PENDING,
     PUSH_STATUS_RUNNING,
+    PUSH_STATUS_SUCCEEDED,
     PUSH_STATUS_SENT,
     PUSH_STATUS_SIMULATED,
     PUSH_STATUS_UNKNOWN_AFTER_DISPATCH,
@@ -37,8 +38,8 @@ PUSH_STATUS_LABELS = {
 }
 
 PUSH_STATUS_DEFINITIONS = {
-    PUSH_STATUS_PENDING: "已进入统一推送任务池，等待统一调度器扫描或等待前置条件满足。",
-    PUSH_STATUS_RUNNING: "任务已被统一调度器锁定，正在执行外部动作。",
+    PUSH_STATUS_PENDING: "已进入统一推送任务池；有可用产能时立即领取，否则按所属通道正常排队或等待前置条件。",
+    PUSH_STATUS_RUNNING: "任务已被执行 worker 领取，正在执行外部动作。",
     PUSH_STATUS_SUCCEEDED: "外部动作已执行成功，并已有成功 attempt 记录。",
     PUSH_STATUS_SENT: "主发送链路已完成发送。",
     PUSH_STATUS_SIMULATED: "适配器完成模拟执行，没有发生真实外部调用。",
@@ -103,8 +104,6 @@ def status_matches(raw_status: Any, expected: Any) -> bool:
     expected_text = _text(expected)
     if not expected_text:
         return True
-    if expected_text == PUSH_STATUS_SUCCEEDED:
-        expected_text = PUSH_STATUS_SENT
     if expected_text in STANDARD_PUSH_STATUSES:
         return standard_push_status(raw_status) == expected_text
     return _text(raw_status) == expected_text
