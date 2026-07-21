@@ -36,7 +36,7 @@ def test_relay_workflow_pins_actions_and_source_host_key() -> None:
     assert "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0" in source
     assert "appleboy/scp-action@ff85246acaad7bdce478db94a363cd2bf7c90345" in source
     assert "appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2" in source
-    assert "SHA256:P1RMaTUquxIKkVK2eN3DDM4ZBbZYjrCMXepWeDltHSg" in source
+    assert "SHA256:WG6M6dHCpGO1UFceIzdIUv3Z3ZHZ+Wt66MnEd8h/FFQ" in source
     assert "test \"$DEPLOY_HOST\" = \"$EXPECTED_SOURCE_HOST\"" in source
     assert "test \"$(sha256sum \"$relay_script\" | awk '{print $1}')\" = \"$RELAY_SCRIPT_SHA256\"" in source
 

@@ -34,7 +34,7 @@ jobs:
     timeout-minutes: 20
     env:
       EXPECTED_SOURCE_HOST: 150.158.82.186
-      EXPECTED_SOURCE_SSH_FINGERPRINT: SHA256:P1RMaTUquxIKkVK2eN3DDM4ZBbZYjrCMXepWeDltHSg
+      EXPECTED_SOURCE_SSH_FINGERPRINT: SHA256:WG6M6dHCpGO1UFceIzdIUv3Z3ZHZ+Wt66MnEd8h/FFQ
       EXPECTED_SOURCE_BASE_URL: https://www.youcangogogo.com
       EXPECTED_TARGET_BASE_URL: https://id-dev.youcangogogo.com
       EXPECTED_TARGET_URL: https://id-dev.youcangogogo.com/wecom/external-contact/callback
