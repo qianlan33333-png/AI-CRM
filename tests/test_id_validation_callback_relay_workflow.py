@@ -41,6 +41,18 @@ def test_relay_workflow_pins_actions_and_source_host_key() -> None:
     assert "test \"$(sha256sum \"$relay_script\" | awk '{print $1}')\" = \"$RELAY_SCRIPT_SHA256\"" in source
 
 
+def test_relay_workflow_exports_database_environment_before_python() -> None:
+    source = _source()
+
+    export_index = source.index("set -a")
+    source_index = source.index("source /home/ubuntu/.openclaw-wecom-pg.env")
+    restore_index = source.index("set +a", source_index)
+    database_guard_index = source.index('test -n "${DATABASE_URL:-}"', restore_index)
+    python_index = source.index('python3 "$relay_script"', database_guard_index)
+
+    assert export_index < source_index < restore_index < database_guard_index < python_index
+
+
 def test_relay_workflow_never_exposes_raw_callback_identity() -> None:
     source = _source()
 

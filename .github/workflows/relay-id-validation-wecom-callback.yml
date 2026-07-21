@@ -154,7 +154,10 @@ jobs:
             cd '/home/ubuntu/极简 crm'
             test "$(git rev-parse HEAD)" = "$SOURCE_RELEASE_SHA"
             test "$(tr -d '\r\n' < .release-sha)" = "$SOURCE_RELEASE_SHA"
+            set -a
             source /home/ubuntu/.openclaw-wecom-pg.env
+            set +a
+            test -n "${DATABASE_URL:-}"
             source /home/ubuntu/venvs/openclaw/bin/activate
             AICRM_ID_VALIDATION_CALLBACK_RELAY_AUTHORIZED=1 \
               python3 "$relay_script" \
