@@ -1,5 +1,5 @@
 name: Promote to Production (Manual)
-# Promotion attestation: PR #1741 is bound to ID validation PR #213.
+# Promotion attestation: PR #1741 is bound to ID validation PR #215.
 
 on:
   workflow_dispatch:
