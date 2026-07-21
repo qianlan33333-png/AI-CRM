@@ -14,6 +14,8 @@ ACTIVE_SCRIPTS = {
     "external_effect_queue_worker": Path("scripts/run_external_effect_queue_worker.py"),
 }
 SERVICE_COMMANDS = {
+    "deploy/aicrm-next-group-ops-planning.service": "python scripts/run_automation_ops_scheduler.py",
+    "deploy/aicrm-next-broadcast-delegation.service": "python scripts/run_broadcast_queue_worker.py",
     "deploy/openclaw-automation-ops-scheduler.service": "python scripts/run_automation_ops_scheduler.py",
     "deploy/openclaw-broadcast-queue-worker.service": "python scripts/run_broadcast_queue_worker.py",
     "deploy/openclaw-external-contact-sync.service": "python scripts/run_external_contact_sync.py",

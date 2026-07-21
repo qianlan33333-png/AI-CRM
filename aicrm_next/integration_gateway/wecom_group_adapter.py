@@ -8,6 +8,7 @@ from aicrm_next.platform_foundation.external_effects.execution_gates import expl
 from aicrm_next.shared.postgres_connection import get_db
 from aicrm_next.shared.runtime_settings import runtime_bool, runtime_setting
 from aicrm_next.shared.wecom_payload_contract import normalize_group_admin_userids
+from aicrm_next.shared.wecom_runtime import classify_wecom_provider_error
 
 from .audit import record_audit_event
 from .wecom_customer_group_client import WeComCustomerGroupClient, WeComCustomerGroupClientError
@@ -36,6 +37,21 @@ def _safe_payload(payload: dict[str, Any]) -> dict[str, Any]:
     safe.pop("token", None)
     safe.pop("access_token", None)
     return safe
+
+
+def _provider_errcode(value: Any, *, default: int = 0) -> int:
+    if isinstance(value, bool):
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _provider_string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item or "").strip() for item in value if str(item or "").strip()]
 
 
 def _requested_chat_ids(payload: dict[str, Any]) -> list[str]:
@@ -135,6 +151,11 @@ class WeComGroupMessageAdapter:
         try:
             result = self._client().create_group_message_task(normalized)
         except WeComCustomerGroupClientError as exc:
+            provider_errcode = _provider_errcode((exc.payload or {}).get("errcode"))
+            derived_error_code, classification = classify_wecom_provider_error(
+                provider_errcode=provider_errcode,
+                transport_error=exc.error_code == "wecom_group_client_http_error",
+            )
             return {
                 "ok": False,
                 "adapter": self.adapter_name,
@@ -148,17 +169,21 @@ class WeComGroupMessageAdapter:
                 "exact_target_required": True,
                 "exact_target_verified": False,
                 "requested_chat_ids": requested_chat_ids,
-                "error_code": exc.error_code or "wecom_group_message_client_error",
+                "error_code": (
+                    derived_error_code
+                    if provider_errcode or exc.error_code == "wecom_group_client_http_error"
+                    else exc.error_code or "wecom_group_message_client_error"
+                ),
                 "error_message": str(exc),
+                "provider_errcode": provider_errcode,
+                "provider_error_classification": classification,
+                "retryable": classification == "retryable",
             }
-        errcode = int(result.get("errcode") or 0) if isinstance(result, dict) else -1
+        errcode = _provider_errcode(result.get("errcode")) if isinstance(result, dict) else -1
         msgid = str((result or {}).get("msgid") or "").strip() if isinstance(result, dict) else ""
-        failed_chat_ids = [
-            str(item or "").strip()
-            for item in list((result or {}).get("fail_list") or [])
-            if str(item or "").strip()
-        ] if isinstance(result, dict) else []
+        failed_chat_ids = _provider_string_list((result or {}).get("fail_list")) if isinstance(result, dict) else []
         if errcode != 0:
+            error_code, classification = classify_wecom_provider_error(provider_errcode=errcode)
             return {
                 "ok": False,
                 "adapter": self.adapter_name,
@@ -172,8 +197,11 @@ class WeComGroupMessageAdapter:
                 "exact_target_required": True,
                 "exact_target_verified": False,
                 "requested_chat_ids": requested_chat_ids,
-                "error_code": "wecom_group_message_api_error",
+                "error_code": error_code,
                 "error_message": str((result or {}).get("errmsg") or "WeCom group message API failed"),
+                "provider_errcode": errcode,
+                "provider_error_classification": classification,
+                "retryable": classification == "retryable",
             }
         if not msgid:
             return {

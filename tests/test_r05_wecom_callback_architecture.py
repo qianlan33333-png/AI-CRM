@@ -346,5 +346,8 @@ def test_callback_reconciliation_is_count_only_and_reports_static_boundaries(mon
     assert payload["pii_included"] is False
     assert payload["static_boundary"]["inline_dispatch_reference_count"] == 0
     assert payload["static_boundary"]["process_local_executor_reference_count"] == 0
+    assert payload["static_boundary"]["durable_inbox_runtime_manifest_count"] == 1
+    assert payload["static_boundary"]["legacy_persistent_worker_active_count"] == 0
+    assert payload["static_boundary"]["legacy_persistent_worker_managed_count"] == 1
     assert "external-fixture" not in serialized
     assert "welcome-fixture" not in serialized

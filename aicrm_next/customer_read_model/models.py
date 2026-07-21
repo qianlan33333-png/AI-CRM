@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import Boolean, Column, DateTime, Index, Integer, MetaData, String, Table, Text
+from sqlalchemy import Boolean, Column, DateTime, Index, Integer, MetaData, String, Table, Text, UniqueConstraint
 from sqlalchemy.types import JSON
 
 from aicrm_next.shared.database import Base
@@ -65,9 +65,17 @@ customer_timeline_event_next = Table(
     Column("source_id", String(128), nullable=False, default=""),
     Column("metadata_json", JSON, nullable=False, default=dict),
     Column("created_at", DateTime(timezone=True), nullable=False),
+    UniqueConstraint("event_id", name="uq_customer_timeline_event_next_event_id"),
     Index("ix_customer_timeline_event_next_unionid", "unionid"),
     Index("ix_customer_timeline_event_next_event_type", "event_type"),
     Index("ix_customer_timeline_event_next_event_time", "event_time"),
+)
+
+Index(
+    "ix_customer_timeline_event_next_unionid_time_id",
+    customer_timeline_event_next.c.unionid,
+    customer_timeline_event_next.c.event_time.desc(),
+    customer_timeline_event_next.c.id.desc(),
 )
 
 customer_recent_message_next = Table(

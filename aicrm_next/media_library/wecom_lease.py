@@ -11,9 +11,12 @@ from uuid import uuid4
 
 from sqlalchemy import text
 
-from aicrm_next.integration_gateway.wecom_media_upload_client import build_wecom_media_upload_client
+from aicrm_next.integration_gateway.wecom_media_upload_client import (
+    WeComMediaUploadClientError,
+    build_wecom_media_upload_client,
+)
 from aicrm_next.shared.db_session import get_session_factory
-from aicrm_next.shared.wecom_runtime import load_wecom_execution_config
+from aicrm_next.shared.wecom_runtime import classify_wecom_provider_error, load_wecom_execution_config
 
 from .postgres_repo import PostgresMediaLibraryRepository
 
@@ -28,6 +31,15 @@ TENANT_ID = "aicrm"
 
 def _text(value: Any) -> str:
     return str(value or "").strip()
+
+
+def _safe_int(value: Any) -> int:
+    if isinstance(value, bool):
+        return 0
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
 
 
 def _utc(value: datetime | None = None) -> datetime:
@@ -68,10 +80,62 @@ class MediaLeaseKey:
 
 
 class WeComMediaLeaseError(RuntimeError):
-    def __init__(self, code: str, message: str, *, retryable: bool = False) -> None:
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        *,
+        retryable: bool = False,
+        provider_errcode: int = 0,
+        provider_error_classification: str = "",
+        provider_stage: str = "",
+        provider_result_received: bool = False,
+        provider_call_executed: bool = False,
+        errmsg_present: bool = False,
+    ) -> None:
         super().__init__(message)
         self.code = _text(code) or "wecom_media_lease_error"
         self.retryable = bool(retryable)
+        self.provider_errcode = _safe_int(provider_errcode)
+        classification = _text(provider_error_classification)
+        self.provider_error_classification = classification if classification in {"blocked", "retryable", "terminal"} else ""
+        stage = _text(provider_stage)
+        self.provider_stage = stage if stage in {"config", "gettoken", "upload", "upload_attachment"} else ""
+        self.provider_result_received = bool(provider_result_received)
+        self.provider_call_executed = bool(provider_call_executed)
+        self.errmsg_present = bool(errmsg_present)
+
+
+def _provider_lease_error(exc: WeComMediaUploadClientError) -> WeComMediaLeaseError:
+    provider_errcode = _safe_int(getattr(exc, "provider_errcode", 0))
+    provider_stage = _text(getattr(exc, "stage", ""))
+    provider_result_received = bool(getattr(exc, "provider_result_received", False))
+    media_upload_executed = provider_stage in {"upload", "upload_attachment"}
+    client_error_code = _text(getattr(exc, "error_code", ""))
+    if client_error_code == "wecom_media_config_missing":
+        error_code = "config_missing"
+        classification = "terminal"
+    elif client_error_code == "wecom_media_http_error":
+        error_code, classification = classify_wecom_provider_error(transport_error=True)
+    elif provider_result_received:
+        error_code, classification = classify_wecom_provider_error(provider_errcode=provider_errcode)
+    elif media_upload_executed:
+        error_code = "external_call_unknown"
+        classification = "retryable"
+    else:
+        error_code = "provider_response_invalid"
+        classification = "terminal"
+    return WeComMediaLeaseError(
+        error_code,
+        error_code,
+        retryable=classification == "retryable",
+        provider_errcode=provider_errcode,
+        provider_error_classification=classification,
+        provider_stage=provider_stage,
+        provider_result_received=provider_result_received,
+        provider_call_executed=media_upload_executed,
+        errmsg_present=bool(getattr(exc, "errmsg_present", False)),
+    )
 
 
 class WeComMediaLeaseRepository(Protocol):
@@ -491,14 +555,23 @@ class WeComMediaLeaseManager:
                     return dict(existing or {})
             raise WeComMediaLeaseError("media_refresh_in_progress", "WeCom media refresh is already in progress", retryable=True)
 
+        upload_invoked = False
         try:
             item = self._material(normalized_kind, item_id)
             file_name, content_type, file_bytes = self._source_payload(normalized_kind, item_id, item)
             digest = hashlib.sha256(file_bytes).hexdigest()
+            upload_invoked = True
             uploaded = self._upload(normalized_upload, file_name=file_name, content_type=content_type, file_bytes=file_bytes)
             media_id = _text(uploaded.get("media_id"))
             if not media_id:
-                raise WeComMediaLeaseError("empty_media_id", "WeCom media upload returned no media_id", retryable=True)
+                raise WeComMediaLeaseError(
+                    "provider_response_invalid",
+                    "provider_response_invalid",
+                    provider_error_classification="terminal",
+                    provider_stage="upload_attachment" if normalized_upload == "attachment" else "upload",
+                    provider_result_received=True,
+                    provider_call_executed=True,
+                )
             created_at = _provider_created_at(uploaded, now)
             expires_at = created_at + PROVIDER_TTL
             refresh_after = expires_at - REFRESH_MARGIN
@@ -523,16 +596,36 @@ class WeComMediaLeaseManager:
                 now=now,
             )
             raise
-        except Exception as exc:
+        except WeComMediaUploadClientError as exc:
+            provider_error = _provider_lease_error(exc)
             self._lease_repository.mark_failed(
                 key,
                 token=token,
-                error_code="wecom_media_upload_failed",
-                error_message=str(exc),
+                error_code=provider_error.code,
+                error_message=str(provider_error),
+                retryable=provider_error.retryable,
+                now=now,
+            )
+            raise provider_error from exc
+        except Exception as exc:
+            error_code = "external_call_unknown" if upload_invoked else "local_execution_error"
+            self._lease_repository.mark_failed(
+                key,
+                token=token,
+                error_code=error_code,
+                error_message=error_code,
                 retryable=True,
                 now=now,
             )
-            raise WeComMediaLeaseError("wecom_media_upload_failed", str(exc), retryable=True) from exc
+            raise WeComMediaLeaseError(
+                error_code,
+                error_code,
+                retryable=True,
+                provider_error_classification="retryable" if upload_invoked else "",
+                provider_stage=("upload_attachment" if normalized_upload == "attachment" else "upload") if upload_invoked else "",
+                provider_result_received=False,
+                provider_call_executed=upload_invoked,
+            ) from exc
 
     def list_due_materials(self, *, limit: int = 50) -> list[dict[str, Any]]:
         if not self._corp_id:

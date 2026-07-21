@@ -181,6 +181,7 @@ def test_postgres_broadcast_claim_reclaims_expired_and_retryable_jobs(monkeypatc
     assert "lease_expires_at <= %s" in sql
     assert "status = 'failed_retryable'" in sql
     assert "next_retry_at IS NULL OR next_retry_at <= %s" in sql
+    assert "attempt_count < max_attempts" in sql
 
 
 def test_broadcast_worker_rejects_invalid_limit() -> None:

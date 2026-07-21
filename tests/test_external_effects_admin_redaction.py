@@ -203,7 +203,7 @@ def test_external_effect_admin_jobs_list_detail_attempts_receipts_and_diagnostic
     assert diagnostics.json()["filters"]["target_id"] == "[pii]"
 
 
-def test_external_effect_retry_and_cancel_responses_are_redacted(next_client: TestClient, monkeypatch) -> None:
+def test_external_effect_retry_and_cancel_validation_responses_are_redacted(next_client: TestClient, monkeypatch) -> None:
     monkeypatch.setenv("AICRM_ROUTE_POLICY_ENFORCED", "true")
     tokens = install_admin_action_tokens(
         next_client,
@@ -221,12 +221,12 @@ def test_external_effect_retry_and_cancel_responses_are_redacted(next_client: Te
         json={"admin_action_token": tokens[("POST", CANCEL_JOB_ROUTE)]},
     )
 
-    assert retried.status_code == 200
-    assert cancelled.status_code == 200
+    assert retried.status_code == 422
+    assert cancelled.status_code == 422
     _assert_no_sensitive_literals(retried.text)
     _assert_no_sensitive_literals(cancelled.text)
-    assert retried.json()["job"]["payload_json"]["webhook_token"] == "[redacted]"
-    assert cancelled.json()["job"]["payload_json"]["authorization"] == "[redacted]"
+    assert set(retried.json()["missing_fields"]) == {"actor", "reason", "expected_version"}
+    assert set(cancelled.json()["missing_fields"]) == {"actor", "reason", "expected_version"}
 
 
 def test_external_effect_run_due_preview_and_dry_run_responses_are_redacted(next_client: TestClient, monkeypatch) -> None:

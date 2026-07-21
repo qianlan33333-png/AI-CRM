@@ -319,6 +319,14 @@ def _plan_broadcast_idempotency_key(plan_id: str, *, source_event_id: str = "", 
     return f"ops_plan_approved_broadcast:{source}"[:240]
 
 
+def _recipient_broadcast_execution_id(recipient_idempotency_key: str) -> str:
+    normalized = _text(recipient_idempotency_key)
+    if not normalized:
+        raise ValueError("recipient broadcast idempotency key is required")
+    digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:32]
+    return f"exe_broadcast_{digest}"
+
+
 def _plan_broadcast_content_payload(*, plan_id: str, owner_userid: str, target_count: int, source_event_id: str) -> dict[str, Any]:
     return {
         "plan_id": _text(plan_id),
@@ -794,6 +802,7 @@ class PostgresCloudPlanRepository(CloudLegacyPostgresRepositoryMixin):
                 recipient = dict(recipient_row)
                 recipient_id = int(recipient["id"])
                 recipient_idempotency_key = f"cloud_plan_recipient:{normalized_plan_id}:{recipient_id}"
+                execution_id = _recipient_broadcast_execution_id(recipient_idempotency_key)
                 existing = conn.execute(
                     "SELECT id FROM broadcast_jobs WHERE idempotency_key = %s ORDER BY id DESC LIMIT 1",
                     (recipient_idempotency_key,),
@@ -814,12 +823,12 @@ class PostgresCloudPlanRepository(CloudLegacyPostgresRepositoryMixin):
                             source_type, source_id, source_table, scheduled_for, priority, batch_key,
                             business_domain, idempotency_key, channel, target_kind, retry_policy_json, metadata_json,
                             status, requires_approval, target_unionids_json, target_count, target_summary,
-                            content_type, content_payload, content_summary, trace_id, created_by
+                            content_type, content_payload, content_summary, trace_id, created_by, execution_id
                         ) VALUES (
                             'cloud_plan', %s, 'cloud_broadcast_plan_recipients', CURRENT_TIMESTAMP, 100, %s,
                             'ai_assistant', %s, 'wecom_private', 'unionid', '{}'::jsonb, %s::jsonb,
                             'queued', FALSE, %s::jsonb, 1, %s,
-                            'cloud_plan', %s::jsonb, %s, %s, %s
+                            'cloud_plan', %s::jsonb, %s, %s, %s, %s
                         )
                         ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL AND idempotency_key <> ''
                         DO NOTHING
@@ -843,6 +852,7 @@ class PostgresCloudPlanRepository(CloudLegacyPostgresRepositoryMixin):
                             f"{_text(plan_dict.get('display_name')) or _text(plan_dict.get('intent')) or normalized_plan_id} · {_text(recipient.get('display_name')) or _text(recipient.get('unionid'))}",
                             _text(plan_dict.get("trace_id")) or normalized_plan_id,
                             _text(operator) or "internal_event_worker",
+                            execution_id,
                         ),
                     ).fetchone()
                     if inserted:
@@ -857,6 +867,14 @@ class PostgresCloudPlanRepository(CloudLegacyPostgresRepositoryMixin):
                         if job_id:
                             reused_count += 1
                 if job_id:
+                    conn.execute(
+                        """
+                        UPDATE broadcast_jobs
+                        SET execution_id = %s, updated_at = CURRENT_TIMESTAMP
+                        WHERE id = %s AND COALESCE(execution_id, '') = ''
+                        """,
+                        (execution_id, job_id),
+                    )
                     job_ids.append(job_id)
                     conn.execute(
                         """

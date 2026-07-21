@@ -13,6 +13,9 @@ from aicrm_next.integration_gateway.wechat_shop_client import (
     WeChatShopClientError,
 )
 from aicrm_next.identity_contact.payment_projection import project_wechat_shop_order_mobile
+from aicrm_next.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform_foundation.internal_events.models import InternalEventCreateRequest
+from aicrm_next.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
 from aicrm_next.shared.runtime import database_mode
 from aicrm_next.shared.runtime_settings import runtime_setting
 
@@ -930,6 +933,44 @@ def _upsert_order(order: dict[str, Any], *, source_event_id: int | None = None) 
             order,
             source_route="wechat_shop_order_sync",
         )
+        if bool(saved.get("deal_recorded")) and _text(saved.get("unionid")):
+            enqueue_transactional_internal_event_outbox(
+                conn,
+                InternalEventCreateRequest(
+                    event_type="commerce.product_enrolled",
+                    aggregate_type="wechat_shop_order",
+                    aggregate_id=_text(saved.get("order_id") or saved.get("id")),
+                    subject_type="unionid",
+                    subject_id=_text(saved.get("unionid")),
+                    idempotency_key=f"commerce.product_enrolled:wechat_shop:{_text(saved.get('order_id'))}",
+                    source_module="commerce.wechat_shop_service",
+                    source_command_id=_text(source_event_id or saved.get("order_id")),
+                    occurred_at=saved.get("paid_at") or saved.get("updated_at"),
+                    context=CommandContext(
+                        actor_id="wechat_shop_sync",
+                        actor_type="system",
+                        source_route="wechat_shop_order_sync",
+                    ),
+                    payload={
+                        "source_table": "wechat_shop_orders",
+                        "source_id": _text(saved.get("order_id")),
+                        "product_type": "wechat_shop",
+                        "order": {
+                            "order_id": _text(saved.get("order_id")),
+                            "unionid": _text(saved.get("unionid")),
+                            "product_code": _text(saved.get("product_code")),
+                            "product_name": _text(saved.get("product_name")),
+                            "product_type": "wechat_shop",
+                            "paid_at": str(saved.get("paid_at") or ""),
+                        },
+                    },
+                    payload_summary={
+                        "order_id": _text(saved.get("order_id")),
+                        "product_code": _text(saved.get("product_code")),
+                        "unionid_present": True,
+                    },
+                ),
+            )
     return saved
 
 

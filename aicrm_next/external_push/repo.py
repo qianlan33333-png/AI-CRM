@@ -384,6 +384,54 @@ class SQLAlchemyExternalPushRepository:
         )
         return _public_delivery(row) or {}
 
+    def mark_delivery_settled_from_external_effect(
+        self,
+        delivery_id: str,
+        *,
+        external_effect_job_id: int,
+        external_effect_status: str,
+        error_code: str = "",
+    ) -> dict[str, Any]:
+        """Close a delivery when its canonical External Effect cannot succeed."""
+
+        terminal_status = _normalized_text(external_effect_status)
+        delivery_status = {
+            "failed_terminal": "gave_up",
+            "blocked": "gave_up",
+            "unknown_after_dispatch": "gave_up",
+            "cancelled": "skipped",
+            "simulated": "skipped",
+        }.get(terminal_status)
+        if not delivery_status:
+            return {}
+        row = self._write_one(
+            """
+            UPDATE external_push_delivery
+            SET status = :status,
+                attempt_count = GREATEST(attempt_count, 1),
+                response_body = :response_body,
+                error_message = :error_message,
+                next_retry_at = NULL,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE delivery_id = :delivery_id
+              AND status <> 'success'
+            RETURNING *
+            """,
+            {
+                "status": delivery_status,
+                "response_body": _json_dumps(
+                    {
+                        "external_effect_job_id": int(external_effect_job_id),
+                        "external_effect_status": terminal_status,
+                        "reconciliation_required": terminal_status == "unknown_after_dispatch",
+                    }
+                ),
+                "error_message": _normalized_text(error_code) or f"external_effect_{terminal_status}",
+                "delivery_id": _normalized_text(delivery_id),
+            },
+        )
+        return _public_delivery(row) or {}
+
     def get_delivery_by_delivery_id(self, delivery_id: str) -> dict[str, Any] | None:
         row = self._one(
             "SELECT * FROM external_push_delivery WHERE delivery_id = :delivery_id LIMIT 1",

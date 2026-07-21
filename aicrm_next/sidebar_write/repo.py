@@ -721,7 +721,7 @@ class PostgresSidebarWriteRepository:
         bind_by_userid: str,
     ) -> JsonDict:
         source_key = f"sidebar_bind_mobile:{external_userid}:{command_id}"
-        conn.execute(
+        cursor = conn.execute(
             """
             INSERT INTO crm_user_identity_resolution_queue (
                 source_type,
@@ -746,6 +746,7 @@ class PostgresSidebarWriteRepository:
                 reason = EXCLUDED.reason,
                 last_seen_at = NOW(),
                 updated_at = NOW()
+            RETURNING *
             """,
             (
                 source_key,
@@ -764,7 +765,23 @@ class PostgresSidebarWriteRepository:
                 ),
             ),
         )
-        return {"status": "pending", "reason": "identity_pending_unionid", "source_key": source_key}
+        row = cursor.fetchone()
+        planned: JsonDict = {}
+        if row:
+            from aicrm_next.identity_contact.resolution_effects import plan_identity_resolution_effect
+
+            planned = plan_identity_resolution_effect(
+                conn,
+                dict(row),
+                parent_execution_id=command_id,
+                source_route="sidebar_write.identity_resolution.enqueue",
+            )
+        return {
+            "status": "pending" if planned.get("external_effect_job_id") else "held",
+            "reason": "identity_pending_unionid",
+            "source_key": source_key,
+            **planned,
+        }
 
     def _binding_response(self, row: JsonDict, *, owner_userid: str) -> JsonDict:
         unionid = str(row.get("unionid") or "").strip()

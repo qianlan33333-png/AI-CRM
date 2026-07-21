@@ -22,8 +22,9 @@ class PushCenterRepository:
         *,
         limit: int = 50,
         offset: int = 0,
-    ) -> tuple[list[dict[str, Any]], int, dict[str, Any], list[dict[str, Any]]]:
-        return self._service.query_projections(filters or {}, limit=limit, offset=offset)
+        cursor: str = "",
+    ) -> tuple[list[dict[str, Any]], int, dict[str, Any], list[dict[str, Any]], str, bool]:
+        return self._service.query_projections(filters or {}, limit=limit, offset=offset, cursor=cursor)
 
     def get_job(self, job_id: int | str) -> dict[str, Any] | None:
         return self._service.get_projection(str(job_id))

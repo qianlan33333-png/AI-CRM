@@ -172,13 +172,13 @@ REQUIRED_TEST_PROOFS = {
         "tests/test_next_channel_entry_orchestrator.py",
         "test_active_channel_baseline_emits_only_channel_entry_without_program_admission",
     ),
-    "external_effect_realtime_unknown_quarantine": (
+    "external_effect_realtime_signal_only": (
         "tests/test_external_effects_realtime.py",
-        "test_realtime_adapter_exception_quarantines_job_for_reconciliation",
+        "test_realtime_signal_never_dispatches_provider_or_creates_attempt",
     ),
     "external_effect_stale_dispatching_quarantine": (
-        "tests/test_external_effects_mvp.py",
-        "test_external_effect_due_queue_quarantines_stale_dispatching_jobs",
+        "tests/test_external_effect_delivery_lease.py",
+        "test_stale_post_provider_dispatch_is_quarantined_as_unknown",
     ),
     "schema_contract": ("tests/test_webhook_inbox_migration_contract.py", "test_webhook_inbox_migration_locks_status_and_idempotency_contracts"),
     "webhook_inbox_service_models": (
@@ -191,7 +191,7 @@ REQUIRED_TEST_PROOFS = {
     ),
     "admin_replay_detail": ("tests/test_webhook_inbox_admin_api.py", "test_webhook_inbox_admin_detail_returns_processing_chain"),
     "admin_retry_skip": ("tests/test_webhook_inbox_admin_api.py", "test_webhook_inbox_admin_retry_and_skip_require_token"),
-    "admin_dispatch_one": ("tests/test_webhook_inbox_admin_api.py", "test_webhook_inbox_admin_dispatch_one_requires_token_and_supports_execute"),
+    "admin_dispatch_one": ("tests/test_webhook_inbox_admin_api.py", "test_webhook_inbox_admin_dispatch_one_requires_token_and_versioned_command"),
     "admin_run_due": ("tests/test_webhook_inbox_admin_api.py", "test_webhook_inbox_admin_run_due_defaults_to_dry_run"),
     "admin_page_hooks": ("tests/test_webhook_inbox_admin_api.py", "test_webhook_inbox_admin_page_renders_shell_and_api_hooks"),
     "admin_incident_window_filter": (
@@ -271,7 +271,7 @@ OBJECTIVE_REQUIREMENTS = {
         "tests": [
             "external_effect_boundary",
             "channel_entry_effect_realtime_wakeup",
-            "external_effect_realtime_unknown_quarantine",
+            "external_effect_realtime_signal_only",
             "external_effect_stale_dispatching_quarantine",
         ],
         "readiness": ["downstream_worker_isolation_ok"],

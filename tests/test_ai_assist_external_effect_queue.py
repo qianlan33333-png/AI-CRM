@@ -334,6 +334,7 @@ def test_wecom_private_external_effect_allowlisted_execute_succeeds(monkeypatch)
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES", WECOM_MESSAGE_PRIVATE_SEND)
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_TARGET_EXTERNAL_USERIDS", "wm_fixture_a")
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS", "owner_fixture")
+    monkeypatch.setenv("AICRM_WECOM_PROVIDER_TARGET_POLICY", "allowlisted_canary")
     calls: list[dict] = []
 
     class _Adapter:
@@ -359,7 +360,17 @@ def test_wecom_private_external_effect_allowlisted_execute_succeeds(monkeypatch)
         )
     )
     job_id = plan["external_effect_job_ids"][0]
-    ExternalEffectService().approve(job_id)
+    service = ExternalEffectService()
+    pending = service.get(job_id)
+    assert pending is not None
+    authorized = service.authorize_allowlisted_canary(
+        job_id,
+        actor="pytest",
+        reason="explicit AI assist canary target confirmation",
+        expected_version=pending.row_version,
+    )
+    assert authorized is not None
+    service.approve(job_id)
 
     worker = ExternalEffectWorker(adapter_registry=build_external_effect_adapter_registry())
     preview = worker.preview_due(batch_size=1, effect_types=[WECOM_MESSAGE_PRIVATE_SEND], test_only=False)
@@ -382,13 +393,14 @@ def test_wecom_private_external_effect_allowlisted_execute_succeeds(monkeypatch)
     assert attempts[0].response_summary_json["wecom_send_executed"] is True
 
 
-def test_wecom_private_external_effect_ignores_target_allowlist_miss(monkeypatch) -> None:
+def test_wecom_private_external_effect_cannot_self_authorize_allowlist_miss(monkeypatch) -> None:
     _reset_fixture_state()
     monkeypatch.setenv("AI_ASSIST_EXTERNAL_EFFECT_SEND_MODE", "wecom_private")
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_WECOM_EXECUTE", "1")
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES", WECOM_MESSAGE_PRIVATE_SEND)
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_TARGET_EXTERNAL_USERIDS", "wm_other")
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS", "owner_fixture")
+    monkeypatch.setenv("AICRM_WECOM_PROVIDER_TARGET_POLICY", "allowlisted_canary")
     calls: list[dict] = []
 
     class _Adapter:
@@ -411,7 +423,19 @@ def test_wecom_private_external_effect_ignores_target_allowlist_miss(monkeypatch
         )
     )
     job_id = plan["external_effect_job_ids"][0]
-    ExternalEffectService().approve(job_id)
+    service = ExternalEffectService()
+    pending = service.get(job_id)
+    assert pending is not None
+    assert (
+        service.authorize_allowlisted_canary(
+            job_id,
+            actor="pytest",
+            reason="target is intentionally outside the canary allowlist",
+            expected_version=pending.row_version,
+        )
+        is None
+    )
+    service.approve(job_id)
 
     result = ExternalEffectWorker(
         adapter_registry=build_external_effect_adapter_registry()
@@ -419,12 +443,13 @@ def test_wecom_private_external_effect_ignores_target_allowlist_miss(monkeypatch
     updated = ExternalEffectService().get(job_id)
     attempts = ExternalEffectService().list_attempts(job_id)
 
-    assert result["counts"]["succeeded_count"] == 1
-    assert result["real_external_call_executed"] is True
-    assert len(calls) == 1
+    assert result["counts"]["succeeded_count"] == 0
+    assert result["real_external_call_executed"] is False
+    assert calls == []
     assert updated is not None
-    assert updated.status == "succeeded"
-    assert attempts[0].status == "succeeded"
+    assert updated.status == "blocked"
+    assert attempts[0].status == "blocked"
+    assert attempts[0].error_code == "wecom_execution_scope_not_allowlisted_canary"
 
 
 def test_ai_assist_campaign_loopback_test_only_false_is_rejected(monkeypatch) -> None:

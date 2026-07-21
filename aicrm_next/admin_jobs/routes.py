@@ -5,13 +5,15 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from aicrm_next.shared.admin_action_runtime import ensure_admin_action_token, validate_admin_action_token
+from aicrm_next.platform_foundation.auth_platform.context import AuthContext
 
 from .application import (
     approve_broadcast_job,
+    build_broadcast_job_detail_payload,
     build_broadcast_jobs_payload,
     build_jobs_archive_sync_payload,
     build_jobs_callbacks_payload,
@@ -27,28 +29,42 @@ from .application import (
 )
 from .domain import normalized_bool, normalized_text
 from .notification_settings import (
-    FEISHU_WEBHOOK_ERROR,
     FeishuWebhookValidationError,
     get_feishu_notification_setting,
+    enqueue_feishu_webhook_validation,
     send_broadcast_job_hourly_feishu_report,
     upsert_feishu_notification_setting,
-    validate_feishu_webhook,
 )
 from aicrm_next.admin_shell import admin_path_for, shell_context
 
 router = APIRouter()
 
 _ADMIN_JOBS_TEMPLATE_DIR = Path(__file__).resolve().parent / "templates"
-templates = Jinja2Templates(directory=_ADMIN_JOBS_TEMPLATE_DIR)
+_FRONTEND_COMPAT_TEMPLATE_DIR = Path(__file__).resolve().parents[1] / "frontend_compat" / "templates"
+templates = Jinja2Templates(directory=[_ADMIN_JOBS_TEMPLATE_DIR, _FRONTEND_COMPAT_TEMPLATE_DIR])
 
 
 def _operator_from_request(request: Request, payload: dict[str, Any] | None = None, form: Any | None = None) -> str:
-    return (
-        normalized_text(request.headers.get("X-Admin-Operator"))
-        or normalized_text((form or {}).get("operator") if form is not None else "")
-        or normalized_text((payload or {}).get("operator") if payload else "")
-        or "crm_console"
-    )
+    del payload, form
+    context = getattr(request.state, "auth_context", None)
+    if isinstance(context, AuthContext) and normalized_text(context.sub):
+        return normalized_text(context.sub)
+    return "authenticated_admin"
+
+
+def _authenticated_actor(request: Request) -> str:
+    context = getattr(request.state, "auth_context", None)
+    return normalized_text(context.sub) if isinstance(context, AuthContext) else ""
+
+
+def _manual_action_contract(payload: dict[str, Any]) -> str:
+    if not normalized_text(payload.get("reason")):
+        return "manual_action_reason_required"
+    try:
+        expected_version = int(payload.get("expected_version") or 0)
+    except (TypeError, ValueError):
+        expected_version = 0
+    return "" if expected_version > 0 else "manual_action_expected_version_required"
 
 
 def _jsonable(payload: Any) -> Any:
@@ -250,6 +266,9 @@ async def api_admin_jobs_webhook_delivery_retry(delivery_id: int, request: Reque
 
 @router.get("/admin/broadcast-jobs", name="api.admin_broadcast_jobs", response_class=HTMLResponse)
 def admin_broadcast_jobs(request: Request):
+    selected_job_id = normalized_text(request.query_params.get("job_id"))
+    if selected_job_id.isdigit():
+        return RedirectResponse(f"/admin/broadcast-jobs/{selected_job_id}", status_code=303)
     payload = build_broadcast_jobs_payload(dict(request.query_params))
     context = shell_context(
         request=request,
@@ -262,6 +281,8 @@ def admin_broadcast_jobs(request: Request):
             "breadcrumbs": [{"label": "客户管理后台", "href": "/"}, {"label": "同步任务", "href": "/admin/jobs"}, {"label": "群发队列", "href": ""}],
             "jobs": payload["jobs"],
             "counts": payload["counts"],
+            "total": payload["total"],
+            "operator_actor": _authenticated_actor(request),
             "filters": payload["filters"],
             "status_options": payload["status_options"],
             "source_type_options": payload["source_type_options"],
@@ -272,10 +293,48 @@ def admin_broadcast_jobs(request: Request):
     return templates.TemplateResponse(request, "admin_console/broadcast_jobs.html", context)
 
 
+@router.get(
+    "/admin/broadcast-jobs/{job_id}",
+    name="api.admin_broadcast_job_page",
+    response_class=HTMLResponse,
+)
+def admin_broadcast_job_page(job_id: int, request: Request):
+    context = shell_context(
+        request=request,
+        page_title="群发任务详情",
+        page_summary="核对单个群发任务的审批、排队、发送与关联事件。",
+        active_endpoint="api.admin_jobs",
+    )
+    context.update(
+        {
+            "breadcrumbs": [
+                {"label": "客户管理后台", "href": "/"},
+                {"label": "群发队列", "href": "/admin/broadcast-jobs"},
+                {"label": f"#{job_id}", "href": ""},
+            ],
+            "job_id": int(job_id),
+            "operator_actor": _authenticated_actor(request),
+            "admin_action_token": ensure_admin_action_token(),
+            "url_for": admin_path_for,
+        }
+    )
+    return templates.TemplateResponse(request, "admin_console/broadcast_job_detail.html", context)
+
+
 @router.get("/api/admin/broadcast-jobs")
 def api_admin_broadcast_jobs(request: Request):
     payload = build_broadcast_jobs_payload(dict(request.query_params))
-    return {"ok": True, "jobs": _jsonable(payload["jobs"]), "counts": payload["counts"], "filters": payload["filters"]}
+    return {
+        "ok": True,
+        "jobs": _jsonable(payload["jobs"]),
+        "counts": payload["counts"],
+        "filters": payload["filters"],
+        "total": payload["total"],
+        "status_options": payload["status_options"],
+        "source_type_options": payload["source_type_options"],
+        "route_owner": "ai_crm_next",
+        "real_external_call_executed": False,
+    }
 
 
 def _with_ok(payload: dict[str, Any]) -> dict[str, Any]:
@@ -313,11 +372,15 @@ async def api_admin_broadcast_jobs_validate_feishu_notification_settings(request
     token_error = await _action_token_error(request, payload)
     if token_error:
         return JSONResponse({"ok": False, "error": token_error}, status_code=401)
-    result = validate_feishu_webhook(webhook_url=normalized_text(payload.get("webhookUrl")), enabled=normalized_bool(payload.get("enabled")))
-    if result.get("ok"):
-        return _jsonable(result)
-    status_code = 400 if result.get("message") == FEISHU_WEBHOOK_ERROR else 502
-    return JSONResponse(_jsonable(result), status_code=status_code)
+    try:
+        result = enqueue_feishu_webhook_validation(
+            webhook_url=normalized_text(payload.get("webhookUrl")),
+            enabled=normalized_bool(payload.get("enabled")),
+            actor_id=_operator_from_request(request),
+        )
+    except FeishuWebhookValidationError as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
+    return JSONResponse(_jsonable(result), status_code=202)
 
 
 @router.post("/api/admin/broadcast-jobs/feishu-hourly-report/run")
@@ -327,7 +390,23 @@ async def api_admin_broadcast_jobs_feishu_hourly_report_run(request: Request):
     if token_error:
         return JSONResponse({"ok": False, "error": token_error}, status_code=401)
     result = send_broadcast_job_hourly_feishu_report()
-    return _jsonable({"ok": result.get("status") == "sent", **result})
+    return _jsonable({"ok": result.get("status") in {"queued", "sent"}, **result})
+
+
+@router.get("/api/admin/broadcast-jobs/{job_id}")
+def api_admin_broadcast_job_detail(job_id: int):
+    payload = build_broadcast_job_detail_payload(job_id)
+    if not payload:
+        return JSONResponse(
+            {
+                "ok": False,
+                "error": "broadcast_job_not_found",
+                "route_owner": "ai_crm_next",
+                "real_external_call_executed": False,
+            },
+            status_code=404,
+        )
+    return _jsonable(payload)
 
 
 @router.post("/api/admin/jobs/order-identity-repair/run")
@@ -356,10 +435,19 @@ async def api_admin_broadcast_jobs_approve(job_id: int, request: Request):
     token_error = await _action_token_error(request, payload)
     if token_error:
         return JSONResponse({"ok": False, "error": token_error}, status_code=401)
+    contract_error = _manual_action_contract(payload)
+    if contract_error:
+        return JSONResponse({"ok": False, "error": contract_error}, status_code=422)
     try:
-        return _jsonable(approve_broadcast_job(job_id, operator=_operator_from_request(request, payload)))
+        return _jsonable(
+            approve_broadcast_job(
+                job_id,
+                operator=_operator_from_request(request),
+                reason=normalized_text(payload.get("reason")),
+            )
+        )
     except ValueError as exc:
-        return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=409)
 
 
 @router.post("/api/admin/broadcast-jobs/{job_id}/cancel")
@@ -368,7 +456,16 @@ async def api_admin_broadcast_jobs_cancel(job_id: int, request: Request):
     token_error = await _action_token_error(request, payload)
     if token_error:
         return JSONResponse({"ok": False, "error": token_error}, status_code=401)
+    contract_error = _manual_action_contract(payload)
+    if contract_error:
+        return JSONResponse({"ok": False, "error": contract_error}, status_code=422)
     try:
-        return _jsonable(cancel_broadcast_job(job_id, operator=_operator_from_request(request, payload), reason=normalized_text(payload.get("reason"))))
+        return _jsonable(
+            cancel_broadcast_job(
+                job_id,
+                operator=_operator_from_request(request),
+                reason=normalized_text(payload.get("reason")),
+            )
+        )
     except ValueError as exc:
-        return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=409)

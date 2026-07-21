@@ -28,6 +28,13 @@ def _matches_external_push_delivery(
     )
 
 
+def _matches_external_push_terminal_delivery(
+    job: ExternalEffectJob,
+    dispatch_result: ExternalEffectDispatchResult,
+) -> bool:
+    return _matches_external_push_delivery(job, dispatch_result) and job.status != "succeeded"
+
+
 def _response_status(dispatch_result: ExternalEffectDispatchResult) -> int | None:
     value: Any = (dispatch_result.response_summary or {}).get("status_code")
     try:
@@ -69,11 +76,49 @@ def _project_external_push_delivery_after_success(
     }
 
 
+def _project_external_push_terminal_delivery(
+    job: ExternalEffectJob,
+    _dispatch_result: ExternalEffectDispatchResult,
+) -> dict[str, Any]:
+    try:
+        delivery = repo.build_external_push_repository().mark_delivery_settled_from_external_effect(
+            str(job.target_id or "").strip(),
+            external_effect_job_id=int(job.id or 0),
+            external_effect_status=str(job.status or "").strip(),
+            error_code=str(job.last_error_code or "").strip(),
+        )
+    except Exception as exc:
+        safe_log_exception(
+            LOGGER,
+            "external push delivery terminal projection failed",
+            exc,
+            external_effect_job_id=int(job.id or 0),
+        )
+        return {"ok": False, "projection_type": "external_push_delivery", "error": str(exc)[:500]}
+    if not delivery:
+        return {"ok": False, "projection_type": "external_push_delivery", "error": "external_push_delivery_not_found"}
+    return {
+        "ok": True,
+        "projection_type": "external_push_delivery",
+        "delivery_status": delivery.get("status"),
+        "external_effect_status": job.status,
+    }
+
+
 EXTERNAL_PUSH_DELIVERY_CONTINUATION = ExternalEffectContinuation(
     name="external_push_delivery",
     matches=_matches_external_push_delivery,
     run=_project_external_push_delivery_after_success,
 )
 
+EXTERNAL_PUSH_DELIVERY_SETTLEMENT_CONTINUATION = ExternalEffectContinuation(
+    name="external_push_delivery_settlement",
+    matches=_matches_external_push_terminal_delivery,
+    run=_project_external_push_terminal_delivery,
+)
 
-__all__ = ["EXTERNAL_PUSH_DELIVERY_CONTINUATION"]
+
+__all__ = [
+    "EXTERNAL_PUSH_DELIVERY_CONTINUATION",
+    "EXTERNAL_PUSH_DELIVERY_SETTLEMENT_CONTINUATION",
+]

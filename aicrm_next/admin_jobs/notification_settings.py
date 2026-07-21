@@ -182,6 +182,70 @@ def validate_feishu_webhook(
     }
 
 
+def enqueue_feishu_webhook_validation(
+    *,
+    webhook_url: str,
+    enabled: bool = True,
+    actor_id: str = "",
+    repo: AdminJobsRepository | None = None,
+) -> dict[str, Any]:
+    """Persist validation intent and return before any provider call starts."""
+
+    validate_feishu_webhook_url(webhook_url)
+    repo = repo or build_admin_jobs_repository()
+    setting = upsert_feishu_notification_setting(
+        enabled=enabled,
+        webhook_url=webhook_url,
+        validation_status="unverified",
+        validated_at=None,
+        last_validation_error=None,
+        repo=repo,
+    )
+    validation_id = __import__("uuid").uuid4().hex
+    job = ExternalEffectService().plan_effect(
+        effect_type=FEISHU_WEBHOOK_NOTIFY,
+        adapter_name="feishu_webhook",
+        operation="validate",
+        target_type="feishu_webhook_setting",
+        target_id=FEISHU_CHANNEL,
+        business_type="broadcast_notification_validation",
+        business_id=validation_id,
+        payload={
+            "webhook_url": normalized_text(webhook_url),
+            "body": {"msg_type": "text", "content": {"text": FEISHU_VALIDATION_MESSAGE}},
+            "validation": {"channel": FEISHU_CHANNEL, "enabled": bool(enabled)},
+        },
+        payload_summary={
+            "webhook_url_present": True,
+            "validation": True,
+            "channel": FEISHU_CHANNEL,
+            "text_length": len(FEISHU_VALIDATION_MESSAGE),
+        },
+        context=CommandContext(
+            actor_id=normalized_text(actor_id) or "authenticated_admin",
+            actor_type="admin",
+            trace_id=f"feishu-validation:{validation_id}",
+            source_route="/api/admin/broadcast-jobs/notification-settings/feishu/validate",
+        ),
+        source_module="admin_jobs.notification_settings",
+        source_command_id=validation_id,
+        idempotency_key=f"feishu-webhook-validation:{validation_id}",
+        risk_level="medium",
+        execution_mode="execute",
+        status="queued",
+    )
+    job_id = int(job.get("id") or 0)
+    return {
+        "ok": True,
+        "accepted": True,
+        "validationStatus": "unverified",
+        "webhookMasked": setting.get("webhookMasked"),
+        "externalEffectJobId": job_id,
+        "statusUrl": f"/api/admin/push-center/jobs/external_effect_job:{job_id}",
+        "real_external_call_executed": False,
+    }
+
+
 def send_feishu_webhook_message(webhook_url: str, text: str) -> dict[str, Any]:
     validate_feishu_webhook_url(webhook_url)
     job = ExternalEffectService().plan_effect(
@@ -331,6 +395,15 @@ def send_broadcast_job_hourly_feishu_report(
         result = send(normalized_text(setting.get("webhook_url")), message)
     except Exception:
         result = {"ok": False}
+    if result.get("ok") is True and result.get("queued") is True:
+        # Queue acceptance is not provider delivery.  Keep the durable report
+        # pending until the external-effect completion path records the actual
+        # provider outcome.
+        return {
+            "status": "queued",
+            "summary": public_summary,
+            "externalEffectJobId": result.get("external_effect_job_id"),
+        }
     if result.get("ok") is True:
         mark_hourly_report_sent(
             report_key=report_key,

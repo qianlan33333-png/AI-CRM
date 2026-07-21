@@ -19,6 +19,7 @@ SYSTEMD_DIR = Path("/etc/systemd/system")
 DEPLOY_GUARD_FILE = Path("/home/ubuntu/.aicrm-production-deploy-in-progress")
 WEB_START_AUTHORIZATION_FILE = Path("/run/aicrm-production-web-start-authorized")
 RUNTIME_START_AUTHORIZATION_FILE = Path("/run/aicrm-production-runtime-start-authorized")
+QUEUE_RUNTIME_GENERATION_ENV = Path("/home/ubuntu/.aicrm-queue-runtime-generation.env")
 DEPLOY_GUARD_DROPIN = "00-aicrm-deploy-transaction-guard.conf"
 DEPLOY_GUARD_SOURCE = ROOT / "deploy" / "systemd" / DEPLOY_GUARD_DROPIN
 PRIMARY_WEB_GUARD_SOURCE = ROOT / "deploy" / "systemd" / "00-aicrm-primary-web-transaction-guard.conf"
@@ -45,6 +46,16 @@ class ServiceUnit:
 class RetiredDropIn:
     unit: str
     dropin: str
+
+
+@dataclass(frozen=True)
+class SuccessorOwner:
+    legacy_owner: str
+    capability: str
+    successor_kind: str
+    successor_unit: str
+    health_contract: str
+    backlog_contract: str
 
 
 def load_manifest(path: Path = MANIFEST_PATH) -> dict[str, Any]:
@@ -76,6 +87,162 @@ def active_services(manifest: dict[str, Any]) -> list[ServiceUnit]:
             )
         )
     return services
+
+
+def cutover_owner_inventory(manifest: dict[str, Any]) -> str:
+    section = manifest.get("cutover_managed_legacy") or {}
+    if not isinstance(section, dict):
+        raise ValueError("cutover_managed_legacy must be an object")
+    return str(section.get("owner_inventory") or "").strip()
+
+
+def cutover_legacy_timers(manifest: dict[str, Any]) -> list[TimerUnit]:
+    section = manifest.get("cutover_managed_legacy") or {}
+    if not isinstance(section, dict):
+        raise ValueError("cutover_managed_legacy must be an object")
+    timers: list[TimerUnit] = []
+    for item in section.get("timers") or []:
+        if not isinstance(item, dict):
+            raise ValueError("cutover_managed_legacy timers must declare timer and service")
+        timer = str(item.get("timer") or "").strip()
+        service = str(item.get("service") or "").strip()
+        if not timer or not service:
+            raise ValueError("cutover_managed_legacy timers must declare timer and service")
+        timers.append(TimerUnit(timer=timer, service=service))
+    return timers
+
+
+def cutover_replacement_timers(manifest: dict[str, Any]) -> list[TimerUnit]:
+    section = manifest.get("cutover_replacement_autostart") or {}
+    if not isinstance(section, dict):
+        raise ValueError("cutover_replacement_autostart must be an object")
+    timers: list[TimerUnit] = []
+    for item in section.get("timers") or []:
+        if not isinstance(item, dict):
+            raise ValueError("cutover_replacement_autostart timers must declare timer and service")
+        timer = str(item.get("timer") or "").strip()
+        service = str(item.get("service") or "").strip()
+        if not timer or not service:
+            raise ValueError("cutover_replacement_autostart timers must declare timer and service")
+        timers.append(TimerUnit(timer=timer, service=service))
+    return timers
+
+
+def cutover_replacement_owner_inventory(manifest: dict[str, Any]) -> str:
+    section = manifest.get("cutover_replacement_autostart") or {}
+    if not isinstance(section, dict):
+        raise ValueError("cutover_replacement_autostart must be an object")
+    return str(section.get("owner_inventory") or "").strip()
+
+
+def cutover_successor_owner_inventory(manifest: dict[str, Any]) -> str:
+    section = manifest.get("cutover_successor_matrix") or {}
+    if not isinstance(section, dict):
+        raise ValueError("cutover_successor_matrix must be an object")
+    return str(section.get("owner_inventory") or "").strip()
+
+
+def cutover_successor_owners(manifest: dict[str, Any]) -> list[SuccessorOwner]:
+    section = manifest.get("cutover_successor_matrix") or {}
+    if not isinstance(section, dict):
+        raise ValueError("cutover_successor_matrix must be an object")
+    owners: list[SuccessorOwner] = []
+    for item in section.get("owners") or []:
+        if not isinstance(item, dict):
+            raise ValueError("cutover successor owners must be objects")
+        owner = SuccessorOwner(
+            legacy_owner=str(item.get("legacy_owner") or "").strip(),
+            capability=str(item.get("capability") or "").strip(),
+            successor_kind=str(item.get("successor_kind") or "").strip(),
+            successor_unit=str(item.get("successor_unit") or "").strip(),
+            health_contract=str(item.get("health_contract") or "").strip(),
+            backlog_contract=str(item.get("backlog_contract") or "").strip(),
+        )
+        if not all(
+            (
+                owner.legacy_owner,
+                owner.capability,
+                owner.successor_kind,
+                owner.successor_unit,
+                owner.health_contract,
+                owner.backlog_contract,
+            )
+        ):
+            raise ValueError("cutover successor owners must declare every contract field")
+        if owner.successor_kind not in {"persistent_service", "timer"}:
+            raise ValueError("cutover successor_kind must be persistent_service or timer")
+        owners.append(owner)
+    return owners
+
+
+def cutover_legacy_persistent_services(manifest: dict[str, Any]) -> list[ServiceUnit]:
+    section = manifest.get("cutover_managed_legacy") or {}
+    if not isinstance(section, dict):
+        raise ValueError("cutover_managed_legacy must be an object")
+    services: list[ServiceUnit] = []
+    for item in section.get("persistent_services") or []:
+        if not isinstance(item, dict):
+            raise ValueError("cutover_managed_legacy persistent services must declare service")
+        service = str(item.get("service") or "").strip()
+        if not service:
+            raise ValueError("cutover_managed_legacy persistent services must declare service")
+        services.append(ServiceUnit(service=service))
+    return services
+
+
+def cutover_legacy_units(manifest: dict[str, Any]) -> list[str]:
+    timers = cutover_legacy_timers(manifest)
+    persistent = cutover_legacy_persistent_services(manifest)
+    return list(
+        dict.fromkeys(
+            (
+                *(unit.timer for unit in timers),
+                *(unit.service for unit in timers),
+                *(unit.service for unit in persistent),
+            )
+        )
+    )
+
+
+def staged_runtime_generation(path: Path | None = None) -> int:
+    marker = path or QUEUE_RUNTIME_GENERATION_ENV
+    if not marker.exists():
+        return 0
+    values = []
+    for line in marker.read_text(encoding="utf-8").splitlines():
+        key, separator, value = line.strip().partition("=")
+        if separator and key == "AICRM_QUEUE_WORKER_GENERATION":
+            values.append(value.strip())
+    if not values:
+        return 0
+    if len(values) != 1:
+        raise ValueError("queue runtime generation marker must declare exactly one generation")
+    try:
+        generation = int(values[0])
+    except ValueError as exc:
+        raise ValueError("queue runtime generation marker must be an integer") from exc
+    if generation < 0:
+        raise ValueError("queue runtime generation marker must be >= 0")
+    return generation
+
+
+def runtime_cutover_committed(path: Path | None = None) -> bool:
+    marker = path or QUEUE_RUNTIME_GENERATION_ENV
+    if not marker.exists():
+        return False
+    values = []
+    for line in marker.read_text(encoding="utf-8").splitlines():
+        key, separator, value = line.strip().partition("=")
+        if separator and key == "AICRM_QUEUE_CUTOVER_COMMITTED":
+            values.append(value.strip())
+    if not values:
+        return False
+    if len(values) != 1 or values[0] not in {"0", "1"}:
+        raise ValueError("queue runtime cutover committed marker must be exactly 0 or 1")
+    committed = values[0] == "1"
+    if committed and staged_runtime_generation(marker) <= 0:
+        raise ValueError("queue runtime cutover cannot be committed at generation 0")
+    return committed
 
 
 def primary_web_service(manifest: dict[str, Any]) -> ServiceUnit:
@@ -197,6 +364,8 @@ def _guarded_units(manifest: dict[str, Any]) -> list[str]:
         *(service.service for service in active_services(manifest)),
         *(unit.timer for unit in active_timers(manifest)),
         *(unit.service for unit in active_timers(manifest)),
+        *(unit.timer for unit in cutover_replacement_timers(manifest)),
+        *(unit.service for unit in cutover_replacement_timers(manifest)),
         *(unit.timer for unit in approval_timers(manifest)),
         *(unit.service for unit in approval_timers(manifest)),
         *retired_units(manifest),
@@ -234,14 +403,31 @@ def _validate_deploy_guards() -> None:
 
 
 def validate_manifest(manifest: dict[str, Any], *, validate_unit_files: bool = True) -> None:
-    if manifest.get("schema_version") != 2:
-        raise ValueError("production runtime units manifest schema_version must be 2")
+    if manifest.get("schema_version") != 4:
+        raise ValueError("production runtime units manifest schema_version must be 4")
     drain_timeout = int(manifest.get("timer_service_drain_timeout_seconds") or DEFAULT_TIMER_SERVICE_DRAIN_TIMEOUT_SECONDS)
     if drain_timeout < 1 or drain_timeout > 900:
         raise ValueError("timer_service_drain_timeout_seconds must be between 1 and 900")
     primary_web = primary_web_service(manifest)
     timers = active_timers(manifest)
     services = active_services(manifest)
+    cutover_inventory = cutover_owner_inventory(manifest)
+    cutover_timers = cutover_legacy_timers(manifest)
+    cutover_persistent = cutover_legacy_persistent_services(manifest)
+    replacement_inventory = cutover_replacement_owner_inventory(manifest)
+    replacement_timers = cutover_replacement_timers(manifest)
+    successor_inventory = cutover_successor_owner_inventory(manifest)
+    successors = cutover_successor_owners(manifest)
+    if not cutover_inventory:
+        raise ValueError("cutover_managed_legacy.owner_inventory is required")
+    if not cutover_timers and not cutover_persistent:
+        raise ValueError("cutover_managed_legacy must declare at least one old owner")
+    if not replacement_inventory or replacement_inventory != cutover_inventory:
+        raise ValueError("cutover replacement and legacy owner inventories must match")
+    if not replacement_timers:
+        raise ValueError("cutover_replacement_autostart must declare at least one replacement")
+    if successor_inventory != cutover_inventory:
+        raise ValueError("cutover successor and legacy owner inventories must match")
     approval = approval_timers(manifest)
     approval_required = [unit.timer for unit in approval]
     retired_forbidden = retired_units(manifest)
@@ -249,8 +435,49 @@ def validate_manifest(manifest: dict[str, Any], *, validate_unit_files: bool = T
     retired_overlay_dropins = retired_dropins(manifest)
     active_timer_names = [unit.timer for unit in timers]
     active_service_names = [unit.service for unit in timers] + [unit.service for unit in services]
-    _unique(active_timer_names + approval_required + retired_forbidden, "timer classification")
-    _unique(active_service_names, "active service")
+    cutover_timer_names = [unit.timer for unit in cutover_timers]
+    cutover_service_names = [unit.service for unit in cutover_timers] + [unit.service for unit in cutover_persistent]
+    replacement_timer_names = [unit.timer for unit in replacement_timers]
+    replacement_service_names = [unit.service for unit in replacement_timers]
+    legacy_owner_names = [unit.timer for unit in cutover_timers] + [
+        unit.service for unit in cutover_persistent
+    ]
+    successor_legacy_names = [owner.legacy_owner for owner in successors]
+    if (
+        len(successor_legacy_names) != len(set(successor_legacy_names))
+        or set(successor_legacy_names) != set(legacy_owner_names)
+    ):
+        raise ValueError("every retired owner must declare exactly one successor")
+    successor_timer_names = [
+        owner.successor_unit for owner in successors if owner.successor_kind == "timer"
+    ]
+    if set(successor_timer_names) != set(replacement_timer_names):
+        raise ValueError("every replacement timer must own exactly one retired capability")
+    successor_service_names = {
+        owner.successor_unit
+        for owner in successors
+        if owner.successor_kind == "persistent_service"
+    }
+    if not successor_service_names.issubset(set(active_service_names)):
+        raise ValueError("persistent successors must be active canonical services")
+    legacy_unit_names = set(cutover_legacy_units(manifest))
+    invalid_successors = sorted(
+        owner.successor_unit for owner in successors if owner.successor_unit in legacy_unit_names
+    )
+    if invalid_successors:
+        raise ValueError(f"legacy owners cannot be their own successor: {invalid_successors}")
+    _unique(
+        active_timer_names
+        + approval_required
+        + replacement_timer_names
+        + cutover_timer_names
+        + retired_forbidden,
+        "timer classification",
+    )
+    _unique(
+        active_service_names + replacement_service_names + cutover_service_names,
+        "runtime service classification",
+    )
     _unique(retired_files, "retired unit file")
     _unique([f"{item.unit}.d/{item.dropin}" for item in retired_overlay_dropins], "retired drop-in")
     for item in retired_overlay_dropins:
@@ -265,7 +492,18 @@ def validate_manifest(manifest: dict[str, Any], *, validate_unit_files: bool = T
         *(unit.service for unit in approval),
     ]
     _unique(managed_service_names, "managed service")
-    overlaps = sorted(set(managed_service_names + active_timer_names + approval_required) & set(retired_forbidden))
+    overlaps = sorted(
+        set(
+            managed_service_names
+            + active_timer_names
+            + approval_required
+            + replacement_timer_names
+            + replacement_service_names
+            + cutover_timer_names
+            + cutover_service_names
+        )
+        & set(retired_forbidden)
+    )
     if overlaps:
         raise ValueError(f"retired units must not be managed: {overlaps}")
     invalid_retired_files = sorted(set(retired_files) - set(retired_forbidden))
@@ -278,9 +516,13 @@ def validate_manifest(manifest: dict[str, Any], *, validate_unit_files: bool = T
         _validate_deploy_guards()
         for unit in timers:
             _validate_timer_unit(unit)
+        for unit in cutover_timers:
+            _validate_timer_unit(unit)
+        for unit in replacement_timers:
+            _validate_timer_unit(unit)
         for unit in approval:
             _validate_timer_unit(unit)
-        for service in managed_service_names:
+        for service in (*managed_service_names, *replacement_service_names, *cutover_service_names):
             _validate_managed_service(service)
 
 
@@ -453,6 +695,8 @@ def _timer_service_active_state(runner: Runner, service: str) -> str:
 
 def _wait_for_timer_services_to_drain(manifest: dict[str, Any], runner: Runner, services: list[str]) -> None:
     unique_services = list(dict.fromkeys(services))
+    if not unique_services:
+        return
     timeout_seconds = int(manifest.get("timer_service_drain_timeout_seconds") or DEFAULT_TIMER_SERVICE_DRAIN_TIMEOUT_SECONDS)
     deadline = time.monotonic() + timeout_seconds
     while True:
@@ -466,9 +710,59 @@ def _wait_for_timer_services_to_drain(manifest: dict[str, Any], runner: Runner, 
         time.sleep(min(TIMER_SERVICE_DRAIN_POLL_INTERVAL_SECONDS, remaining))
 
 
-def phase_stop_for_migration(manifest: dict[str, Any], runner: Runner) -> None:
+def phase_stop_for_migration(
+    manifest: dict[str, Any],
+    runner: Runner,
+    *,
+    allow_already_stopped: bool = False,
+) -> None:
     runner.run(["sudo", "test", "-e", str(DEPLOY_GUARD_FILE)])
-    timers = [*active_timers(manifest), *approval_timers(manifest)]
+    generation = staged_runtime_generation()
+    cutover_timers = cutover_legacy_timers(manifest)
+    cutover_persistent = cutover_legacy_persistent_services(manifest)
+    if generation <= 0:
+        for unit in cutover_timers:
+            _require_enabled(runner, unit.timer, error_prefix="pre-cutover legacy timer is not enabled")
+            if not allow_already_stopped:
+                _require_active(runner, unit.timer, error_prefix="pre-cutover legacy timer is not active")
+        for service in cutover_persistent:
+            _require_enabled(runner, service.service, error_prefix="pre-cutover legacy service is not enabled")
+            if not allow_already_stopped:
+                _require_active(runner, service.service, error_prefix="pre-cutover legacy service is not active")
+        for unit in cutover_timers:
+            runner.systemctl("stop", unit.timer, check=False)
+        for service in cutover_persistent:
+            runner.systemctl("stop", service.service, check=False)
+        _wait_for_timer_services_to_drain(
+            manifest,
+            runner,
+            [
+                *(unit.service for unit in cutover_timers),
+                *(service.service for service in cutover_persistent),
+            ],
+        )
+        for unit in cutover_timers:
+            runner.systemctl("reset-failed", unit.timer, check=False)
+            runner.systemctl("reset-failed", unit.service, check=False)
+            _require_inactive(runner, unit.timer, error_prefix="pre-cutover legacy timer did not stop")
+            _require_inactive(runner, unit.service, error_prefix="pre-cutover legacy service did not drain")
+            _require_not_failed(runner, unit.timer, error_prefix="pre-cutover legacy timer remains failed")
+            _require_not_failed(runner, unit.service, error_prefix="pre-cutover legacy service remains failed")
+        for service in cutover_persistent:
+            runner.systemctl("reset-failed", service.service, check=False)
+            _require_inactive(runner, service.service, error_prefix="pre-cutover legacy service did not stop")
+            _require_not_failed(runner, service.service, error_prefix="pre-cutover legacy service remains failed")
+        print(f"cutover_managed_legacy={cutover_owner_inventory(manifest)} generation=0 action=temporarily_stopped")
+    else:
+        _verify_cutover_legacy_retired(manifest, runner, generation=generation)
+    committed = runtime_cutover_committed()
+    if generation > 0 and not committed:
+        _verify_cutover_replacements_disabled(manifest, runner, generation=generation)
+    timers = [
+        *active_timers(manifest),
+        *approval_timers(manifest),
+        *(cutover_replacement_timers(manifest) if committed else []),
+    ]
     for unit in timers:
         runner.systemctl("stop", unit.timer, check=False)
     _wait_for_timer_services_to_drain(manifest, runner, [unit.service for unit in timers])
@@ -537,6 +831,15 @@ def _require_enabled(runner: Runner, unit: str, *, error_prefix: str) -> None:
         raise RuntimeError(f"{error_prefix}: {unit}")
 
 
+def _require_disabled(runner: Runner, unit: str, *, error_prefix: str) -> None:
+    proc = runner.systemctl("is-enabled", unit, check=False, capture_output=True)
+    if not runner.execute:
+        return
+    state = (proc.stdout or "").strip().lower() if proc is not None else ""
+    if proc is None or proc.returncode == 0 or state not in {"disabled", "masked"}:
+        raise RuntimeError(f"{error_prefix}: {unit}: {state or 'unknown'}")
+
+
 def _require_not_failed(runner: Runner, unit: str, *, error_prefix: str) -> None:
     proc = runner.systemctl("is-failed", unit, check=False)
     if runner.execute and proc is not None and proc.returncode == 0:
@@ -571,6 +874,56 @@ def _verify_retired_unit_state(runner: Runner, unit: str, *, allow_static: bool 
             raise RuntimeError(f"{error_prefix}: {unit}")
 
 
+def _verify_cutover_legacy_retired(
+    manifest: dict[str, Any],
+    runner: Runner,
+    *,
+    generation: int,
+) -> None:
+    for unit in cutover_legacy_timers(manifest):
+        _require_disabled(runner, unit.timer, error_prefix="post-cutover legacy timer is not disabled")
+        _require_inactive(runner, unit.timer, error_prefix="post-cutover legacy timer is still active")
+        _require_inactive(runner, unit.service, error_prefix="post-cutover legacy service is still active")
+    for service in cutover_legacy_persistent_services(manifest):
+        _require_disabled(runner, service.service, error_prefix="post-cutover legacy service is not disabled")
+        _require_inactive(runner, service.service, error_prefix="post-cutover legacy service is still active")
+    print(
+        f"cutover_managed_legacy={cutover_owner_inventory(manifest)} "
+        f"generation={generation} action=verified_retired"
+    )
+
+
+def _verify_cutover_replacements_disabled(
+    manifest: dict[str, Any],
+    runner: Runner,
+    *,
+    generation: int,
+) -> None:
+    for unit in cutover_replacement_timers(manifest):
+        _require_disabled(runner, unit.timer, error_prefix="cutover replacement timer is not disabled")
+        _require_inactive(runner, unit.timer, error_prefix="cutover replacement timer is still active")
+        _require_inactive(runner, unit.service, error_prefix="cutover replacement service is still active")
+    print(
+        f"cutover_replacement_autostart={cutover_replacement_owner_inventory(manifest)} "
+        f"generation={generation} action=verified_disabled"
+    )
+
+
+def _verify_cutover_replacements_active(
+    manifest: dict[str, Any],
+    runner: Runner,
+    *,
+    generation: int,
+) -> None:
+    for unit in cutover_replacement_timers(manifest):
+        _require_enabled(runner, unit.timer, error_prefix="cutover replacement timer is not enabled")
+        _require_active(runner, unit.timer, error_prefix="cutover replacement timer is not active")
+    print(
+        f"cutover_replacement_autostart={cutover_replacement_owner_inventory(manifest)} "
+        f"generation={generation} action=verified_active"
+    )
+
+
 def phase_install_primary_web(manifest: dict[str, Any], runner: Runner) -> None:
     service = primary_web_service(manifest).service
     for retired_file in retired_unit_files(manifest):
@@ -585,6 +938,7 @@ def phase_install_enable_after_web_health(manifest: dict[str, Any], runner: Runn
     services = active_services(manifest)
     timers = active_timers(manifest)
     approval = approval_timers(manifest)
+    replacements = cutover_replacement_timers(manifest)
     enabled_approval_timers = {unit.timer for unit in approval if _is_enabled(runner, unit.timer)}
     copied_services: set[str] = set()
     for service in services:
@@ -596,6 +950,11 @@ def phase_install_enable_after_web_health(manifest: dict[str, Any], runner: Runn
             copied_services.add(unit.service)
         _copy_unit(runner, unit.timer)
     for unit in approval:
+        if unit.service not in copied_services:
+            _copy_unit(runner, unit.service)
+            copied_services.add(unit.service)
+        _copy_unit(runner, unit.timer)
+    for unit in replacements:
         if unit.service not in copied_services:
             _copy_unit(runner, unit.service)
             copied_services.add(unit.service)
@@ -623,6 +982,31 @@ def phase_install_enable_after_web_health(manifest: dict[str, Any], runner: Runn
             continue
         runner.systemctl("restart", unit.timer)
         runner.systemctl("status", unit.timer, "--no-pager")
+    generation = staged_runtime_generation()
+    committed = runtime_cutover_committed()
+    if committed:
+        for unit in replacements:
+            runner.systemctl("enable", unit.timer)
+            runner.systemctl("restart", unit.timer)
+            runner.systemctl("status", unit.timer, "--no-pager")
+        _verify_cutover_replacements_active(manifest, runner, generation=generation)
+    else:
+        for unit in replacements:
+            runner.systemctl("disable", "--now", unit.timer, check=False)
+            runner.systemctl("stop", unit.service, check=False)
+            runner.systemctl("reset-failed", unit.timer, check=False)
+            runner.systemctl("reset-failed", unit.service, check=False)
+        _verify_cutover_replacements_disabled(manifest, runner, generation=generation)
+    if generation <= 0:
+        for service in cutover_legacy_persistent_services(manifest):
+            runner.systemctl("restart", service.service)
+            runner.systemctl("status", service.service, "--no-pager")
+        for unit in cutover_legacy_timers(manifest):
+            runner.systemctl("restart", unit.timer)
+            runner.systemctl("status", unit.timer, "--no-pager")
+        print(f"cutover_managed_legacy={cutover_owner_inventory(manifest)} generation=0 action=restarted_installed_units")
+    else:
+        _verify_cutover_legacy_retired(manifest, runner, generation=generation)
 
 
 def _verify_desired_runtime_state(manifest: dict[str, Any], runner: Runner) -> None:
@@ -641,6 +1025,22 @@ def _verify_desired_runtime_state(manifest: dict[str, Any], runner: Runner) -> N
         _require_active(runner, unit.timer, error_prefix="required runtime unit is not active")
     for unit in approval_timers(manifest):
         _verify_approval_timer_state(runner, unit.timer)
+    generation = staged_runtime_generation()
+    committed = runtime_cutover_committed()
+    if committed:
+        _verify_cutover_replacements_active(manifest, runner, generation=generation)
+    else:
+        _verify_cutover_replacements_disabled(manifest, runner, generation=generation)
+    if generation <= 0:
+        for unit in cutover_legacy_timers(manifest):
+            _require_enabled(runner, unit.timer, error_prefix="pre-cutover legacy timer is not enabled")
+            _require_active(runner, unit.timer, error_prefix="pre-cutover legacy timer is not active")
+        for service in cutover_legacy_persistent_services(manifest):
+            _require_enabled(runner, service.service, error_prefix="pre-cutover legacy service is not enabled")
+            _require_active(runner, service.service, error_prefix="pre-cutover legacy service is not active")
+        print(f"cutover_managed_legacy={cutover_owner_inventory(manifest)} generation=0 action=verified_running")
+    else:
+        _verify_cutover_legacy_retired(manifest, runner, generation=generation)
     for unit in retired_units(manifest):
         _verify_retired_unit_state(runner, unit)
     for unit in retired_unit_files(manifest):
@@ -677,8 +1077,10 @@ def main(argv: list[str] | None = None) -> int:
             "authorize-runtime-restore",
             "authorize-web-start",
             "begin-transaction",
+            "ensure-stopped-for-rollback",
             "retire-legacy-overlays",
             "stop-for-migration",
+            "stop-for-migration-recovery",
             "install-primary-web",
             "release-runtime-guard",
             "install-enable-after-web-health",
@@ -700,7 +1102,9 @@ def main(argv: list[str] | None = None) -> int:
             "authorize-runtime-restore",
             "authorize-web-start",
             "begin-transaction",
+            "ensure-stopped-for-rollback",
             "stop-for-migration",
+            "stop-for-migration-recovery",
             "release-runtime-guard",
         },
     )
@@ -713,10 +1117,14 @@ def main(argv: list[str] | None = None) -> int:
         phase_authorize_web_start(manifest, runner)
     elif args.phase == "begin-transaction":
         phase_begin_transaction(manifest, runner)
+    elif args.phase == "ensure-stopped-for-rollback":
+        phase_stop_for_migration(manifest, runner, allow_already_stopped=True)
     elif args.phase == "retire-legacy-overlays":
         phase_retire_legacy_overlays(manifest, runner)
     elif args.phase == "stop-for-migration":
         phase_stop_for_migration(manifest, runner)
+    elif args.phase == "stop-for-migration-recovery":
+        phase_stop_for_migration(manifest, runner, allow_already_stopped=True)
     elif args.phase == "install-primary-web":
         phase_install_primary_web(manifest, runner)
     elif args.phase == "release-runtime-guard":

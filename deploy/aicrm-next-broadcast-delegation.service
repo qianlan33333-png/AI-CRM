@@ -1,0 +1,13 @@
+[Unit]
+Description=AI-CRM Next Broadcast Delegation — materialize broadcast jobs as durable external effects
+After=network.target openclaw-wecom-postgres.service
+Requires=openclaw-wecom-postgres.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/极简 crm
+EnvironmentFile=/home/ubuntu/.openclaw-wecom-pg.env
+EnvironmentFile=-/home/ubuntu/.aicrm-queue-runtime-generation.env
+Environment=AICRM_GROUP_OPS_MATERIAL_UPLOAD_MODE=real
+ExecStart=/home/ubuntu/venvs/openclaw/bin/python scripts/run_broadcast_queue_worker.py --limit 50

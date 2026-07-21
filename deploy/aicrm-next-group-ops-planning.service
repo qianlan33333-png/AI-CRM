@@ -1,0 +1,12 @@
+[Unit]
+Description=AI-CRM Next Group Ops Planning — reconcile active plans into durable effect graphs
+After=network.target openclaw-wecom-postgres.service
+Requires=openclaw-wecom-postgres.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/极简 crm
+EnvironmentFile=/home/ubuntu/.openclaw-wecom-pg.env
+EnvironmentFile=-/home/ubuntu/.aicrm-queue-runtime-generation.env
+ExecStart=/home/ubuntu/venvs/openclaw/bin/python scripts/run_automation_ops_scheduler.py --operator aicrm_next_group_ops_planner

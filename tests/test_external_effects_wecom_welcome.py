@@ -48,6 +48,7 @@ def _plan_welcome_job(
 ) -> dict:
     service = ExternalEffectService(repo)
     payload = {
+        "execution_scope": "allowlisted_canary",
         "welcome_code": "welcome-code",
         "external_userid": "wm_welcome_target",
         "follow_user_userid": "HuangYouCan",
@@ -116,9 +117,18 @@ def test_wecom_welcome_missing_composition_never_claims_external_call(monkeypatc
     reset_external_effect_fixture_state()
     monkeypatch.setenv("AICRM_WECOM_EXECUTION_MODE", "execute")
     monkeypatch.setenv("AICRM_WECOM_ENABLED_EFFECT_TYPES", WECOM_WELCOME_MESSAGE_SEND)
+    monkeypatch.setenv("AICRM_WECOM_PROVIDER_TARGET_POLICY", "allowlisted_canary")
+    monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_TARGET_EXTERNAL_USERIDS", "wm_welcome_target")
+    monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS", "HuangYouCan")
     monkeypatch.setattr("aicrm_next.platform_foundation.external_effects.worker._capability_gate_error", lambda job: "")
     repo = build_external_effect_repository()
     job = _plan_welcome_job(repo=repo, key="welcome-missing-composition")
+    assert ExternalEffectService(repo).authorize_allowlisted_canary(
+        job["id"],
+        actor="pytest",
+        reason="explicit welcome canary authorization",
+        expected_version=job["row_version"],
+    )
 
     result = ExternalEffectWorker(
         repo,
@@ -136,9 +146,18 @@ def test_wecom_welcome_executes_through_external_effect_worker(monkeypatch) -> N
     reset_external_effect_fixture_state()
     monkeypatch.setenv("AICRM_WECOM_EXECUTION_MODE", "execute")
     monkeypatch.setenv("AICRM_WECOM_ENABLED_EFFECT_TYPES", WECOM_WELCOME_MESSAGE_SEND)
+    monkeypatch.setenv("AICRM_WECOM_PROVIDER_TARGET_POLICY", "allowlisted_canary")
+    monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_TARGET_EXTERNAL_USERIDS", "wm_welcome_target")
+    monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS", "HuangYouCan")
     monkeypatch.setattr("aicrm_next.platform_foundation.external_effects.worker._capability_gate_error", lambda job: "")
     repo = build_external_effect_repository()
     job = _plan_welcome_job(repo=repo)
+    assert ExternalEffectService(repo).authorize_allowlisted_canary(
+        job["id"],
+        actor="pytest",
+        reason="explicit welcome canary authorization",
+        expected_version=job["row_version"],
+    )
     fake = _FakeWelcomeAdapter()
 
     result = ExternalEffectWorker(
@@ -154,7 +173,7 @@ def test_wecom_welcome_executes_through_external_effect_worker(monkeypatch) -> N
     assert "welcome-code" not in str(result["attempt"]["request_summary_json"])
 
 
-def test_wecom_welcome_resolves_library_materials_before_provider_call(monkeypatch) -> None:
+def test_wecom_welcome_rejects_unresolved_material_without_provider_or_resolver_call(monkeypatch) -> None:
     reset_external_effect_fixture_state()
     monkeypatch.setenv("AICRM_WECOM_EXECUTION_MODE", "execute")
     monkeypatch.setenv("AICRM_WECOM_ENABLED_EFFECT_TYPES", WECOM_WELCOME_MESSAGE_SEND)
@@ -182,11 +201,11 @@ def test_wecom_welcome_resolves_library_materials_before_provider_call(monkeypat
         ),
     ).dispatch_one(job["id"])
 
-    assert result["job"]["status"] == "succeeded"
-    assert resolver_calls == [[{"msgtype": "image", "material_id": 110}]]
-    assert fake.payloads[0]["attachments"] == [
-        {"msgtype": "image", "image": {"media_id": "resolved-image-media"}}
-    ]
+    assert result["job"]["status"] == "blocked"
+    assert result["attempt"]["error_code"] == "unresolved_material_dependency"
+    assert result["real_external_call_executed"] is False
+    assert resolver_calls == []
+    assert fake.payloads == []
 
 
 def test_production_welcome_material_translation_uses_wecom_welcome_shapes() -> None:
@@ -247,6 +266,9 @@ def test_channel_entry_welcome_fallback_private_message_preserves_exact_target(m
     reset_external_effect_fixture_state()
     monkeypatch.setenv("AICRM_WECOM_EXECUTION_MODE", "execute")
     monkeypatch.setenv("AICRM_WECOM_ENABLED_EFFECT_TYPES", WECOM_MESSAGE_PRIVATE_SEND)
+    monkeypatch.setenv("AICRM_WECOM_PROVIDER_TARGET_POLICY", "allowlisted_canary")
+    monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_TARGET_EXTERNAL_USERIDS", "wm_dynamic_new_contact")
+    monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS", "HuangYouCan")
     calls: list[dict] = []
 
     class _FakePrivateAdapter:
@@ -276,6 +298,7 @@ def test_channel_entry_welcome_fallback_private_message_preserves_exact_target(m
         source_event_id="evt-1",
         idempotency_key="welcome-fallback-private",
         payload={
+            "execution_scope": "allowlisted_canary",
             "channel": "wecom_private",
             "source": "channel_entry_welcome_fallback",
             "owner_userid": "HuangYouCan",
@@ -286,6 +309,12 @@ def test_channel_entry_welcome_fallback_private_message_preserves_exact_target(m
         context=_context("trace-welcome-fallback"),
         status="queued",
         execution_mode="execute",
+    )
+    assert ExternalEffectService(repo).authorize_allowlisted_canary(
+        job["id"],
+        actor="pytest",
+        reason="explicit fallback canary authorization",
+        expected_version=job["row_version"],
     )
 
     result = ExternalEffectWorker(repo, build_external_effect_adapter_registry()).dispatch_one(job["id"])

@@ -1,6 +1,11 @@
 # Automation Ops Scheduler
 
-`scripts/run_automation_ops_scheduler.py` is now the production scheduler entry for group_ops only. It creates due `external_effect_job` rows with `effect_type=wecom.message.group.send`; historical `broadcast_jobs` remain read-only compatibility records. Real WeCom group delivery is handled by the External Effect worker and the `wecom_group_message` adapter guard.
+`scripts/run_automation_ops_scheduler.py` is now the production scheduler entry
+for group_ops only. `aicrm-next-group-ops-planning.timer` is its sole automatic
+owner after cutover. It creates due `external_effect_job` rows with
+`effect_type=wecom.message.group.send`; historical `broadcast_jobs` remain
+read-only compatibility records. Real WeCom group delivery is handled by the
+External Effect worker and the `wecom_group_message` adapter guard.
 
 ## group_ops due_at
 
@@ -29,14 +34,27 @@ The External Effect job keeps the current group_ops delivery contract in `payloa
 
 ## Idempotency
 
-The scheduler uses a stable source/idempotency shape that includes:
+The scheduler uses a revision-aware source/idempotency shape that includes:
 
 - `plan_id`
 - `node_id`
 - `due_at` minute
+- plan and node `updated_at`
+- normalized message content hash
+- owner and schedule fields
+- sorted active chat bindings and their lifecycle timestamps
 - sorted `chat_ids` hash
 
-The `external_effect_job` idempotency guard is the primary protection, with a historical `broadcast_jobs` lookup only for older rows. Rerunning the timer does not duplicate External Effect jobs.
+The revision fingerprint is also the effect graph `version_fingerprint`. Rerunning the
+same revision does not duplicate work. Editing plan/node content, owner, schedule, or
+active group membership creates a new graph and transactionally cancels every old
+pre-provider child before the new revision becomes eligible. Disable, archive, delete,
+and group removal invalidate the old graph without materializing a replacement. A child
+that has crossed the provider boundary is never overwritten or replayed; its graph is
+reported as terminal/superseded with the boundary evidence preserved.
+
+The `external_effect_job` idempotency guard is the primary duplicate protection, with a
+historical `broadcast_jobs` lookup only for older rows.
 
 ## Retired legacy components
 
@@ -79,14 +97,17 @@ Do not use group_ops run-due or direct queue writes to stand in for automatic sc
 
 ## systemd
 
-Install and enable the scheduler timer alongside the existing broadcast worker:
+The deployment manifest installs and enables the reviewed Next successor after
+the generation cutover is committed:
 
 ```bash
-sudo cp deploy/openclaw-automation-ops-scheduler.service /etc/systemd/system/
-sudo cp deploy/openclaw-automation-ops-scheduler.timer /etc/systemd/system/
+sudo cp deploy/aicrm-next-group-ops-planning.service /etc/systemd/system/
+sudo cp deploy/aicrm-next-group-ops-planning.timer /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now openclaw-automation-ops-scheduler.timer
-sudo systemctl status openclaw-automation-ops-scheduler.timer
+sudo systemctl enable --now aicrm-next-group-ops-planning.timer
+sudo systemctl status aicrm-next-group-ops-planning.timer
 ```
 
 The timer runs every minute. Idempotency makes this safe even when no tasks are due.
+`openclaw-automation-ops-scheduler.timer` remains disabled as a retired legacy
+owner and is never a rollback path.

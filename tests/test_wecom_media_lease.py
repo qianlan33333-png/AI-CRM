@@ -6,13 +6,15 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from aicrm_next.automation_engine.group_ops.material_resolver import PostgresGroupOpsMaterialResolver
+from aicrm_next.integration_gateway.wecom_media_upload_client import WeComMediaUploadClientError
 from aicrm_next.media_library.wecom_lease import (
     InMemoryWeComMediaLeaseRepository,
     WeComMediaLeaseError,
     WeComMediaLeaseManager,
 )
-from aicrm_next.wecom_media_jobs import WeComMediaUploadAdapter, enqueue_due_media_refreshes
+from aicrm_next.wecom_media_jobs import WeComMediaUploadAdapter, enqueue_due_media_refreshes, sync_uploaded_material
 from aicrm_next.platform_foundation.external_effects import WECOM_MEDIA_UPLOAD, ExternalEffectJob
+from aicrm_next.platform_foundation.external_effects.execution_policy import normalize_dispatch_result
 from aicrm_next.platform_foundation.external_effects.repo import InMemoryExternalEffectRepository
 
 
@@ -134,7 +136,9 @@ def test_postgres_material_resolver_uses_lease_for_all_supported_material_kinds(
     assert attachments[1]["file"]["media_id"] == "real-file-2"
 
 
-def test_external_effect_adapter_reports_missing_source_without_false_external_call() -> None:
+def test_external_effect_adapter_reports_missing_source_without_false_external_call(monkeypatch) -> None:
+    monkeypatch.setenv("AICRM_WECOM_PROVIDER_TARGET_POLICY", "allowlisted_canary")
+    monkeypatch.setenv("AICRM_WECOM_CANARY_ALLOWED_MEDIA_TARGETS", "image:4:image")
     manager = _manager()
     adapter = WeComMediaUploadAdapter(manager_factory=lambda: manager)
     job = ExternalEffectJob(
@@ -142,8 +146,26 @@ def test_external_effect_adapter_reports_missing_source_without_false_external_c
         effect_type=WECOM_MEDIA_UPLOAD,
         adapter_name="wecom_media_upload",
         operation="refresh_temporary_media",
+        target_type="media_library_material",
         target_id="image:4:image",
-        payload_json={"material_kind": "image", "material_id": 4, "upload_kind": "image", "force_refresh": True},
+        payload_json={
+            "execution_scope": "allowlisted_canary",
+            "material_kind": "image",
+            "material_id": 4,
+            "upload_kind": "image",
+            "force_refresh": True,
+        },
+        payload_summary_json={
+            "canary_authorization": {
+                "actor": "pytest",
+                "reason": "explicit media canary authorization",
+                "authorized_at": NOW.isoformat(),
+                "authorized_job_id": 1,
+                "authorized_from_version": 1,
+                "duplicate_risk_confirmed": False,
+            }
+        },
+        row_version=2,
     )
 
     result = adapter.dispatch(job)
@@ -151,6 +173,157 @@ def test_external_effect_adapter_reports_missing_source_without_false_external_c
     assert result.status == "failed_terminal"
     assert result.error_code == "material_source_missing"
     assert result.real_external_call_executed is False
+
+
+def test_external_effect_adapter_reports_manager_build_failure_before_provider_boundary(monkeypatch) -> None:
+    def failing_factory():
+        raise RuntimeError("local detail")
+
+    monkeypatch.setenv("AICRM_WECOM_PROVIDER_TARGET_POLICY", "allowlisted_canary")
+    monkeypatch.setenv("AICRM_WECOM_CANARY_ALLOWED_MEDIA_TARGETS", "image:1:image")
+    adapter = WeComMediaUploadAdapter(manager_factory=failing_factory)
+    job = ExternalEffectJob(
+        id=4,
+        effect_type=WECOM_MEDIA_UPLOAD,
+        adapter_name="wecom_media_upload",
+        operation="refresh_temporary_media",
+        target_type="media_library_material",
+        target_id="image:1:image",
+        payload_json={
+            "execution_scope": "allowlisted_canary",
+            "material_kind": "image",
+            "material_id": 1,
+            "upload_kind": "image",
+            "force_refresh": True,
+        },
+        payload_summary_json={
+            "canary_authorization": {
+                "actor": "pytest",
+                "reason": "explicit media canary authorization",
+                "authorized_at": NOW.isoformat(),
+                "authorized_job_id": 4,
+                "authorized_from_version": 1,
+                "duplicate_risk_confirmed": False,
+            }
+        },
+        row_version=2,
+    )
+
+    result = adapter.dispatch(job)
+
+    assert result.status == "failed_retryable"
+    assert result.error_code == "local_execution_error"
+    assert result.real_external_call_executed is False
+    assert result.provider_result_received is False
+    assert "local detail" not in result.error_message
+
+
+def test_external_effect_adapter_preserves_safe_media_provider_diagnostics(monkeypatch) -> None:
+    class FailingUploader:
+        def upload_image(self, file_name: str, payload: bytes, content_type: str):
+            raise WeComMediaUploadClientError(
+                "raw provider detail must not persist",
+                stage="upload",
+                error_code="wecom_media_upload_failed",
+                payload={"errcode": 48002, "errmsg": "raw provider detail must not persist"},
+            )
+
+    monkeypatch.setenv("AICRM_WECOM_PROVIDER_TARGET_POLICY", "allowlisted_canary")
+    monkeypatch.setenv("AICRM_WECOM_CANARY_ALLOWED_MEDIA_TARGETS", "image:1:image")
+    adapter = WeComMediaUploadAdapter(manager_factory=lambda: _manager(uploader=FailingUploader()))
+    job = ExternalEffectJob(
+        id=2,
+        effect_type=WECOM_MEDIA_UPLOAD,
+        adapter_name="wecom_media_upload",
+        operation="refresh_temporary_media",
+        target_type="media_library_material",
+        target_id="image:1:image",
+        payload_json={
+            "execution_scope": "allowlisted_canary",
+            "material_kind": "image",
+            "material_id": 1,
+            "upload_kind": "image",
+            "force_refresh": True,
+        },
+        payload_summary_json={
+            "canary_authorization": {
+                "actor": "pytest",
+                "reason": "explicit media canary authorization",
+                "authorized_at": NOW.isoformat(),
+                "authorized_job_id": 2,
+                "authorized_from_version": 1,
+                "duplicate_risk_confirmed": False,
+            }
+        },
+        row_version=2,
+    )
+
+    result = adapter.dispatch(job)
+
+    assert result.status == "failed_terminal"
+    assert result.error_code == "permission_denied"
+    assert result.real_external_call_executed is True
+    assert result.provider_result_received is True
+    assert result.response_summary == {
+        "real_external_call_executed": True,
+        "wecom_media_upload_executed": True,
+        "provider_result_received": True,
+        "errcode": 48002,
+        "errmsg_present": True,
+        "provider_error_classification": "terminal",
+        "provider_stage": "upload",
+    }
+    assert "raw provider detail" not in str(result.response_summary)
+    assert "raw provider detail" not in result.error_message
+
+
+def test_media_upload_transport_failure_after_boundary_normalizes_unknown(monkeypatch) -> None:
+    class FailingUploader:
+        def upload_image(self, file_name: str, payload: bytes, content_type: str):
+            raise WeComMediaUploadClientError(
+                "network detail",
+                stage="upload",
+                error_code="wecom_media_http_error",
+            )
+
+    monkeypatch.setenv("AICRM_WECOM_PROVIDER_TARGET_POLICY", "allowlisted_canary")
+    monkeypatch.setenv("AICRM_WECOM_CANARY_ALLOWED_MEDIA_TARGETS", "image:1:image")
+    adapter = WeComMediaUploadAdapter(manager_factory=lambda: _manager(uploader=FailingUploader()))
+    job = ExternalEffectJob(
+        id=3,
+        effect_type=WECOM_MEDIA_UPLOAD,
+        adapter_name="wecom_media_upload",
+        operation="refresh_temporary_media",
+        target_type="media_library_material",
+        target_id="image:1:image",
+        payload_json={
+            "execution_scope": "allowlisted_canary",
+            "material_kind": "image",
+            "material_id": 1,
+            "upload_kind": "image",
+            "force_refresh": True,
+        },
+        payload_summary_json={
+            "canary_authorization": {
+                "actor": "pytest",
+                "reason": "explicit media canary authorization",
+                "authorized_at": NOW.isoformat(),
+                "authorized_job_id": 3,
+                "authorized_from_version": 1,
+                "duplicate_risk_confirmed": False,
+            }
+        },
+        row_version=2,
+    )
+
+    dispatched = adapter.dispatch(job)
+    normalized = normalize_dispatch_result(job, dispatched)
+
+    assert dispatched.status == "failed_retryable"
+    assert dispatched.error_code == "network_error"
+    assert dispatched.real_external_call_executed is True
+    assert dispatched.provider_result_received is False
+    assert normalized.status == "unknown_after_dispatch"
 
 
 def test_scheduler_enqueues_only_material_references_without_persisting_source_bytes(monkeypatch) -> None:
@@ -168,6 +341,7 @@ def test_scheduler_enqueues_only_material_references_without_persisting_source_b
         repository=repository,
         operator="pytest",
         now=NOW,
+        repair_authorized=True,
     )
     job = repository.get_job(result["items"][0]["job_id"])
 
@@ -182,3 +356,31 @@ def test_scheduler_enqueues_only_material_references_without_persisting_source_b
         "bypass_push_capability": True,
     }
     assert "data_base64" not in str(job.payload_json)
+
+
+def test_media_upload_request_only_enqueues_and_never_dispatches_inline(monkeypatch) -> None:
+    from aicrm_next import wecom_media_jobs
+
+    repository = InMemoryExternalEffectRepository()
+    monkeypatch.setattr(wecom_media_jobs, "production_data_ready", lambda: True)
+    monkeypatch.setattr(wecom_media_jobs, "build_external_effect_repository", lambda: repository)
+    monkeypatch.setenv("AICRM_WECOM_EXECUTION_MODE", "execute")
+
+    result = sync_uploaded_material(
+        material_kind="image",
+        material_id=1,
+        upload_kind="image",
+        actor="pytest",
+        idempotency_key="request-only",
+    )
+
+    job = repository.get_job(result["job_id"])
+    assert result["accepted"] is True
+    assert result["status"] == "queued"
+    assert result["lane"] == "wecom_media"
+    assert result["execution_id"]
+    assert result["status_url"].endswith(result["execution_id"])
+    assert result["real_external_call_executed"] is False
+    assert job is not None
+    assert job.status == "queued"
+    assert repository.list_attempts(job.id) == []

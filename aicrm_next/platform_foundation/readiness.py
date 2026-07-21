@@ -73,9 +73,9 @@ def _probe_queues(repository: RuntimeReadinessRepository) -> dict[str, Any]:
         metrics.get("internal_event_oldest_pending_age_seconds", 0),
     )
     max_age = max(
-        metrics.get("webhook_oldest_pending_age_seconds", 0),
+        metrics.get("webhook_eligible_oldest_pending_age_seconds", metrics.get("webhook_oldest_pending_age_seconds", 0)),
         actionable_internal_age,
-        metrics.get("external_effect_oldest_pending_age_seconds", 0),
+        metrics.get("external_effect_eligible_oldest_pending_age_seconds", metrics.get("external_effect_oldest_pending_age_seconds", 0)),
     )
     terminal_count = (
         metrics.get("webhook_dead_letter_count", 0)

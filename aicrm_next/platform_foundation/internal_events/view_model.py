@@ -36,6 +36,26 @@ FILTER_KEYS = (
     "created_to",
 )
 
+EVENT_SECTION_OPTIONS = (
+    ("payment", "支付订单"),
+    ("questionnaire", "问卷"),
+    ("broadcast", "群发 / 运营"),
+    ("ai_assist", "AI 助手"),
+    ("customer", "客户 / 标签"),
+    ("owner_migration", "负责人迁移"),
+    ("other", "其他"),
+)
+
+CONSUMER_STATUS_OPTIONS = (
+    ("pending", "待执行"),
+    ("running", "执行中"),
+    ("succeeded", "成功"),
+    ("failed_retryable", "失败可重试"),
+    ("failed_terminal", "失败不可重试"),
+    ("blocked", "执行受阻"),
+    ("skipped", "已跳过"),
+)
+
 _SENSITIVE_EXACT_KEYS = {
     "authorization",
     "access_token",
@@ -164,6 +184,12 @@ def event_list_item(
     reconciliation: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     summary = _reconciliation_summary(runs, reconciliation, event_type=event.event_type)
+    queue_states = [_consumer_queue_state(run) for run in runs]
+    queue_state = next(
+        (state for state in ("unknown", "running", "retry_wait", "held", "scheduled", "waiting") if state in queue_states),
+        "terminal",
+    )
+    available_values = [run.available_at or run.next_retry_at for run in runs if run.available_at or run.next_retry_at]
     return {
         "event_id": event.event_id,
         "event_type": event.event_type,
@@ -181,6 +207,11 @@ def event_list_item(
         "trace_id": event.trace_id,
         "request_id": event.request_id,
         "correlation_id": event.correlation_id,
+        "execution_id": event.execution_id,
+        "parent_execution_id": event.parent_execution_id,
+        "lanes": sorted({run.lane for run in runs if run.lane}),
+        "available_at": min(available_values) if available_values else "",
+        "queue_state": queue_state,
         "idempotency_key": event.idempotency_key,
         "payload_summary_json": _redact(dict(event.payload_summary_json or {})),
         "derived_status": summary["derived_status"],
@@ -195,6 +226,14 @@ def consumer_run_item(run: InternalEventConsumerRun) -> dict[str, Any]:
         "event_id": run.event_id,
         "consumer_name": run.consumer_name,
         "consumer_type": run.consumer_type,
+        "execution_id": run.execution_id,
+        "parent_execution_id": run.parent_execution_id,
+        "lane": run.lane,
+        "available_at": run.available_at,
+        "queue_state": _consumer_queue_state(run),
+        "wait_reason": _consumer_wait_reason(run),
+        "hold_reason": run.hold_reason,
+        "policy_version": run.policy_version,
         "status": run.status,
         "attempt_count": run.attempt_count,
         "max_attempts": run.max_attempts,
@@ -208,9 +247,34 @@ def consumer_run_item(run: InternalEventConsumerRun) -> dict[str, Any]:
         "created_at": run.created_at,
         "updated_at": run.updated_at,
         "finished_at": run.finished_at,
+        "row_version": str(getattr(run, "row_version", "") or ""),
         "retryable": run.status in {"failed_retryable", "failed_terminal", "blocked"},
         "skippable": run.status not in {"succeeded", "skipped"},
     }
+
+
+def _consumer_queue_state(run: InternalEventConsumerRun) -> str:
+    if run.hold_reason:
+        return "held"
+    if run.status == "running":
+        return "running"
+    if run.status == "failed_retryable":
+        return "retry_wait"
+    if run.status == "pending":
+        return "waiting"
+    return "terminal"
+
+
+def _consumer_wait_reason(run: InternalEventConsumerRun) -> str:
+    if run.hold_reason:
+        return run.hold_reason
+    if run.status == "running":
+        return "handler_in_flight"
+    if run.status == "failed_retryable":
+        return "retry_wait"
+    if run.status == "pending":
+        return "waiting_for_lane_capacity"
+    return ""
 
 
 def attempt_item(attempt: InternalEventConsumerAttempt) -> dict[str, Any]:
@@ -237,12 +301,10 @@ def build_events_payload(params: dict[str, Any] | None = None, *, repository: In
     offset = _int((params or {}).get("offset"), default=0, minimum=0, maximum=100000)
     try:
         events, total = repository.list_events(filters, limit=limit, offset=offset)
-        items: list[dict[str, Any]] = []
-        for event in events:
-            runs, _ = repository.list_consumer_runs({"event_id": event.event_id}, limit=200)
-            items.append(event_list_item(event, runs))
-        metrics = repository.queue_metrics({})
-        effective_filters: dict[str, Any] = {}
+        runs_by_event = repository.list_consumer_runs_for_events([event.event_id for event in events])
+        items = [event_list_item(event, runs_by_event.get(event.event_id, [])) for event in events]
+        metrics = repository.queue_metrics(filters)
+        effective_filters: dict[str, Any] = dict(filters)
         configured_pairs = allowed_event_consumer_pairs()
         configured_event_types = allowed_event_types()
         configured_consumers = allowed_consumers()
@@ -271,6 +333,13 @@ def build_events_payload(params: dict[str, Any] | None = None, *, repository: In
             "raw_due": metrics.get("due_count", 0),
             "rollout_gated": max(0, int(metrics.get("due_count") or 0) - int(effective_metrics.get("due_count") or 0)),
         },
+        "filter_options": {
+            "event_sections": [{"key": key, "label": label} for key, label in EVENT_SECTION_OPTIONS],
+            "consumer_statuses": [{"key": key, "label": label} for key, label in CONSUMER_STATUS_OPTIONS],
+            "event_types": configured_event_types,
+            "consumers": configured_consumers,
+        },
+        "count_semantics": "计数来自消费者执行记录，不代表消息、外部投递、标签等下游业务已经交付。",
         "route_owner": ROUTE_OWNER,
         "real_external_call_executed": False,
     }
@@ -325,5 +394,12 @@ def _read_unavailable_payload(filters: dict[str, Any], exc: Exception, *, limit:
             "limit": limit,
             "offset": offset,
             "counts": {"total": 0, "due": 0, "failed_retryable": 0, "failed_terminal": 0},
+            "filter_options": {
+                "event_sections": [{"key": key, "label": label} for key, label in EVENT_SECTION_OPTIONS],
+                "consumer_statuses": [{"key": key, "label": label} for key, label in CONSUMER_STATUS_OPTIONS],
+                "event_types": [],
+                "consumers": [],
+            },
+            "count_semantics": "计数来自消费者执行记录，不代表消息、外部投递、标签等下游业务已经交付。",
         },
     )

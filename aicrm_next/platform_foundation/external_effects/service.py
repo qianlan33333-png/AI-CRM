@@ -11,6 +11,7 @@ from .execution_gates import (
     is_wecom_effect_type,
     wecom_execution_disabled_message,
 )
+from .wecom_canary_policy import wecom_canary_job_gate_error
 from .models import ExternalEffectCreateRequest, ExternalEffectJob
 from .repo import ExternalEffectRepository, build_external_effect_repository
 
@@ -39,10 +40,17 @@ class ExternalEffectService:
         requires_approval: bool = False,
         execution_mode: str = "execute",
         scheduled_at: datetime | None = None,
+        available_at: datetime | None = None,
         priority: int = 100,
         max_attempts: int = 5,
         idempotency_key: str = "",
         status: str = "queued",
+        execution_id: str = "",
+        parent_execution_id: str = "",
+        lane: str = "",
+        ordering_key: str = "",
+        fairness_key: str = "",
+        rate_scope_key: str = "",
         connection: Any | None = None,
     ) -> dict[str, Any]:
         initial_status = str(status or "queued").strip() or "queued"
@@ -78,15 +86,28 @@ class ExternalEffectService:
             requires_approval=requires_approval,
             execution_mode=effective_execution_mode,
             scheduled_at=scheduled_at,
+            available_at=available_at,
             priority=priority,
             max_attempts=max_attempts,
             idempotency_key=idempotency_key,
             status=initial_status,
+            execution_id=execution_id,
+            parent_execution_id=parent_execution_id,
+            lane=lane,
+            ordering_key=ordering_key,
+            fairness_key=fairness_key,
+            rate_scope_key=rate_scope_key,
         )
         if connection is not None:
-            from .transactional import enqueue_transactional_external_effect_job
+            from sqlalchemy.orm import Session
 
-            return enqueue_transactional_external_effect_job(connection, request).to_dict()
+            from .transactional import (
+                enqueue_external_effect_job_in_session,
+                enqueue_transactional_external_effect_job,
+            )
+
+            enqueue = enqueue_external_effect_job_in_session if isinstance(connection, Session) else enqueue_transactional_external_effect_job
+            return enqueue(connection, request).to_dict()
         return self._repo.create_job(request).to_dict()
 
     def get(self, job_id: int) -> ExternalEffectJob | None:
@@ -153,6 +174,30 @@ class ExternalEffectService:
             return blocked
         return self._repo.approve_job(job_id)
 
+    def authorize_allowlisted_canary(
+        self,
+        job_id: int,
+        *,
+        actor: str,
+        reason: str,
+        expected_version: int,
+    ) -> ExternalEffectJob | None:
+        normalized_actor = str(actor or "").strip()
+        normalized_reason = str(reason or "").strip()
+        if not normalized_actor or not normalized_reason or int(expected_version or 0) < 1:
+            return None
+        job = self._repo.get_job(job_id)
+        if job is None or not is_wecom_effect_type(job.effect_type):
+            return None
+        if wecom_canary_job_gate_error(job, authorize_scope=True):
+            return None
+        return self._repo.authorize_allowlisted_canary(
+            job_id,
+            actor=normalized_actor,
+            reason=normalized_reason,
+            expected_version=int(expected_version),
+        )
+
     def retry(
         self,
         job_id: int,
@@ -191,13 +236,23 @@ class ExternalEffectService:
         return self._repo.enqueue_job(
             job_id,
             allow_unknown_after_dispatch=job.status == "unknown_after_dispatch",
+            extend_attempt_budget=True,
         )
 
-    def cancel(self, job_id: int) -> ExternalEffectJob | None:
-        job = self._repo.get_job(job_id)
-        if not job or job.status in {"succeeded", "cancelled"}:
-            return None
-        return self._repo.cancel_job(job_id)
+    def cancel(
+        self,
+        job_id: int,
+        *,
+        actor: str = "",
+        reason: str = "",
+        expected_version: int | None = None,
+    ) -> ExternalEffectJob | None:
+        return self._repo.request_cancel(
+            job_id,
+            actor=str(actor or "").strip(),
+            reason=str(reason or "").strip(),
+            expected_version=expected_version,
+        )
 
     def complete_record_only(self, *, dry_run: bool = True, limit: int = 100, operator: str = "system") -> dict[str, Any]:
         jobs = self._repo.list_record_only_jobs(limit=limit)
@@ -273,12 +328,15 @@ class ExternalEffectService:
             error_code=WECOM_EXECUTION_DISABLED_CODE,
             error_message=wecom_execution_disabled_message(),
         )
-        return self._repo.mark_blocked(
-            job.id,
-            attempt_id=attempt.attempt_id,
-            error_code=WECOM_EXECUTION_DISABLED_CODE,
-            error_message=wecom_execution_disabled_message(),
-        ) or job
+        return (
+            self._repo.mark_blocked(
+                job.id,
+                attempt_id=attempt.attempt_id,
+                error_code=WECOM_EXECUTION_DISABLED_CODE,
+                error_message=wecom_execution_disabled_message(),
+            )
+            or job
+        )
 
 
 def default_external_effect_service() -> ExternalEffectService:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 
+from aicrm_next.external_effect_composition import build_external_effect_continuation_registry
 from aicrm_next.platform_foundation.command_bus import CommandContext
 from aicrm_next.platform_foundation.external_effects import (
     WEBHOOK_ORDER_PAID_PUSH,
@@ -18,6 +19,10 @@ from aicrm_next.platform_foundation.external_effects.jobs import (
     run_scheduled_external_effects,
 )
 from aicrm_next.platform_foundation.external_effects.repo import build_external_effect_repository
+from aicrm_next.platform_foundation.external_effects.test_receiver import (
+    TEST_RECEIVER_PATH_PREFIX,
+    canonical_payload_hash,
+)
 from scripts import run_external_effect_queue_worker as worker_script
 
 
@@ -54,7 +59,14 @@ def _plan(effect_type: str, *, key: str, test_only: bool = False) -> None:
         else {"webhook_url": "https://hooks.example.test/effect", "body": {"id": key}}
     )
     if test_only:
-        payload.update({"execution_scope": "test_loopback", "is_test": True})
+        payload.update(
+            {
+                "webhook_url": f"https://crm.example.test{TEST_RECEIVER_PATH_PREFIX}",
+                "execution_scope": "test_loopback",
+                "is_test": True,
+                "expected_payload_hash": canonical_payload_hash(payload["body"]),
+            }
+        )
     ExternalEffectService().plan_effect(
         effect_type=effect_type,
         adapter_name="wecom_tag" if effect_type == WECOM_CONTACT_TAG_MARK else "outbound_webhook",
@@ -128,11 +140,7 @@ def test_external_effect_worker_script_returns_nonzero_for_blocked_or_unknown(mo
     assert exit_code == 1
     assert payload["ok"] is False
     assert payload["counts"]["blocked_count"] == 1
-    assert captured["continuation_registry"].names == (
-        "questionnaire_contact_tags",
-        "external_push_delivery",
-        "automation_agent_audience_webhook",
-    )
+    assert captured["continuation_registry"].names == build_external_effect_continuation_registry().names
 
 
 def test_external_effect_scheduler_execute_scans_all_due_jobs_one_by_one(monkeypatch) -> None:

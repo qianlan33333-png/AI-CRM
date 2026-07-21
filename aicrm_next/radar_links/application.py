@@ -66,6 +66,48 @@ class ListRadarLinksQuery:
     __call__ = execute
 
 
+class ListSidebarRadarLinksQuery:
+    """Return enabled radar wrappers without targets, identities, or click statistics."""
+
+    def __init__(self, repo: RadarLinksRepository | None = None) -> None:
+        self._repo = repo or build_radar_links_repository()
+
+    def execute(self, *, base_url: str, limit: int | None = None, offset: int = 0) -> dict[str, Any]:
+        rows: list[dict[str, Any]] = []
+        scan_offset = 0
+        while True:
+            batch, total = self._repo.list_links(limit=200, offset=scan_offset)
+            rows.extend(batch)
+            scan_offset += len(batch)
+            if not batch or scan_offset >= int(total or 0):
+                break
+        enabled = [item for item in rows if bool(item.get("enabled", True))]
+        safe_offset = max(0, int(offset))
+        page = (
+            enabled[safe_offset:]
+            if limit is None
+            else enabled[safe_offset : safe_offset + max(1, min(int(limit), 10_000))]
+        )
+        type_labels = {"link": "链接", "image": "图片", "pdf": "PDF"}
+        items = []
+        for item in page:
+            target_type = normalize_target_type(str(item.get("target_type") or "link"))
+            code = str(item.get("code") or "").strip()
+            items.append(
+                {
+                    "id": int(item.get("id") or 0),
+                    "title": str(item.get("title") or ""),
+                    "target_type": target_type,
+                    "type_label": type_labels.get(target_type, "链接"),
+                    "url": f"{base_url.rstrip('/')}/r/{code}",
+                    "updated_at": str(item.get("updated_at") or ""),
+                }
+            )
+        return {"ok": True, "items": items, "total": len(enabled), "limit": len(items), "offset": safe_offset}
+
+    __call__ = execute
+
+
 class CreateRadarLinkCommand:
     def __init__(self, repo: RadarLinksRepository | None = None) -> None:
         self._repo = repo or build_radar_links_repository()
@@ -672,8 +714,7 @@ class ResolveRadarLandingQuery:
         return {"ok": True, "action": "redirect", "redirect_url": f"/radar/view/{link['code']}", "viewer_session_token": viewer_token}
 
     def _record_event(self, link: dict[str, Any], *, stage: str, identity: dict[str, str], request_meta: dict[str, Any]) -> None:
-        self._repo.record_click_event(
-            {
+        payload = {
                 "link_id": int(link["id"]),
                 "code": str(link.get("code") or ""),
                 "target_type_snapshot": normalize_target_type(str(link.get("target_type") or "link")),
@@ -692,7 +733,10 @@ class ResolveRadarLandingQuery:
                 "referer": request_meta.get("referer", ""),
                 "query_params_json": request_meta.get("query_params_json") if isinstance(request_meta.get("query_params_json"), dict) else {},
             }
-        )
+        if stage == "landing" and str(identity.get("unionid") or "").strip():
+            self._repo.record_logical_open_event(payload, radar_title=str(link.get("title") or ""))
+        else:
+            self._repo.record_click_event(payload)
 
     __call__ = execute
 
@@ -772,8 +816,7 @@ class CompleteRadarOAuthCallbackCommand:
             raise ContractError("unionid_required: radar oauth canonical UnionID is missing")
         meta = request_meta or {}
         for stage in ("oauth_callback", "authorized"):
-            self._repo.record_click_event(
-                {
+            event_payload = {
                     "link_id": int(link["id"]),
                     "code": str(link.get("code") or ""),
                     "target_type_snapshot": normalize_target_type(str(link.get("target_type") or "link")),
@@ -790,7 +833,10 @@ class CompleteRadarOAuthCallbackCommand:
                     "referer": meta.get("referer", ""),
                     "query_params_json": meta.get("query_params_json") if isinstance(meta.get("query_params_json"), dict) else {},
                 }
-            )
+            if stage == "authorized" and identity["unionid"]:
+                self._repo.record_logical_open_event(event_payload, radar_title=str(link.get("title") or ""))
+            else:
+                self._repo.record_click_event(event_payload)
         target_type = normalize_target_type(str(link.get("target_type") or "link"))
         viewer_token = sign_viewer_session(code=str(link["code"]), **identity, secret_key=_secret_key())
         redirect_url = str(link.get("original_url") or "") if target_type == "link" else f"/radar/view/{link['code']}"

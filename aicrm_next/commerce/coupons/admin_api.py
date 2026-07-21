@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 from collections.abc import Mapping
 from typing import Any
-from urllib.parse import urlsplit
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.encoders import jsonable_encoder
@@ -11,7 +10,7 @@ from fastapi.responses import JSONResponse
 
 from aicrm_next.shared.errors import ContractError, NotFoundError
 from aicrm_next.shared.admin_action_runtime import validate_admin_action_token
-from aicrm_next.shared.runtime import production_environment, runtime_setting
+from aicrm_next.shared.public_url import canonical_public_base_url
 
 from .application import CouponAdminApplication
 from .dto import CouponUpsertRequest
@@ -47,31 +46,6 @@ def _admin_actor_id(request: Request) -> str:
 
 def _write_application(request: Request) -> CouponAdminApplication:
     return CouponAdminApplication(actor_id=_admin_actor_id(request))
-
-
-def _request_base_url(request: Request) -> str:
-    configured = str(
-        runtime_setting("AICRM_PUBLIC_BASE_URL")
-        or runtime_setting("PUBLIC_BASE_URL")
-        or runtime_setting("APP_BASE_URL")
-        or ""
-    ).strip()
-    candidate = configured or str(request.base_url).rstrip("/")
-    parsed = urlsplit(candidate)
-    if (
-        parsed.scheme not in {"http", "https"}
-        or not parsed.netloc
-        or parsed.username
-        or parsed.password
-        or parsed.query
-        or parsed.fragment
-    ):
-        raise ContractError("public_base_url_invalid")
-    if production_environment() and not configured:
-        raise ContractError("public_base_url_required")
-    if production_environment() and parsed.scheme != "https":
-        raise ContractError("public_base_url_https_required")
-    return f"{parsed.scheme}://{parsed.netloc}{parsed.path.rstrip('/')}"
 
 
 def _application_result(operation):
@@ -194,7 +168,7 @@ def get_coupon_share(coupon_id: int, request: Request) -> JSONResponse:
     return _response(
         _application_result(lambda: CouponAdminApplication().get_share(
             coupon_id,
-            request_base_url=_request_base_url(request),
+            request_base_url=canonical_public_base_url(request),
         ))
     )
 

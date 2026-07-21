@@ -42,6 +42,10 @@ from aicrm_next.platform_foundation.external_effects import (
 from aicrm_next.platform_foundation.internal_events import InternalEventService
 from aicrm_next.platform_foundation.external_effects.realtime import wake_external_effect_job
 from aicrm_next.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry
+from aicrm_next.channel_entry.welcome_media_effects_repository import (
+    WelcomeEffectGraphRequest,
+    build_welcome_effect_graph_repository,
+)
 
 CUSTOMER_NAME_PLACEHOLDER_RE = re.compile(r"\{\{\s*客户名\s*\}\}")
 LOGGER = logging.getLogger(__name__)
@@ -214,6 +218,18 @@ def _channel_entry_target(command: ProcessChannelEntryCommand) -> tuple[str, str
     return "external_userid", text(command.external_contact_id), {}
 
 
+def _relationship_epoch_key(command: ProcessChannelEntryCommand) -> str:
+    """Return the durable relationship event identity for effect deduplication.
+
+    WeCom retries of the same callback resolve to the same event-log row, while
+    deleting and re-adding a contact creates a new row.  Keep the historical
+    key shape for non-callback/manual commands that have no durable event row.
+    """
+
+    event_log_id = int(command.event_log_id or 0)
+    return f":relationship_event:{event_log_id}" if event_log_id > 0 else ""
+
+
 def _emit_channel_entry_internal_event(
     command: ProcessChannelEntryCommand,
     *,
@@ -330,20 +346,13 @@ def process_channel_entry_runtime(
         identity_status=identity_status,
         runtime_status="received",
         payload_json=repo.json_safe(command.payload_json or {}),
+        enqueue_identity_resolution=True,
+        identity_resolution_reason="identity_pending_unionid",
     )
-    identity_queue: dict[str, Any] = {"ok": True}
-    try:
-        repo.enqueue_channel_entry_identity_resolution(
-            corp_id=corp_id,
-            external_userid=command.external_contact_id,
-            follow_user_userid=command.follow_user_userid,
-            payload_json=repo.json_safe(command.payload_json or {}),
-            reason="identity_pending_unionid",
-        )
-    except Exception as exc:
-        safe_log_exception(LOGGER, "channel entry identity resolution enqueue failed", exc, level=logging.WARNING)
-        identity_queue = {"ok": False, "reason": "identity_resolution_enqueue_failed", "message": str(exc)}
-    runtime_entry["identity_resolution_queue"] = identity_queue
+    runtime_entry.setdefault(
+        "identity_resolution_queue",
+        {"ok": False, "reason": "identity_resolution_enqueue_missing"},
+    )
     _log_effect(
         command,
         effect_type="channel_entry_runtime",
@@ -525,6 +534,39 @@ def _sync_identity_best_effort(
     return identity_sync
 
 
+def _plan_identity_resolution_for_event(
+    event: dict[str, Any],
+    *,
+    corp_id: str,
+    event_log_id: int | None,
+) -> dict[str, Any]:
+    """Persist provider work only; callback processing never calls WeCom here."""
+
+    try:
+        planned = repo.enqueue_channel_entry_identity_resolution(
+            corp_id=corp_id,
+            external_userid=text(event.get("ExternalUserID")),
+            follow_user_userid=text(event.get("UserID")),
+            payload_json=repo.json_safe(event),
+            reason="callback_identity_resolution_required",
+            event_log_id=event_log_id,
+        )
+    except Exception as exc:
+        safe_log_exception(LOGGER, "callback identity resolution effect planning failed", exc, level=logging.WARNING)
+        return {
+            "status": "failed",
+            "reason": "identity_resolution_effect_planning_failed",
+            "message": str(exc),
+            "real_external_call_executed": False,
+        }
+    return {
+        "status": "queued" if planned.get("external_effect_job_id") else "held",
+        "reason": "external_contact_detail_effect_queued" if planned.get("external_effect_job_id") else text(planned.get("reason")),
+        **planned,
+        "real_external_call_executed": False,
+    }
+
+
 def _welcome_attachments(channel: dict[str, Any]) -> tuple[list[dict[str, Any]], str]:
     attachments: list[dict[str, Any]] = []
     for key, msgtype in (
@@ -632,55 +674,52 @@ def _send_welcome(
         return {"attempted": False, "sent": False, "reason": "dry_run", "request_payload": payload}
     target_type, target_id, target_payload = _channel_entry_target(command)
     try:
-        job = _plan_channel_entry_effect(
-            command,
-            effect_type=WECOM_WELCOME_MESSAGE_SEND,
-            adapter_name="wecom_welcome_message",
-            operation="send",
-            target_type=target_type,
-            target_id=target_id,
-            business_id=str(channel_id),
-            idempotency_key=key,
-            payload={
-                **payload,
-                **target_payload,
-                "external_userid": command.external_contact_id,
-                "follow_user_userid": command.follow_user_userid,
-                "channel_id": channel_id,
-                "scene_value": scene,
-            },
-            payload_summary={
-                "external_userid": command.external_contact_id,
-                "target_type": target_type,
-                "target_id": target_id,
-                "target_unionid": text(target_payload.get("target_unionid")),
-                "follow_user_userid": command.follow_user_userid,
-                "channel_id": channel_id,
-                "scene_value": scene,
-                "welcome_code_present": bool(welcome_code),
-                "text_present": bool(text_content),
-                "attachment_count": len(attachments),
-            },
+        graph = build_welcome_effect_graph_repository().plan(
+            WelcomeEffectGraphRequest(
+                idempotency_key=f"channel_entry:{key}",
+                channel_id=channel_id,
+                corp_id=extract_corp_id(command.payload_json),
+                external_userid=command.external_contact_id,
+                follow_user_userid=command.follow_user_userid,
+                welcome_code=welcome_code,
+                target_type=target_type,
+                target_id=target_id,
+                target_payload=target_payload,
+                text_content=text_content,
+                attachments=tuple(attachments),
+                actor_id=text(command.operator_id or command.follow_user_userid),
+                source_event_id=str(command.event_log_id or ""),
+                scene_value=scene,
+            )
         )
     except Exception as exc:
         result = {"attempted": True, "sent": False, "reason": "external_effect_queue_failed", "welcome_code": welcome_code, "message": str(exc)}
         _log_effect(command, effect_type="welcome_message", idempotency_key=key, status="failed", channel_id=channel_id, scene_value=scene, reason="external_effect_queue_failed", request_json=payload, response_json=result)
         return result
-    immediate_dispatch_scheduled = _wake_channel_entry_external_effect_job(
-        job.get("id"),
-        effect_type=WECOM_WELCOME_MESSAGE_SEND,
-        reason="channel_entry_welcome_message",
-        adapter_registry=adapter_registry,
-    )
+    final_job_id = int(graph.get("final_effect_job_id") or 0)
+    immediate_dispatch_scheduled = False
+    if graph.get("status") == "ready":
+        immediate_dispatch_scheduled = _wake_channel_entry_external_effect_job(
+            final_job_id,
+            effect_type=WECOM_WELCOME_MESSAGE_SEND,
+            reason="channel_entry_welcome_message",
+            adapter_registry=adapter_registry,
+        )
     result = {
         "attempted": True,
         "sent": False,
         "queued": True,
         "reason": "external_effect_job_queued",
         "welcome_code": welcome_code,
-        "external_effect_job_id": job.get("id"),
+        "execution_id": graph.get("execution_id"),
+        "status_url": graph.get("status_url"),
+        "external_effect_job_id": final_job_id,
+        "external_effect_job_ids": graph.get("external_effect_job_ids") or [],
+        "upload_effect_job_ids": graph.get("upload_effect_job_ids") or [],
+        "dependency_status": graph.get("status"),
+        "duplicate": bool(graph.get("duplicate")),
         "immediate_dispatch_scheduled": immediate_dispatch_scheduled,
-        "immediate_dispatch_mode": "durable_callback_worker_inline_claim",
+        "immediate_dispatch_mode": "postgres_queue_trigger",
         "fallback_message": {},
         "welcome_effect_cancelled_for_fallback": False,
         "real_external_call_executed": False,
@@ -699,7 +738,8 @@ def _apply_tag(
 ) -> dict[str, Any]:
     channel_id = int(channel.get("id") or 0)
     tag_id = text(channel.get("entry_tag_id"))
-    key = f"{extract_corp_id(command.payload_json)}:{command.external_contact_id}:{command.follow_user_userid}:{tag_id}:{channel_id}:tag"
+    relationship_epoch = _relationship_epoch_key(command)
+    key = f"{extract_corp_id(command.payload_json)}:{command.external_contact_id}:{command.follow_user_userid}:{tag_id}:{channel_id}{relationship_epoch}:tag"
     if not tag_id:
         result = {"attempted": False, "applied": False, "reason": "no_entry_tag_configured"}
         _log_effect(command, effect_type="entry_tag", idempotency_key=key, status="skipped", channel_id=channel_id, scene_value=scene, reason=result["reason"], response_json=result)
@@ -904,6 +944,7 @@ def process_wecom_external_contact_event(
     try:
         is_entry_event = text(event.get("Event")) == "change_external_contact" and text(event.get("ChangeType")) in ENTRY_CHANGE_TYPES
         if is_entry_event:
+            entry_identity_plan: dict[str, Any] = {}
             if text(event.get("State")) and text(event.get("ExternalUserID")):
                 entry = process_channel_entry(
                     ProcessChannelEntryCommand(
@@ -917,6 +958,10 @@ def process_wecom_external_contact_event(
                     external_effect_adapter_registry=external_effect_adapter_registry,
                 )
                 result.update({"handled": bool(entry.get("handled")), "entry_result": entry})
+                runtime_entry = entry.get("runtime_entry") if isinstance(entry.get("runtime_entry"), dict) else {}
+                candidate = runtime_entry.get("identity_resolution_queue") if isinstance(runtime_entry, dict) else {}
+                if isinstance(candidate, dict):
+                    entry_identity_plan = dict(candidate)
             else:
                 result["entry_result"] = {
                     "handled": False,
@@ -924,11 +969,19 @@ def process_wecom_external_contact_event(
                     "state_present": bool(text(event.get("State"))),
                     "external_userid_present": bool(text(event.get("ExternalUserID"))),
                 }
-            result["identity_sync"] = _sync_identity_best_effort(
-                event,
-                corp_id=command.corp_id,
-                event_log_id=int(logged.get("id") or 0) or None,
-            )
+            if entry_identity_plan.get("external_effect_job_id"):
+                result["identity_sync"] = {
+                    "status": "queued",
+                    "reason": "external_contact_detail_effect_queued",
+                    **entry_identity_plan,
+                    "real_external_call_executed": False,
+                }
+            else:
+                result["identity_sync"] = _plan_identity_resolution_for_event(
+                    event,
+                    corp_id=command.corp_id,
+                    event_log_id=int(logged.get("id") or 0) or None,
+                )
             repo.mark_event_status(int(logged["id"]), "success")
         else:
             result["identity_sync"] = {"status": "skipped", "reason": "non_entry_change_type"}

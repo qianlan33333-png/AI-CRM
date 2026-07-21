@@ -55,7 +55,13 @@ def run(*, execute: bool, batch_size: int, max_batches: int, operator: str, bind
     )
     manager = build_wecom_media_lease_manager()
     if not execute:
-        preview = enqueue_due_media_refreshes(dry_run=True, limit=bounded_batch, manager=manager)
+        preview = enqueue_due_media_refreshes(
+            dry_run=True,
+            limit=bounded_batch,
+            manager=manager,
+            operator=operator,
+            repair_authorized=True,
+        )
         return {
             "ok": True,
             "execute": False,
@@ -80,6 +86,7 @@ def run(*, execute: bool, batch_size: int, max_batches: int, operator: str, bind
             limit=bounded_batch,
             manager=manager,
             repository=repository,
+            repair_authorized=True,
         )
         if not int(enqueued.get("candidate_count") or 0):
             break

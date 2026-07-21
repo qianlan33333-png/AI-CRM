@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 
 from aicrm_next.shared.sync_request import read_request_body
 
-from .refresh_service import AudienceRefreshService
+from .refresh_intents import AudienceRefreshIntentService
 from .schemas import (
     InboundWebhookRequest,
     OutboundSubscriptionCreateRequest,
@@ -125,7 +125,19 @@ async def archive_package(package_id: int, request: Request) -> JSONResponse:
 async def refresh_package(package_id: int, request: Request) -> JSONResponse:
     try:
         payload = RefreshRequest(**await _body(request))
-        result = AudienceRefreshService().refresh_package(package_id, run_type=payload.run_type, params=payload.params, row_limit=payload.row_limit)
+        idempotency_key = _text(request.headers.get("X-Idempotency-Key"))
+        execution_id = _text(request.headers.get("X-AICRM-Execution-Id"))
+        parent_execution_id = _text(request.headers.get("X-AICRM-Parent-Execution-Id"))
+        result = AudienceRefreshIntentService().request_package_refresh(
+            package_id,
+            refresh_kind="manual" if payload.run_type not in {"daily", "snapshot", "snapshot_current"} else "daily",
+            source_event_key=idempotency_key,
+            execution_id=execution_id,
+            parent_execution_id=parent_execution_id,
+            params=payload.params,
+            row_limit=payload.row_limit,
+        )
+        result = {"accepted": bool(result.get("ok")), **result}
         return _json(result, status_code=200 if result.get("ok") else 400)
     except Exception as exc:
         return _json({"ok": False, "error": str(exc)}, status_code=400)

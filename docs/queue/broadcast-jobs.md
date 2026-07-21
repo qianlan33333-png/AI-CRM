@@ -1,6 +1,14 @@
 # Broadcast Jobs Queue Contract
 
-`broadcast_jobs` is the shared queue for scheduled broadcast sends. It keeps the existing `source_type` handler dispatch model and adds metadata that makes new business intake clearer without replacing the Postgres queue or worker.
+`broadcast_jobs` is the durable business-intent queue for scheduled broadcast
+sends. After the PR-3 cutover, `aicrm-next-broadcast-delegation.timer` is its
+only automatic claim owner. The Next-native worker converts supported rows into
+`external_effect_job` records in one database transaction; it never owns the
+provider call. The persistent External Effect runtime remains the only WeCom
+delivery owner.
+
+`openclaw-broadcast-queue-worker.timer` is a retired legacy owner. It must stay
+disabled and must not be restored as a fallback.
 
 ## Field Roles
 
@@ -20,7 +28,7 @@
 - [ ] Choose the `target_kind`.
 - [ ] Define a stable `idempotency_key`.
 - [ ] Define the `content_payload` schema.
-- [ ] Route supported dispatch through the Next broadcast queue worker in `aicrm_next/background_jobs/broadcast_queue_worker.py`.
+- [ ] Route supported delegation through the Next broadcast queue worker in `aicrm_next/background_jobs/broadcast_queue_worker.py`.
 - [ ] Keep unsupported `source_type` values safely skipped until a Next-native dispatcher path is reviewed.
 - [ ] Ensure the dispatcher path is safe around external side effects and resume cases.
 - [ ] Use `enqueue_broadcast_job(...)` or pass the standard metadata through `enqueue_job(...)`.
@@ -35,7 +43,8 @@ Handlers receive one job dict and return one of:
 {"ok": False, "error": "safe short reason"}
 ```
 
-Handlers own the domain side effects. The worker owns queue state transitions through `mark_sent` and `mark_failed`.
+The Broadcast worker owns claim, planning, and delegation state transitions.
+The External Effect runtime owns provider attempts and final delivery truth.
 
 Do not blindly retry sends with unknown external side effects. Future retry policy can use `failure_type`, for example:
 

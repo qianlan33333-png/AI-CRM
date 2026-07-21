@@ -63,7 +63,7 @@ def _upload_side_effect_plan(*, operation: str, idempotency_key: str, wecom_sync
         reason="source row is durable before audited WeCom media synchronization",
     )
     status = str(wecom_sync.get("status") or "")
-    if status in {"succeeded", "failed_retryable", "failed_terminal", "blocked"}:
+    if status in {"queued", "planned", "approved", "succeeded", "failed_retryable", "failed_terminal", "blocked"}:
         plan["wecom_media_upload"] = "executed" if wecom_sync.get("real_external_call_executed") else status
         plan["real_external_call"] = "executed" if wecom_sync.get("real_external_call_executed") else "not_executed"
         plan["audit"] = "external_effect_job"

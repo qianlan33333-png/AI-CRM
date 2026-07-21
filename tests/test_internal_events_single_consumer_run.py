@@ -19,16 +19,18 @@ from aicrm_next.public_product.h5_wechat_pay import _apply_transaction
 from tests.admin_auth_test_helpers import install_admin_action_tokens
 
 
-PAYMENT_CONSUMERS = {
+PAYMENT_CONSUMERS = frozenset({
     "order_projection_consumer",
     "service_period_entitlement_consumer",
     "webhook_order_paid_consumer",
     "ai_audience_source_poke_consumer",
+    "customer_read_model_dirty_consumer",
+    "customer_timeline_projection_consumer",
     "customer_business_summary_consumer",
     "dnd_policy_consumer",
     "ai_assist_notify_consumer",
     "product_paid_wecom_tag_consumer",
-}
+})
 
 
 class _FakeCursor:

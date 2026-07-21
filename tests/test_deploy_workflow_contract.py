@@ -1080,17 +1080,19 @@ def test_ai_audience_scheduler_runs_through_internal_event_queue_only():
 
 def test_production_runtime_declares_exactly_one_internal_event_relay_owner():
     manifest = json.loads((ROOT / "deploy" / "production_runtime_units.json").read_text(encoding="utf-8"))
-    declared = {
-        item["service"]: item["internal_event_relay_role"]
-        for item in manifest["active_autostart"]
-        if item.get("internal_event_relay_role")
+    legacy = {
+        item["service"]
+        for item in manifest["cutover_managed_legacy"]["timers"]
+    }
+    successors = {
+        item["capability"]: item["successor_unit"]
+        for item in manifest["cutover_successor_matrix"]["owners"]
     }
 
-    assert declared == {
-        "openclaw-ai-audience-scheduler.service": "consumer_only",
-        "openclaw-internal-event-worker.service": "owner",
-    }
-    assert list(declared.values()).count("owner") == 1
+    assert "openclaw-ai-audience-scheduler.service" in legacy
+    assert "openclaw-internal-event-worker.service" in legacy
+    assert successors["internal_event_dispatch"] == "aicrm-internal-queue-runtime.service"
+    assert successors["ai_audience_daily_intent"] == "aicrm-ai-audience-daily-intent.timer"
 
     owner_sources = [
         path.relative_to(ROOT).as_posix()

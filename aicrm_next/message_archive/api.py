@@ -9,6 +9,8 @@ from fastapi import APIRouter, Query, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
+from aicrm_next.admin_jobs_archive_sync_gateway import execute_archive_sync
+
 from .application import (
     ListExternalChatRecordsQuery,
     ListArchivedMessagesQuery,
@@ -16,7 +18,7 @@ from .application import (
     blocked_messages_side_effect,
     deprecated_messages_route,
 )
-from .sync_service import archive_health_payload, execute_archive_sync
+from .sync_service import archive_health_payload
 
 router = APIRouter()
 _EXTERNAL_CHAT_SOURCE_STATUS = "external_chat_records"

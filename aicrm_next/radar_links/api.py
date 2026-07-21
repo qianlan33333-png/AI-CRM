@@ -15,8 +15,10 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 
 from aicrm_next.shared.errors import ContractError, NotFoundError
 from aicrm_next.shared.pii_audit import set_pii_audit_result_count
+from aicrm_next.shared.public_url import canonical_public_base_url
 from aicrm_next.shared.repository_provider import RepositoryProviderError
 from aicrm_next.shared.runtime_settings import runtime_setting
+from aicrm_next.shared.sidebar_access import sidebar_owner_context_from_request
 from aicrm_next.shared.wechat_identity_page import wechat_identity_failure_response
 from aicrm_next.shared.wechat_h5_session import is_wechat_browser
 
@@ -42,6 +44,7 @@ from .application import (
     ListExternalRadarLinkMappingsQuery,
     ListRadarLinkEventsQuery,
     ListRadarLinksQuery,
+    ListSidebarRadarLinksQuery,
     ProcessRadarPdfPreviewCommand,
     RecordRadarContentEventCommand,
     ResolveRadarLandingQuery,
@@ -155,6 +158,39 @@ def _encode_external_cursor(key: str, value: int | None) -> str:
 
 def _external_filters(**values: Any) -> dict[str, Any]:
     return {key: value for key, value in values.items() if value not in {None, ""}}
+
+
+@router.get("/api/sidebar/v2/radar-links", name="api.sidebar_v2_radar_links")
+def list_sidebar_radar_links(
+    request: Request,
+) -> JSONResponse:
+    sidebar_owner_context_from_request(request)
+    try:
+        payload = ListSidebarRadarLinksQuery().execute(
+            base_url=canonical_public_base_url(request),
+        )
+    except (ContractError, RepositoryProviderError) as exc:
+        _raise_http(exc)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "ok": False,
+                "degraded": True,
+                "source_status": "production_unavailable",
+                "error_code": "sidebar_radar_links_unavailable",
+                "detail": str(exc),
+            },
+        ) from exc
+    return JSONResponse(
+        jsonable_encoder({**payload, "route_owner": "ai_crm_next"}),
+        headers={
+            "X-AICRM-Route-Owner": "ai_crm_next",
+            "X-AICRM-Fallback-Used": "false",
+            "X-AICRM-Real-External-Call-Executed": "false",
+            "Cache-Control": "no-store, max-age=0",
+        },
+    )
 
 
 def _request_meta(request: Request) -> dict[str, Any]:

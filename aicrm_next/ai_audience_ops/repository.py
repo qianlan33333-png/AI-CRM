@@ -494,41 +494,53 @@ class SQLAlchemyAudienceRepository(AudiencePackageRepositoryMixin, AudienceRepos
     def enqueue_identity_resolution(self, normalized: dict[str, Any], *, reason: str) -> None:
         if not self._table_exists("crm_user_identity_resolution_queue"):
             return
-        self._write_one(
-            """
-            INSERT INTO crm_user_identity_resolution_queue (
-                source_type, source_key, reason, external_userid, mobile, payload_json, status,
-                created_at, updated_at
-            )
-            VALUES (
-                'ai_audience_ops', :source_key, :reason, :external_userid, :mobile, CAST(:payload_json AS jsonb),
-                'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-            )
-            ON CONFLICT (source_type, source_key)
-            WHERE status = 'pending' AND source_type <> '' AND source_key <> ''
-            DO UPDATE SET reason = EXCLUDED.reason,
-                external_userid = COALESCE(NULLIF(EXCLUDED.external_userid, ''), crm_user_identity_resolution_queue.external_userid),
-                mobile = COALESCE(NULLIF(EXCLUDED.mobile, ''), crm_user_identity_resolution_queue.mobile),
-                payload_json = crm_user_identity_resolution_queue.payload_json || EXCLUDED.payload_json,
-                last_seen_at = CURRENT_TIMESTAMP,
-                updated_at = CURRENT_TIMESTAMP
-            RETURNING id
-            """,
-            {
-                "source_key": _text(normalized.get("event_source_key")) or f"{normalized.get('identity_type')}:{normalized.get('identity_value')}",
-                "reason": _text(reason) or "missing_unionid",
-                "external_userid": _text(normalized.get("external_userid")),
-                "mobile": _text(normalized.get("mobile")),
-                "payload_json": _json_dumps(
-                    {
-                        "identity_type": normalized.get("identity_type"),
-                        "identity_value": normalized.get("identity_value"),
-                        "event_source_key": normalized.get("event_source_key"),
-                        "payload_json": normalized.get("payload_json") or {},
-                    }
+        params = {
+            "source_key": _text(normalized.get("event_source_key")) or f"{normalized.get('identity_type')}:{normalized.get('identity_value')}",
+            "reason": _text(reason) or "missing_unionid",
+            "external_userid": _text(normalized.get("external_userid")),
+            "mobile": _text(normalized.get("mobile")),
+            "payload_json": _json_dumps(
+                {
+                    "identity_type": normalized.get("identity_type"),
+                    "identity_value": normalized.get("identity_value"),
+                    "event_source_key": normalized.get("event_source_key"),
+                    "payload_json": normalized.get("payload_json") or {},
+                }
+            ),
+        }
+        with self._session_factory() as session:
+            row = session.execute(
+                text(
+                    """
+                    INSERT INTO crm_user_identity_resolution_queue (
+                        source_type, source_key, reason, external_userid, mobile, payload_json, status,
+                        created_at, updated_at
+                    )
+                    VALUES (
+                        'ai_audience_ops', :source_key, :reason, :external_userid, :mobile,
+                        CAST(:payload_json AS jsonb), 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                    )
+                    ON CONFLICT (source_type, source_key)
+                    WHERE status = 'pending' AND source_type <> '' AND source_key <> ''
+                    DO UPDATE SET reason = EXCLUDED.reason,
+                        external_userid = COALESCE(NULLIF(EXCLUDED.external_userid, ''), crm_user_identity_resolution_queue.external_userid),
+                        mobile = COALESCE(NULLIF(EXCLUDED.mobile, ''), crm_user_identity_resolution_queue.mobile),
+                        payload_json = crm_user_identity_resolution_queue.payload_json || EXCLUDED.payload_json,
+                        last_seen_at = CURRENT_TIMESTAMP,
+                        updated_at = CURRENT_TIMESTAMP
+                    RETURNING *
+                    """
                 ),
-            },
-        )
+                params,
+            ).mappings().one()
+            from aicrm_next.identity_contact.resolution_effects import plan_identity_resolution_effect
+
+            plan_identity_resolution_effect(
+                session,
+                dict(row),
+                source_route="ai_audience_ops.identity_resolution.enqueue",
+            )
+            session.commit()
 
     def upsert_active_member(self, package_id: int, normalized: dict[str, Any], *, occurred_at: datetime) -> dict[str, Any]:
         row = self._write_one(

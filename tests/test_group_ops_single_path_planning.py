@@ -173,12 +173,13 @@ def test_external_effect_planner_failure_is_not_swallowed(monkeypatch) -> None:
 
 
 def test_scheduler_planner_failure_produces_non_success_summary(monkeypatch) -> None:
-    def fail_plan(**_kwargs):
-        raise RuntimeError("planner transaction failed")
+    class FailingGraphRepository:
+        def plan(self, _request):
+            raise RuntimeError("planner transaction failed")
 
     monkeypatch.setattr(
-        "aicrm_next.automation_engine.group_ops.scheduler.plan_group_ops_external_effect",
-        fail_plan,
+        "aicrm_next.automation_engine.group_ops.scheduler.build_group_ops_effect_graph_repository",
+        lambda: FailingGraphRepository(),
     )
     monkeypatch.setattr(
         "aicrm_next.automation_engine.group_ops.scheduler.resolve_group_ops_content_package_materials",

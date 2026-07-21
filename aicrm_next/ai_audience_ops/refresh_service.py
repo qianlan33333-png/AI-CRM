@@ -90,6 +90,7 @@ class AudienceRefreshService:
         package: dict[str, Any] | None = None,
         params: dict[str, Any] | None = None,
         row_limit: int = AI_AUDIENCE_REFRESH_DEFAULT_ROW_LIMIT,
+        emit_completion_event: bool = True,
     ) -> dict[str, Any]:
         package = package or self._repo.get_package(int(package_id))
         if not package:
@@ -146,13 +147,17 @@ class AudienceRefreshService:
                 daily_refresh_time=_text(package.get("daily_refresh_time")) or "02:00",
                 timezone_name=_text(package.get("timezone")) or "Asia/Shanghai",
             )
-            run_event = self._emit_run_refreshed_event(
-                package,
-                completed or run,
-                refresh_kind=refresh_kind,
-                returned_count=len(raw_rows),
-                diff=diff,
-                occurred_at=started_at,
+            run_event = (
+                self._emit_run_refreshed_event(
+                    package,
+                    completed or run,
+                    refresh_kind=refresh_kind,
+                    returned_count=len(raw_rows),
+                    diff=diff,
+                    occurred_at=started_at,
+                )
+                if emit_completion_event
+                else None
             )
             return {
                 "ok": True,

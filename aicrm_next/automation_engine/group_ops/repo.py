@@ -425,9 +425,13 @@ class InMemoryGroupOpsRepository:
         if existing:
             existing["status"] = "active"
             existing["removed_at"] = ""
+            if int(plan_id) in self._plans:
+                self._plans[int(plan_id)]["updated_at"] = utc_now_iso()
             return deepcopy(existing)
         row = self._snapshot_group(int(plan_id), group)
         self._plan_groups[int(plan_id)][group["chat_id"]] = row
+        if int(plan_id) in self._plans:
+            self._plans[int(plan_id)]["updated_at"] = utc_now_iso()
         return deepcopy(row)
 
     def remove_group(self, plan_id: int, chat_id: str) -> bool:
@@ -436,6 +440,8 @@ class InMemoryGroupOpsRepository:
             return False
         item["status"] = "removed"
         item["removed_at"] = utc_now_iso()
+        if int(plan_id) in self._plans:
+            self._plans[int(plan_id)]["updated_at"] = utc_now_iso()
         return True
 
     def list_group_assets(self, filters: dict[str, Any]) -> tuple[list[dict[str, Any]], int]:

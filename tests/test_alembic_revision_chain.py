@@ -56,30 +56,146 @@ def _parents(value: Any) -> list[str]:
 def test_all_alembic_down_revisions_exist() -> None:
     revisions = _migration_revisions()
 
-    missing = {
-        revision: parent
-        for revision, item in revisions.items()
-        for parent in _parents(item["down_revision"])
-        if parent not in revisions
-    }
+    missing = {revision: parent for revision, item in revisions.items() for parent in _parents(item["down_revision"]) if parent not in revisions}
 
     assert missing == {}
 
 
-def test_required_physical_schema_repair_is_the_single_head() -> None:
+def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     revisions = _migration_revisions()
     referenced = {parent for item in revisions.values() for parent in _parents(item["down_revision"])}
     heads = set(revisions) - referenced
     repair = VERSIONS / "0123_required_physical_schema_repair.py"
     source = repair.read_text(encoding="utf-8")
+    audit_repair = VERSIONS / "0124_automation_agent_audit_tables.py"
+    audit_source = audit_repair.read_text(encoding="utf-8")
 
-    assert heads == {"0123_required_physical_schema_repair"}
+    runtime_correctness = VERSIONS / "0125_execution_runtime_correctness.py"
+    runtime_source = runtime_correctness.read_text(encoding="utf-8")
+
+    postgres_runtime = VERSIONS / "0126_postgres_execution_runtime.py"
+    postgres_runtime_source = postgres_runtime.read_text(encoding="utf-8")
+    group_ops_graph = VERSIONS / "0127_group_ops_durable_effect_graph.py"
+    group_ops_graph_source = group_ops_graph.read_text(encoding="utf-8")
+    audience_intents = VERSIONS / "0128_ai_audience_refresh_intents.py"
+    audience_intents_source = audience_intents.read_text(encoding="utf-8")
+    identity_customer = VERSIONS / "0129_identity_customer_event_driven.py"
+    identity_customer_source = identity_customer.read_text(encoding="utf-8")
+    welcome_media = VERSIONS / "0130_welcome_media_dependencies.py"
+    welcome_media_source = welcome_media.read_text(encoding="utf-8")
+    continuation_fanout = VERSIONS / "0131_external_effect_continuation_fanout.py"
+    continuation_fanout_source = continuation_fanout.read_text(encoding="utf-8")
+    external_scope = VERSIONS / "0132_external_claim_scope_policy.py"
+    external_scope_source = external_scope.read_text(encoding="utf-8")
+    sidebar_timeline = VERSIONS / "0133_sidebar_customer_timeline.py"
+    sidebar_timeline_source = sidebar_timeline.read_text(encoding="utf-8")
+    timeline_indexes = VERSIONS / "0134_execution_timeline_graph_indexes.py"
+    timeline_indexes_source = timeline_indexes.read_text(encoding="utf-8")
+    scope_transition = VERSIONS / "0135_queue_scope_transition_audit.py"
+    scope_transition_source = scope_transition.read_text(encoding="utf-8")
+    validation_soak = VERSIONS / "0136_queue_runtime_validation_soak.py"
+    validation_soak_source = validation_soak.read_text(encoding="utf-8")
+
+    assert heads == {"0136_queue_runtime_validation_soak"}
+    assert revisions["0136_queue_runtime_validation_soak"]["down_revision"] == "0135_queue_scope_transition_audit"
+    assert revisions["0135_queue_scope_transition_audit"]["down_revision"] == "0134_execution_timeline_graph_indexes"
+    assert revisions["0134_execution_timeline_graph_indexes"]["down_revision"] == "0133_sidebar_customer_timeline"
+    assert revisions["0133_sidebar_customer_timeline"]["down_revision"] == "0132_external_claim_scope_policy"
+    assert revisions["0132_external_claim_scope_policy"]["down_revision"] == "0131_external_effect_continuation_fanout"
+    assert revisions["0131_external_effect_continuation_fanout"]["down_revision"] == "0130_welcome_media_dependencies"
+    assert revisions["0130_welcome_media_dependencies"]["down_revision"] == "0129_identity_customer_event_driven"
+    assert revisions["0129_identity_customer_event_driven"]["down_revision"] == "0128_ai_audience_refresh_intents"
+    assert revisions["0128_ai_audience_refresh_intents"]["down_revision"] == "0127_group_ops_durable_effect_graph"
+    assert revisions["0127_group_ops_durable_effect_graph"]["down_revision"] == "0126_postgres_execution_runtime"
+    assert revisions["0126_postgres_execution_runtime"]["down_revision"] == "0125_execution_runtime_correctness"
+    assert revisions["0125_execution_runtime_correctness"]["down_revision"] == "0124_agent_audit_tables"
+    assert revisions["0124_agent_audit_tables"]["down_revision"] == "0123_required_physical_schema_repair"
     assert revisions["0123_required_physical_schema_repair"]["down_revision"] == "0122_internal_event_fanout_manifest"
     assert "0018_hxc_dashboard_broadcast_tasks" in source
     assert "0023_group_ops_webhook_rules" in source
     assert "0028_owner_migration_excel_sessions" in source
     assert "def downgrade()" in source
     assert "return None" in source
+    assert "CREATE TABLE IF NOT EXISTS automation_agent_output" in audit_source
+    assert "CREATE TABLE IF NOT EXISTS automation_agent_llm_call_log" in audit_source
+    assert "idx_automation_agent_output_run_created" in audit_source
+    assert "queue_runtime_scope_transition_audit" in scope_transition_source
+    assert "queue_runtime_canary_config_audit" in scope_transition_source
+    assert "aicrm_reject_queue_runtime_audit_mutation" in scope_transition_source
+    assert "queue_runtime_validation_evidence" in validation_soak_source
+    assert "queue_runtime_lease_recovery_event" in validation_soak_source
+    assert "queue_runtime_soak_run" in validation_soak_source
+    assert "queue_runtime_soak_snapshot" in validation_soak_source
+    assert "trg_queue_runtime_validation_evidence_append_only" in validation_soak_source
+    assert "trg_queue_runtime_lease_recovery_event_append_only" in validation_soak_source
+    assert "trg_queue_runtime_soak_snapshot_append_only" in validation_soak_source
+    assert "ix_automation_agent_output_unionid" in audit_source
+    assert "idx_automation_agent_llm_call_log_agent_created" in audit_source
+    assert "FOREIGN KEY" not in audit_source
+    assert "return None" in audit_source
+    assert "row_version BIGINT NOT NULL DEFAULT 1" in runtime_source
+    assert "cancel_requested_at TIMESTAMPTZ" in runtime_source
+    assert "uq_external_effect_attempt_open_job" in runtime_source
+    assert "'dispatching'" in runtime_source
+    assert "claim_enabled BOOLEAN NOT NULL DEFAULT FALSE" in postgres_runtime_source
+    assert "automation_group_ops_effect_dependency" in group_ops_graph_source
+    assert "'PR-2 installs in claimless standby mode'" in postgres_runtime_source
+    assert '"outbound_webhook": 4' in postgres_runtime_source
+    assert 'mode = "blocked" if lane == "outbound_webhook" else "standby"' in postgres_runtime_source
+    assert "ALTER COLUMN available_at SET NOT NULL" in postgres_runtime_source
+    assert "ALTER COLUMN available_at SET DEFAULT CURRENT_TIMESTAMP" in postgres_runtime_source
+    assert "historical_freeze_orphan" in postgres_runtime_source
+    assert "BEFORE UPDATE OR DELETE ON queue_policy_snapshot" in postgres_runtime_source
+    assert "aicrm_reject_queue_policy_snapshot_mutation" in postgres_runtime_source
+    assert "CREATE TABLE IF NOT EXISTS ai_audience_refresh_intent" in audience_intents_source
+    assert "CREATE TABLE IF NOT EXISTS ai_audience_refresh_source_receipt" in audience_intents_source
+    assert "identity_resolution_completion_receipt" in identity_customer_source
+    assert "customer_read_model_refresh_intent" in identity_customer_source
+    assert "customer_read_model_refresh_source_receipt" in identity_customer_source
+    assert "provider_result_json" in identity_customer_source
+    assert "pre_event_driven_cutover_requires_manual_classification" in identity_customer_source
+    assert "channel_welcome_effect_graph" in welcome_media_source
+    assert "channel_welcome_effect_dependency" in welcome_media_source
+    assert "pre_independent_continuation_fanout_requires_manual_classification" in continuation_fanout_source
+    assert "external_effect_completion_continuation_consumer" in continuation_fanout_source
+    assert "external_claim_scope" in external_scope_source
+    assert "uq_customer_timeline_event_next_event_id" in sidebar_timeline_source
+    assert "ix_customer_timeline_event_next_unionid_time_id" in sidebar_timeline_source
+    assert "ROW_NUMBER() OVER" in sidebar_timeline_source
+    assert "queue-v2-test-loopback" in external_scope_source
+    assert "execution timeline index migration requires standby generation 0" in timeline_indexes_source
+    for index_name in (
+        "idx_external_effect_parent_execution",
+        "idx_internal_event_parent_execution",
+        "idx_internal_run_parent_execution",
+        "idx_internal_outbox_parent_execution",
+        "idx_webhook_inbox_parent_execution",
+    ):
+        assert index_name in timeline_indexes_source
+    assert "CREATE INDEX IF NOT EXISTS {index_name}" in timeline_indexes_source
+    assert "DROP INDEX IF EXISTS {index_name}" in timeline_indexes_source
+    for constraint_name in (
+        "ck_external_effect_job_runtime_lane",
+        "ck_internal_event_consumer_run_runtime_lane",
+        "ck_internal_event_outbox_runtime_lane",
+        "ck_webhook_inbox_runtime_lane",
+    ):
+        assert constraint_name in postgres_runtime_source
+    for index_name in (
+        "idx_internal_outbox_ordering_active",
+        "idx_webhook_inbox_ordering_active",
+    ):
+        assert f"CREATE INDEX IF NOT EXISTS {index_name}" in postgres_runtime_source
+        assert postgres_runtime_source.count(index_name) >= 2
+    for table_name in (
+        "queue_runtime_control",
+        "queue_lane_policy",
+        "queue_policy_snapshot",
+        "queue_fairness_cursor",
+        "queue_rate_scope_cooldown",
+        "queue_worker_heartbeat",
+    ):
+        assert f"CREATE TABLE IF NOT EXISTS {table_name}" in postgres_runtime_source
 
 
 def test_alembic_revision_storage_supports_deployed_revision_ids() -> None:
@@ -90,9 +206,7 @@ def test_alembic_revision_storage_supports_deployed_revision_ids() -> None:
     old_wechat_unionid_revision = "0029_wechat_pay_order_" + "unionid_index"
 
     beyond_runtime_limit = {
-        revision: {"length": len(revision), "path": str(item["path"])}
-        for revision, item in revisions.items()
-        if len(revision) > ALEMBIC_VERSION_NUM_LENGTH
+        revision: {"length": len(revision), "path": str(item["path"])} for revision, item in revisions.items() if len(revision) > ALEMBIC_VERSION_NUM_LENGTH
     }
     alembic_env = (ROOT / "migrations" / "env.py").read_text(encoding="utf-8")
 
@@ -129,13 +243,9 @@ def test_user_ops_production_tables_migration_is_parent_of_wechat_unionid_index(
 
 
 def test_miniprogram_reset_migration_preserves_broadcast_job_claim_token_not_null_contract() -> None:
-    source = (
-        VERSIONS / "0034_reset_miniprogram_only_material_jobs_20260611.py"
-    ).read_text(encoding="utf-8")
+    source = (VERSIONS / "0034_reset_miniprogram_only_material_jobs_20260611.py").read_text(encoding="utf-8")
 
-    assert "claim_token TEXT NOT NULL DEFAULT ''" in (
-        VERSIONS / "0012_broadcast_job_leases.py"
-    ).read_text(encoding="utf-8")
+    assert "claim_token TEXT NOT NULL DEFAULT ''" in (VERSIONS / "0012_broadcast_job_leases.py").read_text(encoding="utf-8")
     assert "claim_token = ''" in source
     assert "claim_token = NULL" not in source
 
@@ -231,15 +341,12 @@ def test_raw_migration_sql_does_not_expose_numeric_bind_literals() -> None:
             raw_sql_strings.append((path, node.lineno, node.args[0].value))
 
     numeric_bind_risks = {
-        f"{path.relative_to(ROOT)}:{lineno}": NUMERIC_BIND_PATTERN.findall(sql)
-        for path, lineno, sql in raw_sql_strings
-        if NUMERIC_BIND_PATTERN.search(sql)
+        f"{path.relative_to(ROOT)}:{lineno}": NUMERIC_BIND_PATTERN.findall(sql) for path, lineno, sql in raw_sql_strings if NUMERIC_BIND_PATTERN.search(sql)
     }
     raw_json_default_risks = {
         f"{path.relative_to(ROOT)}:{lineno}": sql
         for path, lineno, sql in raw_sql_strings
-        if any(f"{risky_default_prefix}{value}" in sql for value in ("30", "3", "1"))
-        or old_sqlalchemy_rendered_default in sql
+        if any(f"{risky_default_prefix}{value}" in sql for value in ("30", "3", "1")) or old_sqlalchemy_rendered_default in sql
     }
 
     assert numeric_bind_risks == {}

@@ -12,6 +12,7 @@ from .repository import (
     _offset,
     _plan_broadcast_idempotency_key,
     _plan_view,
+    _recipient_broadcast_execution_id,
     _recipient_view,
     _text,
     copy,
@@ -274,16 +275,20 @@ class InMemoryCloudPlanRepository:
         reused_count = 0
         for recipient in recipients:
             recipient_id = int(recipient["id"])
+            recipient_idempotency_key = f"cloud_plan_recipient:{normalized_plan_id}:{recipient_id}"
+            execution_id = _recipient_broadcast_execution_id(recipient_idempotency_key)
             existing = next(
                 (
                     item
                     for item in self.broadcast_jobs
-                    if item.get("idempotency_key") == f"cloud_plan_recipient:{normalized_plan_id}:{recipient_id}"
+                    if item.get("idempotency_key") == recipient_idempotency_key
                 ),
                 None,
             )
             if existing:
                 job_id = int(existing["id"])
+                if not _text(existing.get("execution_id")):
+                    existing["execution_id"] = execution_id
                 reused_count += 1
             else:
                 job_id = len(self.broadcast_jobs) + 1
@@ -297,7 +302,8 @@ class InMemoryCloudPlanRepository:
                         "priority": 100,
                         "batch_key": f"cloud_plan_recipient:{normalized_plan_id}",
                         "business_domain": "ai_assistant",
-                        "idempotency_key": f"cloud_plan_recipient:{normalized_plan_id}:{recipient_id}",
+                        "idempotency_key": recipient_idempotency_key,
+                        "execution_id": execution_id,
                         "channel": "wecom_private",
                         "target_kind": "unionid",
                         "status": "queued",

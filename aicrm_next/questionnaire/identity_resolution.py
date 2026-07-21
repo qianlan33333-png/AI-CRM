@@ -52,9 +52,10 @@ def enqueue_questionnaire_identity_resolution(
             openid = COALESCE(NULLIF(EXCLUDED.openid, ''), crm_user_identity_resolution_queue.openid),
             mobile = COALESCE(NULLIF(EXCLUDED.mobile, ''), crm_user_identity_resolution_queue.mobile),
             payload_json = crm_user_identity_resolution_queue.payload_json || EXCLUDED.payload_json,
-            reason = EXCLUDED.reason,
-            last_seen_at = NOW(),
-            updated_at = NOW()
+        reason = EXCLUDED.reason,
+        last_seen_at = NOW(),
+        updated_at = NOW()
+        RETURNING *
         """,
         (
             source_key,
@@ -65,6 +66,15 @@ def enqueue_questionnaire_identity_resolution(
             _text(reason) or "identity_unresolved",
         ),
     )
+    row = conn.execute("SELECT * FROM crm_user_identity_resolution_queue WHERE source_type = 'questionnaire_submission' AND source_key = %s AND status = 'pending'", (source_key,)).fetchone()
+    if row:
+        from aicrm_next.identity_contact.resolution_effects import plan_identity_resolution_effect
+
+        plan_identity_resolution_effect(
+            conn,
+            dict(row),
+            source_route="questionnaire.identity_resolution.enqueue",
+        )
 
 
 def _text(value: Any) -> str:

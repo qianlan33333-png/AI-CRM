@@ -71,6 +71,8 @@ class InternalEventCreateRequest:
     correlation_id: str = ""
     occurred_at: datetime | None = None
     tenant_id: str = DEFAULT_TENANT_ID
+    execution_id: str = ""
+    parent_execution_id: str = ""
 
 
 @dataclass(frozen=True)
@@ -100,6 +102,8 @@ class InternalEvent:
     trace_id: str = ""
     request_id: str = ""
     correlation_id: str = ""
+    execution_id: str = ""
+    parent_execution_id: str = ""
     occurred_at: str = ""
     payload_json: dict[str, Any] = field(default_factory=dict)
     payload_summary_json: dict[str, Any] = field(default_factory=dict)
@@ -120,6 +124,12 @@ class InternalEventConsumerRun:
     event_id: str = ""
     consumer_name: str = ""
     consumer_type: str = "projection"
+    execution_id: str = ""
+    parent_execution_id: str = ""
+    lane: str = "internal_general"
+    available_at: str = ""
+    ordering_key: str = ""
+    fairness_key: str = ""
     status: InternalEventConsumerRunStatus = "pending"
     attempt_count: int = 0
     max_attempts: int = 5
@@ -127,6 +137,11 @@ class InternalEventConsumerRun:
     locked_at: str = ""
     locked_by: str = ""
     lease_token: str = ""
+    lease_expires_at: str = ""
+    heartbeat_at: str = ""
+    worker_generation: int = 0
+    policy_version: str = ""
+    row_version: str = ""
     last_attempt_id: str = ""
     last_error_code: str = ""
     last_error_message: str = ""
@@ -134,6 +149,8 @@ class InternalEventConsumerRun:
     created_at: str = ""
     updated_at: str = ""
     finished_at: str = ""
+    hold_reason: str = ""
+    hold_at: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -159,6 +176,12 @@ class InternalEventOutboxRecord:
     trace_id: str = ""
     request_id: str = ""
     correlation_id: str = ""
+    execution_id: str = ""
+    parent_execution_id: str = ""
+    lane: str = "internal_general"
+    available_at: str = ""
+    ordering_key: str = ""
+    fairness_key: str = ""
     occurred_at: str = ""
     payload_json: dict[str, Any] = field(default_factory=dict)
     payload_summary_json: dict[str, Any] = field(default_factory=dict)
@@ -167,6 +190,10 @@ class InternalEventOutboxRecord:
     max_attempts: int = 10
     next_retry_at: str = ""
     lease_token: str = ""
+    lease_expires_at: str = ""
+    heartbeat_at: str = ""
+    worker_generation: int = 0
+    policy_version: str = ""
     locked_at: str = ""
     locked_by: str = ""
     internal_event_id: str = ""
@@ -175,6 +202,8 @@ class InternalEventOutboxRecord:
     created_at: str = ""
     updated_at: str = ""
     relayed_at: str = ""
+    hold_reason: str = ""
+    hold_at: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -200,12 +229,10 @@ class InternalEventOutboxRecord:
             source_module=self.source_module,
             source_command_id=self.source_command_id,
             correlation_id=self.correlation_id,
-            occurred_at=(
-                datetime.fromisoformat(self.occurred_at.replace("Z", "+00:00"))
-                if self.occurred_at
-                else None
-            ),
+            occurred_at=(datetime.fromisoformat(self.occurred_at.replace("Z", "+00:00")) if self.occurred_at else None),
             tenant_id=self.tenant_id,
+            execution_id=self.execution_id,
+            parent_execution_id=self.parent_execution_id,
         )
 
 

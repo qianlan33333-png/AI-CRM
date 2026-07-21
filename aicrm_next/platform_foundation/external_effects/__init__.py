@@ -26,6 +26,7 @@ from .models import (
     WECOM_CONTACT_TAG_MARK,
     WECOM_CONTACT_TAG_UNMARK,
     WECOM_PROFILE_UPDATE,
+    WECOM_EXTERNAL_CONTACT_DETAIL_FETCH,
     ExternalEffectDispatchResult,
     ExternalEffectJob,
 )
@@ -62,5 +63,6 @@ __all__ = [
     "WECOM_CONTACT_TAG_MARK",
     "WECOM_CONTACT_TAG_UNMARK",
     "WECOM_PROFILE_UPDATE",
+    "WECOM_EXTERNAL_CONTACT_DETAIL_FETCH",
     "reset_external_effect_fixture_state",
 ]

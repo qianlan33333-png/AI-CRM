@@ -1,7 +1,12 @@
 {% extends "admin_console/base.html" %}
+{% from "admin_console/_execution_components.html" import execution_action_dialog %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/admin_execution_ui.css') }}?v=20260717">
+{% endblock %}
 
 {% block content %}
-<section class="webhook-inbox-page" data-route-owner="ai_crm_next" data-admin-action-token="{{ admin_action_token }}">
+<section class="webhook-inbox-page" data-route-owner="ai_crm_next" data-admin-action-token="{{ admin_action_token }}" data-operator-actor="{{ operator_actor }}">
   <section class="webhook-inbox-stats" aria-label="Webhook Inbox 队列统计">
     <article class="admin-card webhook-inbox-stat"><div class="webhook-inbox-stat-label">待处理</div><div class="webhook-inbox-stat-value" data-stat="due_count">-</div></article>
     <article class="admin-card webhook-inbox-stat"><div class="webhook-inbox-stat-label">处理中</div><div class="webhook-inbox-stat-value" data-stat="processing_count">-</div></article>
@@ -122,6 +127,7 @@
       <div id="detailPanel" class="webhook-inbox-detail-empty">加载中...</div>
     </section>
   </div>
+  {{ execution_action_dialog() }}
 </section>
 
 <style>
@@ -204,6 +210,7 @@
 }
 </style>
 
+<script src="{{ url_for('static', filename='admin_console/admin_execution_ui.js') }}?v=20260717"></script>
 <script>
 (() => {
   const state = { filters: {}, itemsById: new Map(), selectedId: null };
@@ -233,10 +240,6 @@
     return String(value ?? "").replace(/[&<>"']/g, c => ({
       "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
     }[c]));
-  }
-
-  async function readJson(response) {
-    try { return await response.json(); } catch (_) { return {}; }
   }
 
   function labelFor(map, value) {
@@ -331,7 +334,7 @@
 
   async function loadMetrics() {
     const response = await fetch(`/api/admin/webhook-inbox/metrics?${qs(state.filters)}`);
-    const data = await readJson(response);
+    const data = await window.AdminExecutionUI.readJson(response);
     const metrics = data.queue_metrics || {};
     ["due_count", "processing_count", "failed_retryable_count", "dead_letter_count", "oldest_received_age_seconds"].forEach(key => {
       document.querySelector(`[data-stat="${key}"]`).textContent = metrics[key] ?? 0;
@@ -343,7 +346,7 @@
 
   async function loadItems() {
     const response = await fetch(`/api/admin/webhook-inbox/items?${qs({ limit: 50, ...state.filters })}`);
-    const data = await readJson(response);
+    const data = await window.AdminExecutionUI.readJson(response);
     const items = data.items || [];
     state.itemsById = new Map(items.map(item => [String(item.id), item]));
     document.getElementById("totalText").textContent = `共 ${items.length} 条`;
@@ -526,7 +529,7 @@
     document.getElementById("detailPanel").className = "";
     document.getElementById("detailPanel").innerHTML = `<div class="webhook-inbox-detail-empty">加载中...</div>`;
     const response = await fetch(`/api/admin/webhook-inbox/${encodeURIComponent(id)}`);
-    const data = await readJson(response);
+    const data = await window.AdminExecutionUI.readJson(response);
     if (!data.ok) {
       document.getElementById("detailPanel").innerHTML = `<div class="webhook-inbox-detail-empty">${escapeHtml(data.error || "加载失败")}</div>`;
       return;
@@ -541,19 +544,24 @@
   async function performItemAction(action) {
     if (!state.selectedId) return;
     const endpointAction = action === "dispatch-preview" ? "dispatch" : action;
+    const item = state.itemsById.get(String(state.selectedId)) || {};
     const payload = {
       admin_action_token: adminToken(),
       reason: `admin_ui_${action}`
     };
     if (action === "dispatch-preview") payload.dry_run = true;
-    if (action === "dispatch") payload.dry_run = false;
+    if (action !== "dispatch-preview") {
+      const command = await window.AdminExecutionUI.requestVersionedQueueCommand(document.querySelector(".webhook-inbox-page"), {action, expectedVersion: item.row_version});
+      if (!command) return;
+      Object.assign(payload, command, action === "dispatch" ? {dry_run: false} : {});
+    }
     const response = await fetch(`/api/admin/webhook-inbox/${encodeURIComponent(state.selectedId)}/${endpointAction}`, {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify(payload)
     });
-    const data = await readJson(response);
-    setActionStatus(data.ok ? `${action} 已提交` : (data.error || `${action} 失败`));
+    const data = await window.AdminExecutionUI.readJson(response);
+    setActionStatus(data.ok ? `${action} 已提交队列` : (data.error || `${action} 失败`));
     if (data.ok) {
       closeDetailModal();
       await refreshAll();
@@ -567,14 +575,14 @@
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({ admin_action_token: adminToken(), provider: "wecom", limit: 20, dry_run: true })
     });
-    const data = await readJson(response);
+    const data = await window.AdminExecutionUI.readJson(response);
     setActionStatus(data.ok ? `Dry-run: ${Number(data.due_count || data.claimed_count || 0)} 条` : (data.error || "Dry-run 失败"));
   }
 
   async function loadReconciliation() {
     setActionStatus("核对中...");
     const response = await fetch(`/api/admin/wecom/callback/reconciliation?${qs({ limit: 20, ...state.filters })}`);
-    const data = await readJson(response);
+    const data = await window.AdminExecutionUI.readJson(response);
     const metrics = data.queue_metrics || {};
     setActionStatus(data.ok ? `企微核对: due ${Number(metrics.due_count || 0)} / dead ${Number(metrics.dead_letter_count || 0)}` : (data.error || "核对失败"));
   }

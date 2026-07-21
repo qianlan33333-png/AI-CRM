@@ -415,6 +415,60 @@ class CouponAdminApplication:
         )
 
 
+class CouponSidebarApplication:
+    """Read-only, PII-free coupon projection for the signed customer sidebar."""
+
+    def __init__(self, repository: CouponRepository | None = None) -> None:
+        self._repo = repository or build_coupon_repository()
+
+    def list_claimable(
+        self,
+        *,
+        public_base_url: str,
+        limit: int | None = None,
+    ) -> dict[str, Any]:
+        requested_limit = max(1, min(int(limit), 10_000)) if limit is not None else None
+        page_limit = min(requested_limit or 200, 200)
+        coupons: list[dict[str, Any]] = []
+        total = 0
+        offset = 0
+        while True:
+            payload = self._repo.list_coupons(limit=page_limit, offset=offset, q="", status="active")
+            batch = [dict(item) for item in payload.get("items") or []]
+            coupons.extend(batch)
+            total = int(payload.get("total") or len(coupons))
+            offset += len(batch)
+            if not batch or offset >= total or (requested_limit is not None and offset >= requested_limit):
+                break
+        if requested_limit is not None:
+            coupons = coupons[:requested_limit]
+        base = _text(public_base_url).rstrip("/")
+        items: list[dict[str, Any]] = []
+        for coupon in coupons:
+            amount = int(coupon.get("discount_amount_total") or 0)
+            amount_text = f"{amount / 100:.2f}".rstrip("0").rstrip(".")
+            items.append(
+                {
+                    "id": int(coupon.get("id") or 0),
+                    "name": _text(coupon.get("name")),
+                    "discount_amount_total": amount,
+                    "discount_label": f"立减 ¥{amount_text}",
+                    "products": [
+                        {
+                            "title": _text(product.get("title")),
+                            "product_type": _text(product.get("product_type")),
+                        }
+                        for product in coupon.get("products") or []
+                    ],
+                    "claim_ends_at": _shanghai_datetime_display(coupon.get("claim_ends_at")),
+                    "url": f"{base}/c/{_text(coupon.get('public_slug'))}",
+                }
+            )
+        return {"ok": True, "items": items, "total": total}
+
+    __call__ = list_claimable
+
+
 class CouponPublicApplication:
     def __init__(self, repository: CouponRepository | None = None) -> None:
         self._repo = repository or build_coupon_repository()

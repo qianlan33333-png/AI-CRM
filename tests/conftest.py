@@ -17,6 +17,7 @@ superuser，开箱即用）。
 - ``next_pg_schema``：显式 opt-in 的 Next/Alembic PG schema 测试入口
 - ``app`` / ``client``：默认指向 Next FastAPI，测试层不再提供 legacy Flask bridge
 """
+
 from __future__ import annotations
 
 import os
@@ -96,6 +97,8 @@ _TABLES_TO_TRUNCATE = [
     # durable callback ingress
     "webhook_inbox",
     # — ai audience ops
+    "ai_audience_refresh_source_receipt",
+    "ai_audience_refresh_intent",
     "ai_audience_inbound_webhook_event",
     "ai_audience_package_sender",
     "ai_audience_outbound_subscription",
@@ -139,6 +142,11 @@ _TABLES_TO_TRUNCATE = [
     "automation_sop_batch",
     "automation_sop_template",
     "automation_agent_run",
+    "channel_welcome_effect_dependency",
+    "channel_welcome_effect_graph",
+    "automation_group_ops_effect_dependency",
+    "automation_group_ops_effect_material",
+    "automation_group_ops_effect_graph",
     "automation_agent_output",
     "automation_agent_llm_call_log",
     "automation_agent_webhook_item",
@@ -189,6 +197,7 @@ _TABLES_TO_TRUNCATE = [
     "questionnaire_score_rules",
     "questionnaires",
     "external_push_delivery",
+    "identity_resolution_completion_receipt",
     "internal_event_consumer_attempt",
     "internal_event_consumer_run",
     "internal_event",
@@ -281,6 +290,8 @@ _TABLES_TO_TRUNCATE = [
     "customer_timeline_event_next",
     "customer_detail_snapshot_next",
     "customer_list_index_next",
+    "customer_read_model_refresh_source_receipt",
+    "customer_read_model_refresh_intent",
     "customer_read_model_refresh_state",
     # — archive / system
     "archived_messages",
@@ -320,6 +331,42 @@ _truncate_state: dict[str, Any] = {
     "tables_sql": "",
     "conn": None,  # session-cached autocommit psycopg conn
 }
+
+_QUEUE_RUNTIME_RESET_SQL = """
+WITH reset_control AS (
+    UPDATE queue_runtime_control
+    SET active_generation = 0,
+        claim_enabled = FALSE,
+        rollout_mode = 'standby',
+        global_max_in_flight = 20,
+        policy_version = 'queue-v2-test-loopback',
+        external_claim_scope = 'test_loopback',
+        updated_by = 'pytest-fixture',
+        updated_reason = 'reset mutable queue control between tests',
+        updated_at = CURRENT_TIMESTAMP
+    WHERE singleton = TRUE
+    RETURNING singleton
+)
+UPDATE queue_lane_policy
+SET max_in_flight = CASE lane
+        WHEN 'internal_general' THEN 4
+        WHEN 'internal_financial' THEN 1
+        WHEN 'webhook_inbox' THEN 4
+        WHEN 'wecom_interactive' THEN 4
+        WHEN 'wecom_bulk' THEN 1
+        WHEN 'wecom_media' THEN 2
+        WHEN 'outbound_webhook' THEN 4
+        ELSE max_in_flight
+    END,
+    enabled = TRUE,
+    rollout_mode = CASE WHEN lane = 'outbound_webhook' THEN 'blocked' ELSE 'standby' END,
+    blocked_until = NULL,
+    policy_version = 'queue-v2-test-loopback',
+    updated_by = 'pytest-fixture',
+    updated_reason = 'reset mutable queue lane policy between tests',
+    updated_at = CURRENT_TIMESTAMP
+WHERE EXISTS (SELECT 1 FROM reset_control)
+"""
 
 
 def _close_truncate_conn() -> None:
@@ -422,8 +469,7 @@ def _ensure_schema_once():
     pcur = probe.cursor()
     placeholders = ", ".join(["%s"] * len(_TABLES_TO_TRUNCATE))
     pcur.execute(
-        f"SELECT table_name FROM information_schema.tables "
-        f"WHERE table_schema = 'public' AND table_name IN ({placeholders})",
+        f"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ({placeholders})",
         tuple(_TABLES_TO_TRUNCATE),
     )
     existing = {row[0] for row in pcur.fetchall()}
@@ -431,11 +477,7 @@ def _ensure_schema_once():
     probe.close()
     ordered = [t for t in _TABLES_TO_TRUNCATE if t in existing]
     _truncate_state["url"] = url
-    _truncate_state["tables_sql"] = (
-        f"TRUNCATE TABLE {', '.join(ordered)} RESTART IDENTITY CASCADE"
-        if ordered
-        else ""
-    )
+    _truncate_state["tables_sql"] = f"TRUNCATE TABLE {', '.join(ordered)} RESTART IDENTITY CASCADE" if ordered else ""
     if _fixture_default_runtime_enabled():
         os.environ.pop("DATABASE_URL", None)
     yield
@@ -472,6 +514,7 @@ def _truncate_before_each_test():
     cur = conn.cursor()
     try:
         cur.execute(sql)
+        cur.execute(_QUEUE_RUNTIME_RESET_SQL)
     except Exception:
         # 断连 / 死锁 / 上个 test 遗留 idle transaction：弃旧连接，清 blocker 后重试。
         try:
@@ -485,6 +528,7 @@ def _truncate_before_each_test():
         try:
             retry_cur.execute("SET lock_timeout = '5s'")
             retry_cur.execute(sql)
+            retry_cur.execute(_QUEUE_RUNTIME_RESET_SQL)
             _truncate_state["conn"] = retry_conn
         except Exception:
             try:

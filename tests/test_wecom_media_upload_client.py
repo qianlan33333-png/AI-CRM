@@ -128,6 +128,25 @@ def test_wecom_media_client_upload_nonzero_fails() -> None:
 
     assert exc_info.value.error_code == "wecom_media_upload_failed"
     assert exc_info.value.payload["errcode"] == 40007
+    assert exc_info.value.provider_errcode == 40007
+    assert exc_info.value.provider_result_received is True
+    assert exc_info.value.errmsg_present is True
+
+
+def test_wecom_media_client_malformed_errcode_does_not_raise_conversion_error() -> None:
+    client = WeComMediaUploadClient(
+        corp_id="corp_001",
+        secret="secret_001",
+        http_get=lambda *args, **kwargs: {"errcode": 0, "access_token": "token_001", "expires_in": 7200},
+        http_post=lambda *args, **kwargs: {"errcode": "malformed", "errmsg": "invalid response"},
+    )
+
+    with pytest.raises(WeComMediaUploadClientError) as exc_info:
+        client.upload_image("probe.png", b"x", "image/png")
+
+    assert exc_info.value.error_code == "wecom_media_upload_failed"
+    assert exc_info.value.provider_errcode == 0
+    assert exc_info.value.provider_result_received is True
 
 
 def test_wecom_media_client_http_exception_fails() -> None:

@@ -9,6 +9,7 @@ from typing import Any
 from aicrm_next.admin_jobs_archive_sync_gateway import execute_archive_sync
 from aicrm_next.shared.retired_contracts import retired_external_effect_payload
 from aicrm_next.shared.runtime_settings import runtime_setting
+from aicrm_next.shared.sensitive_data import redact_sensitive_data, redact_sensitive_text
 
 from .domain import (
     BROADCAST_SOURCE_TYPES,
@@ -502,18 +503,64 @@ def build_broadcast_jobs_payload(args: Any, repo: AdminJobsRepository | None = N
     return {
         "filters": {"statuses": statuses, "source_types": source_types, "limit": limit, "offset": offset},
         "jobs": jobs,
-        "counts": repo.broadcast_counts(),
-        "status_options": BROADCAST_STATUSES,
-        "source_type_options": BROADCAST_SOURCE_TYPES,
+        "counts": repo.broadcast_counts(statuses=statuses, source_types=source_types),
+        "total": repo.broadcast_total(statuses=statuses, source_types=source_types),
+        "status_options": [{"key": status, "label": status_label(status)} for status in BROADCAST_STATUSES],
+        "source_type_options": [
+            {"key": source_type, "label": broadcast_source_type_label(source_type)}
+            for source_type in BROADCAST_SOURCE_TYPES
+        ],
         "source_status": repo.source_status,
     }
 
 
 def _broadcast_job_view(row: dict[str, Any]) -> dict[str, Any]:
-    safe_row = dict(row)
-    idempotency_key = normalized_text(safe_row.pop("idempotency_key", ""))
+    idempotency_key = normalized_text(row.get("idempotency_key"))
     status = normalized_text(row.get("status"))
     domain = normalized_text(row.get("business_domain")) or "unknown"
+    safe_row = {
+        key: row.get(key)
+        for key in (
+            "id",
+            "source_type",
+            "source_table",
+            "scheduled_for",
+            "priority",
+            "batch_key",
+            "business_domain",
+            "channel",
+            "target_kind",
+            "failure_type",
+            "status",
+            "requires_approval",
+            "approved_by",
+            "approved_at",
+            "cancelled_by",
+            "cancelled_at",
+            "target_count",
+            "content_type",
+            "attempt_count",
+            "outbound_task_id",
+            "external_effect_job_id",
+            "execution_id",
+            "execution_owner",
+            "outbound_task_status",
+            "sent_count",
+            "failed_count",
+            "trace_id",
+            "created_by",
+            "created_at",
+            "updated_at",
+            "claimed_at",
+            "sent_at",
+        )
+        if key in row
+    }
+    safe_row["target_summary"] = redact_sensitive_text(row.get("target_summary"))
+    safe_row["content_summary"] = redact_sensitive_text(row.get("content_summary"))
+    safe_row["last_error"] = redact_sensitive_text(row.get("last_error"))
+    safe_row["cancel_reason"] = redact_sensitive_text(row.get("cancel_reason"))
+    safe_row["row_version"] = int(row.get("row_version") or 1)
     return {
         **safe_row,
         "status_label": status_label(status),
@@ -524,8 +571,8 @@ def _broadcast_job_view(row: dict[str, Any]) -> dict[str, Any]:
         "source_detail_label": _broadcast_source_detail(row),
         "channel_label": broadcast_channel_label(row.get("channel")),
         "target_kind_label": broadcast_target_kind_label(row.get("target_kind")),
-        "target_summary_label": _broadcast_summary_label(row.get("target_summary")),
-        "content_summary_label": _broadcast_summary_label(row.get("content_summary")),
+        "target_summary_label": redact_sensitive_text(_broadcast_summary_label(row.get("target_summary"))),
+        "content_summary_label": redact_sensitive_text(_broadcast_summary_label(row.get("content_summary"))),
         "scheduled_for_label": _beijing_time_label(row.get("scheduled_for")),
         "has_idempotency_key": bool(row.get("has_idempotency_key")) or bool(idempotency_key),
         "can_approve": status == "waiting_approval",
@@ -533,14 +580,83 @@ def _broadcast_job_view(row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def approve_broadcast_job(job_id: int, *, operator: str, repo: AdminJobsRepository | None = None) -> dict[str, Any]:
+def build_broadcast_job_detail_payload(
+    job_id: int,
+    repo: AdminJobsRepository | None = None,
+) -> dict[str, Any] | None:
+    repo = repo or build_admin_jobs_repository()
+    row = repo.get_broadcast_job(int(job_id))
+    if not row:
+        return None
+    job = _broadcast_job_view(row)
+    batch = repo.get_message_batch(int(job_id)) or {}
+    raw_events = repo.list_batch_messages(int(job_id), limit=100)
+    event_total = repo.count_batch_messages(int(job_id))
+    events = [
+        {
+            "message_id": event.get("message_id"),
+            "event_type": normalized_text(event.get("msgtype") or event.get("event_type")),
+            "occurred_at": event.get("send_time") or event.get("created_at"),
+            "chat_type": normalized_text(event.get("chat_type")),
+            "has_external_target": bool(
+                normalized_text(event.get("external_userid"))
+                or normalized_text(event.get("chat_id"))
+                or normalized_text(event.get("receiver"))
+            ),
+            "has_content": bool(normalized_text(event.get("content"))),
+        }
+        for event in raw_events
+    ]
+    batch_summary = {
+        key: batch.get(key)
+        for key in ("id", "batch_key", "window_start", "window_end", "status", "message_count", "created_at", "acked_at")
+        if key in batch
+    }
+    return {
+        "ok": True,
+        "job": redact_sensitive_data(job),
+        "batch": redact_sensitive_data(batch_summary),
+        "events": events,
+        "linked_record_counts": {
+            "broadcast_job_events": event_total,
+            "outbound_tasks": 1 if job.get("outbound_task_id") else 0,
+            "external_effect_jobs": 1 if job.get("external_effect_job_id") else 0,
+        },
+        "push_center_url": f"/admin/push-center/jobs/broadcast_job:{int(job_id)}",
+        "events_truncated": event_total > len(events),
+        "route_owner": "ai_crm_next",
+        "real_external_call_executed": False,
+    }
+
+
+def approve_broadcast_job(
+    job_id: int,
+    *,
+    operator: str,
+    reason: str = "",
+    repo: AdminJobsRepository | None = None,
+) -> dict[str, Any]:
     repo = repo or build_admin_jobs_repository()
     before = repo.get_broadcast_job(job_id) or {}
     after = repo.approve_broadcast_job(job_id, approved_by=_operator(operator))
     if not after:
         raise ValueError("job not approvable (not waiting_approval)")
-    payload = {"ok": True, "approved": True, "job_id": job_id, "job": _broadcast_job_view(after)}
-    _audit(repo, operator=operator, action_type="approve_broadcast_job", target_type=TARGET_BROADCAST_JOB, target_id=str(job_id), before=before, after=payload)
+    payload = {
+        "ok": True,
+        "approved": True,
+        "job_id": job_id,
+        "reason": redact_sensitive_text(reason),
+        "job": _broadcast_job_view(after),
+    }
+    _audit(
+        repo,
+        operator=operator,
+        action_type="approve_broadcast_job",
+        target_type=TARGET_BROADCAST_JOB,
+        target_id=str(job_id),
+        before=redact_sensitive_data(_broadcast_job_view(before)) if before else {},
+        after=payload,
+    )
     return payload
 
 
@@ -551,5 +667,13 @@ def cancel_broadcast_job(job_id: int, *, operator: str, reason: str = "", repo: 
     if not after:
         raise ValueError("job not cancelable (not queued or waiting_approval)")
     payload = {"ok": True, "cancelled": True, "job_id": job_id, "job": _broadcast_job_view(after)}
-    _audit(repo, operator=operator, action_type="cancel_broadcast_job", target_type=TARGET_BROADCAST_JOB, target_id=str(job_id), before=before, after=payload)
+    _audit(
+        repo,
+        operator=operator,
+        action_type="cancel_broadcast_job",
+        target_type=TARGET_BROADCAST_JOB,
+        target_id=str(job_id),
+        before=redact_sensitive_data(_broadcast_job_view(before)) if before else {},
+        after=payload,
+    )
     return payload

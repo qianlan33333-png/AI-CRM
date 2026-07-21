@@ -6,6 +6,9 @@ import json
 import secrets
 from typing import Any, Protocol
 
+from aicrm_next.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform_foundation.internal_events.models import InternalEventCreateRequest
+from aicrm_next.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
 from aicrm_next.shared.repository_provider import RepositoryProviderError, assert_repository_allowed
 from aicrm_next.shared.runtime import production_data_ready, raw_database_url
 
@@ -23,6 +26,7 @@ class RadarLinksRepository(Protocol):
     def save_link(self, payload: dict[str, Any], link_id: int | None = None) -> dict[str, Any]: ...
     def set_enabled(self, link_id: int, enabled: bool) -> dict[str, Any] | None: ...
     def record_click_event(self, payload: dict[str, Any]) -> dict[str, Any]: ...
+    def record_logical_open_event(self, payload: dict[str, Any], *, radar_title: str) -> dict[str, Any]: ...
     def list_click_events(
         self,
         link_id: int,
@@ -86,6 +90,7 @@ class InMemoryRadarLinksRepository:
         self._links: list[dict[str, Any]] = []
         self._events: list[dict[str, Any]] = []
         self._pdf_assets: list[dict[str, Any]] = []
+        self._logical_open_events: list[dict[str, Any]] = []
         self._next_id = 1
         self._next_event_id = 1
         self._next_pdf_asset_id = 1
@@ -183,6 +188,19 @@ class InMemoryRadarLinksRepository:
         self._next_event_id += 1
         self._events.append(event)
         return deepcopy(event)
+
+    def record_logical_open_event(self, payload: dict[str, Any], *, radar_title: str) -> dict[str, Any]:
+        event = self.record_click_event(payload)
+        if str(event.get("unionid") or "").strip():
+            self._logical_open_events.append(
+                {
+                    "event_type": "radar.opened",
+                    "click_event_id": int(event.get("id") or 0),
+                    "unionid": str(event.get("unionid") or ""),
+                    "radar_title": str(radar_title or ""),
+                }
+            )
+        return event
 
     def list_click_events(
         self,
@@ -605,7 +623,54 @@ class PostgresRadarLinksRepository:
 
     def record_click_event(self, payload: dict[str, Any]) -> dict[str, Any]:
         with self._connect() as conn:
-            row = conn.execute(
+            row = self._insert_click_event(conn, payload)
+        return dict(row or {})
+
+    def record_logical_open_event(self, payload: dict[str, Any], *, radar_title: str) -> dict[str, Any]:
+        with self._connect() as conn:
+            row = self._insert_click_event(conn, payload)
+            event = dict(row or {})
+            unionid = str(event.get("unionid") or "").strip()
+            if unionid:
+                click_event_id = str(event.get("id") or "").strip()
+                enqueue_transactional_internal_event_outbox(
+                    conn,
+                    InternalEventCreateRequest(
+                        event_type="radar.opened",
+                        aggregate_type="radar_click_event",
+                        aggregate_id=click_event_id,
+                        subject_type="unionid",
+                        subject_id=unionid,
+                        idempotency_key=f"radar.opened:{click_event_id}",
+                        source_module="radar_links.application",
+                        source_command_id=click_event_id,
+                        occurred_at=event.get("created_at"),
+                        context=CommandContext(
+                            actor_id="radar_viewer",
+                            actor_type="customer",
+                            source_route="radar_links.logical_open",
+                        ),
+                        payload={
+                            "click_event_id": click_event_id,
+                            "radar_id": int(event.get("link_id") or 0),
+                            "radar_title": str(radar_title or ""),
+                            "target_type": str(event.get("target_type_snapshot") or "link"),
+                            "unionid": unionid,
+                            "opened_at": str(event.get("created_at") or ""),
+                        },
+                        payload_summary={
+                            "click_event_id": click_event_id,
+                            "radar_id": int(event.get("link_id") or 0),
+                            "target_type": str(event.get("target_type_snapshot") or "link"),
+                            "unionid_present": True,
+                        },
+                    ),
+                )
+        return event
+
+    @staticmethod
+    def _insert_click_event(conn: Any, payload: dict[str, Any]) -> dict[str, Any] | None:
+        return conn.execute(
                 """
                 INSERT INTO radar_click_events (
                     link_id, code, stage, openid, unionid, external_userid,
@@ -640,7 +705,6 @@ class PostgresRadarLinksRepository:
                     "",
                 ),
             ).fetchone()
-        return dict(row or {})
 
     def list_click_events(
         self,

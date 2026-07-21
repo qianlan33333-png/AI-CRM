@@ -147,6 +147,15 @@ def admin_path_for(name: str, **path_params: object) -> str:
         strategy_key = quote(str(path_params.get("strategy_key", "")).strip(), safe="")
         run_key = quote(str(path_params.get("run_key", "")).strip(), safe="")
         return f"/admin/operation-cycles/{strategy_key}/runs/{run_key}"
+    if name == "api.admin_push_center_job_page":
+        job_id = quote(str(path_params.get("job_id", "")).strip(), safe=":")
+        return f"/admin/push-center/jobs/{job_id}"
+    if name == "api.admin_internal_event_page":
+        event_id = quote(str(path_params.get("event_id", "")).strip(), safe="")
+        return f"/admin/internal-events/{event_id}"
+    if name == "api.admin_broadcast_job_page":
+        job_id = quote(str(path_params.get("job_id", "")).strip(), safe="")
+        return f"/admin/broadcast-jobs/{job_id}"
 
     route = ADMIN_ROUTE_REGISTRY.get(name)
     base = route.path if route else "#"

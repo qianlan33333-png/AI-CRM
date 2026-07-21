@@ -6,6 +6,7 @@ import os
 import pytest
 from sqlalchemy import text
 
+from aicrm_next.ai_audience_ops.refresh_intents import AudienceRefreshIntentRepository, AudienceRefreshIntentService
 from aicrm_next.ai_audience_ops.sql_linter import lint_sql
 from aicrm_next.shared.db_session import get_session_factory
 
@@ -123,7 +124,13 @@ def test_huangyoucan_unregistered_package_refresh_filters_registered_identities(
     assert publish_resp.status_code == 200, publish_resp.text
     publish_body = publish_resp.json()
     assert publish_body["launch_refresh"]["ok"] is True
-    assert publish_body["launch_refresh"]["entered_count"] == 1
+    intent = AudienceRefreshIntentRepository().get(int(package_id))
+    assert intent is not None
+    launched = AudienceRefreshIntentService().process_requested(
+        package_id=int(package_id),
+        signal_generation=int(intent["signal_generation"]),
+    )
+    assert launched["entered_count"] == 1
 
     refresh_resp = next_client.post(
         f"/api/ai/audience/packages/{package_id}/refresh",
@@ -133,6 +140,13 @@ def test_huangyoucan_unregistered_package_refresh_filters_registered_identities(
     assert refresh_resp.status_code == 200, refresh_resp.text
     body = refresh_resp.json()
     assert body["ok"] is True
+    assert body["accepted"] is True
+    intent = AudienceRefreshIntentRepository().get(int(package_id))
+    assert intent is not None
+    body = AudienceRefreshIntentService().process_requested(
+        package_id=int(package_id),
+        signal_generation=int(intent["signal_generation"]),
+    )
     assert body["returned_count"] == 1
     assert body["entered_count"] == 0
     assert body["real_external_call_executed"] is False

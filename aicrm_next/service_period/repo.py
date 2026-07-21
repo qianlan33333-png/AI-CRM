@@ -9,6 +9,9 @@ from typing import Any, Protocol
 from aicrm_next.commerce.repo import build_commerce_repository
 from aicrm_next.identity_contact.dto import ResolvePersonIdentityRequest
 from aicrm_next.identity_contact.resolver import resolve_identity_with_dbapi, resolved_unionid
+from aicrm_next.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform_foundation.internal_events.models import InternalEventCreateRequest
+from aicrm_next.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
 from aicrm_next.shared.db_session import connect_pooled_postgres
 from aicrm_next.shared.errors import ContractError, NotFoundError
 from aicrm_next.shared.repository_provider import assert_repository_allowed
@@ -1409,7 +1412,51 @@ class PostgresServicePeriodRepository(
                 _jsonb(payload),
             ),
         ).fetchone()
-        return dict(row or {})
+        event = dict(row or {})
+        if event_type in {"activated", "renewed", "admin_adjusted"} and text(unionid):
+            source_event_id = text(event.get("event_id") or event.get("id"))
+            product_title = text(product.get("title") or product.get("name") or product.get("product_code")) or "周期商品"
+            enqueue_transactional_internal_event_outbox(
+                conn,
+                InternalEventCreateRequest(
+                    event_type="commerce.product_enrolled",
+                    aggregate_type="service_period_event",
+                    aggregate_id=source_event_id,
+                    subject_type="unionid",
+                    subject_id=text(unionid),
+                    idempotency_key=f"commerce.product_enrolled:service_period:{source_event_id}",
+                    source_module="service_period.repo",
+                    source_command_id=source_event_id,
+                    occurred_at=event.get("created_at"),
+                    context=CommandContext(
+                        actor_id="service_period",
+                        actor_type="system",
+                        source_route="service_period.entitlement",
+                    ),
+                    payload={
+                        "source_table": "service_period_events",
+                        "source_id": source_event_id,
+                        "product_type": "service_period",
+                        "order": {
+                            "id": text(event.get("id")),
+                            "out_trade_no": text(out_trade_no),
+                            "unionid": text(unionid),
+                            "product_id": text(product.get("trade_product_id")),
+                            "product_code": text(product.get("product_code")),
+                            "product_name": product_title,
+                            "product_type": "service_period",
+                            "activated_at": str(event.get("created_at") or ""),
+                        },
+                    },
+                    payload_summary={
+                        "service_period_event_id": source_event_id,
+                        "event_type": event_type,
+                        "product_code": text(product.get("product_code")),
+                        "unionid_present": True,
+                    },
+                ),
+            )
+        return event
 
     def _entitlement_payload(self, row: dict[str, Any]) -> dict[str, Any]:
         status = entitlement_status(row.get("end_at"), row.get("status"))

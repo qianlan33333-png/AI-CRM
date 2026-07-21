@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from copy import deepcopy
 from datetime import datetime, timezone
-import json
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 
 from aicrm_next.identity_contact.resolver import resolve_external_userid_with_dbapi
 from aicrm_next.shared.repository_provider import assert_repository_allowed
@@ -332,8 +333,14 @@ class PostgresMessageArchiveReadRepository:
 
 
 class PostgresArchiveSyncRepository:
-    def __init__(self, database_url: str | None = None) -> None:
+    def __init__(
+        self,
+        database_url: str | None = None,
+        *,
+        source_change_recorder: Callable[[Any, int, int, str], dict[str, Any]] | None = None,
+    ) -> None:
         self._database_url = _psycopg_url(str(database_url or raw_database_url()).strip())
+        self._source_change_recorder = source_change_recorder
 
     def _connect(self):
         import psycopg
@@ -394,6 +401,7 @@ class PostgresArchiveSyncRepository:
 
     def insert_messages_and_advance_seq(self, messages: list[JsonDict], *, last_seq: int) -> int:
         inserted = 0
+        inserted_row_ids: list[int] = []
         with self._connect() as conn:
             try:
                 for message in messages:
@@ -429,6 +437,10 @@ class PostgresArchiveSyncRepository:
                     ).fetchone()
                     if row:
                         inserted += 1
+                        row_id = int(row.get("id") or 0)
+                        if row_id <= 0:
+                            raise RuntimeError("archive_inserted_row_id_required")
+                        inserted_row_ids.append(row_id)
                 conn.execute(
                     """
                     INSERT INTO archive_sync_state (state_key, last_seq, updated_at)
@@ -439,6 +451,15 @@ class PostgresArchiveSyncRepository:
                     """,
                     (int(last_seq),),
                 )
+                if inserted:
+                    if self._source_change_recorder is None:
+                        raise RuntimeError("archive_source_change_recorder_required")
+                    self._source_change_recorder(
+                        conn,
+                        int(inserted),
+                        int(last_seq),
+                        _archive_source_batch_key(inserted_row_ids),
+                    )
                 conn.commit()
             except Exception:
                 conn.rollback()
@@ -452,10 +473,24 @@ def build_message_archive_repository() -> MessageArchiveRepository:
     return assert_repository_allowed(FixtureMessageArchiveRepository(), capability_owner="message_archive")
 
 
-def build_archive_sync_repository() -> ArchiveSyncRepository:
+def build_archive_sync_repository(
+    *,
+    source_change_recorder: Callable[[Any, int, int, str], dict[str, Any]] | None = None,
+) -> ArchiveSyncRepository:
     if not production_data_ready():
         raise RuntimeError("archive sync requires PostgreSQL production data mode")
-    return assert_repository_allowed(PostgresArchiveSyncRepository(), capability_owner="message_archive")
+    return assert_repository_allowed(
+        PostgresArchiveSyncRepository(source_change_recorder=source_change_recorder),
+        capability_owner="message_archive",
+    )
+
+
+def _archive_source_batch_key(inserted_row_ids: list[int]) -> str:
+    normalized = sorted(int(row_id) for row_id in inserted_row_ids if int(row_id) > 0)
+    if not normalized:
+        raise RuntimeError("archive_source_batch_key_required")
+    material = ",".join(str(row_id) for row_id in normalized)
+    return hashlib.sha256(material.encode("ascii")).hexdigest()
 
 
 def read_archive_app_setting(key: str) -> str:
@@ -488,10 +523,10 @@ def _json_payload(value: Any) -> dict[str, Any]:
 
 def _enqueue_archive_identity_resolution(conn, message: JsonDict) -> None:
     external_userid = str(message.get("external_userid") or "").strip()
-    source_key = str(message.get("msgid") or message.get("seq") or "").strip()
-    if not external_userid or not source_key:
+    source_key = external_userid
+    if not external_userid:
         return
-    conn.execute(
+    cursor = conn.execute(
         """
         INSERT INTO crm_user_identity_resolution_queue (
             source_type,
@@ -520,12 +555,22 @@ def _enqueue_archive_identity_resolution(conn, message: JsonDict) -> None:
         DO UPDATE SET
             external_userid = COALESCE(NULLIF(EXCLUDED.external_userid, ''), crm_user_identity_resolution_queue.external_userid),
             payload_json = crm_user_identity_resolution_queue.payload_json || EXCLUDED.payload_json,
-            reason = EXCLUDED.reason,
-            last_seen_at = NOW(),
-            updated_at = NOW()
+        reason = EXCLUDED.reason,
+        last_seen_at = NOW(),
+        updated_at = NOW()
+        RETURNING *
         """,
         (source_key, external_userid, json.dumps({"message": message}, ensure_ascii=False, default=str)),
     )
+    row = cursor.fetchone()
+    if row:
+        from aicrm_next.identity_contact.resolution_effects import plan_identity_resolution_effect
+
+        plan_identity_resolution_effect(
+            conn,
+            dict(row),
+            source_route="message_archive.identity_resolution.enqueue",
+        )
 
 
 def _normalize_stored_chat_scene(value: str | None) -> str:

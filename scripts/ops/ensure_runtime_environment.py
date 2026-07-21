@@ -9,6 +9,7 @@ from scripts.ops.migrate_app_setting_secrets import _persist_environment_values
 DEPRECATED_RUNTIME_ENV_KEYS = frozenset(
     {
         "AICRM_QUESTIONNAIRE_EXTERNAL_PUSH_MODE",
+        "AICRM_NEXT_WECOM_REAL_CALLS_ENABLED",
         "AICRM_EXTERNAL_EFFECT_WECOM_EXECUTE",
         "AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES",
         "AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS",

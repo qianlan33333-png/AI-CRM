@@ -627,7 +627,7 @@ def test_webhooks_push_category_controls_external_effect_runtime(monkeypatch, tm
     )
 
     assert rejected_legacy_save.status_code == 400
-    assert "push capabilities API" in rejected_legacy_save.json()["error"]
+    assert "managed by push capabilities API" in rejected_legacy_save.json()["error"]
 
     saved = client.patch(
         "/api/admin/config/push-capabilities/questionnaire_external_push",
@@ -663,7 +663,12 @@ def test_webhooks_push_category_controls_external_effect_runtime(monkeypatch, tm
     assert welcome_saved.json()["derived_gates"]["realtime_allowed_types"] == ["wecom.welcome_message.send"]
     assert _scalar(database_url, "SELECT value FROM app_settings WHERE key = 'AICRM_EXTERNAL_EFFECT_REALTIME_ENABLED'") == "true"
     assert _scalar(database_url, "SELECT value FROM app_settings WHERE key = 'AICRM_EXTERNAL_EFFECT_REALTIME_ALLOWED_TYPES'") == "wecom.welcome_message.send"
-    assert realtime_wakeup_state()["channel_entry_missing_types"] == ["wecom.contact.tag.mark", "wecom.profile.update"]
+    realtime_state = realtime_wakeup_state()
+    assert realtime_state["status"] == "durable_signal_only"
+    assert realtime_state["channel_entry_missing_types"] == []
+    assert realtime_state["channel_entry_ready"] is True
+    assert realtime_state["dispatch_boundary"] == "postgres_execution_runtime_claim_one"
+    assert realtime_state["provider_dispatch_allowed"] is False
 
     rejected = client.put(
         "/api/admin/config/categories/webhooks_push/settings",

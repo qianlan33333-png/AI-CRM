@@ -101,7 +101,7 @@ def test_automation_ops_scheduler_dry_run_returns_structured_skips() -> None:
     assert result["ok"] is True
     assert result["components"] == [
         {"component": "group_ops_scheduler", "status": "skipped", "reason": "dry_run"},
-        {"component": "wecom_media_lease_refresher", "status": "skipped", "reason": "dry_run"},
+        {"component": "wecom_media_lease_refresher", "status": "skipped", "reason": "retired_manual_repair_only"},
     ]
 
 

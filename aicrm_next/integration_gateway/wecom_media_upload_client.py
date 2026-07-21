@@ -29,6 +29,15 @@ def _timeout_value(value: Any) -> int:
     return parsed if parsed > 0 else 15
 
 
+def _provider_errcode(value: Any) -> int:
+    if isinstance(value, bool):
+        return 0
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
+
+
 class WeComMediaUploadClientError(RuntimeError):
     def __init__(
         self,
@@ -42,6 +51,9 @@ class WeComMediaUploadClientError(RuntimeError):
         self.stage = stage
         self.error_code = error_code
         self.payload = payload or {}
+        self.provider_errcode = _provider_errcode(self.payload.get("errcode"))
+        self.provider_result_received = "errcode" in self.payload or "media_id" in self.payload
+        self.errmsg_present = bool(_text(self.payload.get("errmsg")))
 
 
 class WeComMediaUploadClient:
@@ -135,7 +147,7 @@ class WeComMediaUploadClient:
                 error_code="wecom_media_http_error",
             ) from exc
 
-        errcode = int(payload.get("errcode") or 0)
+        errcode = _provider_errcode(payload.get("errcode"))
         token = _text(payload.get("access_token"))
         if errcode != 0 or not token:
             raise WeComMediaUploadClientError(
@@ -169,7 +181,7 @@ class WeComMediaUploadClient:
                 error_code="wecom_media_http_error",
             ) from exc
 
-        errcode = int(payload.get("errcode") or 0)
+        errcode = _provider_errcode(payload.get("errcode"))
         if errcode != 0:
             raise WeComMediaUploadClientError(
                 "wecom media upload failed",
@@ -205,7 +217,7 @@ class WeComMediaUploadClient:
                 error_code="wecom_media_http_error",
             ) from exc
 
-        errcode = int(payload.get("errcode") or 0)
+        errcode = _provider_errcode(payload.get("errcode"))
         if errcode != 0:
             raise WeComMediaUploadClientError(
                 "wecom media attachment upload failed",

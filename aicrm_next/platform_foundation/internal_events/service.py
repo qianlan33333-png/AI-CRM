@@ -42,6 +42,8 @@ class InternalEventService:
         source_module: str = "",
         source_command_id: str = "",
         correlation_id: str = "",
+        execution_id: str = "",
+        parent_execution_id: str = "",
         occurred_at: datetime | None = None,
         tenant_id: str = "aicrm",
     ) -> dict[str, Any]:
@@ -59,6 +61,8 @@ class InternalEventService:
             source_module=source_module,
             source_command_id=source_command_id,
             correlation_id=correlation_id,
+            execution_id=execution_id,
+            parent_execution_id=parent_execution_id,
             occurred_at=occurred_at,
             tenant_id=tenant_id,
         )

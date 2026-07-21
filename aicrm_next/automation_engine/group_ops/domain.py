@@ -378,13 +378,21 @@ def build_node_group_message_content(
     sender: str,
     resolved_attachments: list[dict[str, Any]] | None = None,
     resolved_image_media_ids: list[str] | None = None,
+    allow_deferred_materials: bool = False,
 ) -> dict[str, Any]:
     content_package = node.get("content_package_json") if isinstance(node.get("content_package_json"), dict) else {}
     text_content = clean_text(node.get("text_content")) or clean_text(content_package.get("content_text"))
+    attachments = list(node.get("attachments") or []) + list(resolved_attachments or [])
+    image_media_ids = list(resolved_image_media_ids or [])
+    if allow_deferred_materials and not text_content and not attachments and not image_media_ids:
+        payload: dict[str, Any] = {}
+        if clean_text(sender):
+            payload["sender"] = clean_text(sender)
+        return payload
     return normalize_message_content(
         text=text_content,
-        attachments=list(node.get("attachments") or []) + list(resolved_attachments or []),
-        image_media_ids=list(resolved_image_media_ids or []),
+        attachments=attachments,
+        image_media_ids=image_media_ids,
         sender=sender,
     )
 

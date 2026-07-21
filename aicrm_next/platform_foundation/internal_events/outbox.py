@@ -5,6 +5,9 @@ from datetime import timedelta
 from typing import Any
 from uuid import uuid4
 
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
 from .consumer_registry import InternalEventConsumerRegistry, current_internal_event_consumer_registry
 from .models import (
     DEFAULT_TENANT_ID,
@@ -59,6 +62,8 @@ def enqueue_transactional_internal_event_outbox(conn: Any, request: InternalEven
 
     tenant_id = _text(request.tenant_id) or DEFAULT_TENANT_ID
     key = _idempotency_key(request)
+    occurred_at = public_datetime(request.occurred_at or utcnow())
+    lane = "internal_financial" if _text(request.event_type).startswith(("payment.", "refund.", "order.")) else "internal_general"
     params = (
         tenant_id,
         "ieo_" + uuid4().hex,
@@ -77,7 +82,13 @@ def enqueue_transactional_internal_event_outbox(conn: Any, request: InternalEven
         _text(request.context.trace_id),
         _text(request.context.request_id),
         _text(request.correlation_id),
-        public_datetime(request.occurred_at or utcnow()),
+        _text(request.execution_id) or "exe_" + uuid4().hex,
+        _text(request.parent_execution_id),
+        lane,
+        occurred_at,
+        f"{_text(request.aggregate_type)}:{_text(request.aggregate_id)}",
+        _text(request.event_type),
+        occurred_at,
         json.dumps(dict(request.payload or {}), ensure_ascii=False, default=str, separators=(",", ":")),
         json.dumps(_payload_summary(request), ensure_ascii=False, default=str, separators=(",", ":")),
     )
@@ -87,11 +98,16 @@ def enqueue_transactional_internal_event_outbox(conn: Any, request: InternalEven
             tenant_id, outbox_id, event_type, event_version, aggregate_type, aggregate_id,
             subject_type, subject_id, idempotency_key, actor_id, actor_type,
             source_module, source_route, source_command_id, trace_id, request_id,
-            correlation_id, occurred_at, payload_json, payload_summary_json,
+            correlation_id, execution_id, parent_execution_id, lane, available_at,
+            ordering_key, fairness_key, policy_version,
+            occurred_at, payload_json, payload_summary_json,
             status, attempt_count, max_attempts, created_at, updated_at
         ) VALUES (
             %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-            %s, %s, %s, %s, %s, %s, %s, %s::timestamptz,
+            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+            %s::timestamptz, %s, %s,
+            (SELECT policy_version FROM queue_runtime_control WHERE singleton = TRUE FOR SHARE),
+            %s::timestamptz,
             %s::jsonb, %s::jsonb, 'pending', 0, 10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
         )
         ON CONFLICT (tenant_id, idempotency_key) DO NOTHING
@@ -105,6 +121,91 @@ def enqueue_transactional_internal_event_outbox(conn: Any, request: InternalEven
         "SELECT * FROM internal_event_outbox WHERE tenant_id = %s AND idempotency_key = %s LIMIT 1",
         (tenant_id, key),
     ).fetchone()
+    if not existing:
+        raise RuntimeError("internal event outbox idempotent create failed")
+    return dict(existing)
+
+
+def enqueue_internal_event_outbox_in_session(
+    session: Session,
+    request: InternalEventCreateRequest,
+) -> dict[str, Any]:
+    """Insert an outbox envelope in a caller-owned SQLAlchemy transaction."""
+
+    tenant_id = _text(request.tenant_id) or DEFAULT_TENANT_ID
+    key = _idempotency_key(request)
+    occurred_at = public_datetime(request.occurred_at or utcnow())
+    lane = "internal_financial" if _text(request.event_type).startswith(("payment.", "refund.", "order.")) else "internal_general"
+    params = {
+        "tenant_id": tenant_id,
+        "outbox_id": "ieo_" + uuid4().hex,
+        "event_type": _text(request.event_type),
+        "event_version": int(request.event_version or 1),
+        "aggregate_type": _text(request.aggregate_type),
+        "aggregate_id": _text(request.aggregate_id),
+        "subject_type": _text(request.subject_type),
+        "subject_id": _text(request.subject_id),
+        "idempotency_key": key,
+        "actor_id": _text(request.context.actor_id),
+        "actor_type": _text(request.context.actor_type) or "system",
+        "source_module": _text(request.source_module),
+        "source_route": _text(request.context.source_route),
+        "source_command_id": _text(request.source_command_id),
+        "trace_id": _text(request.context.trace_id),
+        "request_id": _text(request.context.request_id),
+        "correlation_id": _text(request.correlation_id),
+        "execution_id": _text(request.execution_id) or "exe_" + uuid4().hex,
+        "parent_execution_id": _text(request.parent_execution_id),
+        "lane": lane,
+        "available_at": occurred_at,
+        "ordering_key": f"{_text(request.aggregate_type)}:{_text(request.aggregate_id)}",
+        "fairness_key": _text(request.event_type),
+        "occurred_at": occurred_at,
+        "payload_json": json.dumps(dict(request.payload or {}), ensure_ascii=False, default=str, separators=(",", ":")),
+        "payload_summary_json": json.dumps(_payload_summary(request), ensure_ascii=False, default=str, separators=(",", ":")),
+    }
+    row = (
+        session.execute(
+            text(
+                """
+                INSERT INTO internal_event_outbox (
+                    tenant_id, outbox_id, event_type, event_version, aggregate_type, aggregate_id,
+                    subject_type, subject_id, idempotency_key, actor_id, actor_type,
+                    source_module, source_route, source_command_id, trace_id, request_id,
+                    correlation_id, execution_id, parent_execution_id, lane, available_at,
+                    ordering_key, fairness_key, policy_version,
+                    occurred_at, payload_json, payload_summary_json,
+                    status, attempt_count, max_attempts, created_at, updated_at
+                ) VALUES (
+                    :tenant_id, :outbox_id, :event_type, :event_version, :aggregate_type, :aggregate_id,
+                    :subject_type, :subject_id, :idempotency_key, :actor_id, :actor_type,
+                    :source_module, :source_route, :source_command_id, :trace_id, :request_id,
+                    :correlation_id, :execution_id, :parent_execution_id, :lane,
+                    CAST(:available_at AS timestamptz), :ordering_key, :fairness_key,
+                    (SELECT policy_version FROM queue_runtime_control WHERE singleton = TRUE FOR SHARE),
+                    CAST(:occurred_at AS timestamptz), CAST(:payload_json AS jsonb),
+                    CAST(:payload_summary_json AS jsonb), 'pending', 0, 10,
+                    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                )
+                ON CONFLICT (tenant_id, idempotency_key) DO NOTHING
+                RETURNING *
+                """
+            ),
+            params,
+        )
+        .mappings()
+        .fetchone()
+    )
+    if row:
+        return dict(row)
+    existing = (
+        session.execute(
+            text("SELECT * FROM internal_event_outbox WHERE tenant_id = :tenant_id AND idempotency_key = :idempotency_key LIMIT 1"),
+            {"tenant_id": tenant_id, "idempotency_key": key},
+        )
+        .mappings()
+        .fetchone()
+    )
     if not existing:
         raise RuntimeError("internal event outbox idempotent create failed")
     return dict(existing)
@@ -238,17 +339,64 @@ class InternalEventOutboxRelay:
                     "consumer_run_count": len(runs),
                 }
             )
-        failed_count = (
-            counts["failed_retryable_count"]
-            + counts["failed_terminal_count"]
-            + counts["lost_lease_count"]
-            + counts["unhandled_failure_count"]
-        )
+        failed_count = counts["failed_retryable_count"] + counts["failed_terminal_count"] + counts["lost_lease_count"] + counts["unhandled_failure_count"]
         return {
             "ok": failed_count == 0,
             "dry_run": False,
             "items": items,
             "counts": counts,
             "metrics": self._repo.outbox_metrics(),
+            "real_external_call_executed": False,
+        }
+
+    def relay_claimed(self, record) -> dict[str, Any]:
+        """Relay exactly one outbox row already leased by the lane runtime."""
+
+        try:
+            relayed = self._repo.relay_outbox(
+                record,
+                self._consumer_specs(record.event_type),
+                fanout_manifest=self._fanout_manifest(record.event_type),
+            )
+        except Exception as exc:
+            try:
+                failed = self._repo.mark_outbox_failure(
+                    record,
+                    error_code="relay_exception",
+                    error_message=exc.__class__.__name__,
+                    next_retry_at=_retry_at(record.attempt_count),
+                )
+            except Exception as persist_exc:
+                return {
+                    "ok": False,
+                    "outbox_id": record.outbox_id,
+                    "status": "failure_persist_failed",
+                    "error": "outbox_failure_persist_failed",
+                    "error_class": persist_exc.__class__.__name__,
+                    "real_external_call_executed": False,
+                }
+            return {
+                "ok": False,
+                "outbox_id": record.outbox_id,
+                "status": failed.status if failed else "lost_lease",
+                "error": "relay_exception",
+                "error_class": exc.__class__.__name__,
+                "real_external_call_executed": False,
+            }
+        if relayed is None:
+            return {
+                "ok": False,
+                "outbox_id": record.outbox_id,
+                "status": "lost_lease",
+                "error": "lost_lease",
+                "real_external_call_executed": False,
+            }
+        updated, event, runs = relayed
+        return {
+            "ok": True,
+            "outbox_id": updated.outbox_id,
+            "status": updated.status,
+            "event_id": event.event_id,
+            "consumer_run_count": len(runs),
             "real_external_call_executed": False,
         }

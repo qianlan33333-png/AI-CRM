@@ -6,11 +6,9 @@ from typing import Any
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
-from aicrm_next.platform_foundation.command_bus.models import CommandContext
 from aicrm_next.platform_foundation.external_effects import ExternalEffectService
 from aicrm_next.platform_foundation.internal_events import InternalEventService
 
-from .event_types import DAILY_TICK_EVENT, INCREMENTAL_TICK_EVENT, SOURCE_CHANGED_EVENT
 from .repository import AudienceRepository, build_audience_repository, default_refresh_started_at, previous_watermark, _text
 from .schemas import PackageCreateRequest, PackageVersionCreateRequest, PreviewRequest
 from .sql_executor import build_execution_plan
@@ -432,7 +430,7 @@ class AudiencePackageService:
         return result
 
     def _refresh_package_on_launch(self, package_id: int) -> dict[str, Any]:
-        from .refresh_service import AudienceRefreshService
+        from .refresh_intents import AudienceRefreshIntentService
 
         package = self._repo.get_package(int(package_id))
         if not package:
@@ -441,10 +439,11 @@ class AudiencePackageService:
         if not version:
             return {"ok": False, "skipped": True, "reason": "current_version_not_found", "real_external_call_executed": False}
         run_type = "daily" if _text(version.get("snapshot_sql_text")) else "incremental"
-        result = AudienceRefreshService(repository=self._repo, internal_events=self._events).refresh_package(
+        result = AudienceRefreshIntentService().request_package_refresh(
             int(package_id),
-            run_type=run_type,
-            package=package,
+            refresh_kind=run_type,
+            source_event_key=f"package_launch:{int(package_id)}:{int(version.get('id') or 0)}:{datetime.now(timezone.utc).isoformat()}",
+            parent_execution_id="",
         )
         return {
             "trigger": "package_launch",
@@ -482,43 +481,22 @@ class AudiencePackageService:
         return {"ok": bool(subscription), "subscription": subscription, "error": "" if subscription else "subscription_not_found"}
 
     def emit_tick(self, tick_type: str, *, actor_id: str = "ai_audience_scheduler") -> dict[str, Any]:
-        event_type = DAILY_TICK_EVENT if tick_type == "daily" else INCREMENTAL_TICK_EVENT
+        from .refresh_intents import AudienceRefreshIntentService
+
         bucket = _tick_bucket(tick_type)
-        result = self._events.emit_event(
-            event_type=event_type,
-            aggregate_type="ai_audience_scheduler",
-            aggregate_id=bucket,
-            subject_type="ai_audience",
-            subject_id=tick_type,
-            idempotency_key=f"ai_audience:{tick_type}:{bucket}",
-            source_module="ai_audience_ops.service",
-            payload={"tick_type": tick_type, "bucket": bucket},
-            payload_summary={"tick_type": tick_type, "bucket": bucket},
-            context=CommandContext(actor_id=actor_id, actor_type="system", source_route=f"ai_audience.ticks.{tick_type}"),
+        return AudienceRefreshIntentService().request_due_refreshes(
+            "daily" if tick_type == "daily" else "incremental",
+            bucket=bucket,
+            actor_id=actor_id,
         )
-        return {"ok": True, **result}
 
     def has_launch_refresh_due(self, refresh_kind: str = "daily") -> bool:
         return self._repo.has_launch_refresh_due("daily" if refresh_kind == "daily" else "incremental")
 
     def emit_source_changed(self, payload: dict[str, Any]) -> dict[str, Any]:
-        source_type = _text(payload.get("source_type"))
-        source_key = _text(payload.get("source_key"))
-        identity_type = _text(payload.get("identity_type"))
-        identity_value = _text(payload.get("identity_value"))
-        result = self._events.emit_event(
-            event_type=SOURCE_CHANGED_EVENT,
-            aggregate_type="ai_audience_source",
-            aggregate_id=f"{source_type}:{source_key}",
-            subject_type=identity_type,
-            subject_id=identity_value,
-            idempotency_key=f"ai_audience:source:{source_type}:{source_key}:{identity_type}:{identity_value}:{_text(payload.get('occurred_at'))}",
-            source_module="ai_audience_ops.service",
-            payload=dict(payload or {}),
-            payload_summary={"source_type": source_type, "source_key": source_key, "identity_type": identity_type},
-            context=CommandContext(actor_id="ai_audience_source_dirty", actor_type="system", source_route="ai_audience.source_dirty"),
-        )
-        return {"ok": True, **result}
+        from .refresh_intents import AudienceRefreshIntentService
+
+        return AudienceRefreshIntentService().request_source_change(payload, emit_source_audit=True)
 
     def diagnostics(self, package_id: int, kind: str) -> dict[str, Any]:
         if kind == "runs":
@@ -546,7 +524,7 @@ class AudiencePackageService:
 def _tick_bucket(tick_type: str) -> str:
     from datetime import datetime, timezone
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(ZoneInfo("Asia/Shanghai")) if tick_type == "daily" else datetime.now(timezone.utc)
     if tick_type == "daily":
         return now.strftime("%Y-%m-%d")
     minute = (now.minute // 3) * 3

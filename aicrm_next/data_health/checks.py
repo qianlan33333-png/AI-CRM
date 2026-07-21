@@ -15,6 +15,7 @@ from aicrm_next.shared.db_session import get_session_factory
 from tools.check_data_table_lifecycle import check_data_table_lifecycle
 
 from .dto import DataHealthCheckResult
+from .external_effect_provenance import callback_welcome_failure_sql, direct_canary_job_sql
 from .schema_drift import (
     database_schema_available,
     evaluate_schema_drift,
@@ -380,7 +381,11 @@ def _identity_resolution_queue_backlog() -> DataHealthCheckResult:
 def _projection_freshness_customer_read_model() -> DataHealthCheckResult:
     check_id = "projection_freshness_customer_read_model"
     title = "Customer read model projection freshness"
-    source_tables = ["customer_list_index_next", "customer_detail_snapshot_next"]
+    source_tables = [
+        "customer_list_index_next",
+        "customer_detail_snapshot_next",
+        "customer_timeline_event_next",
+    ]
     if not database_schema_available():
         return _db_unavailable_placeholder(check_id, title, source_tables)
     try:
@@ -401,6 +406,16 @@ def _projection_freshness_customer_read_model() -> DataHealthCheckResult:
                             (
                                 SELECT target_count FROM customer_read_model_refresh_state WHERE singleton_id = 1
                             ) AS refresh_target_count,
+                            (SELECT COUNT(*) FROM customer_timeline_event_next) AS timeline_event_count,
+                            (
+                                SELECT COUNT(*)
+                                FROM (
+                                    SELECT event_id
+                                    FROM customer_timeline_event_next
+                                    GROUP BY event_id
+                                    HAVING COUNT(*) > 1
+                                ) duplicate_events
+                            ) AS timeline_duplicate_event_id_count,
                             EXTRACT(EPOCH FROM (
                                 CURRENT_TIMESTAMP - (
                                     SELECT last_succeeded_at
@@ -431,6 +446,8 @@ def _projection_freshness_customer_read_model() -> DataHealthCheckResult:
     refresh_state_present = bool(row.get("refresh_state_present"))
     refresh_source_count = int(row.get("refresh_source_count") or 0)
     refresh_target_count = int(row.get("refresh_target_count") or 0)
+    timeline_event_count = int(row.get("timeline_event_count") or 0)
+    timeline_duplicate_event_id_count = int(row.get("timeline_duplicate_event_id_count") or 0)
     refresh_age_minutes = float(row.get("refresh_age_minutes") or 0)
     violations = []
     if list_count <= 0:
@@ -441,20 +458,23 @@ def _projection_freshness_customer_read_model() -> DataHealthCheckResult:
         violations.append(f"projection_count_mismatch={list_count}:{detail_count}")
     if not refresh_state_present:
         violations.append("customer read model has no successful managed refresh")
-    elif refresh_age_minutes > PROJECTION_FRESHNESS_MAX_MINUTES:
-        violations.append(f"refresh_age_minutes={refresh_age_minutes:.1f} exceeds {PROJECTION_FRESHNESS_MAX_MINUTES}")
     if refresh_state_present and refresh_target_count != list_count:
         violations.append(f"refresh_target_count={refresh_target_count} does not match list_count={list_count}")
     if refresh_state_present and refresh_source_count != refresh_target_count:
         violations.append(f"refresh_count_mismatch={refresh_source_count}:{refresh_target_count}")
+    if timeline_duplicate_event_id_count > 0:
+        violations.append(f"timeline_duplicate_event_id_count={timeline_duplicate_event_id_count}")
     evidence = {
         "list_count": list_count,
         "detail_count": detail_count,
         "refresh_state_present": refresh_state_present,
         "refresh_source_count": refresh_source_count,
         "refresh_target_count": refresh_target_count,
+        "timeline_event_count": timeline_event_count,
+        "timeline_duplicate_event_id_count": timeline_duplicate_event_id_count,
         "refresh_age_minutes": refresh_age_minutes,
-        "max_stale_minutes": PROJECTION_FRESHNESS_MAX_MINUTES,
+        "freshness_policy": "source_change_lag",
+        "wall_clock_age_is_diagnostic": True,
     }
     if violations:
         return DataHealthCheckResult(
@@ -462,16 +482,16 @@ def _projection_freshness_customer_read_model() -> DataHealthCheckResult:
             title=title,
             status="fail",
             severity="red",
-            summary="Customer read model projections are empty or stale.",
+            summary="Customer read model projections are empty or inconsistent.",
             evidence={**evidence, "violations": violations},
-            remediation="Run the customer read model projection refresh and inspect failed projection jobs.",
+            remediation="Inspect the event-driven refresh intent and projection consumer; source-change lag is enforced by customer_360_freshness_guard.",
         )
     return DataHealthCheckResult(
         check_id=check_id,
         title=title,
         status="ok",
         severity="green",
-        summary="Customer read model projections are populated and fresh.",
+        summary="Customer read model projections are populated and internally consistent.",
         evidence=evidence,
         remediation="",
     )
@@ -479,7 +499,7 @@ def _projection_freshness_customer_read_model() -> DataHealthCheckResult:
 
 def _broadcast_job_blocked_backlog() -> DataHealthCheckResult:
     check_id = "broadcast_job_blocked_backlog"
-    title = "Broadcast job blocked backlog"
+    title = "Legacy broadcast ledger backlog"
     source_tables = ["broadcast_jobs", "broadcast_job_events"]
     if not database_schema_available():
         return _db_unavailable_placeholder(check_id, title, source_tables)
@@ -489,7 +509,34 @@ def _broadcast_job_blocked_backlog() -> DataHealthCheckResult:
                 session.execute(
                     text(
                         f"""
+                        WITH legacy_broadcast AS (
+                            SELECT *
+                            FROM broadcast_jobs
+                            WHERE COALESCE(NULLIF(execution_owner, ''), 'legacy_frozen') = 'legacy_frozen'
+                        )
                         SELECT
+                            COUNT(*) FILTER (
+                                WHERE status IN (
+                                    'waiting_approval', 'queued', 'claimed', 'dispatching',
+                                    'failed', 'failed_retryable', 'failed_terminal', 'blocked',
+                                    'unknown_after_dispatch'
+                                )
+                            ) AS raw_open_count,
+                            COUNT(*) FILTER (
+                                WHERE hold_reason <> ''
+                                  AND status IN (
+                                      'waiting_approval', 'queued', 'claimed', 'dispatching',
+                                      'failed', 'failed_retryable', 'failed_terminal', 'blocked',
+                                      'unknown_after_dispatch'
+                                  )
+                            ) AS held_count,
+                            COUNT(*) FILTER (
+                                WHERE status IN ('failed', 'failed_terminal', 'blocked')
+                            ) AS dlq_count,
+                            COUNT(*) FILTER (
+                                WHERE status = 'unknown_after_dispatch'
+                            ) AS unknown_count,
+                            0::BIGINT AS eligible_count,
                             COUNT(*) FILTER (
                                 WHERE status = 'blocked'
                                   AND updated_at >= CURRENT_TIMESTAMP - make_interval(hours => {BROADCAST_TERMINAL_LOOKBACK_HOURS})
@@ -509,7 +556,7 @@ def _broadcast_job_blocked_backlog() -> DataHealthCheckResult:
                                     WHERE status IN ('blocked', 'failed_terminal')
                                 )
                             )) / 3600 AS oldest_terminal_hours
-                        FROM broadcast_jobs
+                        FROM legacy_broadcast
                         """
                     )
                 )
@@ -523,11 +570,16 @@ def _broadcast_job_blocked_backlog() -> DataHealthCheckResult:
             title=title,
             status="fail",
             severity="red",
-            summary="Broadcast backlog check could not read the live queue.",
+            summary="Legacy broadcast ledger check could not read the live ledger.",
             evidence={"error": type(exc).__name__, "message": str(exc)[:300]},
             remediation="Verify broadcast_jobs migrations and DATABASE_URL read access.",
         )
 
+    raw_open_count = int(row.get("raw_open_count") or 0)
+    held_count = int(row.get("held_count") or 0)
+    dlq_count = int(row.get("dlq_count") or 0)
+    unknown_count = int(row.get("unknown_count") or 0)
+    eligible_count = 0
     blocked_count = int(row.get("recent_blocked_count", row.get("blocked_count")) or 0)
     failed_terminal_count = int(row.get("recent_failed_terminal_count", row.get("failed_terminal_count")) or 0)
     historical_blocked_count = int(row.get("historical_blocked_count") or blocked_count)
@@ -542,6 +594,13 @@ def _broadcast_job_blocked_backlog() -> DataHealthCheckResult:
     if due_retryable_count > BROADCAST_RETRYABLE_DUE_MAX_COUNT:
         violations.append(f"due_retryable_count={due_retryable_count} exceeds {BROADCAST_RETRYABLE_DUE_MAX_COUNT}")
     evidence = {
+        "execution_owner": "legacy_frozen",
+        "execution_semantics": "readonly",
+        "raw_open_count": raw_open_count,
+        "held_count": held_count,
+        "eligible_count": eligible_count,
+        "dlq_count": dlq_count,
+        "unknown_count": unknown_count,
         "blocked_count": blocked_count,
         "failed_terminal_count": failed_terminal_count,
         "historical_blocked_count": historical_blocked_count,
@@ -557,16 +616,16 @@ def _broadcast_job_blocked_backlog() -> DataHealthCheckResult:
             title=title,
             status="fail",
             severity="red",
-            summary="Broadcast queue has blocked, terminal, or excessive due retryable jobs.",
+            summary="Legacy broadcast ledger has recent DLQ entries or excessive frozen retryable history; eligible remains zero.",
             evidence={**evidence, "violations": violations},
-            remediation="Inspect broadcast_job_events, fix terminal causes, and requeue only after operator approval.",
+            remediation="Inspect and classify broadcast history manually; provider work must stay owned by external_effect_job and the legacy worker must remain retired.",
         )
     return DataHealthCheckResult(
         check_id=check_id,
         title=title,
         status="ok",
         severity="green",
-        summary="Broadcast blocked backlog is within threshold.",
+        summary="Legacy broadcast history is visible as a read-only ledger and has no executable rows.",
         evidence=evidence,
         remediation="",
     )
@@ -584,28 +643,60 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
                 session.execute(
                     text(
                         f"""
+                        WITH classified_jobs AS (
+                            SELECT job.*,
+                                   (
+                                       ({direct_canary_job_sql("job")})
+                                       OR ({callback_welcome_failure_sql("job")})
+                                   ) AS id_validation_canary,
+                                   ({callback_welcome_failure_sql("job")})
+                                       AS id_validation_callback_welcome
+                            FROM external_effect_job job
+                        )
                         SELECT
-                            COUNT(*) FILTER (WHERE status = 'failed_retryable') AS failed_retryable_count,
                             COUNT(*) FILTER (
-                                WHERE status = 'failed_terminal'
+                                WHERE NOT id_validation_canary AND status = 'failed_retryable'
+                            ) AS failed_retryable_count,
+                            COUNT(*) FILTER (
+                                WHERE NOT id_validation_canary
+                                  AND status = 'failed_terminal'
                                   AND updated_at >= CURRENT_TIMESTAMP - make_interval(hours => {EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS})
                             ) AS recent_failed_terminal_count,
                             COUNT(*) FILTER (
-                                WHERE status = 'blocked'
+                                WHERE NOT id_validation_canary
+                                  AND status = 'blocked'
                                   AND updated_at >= CURRENT_TIMESTAMP - make_interval(hours => {EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS})
                             ) AS recent_blocked_count,
-                            COUNT(*) FILTER (WHERE status = 'failed_terminal') AS historical_failed_terminal_count,
-                            COUNT(*) FILTER (WHERE status = 'blocked') AS historical_blocked_count,
                             COUNT(*) FILTER (
-                                WHERE status = 'failed_retryable'
+                                WHERE NOT id_validation_canary AND status = 'failed_terminal'
+                            ) AS historical_failed_terminal_count,
+                            COUNT(*) FILTER (
+                                WHERE NOT id_validation_canary AND status = 'blocked'
+                            ) AS historical_blocked_count,
+                            COUNT(*) FILTER (
+                                WHERE NOT id_validation_canary
+                                  AND status = 'failed_retryable'
                                   AND (next_retry_at IS NULL OR next_retry_at <= CURRENT_TIMESTAMP)
                             ) AS due_retryable_count,
                             EXTRACT(EPOCH FROM (
                                 CURRENT_TIMESTAMP - MIN(COALESCE(next_retry_at, updated_at)) FILTER (
-                                    WHERE status = 'failed_retryable'
+                                    WHERE NOT id_validation_canary AND status = 'failed_retryable'
                                 )
-                            )) AS oldest_failed_retryable_age_seconds
-                        FROM external_effect_job
+                            )) AS oldest_failed_retryable_age_seconds,
+                            COUNT(*) FILTER (
+                                WHERE id_validation_canary AND status = 'failed_retryable'
+                            ) AS canary_failed_retryable_count,
+                            COUNT(*) FILTER (
+                                WHERE id_validation_canary AND status = 'failed_terminal'
+                            ) AS canary_failed_terminal_count,
+                            COUNT(*) FILTER (
+                                WHERE id_validation_canary AND status = 'blocked'
+                            ) AS canary_blocked_count,
+                            COUNT(*) FILTER (
+                                WHERE id_validation_callback_welcome
+                                  AND status = 'failed_terminal'
+                            ) AS callback_welcome_failed_terminal_count
+                        FROM classified_jobs
                         """
                     )
                 )
@@ -631,6 +722,10 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
     historical_blocked_count = int(row.get("historical_blocked_count") or blocked_count)
     due_retryable_count = int(row.get("due_retryable_count") or 0)
     oldest_failed_retryable_age_seconds = int(float(row.get("oldest_failed_retryable_age_seconds") or 0))
+    canary_failed_retryable_count = int(row.get("canary_failed_retryable_count") or 0)
+    canary_failed_terminal_count = int(row.get("canary_failed_terminal_count") or 0)
+    canary_blocked_count = int(row.get("canary_blocked_count") or 0)
+    callback_welcome_failed_terminal_count = int(row.get("callback_welcome_failed_terminal_count") or 0)
     violations = []
     if failed_terminal_count > 0:
         violations.append(f"failed_terminal_count={failed_terminal_count} exceeds 0")
@@ -648,6 +743,14 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
         "due_retryable_count": due_retryable_count,
         "oldest_failed_retryable_age_seconds": oldest_failed_retryable_age_seconds,
         "due_retryable_threshold": EXTERNAL_EFFECT_RETRYABLE_DUE_MAX_COUNT,
+        "id_validation_canary": {
+            "failed_retryable_count": canary_failed_retryable_count,
+            "failed_terminal_count": canary_failed_terminal_count,
+            "blocked_count": canary_blocked_count,
+            "callback_welcome_failed_terminal_count": callback_welcome_failed_terminal_count,
+            "excluded_from_business_health": True,
+            "strict_provenance_required": True,
+        },
     }
     if violations:
         return DataHealthCheckResult(
@@ -904,9 +1007,7 @@ def _questionnaire_submission_without_user_guard() -> DataHealthCheckResult:
         "guarded_missing_unionid_count": int(row.get("guarded_missing_unionid_count") or 0),
         "unguarded_missing_unionid_count": int(row.get("unguarded_missing_unionid_count") or 0),
         "missing_continuation_guard_count": int(row.get("missing_continuation_guard_count") or 0),
-        "identity_dependent_effect_without_unionid_count": int(
-            row.get("identity_dependent_effect_without_unionid_count") or 0
-        ),
+        "identity_dependent_effect_without_unionid_count": int(row.get("identity_dependent_effect_without_unionid_count") or 0),
         "missing_identity_count": int(row.get("missing_identity_count") or 0),
         "historical_pre_cutover_count": int(row.get("historical_pre_cutover_count") or 0),
         "cutover_at": QUESTIONNAIRE_AUTO_EXECUTE_CUTOVER_AT,
@@ -1218,14 +1319,51 @@ def _wecom_media_lease_health() -> DataHealthCheckResult:
             row = (
                 session.execute(
                     text(
-                        """
+                        f"""
+                        WITH classified_leases AS (
+                            SELECT lease.*,
+                                   EXISTS (
+                                       SELECT 1
+                                       FROM external_effect_job canary_job
+                                       WHERE canary_job.target_type = 'media_library_material'
+                                         AND canary_job.target_id = CONCAT(
+                                             lease.material_kind, ':', lease.material_id, ':', lease.upload_kind
+                                         )
+                                         AND ({direct_canary_job_sql("canary_job")})
+                                   ) AS id_validation_canary_referenced,
+                                   EXISTS (
+                                       SELECT 1
+                                       FROM external_effect_job ordinary_job
+                                       WHERE ordinary_job.target_type = 'media_library_material'
+                                         AND ordinary_job.target_id = CONCAT(
+                                             lease.material_kind, ':', lease.material_id, ':', lease.upload_kind
+                                         )
+                                         AND NOT ({direct_canary_job_sql("ordinary_job")})
+                                   ) AS ordinary_job_referenced
+                            FROM wecom_media_leases lease
+                            WHERE lease.tenant_id = 'aicrm'
+                        )
                         SELECT
                             COUNT(*) AS total_count,
                             COUNT(*) FILTER (WHERE status = 'ready' AND provider_expires_at > CURRENT_TIMESTAMP) AS ready_count,
                             COUNT(*) FILTER (WHERE status = 'ready' AND refresh_after <= CURRENT_TIMESTAMP) AS refresh_due_count,
                             COUNT(*) FILTER (WHERE status = 'refreshing') AS refreshing_count,
-                            COUNT(*) FILTER (WHERE status = 'failed') AS failed_count,
-                            COUNT(*) FILTER (WHERE status = 'invalid_source') AS invalid_source_count,
+                            COUNT(*) FILTER (
+                                WHERE status = 'failed'
+                                  AND NOT (id_validation_canary_referenced AND NOT ordinary_job_referenced)
+                            ) AS failed_count,
+                            COUNT(*) FILTER (
+                                WHERE status = 'invalid_source'
+                                  AND NOT (id_validation_canary_referenced AND NOT ordinary_job_referenced)
+                            ) AS invalid_source_count,
+                            COUNT(*) FILTER (
+                                WHERE status = 'failed'
+                                  AND id_validation_canary_referenced AND NOT ordinary_job_referenced
+                            ) AS canary_failed_count,
+                            COUNT(*) FILTER (
+                                WHERE status = 'invalid_source'
+                                  AND id_validation_canary_referenced AND NOT ordinary_job_referenced
+                            ) AS canary_invalid_source_count,
                             COUNT(*) FILTER (WHERE status = 'ready' AND provider_expires_at <= CURRENT_TIMESTAMP) AS expired_count,
                             (
                                 SELECT COUNT(*) FROM (
@@ -1240,8 +1378,7 @@ def _wecom_media_lease_health() -> DataHealthCheckResult:
                                       AND COALESCE(thumb_image_base64, '') = ''
                                 ) source_gaps
                             ) AS source_gap_count
-                        FROM wecom_media_leases
-                        WHERE tenant_id = 'aicrm'
+                        FROM classified_leases
                         """
                     )
                 )

@@ -280,6 +280,37 @@ class IdentityBridgeService:
             reason, failure = _adapter_failure(exc)
             return {"status": "failed", "reason": reason, **failure}
 
+    def apply_external_contact_detail(
+        self,
+        *,
+        detail_payload: dict[str, Any],
+        external_userid: str,
+        owner_userid: str = "",
+        corp_id: str = "",
+    ) -> dict[str, Any]:
+        """Apply an already-persisted provider result without any provider call."""
+
+        external = text(external_userid)
+        if not external:
+            return {"status": "failed", "reason": "external_userid_missing", "real_external_call_executed": False}
+        effective_corp_id, corp_error = _single_corp_id(corp_id)
+        if corp_error:
+            return {"status": "failed", "reason": corp_error, "real_external_call_executed": False}
+        detail = dict(detail_payload or {})
+        detail_external = text((detail.get("external_contact") or {}).get("external_userid"))
+        if detail_external and detail_external != external:
+            return {"status": "failed", "reason": "provider_target_mismatch", "real_external_call_executed": False}
+        preferred_owner = _preferred_owner_userid(owner_userid, detail)
+        result = self._sync_external_contact_identity_for_detail(
+            detail_payload=detail,
+            external_userid=external,
+            owner_userid=preferred_owner,
+            corp_id=effective_corp_id,
+        )
+        result["real_external_call_executed"] = False
+        result["provider_result_applied"] = True
+        return result
+
     def ensure_external_contact_identity_for_sidebar(
         self,
         *,
@@ -309,27 +340,30 @@ class IdentityBridgeService:
                 "mobile_bound": bool(state.get("mobile_bound")),
                 "age_seconds": state.get("age_seconds"),
             }
-        result = self.sync_external_contact_identity_for_event(
-            {
+        from . import repo as channel_repo
+
+        planned = channel_repo.enqueue_channel_entry_identity_resolution(
+            corp_id=text(corp_id),
+            external_userid=normalized_external_userid,
+            follow_user_userid=text(owner_userid),
+            payload_json={
                 "Event": "change_external_contact",
                 "ChangeType": "edit_external_contact",
                 "ExternalUserID": normalized_external_userid,
                 "UserID": text(owner_userid),
+                "source": "sidebar_identity_refresh",
             },
-            corp_id=text(corp_id),
+            reason=reason,
         )
-        mobile_binding = dict((result or {}).get("mobile_binding") or {})
-        questionnaire_backfill = dict((result or {}).get("questionnaire_backfill") or {})
         return {
-            "status": "attempted",
+            "status": "queued" if planned.get("external_effect_job_id") else "held",
             "reason": reason,
-            "sync_status": text((result or {}).get("status")),
-            "sync_reason": text((result or {}).get("reason")),
-            "unionid_present": bool((result or {}).get("unionid_present")),
-            "openid_present": bool((result or {}).get("openid_present")),
-            "mobile_binding_status": text(mobile_binding.get("status")),
-            "mobile_bound": text(mobile_binding.get("status")) in {"bound", "already_bound"},
-            "questionnaire_updated_count": int(questionnaire_backfill.get("updated_count") or 0),
+            "external_effect_job_id": int(planned.get("external_effect_job_id") or 0) or None,
+            "execution_id": text(planned.get("execution_id")),
+            "unionid_present": bool(state.get("unionid_present")),
+            "openid_present": bool(state.get("openid_present")),
+            "mobile_bound": bool(state.get("mobile_bound")),
+            "real_external_call_executed": False,
         }
 
 

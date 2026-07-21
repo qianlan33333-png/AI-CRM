@@ -8,6 +8,9 @@ from typing import Any, Callable
 
 from aicrm_next.identity_contact.dto import IdentityResolveResult, ResolvePersonIdentityRequest
 from aicrm_next.identity_contact.resolver import classify_identity_candidates, resolve_identity_with_dbapi, resolved_unionid
+from aicrm_next.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform_foundation.external_effects import WECOM_MESSAGE_PRIVATE_SEND
+from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
 from aicrm_next.shared.errors import ContractError
 from aicrm_next.shared.postgres_connection import get_db
 from aicrm_next.shared.runtime import database_mode
@@ -25,11 +28,7 @@ def _json_dumps(value: Any) -> str:
 
 def _recipient_external_userid(input_data: dict[str, Any]) -> str:
     recipient = input_data.get("recipient") if isinstance(input_data.get("recipient"), dict) else {}
-    return clean_text(
-        recipient.get("externalUserId")
-        or recipient.get("external_user_id")
-        or recipient.get("external_userid")
-    )
+    return clean_text(recipient.get("externalUserId") or recipient.get("external_user_id") or recipient.get("external_userid"))
 
 
 def _recipient_unionid(input_data: dict[str, Any]) -> str:
@@ -75,10 +74,7 @@ def _recipient_snapshot(input_data: dict[str, Any]) -> dict[str, str]:
 
 def _operator(input_data: dict[str, Any]) -> str:
     return clean_text(
-        input_data.get("operatorMemberId")
-        or input_data.get("operator_member_id")
-        or input_data.get("operatorAccount")
-        or input_data.get("operator_account")
+        input_data.get("operatorMemberId") or input_data.get("operator_member_id") or input_data.get("operatorAccount") or input_data.get("operator_account")
     )
 
 
@@ -108,7 +104,9 @@ class GroupOpsActionCommand:
 
 
 class GroupOpsActionAudit:
-    def record(self, *, command: GroupOpsActionCommand, action_type: str, status: str, side_effect_executed: bool, detail: dict[str, Any] | None = None) -> dict[str, Any]:
+    def record(
+        self, *, command: GroupOpsActionCommand, action_type: str, status: str, side_effect_executed: bool, detail: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         return {
             "audit_type": "group_ops_action",
             "plan_id": int(command.plan_id),
@@ -128,9 +126,11 @@ class NextOutboundMessageQueueGateway:
         *,
         insert_job: Callable[..., int] | None = None,
         fetch_job_by_idempotency_key: Callable[[str], dict[str, Any] | None] | None = None,
+        external_effect_service: ExternalEffectService | None = None,
     ) -> None:
         self._insert_job = insert_job
         self._fetch_job_by_idempotency_key = fetch_job_by_idempotency_key
+        self._external_effect_service = external_effect_service or ExternalEffectService()
 
     def enqueue_private_message(self, command: GroupOpsActionCommand) -> dict[str, Any]:
         payload = {
@@ -145,69 +145,56 @@ class NextOutboundMessageQueueGateway:
         if self._insert_job is not None:
             job_id = int(self._insert_job(command=command, source_id=source_id, payload=payload) or 0)
             return {"status": "queued" if job_id else "duplicate", "job_id": job_id, "source_id": source_id, "content_payload": payload}
-        existing = self._fetch_existing(command.idempotency_key)
-        if existing:
-            return {"status": "duplicate", "job_id": int(existing.get("id") or 0), "source_id": source_id, "content_payload": payload}
-        job_id = self._insert_broadcast_job(command=command, source_id=source_id, payload=payload)
-        if not job_id:
-            existing = self._fetch_existing(command.idempotency_key) or {}
-            return {"status": "duplicate", "job_id": int(existing.get("id") or 0), "source_id": source_id, "content_payload": payload}
-        return {"status": "queued", "job_id": int(job_id), "source_id": source_id, "content_payload": payload}
-
-    def _fetch_existing(self, idempotency_key: str) -> dict[str, Any] | None:
-        if self._fetch_job_by_idempotency_key is not None:
-            return self._fetch_job_by_idempotency_key(idempotency_key)
-        db = get_db()
-        row = db.execute(
-            """
-            SELECT id, status, idempotency_key
-            FROM broadcast_jobs
-            WHERE idempotency_key = ?
-            ORDER BY id DESC
-            LIMIT 1
-            """,
-            (idempotency_key,),
-        ).fetchone()
-        return dict(row) if row else None
-
-    def _insert_broadcast_job(self, *, command: GroupOpsActionCommand, source_id: str, payload: dict[str, Any]) -> int:
-        if not command.unionid:
-            raise ContractError("unionid is required for group ops broadcast job")
-        db = get_db()
-        row = db.execute(
-            """
-            INSERT INTO broadcast_jobs (
-                source_type, source_id, source_table, scheduled_for, priority, batch_key,
-                business_domain, idempotency_key, channel, target_kind, retry_policy_json, metadata_json,
-                status, requires_approval,
-                target_unionids_json, target_count, target_summary,
-                content_type, content_payload, content_summary,
-                trace_id, created_by
-            ) VALUES (
-                'workflow', ?, 'automation_group_ops_plans', ?, 100, '',
-                'group_ops', ?, 'wecom_private', 'unionid', '{}'::jsonb, CAST(? AS jsonb),
-                'queued', FALSE,
-                CAST(? AS jsonb), 1, '1 unionid',
-                'private_message', CAST(? AS jsonb), ?,
-                ?, ?
-            )
-            ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL AND idempotency_key <> '' DO NOTHING
-            RETURNING id
-            """,
-            (
-                source_id,
-                _now_iso(),
-                command.idempotency_key,
-                _json_dumps({"recipient": command.recipient, "action_type": command.action["action_type"]}),
-                _json_dumps([command.unionid]),
-                _json_dumps(payload),
-                command.content[:500],
-                command.idempotency_key,
-                command.created_by,
+        planned = self._external_effect_service.plan_effect(
+            effect_type=WECOM_MESSAGE_PRIVATE_SEND,
+            adapter_name="wecom_private_message",
+            operation="send_private_message",
+            target_type="external_contact",
+            target_id=command.external_userid,
+            business_type="group_ops_action",
+            business_id=f"{command.plan_id}:{command.trigger_event_id}",
+            payload={
+                "channel": "wecom_private",
+                "owner_userid": command.sender,
+                "sender": command.sender,
+                "external_userids": [command.external_userid],
+                "target_unionid": command.unionid,
+                "content_text": command.content,
+                "attachments": [],
+                "source": "automation_engine.group_ops.action_dispatcher",
+            },
+            payload_summary={
+                "channel": "wecom_private",
+                "external_userid_count": 1,
+                "content_text_length": len(command.content),
+                "target_unionid_present": bool(command.unionid),
+            },
+            context=CommandContext(
+                actor_id=command.sender or command.created_by,
+                actor_type="system",
+                request_id=command.idempotency_key,
+                trace_id=command.idempotency_key,
+                source_route="/api/automation/group-ops/webhooks/{webhook_key}",
             ),
-        ).fetchone()
-        db.commit()
-        return int((row or {}).get("id") or 0)
+            source_module="automation_engine.group_ops.action_dispatcher",
+            source_event_id=command.trigger_event_id,
+            source_command_id=source_id,
+            risk_level="medium",
+            execution_mode="execute",
+            status="queued",
+            idempotency_key=f"group-ops-private-effect:{command.idempotency_key}",
+            lane="wecom_interactive",
+            ordering_key=f"group_ops_contact:{command.external_userid}",
+            fairness_key=f"group_ops_plan:{command.plan_id}",
+        )
+        return {
+            "status": "queued" if planned.get("created_on_plan") is not False else "duplicate",
+            "job_id": int(planned.get("id") or 0),
+            "source_id": source_id,
+            "content_payload": payload,
+            "execution_id": clean_text(planned.get("execution_id")),
+            "execution_owner": "external_effect_job",
+        }
 
 
 class GroupOpsActionDispatcher:
@@ -236,6 +223,8 @@ class GroupOpsActionDispatcher:
                 "ok": True,
                 "status": queued["status"],
                 "action_ref_id": str(queued.get("job_id") or ""),
+                "execution_id": clean_text(queued.get("execution_id")),
+                "execution_owner": clean_text(queued.get("execution_owner")),
                 "side_effect_executed": False,
                 "audit": audit,
             }

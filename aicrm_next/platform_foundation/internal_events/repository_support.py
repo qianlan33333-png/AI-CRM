@@ -44,25 +44,102 @@ LEASE_TIMEOUT = timedelta(minutes=5)
 def automatic_due_predicate_sql(alias: str = "r") -> str:
     return f"""
         (
+            {alias}.hold_reason = ''
+            AND
             (
-                {alias}.status = 'pending'
-                AND ({alias}.locked_at IS NULL OR {alias}.locked_at <= CURRENT_TIMESTAMP - INTERVAL '5 minutes')
-            )
-            OR (
-                {alias}.status = 'failed_retryable'
-                AND ({alias}.next_retry_at IS NULL OR {alias}.next_retry_at <= CURRENT_TIMESTAMP)
-                AND ({alias}.locked_at IS NULL OR {alias}.locked_at <= CURRENT_TIMESTAMP - INTERVAL '5 minutes')
-            )
-            OR (
-                {alias}.status = 'running'
-                AND {alias}.locked_at IS NOT NULL
-                AND {alias}.locked_at <= CURRENT_TIMESTAMP - INTERVAL '5 minutes'
+                (
+                    {alias}.status = 'pending'
+                    AND ({alias}.locked_at IS NULL OR {alias}.locked_at <= CURRENT_TIMESTAMP - INTERVAL '5 minutes')
+                )
+                OR (
+                    {alias}.status = 'failed_retryable'
+                    AND ({alias}.next_retry_at IS NULL OR {alias}.next_retry_at <= CURRENT_TIMESTAMP)
+                    AND ({alias}.locked_at IS NULL OR {alias}.locked_at <= CURRENT_TIMESTAMP - INTERVAL '5 minutes')
+                )
+                OR (
+                    {alias}.status = 'running'
+                    AND {alias}.locked_at IS NOT NULL
+                    AND {alias}.locked_at <= CURRENT_TIMESTAMP - INTERVAL '5 minutes'
+                )
             )
         )
     """
 
 
+def queue_metric_filter_sql(
+    filters: dict[str, Any],
+    *,
+    event_consumer_pair_clause: Callable[[Any, dict[str, Any]], str],
+) -> tuple[str, dict[str, Any]]:
+    clauses: list[str] = []
+    params: dict[str, Any] = {}
+    if _text(filters.get("event_type")):
+        clauses.append("e.event_type = :event_type")
+        params["event_type"] = _text(filters.get("event_type"))
+    event_section = _text(filters.get("event_section"))
+    if event_section and not _text(filters.get("event_type")):
+        known_types = sorted({event_type for values in EVENT_SECTION_EVENT_TYPES.values() for event_type in values})
+        section_types = list(EVENT_SECTION_EVENT_TYPES.get(event_section, ()))
+        if section_types:
+            clauses.append("e.event_type = ANY(:metric_event_section_types)")
+            params["metric_event_section_types"] = section_types
+        elif event_section == "other" and known_types:
+            clauses.append("NOT (e.event_type = ANY(:metric_known_event_types))")
+            params["metric_known_event_types"] = known_types
+    for key in (
+        "aggregate_type",
+        "aggregate_id",
+        "subject_type",
+        "subject_id",
+        "trace_id",
+        "idempotency_key",
+        "source_module",
+    ):
+        value = _text(filters.get(key))
+        if value:
+            clauses.append(f"e.{key} = :metric_{key}")
+            params[f"metric_{key}"] = value
+    trace_hashes = _trace_hash_candidates(filters)
+    if trace_hashes:
+        trace_clauses: list[str] = []
+        for index, trace_hash in enumerate(trace_hashes):
+            param_key = f"metric_original_trace_hash_{index}"
+            trace_clauses.append(
+                f"(e.payload_json -> 'broadcast_task' ->> 'original_trace_hash' = :{param_key} "
+                f"OR e.payload_json -> 'broadcast_task' ->> 'trace_id_hash' = :{param_key})"
+            )
+            params[param_key] = trace_hash
+        clauses.append("(" + " OR ".join(trace_clauses) + ")")
+    for key, operator in (("created_from", ">="), ("created_to", "<=")):
+        value = _text(filters.get(key))
+        if value:
+            clauses.append(f"e.created_at {operator} CAST(:metric_{key} AS timestamptz)")
+            params[f"metric_{key}"] = value
+    for source_key, column, param_key in (
+        ("event_types", "e.event_type", "event_types"),
+        ("consumer_names", "r.consumer_name", "consumer_names"),
+    ):
+        values = [_text(item) for item in filters.get(source_key) or [] if _text(item)]
+        if values:
+            clauses.append(f"{column} = ANY(:{param_key})")
+            params[param_key] = values
+    for source_key, column, param_key in (
+        ("consumer_name", "r.consumer_name", "consumer_name"),
+        ("consumer_status", "r.status", "metric_consumer_status"),
+    ):
+        value = _text(filters.get(source_key))
+        if value:
+            clauses.append(f"{column} = :{param_key}")
+            params[param_key] = value
+    pair_clause = event_consumer_pair_clause(filters.get("event_consumers"), params)
+    if pair_clause:
+        clauses.append(pair_clause)
+    return ("WHERE " + " AND ".join(clauses) if clauses else ""), params
+
+
 def _run_is_automatically_due(row: dict[str, Any], *, now: datetime) -> bool:
+    if _text(row.get("hold_reason")):
+        return False
     status = _text(row.get("status"))
     if status not in AUTOMATIC_PENDING_STATUSES and status != "running":
         return False
@@ -196,11 +273,22 @@ def _public_run(row: dict[str, Any] | None) -> InternalEventConsumerRun | None:
         return None
     payload = dict(row)
     payload["result_summary_json"] = _json_obj(payload.get("result_summary_json"))
-    for key in ("next_retry_at", "locked_at", "created_at", "updated_at", "finished_at"):
+    for key in (
+        "available_at",
+        "next_retry_at",
+        "locked_at",
+        "lease_expires_at",
+        "heartbeat_at",
+        "created_at",
+        "updated_at",
+        "finished_at",
+        "hold_at",
+    ):
         payload[key] = public_datetime(payload.get(key))
     payload["id"] = int(payload.get("id") or 0)
     payload["attempt_count"] = int(payload.get("attempt_count") or 0)
     payload["max_attempts"] = int(payload.get("max_attempts") or 0)
+    payload["worker_generation"] = int(payload.get("worker_generation") or 0)
     return InternalEventConsumerRun(**payload)
 
 
@@ -223,10 +311,22 @@ def _public_outbox(row: dict[str, Any] | None) -> InternalEventOutboxRecord | No
     payload = dict(row)
     for key in ("payload_json", "payload_summary_json"):
         payload[key] = _json_obj(payload.get(key))
-    for key in ("occurred_at", "next_retry_at", "locked_at", "created_at", "updated_at", "relayed_at"):
+    for key in (
+        "occurred_at",
+        "available_at",
+        "next_retry_at",
+        "locked_at",
+        "lease_expires_at",
+        "heartbeat_at",
+        "created_at",
+        "updated_at",
+        "relayed_at",
+        "hold_at",
+    ):
         payload[key] = public_datetime(payload.get(key))
     for key in ("id", "event_version", "attempt_count", "max_attempts"):
         payload[key] = int(payload.get(key) or 0)
+    payload["worker_generation"] = int(payload.get("worker_generation") or 0)
     return InternalEventOutboxRecord(**payload)
 
 
@@ -273,6 +373,25 @@ class InternalEventRepository:
 
     def list_consumer_runs(self, filters: dict[str, Any] | None = None, *, limit: int = 100, offset: int = 0) -> tuple[list[InternalEventConsumerRun], int]:
         raise NotImplementedError
+
+    def list_consumer_runs_for_events(
+        self,
+        event_ids: list[str],
+    ) -> dict[str, list[InternalEventConsumerRun]]:
+        """Return consumer runs grouped by event.
+
+        Concrete repositories override this with one batch query.  The fallback
+        keeps small test doubles source-compatible while they migrate to the
+        batch contract.
+        """
+
+        grouped: dict[str, list[InternalEventConsumerRun]] = {
+            _text(event_id): [] for event_id in event_ids if _text(event_id)
+        }
+        for event_id in grouped:
+            runs, _ = self.list_consumer_runs({"event_id": event_id}, limit=200)
+            grouped[event_id] = runs
+        return grouped
 
     def get_consumer_run(self, event_id: str, consumer_name: str) -> InternalEventConsumerRun | None:
         raise NotImplementedError
@@ -323,6 +442,7 @@ class InternalEventRepository:
         *,
         locked_by: str,
         expected_lease_token: str = "",
+        expected_generation: int = 0,
     ) -> InternalEventConsumerRun | None:
         raise NotImplementedError
 
@@ -337,6 +457,7 @@ class InternalEventRepository:
         error_message: str = "",
         next_retry_at: datetime | None = None,
         expected_lease_token: str = "",
+        expected_generation: int = 0,
     ) -> InternalEventConsumerRun | None:
         raise NotImplementedError
 

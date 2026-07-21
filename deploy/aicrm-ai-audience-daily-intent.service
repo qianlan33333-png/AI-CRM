@@ -1,0 +1,12 @@
+[Unit]
+Description=AI Audience daily clock intent writer (no inline refresh or external call)
+After=network.target openclaw-wecom-postgres.service
+Requires=openclaw-wecom-postgres.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/极简 crm
+EnvironmentFile=/home/ubuntu/.openclaw-wecom-pg.env
+ExecStartPre=/bin/bash -c 'source /home/ubuntu/venvs/openclaw/bin/activate && python scripts/ops/check_ai_audience_refresh_owner.py --code-only'
+ExecStart=/bin/bash -c 'source /home/ubuntu/venvs/openclaw/bin/activate && python scripts/run_ai_audience_scheduler.py --daily-only --daily-at 02:00'

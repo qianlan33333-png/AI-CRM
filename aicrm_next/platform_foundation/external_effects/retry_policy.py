@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -25,7 +26,8 @@ BLOCKED_ERROR_CODES = {
     "push_capability_readonly",
 }
 
-_RETRY_DELAYS_SECONDS = (60, 300, 900, 3600)
+_BASE_RETRY_SECONDS = 60
+_MAX_RETRY_SECONDS = 3600
 
 
 def classify_error_code(error_code: str, *, status_code: int | None = None) -> str:
@@ -47,8 +49,8 @@ def classify_error_code(error_code: str, *, status_code: int | None = None) -> s
 
 
 def retry_delay_seconds(attempt_count: int) -> int:
-    index = max(0, min(int(attempt_count or 0), len(_RETRY_DELAYS_SECONDS) - 1))
-    return _RETRY_DELAYS_SECONDS[index]
+    exponent = max(0, min(int(attempt_count or 0), 16))
+    return min(_MAX_RETRY_SECONDS, _BASE_RETRY_SECONDS * (2**exponent))
 
 
 def next_retry_at(
@@ -56,16 +58,24 @@ def next_retry_at(
     *,
     now: datetime | None = None,
     retry_after_seconds: int | float | None = None,
+    jitter_ratio: float = 0.2,
 ) -> datetime:
     current = now or datetime.now(timezone.utc)
     if current.tzinfo is None:
         current = current.replace(tzinfo=timezone.utc)
-    policy_delay = retry_delay_seconds(attempt_count)
-    try:
-        provider_delay = max(0, min(float(retry_after_seconds or 0), 86400))
-    except (TypeError, ValueError):
-        provider_delay = 0
-    return current + timedelta(seconds=max(policy_delay, provider_delay))
+    if retry_after_seconds is not None:
+        try:
+            provider_delay = max(0.0, min(float(retry_after_seconds), 86400.0))
+        except (TypeError, ValueError):
+            provider_delay = None
+        if provider_delay is not None:
+            return current + timedelta(seconds=provider_delay)
+    policy_delay = float(retry_delay_seconds(attempt_count))
+    ratio = max(0.0, min(float(jitter_ratio or 0.0), 0.5))
+    if ratio:
+        random_unit = secrets.randbelow(2_000_001) / 1_000_000 - 1.0
+        policy_delay *= 1.0 + ratio * random_unit
+    return current + timedelta(seconds=max(1.0, policy_delay))
 
 
 def status_for_failure(*, error_code: str, attempt_count: int, max_attempts: int, status_code: int | None = None) -> str:

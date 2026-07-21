@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 4,
   "timer_service_drain_timeout_seconds": 600,
   "primary_web": {
     "service": "openclaw-wecom-postgres.service"
@@ -10,51 +10,152 @@
       "health_url": "http://127.0.0.1:5002/health"
     },
     {
-      "service": "openclaw-wecom-callback-inbox-worker.service",
+      "service": "aicrm-internal-queue-runtime.service",
+      "stop_for_migration": true
+    },
+    {
+      "service": "aicrm-inbox-queue-runtime.service",
+      "stop_for_migration": true
+    },
+    {
+      "service": "aicrm-external-queue-runtime.service",
       "stop_for_migration": true
     }
   ],
   "active_autostart": [
     {
-      "timer": "openclaw-ai-audience-scheduler.timer",
-      "service": "openclaw-ai-audience-scheduler.service",
-      "internal_event_relay_role": "consumer_only",
-      "kick_after_timer_restart": true
-    },
-    {
-      "timer": "openclaw-broadcast-queue-worker.timer",
-      "service": "openclaw-broadcast-queue-worker.service",
-      "kick_after_timer_restart": true
-    },
-    {
-      "timer": "openclaw-internal-event-worker.timer",
-      "service": "openclaw-internal-event-worker.service",
-      "internal_event_relay_role": "owner",
-      "kick_after_timer_restart": true
-    },
-    {
-      "timer": "openclaw-external-effect-worker.timer",
-      "service": "openclaw-external-effect-worker.service"
+      "timer": "aicrm-queue-invariant-check.timer",
+      "service": "aicrm-queue-invariant-check.service"
     },
     {
       "timer": "openclaw-wechat-pay-order-reconciliation-worker.timer",
       "service": "openclaw-wechat-pay-order-reconciliation-worker.service"
-    },
-    {
-      "timer": "openclaw-identity-resolution-worker.timer",
-      "service": "openclaw-identity-resolution-worker.service"
-    },
-    {
-      "timer": "openclaw-customer-read-model-refresh.timer",
-      "service": "openclaw-customer-read-model-refresh.service",
-      "kick_after_timer_restart": true,
-      "kick_failure_fatal": true
-    },
-    {
-      "timer": "openclaw-automation-ops-scheduler.timer",
-      "service": "openclaw-automation-ops-scheduler.service"
     }
   ],
+  "cutover_replacement_autostart": {
+    "owner_inventory": "pr3",
+    "timers": [
+      {
+        "timer": "aicrm-ai-audience-daily-intent.timer",
+        "service": "aicrm-ai-audience-daily-intent.service"
+      },
+      {
+        "timer": "aicrm-next-broadcast-delegation.timer",
+        "service": "aicrm-next-broadcast-delegation.service"
+      },
+      {
+        "timer": "aicrm-next-group-ops-planning.timer",
+        "service": "aicrm-next-group-ops-planning.service"
+      }
+    ]
+  },
+  "cutover_managed_legacy": {
+    "owner_inventory": "pr3",
+    "timers": [
+      {
+        "timer": "openclaw-internal-event-worker.timer",
+        "service": "openclaw-internal-event-worker.service"
+      },
+      {
+        "timer": "openclaw-external-effect-worker.timer",
+        "service": "openclaw-external-effect-worker.service"
+      },
+      {
+        "timer": "openclaw-broadcast-queue-worker.timer",
+        "service": "openclaw-broadcast-queue-worker.service"
+      },
+      {
+        "timer": "openclaw-ai-audience-scheduler.timer",
+        "service": "openclaw-ai-audience-scheduler.service"
+      },
+      {
+        "timer": "openclaw-identity-resolution-worker.timer",
+        "service": "openclaw-identity-resolution-worker.service"
+      },
+      {
+        "timer": "openclaw-customer-read-model-refresh.timer",
+        "service": "openclaw-customer-read-model-refresh.service"
+      },
+      {
+        "timer": "openclaw-automation-ops-scheduler.timer",
+        "service": "openclaw-automation-ops-scheduler.service"
+      }
+    ],
+    "persistent_services": [
+      {
+        "service": "openclaw-wecom-callback-inbox-worker.service"
+      }
+    ]
+  },
+  "cutover_successor_matrix": {
+    "owner_inventory": "pr3",
+    "owners": [
+      {
+        "legacy_owner": "openclaw-internal-event-worker.timer",
+        "capability": "internal_event_dispatch",
+        "successor_kind": "persistent_service",
+        "successor_unit": "aicrm-internal-queue-runtime.service",
+        "health_contract": "queue_worker_heartbeat:aicrm-internal_event-runtime",
+        "backlog_contract": "internal_event_consumer_run"
+      },
+      {
+        "legacy_owner": "openclaw-external-effect-worker.timer",
+        "capability": "external_effect_dispatch",
+        "successor_kind": "persistent_service",
+        "successor_unit": "aicrm-external-queue-runtime.service",
+        "health_contract": "queue_worker_heartbeat:aicrm-external_effect-runtime",
+        "backlog_contract": "external_effect_job"
+      },
+      {
+        "legacy_owner": "openclaw-broadcast-queue-worker.timer",
+        "capability": "broadcast_external_effect_delegation",
+        "successor_kind": "timer",
+        "successor_unit": "aicrm-next-broadcast-delegation.timer",
+        "health_contract": "systemd_timer:aicrm-next-broadcast-delegation.timer",
+        "backlog_contract": "broadcast_jobs"
+      },
+      {
+        "legacy_owner": "openclaw-ai-audience-scheduler.timer",
+        "capability": "ai_audience_daily_intent",
+        "successor_kind": "timer",
+        "successor_unit": "aicrm-ai-audience-daily-intent.timer",
+        "health_contract": "systemd_timer:aicrm-ai-audience-daily-intent.timer",
+        "backlog_contract": "ai_audience_package_intent"
+      },
+      {
+        "legacy_owner": "openclaw-identity-resolution-worker.timer",
+        "capability": "identity_resolution_effect_execution",
+        "successor_kind": "persistent_service",
+        "successor_unit": "aicrm-external-queue-runtime.service",
+        "health_contract": "queue_worker_heartbeat:aicrm-external_effect-runtime",
+        "backlog_contract": "crm_user_identity_resolution_queue+external_effect_job"
+      },
+      {
+        "legacy_owner": "openclaw-customer-read-model-refresh.timer",
+        "capability": "customer_read_model_refresh",
+        "successor_kind": "persistent_service",
+        "successor_unit": "aicrm-internal-queue-runtime.service",
+        "health_contract": "queue_worker_heartbeat:aicrm-internal_event-runtime",
+        "backlog_contract": "customer_read_model_refresh_intent+internal_event_consumer_run"
+      },
+      {
+        "legacy_owner": "openclaw-automation-ops-scheduler.timer",
+        "capability": "group_ops_effect_graph_planning",
+        "successor_kind": "timer",
+        "successor_unit": "aicrm-next-group-ops-planning.timer",
+        "health_contract": "systemd_timer:aicrm-next-group-ops-planning.timer",
+        "backlog_contract": "automation_group_ops_plan+automation_group_ops_effect_graph"
+      },
+      {
+        "legacy_owner": "openclaw-wecom-callback-inbox-worker.service",
+        "capability": "wecom_callback_inbox_dispatch",
+        "successor_kind": "persistent_service",
+        "successor_unit": "aicrm-inbox-queue-runtime.service",
+        "health_contract": "queue_worker_heartbeat:aicrm-webhook_inbox-runtime",
+        "backlog_contract": "webhook_inbox"
+      }
+    ]
+  },
   "approval_required": [
     {
       "timer": "aicrm-wechat-shop-order-sync.timer",

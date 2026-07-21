@@ -3,9 +3,11 @@ from __future__ import annotations
 from dataclasses import replace
 import logging
 from typing import Any
+from urllib.parse import urlparse
 from uuid import uuid4
 
 from aicrm_next.platform_foundation.push_center.capability_registry import capability_for_section
+from aicrm_next.shared.automation_agent_webhook_contract import automation_agent_code_from_webhook_url
 from aicrm_next.platform_foundation.push_center.section_mapper import section_for_job
 from aicrm_next.shared.runtime_settings import runtime_bool, runtime_setting
 from aicrm_next.shared.safe_logging import safe_log_exception
@@ -28,6 +30,7 @@ from .models import (
 )
 from .repo import ExternalEffectRepository, build_external_effect_repository
 from .retry_policy import next_retry_at, status_for_failure
+from .rate_limit import is_rate_limited
 
 LOGGER = logging.getLogger(__name__)
 
@@ -39,6 +42,30 @@ def _enabled(name: str) -> bool:
 def _is_test_job(job: ExternalEffectJob) -> bool:
     payload = dict(job.payload_json or {})
     return payload.get("execution_scope") == "test_loopback" or payload.get("is_test") is True
+
+
+def _test_only_adapter_gate_error(job: ExternalEffectJob) -> str:
+    """Allow only loopbacks that cannot reach a real provider adapter."""
+
+    payload = dict(job.payload_json or {})
+    if payload.get("execution_scope") != "test_loopback" or payload.get("is_test") is not True:
+        return "test_execution_scope_invalid"
+    adapter_name = str(job.adapter_name or "").strip()
+    target_url = str(payload.get("webhook_url") or payload.get("target_url") or "").strip()
+    if adapter_name == "outbound_webhook":
+        from .test_receiver import TEST_RECEIVER_PATH_PREFIX
+
+        if (
+            urlparse(target_url).path == TEST_RECEIVER_PATH_PREFIX
+            and bool(str(payload.get("expected_payload_hash") or "").strip())
+        ):
+            return ""
+        return "test_receiver_contract_invalid"
+    if adapter_name == "webhook":
+        if automation_agent_code_from_webhook_url(target_url):
+            return ""
+        return "test_internal_webhook_contract_invalid"
+    return "test_execution_adapter_not_allowed"
 
 
 def _capability_gate_error(job: ExternalEffectJob) -> str:
@@ -136,6 +163,19 @@ class ExternalEffectWorker:
                 "real_external_call_executed": False,
             }
 
+        if not self._repo.direct_claims_allowed():
+            return {
+                "ok": True,
+                "items": [],
+                "counts": self._empty_counts(),
+                "quarantined_stale_dispatching_count": 0,
+                "dry_run": False,
+                "test_only": bool(test_only),
+                "owner_disabled": True,
+                "reason": "postgres_queue_runtime_is_active",
+                "real_external_call_executed": False,
+            }
+
         quarantined_count = self._repo.quarantine_stale_dispatching()
         jobs = self._repo.acquire_due_jobs(
             limit=batch_size,
@@ -194,6 +234,20 @@ class ExternalEffectWorker:
             }
         return self._dispatch_claimed(claimed)
 
+    def dispatch_claimed(self, job_id: int, *, lease_token: str) -> dict[str, Any]:
+        """Dispatch a row already claimed by the PostgreSQL lane runtime."""
+
+        claimed = self._repo.get_active_claim(int(job_id), lease_token=str(lease_token or ""))
+        if claimed is None:
+            current = self._repo.get_job(int(job_id))
+            return {
+                "ok": False,
+                "error": "lost_lease",
+                "job": current.to_dict() if current else {"id": int(job_id)},
+                "real_external_call_executed": False,
+            }
+        return self._dispatch_claimed(claimed)
+
     def _dispatch_claimed(self, job: ExternalEffectJob) -> dict[str, Any]:
         active = self._repo.get_active_claim(job.id, lease_token=job.lease_token)
         if active is None:
@@ -204,6 +258,21 @@ class ExternalEffectWorker:
                 "real_external_call_executed": False,
             }
         job = active
+        if job.cancel_requested_at:
+            cancelled = self._repo.settle_cancel(job=job)
+            current = cancelled or self._repo.get_job(job.id) or job
+            return {
+                "ok": bool(cancelled),
+                "error": "" if cancelled else "cancel_settlement_lost_lease",
+                "job": current.to_dict(),
+                "post_success_continuation": {
+                    "applicable": False,
+                    "reason": "dispatch_cancelled_before_provider",
+                },
+                "completion_event_queued": False,
+                "settlement_event_queued": bool(cancelled),
+                "real_external_call_executed": False,
+            }
         dispatch_result = self._block_if_wecom_execution_disabled(job)
         if dispatch_result is None and _enabled("AICRM_EXTERNAL_EFFECT_TEST_EXECUTION_ONLY") and not _is_test_job(job):
             dispatch_result = ExternalEffectDispatchResult(
@@ -214,6 +283,22 @@ class ExternalEffectWorker:
                 error_code="test_execution_only_required",
                 error_message="AICRM_EXTERNAL_EFFECT_TEST_EXECUTION_ONLY=1 blocks non-test jobs.",
             )
+        if dispatch_result is None and _enabled("AICRM_EXTERNAL_EFFECT_TEST_EXECUTION_ONLY"):
+            test_gate_error = _test_only_adapter_gate_error(job)
+            if test_gate_error:
+                dispatch_result = ExternalEffectDispatchResult(
+                    status="blocked",
+                    adapter_mode=job.execution_mode or "execute",
+                    request_summary={
+                        "effect_type": job.effect_type,
+                        "adapter_name": job.adapter_name,
+                        "execution_scope": "test_loopback",
+                    },
+                    response_summary={"blocked": True, "real_external_call_executed": False},
+                    error_code=test_gate_error,
+                    error_message="Test-loopback policy blocks this provider adapter contract.",
+                    real_external_call_executed=False,
+                )
         capability_error = _capability_gate_error(job)
         if dispatch_result is None and capability_error:
             message = (
@@ -235,6 +320,44 @@ class ExternalEffectWorker:
                 error_message=message,
             )
         if dispatch_result is None:
+            begun = self._repo.begin_provider_attempt(
+                job=job,
+                request_summary={
+                    "effect_type": job.effect_type,
+                    "adapter_name": job.adapter_name,
+                    "operation": job.operation,
+                    "target_type": job.target_type,
+                    "provider_boundary": "durable_attempt_committed_before_adapter_dispatch",
+                },
+            )
+            if begun is None:
+                current = self._repo.get_job(job.id)
+                if current is not None and current.status == "dispatching" and current.cancel_requested_at and current.lease_token == job.lease_token:
+                    cancelled = self._repo.settle_cancel(job=current)
+                    if cancelled is not None:
+                        return {
+                            "ok": True,
+                            "job": cancelled.to_dict(),
+                            "post_success_continuation": {
+                                "applicable": False,
+                                "reason": "dispatch_cancelled_before_provider",
+                            },
+                            "completion_event_queued": False,
+                            "settlement_event_queued": True,
+                            "real_external_call_executed": False,
+                        }
+                return {
+                    "ok": False,
+                    "error": "provider_attempt_not_started",
+                    "job": (current or job).to_dict(),
+                    "post_success_continuation": {
+                        "applicable": False,
+                        "reason": "provider_attempt_not_started",
+                    },
+                    "completion_event_queued": False,
+                    "real_external_call_executed": False,
+                }
+            job, _provider_attempt = begun
             try:
                 dispatch_result = self._adapters.get(job.adapter_name).dispatch(job)
             except Exception as exc:
@@ -258,6 +381,8 @@ class ExternalEffectWorker:
                     response_summary={
                         "adapter_exception": True,
                         "provider_result_received": False,
+                        "provider_boundary_crossed": True,
+                        "external_call_outcome_unknown": True,
                     },
                     error_code="adapter_exception",
                     error_message=str(exc)[:500],
@@ -267,22 +392,8 @@ class ExternalEffectWorker:
 
         dispatch_result = normalize_dispatch_result(job, dispatch_result)
         continuation = self._run_post_success_continuations(job, dispatch_result)
-        if continuation.get("applicable"):
-            dispatch_result = replace(
-                dispatch_result,
-                response_summary={
-                    **dict(dispatch_result.response_summary or {}),
-                    "post_success_continuation": continuation,
-                },
-            )
-            if not continuation.get("ok"):
-                dispatch_result = replace(
-                    dispatch_result,
-                    status="unknown_after_dispatch",
-                    error_code="post_success_continuation_unknown",
-                    error_message=str(continuation.get("error") or "Post-success continuation did not complete."),
-                )
 
+        rate_limited = is_rate_limited(dispatch_result)
         if (
             dispatch_result.status == "failed_retryable"
             and status_for_failure(
@@ -295,10 +406,13 @@ class ExternalEffectWorker:
             dispatch_result = replace(dispatch_result, status="failed_terminal")
 
         retry_at = None
-        if dispatch_result.status == "failed_retryable":
+        if dispatch_result.status == "failed_retryable" or rate_limited:
+            retry_after_seconds = dispatch_result.retry_after_seconds
+            if retry_after_seconds is None:
+                retry_after_seconds = (dispatch_result.response_summary or {}).get("retry_after_seconds")
             retry_at = next_retry_at(
                 job.attempt_count,
-                retry_after_seconds=(dispatch_result.response_summary or {}).get("retry_after_seconds"),
+                retry_after_seconds=retry_after_seconds,
             )
 
         try:
@@ -332,6 +446,8 @@ class ExternalEffectWorker:
                 "error": "result_persistence_failed",
                 "job": updated.to_dict() if updated else job.to_dict(),
                 "post_success_continuation": continuation,
+                "completion_event_queued": False,
+                "settlement_event_queued": bool(updated),
                 "real_external_call_executed": dispatch_result.real_external_call_executed,
             }
         if completed is None:
@@ -341,6 +457,7 @@ class ExternalEffectWorker:
                 "error": "lost_lease",
                 "job": current.to_dict() if current else job.to_dict(),
                 "post_success_continuation": continuation,
+                "completion_event_queued": False,
                 "real_external_call_executed": dispatch_result.real_external_call_executed,
             }
         updated, attempt = completed
@@ -349,6 +466,9 @@ class ExternalEffectWorker:
             "job": updated.to_dict(),
             "attempt": attempt.to_dict(),
             "post_success_continuation": continuation,
+            "completion_event_queued": updated.status == "succeeded",
+            "settlement_event_queued": updated.status
+            in {"succeeded", "simulated", "unknown_after_dispatch", "failed_terminal", "blocked", "cancelled"},
             "real_external_call_executed": dispatch_result.real_external_call_executed,
         }
 
@@ -382,4 +502,8 @@ class ExternalEffectWorker:
     def _run_post_success_continuations(self, job: ExternalEffectJob, dispatch_result) -> dict[str, Any]:
         if dispatch_result.status != "succeeded":
             return {"applicable": False, "reason": "dispatch_not_succeeded"}
-        return self._continuations.run(job, dispatch_result)
+        return {
+            "applicable": False,
+            "reason": "durable_completion_event_pending",
+            "registered_compatibility_continuations": list(self._continuations.names),
+        }

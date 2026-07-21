@@ -534,6 +534,7 @@ class PostgresIdentityBindingRepository:
                 reason = EXCLUDED.reason,
                 last_seen_at = NOW(),
                 updated_at = NOW()
+            RETURNING *
             """,
             (
                 external_userid,
@@ -555,6 +556,15 @@ class PostgresIdentityBindingRepository:
                 ),
             ),
         )
+        row = cur.fetchone()
+        if row:
+            from .resolution_effects import plan_identity_resolution_effect
+
+            plan_identity_resolution_effect(
+                cur,
+                dict(row),
+                source_route="identity_contact.mobile_bind_resolution.enqueue",
+            )
 
     def _record_conflict(
         self,

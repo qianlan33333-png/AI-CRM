@@ -221,7 +221,7 @@ def webhook_route_contracts() -> tuple[WebhookRouteContract, ...]:
             "dispatch_webhook_inbox_item",
             "staging_disabled",
             "command",
-            "admin dispatch defaults to dry-run and worker plans downstream work before effects",
+            "admin dispatch previews read-only or accepts one versioned durable queue command; it never invokes a handler or provider",
         ),
         W(
             "/api/admin/webhook-inbox/run-due",
@@ -229,7 +229,7 @@ def webhook_route_contracts() -> tuple[WebhookRouteContract, ...]:
             "run_webhook_inbox_due",
             "staging_disabled",
             "command",
-            "admin run-due defaults to dry-run and worker plans downstream work before effects",
+            "admin run-due previews read-only or accepts one versioned durable queue command; the listener-owned worker claims later",
         ),
         W(
             "/api/admin/wecom/callback/reconciliation",

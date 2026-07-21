@@ -14,6 +14,7 @@ REQUIRED_PROFILES = {
     "sidebar_workbench",
     "questionnaire_admin",
     "admin_jobs",
+    "push_center",
 }
 
 

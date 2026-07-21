@@ -316,6 +316,13 @@ class PostgresGroupOpsRepository(GroupOpsPostgresMappingMixin):
                         {"plan_id": int(plan_id), "chat_id": chat_id, **self._group_binding_params(group=group)},
                     ).fetchone()
                     binding_id = int((_as_mapping(row) or {}).get("id") or 0)
+                conn.execute(
+                    text(
+                        "UPDATE automation_group_ops_plans "
+                        "SET updated_at = CURRENT_TIMESTAMP WHERE id = :plan_id"
+                    ),
+                    {"plan_id": int(plan_id)},
+                )
                 return self._get_plan_group_sql(conn, binding_id) or {}
         except IntegrityError as exc:
             raise ContractError("group is already bound to this plan") from exc
@@ -337,6 +344,14 @@ class PostgresGroupOpsRepository(GroupOpsPostgresMappingMixin):
                     ),
                     {"plan_id": int(plan_id), "chat_id": clean_text(chat_id)},
                 )
+                if result.rowcount:
+                    conn.execute(
+                        text(
+                            "UPDATE automation_group_ops_plans "
+                            "SET updated_at = CURRENT_TIMESTAMP WHERE id = :plan_id"
+                        ),
+                        {"plan_id": int(plan_id)},
+                    )
                 return bool(result.rowcount)
         except SQLAlchemyError as exc:
             raise RepositoryProviderError(f"group ops repository unavailable: {exc}") from exc

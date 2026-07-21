@@ -74,6 +74,9 @@ def _source_needles(path: str, policy: dict) -> tuple[str, ...]:
     needles = [normalized]
     if normalized.endswith(".py"):
         needles.append(normalized[:-3].replace("/", "."))
+        script_stem = Path(normalized).stem
+        if normalized.startswith(("scripts/", "tools/")) and len(script_stem) >= 12:
+            needles.append(script_stem)
     context = _path_context(normalized)
     if context:
         needles.extend((f"aicrm_next.{context}", f"aicrm_next/{context}"))
@@ -96,6 +99,31 @@ def _tests_for_path(path: str, sources: dict[str, str], policy: dict) -> list[st
         if source_match or name_match:
             selected.append(test_path)
     return selected
+
+
+def _override_tests_for_path(path: str, sources: dict[str, str], policy: dict) -> list[str]:
+    selected: list[str] = []
+    overrides = policy.get("runtime_test_overrides", [])
+    if not isinstance(overrides, list):
+        raise SystemExit("policy.runtime_test_overrides must be a list")
+    for override in overrides:
+        if not isinstance(override, dict):
+            raise SystemExit("Every runtime test override must be a mapping")
+        patterns = override.get("paths", [])
+        tests = override.get("python_tests", [])
+        if not isinstance(patterns, list) or not isinstance(tests, list):
+            raise SystemExit("Runtime test override paths and python_tests must be lists")
+        rationale = override.get("rationale")
+        if not isinstance(rationale, str) or not rationale.strip():
+            raise SystemExit("Runtime test override rationale must be non-empty")
+        if not any(_matches(path, str(pattern)) for pattern in patterns):
+            continue
+        for test_path in tests:
+            normalized_test = _normalize_path(str(test_path))
+            if normalized_test not in sources:
+                raise SystemExit(f"Runtime test override references an unknown test: {normalized_test}")
+            selected.append(normalized_test)
+    return _unique(selected)
 
 
 def _high_risk_reasons(policy: dict, changed_files: Iterable[str]) -> list[str]:
@@ -141,6 +169,8 @@ def select_convention_scope(
 
     for path in changed_files:
         matched_python = _tests_for_path(path, python_sources, policy)
+        matched_python.extend(_override_tests_for_path(path, python_sources, policy))
+        matched_python = _unique(matched_python)
         matched_frontend = _tests_for_path(path, frontend_sources, policy)
         python_tests.extend(matched_python)
         frontend_tests.extend(matched_frontend)

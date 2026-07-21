@@ -75,9 +75,19 @@ owner can fail the current continuation guard.
 - `fail`: check found a red condition that should block migration/release work.
 - `not_applicable`: the runtime has no configured database, so a live probe cannot run.
 
-The managed customer read model is rebuilt every 30 minutes by
-`openclaw-customer-read-model-refresh.timer`; its singleton refresh evidence is
-stored in `customer_read_model_refresh_state`.
+The managed customer read model is refreshed through durable source events and
+the coalesced `customer_read_model_refresh_intent`. The compatibility timer may
+write an intent while the legacy generation remains the active owner, but it
+never rebuilds the projection inline and is retired at the PR-3 generation
+cutover. Singleton refresh evidence is stored in
+`customer_read_model_refresh_state`.
+
+`projection_freshness_customer_read_model` enforces projection population and
+list/detail/managed-refresh count consistency. The wall-clock age of an
+otherwise consistent projection is diagnostic only: elapsed time without a
+source change is not data staleness. `customer_360_freshness_guard` remains the
+release-blocking source-of-truth check and compares the latest identity, order,
+questionnaire, and message facts with the last successful managed refresh.
 
 ## Data Quality Registry
 

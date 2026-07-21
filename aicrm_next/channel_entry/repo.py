@@ -959,6 +959,9 @@ def upsert_channel_entry_runtime(
     identity_status: str = "pending",
     runtime_status: str = "received",
     payload_json: dict[str, Any] | None = None,
+    enqueue_identity_resolution: bool = False,
+    identity_resolution_reason: str = "identity_pending_unionid",
+    parent_execution_id: str = "",
 ) -> dict[str, Any]:
     with _connect() as conn, conn.cursor() as cur:
         cur.execute(
@@ -1005,8 +1008,48 @@ def upsert_channel_entry_runtime(
             ),
         )
         row = cur.fetchone()
+        identity_queue: dict[str, Any] = {}
+        if row and enqueue_identity_resolution:
+            from aicrm_next.identity_contact.resolution_effects import (
+                enqueue_channel_entry_identity_resolution_in_connection,
+            )
+
+            identity_queue = enqueue_channel_entry_identity_resolution_in_connection(
+                conn,
+                corp_id=corp_id,
+                external_userid=external_userid,
+                follow_user_userid=follow_user_userid,
+                payload_json=payload_json,
+                reason=identity_resolution_reason,
+                parent_execution_id=parent_execution_id,
+                event_log_id=event_log_id,
+            )
+            if identity_queue.get("external_effect_job_id"):
+                linked = conn.execute(
+                    """
+                    UPDATE automation_channel_entry_runtime
+                    SET identity_external_effect_job_id = %s,
+                        identity_execution_id = %s,
+                        identity_parent_execution_id = %s,
+                        identity_hold_reason = '',
+                        identity_held_at = NULL,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                    RETURNING *
+                    """,
+                    (
+                        int(identity_queue["external_effect_job_id"]),
+                        text(identity_queue.get("execution_id")),
+                        text(identity_queue.get("parent_execution_id")),
+                        int(row["id"]),
+                    ),
+                ).fetchone()
+                row = linked or row
         conn.commit()
-        return dict(row) if row else {}
+        result = dict(row) if row else {}
+        if enqueue_identity_resolution:
+            result["identity_resolution_queue"] = identity_queue
+        return result
 
 
 def mark_channel_entry_runtime_identity(
@@ -1064,51 +1107,26 @@ def enqueue_channel_entry_identity_resolution(
     follow_user_userid: str = "",
     payload_json: dict[str, Any] | None = None,
     reason: str = "identity_pending_unionid",
-) -> None:
-    external = text(external_userid)
-    if not external:
-        return
-    source_key = f"{text(corp_id)}:{external}:{text(follow_user_userid)}"
-    with _connect() as conn, conn.cursor() as cur:
-        cur.execute(
-            """
-            INSERT INTO crm_user_identity_resolution_queue (
-                source_type,
-                source_key,
-                corp_id,
-                external_userid,
-                payload_json,
-                reason,
-                status,
-                first_seen_at,
-                last_seen_at,
-                created_at,
-                updated_at
-            ) VALUES (
-                'channel_entry',
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                'pending',
-                NOW(),
-                NOW(),
-                NOW(),
-                NOW()
-            )
-            ON CONFLICT (source_type, source_key) WHERE status = 'pending' AND source_type <> '' AND source_key <> ''
-            DO UPDATE SET
-                corp_id = COALESCE(NULLIF(EXCLUDED.corp_id, ''), crm_user_identity_resolution_queue.corp_id),
-                external_userid = COALESCE(NULLIF(EXCLUDED.external_userid, ''), crm_user_identity_resolution_queue.external_userid),
-                payload_json = crm_user_identity_resolution_queue.payload_json || EXCLUDED.payload_json,
-                reason = EXCLUDED.reason,
-                last_seen_at = NOW(),
-                updated_at = NOW()
-            """,
-            (source_key, text(corp_id), external, _json(payload_json or {}), text(reason) or "identity_pending_unionid"),
+    parent_execution_id: str = "",
+    event_log_id: int | None = None,
+) -> dict[str, Any]:
+    from aicrm_next.identity_contact.resolution_effects import (
+        enqueue_channel_entry_identity_resolution_in_connection,
+    )
+
+    with _connect() as conn:
+        planned = enqueue_channel_entry_identity_resolution_in_connection(
+            conn,
+            corp_id=corp_id,
+            external_userid=external_userid,
+            follow_user_userid=follow_user_userid,
+            payload_json=payload_json,
+            reason=reason,
+            parent_execution_id=parent_execution_id,
+            event_log_id=event_log_id,
         )
         conn.commit()
+    return planned
 
 
 def get_channel_entry_effect_log(effect_type: str, idempotency_key: str) -> dict[str, Any] | None:
@@ -1397,6 +1415,7 @@ def _enqueue_tag_identity_resolution(
             reason = EXCLUDED.reason,
             last_seen_at = NOW(),
             updated_at = NOW()
+        RETURNING *
         """,
         (
             source_key,
@@ -1410,6 +1429,14 @@ def _enqueue_tag_identity_resolution(
                 }
             ),
         ),
+    )
+    row = dict(cur.fetchone() or {})
+    from aicrm_next.identity_contact.resolution_effects import plan_identity_resolution_effect
+
+    plan_identity_resolution_effect(
+        cur,
+        row,
+        source_route="channel_entry.contact_tags.identity_resolution",
     )
 
 

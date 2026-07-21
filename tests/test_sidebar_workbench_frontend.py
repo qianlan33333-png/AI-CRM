@@ -22,9 +22,12 @@ def test_sidebar_workbench_v2_page_is_next_owned(client):
     assert 'data-material-send-url="/api/sidebar/v2/materials/send"' in html
     assert 'data-periodic-orders-url="/api/sidebar/v2/periodic-orders"' in html
     assert 'data-periodic-order-remark-url="/api/sidebar/v2/periodic-orders"' in html
+    assert 'data-coupons-url="/api/sidebar/v2/coupons"' in html
+    assert 'data-radar-links-url="/api/sidebar/v2/radar-links"' in html
+    assert 'data-timeline-url="/api/sidebar/v2/timeline"' in html
     assert "sidebar_workbench/sidebar_workbench.js" in html
-    assert "sidebar_workbench/sidebar_workbench.js?v=20260714-progressive-loading" in html
-    assert "sidebar_workbench/sidebar_workbench.css?v=20260709-periodic-product-tabs" in html
+    assert "sidebar_workbench/sidebar_workbench.js?v=20260717-capability-optimization" in html
+    assert "sidebar_workbench/sidebar_workbench.css?v=20260717-capability-optimization" in html
     assert "自动化转化操作区" not in html
 
 
@@ -34,11 +37,27 @@ def test_sidebar_workbench_static_contract_has_next_surface_only():
     css = WORKBENCH_CSS.read_text(encoding="utf-8")
     combined = template + "\n" + script + "\n" + css
 
+    assert """const tabs = [
+    ["profile", "核心画像"],
+    ["questionnaires", "问卷"],
+    ["products", "商品"],
+    ["orders", "订单"],
+    ["coupons", "优惠券"],
+    ["materials", "素材"],
+    ["other_staff_messages", "其他客服聊天"],
+  ];""" in script
     assert '["profile", "核心画像"]' in script
     assert '["questionnaires", "问卷"]' in script
     assert '["products", "商品"]' in script
     assert '["orders", "订单"]' in script
-    assert '["periodic_orders", "周期订单"]' in script
+    assert '["coupons", "优惠券"]' in script
+    assert '["periodic_orders", "周期订单"]' not in script
+    assert '["regular", "普通订单"]' in script
+    assert '["periodic", "周期订单"]' in script
+    assert '["basic", "基础信息"]' in script
+    assert '["timeline", "用户时间线"]' in script
+    assert '["image", "图片素材"]' in script
+    assert '["radar", "雷达链接"]' in script
     assert '["regular", "普通商品"]' in script
     assert '["service_period", "周期性商品"]' in script
     assert 'invokeWeCom("getCurExternalContact"' in script
@@ -64,15 +83,28 @@ def test_sidebar_workbench_static_contract_has_next_surface_only():
     assert "renderPeriodicOrders" in script
     assert "data-periodic-order-remark" in script
     assert "savePeriodicOrderRemarkSoon" in script
-    periodic_renderer = script[script.index("function renderPeriodicOrders()") : script.index("function renderMaterials()")]
+    periodic_renderer = script[script.index("function periodicOrderCards()") : script.index("function renderPeriodicOrders()")]
     for label in ("剩余有效期", "正式登录", "token 消耗", "学习计划进度", "近 7 天打开次数", "最后打开时间"):
         assert label in periodic_renderer
     assert '<span>状态</span>' not in periodic_renderer
     assert '<span>到期时间</span>' not in periodic_renderer
-    assert 'queryUrl(endpoint("periodicOrdersUrl"), customerContextQuery())' in script
+    assert 'const url = normalized === "periodic" ? endpoint("periodicOrdersUrl") : endpoint("ordersUrl")' in script
+    assert "requestPanelJson(panelKey, queryUrl(url, customerContextQuery()))" in script
     assert 'queryUrl(endpoint("periodicOrderRemarkUrl") + "/" + encodeURIComponent(id) + "/remark", customerContextQuery())' in script
     assert 'data-periodic-orders-url="/api/sidebar/v2/periodic-orders"' in template
     assert 'data-periodic-order-remark-url="/api/sidebar/v2/periodic-orders"' in template
+    assert 'data-coupons-url="/api/sidebar/v2/coupons"' in template
+    assert 'data-radar-links-url="/api/sidebar/v2/radar-links"' in template
+    assert 'data-timeline-url="/api/sidebar/v2/timeline"' in template
+    assert "暂无小程序素材" not in script
+    assert "暂无 PDF 素材" not in script
+    assert 'type: "mini"' not in script
+    assert 'type: "pdf"' not in script
+    assert "renderCoupons" in script
+    assert "renderRadarLinks" in script
+    assert '>复制链接</button></article>' in script
+    assert "renderProfileTimeline" in script
+    assert "fallbackCopyText" in script
     assert "periodic-remark-textarea" in css
     assert "grid-template-columns: minmax(0, 1fr) auto" in css
     assert "@keyframes sidebar-skeleton" in css
@@ -91,6 +123,8 @@ def test_sidebar_workbench_static_contract_has_next_surface_only():
     assert 'if (tab !== "profile" && !isWorkbenchReady()) return;' in switch_tab
     assert "state.activeTab !== tab" in switch_tab
     assert 'tab === "materials" && state.materialType !== materialType' in switch_tab
+    assert 'tab === "orders" && state.orderType !== orderType' in switch_tab
+    assert 'tab === "profile" && state.profileView !== profileView' in switch_tab
     assert "data-retry-tab" in switch_tab
     assert 'event.target.closest("[data-retry-tab]")' in script
     material_switch = script[script.index("async function switchMaterialType") : script.index("function renderActiveTab")]
@@ -98,6 +132,12 @@ def test_sidebar_workbench_static_contract_has_next_surface_only():
     assert "state.materialType !== type" in material_switch
     assert "data-retry-material-type" in script
     assert 'event.target.closest("[data-retry-material-type]")' in script
+    assert "data-retry-order-type" in script
+    assert "data-refresh-timeline" in script
+    assert "data-load-more-timeline" in script
+    assert 'requestPanelJson("coupons", endpoint("couponsUrl"))' in script
+    assert 'requestPanelJson("radar_links", endpoint("radarLinksUrl"))' in script
+    assert 'queryUrl(endpoint("timelineUrl"), { limit: 20, offset })' in script
     assert "customer-avatar" not in combined
     assert "复制商品链接" not in combined
     assert "待确认员工身份" not in combined

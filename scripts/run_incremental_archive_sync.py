@@ -39,7 +39,7 @@ def _payload() -> dict[str, object]:
 
 def run_direct() -> str:
     ensure_repo_root_on_path()
-    from aicrm_next.message_archive.sync_service import execute_archive_sync
+    from aicrm_next.admin_jobs_archive_sync_gateway import execute_archive_sync
 
     payload = _payload()
     response_payload = execute_archive_sync(

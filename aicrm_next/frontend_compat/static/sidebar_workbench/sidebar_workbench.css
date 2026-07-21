@@ -369,6 +369,10 @@ button[disabled] {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.two-column-seg {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .seg button {
   min-height: 32px;
   border: 1px solid var(--line);
@@ -440,6 +444,13 @@ button[disabled] {
   color: #c2410c;
 }
 
+.thumb.radar {
+  border-color: #c7d7fe;
+  background: linear-gradient(145deg, #eef4ff, #e0e7ff);
+  color: #3730a3;
+  font-size: 11px;
+}
+
 .material-main {
   min-width: 0;
   overflow: hidden;
@@ -487,6 +498,96 @@ button[disabled] {
 .timeline {
   display: grid;
   gap: 8px;
+}
+
+.timeline-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.customer-timeline {
+  position: relative;
+  display: grid;
+  gap: 0;
+  padding-left: 4px;
+}
+
+.timeline-event {
+  position: relative;
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  gap: 8px;
+  min-width: 0;
+  padding-bottom: 12px;
+}
+
+.timeline-event:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  top: 13px;
+  bottom: -1px;
+  left: 6px;
+  width: 2px;
+  border-radius: 999px;
+  background: #dbe7fb;
+}
+
+.timeline-marker {
+  position: relative;
+  z-index: 1;
+  width: 12px;
+  height: 12px;
+  margin-top: 3px;
+  border: 3px solid #dbeafe;
+  border-radius: 50%;
+  background: var(--blue);
+}
+
+.timeline-event-main {
+  min-width: 0;
+  padding: 8px 9px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fbfdff;
+}
+
+.timeline-event-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.timeline-event-head h3 {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.timeline-event-head time {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.timeline-summary {
+  margin-top: 4px;
+  color: #475467;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.timeline-more {
+  justify-content: center;
+}
+
+.timeline-more .btn {
+  min-width: 112px;
 }
 
 .msg {

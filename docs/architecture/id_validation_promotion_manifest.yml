@@ -1,0 +1,126 @@
+version: 1
+
+source_repository: qianlan333/AI-CRM-ID-refactor
+target_repository: qianlan333/AI-CRM
+
+upstream_sync:
+  repository: qianlan333/AI-CRM
+  validated_sha: 2872e177c441eebacf2c6e56f63d8156556cc61d
+  strategy: ancestry_merge_preserving_id_only_overlay
+
+authorization:
+  command: PROMOTE <validated_ID_SHA> TO AI-CRM
+  creates_github_pr_only: true
+  authorizes_server_deploy: false
+
+# Classification precedence is fail-closed: id_only, then mixed review, then
+# promotable. A path in either guarded class must never be copied wholesale by
+# an automated promotion tool.
+promotable_application:
+  paths: []
+  globs:
+    - aicrm_next/**
+    - migrations/versions/**
+    - deploy/**
+    - frontend/**
+    - scripts/ci/**
+    - scripts/run_execution_runtime.py
+    - tests/**
+    - docs/architecture/**
+    - docs/ci/**
+    - package.json
+
+id_only_overlay:
+  paths:
+    - .github/workflows/deploy.yml
+    - .github/workflows/id-validation-queue-operations.yml
+    - .github/workflows/refresh-pytest-duration-baseline.yml
+    - aicrm_next/platform_foundation/execution_runtime/validation.py
+    - aicrm_next/platform_foundation/external_effects/canary_repository.py
+    - aicrm_next/platform_foundation/external_effects/test_receiver.py
+    - aicrm_next/platform_foundation/external_effects/wecom_canary_policy.py
+    - deploy/aicrm-queue-soak-snapshot.service
+    - deploy/aicrm-queue-soak-snapshot.timer
+    - docs/adr/2026-07-17-id-validation-deployment-ownership.md
+    - docs/architecture/id_validation_promotion_manifest.yml
+    - migrations/versions/0135_queue_scope_transition_audit.py
+    - scripts/ci/check_id_validation_promotion_manifest.py
+    - scripts/ops/attest_queue_runtime_validation.py
+    - scripts/ops/authorize_wecom_canary_execution.py
+    - scripts/ops/configure_wecom_canary.py
+    - scripts/ops/manage_queue_runtime_soak.py
+    - scripts/ops/plan_wecom_canary.py
+    - scripts/ops/run_id_validation_queue_operation.sh
+    - scripts/ops/run_queue_runtime_fault_drill.py
+    - scripts/ops/run_test_loopback_canary.py
+    - scripts/ops/transition_queue_runtime_scope.py
+    - tests/test_attest_queue_runtime_validation.py
+    - tests/test_authorize_wecom_canary_execution.py
+    - tests/test_id_validation_admin_config_lock.py
+    - tests/test_id_validation_promotion_manifest.py
+    - tests/test_plan_wecom_canary.py
+    - tests/test_queue_runtime_fault_drill.py
+    - tests/test_queue_runtime_operations_workflow.py
+    - tests/test_queue_runtime_validation.py
+    - tests/test_run_test_loopback_canary.py
+    - tests/test_wecom_canary_configuration.py
+    - tests/test_wecom_canary_policy.py
+  globs:
+    - .github/workflows/*id-validation*
+    - docs/adr/*id-validation*
+    - scripts/**/*id_validation*
+    - scripts/**/*wecom_canary*
+    - tests/*id_validation*
+    - tests/*wecom_canary*
+    - tests/**/*id_validation*
+    - tests/**/*wecom_canary*
+
+mixed_review_required:
+  paths:
+    - aicrm_next/automation_engine/group_ops/domain.py
+    - aicrm_next/automation_engine/group_ops/durable_effects_repository.py
+    - aicrm_next/automation_engine/group_ops/scheduler.py
+    - aicrm_next/service_period/domain.py
+    - aicrm_next/admin_config/application.py
+    - aicrm_next/admin_config/application_support.py
+    - aicrm_next/admin_config/category_registry.py
+    - aicrm_next/platform_foundation/auth_platform/webhook_hmac.py
+    - aicrm_next/platform_foundation/execution_runtime/cutover.py
+    - aicrm_next/platform_foundation/external_effects/adapters.py
+    - aicrm_next/platform_foundation/external_effects/direct_claim_repository.py
+    - aicrm_next/platform_foundation/external_effects/models.py
+    - aicrm_next/platform_foundation/external_effects/repo.py
+    - aicrm_next/platform_foundation/external_effects/repo_contract.py
+    - aicrm_next/platform_foundation/external_effects/repo_memory.py
+    - aicrm_next/platform_foundation/external_effects/service.py
+    - aicrm_next/platform_foundation/push_center/api.py
+    - aicrm_next/shared/wecom_runtime.py
+    - aicrm_next/wecom_media_jobs.py
+    - deploy/production_runtime_units.json
+    - docs/architecture/data_table_lifecycle_manifest.yml
+    - docs/architecture/repository_ownership.yml
+    - docs/architecture/runtime_contract_inventory.json
+    - migrations/versions/0136_queue_runtime_validation_soak.py
+    - scripts/ci/check_queue_runtime_cutover_kernel.py
+    - scripts/ci/run_architecture_gates.sh
+    - scripts/ops/cutover_queue_runtime_generation.py
+    - scripts/run_execution_runtime.py
+    - tests/test_admin_config_next.py
+    - tests/test_ai_assist_external_effect_queue.py
+    - tests/test_alembic_revision_chain.py
+    - tests/test_channel_welcome_media_dependencies_postgres.py
+    - tests/test_database_bootstrap.py
+    - tests/test_execution_runtime_postgres.py
+    - tests/test_external_effects_mvp.py
+    - tests/test_external_effects_wecom_welcome.py
+    - tests/test_github_action_pins.py
+    - tests/test_group_ops_external_effect_queue.py
+    - tests/test_identity_customer_event_driven_postgres.py
+    - tests/test_questionnaire_h5_final_tags_real_wecom.py
+    - tests/test_queue_runtime_cutover.py
+    - tests/test_queue_runtime_cutover_postgres.py
+    - tests/test_run_execution_runtime.py
+    - tests/test_runtime_contract_inventory.py
+    - tests/test_select_test_scope.py
+    - tests/test_wecom_media_lease.py
+  globs: []

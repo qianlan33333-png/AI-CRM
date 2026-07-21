@@ -14,18 +14,25 @@
     ["questionnaires", "问卷"],
     ["products", "商品"],
     ["orders", "订单"],
-    ["periodic_orders", "周期订单"],
+    ["coupons", "优惠券"],
     ["materials", "素材"],
     ["other_staff_messages", "其他客服聊天"],
   ];
   const materialTabs = [
     ["image", "图片素材"],
-    ["mini", "小程序素材"],
-    ["pdf", "PDF 素材"],
+    ["radar", "雷达链接"],
   ];
   const productTabs = [
     ["regular", "普通商品"],
     ["service_period", "周期性商品"],
+  ];
+  const orderTabs = [
+    ["regular", "普通订单"],
+    ["periodic", "周期订单"],
+  ];
+  const profileTabs = [
+    ["basic", "基础信息"],
+    ["timeline", "用户时间线"],
   ];
   const WORKBENCH_STATES = {
     identifying_customer: "identifying_customer",
@@ -44,7 +51,10 @@
     products: 9000,
     orders: 12000,
     periodic_orders: 12000,
+    coupons: 9000,
     materials: 10000,
+    radar_links: 10000,
+    timeline: 10000,
     other_staff_messages: 9000,
   };
   const PANEL_CACHE_TTL_MS = 2 * 60 * 1000;
@@ -62,8 +72,10 @@
     sidebar_oauth_url: "",
     sidebar_oauth_started: false,
     activeTab: "profile",
+    profileView: "basic",
     materialType: "image",
     productType: "regular",
+    orderType: "regular",
     workbench: null,
     loaded: {},
     data: {
@@ -72,7 +84,15 @@
       service_period_products: null,
       orders: null,
       periodic_orders: null,
+      coupons: null,
       materials: {},
+      radar_links: null,
+      timeline: {
+        items: [],
+        total: 0,
+        has_more: false,
+        next_offset: 0,
+      },
       other_staff_messages: null,
     },
     profileSaveTimer: null,
@@ -83,6 +103,7 @@
     panelRequests: new Map(),
     jssdkConfigRequests: new Map(),
     jssdkConfigCache: new Map(),
+    timelineRequestVersion: 0,
   };
 
   const debugEnabled = root && root.dataset.debugEnabled === "true";
@@ -681,17 +702,47 @@
     );
   }
 
+  function segmentedControls(items, activeKey, dataAttribute, extraClass) {
+    return '<div class="seg two-column-seg ' + escapeHtml(extraClass || "") + '">' + items.map(([key, label]) => (
+      '<button type="button" class="' + (key === activeKey ? "active" : "") + '" ' + dataAttribute + '="' + escapeHtml(key) + '">' + escapeHtml(label) + "</button>"
+    )).join("") + "</div>";
+  }
+
+  function profileTypeControls() {
+    return segmentedControls(profileTabs, state.profileView, "data-profile-view", "profile-seg");
+  }
+
   function renderProfile() {
+    if (state.profileView === "timeline") {
+      renderProfileTimeline();
+      return;
+    }
     const profile = (state.workbench && state.workbench.profile) || {};
     content.innerHTML = panel(
-      "核心画像",
-      '<div class="editor">' +
+      "",
+      profileTypeControls() + '<div class="editor">' +
         textAreaField("source", "用户来源", profile.source || "") +
         textAreaField("industry", "行业信息", profile.industry || "") +
         textAreaField("industry_description", "行业具体描述", profile.industry_description || "") +
         textAreaField("needs_blockers_followup", "需求、卡点、跟进状态", profile.needs_blockers_followup || "") +
       "</div>"
     );
+  }
+
+  function renderProfileTimeline() {
+    const timeline = state.data.timeline || {};
+    const rows = timeline.items || [];
+    const actions = '<div class="timeline-toolbar"><span class="mini">最新动态在前</span><button class="btn ghost" type="button" data-refresh-timeline>刷新</button></div>';
+    const body = rows.length
+      ? '<div class="customer-timeline">' + rows.map((item) => (
+          '<article class="timeline-event"><div class="timeline-marker" aria-hidden="true"></div><div class="timeline-event-main">' +
+          '<div class="timeline-event-head"><h3>' + escapeHtml(item.title || "用户动态") + '</h3><time>' + escapeHtml(item.event_time || "") + "</time></div>" +
+          (item.summary ? '<div class="timeline-summary">' + escapeHtml(item.summary) + "</div>" : "") +
+          '</div></article>'
+        )).join("") + "</div>" +
+        (timeline.has_more ? '<div class="row-actions timeline-more"><button class="btn ghost" type="button" data-load-more-timeline>加载更多</button></div>' : "")
+      : empty("暂无用户时间线记录");
+    content.innerHTML = panel("", profileTypeControls() + actions + body);
   }
 
   function renderQuestionnaires() {
@@ -744,35 +795,33 @@
     );
   }
 
-  function renderOrders() {
-    const rows = state.data.orders || [];
-    if (!rows.length) {
-      content.innerHTML = panel("订单", empty("暂无订单记录"));
-      return;
-    }
-    content.innerHTML = panel(
-      "订单",
-      rows
-        .map((item) => (
-          '<article class="card"><div class="card-title"><div><h3>' + escapeHtml(item.title || "未命名商品") + "</h3>" +
-          '<div class="mini">' + escapeHtml(item.id || "") + '</div></div><div class="price">' + escapeHtml(item.amount_label || "") + "</div></div>" +
-          '<div class="kv"><span>状态</span><strong>' + escapeHtml(item.status_label || "") + "</strong>" +
-          '<span>时间</span><strong>' + escapeHtml(item.paid_at || "") + "</strong></div>" +
-          '<div class="row-actions"><button class="btn primary" type="button" data-order-detail-url="' + escapeHtml(item.detail_url || "") + '">查看详情</button></div></article>'
-        ))
-        .join("")
-    );
+  function orderTypeControls() {
+    return segmentedControls(orderTabs, state.orderType, "data-order-type", "order-seg");
   }
 
-  function renderPeriodicOrders() {
+  function regularOrderCards() {
+    const rows = state.data.orders || [];
+    if (!rows.length) return empty("暂无普通订单");
+    return rows
+      .map((item) => (
+        '<article class="card"><div class="card-title"><div><h3>' + escapeHtml(item.title || "未命名商品") + "</h3>" +
+        '<div class="mini">' + escapeHtml(item.id || "") + '</div></div><div class="price">' + escapeHtml(item.amount_label || "") + "</div></div>" +
+        '<div class="kv"><span>状态</span><strong>' + escapeHtml(item.status_label || "") + "</strong>" +
+        '<span>时间</span><strong>' + escapeHtml(item.paid_at || "") + "</strong></div>" +
+        '<div class="row-actions"><button class="btn primary" type="button" data-order-detail-url="' + escapeHtml(item.detail_url || "") + '">查看详情</button></div></article>'
+      ))
+      .join("");
+  }
+
+  function renderOrders() {
+    const body = state.orderType === "periodic" ? periodicOrderCards() : regularOrderCards();
+    content.innerHTML = panel("", orderTypeControls() + body);
+  }
+
+  function periodicOrderCards() {
     const rows = state.data.periodic_orders || [];
-    if (!rows.length) {
-      content.innerHTML = panel("周期性产品订单", empty("暂无周期性产品订单"));
-      return;
-    }
-    content.innerHTML = panel(
-      "周期性产品订单",
-      rows
+    if (!rows.length) return empty("暂无周期订单");
+    return rows
         .map((item) => {
           const lastOrder = [item.last_out_trade_no || "", item.last_order_paid_at || ""].filter(Boolean).join(" · ");
           const detailAction = item.detail_url
@@ -793,12 +842,36 @@
             detailAction + "</article>"
           );
         })
-        .join("")
+        .join("");
+  }
+
+  function renderPeriodicOrders() {
+    state.orderType = "periodic";
+    renderOrders();
+  }
+
+  function renderCoupons() {
+    const rows = state.data.coupons || [];
+    if (!rows.length) {
+      content.innerHTML = panel("", empty("暂无可领取优惠券"));
+      return;
+    }
+    content.innerHTML = panel(
+      "",
+      rows.map((item) => {
+        const products = (item.products || []).map((product) => product.title || "").filter(Boolean).join("、");
+        return (
+          '<article class="card link-card"><div class="card-title"><div><h3>' + escapeHtml(item.name || "未命名优惠券") + '</h3><div class="mini">' +
+          escapeHtml(item.discount_label || "") + '</div></div></div><div class="kv"><span>适用商品</span><strong>' + escapeHtml(products || "全部已配置商品") +
+          '</strong><span>领取截止</span><strong>' + escapeHtml(item.claim_ends_at || "") + '</strong></div><div class="row-actions"><button class="btn primary" type="button" data-copy-url="' +
+          escapeHtml(item.url || "") + '">复制链接</button></div></article>'
+        );
+      }).join("")
     );
   }
 
   function materialTypeControls() {
-    return '<div class="seg">' + materialTabs.map(([key, label]) => '<button type="button" class="' + (key === state.materialType ? "active" : "") + '" data-material-type="' + key + '">' + escapeHtml(label) + "</button>").join("") + "</div>";
+    return segmentedControls(materialTabs, state.materialType, "data-material-type", "material-seg");
   }
 
   function renderMaterialLoadError(type, error) {
@@ -811,32 +884,50 @@
   }
 
   function renderMaterials() {
-    const rows = state.data.materials[state.materialType] || [];
     const controls = materialTypeControls();
+    if (state.materialType === "radar") {
+      renderRadarLinks(controls);
+      return;
+    }
+    const rows = state.data.materials.image || [];
     if (!rows.length) {
-      content.innerHTML = panel("素材", controls + empty("暂无素材"));
+      content.innerHTML = panel("", controls + empty("暂无图片素材"));
       return;
     }
     content.innerHTML = panel(
-      "素材",
+      "",
       controls +
         rows
           .map((item) => {
-            const type = item.type === "mini" ? "mini" : item.type === "pdf" ? "pdf" : "image";
-            const thumbClass = type === "mini" ? "mini-program" : type === "pdf" ? "pdf" : "image-thumb";
-            const materialClass = type === "mini" ? "material--mini" : type === "pdf" ? "material--pdf" : "material--image";
-            const fallbackLabel = item.thumbnail_label || (type === "mini" ? "小" : type === "pdf" ? "PDF" : "图");
+            const fallbackLabel = item.thumbnail_label || "图";
             const thumb = item.thumbnail_url
               ? '<div class="material-thumb thumb image-thumb"><img src="' + escapeHtml(item.thumbnail_url) + '" alt="" data-material-thumb-img data-fallback-label="' + escapeHtml(fallbackLabel) + '"></div>'
-              : '<div class="material-thumb thumb ' + thumbClass + '">' + escapeHtml(fallbackLabel) + "</div>";
+              : '<div class="material-thumb thumb image-thumb">' + escapeHtml(fallbackLabel) + "</div>";
             return (
-              '<article class="card material ' + materialClass + '">' + thumb +
+              '<article class="card material material--image">' + thumb +
               '<div class="material-main"><h3 class="material-title">' + escapeHtml(item.title || "未命名素材") + '</h3><div class="material-tags tags">' +
               (item.tags || []).map((tag) => '<span class="tag">' + escapeHtml(tag) + "</span>").join("") +
               '</div></div><button class="btn primary material-send" type="button" data-material-send="' + escapeHtml(item.id || "") + '">发送</button></article>'
             );
           })
           .join("")
+    );
+  }
+
+  function renderRadarLinks(controls) {
+    const rows = state.data.radar_links || [];
+    if (!rows.length) {
+      content.innerHTML = panel("", controls + empty("暂无启用中的雷达链接"));
+      return;
+    }
+    content.innerHTML = panel(
+      "",
+      controls + rows.map((item) => (
+        '<article class="card material material--radar"><div class="material-thumb thumb radar">' + escapeHtml(item.type_label || "雷达") +
+        '</div><div class="material-main"><h3 class="material-title">' + escapeHtml(item.title || "未命名雷达") +
+        '</h3><div class="mini">' + escapeHtml(item.type_label || "追踪链接") +
+        '</div></div><button class="btn primary material-send" type="button" data-copy-url="' + escapeHtml(item.url || "") + '">复制链接</button></article>'
+      )).join("")
     );
   }
 
@@ -921,7 +1012,15 @@
   }
 
   async function loadTabData(tab) {
-    if (tab === "profile" || state.loaded[tab]) return;
+    if (tab === "profile") {
+      if (state.profileView === "timeline") await loadTimeline({ reset: true, force: true });
+      return;
+    }
+    if (tab === "orders") {
+      await loadOrders(state.orderType);
+      return;
+    }
+    if (state.loaded[tab]) return;
     if (tab === "questionnaires") {
       const payload = await requestPanelJson("questionnaires", queryUrl(endpoint("questionnairesUrl"), customerContextQuery()));
       state.data.questionnaires = payload.questionnaires || [];
@@ -930,22 +1029,9 @@
       writeDebug("products response", productContextDiagnostics(payload));
       state.data.products = payload.products || [];
       state.data.service_period_products = payload.service_period_products || [];
-    } else if (tab === "orders") {
-      const payload = await requestPanelJson("orders", queryUrl(endpoint("ordersUrl"), customerContextQuery()));
-      if (payload.customer) {
-        state.workbench.customer = Object.assign({}, state.workbench.customer || {}, payload.customer);
-        renderTop();
-      }
-      writeDebug("orders response", payload.diagnostics || {});
-      state.data.orders = payload.orders || [];
-    } else if (tab === "periodic_orders") {
-      const payload = await requestPanelJson("periodic_orders", queryUrl(endpoint("periodicOrdersUrl"), customerContextQuery()));
-      if (payload.customer) {
-        state.workbench.customer = Object.assign({}, state.workbench.customer || {}, payload.customer);
-        renderTop();
-      }
-      writeDebug("periodic orders response", payload.diagnostics || {});
-      state.data.periodic_orders = payload.periodic_orders || [];
+    } else if (tab === "coupons") {
+      const payload = await requestPanelJson("coupons", endpoint("couponsUrl"));
+      state.data.coupons = payload.items || [];
     } else if (tab === "materials") {
       await loadMaterials(state.materialType);
     } else if (tab === "other_staff_messages") {
@@ -969,10 +1055,37 @@
     state.loaded[tab] = true;
   }
 
+  async function loadOrders(type) {
+    const normalized = type === "periodic" ? "periodic" : "regular";
+    const cacheKey = "orders:" + normalized;
+    if (state.loaded[cacheKey]) return;
+    const panelKey = normalized === "periodic" ? "periodic_orders" : "orders";
+    const url = normalized === "periodic" ? endpoint("periodicOrdersUrl") : endpoint("ordersUrl");
+    const payload = await requestPanelJson(panelKey, queryUrl(url, customerContextQuery()));
+    if (payload.customer) {
+      state.workbench.customer = Object.assign({}, state.workbench.customer || {}, payload.customer);
+      renderTop();
+    }
+    if (normalized === "periodic") {
+      writeDebug("periodic orders response", payload.diagnostics || {});
+      state.data.periodic_orders = payload.periodic_orders || [];
+    } else {
+      writeDebug("orders response", payload.diagnostics || {});
+      state.data.orders = payload.orders || [];
+    }
+    state.loaded[cacheKey] = true;
+  }
+
   async function loadMaterials(type) {
-    if (state.data.materials[type]) return;
-    const payload = await requestPanelJson("materials", queryUrl(endpoint("materialsUrl"), { type, limit: 50 }));
-    state.data.materials[type] = payload.materials || [];
+    if (type === "radar") {
+      if (state.data.radar_links) return;
+      const payload = await requestPanelJson("radar_links", endpoint("radarLinksUrl"));
+      state.data.radar_links = payload.items || [];
+      return;
+    }
+    if (state.data.materials.image) return;
+    const payload = await requestPanelJson("materials", queryUrl(endpoint("materialsUrl"), { type: "image", limit: 50 }));
+    state.data.materials.image = payload.materials || [];
   }
 
   async function switchMaterialType(type) {
@@ -990,12 +1103,85 @@
     }
   }
 
+  async function switchOrderType(type) {
+    if (!orderTabs.some((item) => item[0] === type)) return;
+    state.orderType = type;
+    if (state.activeTab !== "orders") return;
+    setPanelLoading("订单");
+    try {
+      await loadOrders(type);
+      if (state.activeTab !== "orders" || state.orderType !== type) return;
+      renderOrders();
+    } catch (error) {
+      if (state.activeTab !== "orders" || state.orderType !== type) return;
+      content.innerHTML = panel(
+        "",
+        orderTypeControls() + '<div class="status error">' + escapeHtml(error.message || "加载失败") + "</div>" +
+          '<div class="row-actions"><button class="btn primary" type="button" data-retry-order-type="' + escapeHtml(type) + '">重试</button></div>'
+      );
+    }
+  }
+
+  async function loadTimeline(options) {
+    const reset = Boolean(options && options.reset);
+    const force = Boolean(options && options.force);
+    const offset = reset ? 0 : Number((state.data.timeline || {}).next_offset || 0);
+    const requestVersion = reset ? ++state.timelineRequestVersion : state.timelineRequestVersion;
+    const url = queryUrl(endpoint("timelineUrl"), { limit: 20, offset });
+    if (force) clearPanelCache("timeline");
+    const payload = await requestPanelJson("timeline", url);
+    if (requestVersion !== state.timelineRequestVersion) return;
+    const current = reset ? [] : (state.data.timeline.items || []);
+    state.data.timeline = {
+      items: current.concat(payload.items || []),
+      total: Number(payload.total || 0),
+      has_more: Boolean(payload.has_more),
+      next_offset: Number(payload.next_offset || 0),
+    };
+  }
+
+  async function switchProfileView(view) {
+    if (!profileTabs.some((item) => item[0] === view)) return;
+    state.profileView = view;
+    if (state.activeTab !== "profile") return;
+    if (view === "basic") {
+      renderProfile();
+      return;
+    }
+    setPanelLoading("用户时间线");
+    try {
+      await loadTimeline({ reset: true, force: true });
+      if (state.activeTab !== "profile" || state.profileView !== "timeline") return;
+      renderProfileTimeline();
+    } catch (error) {
+      if (state.activeTab !== "profile" || state.profileView !== "timeline") return;
+      content.innerHTML = panel(
+        "",
+        profileTypeControls() + '<div class="status error">' + escapeHtml(error.message || "时间线加载失败") + "</div>" +
+          '<div class="row-actions"><button class="btn primary" type="button" data-refresh-timeline>重试</button></div>'
+      );
+    }
+  }
+
+  async function refreshTimeline() {
+    if (state.activeTab !== "profile" || state.profileView !== "timeline") return;
+    setPanelLoading("用户时间线");
+    await loadTimeline({ reset: true, force: true });
+    if (state.activeTab === "profile" && state.profileView === "timeline") renderProfileTimeline();
+  }
+
+  async function loadMoreTimeline() {
+    if (!state.data.timeline.has_more) return;
+    await loadTimeline({ reset: false, force: false });
+    if (state.activeTab === "profile" && state.profileView === "timeline") renderProfileTimeline();
+  }
+
   function renderActiveTab() {
     if (state.activeTab === "profile") renderProfile();
     if (state.activeTab === "questionnaires") renderQuestionnaires();
     if (state.activeTab === "products") renderProducts();
     if (state.activeTab === "orders") renderOrders();
-    if (state.activeTab === "periodic_orders") renderPeriodicOrders();
+    if (state.activeTab === "coupons") renderCoupons();
     if (state.activeTab === "materials") renderMaterials();
     if (state.activeTab === "other_staff_messages") renderOtherStaffMessages();
   }
@@ -1006,13 +1192,25 @@
     renderTabs();
     const label = tabs.find((item) => item[0] === tab)?.[1] || "";
     const materialType = tab === "materials" ? state.materialType : "";
+    const orderType = tab === "orders" ? state.orderType : "";
+    const profileView = tab === "profile" ? state.profileView : "";
     setPanelLoading(label);
     try {
       await loadTabData(tab);
-      if (state.activeTab !== tab || (tab === "materials" && state.materialType !== materialType)) return;
+      if (
+        state.activeTab !== tab ||
+        (tab === "materials" && state.materialType !== materialType) ||
+        (tab === "orders" && state.orderType !== orderType) ||
+        (tab === "profile" && state.profileView !== profileView)
+      ) return;
       renderActiveTab();
     } catch (error) {
-      if (state.activeTab !== tab || (tab === "materials" && state.materialType !== materialType)) return;
+      if (
+        state.activeTab !== tab ||
+        (tab === "materials" && state.materialType !== materialType) ||
+        (tab === "orders" && state.orderType !== orderType) ||
+        (tab === "profile" && state.profileView !== profileView)
+      ) return;
       content.innerHTML = panel(
         label,
         '<div class="status error">' + escapeHtml(error.message || "加载失败") + "</div>" +
@@ -1022,27 +1220,71 @@
   }
 
   async function sendMaterial(materialId) {
+    if (state.materialType !== "image") {
+      showToast("雷达链接请使用复制链接", "error");
+      return;
+    }
     try {
       const payload = await requestJson(endpoint("materialSendUrl"), {
         method: "POST",
         body: JSON.stringify({
           external_userid: state.external_userid,
           owner_userid: state.owner_userid,
-          type: state.materialType,
+          type: "image",
           material_id: materialId,
           operator: state.bind_by_userid || state.owner_userid || "",
-          delivery_mode: state.materialType === "image" ? "chat_toolbar" : "dispatch",
+          delivery_mode: "chat_toolbar",
         }),
       });
-      if (state.materialType === "image") {
-        if (!payload.media_id) throw new Error("图片素材未取得 media_id");
-        await sendImageToCurrentChat(payload.media_id);
-        showToast("已发送到当前会话");
-        return;
-      }
-      showToast("已发送");
+      if (!payload.media_id) throw new Error("图片素材未取得 media_id");
+      await sendImageToCurrentChat(payload.media_id);
+      showToast("已发送到当前会话");
     } catch (error) {
       showToast(error.message || "发送失败", "error");
+    }
+  }
+
+  function fallbackCopyText(value) {
+    const textarea = document.createElement("textarea");
+    textarea.value = value;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    textarea.style.pointerEvents = "none";
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    let copied = false;
+    try {
+      copied = Boolean(document.execCommand && document.execCommand("copy"));
+    } finally {
+      document.body.removeChild(textarea);
+    }
+    return copied;
+  }
+
+  async function copyLink(value) {
+    const link = absoluteUrl(value);
+    if (!link) {
+      showToast("暂无可复制链接", "error");
+      return false;
+    }
+    try {
+      const clipboard = window.navigator && window.navigator.clipboard;
+      if (clipboard && typeof clipboard.writeText === "function") {
+        await clipboard.writeText(link);
+      } else if (!fallbackCopyText(link)) {
+        throw new Error("copy unavailable");
+      }
+      showToast("已复制");
+      return true;
+    } catch (_error) {
+      if (fallbackCopyText(link)) {
+        showToast("已复制");
+        return true;
+      }
+      showToast("复制失败，请长按链接复制", "error");
+      return false;
     }
   }
 
@@ -1374,6 +1616,39 @@
       await switchMaterialType(retryMaterialTypeButton.dataset.retryMaterialType);
       return;
     }
+    const retryOrderTypeButton = event.target.closest("[data-retry-order-type]");
+    if (retryOrderTypeButton) {
+      retryOrderTypeButton.disabled = true;
+      await switchOrderType(retryOrderTypeButton.dataset.retryOrderType);
+      return;
+    }
+    const profileViewButton = event.target.closest("[data-profile-view]");
+    if (profileViewButton) {
+      await switchProfileView(profileViewButton.dataset.profileView);
+      return;
+    }
+    const refreshTimelineButton = event.target.closest("[data-refresh-timeline]");
+    if (refreshTimelineButton) {
+      refreshTimelineButton.disabled = true;
+      try {
+        await refreshTimeline();
+      } catch (error) {
+        showToast(error.message || "时间线刷新失败", "error");
+        if (state.activeTab === "profile" && state.profileView === "timeline") renderProfileTimeline();
+      }
+      return;
+    }
+    const loadMoreTimelineButton = event.target.closest("[data-load-more-timeline]");
+    if (loadMoreTimelineButton) {
+      loadMoreTimelineButton.disabled = true;
+      try {
+        await loadMoreTimeline();
+      } catch (error) {
+        showToast(error.message || "加载更多失败", "error");
+        loadMoreTimelineButton.disabled = false;
+      }
+      return;
+    }
     const qButton = event.target.closest("[data-toggle-questionnaire]");
     if (qButton) {
       const card = content.querySelector('[data-questionnaire-card="' + qButton.dataset.toggleQuestionnaire + '"]');
@@ -1383,6 +1658,21 @@
     const materialTypeButton = event.target.closest("[data-material-type]");
     if (materialTypeButton) {
       await switchMaterialType(materialTypeButton.dataset.materialType);
+      return;
+    }
+    const orderTypeButton = event.target.closest("[data-order-type]");
+    if (orderTypeButton) {
+      await switchOrderType(orderTypeButton.dataset.orderType);
+      return;
+    }
+    const copyButton = event.target.closest("[data-copy-url]");
+    if (copyButton) {
+      copyButton.disabled = true;
+      try {
+        await copyLink(copyButton.dataset.copyUrl);
+      } finally {
+        copyButton.disabled = false;
+      }
       return;
     }
     const materialSendButton = event.target.closest("[data-material-send]");

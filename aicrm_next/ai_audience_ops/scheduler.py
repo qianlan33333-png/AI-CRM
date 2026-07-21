@@ -13,6 +13,8 @@ from .event_types import (
     INCREMENTAL_REFRESH_CONSUMER,
     INCREMENTAL_TICK_EVENT,
     OUTBOUND_EFFECT_CONSUMER,
+    REFRESH_INTENT_CONSUMER,
+    REFRESH_REQUESTED_EVENT,
     RUN_REFRESHED_EVENT,
     SOURCE_CHANGED_EVENT,
     SOURCE_POKE_CONSUMER,
@@ -31,6 +33,7 @@ def emit_due_ticks(
     now: datetime | None = None,
     daily_refresh_time: str = DEFAULT_DAILY_REFRESH_TIME,
     daily_window_minutes: int = DEFAULT_DAILY_TICK_WINDOW_MINUTES,
+    force_daily: bool = False,
 ) -> dict[str, Any]:
     service = AudiencePackageService()
     items: list[dict[str, Any]] = []
@@ -44,7 +47,7 @@ def emit_due_ticks(
             daily_refresh_time=daily_refresh_time,
             daily_window_minutes=daily_window_minutes,
         )
-        daily_due = window_daily_due or _launch_daily_refresh_due(service)
+        daily_due = bool(force_daily) or window_daily_due or _launch_daily_refresh_due(service)
     if include_daily and daily_due:
         items.append({"tick_type": "daily", "result": service.emit_tick("daily")})
     return {
@@ -52,6 +55,7 @@ def emit_due_ticks(
         "items": items,
         "daily_tick_due": daily_due,
         "daily_tick_window_due": window_daily_due,
+        "daily_tick_forced": bool(force_daily),
         "daily_refresh_time": daily_refresh_time,
         "daily_window_minutes": max(1, int(daily_window_minutes or DEFAULT_DAILY_TICK_WINDOW_MINUTES)),
         "real_external_call_executed": False,
@@ -140,6 +144,7 @@ def ai_audience_event_consumer_pairs(*, include_source_poke: bool = True, includ
             [
                 f"{INCREMENTAL_TICK_EVENT}:{INCREMENTAL_REFRESH_CONSUMER}",
                 f"{DAILY_TICK_EVENT}:{DAILY_REFRESH_CONSUMER}",
+                f"{REFRESH_REQUESTED_EVENT}:{REFRESH_INTENT_CONSUMER}",
             ]
         )
     if include_outbound:
