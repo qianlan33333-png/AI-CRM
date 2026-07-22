@@ -539,7 +539,7 @@ def test_external_effect_backlog_excludes_only_shared_pre_cutover_identity_adopt
         "excluded_from_business_health": True,
         "provider_boundary_crossed": False,
         "pending_generation_1_adoption": True,
-        "predicate_version": "identity_contact_detail_test_policy_v1",
+        "predicate_version": "identity_contact_detail_test_policy_v2",
         "strict_provenance_required": True,
     }
     query = "\n".join(calls)

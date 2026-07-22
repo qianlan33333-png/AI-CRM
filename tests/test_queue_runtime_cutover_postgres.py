@@ -52,6 +52,7 @@ def _insert_deferred_identity_effect(
     provider_boundary_crossed: bool = False,
     extra_attempt: bool = False,
     with_runtime: bool = False,
+    attempt_adapter_mode: str = "disabled",
 ) -> tuple[int, int]:
     job = connection.execute(
         """
@@ -126,13 +127,13 @@ def _insert_deferred_identity_effect(
             status, error_code, error_message, provider_call_started_at,
             worker_generation, completed_at
         ) VALUES (
-            %s, %s, %s, 'execute', 'get_external_contact_detail',
+            %s, %s, %s, %s, 'get_external_contact_detail',
             'blocked', 'effect_type_not_allowed', 'blocked before provider',
             CASE WHEN %s THEN CURRENT_TIMESTAMP ELSE NULL END,
             0, CURRENT_TIMESTAMP
         )
         """,
-        (attempt_id, job_id, adapter_name, provider_boundary_crossed),
+        (attempt_id, job_id, adapter_name, attempt_adapter_mode, provider_boundary_crossed),
     )
     connection.execute(
         "UPDATE external_effect_job SET last_attempt_id = %s WHERE id = %s",
@@ -145,12 +146,12 @@ def _insert_deferred_identity_effect(
                 attempt_id, job_id, adapter_name, adapter_mode, operation,
                 status, error_code, error_message, worker_generation, completed_at
             ) VALUES (
-                %s, %s, %s, 'execute', 'get_external_contact_detail',
+                %s, %s, %s, %s, 'get_external_contact_detail',
                 'blocked', 'effect_type_not_allowed', 'unexpected second attempt',
                 0, CURRENT_TIMESTAMP
             )
             """,
-            (f"eea-deferred-{suffix}-second", job_id, adapter_name),
+            (f"eea-deferred-{suffix}-second", job_id, adapter_name, attempt_adapter_mode),
         )
     if with_runtime:
         connection.execute(
@@ -1181,7 +1182,7 @@ def test_all_scope_transition_adopts_only_pre_provider_identity_effect_and_prese
         "adopted_job_count": 1,
         "adopted_queue_count": 1,
         "adopted_runtime_count": 1,
-        "predicate_version": "identity_contact_detail_test_policy_v1",
+        "predicate_version": "identity_contact_detail_test_policy_v2",
     }
 
 
@@ -1221,6 +1222,11 @@ def test_all_scope_transition_never_adopts_ambiguous_or_wrong_provenance_identit
             "attempt-" + uuid4().hex,
             extra_attempt=True,
         )
+        wrong_attempt_mode_job, _ = _insert_deferred_identity_effect(
+            connection,
+            "attempt-mode-" + uuid4().hex,
+            attempt_adapter_mode="execute",
+        )
 
     target_policy_version = f"queue-v2-production-all-{uuid4().hex[:10]}"
     repository.transition_external_claim_scope(
@@ -1239,7 +1245,7 @@ def test_all_scope_transition_never_adopts_ambiguous_or_wrong_provenance_identit
             SELECT id, status, worker_generation, policy_version
             FROM external_effect_job WHERE id = ANY(%s) ORDER BY id
             """,
-            ([provider_job, wrong_route_job, wrong_adapter_job, duplicate_attempt_job],),
+            ([provider_job, wrong_route_job, wrong_adapter_job, duplicate_attempt_job, wrong_attempt_mode_job],),
         ).fetchall()
         audit = connection.execute(
             """
@@ -1258,7 +1264,7 @@ def test_all_scope_transition_never_adopts_ambiguous_or_wrong_provenance_identit
         "adopted_job_count": 0,
         "adopted_queue_count": 0,
         "adopted_runtime_count": 0,
-        "predicate_version": "identity_contact_detail_test_policy_v1",
+        "predicate_version": "identity_contact_detail_test_policy_v2",
     }
 
 
