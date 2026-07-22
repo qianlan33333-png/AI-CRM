@@ -1,0 +1,11 @@
+[Unit]
+Description=Capture AI-CRM queue soak evidence every 15 minutes
+
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+RandomizedDelaySec=20
+Unit=aicrm-queue-soak-snapshot.service
+
+[Install]
+WantedBy=timers.target

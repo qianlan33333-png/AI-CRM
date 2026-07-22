@@ -41,6 +41,7 @@ from aicrm_next.platform_foundation.internal_events.worker import (
 EXECUTE_ENV = "AICRM_QUEUE_RUNTIME_EXECUTE"
 TEST_ONLY_ENV = "AICRM_QUEUE_RUNTIME_TEST_ONLY"
 ALLOWLISTED_CANARY_ENV = "AICRM_QUEUE_RUNTIME_ALLOWLISTED_CANARY"
+ALL_SCOPE_ENV = "AICRM_QUEUE_RUNTIME_ALL_SCOPE"
 
 
 def _truthy(value: str) -> bool:
@@ -81,14 +82,19 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         and args.execute
         and not args.test_only
         and not _truthy(os.getenv(ALLOWLISTED_CANARY_ENV, ""))
+        and not _truthy(os.getenv(ALL_SCOPE_ENV, ""))
     ):
         parser.error(
-            "external allowlisted execute requires the reviewed canary generation marker"
+            "external execute requires a reviewed allowlisted or all-scope generation marker"
         )
     if args.queue_kind == "external" and args.test_only and _truthy(
         os.getenv(ALLOWLISTED_CANARY_ENV, "")
     ):
         parser.error("external runtime cannot be both test-only and allowlisted canary")
+    if args.queue_kind == "external" and args.test_only and _truthy(os.getenv(ALL_SCOPE_ENV, "")):
+        parser.error("external runtime cannot be both test-only and all-scope")
+    if _truthy(os.getenv(ALLOWLISTED_CANARY_ENV, "")) and _truthy(os.getenv(ALL_SCOPE_ENV, "")):
+        parser.error("external runtime cannot be both allowlisted canary and all-scope")
     return args
 
 

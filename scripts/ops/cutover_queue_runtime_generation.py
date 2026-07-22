@@ -51,14 +51,27 @@ class SystemdQueueRuntimeLifecycle:
         self.write_generation_marker(generation=int(generation), committed=False, test_only=True)
 
     @staticmethod
-    def write_generation_marker(*, generation: int, committed: bool, test_only: bool) -> None:
+    def write_generation_marker(
+        *,
+        generation: int,
+        committed: bool,
+        test_only: bool,
+        external_claim_scope: str = "",
+    ) -> None:
+        scope = str(external_claim_scope or ("test_loopback" if test_only else "allowlisted")).strip()
+        if scope not in {"test_loopback", "allowlisted", "all"}:
+            raise ValueError(f"unsupported generation marker scope: {scope}")
+        if test_only != (scope == "test_loopback"):
+            raise ValueError("test_only must match the external claim scope")
         test_flag = 1 if test_only else 0
-        allowlisted_flag = 0 if test_only else 1
+        allowlisted_flag = 1 if scope == "allowlisted" else 0
+        all_scope_flag = 1 if scope == "all" else 0
         payload = (
             f"AICRM_QUEUE_WORKER_GENERATION={int(generation)}\n"
             "AICRM_QUEUE_RUNTIME_EXECUTE=1\n"
             f"AICRM_QUEUE_RUNTIME_TEST_ONLY={test_flag}\n"
             f"AICRM_QUEUE_RUNTIME_ALLOWLISTED_CANARY={allowlisted_flag}\n"
+            f"AICRM_QUEUE_RUNTIME_ALL_SCOPE={all_scope_flag}\n"
             f"AICRM_EXTERNAL_EFFECT_TEST_EXECUTION_ONLY={test_flag}\n"
             f"AICRM_QUEUE_CUTOVER_COMMITTED={1 if committed else 0}\n"
         )

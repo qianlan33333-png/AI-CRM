@@ -587,6 +587,13 @@ def evaluate_soak_snapshot(
         violations.append("unknown_count_increased")
     if int(metrics.get("queue_dlq_count") or 0) > int(baseline.get("queue_dlq_count") or 0):
         violations.append("dlq_count_increased")
+    for key, violation in (
+        ("queue_active_generation", "active_generation_changed"),
+        ("queue_policy_version", "queue_policy_version_changed"),
+        ("queue_external_claim_scope", "external_claim_scope_changed"),
+    ):
+        if str(metrics.get(key) or "") != str(baseline.get(key) or ""):
+            violations.append(violation)
     oldest_eligible = max(
         int(metrics.get("external_effect_eligible_oldest_pending_age_seconds") or 0),
         int(metrics.get("internal_event_actionable_oldest_pending_age_seconds") or 0),

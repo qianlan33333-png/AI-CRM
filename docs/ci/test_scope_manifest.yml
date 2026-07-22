@@ -1677,12 +1677,14 @@
         "scripts/ops/run_queue_runtime_fault_drill.py",
         "scripts/ops/run_test_loopback_canary.py",
         "scripts/ops/transition_queue_runtime_scope.py",
+        "scripts/ops/validate_queue_all_scope_cutover.py",
         "scripts/run_execution_runtime.py",
         "tests/test_admin_queue_command_*.py",
         "tests/test_execution_runtime_*.py",
         "tests/test_execution_timeline_graph_postgres.py",
         "tests/test_queue_runtime_cutover*.py",
         "tests/test_queue_runtime_systemd.py",
+        "tests/test_queue_all_scope_cutover.py",
         "tests/test_run_execution_runtime.py"
       ],
       "python_tests": [
@@ -1699,6 +1701,7 @@
         "tests/test_queue_runtime_cutover.py",
         "tests/test_queue_runtime_cutover_postgres.py",
         "tests/test_queue_runtime_systemd.py",
+        "tests/test_queue_all_scope_cutover.py",
         "tests/test_run_execution_runtime.py",
         "tests/test_alembic_revision_chain.py",
         "tests/test_database_bootstrap.py",

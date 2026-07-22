@@ -908,6 +908,47 @@ def test_scope_transition_refuses_any_dispatching_external_effect() -> None:
     assert repository.read_state().external_claim_scope == "test_loopback"
 
 
+def test_scope_transition_can_enter_all_scope_and_resume_execute_mode() -> None:
+    repository = RuntimeGenerationRepository(_database_url())
+    target_policy_version = f"queue-v2-production-all-{uuid4().hex[:10]}"
+    repository.activate_generation(
+        expected_generation=0,
+        target_generation=81,
+        expected_policy_version="queue-v2-test-loopback",
+        lanes=("wecom_interactive", "outbound_webhook"),
+        actor="pytest",
+        reason="activate before production all scope",
+    )
+    repository.disable_claims(
+        expected_generation=81,
+        actor="pytest",
+        reason="drain before production all scope",
+    )
+
+    transitioned = repository.transition_external_claim_scope(
+        expected_generation=81,
+        expected_policy_version="queue-v2-test-loopback",
+        target_policy_version=target_policy_version,
+        expected_scope="test_loopback",
+        target_scope="all",
+        actor="pytest",
+        reason="explicit production all scope transition",
+    )
+    resumed = repository.resume_claims(
+        expected_generation=81,
+        expected_policy_version=target_policy_version,
+        expected_scope="all",
+        actor="pytest",
+        reason="resume after production listener verification",
+    )
+
+    assert transitioned.claim_enabled is False
+    assert transitioned.external_claim_scope == "all"
+    assert resumed.claim_enabled is True
+    assert resumed.rollout_mode == "execute"
+    assert resumed.external_claim_scope == "all"
+
+
 def test_invariant_checker_reports_missing_active_generation_heartbeats() -> None:
     RuntimeGenerationRepository(_database_url()).activate_generation(
         expected_generation=0,
