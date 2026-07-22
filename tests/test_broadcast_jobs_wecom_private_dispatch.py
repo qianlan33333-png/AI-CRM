@@ -87,6 +87,15 @@ class RecordingWeComClient:
         return {"errcode": 0, "msgid": "msg-recorded"}
 
 
+class ResultWeComClient:
+    def __init__(self, result: dict[str, Any]) -> None:
+        self.result = dict(result)
+
+    def create_group_message_task(self, payload: dict[str, Any]) -> dict[str, Any]:
+        self.payload = dict(payload)
+        return dict(self.result)
+
+
 @pytest.fixture(autouse=True)
 def _resolve_unionid_targets(monkeypatch) -> None:
     def fake_resolver(unionids: list[str]) -> tuple[list[str], list[str]]:
@@ -590,6 +599,54 @@ def test_wecom_private_adapter_canonicalizes_miniprogram_attachment(monkeypatch)
             },
         }
     ]
+
+
+def test_wecom_private_adapter_preserves_known_provider_error_evidence(monkeypatch) -> None:
+    from aicrm_next.integration_gateway.wecom_private_adapter import WeComPrivateMessageAdapter
+
+    monkeypatch.setenv("AICRM_ENABLE_REAL_WECOM_PRIVATE_MESSAGE", "1")
+    client = ResultWeComClient({"errcode": 40096, "errmsg": "invalid external_userid"})
+    adapter = WeComPrivateMessageAdapter(mode="production", client_factory=lambda: client)
+
+    result = adapter.create_private_message_task(
+        {
+            "sender": "HuangYouCan",
+            "external_userids": ["wm_test"],
+            "text": {"content": "hello"},
+        },
+        idempotency_key="adapter-known-provider-error",
+    )
+
+    assert result["ok"] is False
+    assert result["side_effect_executed"] is True
+    assert result["provider_errcode"] == 40096
+    assert result["provider_error_classification"] == "terminal"
+    assert result["error_code"] == "wecom_error_40096"
+    assert result["retryable"] is False
+    assert result["result"] == {"errcode": 40096, "errmsg": "invalid external_userid"}
+
+
+def test_wecom_private_adapter_preserves_retryable_provider_error(monkeypatch) -> None:
+    from aicrm_next.integration_gateway.wecom_private_adapter import WeComPrivateMessageAdapter
+
+    monkeypatch.setenv("AICRM_ENABLE_REAL_WECOM_PRIVATE_MESSAGE", "1")
+    client = ResultWeComClient({"errcode": 45009, "errmsg": "rate limit"})
+    adapter = WeComPrivateMessageAdapter(mode="production", client_factory=lambda: client)
+
+    result = adapter.create_private_message_task(
+        {
+            "sender": "HuangYouCan",
+            "external_userids": ["wm_test"],
+            "text": {"content": "hello"},
+        },
+        idempotency_key="adapter-retryable-provider-error",
+    )
+
+    assert result["ok"] is False
+    assert result["provider_errcode"] == 45009
+    assert result["provider_error_classification"] == "retryable"
+    assert result["error_code"] == "rate_limited"
+    assert result["retryable"] is True
 
 
 @pytest.mark.skip(reason="broadcast provider dispatch retired; External Effect owns execution")

@@ -6,6 +6,7 @@ from typing import Any, Callable
 from aicrm_next.platform_foundation.external_effects.execution_gates import explicit_wecom_execution_disabled
 from aicrm_next.shared.runtime_settings import runtime_bool, runtime_setting
 from aicrm_next.shared.wecom_payload_contract import normalize_miniprogram_attachment_payload
+from aicrm_next.shared.wecom_runtime import classify_wecom_provider_error
 
 from .audit import record_audit_event
 from .wecom_customer_group_client import WeComCustomerGroupClient, WeComCustomerGroupClientError
@@ -38,6 +39,15 @@ def _safe_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
 def _targets(value: Any) -> list[str]:
     return [str(item or "").strip() for item in list(value or []) if str(item or "").strip()]
+
+
+def _provider_errcode(value: Any, *, default: int = 0) -> int:
+    if isinstance(value, bool):
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
 
 
 def _normalize_wecom_attachment(item: Any) -> dict[str, Any]:
@@ -131,6 +141,11 @@ class WeComPrivateMessageAdapter:
         try:
             result = self._client().create_group_message_task(normalized)
         except WeComCustomerGroupClientError as exc:
+            provider_errcode = _provider_errcode((exc.payload or {}).get("errcode"))
+            derived_error_code, classification = classify_wecom_provider_error(
+                provider_errcode=provider_errcode,
+                transport_error=exc.error_code == "wecom_group_client_http_error",
+            )
             return self._result(
                 ok=False,
                 operation="create_private_message_task",
@@ -138,13 +153,23 @@ class WeComPrivateMessageAdapter:
                 target=target,
                 result=exc.payload if exc.payload else {},
                 side_effect_executed=True,
-                error_code="external_call_unknown" if not exc.payload else "external_call_failed_known",
+                error_code=(
+                    derived_error_code
+                    if provider_errcode or exc.error_code == "wecom_group_client_http_error"
+                    else exc.error_code or "wecom_private_message_client_error"
+                ),
                 error_message=str(exc),
+                extra={
+                    "provider_errcode": provider_errcode,
+                    "provider_error_classification": classification,
+                    "retryable": classification == "retryable",
+                },
             )
         errcode = int(result.get("errcode") or 0) if isinstance(result, dict) else -1
         msgid = str((result or {}).get("msgid") or "").strip() if isinstance(result, dict) else ""
         fail_list = _targets((result or {}).get("fail_list")) if isinstance(result, dict) else []
         if errcode != 0:
+            error_code, classification = classify_wecom_provider_error(provider_errcode=errcode)
             return self._result(
                 ok=False,
                 operation="create_private_message_task",
@@ -152,8 +177,13 @@ class WeComPrivateMessageAdapter:
                 target=target,
                 result=result if isinstance(result, dict) else {},
                 side_effect_executed=True,
-                error_code="external_call_failed_known",
+                error_code=error_code,
                 error_message=str((result or {}).get("errmsg") or "WeCom private message API failed"),
+                extra={
+                    "provider_errcode": errcode,
+                    "provider_error_classification": classification,
+                    "retryable": classification == "retryable",
+                },
             )
         if not msgid:
             return self._result(
@@ -174,9 +204,16 @@ class WeComPrivateMessageAdapter:
                 target=target,
                 result=result,
                 side_effect_executed=True,
-                error_code="external_call_failed_known",
+                error_code="private_target_rejected",
                 error_message=f"WeCom rejected {len(fail_list)} requested private targets",
-                extra={"failed_external_userids": fail_list, "wecom_msgid": msgid},
+                extra={
+                    "failed_external_userids": fail_list,
+                    "failed_external_userid_count": len(fail_list),
+                    "provider_errcode": 0,
+                    "provider_error_classification": "terminal",
+                    "retryable": False,
+                    "wecom_msgid": msgid,
+                },
             )
         return self._result(
             ok=True,
