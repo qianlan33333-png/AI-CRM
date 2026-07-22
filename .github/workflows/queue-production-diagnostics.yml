@@ -122,12 +122,74 @@ jobs:
                         )
                     ).mappings()
                 ]
+                terminal_followup = [
+                    dict(row)
+                    for row in session.execute(
+                        text(
+                            """
+                            WITH classified AS (
+                                SELECT
+                                    terminal.effect_type,
+                                    terminal.business_type,
+                                    terminal.last_error_code,
+                                    EXISTS (
+                                        SELECT 1
+                                        FROM external_effect_job success
+                                        WHERE success.status = 'succeeded'
+                                          AND success.effect_type = terminal.effect_type
+                                          AND success.business_type = terminal.business_type
+                                          AND success.business_id <> ''
+                                          AND success.business_id = terminal.business_id
+                                    ) AS succeeded_same_business,
+                                    EXISTS (
+                                        SELECT 1
+                                        FROM external_effect_job success
+                                        WHERE success.status = 'succeeded'
+                                          AND success.effect_type = terminal.effect_type
+                                          AND success.target_type = terminal.target_type
+                                          AND success.target_id = terminal.target_id
+                                    ) AS succeeded_same_target,
+                                    EXISTS (
+                                        SELECT 1
+                                        FROM external_effect_job success
+                                        WHERE success.status = 'succeeded'
+                                          AND success.effect_type = terminal.effect_type
+                                          AND success.target_type = terminal.target_type
+                                          AND success.target_id = terminal.target_id
+                                          AND success.updated_at > terminal.updated_at
+                                    ) AS succeeded_same_target_after_terminal
+                                FROM external_effect_job terminal
+                                WHERE terminal.status = 'failed_terminal'
+                                  AND terminal.updated_at >= CURRENT_TIMESTAMP - INTERVAL '24 hours'
+                            )
+                            SELECT
+                                effect_type,
+                                business_type,
+                                last_error_code,
+                                succeeded_same_business,
+                                succeeded_same_target,
+                                succeeded_same_target_after_terminal,
+                                COUNT(*) AS row_count
+                            FROM classified
+                            GROUP BY
+                                effect_type,
+                                business_type,
+                                last_error_code,
+                                succeeded_same_business,
+                                succeeded_same_target,
+                                succeeded_same_target_after_terminal
+                            ORDER BY row_count DESC
+                            """
+                        )
+                    ).mappings()
+                ]
             print(
                 json.dumps(
                     {
                         "external_effect_health": payload(_external_effect_failed_retryable_backlog()),
                         "customer_360_freshness": payload(_customer_360_freshness_guard()),
                         "recent_external_effect_groups": grouped,
+                        "terminal_followup_proof": terminal_followup,
                         "contains_raw_target_or_payload": False,
                         "read_only": True,
                     },
