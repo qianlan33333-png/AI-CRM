@@ -13,7 +13,8 @@ from typing import Any, Callable, Sequence
 try:
     from scripts.script_runtime import ensure_repo_root_on_path, print_json
 except ModuleNotFoundError:  # pragma: no cover - direct script execution
-    from script_runtime import ensure_repo_root_on_path, print_json
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from scripts.script_runtime import ensure_repo_root_on_path, print_json
 
 ensure_repo_root_on_path()
 
