@@ -1,0 +1,137 @@
+name: Queue Production Diagnostics (Read Only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_release_sha:
+        description: Exact release SHA currently exposed by production
+        required: true
+        type: string
+      confirmation:
+        description: Exact read-only diagnostics confirmation
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aicrm-production-queue-diagnostics
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Verify public release and confirmation
+        run: |
+          set -e
+          expected_release_sha='${{ inputs.expected_release_sha }}'
+          confirmation='${{ inputs.confirmation }}'
+          test "$confirmation" = 'DIAGNOSE AI-CRM QUEUE PRODUCTION READ ONLY'
+          printf '%s' "$expected_release_sha" | grep -Eq '^[0-9a-f]{40}$'
+          curl -sSf -D /tmp/aicrm-production-diagnostic-health.headers \
+            https://www.youcangogogo.com/health \
+            -o /tmp/aicrm-production-diagnostic-health.json
+          public_sha="$(awk 'tolower($1) == "x-aicrm-release-sha:" {gsub("\\r", "", $2); print $2}' /tmp/aicrm-production-diagnostic-health.headers)"
+          test "$public_sha" = "$expected_release_sha"
+
+      - name: Read aggregate queue and data-health evidence
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.2
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          command_timeout: 10m
+          script: |
+            set -e
+            set -o pipefail
+            cd '/home/ubuntu/极简 crm'
+            expected_release_sha='${{ inputs.expected_release_sha }}'
+            test "$(git rev-parse HEAD)" = "$expected_release_sha"
+            test "$(tr -d '\r\n' < .release-sha)" = "$expected_release_sha"
+            source /home/ubuntu/.openclaw-wecom-pg.env
+            source /home/ubuntu/venvs/openclaw/bin/activate
+            python3 - <<'PY'
+            import json
+
+            from sqlalchemy import text
+
+            from aicrm_next.data_health.checks import (
+                _customer_360_freshness_guard,
+                _external_effect_failed_retryable_backlog,
+            )
+            from aicrm_next.shared.db_session import get_session_factory
+
+
+            def payload(result):
+                model_dump = getattr(result, "model_dump", None)
+                return model_dump() if callable(model_dump) else result.dict()
+
+
+            with get_session_factory()() as session:
+                grouped = [
+                    dict(row)
+                    for row in session.execute(
+                        text(
+                            """
+                            SELECT
+                                status,
+                                effect_type,
+                                adapter_name,
+                                operation,
+                                business_type,
+                                source_module,
+                                source_route,
+                                last_error_code,
+                                attempt_count,
+                                max_attempts,
+                                side_effect_executed,
+                                provider_result_received,
+                                worker_generation,
+                                policy_version,
+                                execution_mode,
+                                COUNT(*) AS row_count,
+                                MIN(updated_at) AS oldest_updated_at,
+                                MAX(updated_at) AS newest_updated_at
+                            FROM external_effect_job
+                            WHERE status IN ('failed_retryable', 'failed_terminal', 'blocked')
+                              AND updated_at >= CURRENT_TIMESTAMP - INTERVAL '24 hours'
+                            GROUP BY
+                                status,
+                                effect_type,
+                                adapter_name,
+                                operation,
+                                business_type,
+                                source_module,
+                                source_route,
+                                last_error_code,
+                                attempt_count,
+                                max_attempts,
+                                side_effect_executed,
+                                provider_result_received,
+                                worker_generation,
+                                policy_version,
+                                execution_mode
+                            ORDER BY newest_updated_at DESC
+                            LIMIT 50
+                            """
+                        )
+                    ).mappings()
+                ]
+            print(
+                json.dumps(
+                    {
+                        "external_effect_health": payload(_external_effect_failed_retryable_backlog()),
+                        "customer_360_freshness": payload(_customer_360_freshness_guard()),
+                        "recent_external_effect_groups": grouped,
+                        "contains_raw_target_or_payload": False,
+                        "read_only": True,
+                    },
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    default=str,
+                )
+            )
+            PY

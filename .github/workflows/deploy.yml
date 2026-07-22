@@ -196,7 +196,7 @@ jobs:
                   fi
                   if ! python3 "$release_control_manager" \
                     --manifest "$release_control_manifest" \
-                    --phase stop-for-migration --execute; then
+                    --phase stop-for-migration-recovery --execute; then
                     cleanup_failed=1
                   fi
                 else
@@ -263,7 +263,7 @@ jobs:
                   fi
                   if ! python3 "$release_control_manager" \
                     --manifest "$release_control_manifest" \
-                    --phase verify --execute; then
+                    --phase verify-staged-runtime --execute; then
                     cleanup_failed=1
                   fi
                   if ! python3 "$release_control_manager" \
@@ -504,6 +504,19 @@ jobs:
               --expected-callback-url "$auth_issuer/auth/wecom/callback" \
               "${runtime_secret_args[@]}" \
               | tee /tmp/aicrm-runtime-secret-readiness.json
+            export AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED=1
+            python scripts/run_customer_read_model_refresh.py \
+              --execute \
+              --release-refresh \
+              --source-key "deploy_runtime:$after_sha" \
+              | tee /tmp/aicrm-customer-read-model-release-refresh.json
+            python scripts/run_internal_event_worker.py \
+              --execute \
+              --limit 1 \
+              --event-types customer_read_model.refresh.requested \
+              --consumer-names customer_read_model_refresh_intent_consumer \
+              | tee /tmp/aicrm-customer-read-model-release-refresh-consumer.json
+            unset AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED
             deploy_smoke_session_file="$(mktemp /tmp/aicrm-deploy-smoke-session.XXXXXX)"
             python3 scripts/ops/create_deploy_smoke_session.py issue \
               --output-file "$deploy_smoke_session_file" \

@@ -57,7 +57,7 @@ def test_failed_uncommitted_deploy_restores_previous_exact_sha_and_dependencies(
     committed_init = workflow.index("release_committed=0", switched_init)
     cleanup_index = workflow.index("cleanup_deploy()", committed_init)
     transaction_guard = workflow.index('[ "${runtime_mutation_started:-0}" = "1" ]', cleanup_index)
-    stop_index = workflow.index("--phase stop-for-migration --execute", transaction_guard)
+    stop_index = workflow.index("--phase stop-for-migration-recovery --execute", transaction_guard)
     rollback_guard = workflow.index('[ "${release_switched:-0}" = "1" ]', stop_index)
     reset_index = workflow.index('git reset --hard "$before_sha"', rollback_guard)
     release_file_index = workflow.index("printf '%s\\n' \"$before_sha\" > .release-sha", reset_index)
@@ -526,7 +526,7 @@ def test_production_deploy_failure_after_quiesce_is_fail_closed():
         "--phase begin-transaction --execute",
         cleanup_guard_index,
     )
-    cleanup_stop_runtime_index = workflow.index("--phase stop-for-migration --execute", cleanup_begin_index)
+    cleanup_stop_runtime_index = workflow.index("--phase stop-for-migration-recovery --execute", cleanup_begin_index)
     cleanup_stop_web_index = workflow.index("sudo systemctl stop openclaw-wecom-postgres.service || true", cleanup_guard_index)
     deploy_stop_index = _deploy_runtime_phase_index(workflow, "stop-for-migration")
     reset_index = workflow.index('git reset --hard "$verified_sha"')
@@ -643,8 +643,8 @@ def test_deploy_exit_trap_revokes_smoke_session_and_restores_runtime_units():
     workflow = PRODUCTION_DEPLOY_WORKFLOW.read_text(encoding="utf-8")
 
     cleanup_index = workflow.index("cleanup_deploy() {")
-    stop_index = workflow.index("--phase stop-for-migration --execute", cleanup_index)
-    verify_index = workflow.index("--phase verify --execute", stop_index)
+    stop_index = workflow.index("--phase stop-for-migration-recovery --execute", cleanup_index)
+    verify_index = workflow.index("--phase verify-staged-runtime --execute", stop_index)
     trap_index = workflow.index("trap cleanup_deploy EXIT", verify_index)
     restored_flag_index = workflow.index("runtime_units_stopped=0", trap_index)
 
@@ -656,8 +656,45 @@ def test_deploy_exit_trap_revokes_smoke_session_and_restores_runtime_units():
     assert 'git reset --hard "$before_sha"' in cleanup
     assert 'grep -i "x-aicrm-release-sha: $restore_expected_sha"' in cleanup
     assert "--phase install-enable-after-web-health --execute" in cleanup
-    assert "--phase verify --execute" in cleanup
+    assert "--phase verify-staged-runtime --execute" in cleanup
     assert "restored_web_ready" in cleanup
+
+
+def test_production_deploy_refreshes_customer_projection_through_the_scoped_internal_consumer_before_smoke():
+    workflow = PRODUCTION_DEPLOY_WORKFLOW.read_text(encoding="utf-8")
+
+    readiness_index = workflow.index("python scripts/ops/check_runtime_secret_readiness.py")
+    request_index = workflow.index("python scripts/run_customer_read_model_refresh.py", readiness_index)
+    release_refresh_index = workflow.index("--release-refresh", request_index)
+    source_key_index = workflow.index('--source-key "deploy_runtime:$after_sha"', release_refresh_index)
+    consumer_index = workflow.index("python scripts/run_internal_event_worker.py", source_key_index)
+    event_type_index = workflow.index("--event-types customer_read_model.refresh.requested", consumer_index)
+    consumer_name_index = workflow.index(
+        "--consumer-names customer_read_model_refresh_intent_consumer",
+        event_type_index,
+    )
+    smoke_index = workflow.index("python scripts/ops/check_admin_read_pages_smoke.py", consumer_name_index)
+
+    assert readiness_index < request_index < release_refresh_index < source_key_index
+    assert source_key_index < consumer_index < event_type_index < consumer_name_index < smoke_index
+    assert "AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED=1" in workflow[readiness_index:smoke_index]
+    assert "--limit 1" in workflow[consumer_index:smoke_index]
+
+
+def test_queue_production_diagnostics_is_count_only_and_requires_exact_public_release():
+    workflow = (ROOT / ".github" / "workflows" / "queue-production-diagnostics.yml").read_text(encoding="utf-8")
+
+    assert "DIAGNOSE AI-CRM QUEUE PRODUCTION READ ONLY" in workflow
+    assert 'test "$public_sha" = "$expected_release_sha"' in workflow
+    assert 'test "$(git rev-parse HEAD)" = "$expected_release_sha"' in workflow
+    assert "_external_effect_failed_retryable_backlog" in workflow
+    assert "_customer_360_freshness_guard" in workflow
+    assert "COUNT(*) AS row_count" in workflow
+    assert "target_id" not in workflow
+    assert "payload_json" not in workflow
+    assert "UPDATE external_effect_job" not in workflow
+    assert "DELETE FROM external_effect_job" not in workflow
+    assert "INSERT INTO external_effect_job" not in workflow
 
 
 def test_production_deploy_retires_legacy_external_push_worker():
