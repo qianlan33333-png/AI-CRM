@@ -9,8 +9,8 @@
   },
   "target": {
     "repository": "qianlan333/AI-CRM",
-    "candidate_sha": "63002ab7013f013fbcaf17774f116dae8cc0e0d4",
-    "pull_request": 1764
+    "candidate_sha": "b3aa100e77a2bd174a8db52b7e38c512f7e2a44d",
+    "pull_request": 1767
   },
   "allowed_post_candidate_paths": [
     ".github/workflows/deploy.yml",
