@@ -1117,6 +1117,8 @@ def test_sidebar_questionnaires_fall_back_to_identity_snapshot_when_context_flap
     assert payload["questionnaires"] == [
         {
             "id": "1414",
+            "submission_id": "1414",
+            "questionnaire_id": "21",
             "title": "填写问卷激活黄小璨AI",
             "submitted_at": "2026-06-24 18:04",
             "answer_count": 1,

@@ -999,6 +999,8 @@ class SidebarQuestionnaireReadModel:
                 order.append(key)
                 grouped[key] = {
                     "id": submission_id or questionnaire_id or f"q_{len(order)}",
+                    "submission_id": submission_id,
+                    "questionnaire_id": questionnaire_id,
                     "title": title,
                     "submitted_at": submitted_at,
                     "answer_count": 0,

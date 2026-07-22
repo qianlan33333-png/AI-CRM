@@ -168,6 +168,122 @@ def test_timeline_projection_is_paged_filtered_and_strips_identity_and_raw_paylo
         assert secret not in str(payload)
 
 
+def test_timeline_source_actions_are_allowlisted_and_internal_only() -> None:
+    rows = [
+        {
+            "event_id": "questionnaire:submission-42",
+            "event_time": "2026-07-17T11:26:29+08:00",
+            "event_type": "questionnaire_submitted",
+            "title": "提交问卷 · 激活问卷",
+            "summary": "已完成问卷提交",
+            "source_table": "questionnaire_submissions",
+            "source_id": "submission-42",
+            "metadata": {"questionnaire_id": "21", "questionnaire_title": "激活问卷"},
+        },
+        {
+            "event_id": "product:payment:wx/order 1",
+            "event_time": "2026-07-17T11:20:00+08:00",
+            "event_type": "product_enrolled",
+            "title": "报名或支付成功 · 年度版",
+            "summary": "已完成商品报名或支付",
+            "source_table": "wechat_pay_orders",
+            "source_id": "wx/order 1",
+            "metadata": {"product_id": "annual", "product_title": "年度版", "product_type": "standard_product"},
+        },
+        {
+            "event_id": "product:wechat_shop:shop/order 2",
+            "event_time": "2026-07-17T11:10:00+08:00",
+            "event_type": "product_enrolled",
+            "title": "报名或支付成功 · 小店商品",
+            "summary": "已完成商品报名或支付",
+            "source_table": "wechat_shop_orders",
+            "source_id": "shop/order 2",
+            "metadata": {"product_id": "shop", "product_title": "小店商品", "product_type": "wechat_shop"},
+        },
+        {
+            "event_id": "channel_entry:8",
+            "event_time": "2026-07-17T11:00:00+08:00",
+            "event_type": "channel_entry",
+            "title": "扫码进入渠道",
+            "summary": "直播间",
+            "source_table": "automation_channel_entry_effect_log",
+            "source_id": "8",
+            "metadata": {"channel_name": "直播间"},
+        },
+        {
+            "event_id": "radar:9",
+            "event_time": "2026-07-17T10:50:00+08:00",
+            "event_type": "radar_opened",
+            "title": "打开雷达 · 白皮书",
+            "summary": "已打开追踪链接",
+            "source_table": "radar_click_events",
+            "source_id": "9",
+            "metadata": {"radar_id": "3", "radar_title": "白皮书", "target_type": "pdf"},
+        },
+        {
+            "event_id": "product:service_period:enrollment-only",
+            "event_time": "2026-07-17T10:40:00+08:00",
+            "event_type": "product_enrolled",
+            "title": "报名成功 · 无订单报名",
+            "summary": "已完成商品报名或支付",
+            "source_table": "commerce_enrollment",
+            "source_id": "enrollment-only",
+            "metadata": {"product_id": "offline", "product_title": "无订单报名", "product_type": "service_period"},
+        },
+    ]
+
+    class Repository:
+        def get_customer(self, external_userid):
+            return {"external_userid": external_userid, "unionid": "union-signed"}
+
+        def list_timeline_by_unionid(self, _unionid, _filters, *, limit=None, offset=0):
+            return rows[offset : offset + limit]
+
+        def count_timeline_by_unionid(self, _unionid, _filters):
+            return len(rows)
+
+    payload = SidebarCustomerTimelineQuery(Repository())(external_userid="wm-signed")
+    items = payload["items"]
+
+    assert items[0]["source_action"] == {
+        "kind": "questionnaire_submission",
+        "label": "查看原纪录",
+        "submission_id": "submission-42",
+        "questionnaire_id": "21",
+    }
+    assert items[1]["source_action"] == {
+        "kind": "order_detail",
+        "label": "查看原纪录",
+        "detail_url": "/admin/wechat-pay/transactions/wx%2Forder%201",
+    }
+    assert items[2]["source_action"] == {
+        "kind": "order_detail",
+        "label": "查看原纪录",
+        "detail_url": "/admin/wechat-shop/transactions/shop%2Forder%202",
+    }
+    assert all("source_action" not in items[index] for index in (3, 4, 5))
+    serialized = str(payload)
+    for hidden in ("source_table", "source_id", "questionnaire_submissions", "automation_channel_entry_effect_log", "radar_click_events"):
+        assert hidden not in serialized
+
+
+def test_service_period_payment_event_reuses_payment_number_for_order_detail() -> None:
+    safe_item = SidebarCustomerTimelineQuery._safe_item(
+        {
+            "event_id": "product:payment:period-pay-9",
+            "event_time": "2026-07-17T10:00:00Z",
+            "event_type": "product_enrolled",
+            "title": "报名或支付成功 · 周期课",
+            "summary": "已确认周期商品报名或激活",
+            "source_table": "service_period_events",
+            "source_id": "period-event-1",
+            "metadata": {"product_id": "9", "product_title": "周期课", "product_type": "service_period"},
+        }
+    )
+
+    assert safe_item["source_action"]["detail_url"] == "/admin/wechat-pay/transactions/period-pay-9"
+
+
 def _sidebar_client(monkeypatch, *, external_userid: str = "wm-signed") -> TestClient:
     monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.delenv("AICRM_NEXT_ENV", raising=False)

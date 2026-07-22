@@ -122,6 +122,40 @@
       .replace(/'/g, "&#39;");
   }
 
+  function formatTimelineTime(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return "—";
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) return "—";
+    try {
+      const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Shanghai",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23",
+      }).formatToParts(parsed);
+      const values = {};
+      parts.forEach((part) => {
+        if (part.type !== "literal") values[part.type] = part.value;
+      });
+      if (!values.year || !values.month || !values.day || !values.hour || !values.minute) return "—";
+      return values.year + "-" + values.month + "-" + values.day + " " + values.hour + ":" + values.minute;
+    } catch (_error) {
+      return "—";
+    }
+  }
+
+  function timelineSummary(item) {
+    const summary = String((item && item.summary) || "").trim();
+    if (String((item && item.event_type) || "") === "product_enrolled" && summary === "已完成商品报名或支付") {
+      return "";
+    }
+    return summary;
+  }
+
   function huangyoucanMatched(item) {
     return ["matched_unionid", "matched_mobile"].indexOf(String((item && item.huangyoucan_match_status) || "")) >= 0;
   }
@@ -516,6 +550,17 @@
     }
   }
 
+  function openOrderDetail(detailUrl) {
+    const link = absoluteUrl(detailUrl);
+    if (!link) {
+      showToast("暂无订单详情链接", "error");
+      return false;
+    }
+    window.open(link, "_blank", "noopener");
+    showToast("已打开订单详情");
+    return true;
+  }
+
   function getQueryValue(key) {
     return new URLSearchParams(window.location.search).get(key) || "";
   }
@@ -734,12 +779,21 @@
     const rows = timeline.items || [];
     const actions = '<div class="timeline-toolbar"><span class="mini">最新动态在前</span><button class="btn ghost" type="button" data-refresh-timeline>刷新</button></div>';
     const body = rows.length
-      ? '<div class="customer-timeline">' + rows.map((item) => (
-          '<article class="timeline-event"><div class="timeline-marker" aria-hidden="true"></div><div class="timeline-event-main">' +
-          '<div class="timeline-event-head"><h3>' + escapeHtml(item.title || "用户动态") + '</h3><time>' + escapeHtml(item.event_time || "") + "</time></div>" +
-          (item.summary ? '<div class="timeline-summary">' + escapeHtml(item.summary) + "</div>" : "") +
-          '</div></article>'
-        )).join("") + "</div>" +
+      ? '<div class="customer-timeline">' + rows.map((item, index) => {
+          const summary = timelineSummary(item);
+          const sourceAction = item.source_action || {};
+          const sourceKind = String(sourceAction.kind || "");
+          const canOpenSource = sourceKind === "questionnaire_submission" || sourceKind === "order_detail";
+          const sourceButton = canOpenSource
+            ? '<div class="timeline-event-actions"><button class="btn ghost" type="button" data-timeline-source="' + escapeHtml(index) + '">查看原纪录</button></div>'
+            : "";
+          return (
+            '<article class="timeline-event"><div class="timeline-marker" aria-hidden="true"></div><div class="timeline-event-main">' +
+            '<div class="timeline-event-head"><h3>' + escapeHtml(item.title || "用户动态") + '</h3><time>' + escapeHtml(formatTimelineTime(item.event_time)) + "</time></div>" +
+            (summary ? '<div class="timeline-summary">' + escapeHtml(summary) + "</div>" : "") +
+            sourceButton + '</div></article>'
+          );
+        }).join("") + "</div>" +
         (timeline.has_more ? '<div class="row-actions timeline-more"><button class="btn ghost" type="button" data-load-more-timeline>加载更多</button></div>' : "")
       : empty("暂无用户时间线记录");
     content.innerHTML = panel("", profileTypeControls() + actions + body);
@@ -758,7 +812,7 @@
           const answers = item.answers || [];
           const count = String(item.answer_count || answers.length || 0) + "/" + String(item.total_count || item.answer_count || answers.length || 0) + " 题";
           return (
-            '<article class="card" data-questionnaire-card="' + index + '">' +
+            '<article class="card" tabindex="-1" data-questionnaire-card="' + index + '" data-questionnaire-submission-id="' + escapeHtml(item.submission_id || item.id || "") + '" data-questionnaire-id="' + escapeHtml(item.questionnaire_id || "") + '">' +
             '<div class="card-title"><div><h3>' + escapeHtml(item.title || "未命名问卷") + "</h3>" +
             '<div class="mini">' + escapeHtml([item.submitted_at || "", count].filter(Boolean).join(" · ")) + "</div></div></div>" +
             '<div class="row-actions"><button class="btn primary" type="button" data-toggle-questionnaire="' + index + '">查看答案</button></div>' +
@@ -1219,6 +1273,37 @@
     }
   }
 
+  async function openTimelineSource(item) {
+    const action = (item && item.source_action) || {};
+    if (action.kind === "order_detail") {
+      return openOrderDetail(action.detail_url);
+    }
+    if (action.kind !== "questionnaire_submission") return false;
+    const submissionId = String(action.submission_id || "").trim();
+    if (!submissionId) {
+      showToast("未找到对应问卷原记录", "error");
+      return false;
+    }
+    await switchTab("questionnaires");
+    const questionnaireIndex = (state.data.questionnaires || []).findIndex((questionnaire) => (
+      String(questionnaire.submission_id || "").trim() === submissionId
+    ));
+    if (questionnaireIndex < 0) {
+      showToast("未找到对应问卷原记录", "error");
+      return false;
+    }
+    const card = content.querySelector('[data-questionnaire-card="' + questionnaireIndex + '"]');
+    if (!card) {
+      showToast("未找到对应问卷原记录", "error");
+      return false;
+    }
+    card.classList.add("open", "timeline-source-highlight");
+    if (typeof card.scrollIntoView === "function") card.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (typeof card.focus === "function") card.focus({ preventScroll: true });
+    window.setTimeout(() => card.classList.remove("timeline-source-highlight"), 1600);
+    return true;
+  }
+
   async function sendMaterial(materialId) {
     if (state.materialType !== "image") {
       showToast("雷达链接请使用复制链接", "error");
@@ -1649,6 +1734,18 @@
       }
       return;
     }
+    const timelineSourceButton = event.target.closest("[data-timeline-source]");
+    if (timelineSourceButton) {
+      const item = (state.data.timeline.items || [])[Number(timelineSourceButton.dataset.timelineSource)];
+      if (!item) return;
+      timelineSourceButton.disabled = true;
+      try {
+        await openTimelineSource(item);
+      } finally {
+        timelineSourceButton.disabled = false;
+      }
+      return;
+    }
     const qButton = event.target.closest("[data-toggle-questionnaire]");
     if (qButton) {
       const card = content.querySelector('[data-questionnaire-card="' + qButton.dataset.toggleQuestionnaire + '"]');
@@ -1703,13 +1800,7 @@
     }
     const orderDetailButton = event.target.closest("[data-order-detail-url]");
     if (orderDetailButton) {
-      const link = absoluteUrl(orderDetailButton.dataset.orderDetailUrl);
-      if (!link) {
-        showToast("暂无订单详情链接", "error");
-        return;
-      }
-      window.open(link, "_blank", "noopener");
-      showToast("已打开订单详情");
+      openOrderDetail(orderDetailButton.dataset.orderDetailUrl);
       return;
     }
   });
