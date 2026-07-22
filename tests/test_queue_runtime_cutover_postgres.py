@@ -9,6 +9,7 @@ import psycopg
 import pytest
 from psycopg.rows import dict_row
 
+from aicrm_next.data_health import checks as data_health_checks
 from aicrm_next.platform_foundation.execution_runtime.commands import (
     QUEUE_RUNTIME_COMMAND_APPLIED,
     QueueCommandConflict,
@@ -1491,6 +1492,65 @@ def test_post_cutover_contact_detail_recovery_rejects_any_provider_boundary() ->
     assert job["status"] == "blocked"
     assert job["attempt_count"] == 2
     assert job["provider_call_started_at"] is not None
+
+
+def test_data_health_excludes_only_exact_post_cutover_recovery_candidate() -> None:
+    target_policy = "queue-v2-production-all-g1"
+    repository = RuntimeGenerationRepository(_database_url())
+    repository.activate_generation(
+        expected_generation=0,
+        target_generation=1,
+        expected_policy_version="queue-v2-test-loopback",
+        lanes=("wecom_interactive",),
+        actor="pytest",
+        reason="activate exact production generation for health",
+    )
+    repository.disable_claims(expected_generation=1, actor="pytest", reason="drain for health")
+    with _connect() as connection:
+        safe_job_id, safe_queue_id = _insert_deferred_identity_effect(
+            connection, "post-cutover-health-safe", with_runtime=True
+        )
+        unsafe_job_id, unsafe_queue_id = _insert_deferred_identity_effect(
+            connection, "post-cutover-health-unsafe", with_runtime=True
+        )
+    repository.transition_external_claim_scope(
+        expected_generation=1,
+        expected_policy_version="queue-v2-test-loopback",
+        target_policy_version=target_policy,
+        expected_scope="test_loopback",
+        target_scope="all",
+        actor="pytest",
+        reason="adopt exact health candidates",
+    )
+    with _connect() as connection:
+        _simulate_post_cutover_contact_detail_gate_block(
+            connection, job_id=safe_job_id, queue_id=safe_queue_id
+        )
+    repository.resume_claims(
+        expected_generation=1,
+        expected_policy_version=target_policy,
+        expected_scope="all",
+        actor="pytest",
+        reason="resume exact health state",
+    )
+
+    safe_health = data_health_checks._external_effect_failed_retryable_backlog()
+    assert safe_health.status == "ok"
+    assert safe_health.evidence["blocked_count"] == 0
+    assert safe_health.evidence["post_cutover_identity_recovery"]["eligible_count"] == 1
+
+    with _connect() as connection:
+        _simulate_post_cutover_contact_detail_gate_block(
+            connection,
+            job_id=unsafe_job_id,
+            queue_id=unsafe_queue_id,
+            provider_boundary_crossed=True,
+        )
+
+    unsafe_health = data_health_checks._external_effect_failed_retryable_backlog()
+    assert unsafe_health.status == "fail"
+    assert unsafe_health.evidence["blocked_count"] == 1
+    assert unsafe_health.evidence["post_cutover_identity_recovery"]["eligible_count"] == 1
 
 
 def test_invariant_checker_reports_missing_active_generation_heartbeats() -> None:

@@ -347,37 +347,37 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_BROADCAST_BLOCKED_MAX_COUNT",
-      "line": 37
+      "line": 39
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_BROADCAST_RETRYABLE_DUE_MAX_COUNT",
-      "line": 38
+      "line": 40
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_BROADCAST_TERMINAL_LOOKBACK_HOURS",
-      "line": 41
-    },
-    {
-      "accessor": "os.getenv",
-      "file": "aicrm_next/data_health/checks.py",
-      "key": "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_RETRYABLE_DUE_MAX_COUNT",
       "line": 43
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/data_health/checks.py",
+      "key": "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_RETRYABLE_DUE_MAX_COUNT",
+      "line": 45
+    },
+    {
+      "accessor": "os.getenv",
+      "file": "aicrm_next/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS",
-      "line": 46
+      "line": 48
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_PROJECTION_FRESHNESS_MAX_MINUTES",
-      "line": 36
+      "line": 38
     },
     {
       "accessor": "os.getenv",

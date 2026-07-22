@@ -558,6 +558,45 @@ def test_external_effect_backlog_excludes_only_shared_pre_cutover_identity_adopt
         assert strict_token in query
 
 
+def test_external_effect_backlog_excludes_only_exact_post_cutover_identity_recovery(monkeypatch) -> None:
+    from aicrm_next.data_health import checks
+
+    calls = _patch_health_db(
+        monkeypatch,
+        {
+            "failed_retryable_count": 0,
+            "recent_failed_terminal_count": 0,
+            "recent_blocked_count": 0,
+            "historical_failed_terminal_count": 0,
+            "historical_blocked_count": 0,
+            "due_retryable_count": 0,
+            "post_cutover_recoverable_identity_count": 6,
+        },
+    )
+
+    result = checks._external_effect_failed_retryable_backlog()
+
+    assert result.status == "ok"
+    assert result.evidence["post_cutover_identity_recovery"] == {
+        "eligible_count": 6,
+        "excluded_from_business_health": True,
+        "provider_boundary_crossed": False,
+        "predicate_version": "identity_contact_detail_all_scope_v1",
+        "strict_provenance_required": True,
+    }
+    query = "\n".join(calls)
+    for strict_token in (
+        "recovery_control.active_generation = 1",
+        "recovery_control.claim_enabled = TRUE",
+        "recovery_control.external_claim_scope = 'all'",
+        "job.attempt_count = 2",
+        "provider_call_started_at IS NULL",
+        "provider_result_json",
+        "NOT EXISTS",
+    ):
+        assert strict_token in query
+
+
 def test_external_effect_backlog_keeps_historical_terminal_evidence_without_permanent_failure(monkeypatch) -> None:
     from aicrm_next.data_health import checks
 
