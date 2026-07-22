@@ -74,7 +74,7 @@ def test_empty_postgres_database_installs_and_reuses_alembic_head() -> None:
 
         assert first.baseline_applied is True
         assert first.revision_before is None
-        assert first.revision_after == "0137_queue_production_scope_cutover"
+        assert first.revision_after == "0138_queue_terminal_acknowledgement"
         assert second.baseline_applied is False
         assert second.revision_before == first.revision_after
         assert second.revision_after == first.revision_after
@@ -103,6 +103,7 @@ def test_empty_postgres_database_installs_and_reuses_alembic_head() -> None:
             "queue_policy_snapshot",
             "queue_rate_scope_cooldown",
             "queue_runtime_control",
+            "queue_terminal_acknowledgement",
             "queue_worker_heartbeat",
             "wecom_external_contact_event_logs",
             "wecom_media_leases",
@@ -296,7 +297,7 @@ def test_production_shape_alembic_database_upgrades_without_reapplying_baseline(
 
         assert result.baseline_applied is False
         assert result.revision_before == "0098_admin_session_revocation"
-        assert result.revision_after == "0137_queue_production_scope_cutover"
+        assert result.revision_after == "0138_queue_terminal_acknowledgement"
         with psycopg.connect(database_url) as connection:
             preserved = connection.execute(
                 "SELECT wecom_userid, session_version FROM admin_users WHERE id = %s",
@@ -324,7 +325,7 @@ def test_upgrade_repairs_missing_or_partial_automation_agent_audit_tables_withou
 
         assert result.baseline_applied is False
         assert result.revision_before == "0123_required_physical_schema_repair"
-        assert result.revision_after == "0137_queue_production_scope_cutover"
+        assert result.revision_after == "0138_queue_terminal_acknowledgement"
 
         expected_columns = {
             "automation_agent_output": {
@@ -997,7 +998,7 @@ def test_identity_customer_cutover_holds_historical_work_without_replay() -> Non
         _upgrade_database_to(database_url, "head")
         with psycopg.connect(database_url) as connection:
             assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
-                "0137_queue_production_scope_cutover",
+                "0138_queue_terminal_acknowledgement",
             )
 
 
@@ -1091,7 +1092,7 @@ def test_external_claim_scope_policy_upgrade_downgrade_and_reupgrade() -> None:
         _upgrade_database_to(database_url, "head")
         with psycopg.connect(database_url) as connection:
             assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
-                "0137_queue_production_scope_cutover",
+                "0138_queue_terminal_acknowledgement",
             )
             assert connection.execute(
                 """
@@ -1139,7 +1140,7 @@ def test_execution_timeline_graph_indexes_upgrade_downgrade_and_reupgrade() -> N
                 "SELECT indexname FROM pg_indexes WHERE schemaname = 'public' AND indexname = ANY(%s)",
                 (sorted(expected_indexes),),
             ).fetchall()
-        assert version == ("0137_queue_production_scope_cutover",)
+        assert version == ("0138_queue_terminal_acknowledgement",)
         assert control == (0, False)
         assert {row[0] for row in installed} == expected_indexes
 
@@ -1247,6 +1248,25 @@ def test_queue_validation_audits_are_append_only_and_survive_additive_rollback()
                 """,
                 ("c" * 40, "d" * 64),
             )
+            connection.execute(
+                """
+                INSERT INTO queue_terminal_acknowledgement (
+                    acknowledgement_id, acknowledgement_type, job_id,
+                    job_execution_id, attempt_id, graph_id,
+                    release_sha, authorization_base_sha,
+                    authorization_confirmation_sha256, job_fingerprint_sha256,
+                    status, job_status, error_code, replay_prohibited,
+                    provider_success_claimed, actor, reason
+                ) VALUES (
+                    'qta-bootstrap', 'pre_cutover_welcome_41050_no_replay', 91,
+                    'exe-bootstrap', 'attempt-bootstrap', 19,
+                    %s, %s, %s, %s,
+                    'acknowledged_history', 'failed_terminal', 'wecom_error_41050',
+                    TRUE, FALSE, 'pytest', 'append-only terminal history proof'
+                )
+                """,
+                ("e" * 40, "f" * 40, "a" * 64, "b" * 64),
+            )
             connection.commit()
 
         append_only_statements = (
@@ -1258,6 +1278,9 @@ def test_queue_validation_audits_are_append_only_and_survive_additive_rollback()
             "TRUNCATE queue_runtime_validation_evidence",
             "TRUNCATE queue_runtime_lease_recovery_event",
             "TRUNCATE queue_runtime_soak_snapshot",
+            "UPDATE queue_terminal_acknowledgement SET reason = 'mutated' WHERE acknowledgement_id = 'qta-bootstrap'",
+            "DELETE FROM queue_terminal_acknowledgement WHERE acknowledgement_id = 'qta-bootstrap'",
+            "TRUNCATE queue_terminal_acknowledgement",
         )
         for statement in append_only_statements:
             with psycopg.connect(database_url, autocommit=True) as connection:
@@ -1295,7 +1318,8 @@ def test_queue_validation_audits_are_append_only_and_survive_additive_rollback()
                 SELECT to_regclass('public.queue_runtime_validation_evidence'),
                        to_regclass('public.queue_runtime_lease_recovery_event'),
                        to_regclass('public.queue_runtime_soak_run'),
-                       to_regclass('public.queue_runtime_soak_snapshot')
+                       to_regclass('public.queue_runtime_soak_snapshot'),
+                       to_regclass('public.queue_terminal_acknowledgement')
                 """
             ).fetchone()
         assert retained == (
@@ -1303,12 +1327,13 @@ def test_queue_validation_audits_are_append_only_and_survive_additive_rollback()
             "queue_runtime_lease_recovery_event",
             "queue_runtime_soak_run",
             "queue_runtime_soak_snapshot",
+            "queue_terminal_acknowledgement",
         )
 
         _upgrade_database_to(database_url, "head")
         with psycopg.connect(database_url) as connection:
             assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
-                "0137_queue_production_scope_cutover",
+                "0138_queue_terminal_acknowledgement",
             )
 
 

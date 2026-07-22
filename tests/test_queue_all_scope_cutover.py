@@ -16,6 +16,10 @@ MANIFEST = json.loads(
 BASE_SHA = "7369fa6c7858165097f25dff26f324d109cf7b80"
 RELEASE_SHA = "a" * 40
 CONFIRMATION = f"AUTHORIZE AI-CRM QUEUE ALL-SCOPE CUTOVER {BASE_SHA} ON PRODUCTION"
+WELCOME_ACK_CONFIRMATION = (
+    "ACKNOWLEDGE AI-CRM PRE-CUTOVER WELCOME 41050 TERMINAL "
+    "AS NO-REPLAY HISTORY ON PRODUCTION"
+)
 
 
 def test_authorization_envelope_accepts_only_reviewed_successor_paths() -> None:
@@ -52,6 +56,38 @@ def test_authorization_envelope_rejects_changed_confirmation() -> None:
             confirmation="AUTHORIZE SOMETHING ELSE",
             changed_paths=["scripts/ops/transition_queue_runtime_scope.py"],
         )
+
+
+def test_pre_cutover_welcome_acknowledgement_is_one_exact_no_replay_scope() -> None:
+    acknowledgement = MANIFEST["pre_cutover_welcome_terminal_acknowledgement"]
+    script_source = (
+        ROOT / "scripts" / "ops" / "acknowledge_pre_cutover_welcome_terminal.py"
+    ).read_text(encoding="utf-8")
+
+    assert acknowledgement == {
+        "acknowledgement_type": "pre_cutover_welcome_41050_no_replay",
+        "confirmation": WELCOME_ACK_CONFIRMATION,
+        "confirmation_sha256": "23255deb8941ea4a7307fff1c7f45c53721447e3969ad8b7ea58c7306553166e",
+        "authorization_base_sha": BASE_SHA,
+        "authorization_recorded_at_utc": "2026-07-22T03:07:19Z",
+        "maximum_job_count": 1,
+        "effect_type": "wecom.welcome_message.send",
+        "adapter_name": "wecom_welcome_message",
+        "operation": "send",
+        "business_type": "channel_welcome_effect_graph",
+        "source_module": "channel_entry.application",
+        "source_route": "channel_entry.process_channel_entry",
+        "error_code": "wecom_error_41050",
+        "expected_policy_version": "queue-v2-test-loopback",
+        "expected_worker_generation": 0,
+        "replay_prohibited": True,
+        "provider_success_claimed": False,
+    }
+    assert "expected exactly one authorized historical welcome terminal" in script_source
+    assert "provider_success_claimed\": False" in script_source
+    assert "real_external_call_executed\": False" in script_source
+    assert "send_welcome_msg" not in script_source
+    assert "requeue" not in script_source.lower()
 
 
 def test_soak_fails_closed_when_generation_policy_or_scope_drifts() -> None:
