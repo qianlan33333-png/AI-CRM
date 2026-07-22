@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 PRE_PROVIDER_IDENTITY_ADOPTION_SOURCE_POLICY = "queue-v2-test-loopback"
-PRE_PROVIDER_IDENTITY_ADOPTION_PREDICATE_VERSION = "identity_contact_detail_test_policy_v1"
+PRE_PROVIDER_IDENTITY_ADOPTION_PREDICATE_VERSION = "identity_contact_detail_test_policy_v2"
 
 
 def pre_provider_identity_adoption_predicate_sql(
@@ -86,7 +86,7 @@ def pre_provider_identity_adoption_predicate_sql(
                     AND adoption_attempt.error_code = 'effect_type_not_allowed'
                     AND adoption_attempt.adapter_name = 'wecom_external_contact_detail'
                     AND adoption_attempt.operation = 'get_external_contact_detail'
-                    AND adoption_attempt.adapter_mode = 'execute'
+                    AND adoption_attempt.adapter_mode = 'disabled'
                     AND adoption_attempt.provider_call_started_at IS NULL
                     AND adoption_attempt.worker_generation = 0
               )
