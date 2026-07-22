@@ -143,6 +143,8 @@ def test_cutover_prepares_exact_type_recovers_strict_history_and_checks_health_b
     assert "attempt_count BETWEEN 1 AND 2" in recovery
     assert "--maximum-candidate-count 12" in workflow
     assert "candidate_attempt_histogram" in workflow
+    assert "business_negative_count" in workflow
+    assert "external_contact_relationship_absent" in workflow
     assert "provider_call_started_at IS NULL" in recovery
     assert "maximum-candidate-count" in recovery
     assert '"contains_raw_target_or_job_ids": False' in recovery

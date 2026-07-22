@@ -1192,6 +1192,8 @@ class WeComExternalContactDetailAdapter:
                 default_error_code="wecom_external_contact_detail_failed",
                 executed_key="wecom_external_contact_detail_executed",
             )
+            provider_result_received = int(response_summary.get("errcode") or 0) != 0
+            response_summary["provider_result_received"] = provider_result_received
             return ExternalEffectDispatchResult(
                 status="failed_retryable" if retryable else "failed_terminal",
                 adapter_mode="execute",
@@ -1200,7 +1202,7 @@ class WeComExternalContactDetailAdapter:
                 error_code=error_code,
                 error_message=error_message,
                 real_external_call_executed=bool(response_summary.get("real_external_call_executed")),
-                provider_result_received=False,
+                provider_result_received=provider_result_received,
             )
         detail = dict(result or {})
         errcode = int(detail.get("errcode") or 0)

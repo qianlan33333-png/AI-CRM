@@ -157,6 +157,7 @@ jobs:
             data = json.load(open('/tmp/aicrm-contact-detail-recovery.json', encoding='utf-8'))
             assert 0 <= data['candidate_count'] <= 12
             assert sum(data['candidate_attempt_histogram'].values()) == data['candidate_count']
+            assert 3 <= data['business_negative_count'] <= 12
             assert data['contains_raw_target_or_job_ids'] is False
             if data['candidate_count']:
                 assert data['progress']['succeeded_count'] == data['candidate_count']
@@ -215,6 +216,10 @@ jobs:
             assert summary['counts']['fail'] == 0
             assert external['status'] == 'ok'
             assert external['severity'] == 'green'
+            absence = external['evidence']['external_contact_relationship_absent']
+            assert 3 <= absence['count'] <= 12
+            assert absence['replay_prohibited'] is True
+            assert absence['provider_success_claimed'] is False
             PY
             export AICRM_QUEUE_SOAK_AUTHORIZED=1
             python scripts/ops/manage_queue_runtime_soak.py \

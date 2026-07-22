@@ -726,6 +726,7 @@ def test_queue_production_diagnostics_is_count_only_and_requires_exact_public_re
     assert "_external_effect_failed_retryable_backlog" in workflow
     assert "preprovider_identity_history" in workflow
     assert "exact_gate_attempt_count" in workflow
+    assert "contact_absence_terminal_history" in workflow
     assert "_customer_360_freshness_guard" in workflow
     assert "COUNT(*) AS row_count" in workflow
     assert "succeeded_same_business" in workflow

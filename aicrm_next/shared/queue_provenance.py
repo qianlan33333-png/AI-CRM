@@ -5,6 +5,11 @@ PRE_PROVIDER_IDENTITY_ADOPTION_SOURCE_POLICY = "queue-v2-test-loopback"
 PRE_PROVIDER_IDENTITY_ADOPTION_PREDICATE_VERSION = "identity_contact_detail_test_policy_v2"
 POST_CUTOVER_IDENTITY_RECOVERY_POLICY = "queue-v2-production-all-g1"
 POST_CUTOVER_IDENTITY_RECOVERY_PREDICATE_VERSION = "identity_contact_detail_all_scope_preprovider_v2"
+EXTERNAL_CONTACT_RELATIONSHIP_ABSENT_ERROR_CODES = (
+    "external_contact_relationship_absent",
+    "wecom_error_84061",
+    "wecom_errcode_84061",
+)
 
 
 def pre_provider_identity_adoption_predicate_sql(
@@ -192,5 +197,79 @@ def post_cutover_identity_recovery_predicate_sql(
                     AND recovery_control.rollout_mode = 'execute'
                     AND recovery_control.policy_version = '{normalized_policy}'
                     AND recovery_control.external_claim_scope = 'all'
+              )
+    """
+
+
+def external_contact_relationship_absent_terminal_sql(*, job_alias: str) -> str:
+    """Recognize an exact provider-declared business-negative identity result.
+
+    WeCom 84061 means the external-contact relationship does not exist. It is
+    terminal and must never be replayed, but it is not an infrastructure or
+    queue failure. Every earlier attempt, if present, must be the reviewed
+    pre-provider typed-effect gate history and exactly one final attempt must
+    contain the real provider response.
+    """
+
+    error_codes = ", ".join(f"'{item}'" for item in EXTERNAL_CONTACT_RELATIONSHIP_ABSENT_ERROR_CODES)
+    return f"""
+              {job_alias}.effect_type = 'wecom.external_contact.detail.fetch'
+              AND {job_alias}.adapter_name = 'wecom_external_contact_detail'
+              AND {job_alias}.operation = 'get_external_contact_detail'
+              AND {job_alias}.target_type = 'external_user'
+              AND {job_alias}.business_type = 'identity_resolution_queue'
+              AND {job_alias}.source_module = 'aicrm_next.identity_contact.resolution_effects'
+              AND {job_alias}.source_route IN (
+                  'channel_entry.identity_resolution.enqueue',
+                  'message_archive.identity_resolution.enqueue'
+              )
+              AND {job_alias}.status = 'failed_terminal'
+              AND {job_alias}.last_error_code IN ({error_codes})
+              AND {job_alias}.execution_mode = 'execute'
+              AND {job_alias}.attempt_count BETWEEN 1 AND 3
+              AND {job_alias}.max_attempts = 5
+              AND {job_alias}.worker_generation = 1
+              AND {job_alias}.policy_version = '{POST_CUTOVER_IDENTITY_RECOVERY_POLICY}'
+              AND {job_alias}.side_effect_executed = TRUE
+              AND {job_alias}.provider_result_received = TRUE
+              AND {job_alias}.provider_call_started_at IS NOT NULL
+              AND {job_alias}.reconciliation_required = FALSE
+              AND {job_alias}.lease_token = ''
+              AND {job_alias}.lease_expires_at IS NULL
+              AND {job_alias}.locked_by = ''
+              AND {job_alias}.locked_at IS NULL
+              AND {job_alias}.hold_reason = ''
+              AND {job_alias}.cancel_requested_at IS NULL
+              AND (
+                  SELECT COUNT(*)
+                  FROM external_effect_attempt relationship_absent_all_attempts
+                  WHERE relationship_absent_all_attempts.job_id = {job_alias}.id
+              ) = {job_alias}.attempt_count
+              AND (
+                  SELECT COUNT(*)
+                  FROM external_effect_attempt relationship_absent_gate_attempt
+                  WHERE relationship_absent_gate_attempt.job_id = {job_alias}.id
+                    AND relationship_absent_gate_attempt.status = 'blocked'
+                    AND relationship_absent_gate_attempt.error_code = 'effect_type_not_allowed'
+                    AND relationship_absent_gate_attempt.adapter_name = 'wecom_external_contact_detail'
+                    AND relationship_absent_gate_attempt.operation = 'get_external_contact_detail'
+                    AND relationship_absent_gate_attempt.adapter_mode = 'disabled'
+                    AND relationship_absent_gate_attempt.provider_call_started_at IS NULL
+                    AND relationship_absent_gate_attempt.worker_generation IN (0, 1)
+                    AND COALESCE(relationship_absent_gate_attempt.provider_result_json, '{{}}'::jsonb) = '{{}}'::jsonb
+              ) = {job_alias}.attempt_count - 1
+              AND 1 = (
+                  SELECT COUNT(*)
+                  FROM external_effect_attempt relationship_absent_provider_attempt
+                  WHERE relationship_absent_provider_attempt.job_id = {job_alias}.id
+                    AND relationship_absent_provider_attempt.status = 'failed_terminal'
+                    AND relationship_absent_provider_attempt.error_code IN ({error_codes})
+                    AND relationship_absent_provider_attempt.adapter_name = 'wecom_external_contact_detail'
+                    AND relationship_absent_provider_attempt.operation = 'get_external_contact_detail'
+                    AND relationship_absent_provider_attempt.adapter_mode = 'execute'
+                    AND relationship_absent_provider_attempt.provider_call_started_at IS NOT NULL
+                    AND relationship_absent_provider_attempt.worker_generation = 1
+                    AND COALESCE((relationship_absent_provider_attempt.response_summary_json->>'errcode')::INTEGER, 0) = 84061
+                    AND COALESCE((relationship_absent_provider_attempt.response_summary_json->>'real_external_call_executed')::BOOLEAN, FALSE)
               )
     """

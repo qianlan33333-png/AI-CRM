@@ -25,6 +25,7 @@ from aicrm_next.shared.db_session import get_engine  # noqa: E402
 from aicrm_next.shared.queue_provenance import (  # noqa: E402
     POST_CUTOVER_IDENTITY_RECOVERY_POLICY,
     POST_CUTOVER_IDENTITY_RECOVERY_PREDICATE_VERSION,
+    external_contact_relationship_absent_terminal_sql,
     post_cutover_identity_recovery_predicate_sql,
 )
 from aicrm_next.shared.sensitive_data import redact_sensitive_data  # noqa: E402
@@ -237,6 +238,20 @@ def _completed_rows(connection: Any) -> list[int]:
     return [int(item) for item in rows]
 
 
+def _business_negative_rows(connection: Any) -> list[int]:
+    rows = connection.execute(
+        text(
+            f"""
+            SELECT job.id
+            FROM external_effect_job job
+            WHERE {external_contact_relationship_absent_terminal_sql(job_alias="job")}
+            ORDER BY job.id
+            """
+        )
+    ).scalars().all()
+    return [int(item) for item in rows]
+
+
 def _reopen_candidates(
     connection: Any,
     rows: list[dict[str, Any]],
@@ -341,6 +356,7 @@ def _progress(job_ids: list[int]) -> dict[str, int]:
         return {
             "job_count": 0,
             "succeeded_count": 0,
+            "business_negative_count": 0,
             "active_count": 0,
             "unsafe_terminal_count": 0,
             "provider_boundary_attempt_count": 0,
@@ -352,15 +368,19 @@ def _progress(job_ids: list[int]) -> dict[str, int]:
     with get_engine().connect() as connection:
         row = connection.execute(
             text(
-                """
+                f"""
                 SELECT
                     COUNT(*) AS job_count,
                     COUNT(*) FILTER (WHERE job.status = 'succeeded') AS succeeded_count,
+                    COUNT(*) FILTER (
+                        WHERE ({external_contact_relationship_absent_terminal_sql(job_alias="job")})
+                    ) AS business_negative_count,
                     COUNT(*) FILTER (
                         WHERE job.status IN ('queued', 'dispatching', 'failed_retryable')
                     ) AS active_count,
                     COUNT(*) FILTER (
                         WHERE job.status IN ('blocked', 'failed_terminal', 'unknown_after_dispatch')
+                          AND NOT ({external_contact_relationship_absent_terminal_sql(job_alias="job")})
                     ) AS unsafe_terminal_count,
                     COALESCE(SUM((
                         SELECT COUNT(*)
@@ -401,15 +421,15 @@ def _wait_for_completion(job_ids: list[int], timeout_seconds: int) -> dict[str, 
             raise RuntimeError("contact-detail recovery reached an unsafe terminal state")
         complete = (
             progress["job_count"] == len(job_ids)
-            and progress["succeeded_count"] == len(job_ids)
+            and progress["succeeded_count"] + progress["business_negative_count"] == len(job_ids)
             and progress["provider_boundary_attempt_count"] == len(job_ids)
             and progress["duplicate_provider_attempt_job_count"] == 0
-            and progress["completion_receipt_count"] == len(job_ids)
-            and progress["resolved_count"] + progress["conflict_count"] == len(job_ids)
+            and progress["completion_receipt_count"] == progress["succeeded_count"]
+            and progress["resolved_count"] + progress["conflict_count"] == progress["succeeded_count"]
         )
         if complete:
             with get_engine().connect() as connection:
-                verified = set(_completed_rows(connection))
+                verified = set(_completed_rows(connection)) | set(_business_negative_rows(connection))
             if set(job_ids).issubset(verified):
                 return progress
             raise RuntimeError("contact-detail recovery completion proof did not match strict provenance")
@@ -437,6 +457,7 @@ def _recover(args: argparse.Namespace) -> dict[str, Any]:
             for attempt_count in (1, 2)
         }
         completed_before = _completed_rows(connection)
+        business_negative_before = _business_negative_rows(connection)
         if not args.apply:
             return {
                 "ok": True,
@@ -445,6 +466,7 @@ def _recover(args: argparse.Namespace) -> dict[str, Any]:
                 "candidate_count": len(candidate_ids),
                 "candidate_attempt_histogram": candidate_attempt_histogram,
                 "previously_completed_count": len(completed_before),
+                "business_negative_count": len(business_negative_before),
                 "maximum_candidate_count": maximum,
                 "predicate_version": POST_CUTOVER_IDENTITY_RECOVERY_PREDICATE_VERSION,
                 "control": control,
@@ -473,8 +495,9 @@ def _recover(args: argparse.Namespace) -> dict[str, Any]:
         real_external_call_executed = False
     with get_engine().connect() as connection:
         completed_after = _completed_rows(connection)
-    if len(completed_after) < len(completed_before) + len(candidate_ids):
-        raise RuntimeError("strict completed contact-detail recovery count regressed")
+        business_negative_after = _business_negative_rows(connection)
+    if len(completed_after) + len(business_negative_after) < len(completed_before) + len(business_negative_before) + len(candidate_ids):
+        raise RuntimeError("strict settled contact-detail recovery count regressed")
     return {
         "ok": True,
         "action": "recover",
@@ -483,6 +506,7 @@ def _recover(args: argparse.Namespace) -> dict[str, Any]:
         "candidate_attempt_histogram": candidate_attempt_histogram,
         "previously_completed_count": len(completed_before),
         "completed_count": len(completed_after),
+        "business_negative_count": len(business_negative_after),
         "maximum_candidate_count": maximum,
         "predicate_version": POST_CUTOVER_IDENTITY_RECOVERY_PREDICATE_VERSION,
         "control": control,

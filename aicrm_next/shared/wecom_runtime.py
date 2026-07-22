@@ -45,6 +45,7 @@ RETRYABLE_PROVIDER_ERRCODES = {-1, 45009, 45011}
 TERMINAL_CONFIG_ERRCODES = {40001, 40013, 41001}
 TERMINAL_PERMISSION_ERRCODES = {48002, 60011, 301002}
 TERMINAL_TRUST_ERRCODES = {60020}
+TERMINAL_BUSINESS_OUTCOME_ERRCODES = {84061}
 
 
 def _text(value: Any) -> str:
@@ -291,6 +292,8 @@ def classify_wecom_provider_error(
         return "ip_not_trusted", "terminal"
     if provider_errcode in TERMINAL_PERMISSION_ERRCODES:
         return "permission_denied", "terminal"
+    if provider_errcode in TERMINAL_BUSINESS_OUTCOME_ERRCODES:
+        return "external_contact_relationship_absent", "terminal"
     if provider_errcode:
         return f"wecom_error_{provider_errcode}", "terminal"
     return "provider_response_invalid", "terminal"
