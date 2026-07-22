@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -334,6 +335,35 @@ def test_generation_marker_is_installed_private_and_owned_by_runtime_service(
     assert command[-1] == str(marker)
 
 
+def test_generation_marker_distinguishes_all_scope_from_allowlisted_canary(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    payloads: list[str] = []
+
+    def fake_run(command, **_kwargs):
+        payloads.append(Path(command[-2]).read_text(encoding="utf-8"))
+        return SimpleNamespace(returncode=0, stdout="")
+
+    monkeypatch.setattr(cutover_queue_runtime_generation, "_run", fake_run)
+    monkeypatch.setattr(
+        cutover_queue_runtime_generation,
+        "RUNTIME_GENERATION_ENV",
+        tmp_path / "queue-runtime-generation.env",
+    )
+
+    cutover_queue_runtime_generation.SystemdQueueRuntimeLifecycle.write_generation_marker(
+        generation=1,
+        committed=True,
+        test_only=False,
+        external_claim_scope="all",
+    )
+
+    assert "AICRM_QUEUE_RUNTIME_ALLOWLISTED_CANARY=0" in payloads[0]
+    assert "AICRM_QUEUE_RUNTIME_ALL_SCOPE=1" in payloads[0]
+    assert "AICRM_EXTERNAL_EFFECT_TEST_EXECUTION_ONLY=0" in payloads[0]
+
+
 def test_scope_transition_cli_is_plan_only_and_lists_fail_closed_sequence(capsys) -> None:
     exit_code = transition_queue_runtime_scope.main(
         [
@@ -452,6 +482,52 @@ def test_allowlisted_scope_preflight_requires_allowlist_for_each_enabled_effect(
 
     assert result["ready"] is False
     assert expected_reason in result["blocking_reasons"]
+
+
+def test_all_scope_preflight_requires_production_provider_config_without_canary_policy(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        transition_queue_runtime_scope,
+        "load_wecom_execution_config",
+        lambda: SimpleNamespace(
+            execution_mode="execute",
+            real_calls_enabled=True,
+            enabled_effect_types=("wecom.message.private.send",),
+        ),
+    )
+    monkeypatch.setattr(transition_queue_runtime_scope, "runtime_setting", lambda *_args: "")
+
+    result = transition_queue_runtime_scope._policy_preflight("all")
+
+    assert result["ready"] is True
+    assert result["provider_target_policy"] == "production_default"
+
+
+def test_all_scope_apply_requires_distinct_exact_authorization(monkeypatch) -> None:
+    monkeypatch.setenv("AICRM_QUEUE_SCOPE_TRANSITION_AUTHORIZED", "1")
+    monkeypatch.delenv("AICRM_QUEUE_ALL_SCOPE_AUTHORIZED", raising=False)
+    monkeypatch.setattr(
+        transition_queue_runtime_scope,
+        "_policy_preflight",
+        lambda _scope: {"required": True, "ready": True, "blocking_reasons": []},
+    )
+
+    with pytest.raises(RuntimeError, match="AICRM_QUEUE_ALL_SCOPE_AUTHORIZED=1"):
+        transition_queue_runtime_scope.main(
+            [
+                "--generation", "1",
+                "--expected-policy-version", "queue-v2-test-loopback",
+                "--target-policy-version", "queue-v2-production-all-g1",
+                "--expected-scope", "test_loopback",
+                "--target-scope", "all",
+                "--authorization-base-sha", "7369fa6c7858165097f25dff26f324d109cf7b80",
+                "--actor", "pytest",
+                "--reason", "authorization boundary",
+                "--apply",
+                "--confirmation", "TRANSITION_QUEUE_SCOPE_1_TEST_LOOPBACK_TO_ALL",
+            ]
+        )
 
 
 def test_queue_cutover_ownership_checker_passes() -> None:

@@ -54,6 +54,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--expected-release-sha", default="")
     parser.add_argument("--generation", type=int, default=0)
     parser.add_argument("--expected-policy-version", default="")
+    parser.add_argument("--expected-scope", choices=("allowlisted", "all"), default="allowlisted")
     parser.add_argument("--duration-hours", type=int, default=72)
     parser.add_argument("--actor", default="queue-soak-system")
     parser.add_argument("--reason", default="periodic queue soak evidence")
@@ -118,6 +119,39 @@ def _evidence_types(
         (release_sha, generation, policy_version),
     ).fetchall()
     return {str(row.get("evidence_type") or "") for row in rows}
+
+
+def _all_scope_cutover_evidence(
+    connection: Any,
+    *,
+    generation: int,
+    policy_version: str,
+) -> dict[str, bool]:
+    transition = connection.execute(
+        """
+        SELECT 1
+        FROM queue_runtime_scope_transition_audit
+        WHERE active_generation = %s
+          AND to_policy_version = %s
+          AND to_scope = 'all'
+        LIMIT 1
+        """,
+        (generation, policy_version),
+    ).fetchone()
+    lanes = connection.execute(
+        """
+        SELECT COUNT(*)::BIGINT AS count
+        FROM queue_lane_policy
+        WHERE policy_version = %s
+          AND enabled = TRUE
+          AND rollout_mode IN ('canary', 'execute')
+        """,
+        (policy_version,),
+    ).fetchone()
+    return {
+        "all_scope_transition_audit": bool(transition),
+        "generation_lanes_active": int((lanes or {}).get("count") or 0) == 7,
+    }
 
 
 def _snapshot_count(connection: Any, soak_id: str) -> int:
@@ -238,6 +272,7 @@ def _start(args: argparse.Namespace, database_url: str) -> dict[str, Any]:
     generation = int(args.generation or 0)
     policy_version = str(args.expected_policy_version or "").strip()
     duration_hours = int(args.duration_hours or 72)
+    expected_scope = str(args.expected_scope or "allowlisted").strip()
     if generation <= 0 or not policy_version or duration_hours != 72:
         raise ValueError("start requires a positive generation, policy version, and exactly 72 hours")
     _authorized(f"START_QUEUE_SOAK_{release_sha}_{generation}", args.confirmation)
@@ -246,9 +281,9 @@ def _start(args: argparse.Namespace, database_url: str) -> dict[str, Any]:
         state.active_generation != generation
         or not state.claim_enabled
         or state.policy_version != policy_version
-        or state.external_claim_scope != "allowlisted"
+        or state.external_claim_scope != expected_scope
     ):
-        raise RuntimeError("soak requires the exact active allowlisted generation")
+        raise RuntimeError(f"soak requires the exact active {expected_scope} generation")
     migration_revision = _migration_revision(database_url)
     metrics = collect_soak_metrics(database_url, started_at=datetime.now(timezone.utc))
     baseline_violations = evaluate_soak_snapshot(
@@ -268,15 +303,25 @@ def _start(args: argparse.Namespace, database_url: str) -> dict[str, Any]:
         with connection.transaction():
             if _running_soak(connection, for_update=True):
                 raise RuntimeError("a queue runtime soak is already running")
-            evidence = _evidence_types(
-                connection,
-                release_sha=release_sha,
-                generation=generation,
-                policy_version=policy_version,
-            )
-            missing = sorted(REQUIRED_VALIDATION_EVIDENCE - evidence)
-            if missing:
-                raise RuntimeError("required validation evidence is missing: " + ",".join(missing))
+            if expected_scope == "allowlisted":
+                evidence = _evidence_types(
+                    connection,
+                    release_sha=release_sha,
+                    generation=generation,
+                    policy_version=policy_version,
+                )
+                missing = sorted(REQUIRED_VALIDATION_EVIDENCE - evidence)
+                if missing:
+                    raise RuntimeError("required validation evidence is missing: " + ",".join(missing))
+            else:
+                evidence = _all_scope_cutover_evidence(
+                    connection,
+                    generation=generation,
+                    policy_version=policy_version,
+                )
+                missing = sorted(key for key, present in evidence.items() if not present)
+                if missing:
+                    raise RuntimeError("required production cutover evidence is missing: " + ",".join(missing))
             row = connection.execute(
                 """
                 INSERT INTO queue_runtime_soak_run (
@@ -285,7 +330,7 @@ def _start(args: argparse.Namespace, database_url: str) -> dict[str, Any]:
                     status, required_until, baseline_json, latest_snapshot_json,
                     actor, reason
                 ) VALUES (
-                    %s, %s, %s, %s, %s, 'allowlisted', %s,
+                    %s, %s, %s, %s, %s, %s, %s,
                     'running', CURRENT_TIMESTAMP + INTERVAL '72 hours',
                     %s::jsonb, %s::jsonb, %s, %s
                 )
@@ -297,6 +342,7 @@ def _start(args: argparse.Namespace, database_url: str) -> dict[str, Any]:
                     migration_revision,
                     generation,
                     policy_version,
+                    expected_scope,
                     config_hash,
                     _json(metrics),
                     _json(metrics),

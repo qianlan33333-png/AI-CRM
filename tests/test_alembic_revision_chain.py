@@ -95,8 +95,11 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     scope_transition_source = scope_transition.read_text(encoding="utf-8")
     validation_soak = VERSIONS / "0136_queue_runtime_validation_soak.py"
     validation_soak_source = validation_soak.read_text(encoding="utf-8")
+    production_scope = VERSIONS / "0137_queue_production_scope_cutover.py"
+    production_scope_source = production_scope.read_text(encoding="utf-8")
 
-    assert heads == {"0136_queue_runtime_validation_soak"}
+    assert heads == {"0137_queue_production_scope_cutover"}
+    assert revisions["0137_queue_production_scope_cutover"]["down_revision"] == "0136_queue_runtime_validation_soak"
     assert revisions["0136_queue_runtime_validation_soak"]["down_revision"] == "0135_queue_scope_transition_audit"
     assert revisions["0135_queue_scope_transition_audit"]["down_revision"] == "0134_execution_timeline_graph_indexes"
     assert revisions["0134_execution_timeline_graph_indexes"]["down_revision"] == "0133_sidebar_customer_timeline"
@@ -129,6 +132,8 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     assert "trg_queue_runtime_validation_evidence_append_only" in validation_soak_source
     assert "trg_queue_runtime_lease_recovery_event_append_only" in validation_soak_source
     assert "trg_queue_runtime_soak_snapshot_append_only" in validation_soak_source
+    assert "to_scope IN ('test_loopback', 'allowlisted', 'all')" in production_scope_source
+    assert "external_claim_scope IN ('allowlisted', 'all')" in production_scope_source
     assert "ix_automation_agent_output_unionid" in audit_source
     assert "idx_automation_agent_llm_call_log_agent_created" in audit_source
     assert "FOREIGN KEY" not in audit_source

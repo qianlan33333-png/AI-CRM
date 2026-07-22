@@ -28,6 +28,10 @@
       "service": "aicrm-queue-invariant-check.service"
     },
     {
+      "timer": "aicrm-queue-soak-snapshot.timer",
+      "service": "aicrm-queue-soak-snapshot.service"
+    },
+    {
       "timer": "openclaw-wechat-pay-order-reconciliation-worker.timer",
       "service": "openclaw-wechat-pay-order-reconciliation-worker.service"
     }

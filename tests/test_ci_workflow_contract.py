@@ -9,6 +9,7 @@ FULL_REGRESSION_WORKFLOW = ROOT / ".github" / "workflows" / "full-regression.yml
 DURATION_BASELINE_REFRESH_WORKFLOW = ROOT / ".github" / "workflows" / "refresh-pytest-duration-baseline.yml"
 DEPLOY_WORKFLOW = ROOT / ".github" / "workflows" / "deploy.yml"
 PROMOTE_PRODUCTION_WORKFLOW = ROOT / ".github" / "workflows" / "promote-production.yml"
+QUEUE_PRODUCTION_CUTOVER_WORKFLOW = ROOT / ".github" / "workflows" / "queue-production-cutover.yml"
 LEGACY_CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 
 
@@ -222,6 +223,26 @@ def test_architecture_gate_script_has_fast_db_and_full_modes() -> None:
     assert "tools/check_background_job_contract.py" in script
     assert "scripts/ci/check_dependency_security.py" in script
     assert "Unknown architecture gate mode" in script
+
+
+def test_queue_production_cutover_is_manual_exact_release_and_all_scope_only() -> None:
+    source = _source(QUEUE_PRODUCTION_CUTOVER_WORKFLOW)
+    trigger = source[source.index("on:") : source.index("permissions:")]
+
+    assert "workflow_dispatch:" in trigger
+    assert "push:" not in trigger
+    assert "schedule:" not in trigger
+    assert "environment: production" in source
+    assert "docs/releases/queue_all_scope_cutover.json" in source
+    assert "validate_queue_all_scope_cutover.py" in source
+    assert "git merge-base --is-ancestor" in source
+    assert "https://www.youcangogogo.com/health" in source
+    assert "AICRM_QUEUE_ALL_SCOPE_AUTHORIZED=1" in source
+    assert "--target-scope all" in source
+    assert "--expected-scope all" in source
+    assert "--duration-hours 72" in source
+    assert "--owner-inventory pr3" in source
+    assert "aicrm-queue-soak-snapshot.timer" in source
 
 
 def test_frontend_scripts_are_split_for_scoped_ci() -> None:

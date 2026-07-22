@@ -25,6 +25,10 @@ from aicrm_next.platform_foundation.external_effects.wecom_canary_policy import 
     wecom_canary_policy_snapshot,
 )
 from aicrm_next.shared.wecom_runtime import load_wecom_execution_config  # noqa: E402
+from aicrm_next.shared.runtime_settings import runtime_setting  # noqa: E402
+from aicrm_next.platform_foundation.external_effects.wecom_canary_policy import (  # noqa: E402
+    WECOM_PROVIDER_TARGET_POLICY_KEY,
+)
 from scripts.ops.cutover_queue_runtime_generation import (  # noqa: E402
     CANONICAL_RUNTIME_SERVICES,
     SystemdQueueRuntimeLifecycle,
@@ -32,6 +36,7 @@ from scripts.ops.cutover_queue_runtime_generation import (  # noqa: E402
 
 
 AUTHORIZATION_ENV = "AICRM_QUEUE_SCOPE_TRANSITION_AUTHORIZED"
+ALL_SCOPE_AUTHORIZATION_ENV = "AICRM_QUEUE_ALL_SCOPE_AUTHORIZED"
 EXTERNAL_RUNTIME_SERVICE = "aicrm-external-queue-runtime.service"
 EXTERNAL_HEARTBEAT_NAME = "aicrm-external_effect-runtime"
 EXTERNAL_TARGET_EFFECT_TYPES = frozenset(
@@ -63,8 +68,10 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--generation", type=int, required=True)
     parser.add_argument("--expected-policy-version", required=True)
     parser.add_argument("--target-policy-version", required=True)
-    parser.add_argument("--expected-scope", choices=("test_loopback", "allowlisted"), required=True)
-    parser.add_argument("--target-scope", choices=("test_loopback", "allowlisted"), required=True)
+    parser.add_argument("--expected-scope", choices=("test_loopback", "allowlisted", "all"), required=True)
+    parser.add_argument("--target-scope", choices=("test_loopback", "allowlisted", "all"), required=True)
+    parser.add_argument("--authorization-base-sha", default="")
+    parser.add_argument("--all-scope-confirmation", default="")
     parser.add_argument("--actor", required=True)
     parser.add_argument("--reason", required=True)
     parser.add_argument("--drain-timeout-seconds", type=int, default=60)
@@ -82,6 +89,25 @@ def _confirmation(args: argparse.Namespace) -> str:
 
 
 def _policy_preflight(target_scope: str) -> dict[str, object]:
+    if target_scope == "all":
+        config = load_wecom_execution_config()
+        explicit_provider_policy = runtime_setting(WECOM_PROVIDER_TARGET_POLICY_KEY, "").strip()
+        blocking_reasons: list[str] = []
+        if config.execution_mode != "execute":
+            blocking_reasons.append("wecom_execution_mode_not_execute")
+        if not config.real_calls_enabled:
+            blocking_reasons.append("wecom_provider_config_not_ready")
+        if not config.enabled_effect_types:
+            blocking_reasons.append("wecom_enabled_effect_types_empty")
+        if explicit_provider_policy:
+            blocking_reasons.append("wecom_canary_provider_policy_must_be_unset")
+        return {
+            "required": True,
+            "ready": not blocking_reasons,
+            "provider_target_policy": explicit_provider_policy or "production_default",
+            "enabled_effect_type_count": len(config.enabled_effect_types),
+            "blocking_reasons": list(dict.fromkeys(blocking_reasons)),
+        }
     if target_scope != "allowlisted":
         return {"required": False, "ready": True}
     policy = wecom_canary_policy_snapshot()
@@ -185,9 +211,20 @@ def main(argv: list[str] | None = None) -> int:
         raise RuntimeError(f"--confirmation must equal {_confirmation(args)}")
     if not bool(policy_preflight.get("ready")):
         raise RuntimeError(
-            "allowlisted canary policy is not ready: "
+            "target provider policy is not ready: "
             + ",".join(str(item) for item in policy_preflight.get("blocking_reasons") or [])
         )
+    if str(args.target_scope) == "all":
+        base_sha = str(args.authorization_base_sha or "").strip()
+        expected_all_confirmation = (
+            f"AUTHORIZE AI-CRM QUEUE ALL-SCOPE CUTOVER {base_sha} ON PRODUCTION"
+        )
+        if str(os.getenv(ALL_SCOPE_AUTHORIZATION_ENV) or "").strip() != "1":
+            raise RuntimeError(f"{ALL_SCOPE_AUTHORIZATION_ENV}=1 is required")
+        if len(base_sha) != 40 or any(character not in "0123456789abcdef" for character in base_sha):
+            raise RuntimeError("--authorization-base-sha must be one full lowercase SHA")
+        if str(args.all_scope_confirmation or "").strip() != expected_all_confirmation:
+            raise RuntimeError(f"--all-scope-confirmation must equal {expected_all_confirmation}")
 
     repository = RuntimeGenerationRepository()
     state = repository.read_state()
@@ -226,6 +263,7 @@ def main(argv: list[str] | None = None) -> int:
         generation=int(args.generation),
         committed=True,
         test_only=str(args.target_scope) == "test_loopback",
+        external_claim_scope=str(args.target_scope),
     )
     _restart_external_runtime()
     _wait_external_listener(

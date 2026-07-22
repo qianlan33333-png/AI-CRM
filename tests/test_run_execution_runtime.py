@@ -107,3 +107,22 @@ def test_external_execute_requires_test_only_or_reviewed_canary_marker(monkeypat
                 "--test-only",
             ]
         )
+
+
+def test_external_execute_accepts_only_exclusive_all_scope_marker(monkeypatch) -> None:
+    monkeypatch.setenv("AICRM_QUEUE_RUNTIME_EXECUTE", "1")
+    monkeypatch.delenv("AICRM_QUEUE_RUNTIME_ALLOWLISTED_CANARY", raising=False)
+    monkeypatch.setenv("AICRM_QUEUE_RUNTIME_ALL_SCOPE", "1")
+
+    args = run_execution_runtime._parse_args(
+        ["--queue-kind", "external", "--generation", "1", "--execute"]
+    )
+
+    assert args.execute is True
+    assert args.test_only is False
+
+    monkeypatch.setenv("AICRM_QUEUE_RUNTIME_ALLOWLISTED_CANARY", "1")
+    with pytest.raises(SystemExit):
+        run_execution_runtime._parse_args(
+            ["--queue-kind", "external", "--generation", "1", "--execute"]
+        )

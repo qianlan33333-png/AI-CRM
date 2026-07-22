@@ -424,8 +424,12 @@ class RuntimeGenerationRepository:
         if (source_scope, destination_scope) not in {
             ("test_loopback", "allowlisted"),
             ("allowlisted", "test_loopback"),
+            ("allowlisted", "all"),
+            ("all", "allowlisted"),
+            ("test_loopback", "all"),
+            ("all", "test_loopback"),
         }:
-            raise ValueError("only test_loopback <-> allowlisted scope transitions are supported")
+            raise ValueError("unsupported external claim scope transition")
         if (
             not policy_version
             or not next_policy_version
@@ -608,7 +612,7 @@ class RuntimeGenerationRepository:
         scope = str(expected_scope or "").strip()
         normalized_actor = str(actor or "").strip()
         normalized_reason = str(reason or "").strip()
-        if scope not in {"test_loopback", "allowlisted"}:
+        if scope not in {"test_loopback", "allowlisted", "all"}:
             raise ValueError("unsupported external claim scope")
         if not policy_version or not normalized_actor or not normalized_reason:
             raise ValueError("policy version, actor and reason are required")
@@ -617,7 +621,7 @@ class RuntimeGenerationRepository:
                 """
                 UPDATE queue_runtime_control
                 SET claim_enabled = TRUE,
-                    rollout_mode = 'canary',
+                    rollout_mode = %s,
                     updated_by = %s,
                     updated_reason = %s,
                     updated_at = CURRENT_TIMESTAMP
@@ -637,6 +641,7 @@ class RuntimeGenerationRepository:
                           updated_by, updated_reason, updated_at
                 """,
                 (
+                    "execute" if scope == "all" else "canary",
                     normalized_actor,
                     normalized_reason,
                     generation,

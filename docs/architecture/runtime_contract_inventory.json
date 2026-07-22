@@ -3213,7 +3213,7 @@
     }
   ],
   "migration_heads": [
-    "0136_queue_runtime_validation_soak"
+    "0137_queue_production_scope_cutover"
   ],
   "openapi_components": {
     "schemas": {
@@ -45461,6 +45461,14 @@
       "service": "aicrm-queue-invariant-check.service",
       "state": "active_autostart",
       "unit": "aicrm-queue-invariant-check.timer"
+    },
+    {
+      "kick_after_timer_restart": false,
+      "kick_failure_fatal": false,
+      "kind": "timer",
+      "service": "aicrm-queue-soak-snapshot.service",
+      "state": "active_autostart",
+      "unit": "aicrm-queue-soak-snapshot.timer"
     },
     {
       "kind": "service",

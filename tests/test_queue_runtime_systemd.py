@@ -39,6 +39,16 @@ def test_queue_invariant_timer_is_read_only_and_runs_every_fifteen_minutes() -> 
     assert "--execute" not in service
 
 
+def test_queue_soak_timer_captures_read_only_evidence_every_fifteen_minutes() -> None:
+    timer = (ROOT / "deploy" / "aicrm-queue-soak-snapshot.timer").read_text(encoding="utf-8")
+    service = (ROOT / "deploy" / "aicrm-queue-soak-snapshot.service").read_text(encoding="utf-8")
+
+    assert "OnCalendar=*:0/15" in timer
+    assert "Persistent=true" in timer
+    assert "manage_queue_runtime_soak.py --action snapshot" in service
+    assert "--execute" not in service
+
+
 def test_queue_runtime_execute_mode_requires_positive_generation() -> None:
     script = (ROOT / "scripts" / "run_execution_runtime.py").read_text(encoding="utf-8")
     assert 'if args.execute and args.generation <= 0:' in script
