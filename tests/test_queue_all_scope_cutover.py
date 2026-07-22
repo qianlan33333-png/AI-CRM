@@ -60,6 +60,11 @@ def test_authorization_envelope_rejects_changed_confirmation() -> None:
 
 def test_pre_cutover_welcome_acknowledgement_is_one_exact_no_replay_scope() -> None:
     acknowledgement = MANIFEST["pre_cutover_welcome_terminal_acknowledgement"]
+    production_manifest = json.loads(
+        (ROOT / "docs" / "releases" / "production_promotion.json").read_text(
+            encoding="utf-8"
+        )
+    )
     script_source = (
         ROOT / "scripts" / "ops" / "acknowledge_pre_cutover_welcome_terminal.py"
     ).read_text(encoding="utf-8")
@@ -88,6 +93,9 @@ def test_pre_cutover_welcome_acknowledgement_is_one_exact_no_replay_scope() -> N
     assert "real_external_call_executed\": False" in script_source
     assert "send_welcome_msg" not in script_source
     assert "requeue" not in script_source.lower()
+    assert "tests/test_queue_all_scope_cutover.py" in production_manifest[
+        "allowed_post_candidate_paths"
+    ]
 
 
 def test_soak_fails_closed_when_generation_policy_or_scope_drifts() -> None:
