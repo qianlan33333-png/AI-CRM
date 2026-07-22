@@ -98,6 +98,23 @@ def test_pre_cutover_welcome_acknowledgement_is_one_exact_no_replay_scope() -> N
     ]
 
 
+def test_cutover_exports_database_environment_before_migration_preflight() -> None:
+    workflow = (
+        ROOT / ".github" / "workflows" / "queue-production-cutover.yml"
+    ).read_text(encoding="utf-8")
+
+    source_index = workflow.index("source /home/ubuntu/.openclaw-wecom-pg.env")
+    export_index = workflow.rindex("set -a", 0, source_index)
+    unexport_index = workflow.index("set +a", source_index)
+    migration_index = workflow.index("python3 -m alembic current", unexport_index)
+    activation_index = workflow.index(
+        "python scripts/ops/cutover_queue_runtime_generation.py",
+        migration_index,
+    )
+
+    assert export_index < source_index < unexport_index < migration_index < activation_index
+
+
 def test_soak_fails_closed_when_generation_policy_or_scope_drifts() -> None:
     baseline = {
         "queue_active_generation": 1,

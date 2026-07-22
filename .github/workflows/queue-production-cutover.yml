@@ -82,7 +82,9 @@ jobs:
             target_policy_version='${{ needs.validate.outputs.target_policy_version }}'
             test "$(git rev-parse HEAD)" = "$release_sha"
             test "$(tr -d '\r\n' < .release-sha)" = "$release_sha"
+            set -a
             source /home/ubuntu/.openclaw-wecom-pg.env
+            set +a
             source /home/ubuntu/venvs/openclaw/bin/activate
             python3 -m alembic current | grep -F '0138_queue_terminal_acknowledgement'
             python scripts/ops/transition_queue_runtime_scope.py \
