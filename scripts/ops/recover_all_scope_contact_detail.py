@@ -44,7 +44,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Prepare the exact WeCom contact-detail type and recover only the known "
-            "two-attempt pre-provider all-scope block."
+            "bounded pre-provider all-scope gate blocks."
         )
     )
     parser.add_argument("--action", choices=("prepare", "recover"), required=True)
@@ -144,7 +144,8 @@ def _candidate_rows(
         for row in connection.execute(
             text(
                 f"""
-                SELECT job.id, queue.id AS queue_id
+                SELECT job.id, queue.id AS queue_id,
+                       job.attempt_count AS pre_provider_attempt_count
                 FROM external_effect_job job
                 JOIN crm_user_identity_resolution_queue queue
                   ON queue.external_effect_job_id = job.id
@@ -178,7 +179,7 @@ def _completed_rows(connection: Any) -> list[int]:
                   'message_archive.identity_resolution.enqueue'
               )
               AND job.status = 'succeeded'
-              AND job.attempt_count = 3
+              AND job.attempt_count BETWEEN 2 AND 3
               AND job.worker_generation = :generation
               AND job.policy_version = :policy_version
               AND job.side_effect_executed = TRUE
@@ -188,7 +189,7 @@ def _completed_rows(connection: Any) -> list[int]:
                   SELECT COUNT(*)
                   FROM external_effect_attempt attempt
                   WHERE attempt.job_id = job.id
-              ) = 3
+              ) = job.attempt_count
               AND (
                   SELECT COUNT(*)
                   FROM external_effect_attempt attempt
@@ -199,7 +200,9 @@ def _completed_rows(connection: Any) -> list[int]:
                     AND attempt.operation = 'get_external_contact_detail'
                     AND attempt.adapter_mode = 'disabled'
                     AND attempt.provider_call_started_at IS NULL
-              ) = 2
+                    AND COALESCE(attempt.provider_result_json, '{}'::jsonb) = '{}'::jsonb
+                    AND attempt.worker_generation IN (0, 1)
+              ) = job.attempt_count - 1
               AND (
                   SELECT COUNT(*)
                   FROM external_effect_attempt attempt
@@ -269,7 +272,7 @@ def _reopen_candidates(
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ANY(:job_ids)
               AND status = 'blocked'
-              AND attempt_count = 2
+              AND attempt_count BETWEEN 1 AND 2
               AND worker_generation = :generation
               AND policy_version = :policy_version
               AND provider_call_started_at IS NULL
@@ -407,7 +410,7 @@ def _wait_for_completion(job_ids: list[int], timeout_seconds: int) -> dict[str, 
         if complete:
             with get_engine().connect() as connection:
                 verified = set(_completed_rows(connection))
-            if verified == set(job_ids):
+            if set(job_ids).issubset(verified):
                 return progress
             raise RuntimeError("contact-detail recovery completion proof did not match strict provenance")
         if time.monotonic() >= deadline:
@@ -426,6 +429,13 @@ def _recover(args: argparse.Namespace) -> dict[str, Any]:
         if len(rows) > maximum:
             raise RuntimeError("strict contact-detail recovery candidate count exceeds reviewed maximum")
         candidate_ids = [int(row["id"]) for row in rows]
+        candidate_attempt_histogram = {
+            str(attempt_count): sum(
+                1 for row in rows
+                if int(row["pre_provider_attempt_count"]) == attempt_count
+            )
+            for attempt_count in (1, 2)
+        }
         completed_before = _completed_rows(connection)
         if not args.apply:
             return {
@@ -433,6 +443,7 @@ def _recover(args: argparse.Namespace) -> dict[str, Any]:
                 "action": "recover",
                 "applied": False,
                 "candidate_count": len(candidate_ids),
+                "candidate_attempt_histogram": candidate_attempt_histogram,
                 "previously_completed_count": len(completed_before),
                 "maximum_candidate_count": maximum,
                 "predicate_version": POST_CUTOVER_IDENTITY_RECOVERY_PREDICATE_VERSION,
@@ -449,6 +460,7 @@ def _recover(args: argparse.Namespace) -> dict[str, Any]:
             target_id=CONTACT_DETAIL_EFFECT_TYPE,
             before={
                 "candidate_count": len(candidate_ids),
+                "candidate_attempt_histogram": candidate_attempt_histogram,
                 "predicate_version": POST_CUTOVER_IDENTITY_RECOVERY_PREDICATE_VERSION,
                 "provider_boundary_attempt_count": 0,
             },
@@ -468,6 +480,7 @@ def _recover(args: argparse.Namespace) -> dict[str, Any]:
         "action": "recover",
         "applied": bool(candidate_ids),
         "candidate_count": len(candidate_ids),
+        "candidate_attempt_histogram": candidate_attempt_histogram,
         "previously_completed_count": len(completed_before),
         "completed_count": len(completed_after),
         "maximum_candidate_count": maximum,

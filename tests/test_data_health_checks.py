@@ -581,7 +581,7 @@ def test_external_effect_backlog_excludes_only_exact_post_cutover_identity_recov
         "eligible_count": 6,
         "excluded_from_business_health": True,
         "provider_boundary_crossed": False,
-        "predicate_version": "identity_contact_detail_all_scope_v1",
+        "predicate_version": "identity_contact_detail_all_scope_preprovider_v2",
         "strict_provenance_required": True,
     }
     query = "\n".join(calls)
@@ -589,7 +589,8 @@ def test_external_effect_backlog_excludes_only_exact_post_cutover_identity_recov
         "recovery_control.active_generation = 1",
         "recovery_control.claim_enabled = TRUE",
         "recovery_control.external_claim_scope = 'all'",
-        "job.attempt_count = 2",
+        "job.attempt_count BETWEEN 1 AND 2",
+        "unsafe_recovery_attempt.worker_generation NOT IN (0, 1)",
         "provider_call_started_at IS NULL",
         "provider_result_json",
         "NOT EXISTS",

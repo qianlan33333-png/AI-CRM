@@ -229,6 +229,96 @@ jobs:
                         )
                     ).mappings()
                 ]
+                preprovider_identity_history = [
+                    dict(row)
+                    for row in session.execute(
+                        text(
+                            """
+                            SELECT
+                                job.source_route,
+                                job.attempt_count AS job_attempt_count,
+                                job.worker_generation AS job_worker_generation,
+                                job.policy_version,
+                                job.target_type,
+                                job.execution_mode,
+                                job.max_attempts,
+                                job.last_error_code,
+                                job.side_effect_executed,
+                                job.provider_result_received,
+                                (job.provider_call_started_at IS NOT NULL) AS job_provider_boundary_crossed,
+                                job.reconciliation_required,
+                                job.hold_reason AS job_hold_reason,
+                                queue.status AS queue_status,
+                                queue.hold_reason AS queue_hold_reason,
+                                queue.last_error AS queue_last_error,
+                                attempts.durable_attempt_count,
+                                attempts.exact_gate_attempt_count,
+                                attempts.provider_boundary_attempt_count,
+                                attempts.minimum_worker_generation,
+                                attempts.maximum_worker_generation,
+                                COUNT(*) AS row_count
+                            FROM external_effect_job job
+                            JOIN crm_user_identity_resolution_queue queue
+                              ON queue.external_effect_job_id = job.id
+                             AND queue.id::TEXT = job.business_id
+                            JOIN LATERAL (
+                                SELECT
+                                    COUNT(*) AS durable_attempt_count,
+                                    COUNT(*) FILTER (
+                                        WHERE attempt.status = 'blocked'
+                                          AND attempt.error_code = 'effect_type_not_allowed'
+                                          AND attempt.adapter_name = 'wecom_external_contact_detail'
+                                          AND attempt.operation = 'get_external_contact_detail'
+                                          AND attempt.adapter_mode = 'disabled'
+                                          AND attempt.provider_call_started_at IS NULL
+                                          AND COALESCE(attempt.provider_result_json, '{}'::jsonb) = '{}'::jsonb
+                                          AND attempt.worker_generation IN (0, 1)
+                                    ) AS exact_gate_attempt_count,
+                                    COUNT(*) FILTER (
+                                        WHERE attempt.provider_call_started_at IS NOT NULL
+                                    ) AS provider_boundary_attempt_count,
+                                    MIN(attempt.worker_generation) AS minimum_worker_generation,
+                                    MAX(attempt.worker_generation) AS maximum_worker_generation
+                                FROM external_effect_attempt attempt
+                                WHERE attempt.job_id = job.id
+                            ) attempts ON TRUE
+                            WHERE job.status = 'blocked'
+                              AND job.effect_type = 'wecom.external_contact.detail.fetch'
+                              AND job.adapter_name = 'wecom_external_contact_detail'
+                              AND job.operation = 'get_external_contact_detail'
+                              AND job.business_type = 'identity_resolution_queue'
+                              AND job.source_module = 'aicrm_next.identity_contact.resolution_effects'
+                              AND job.source_route IN (
+                                  'channel_entry.identity_resolution.enqueue',
+                                  'message_archive.identity_resolution.enqueue'
+                              )
+                            GROUP BY
+                                job.source_route,
+                                job.attempt_count,
+                                job.worker_generation,
+                                job.policy_version,
+                                job.target_type,
+                                job.execution_mode,
+                                job.max_attempts,
+                                job.last_error_code,
+                                job.side_effect_executed,
+                                job.provider_result_received,
+                                (job.provider_call_started_at IS NOT NULL),
+                                job.reconciliation_required,
+                                job.hold_reason,
+                                queue.status,
+                                queue.hold_reason,
+                                queue.last_error,
+                                attempts.durable_attempt_count,
+                                attempts.exact_gate_attempt_count,
+                                attempts.provider_boundary_attempt_count,
+                                attempts.minimum_worker_generation,
+                                attempts.maximum_worker_generation
+                            ORDER BY job.attempt_count, job.source_route
+                            """
+                        )
+                    ).mappings()
+                ]
                 welcome_graph_terminal = [
                     dict(row)
                     for row in session.execute(
@@ -266,6 +356,7 @@ jobs:
                         "recent_external_effect_groups": grouped,
                         "terminal_followup_proof": terminal_followup,
                         "deferred_identity_projection": deferred_identity_projection,
+                        "preprovider_identity_history": preprovider_identity_history,
                         "welcome_graph_terminal": welcome_graph_terminal,
                         "contains_raw_target_or_payload": False,
                         "read_only": True,
