@@ -13,9 +13,11 @@ from aicrm_next.platform_foundation.external_effects import (
 )
 from aicrm_next.platform_foundation.external_effects.adapters import (
     ExternalEffectAdapterRegistry,
+    WeComPrivateMessageAdapter,
     WeComWelcomeMessageAdapter,
     wecom_execution_settings,
 )
+from aicrm_next.platform_foundation.external_effects.models import ExternalEffectJob
 from aicrm_next.platform_foundation.external_effects.repo import build_external_effect_repository
 from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
 
@@ -29,6 +31,21 @@ class _FakeWelcomeAdapter:
         return {"errcode": 0, "errmsg": "ok"}
 
 
+class _KnownPrivateProviderFailure:
+    def create_private_message_task(self, payload: dict, *, idempotency_key: str = "") -> dict:
+        return {
+            "ok": False,
+            "mode": "production",
+            "side_effect_executed": True,
+            "result": {"errcode": 40096, "errmsg": "invalid external_userid"},
+            "provider_errcode": 40096,
+            "provider_error_classification": "terminal",
+            "error_code": "wecom_error_40096",
+            "error_message": "invalid external_userid",
+            "retryable": False,
+        }
+
+
 def _context(trace_id: str = "trace-wecom-welcome") -> CommandContext:
     return CommandContext(
         actor_id="pytest",
@@ -37,6 +54,50 @@ def _context(trace_id: str = "trace-wecom-welcome") -> CommandContext:
         trace_id=trace_id,
         source_route="/pytest/wecom-welcome",
     )
+
+
+def test_private_external_effect_preserves_known_provider_result_without_target_data(monkeypatch) -> None:
+    monkeypatch.delenv("AICRM_WECOM_PROVIDER_TARGET_POLICY", raising=False)
+    adapter = WeComPrivateMessageAdapter(adapter_factory=lambda: _KnownPrivateProviderFailure())
+    job = ExternalEffectJob(
+        id=7,
+        effect_type=WECOM_MESSAGE_PRIVATE_SEND,
+        adapter_name="wecom_private_message",
+        operation="send_private_message",
+        target_type="external_user",
+        target_id="wm_test",
+        business_type="broadcast_job",
+        business_id="broadcast-7",
+        idempotency_key="broadcast-7",
+        execution_mode="execute",
+        payload_json={
+            "channel": "wecom_private",
+            "owner_userid": "HuangYouCan",
+            "external_userids": ["wm_test"],
+            "content_text": "hello",
+        },
+    )
+
+    result = adapter.dispatch(job)
+
+    assert result.status == "failed_terminal"
+    assert result.error_code == "wecom_error_40096"
+    assert result.real_external_call_executed is True
+    assert result.provider_result_received is True
+    assert result.response_summary == {
+        "real_external_call_executed": True,
+        "wecom_send_executed": True,
+        "adapter_mode": "production",
+        "exact_target_verified": False,
+        "requested_external_userid_count": 1,
+        "wecom_msgid_present": False,
+        "errcode": 40096,
+        "errmsg_present": True,
+        "provider_error_classification": "terminal",
+        "failed_external_userid_count": 0,
+        "provider_result_received": True,
+    }
+    assert "wm_test" not in str(result.response_summary)
 
 
 def _plan_welcome_job(

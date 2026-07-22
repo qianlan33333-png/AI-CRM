@@ -1037,7 +1037,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/integration_gateway/wecom_private_adapter.py",
       "key": "AICRM_WECOM_GROUP_ADAPTER_MODE",
-      "line": 20
+      "line": 21
     },
     {
       "accessor": "os.getenv",
@@ -1049,7 +1049,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/integration_gateway/wecom_private_adapter.py",
       "key": "AICRM_WECOM_PRIVATE_ADAPTER_MODE",
-      "line": 20
+      "line": 21
     },
     {
       "accessor": "declared_runtime_environment_key",

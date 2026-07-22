@@ -586,6 +586,9 @@ class WeComPrivateMessageAdapter:
         side_effect_executed = bool(result.get("side_effect_executed"))
         ok = bool(result.get("ok"))
         error_code = str(result.get("error_code") or "").strip()
+        provider_result = dict(result.get("result") or {}) if isinstance(result.get("result"), dict) else {}
+        provider_errcode = _safe_int(result.get("provider_errcode") or provider_result.get("errcode"))
+        provider_result_received = bool(side_effect_executed and provider_result)
         response_summary = {
             "real_external_call_executed": side_effect_executed,
             "wecom_send_executed": side_effect_executed,
@@ -593,6 +596,14 @@ class WeComPrivateMessageAdapter:
             "exact_target_verified": bool(result.get("exact_target_verified")),
             "requested_external_userid_count": len(result.get("requested_external_userids") or external_userids),
             "wecom_msgid_present": bool(str(result.get("wecom_msgid") or "").strip()),
+            "errcode": provider_errcode,
+            "errmsg_present": bool(str(provider_result.get("errmsg") or result.get("error_message") or "").strip()),
+            "provider_error_classification": str(result.get("provider_error_classification") or ""),
+            "failed_external_userid_count": _safe_int(
+                result.get("failed_external_userid_count"),
+                default=_safe_list_count(provider_result.get("fail_list")),
+            ),
+            "provider_result_received": provider_result_received,
         }
         if ok:
             return ExternalEffectDispatchResult(
@@ -615,13 +626,14 @@ class WeComPrivateMessageAdapter:
             )
         retryable = error_code in {"external_call_unknown", "adapter_exception", "network_error", "timeout", "rate_limited"}
         return ExternalEffectDispatchResult(
-            status="failed_retryable" if retryable else "failed_terminal",
+            status="failed_retryable" if result.get("retryable") is True or retryable else "failed_terminal",
             adapter_mode="execute",
             request_summary=request_summary,
             response_summary=response_summary,
             error_code=error_code or "wecom_private_send_failed",
             error_message=_safe_error_message(result.get("error_message") or "WeCom private-message send failed."),
             real_external_call_executed=True,
+            provider_result_received=provider_result_received,
         )
 
     def _execution_gate_error(

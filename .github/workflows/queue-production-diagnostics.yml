@@ -87,6 +87,27 @@ jobs:
                                 source_module,
                                 source_route,
                                 last_error_code,
+                                CASE
+                                    WHEN last_error_code <> 'external_call_failed_known' THEN ''
+                                    WHEN LOWER(last_error_message) LIKE '%invalid external_userid%'
+                                      OR LOWER(last_error_message) LIKE '%invalid external userid%'
+                                    THEN 'invalid_external_userid'
+                                    WHEN LOWER(last_error_message) LIKE '%rejected % requested private target%'
+                                    THEN 'private_target_rejected'
+                                    WHEN LOWER(last_error_message) LIKE '%not external contact%'
+                                      OR LOWER(last_error_message) LIKE '%not a friend%'
+                                      OR LOWER(last_error_message) LIKE '%external contact%not found%'
+                                    THEN 'external_contact_relationship_absent'
+                                    WHEN LOWER(last_error_message) LIKE '%permission%'
+                                      OR LOWER(last_error_message) LIKE '%forbidden%'
+                                      OR LOWER(last_error_message) LIKE '%unauthorized%'
+                                    THEN 'permission_denied'
+                                    WHEN LOWER(last_error_message) LIKE '%rate limit%'
+                                      OR LOWER(last_error_message) LIKE '%frequency%'
+                                      OR last_error_message LIKE '%频率%'
+                                    THEN 'rate_limited'
+                                    ELSE 'other_known_provider_failure'
+                                END AS error_message_class,
                                 attempt_count,
                                 max_attempts,
                                 side_effect_executed,
@@ -109,6 +130,7 @@ jobs:
                                 source_module,
                                 source_route,
                                 last_error_code,
+                                error_message_class,
                                 attempt_count,
                                 max_attempts,
                                 side_effect_executed,
