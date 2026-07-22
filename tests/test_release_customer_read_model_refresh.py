@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
+import subprocess
 from subprocess import CompletedProcess
+import sys
 
 import pytest
 
@@ -11,6 +14,26 @@ from scripts.ops.run_release_customer_read_model_refresh import (
     ReleaseRefreshError,
     run_release_refresh,
 )
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_release_refresh_script_bootstraps_from_non_repository_working_directory(tmp_path) -> None:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "scripts" / "ops" / "run_release_customer_read_model_refresh.py"),
+            "--help",
+        ],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert "--release-sha" in completed.stdout
 
 
 def test_release_refresh_runs_only_the_exact_internal_projection_consumer(monkeypatch) -> None:
