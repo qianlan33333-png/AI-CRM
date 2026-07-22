@@ -14,6 +14,7 @@
     "deploy/aicrm-queue-soak-snapshot.timer",
     "deploy/production_runtime_units.json",
     "docs/architecture/runtime_contract_inventory.json",
+    "docs/ci/test_scope_manifest.yml",
     "docs/releases/production_promotion.json",
     "docs/releases/queue_all_scope_cutover.json",
     "migrations/versions/0137_queue_production_scope_cutover.py",
@@ -30,6 +31,7 @@
     "tests/test_queue_runtime_cutover_postgres.py",
     "tests/test_queue_runtime_systemd.py",
     "tests/test_run_execution_runtime.py",
-    "tests/test_runtime_contract_inventory.py"
+    "tests/test_runtime_contract_inventory.py",
+    "tests/test_select_test_scope.py"
   ]
 }
