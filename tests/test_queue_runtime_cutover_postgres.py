@@ -43,6 +43,134 @@ def _connect(*, autocommit: bool = True):
     return psycopg.connect(_database_url(), autocommit=autocommit, row_factory=dict_row)
 
 
+def _insert_deferred_identity_effect(
+    connection,
+    suffix: str,
+    *,
+    source_route: str = "channel_entry.identity_resolution.enqueue",
+    adapter_name: str = "wecom_external_contact_detail",
+    provider_boundary_crossed: bool = False,
+    extra_attempt: bool = False,
+    with_runtime: bool = False,
+) -> tuple[int, int]:
+    job = connection.execute(
+        """
+        INSERT INTO external_effect_job (
+            effect_type, adapter_name, operation, target_type, target_id,
+            business_type, business_id, source_module, source_route,
+            idempotency_key, execution_mode, status, attempt_count, max_attempts,
+            last_error_code, last_error_message, side_effect_executed,
+            provider_result_received, provider_call_started_at,
+            reconciliation_required, worker_generation, policy_version,
+            execution_id, lane, available_at, ordering_key, fairness_key,
+            rate_scope_key, completed_at
+        ) VALUES (
+            'wecom.external_contact.detail.fetch', %s, 'get_external_contact_detail',
+            'external_user', %s, 'identity_resolution_queue', '',
+            'aicrm_next.identity_contact.resolution_effects', %s,
+            %s, 'execute', 'blocked', 1, 5,
+            'effect_type_not_allowed', 'blocked by generation-0 test policy',
+            %s, %s,
+            CASE WHEN %s THEN CURRENT_TIMESTAMP ELSE NULL END,
+            FALSE, 0, 'queue-v2-test-loopback', %s,
+            'wecom_interactive', CURRENT_TIMESTAMP, %s, 'test-corp',
+            'wecom:test-corp:external_contact_detail', CURRENT_TIMESTAMP
+        )
+        RETURNING id
+        """,
+        (
+            adapter_name,
+            f"external-{suffix}",
+            source_route,
+            f"deferred-identity-{suffix}",
+            provider_boundary_crossed,
+            provider_boundary_crossed,
+            provider_boundary_crossed,
+            f"exe-deferred-identity-{suffix}",
+            f"external_user:external-{suffix}",
+        ),
+    ).fetchone()
+    job_id = int(job["id"])
+    queue = connection.execute(
+        """
+        INSERT INTO crm_user_identity_resolution_queue (
+            source_type, source_key, source_table, source_id, corp_id,
+            external_userid, reason, status, last_error, next_attempt_at,
+            execution_id, external_effect_job_id, hold_reason, held_at
+        ) VALUES (
+            'channel_entry', %s, 'wecom_external_contact_event_logs', %s,
+            'test-corp', %s, 'missing_unionid', 'held',
+            'effect_type_not_allowed', NULL, %s, %s,
+            'effect_type_not_allowed', CURRENT_TIMESTAMP
+        )
+        RETURNING id
+        """,
+        (
+            f"source-{suffix}",
+            suffix,
+            f"external-{suffix}",
+            f"exe-identity-intent-{suffix}",
+            job_id,
+        ),
+    ).fetchone()
+    queue_id = int(queue["id"])
+    connection.execute(
+        "UPDATE external_effect_job SET business_id = %s WHERE id = %s",
+        (str(queue_id), job_id),
+    )
+    attempt_id = f"eea-deferred-{suffix}"
+    connection.execute(
+        """
+        INSERT INTO external_effect_attempt (
+            attempt_id, job_id, adapter_name, adapter_mode, operation,
+            status, error_code, error_message, provider_call_started_at,
+            worker_generation, completed_at
+        ) VALUES (
+            %s, %s, %s, 'execute', 'get_external_contact_detail',
+            'blocked', 'effect_type_not_allowed', 'blocked before provider',
+            CASE WHEN %s THEN CURRENT_TIMESTAMP ELSE NULL END,
+            0, CURRENT_TIMESTAMP
+        )
+        """,
+        (attempt_id, job_id, adapter_name, provider_boundary_crossed),
+    )
+    connection.execute(
+        "UPDATE external_effect_job SET last_attempt_id = %s WHERE id = %s",
+        (attempt_id, job_id),
+    )
+    if extra_attempt:
+        connection.execute(
+            """
+            INSERT INTO external_effect_attempt (
+                attempt_id, job_id, adapter_name, adapter_mode, operation,
+                status, error_code, error_message, worker_generation, completed_at
+            ) VALUES (
+                %s, %s, %s, 'execute', 'get_external_contact_detail',
+                'blocked', 'effect_type_not_allowed', 'unexpected second attempt',
+                0, CURRENT_TIMESTAMP
+            )
+            """,
+            (f"eea-deferred-{suffix}-second", job_id, adapter_name),
+        )
+    if with_runtime:
+        connection.execute(
+            """
+            INSERT INTO automation_channel_entry_runtime (
+                corp_id, scene_value, external_userid, follow_user_userid,
+                identity_status, identity_last_error,
+                identity_external_effect_job_id, identity_hold_reason,
+                identity_held_at
+            ) VALUES (
+                'test-corp', %s, %s, 'owner-test', 'held',
+                'effect_type_not_allowed', %s, 'effect_type_not_allowed',
+                CURRENT_TIMESTAMP
+            )
+            """,
+            (f"scene-{suffix}", f"external-{suffix}", job_id),
+        )
+    return job_id, queue_id
+
+
 def _reset_control_plane_state() -> None:
     with _connect() as connection:
         connection.execute("DELETE FROM queue_worker_heartbeat")
@@ -947,6 +1075,191 @@ def test_scope_transition_can_enter_all_scope_and_resume_execute_mode() -> None:
     assert resumed.claim_enabled is True
     assert resumed.rollout_mode == "execute"
     assert resumed.external_claim_scope == "all"
+
+
+def test_all_scope_transition_adopts_only_pre_provider_identity_effect_and_preserves_attempt() -> None:
+    repository = RuntimeGenerationRepository(_database_url())
+    repository.activate_generation(
+        expected_generation=0,
+        target_generation=82,
+        expected_policy_version="queue-v2-test-loopback",
+        lanes=("wecom_interactive",),
+        actor="pytest",
+        reason="activate before deferred identity adoption",
+    )
+    repository.disable_claims(
+        expected_generation=82,
+        actor="pytest",
+        reason="drain before deferred identity adoption",
+    )
+    with _connect() as connection:
+        job_id, queue_id = _insert_deferred_identity_effect(
+            connection,
+            uuid4().hex,
+            with_runtime=True,
+        )
+
+    target_policy_version = f"queue-v2-production-all-{uuid4().hex[:10]}"
+    repository.transition_external_claim_scope(
+        expected_generation=82,
+        expected_policy_version="queue-v2-test-loopback",
+        target_policy_version=target_policy_version,
+        expected_scope="test_loopback",
+        target_scope="all",
+        actor="pytest",
+        reason="adopt exact pre-provider identity effect",
+    )
+
+    with _connect() as connection:
+        job = connection.execute(
+            """
+            SELECT status, attempt_count, worker_generation, policy_version,
+                   provider_call_started_at, side_effect_executed,
+                   provider_result_received, last_error_code, completed_at,
+                   result_summary_json
+            FROM external_effect_job WHERE id = %s
+            """,
+            (job_id,),
+        ).fetchone()
+        queue = connection.execute(
+            """
+            SELECT status, hold_reason, last_error, held_at, next_attempt_at
+            FROM crm_user_identity_resolution_queue WHERE id = %s
+            """,
+            (queue_id,),
+        ).fetchone()
+        runtime = connection.execute(
+            """
+            SELECT identity_status, identity_hold_reason, identity_last_error,
+                   identity_held_at, identity_next_attempt_at
+            FROM automation_channel_entry_runtime
+            WHERE identity_external_effect_job_id = %s
+            """,
+            (job_id,),
+        ).fetchone()
+        attempts = connection.execute(
+            """
+            SELECT status, error_code, provider_call_started_at, worker_generation
+            FROM external_effect_attempt WHERE job_id = %s ORDER BY id
+            """,
+            (job_id,),
+        ).fetchall()
+        audit = connection.execute(
+            """
+            SELECT policy_json_after
+            FROM queue_runtime_scope_transition_audit
+            WHERE to_policy_version = %s
+            """,
+            (target_policy_version,),
+        ).fetchone()
+
+    assert job["status"] == "queued"
+    assert job["attempt_count"] == 1
+    assert job["worker_generation"] == 82
+    assert job["policy_version"] == target_policy_version
+    assert job["provider_call_started_at"] is None
+    assert job["side_effect_executed"] is False
+    assert job["provider_result_received"] is False
+    assert job["last_error_code"] == ""
+    assert job["completed_at"] is None
+    assert job["result_summary_json"]["pre_provider_attempt_preserved"] is True
+    assert queue["status"] == "pending"
+    assert queue["hold_reason"] == queue["last_error"] == ""
+    assert queue["held_at"] is None
+    assert queue["next_attempt_at"] is not None
+    assert runtime["identity_status"] == "pending"
+    assert runtime["identity_hold_reason"] == runtime["identity_last_error"] == ""
+    assert runtime["identity_held_at"] is None
+    assert runtime["identity_next_attempt_at"] is not None
+    assert len(attempts) == 1
+    assert attempts[0]["status"] == "blocked"
+    assert attempts[0]["error_code"] == "effect_type_not_allowed"
+    assert attempts[0]["provider_call_started_at"] is None
+    assert attempts[0]["worker_generation"] == 0
+    assert audit["policy_json_after"]["pre_provider_identity_adoption"] == {
+        "eligible_count": 1,
+        "adopted_job_count": 1,
+        "adopted_queue_count": 1,
+        "adopted_runtime_count": 1,
+        "predicate_version": "identity_contact_detail_test_policy_v1",
+    }
+
+
+def test_all_scope_transition_never_adopts_ambiguous_or_wrong_provenance_identity_effects() -> None:
+    repository = RuntimeGenerationRepository(_database_url())
+    repository.activate_generation(
+        expected_generation=0,
+        target_generation=83,
+        expected_policy_version="queue-v2-test-loopback",
+        lanes=("wecom_interactive",),
+        actor="pytest",
+        reason="activate before fail-closed adoption cases",
+    )
+    repository.disable_claims(
+        expected_generation=83,
+        actor="pytest",
+        reason="drain before fail-closed adoption cases",
+    )
+    with _connect() as connection:
+        provider_job, _ = _insert_deferred_identity_effect(
+            connection,
+            "provider-" + uuid4().hex,
+            provider_boundary_crossed=True,
+        )
+        wrong_route_job, _ = _insert_deferred_identity_effect(
+            connection,
+            "route-" + uuid4().hex,
+            source_route="unreviewed.identity.enqueue",
+        )
+        wrong_adapter_job, _ = _insert_deferred_identity_effect(
+            connection,
+            "adapter-" + uuid4().hex,
+            adapter_name="unreviewed_adapter",
+        )
+        duplicate_attempt_job, _ = _insert_deferred_identity_effect(
+            connection,
+            "attempt-" + uuid4().hex,
+            extra_attempt=True,
+        )
+
+    target_policy_version = f"queue-v2-production-all-{uuid4().hex[:10]}"
+    repository.transition_external_claim_scope(
+        expected_generation=83,
+        expected_policy_version="queue-v2-test-loopback",
+        target_policy_version=target_policy_version,
+        expected_scope="test_loopback",
+        target_scope="all",
+        actor="pytest",
+        reason="prove ambiguous identity effects remain terminal",
+    )
+
+    with _connect() as connection:
+        jobs = connection.execute(
+            """
+            SELECT id, status, worker_generation, policy_version
+            FROM external_effect_job WHERE id = ANY(%s) ORDER BY id
+            """,
+            ([provider_job, wrong_route_job, wrong_adapter_job, duplicate_attempt_job],),
+        ).fetchall()
+        audit = connection.execute(
+            """
+            SELECT policy_json_after
+            FROM queue_runtime_scope_transition_audit
+            WHERE to_policy_version = %s
+            """,
+            (target_policy_version,),
+        ).fetchone()
+
+    assert {row["status"] for row in jobs} == {"blocked"}
+    assert {row["worker_generation"] for row in jobs} == {0}
+    assert {row["policy_version"] for row in jobs} == {target_policy_version}
+    assert audit["policy_json_after"]["pre_provider_identity_adoption"] == {
+        "eligible_count": 0,
+        "adopted_job_count": 0,
+        "adopted_queue_count": 0,
+        "adopted_runtime_count": 0,
+        "predicate_version": "identity_contact_detail_test_policy_v1",
+    }
 
 
 def test_invariant_checker_reports_missing_active_generation_heartbeats() -> None:
