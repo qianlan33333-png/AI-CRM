@@ -55,6 +55,38 @@ def _repository(tmp_path: Path, *, unexpected_path: str | None = None) -> tuple[
     return root, candidate_sha, release_sha, changed_paths
 
 
+def _repository_with_existing_controls(
+    tmp_path: Path,
+    *,
+    missing_control: str | None = None,
+) -> tuple[Path, str, str, list[str]]:
+    root = tmp_path / "repo"
+    root.mkdir()
+    _git(root, "init", "-b", "main")
+    _git(root, "config", "user.name", "Promotion Test")
+    _git(root, "config", "user.email", "promotion@example.invalid")
+    _write(root, "application.txt", "candidate\n")
+    required_controls = [
+        ".github/workflows/deploy.yml",
+        ".github/workflows/promote-production.yml",
+        "docs/releases/production_promotion.json",
+        "scripts/ops/validate_production_promotion.py",
+    ]
+    for index, relative_path in enumerate(required_controls):
+        if relative_path != missing_control:
+            _write(root, relative_path, f"control {index}\n")
+    _git(root, "add", ".")
+    _git(root, "commit", "-m", "candidate with promotion controls")
+    candidate_sha = _git(root, "rev-parse", "HEAD")
+
+    changed_paths = ["docs/releases/production_promotion.json"]
+    _write(root, changed_paths[0], "next promotion binding\n")
+    _git(root, "add", ".")
+    _git(root, "commit", "-m", "next promotion binding")
+    release_sha = _git(root, "rev-parse", "HEAD")
+    return root, candidate_sha, release_sha, changed_paths
+
+
 def _manifest(candidate_sha: str, allowed_paths: list[str]) -> dict:
     return {
         "version": 1,
@@ -127,6 +159,25 @@ def test_promotion_binds_validated_id_evidence_to_ci_verified_target_candidate(t
     assert result["target_candidate_sha"] == candidate_sha
     assert result["release_sha"] == release_sha
     assert result["target_ci_run_id"] == 103
+
+
+def test_promotion_accepts_existing_controls_for_a_later_release_binding(tmp_path: Path) -> None:
+    root, candidate_sha, release_sha, changed_paths = _repository_with_existing_controls(tmp_path)
+
+    result = _validate(root, candidate_sha, release_sha, changed_paths)
+
+    assert result["ok"] is True
+    assert result["changed_paths"] == changed_paths
+
+
+def test_promotion_rejects_release_that_drops_a_required_control(tmp_path: Path) -> None:
+    root, candidate_sha, release_sha, changed_paths = _repository_with_existing_controls(
+        tmp_path,
+        missing_control=".github/workflows/deploy.yml",
+    )
+
+    with pytest.raises(PromotionValidationError, match="promotion control paths are missing"):
+        _validate(root, candidate_sha, release_sha, changed_paths)
 
 
 def test_promotion_rejects_id_sha_that_is_not_publicly_active(tmp_path: Path) -> None:
