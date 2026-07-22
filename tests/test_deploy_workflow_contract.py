@@ -36,6 +36,26 @@ def test_deploy_workflows_serialize_without_cancelling_active_release() -> None:
     assert "cancel-in-progress: false" in promotion
 
 
+def test_deploy_acknowledges_only_authorized_pre_cutover_welcome_before_green_health() -> None:
+    workflow = PRODUCTION_DEPLOY_WORKFLOW.read_text(encoding="utf-8")
+
+    refresh_index = workflow.index("scripts/run_customer_read_model_refresh.py")
+    acknowledgement_index = workflow.index(
+        "scripts/ops/acknowledge_pre_cutover_welcome_terminal.py",
+        refresh_index,
+    )
+    apply_index = workflow.index("--apply", acknowledgement_index)
+    admin_health_index = workflow.index("scripts/ops/check_admin_read_pages_smoke.py", apply_index)
+
+    assert refresh_index < acknowledgement_index < apply_index < admin_health_index
+    assert "AICRM_QUEUE_TERMINAL_ACK_AUTHORIZED=1" in workflow
+    assert "pre_cutover_welcome_terminal_acknowledgement" in workflow
+    assert "authorized pre-cutover welcome 41050 no-replay history" in workflow
+    acknowledgement_block = workflow[acknowledgement_index:admin_health_index]
+    assert "send_welcome_msg" not in acknowledgement_block
+    assert "requeue" not in acknowledgement_block.lower()
+
+
 def test_remote_deploy_holds_target_specific_server_lock_before_sha_checks() -> None:
     workflow = PRODUCTION_DEPLOY_WORKFLOW.read_text(encoding="utf-8")
 

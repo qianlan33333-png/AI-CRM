@@ -16,17 +16,27 @@
     ".github/workflows/deploy.yml",
     ".github/workflows/promote-production.yml",
     ".github/workflows/queue-production-diagnostics.yml",
+    "aicrm_next/data_health/checks.py",
+    "aicrm_next/data_health/external_effect_provenance.py",
     "aicrm_next/platform_foundation/execution_runtime/cutover.py",
     "docs/adr/2026-07-17-cross-repository-production-promotion.md",
+    "docs/architecture/data_table_lifecycle_manifest.yml",
+    "docs/architecture/runtime_contract_inventory.json",
     "docs/ci/test_scope_manifest.yml",
     "docs/ci/test_scope_policy.yml",
     "docs/releases/production_promotion.json",
     "docs/releases/queue_all_scope_cutover.json",
+    "migrations/versions/0138_queue_terminal_acknowledgement.py",
+    "scripts/ops/acknowledge_pre_cutover_welcome_terminal.py",
     "scripts/ops/validate_production_promotion.py",
     "tests/test_ci_workflow_contract.py",
+    "tests/test_data_health_checks.py",
+    "tests/test_database_bootstrap.py",
     "tests/test_deploy_workflow_contract.py",
     "tests/test_github_action_pins.py",
     "tests/test_production_promotion_provenance.py",
-    "tests/test_queue_runtime_cutover_postgres.py"
+    "tests/test_alembic_revision_chain.py",
+    "tests/test_queue_runtime_cutover_postgres.py",
+    "tests/test_runtime_contract_inventory.py"
   ]
 }

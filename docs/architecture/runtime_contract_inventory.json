@@ -341,37 +341,37 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_BROADCAST_BLOCKED_MAX_COUNT",
-      "line": 29
-    },
-    {
-      "accessor": "os.getenv",
-      "file": "aicrm_next/data_health/checks.py",
-      "key": "AICRM_DATA_HEALTH_BROADCAST_RETRYABLE_DUE_MAX_COUNT",
-      "line": 30
-    },
-    {
-      "accessor": "os.getenv",
-      "file": "aicrm_next/data_health/checks.py",
-      "key": "AICRM_DATA_HEALTH_BROADCAST_TERMINAL_LOOKBACK_HOURS",
       "line": 33
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/data_health/checks.py",
+      "key": "AICRM_DATA_HEALTH_BROADCAST_RETRYABLE_DUE_MAX_COUNT",
+      "line": 34
+    },
+    {
+      "accessor": "os.getenv",
+      "file": "aicrm_next/data_health/checks.py",
+      "key": "AICRM_DATA_HEALTH_BROADCAST_TERMINAL_LOOKBACK_HOURS",
+      "line": 37
+    },
+    {
+      "accessor": "os.getenv",
+      "file": "aicrm_next/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_RETRYABLE_DUE_MAX_COUNT",
-      "line": 35
+      "line": 39
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS",
-      "line": 38
+      "line": 42
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_PROJECTION_FRESHNESS_MAX_MINUTES",
-      "line": 28
+      "line": 32
     },
     {
       "accessor": "os.getenv",
@@ -3213,7 +3213,7 @@
     }
   ],
   "migration_heads": [
-    "0137_queue_production_scope_cutover"
+    "0138_queue_terminal_acknowledgement"
   ],
   "openapi_components": {
     "schemas": {
@@ -48532,6 +48532,19 @@
       ],
       "table": "queue_runtime_validation_evidence",
       "write_owner": "aicrm_next.platform_foundation.execution_runtime.validation"
+    },
+    {
+      "domain": "platform_foundation",
+      "drop_candidate": false,
+      "lifecycle": "audit",
+      "migration_source": "0138_queue_terminal_acknowledgement",
+      "pii_level": "none",
+      "read_owners": [
+        "external effect data health",
+        "production queue cutover evidence"
+      ],
+      "table": "queue_terminal_acknowledgement",
+      "write_owner": "scripts.ops.acknowledge_pre_cutover_welcome_terminal"
     },
     {
       "domain": "platform_foundation",

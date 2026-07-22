@@ -15,7 +15,11 @@ from aicrm_next.shared.db_session import get_session_factory
 from tools.check_data_table_lifecycle import check_data_table_lifecycle
 
 from .dto import DataHealthCheckResult
-from .external_effect_provenance import callback_welcome_failure_sql, direct_canary_job_sql
+from .external_effect_provenance import (
+    acknowledged_pre_cutover_welcome_failure_sql,
+    callback_welcome_failure_sql,
+    direct_canary_job_sql,
+)
 from .schema_drift import (
     database_schema_available,
     evaluate_schema_drift,
@@ -634,7 +638,11 @@ def _broadcast_job_blocked_backlog() -> DataHealthCheckResult:
 def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
     check_id = "external_effect_failed_retryable_backlog"
     title = "External effect failed retryable backlog"
-    source_tables = ["external_effect_job", "external_effect_attempt"]
+    source_tables = [
+        "external_effect_job",
+        "external_effect_attempt",
+        "queue_terminal_acknowledgement",
+    ]
     if not database_schema_available():
         return _db_unavailable_placeholder(check_id, title, source_tables)
     try:
@@ -650,37 +658,50 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
                                        OR ({callback_welcome_failure_sql("job")})
                                    ) AS id_validation_canary,
                                    ({callback_welcome_failure_sql("job")})
-                                       AS id_validation_callback_welcome
+                                       AS id_validation_callback_welcome,
+                                   ({acknowledged_pre_cutover_welcome_failure_sql("job")})
+                                       AS pre_cutover_acknowledged_welcome
                             FROM external_effect_job job
                         )
                         SELECT
                             COUNT(*) FILTER (
-                                WHERE NOT id_validation_canary AND status = 'failed_retryable'
+                                WHERE NOT id_validation_canary
+                                  AND NOT pre_cutover_acknowledged_welcome
+                                  AND status = 'failed_retryable'
                             ) AS failed_retryable_count,
                             COUNT(*) FILTER (
                                 WHERE NOT id_validation_canary
+                                  AND NOT pre_cutover_acknowledged_welcome
                                   AND status = 'failed_terminal'
                                   AND updated_at >= CURRENT_TIMESTAMP - make_interval(hours => {EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS})
                             ) AS recent_failed_terminal_count,
                             COUNT(*) FILTER (
                                 WHERE NOT id_validation_canary
+                                  AND NOT pre_cutover_acknowledged_welcome
                                   AND status = 'blocked'
                                   AND updated_at >= CURRENT_TIMESTAMP - make_interval(hours => {EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS})
                             ) AS recent_blocked_count,
                             COUNT(*) FILTER (
-                                WHERE NOT id_validation_canary AND status = 'failed_terminal'
+                                WHERE NOT id_validation_canary
+                                  AND NOT pre_cutover_acknowledged_welcome
+                                  AND status = 'failed_terminal'
                             ) AS historical_failed_terminal_count,
                             COUNT(*) FILTER (
-                                WHERE NOT id_validation_canary AND status = 'blocked'
+                                WHERE NOT id_validation_canary
+                                  AND NOT pre_cutover_acknowledged_welcome
+                                  AND status = 'blocked'
                             ) AS historical_blocked_count,
                             COUNT(*) FILTER (
                                 WHERE NOT id_validation_canary
+                                  AND NOT pre_cutover_acknowledged_welcome
                                   AND status = 'failed_retryable'
                                   AND (next_retry_at IS NULL OR next_retry_at <= CURRENT_TIMESTAMP)
                             ) AS due_retryable_count,
                             EXTRACT(EPOCH FROM (
                                 CURRENT_TIMESTAMP - MIN(COALESCE(next_retry_at, updated_at)) FILTER (
-                                    WHERE NOT id_validation_canary AND status = 'failed_retryable'
+                                    WHERE NOT id_validation_canary
+                                      AND NOT pre_cutover_acknowledged_welcome
+                                      AND status = 'failed_retryable'
                                 )
                             )) AS oldest_failed_retryable_age_seconds,
                             COUNT(*) FILTER (
@@ -695,7 +716,11 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
                             COUNT(*) FILTER (
                                 WHERE id_validation_callback_welcome
                                   AND status = 'failed_terminal'
-                            ) AS callback_welcome_failed_terminal_count
+                            ) AS callback_welcome_failed_terminal_count,
+                            COUNT(*) FILTER (
+                                WHERE pre_cutover_acknowledged_welcome
+                                  AND status = 'failed_terminal'
+                            ) AS pre_cutover_acknowledged_welcome_count
                         FROM classified_jobs
                         """
                     )
@@ -726,6 +751,9 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
     canary_failed_terminal_count = int(row.get("canary_failed_terminal_count") or 0)
     canary_blocked_count = int(row.get("canary_blocked_count") or 0)
     callback_welcome_failed_terminal_count = int(row.get("callback_welcome_failed_terminal_count") or 0)
+    pre_cutover_acknowledged_welcome_count = int(
+        row.get("pre_cutover_acknowledged_welcome_count") or 0
+    )
     violations = []
     if failed_terminal_count > 0:
         violations.append(f"failed_terminal_count={failed_terminal_count} exceeds 0")
@@ -749,6 +777,14 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
             "blocked_count": canary_blocked_count,
             "callback_welcome_failed_terminal_count": callback_welcome_failed_terminal_count,
             "excluded_from_business_health": True,
+            "strict_provenance_required": True,
+        },
+        "pre_cutover_welcome_terminal_acknowledgement": {
+            "acknowledged_count": pre_cutover_acknowledged_welcome_count,
+            "excluded_from_business_health": True,
+            "operator_acknowledgement_required": True,
+            "provider_success_claimed": False,
+            "replay_prohibited": True,
             "strict_provenance_required": True,
         },
     }

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+from uuid import uuid4
 
 import pytest
 
@@ -570,6 +571,14 @@ def test_external_effect_backlog_separates_only_strict_id_validation_canary_fail
         "excluded_from_business_health": True,
         "strict_provenance_required": True,
     }
+    assert result.evidence["pre_cutover_welcome_terminal_acknowledgement"] == {
+        "acknowledged_count": 0,
+        "excluded_from_business_health": True,
+        "operator_acknowledgement_required": True,
+        "provider_success_claimed": False,
+        "replay_prohibited": True,
+        "strict_provenance_required": True,
+    }
     query = "\n".join(calls)
     for required_provenance in (
         "business_type",
@@ -597,6 +606,10 @@ def test_external_effect_backlog_separates_only_strict_id_validation_canary_fail
         "provider_attempt_count",
         "provider_policy_gate_passed",
         "target_values_redacted",
+        "queue_terminal_acknowledgement",
+        "pre_cutover_welcome_41050_no_replay",
+        "provider_success_claimed",
+        "replay_prohibited",
     ):
         assert callback_proof in query
 
@@ -722,6 +735,180 @@ def test_mirrored_welcome_validation_failure_is_excluded_only_with_append_only_p
     assert result.evidence["failed_terminal_count"] == 0
     assert result.evidence["id_validation_canary"]["failed_terminal_count"] == 1
     assert result.evidence["id_validation_canary"]["callback_welcome_failed_terminal_count"] == 1
+
+
+@pytest.mark.postgres
+def test_pre_cutover_welcome_terminal_requires_exact_no_replay_acknowledgement(
+    next_pg_schema,
+    monkeypatch,
+) -> None:
+    import psycopg
+
+    from aicrm_next.data_health import checks
+    from scripts.ops.acknowledge_pre_cutover_welcome_terminal import (
+        EXPECTED_CONFIRMATION,
+        acknowledge,
+    )
+
+    database_url = os.environ["DATABASE_URL"]
+    suffix = uuid4().hex
+    execution_id = f"exe-pre-cutover-welcome-{suffix}"
+    target_id = f"redacted-pre-cutover-target-{suffix}"
+    attempt_id = f"eea-pre-cutover-welcome-{suffix}"
+    with psycopg.connect(database_url) as connection:
+        job_id = int(
+            connection.execute(
+                """
+                INSERT INTO external_effect_job (
+                    effect_type, adapter_name, operation, target_type, target_id,
+                    business_type, business_id, source_module, source_route,
+                    idempotency_key, execution_mode, status, attempt_count,
+                    max_attempts, last_error_code, side_effect_executed,
+                    provider_result_received, provider_call_started_at,
+                    reconciliation_required, worker_generation, policy_version,
+                    execution_id, created_at, updated_at, completed_at
+                ) VALUES (
+                    'wecom.welcome_message.send', 'wecom_welcome_message', 'send',
+                    'external_user', %s,
+                    'channel_welcome_effect_graph', %s,
+                    'channel_entry.application', 'channel_entry.process_channel_entry',
+                    %s, 'execute', 'failed_terminal',
+                    1, 5, 'wecom_error_41050', TRUE, TRUE,
+                    TIMESTAMPTZ '2026-07-22T03:01:00Z', FALSE, 0,
+                    'queue-v2-test-loopback', %s,
+                    TIMESTAMPTZ '2026-07-22T03:00:00Z',
+                    TIMESTAMPTZ '2026-07-22T03:02:00Z',
+                    TIMESTAMPTZ '2026-07-22T03:02:00Z'
+                )
+                RETURNING id
+                """,
+                (
+                    target_id,
+                    execution_id,
+                    f"pre-cutover-welcome-terminal-test-{suffix}",
+                    execution_id,
+                ),
+            ).fetchone()[0]
+        )
+        connection.execute(
+            """
+            INSERT INTO external_effect_attempt (
+                attempt_id, job_id, adapter_name, adapter_mode, operation,
+                status, error_code, provider_call_started_at, worker_generation,
+                started_at, completed_at
+            ) VALUES (
+                %s, %s, 'wecom_welcome_message', 'execute',
+                'send', 'failed_terminal', 'wecom_error_41050',
+                TIMESTAMPTZ '2026-07-22T03:01:00Z', 0,
+                TIMESTAMPTZ '2026-07-22T03:01:00Z',
+                TIMESTAMPTZ '2026-07-22T03:02:00Z'
+            )
+            """,
+            (attempt_id, job_id),
+        )
+        connection.execute(
+            "UPDATE external_effect_job SET last_attempt_id = %s WHERE id = %s",
+            (attempt_id, job_id),
+        )
+        connection.execute(
+            """
+            INSERT INTO channel_welcome_effect_graph (
+                execution_id, idempotency_key, status, final_effect_job_id
+            ) VALUES (
+                %s, %s, 'ready', %s
+            )
+            """,
+            (execution_id, f"graph-pre-cutover-welcome-{suffix}", job_id),
+        )
+        connection.commit()
+
+    without_acknowledgement = checks._external_effect_failed_retryable_backlog()
+    assert without_acknowledgement.status == "fail"
+    assert without_acknowledgement.evidence["failed_terminal_count"] == 1
+
+    monkeypatch.setenv("AICRM_QUEUE_TERMINAL_ACK_AUTHORIZED", "1")
+    manifest_path = Path(__file__).resolve().parents[1] / "docs" / "releases" / "queue_all_scope_cutover.json"
+    result = acknowledge(
+        manifest_path=manifest_path,
+        release_sha="a" * 40,
+        authorization_base_sha="7369fa6c7858165097f25dff26f324d109cf7b80",
+        confirmation=EXPECTED_CONFIRMATION,
+        actor="pytest",
+        reason="exact no-replay history test",
+        apply=True,
+    )
+
+    assert result == {
+        "ok": True,
+        "applied": True,
+        "acknowledged_count": 1,
+        "created_count": 1,
+        "graph_terminalized_count": 1,
+        "replay_prohibited": True,
+        "provider_success_claimed": False,
+        "real_external_call_executed": False,
+        "target_values_redacted": True,
+    }
+    repeated = acknowledge(
+        manifest_path=manifest_path,
+        release_sha="b" * 40,
+        authorization_base_sha="7369fa6c7858165097f25dff26f324d109cf7b80",
+        confirmation=EXPECTED_CONFIRMATION,
+        actor="pytest",
+        reason="idempotent no-replay history test",
+        apply=True,
+    )
+    assert repeated["acknowledged_count"] == 1
+    assert repeated["created_count"] == 0
+    assert repeated["graph_terminalized_count"] == 0
+    assert repeated["real_external_call_executed"] is False
+    health = checks._external_effect_failed_retryable_backlog()
+    assert health.status == "ok"
+    assert health.evidence["failed_terminal_count"] == 0
+    assert health.evidence["pre_cutover_welcome_terminal_acknowledgement"] == {
+        "acknowledged_count": 1,
+        "excluded_from_business_health": True,
+        "operator_acknowledgement_required": True,
+        "provider_success_claimed": False,
+        "replay_prohibited": True,
+        "strict_provenance_required": True,
+    }
+    with psycopg.connect(database_url) as connection:
+        graph_status = connection.execute(
+            "SELECT status FROM channel_welcome_effect_graph WHERE final_effect_job_id = %s",
+            (job_id,),
+        ).fetchone()[0]
+        acknowledgement = connection.execute(
+            """
+            SELECT replay_prohibited, provider_success_claimed
+            FROM queue_terminal_acknowledgement
+            WHERE job_id = %s
+            """,
+            (job_id,),
+        ).fetchone()
+    assert graph_status == "terminal"
+    assert acknowledgement == (True, False)
+
+    with psycopg.connect(database_url) as connection:
+        connection.execute(
+            """
+            INSERT INTO external_effect_attempt (
+                attempt_id, job_id, adapter_name, adapter_mode, operation,
+                status, error_code, provider_call_started_at, worker_generation,
+                started_at, completed_at
+            ) VALUES (
+                %s, %s, 'wecom_welcome_message', 'execute', 'send',
+                'failed_terminal', 'wecom_error_41050', CURRENT_TIMESTAMP, 0,
+                CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            )
+            """,
+            (f"eea-unexpected-replay-{suffix}", job_id),
+        )
+        connection.commit()
+
+    after_unexpected_second_attempt = checks._external_effect_failed_retryable_backlog()
+    assert after_unexpected_second_attempt.status == "fail"
+    assert after_unexpected_second_attempt.evidence["failed_terminal_count"] == 1
 
 
 def test_wecom_media_health_separates_exclusive_canary_failure_but_keeps_evidence(monkeypatch) -> None:
