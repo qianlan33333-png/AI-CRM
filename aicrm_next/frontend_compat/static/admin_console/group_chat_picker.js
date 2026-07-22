@@ -39,9 +39,9 @@
   }
 
   function bindingLabel(status) {
-    if (status === "ready") return "邀请卡片已就绪";
+    if (status === "ready") return "可直接使用";
     if (status === "invalid") return "群邀请已失效";
-    return "邀请卡片准备中";
+    return "选择后自动生成";
   }
 
   function open(options) {
@@ -135,7 +135,7 @@
 
     async function selectGroup(group) {
       loading = true;
-      render("正在准备群邀请卡片…");
+      render("正在自动生成群邀请…");
       try {
         const payload = await fetchJson(ensureApi, {
           method: "POST",
@@ -145,14 +145,17 @@
         const binding = payload.item || {};
         const bindingId = Number(payload.binding_id || binding.id || 0);
         if (!bindingId) throw new Error("群邀请绑定 ID 无效");
-        const status = String(payload.binding_status || binding.binding_status || "pending");
+        const status = String(payload.binding_status || binding.binding_status || "");
+        if (status !== "ready" || !String(binding.join_url || "").trim()) {
+          throw new Error("系统未返回可用的群邀请，请重试");
+        }
         onConfirm({
           type: "group_invite",
           library_id: bindingId,
           title: group.group_name,
           subtitle: bindingLabel(status),
-          enabled: status !== "invalid",
-          selectable: status !== "invalid",
+          enabled: true,
+          selectable: true,
           metadata: {
             chat_id: group.chat_id,
             group_name: group.group_name,

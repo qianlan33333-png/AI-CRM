@@ -402,7 +402,7 @@ def ensure_group_invite_binding(payload: GroupInviteBindingEnsureRequest) -> dic
     try:
         return _with_contract(
             EnsureGroupInviteBindingCommand()(payload),
-            source_status="local_repository_write",
+            source_status="group_invite_binding_ready",
         )
     except Exception as exc:
         return _error_response(exc)

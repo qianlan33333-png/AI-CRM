@@ -40,6 +40,7 @@ def test_get_wecom_adapter_enables_production_adapter_only_with_flag_and_config(
     assert diagnosis["can_send_welcome"] is True
     assert diagnosis["can_mark_tag"] is True
     assert diagnosis["can_create_contact_way"] is True
+    assert diagnosis["can_create_group_join_way"] is True
 
 
 def test_get_wecom_adapter_blocks_when_flag_disabled_or_config_missing(monkeypatch):
@@ -76,6 +77,10 @@ def test_production_wecom_adapter_contract_posts_real_wecom_endpoints():
             return _Response({"errcode": 0, "access_token": "token", "expires_in": 7200})
         if url.endswith("/cgi-bin/externalcontact/add_contact_way"):
             return _Response({"errcode": 0, "config_id": "cfg", "qr_code": "https://qr"})
+        if url.endswith("/cgi-bin/externalcontact/groupchat/add_join_way"):
+            return _Response({"errcode": 0, "config_id": "group-cfg"})
+        if url.endswith("/cgi-bin/externalcontact/groupchat/get_join_way"):
+            return _Response({"errcode": 0, "join_way": {"config_id": "group-cfg", "chat_id_list": ["wr1"], "qr_code": "https://work.weixin.qq.com/gm/abc"}})
         return _Response({"errcode": 0, "errmsg": "ok"})
 
     adapter = ProductionWeComAdapter(
@@ -87,17 +92,23 @@ def test_production_wecom_adapter_contract_posts_real_wecom_endpoints():
     welcome = adapter.send_welcome_msg({"welcome_code": "wc", "text": {"content": "hi"}})
     tag = adapter.mark_external_contact_tags(external_userid="wm", follow_user_userid="owner", add_tags=["tag"], remove_tags=[])
     qrcode = adapter.create_contact_way({"state": "aqr", "user": ["owner"]})
+    group_config = adapter.create_group_join_way({"scene": 1, "chat_id_list": ["wr1"]})
+    group_join_way = adapter.get_group_join_way("group-cfg")
     detail = adapter.get_external_contact_detail("wm")
 
     assert welcome["errcode"] == 0
     assert tag["errcode"] == 0
     assert qrcode["config_id"] == "cfg"
+    assert group_config["config_id"] == "group-cfg"
+    assert group_join_way["join_way"]["chat_id_list"] == ["wr1"]
     assert detail["errcode"] == 0
     assert [call["url"].split("qyapi.weixin.qq.com", 1)[1].split("?", 1)[0] for call in calls] == [
         "/cgi-bin/gettoken",
         "/cgi-bin/externalcontact/send_welcome_msg",
         "/cgi-bin/externalcontact/mark_tag",
         "/cgi-bin/externalcontact/add_contact_way",
+        "/cgi-bin/externalcontact/groupchat/add_join_way",
+        "/cgi-bin/externalcontact/groupchat/get_join_way",
         "/cgi-bin/externalcontact/get",
     ]
     assert calls[2]["json"] == {"userid": "owner", "external_userid": "wm", "add_tag": ["tag"]}

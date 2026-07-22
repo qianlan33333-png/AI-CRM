@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import os
+import uuid
 from typing import Any
 
 from aicrm_next.integration_gateway.media_adapters import build_cloud_storage_adapter, build_wecom_media_adapter, extract_base64_payload
+from aicrm_next.integration_gateway.wecom_group_invite_adapter import build_wecom_group_invite_adapter
 from aicrm_next.shared.errors import ContractError
 from aicrm_next.shared import runtime
 
-from .dto import AttachmentUpsertRequest, GroupInviteBindingEnsureRequest, GroupInviteBindingUpdateRequest, GroupInviteUpsertRequest, ImageFromBase64Request, ImageFromUrlRequest, ImageUpsertRequest, MiniprogramUpsertRequest
+from .dto import AttachmentUpsertRequest, GroupInviteBindingEnsureRequest, GroupInviteBindingUpdateRequest, GroupInviteUpsertRequest, ImageFromBase64Request, ImageFromUrlRequest, ImageUpsertRequest, MiniprogramUpsertRequest, normalize_group_invite_join_url
 from .repo import MediaLibraryRepository, build_media_library_repository, normalize_tags
 
 
@@ -126,14 +129,153 @@ class GetMediaItemQuery:
         return {"ok": True, "item": item}
 
 
-class EnsureGroupInviteBindingCommand:
-    def __init__(self, repo: MediaLibraryRepository | None = None) -> None:
+def _group_invite_state(chat_id: str) -> str:
+    digest = hashlib.sha256(str(chat_id or "").encode("utf-8")).hexdigest()[:20]
+    return f"aicrm_gi_{digest}"
+
+
+def _utf8_prefix(value: Any, byte_limit: int) -> str:
+    text = str(value or "").strip()
+    while len(text.encode("utf-8")) > byte_limit:
+        text = text[:-1]
+    return text
+
+
+def _group_invite_failure(result: dict[str, Any], *, stage: str) -> ContractError:
+    error_code = str(result.get("error_code") or "wecom_group_join_way_error").strip()
+    if error_code in {"missing_wecom_config", "wecom_real_calls_disabled"}:
+        message = "系统尚未完成企微接口配置，请管理员检查企微凭据和执行开关"
+    elif result.get("retryable"):
+        message = "企微接口暂时繁忙，请稍后重试"
+    else:
+        message = "企微未能生成该客户群的邀请链接，请确认应用具有客户群权限"
+    return ContractError(f"group_invite_auto_provision_failed:{stage}:{error_code}:{message}")
+
+
+class EnsureGroupInviteBindingReadyCommand:
+    def __init__(self, repo: MediaLibraryRepository | None = None, adapter: Any | None = None) -> None:
         self._repo = repo or build_media_library_repository()
+        self._adapter = adapter
+
+    def _adapter_or_build(self) -> Any:
+        if self._adapter is None:
+            self._adapter = build_wecom_group_invite_adapter()
+        return self._adapter
+
+    def __call__(self, item_id: str, *, item: dict[str, Any] | None = None) -> dict[str, Any]:
+        current = item or self._repo.get_item("group_invite", item_id)
+        if not current:
+            from aicrm_next.shared.errors import NotFoundError
+
+            raise NotFoundError("group_invite item not found")
+        if str(current.get("binding_status") or "") == "invalid":
+            raise ContractError("group_invite_invalid:客户群已失效，请同步客户群后重试")
+        if not bool(current.get("enabled", True)):
+            raise ContractError("group_invite_disabled:群邀请已停用，请重新选择群聊后重试")
+        current_join_url = normalize_group_invite_join_url(current.get("join_url"))
+        if str(current.get("binding_status") or "") == "ready" and current_join_url:
+            return {
+                "ok": True,
+                "item": current,
+                "binding_id": current.get("id"),
+                "binding_status": "ready",
+                "auto_provisioned": False,
+                "real_external_call_executed": False,
+            }
+
+        chat_id = str(current.get("chat_id") or ((current.get("chat_id_list") or [""])[0])).strip()
+        if not chat_id:
+            raise ContractError("group_invite_chat_id_missing:群邀请未绑定客户群")
+        state = str(current.get("state") or "").strip() or _group_invite_state(chat_id)
+        config_id = str(current.get("config_id") or "").strip()
+        create_result: dict[str, Any] = {}
+        real_external_call_executed = False
+
+        if not config_id or config_id.startswith("provisioning:"):
+            claim_token = f"provisioning:{uuid.uuid4().hex}"
+            claim = self._repo.claim_group_invite_provisioning(str(current["id"]), claim_token, state)
+            current = claim.get("item") or current
+            if not claim.get("claimed"):
+                if str(current.get("binding_status") or "") == "ready" and str(current.get("join_url") or "").strip():
+                    return {
+                        "ok": True,
+                        "item": current,
+                        "binding_id": current.get("id"),
+                        "binding_status": "ready",
+                        "auto_provisioned": False,
+                        "real_external_call_executed": False,
+                    }
+                existing_config_id = str(current.get("config_id") or "").strip()
+                if existing_config_id and not existing_config_id.startswith("provisioning:"):
+                    config_id = existing_config_id
+                else:
+                    raise ContractError("group_invite_provisioning_in_progress:系统正在生成群邀请，请稍后重试")
+            else:
+                create_payload = {
+                    "scene": 1,
+                    "remark": _utf8_prefix(current.get("name") or current.get("title") or "AI-CRM群邀请", 30),
+                    "auto_create_room": 0,
+                    "chat_id_list": [chat_id],
+                    "state": state,
+                }
+                create_result = self._adapter_or_build().create_join_way(
+                    create_payload,
+                    idempotency_key=f"group-invite-binding:{current['id']}:create",
+                )
+                real_external_call_executed = bool(create_result.get("real_external_call_executed"))
+                if not create_result.get("ok"):
+                    self._repo.release_group_invite_provisioning(str(current["id"]), claim_token)
+                    raise _group_invite_failure(create_result, stage="create")
+                config_id = str(create_result.get("config_id") or "").strip()
+                if not config_id:
+                    self._repo.release_group_invite_provisioning(str(current["id"]), claim_token)
+                    raise ContractError("group_invite_auto_provision_failed:create:missing_config_id:企微未返回群邀请配置")
+                stored = self._repo.store_group_invite_config(str(current["id"]), claim_token, config_id, state)
+                if not stored:
+                    raise ContractError("group_invite_auto_provision_conflict:群邀请生成结果保存冲突，请重试")
+                current = stored
+
+        get_result = self._adapter_or_build().get_join_way(
+            config_id,
+            idempotency_key=f"group-invite-binding:{current['id']}:get:{config_id}",
+        )
+        real_external_call_executed = real_external_call_executed or bool(get_result.get("real_external_call_executed"))
+        if not get_result.get("ok"):
+            raise _group_invite_failure(get_result, stage="get")
+        join_way = get_result.get("join_way") if isinstance(get_result.get("join_way"), dict) else {}
+        returned_chat_ids = [str(value or "").strip() for value in list(join_way.get("chat_id_list") or []) if str(value or "").strip()]
+        if chat_id not in returned_chat_ids:
+            raise ContractError("group_invite_target_mismatch:企微返回的邀请配置未绑定所选客户群")
+        try:
+            join_url = normalize_group_invite_join_url(join_way.get("qr_code"))
+        except ValueError as exc:
+            raise ContractError("group_invite_join_url_invalid:企微返回的加入群聊链接无效") from exc
+        if not join_url:
+            raise ContractError("group_invite_join_url_missing:企微未返回加入群聊链接")
+        ready = self._repo.complete_group_invite_provisioning(str(current["id"]), config_id, state, join_url)
+        return {
+            "ok": True,
+            "item": ready,
+            "binding_id": ready.get("id"),
+            "binding_status": "ready",
+            "auto_provisioned": bool(create_result),
+            "adapter_result": {
+                "create": create_result,
+                "get": {key: value for key, value in get_result.items() if key != "join_way"},
+            },
+            "real_external_call_executed": real_external_call_executed,
+        }
+
+
+class EnsureGroupInviteBindingCommand:
+    def __init__(self, repo: MediaLibraryRepository | None = None, adapter: Any | None = None) -> None:
+        self._repo = repo or build_media_library_repository()
+        self._adapter = adapter
 
     def __call__(self, payload: GroupInviteBindingEnsureRequest | dict[str, Any]) -> dict[str, Any]:
         data = payload.model_dump() if hasattr(payload, "model_dump") else dict(payload)
         item = self._repo.ensure_group_invite_binding(data)
-        return {"ok": True, "item": item, "binding_id": item.get("id"), "binding_status": item.get("binding_status") or "pending"}
+        return EnsureGroupInviteBindingReadyCommand(self._repo, self._adapter)(str(item["id"]), item=item)
 
 
 class UpdateGroupInviteBindingCommand:

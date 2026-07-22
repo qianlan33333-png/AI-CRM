@@ -923,6 +923,84 @@ class PostgresMediaLibraryRepository:
             raise ContractError("群邀请绑定创建失败")
         return self.get_item("group_invite", str(row["id"])) or {}
 
+    def claim_group_invite_provisioning(self, item_id: str, claim_token: str, state: str) -> dict[str, Any]:
+        with self._connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE group_invite_library
+                    SET config_id = %s, state = %s, updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s
+                      AND COALESCE(binding_status, 'pending') <> 'invalid'
+                      AND COALESCE(join_url, '') = ''
+                      AND (
+                        COALESCE(config_id, '') = ''
+                        OR (COALESCE(config_id, '') LIKE 'provisioning:%%' AND updated_at < CURRENT_TIMESTAMP - INTERVAL '2 minutes')
+                      )
+                    RETURNING id
+                    """,
+                    (claim_token, state, int(item_id)),
+                )
+                claimed = cur.fetchone()
+            conn.commit()
+        item = self.get_item("group_invite", item_id)
+        if not item:
+            raise NotFoundError("group_invite item not found")
+        return {"claimed": bool(claimed), "item": item}
+
+    def store_group_invite_config(self, item_id: str, claim_token: str, config_id: str, state: str) -> dict[str, Any] | None:
+        with self._connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE group_invite_library
+                    SET config_id = %s, state = %s, updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s AND config_id = %s AND COALESCE(join_url, '') = ''
+                    RETURNING id
+                    """,
+                    (config_id, state, int(item_id), claim_token),
+                )
+                row = cur.fetchone()
+            conn.commit()
+        return self.get_item("group_invite", str(row["id"])) if row else None
+
+    def release_group_invite_provisioning(self, item_id: str, claim_token: str) -> None:
+        with self._connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE group_invite_library
+                    SET config_id = '', updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s AND config_id = %s AND COALESCE(join_url, '') = ''
+                    """,
+                    (int(item_id), claim_token),
+                )
+            conn.commit()
+
+    def complete_group_invite_provisioning(self, item_id: str, config_id: str, state: str, join_url: str) -> dict[str, Any]:
+        normalized_url = normalize_group_invite_join_url(join_url)
+        with self._connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE group_invite_library
+                    SET config_id = %s,
+                        state = %s,
+                        join_url = %s,
+                        binding_status = 'ready',
+                        enabled = TRUE,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = %s AND config_id = %s AND COALESCE(binding_status, 'pending') <> 'invalid'
+                    RETURNING id
+                    """,
+                    (config_id, state, normalized_url, int(item_id), config_id),
+                )
+                row = cur.fetchone()
+            conn.commit()
+        if not row:
+            raise ContractError("群邀请自动生成状态已变化，请重试")
+        return self.get_item("group_invite", str(row["id"])) or {}
+
     def reconcile_group_invite_bindings(self, active_chat_ids: list[str], inactive_chat_ids: list[str]) -> int:
         active = [str(value or "").strip() for value in active_chat_ids if str(value or "").strip()]
         inactive = [str(value or "").strip() for value in inactive_chat_ids if str(value or "").strip()]

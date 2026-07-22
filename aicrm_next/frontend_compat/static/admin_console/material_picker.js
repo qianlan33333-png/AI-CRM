@@ -71,7 +71,7 @@
         <header class="aicrm-material-picker__head">
           <div>
             <h3>${escapeHtml(options.title || `选择${TYPE_LABELS[type]}`)}</h3>
-            <p>${type === "group_invite" ? `选择一个已配置邀请链接的客户群。<a href="/admin/group-invite-library" target="_blank" rel="noopener">管理群邀请设置</a>` : `最多 ${limit} 个，已选项会高亮显示。`}</p>
+            <p>最多 ${limit} 个，已选项会高亮显示。</p>
           </div>
           <button class="aicrm-material-picker__button" type="button" data-picker-close>取消</button>
         </header>
@@ -101,7 +101,7 @@
     function render() {
       if (!items.length) {
         empty.hidden = false;
-        empty.textContent = type === "group_invite" ? "没有已同步的客户群" : "没有可选素材";
+        empty.textContent = "没有可选素材";
         grid.innerHTML = "";
         return;
       }

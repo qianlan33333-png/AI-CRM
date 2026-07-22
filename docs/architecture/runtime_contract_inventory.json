@@ -827,7 +827,7 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/media_library/application.py",
       "key": "AICRM_NEXT_WECOM_MEDIA_MODE",
-      "line": 93
+      "line": 96
     },
     {
       "accessor": "declared_runtime_environment_key",
