@@ -514,6 +514,50 @@ def test_external_effect_backlog_probe_accepts_small_retryable_queue(monkeypatch
     assert any("FROM external_effect_job" in sql for sql in calls)
 
 
+def test_external_effect_backlog_excludes_only_shared_pre_cutover_identity_adoption_predicate(monkeypatch) -> None:
+    from aicrm_next.data_health import checks
+
+    calls = _patch_health_db(
+        monkeypatch,
+        {
+            "failed_retryable_count": 0,
+            "recent_failed_terminal_count": 0,
+            "recent_blocked_count": 0,
+            "historical_failed_terminal_count": 0,
+            "historical_blocked_count": 0,
+            "due_retryable_count": 0,
+            "oldest_failed_retryable_age_seconds": 0,
+            "pre_cutover_deferred_identity_count": 4,
+        },
+    )
+
+    result = checks._external_effect_failed_retryable_backlog()
+
+    assert result.status == "ok"
+    assert result.evidence["pre_cutover_deferred_identity_adoption"] == {
+        "eligible_count": 4,
+        "excluded_from_business_health": True,
+        "provider_boundary_crossed": False,
+        "pending_generation_1_adoption": True,
+        "predicate_version": "identity_contact_detail_test_policy_v1",
+        "strict_provenance_required": True,
+    }
+    query = "\n".join(calls)
+    for strict_token in (
+        "wecom.external_contact.detail.fetch",
+        "wecom_external_contact_detail",
+        "channel_entry.identity_resolution.enqueue",
+        "message_archive.identity_resolution.enqueue",
+        "provider_call_started_at IS NULL",
+        "side_effect_executed = FALSE",
+        "provider_result_received = FALSE",
+        "SELECT COUNT(*)",
+        "adoption_control.active_generation = 0",
+        "adoption_control.external_claim_scope = 'test_loopback'",
+    ):
+        assert strict_token in query
+
+
 def test_external_effect_backlog_keeps_historical_terminal_evidence_without_permanent_failure(monkeypatch) -> None:
     from aicrm_next.data_health import checks
 

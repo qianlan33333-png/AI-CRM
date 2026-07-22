@@ -36,6 +36,7 @@
     "scripts/ops/ingest_wecom_canary_callback.py",
     "scripts/ops/manage_queue_runtime_soak.py",
     "scripts/ops/acknowledge_pre_cutover_welcome_terminal.py",
+    "scripts/ops/run_release_customer_read_model_refresh.py",
     "scripts/ops/plan_wecom_canary.py",
     "scripts/ops/relay_wecom_canary_callback.py",
     "scripts/ops/run_id_validation_queue_operation.sh",
@@ -877,6 +878,7 @@
         "aicrm_next/customer_read_model/repo_live_source.py",
         "aicrm_next/internal_event_composition.py",
         "scripts/run_customer_read_model_refresh.py",
+        "scripts/ops/run_release_customer_read_model_refresh.py",
         "scripts/ops/check_identity_customer_event_driven.py",
         "deploy/openclaw-customer-read-model-refresh.service",
         "deploy/openclaw-customer-read-model-refresh.timer",
@@ -886,7 +888,8 @@
         "tests/test_customer_live_source_repository.py",
         "tests/test_customer_read_model_refresh.py",
         "tests/test_customer_timeline_projection.py",
-        "tests/test_identity_customer_event_driven_postgres.py"
+        "tests/test_identity_customer_event_driven_postgres.py",
+        "tests/test_release_customer_read_model_refresh.py"
       ],
       "python_tests": [
         "tests/test_customer_live_source_repository.py",
@@ -897,6 +900,7 @@
         "tests/test_database_bootstrap.py",
         "tests/test_runtime_units_autostart.py",
         "tests/test_runtime_contract_inventory.py",
+        "tests/test_release_customer_read_model_refresh.py",
         "tests/test_select_test_scope.py"
       ],
       "needs_postgres": true,
@@ -1651,6 +1655,7 @@
       "name": "postgres_execution_runtime",
       "paths": [
         "aicrm_next/platform_foundation/execution_runtime/**",
+        "aicrm_next/shared/queue_provenance.py",
         "aicrm_next/platform_foundation/external_effects/direct_claim_repository.py",
         "aicrm_next/platform_foundation/external_effects/rate_limit.py",
         "deploy/aicrm-*-queue-runtime.service",

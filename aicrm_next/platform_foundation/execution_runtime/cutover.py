@@ -10,6 +10,11 @@ from uuid import uuid4
 from psycopg import sql
 
 from aicrm_next.shared.runtime import raw_database_url
+from aicrm_next.shared.queue_provenance import (
+    PRE_PROVIDER_IDENTITY_ADOPTION_PREDICATE_VERSION,
+    PRE_PROVIDER_IDENTITY_ADOPTION_SOURCE_POLICY,
+    pre_provider_identity_adoption_predicate_sql,
+)
 
 from .repository import normalize_runtime_database_url, open_runtime_connection
 
@@ -509,7 +514,7 @@ class RuntimeGenerationRepository:
                     "external_claim_scope": destination_scope,
                     "pre_provider_identity_adoption": {
                         **adoption,
-                        "predicate_version": "identity_contact_detail_test_policy_v1",
+                        "predicate_version": PRE_PROVIDER_IDENTITY_ADOPTION_PREDICATE_VERSION,
                     },
                 }
                 inserted_snapshot = connection.execute(
@@ -633,65 +638,20 @@ class RuntimeGenerationRepository:
         any count mismatch aborts the whole scope transition.
         """
 
+        if source_policy_version != PRE_PROVIDER_IDENTITY_ADOPTION_SOURCE_POLICY:
+            raise GenerationCASConflict("pre-provider identity adoption source policy mismatch")
+
         eligible = connection.execute(
-            """
+            f"""
             SELECT job.id, queue.id AS queue_id
             FROM external_effect_job job
             JOIN crm_user_identity_resolution_queue queue
               ON queue.external_effect_job_id = job.id
              AND queue.id::TEXT = job.business_id
-            WHERE job.effect_type = 'wecom.external_contact.detail.fetch'
-              AND job.adapter_name = 'wecom_external_contact_detail'
-              AND job.operation = 'get_external_contact_detail'
-              AND job.business_type = 'identity_resolution_queue'
-              AND job.source_module = 'aicrm_next.identity_contact.resolution_effects'
-              AND job.source_route IN (
-                  'channel_entry.identity_resolution.enqueue',
-                  'message_archive.identity_resolution.enqueue'
-              )
-              AND job.status = 'blocked'
-              AND job.last_error_code = 'effect_type_not_allowed'
-              AND job.execution_mode = 'execute'
-              AND job.attempt_count = 1
-              AND job.max_attempts = 5
-              AND job.worker_generation = 0
-              AND job.policy_version = %s
-              AND job.side_effect_executed = FALSE
-              AND job.provider_result_received = FALSE
-              AND job.provider_call_started_at IS NULL
-              AND job.reconciliation_required = FALSE
-              AND job.lease_token = ''
-              AND job.lease_expires_at IS NULL
-              AND job.locked_by = ''
-              AND job.locked_at IS NULL
-              AND job.hold_reason = ''
-              AND job.cancel_requested_at IS NULL
-              AND queue.status IN ('pending', 'held')
-              AND (
-                  (queue.status = 'pending' AND queue.hold_reason = '' AND queue.last_error = '')
-                  OR (
-                      queue.status = 'held'
-                      AND queue.hold_reason = 'effect_type_not_allowed'
-                      AND queue.last_error = 'effect_type_not_allowed'
-                  )
-              )
-              AND (SELECT COUNT(*) FROM external_effect_attempt attempt WHERE attempt.job_id = job.id) = 1
-              AND EXISTS (
-                  SELECT 1
-                  FROM external_effect_attempt attempt
-                  WHERE attempt.job_id = job.id
-                    AND attempt.status = 'blocked'
-                    AND attempt.error_code = 'effect_type_not_allowed'
-                    AND attempt.adapter_name = 'wecom_external_contact_detail'
-                    AND attempt.operation = 'get_external_contact_detail'
-                    AND attempt.adapter_mode = 'execute'
-                    AND attempt.provider_call_started_at IS NULL
-                    AND attempt.worker_generation = 0
-              )
+            WHERE {pre_provider_identity_adoption_predicate_sql(job_alias="job", queue_alias="queue")}
             ORDER BY job.id
             FOR UPDATE OF job, queue
-            """,
-            (source_policy_version,),
+            """
         ).fetchall()
         job_ids = [int(row["id"]) for row in eligible]
         queue_ids = [int(row["queue_id"]) for row in eligible]
