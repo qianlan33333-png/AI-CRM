@@ -687,6 +687,9 @@ def test_queue_production_diagnostics_is_count_only_and_requires_exact_public_re
     assert "DIAGNOSE AI-CRM QUEUE PRODUCTION READ ONLY" in workflow
     assert 'test "$public_sha" = "$expected_release_sha"' in workflow
     assert 'test "$(git rev-parse HEAD)" = "$expected_release_sha"' in workflow
+    source_index = workflow.index("source /home/ubuntu/.openclaw-wecom-pg.env")
+    assert workflow.rindex("set -a", 0, source_index) < source_index
+    assert source_index < workflow.index("set +a", source_index)
     assert "_external_effect_failed_retryable_backlog" in workflow
     assert "_customer_360_freshness_guard" in workflow
     assert "COUNT(*) AS row_count" in workflow
