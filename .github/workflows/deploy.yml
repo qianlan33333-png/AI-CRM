@@ -505,17 +505,9 @@ jobs:
               "${runtime_secret_args[@]}" \
               | tee /tmp/aicrm-runtime-secret-readiness.json
             export AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED=1
-            python scripts/run_customer_read_model_refresh.py \
-              --execute \
-              --release-refresh \
-              --source-key "deploy_runtime:$after_sha" \
+            python3 scripts/ops/run_release_customer_read_model_refresh.py \
+              --release-sha "$after_sha" \
               | tee /tmp/aicrm-customer-read-model-release-refresh.json
-            python scripts/run_internal_event_worker.py \
-              --execute \
-              --limit 1 \
-              --event-types customer_read_model.refresh.requested \
-              --consumer-names customer_read_model_refresh_intent_consumer \
-              | tee /tmp/aicrm-customer-read-model-release-refresh-consumer.json
             unset AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED
             welcome_terminal_confirmation="$(python3 -c 'import json; print(json.load(open("docs/releases/queue_all_scope_cutover.json", encoding="utf-8"))["pre_cutover_welcome_terminal_acknowledgement"]["confirmation"])')"
             export AICRM_QUEUE_TERMINAL_ACK_AUTHORIZED=1

@@ -39,7 +39,7 @@ def test_deploy_workflows_serialize_without_cancelling_active_release() -> None:
 def test_deploy_acknowledges_only_authorized_pre_cutover_welcome_before_green_health() -> None:
     workflow = PRODUCTION_DEPLOY_WORKFLOW.read_text(encoding="utf-8")
 
-    refresh_index = workflow.index("scripts/run_customer_read_model_refresh.py")
+    refresh_index = workflow.index("scripts/ops/run_release_customer_read_model_refresh.py")
     acknowledgement_index = workflow.index(
         "scripts/ops/acknowledge_pre_cutover_welcome_terminal.py",
         refresh_index,
@@ -684,21 +684,34 @@ def test_production_deploy_refreshes_customer_projection_through_the_scoped_inte
     workflow = PRODUCTION_DEPLOY_WORKFLOW.read_text(encoding="utf-8")
 
     readiness_index = workflow.index("python scripts/ops/check_runtime_secret_readiness.py")
-    request_index = workflow.index("python scripts/run_customer_read_model_refresh.py", readiness_index)
-    release_refresh_index = workflow.index("--release-refresh", request_index)
-    source_key_index = workflow.index('--source-key "deploy_runtime:$after_sha"', release_refresh_index)
-    consumer_index = workflow.index("python scripts/run_internal_event_worker.py", source_key_index)
-    event_type_index = workflow.index("--event-types customer_read_model.refresh.requested", consumer_index)
-    consumer_name_index = workflow.index(
-        "--consumer-names customer_read_model_refresh_intent_consumer",
-        event_type_index,
+    authorization_index = workflow.index(
+        "export AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED=1",
+        readiness_index,
     )
-    smoke_index = workflow.index("python scripts/ops/check_admin_read_pages_smoke.py", consumer_name_index)
+    consumer_index = workflow.index(
+        "python3 scripts/ops/run_release_customer_read_model_refresh.py",
+        authorization_index,
+    )
+    release_sha_index = workflow.index('--release-sha "$after_sha"', consumer_index)
+    unset_index = workflow.index(
+        "unset AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED",
+        release_sha_index,
+    )
+    smoke_index = workflow.index("python scripts/ops/check_admin_read_pages_smoke.py", unset_index)
 
-    assert readiness_index < request_index < release_refresh_index < source_key_index
-    assert source_key_index < consumer_index < event_type_index < consumer_name_index < smoke_index
+    assert readiness_index < authorization_index < consumer_index < release_sha_index
+    assert release_sha_index < unset_index < smoke_index
     assert "AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED=1" in workflow[readiness_index:smoke_index]
-    assert "--limit 1" in workflow[consumer_index:smoke_index]
+    assert '--release-sha "$after_sha"' in workflow[consumer_index:smoke_index]
+    refresh_runner = (ROOT / "scripts" / "ops" / "run_release_customer_read_model_refresh.py").read_text(
+        encoding="utf-8"
+    )
+    assert "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_TYPES" in refresh_runner
+    assert "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_CONSUMERS" in refresh_runner
+    assert '"candidate_count": 0 if already_completed else 1' in refresh_runner
+    assert '"succeeded_count": 0 if already_completed else 1' in refresh_runner
+    assert "release_refresh_completion_mismatch" in refresh_runner
+    assert '"real_external_call_executed": False' in refresh_runner
 
 
 def test_queue_production_diagnostics_is_count_only_and_requires_exact_public_release():

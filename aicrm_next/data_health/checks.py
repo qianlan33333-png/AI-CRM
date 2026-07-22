@@ -12,6 +12,10 @@ from aicrm_next.shared.release_cutovers import (
     QUESTIONNAIRE_AUTO_EXECUTE_CUTOVER_SQL,
 )
 from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.shared.queue_provenance import (
+    PRE_PROVIDER_IDENTITY_ADOPTION_PREDICATE_VERSION,
+    pre_provider_identity_adoption_predicate_sql,
+)
 from tools.check_data_table_lifecycle import check_data_table_lifecycle
 
 from .dto import DataHealthCheckResult
@@ -641,6 +645,8 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
     source_tables = [
         "external_effect_job",
         "external_effect_attempt",
+        "crm_user_identity_resolution_queue",
+        "queue_runtime_control",
         "queue_terminal_acknowledgement",
     ]
     if not database_schema_available():
@@ -660,7 +666,16 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
                                    ({callback_welcome_failure_sql("job")})
                                        AS id_validation_callback_welcome,
                                    ({acknowledged_pre_cutover_welcome_failure_sql("job")})
-                                       AS pre_cutover_acknowledged_welcome
+                                       AS pre_cutover_acknowledged_welcome,
+                                   EXISTS (
+                                       SELECT 1
+                                       FROM crm_user_identity_resolution_queue deferred_identity_queue
+                                       WHERE {pre_provider_identity_adoption_predicate_sql(
+                                           job_alias="job",
+                                           queue_alias="deferred_identity_queue",
+                                           require_active_source_control=True,
+                                       )}
+                                   ) AS pre_cutover_deferred_identity
                             FROM external_effect_job job
                         )
                         SELECT
@@ -678,6 +693,7 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
                             COUNT(*) FILTER (
                                 WHERE NOT id_validation_canary
                                   AND NOT pre_cutover_acknowledged_welcome
+                                  AND NOT pre_cutover_deferred_identity
                                   AND status = 'blocked'
                                   AND updated_at >= CURRENT_TIMESTAMP - make_interval(hours => {EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS})
                             ) AS recent_blocked_count,
@@ -689,6 +705,7 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
                             COUNT(*) FILTER (
                                 WHERE NOT id_validation_canary
                                   AND NOT pre_cutover_acknowledged_welcome
+                                  AND NOT pre_cutover_deferred_identity
                                   AND status = 'blocked'
                             ) AS historical_blocked_count,
                             COUNT(*) FILTER (
@@ -720,7 +737,11 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
                             COUNT(*) FILTER (
                                 WHERE pre_cutover_acknowledged_welcome
                                   AND status = 'failed_terminal'
-                            ) AS pre_cutover_acknowledged_welcome_count
+                            ) AS pre_cutover_acknowledged_welcome_count,
+                            COUNT(*) FILTER (
+                                WHERE pre_cutover_deferred_identity
+                                  AND status = 'blocked'
+                            ) AS pre_cutover_deferred_identity_count
                         FROM classified_jobs
                         """
                     )
@@ -754,6 +775,7 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
     pre_cutover_acknowledged_welcome_count = int(
         row.get("pre_cutover_acknowledged_welcome_count") or 0
     )
+    pre_cutover_deferred_identity_count = int(row.get("pre_cutover_deferred_identity_count") or 0)
     violations = []
     if failed_terminal_count > 0:
         violations.append(f"failed_terminal_count={failed_terminal_count} exceeds 0")
@@ -785,6 +807,14 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
             "operator_acknowledgement_required": True,
             "provider_success_claimed": False,
             "replay_prohibited": True,
+            "strict_provenance_required": True,
+        },
+        "pre_cutover_deferred_identity_adoption": {
+            "eligible_count": pre_cutover_deferred_identity_count,
+            "excluded_from_business_health": True,
+            "provider_boundary_crossed": False,
+            "pending_generation_1_adoption": True,
+            "predicate_version": PRE_PROVIDER_IDENTITY_ADOPTION_PREDICATE_VERSION,
             "strict_provenance_required": True,
         },
     }
