@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""Validate one cross-repository ID-to-AI-CRM production promotion.
-
-The current reviewed binding promotes AI-CRM PR #1747 only after ID validation
-PR #221 is active on id-dev.
-"""
+"""Validate one cross-repository ID-to-AI-CRM production promotion."""
 
 from __future__ import annotations
 
@@ -158,7 +154,11 @@ def validate_promotion(
     allowed_path_set = set(allowed_paths)
     unexpected_paths = sorted(changed_paths - allowed_path_set)
     _require(not unexpected_paths, f"unapproved post-candidate paths: {', '.join(unexpected_paths)}")
-    missing_required_paths = sorted(REQUIRED_PROMOTION_PATHS - changed_paths)
+    missing_required_paths = sorted(
+        path
+        for path in REQUIRED_PROMOTION_PATHS
+        if _git(root, "cat-file", "-e", f"{release_sha}:{path}", check=False).returncode != 0
+    )
     _require(not missing_required_paths, f"promotion control paths are missing: {', '.join(missing_required_paths)}")
     target_ci_run_id = _validate_target_ci(target_ci_runs, release_sha)
 
