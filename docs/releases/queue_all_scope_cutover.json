@@ -25,6 +25,7 @@
     "scripts/run_execution_runtime.py",
     "tests/test_alembic_revision_chain.py",
     "tests/test_ci_workflow_contract.py",
+    "tests/test_database_bootstrap.py",
     "tests/test_github_action_pins.py",
     "tests/test_queue_all_scope_cutover.py",
     "tests/test_queue_runtime_cutover.py",
