@@ -1342,7 +1342,7 @@ def _simulate_post_cutover_contact_detail_gate_block(
     )
 
 
-def test_post_cutover_contact_detail_recovery_reopens_only_exact_two_attempt_history() -> None:
+def test_post_cutover_contact_detail_recovery_reopens_exact_one_and_two_attempt_history() -> None:
     target_policy = f"queue-v2-production-all-{uuid4().hex[:10]}"
     repository = RuntimeGenerationRepository(_database_url())
     repository.activate_generation(
@@ -1379,6 +1379,27 @@ def test_post_cutover_contact_detail_recovery_reopens_only_exact_two_attempt_his
             job_id=job_id,
             queue_id=queue_id,
         )
+        fresh_job_id, fresh_queue_id = _insert_deferred_identity_effect(
+            connection,
+            "post-cutover-recovery-fresh-generation-one",
+            with_runtime=True,
+        )
+        connection.execute(
+            """
+            UPDATE external_effect_job
+            SET worker_generation = 1, policy_version = %s
+            WHERE id = %s
+            """,
+            (target_policy, fresh_job_id),
+        )
+        connection.execute(
+            """
+            UPDATE external_effect_attempt
+            SET worker_generation = 1
+            WHERE job_id = %s
+            """,
+            (fresh_job_id,),
+        )
     repository.resume_claims(
         expected_generation=1,
         expected_policy_version=target_policy,
@@ -1392,14 +1413,18 @@ def test_post_cutover_contact_detail_recovery_reopens_only_exact_two_attempt_his
             connection,
             policy_version=target_policy,
         )
-        assert [int(row["id"]) for row in rows] == [job_id]
+        assert [int(row["id"]) for row in rows] == [job_id, fresh_job_id]
+        assert {
+            int(row["id"]): int(row["pre_provider_attempt_count"])
+            for row in rows
+        } == {job_id: 2, fresh_job_id: 1}
         counts = recover_all_scope_contact_detail._reopen_candidates(
             connection,
             rows,
             policy_version=target_policy,
         )
 
-    assert counts == {"job_count": 1, "queue_count": 1, "runtime_count": 1}
+    assert counts == {"job_count": 2, "queue_count": 2, "runtime_count": 2}
     with _connect() as connection:
         job = connection.execute(
             """
@@ -1418,6 +1443,19 @@ def test_post_cutover_contact_detail_recovery_reopens_only_exact_two_attempt_his
             "SELECT COUNT(*) AS count FROM external_effect_attempt WHERE job_id = %s",
             (job_id,),
         ).fetchone()["count"]
+        fresh_job = connection.execute(
+            """
+            SELECT status, attempt_count, worker_generation, policy_version,
+                   provider_call_started_at, side_effect_executed,
+                   provider_result_received, last_error_code
+            FROM external_effect_job WHERE id = %s
+            """,
+            (fresh_job_id,),
+        ).fetchone()
+        fresh_queue = connection.execute(
+            "SELECT status, hold_reason, last_error FROM crm_user_identity_resolution_queue WHERE id = %s",
+            (fresh_queue_id,),
+        ).fetchone()
 
     assert job["status"] == "queued"
     assert job["attempt_count"] == 2
@@ -1429,6 +1467,15 @@ def test_post_cutover_contact_detail_recovery_reopens_only_exact_two_attempt_his
     assert job["last_error_code"] == ""
     assert queue == {"status": "pending", "hold_reason": "", "last_error": ""}
     assert attempt_count == 2
+    assert fresh_job["status"] == "queued"
+    assert fresh_job["attempt_count"] == 1
+    assert fresh_job["worker_generation"] == 1
+    assert fresh_job["policy_version"] == target_policy
+    assert fresh_job["provider_call_started_at"] is None
+    assert fresh_job["side_effect_executed"] is False
+    assert fresh_job["provider_result_received"] is False
+    assert fresh_job["last_error_code"] == ""
+    assert fresh_queue == {"status": "pending", "hold_reason": "", "last_error": ""}
 
 
 def test_post_cutover_contact_detail_recovery_rejects_any_provider_boundary() -> None:

@@ -147,15 +147,16 @@ jobs:
               --authorization-base-sha "$authorization_base_sha" \
               --confirmation '${{ inputs.confirmation }}' \
               --actor github-actions \
-              --reason 'recover exact two-attempt pre-provider contact-detail block' \
-              --maximum-candidate-count 6 \
+              --reason 'recover bounded exact pre-provider contact-detail gate blocks' \
+              --maximum-candidate-count 12 \
               --wait-timeout-seconds 180 \
               --apply \
               > /tmp/aicrm-contact-detail-recovery.json
             python3 - <<'PY'
             import json
             data = json.load(open('/tmp/aicrm-contact-detail-recovery.json', encoding='utf-8'))
-            assert data['candidate_count'] in (0, 6)
+            assert 0 <= data['candidate_count'] <= 12
+            assert sum(data['candidate_attempt_histogram'].values()) == data['candidate_count']
             assert data['contains_raw_target_or_job_ids'] is False
             if data['candidate_count']:
                 assert data['progress']['succeeded_count'] == data['candidate_count']

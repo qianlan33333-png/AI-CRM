@@ -140,7 +140,9 @@ def test_cutover_prepares_exact_type_recovers_strict_history_and_checks_health_b
 
     assert prepare_index < preflight_index < owner_index < recover_index
     assert recover_index < idle_index < data_health_index < soak_index
-    assert "attempt_count = 2" in recovery
+    assert "attempt_count BETWEEN 1 AND 2" in recovery
+    assert "--maximum-candidate-count 12" in workflow
+    assert "candidate_attempt_histogram" in workflow
     assert "provider_call_started_at IS NULL" in recovery
     assert "maximum-candidate-count" in recovery
     assert '"contains_raw_target_or_job_ids": False' in recovery

@@ -724,6 +724,8 @@ def test_queue_production_diagnostics_is_count_only_and_requires_exact_public_re
     assert workflow.rindex("set -a", 0, source_index) < source_index
     assert source_index < workflow.index("set +a", source_index)
     assert "_external_effect_failed_retryable_backlog" in workflow
+    assert "preprovider_identity_history" in workflow
+    assert "exact_gate_attempt_count" in workflow
     assert "_customer_360_freshness_guard" in workflow
     assert "COUNT(*) AS row_count" in workflow
     assert "succeeded_same_business" in workflow

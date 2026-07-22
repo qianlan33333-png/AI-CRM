@@ -4,7 +4,7 @@ from __future__ import annotations
 PRE_PROVIDER_IDENTITY_ADOPTION_SOURCE_POLICY = "queue-v2-test-loopback"
 PRE_PROVIDER_IDENTITY_ADOPTION_PREDICATE_VERSION = "identity_contact_detail_test_policy_v2"
 POST_CUTOVER_IDENTITY_RECOVERY_POLICY = "queue-v2-production-all-g1"
-POST_CUTOVER_IDENTITY_RECOVERY_PREDICATE_VERSION = "identity_contact_detail_all_scope_v1"
+POST_CUTOVER_IDENTITY_RECOVERY_PREDICATE_VERSION = "identity_contact_detail_all_scope_preprovider_v2"
 
 
 def pre_provider_identity_adoption_predicate_sql(
@@ -102,12 +102,15 @@ def post_cutover_identity_recovery_predicate_sql(
     queue_alias: str,
     policy_version: str = POST_CUTOVER_IDENTITY_RECOVERY_POLICY,
 ) -> str:
-    """Return the exact predicate for the known post-cutover gate-only block.
+    """Return the exact predicate for post-cutover pre-provider gate-only blocks.
 
     The first all-scope transition preserved the generation-0 blocked attempt,
     then the still-missing typed effect allowlist produced one more blocked
-    attempt without opening the provider boundary.  Recovery is allowed only
-    for that exact two-attempt history and the immutable identity routes.
+    attempt without opening the provider boundary. New identity work can also
+    reach the same gate once under generation 1 before the typed effect is
+    enabled. Recovery is allowed only for either strict one- or two-attempt
+    history on the immutable identity routes, with every durable attempt still
+    proving that the provider boundary was never opened.
     """
 
     normalized_policy = str(policy_version or "").strip()
@@ -133,7 +136,7 @@ def post_cutover_identity_recovery_predicate_sql(
               AND {job_alias}.status = 'blocked'
               AND {job_alias}.last_error_code = 'effect_type_not_allowed'
               AND {job_alias}.execution_mode = 'execute'
-              AND {job_alias}.attempt_count = 2
+              AND {job_alias}.attempt_count BETWEEN 1 AND 2
               AND {job_alias}.max_attempts = 5
               AND {job_alias}.worker_generation = 1
               AND {job_alias}.policy_version = '{normalized_policy}'
@@ -154,7 +157,7 @@ def post_cutover_identity_recovery_predicate_sql(
                   SELECT COUNT(*)
                   FROM external_effect_attempt recovery_attempt_count
                   WHERE recovery_attempt_count.job_id = {job_alias}.id
-              ) = 2
+              ) = {job_alias}.attempt_count
               AND (
                   SELECT COUNT(*)
                   FROM external_effect_attempt recovery_attempt
@@ -166,7 +169,7 @@ def post_cutover_identity_recovery_predicate_sql(
                     AND recovery_attempt.adapter_mode = 'disabled'
                     AND recovery_attempt.provider_call_started_at IS NULL
                     AND COALESCE(recovery_attempt.provider_result_json, '{{}}'::jsonb) = '{{}}'::jsonb
-              ) = 2
+              ) = {job_alias}.attempt_count
               AND NOT EXISTS (
                   SELECT 1
                   FROM external_effect_attempt unsafe_recovery_attempt
@@ -176,6 +179,7 @@ def post_cutover_identity_recovery_predicate_sql(
                         OR unsafe_recovery_attempt.status <> 'blocked'
                         OR unsafe_recovery_attempt.error_code <> 'effect_type_not_allowed'
                         OR unsafe_recovery_attempt.adapter_mode <> 'disabled'
+                        OR unsafe_recovery_attempt.worker_generation NOT IN (0, 1)
                         OR COALESCE(unsafe_recovery_attempt.provider_result_json, '{{}}'::jsonb) <> '{{}}'::jsonb
                     )
               )
