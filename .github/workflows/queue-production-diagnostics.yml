@@ -319,6 +319,64 @@ jobs:
                         )
                     ).mappings()
                 ]
+                contact_absence_terminal_history = [
+                    dict(row)
+                    for row in session.execute(
+                        text(
+                            """
+                            SELECT
+                                job.source_route,
+                                job.attempt_count AS job_attempt_count,
+                                job.worker_generation AS job_worker_generation,
+                                job.policy_version,
+                                job.last_error_code AS job_error_code,
+                                job.side_effect_executed,
+                                job.provider_result_received,
+                                (job.provider_call_started_at IS NOT NULL) AS job_provider_boundary_crossed,
+                                job.reconciliation_required,
+                                attempt.status AS attempt_status,
+                                attempt.error_code AS attempt_error_code,
+                                attempt.adapter_mode,
+                                (attempt.provider_call_started_at IS NOT NULL) AS attempt_provider_boundary_crossed,
+                                attempt.worker_generation AS attempt_worker_generation,
+                                COALESCE((attempt.response_summary_json->>'errcode')::INTEGER, 0) AS provider_errcode,
+                                COALESCE((attempt.response_summary_json->>'real_external_call_executed')::BOOLEAN, FALSE) AS real_external_call_executed,
+                                COUNT(*) AS row_count
+                            FROM external_effect_job job
+                            JOIN external_effect_attempt attempt ON attempt.job_id = job.id
+                            WHERE job.status = 'failed_terminal'
+                              AND job.effect_type = 'wecom.external_contact.detail.fetch'
+                              AND job.adapter_name = 'wecom_external_contact_detail'
+                              AND job.operation = 'get_external_contact_detail'
+                              AND job.business_type = 'identity_resolution_queue'
+                              AND job.source_module = 'aicrm_next.identity_contact.resolution_effects'
+                              AND job.last_error_code IN (
+                                  'external_contact_relationship_absent',
+                                  'wecom_error_84061',
+                                  'wecom_errcode_84061'
+                              )
+                            GROUP BY
+                                job.source_route,
+                                job.attempt_count,
+                                job.worker_generation,
+                                job.policy_version,
+                                job.last_error_code,
+                                job.side_effect_executed,
+                                job.provider_result_received,
+                                (job.provider_call_started_at IS NOT NULL),
+                                job.reconciliation_required,
+                                attempt.status,
+                                attempt.error_code,
+                                attempt.adapter_mode,
+                                (attempt.provider_call_started_at IS NOT NULL),
+                                attempt.worker_generation,
+                                COALESCE((attempt.response_summary_json->>'errcode')::INTEGER, 0),
+                                COALESCE((attempt.response_summary_json->>'real_external_call_executed')::BOOLEAN, FALSE)
+                            ORDER BY attempt_provider_boundary_crossed, attempt_status
+                            """
+                        )
+                    ).mappings()
+                ]
                 welcome_graph_terminal = [
                     dict(row)
                     for row in session.execute(
@@ -357,6 +415,7 @@ jobs:
                         "terminal_followup_proof": terminal_followup,
                         "deferred_identity_projection": deferred_identity_projection,
                         "preprovider_identity_history": preprovider_identity_history,
+                        "contact_absence_terminal_history": contact_absence_terminal_history,
                         "welcome_graph_terminal": welcome_graph_terminal,
                         "contains_raw_target_or_payload": False,
                         "read_only": True,

@@ -1600,6 +1600,87 @@ def test_data_health_excludes_only_exact_post_cutover_recovery_candidate() -> No
     assert unsafe_health.evidence["post_cutover_identity_recovery"]["eligible_count"] == 1
 
 
+def test_data_health_excludes_only_strict_provider_confirmed_contact_absence() -> None:
+    target_policy = "queue-v2-production-all-g1"
+    with _connect() as connection:
+        job_id, queue_id = _insert_deferred_identity_effect(
+            connection,
+            "provider-confirmed-contact-absence",
+            source_route="message_archive.identity_resolution.enqueue",
+            with_runtime=True,
+        )
+        connection.execute(
+            """
+            UPDATE external_effect_job
+            SET worker_generation = 1, policy_version = %s
+            WHERE id = %s
+            """,
+            (target_policy, job_id),
+        )
+        _simulate_post_cutover_contact_detail_gate_block(
+            connection,
+            job_id=job_id,
+            queue_id=queue_id,
+        )
+        attempt_id = f"eea-contact-absence-{job_id}"
+        connection.execute(
+            """
+            INSERT INTO external_effect_attempt (
+                attempt_id, job_id, adapter_name, adapter_mode, operation,
+                status, error_code, error_message, response_summary_json,
+                provider_call_started_at, worker_generation, completed_at
+            ) VALUES (
+                %s, %s, 'wecom_external_contact_detail', 'execute',
+                'get_external_contact_detail', 'failed_terminal',
+                'wecom_error_84061', 'not external contact',
+                '{"errcode":84061,"real_external_call_executed":true}'::jsonb,
+                CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP
+            )
+            """,
+            (attempt_id, job_id),
+        )
+        connection.execute(
+            """
+            UPDATE external_effect_job
+            SET status = 'failed_terminal', attempt_count = 3,
+                last_attempt_id = %s, last_error_code = 'wecom_error_84061',
+                provider_call_started_at = CURRENT_TIMESTAMP,
+                side_effect_executed = TRUE, provider_result_received = TRUE,
+                completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+            WHERE id = %s
+            """,
+            (attempt_id, job_id),
+        )
+
+    health = data_health_checks._external_effect_failed_retryable_backlog()
+    assert health.status == "ok"
+    assert health.evidence["failed_terminal_count"] == 0
+    assert health.evidence["external_contact_relationship_absent"]["count"] == 1
+    with recover_all_scope_contact_detail.get_engine().connect() as connection:
+        assert recover_all_scope_contact_detail._business_negative_rows(connection) == [job_id]
+    progress = recover_all_scope_contact_detail._progress([job_id])
+    assert progress["business_negative_count"] == 1
+    assert progress["unsafe_terminal_count"] == 0
+    assert progress["provider_boundary_attempt_count"] == 1
+
+    with _connect() as connection:
+        connection.execute(
+            """
+            UPDATE external_effect_attempt
+            SET response_summary_json = '{"errcode":84062,"real_external_call_executed":true}'::jsonb
+            WHERE attempt_id = %s
+            """,
+            (attempt_id,),
+        )
+    unsafe = data_health_checks._external_effect_failed_retryable_backlog()
+    assert unsafe.status == "fail"
+    assert unsafe.evidence["failed_terminal_count"] == 1
+    assert unsafe.evidence["external_contact_relationship_absent"]["count"] == 0
+    unsafe_progress = recover_all_scope_contact_detail._progress([job_id])
+    assert unsafe_progress["business_negative_count"] == 0
+    assert unsafe_progress["unsafe_terminal_count"] == 1
+
+
 def test_invariant_checker_reports_missing_active_generation_heartbeats() -> None:
     RuntimeGenerationRepository(_database_url()).activate_generation(
         expected_generation=0,

@@ -598,6 +598,46 @@ def test_external_effect_backlog_excludes_only_exact_post_cutover_identity_recov
         assert strict_token in query
 
 
+def test_external_effect_backlog_keeps_exact_contact_absence_as_no_replay_business_terminal(monkeypatch) -> None:
+    from aicrm_next.data_health import checks
+
+    calls = _patch_health_db(
+        monkeypatch,
+        {
+            "failed_retryable_count": 0,
+            "recent_failed_terminal_count": 0,
+            "recent_blocked_count": 0,
+            "historical_failed_terminal_count": 3,
+            "historical_blocked_count": 0,
+            "due_retryable_count": 0,
+            "expected_contact_absence_count": 3,
+        },
+    )
+
+    result = checks._external_effect_failed_retryable_backlog()
+
+    assert result.status == "ok"
+    assert result.evidence["external_contact_relationship_absent"] == {
+        "count": 3,
+        "excluded_from_business_health": True,
+        "provider_boundary_crossed": True,
+        "provider_success_claimed": False,
+        "replay_prohibited": True,
+        "strict_provenance_required": True,
+    }
+    query = "\n".join(calls)
+    for strict_token in (
+        "wecom.external_contact.detail.fetch",
+        "wecom_error_84061",
+        "relationship_absent_provider_attempt",
+        "response_summary_json->>'errcode'",
+        "provider_call_started_at IS NOT NULL",
+        "provider_result_received = TRUE",
+        "relationship_absent_gate_attempt",
+    ):
+        assert strict_token in query
+
+
 def test_external_effect_backlog_keeps_historical_terminal_evidence_without_permanent_failure(monkeypatch) -> None:
     from aicrm_next.data_health import checks
 

@@ -15,7 +15,7 @@ from aicrm_next.shared.db_session import get_session_factory
 from aicrm_next.shared.queue_provenance import (
     POST_CUTOVER_IDENTITY_RECOVERY_PREDICATE_VERSION,
     PRE_PROVIDER_IDENTITY_ADOPTION_PREDICATE_VERSION,
-    post_cutover_identity_recovery_predicate_sql,
+    external_contact_relationship_absent_terminal_sql, post_cutover_identity_recovery_predicate_sql,
     pre_provider_identity_adoption_predicate_sql,
 )
 from tools.check_data_table_lifecycle import check_data_table_lifecycle
@@ -644,8 +644,7 @@ def _broadcast_job_blocked_backlog() -> DataHealthCheckResult:
 def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
     check_id = "external_effect_failed_retryable_backlog"
     title = "External effect failed retryable backlog"
-    source_tables = ["external_effect_job", "external_effect_attempt", "crm_user_identity_resolution_queue",
-                     "queue_runtime_control", "queue_terminal_acknowledgement"]
+    source_tables = ["external_effect_job", "external_effect_attempt", "crm_user_identity_resolution_queue", "queue_runtime_control", "queue_terminal_acknowledgement"]
     if not database_schema_available():
         return _db_unavailable_placeholder(check_id, title, source_tables)
     try:
@@ -664,6 +663,7 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
                                        AS id_validation_callback_welcome,
                                    ({acknowledged_pre_cutover_welcome_failure_sql("job")})
                                        AS pre_cutover_acknowledged_welcome,
+                                   ({external_contact_relationship_absent_terminal_sql(job_alias="job")}) AS expected_contact_absence,
                                    EXISTS (
                                        SELECT 1
                                        FROM crm_user_identity_resolution_queue recovery_identity_queue
@@ -689,6 +689,7 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
                             COUNT(*) FILTER (
                                 WHERE NOT id_validation_canary
                                   AND NOT pre_cutover_acknowledged_welcome
+                                  AND NOT expected_contact_absence
                                   AND status = 'failed_terminal'
                                   AND updated_at >= CURRENT_TIMESTAMP - make_interval(hours => {EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS})
                             ) AS recent_failed_terminal_count,
@@ -742,6 +743,7 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
                                 WHERE pre_cutover_acknowledged_welcome
                                   AND status = 'failed_terminal'
                             ) AS pre_cutover_acknowledged_welcome_count,
+                            COUNT(*) FILTER (WHERE expected_contact_absence) AS expected_contact_absence_count,
                             COUNT(*) FILTER (WHERE post_cutover_recoverable_identity AND status = 'blocked') AS post_cutover_recoverable_identity_count,
                             COUNT(*) FILTER (WHERE pre_cutover_deferred_identity AND status = 'blocked') AS pre_cutover_deferred_identity_count
                         FROM classified_jobs
@@ -773,9 +775,8 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
     canary_failed_terminal_count = int(row.get("canary_failed_terminal_count") or 0)
     canary_blocked_count = int(row.get("canary_blocked_count") or 0)
     callback_welcome_failed_terminal_count = int(row.get("callback_welcome_failed_terminal_count") or 0)
-    pre_cutover_acknowledged_welcome_count = int(row.get("pre_cutover_acknowledged_welcome_count") or 0)
-    pre_cutover_deferred_identity_count = int(row.get("pre_cutover_deferred_identity_count") or 0)
-    post_cutover_recoverable_identity_count = int(row.get("post_cutover_recoverable_identity_count") or 0)
+    pre_cutover_acknowledged_welcome_count, expected_contact_absence_count = int(row.get("pre_cutover_acknowledged_welcome_count") or 0), int(row.get("expected_contact_absence_count") or 0)
+    pre_cutover_deferred_identity_count, post_cutover_recoverable_identity_count = int(row.get("pre_cutover_deferred_identity_count") or 0), int(row.get("post_cutover_recoverable_identity_count") or 0)
     violations = []
     if failed_terminal_count > 0:
         violations.append(f"failed_terminal_count={failed_terminal_count} exceeds 0")
@@ -809,12 +810,11 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
             "replay_prohibited": True,
             "strict_provenance_required": True,
         },
+        "external_contact_relationship_absent": {"count": expected_contact_absence_count, "excluded_from_business_health": True, "provider_boundary_crossed": True, "provider_success_claimed": False, "replay_prohibited": True, "strict_provenance_required": True},
         "pre_cutover_deferred_identity_adoption": {
             "eligible_count": pre_cutover_deferred_identity_count, "excluded_from_business_health": True,
             "provider_boundary_crossed": False, "pending_generation_1_adoption": True,
-            "predicate_version": PRE_PROVIDER_IDENTITY_ADOPTION_PREDICATE_VERSION,
-            "strict_provenance_required": True,
-        },
+            "predicate_version": PRE_PROVIDER_IDENTITY_ADOPTION_PREDICATE_VERSION, "strict_provenance_required": True},
         "post_cutover_identity_recovery": {
             "eligible_count": post_cutover_recoverable_identity_count, "excluded_from_business_health": True,
             "provider_boundary_crossed": False,

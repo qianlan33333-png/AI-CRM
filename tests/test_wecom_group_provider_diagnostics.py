@@ -3,8 +3,13 @@ from __future__ import annotations
 import json
 
 from aicrm_next.integration_gateway.wecom_group_adapter import WeComGroupMessageAdapter
+from aicrm_next.integration_gateway.wecom_channel_entry_client import WeComApiError
 from aicrm_next.platform_foundation.external_effects import adapters as effect_adapters
-from aicrm_next.platform_foundation.external_effects.models import ExternalEffectJob, WECOM_MESSAGE_GROUP_SEND
+from aicrm_next.platform_foundation.external_effects.models import (
+    ExternalEffectJob,
+    WECOM_EXTERNAL_CONTACT_DETAIL_FETCH,
+    WECOM_MESSAGE_GROUP_SEND,
+)
 from aicrm_next.shared.wecom_runtime import classify_wecom_provider_error
 
 
@@ -38,6 +43,41 @@ def test_group_provider_error_keeps_safe_errcode_and_classification(monkeypatch)
 
 def test_provider_error_60020_is_terminal_ip_trust_configuration() -> None:
     assert classify_wecom_provider_error(provider_errcode=60020) == ("ip_not_trusted", "terminal")
+
+
+def test_external_contact_relationship_absence_is_visible_non_retryable_business_outcome() -> None:
+    assert classify_wecom_provider_error(provider_errcode=84061) == (
+        "external_contact_relationship_absent",
+        "terminal",
+    )
+
+    class _Client:
+        def get_external_contact_detail(self, external_userid):
+            raise WeComApiError(
+                "not external contact",
+                payload={"errcode": 84061, "errmsg": "not external contact"},
+            )
+
+    job = ExternalEffectJob(
+        id=84061,
+        effect_type=WECOM_EXTERNAL_CONTACT_DETAIL_FETCH,
+        adapter_name="wecom_external_contact_detail",
+        operation="get_external_contact_detail",
+        target_type="external_user",
+        target_id="wm_relationship_absent",
+        execution_mode="execute",
+        payload_json={"external_userid": "wm_relationship_absent", "queue_id": 7},
+    )
+    result = effect_adapters.WeComExternalContactDetailAdapter(
+        adapter_factory=lambda: _Client(),
+    ).dispatch(job)
+
+    assert result.status == "failed_terminal"
+    assert result.error_code == "external_contact_relationship_absent"
+    assert result.real_external_call_executed is True
+    assert result.provider_result_received is True
+    assert result.response_summary["errcode"] == 84061
+    assert result.response_summary["provider_result_received"] is True
 
 
 def test_group_provider_malformed_diagnostics_do_not_raise_after_boundary(monkeypatch) -> None:

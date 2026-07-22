@@ -33,8 +33,10 @@
     "aicrm_next/data_health/external_effect_provenance.py",
     "aicrm_next/platform_foundation/execution_runtime/validation.py",
     "aicrm_next/platform_foundation/execution_runtime/cutover.py",
+    "aicrm_next/platform_foundation/external_effects/adapters.py",
     "aicrm_next/platform_foundation/external_effects/repo.py",
     "aicrm_next/shared/queue_provenance.py",
+    "aicrm_next/shared/wecom_runtime.py",
     "deploy/aicrm-queue-soak-snapshot.service",
     "deploy/aicrm-queue-soak-snapshot.timer",
     "deploy/production_runtime_units.json",
@@ -69,6 +71,7 @@
     "tests/test_queue_runtime_systemd.py",
     "tests/test_run_execution_runtime.py",
     "tests/test_runtime_contract_inventory.py",
-    "tests/test_select_test_scope.py"
+    "tests/test_select_test_scope.py",
+    "tests/test_wecom_group_provider_diagnostics.py"
   ]
 }
