@@ -453,7 +453,7 @@ def assert_group_invite_bindings_ready(
     blocking = [issue for issue in result.get("issues") or [] if issue.get("severity") == "error"]
     if blocking:
         ids = ",".join(str(value) for value in group_invite_ids)
-        raise ContractError(f"group_invite_not_ready:ids={ids}:群邀请卡片尚未就绪，请联系管理员补齐邀请链接")
+        raise ContractError(f"group_invite_not_ready:ids={ids}:系统未能自动生成群邀请，请重新选择群聊后重试")
 
 
 def _validate_material_asset(material: dict[str, Any], *, channel: str, field_name: str) -> list[dict[str, Any]]:
@@ -470,7 +470,7 @@ def _validate_material_asset(material: dict[str, Any], *, channel: str, field_na
     if material_type == "group_invite":
         binding_status = str(metadata.get("binding_status") or ("ready" if metadata.get("join_url") else "pending")).strip()
         if binding_status != "ready" or not str(metadata.get("join_url") or "").strip():
-            issues.append(_material_validation_issue(asset_id, "group_invite_not_ready", "群邀请卡片尚未就绪，请联系管理员补齐邀请链接", field_name))
+            issues.append(_material_validation_issue(asset_id, "group_invite_not_ready", "系统未能自动生成群邀请，请重新选择群聊后重试", field_name))
             return issues
     missing = _missing_metadata_fields(material_type, material, metadata)
     for field in missing:

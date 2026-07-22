@@ -38,6 +38,10 @@ class MediaLibraryRepository(Protocol):
     def save_item(self, kind: str, payload: dict[str, Any], item_id: str | None = None) -> dict[str, Any]: ...
     def delete_item(self, kind: str, item_id: str, *, force: bool = False) -> dict[str, Any]: ...
     def ensure_group_invite_binding(self, payload: dict[str, Any]) -> dict[str, Any]: ...
+    def claim_group_invite_provisioning(self, item_id: str, claim_token: str, state: str) -> dict[str, Any]: ...
+    def store_group_invite_config(self, item_id: str, claim_token: str, config_id: str, state: str) -> dict[str, Any] | None: ...
+    def release_group_invite_provisioning(self, item_id: str, claim_token: str) -> None: ...
+    def complete_group_invite_provisioning(self, item_id: str, config_id: str, state: str, join_url: str) -> dict[str, Any]: ...
     def reconcile_group_invite_bindings(self, active_chat_ids: list[str], inactive_chat_ids: list[str]) -> int: ...
 
 
@@ -362,6 +366,61 @@ class InMemoryMediaLibraryRepository:
         }
         self._data["group_invite"].append(item)
         return deepcopy(item)
+
+    def claim_group_invite_provisioning(self, item_id: str, claim_token: str, state: str) -> dict[str, Any]:
+        for item in self._data["group_invite"]:
+            if str(item.get("id")) != str(item_id) or item.get("deleted"):
+                continue
+            current_config_id = str(item.get("config_id") or "").strip()
+            can_claim = (
+                item.get("binding_status") != "invalid"
+                and not str(item.get("join_url") or "").strip()
+                and not current_config_id
+            )
+            if can_claim:
+                item["config_id"] = claim_token
+                item["state"] = state
+                item["updated_at"] = now_iso()
+            return {"claimed": can_claim, "item": deepcopy(item)}
+        raise NotFoundError("group_invite item not found")
+
+    def store_group_invite_config(self, item_id: str, claim_token: str, config_id: str, state: str) -> dict[str, Any] | None:
+        for item in self._data["group_invite"]:
+            if str(item.get("id")) != str(item_id) or item.get("deleted"):
+                continue
+            if str(item.get("config_id") or "") != claim_token:
+                return None
+            item["config_id"] = config_id
+            item["state"] = state
+            item["updated_at"] = now_iso()
+            return deepcopy(item)
+        return None
+
+    def release_group_invite_provisioning(self, item_id: str, claim_token: str) -> None:
+        for item in self._data["group_invite"]:
+            if str(item.get("id")) == str(item_id) and str(item.get("config_id") or "") == claim_token:
+                item["config_id"] = ""
+                item["updated_at"] = now_iso()
+
+    def complete_group_invite_provisioning(self, item_id: str, config_id: str, state: str, join_url: str) -> dict[str, Any]:
+        normalized_url = normalize_group_invite_join_url(join_url)
+        for item in self._data["group_invite"]:
+            if str(item.get("id")) != str(item_id) or item.get("deleted"):
+                continue
+            if str(item.get("config_id") or "") != str(config_id or ""):
+                raise ContractError("群邀请自动生成状态已变化，请重试")
+            item.update(
+                {
+                    "config_id": config_id,
+                    "state": state,
+                    "join_url": normalized_url,
+                    "binding_status": "ready",
+                    "enabled": True,
+                    "updated_at": now_iso(),
+                }
+            )
+            return deepcopy(item)
+        raise NotFoundError("group_invite item not found")
 
     def reconcile_group_invite_bindings(self, active_chat_ids: list[str], inactive_chat_ids: list[str]) -> int:
         active = {str(value or "").strip() for value in active_chat_ids if str(value or "").strip()}

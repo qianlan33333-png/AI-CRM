@@ -105,6 +105,12 @@ class GuardedWeComAdapter:
     def create_contact_way(self, payload: dict[str, Any]) -> dict[str, Any]:
         raise WeComAdapterBlocked(self.contact_way_reason, missing_config=self.missing_config)
 
+    def create_group_join_way(self, payload: dict[str, Any]) -> dict[str, Any]:
+        raise WeComAdapterBlocked(self.contact_way_reason, missing_config=self.missing_config)
+
+    def get_group_join_way(self, config_id: str) -> dict[str, Any]:
+        raise WeComAdapterBlocked(self.contact_way_reason, missing_config=self.missing_config)
+
     def update_external_contact_remark(self, payload: dict[str, Any]) -> dict[str, Any]:
         raise WeComAdapterBlocked(self.detail_reason, missing_config=self.missing_config)
 
@@ -276,6 +282,16 @@ class ProductionWeComAdapter:
     def create_contact_way(self, payload: dict[str, Any]) -> dict[str, Any]:
         return self._request("POST", "/cgi-bin/externalcontact/add_contact_way", json_payload=payload)
 
+    def create_group_join_way(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return self._request("POST", "/cgi-bin/externalcontact/groupchat/add_join_way", json_payload=payload)
+
+    def get_group_join_way(self, config_id: str) -> dict[str, Any]:
+        return self._request(
+            "POST",
+            "/cgi-bin/externalcontact/groupchat/get_join_way",
+            json_payload={"config_id": _text(config_id)},
+        )
+
     def update_external_contact_remark(self, payload: dict[str, Any]) -> dict[str, Any]:
         return self._request("POST", "/cgi-bin/externalcontact/remark", json_payload=payload)
 
@@ -335,6 +351,7 @@ def wecom_adapter_diagnostics() -> dict[str, Any]:
         "can_send_welcome": enabled,
         "can_mark_tag": enabled,
         "can_create_contact_way": enabled,
+        "can_create_group_join_way": enabled,
         "can_transfer_customer": enabled,
     }
 

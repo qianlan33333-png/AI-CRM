@@ -674,6 +674,12 @@ def _save_postgres_channel(payload: dict[str, Any], channel_id: int | None = Non
         raise LookupError("channel_not_found")
     data = _coerce_channel_payload(payload, existing=existing, partial=bool(channel_id))
     _validate_assignment_contract(payload, data)
+    if data.get("welcome_group_invite_library_ids"):
+        from aicrm_next.media_library.application import EnsureGroupInviteBindingReadyCommand
+
+        provisioner = EnsureGroupInviteBindingReadyCommand()
+        for group_invite_id in data["welcome_group_invite_library_ids"]:
+            provisioner(str(group_invite_id))
     if not channels_repo.uses_postgres():
         _assert_fixture_channel_write_allowed(detail="channel admin write requires production database")
         return _save_fixture_channel(payload, channel_id)

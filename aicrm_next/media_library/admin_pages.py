@@ -50,7 +50,7 @@ def admin_group_invite_library(request: Request):
     context = shell_context(
         request=request,
         page_title="群邀请托管",
-        page_summary="管理员集中维护企微原生加入群聊链接；运营人员只需直接选择群聊。",
+        page_summary="系统根据已同步客户群自动生成并保存企微加入群聊链接；运营人员只需选择群聊。",
         active_endpoint="api.admin_group_invite_library_workspace",
     )
     return templates.TemplateResponse(request, "admin_console/group_invite_library.html", context)

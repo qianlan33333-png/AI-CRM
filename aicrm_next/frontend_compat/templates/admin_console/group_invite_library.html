@@ -2,99 +2,58 @@
 
 {% block head_extra %}
 <style>
-  .gi-layout { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(340px,.72fr); gap:16px; }
   .gi-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:18px; }
-  .gi-intro { grid-column:1 / -1; display:flex; gap:14px; align-items:flex-start; }
-  .gi-intro-icon { width:42px; height:42px; flex:none; border-radius:12px; display:grid; place-items:center; background:#eef4ff; color:#2c5cdb; font-size:21px; }
-  .gi-intro h2, .gi-card h2 { margin:0; color:#111827; }
-  .gi-intro p { margin:6px 0 0; color:#667085; line-height:1.65; }
-  .gi-toolbar { display:flex; gap:10px; align-items:center; margin:16px 0 14px; }
-  .gi-toolbar input { flex:1; }
-  .gi-input, .gi-form input { width:100%; box-sizing:border-box; border:1px solid #d1d5db; border-radius:8px; padding:9px 11px; font:inherit; }
-  .gi-form label { display:block; color:#4b5563; font-size:13px; font-weight:650; margin:16px 0 6px; }
-  .gi-help { color:#6b7280; font-size:12px; line-height:1.6; margin:7px 0 0; }
-  .gi-list { display:grid; gap:10px; }
-  .gi-item { border:1px solid #e5e7eb; border-radius:10px; padding:14px; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:14px; align-items:center; }
-  .gi-title { display:flex; gap:8px; align-items:center; font-weight:680; color:#111827; }
-  .gi-meta { color:#667085; font-size:12px; margin-top:5px; }
-  .gi-badge { display:inline-flex; align-items:center; border-radius:999px; padding:3px 8px; font-size:11px; font-weight:650; }
-  .gi-badge.bound { color:#087443; background:#ecfdf3; }
-  .gi-badge.unbound { color:#9a6700; background:#fffaeb; }
-  .gi-actions { display:flex; gap:8px; align-items:center; }
-  .gi-btn { border:1px solid #d1d5db; border-radius:8px; background:#fff; padding:8px 12px; cursor:pointer; color:#344054; text-decoration:none; font:inherit; }
-  .gi-btn.primary { background:#2c5cdb; border-color:#2c5cdb; color:#fff; }
-  .gi-btn.danger { color:#b42318; }
-  .gi-btn[disabled] { opacity:.5; cursor:not-allowed; }
-  .gi-selected { margin-top:14px; border-radius:10px; padding:13px; background:#f8fafc; border:1px solid #e5e7eb; }
-  .gi-selected strong { display:block; color:#111827; }
-  .gi-selected span { display:block; color:#667085; font-size:12px; margin-top:4px; word-break:break-all; }
-  .gi-placeholder { color:#667085; line-height:1.65; padding:22px 4px; }
-  .gi-status { min-height:20px; margin-top:12px; font-size:12px; }
-  .gi-status.error { color:#b42318; } .gi-status.success { color:#087443; }
+  .gi-card h2 { margin:0; color:#111827; }
   .gi-count { color:#667085; font-size:12px; margin-top:5px; }
-  @media (max-width: 900px) { .gi-layout { grid-template-columns:1fr; } .gi-intro { grid-column:auto; } }
+  .gi-toolbar { display:flex; gap:10px; align-items:center; margin:16px 0 14px; }
+  .gi-input { flex:1; min-width:0; box-sizing:border-box; border:1px solid #d1d5db; border-radius:8px; padding:9px 11px; font:inherit; }
+  .gi-list { display:grid; gap:10px; }
+  .gi-item { border:1px solid #e5e7eb; border-radius:10px; padding:14px; }
+  .gi-title { display:flex; gap:8px; align-items:center; font-weight:680; color:#111827; }
+  .gi-meta { color:#667085; font-size:12px; margin-top:5px; overflow-wrap:anywhere; }
+  .gi-badge { display:inline-flex; align-items:center; border-radius:999px; padding:3px 8px; font-size:11px; font-weight:650; }
+  .gi-badge.ready { color:#087443; background:#ecfdf3; }
+  .gi-badge.pending { color:#175cd3; background:#eff8ff; }
+  .gi-badge.invalid { color:#b42318; background:#fef3f2; }
+  .gi-btn { border:1px solid #d1d5db; border-radius:8px; background:#fff; padding:8px 12px; cursor:pointer; color:#344054; text-decoration:none; font:inherit; white-space:nowrap; }
+  .gi-help { color:#6b7280; font-size:12px; line-height:1.6; margin:8px 0 0; }
+  .gi-status { min-height:20px; margin:12px 0 0; font-size:12px; }
+  .gi-status.error { color:#b42318; }
+  .gi-status.success { color:#087443; }
+  @media (max-width: 720px) { .gi-toolbar { align-items:stretch; flex-wrap:wrap; } .gi-input { flex-basis:100%; } }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="gi-layout" data-group-invite-settings>
-  <section class="gi-card gi-intro">
-    <div class="gi-intro-icon">群</div>
-    <div>
-      <h2>群邀请托管</h2>
-      <p>运营人员在欢迎语、群发、私信群发、AI 助手和自动化运营里只需选择要加入的群聊。这里仅由管理员补齐企业微信原生「加入群聊」链接；该链接不是素材，也不使用 media_id。</p>
-    </div>
-  </section>
-
-  <section class="gi-card" aria-labelledby="gi-list-title">
-    <h2 id="gi-list-title">已同步客户群</h2>
-    <div class="gi-count" id="gi-count">正在加载…</div>
-    <div class="gi-toolbar">
-      <input class="gi-input" id="gi-search" type="search" placeholder="搜索群名称、群主或 chat_id">
-      <button class="gi-btn" id="gi-refresh" type="button">刷新</button>
-      <a class="gi-btn" href="/admin/automation-conversion/group-ops/groups/ui">客户群同步</a>
-    </div>
-    <div class="gi-list" id="gi-list"><p class="gi-help">加载中…</p></div>
-  </section>
-
-  <section class="gi-card gi-form" aria-labelledby="gi-form-title">
-    <h2 id="gi-form-title">配置邀请链接</h2>
-    <div id="gi-form-placeholder" class="gi-placeholder">请从左侧选择一个客户群。运营配置完成后，各发送场景会直接显示这个群的名称。</div>
-    <div id="gi-form-fields" hidden>
-      <input id="gi-id" type="hidden">
-      <input id="gi-chat-id" type="hidden">
-      <div class="gi-selected">
-        <strong id="gi-group-name"></strong>
-        <span id="gi-group-meta"></span>
-      </div>
-      <label for="gi-join-url">企业微信「加入群聊」链接</label>
-      <input id="gi-join-url" autocomplete="off" placeholder="https://work.weixin.qq.com/gm/…">
-      <p class="gi-help">在企业微信客户群中复制原生「加入群聊」链接后粘贴到这里。系统会自动生成发送卡片的标题和说明，无需维护素材、封面或 media_id。</p>
-      <div class="gi-actions" style="margin-top:18px">
-        <button class="gi-btn primary" id="gi-save" type="button">保存群邀请设置</button>
-      </div>
-    </div>
-    <div class="gi-status" id="gi-status" role="status"></div>
-  </section>
-</div>
+<section class="gi-card" aria-labelledby="gi-list-title" data-group-invite-settings>
+  <h2 id="gi-list-title">已同步客户群</h2>
+  <div class="gi-count" id="gi-count">正在加载…</div>
+  <p class="gi-help">无需填写链接或参数。首次选用群聊时，系统会从企业微信自动生成并保存官方入群链接。</p>
+  <div class="gi-toolbar">
+    <input class="gi-input" id="gi-search" type="search" placeholder="搜索群名称、群主或 chat_id">
+    <button class="gi-btn" id="gi-refresh" type="button">刷新</button>
+    <a class="gi-btn" href="/admin/automation-conversion/group-ops/groups/ui">客户群同步</a>
+  </div>
+  <div class="gi-list" id="gi-list"><p class="gi-help">加载中…</p></div>
+  <div class="gi-status" id="gi-status" role="status" aria-live="polite"></div>
+</section>
 
 <script>
 (() => {
   const groupApi = '/api/admin/automation-conversion/group-ops/groups';
   const bindingApi = '/api/admin/group-invite-bindings';
   const $ = (id) => document.getElementById(id);
-  const state = { groups: [], bindings: [], selectedChatId: '' };
+  const state = { groups: [], bindings: [] };
   let timer = null;
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
   const status = (message, kind='') => { $('gi-status').textContent = message; $('gi-status').className = `gi-status ${kind}`; };
 
   async function fetchJson(url, options) {
-    if (window.AdminApi && typeof window.AdminApi.requestJson === 'function') {
-      return window.AdminApi.requestJson(url, options || {});
-    }
+    if (window.AdminApi && typeof window.AdminApi.requestJson === 'function') return window.AdminApi.requestJson(url, options || {});
     const response = await fetch(url, options);
     const payload = await response.json().catch(() => ({}));
-    if (!response.ok || payload.ok === false) throw new Error(payload.error || payload.detail || '请求失败');
+    const detail = payload.detail && typeof payload.detail === 'object' ? payload.detail.detail : payload.detail;
+    if (!response.ok || payload.ok === false) throw new Error(payload.error || detail || '请求失败');
     return payload;
   }
 
@@ -116,90 +75,37 @@
     return state.bindings.find((item) => String(item.chat_id || (item.chat_id_list || [])[0] || '') === String(chatId || '')) || null;
   }
 
-  function renderForm() {
-    const group = state.groups.find((item) => String(item.chat_id) === state.selectedChatId);
-    $('gi-form-placeholder').hidden = Boolean(group);
-    $('gi-form-fields').hidden = !group;
-    if (!group) return;
-    const binding = bindingFor(group.chat_id);
-    $('gi-id').value = binding?.id || '';
-    $('gi-chat-id').value = group.chat_id || '';
-    $('gi-group-name').textContent = group.group_name || group.chat_id || '未命名客户群';
-    $('gi-group-meta').textContent = `群主：${group.owner_name || group.owner_userid || '未识别'} · chat_id：${group.chat_id}`;
-    $('gi-join-url').value = binding?.join_url || '';
-    $('gi-form-title').textContent = binding ? '更新邀请链接' : '配置邀请链接';
-    status('');
-  }
-
   function renderList() {
     const query = $('gi-search').value.trim().toLowerCase();
     const rows = state.groups.filter((group) => !query || `${group.group_name || ''} ${group.owner_name || ''} ${group.owner_userid || ''} ${group.chat_id || ''}`.toLowerCase().includes(query));
-    const boundCount = state.groups.filter((group) => bindingFor(group.chat_id)?.binding_status === 'ready').length;
-    $('gi-count').textContent = `共 ${state.groups.length} 个客户群，${boundCount} 个邀请链接已就绪`;
+    const readyCount = state.groups.filter((group) => bindingFor(group.chat_id)?.binding_status === 'ready').length;
+    $('gi-count').textContent = `共 ${state.groups.length} 个客户群，${readyCount} 个已可直接使用`;
     $('gi-list').innerHTML = rows.length ? rows.map((group) => {
       const binding = bindingFor(group.chat_id);
-      const bindingStatus = String(binding?.binding_status || (binding?.join_url ? 'ready' : 'pending'));
+      const bindingStatus = String(binding?.binding_status || 'pending');
+      const isReady = bindingStatus === 'ready';
+      const isInvalid = bindingStatus === 'invalid';
+      const badge = isReady ? '已可用' : isInvalid ? '群聊已失效' : '首次选用时自动生成';
       return `<article class="gi-item">
-        <div>
-          <div class="gi-title">${escapeHtml(group.group_name || group.chat_id)} <span class="gi-badge ${bindingStatus === 'ready' ? 'bound' : 'unbound'}">${bindingStatus === 'ready' ? '已就绪' : bindingStatus === 'invalid' ? '已失效' : '待托管'}</span></div>
-          <div class="gi-meta">群主：${escapeHtml(group.owner_name || group.owner_userid || '未识别')} · ${Number(group.member_count || 0)} 人 · ${escapeHtml(group.chat_id)}</div>
-        </div>
-        <button class="gi-btn${state.selectedChatId === String(group.chat_id) ? ' primary' : ''}" type="button" data-configure-chat="${escapeHtml(group.chat_id)}">${binding ? '编辑链接' : '配置链接'}</button>
+        <div class="gi-title">${escapeHtml(group.group_name || group.chat_id)} <span class="gi-badge ${isReady ? 'ready' : isInvalid ? 'invalid' : 'pending'}">${badge}</span></div>
+        <div class="gi-meta">群主：${escapeHtml(group.owner_name || group.owner_userid || '未识别')} · ${Number(group.member_count || 0)} 人 · ${escapeHtml(group.chat_id)}</div>
       </article>`;
     }).join('') : '<p class="gi-help">没有匹配的客户群。若列表为空，请先进行客户群同步。</p>';
-    $('gi-list').querySelectorAll('[data-configure-chat]').forEach((button) => button.addEventListener('click', () => {
-      state.selectedChatId = String(button.dataset.configureChat || '');
-      renderList(); renderForm();
-    }));
   }
 
-  async function load() {
-    status('正在加载客户群…');
+  async function load({ keepStatus=false }={}) {
+    if (!keepStatus) status('正在加载客户群…');
     const [groups, bindings] = await Promise.all([
       fetchAll(groupApi, 100),
       fetchAll(`${bindingApi}?enabled_only=false`, 100),
     ]);
     state.groups = groups;
     state.bindings = bindings;
-    if (state.selectedChatId && !state.groups.some((group) => String(group.chat_id) === state.selectedChatId)) state.selectedChatId = '';
-    renderList(); renderForm(); status('');
+    renderList();
+    if (!keepStatus) status('');
   }
 
-  $('gi-save').addEventListener('click', async () => {
-    const group = state.groups.find((item) => String(item.chat_id) === state.selectedChatId);
-    if (!group) return status('请先选择客户群', 'error');
-    const joinUrl = $('gi-join-url').value.trim();
-    if (!joinUrl) return status('请粘贴企业微信「加入群聊」链接', 'error');
-    const id = $('gi-id').value;
-    const groupName = String(group.group_name || group.chat_id || '客户群');
-    const body = { join_url: joinUrl, enabled: true };
-    status('保存中…');
-    try {
-      let bindingId = id;
-      if (!bindingId) {
-        const ensured = await fetchJson(`${bindingApi}/ensure`, {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({
-            chat_id: String(group.chat_id),
-            group_name: groupName,
-            owner_userid: String(group.owner_userid || ''),
-            owner_name: String(group.owner_name || ''),
-            member_count: Number(group.member_count || 0),
-          }),
-        });
-        bindingId = String(ensured.binding_id || ensured.item?.id || '');
-      }
-      await fetchJson(`${bindingApi}/${encodeURIComponent(bindingId)}`, {
-        method: 'PUT',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify(body),
-      });
-      await load(); status('已保存。运营人员现在可以在发送场景中直接选择这个客户群。', 'success');
-    } catch (error) { status(error.message || '保存失败', 'error'); }
-  });
-
-  $('gi-refresh').addEventListener('click', () => load().catch((error) => status(error.message, 'error')));
+  $('gi-refresh').addEventListener('click', () => load().catch((error) => status(error.message || '加载失败', 'error')));
   $('gi-search').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(renderList, 180); });
   load().catch((error) => status(error.message || '加载失败', 'error'));
 })();

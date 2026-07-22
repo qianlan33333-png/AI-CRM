@@ -143,7 +143,7 @@ class PostgresSendContentRepository(SendContentRepository):
                 "type": "group_invite",
                 "library_id": library_id,
                 "title": title,
-                "subtitle": "邀请卡片准备中" if binding_status == "pending" else "群邀请已失效" if binding_status == "invalid" else description or "点击卡片直接加入群聊",
+                "subtitle": "选用时由系统自动生成邀请" if binding_status == "pending" else "群邀请已失效" if binding_status == "invalid" else description or "点击卡片直接加入群聊",
                 "thumbnail_url": pic_url,
                 "enabled": bool(item.get("enabled", True)),
                 "metadata": {
