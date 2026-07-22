@@ -51,7 +51,9 @@ jobs:
             expected_release_sha='${{ inputs.expected_release_sha }}'
             test "$(git rev-parse HEAD)" = "$expected_release_sha"
             test "$(tr -d '\r\n' < .release-sha)" = "$expected_release_sha"
+            set -a
             source /home/ubuntu/.openclaw-wecom-pg.env
+            set +a
             source /home/ubuntu/venvs/openclaw/bin/activate
             python3 - <<'PY'
             import json
@@ -120,12 +122,151 @@ jobs:
                         )
                     ).mappings()
                 ]
+                terminal_followup = [
+                    dict(row)
+                    for row in session.execute(
+                        text(
+                            """
+                            WITH classified AS (
+                                SELECT
+                                    terminal.effect_type,
+                                    terminal.business_type,
+                                    terminal.last_error_code,
+                                    EXISTS (
+                                        SELECT 1
+                                        FROM external_effect_job success
+                                        WHERE success.status = 'succeeded'
+                                          AND success.effect_type = terminal.effect_type
+                                          AND success.business_type = terminal.business_type
+                                          AND success.business_id <> ''
+                                          AND success.business_id = terminal.business_id
+                                    ) AS succeeded_same_business,
+                                    EXISTS (
+                                        SELECT 1
+                                        FROM external_effect_job success
+                                        WHERE success.status = 'succeeded'
+                                          AND success.effect_type = terminal.effect_type
+                                          AND success.target_type = terminal.target_type
+                                          AND success.target_id = terminal.target_id
+                                    ) AS succeeded_same_target,
+                                    EXISTS (
+                                        SELECT 1
+                                        FROM external_effect_job success
+                                        WHERE success.status = 'succeeded'
+                                          AND success.effect_type = terminal.effect_type
+                                          AND success.target_type = terminal.target_type
+                                          AND success.target_id = terminal.target_id
+                                          AND success.updated_at > terminal.updated_at
+                                    ) AS succeeded_same_target_after_terminal
+                                FROM external_effect_job terminal
+                                WHERE terminal.status = 'failed_terminal'
+                                  AND terminal.updated_at >= CURRENT_TIMESTAMP - INTERVAL '24 hours'
+                            )
+                            SELECT
+                                effect_type,
+                                business_type,
+                                last_error_code,
+                                succeeded_same_business,
+                                succeeded_same_target,
+                                succeeded_same_target_after_terminal,
+                                COUNT(*) AS row_count
+                            FROM classified
+                            GROUP BY
+                                effect_type,
+                                business_type,
+                                last_error_code,
+                                succeeded_same_business,
+                                succeeded_same_target,
+                                succeeded_same_target_after_terminal
+                            ORDER BY row_count DESC
+                            """
+                        )
+                    ).mappings()
+                ]
+                deferred_identity_projection = [
+                    dict(row)
+                    for row in session.execute(
+                        text(
+                            """
+                            SELECT
+                                queue.status AS queue_status,
+                                queue.hold_reason AS queue_hold_reason,
+                                queue.last_error AS queue_last_error,
+                                COALESCE(runtime.identity_status, 'not_linked') AS runtime_identity_status,
+                                COALESCE(runtime.identity_hold_reason, '') AS runtime_hold_reason,
+                                COUNT(DISTINCT job.id) AS job_count,
+                                COUNT(DISTINCT attempt.id) AS attempt_count,
+                                COUNT(DISTINCT attempt.id) FILTER (
+                                    WHERE attempt.provider_call_started_at IS NOT NULL
+                                ) AS provider_boundary_attempt_count
+                            FROM external_effect_job job
+                            JOIN crm_user_identity_resolution_queue queue
+                              ON queue.external_effect_job_id = job.id
+                             AND queue.id::TEXT = job.business_id
+                            LEFT JOIN automation_channel_entry_runtime runtime
+                              ON runtime.identity_external_effect_job_id = job.id
+                            LEFT JOIN external_effect_attempt attempt ON attempt.job_id = job.id
+                            WHERE job.status = 'blocked'
+                              AND job.effect_type = 'wecom.external_contact.detail.fetch'
+                              AND job.adapter_name = 'wecom_external_contact_detail'
+                              AND job.operation = 'get_external_contact_detail'
+                              AND job.business_type = 'identity_resolution_queue'
+                              AND job.source_module = 'aicrm_next.identity_contact.resolution_effects'
+                              AND job.last_error_code = 'effect_type_not_allowed'
+                              AND job.worker_generation = 0
+                              AND job.policy_version = 'queue-v2-test-loopback'
+                              AND job.side_effect_executed = FALSE
+                              AND job.provider_result_received = FALSE
+                              AND job.provider_call_started_at IS NULL
+                            GROUP BY
+                                queue.status,
+                                queue.hold_reason,
+                                queue.last_error,
+                                COALESCE(runtime.identity_status, 'not_linked'),
+                                COALESCE(runtime.identity_hold_reason, '')
+                            ORDER BY job_count DESC
+                            """
+                        )
+                    ).mappings()
+                ]
+                welcome_graph_terminal = [
+                    dict(row)
+                    for row in session.execute(
+                        text(
+                            """
+                            SELECT
+                                graph.status AS graph_status,
+                                job.source_route,
+                                job.attempt_count AS job_attempt_count,
+                                COUNT(DISTINCT attempt.id) AS durable_attempt_count,
+                                COUNT(DISTINCT attempt.id) FILTER (
+                                    WHERE attempt.provider_call_started_at IS NOT NULL
+                                ) AS provider_boundary_attempt_count,
+                                COUNT(*) AS row_count
+                            FROM external_effect_job job
+                            JOIN channel_welcome_effect_graph graph
+                              ON graph.final_effect_job_id = job.id
+                             AND graph.execution_id = job.business_id
+                            LEFT JOIN external_effect_attempt attempt ON attempt.job_id = job.id
+                            WHERE job.status = 'failed_terminal'
+                              AND job.effect_type = 'wecom.welcome_message.send'
+                              AND job.last_error_code = 'wecom_error_41050'
+                              AND job.updated_at >= CURRENT_TIMESTAMP - INTERVAL '24 hours'
+                            GROUP BY graph.status, job.source_route, job.attempt_count
+                            ORDER BY row_count DESC
+                            """
+                        )
+                    ).mappings()
+                ]
             print(
                 json.dumps(
                     {
                         "external_effect_health": payload(_external_effect_failed_retryable_backlog()),
                         "customer_360_freshness": payload(_customer_360_freshness_guard()),
                         "recent_external_effect_groups": grouped,
+                        "terminal_followup_proof": terminal_followup,
+                        "deferred_identity_projection": deferred_identity_projection,
+                        "welcome_graph_terminal": welcome_graph_terminal,
                         "contains_raw_target_or_payload": False,
                         "read_only": True,
                     },

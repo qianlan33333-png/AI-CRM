@@ -491,7 +491,27 @@ class RuntimeGenerationRepository:
                 before_policy = dict(snapshot.get("policy_json") or {})
                 if str(before_policy.get("external_claim_scope") or "") != source_scope:
                     raise GenerationCASConflict("queue policy snapshot scope does not match runtime control")
-                after_policy = {**before_policy, "external_claim_scope": destination_scope}
+                adoption = {
+                    "eligible_count": 0,
+                    "adopted_job_count": 0,
+                    "adopted_queue_count": 0,
+                    "adopted_runtime_count": 0,
+                }
+                if source_scope == "test_loopback" and destination_scope == "all":
+                    adoption = self._adopt_pre_provider_identity_effects(
+                        connection,
+                        generation=generation,
+                        source_policy_version=policy_version,
+                        target_policy_version=next_policy_version,
+                    )
+                after_policy = {
+                    **before_policy,
+                    "external_claim_scope": destination_scope,
+                    "pre_provider_identity_adoption": {
+                        **adoption,
+                        "predicate_version": "identity_contact_detail_test_policy_v1",
+                    },
+                }
                 inserted_snapshot = connection.execute(
                     """
                     INSERT INTO queue_policy_snapshot (
@@ -597,6 +617,167 @@ class RuntimeGenerationRepository:
                     ),
                 )
         return self._state(after_row)
+
+    @staticmethod
+    def _adopt_pre_provider_identity_effects(
+        connection: Any,
+        *,
+        generation: int,
+        source_policy_version: str,
+        target_policy_version: str,
+    ) -> dict[str, int]:
+        """Adopt only generation-0 identity effects proven never to reach WeCom.
+
+        The old blocked attempt remains append-only in ``external_effect_attempt``.
+        This transaction reopens the job and its linked local projection together;
+        any count mismatch aborts the whole scope transition.
+        """
+
+        eligible = connection.execute(
+            """
+            SELECT job.id, queue.id AS queue_id
+            FROM external_effect_job job
+            JOIN crm_user_identity_resolution_queue queue
+              ON queue.external_effect_job_id = job.id
+             AND queue.id::TEXT = job.business_id
+            WHERE job.effect_type = 'wecom.external_contact.detail.fetch'
+              AND job.adapter_name = 'wecom_external_contact_detail'
+              AND job.operation = 'get_external_contact_detail'
+              AND job.business_type = 'identity_resolution_queue'
+              AND job.source_module = 'aicrm_next.identity_contact.resolution_effects'
+              AND job.source_route IN (
+                  'channel_entry.identity_resolution.enqueue',
+                  'message_archive.identity_resolution.enqueue'
+              )
+              AND job.status = 'blocked'
+              AND job.last_error_code = 'effect_type_not_allowed'
+              AND job.execution_mode = 'execute'
+              AND job.attempt_count = 1
+              AND job.max_attempts = 5
+              AND job.worker_generation = 0
+              AND job.policy_version = %s
+              AND job.side_effect_executed = FALSE
+              AND job.provider_result_received = FALSE
+              AND job.provider_call_started_at IS NULL
+              AND job.reconciliation_required = FALSE
+              AND job.lease_token = ''
+              AND job.lease_expires_at IS NULL
+              AND job.locked_by = ''
+              AND job.locked_at IS NULL
+              AND job.hold_reason = ''
+              AND job.cancel_requested_at IS NULL
+              AND queue.status IN ('pending', 'held')
+              AND (
+                  (queue.status = 'pending' AND queue.hold_reason = '' AND queue.last_error = '')
+                  OR (
+                      queue.status = 'held'
+                      AND queue.hold_reason = 'effect_type_not_allowed'
+                      AND queue.last_error = 'effect_type_not_allowed'
+                  )
+              )
+              AND (SELECT COUNT(*) FROM external_effect_attempt attempt WHERE attempt.job_id = job.id) = 1
+              AND EXISTS (
+                  SELECT 1
+                  FROM external_effect_attempt attempt
+                  WHERE attempt.job_id = job.id
+                    AND attempt.status = 'blocked'
+                    AND attempt.error_code = 'effect_type_not_allowed'
+                    AND attempt.adapter_name = 'wecom_external_contact_detail'
+                    AND attempt.operation = 'get_external_contact_detail'
+                    AND attempt.adapter_mode = 'execute'
+                    AND attempt.provider_call_started_at IS NULL
+                    AND attempt.worker_generation = 0
+              )
+            ORDER BY job.id
+            FOR UPDATE OF job, queue
+            """,
+            (source_policy_version,),
+        ).fetchall()
+        job_ids = [int(row["id"]) for row in eligible]
+        queue_ids = [int(row["queue_id"]) for row in eligible]
+        if not job_ids:
+            return {
+                "eligible_count": 0,
+                "adopted_job_count": 0,
+                "adopted_queue_count": 0,
+                "adopted_runtime_count": 0,
+            }
+
+        adopted_jobs = connection.execute(
+            """
+            UPDATE external_effect_job
+            SET status = 'queued',
+                worker_generation = %s,
+                policy_version = %s,
+                available_at = CURRENT_TIMESTAMP,
+                scheduled_at = LEAST(scheduled_at, CURRENT_TIMESTAMP),
+                next_retry_at = NULL,
+                lease_token = '',
+                lease_expires_at = NULL,
+                locked_by = '',
+                locked_at = NULL,
+                dispatch_started_at = NULL,
+                heartbeat_at = NULL,
+                completed_at = NULL,
+                last_error_code = '',
+                last_error_message = '',
+                result_summary_json = jsonb_build_object(
+                    'pre_provider_attempt_preserved', TRUE,
+                    'adoption_reason', 'authorized_all_scope_cutover'
+                ),
+                row_version = row_version + 1,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ANY(%s)
+              AND status = 'blocked'
+              AND policy_version = %s
+              AND provider_call_started_at IS NULL
+              AND side_effect_executed = FALSE
+              AND provider_result_received = FALSE
+            RETURNING id
+            """,
+            (generation, target_policy_version, job_ids, source_policy_version),
+        ).fetchall()
+        adopted_queues = connection.execute(
+            """
+            UPDATE crm_user_identity_resolution_queue
+            SET status = 'pending',
+                hold_reason = '',
+                held_at = NULL,
+                next_attempt_at = CURRENT_TIMESTAMP,
+                last_error = '',
+                completed_at = NULL,
+                row_version = row_version + 1,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ANY(%s)
+              AND external_effect_job_id = ANY(%s)
+              AND status IN ('pending', 'held')
+            RETURNING id
+            """,
+            (queue_ids, job_ids),
+        ).fetchall()
+        adopted_runtime = connection.execute(
+            """
+            UPDATE automation_channel_entry_runtime
+            SET identity_status = 'pending',
+                identity_hold_reason = '',
+                identity_held_at = NULL,
+                identity_next_attempt_at = CURRENT_TIMESTAMP,
+                identity_last_error = '',
+                updated_at = CURRENT_TIMESTAMP
+            WHERE identity_external_effect_job_id = ANY(%s)
+              AND identity_status IN ('pending', 'pending_identity', 'failed', 'held')
+            RETURNING id
+            """,
+            (job_ids,),
+        ).fetchall()
+        if len(adopted_jobs) != len(job_ids) or len(adopted_queues) != len(queue_ids):
+            raise GenerationCASConflict("pre-provider identity adoption CAS lost")
+        return {
+            "eligible_count": len(job_ids),
+            "adopted_job_count": len(adopted_jobs),
+            "adopted_queue_count": len(adopted_queues),
+            "adopted_runtime_count": len(adopted_runtime),
+        }
 
     def resume_claims(
         self,
