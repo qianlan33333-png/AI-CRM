@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -278,6 +279,56 @@ def test_cutover_cli_is_plan_only_without_explicit_apply(capsys) -> None:
         assert service in output
 
 
+def test_cutover_cli_ensure_owner_state_is_idempotent_after_scope_transition(
+    monkeypatch,
+    capsys,
+) -> None:
+    class Repository:
+        @staticmethod
+        def read_state():
+            return GenerationState(
+                active_generation=1,
+                claim_enabled=True,
+                rollout_mode="execute",
+                policy_version="queue-v2-production-all-g1",
+                updated_by="pytest",
+                updated_reason="already cut over",
+                updated_at=None,
+                external_claim_scope="all",
+            )
+
+    verified: list[bool] = []
+
+    class Lifecycle:
+        @staticmethod
+        def verify_single_owner(**kwargs):
+            verified.append(bool(kwargs["replacement_active"]))
+
+    monkeypatch.setattr(cutover_queue_runtime_generation, "RuntimeGenerationRepository", Repository)
+    monkeypatch.setattr(cutover_queue_runtime_generation, "SystemdQueueRuntimeLifecycle", Lifecycle)
+
+    exit_code = cutover_queue_runtime_generation.main(
+        [
+            "--expected-generation", "0",
+            "--target-generation", "1",
+            "--expected-policy-version", "queue-v2-test-loopback",
+            "--accepted-target-policy-version", "queue-v2-production-all-g1",
+            "--lane", "internal_general",
+            "--owner-inventory", "pr3",
+            "--actor", "pytest",
+            "--reason", "verify existing target",
+            "--ensure-owner-state",
+        ]
+    )
+
+    assert exit_code == 0
+    assert verified == [True]
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["idempotent_target_match"] is True
+    assert payload["policy_version"] == "queue-v2-production-all-g1"
+    assert payload["real_external_call_executed"] is False
+
+
 def test_cutover_cli_rejects_manual_legacy_owner_subset() -> None:
     with pytest.raises(SystemExit):
         cutover_queue_runtime_generation.main(
@@ -493,7 +544,10 @@ def test_all_scope_preflight_requires_production_provider_config_without_canary_
         lambda: SimpleNamespace(
             execution_mode="execute",
             real_calls_enabled=True,
-            enabled_effect_types=("wecom.message.private.send",),
+            enabled_effect_types=(
+                "wecom.message.private.send",
+                "wecom.external_contact.detail.fetch",
+            ),
         ),
     )
     monkeypatch.setattr(transition_queue_runtime_scope, "runtime_setting", lambda *_args: "")
@@ -502,6 +556,28 @@ def test_all_scope_preflight_requires_production_provider_config_without_canary_
 
     assert result["ready"] is True
     assert result["provider_target_policy"] == "production_default"
+    assert result["required_effect_types_ready"] is True
+
+
+def test_all_scope_preflight_fails_when_exact_contact_detail_type_is_missing(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        transition_queue_runtime_scope,
+        "load_wecom_execution_config",
+        lambda: SimpleNamespace(
+            execution_mode="execute",
+            real_calls_enabled=True,
+            enabled_effect_types=("wecom.message.private.send",),
+        ),
+    )
+    monkeypatch.setattr(transition_queue_runtime_scope, "runtime_setting", lambda *_args: "")
+
+    result = transition_queue_runtime_scope._policy_preflight("all")
+
+    assert result["ready"] is False
+    assert result["required_effect_types_ready"] is False
+    assert "wecom_contact_detail_effect_type_not_enabled" in result["blocking_reasons"]
 
 
 def test_all_scope_apply_requires_distinct_exact_authorization(monkeypatch) -> None:

@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from scripts.ops.validate_queue_all_scope_cutover import validate
+from scripts.ops import recover_all_scope_contact_detail
 from aicrm_next.platform_foundation.execution_runtime.validation import evaluate_soak_snapshot
 
 
@@ -113,6 +115,82 @@ def test_cutover_exports_database_environment_before_migration_preflight() -> No
     )
 
     assert export_index < source_index < unexport_index < migration_index < activation_index
+
+
+def test_cutover_prepares_exact_type_recovers_strict_history_and_checks_health_before_soak() -> None:
+    workflow = (
+        ROOT / ".github" / "workflows" / "queue-production-cutover.yml"
+    ).read_text(encoding="utf-8")
+    recovery = (
+        ROOT / "scripts" / "ops" / "recover_all_scope_contact_detail.py"
+    ).read_text(encoding="utf-8")
+    production_manifest = json.loads(
+        (ROOT / "docs" / "releases" / "production_promotion.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    prepare_index = workflow.index("--action prepare")
+    preflight_index = workflow.index("authorized production all-scope cutover preflight")
+    owner_index = workflow.index("--ensure-owner-state")
+    recover_index = workflow.index("--action recover")
+    idle_index = workflow.index("consecutive_idle >= 3")
+    data_health_index = workflow.index("data_health_summary")
+    soak_index = workflow.index("--action start", recover_index)
+
+    assert prepare_index < preflight_index < owner_index < recover_index
+    assert recover_index < idle_index < data_health_index < soak_index
+    assert "attempt_count = 2" in recovery
+    assert "provider_call_started_at IS NULL" in recovery
+    assert "maximum-candidate-count" in recovery
+    assert '"contains_raw_target_or_job_ids": False' in recovery
+    assert "unknown_after_dispatch" in recovery
+    assert "scripts/ops/recover_all_scope_contact_detail.py" in MANIFEST[
+        "allowed_successor_paths"
+    ]
+    assert "scripts/ops/recover_all_scope_contact_detail.py" in production_manifest[
+        "allowed_post_candidate_paths"
+    ]
+
+
+def test_contact_detail_prepare_appends_only_the_exact_missing_type(monkeypatch) -> None:
+    enabled = ["wecom.message.private.send", "wecom.contact.tag.mark"]
+    written: list[dict[str, str]] = []
+
+    def config():
+        return SimpleNamespace(
+            execution_mode="execute",
+            real_calls_enabled=True,
+            enabled_effect_types=tuple(enabled),
+            conflict=False,
+            blocking_reasons=(),
+        )
+
+    class Command:
+        def execute(self, settings, *, operator):
+            written.append(dict(settings))
+            enabled[:] = settings[
+                recover_all_scope_contact_detail.WECOM_ENABLED_EFFECT_TYPES_KEY
+            ].split(",")
+            return [{"operator": operator}]
+
+    monkeypatch.setattr(recover_all_scope_contact_detail, "load_wecom_execution_config", config)
+    monkeypatch.setattr(recover_all_scope_contact_detail, "AdminConfigWriteCommand", Command)
+
+    result = recover_all_scope_contact_detail._prepare(
+        SimpleNamespace(apply=True, actor="pytest")
+    )
+
+    assert result["configuration_changed"] is True
+    assert result["after"]["contact_detail_enabled"] is True
+    assert written == [
+        {
+            recover_all_scope_contact_detail.WECOM_ENABLED_EFFECT_TYPES_KEY: (
+                "wecom.message.private.send,wecom.contact.tag.mark,"
+                "wecom.external_contact.detail.fetch"
+            )
+        }
+    ]
 
 
 def test_soak_fails_closed_when_generation_policy_or_scope_drifts() -> None:

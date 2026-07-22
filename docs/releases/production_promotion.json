@@ -20,6 +20,7 @@
     "aicrm_next/data_health/checks.py",
     "aicrm_next/data_health/external_effect_provenance.py",
     "aicrm_next/platform_foundation/execution_runtime/cutover.py",
+    "aicrm_next/platform_foundation/external_effects/repo.py",
     "aicrm_next/shared/queue_provenance.py",
     "docs/adr/2026-07-17-cross-repository-production-promotion.md",
     "docs/architecture/data_table_lifecycle_manifest.yml",
@@ -30,18 +31,24 @@
     "docs/releases/queue_all_scope_cutover.json",
     "migrations/versions/0138_queue_terminal_acknowledgement.py",
     "scripts/ops/acknowledge_pre_cutover_welcome_terminal.py",
+    "scripts/ops/cutover_queue_runtime_generation.py",
+    "scripts/ops/recover_all_scope_contact_detail.py",
     "scripts/ops/run_release_customer_read_model_refresh.py",
+    "scripts/ops/transition_queue_runtime_scope.py",
     "scripts/ops/validate_production_promotion.py",
     "tests/test_ci_workflow_contract.py",
     "tests/test_data_health_checks.py",
     "tests/test_database_bootstrap.py",
     "tests/test_deploy_workflow_contract.py",
+    "tests/test_execution_runtime_postgres.py",
     "tests/test_github_action_pins.py",
     "tests/test_production_promotion_provenance.py",
     "tests/test_alembic_revision_chain.py",
     "tests/test_queue_all_scope_cutover.py",
+    "tests/test_queue_runtime_cutover.py",
     "tests/test_release_customer_read_model_refresh.py",
     "tests/test_queue_runtime_cutover_postgres.py",
-    "tests/test_runtime_contract_inventory.py"
+    "tests/test_runtime_contract_inventory.py",
+    "tests/test_select_test_scope.py"
   ]
 }

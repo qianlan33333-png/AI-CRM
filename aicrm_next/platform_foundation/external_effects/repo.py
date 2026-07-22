@@ -797,12 +797,12 @@ class SQLAlchemyExternalEffectRepository(
                                 attempt_id, job_id, adapter_name, adapter_mode, operation, trace_id,
                                 request_id, status, request_summary_json, response_summary_json,
                                 provider_result_json, provider_result_hash,
-                                error_code, error_message, started_at, completed_at
+                                error_code, error_message, worker_generation, started_at, completed_at
                             ) VALUES (
                                 :attempt_id, :job_id, :adapter_name, :adapter_mode, :operation, :trace_id,
                                 :request_id, :status, CAST(:request_summary AS jsonb),
                                 CAST(:response_summary AS jsonb), CAST(:provider_result AS jsonb), :provider_result_hash,
-                                :error_code, :error_message,
+                                :error_code, :error_message, :worker_generation,
                                 CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
                             )
                             RETURNING *
@@ -822,6 +822,7 @@ class SQLAlchemyExternalEffectRepository(
                             "provider_result": provider_result_json, "provider_result_hash": provider_result_hash,
                             "error_code": _text(result.error_code),
                             "error_message": _safe_error_message(result.error_message),
+                            "worker_generation": int(current.get("worker_generation") or job.worker_generation or 0),
                         },
                     )
                     .mappings()

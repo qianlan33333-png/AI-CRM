@@ -59,6 +59,7 @@ OWNER_EFFECT_TYPES = frozenset(
         "wecom.profile.update",
     }
 )
+REQUIRED_ALL_SCOPE_EFFECT_TYPES = frozenset({"wecom.external_contact.detail.fetch"})
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -99,6 +100,8 @@ def _policy_preflight(target_scope: str) -> dict[str, object]:
             blocking_reasons.append("wecom_provider_config_not_ready")
         if not config.enabled_effect_types:
             blocking_reasons.append("wecom_enabled_effect_types_empty")
+        if not REQUIRED_ALL_SCOPE_EFFECT_TYPES.issubset(config.enabled_effect_types):
+            blocking_reasons.append("wecom_contact_detail_effect_type_not_enabled")
         if explicit_provider_policy:
             blocking_reasons.append("wecom_canary_provider_policy_must_be_unset")
         return {
@@ -106,6 +109,9 @@ def _policy_preflight(target_scope: str) -> dict[str, object]:
             "ready": not blocking_reasons,
             "provider_target_policy": explicit_provider_policy or "production_default",
             "enabled_effect_type_count": len(config.enabled_effect_types),
+            "required_effect_types_ready": REQUIRED_ALL_SCOPE_EFFECT_TYPES.issubset(
+                config.enabled_effect_types
+            ),
             "blocking_reasons": list(dict.fromkeys(blocking_reasons)),
         }
     if target_scope != "allowlisted":

@@ -87,6 +87,16 @@ jobs:
             set +a
             source /home/ubuntu/venvs/openclaw/bin/activate
             python3 -m alembic current | grep -F '0138_queue_terminal_acknowledgement'
+            export AICRM_QUEUE_ALL_SCOPE_RECOVERY_AUTHORIZED=1
+            python scripts/ops/recover_all_scope_contact_detail.py \
+              --action prepare \
+              --authorization-base-sha "$authorization_base_sha" \
+              --confirmation '${{ inputs.confirmation }}' \
+              --actor github-actions \
+              --reason 'authorized production all-scope exact contact-detail type' \
+              --apply \
+              > /tmp/aicrm-contact-detail-prepare.json
+            python3 -c 'import json; data=json.load(open("/tmp/aicrm-contact-detail-prepare.json")); assert data["after"]["contact_detail_enabled"] is True; assert data["real_external_call_executed"] is False'
             python scripts/ops/transition_queue_runtime_scope.py \
               --generation 1 \
               --expected-policy-version queue-v2-test-loopback \
@@ -103,6 +113,7 @@ jobs:
               --expected-generation 0 \
               --target-generation 1 \
               --expected-policy-version queue-v2-test-loopback \
+              --accepted-target-policy-version "$target_policy_version" \
               --lane internal_general \
               --lane internal_financial \
               --lane webhook_inbox \
@@ -113,8 +124,10 @@ jobs:
               --owner-inventory pr3 \
               --actor github-actions \
               --reason 'authorized production generation 1 owner cutover' \
-              --apply \
-              --confirmation ACTIVATE_QUEUE_GENERATION_1
+              --ensure-owner-state \
+              --confirmation ACTIVATE_QUEUE_GENERATION_1 \
+              > /tmp/aicrm-queue-generation-owner.json
+            python3 -c 'import json; data=json.load(open("/tmp/aicrm-queue-generation-owner.json")); assert data["active_generation"] == 1; assert data["claim_enabled"] is True; assert data["real_external_call_executed"] is False'
             export AICRM_QUEUE_SCOPE_TRANSITION_AUTHORIZED=1
             export AICRM_QUEUE_ALL_SCOPE_AUTHORIZED=1
             python scripts/ops/transition_queue_runtime_scope.py \
@@ -129,6 +142,28 @@ jobs:
               --reason 'authorized production all-scope queue ownership' \
               --apply \
               --confirmation TRANSITION_QUEUE_SCOPE_1_TEST_LOOPBACK_TO_ALL
+            python scripts/ops/recover_all_scope_contact_detail.py \
+              --action recover \
+              --authorization-base-sha "$authorization_base_sha" \
+              --confirmation '${{ inputs.confirmation }}' \
+              --actor github-actions \
+              --reason 'recover exact two-attempt pre-provider contact-detail block' \
+              --maximum-candidate-count 6 \
+              --wait-timeout-seconds 180 \
+              --apply \
+              > /tmp/aicrm-contact-detail-recovery.json
+            python3 - <<'PY'
+            import json
+            data = json.load(open('/tmp/aicrm-contact-detail-recovery.json', encoding='utf-8'))
+            assert data['candidate_count'] in (0, 6)
+            assert data['contains_raw_target_or_job_ids'] is False
+            if data['candidate_count']:
+                assert data['progress']['succeeded_count'] == data['candidate_count']
+                assert data['progress']['provider_boundary_attempt_count'] == data['candidate_count']
+                assert data['progress']['duplicate_provider_attempt_job_count'] == 0
+                assert data['progress']['unsafe_terminal_count'] == 0
+                assert data['real_external_call_executed'] is True
+            PY
             python scripts/ops/cutover_queue_runtime_generation.py \
               --expected-generation 0 \
               --target-generation 1 \
@@ -138,20 +173,47 @@ jobs:
               --actor github-actions \
               --reason 'verify production queue single ownership' \
               --verify-owner-state
-            curl -sSf http://127.0.0.1:5001/api/system/health -o /tmp/aicrm-queue-cutover-health.json
             python3 - "$release_sha" "$target_policy_version" <<'PY'
             import json
             import sys
-            data = json.load(open('/tmp/aicrm-queue-cutover-health.json', encoding='utf-8'))
-            queue = data['components']['queues']['metrics']
-            assert data['status'] == 'ready'
-            assert not data['failed_components']
-            assert data['components']['release']['release_sha'] == sys.argv[1]
-            assert queue['queue_active_generation'] == 1
-            assert queue['queue_policy_version'] == sys.argv[2]
-            assert queue['queue_external_claim_scope'] == 'all'
-            assert queue['queue_eligible_count'] == 0
-            assert queue['queue_in_flight_count'] == 0
+            import time
+            from urllib.request import urlopen
+
+            deadline = time.monotonic() + 120
+            consecutive_idle = 0
+            while time.monotonic() < deadline:
+                with urlopen('http://127.0.0.1:5001/api/system/health', timeout=10) as response:
+                    data = json.load(response)
+                queue = data['components']['queues']['metrics']
+                assert data['status'] == 'ready'
+                assert not data['failed_components']
+                assert data['components']['release']['release_sha'] == sys.argv[1]
+                assert queue['queue_active_generation'] == 1
+                assert queue['queue_policy_version'] == sys.argv[2]
+                assert queue['queue_external_claim_scope'] == 'all'
+                if queue['queue_eligible_count'] == 0 and queue['queue_in_flight_count'] == 0:
+                    consecutive_idle += 1
+                    if consecutive_idle >= 3:
+                        break
+                else:
+                    consecutive_idle = 0
+                time.sleep(2)
+            else:
+                raise RuntimeError('production queue did not remain idle for three bounded samples')
+            with open('/tmp/aicrm-queue-cutover-health.json', 'w', encoding='utf-8') as handle:
+                json.dump(data, handle, ensure_ascii=False, sort_keys=True)
+            PY
+            python3 - <<'PY'
+            from aicrm_next.data_health.application import data_health_summary
+
+            summary = data_health_summary()
+            external = next(
+                item for item in summary['checks']
+                if item['check_id'] == 'external_effect_failed_retryable_backlog'
+            )
+            assert summary['counts']['fail'] == 0
+            assert external['status'] == 'ok'
+            assert external['severity'] == 'green'
             PY
             export AICRM_QUEUE_SOAK_AUTHORIZED=1
             python scripts/ops/manage_queue_runtime_soak.py \

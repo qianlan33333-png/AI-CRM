@@ -1677,6 +1677,7 @@
         "scripts/ops/import_wecom_canary_media_asset.py",
         "scripts/ops/ingest_wecom_canary_callback.py",
         "scripts/ops/manage_queue_runtime_soak.py",
+        "scripts/ops/recover_all_scope_contact_detail.py",
         "scripts/ops/acknowledge_pre_cutover_welcome_terminal.py",
         "scripts/ops/plan_wecom_canary.py",
         "scripts/ops/relay_wecom_canary_callback.py",

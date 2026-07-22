@@ -226,6 +226,7 @@ def test_expression_length_guard_has_permanent_full_ci_scope() -> None:
 def test_production_queue_operations_have_permanent_postgres_full_ci_scope() -> None:
     changed_paths = (
         "scripts/ops/manage_queue_runtime_soak.py",
+        "scripts/ops/recover_all_scope_contact_detail.py",
         "scripts/ops/transition_queue_runtime_scope.py",
         "scripts/ops/validate_queue_all_scope_cutover.py",
         "tests/test_queue_all_scope_cutover.py",
@@ -237,7 +238,7 @@ def test_production_queue_operations_have_permanent_postgres_full_ci_scope() -> 
 
     assert result["unmatched_files"] == []
     assert "postgres_execution_runtime" in result["matched_scopes"]
-    assert set(changed_paths[3:]) <= set(result["python_tests"])
+    assert set(changed_paths[4:]) <= set(result["python_tests"])
     assert result["needs_postgres"] is True
     assert result["needs_full_ci"] is True
     assert result["architecture_gate"] == "full"

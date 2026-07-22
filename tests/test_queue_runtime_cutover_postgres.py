@@ -30,6 +30,7 @@ from aicrm_next.platform_foundation.execution_runtime.listener import (
 from aicrm_next.platform_foundation.external_effects.service import (
     ExternalEffectService,
 )
+from scripts.ops import recover_all_scope_contact_detail
 
 
 pytestmark = pytest.mark.usefixtures("next_pg_schema")
@@ -1266,6 +1267,230 @@ def test_all_scope_transition_never_adopts_ambiguous_or_wrong_provenance_identit
         "adopted_runtime_count": 0,
         "predicate_version": "identity_contact_detail_test_policy_v2",
     }
+
+
+def _simulate_post_cutover_contact_detail_gate_block(
+    connection,
+    *,
+    job_id: int,
+    queue_id: int,
+    provider_boundary_crossed: bool = False,
+) -> None:
+    second_attempt_id = f"eea-post-cutover-{job_id}"
+    connection.execute(
+        """
+        INSERT INTO external_effect_attempt (
+            attempt_id, job_id, adapter_name, adapter_mode, operation,
+            status, error_code, error_message, provider_call_started_at,
+            worker_generation, completed_at
+        ) VALUES (
+            %s, %s, 'wecom_external_contact_detail', 'disabled',
+            'get_external_contact_detail', 'blocked', 'effect_type_not_allowed',
+            'typed effect type missing before provider',
+            CASE WHEN %s THEN CURRENT_TIMESTAMP ELSE NULL END,
+            0, CURRENT_TIMESTAMP
+        )
+        """,
+        (second_attempt_id, job_id, provider_boundary_crossed),
+    )
+    connection.execute(
+        """
+        UPDATE external_effect_job
+        SET status = 'blocked',
+            attempt_count = 2,
+            last_attempt_id = %s,
+            last_error_code = 'effect_type_not_allowed',
+            last_error_message = 'typed effect type missing before provider',
+            provider_call_started_at = CASE WHEN %s THEN CURRENT_TIMESTAMP ELSE NULL END,
+            side_effect_executed = %s,
+            provider_result_received = %s,
+            completed_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = %s
+        """,
+        (
+            second_attempt_id,
+            provider_boundary_crossed,
+            provider_boundary_crossed,
+            provider_boundary_crossed,
+            job_id,
+        ),
+    )
+    connection.execute(
+        """
+        UPDATE crm_user_identity_resolution_queue
+        SET status = 'held', hold_reason = 'effect_type_not_allowed',
+            last_error = 'effect_type_not_allowed', held_at = CURRENT_TIMESTAMP,
+            next_attempt_at = NULL, updated_at = CURRENT_TIMESTAMP
+        WHERE id = %s
+        """,
+        (queue_id,),
+    )
+    connection.execute(
+        """
+        UPDATE automation_channel_entry_runtime
+        SET identity_status = 'held',
+            identity_hold_reason = 'effect_type_not_allowed',
+            identity_last_error = 'effect_type_not_allowed',
+            identity_held_at = CURRENT_TIMESTAMP,
+            identity_next_attempt_at = NULL,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE identity_external_effect_job_id = %s
+        """,
+        (job_id,),
+    )
+
+
+def test_post_cutover_contact_detail_recovery_reopens_only_exact_two_attempt_history() -> None:
+    target_policy = f"queue-v2-production-all-{uuid4().hex[:10]}"
+    repository = RuntimeGenerationRepository(_database_url())
+    repository.activate_generation(
+        expected_generation=0,
+        target_generation=1,
+        expected_policy_version="queue-v2-test-loopback",
+        lanes=("wecom_interactive",),
+        actor="pytest",
+        reason="activate exact production generation",
+    )
+    repository.disable_claims(
+        expected_generation=1,
+        actor="pytest",
+        reason="drain before all scope",
+    )
+    with _connect() as connection:
+        job_id, queue_id = _insert_deferred_identity_effect(
+            connection,
+            "post-cutover-recovery",
+            with_runtime=True,
+        )
+    repository.transition_external_claim_scope(
+        expected_generation=1,
+        expected_policy_version="queue-v2-test-loopback",
+        target_policy_version=target_policy,
+        expected_scope="test_loopback",
+        target_scope="all",
+        actor="pytest",
+        reason="adopt before typed gate block",
+    )
+    with _connect() as connection:
+        _simulate_post_cutover_contact_detail_gate_block(
+            connection,
+            job_id=job_id,
+            queue_id=queue_id,
+        )
+    repository.resume_claims(
+        expected_generation=1,
+        expected_policy_version=target_policy,
+        expected_scope="all",
+        actor="pytest",
+        reason="resume exact all scope",
+    )
+
+    with recover_all_scope_contact_detail.get_engine().begin() as connection:
+        rows = recover_all_scope_contact_detail._candidate_rows(
+            connection,
+            policy_version=target_policy,
+        )
+        assert [int(row["id"]) for row in rows] == [job_id]
+        counts = recover_all_scope_contact_detail._reopen_candidates(
+            connection,
+            rows,
+            policy_version=target_policy,
+        )
+
+    assert counts == {"job_count": 1, "queue_count": 1, "runtime_count": 1}
+    with _connect() as connection:
+        job = connection.execute(
+            """
+            SELECT status, attempt_count, worker_generation, policy_version,
+                   provider_call_started_at, side_effect_executed,
+                   provider_result_received, last_error_code
+            FROM external_effect_job WHERE id = %s
+            """,
+            (job_id,),
+        ).fetchone()
+        queue = connection.execute(
+            "SELECT status, hold_reason, last_error FROM crm_user_identity_resolution_queue WHERE id = %s",
+            (queue_id,),
+        ).fetchone()
+        attempt_count = connection.execute(
+            "SELECT COUNT(*) AS count FROM external_effect_attempt WHERE job_id = %s",
+            (job_id,),
+        ).fetchone()["count"]
+
+    assert job["status"] == "queued"
+    assert job["attempt_count"] == 2
+    assert job["worker_generation"] == 1
+    assert job["policy_version"] == target_policy
+    assert job["provider_call_started_at"] is None
+    assert job["side_effect_executed"] is False
+    assert job["provider_result_received"] is False
+    assert job["last_error_code"] == ""
+    assert queue == {"status": "pending", "hold_reason": "", "last_error": ""}
+    assert attempt_count == 2
+
+
+def test_post_cutover_contact_detail_recovery_rejects_any_provider_boundary() -> None:
+    target_policy = f"queue-v2-production-all-{uuid4().hex[:10]}"
+    repository = RuntimeGenerationRepository(_database_url())
+    repository.activate_generation(
+        expected_generation=0,
+        target_generation=1,
+        expected_policy_version="queue-v2-test-loopback",
+        lanes=("wecom_interactive",),
+        actor="pytest",
+        reason="activate exact production generation",
+    )
+    repository.disable_claims(
+        expected_generation=1,
+        actor="pytest",
+        reason="drain before all scope",
+    )
+    with _connect() as connection:
+        job_id, queue_id = _insert_deferred_identity_effect(
+            connection,
+            "post-cutover-provider-boundary",
+            with_runtime=True,
+        )
+    repository.transition_external_claim_scope(
+        expected_generation=1,
+        expected_policy_version="queue-v2-test-loopback",
+        target_policy_version=target_policy,
+        expected_scope="test_loopback",
+        target_scope="all",
+        actor="pytest",
+        reason="adopt before ambiguous provider block",
+    )
+    with _connect() as connection:
+        _simulate_post_cutover_contact_detail_gate_block(
+            connection,
+            job_id=job_id,
+            queue_id=queue_id,
+            provider_boundary_crossed=True,
+        )
+    repository.resume_claims(
+        expected_generation=1,
+        expected_policy_version=target_policy,
+        expected_scope="all",
+        actor="pytest",
+        reason="resume exact all scope",
+    )
+
+    with recover_all_scope_contact_detail.get_engine().begin() as connection:
+        rows = recover_all_scope_contact_detail._candidate_rows(
+            connection,
+            policy_version=target_policy,
+        )
+
+    assert rows == []
+    with _connect() as connection:
+        job = connection.execute(
+            "SELECT status, attempt_count, provider_call_started_at FROM external_effect_job WHERE id = %s",
+            (job_id,),
+        ).fetchone()
+    assert job["status"] == "blocked"
+    assert job["attempt_count"] == 2
+    assert job["provider_call_started_at"] is not None
 
 
 def test_invariant_checker_reports_missing_active_generation_heartbeats() -> None:

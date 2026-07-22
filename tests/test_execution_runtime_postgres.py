@@ -25,6 +25,7 @@ from aicrm_next.platform_foundation.execution_runtime.metrics import lost_lease_
 from aicrm_next.platform_foundation.repository import RuntimeReadinessRepository
 from aicrm_next.platform_foundation.external_effects.models import (
     WECOM_CONTACT_TAG_MARK,
+    WECOM_EXTERNAL_CONTACT_DETAIL_FETCH,
     ExternalEffectCreateRequest,
     ExternalEffectDispatchResult,
 )
@@ -336,6 +337,52 @@ def test_active_runtime_disables_every_direct_external_effect_owner() -> None:
     assert stale["lease_token"] == "stale-direct-owner"
     assert waiting["status"] == "queued"
     assert waiting["lease_token"] == ""
+
+
+def test_pre_provider_typed_gate_attempt_records_active_worker_generation() -> None:
+    with _connect() as connection:
+        connection.execute(
+            """
+            INSERT INTO app_settings (key, value, updated_at)
+            VALUES
+              ('AICRM_WECOM_EXECUTION_MODE', 'execute', CURRENT_TIMESTAMP),
+              ('AICRM_WECOM_ENABLED_EFFECT_TYPES', 'wecom.message.private.send', CURRENT_TIMESTAMP)
+            ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = CURRENT_TIMESTAMP
+            """
+        )
+    planned = ExternalEffectService().plan_effect(
+        effect_type=WECOM_EXTERNAL_CONTACT_DETAIL_FETCH,
+        adapter_name="wecom_external_contact_detail",
+        operation="get_external_contact_detail",
+        target_type="external_user",
+        target_id="test-external-user",
+        business_type="runtime_generation_test",
+        business_id=uuid4().hex,
+        payload={"execution_scope": "test_loopback", "is_test": True},
+        idempotency_key=f"typed-gate-generation-{uuid4().hex}",
+        status="queued",
+        lane="wecom_interactive",
+    )
+    _enable(generation=7, wecom_interactive=1)
+    runtime = ExecutionRuntimeRepository(_database_url())
+    claim = runtime.claim_external_effect_one(
+        lane="wecom_interactive",
+        worker_id="typed-gate-generation",
+        generation=7,
+        test_only=True,
+    )
+    assert claim is not None
+    repository = SQLAlchemyExternalEffectRepository(get_session_factory(_database_url()))
+
+    result = ExternalEffectWorker(repository).dispatch_claimed(
+        int(planned["id"]),
+        lease_token=claim.lease_token,
+    )
+
+    assert result["job"]["status"] == "blocked"
+    assert result["attempt"]["error_code"] == "effect_type_not_allowed"
+    assert result["attempt"]["provider_call_started_at"] == ""
+    assert result["attempt"]["worker_generation"] == 7
 
 
 def test_generation_zero_cannot_be_enabled_for_runtime_claims() -> None:

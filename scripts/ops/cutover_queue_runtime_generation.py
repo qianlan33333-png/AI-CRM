@@ -234,6 +234,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--expected-generation", type=int, required=True)
     parser.add_argument("--target-generation", type=int, required=True)
     parser.add_argument("--expected-policy-version", required=True)
+    parser.add_argument("--accepted-target-policy-version", default="")
     parser.add_argument("--lane", action="append", default=[], required=True)
     parser.add_argument(
         "--owner-inventory",
@@ -248,6 +249,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     action = parser.add_mutually_exclusive_group()
     action.add_argument("--apply", action="store_true", default=False)
     action.add_argument("--verify-owner-state", action="store_true", default=False)
+    action.add_argument("--ensure-owner-state", action="store_true", default=False)
     parser.add_argument("--confirmation", default="")
     return parser.parse_args(argv)
 
@@ -293,7 +295,7 @@ def _plan(request: QueueRuntimeCutoverRequest, *, owner_inventory: str) -> dict[
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
     request = _request(args)
-    if not args.apply and not args.verify_owner_state:
+    if not args.apply and not args.verify_owner_state and not args.ensure_owner_state:
         print(
             json.dumps(
                 _plan(request, owner_inventory=str(args.owner_inventory)),
@@ -304,6 +306,50 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     repository = RuntimeGenerationRepository()
     lifecycle = SystemdQueueRuntimeLifecycle()
+    if args.ensure_owner_state:
+        state = repository.read_state()
+        accepted_target_policies = {
+            request.expected_policy_version,
+            str(args.accepted_target_policy_version or "").strip(),
+        } - {""}
+        target_matches = (
+            state.active_generation == request.target_generation
+            and state.claim_enabled
+            and state.policy_version in accepted_target_policies
+        )
+        source_matches = (
+            state.active_generation == request.expected_generation
+            and state.policy_version == request.expected_policy_version
+        )
+        if target_matches:
+            lifecycle.verify_single_owner(
+                legacy_triggers=request.legacy_triggers,
+                legacy_services=request.legacy_services,
+                legacy_persistent_services=request.legacy_persistent_services,
+                replacement_active=True,
+            )
+            print(
+                json.dumps(
+                    {
+                        "ok": True,
+                        "applied": False,
+                        "verified": True,
+                        "idempotent_target_match": True,
+                        "owner_inventory": str(args.owner_inventory),
+                        "active_generation": state.active_generation,
+                        "claim_enabled": state.claim_enabled,
+                        "rollout_mode": state.rollout_mode,
+                        "policy_version": state.policy_version,
+                        "external_claim_scope": state.external_claim_scope,
+                        "real_external_call_executed": False,
+                    },
+                    ensure_ascii=False,
+                    sort_keys=True,
+                )
+            )
+            return 0
+        if not source_matches:
+            raise RuntimeError("database generation matches neither the activation source nor accepted target")
     if args.verify_owner_state:
         state = repository.read_state()
         if (
