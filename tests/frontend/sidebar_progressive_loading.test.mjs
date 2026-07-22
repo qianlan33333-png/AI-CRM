@@ -61,6 +61,7 @@ function jsonResponse(payload, status = 200) {
 function loadHarness(fetchImpl, options = {}) {
   const nodes = new Map();
   const copiedValues = [];
+  const openedUrls = [];
   let fallbackCopyCalls = 0;
   const node = (id) => {
     if (!nodes.has(id)) nodes.set(id, createNode());
@@ -108,7 +109,9 @@ function loadHarness(fetchImpl, options = {}) {
       pathname: "/sidebar/bind-mobile",
       search: "",
     },
-    open() {},
+    open(url, target, features) {
+      openedUrls.push({ url, target, features });
+    },
     navigator: options.clipboardWrite
       ? {
           clipboard: {
@@ -120,12 +123,12 @@ function loadHarness(fetchImpl, options = {}) {
         }
       : {},
     setTimeout(callback, delay, ...args) {
-      return nativeSetTimeout(callback, delay === 420 ? 0 : delay, ...args);
+      return nativeSetTimeout(callback, delay === 420 || delay === 1600 ? 0 : delay, ...args);
     },
   };
   const instrumented = source.replace(
     bootMarker,
-    "  globalThis.__sidebarTestApi = { jssdkConfigUrl, loadWorkbench, requestJssdkConfig, requestPanelJson, switchTab, switchMaterialType, switchOrderType, switchProfileView, loadMoreTimeline, refreshTimeline, copyLink, state };\n})();",
+    "  globalThis.__sidebarTestApi = { jssdkConfigUrl, loadWorkbench, requestJssdkConfig, requestPanelJson, switchTab, switchMaterialType, switchOrderType, switchProfileView, loadMoreTimeline, refreshTimeline, copyLink, state, renderProfileTimeline, renderQuestionnaires, formatTimelineTime: typeof formatTimelineTime === 'function' ? formatTimelineTime : undefined, openTimelineSource: typeof openTimelineSource === 'function' ? openTimelineSource : undefined };\n})();",
   );
   const context = {
     AbortController,
@@ -142,6 +145,7 @@ function loadHarness(fetchImpl, options = {}) {
   return {
     api: context.__sidebarTestApi,
     copiedValues,
+    openedUrls,
     nodes,
     get fallbackCopyCalls() {
       return fallbackCopyCalls;
@@ -515,6 +519,129 @@ test("timeline refreshes on entry and paginates twenty items at a time", async (
   await api.refreshTimeline();
   assert.deepEqual(offsets, [0, 20, 0]);
   assert.equal(nodes.get("content").innerHTML.includes("更早雷达"), false, "refresh replaces the previous page set");
+});
+
+test("timeline renders Beijing minute precision, removes only the duplicate product summary, and exposes two source actions", () => {
+  const { api, nodes } = loadHarness(async () => {
+    throw new Error("rendering must not request an API");
+  });
+  assert.equal(typeof api.formatTimelineTime, "function");
+  api.state.data.timeline = {
+    items: [
+      {
+        event_type: "questionnaire_submitted",
+        title: "提交问卷 · 激活问卷",
+        event_time: "2026-07-17T11:26:29+08:00",
+        summary: "已完成问卷提交",
+        source_action: { kind: "questionnaire_submission", label: "查看原纪录", submission_id: "sub-1", questionnaire_id: "21" },
+      },
+      {
+        event_type: "product_enrolled",
+        title: "报名或支付成功 · 年度版",
+        event_time: "2026-07-17T03:26:29.456Z",
+        summary: "已完成商品报名或支付",
+        source_action: { kind: "order_detail", label: "查看原纪录", detail_url: "/admin/wechat-pay/transactions/pay-1" },
+      },
+      { event_type: "channel_entry", title: "扫码进入渠道", event_time: "not-a-time", summary: "直播间" },
+      { event_type: "radar_opened", title: "打开雷达", event_time: "2026-07-17T02:00:00Z", summary: "已打开追踪链接" },
+    ],
+    total: 4,
+    has_more: false,
+    next_offset: 4,
+  };
+
+  api.renderProfileTimeline();
+  const html = nodes.get("content").innerHTML;
+  assert.equal(api.formatTimelineTime("2026-07-17T11:26:29+08:00"), "2026-07-17 11:26");
+  assert.equal(api.formatTimelineTime("2026-07-17T03:26:29.456Z"), "2026-07-17 11:26");
+  assert.equal(api.formatTimelineTime("not-a-time"), "—");
+  assert.equal(html.includes("2026-07-17 11:26"), true);
+  assert.equal(html.includes("T11:26:29"), false);
+  assert.equal(html.includes("已完成商品报名或支付"), false);
+  assert.equal(html.includes("已完成问卷提交"), true);
+  assert.equal((html.match(/data-timeline-source=/g) || []).length, 2);
+});
+
+test("questionnaire source action opens the exact submission in the sidebar", async () => {
+  const addedClasses = [];
+  const removedClasses = [];
+  let scrolled = 0;
+  let focused = 0;
+  const { api, nodes } = loadHarness(async (url) => {
+    if (String(url).includes("/questionnaires")) {
+      return jsonResponse({
+        ok: true,
+        questionnaires: [
+          { id: "sub-other", submission_id: "sub-other", questionnaire_id: "21", title: "同一问卷旧提交", answers: [{ question: "A", answer: "1" }] },
+          { id: "sub-target", submission_id: "sub-target", questionnaire_id: "21", title: "目标提交", answers: [{ question: "B", answer: "2" }] },
+        ],
+      });
+    }
+    throw new Error(`unexpected URL: ${url}`);
+  });
+  api.state.external_userid = "wm_questionnaire_source";
+  api.state.owner_userid = "sales_01";
+  api.state.status = "ready";
+  api.state.workbench = { customer: {}, profile: {}, workflow: {} };
+  nodes.get("content").querySelector = (selector) => {
+    assert.equal(selector, '[data-questionnaire-card="1"]');
+    return {
+      classList: {
+        add(...values) { addedClasses.push(...values); },
+        remove(...values) { removedClasses.push(...values); },
+      },
+      focus() { focused += 1; },
+      scrollIntoView() { scrolled += 1; },
+    };
+  };
+
+  assert.equal(typeof api.openTimelineSource, "function");
+  assert.equal(await api.openTimelineSource({
+    source_action: { kind: "questionnaire_submission", label: "查看原纪录", submission_id: "sub-target", questionnaire_id: "21" },
+  }), true);
+  assert.equal(api.state.activeTab, "questionnaires");
+  assert.deepEqual(addedClasses, ["open", "timeline-source-highlight"]);
+  assert.equal(scrolled, 1);
+  assert.equal(focused, 1);
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  assert.deepEqual(removedClasses, ["timeline-source-highlight"]);
+});
+
+test("missing questionnaire source never opens another submission", async () => {
+  const { api, nodes } = loadHarness(async (url) => {
+    if (String(url).includes("/questionnaires")) {
+      return jsonResponse({ ok: true, questionnaires: [{ id: "sub-missing", submission_id: "", questionnaire_id: "21", title: "缺少提交标识的其他记录", answers: [] }] });
+    }
+    throw new Error(`unexpected URL: ${url}`);
+  });
+  api.state.external_userid = "wm_questionnaire_missing";
+  api.state.owner_userid = "sales_01";
+  api.state.status = "ready";
+  api.state.workbench = { customer: {}, profile: {}, workflow: {} };
+  nodes.get("content").querySelector = () => {
+    throw new Error("a different submission must not be selected");
+  };
+
+  assert.equal(await api.openTimelineSource({
+    source_action: { kind: "questionnaire_submission", label: "查看原纪录", submission_id: "sub-missing", questionnaire_id: "21" },
+  }), false);
+  assert.equal(nodes.get("toast").textContent, "未找到对应问卷原记录");
+});
+
+test("order source action reuses the existing new-window detail behavior", async () => {
+  const { api, openedUrls, nodes } = loadHarness(async () => {
+    throw new Error("order detail must not request an API");
+  });
+
+  assert.equal(await api.openTimelineSource({
+    source_action: { kind: "order_detail", label: "查看原纪录", detail_url: "/admin/wechat-shop/transactions/shop-1" },
+  }), true);
+  assert.deepEqual(openedUrls, [{
+    url: "https://crm.example.test/admin/wechat-shop/transactions/shop-1",
+    target: "_blank",
+    features: "noopener",
+  }]);
+  assert.equal(nodes.get("toast").textContent, "已打开订单详情");
 });
 
 test("coupon and radar links use clipboard copy without any send request", async () => {

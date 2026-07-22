@@ -548,6 +548,7 @@ button[disabled] {
 
 .timeline-event-main {
   min-width: 0;
+  overflow: hidden;
   padding: 8px 9px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -562,9 +563,11 @@ button[disabled] {
 }
 
 .timeline-event-head h3 {
+  min-width: 0;
   margin: 0;
   font-size: 13px;
   line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .timeline-event-head time {
@@ -572,6 +575,7 @@ button[disabled] {
   color: var(--muted);
   font-size: 10px;
   line-height: 1.4;
+  white-space: nowrap;
 }
 
 .timeline-summary {
@@ -580,6 +584,35 @@ button[disabled] {
   font-size: 12px;
   line-height: 1.45;
   overflow-wrap: anywhere;
+}
+
+.timeline-event-actions {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+  margin-top: 6px;
+}
+
+.timeline-event-actions .btn {
+  min-height: 28px;
+  padding: 4px 9px;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.timeline-source-highlight {
+  animation: sidebar-source-highlight 1.6s ease-out;
+}
+
+@keyframes sidebar-source-highlight {
+  0%, 35% {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16);
+  }
+  100% {
+    border-color: var(--line);
+    box-shadow: none;
+  }
 }
 
 .timeline-more {

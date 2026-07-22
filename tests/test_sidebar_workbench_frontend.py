@@ -26,8 +26,8 @@ def test_sidebar_workbench_v2_page_is_next_owned(client):
     assert 'data-radar-links-url="/api/sidebar/v2/radar-links"' in html
     assert 'data-timeline-url="/api/sidebar/v2/timeline"' in html
     assert "sidebar_workbench/sidebar_workbench.js" in html
-    assert "sidebar_workbench/sidebar_workbench.js?v=20260717-capability-optimization" in html
-    assert "sidebar_workbench/sidebar_workbench.css?v=20260717-capability-optimization" in html
+    assert "sidebar_workbench/sidebar_workbench.js?v=20260722-timeline-source-navigation" in html
+    assert "sidebar_workbench/sidebar_workbench.css?v=20260722-timeline-source-navigation" in html
     assert "自动化转化操作区" not in html
 
 
@@ -135,6 +135,11 @@ def test_sidebar_workbench_static_contract_has_next_surface_only():
     assert "data-retry-order-type" in script
     assert "data-refresh-timeline" in script
     assert "data-load-more-timeline" in script
+    assert "data-timeline-source" in script
+    assert "formatTimelineTime" in script
+    assert "openTimelineSource" in script
+    assert "timeline-event-actions" in css
+    assert "timeline-source-highlight" in css
     assert 'requestPanelJson("coupons", endpoint("couponsUrl"))' in script
     assert 'requestPanelJson("radar_links", endpoint("radarLinksUrl"))' in script
     assert 'queryUrl(endpoint("timelineUrl"), { limit: 20, offset })' in script
