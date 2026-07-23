@@ -1388,14 +1388,18 @@ def _wecom_media_lease_health() -> DataHealthCheckResult:
     except Exception as exc:  # pragma: no cover - defensive health endpoint guard
         return _database_probe_failure(check_id, title, exc, ["wecom_media_leases"])
     evidence = {key: int(value or 0) for key, value in dict(row).items()}
-    unhealthy = evidence["failed_count"] + evidence["invalid_source_count"] + evidence["expired_count"]
+    # A ready lease whose provider media id has expired is an expected cache
+    # state: WeComMediaLeaseManager refreshes it from the durable source when
+    # the material is next used.  Keep the count as operational evidence, but
+    # only block production when the cache cannot be repaired safely.
+    unhealthy = evidence["failed_count"] + evidence["invalid_source_count"] + evidence["source_gap_count"]
     if unhealthy:
         return DataHealthCheckResult(
             check_id=check_id,
             title=title,
             status="warn",
             severity="yellow",
-            summary="One or more WeCom temporary media leases require repair.",
+            summary="One or more WeCom temporary media leases or durable sources require repair.",
             evidence=evidence,
             remediation="Run the media lease backfill/refresh worker and repair any material with an invalid durable source.",
         )
@@ -1404,7 +1408,7 @@ def _wecom_media_lease_health() -> DataHealthCheckResult:
         title=title,
         status="ok",
         severity="green",
-        summary="WeCom temporary media leases have no failed, invalid, or expired rows.",
+        summary="WeCom temporary media leases have no failed, invalid, or durable-source-gap rows; expired leases remain refreshable on demand.",
         evidence=evidence,
         remediation="",
     )
