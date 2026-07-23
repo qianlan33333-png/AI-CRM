@@ -737,8 +737,15 @@ def test_queue_production_diagnostics_is_count_only_and_requires_exact_public_re
     assert "deferred_identity_projection" in workflow
     assert "provider_boundary_attempt_count" in workflow
     assert "welcome_graph_terminal" in workflow
+    assert "payment_refund_terminal_history" in workflow
+    assert "merchant_balance_insufficient" in workflow
+    assert "merchant_refund_permission_denied" in workflow
+    assert "provider_error_code_present" in workflow
     assert '"target_id"' not in workflow
-    assert "payload_json" not in workflow
+    assert "job.payload_json" not in workflow
+    assert "request_payload_json" not in workflow
+    assert "response_payload_json AS" not in workflow
+    assert "provider_error_message" not in workflow
     assert "UPDATE external_effect_job" not in workflow
     assert "DELETE FROM external_effect_job" not in workflow
     assert "INSERT INTO external_effect_job" not in workflow

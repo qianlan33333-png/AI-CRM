@@ -448,3 +448,96 @@ jobs:
                 )
             )
             PY
+
+      - name: Read payment refund terminal classification
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.2
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          command_timeout: 10m
+          script: |
+            set -e
+            cd '/home/ubuntu/极简 crm'
+            expected_release_sha='${{ inputs.expected_release_sha }}'
+            test "$(git rev-parse HEAD)" = "$expected_release_sha"
+            set -a
+            source /home/ubuntu/.openclaw-wecom-pg.env
+            set +a
+            source /home/ubuntu/venvs/openclaw/bin/activate
+            python3 - <<'PY'
+            import json
+            from sqlalchemy import text
+            from aicrm_next.shared.db_session import get_session_factory
+
+            sql = text("""
+                WITH classified AS (
+                    SELECT
+                        job.attempt_count,
+                        job.last_error_code,
+                        job.side_effect_executed,
+                        job.provider_result_received,
+                        attempt.id AS attempt_id,
+                        (attempt.provider_call_started_at IS NOT NULL) AS provider_boundary_crossed,
+                        CASE
+                            WHEN provider.code = 'NOT_ENOUGH' THEN 'merchant_balance_insufficient'
+                            WHEN provider.code = 'NO_AUTH' THEN 'merchant_refund_permission_denied'
+                            WHEN provider.code IN ('MCH_NOT_EXISTS', 'APPID_MCHID_NOT_MATCH') THEN 'merchant_identity_rejected'
+                            WHEN provider.code IN ('SIGN_ERROR', 'INVALID_SIGNATURE', 'CERT_ERROR') THEN 'merchant_signature_rejected'
+                            WHEN provider.code IN ('PARAM_ERROR', 'INVALID_REQUEST', 'INVALID_TRANSACTIONID', 'ORDERNOTEXIST')
+                            THEN 'provider_request_rejected'
+                            WHEN provider.code = 'FREQUENCY_LIMITED' THEN 'provider_rate_limited'
+                            WHEN provider.code = 'SYSTEM_ERROR' THEN 'provider_system_error'
+                            WHEN job.last_error_code = 'http_403' THEN 'provider_http_403_unclassified'
+                            ELSE 'provider_error_other'
+                        END AS provider_error_class,
+                        (provider.code <> '') AS provider_error_code_present,
+                        job.updated_at
+                    FROM external_effect_job job
+                    JOIN external_effect_attempt attempt ON attempt.job_id = job.id
+                    LEFT JOIN wechat_pay_refunds refund ON refund.out_refund_no = job.target_id
+                    LEFT JOIN LATERAL (
+                        SELECT UPPER(COALESCE(jsonb_extract_path_text(
+                            refund.response_payload_json, 'provider_payload', 'code'
+                        ), '')) AS code
+                    ) provider ON TRUE
+                    WHERE job.status = 'failed_terminal'
+                      AND job.effect_type = 'payment.wechat.refund.request'
+                      AND job.adapter_name = 'wechat_payment'
+                      AND job.operation = 'refund_request'
+                      AND job.business_type = 'commerce_order'
+                      AND job.source_module = 'commerce.admin_transactions'
+                      AND job.source_route = 'commerce.admin_transactions.create_wechat_refund_request'
+                      AND job.updated_at >= CURRENT_TIMESTAMP - INTERVAL '24 hours'
+                )
+                SELECT
+                    attempt_count,
+                    last_error_code,
+                    side_effect_executed,
+                    provider_result_received,
+                    provider_error_class,
+                    provider_error_code_present,
+                    COUNT(DISTINCT attempt_id) AS durable_attempt_count,
+                    COUNT(DISTINCT attempt_id) FILTER (WHERE provider_boundary_crossed)
+                        AS provider_boundary_attempt_count,
+                    COUNT(*) AS row_count,
+                    MIN(updated_at) AS oldest_updated_at,
+                    MAX(updated_at) AS newest_updated_at
+                FROM classified
+                GROUP BY
+                    attempt_count,
+                    last_error_code,
+                    side_effect_executed,
+                    provider_result_received,
+                    provider_error_class,
+                    provider_error_code_present
+                ORDER BY newest_updated_at DESC
+            """)
+            with get_session_factory()() as session:
+                rows = [dict(row) for row in session.execute(sql).mappings()]
+            print(json.dumps({
+                "payment_refund_terminal_history": rows,
+                "contains_raw_target_or_payload": False,
+                "read_only": True,
+            }, sort_keys=True, default=str))
+            PY

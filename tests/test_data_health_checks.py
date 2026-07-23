@@ -874,6 +874,11 @@ def test_pre_cutover_welcome_terminal_requires_exact_no_replay_acknowledgement(
         acknowledge,
     )
 
+    # The acknowledged row is intentionally pinned before the production
+    # cutover cutoff. Keep this contract independent from wall-clock drift so
+    # the pre-ack assertion does not silently age out of the health lookback.
+    monkeypatch.setattr(checks, "EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS", 24 * 365 * 100)
+
     database_url = os.environ["DATABASE_URL"]
     suffix = uuid4().hex
     execution_id = f"exe-pre-cutover-welcome-{suffix}"
