@@ -56,6 +56,36 @@ def test_deploy_acknowledges_only_authorized_pre_cutover_welcome_before_green_he
     assert "requeue" not in acknowledgement_block.lower()
 
 
+def test_deploy_acknowledges_only_exact_authorized_production_terminal_histories_before_green_health() -> None:
+    workflow = PRODUCTION_DEPLOY_WORKFLOW.read_text(encoding="utf-8")
+
+    welcome_index = workflow.index("scripts/ops/acknowledge_pre_cutover_welcome_terminal.py")
+    acknowledgement_index = workflow.index(
+        "scripts/ops/acknowledge_production_terminal_history.py",
+        welcome_index,
+    )
+    apply_index = workflow.index("--apply", acknowledgement_index)
+    authorization_unset_index = workflow.index(
+        "unset AICRM_QUEUE_TERMINAL_ACK_AUTHORIZED",
+        apply_index,
+    )
+    admin_health_index = workflow.index(
+        "scripts/ops/check_admin_read_pages_smoke.py",
+        authorization_unset_index,
+    )
+
+    assert welcome_index < acknowledgement_index < apply_index
+    assert apply_index < authorization_unset_index < admin_health_index
+    acknowledgement_block = workflow[acknowledgement_index:admin_health_index]
+    assert "production_terminal_history_acknowledgements.json" in workflow
+    assert "private_message_84061" in workflow
+    assert "wechat_refund_not_enough" in workflow
+    assert "operator-authorized production terminal histories; no replay" in workflow
+    assert "requeue" not in acknowledgement_block.lower()
+    assert "refund_request(" not in acknowledgement_block
+    assert "send_private_message(" not in acknowledgement_block
+
+
 def test_remote_deploy_holds_target_specific_server_lock_before_sha_checks() -> None:
     workflow = PRODUCTION_DEPLOY_WORKFLOW.read_text(encoding="utf-8")
 

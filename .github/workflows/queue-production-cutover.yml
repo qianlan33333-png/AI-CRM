@@ -86,7 +86,7 @@ jobs:
             source /home/ubuntu/.openclaw-wecom-pg.env
             set +a
             source /home/ubuntu/venvs/openclaw/bin/activate
-            python3 -m alembic current | grep -F '0138_queue_terminal_acknowledgement'
+            python3 -m alembic current | grep -F '0139_queue_terminal_acknowledgement_scope'
             export AICRM_QUEUE_ALL_SCOPE_RECOVERY_AUTHORIZED=1
             python scripts/ops/recover_all_scope_contact_detail.py \
               --action prepare \

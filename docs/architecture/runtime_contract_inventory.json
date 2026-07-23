@@ -347,37 +347,37 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_BROADCAST_BLOCKED_MAX_COUNT",
-      "line": 39
+      "line": 36
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_BROADCAST_RETRYABLE_DUE_MAX_COUNT",
-      "line": 40
+      "line": 37
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_BROADCAST_TERMINAL_LOOKBACK_HOURS",
-      "line": 43
+      "line": 40
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_RETRYABLE_DUE_MAX_COUNT",
-      "line": 45
+      "line": 42
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS",
-      "line": 48
+      "line": 45
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_PROJECTION_FRESHNESS_MAX_MINUTES",
-      "line": 38
+      "line": 35
     },
     {
       "accessor": "os.getenv",
@@ -3219,7 +3219,7 @@
     }
   ],
   "migration_heads": [
-    "0138_queue_terminal_acknowledgement"
+    "0139_queue_terminal_acknowledgement_scope"
   ],
   "openapi_components": {
     "schemas": {
@@ -48543,14 +48543,14 @@
       "domain": "platform_foundation",
       "drop_candidate": false,
       "lifecycle": "audit",
-      "migration_source": "0138_queue_terminal_acknowledgement",
+      "migration_source": "0139_queue_terminal_acknowledgement_scope",
       "pii_level": "none",
       "read_owners": [
         "external effect data health",
         "production queue cutover evidence"
       ],
       "table": "queue_terminal_acknowledgement",
-      "write_owner": "scripts.ops.acknowledge_pre_cutover_welcome_terminal"
+      "write_owner": "scripts.ops.acknowledge_production_terminal_history"
     },
     {
       "domain": "platform_foundation",

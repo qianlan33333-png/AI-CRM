@@ -235,7 +235,7 @@ def test_queue_production_cutover_is_manual_exact_release_and_all_scope_only() -
     assert "environment: production" in source
     assert "docs/releases/queue_all_scope_cutover.json" in source
     assert "validate_queue_all_scope_cutover.py" in source
-    assert "0138_queue_terminal_acknowledgement" in source
+    assert "0139_queue_terminal_acknowledgement_scope" in source
     assert "0137_queue_production_scope_cutover'" not in source
     assert "git merge-base --is-ancestor" in source
     assert "https://www.youcangogogo.com/health" in source
