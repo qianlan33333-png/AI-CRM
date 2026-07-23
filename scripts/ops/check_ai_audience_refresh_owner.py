@@ -53,12 +53,11 @@ def _code_checks() -> dict[str, bool]:
             (LEGACY_TIMER.name, LEGACY_SERVICE.name) in cutover_pairs
             and (LEGACY_TIMER.name, LEGACY_SERVICE.name) not in active_pairs
         ),
-        "daily_clock_only": "--daily-only" in daily_service and "--run-consumers" not in daily_service and "--execute" not in daily_service,
-        "daily_clock_is_distinct_cutover_replacement": (
+        "refresh_intent_clock_only": "--refresh-intent-clock" in daily_service and "--run-consumers" not in daily_service and "--execute" not in daily_service,
+        "refresh_intent_clock_is_distinct_cutover_replacement": (
             (DAILY_TIMER.name, DAILY_SERVICE.name) in replacement_pairs
             and (DAILY_TIMER.name, DAILY_SERVICE.name) not in active_pairs
-            and "02:00:00" in daily_timer
-            and "*:0/3:00" not in daily_timer
+            and "*:0/3:00" in daily_timer
         ),
         "owner_precheck_installed": "check_ai_audience_refresh_owner.py --code-only" in daily_service,
         "single_package_consumer_registered": "REFRESH_REQUESTED_EVENT" in events and "refresh_intent_consumer" in events,

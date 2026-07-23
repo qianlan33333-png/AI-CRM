@@ -69,11 +69,11 @@ PR3_SUCCESSOR_OWNERS = (
     ),
     (
         "openclaw-ai-audience-scheduler.timer",
-        "ai_audience_daily_intent",
+        "ai_audience_refresh_intent_clock",
         "timer",
         "aicrm-ai-audience-daily-intent.timer",
         "systemd_timer:aicrm-ai-audience-daily-intent.timer",
-        "ai_audience_package_intent",
+        "ai_audience_refresh_intent+internal_event_outbox",
     ),
     (
         "openclaw-identity-resolution-worker.timer",

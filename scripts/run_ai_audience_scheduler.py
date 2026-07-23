@@ -34,6 +34,11 @@ def main() -> int:
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--incremental-only", action="store_true", help="Write compatibility incremental intents without executing them.")
     mode.add_argument("--daily-only", action="store_true", help="Write the daily intent; this is the production timer mode.")
+    mode.add_argument(
+        "--refresh-intent-clock",
+        action="store_true",
+        help="Write incremental intents and a daily intent when the daily clock or overdue-package catch-up is due.",
+    )
     parser.add_argument(
         "--run-consumers",
         action="store_true",
@@ -53,6 +58,9 @@ def main() -> int:
         legacy_owner = assert_legacy_owner_allowed()
         include_incremental = not args.daily_only
         include_daily = not args.incremental_only
+    elif args.refresh_intent_clock:
+        include_incremental = True
+        include_daily = True
     else:
         include_incremental = bool(args.incremental_only)
         include_daily = not args.incremental_only

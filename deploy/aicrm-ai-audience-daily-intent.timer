@@ -1,8 +1,8 @@
 [Unit]
-Description=Write AI Audience daily refresh intents at 02:00 Asia/Shanghai
+Description=Write AI Audience incremental intents every 3 minutes and daily intents when due
 
 [Timer]
-OnCalendar=*-*-* 02:00:00 Asia/Shanghai
+OnCalendar=*-*-* *:0/3:00
 Persistent=true
 Unit=aicrm-ai-audience-daily-intent.service
 

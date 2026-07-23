@@ -215,7 +215,7 @@ def collect_errors(root: Path = ROOT) -> list[str]:
     if successor_rows != PR3_SUCCESSOR_OWNERS:
         errors.append("every reviewed PR-3 owner must have the exact approved successor contract")
     if (AI_AUDIENCE_DAILY_TIMER, AI_AUDIENCE_DAILY_SERVICE) in active_timer_pairs:
-        errors.append("the 02:00 AI Audience replacement timer must not autostart before cutover")
+        errors.append("the AI Audience refresh-intent replacement timer must not autostart before cutover")
     for service in sorted(active_service_names):
         path = root / "deploy" / service
         if not path.exists():

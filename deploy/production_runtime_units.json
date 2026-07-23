@@ -120,11 +120,11 @@
       },
       {
         "legacy_owner": "openclaw-ai-audience-scheduler.timer",
-        "capability": "ai_audience_daily_intent",
+        "capability": "ai_audience_refresh_intent_clock",
         "successor_kind": "timer",
         "successor_unit": "aicrm-ai-audience-daily-intent.timer",
         "health_contract": "systemd_timer:aicrm-ai-audience-daily-intent.timer",
-        "backlog_contract": "ai_audience_package_intent"
+        "backlog_contract": "ai_audience_refresh_intent+internal_event_outbox"
       },
       {
         "legacy_owner": "openclaw-identity-resolution-worker.timer",

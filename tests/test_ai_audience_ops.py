@@ -156,12 +156,12 @@ def test_ai_audience_scheduler_emits_incremental_every_run_and_daily_only_in_2am
     assert not_due["daily_tick_due"] is False
 
 
-def test_ai_audience_scheduler_emits_daily_for_launch_refresh_due_outside_2am_window() -> None:
+def test_ai_audience_scheduler_catches_up_overdue_daily_refresh_outside_2am_window() -> None:
     class Service:
         def emit_tick(self, tick_type):
             return {"ok": True, "tick_type": tick_type}
 
-        def has_launch_refresh_due(self, refresh_kind):
+        def has_refresh_due(self, refresh_kind):
             return refresh_kind == "daily"
 
     outside_window = datetime(2026, 6, 24, 1, 30, tzinfo=ZoneInfo("Asia/Shanghai"))

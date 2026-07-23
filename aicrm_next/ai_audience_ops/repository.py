@@ -704,13 +704,15 @@ class SQLAlchemyAudienceRepository(AudiencePackageRepositoryMixin, AudienceRepos
             },
         )
 
-    def has_launch_refresh_due(self, refresh_kind: str) -> bool:
+    def has_refresh_due(self, refresh_kind: str) -> bool:
         if refresh_kind == "daily":
             enabled_column = "daily_enabled"
             watermark_column = "last_daily_refreshed_at"
+            due_column = "next_daily_refresh_at"
         else:
             enabled_column = "incremental_enabled"
             watermark_column = "last_incremental_watermark_at"
+            due_column = "next_incremental_refresh_at"
         row = self._one(
             f"""
             SELECT 1 AS due
@@ -718,13 +720,20 @@ class SQLAlchemyAudienceRepository(AudiencePackageRepositoryMixin, AudienceRepos
             WHERE status = 'active'
               AND {enabled_column} = TRUE
               AND current_version_id IS NOT NULL
-              AND {watermark_column} IS NULL
+              AND (
+                {watermark_column} IS NULL
+                OR ({due_column} IS NOT NULL AND {due_column} <= CURRENT_TIMESTAMP)
+              )
               AND (lease_expires_at IS NULL OR lease_expires_at <= CURRENT_TIMESTAMP)
             LIMIT 1
             """,
             {},
         )
         return bool(row)
+
+    def has_launch_refresh_due(self, refresh_kind: str) -> bool:
+        """Compatibility alias retained for pre-cutover service objects."""
+        return self.has_refresh_due(refresh_kind)
 
     def update_refresh_success(
         self,

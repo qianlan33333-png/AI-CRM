@@ -47,7 +47,7 @@ def emit_due_ticks(
             daily_refresh_time=daily_refresh_time,
             daily_window_minutes=daily_window_minutes,
         )
-        daily_due = bool(force_daily) or window_daily_due or _launch_daily_refresh_due(service)
+        daily_due = bool(force_daily) or window_daily_due or _daily_refresh_due(service)
     if include_daily and daily_due:
         items.append({"tick_type": "daily", "result": service.emit_tick("daily")})
     return {
@@ -162,8 +162,8 @@ def _source_poke_event_types() -> list[str]:
     ]
 
 
-def _launch_daily_refresh_due(service: Any) -> bool:
-    checker = getattr(service, "has_launch_refresh_due", None)
+def _daily_refresh_due(service: Any) -> bool:
+    checker = getattr(service, "has_refresh_due", None)
     if not callable(checker):
         return False
     try:
