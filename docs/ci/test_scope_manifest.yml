@@ -801,7 +801,10 @@
     {
       "name": "ai_audience_ops",
       "paths": [
+        ".github/workflows/ai-audience-production-diagnostics.yml",
         "aicrm_next/ai_audience_ops/**",
+        "deploy/aicrm-ai-audience-daily-intent.service",
+        "deploy/aicrm-ai-audience-daily-intent.timer",
         "deploy/openclaw-ai-audience-scheduler.service",
         "deploy/openclaw-ai-audience-scheduler.timer",
         "migrations/versions/0128_ai_audience_refresh_intents.py",
@@ -812,6 +815,8 @@
       ],
       "python_tests": [
         "tests/test_ai_audience_ops.py",
+        "tests/test_ai_audience_production_diagnostics_workflow.py",
+        "tests/test_ai_audience_scheduler_cli.py",
         "tests/test_ai_audience_refresh_intents_postgres.py",
         "tests/test_ai_audience_runtime_hotfixes.py",
         "tests/test_ai_audience_external_api.py"

@@ -678,3 +678,12 @@ def test_ai_audience_legacy_owner_guard_fails_after_generation_activation(monkey
         check_ai_audience_refresh_owner.assert_legacy_owner_allowed(
             "postgresql://localhost/test"
         )
+
+
+def test_ai_audience_refresh_owner_code_contract_uses_queue_v2_intent_clock() -> None:
+    checks = check_ai_audience_refresh_owner._code_checks()
+
+    assert checks["refresh_intent_clock_only"] is True
+    assert checks["refresh_intent_clock_is_distinct_cutover_replacement"] is True
+    assert checks["legacy_owner_cutover_managed"] is True
+    assert checks["no_inline_provider_dispatch"] is True

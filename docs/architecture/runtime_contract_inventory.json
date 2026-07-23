@@ -863,7 +863,7 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/ai_audience_ops/service.py",
       "key": "AICRM_PUBLIC_BASE_URL",
-      "line": 611
+      "line": 615
     },
     {
       "accessor": "os.getenv",
@@ -1313,13 +1313,13 @@
       "accessor": "os.getenv",
       "file": "scripts/ops/check_ai_audience_refresh_owner.py",
       "key": "DATABASE_URL",
-      "line": 111
+      "line": 110
     },
     {
       "accessor": "os.getenv",
       "file": "scripts/ops/check_ai_audience_refresh_owner.py",
       "key": "DATABASE_URL",
-      "line": 140
+      "line": 139
     },
     {
       "accessor": "os.getenv",

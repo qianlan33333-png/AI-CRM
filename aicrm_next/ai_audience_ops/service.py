@@ -490,8 +490,12 @@ class AudiencePackageService:
             actor_id=actor_id,
         )
 
+    def has_refresh_due(self, refresh_kind: str = "daily") -> bool:
+        return self._repo.has_refresh_due("daily" if refresh_kind == "daily" else "incremental")
+
     def has_launch_refresh_due(self, refresh_kind: str = "daily") -> bool:
-        return self._repo.has_launch_refresh_due("daily" if refresh_kind == "daily" else "incremental")
+        """Compatibility alias for callers deployed before the queue-v2 clock cutover."""
+        return self.has_refresh_due(refresh_kind)
 
     def emit_source_changed(self, payload: dict[str, Any]) -> dict[str, Any]:
         from .refresh_intents import AudienceRefreshIntentService
