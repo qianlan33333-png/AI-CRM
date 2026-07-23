@@ -15,16 +15,13 @@ from aicrm_next.shared.db_session import get_session_factory
 from aicrm_next.shared.queue_provenance import (
     POST_CUTOVER_IDENTITY_RECOVERY_PREDICATE_VERSION,
     PRE_PROVIDER_IDENTITY_ADOPTION_PREDICATE_VERSION,
-    external_contact_relationship_absent_terminal_sql, post_cutover_identity_recovery_predicate_sql,
-    pre_provider_identity_adoption_predicate_sql,
 )
 from tools.check_data_table_lifecycle import check_data_table_lifecycle
 
 from .dto import DataHealthCheckResult
 from .external_effect_provenance import (
-    acknowledged_pre_cutover_welcome_failure_sql,
-    callback_welcome_failure_sql,
     direct_canary_job_sql,
+    external_effect_backlog_sql,
 )
 from .schema_drift import (
     database_schema_available,
@@ -644,7 +641,14 @@ def _broadcast_job_blocked_backlog() -> DataHealthCheckResult:
 def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
     check_id = "external_effect_failed_retryable_backlog"
     title = "External effect failed retryable backlog"
-    source_tables = ["external_effect_job", "external_effect_attempt", "crm_user_identity_resolution_queue", "queue_runtime_control", "queue_terminal_acknowledgement"]
+    source_tables = [
+        "external_effect_job",
+        "external_effect_attempt",
+        "crm_user_identity_resolution_queue",
+        "queue_runtime_control",
+        "queue_terminal_acknowledgement",
+        "wechat_pay_refunds",
+    ]
     if not database_schema_available():
         return _db_unavailable_placeholder(check_id, title, source_tables)
     try:
@@ -652,102 +656,9 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
             row = (
                 session.execute(
                     text(
-                        f"""
-                        WITH classified_jobs AS (
-                            SELECT job.*,
-                                   (
-                                       ({direct_canary_job_sql("job")})
-                                       OR ({callback_welcome_failure_sql("job")})
-                                   ) AS id_validation_canary,
-                                   ({callback_welcome_failure_sql("job")})
-                                       AS id_validation_callback_welcome,
-                                   ({acknowledged_pre_cutover_welcome_failure_sql("job")})
-                                       AS pre_cutover_acknowledged_welcome,
-                                   ({external_contact_relationship_absent_terminal_sql(job_alias="job")}) AS expected_contact_absence,
-                                   EXISTS (
-                                       SELECT 1
-                                       FROM crm_user_identity_resolution_queue recovery_identity_queue
-                                       WHERE {post_cutover_identity_recovery_predicate_sql(job_alias="job", queue_alias="recovery_identity_queue")}
-                                   ) AS post_cutover_recoverable_identity,
-                                   EXISTS (
-                                       SELECT 1
-                                       FROM crm_user_identity_resolution_queue deferred_identity_queue
-                                       WHERE {pre_provider_identity_adoption_predicate_sql(
-                                           job_alias="job",
-                                           queue_alias="deferred_identity_queue",
-                                           require_active_source_control=True,
-                                       )}
-                                   ) AS pre_cutover_deferred_identity
-                            FROM external_effect_job job
+                        external_effect_backlog_sql(
+                            terminal_lookback_hours=EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS
                         )
-                        SELECT
-                            COUNT(*) FILTER (
-                                WHERE NOT id_validation_canary
-                                  AND NOT pre_cutover_acknowledged_welcome
-                                  AND status = 'failed_retryable'
-                            ) AS failed_retryable_count,
-                            COUNT(*) FILTER (
-                                WHERE NOT id_validation_canary
-                                  AND NOT pre_cutover_acknowledged_welcome
-                                  AND NOT expected_contact_absence
-                                  AND status = 'failed_terminal'
-                                  AND updated_at >= CURRENT_TIMESTAMP - make_interval(hours => {EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS})
-                            ) AS recent_failed_terminal_count,
-                            COUNT(*) FILTER (
-                                WHERE NOT id_validation_canary
-                                  AND NOT pre_cutover_acknowledged_welcome
-                                  AND NOT post_cutover_recoverable_identity
-                                  AND NOT pre_cutover_deferred_identity
-                                  AND status = 'blocked'
-                                  AND updated_at >= CURRENT_TIMESTAMP - make_interval(hours => {EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS})
-                            ) AS recent_blocked_count,
-                            COUNT(*) FILTER (
-                                WHERE NOT id_validation_canary
-                                  AND NOT pre_cutover_acknowledged_welcome
-                                  AND status = 'failed_terminal'
-                            ) AS historical_failed_terminal_count,
-                            COUNT(*) FILTER (
-                                WHERE NOT id_validation_canary
-                                  AND NOT pre_cutover_acknowledged_welcome
-                                  AND NOT post_cutover_recoverable_identity
-                                  AND NOT pre_cutover_deferred_identity
-                                  AND status = 'blocked'
-                            ) AS historical_blocked_count,
-                            COUNT(*) FILTER (
-                                WHERE NOT id_validation_canary
-                                  AND NOT pre_cutover_acknowledged_welcome
-                                  AND status = 'failed_retryable'
-                                  AND (next_retry_at IS NULL OR next_retry_at <= CURRENT_TIMESTAMP)
-                            ) AS due_retryable_count,
-                            EXTRACT(EPOCH FROM (
-                                CURRENT_TIMESTAMP - MIN(COALESCE(next_retry_at, updated_at)) FILTER (
-                                    WHERE NOT id_validation_canary
-                                      AND NOT pre_cutover_acknowledged_welcome
-                                      AND status = 'failed_retryable'
-                                )
-                            )) AS oldest_failed_retryable_age_seconds,
-                            COUNT(*) FILTER (
-                                WHERE id_validation_canary AND status = 'failed_retryable'
-                            ) AS canary_failed_retryable_count,
-                            COUNT(*) FILTER (
-                                WHERE id_validation_canary AND status = 'failed_terminal'
-                            ) AS canary_failed_terminal_count,
-                            COUNT(*) FILTER (
-                                WHERE id_validation_canary AND status = 'blocked'
-                            ) AS canary_blocked_count,
-                            COUNT(*) FILTER (
-                                WHERE id_validation_callback_welcome
-                                  AND status = 'failed_terminal'
-                            ) AS callback_welcome_failed_terminal_count,
-                            COUNT(*) FILTER (
-                                WHERE pre_cutover_acknowledged_welcome
-                                  AND status = 'failed_terminal'
-                            ) AS pre_cutover_acknowledged_welcome_count,
-                            COUNT(*) FILTER (WHERE expected_contact_absence) AS expected_contact_absence_count,
-                            COUNT(*) FILTER (WHERE post_cutover_recoverable_identity AND status = 'blocked') AS post_cutover_recoverable_identity_count,
-                            COUNT(*) FILTER (WHERE pre_cutover_deferred_identity AND status = 'blocked') AS pre_cutover_deferred_identity_count
-                        FROM classified_jobs
-                        """
                     )
                 )
                 .mappings()
@@ -775,7 +686,10 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
     canary_failed_terminal_count = int(row.get("canary_failed_terminal_count") or 0)
     canary_blocked_count = int(row.get("canary_blocked_count") or 0)
     callback_welcome_failed_terminal_count = int(row.get("callback_welcome_failed_terminal_count") or 0)
-    pre_cutover_acknowledged_welcome_count, expected_contact_absence_count = int(row.get("pre_cutover_acknowledged_welcome_count") or 0), int(row.get("expected_contact_absence_count") or 0)
+    pre_cutover_acknowledged_welcome_count = int(row.get("pre_cutover_acknowledged_welcome_count") or 0)
+    acknowledged_private_message_84061_count = int(row.get("acknowledged_private_message_84061_count") or 0)
+    acknowledged_refund_not_enough_count = int(row.get("acknowledged_refund_not_enough_count") or 0)
+    expected_contact_absence_count = int(row.get("expected_contact_absence_count") or 0)
     pre_cutover_deferred_identity_count, post_cutover_recoverable_identity_count = int(row.get("pre_cutover_deferred_identity_count") or 0), int(row.get("post_cutover_recoverable_identity_count") or 0)
     violations = []
     if failed_terminal_count > 0:
@@ -804,6 +718,22 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
         },
         "pre_cutover_welcome_terminal_acknowledgement": {
             "acknowledged_count": pre_cutover_acknowledged_welcome_count,
+            "excluded_from_business_health": True,
+            "operator_acknowledgement_required": True,
+            "provider_success_claimed": False,
+            "replay_prohibited": True,
+            "strict_provenance_required": True,
+        },
+        "production_private_message_84061_acknowledgement": {
+            "acknowledged_count": acknowledged_private_message_84061_count,
+            "excluded_from_business_health": True,
+            "operator_acknowledgement_required": True,
+            "provider_success_claimed": False,
+            "replay_prohibited": True,
+            "strict_provenance_required": True,
+        },
+        "production_wechat_refund_not_enough_acknowledgement": {
+            "acknowledged_count": acknowledged_refund_not_enough_count,
             "excluded_from_business_health": True,
             "operator_acknowledgement_required": True,
             "provider_success_claimed": False,

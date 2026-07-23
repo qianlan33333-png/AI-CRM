@@ -36,6 +36,7 @@
     "scripts/ops/ingest_wecom_canary_callback.py",
     "scripts/ops/manage_queue_runtime_soak.py",
     "scripts/ops/acknowledge_pre_cutover_welcome_terminal.py",
+    "scripts/ops/acknowledge_production_terminal_history.py",
     "scripts/ops/run_release_customer_read_model_refresh.py",
     "scripts/ops/plan_wecom_canary.py",
     "scripts/ops/relay_wecom_canary_callback.py",
@@ -1686,6 +1687,9 @@
         "scripts/ops/manage_queue_runtime_soak.py",
         "scripts/ops/recover_all_scope_contact_detail.py",
         "scripts/ops/acknowledge_pre_cutover_welcome_terminal.py",
+        "scripts/ops/acknowledge_production_terminal_history.py",
+        "migrations/versions/0139_queue_terminal_acknowledgement_scope.py",
+        "docs/releases/production_terminal_history_acknowledgements.json",
         "scripts/ops/plan_wecom_canary.py",
         "scripts/ops/relay_wecom_canary_callback.py",
         "scripts/ops/run_id_validation_queue_operation.sh",
@@ -1700,6 +1704,7 @@
         "tests/test_queue_runtime_cutover*.py",
         "tests/test_queue_runtime_systemd.py",
         "tests/test_queue_all_scope_cutover.py",
+        "tests/test_production_terminal_history_acknowledgement.py",
         "tests/test_run_execution_runtime.py"
       ],
       "python_tests": [

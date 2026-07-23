@@ -2028,24 +2028,26 @@ tables:
   queue_terminal_acknowledgement:
     domain: platform_foundation
     lifecycle: audit
-    write_owner: scripts.ops.acknowledge_pre_cutover_welcome_terminal
+    write_owner: scripts.ops.acknowledge_production_terminal_history
     read_owners:
       - external effect data health
       - production queue cutover evidence
-    replacement: none; immutable operator acknowledgement of one no-replay terminal history
+    replacement: none; immutable operator acknowledgement of strictly authorized no-replay terminal histories
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
       - scripts/ops/acknowledge_pre_cutover_welcome_terminal.py
+      - scripts/ops/acknowledge_production_terminal_history.py
       - external effect data health
-    migration_source: 0138_queue_terminal_acknowledgement
+    migration_source: 0139_queue_terminal_acknowledgement_scope
     pii_level: none
     guard_tests:
       - tests/test_queue_all_scope_cutover.py
+      - tests/test_production_terminal_history_acknowledgement.py
       - tests/test_data_health_checks.py
       - tests/test_database_bootstrap.py
       - tests/test_data_table_lifecycle_guard.py
-    notes: Append-only acknowledgement for the one exactly authorized generation-0 welcome 41050 terminal. It preserves numeric job linkage and hashes only, forbids replay and provider-success claims, and stores no provider target, content, credential, or error message.
+    notes: Append-only acknowledgement for the exactly authorized generation-0 welcome 41050, one production private-message 84061, and three refund NOT_ENOUGH terminals. It preserves numeric job linkage and hashes only, forbids replay and provider-success claims, and stores no provider target, content, credential, or error message.
 
   queue_runtime_validation_evidence:
     domain: platform_foundation
