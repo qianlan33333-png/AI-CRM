@@ -48,6 +48,16 @@ def runtime_settings_request_scope() -> Iterator[None]:
         _REQUEST_SETTINGS_SNAPSHOT.reset(token)
 
 
+def invalidate_runtime_settings_request_snapshot() -> None:
+    """Force a fresh snapshot after an in-request app-settings write."""
+
+    snapshot = _REQUEST_SETTINGS_SNAPSHOT.get()
+    if snapshot is None:
+        return
+    snapshot.loaded = False
+    snapshot.values.clear()
+
+
 def _request_settings_snapshot() -> _RequestSettingsSnapshot | None:
     snapshot = _REQUEST_SETTINGS_SNAPSHOT.get()
     if snapshot is None or snapshot.loaded:

@@ -153,6 +153,20 @@ def test_runtime_settings_request_scope_uses_one_database_snapshot(monkeypatch, 
     assert len(statements) == 2
 
 
+def test_runtime_settings_request_scope_can_be_invalidated_after_write(monkeypatch, tmp_path: Path) -> None:
+    engine = _engine(tmp_path)
+    with engine.begin() as conn:
+        conn.execute(text("INSERT INTO app_settings (key, value) VALUES ('RUNTIME_FLAG', 'before')"))
+    monkeypatch.setattr(runtime_settings, "get_engine", lambda: engine)
+
+    with runtime_settings_request_scope():
+        assert runtime_setting("RUNTIME_FLAG") == "before"
+        with engine.begin() as conn:
+            conn.execute(text("UPDATE app_settings SET value = 'after' WHERE key = 'RUNTIME_FLAG'"))
+        runtime_settings.invalidate_runtime_settings_request_snapshot()
+        assert runtime_setting("RUNTIME_FLAG") == "after"
+
+
 def test_legacy_shared_runtime_facade_resolves_secret_references(monkeypatch, tmp_path: Path) -> None:
     engine = _engine(tmp_path)
     root = tmp_path / "secrets"
