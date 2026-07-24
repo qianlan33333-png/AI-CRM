@@ -24,6 +24,11 @@ REFUND_ACKNOWLEDGEMENT_TYPE = "production_wechat_refund_not_enough_no_replay"
 REFUND_AUTHORIZATION_CONFIRMATION_SHA256 = (
     "adc4f08542ae86f432c00e6dbe318442b0dd588887ff550d6ee48bd20f2f819b"
 )
+PRODUCTION_WELCOME_ACKNOWLEDGEMENT_TYPE = "production_welcome_41050_job_2157_no_replay"
+PRODUCTION_WELCOME_AUTHORIZATION_BASE_SHA = "1ccf3a056f21d3d023fcf77ac809d0569cc09820"
+PRODUCTION_WELCOME_AUTHORIZATION_CONFIRMATION_SHA256 = (
+    "e5a4f0fb09cb5d7e64069064139db7cd31ca4d152e5eaa3352f9cf97e2d510d7"
+)
 
 
 def direct_canary_job_sql(alias: str) -> str:
@@ -382,6 +387,136 @@ def acknowledged_refund_not_enough_failure_sql(alias: str) -> str:
     """
 
 
+def acknowledged_production_welcome_41050_failure_sql(alias: str) -> str:
+    """Return the exact no-replay acknowledgement for production job 2157.
+
+    The predicate intentionally pins every durable identifier and timestamp
+    that proves the one provider-crossed welcome attempt. A later success,
+    extra attempt, changed graph, or altered acknowledgement makes the row
+    visible to business health again.
+    """
+
+    return f"""
+        {alias}.id = 2157
+        AND COALESCE({alias}.effect_type, '') = '{WELCOME_EFFECT_TYPE}'
+        AND COALESCE({alias}.adapter_name, '') = 'wecom_welcome_message'
+        AND COALESCE({alias}.operation, '') = 'send'
+        AND COALESCE({alias}.business_type, '') = 'channel_welcome_effect_graph'
+        AND COALESCE({alias}.source_module, '') = 'channel_entry.application'
+        AND COALESCE({alias}.source_route, '') = 'channel_entry.process_channel_entry'
+        AND COALESCE({alias}.status, '') = 'failed_terminal'
+        AND COALESCE({alias}.last_error_code, '') = '{WELCOME_ERROR_CODE}'
+        AND COALESCE({alias}.execution_mode, '') = 'execute'
+        AND COALESCE({alias}.lane, '') = 'wecom_interactive'
+        AND COALESCE({alias}.execution_id, '') =
+            'exe_channel_welcome_send_4795cc3d70964dc2b8a0fd5c6b875d33'
+        AND COALESCE({alias}.business_id, '') =
+            'exe_channel_welcome_root_1ae456f3e96b4a97a478a5d4630e8907'
+        AND COALESCE({alias}.last_attempt_id, '') =
+            'eea_be52aed9558e43e89c189dd6d472e6fc'
+        AND {alias}.attempt_count = 1
+        AND {alias}.max_attempts = 5
+        AND {alias}.side_effect_executed IS TRUE
+        AND {alias}.provider_result_received IS TRUE
+        AND {alias}.provider_call_started_at =
+            TIMESTAMPTZ '2026-07-24T11:31:32.223640+08:00'
+        AND {alias}.reconciliation_required IS FALSE
+        AND {alias}.worker_generation = 1
+        AND COALESCE({alias}.policy_version, '') = 'queue-v2-production-all-g1'
+        AND {alias}.created_at = TIMESTAMPTZ '2026-07-24T11:30:38.262825+08:00'
+        AND {alias}.updated_at = TIMESTAMPTZ '2026-07-24T11:31:32.739066+08:00'
+        AND {alias}.completed_at = TIMESTAMPTZ '2026-07-24T11:31:32.739066+08:00'
+        AND EXISTS (
+            SELECT 1
+            FROM channel_welcome_effect_graph acknowledged_graph
+            WHERE acknowledged_graph.id = 3
+              AND acknowledged_graph.final_effect_job_id = {alias}.id
+              AND acknowledged_graph.execution_id = COALESCE({alias}.business_id, '')
+              AND acknowledged_graph.status = 'terminal'
+        )
+        AND 1 = (
+            SELECT COUNT(*)
+            FROM external_effect_attempt acknowledged_attempt_count
+            WHERE acknowledged_attempt_count.job_id = {alias}.id
+        )
+        AND EXISTS (
+            SELECT 1
+            FROM external_effect_attempt acknowledged_attempt
+            WHERE acknowledged_attempt.job_id = {alias}.id
+              AND acknowledged_attempt.attempt_id = COALESCE({alias}.last_attempt_id, '')
+              AND acknowledged_attempt.adapter_name = 'wecom_welcome_message'
+              AND acknowledged_attempt.adapter_mode = 'execute'
+              AND acknowledged_attempt.operation = 'send'
+              AND acknowledged_attempt.status = 'failed_terminal'
+              AND acknowledged_attempt.error_code = '{WELCOME_ERROR_CODE}'
+              AND acknowledged_attempt.provider_call_started_at =
+                  TIMESTAMPTZ '2026-07-24T11:31:32.223640+08:00'
+              AND acknowledged_attempt.worker_generation = 1
+              AND acknowledged_attempt.started_at =
+                  TIMESTAMPTZ '2026-07-24T11:31:32.223640+08:00'
+              AND acknowledged_attempt.completed_at =
+                  TIMESTAMPTZ '2026-07-24T11:31:32.739066+08:00'
+        )
+        AND NOT EXISTS (
+            SELECT 1
+            FROM external_effect_job acknowledged_success
+            WHERE acknowledged_success.id <> {alias}.id
+              AND acknowledged_success.status = 'succeeded'
+              AND acknowledged_success.effect_type = {alias}.effect_type
+              AND acknowledged_success.business_type = {alias}.business_type
+              AND acknowledged_success.business_id = {alias}.business_id
+        )
+        AND NOT EXISTS (
+            SELECT 1
+            FROM external_effect_job acknowledged_later_success
+            WHERE acknowledged_later_success.id <> {alias}.id
+              AND acknowledged_later_success.status = 'succeeded'
+              AND acknowledged_later_success.effect_type = {alias}.effect_type
+              AND acknowledged_later_success.target_type = {alias}.target_type
+              AND acknowledged_later_success.target_id = {alias}.target_id
+              AND acknowledged_later_success.updated_at > {alias}.updated_at
+        )
+        AND EXISTS (
+            SELECT 1
+            FROM queue_terminal_acknowledgement acknowledgement
+            WHERE acknowledgement.acknowledgement_type =
+                    '{PRODUCTION_WELCOME_ACKNOWLEDGEMENT_TYPE}'
+              AND acknowledgement.job_id = {alias}.id
+              AND acknowledgement.job_execution_id = COALESCE({alias}.execution_id, '')
+              AND acknowledgement.attempt_id = COALESCE({alias}.last_attempt_id, '')
+              AND acknowledgement.graph_id = 3
+              AND acknowledgement.status = 'acknowledged_history'
+              AND acknowledgement.job_status = 'failed_terminal'
+              AND acknowledgement.error_code = '{WELCOME_ERROR_CODE}'
+              AND acknowledgement.authorization_base_sha =
+                    '{PRODUCTION_WELCOME_AUTHORIZATION_BASE_SHA}'
+              AND acknowledgement.authorization_confirmation_sha256 =
+                    '{PRODUCTION_WELCOME_AUTHORIZATION_CONFIRMATION_SHA256}'
+              AND acknowledgement.release_sha ~ '^[0-9a-f]{{40}}$'
+              AND acknowledgement.job_fingerprint_sha256 ~ '^[0-9a-f]{{64}}$'
+              AND acknowledgement.replay_prohibited IS TRUE
+              AND acknowledgement.provider_success_claimed IS FALSE
+              AND COALESCE(acknowledgement.evidence_json ->> 'durable_provider_attempt_count', '') = '1'
+              AND COALESCE(acknowledgement.evidence_json ->> 'active_sibling_count', '') = '0'
+              AND COALESCE(acknowledgement.evidence_json ->> 'provider_boundary_crossed', '') = 'true'
+              AND COALESCE(acknowledgement.evidence_json ->> 'provider_result_received', '') = 'true'
+              AND COALESCE(acknowledgement.evidence_json ->> 'real_external_call_executed_by_acknowledgement', '') = 'false'
+              AND COALESCE(acknowledgement.evidence_json ->> 'target_values_redacted', '') = 'true'
+              AND COALESCE(acknowledgement.evidence_json ->> 'target_hash_sha256', '') =
+                  ENCODE(
+                      SHA256(
+                          CONVERT_TO(COALESCE({alias}.target_type, ''), 'UTF8')
+                          || DECODE('00', 'hex')
+                          || CONVERT_TO(COALESCE({alias}.target_id, ''), 'UTF8')
+                      ),
+                      'hex'
+                  )
+              AND LENGTH(BTRIM(acknowledgement.actor)) > 0
+              AND LENGTH(BTRIM(acknowledgement.reason)) > 0
+        )
+    """
+
+
 def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
     """Build the read-only external-effect health aggregation query."""
 
@@ -397,6 +532,8 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                        AS id_validation_callback_welcome,
                    ({acknowledged_pre_cutover_welcome_failure_sql("job")})
                        AS pre_cutover_acknowledged_welcome,
+                   ({acknowledged_production_welcome_41050_failure_sql("job")})
+                       AS acknowledged_production_welcome_41050,
                    ({acknowledged_private_message_84061_failure_sql("job")})
                        AS acknowledged_private_message_84061,
                    ({acknowledged_refund_not_enough_failure_sql("job")})
@@ -423,6 +560,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
             COUNT(*) FILTER (
                 WHERE NOT id_validation_canary
                   AND NOT pre_cutover_acknowledged_welcome
+                  AND NOT acknowledged_production_welcome_41050
                   AND NOT acknowledged_private_message_84061
                   AND NOT acknowledged_refund_not_enough
                   AND status = 'failed_retryable'
@@ -430,6 +568,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
             COUNT(*) FILTER (
                 WHERE NOT id_validation_canary
                   AND NOT pre_cutover_acknowledged_welcome
+                  AND NOT acknowledged_production_welcome_41050
                   AND NOT acknowledged_private_message_84061
                   AND NOT acknowledged_refund_not_enough
                   AND NOT expected_contact_absence
@@ -439,6 +578,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
             COUNT(*) FILTER (
                 WHERE NOT id_validation_canary
                   AND NOT pre_cutover_acknowledged_welcome
+                  AND NOT acknowledged_production_welcome_41050
                   AND NOT acknowledged_private_message_84061
                   AND NOT acknowledged_refund_not_enough
                   AND NOT post_cutover_recoverable_identity
@@ -449,6 +589,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
             COUNT(*) FILTER (
                 WHERE NOT id_validation_canary
                   AND NOT pre_cutover_acknowledged_welcome
+                  AND NOT acknowledged_production_welcome_41050
                   AND NOT acknowledged_private_message_84061
                   AND NOT acknowledged_refund_not_enough
                   AND status = 'failed_terminal'
@@ -456,6 +597,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
             COUNT(*) FILTER (
                 WHERE NOT id_validation_canary
                   AND NOT pre_cutover_acknowledged_welcome
+                  AND NOT acknowledged_production_welcome_41050
                   AND NOT acknowledged_private_message_84061
                   AND NOT acknowledged_refund_not_enough
                   AND NOT post_cutover_recoverable_identity
@@ -465,6 +607,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
             COUNT(*) FILTER (
                 WHERE NOT id_validation_canary
                   AND NOT pre_cutover_acknowledged_welcome
+                  AND NOT acknowledged_production_welcome_41050
                   AND NOT acknowledged_private_message_84061
                   AND NOT acknowledged_refund_not_enough
                   AND status = 'failed_retryable'
@@ -474,6 +617,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                 CURRENT_TIMESTAMP - MIN(COALESCE(next_retry_at, updated_at)) FILTER (
                     WHERE NOT id_validation_canary
                       AND NOT pre_cutover_acknowledged_welcome
+                      AND NOT acknowledged_production_welcome_41050
                       AND NOT acknowledged_private_message_84061
                       AND NOT acknowledged_refund_not_enough
                       AND status = 'failed_retryable'
@@ -496,6 +640,10 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                 WHERE pre_cutover_acknowledged_welcome
                   AND status = 'failed_terminal'
             ) AS pre_cutover_acknowledged_welcome_count,
+            COUNT(*) FILTER (
+                WHERE acknowledged_production_welcome_41050
+                  AND status = 'failed_terminal'
+            ) AS acknowledged_production_welcome_41050_count,
             COUNT(*) FILTER (
                 WHERE acknowledged_private_message_84061
                   AND status = 'failed_terminal'
