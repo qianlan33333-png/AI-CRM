@@ -7,7 +7,10 @@ from fastapi.testclient import TestClient
 from starlette.requests import Request
 
 from aicrm_next.commerce.coupons.application import CouponSidebarApplication
-from aicrm_next.customer_read_model.sidebar_timeline import SidebarCustomerTimelineQuery
+from aicrm_next.customer_read_model.sidebar_timeline import (
+    ResolvedSidebarCustomerContext,
+    SidebarCustomerTimelineQuery,
+)
 from aicrm_next.main import create_app
 from aicrm_next.radar_links.application import ListSidebarRadarLinksQuery
 from aicrm_next.shared.errors import ContractError
@@ -309,14 +312,14 @@ def test_new_sidebar_apis_require_a_signed_grant(monkeypatch) -> None:
 
 
 def test_timeline_api_uses_grant_customer_and_ignores_query_identity(monkeypatch) -> None:
-    requested_external_userids = []
+    requested_unionids = []
 
     class Repository:
-        def get_customer(self, external_userid):
-            requested_external_userids.append(external_userid)
-            return {"external_userid": external_userid, "unionid": "union-signed"}
+        def get_customer(self, _external_userid):
+            raise AssertionError("timeline must reuse the request-scoped resolved context")
 
-        def list_timeline_by_unionid(self, _unionid, _filters, *, limit=None, offset=0):
+        def list_timeline_by_unionid(self, unionid, _filters, *, limit=None, offset=0):
+            requested_unionids.append(unionid)
             return []
 
         def count_timeline_by_unionid(self, _unionid, _filters):
@@ -327,13 +330,21 @@ def test_timeline_api_uses_grant_customer_and_ignores_query_identity(monkeypatch
         "aicrm_next.customer_read_model.api._request_scoped_customer_repositories",
         lambda _db: (repo, repo),
     )
-    monkeypatch.setattr("aicrm_next.customer_read_model.api._verify_sidebar_owner_scope", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        "aicrm_next.customer_read_model.api._verify_sidebar_owner_scope",
+        lambda *_args, **_kwargs: ResolvedSidebarCustomerContext(
+            external_userid="wm-signed",
+            unionid="union-signed",
+            owner_userid="sales-1",
+            owner_verified=True,
+        ),
+    )
     client = _sidebar_client(monkeypatch)
 
     response = client.get("/api/sidebar/v2/timeline?external_userid=wm-other&unionid=union-other&limit=20&offset=0")
 
     assert response.status_code == 200
-    assert requested_external_userids == ["wm-signed"]
+    assert requested_unionids == ["union-signed"]
     assert response.json() == {
         "ok": True,
         "items": [],

@@ -1,11 +1,21 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from urllib.parse import quote
 
 from aicrm_next.shared.errors import NotFoundError
 from aicrm_next.shared.typing import JsonDict
 
 from .repo import CustomerReadRepository, build_customer_read_model_repository
+
+
+@dataclass(frozen=True)
+class ResolvedSidebarCustomerContext:
+    external_userid: str
+    unionid: str
+    owner_userid: str
+    corp_id: str = ""
+    owner_verified: bool = False
 
 
 class SidebarCustomerTimelineQuery:
@@ -27,14 +37,30 @@ class SidebarCustomerTimelineQuery:
     def __init__(self, repo: CustomerReadRepository | None = None) -> None:
         self._repo = repo
 
-    def execute(self, *, external_userid: str, limit: int = 20, offset: int = 0) -> JsonDict:
+    def execute(
+        self,
+        *,
+        external_userid: str = "",
+        context: ResolvedSidebarCustomerContext | None = None,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> JsonDict:
         owned_repo = self._repo is None
         repo = self._repo or build_customer_read_model_repository()
         try:
-            customer = repo.get_customer(str(external_userid or "").strip())
-            if not customer:
-                raise NotFoundError("customer not found")
-            unionid = str(customer.get("unionid") or (customer.get("identity") or {}).get("unionid") or "").strip()
+            resolved_external_userid = str(
+                (context.external_userid if context else external_userid) or ""
+            ).strip()
+            unionid = str((context.unionid if context else "") or "").strip()
+            if not unionid:
+                customer = repo.get_customer(resolved_external_userid)
+                if not customer:
+                    raise NotFoundError("customer not found")
+                unionid = str(
+                    customer.get("unionid")
+                    or (customer.get("identity") or {}).get("unionid")
+                    or ""
+                ).strip()
             if not unionid:
                 return {"ok": True, "items": [], "total": 0, "has_more": False, "next_offset": 0}
             filters = {"event_types": list(self.EVENT_TYPES)}
@@ -131,4 +157,4 @@ class SidebarCustomerTimelineQuery:
     __call__ = execute
 
 
-__all__ = ["SidebarCustomerTimelineQuery"]
+__all__ = ["ResolvedSidebarCustomerContext", "SidebarCustomerTimelineQuery"]
