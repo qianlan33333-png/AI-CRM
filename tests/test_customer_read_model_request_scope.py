@@ -210,7 +210,8 @@ def test_sidebar_customer_context_reuses_one_request_scoped_repo(monkeypatch) ->
     assert read_repos[0].session is session
     assert live_repos[0].session is session
     assert read_repos[0].closed is False
-    assert set(read_repos[0].calls) >= {"get_customer", "customer_exists", "list_timeline", "list_recent_messages"}
+    assert set(read_repos[0].calls) >= {"get_customer", "list_timeline", "list_recent_messages"}
+    assert "customer_exists" not in read_repos[0].calls
 
 
 def test_sidebar_v2_releases_request_scoped_session_before_pii_audit(monkeypatch) -> None:

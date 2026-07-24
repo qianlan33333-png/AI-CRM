@@ -22,6 +22,7 @@ from .dto import (
     ListCustomersRequest,
     RecentMessagesRequest,
 )
+from .customer_resolution import get_customer_by_request, resolve_customer_request
 from .errors import CustomerScopeForbiddenError
 from .projections import detail_projection, list_item_projection
 from .repo import CustomerReadRepository, build_customer_live_source_repository, build_customer_read_model_repository
@@ -189,17 +190,6 @@ def _assert_customer_owner_scope(customer: JsonDict, owner_userid: str | None, *
     if not requested_owner and not require_owner:
         return
     raise CustomerScopeForbiddenError("customer scope forbidden")
-
-
-def _repo_get_customer_by_request(repo: CustomerReadRepository, query: CustomerDetailRequest) -> JsonDict | None:
-    unionid = str(query.unionid or "").strip()
-    if unionid:
-        getter = getattr(repo, "get_customer_by_unionid", None)
-        if callable(getter):
-            return getter(unionid)
-        return None
-    external_userid = str(query.external_userid or "").strip()
-    return repo.get_customer(external_userid) if external_userid else None
 
 
 def _repo_customer_exists_by_request(repo: CustomerReadRepository, query: CustomerTimelineRequest | RecentMessagesRequest) -> bool:
@@ -385,7 +375,7 @@ def _customer_detail_live_source_payload(query: CustomerDetailRequest, exc: Exce
     owned_repo = repo is None
     repo = repo or build_customer_live_source_repository()
     try:
-        customer = _repo_get_customer_by_request(repo, query)
+        customer = get_customer_by_request(repo, query)
         if not customer:
             raise NotFoundError("customer not found")
         return {
@@ -625,7 +615,7 @@ class GetCustomerDetailQuery:
                 if not _customer_read_model_next_primary_enabled():
                     raise RuntimeError("customer read model next primary disabled")
                 repo = self._repo or build_customer_read_model_repository()
-                customer = _repo_get_customer_by_request(repo, query)
+                customer = get_customer_by_request(repo, query)
                 if not customer:
                     raise NotFoundError("customer not found")
             except NotFoundError as exc:
@@ -668,7 +658,7 @@ class GetCustomerDetailQuery:
             else:
                 contacts_contract = {"ok": True, "skipped": True, "reason": "unionid_native_query"}
                 projection_contract = {"ok": True, "skipped": True, "reason": "unionid_native_query"}
-            customer = _repo_get_customer_by_request(repo, query)
+            customer = get_customer_by_request(repo, query)
             if not customer:
                 raise NotFoundError("customer not found")
             return {
@@ -706,11 +696,28 @@ class GetCustomerTimelineQuery:
                 if not _customer_read_model_next_primary_enabled():
                     raise RuntimeError("customer read model next primary disabled")
                 repo = self._repo or build_customer_read_model_repository()
-                if not _repo_customer_exists_by_request(repo, query):
-                    raise NotFoundError("customer not found")
-                items = _repo_list_timeline_by_request(repo, query, limit=None, offset=0)
-                total = len(items)
-                page = items[query.offset : query.offset + query.limit]
+                _, resolved_unionid, resolved_external_userid = resolve_customer_request(
+                    repo,
+                    unionid=query.unionid,
+                    external_userid=query.external_userid,
+                )
+                resolved_query = query.model_copy(
+                    update={
+                        "unionid": resolved_unionid or None,
+                        "external_userid": resolved_external_userid or None,
+                    }
+                )
+                page = _repo_list_timeline_by_request(
+                    repo,
+                    resolved_query,
+                    limit=query.limit,
+                    offset=query.offset,
+                )
+                counter = getattr(repo, "count_timeline_by_unionid", None)
+                if resolved_unionid and callable(counter):
+                    total = int(counter(resolved_unionid, {"event_type": query.event_type or ""}))
+                else:
+                    total = len(_repo_list_timeline_by_request(repo, resolved_query, limit=None, offset=0))
             except NotFoundError as exc:
                 if self._repo is None:
                     _close_repository(repo)
@@ -760,14 +767,28 @@ class GetCustomerTimelineQuery:
                 )
             else:
                 projection_contract = {"ok": True, "skipped": True, "reason": "unionid_native_query"}
-            customer = _repo_get_customer_by_request(repo, CustomerDetailRequest(external_userid=query.external_userid, unionid=query.unionid))
-            if not customer:
-                raise NotFoundError("customer not found")
-            items = _repo_list_timeline_by_request(repo, query)
-            if query.event_type:
-                items = [item for item in items if item.get("event_type") == query.event_type]
-            total = len(items)
-            page = items[query.offset : query.offset + query.limit]
+            _, resolved_unionid, resolved_external_userid = resolve_customer_request(
+                repo,
+                unionid=query.unionid,
+                external_userid=query.external_userid,
+            )
+            resolved_query = query.model_copy(
+                update={
+                    "unionid": resolved_unionid or None,
+                    "external_userid": resolved_external_userid or None,
+                }
+            )
+            page = _repo_list_timeline_by_request(
+                repo,
+                resolved_query,
+                limit=query.limit,
+                offset=query.offset,
+            )
+            counter = getattr(repo, "count_timeline_by_unionid", None)
+            if resolved_unionid and callable(counter):
+                total = int(counter(resolved_unionid, {"event_type": query.event_type or ""}))
+            else:
+                total = len(_repo_list_timeline_by_request(repo, resolved_query, limit=None, offset=0))
             return {
                 "ok": True,
                 "timeline": {
@@ -811,9 +832,20 @@ class ListRecentMessagesQuery:
                 if not _customer_read_model_next_primary_enabled():
                     raise RuntimeError("customer read model next primary disabled")
                 repo = self._repo or build_customer_read_model_repository()
-                if not _repo_customer_exists_by_request(repo, query):
-                    raise NotFoundError("customer not found")
-                messages = _repo_list_recent_messages_by_request(repo, query)
+                _, resolved_unionid, resolved_external_userid = resolve_customer_request(
+                    repo,
+                    unionid=query.unionid,
+                    external_userid=query.external_userid,
+                )
+                messages = _repo_list_recent_messages_by_request(
+                    repo,
+                    query.model_copy(
+                        update={
+                            "unionid": resolved_unionid or None,
+                            "external_userid": resolved_external_userid or None,
+                        }
+                    ),
+                )
             except NotFoundError as exc:
                 if self._repo is None:
                     _close_repository(repo)
@@ -865,10 +897,20 @@ class ListRecentMessagesQuery:
             else:
                 archive_contract = {"ok": True, "skipped": True, "reason": "unionid_native_query"}
                 projection_contract = {"ok": True, "skipped": True, "reason": "unionid_native_query"}
-            customer = _repo_get_customer_by_request(repo, CustomerDetailRequest(external_userid=query.external_userid, unionid=query.unionid))
-            if not customer:
-                raise NotFoundError("customer not found")
-            messages = _repo_list_recent_messages_by_request(repo, query)[: query.limit]
+            _, resolved_unionid, resolved_external_userid = resolve_customer_request(
+                repo,
+                unionid=query.unionid,
+                external_userid=query.external_userid,
+            )
+            messages = _repo_list_recent_messages_by_request(
+                repo,
+                query.model_copy(
+                    update={
+                        "unionid": resolved_unionid or None,
+                        "external_userid": resolved_external_userid or None,
+                    }
+                ),
+            )
             return {
                 "ok": True,
                 "messages": messages,

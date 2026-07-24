@@ -52,6 +52,7 @@ def sidebar_owner_context_from_request(
         "owner_userid": viewer,
         "bind_by_userid": viewer,
         "owner_verified": True,
+        "corp_id": str(context.get("corp_id") or "").strip(),
         "external_userid": context_external,
         "source": str(context.get("source") or "signed_sidebar_owner_context"),
         "token_status": token_status,

@@ -15,7 +15,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from aicrm_next.identity_contact.dto import ResolvePersonIdentityRequest
-from aicrm_next.identity_contact.resolver import SQLAlchemyIdentityResolver, classify_identity_candidates
+from aicrm_next.identity_contact.resolver import SQLAlchemyIdentityResolver, resolved_identity_or_none
 from aicrm_next.shared.config import Settings, get_settings
 from aicrm_next.shared.db_session import get_session_factory
 from aicrm_next.shared.repository_provider import assert_repository_allowed
@@ -323,11 +323,19 @@ class SqlAlchemyCustomerReadModelRepository:
         return int(self._session.execute(stmt).scalar_one() or 0)
 
     def get_customer(self, external_userid: str) -> JsonDict | None:
-        for row in self._session.execute(select(customer_detail_snapshot_next)).mappings():
-            customer = self._detail_row_to_customer(row)
-            if str(customer.get("external_userid") or "") == external_userid:
-                return customer
-        return None
+        external_userid = str(external_userid or "").strip()
+        if not external_userid:
+            return None
+        if is_sqlite_session(self._session):
+            # SQLite is only the local-contract backend. Production resolves the
+            # external alias through crm_user_identity and never scans snapshots.
+            return self._get_sqlite_customer_by_external_userid(external_userid)
+        resolution = SQLAlchemyIdentityResolver(self._session).resolve(
+            ResolvePersonIdentityRequest(external_userid=external_userid)
+        )
+        identity = resolved_identity_or_none(resolution)
+        unionid = str((identity.unionid if identity else "") or "").strip()
+        return self.get_customer_by_unionid(unionid) if unionid else None
 
     get_customer_detail = get_customer
 
@@ -340,6 +348,13 @@ class SqlAlchemyCustomerReadModelRepository:
         if not row:
             return None
         return self._detail_row_to_customer(row)
+
+    def _get_sqlite_customer_by_external_userid(self, external_userid: str) -> JsonDict | None:
+        for row in self._session.execute(select(customer_detail_snapshot_next)).mappings():
+            customer = self._detail_row_to_customer(row)
+            if str(customer.get("external_userid") or "") == external_userid:
+                return customer
+        return None
 
     def _detail_row_to_customer(self, row) -> JsonDict:
         customer = dict(row["customer_json"] or {})
@@ -398,8 +413,12 @@ class SqlAlchemyCustomerReadModelRepository:
         elif event_types:
             stmt = stmt.where(customer_timeline_event_next.c.event_type.in_(event_types))
         stmt = stmt.order_by(customer_timeline_event_next.c.event_time.desc(), customer_timeline_event_next.c.id.desc())
+        if limit is not None:
+            stmt = stmt.limit(max(1, int(limit))).offset(max(0, int(offset or 0)))
+        elif offset:
+            stmt = stmt.offset(max(0, int(offset or 0)))
         rows = [self._timeline_row_to_dict(row) for row in self._session.execute(stmt).mappings()]
-        return _apply_page(rows, limit=limit, offset=offset)
+        return rows
 
     def count_timeline_by_unionid(self, unionid: str, filters: JsonDict | None = None) -> int:
         stmt = select(func.count()).select_from(customer_timeline_event_next).where(customer_timeline_event_next.c.unionid == unionid)
@@ -415,10 +434,12 @@ class SqlAlchemyCustomerReadModelRepository:
         stmt = (
             select(customer_recent_message_next)
             .where(customer_recent_message_next.c.unionid == unionid)
-            .order_by(customer_recent_message_next.c.send_time.desc(), customer_recent_message_next.c.id.asc())
+            .order_by(customer_recent_message_next.c.send_time.desc(), customer_recent_message_next.c.id.desc())
         )
+        if limit is not None:
+            stmt = stmt.limit(max(1, int(limit)))
         rows = [self._message_row_to_dict(row) for row in self._session.execute(stmt).mappings()]
-        return _apply_page(rows, limit=limit, offset=0)
+        return rows
 
     def customer_exists(self, external_userid: str) -> bool:
         return self.get_customer(external_userid) is not None
