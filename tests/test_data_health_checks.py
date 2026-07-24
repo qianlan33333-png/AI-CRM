@@ -1094,6 +1094,57 @@ def test_wecom_media_health_keeps_ordinary_invalid_source_actionable(monkeypatch
     assert result.evidence["invalid_source_count"] == 1
 
 
+def test_wecom_media_health_keeps_expired_cache_as_refreshable_evidence(monkeypatch) -> None:
+    from aicrm_next.data_health import checks
+
+    _patch_health_db(
+        monkeypatch,
+        {
+            "total_count": 111,
+            "ready_count": 5,
+            "refresh_due_count": 106,
+            "refreshing_count": 0,
+            "failed_count": 0,
+            "invalid_source_count": 0,
+            "canary_failed_count": 0,
+            "canary_invalid_source_count": 0,
+            "expired_count": 106,
+            "source_gap_count": 0,
+        },
+    )
+
+    result = checks._wecom_media_lease_health()
+
+    assert result.status == "ok"
+    assert result.evidence["expired_count"] == 106
+    assert "refreshable on demand" in result.summary
+
+
+def test_wecom_media_health_keeps_durable_source_gap_actionable(monkeypatch) -> None:
+    from aicrm_next.data_health import checks
+
+    _patch_health_db(
+        monkeypatch,
+        {
+            "total_count": 1,
+            "ready_count": 0,
+            "refresh_due_count": 0,
+            "refreshing_count": 0,
+            "failed_count": 0,
+            "invalid_source_count": 0,
+            "canary_failed_count": 0,
+            "canary_invalid_source_count": 0,
+            "expired_count": 0,
+            "source_gap_count": 1,
+        },
+    )
+
+    result = checks._wecom_media_lease_health()
+
+    assert result.status == "warn"
+    assert result.evidence["source_gap_count"] == 1
+
+
 @pytest.mark.postgres
 def test_id_validation_canary_health_isolation_executes_against_postgres(next_pg_schema) -> None:
     import psycopg
