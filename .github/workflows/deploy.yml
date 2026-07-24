@@ -509,30 +509,12 @@ jobs:
               --release-sha "$after_sha" \
               | tee /tmp/aicrm-customer-read-model-release-refresh.json
             unset AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED
-            welcome_terminal_confirmation="$(python3 -c 'import json; print(json.load(open("docs/releases/queue_all_scope_cutover.json", encoding="utf-8"))["pre_cutover_welcome_terminal_acknowledgement"]["confirmation"])')"
             export AICRM_QUEUE_TERMINAL_ACK_AUTHORIZED=1
-            python3 scripts/ops/acknowledge_pre_cutover_welcome_terminal.py \
-              --manifest docs/releases/queue_all_scope_cutover.json \
+            python3 scripts/ops/acknowledge_release_terminal_histories.py \
               --release-sha "$after_sha" \
-              --authorization-base-sha 7369fa6c7858165097f25dff26f324d109cf7b80 \
-              --confirmation "$welcome_terminal_confirmation" \
               --actor github-actions \
-              --reason 'authorized pre-cutover welcome 41050 no-replay history' \
               --apply \
-              | tee /tmp/aicrm-pre-cutover-welcome-terminal-acknowledgement.json
-            terminal_history_manifest=docs/releases/production_terminal_history_acknowledgements.json
-            private_message_confirmation="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["private_message_84061"]["confirmation"])' "$terminal_history_manifest")"
-            refund_not_enough_confirmation="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["wechat_refund_not_enough"]["confirmation"])' "$terminal_history_manifest")"
-            python3 scripts/ops/acknowledge_production_terminal_history.py \
-              --manifest "$terminal_history_manifest" \
-              --release-sha "$after_sha" \
-              --authorization-base-sha 8ab2f80ec8a6808a357a5911ace38128599a3d3d \
-              --private-confirmation "$private_message_confirmation" \
-              --refund-confirmation "$refund_not_enough_confirmation" \
-              --actor github-actions \
-              --reason 'operator-authorized production terminal histories; no replay' \
-              --apply \
-              | tee /tmp/aicrm-production-terminal-history-acknowledgements.json
+              | tee /tmp/aicrm-release-terminal-history-acknowledgements.json
             unset AICRM_QUEUE_TERMINAL_ACK_AUTHORIZED
             deploy_smoke_session_file="$(mktemp /tmp/aicrm-deploy-smoke-session.XXXXXX)"
             python3 scripts/ops/create_deploy_smoke_session.py issue \

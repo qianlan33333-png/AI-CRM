@@ -74,7 +74,7 @@ def test_empty_postgres_database_installs_and_reuses_alembic_head() -> None:
 
         assert first.baseline_applied is True
         assert first.revision_before is None
-        assert first.revision_after == "0139_queue_terminal_acknowledgement_scope"
+        assert first.revision_after == "0142_sidebar_recent_message_index"
         assert second.baseline_applied is False
         assert second.revision_before == first.revision_after
         assert second.revision_after == first.revision_after
@@ -198,7 +198,7 @@ def test_empty_postgres_database_installs_and_reuses_alembic_head() -> None:
             "expected_consumer_count",
         }
         assert all(row[1] == "NO" for row in manifest_columns)
-        assert runtime_control == (0, False, "standby", 20, "queue-v2-test-loopback", "test_loopback")
+        assert runtime_control == (0, False, "standby", 24, "queue-v2-test-loopback", "test_loopback")
         assert lane_policies == {
             "internal_financial": (1, "standby", True),
             "internal_general": (4, "standby", True),
@@ -207,6 +207,8 @@ def test_empty_postgres_database_installs_and_reuses_alembic_head() -> None:
             "wecom_bulk": (1, "standby", True),
             "wecom_interactive": (4, "standby", True),
             "wecom_media": (2, "standby", True),
+            "wecom_welcome": (2, "standby", True),
+            "wecom_welcome_ingress": (2, "standby", True),
         }
         assert policy_snapshot == ("queue-v2-test-loopback", 10, 30, 30, "blocked", "test_loopback")
         assert {(str(table_name), str(column_name)): str(is_nullable) for table_name, column_name, is_nullable in runtime_queue_columns} == {
@@ -297,7 +299,7 @@ def test_production_shape_alembic_database_upgrades_without_reapplying_baseline(
 
         assert result.baseline_applied is False
         assert result.revision_before == "0098_admin_session_revocation"
-        assert result.revision_after == "0139_queue_terminal_acknowledgement_scope"
+        assert result.revision_after == "0142_sidebar_recent_message_index"
         with psycopg.connect(database_url) as connection:
             preserved = connection.execute(
                 "SELECT wecom_userid, session_version FROM admin_users WHERE id = %s",
@@ -325,7 +327,7 @@ def test_upgrade_repairs_missing_or_partial_automation_agent_audit_tables_withou
 
         assert result.baseline_applied is False
         assert result.revision_before == "0123_required_physical_schema_repair"
-        assert result.revision_after == "0139_queue_terminal_acknowledgement_scope"
+        assert result.revision_after == "0142_sidebar_recent_message_index"
 
         expected_columns = {
             "automation_agent_output": {
@@ -998,7 +1000,7 @@ def test_identity_customer_cutover_holds_historical_work_without_replay() -> Non
         _upgrade_database_to(database_url, "head")
         with psycopg.connect(database_url) as connection:
             assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
-                "0139_queue_terminal_acknowledgement_scope",
+                "0142_sidebar_recent_message_index",
             )
 
 
@@ -1092,7 +1094,7 @@ def test_external_claim_scope_policy_upgrade_downgrade_and_reupgrade() -> None:
         _upgrade_database_to(database_url, "head")
         with psycopg.connect(database_url) as connection:
             assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
-                "0139_queue_terminal_acknowledgement_scope",
+                "0142_sidebar_recent_message_index",
             )
             assert connection.execute(
                 """
@@ -1140,7 +1142,7 @@ def test_execution_timeline_graph_indexes_upgrade_downgrade_and_reupgrade() -> N
                 "SELECT indexname FROM pg_indexes WHERE schemaname = 'public' AND indexname = ANY(%s)",
                 (sorted(expected_indexes),),
             ).fetchall()
-        assert version == ("0139_queue_terminal_acknowledgement_scope",)
+        assert version == ("0142_sidebar_recent_message_index",)
         assert control == (0, False)
         assert {row[0] for row in installed} == expected_indexes
 
@@ -1333,7 +1335,7 @@ def test_queue_validation_audits_are_append_only_and_survive_additive_rollback()
         _upgrade_database_to(database_url, "head")
         with psycopg.connect(database_url) as connection:
             assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
-                "0139_queue_terminal_acknowledgement_scope",
+                "0142_sidebar_recent_message_index",
             )
 
 

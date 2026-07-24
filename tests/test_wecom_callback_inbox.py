@@ -195,6 +195,7 @@ def test_ingest_time_sensitive_welcome_callback_stays_durable_until_worker_claim
     assert result["status"] == "received"
     assert processed == []
     assert repo.rows[0]["status"] == "received"
+    assert repo.rows[0]["lane"] == "wecom_welcome_ingress"
     assert repo.rows[0]["locked_at"] is None
     assert len(repo.preview_due(provider="wecom", limit=10)) == 1
 
@@ -220,6 +221,7 @@ def test_ingest_non_welcome_callback_stays_durable(monkeypatch):
     assert result["ack_boundary"] == "durable_inbox_only"
     assert result["status"] == "received"
     assert repo.rows[0]["status"] == "received"
+    assert repo.rows[0]["lane"] == "webhook_inbox"
     assert len(repo.preview_due(provider="wecom", limit=10)) == 1
 
 

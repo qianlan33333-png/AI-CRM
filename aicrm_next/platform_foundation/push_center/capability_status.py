@@ -65,7 +65,6 @@ class PushCapabilityStatusReadService:
             "readonly_reason": readonly_reason,
             "gate_problem": gate_problem,
             "reason": readonly_reason or gate_problem or ("" if enabled else "capability_disabled"),
-            "push_center_href": capability.push_center_href,
         }
 
 

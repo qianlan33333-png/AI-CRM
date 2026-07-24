@@ -487,23 +487,6 @@ repositories:
     table_writes:
       - domain_event_outbox
       - external_push_delivery
-  aicrm_next/growth_orchestration/repository.py:
-    capability_owner: aicrm_next.growth_orchestration
-    table_reads:
-      - ai_audience_member_current
-      - ai_audience_package
-      - automation_group_ops_plan_groups
-      - automation_group_ops_plan_nodes
-      - automation_group_ops_plans
-      - broadcast_jobs
-      - campaign_members
-      - campaign_steps
-      - campaigns
-      - cloud_broadcast_plan_recipients
-      - cloud_broadcast_plans
-      - external_effect_job
-      - outbound_tasks
-    table_writes: []
   aicrm_next/hxc_dashboard/postgres_repo.py:
     capability_owner: aicrm_next.hxc_dashboard
     table_reads:
@@ -677,6 +660,13 @@ repositories:
       - external_effect_attempt
     table_writes:
       - external_effect_attempt
+  aicrm_next/platform_foundation/external_effects/provider_attempt/repository.py:
+    capability_owner: aicrm_next.platform_foundation.external_effects
+    table_reads:
+      - external_effect_job
+    table_writes:
+      - external_effect_attempt
+      - external_effect_job
   aicrm_next/platform_foundation/external_effects/repo.py:
     capability_owner: aicrm_next.platform_foundation.external_effects
     table_reads:

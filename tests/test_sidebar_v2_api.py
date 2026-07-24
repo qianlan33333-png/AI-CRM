@@ -9,6 +9,7 @@ from sqlalchemy import event
 from sqlalchemy import create_engine, text
 
 from aicrm_next.commerce.repo import PostgresCommerceRepository
+from aicrm_next.customer_read_model import api as customer_read_model_api
 from aicrm_next.customer_read_model import sidebar_v2
 from aicrm_next.customer_read_model.application import GetCustomerContextQuery
 from aicrm_next.customer_read_model.dto import CustomerContextRequest
@@ -52,6 +53,36 @@ def _unauthenticated_client(monkeypatch) -> TestClient:
 def _assert_next(payload: dict) -> None:
     assert payload["route_owner"] == "ai_crm_next"
     assert payload["fallback_used"] is False
+
+
+def test_sidebar_owner_scope_returns_resolved_context_without_loading_activity() -> None:
+    requests: list[CustomerContextRequest] = []
+
+    class ContextQuery:
+        def __call__(self, request: CustomerContextRequest) -> dict:
+            requests.append(request)
+            return {
+                "ok": True,
+                "external_userid": "wm-canonical",
+                "unionid": "union-canonical",
+            }
+
+    context = customer_read_model_api._verify_sidebar_owner_scope(
+        ContextQuery(),
+        external_userid="wm-alias",
+        owner_userid="owner-a",
+        corp_id="ww-test",
+        owner_verified=True,
+    )
+
+    assert context.external_userid == "wm-canonical"
+    assert context.unionid == "union-canonical"
+    assert context.owner_userid == "owner-a"
+    assert context.corp_id == "ww-test"
+    assert context.owner_verified is True
+    assert len(requests) == 1
+    assert requests[0].external_userid == "wm-alias"
+    assert requests[0].include_activity is False
 
 
 def test_sidebar_workflow_title_uses_preserved_channel_link_tables_after_retirement() -> None:

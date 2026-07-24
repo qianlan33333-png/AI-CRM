@@ -251,9 +251,7 @@ def test_frontend_scripts_are_split_for_scoped_ci() -> None:
     package_json = _source(ROOT / "package.json")
 
     assert "\"test:frontend\": \"npm run test:frontend:all\"" in package_json
-    assert "\"test:frontend:push-center\"" in package_json
-    assert "\"test:frontend:group-ops\"" in package_json
-    assert "\"test:frontend:ops-plan\"" in package_json
-    assert "\"test:frontend:wecom\"" in package_json
-    assert "\"test:frontend:preview\"" in package_json
-    assert "\"test:frontend:business-pages\"" in package_json
+    assert "\"test:frontend:security\"" in package_json
+    assert "\"test:frontend:coupons\"" in package_json
+    assert "\"test:frontend:sidebar\"" in package_json
+    assert "test:frontend:push-center" not in package_json

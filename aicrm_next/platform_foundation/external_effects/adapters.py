@@ -863,10 +863,14 @@ class WeComWelcomeMessageAdapter:
         }
 
     def _execution_gate_error(self, job: ExternalEffectJob, payload: dict[str, Any]) -> str:
+        from .deadlines import provider_deadline_elapsed
+
         if job.execution_mode in {"disabled", "shadow", "plan_only", "execute_dryrun"}:
             return "shadow_only"
         if job.effect_type != WECOM_WELCOME_MESSAGE_SEND:
             return "unsupported_effect_type"
+        if provider_deadline_elapsed(payload):
+            return "provider_deadline_elapsed"
         external_userid = str(payload.get("external_userid") or "").strip()
         if _wecom_target_mismatch(job, payload, external_userid):
             return "target_mismatch"

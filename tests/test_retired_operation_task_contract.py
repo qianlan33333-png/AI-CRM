@@ -32,22 +32,17 @@ def test_retired_operation_task_label_is_not_special_cased_in_admin_jobs() -> No
 
 def test_retired_admin_jobs_deferred_runner_is_removed() -> None:
     repository_source = (PROJECT_ROOT / "aicrm_next" / "admin_jobs" / "repository.py").read_text(encoding="utf-8")
-    template_source = (PROJECT_ROOT / "aicrm_next" / "admin_jobs" / "templates" / "admin_console" / "jobs.html").read_text(encoding="utf-8")
-    frontend_jobs_source = (PROJECT_ROOT / "aicrm_next" / "frontend_compat" / "templates" / "admin_console" / "jobs.html").read_text(encoding="utf-8")
-    frontend_operations_source = (PROJECT_ROOT / "aicrm_next" / "frontend_compat" / "templates" / "admin_console" / "operations.html").read_text(encoding="utf-8")
+    admin_jobs_template = PROJECT_ROOT / "aicrm_next" / "admin_jobs" / "templates" / "admin_console" / "jobs.html"
+    frontend_jobs_template = PROJECT_ROOT / "aicrm_next" / "frontend_compat" / "templates" / "admin_console" / "jobs.html"
 
     assert "def run_due_deferred_jobs" not in repository_source
     assert "UPDATE user_ops_deferred_jobs" not in repository_source
-    for source in (template_source, frontend_jobs_source, frontend_operations_source):
-        assert 'name="action" value="run-deferred-jobs"' not in source
-        assert "待处理作业执行已退场" in source
+    assert not admin_jobs_template.exists()
+    assert not frontend_jobs_template.exists()
 
 
 def test_retired_admin_jobs_webhook_retry_runner_is_removed() -> None:
-    template_source = (PROJECT_ROOT / "aicrm_next" / "admin_jobs" / "templates" / "admin_console" / "jobs.html").read_text(encoding="utf-8")
-    frontend_jobs_source = (PROJECT_ROOT / "aicrm_next" / "frontend_compat" / "templates" / "admin_console" / "jobs.html").read_text(encoding="utf-8")
+    routes_source = (PROJECT_ROOT / "aicrm_next" / "admin_jobs" / "routes.py").read_text(encoding="utf-8")
 
-    for source in (template_source, frontend_jobs_source):
-        assert 'name="action" value="run-webhook-retries"' not in source
-        assert 'name="action" value="retry-webhook-delivery"' not in source
-        assert "Webhook 重试执行已退场" in source
+    assert '"/api/admin/jobs/webhook-deliveries/run"' not in routes_source
+    assert '"/api/admin/jobs/webhook-deliveries/{delivery_id}/retry"' not in routes_source

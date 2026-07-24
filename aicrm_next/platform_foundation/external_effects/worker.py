@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 import logging
-from typing import Any
+from typing import Any, Callable, Mapping
 from urllib.parse import urlparse
 from uuid import uuid4
 
@@ -94,12 +94,17 @@ class ExternalEffectWorker:
         adapter_registry: ExternalEffectAdapterRegistry | None = None,
         *,
         continuation_registry: ExternalEffectContinuationRegistry | None = None,
+        critical_post_commit_hook: Callable[
+            [ExternalEffectJob, ExternalEffectDispatchResult], Mapping[str, Any]
+        ]
+        | None = None,
         locked_by: str = "",
         lease_seconds: int = 300,
     ):
         self._repo = repository or build_external_effect_repository()
         self._adapters = adapter_registry or DEFAULT_ADAPTER_REGISTRY
         self._continuations = continuation_registry or EMPTY_EXTERNAL_EFFECT_CONTINUATION_REGISTRY
+        self._critical_post_commit_hook = critical_post_commit_hook
         self._locked_by = locked_by or f"external-effect-worker-{uuid4().hex[:8]}"
         self._lease_seconds = max(30, min(int(lease_seconds or 300), 3600))
 
@@ -114,6 +119,7 @@ class ExternalEffectWorker:
             "unknown_after_dispatch_count": 0,
             "failed_count": 0,
             "blocked_count": 0,
+            "expired_count": 0,
             "lost_lease_count": 0,
         }
 
@@ -201,12 +207,14 @@ class ExternalEffectWorker:
                 counts["unknown_after_dispatch_count"] += 1
             elif status == "blocked":
                 counts["blocked_count"] += 1
+            elif status == "expired":
+                counts["expired_count"] += 1
             elif status.startswith("failed"):
                 counts["failed_count"] += 1
             if result.get("error") == "lost_lease":
                 counts["lost_lease_count"] += 1
             real_external_call_executed = real_external_call_executed or bool(result.get("real_external_call_executed"))
-        ok = not any(counts[key] for key in ("unknown_after_dispatch_count", "failed_count", "blocked_count", "lost_lease_count"))
+        ok = not any(counts[key] for key in ("unknown_after_dispatch_count", "failed_count", "blocked_count", "expired_count", "lost_lease_count"))
         return {
             "ok": ok,
             "exit_code": 0 if ok else 1,
@@ -332,6 +340,20 @@ class ExternalEffectWorker:
             )
             if begun is None:
                 current = self._repo.get_job(job.id)
+                expired = self._repo.expire_provider_deadline(job=job)
+                if expired is not None:
+                    return {
+                        "ok": False,
+                        "error": "provider_deadline_elapsed",
+                        "job": expired.to_dict(),
+                        "post_success_continuation": {
+                            "applicable": False,
+                            "reason": "provider_deadline_elapsed",
+                        },
+                        "completion_event_queued": False,
+                        "settlement_event_queued": True,
+                        "real_external_call_executed": False,
+                    }
                 if current is not None and current.status == "dispatching" and current.cancel_requested_at and current.lease_token == job.lease_token:
                     cancelled = self._repo.settle_cancel(job=current)
                     if cancelled is not None:
@@ -391,7 +413,10 @@ class ExternalEffectWorker:
                 )
 
         dispatch_result = normalize_dispatch_result(job, dispatch_result)
-        continuation = self._run_post_success_continuations(job, dispatch_result)
+        continuation = {
+            "applicable": False,
+            "reason": "dispatch_not_persisted",
+        }
 
         rate_limited = is_rate_limited(dispatch_result)
         if (
@@ -461,6 +486,7 @@ class ExternalEffectWorker:
                 "real_external_call_executed": dispatch_result.real_external_call_executed,
             }
         updated, attempt = completed
+        continuation = self._run_post_success_continuations(updated, dispatch_result)
         return {
             "ok": updated.status in {"succeeded", "simulated"},
             "job": updated.to_dict(),
@@ -502,6 +528,30 @@ class ExternalEffectWorker:
     def _run_post_success_continuations(self, job: ExternalEffectJob, dispatch_result) -> dict[str, Any]:
         if dispatch_result.status != "succeeded":
             return {"applicable": False, "reason": "dispatch_not_succeeded"}
+        if self._critical_post_commit_hook is not None:
+            try:
+                result = dict(self._critical_post_commit_hook(job, dispatch_result))
+            except Exception as exc:
+                safe_log_exception(
+                    LOGGER,
+                    "critical external effect post-commit continuation failed",
+                    exc,
+                    external_effect_job_id=int(job.id or 0),
+                    effect_type=job.effect_type,
+                )
+                return {
+                    "applicable": True,
+                    "ok": False,
+                    "reason": "critical_post_commit_hook_failed",
+                    "error": exc.__class__.__name__,
+                    "durable_completion_event_pending": True,
+                }
+            if result.get("applicable"):
+                return {
+                    **result,
+                    "post_commit": True,
+                    "durable_completion_event_pending": True,
+                }
         return {
             "applicable": False,
             "reason": "durable_completion_event_pending",

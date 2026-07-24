@@ -11,6 +11,9 @@ RUNTIME_DIR = ROOT / ("wecom_ability" + "_service")
 RUNTIME_UNITS_HELPER = "python3 scripts/ops/manage_production_runtime_units.py"
 PRODUCTION_DEPLOY_WORKFLOW = ROOT / ".github" / "workflows" / "deploy.yml"
 PRODUCTION_PROMOTION_WORKFLOW = ROOT / ".github" / "workflows" / "promote-production.yml"
+TERMINAL_ACKNOWLEDGEMENT_ORCHESTRATOR = (
+    ROOT / "scripts" / "ops" / "acknowledge_release_terminal_histories.py"
+)
 
 
 def _git(cwd: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -41,7 +44,7 @@ def test_deploy_acknowledges_only_authorized_pre_cutover_welcome_before_green_he
 
     refresh_index = workflow.index("scripts/ops/run_release_customer_read_model_refresh.py")
     acknowledgement_index = workflow.index(
-        "scripts/ops/acknowledge_pre_cutover_welcome_terminal.py",
+        "scripts/ops/acknowledge_release_terminal_histories.py",
         refresh_index,
     )
     apply_index = workflow.index("--apply", acknowledgement_index)
@@ -49,8 +52,6 @@ def test_deploy_acknowledges_only_authorized_pre_cutover_welcome_before_green_he
 
     assert refresh_index < acknowledgement_index < apply_index < admin_health_index
     assert "AICRM_QUEUE_TERMINAL_ACK_AUTHORIZED=1" in workflow
-    assert "pre_cutover_welcome_terminal_acknowledgement" in workflow
-    assert "authorized pre-cutover welcome 41050 no-replay history" in workflow
     acknowledgement_block = workflow[acknowledgement_index:admin_health_index]
     assert "send_welcome_msg" not in acknowledgement_block
     assert "requeue" not in acknowledgement_block.lower()
@@ -58,11 +59,10 @@ def test_deploy_acknowledges_only_authorized_pre_cutover_welcome_before_green_he
 
 def test_deploy_acknowledges_only_exact_authorized_production_terminal_histories_before_green_health() -> None:
     workflow = PRODUCTION_DEPLOY_WORKFLOW.read_text(encoding="utf-8")
+    orchestrator = TERMINAL_ACKNOWLEDGEMENT_ORCHESTRATOR.read_text(encoding="utf-8")
 
-    welcome_index = workflow.index("scripts/ops/acknowledge_pre_cutover_welcome_terminal.py")
     acknowledgement_index = workflow.index(
-        "scripts/ops/acknowledge_production_terminal_history.py",
-        welcome_index,
+        "scripts/ops/acknowledge_release_terminal_histories.py",
     )
     apply_index = workflow.index("--apply", acknowledgement_index)
     authorization_unset_index = workflow.index(
@@ -74,16 +74,21 @@ def test_deploy_acknowledges_only_exact_authorized_production_terminal_histories
         authorization_unset_index,
     )
 
-    assert welcome_index < acknowledgement_index < apply_index
-    assert apply_index < authorization_unset_index < admin_health_index
+    assert acknowledgement_index < apply_index < authorization_unset_index < admin_health_index
     acknowledgement_block = workflow[acknowledgement_index:admin_health_index]
-    assert "production_terminal_history_acknowledgements.json" in workflow
-    assert "private_message_84061" in workflow
-    assert "wechat_refund_not_enough" in workflow
-    assert "operator-authorized production terminal histories; no replay" in workflow
+    assert "queue_all_scope_cutover.json" in orchestrator
+    assert "production_terminal_history_acknowledgements.json" in orchestrator
+    assert "production_welcome_timeout_acknowledgement.json" in orchestrator
+    assert "acknowledge_pre_cutover_welcome_terminal" in orchestrator
+    assert "acknowledge_production_terminal_history" in orchestrator
+    assert "acknowledge_production_welcome_timeout" in orchestrator
+    assert "operator-authorized production terminal histories; no replay" in orchestrator
+    assert "operator-authorized welcome job 2157 timeout history; no replay" in orchestrator
     assert "requeue" not in acknowledgement_block.lower()
-    assert "refund_request(" not in acknowledgement_block
-    assert "send_private_message(" not in acknowledgement_block
+    assert "requeue" not in orchestrator.lower()
+    assert "refund_request(" not in orchestrator
+    assert "send_private_message(" not in orchestrator
+    assert "send_welcome_msg(" not in orchestrator
 
 
 def test_remote_deploy_holds_target_specific_server_lock_before_sha_checks() -> None:

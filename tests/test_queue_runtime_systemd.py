@@ -53,3 +53,12 @@ def test_queue_runtime_execute_mode_requires_positive_generation() -> None:
     script = (ROOT / "scripts" / "run_execution_runtime.py").read_text(encoding="utf-8")
     assert 'if args.execute and args.generation <= 0:' in script
     assert 'parser.error("--execute requires --generation > 0")' in script
+
+
+def test_queue_runtime_reserves_end_to_end_welcome_lanes() -> None:
+    script = (ROOT / "scripts" / "run_execution_runtime.py").read_text(encoding="utf-8")
+
+    assert '"wecom_welcome_ingress", "webhook_inbox"' in script
+    assert '"wecom_welcome",' in script
+    assert "WECOM_WELCOME_FALLBACK_SECONDS" in script
+    assert "critical_post_commit_hook=run_welcome_realtime_post_commit" in script

@@ -7,14 +7,12 @@ from zoneinfo import ZoneInfo
 from typing import Any
 
 from aicrm_next.admin_jobs_archive_sync_gateway import execute_archive_sync
-from aicrm_next.shared.retired_contracts import retired_external_effect_payload
 from aicrm_next.shared.runtime_settings import runtime_setting
 from aicrm_next.shared.sensitive_data import redact_sensitive_data, redact_sensitive_text
 
 from .domain import (
     BROADCAST_SOURCE_TYPES,
     BROADCAST_STATUSES,
-    JOB_TABS,
     broadcast_business_domain_label,
     broadcast_channel_label,
     broadcast_source_type_label,
@@ -30,12 +28,6 @@ from .repository import AdminJobsRepository, build_admin_jobs_repository, clean_
 
 TARGET_JOBS_ACTION = "jobs_console_action"
 TARGET_BROADCAST_JOB = "broadcast_job"
-
-
-def build_legacy_disabled_payload(legacy_key: str, *, error: str, extra: dict[str, Any] | None = None) -> dict[str, Any]:
-    payload = retired_external_effect_payload(legacy_key, error=error)
-    payload.update(extra or {})
-    return payload
 
 
 def _operator(value: Any) -> str:
@@ -60,18 +52,6 @@ def _audit(
         before=before or {},
         after=after or {},
     )
-
-
-def jobs_tabs(active_key: str) -> list[dict[str, Any]]:
-    active = normalized_text(active_key) or "overview"
-    return [
-        {
-            **item,
-            "active": item["key"] == active,
-            "href": normalized_text(item.get("href")) or f"/admin/jobs?tab={item['key']}",
-        }
-        for item in JOB_TABS
-    ]
 
 
 def _archive_sync_form_defaults() -> dict[str, str]:
@@ -180,10 +160,6 @@ def _webhook_row_view(row: dict[str, Any]) -> dict[str, Any]:
 def build_jobs_payload(args: Any, repo: AdminJobsRepository | None = None) -> dict[str, Any]:
     repo = repo or build_admin_jobs_repository()
     raw_args = dict(args or {})
-    active_tab = normalized_text(raw_args.get("tab")) or "overview"
-    if active_tab not in {item["key"] for item in JOB_TABS}:
-        active_tab = "overview"
-
     archive_filters = {
         "status": normalized_text(raw_args.get("archive_status") or raw_args.get("status")),
         "limit": normalized_int(raw_args.get("archive_limit") or raw_args.get("limit"), default=20),
@@ -265,8 +241,6 @@ def build_jobs_payload(args: Any, repo: AdminJobsRepository | None = None) -> di
     ]
 
     return {
-        "active_tab": active_tab,
-        "tabs": jobs_tabs(active_tab),
         "summary_cards": summary_cards,
         "archive_runtime": {
             "last_sync_run": last_sync_run,
@@ -434,12 +408,6 @@ def execute_jobs_action(*, action: str, form: Any, operator: str, repo: AdminJob
             repo, operator=operator_value, action_type="ack_message_batch", target_type=TARGET_JOBS_ACTION, target_id=str(batch_id), before=before, after=result
         )
         return result
-    if action == "run-deferred-jobs":
-        return retired_external_effect_payload("old_admin_jobs_deferred_run", error="legacy_deferred_jobs_runner_disabled")
-    if action == "retry-webhook-delivery":
-        return retired_external_effect_payload("old_customer_webhook_delivery_retry", error="legacy_webhook_retry_disabled")
-    if action == "run-webhook-retries":
-        return retired_external_effect_payload("old_customer_webhook_delivery_retry", error="legacy_webhook_retry_disabled")
     raise ValueError("不支持的同步任务操作")
 
 
@@ -622,7 +590,7 @@ def build_broadcast_job_detail_payload(
             "outbound_tasks": 1 if job.get("outbound_task_id") else 0,
             "external_effect_jobs": 1 if job.get("external_effect_job_id") else 0,
         },
-        "push_center_url": f"/admin/push-center/jobs/broadcast_job:{int(job_id)}",
+        "push_center_url": f"/api/admin/push-center/jobs/broadcast_job:{int(job_id)}",
         "events_truncated": event_total > len(events),
         "route_owner": "ai_crm_next",
         "real_external_call_executed": False,

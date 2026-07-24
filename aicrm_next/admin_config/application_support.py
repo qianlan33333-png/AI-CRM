@@ -6,7 +6,7 @@ import os
 from typing import TYPE_CHECKING, Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from aicrm_next.admin_jobs.routes import ensure_admin_action_token
+from aicrm_next.shared.admin_action_runtime import ensure_admin_action_token
 from aicrm_next.platform_foundation.external_effects.jobs import (
     SCHEDULER_BATCH_SIZE_KEY,
     SCHEDULER_ENABLED_KEY,
@@ -766,31 +766,6 @@ def _capability_enabled_from_value(value: str, *, default: bool = False) -> bool
     if not _text(value):
         return bool(default)
     return _bool(value)
-
-
-def _capability_queue_counts(counts: dict[str, Any]) -> dict[str, int]:
-    return {
-        "total": int(counts.get("total") or 0),
-        "queued": int(counts.get("queued") or 0),
-        "planned": int(counts.get("planned") or 0),
-        "succeeded": int(counts.get("succeeded") or 0),
-        "blocked": int(counts.get("blocked") or 0),
-        "failed": int(counts.get("failed") or 0),
-        "cancelled": int(counts.get("cancelled") or 0),
-    }
-
-
-def _health_for_capability(*, capability: PushCapability, enabled: bool, counts: dict[str, int], last_error_code: str) -> tuple[str, str]:
-    abnormal_count = counts["blocked"] + counts["failed"]
-    if capability.readonly_reason:
-        return "只读", "neutral"
-    if not capability.supports_real_execution:
-        return "暂未接入", "neutral"
-    if not enabled:
-        return "未开启", "warn"
-    if abnormal_count or last_error_code:
-        return "有异常", "danger"
-    return "正常", "ok"
 
 
 def _effect_type_union_for_enabled_capabilities(read_service: "AdminConfigReadService") -> list[str]:

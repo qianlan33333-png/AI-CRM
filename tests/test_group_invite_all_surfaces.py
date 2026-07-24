@@ -63,5 +63,6 @@ def test_operator_facing_controls_select_groups_instead_of_invite_materials() ->
     assert "+选择群聊" in agent_editor
     assert "+群邀请" not in composer
     assert "+群邀请" not in agent_editor
-    assert '"label": "群邀请托管"' in navigation
+    assert '"label": "群邀请托管"' not in navigation
+    assert '"/admin/group-invite-library"' not in navigation
     assert '"label": "群邀请卡片库"' not in navigation

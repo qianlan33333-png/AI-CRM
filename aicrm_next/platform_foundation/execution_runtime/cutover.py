@@ -119,6 +119,8 @@ ACTIVATABLE_LANES = frozenset(
         "internal_general",
         "internal_financial",
         "webhook_inbox",
+        "wecom_welcome_ingress",
+        "wecom_welcome",
         "wecom_interactive",
         "wecom_bulk",
         "wecom_media",

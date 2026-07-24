@@ -3,6 +3,10 @@ from __future__ import annotations
 import logging
 import os
 import re
+from contextlib import contextmanager
+from contextvars import ContextVar
+from dataclasses import dataclass, field
+from typing import Iterator
 
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
@@ -19,6 +23,63 @@ from aicrm_next.shared.safe_logging import safe_log_exception
 
 LOGGER = logging.getLogger(__name__)
 _TRUE_VALUES = {"1", "true", "yes", "y", "on"}
+
+
+@dataclass
+class _RequestSettingsSnapshot:
+    loaded: bool = False
+    values: dict[str, str] = field(default_factory=dict)
+
+
+_REQUEST_SETTINGS_SNAPSHOT: ContextVar[_RequestSettingsSnapshot | None] = ContextVar(
+    "aicrm_request_settings_snapshot",
+    default=None,
+)
+
+
+@contextmanager
+def runtime_settings_request_scope() -> Iterator[None]:
+    """Reuse one non-logging app-settings snapshot within a single request."""
+
+    token = _REQUEST_SETTINGS_SNAPSHOT.set(_RequestSettingsSnapshot())
+    try:
+        yield
+    finally:
+        _REQUEST_SETTINGS_SNAPSHOT.reset(token)
+
+
+def invalidate_runtime_settings_request_snapshot() -> None:
+    """Force a fresh snapshot after an in-request app-settings write."""
+
+    snapshot = _REQUEST_SETTINGS_SNAPSHOT.get()
+    if snapshot is None:
+        return
+    snapshot.loaded = False
+    snapshot.values.clear()
+
+
+def _request_settings_snapshot() -> _RequestSettingsSnapshot | None:
+    snapshot = _REQUEST_SETTINGS_SNAPSHOT.get()
+    if snapshot is None or snapshot.loaded:
+        return snapshot
+    try:
+        with get_engine().connect() as conn:
+            rows = conn.execute(text("SELECT key, value FROM app_settings")).mappings().all()
+        snapshot.values = {
+            str(row.get("key") or "").strip(): str(row.get("value") or "").strip()
+            for row in rows
+            if str(row.get("key") or "").strip()
+        }
+    except (AttributeError, SQLAlchemyError, RuntimeError) as exc:
+        safe_log_exception(
+            LOGGER,
+            "runtime app_settings request snapshot unavailable",
+            exc,
+            level=logging.DEBUG,
+        )
+        snapshot.values = {}
+    snapshot.loaded = True
+    return snapshot
 
 
 def _cutover_enabled(conn=None) -> bool:
@@ -59,6 +120,21 @@ def runtime_setting(key: str, default: str = "") -> str:
         return default
     fallback = str(default or "").strip()
     cutover_enabled = str(os.getenv(SECRET_REFERENCE_CUTOVER_KEY, "") or "").strip().lower() in _TRUE_VALUES
+    request_snapshot = _request_settings_snapshot()
+    if request_snapshot is not None:
+        stored_value = request_snapshot.values.get(normalized_key)
+        if not cutover_enabled:
+            cutover_enabled = (
+                request_snapshot.values.get(SECRET_REFERENCE_CUTOVER_KEY, "").strip().lower()
+                in _TRUE_VALUES
+            )
+        candidate = stored_value if stored_value is not None else str(os.getenv(normalized_key, fallback) or "")
+        return _resolve_candidate(
+            normalized_key,
+            candidate,
+            default=fallback,
+            cutover_enabled=cutover_enabled,
+        )
     try:
         with get_engine().connect() as conn:
             row = conn.execute(

@@ -2,17 +2,13 @@ from __future__ import annotations
 
 from datetime import date, datetime, time
 from decimal import Decimal
-from pathlib import Path
 from typing import Any
-from urllib.parse import quote
 
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
+from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 
-from aicrm_next.shared.admin_action_runtime import ensure_admin_action_token, validate_admin_action_token
-from aicrm_next.admin_shell import admin_path_for, shell_context
+from aicrm_next.shared.admin_action_runtime import validate_admin_action_token
 from aicrm_next.platform_foundation.execution_runtime.api_command import (
     QueueCommandPayloadError,
     accepted_queue_command_payload,
@@ -35,9 +31,6 @@ from .worker import InternalEventWorker
 
 router = APIRouter()
 ROUTE_OWNER = "ai_crm_next"
-_TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
-_FRONTEND_COMPAT_TEMPLATES_DIR = Path(__file__).resolve().parents[2] / "frontend_compat" / "templates"
-templates = Jinja2Templates(directory=[_TEMPLATES_DIR, _FRONTEND_COMPAT_TEMPLATES_DIR])
 _INTERNAL_LANES = frozenset({"internal_general", "internal_financial"})
 
 
@@ -96,10 +89,6 @@ def _json_safe(value: Any) -> Any:
 def _action_or_internal_token_error(request: Request, payload: dict[str, Any]) -> str:
     token = _text(request.headers.get("X-Admin-Action-Token")) or _text(payload.get("admin_action_token"))
     return validate_admin_action_token(token, request=request)
-
-
-def _authenticated_actor(request: Request) -> str:
-    return _text(authenticated_queue_actor(request))
 
 
 def _runtime_queue_summary() -> dict[str, Any]:
@@ -213,65 +202,6 @@ async def _accepted_action_response(
     except ValueError:
         return _json({"ok": False, "error": "queue_command_target_not_eligible"}, status_code=409)
     return _json(accepted_queue_command_payload(result, command), status_code=202)
-
-
-def _page_context(request: Request) -> dict[str, Any]:
-    context = shell_context(
-        request=request,
-        page_title="事件中心",
-        page_summary="查看内部业务事实和每个消费者的执行状态。",
-        active_endpoint="api.admin_internal_events_page",
-    )
-    context.update(
-        {
-            "breadcrumbs": [{"label": "客户管理后台", "href": "/"}, {"label": "事件中心", "href": ""}],
-            "page_actions": [
-                {"label": "刷新", "href": "#refresh", "variant": "secondary"},
-                {"label": "导出当前页", "href": "#export", "variant": "secondary"},
-            ],
-            "operator_actor": _authenticated_actor(request),
-            "admin_action_token": ensure_admin_action_token(),
-            "url_for": admin_path_for,
-        }
-    )
-    return context
-
-
-@router.get("/admin/internal-events", name="api.admin_internal_events_page", response_class=HTMLResponse)
-def admin_internal_events_page(request: Request):
-    selected_event_id = _text(request.query_params.get("event_id"))
-    if selected_event_id:
-        encoded = quote(selected_event_id, safe="")
-        return RedirectResponse(f"/admin/internal-events/{encoded}", status_code=303)
-    return templates.TemplateResponse(request, "admin_console/internal_events.html", _page_context(request))
-
-
-@router.get(
-    "/admin/internal-events/{event_id}",
-    name="api.admin_internal_event_page",
-    response_class=HTMLResponse,
-)
-def admin_internal_event_page(event_id: str, request: Request):
-    context = shell_context(
-        request=request,
-        page_title="事件详情",
-        page_summary="查看单个业务事实、消费者执行与下游对账信息。",
-        active_endpoint="api.admin_internal_events_page",
-    )
-    context.update(
-        {
-            "breadcrumbs": [
-                {"label": "客户管理后台", "href": "/"},
-                {"label": "事件中心", "href": "/admin/internal-events"},
-                {"label": _text(event_id), "href": ""},
-            ],
-            "event_id": _text(event_id),
-            "operator_actor": _authenticated_actor(request),
-            "admin_action_token": ensure_admin_action_token(),
-            "url_for": admin_path_for,
-        }
-    )
-    return templates.TemplateResponse(request, "admin_console/internal_event_detail.html", context)
 
 
 @router.get("/api/admin/internal-events")

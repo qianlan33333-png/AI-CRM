@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 import psycopg
@@ -12,6 +13,7 @@ from aicrm_next.channel_entry.welcome_media_effects_repository import (
     WelcomeEffectGraphRequest,
 )
 from aicrm_next.platform_foundation.external_effects import WECOM_WELCOME_MESSAGE_SEND
+from aicrm_next.platform_foundation.external_effects.models import ExternalEffectDispatchResult
 from aicrm_next.platform_foundation.external_effects.adapters import (
     ExternalEffectAdapterRegistry,
     WeComWelcomeMessageAdapter,
@@ -20,6 +22,7 @@ from aicrm_next.platform_foundation.external_effects.repo import SQLAlchemyExter
 from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
 from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
 from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.external_effect_composition import run_welcome_realtime_post_commit
 
 
 pytestmark = pytest.mark.usefixtures("next_pg_schema")
@@ -175,7 +178,8 @@ def test_callback_graph_plans_all_media_atomically_and_is_idempotent():
     with _connect() as connection:
         rows = connection.execute(
             """
-            SELECT effect_type, status, lane, parent_execution_id, payload_json, payload_summary_json
+            SELECT effect_type, status, lane, priority, max_attempts,
+                   parent_execution_id, payload_json, payload_summary_json
             FROM external_effect_job
             WHERE business_type = 'channel_welcome_effect_graph'
               AND business_id = %s
@@ -190,7 +194,10 @@ def test_callback_graph_plans_all_media_atomically_and_is_idempotent():
     assert len(rows) == 4
     assert dependencies == 3
     assert all(row["parent_execution_id"] == planned["execution_id"] for row in rows)
-    assert sorted(row["lane"] for row in rows) == ["wecom_interactive", "wecom_media", "wecom_media", "wecom_media"]
+    assert {row["lane"] for row in rows} == {"wecom_welcome"}
+    assert all(row["priority"] == 1 for row in rows)
+    assert all(row["max_attempts"] == 1 for row in rows)
+    assert all(row["payload_json"].get("provider_deadline_at") for row in rows)
     final = next(row for row in rows if row["effect_type"] == WECOM_WELCOME_MESSAGE_SEND)
     assert final["status"] == "planned"
     assert final["payload_json"]["attachments"][-1]["link"]["url"].startswith("https://work.weixin.qq.com/gm/")
@@ -289,6 +296,139 @@ def test_upload_completion_releases_once_after_restart_and_one_welcome_attempt_c
             (planned["final_effect_job_id"],),
         ).fetchone()["count"]
     assert attempt_count == 1
+
+
+def test_upload_worker_releases_final_on_post_commit_without_waiting_for_completion_fanout(monkeypatch):
+    materials = _seed_materials()
+    request = WelcomeEffectGraphRequest(
+        **{
+            **_request("channel_entry:welcome-postgres-post-commit", materials).__dict__,
+            "attachments": ({"msgtype": "image", "material_id": materials["image"]},),
+        }
+    )
+    planned = SQLAlchemyWelcomeEffectGraphRepository(get_session_factory()).plan(request)
+    upload_id = planned["upload_effect_job_ids"][0]
+    effects = SQLAlchemyExternalEffectRepository(get_session_factory())
+    upload_job = effects.get_job(upload_id)
+    assert upload_job is not None
+    monkeypatch.setenv("AICRM_WECOM_CANARY_ALLOWED_MEDIA_TARGETS", upload_job.target_id)
+    authorized = ExternalEffectService(effects).authorize_allowlisted_canary(
+        upload_id,
+        actor="pytest",
+        reason="welcome realtime media dependency",
+        expected_version=upload_job.row_version,
+    )
+    assert authorized is not None
+
+    class MediaAdapter:
+        def dispatch(self, job):
+            with _connect() as connection:
+                connection.execute(
+                    "UPDATE image_library SET thumb_media_id = %s WHERE id = %s",
+                    ("provider-post-commit-media", int(job.payload_json["material_id"])),
+                )
+            return ExternalEffectDispatchResult(
+                status="succeeded",
+                adapter_mode="test_fake",
+                request_summary={"material_id": int(job.payload_json["material_id"])},
+                response_summary={"provider_result_received": True},
+                real_external_call_executed=True,
+                provider_result_received=True,
+            )
+
+    dispatched = ExternalEffectWorker(
+        effects,
+        ExternalEffectAdapterRegistry({"wecom_media_upload": MediaAdapter()}),
+        locked_by="welcome-post-commit-worker",
+        critical_post_commit_hook=run_welcome_realtime_post_commit,
+    ).dispatch_one(upload_id)
+
+    assert dispatched["job"]["status"] == "succeeded"
+    assert dispatched["post_success_continuation"]["released"] is True
+    assert dispatched["post_success_continuation"]["post_commit"] is True
+    with _connect() as connection:
+        final = connection.execute(
+            "SELECT status, payload_json FROM external_effect_job WHERE id = %s",
+            (planned["final_effect_job_id"],),
+        ).fetchone()
+        completion_outbox_count = connection.execute(
+            """
+            SELECT COUNT(*) AS count FROM internal_event_outbox
+            WHERE event_type = 'external_effect.completed'
+              AND payload_json->>'job_id' = %s
+            """,
+            (str(upload_id),),
+        ).fetchone()["count"]
+    assert final["status"] == "queued"
+    assert final["payload_json"]["attachments"] == [
+        {"msgtype": "image", "image": {"media_id": "provider-post-commit-media"}}
+    ]
+    assert completion_outbox_count == 1
+
+
+def test_postgres_deadline_expiry_is_terminal_before_provider_boundary():
+    request = WelcomeEffectGraphRequest(
+        idempotency_key="channel_entry:welcome-postgres-expired-deadline",
+        channel_id=7001,
+        corp_id="ww-postgres",
+        external_userid="wm-postgres-welcome",
+        follow_user_userid="owner-postgres",
+        welcome_code="welcome-postgres-expired-code",
+        target_type="external_user",
+        target_id="wm-postgres-welcome",
+        target_payload={},
+        text_content="This must never be sent",
+        attachments=(),
+        actor_id="pytest",
+        source_event_id="callback-event-expired-postgres",
+        scene_value="scene-postgres",
+        callback_received_at=datetime.now(timezone.utc) - timedelta(seconds=30),
+        provider_deadline_at=datetime.now(timezone.utc) - timedelta(seconds=1),
+    )
+    planned = SQLAlchemyWelcomeEffectGraphRepository(get_session_factory()).plan(request)
+    effects = SQLAlchemyExternalEffectRepository(get_session_factory())
+    final = effects.get_job(planned["final_effect_job_id"])
+    assert final is not None
+    assert ExternalEffectService(effects).authorize_allowlisted_canary(
+        final.id,
+        actor="pytest",
+        reason="deadline expiry proof",
+        expected_version=final.row_version,
+    )
+    provider_calls: list[int] = []
+
+    class ForbiddenAdapter:
+        def dispatch(self, job):
+            provider_calls.append(int(job.id))
+            raise AssertionError("expired welcome reached provider adapter")
+
+    result = ExternalEffectWorker(
+        effects,
+        ExternalEffectAdapterRegistry({"wecom_welcome_message": ForbiddenAdapter()}),
+        locked_by="welcome-expiry-worker",
+    ).dispatch_one(final.id)
+
+    assert result["error"] == "provider_deadline_elapsed"
+    assert result["job"]["status"] == "expired"
+    assert result["job"]["provider_call_started_at"] == ""
+    assert result["real_external_call_executed"] is False
+    assert provider_calls == []
+    with _connect() as connection:
+        attempt_count = connection.execute(
+            "SELECT COUNT(*) AS count FROM external_effect_attempt WHERE job_id = %s",
+            (final.id,),
+        ).fetchone()["count"]
+        settlement = connection.execute(
+            """
+            SELECT payload_json FROM internal_event_outbox
+            WHERE event_type = 'external_effect.settled'
+              AND payload_json->>'job_id' = %s
+            ORDER BY id DESC LIMIT 1
+            """,
+            (str(final.id),),
+        ).fetchone()
+    assert attempt_count == 0
+    assert settlement["payload_json"]["status"] == "expired"
 
 
 def test_failed_or_cancelled_upload_never_releases_final_welcome():

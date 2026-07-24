@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine import Engine
 
 from aicrm_next.admin_config.application import AdminConfigReadService, AdminConfigWriteCommand
@@ -13,7 +13,7 @@ from aicrm_next.message_archive import sync_service as message_archive_sync
 from aicrm_next.questionnaire import repo as questionnaire_repo
 from aicrm_next.shared import runtime_settings
 from aicrm_next.shared import runtime as shared_runtime
-from aicrm_next.shared.runtime_settings import runtime_setting
+from aicrm_next.shared.runtime_settings import runtime_setting, runtime_settings_request_scope
 from aicrm_next.shared.secret_store import FileSecretStore, is_secret_reference, parse_secret_reference
 from aicrm_next.shared.secret_store import SENSITIVE_SETTING_KEYS
 
@@ -123,6 +123,48 @@ def test_runtime_setting_resolves_db_and_environment_references(monkeypatch, tmp
 
     assert runtime_setting("WECOM_SECRET") == "complete-db-secret"
     assert runtime_setting("WECOM_CONTACT_SECRET") == "complete-env-secret"
+
+
+def test_runtime_settings_request_scope_uses_one_database_snapshot(monkeypatch, tmp_path: Path) -> None:
+    engine = _engine(tmp_path)
+    with engine.begin() as conn:
+        conn.execute(
+            text("INSERT INTO app_settings (key, value) VALUES ('AICRM_PUBLIC_BASE_URL', 'https://example.invalid')")
+        )
+    monkeypatch.setattr(runtime_settings, "get_engine", lambda: engine)
+    monkeypatch.setenv("SECRET_KEY", "request-scoped-signing-secret")
+    statements: list[str] = []
+
+    @event.listens_for(engine, "before_cursor_execute")
+    def record_statement(conn, cursor, statement, parameters, context, executemany):  # noqa: ANN001
+        if "app_settings" in statement:
+            statements.append(statement)
+
+    with runtime_settings_request_scope():
+        assert runtime_setting("AICRM_PUBLIC_BASE_URL") == "https://example.invalid"
+        assert runtime_setting("SECRET_KEY") == "request-scoped-signing-secret"
+        assert runtime_setting("MISSING_SETTING", "fallback") == "fallback"
+        assert runtime_setting("AICRM_PUBLIC_BASE_URL") == "https://example.invalid"
+
+    assert len(statements) == 1
+    assert "SELECT key, value FROM app_settings" in statements[0]
+
+    assert runtime_setting("AICRM_PUBLIC_BASE_URL") == "https://example.invalid"
+    assert len(statements) == 2
+
+
+def test_runtime_settings_request_scope_can_be_invalidated_after_write(monkeypatch, tmp_path: Path) -> None:
+    engine = _engine(tmp_path)
+    with engine.begin() as conn:
+        conn.execute(text("INSERT INTO app_settings (key, value) VALUES ('RUNTIME_FLAG', 'before')"))
+    monkeypatch.setattr(runtime_settings, "get_engine", lambda: engine)
+
+    with runtime_settings_request_scope():
+        assert runtime_setting("RUNTIME_FLAG") == "before"
+        with engine.begin() as conn:
+            conn.execute(text("UPDATE app_settings SET value = 'after' WHERE key = 'RUNTIME_FLAG'"))
+        runtime_settings.invalidate_runtime_settings_request_snapshot()
+        assert runtime_setting("RUNTIME_FLAG") == "after"
 
 
 def test_legacy_shared_runtime_facade_resolves_secret_references(monkeypatch, tmp_path: Path) -> None:

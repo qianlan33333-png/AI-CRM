@@ -139,7 +139,11 @@ class QueueRuntimeService:
             ),
             listener=listener,
             max_concurrency=lane.max_in_flight,
-            fallback_seconds=self._fallback_seconds,
+            fallback_seconds=(
+                float(lane.fallback_seconds)
+                if lane.fallback_seconds is not None
+                else self._fallback_seconds
+            ),
             wake_filter=lambda hint: (
                 str(getattr(hint, "queue_kind", "all") or "all")
                 in {"all", self._queue_kind}
@@ -211,7 +215,7 @@ class QueueRuntimeService:
             return self._repo.claim_internal_event_one(lane=lane.name, **kwargs)
         if self._queue_kind == "internal_outbox":
             return self._repo.claim_internal_outbox_one(lane=lane.name, **kwargs)
-        return self._repo.claim_webhook_inbox_one(**kwargs)
+        return self._repo.claim_webhook_inbox_one(lane=lane.name, **kwargs)
 
     def _validate_external_execution_scope(self) -> None:
         if self._queue_kind != "external_effect" or self._claimless:

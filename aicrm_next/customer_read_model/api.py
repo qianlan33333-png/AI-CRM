@@ -45,7 +45,7 @@ from .sidebar_v2 import (
     SidebarWorkbenchReadModel,
     verify_sidebar_identity_snapshot_owner_scope,
 )
-from .sidebar_timeline import SidebarCustomerTimelineQuery
+from .sidebar_timeline import ResolvedSidebarCustomerContext, SidebarCustomerTimelineQuery
 
 router = APIRouter()
 _SQL_REPO_BACKENDS = {"sql", "sqlalchemy", "postgres", "postgresql"}
@@ -333,8 +333,9 @@ def _verify_sidebar_owner_scope(
     *,
     external_userid: str,
     owner_userid: str = "",
+    corp_id: str = "",
     owner_verified: bool = False,
-) -> None:
+) -> ResolvedSidebarCustomerContext:
     if not str(owner_userid or "").strip():
         raise ValueError("owner_userid is required")
     try:
@@ -344,12 +345,27 @@ def _verify_sidebar_owner_scope(
                 owner_userid=str(owner_userid or "").strip(),
                 require_owner_scope=True,
                 owner_verified=owner_verified,
+                include_activity=False,
                 recent_message_limit=1,
                 timeline_limit=1,
             )
         )
-        if not isinstance(payload, dict) or payload.get("ok", True):
-            return
+        if isinstance(payload, dict) and payload.get("ok", True):
+            customer = dict(payload.get("customer") or {})
+            identity = dict(customer.get("identity") or {})
+            canonical_external_userid = str(
+                identity.get("external_userid")
+                or customer.get("external_userid")
+                or payload.get("external_userid")
+                or external_userid
+            ).strip()
+            return ResolvedSidebarCustomerContext(
+                external_userid=canonical_external_userid,
+                unionid=str(payload.get("unionid") or "").strip(),
+                owner_userid=str(owner_userid or "").strip(),
+                corp_id=str(corp_id or "").strip(),
+                owner_verified=owner_verified,
+            )
     except NotFoundError:
         if not production_data_ready():
             raise
@@ -358,6 +374,13 @@ def _verify_sidebar_owner_scope(
     verify_sidebar_identity_snapshot_owner_scope(
         external_userid=external_userid,
         owner_userid=str(owner_userid or "").strip(),
+        owner_verified=owner_verified,
+    )
+    return ResolvedSidebarCustomerContext(
+        external_userid=str(external_userid or "").strip(),
+        unionid="",
+        owner_userid=str(owner_userid or "").strip(),
+        corp_id=str(corp_id or "").strip(),
         owner_verified=owner_verified,
     )
 
@@ -892,14 +915,16 @@ def get_sidebar_v2_timeline(
         return _sidebar_forbidden_error("sidebar customer scope required")
     customer_repo, live_source_repo = _request_scoped_customer_repositories(db)
     try:
-        _verify_sidebar_owner_scope(
+        resolved_context = _verify_sidebar_owner_scope(
             _sidebar_customer_context_query(customer_repo, live_source_repo),
             external_userid=external_userid,
             owner_userid=owner_userid,
+            corp_id=str(owner_context.get("corp_id") or "").strip(),
             owner_verified=bool(owner_context.get("owner_verified")),
         )
         payload = SidebarCustomerTimelineQuery(customer_repo)(
             external_userid=external_userid,
+            context=resolved_context,
             limit=limit,
             offset=offset,
         )

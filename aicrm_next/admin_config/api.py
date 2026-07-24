@@ -9,8 +9,8 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from aicrm_next.admin_read_model.application import GetAdminConfigPageQuery, page_row_count
-from aicrm_next.admin_jobs.routes import ensure_admin_action_token, validate_admin_action_token
 from aicrm_next.admin_shell import admin_path_for, shell_context
+from aicrm_next.shared.admin_action_runtime import ensure_admin_action_token, validate_admin_action_token
 
 from .api_docs_view_model import build_api_docs_view_model
 from .application import (
@@ -224,9 +224,6 @@ def admin_config_category_detail(request: Request, category_key: str):
                 config_category_detail=detail,
                 push_capabilities_api="/api/admin/config/push-capabilities",
                 push_capabilities_scheduler_api="/api/admin/config/push-capabilities/scheduler",
-                push_center_stats_api="/api/admin/push-center/stats",
-                push_center_sections_api="/api/admin/push-center/sections",
-                push_center_jobs_api="/api/admin/push-center/jobs",
             ),
         )
     return templates.TemplateResponse(

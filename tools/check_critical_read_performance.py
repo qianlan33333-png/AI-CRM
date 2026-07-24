@@ -7,7 +7,7 @@ import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from time import perf_counter
+from time import perf_counter, time
 from typing import Any, Callable
 from urllib.parse import urlsplit
 
@@ -17,11 +17,14 @@ if str(ROOT) not in sys.path:
 
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
+from fastapi.testclient import TestClient
 
 from aicrm_next.admin_jobs.application import build_jobs_payload
 from aicrm_next.admin_jobs.repository import PostgresAdminJobsRepository
+from aicrm_next.customer_read_model.application import ListRecentMessagesQuery
+from aicrm_next.customer_read_model.dto import RecentMessagesRequest
 from aicrm_next.customer_read_model.repo import SqlAlchemyCustomerReadModelRepository
-from aicrm_next.customer_read_model.sidebar_v2 import SidebarV2SqlRepository, SidebarWorkbenchReadModel
+from aicrm_next.main import create_app
 from aicrm_next.platform_foundation.performance_contracts import (
     ReadPathBaseline,
     collect_plan_evidence,
@@ -31,7 +34,12 @@ from aicrm_next.platform_foundation.performance_contracts import (
 )
 from aicrm_next.platform_foundation.push_center.sql_read_model import SQLPushCenterReadModel
 from aicrm_next.questionnaire.repo import PostgresQuestionnaireReadRepository
-from aicrm_next.shared.db_session import get_sqlalchemy_database_url
+from aicrm_next.shared.db_session import get_db, get_engine, get_sqlalchemy_database_url
+from aicrm_next.shared.signed_context import (
+    SIDEBAR_VIEWER_SESSION_COOKIE,
+    build_sidebar_owner_context_token,
+)
+from aicrm_next.shared.signed_session import sign_session_payload
 
 
 LOCK_KEY = 4_249_015_149
@@ -78,25 +86,6 @@ class _RecordingAdminJobsRepository(PostgresAdminJobsRepository):
         return super()._rows(query, params)
 
 
-class _StaticCustomerContext:
-    def __call__(self, request) -> dict[str, Any]:  # noqa: ANN001
-        return {
-            "ok": True,
-            "source_status": "next_read_model",
-            "customer": {
-                "external_userid": request.external_userid,
-                "customer_name": "匿名客户",
-                "owner_userid": request.owner_userid,
-                "mobile": "13800000001",
-                "binding": {"is_bound": True, "mobile": "13800000001"},
-                "sidebar_context": {"workflow_title": "基准流程"},
-            },
-            "binding": {"is_bound": True, "mobile": "13800000001"},
-            "messages": [],
-            "timeline": {"items": []},
-        }
-
-
 def _psycopg_url(value: str) -> str:
     value = str(value or "").strip()
     if value.startswith("postgresql+psycopg://"):
@@ -122,7 +111,8 @@ def _seed_dataset(database_url: str) -> None:
         conn.execute("SELECT pg_advisory_lock(%s)", (LOCK_KEY,))
         try:
             conn.execute(
-                "TRUNCATE TABLE customer_list_index_next, questionnaire_questions, "
+                "TRUNCATE TABLE customer_recent_message_next, customer_timeline_event_next, "
+                "customer_detail_snapshot_next, customer_list_index_next, questionnaire_questions, "
                 "questionnaire_submissions, questionnaires, sidebar_customer_profile_fields, "
                 "crm_user_identity, sync_runs, wecom_external_contact_event_logs, "
                 "external_effect_job, broadcast_jobs, outbound_webhook_deliveries "
@@ -178,7 +168,89 @@ def _seed_dataset(database_url: str) -> None:
                        jsonb_build_array('perf_external_' || n),
                        '138' || lpad(n::text, 8, '0'), '138' || lpad(n::text, 8, '0'),
                        TRUE, '匿名客户' || n, 'owner_' || (n % 20), 'active'
-                FROM generate_series(1, 5000) AS n
+                FROM generate_series(1, 100000) AS n
+                """
+            )
+            conn.execute(
+                """
+                INSERT INTO customer_detail_snapshot_next (
+                    id, unionid, customer_json, binding_json, identity_json,
+                    follow_users_json, marketing_summary_json, marketing_profile_json,
+                    contact_json, sidebar_context_json, updated_at, created_at
+                )
+                SELECT n,
+                       'perf_sidebar_union_' || n,
+                       jsonb_build_object(
+                           'unionid', 'perf_sidebar_union_' || n,
+                           'external_userid', 'perf_external_' || n,
+                           'customer_name', '匿名客户' || n,
+                           'owner_userid', 'owner_' || (n % 20),
+                           'mobile', '138' || lpad(n::text, 8, '0')
+                       ),
+                       jsonb_build_object(
+                           'is_bound', TRUE,
+                           'binding_status', 'bound',
+                           'mobile', '138' || lpad(n::text, 8, '0')
+                       ),
+                       jsonb_build_object(
+                           'unionid', 'perf_sidebar_union_' || n,
+                           'external_userid', 'perf_external_' || n,
+                           'primary_owner_userid', 'owner_' || (n % 20)
+                       ),
+                       jsonb_build_array(
+                           jsonb_build_object('userid', 'owner_' || (n % 20))
+                       ),
+                       '{}'::jsonb,
+                       '{}'::jsonb,
+                       '{}'::jsonb,
+                       jsonb_build_object('workflow_title', '基准流程'),
+                       CURRENT_TIMESTAMP,
+                       CURRENT_TIMESTAMP
+                FROM generate_series(1, 100000) AS n
+                """
+            )
+            conn.execute(
+                """
+                INSERT INTO customer_timeline_event_next (
+                    id, event_id, unionid, event_type, event_time, title,
+                    summary, source_table, source_id, metadata_json, created_at
+                )
+                SELECT n,
+                       'perf_timeline_' || n,
+                       'perf_sidebar_union_' || (((n - 1) % 100000) + 1),
+                       CASE n % 4
+                           WHEN 0 THEN 'channel_entry'
+                           WHEN 1 THEN 'questionnaire_submitted'
+                           WHEN 2 THEN 'product_enrolled'
+                           ELSE 'radar_opened'
+                       END,
+                       CURRENT_TIMESTAMP - (n || ' milliseconds')::interval,
+                       '匿名事件' || n,
+                       '',
+                       'performance_fixture',
+                       n::text,
+                       '{}'::jsonb,
+                       CURRENT_TIMESTAMP
+                FROM generate_series(1, 1000000) AS n
+                """
+            )
+            conn.execute(
+                """
+                INSERT INTO customer_recent_message_next (
+                    id, msgid, unionid, msgtype, content, send_time,
+                    owner_userid, chat_type, metadata_json, created_at
+                )
+                SELECT n,
+                       'perf_message_' || n,
+                       'perf_sidebar_union_' || (((n - 1) % 100000) + 1),
+                       'text',
+                       '匿名消息' || n,
+                       CURRENT_TIMESTAMP - (n || ' milliseconds')::interval,
+                       'owner_' || ((((n - 1) % 100000) + 1) % 20),
+                       'single',
+                       '{}'::jsonb,
+                       CURRENT_TIMESTAMP
+                FROM generate_series(1, 1000000) AS n
                 """
             )
             conn.execute(
@@ -270,7 +342,8 @@ def _seed_dataset(database_url: str) -> None:
             )
             conn.execute(
                 "ANALYZE customer_list_index_next, questionnaires, questionnaire_questions, "
-                "questionnaire_submissions, crm_user_identity, sidebar_customer_profile_fields, "
+                "questionnaire_submissions, crm_user_identity, customer_detail_snapshot_next, "
+                "customer_timeline_event_next, customer_recent_message_next, sidebar_customer_profile_fields, "
                 "sync_runs, wecom_external_contact_event_logs, external_effect_job, "
                 "broadcast_jobs, outbound_webhook_deliveries"
             )
@@ -329,26 +402,185 @@ def _run_customer_list(database_url: str, profile: ReadPathBaseline):
         engine.dispose()
 
 
-def _run_sidebar_workbench(database_url: str, profile: ReadPathBaseline):
-    engine = create_engine(get_sqlalchemy_database_url(database_url), future=True)
-    repo = SidebarV2SqlRepository(engine)
-    read_model = SidebarWorkbenchReadModel(repo=repo, context_query=_StaticCustomerContext())
+def _sidebar_route_credentials(*, target_id: int, corp_id: str) -> tuple[str, str, dict[str, str]]:
+    external_userid = f"perf_external_{target_id}"
+    owner_userid = f"owner_{target_id % 20}"
+    session_id = f"critical-read-sidebar-{target_id}"
+    session_cookie = sign_session_payload(
+        {
+            "auth_source": "wecom_sidebar_oauth",
+            "wecom_userid": owner_userid,
+            "external_userid": external_userid,
+            "corp_id": corp_id,
+            "session_id": session_id,
+            "iat": int(time()),
+        }
+    )
+    token = build_sidebar_owner_context_token(
+        viewer_userid=owner_userid,
+        external_userid=external_userid,
+        session_id=session_id,
+        corp_id=corp_id,
+    )
+    return (
+        external_userid,
+        owner_userid,
+        {
+            "X-AICRM-Sidebar-Owner-Token": token,
+            "Cookie": f"{SIDEBAR_VIEWER_SESSION_COOKIE}={session_cookie}",
+        },
+    )
 
-    def invoke(captured: list[CapturedQuery]) -> int:
-        listener = _sqlalchemy_recorder(engine, captured)
+
+def _run_sidebar_route(
+    database_url: str,
+    profile: ReadPathBaseline,
+    *,
+    route: str,
+    target_ids: tuple[int, ...],
+):
+    environment = {
+        "AICRM_NEXT_ENV": "test",
+        "CUSTOMER_READ_MODEL_REPO_BACKEND": "sqlalchemy",
+        "DATABASE_URL": database_url,
+        "SECRET_KEY": "critical-read-sidebar-signing-secret",
+        "WECOM_CORP_ID": "ww-critical-read",
+    }
+    previous = {key: os.environ.get(key) for key in environment}
+    os.environ.update(environment)
+    engine = get_engine(database_url)
+    app = create_app()
+
+    def override_get_db():
+        session = Session(engine)
         try:
-            payload = read_model(
-                external_userid="perf_external_1",
-                owner_userid="owner_1",
-                owner_verified=True,
-            )
-            return 1 if payload.get("customer") else 0
+            yield session
         finally:
-            event.remove(engine, "before_cursor_execute", listener)
+            session.rollback()
+            session.close()
+
+    app.dependency_overrides[get_db] = override_get_db
+    targets = [
+        _sidebar_route_credentials(target_id=target_id, corp_id=environment["WECOM_CORP_ID"])
+        for target_id in target_ids
+    ]
+    sample_index = 0
 
     try:
-        return _measure(profile, invoke)
+        with TestClient(app, raise_server_exceptions=False) as client:
+            def invoke_target(captured: list[CapturedQuery], target_index: int) -> int:
+                external_userid, owner_userid, headers = targets[target_index]
+                path = route
+                if route.endswith("/workbench"):
+                    path = f"{route}?external_userid={external_userid}&owner_userid={owner_userid}"
+                else:
+                    path = f"{route}?limit={profile.page_limit}&offset=0"
+                listener = _sqlalchemy_recorder(engine, captured)
+                try:
+                    response = client.get(path, headers=headers)
+                finally:
+                    event.remove(engine, "before_cursor_execute", listener)
+                if response.status_code != 200:
+                    raise RuntimeError(
+                        f"{profile.name}: expected HTTP 200, got {response.status_code}"
+                    )
+                payload = response.json()
+                if route.endswith("/workbench"):
+                    customer = dict(payload.get("customer") or {})
+                    if str(customer.get("external_userid") or "") != external_userid:
+                        raise RuntimeError(f"{profile.name}: returned the wrong customer")
+                    return 1
+                items = list(payload.get("items") or [])
+                if int(payload.get("total") or 0) != 10:
+                    raise RuntimeError(f"{profile.name}: expected ten target timeline rows")
+                if not items or str(items[0].get("title") or "") != f"匿名事件{target_ids[target_index]}":
+                    raise RuntimeError(f"{profile.name}: returned the wrong timeline page")
+                return len(items)
+
+            def invoke(captured: list[CapturedQuery]) -> int:
+                nonlocal sample_index
+                target_index = sample_index % len(targets)
+                sample_index += 1
+                return invoke_target(captured, target_index)
+
+            latencies, query_count, max_page_rows, _ = _measure(profile, invoke)
+            evidence_queries: list[CapturedQuery] = []
+            for target_index in range(len(targets)):
+                target_queries: list[CapturedQuery] = []
+                invoke_target(target_queries, target_index)
+                evidence_queries.extend(target_queries)
+            return latencies, query_count, max_page_rows, evidence_queries
     finally:
+        app.dependency_overrides.pop(get_db, None)
+        for key, value in previous.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+
+def _run_sidebar_workbench(database_url: str, profile: ReadPathBaseline):
+    return _run_sidebar_route(
+        database_url,
+        profile,
+        route="/api/sidebar/v2/workbench",
+        target_ids=(1,),
+    )
+
+
+def _run_sidebar_timeline(database_url: str, profile: ReadPathBaseline):
+    return _run_sidebar_route(
+        database_url,
+        profile,
+        route="/api/sidebar/v2/timeline",
+        target_ids=(1, 50000, 100000),
+    )
+
+
+def _run_sidebar_recent_messages(database_url: str, profile: ReadPathBaseline):
+    engine = create_engine(get_sqlalchemy_database_url(database_url), future=True)
+    target_ids = (1, 50000, 100000)
+    sample_index = 0
+    previous_database_url = os.environ.get("DATABASE_URL")
+    os.environ["DATABASE_URL"] = database_url
+
+    def invoke_target(captured: list[CapturedQuery], target_index: int) -> int:
+        target_id = target_ids[target_index]
+        listener = _sqlalchemy_recorder(engine, captured)
+        try:
+            with Session(engine) as session:
+                payload = ListRecentMessagesQuery(SqlAlchemyCustomerReadModelRepository(session))(
+                    RecentMessagesRequest(
+                        external_userid=f"perf_external_{target_id}",
+                        limit=profile.page_limit,
+                    )
+                )
+        finally:
+            event.remove(engine, "before_cursor_execute", listener)
+        messages = list(payload.get("messages") or [])
+        if not messages or str(messages[0].get("msgid") or "") != f"perf_message_{target_id}":
+            raise RuntimeError(f"{profile.name}: returned the wrong recent-message page")
+        return len(messages)
+
+    def invoke(captured: list[CapturedQuery]) -> int:
+        nonlocal sample_index
+        target_index = sample_index % len(target_ids)
+        sample_index += 1
+        return invoke_target(captured, target_index)
+
+    try:
+        latencies, query_count, max_page_rows, _ = _measure(profile, invoke)
+        evidence_queries: list[CapturedQuery] = []
+        for target_index in range(len(target_ids)):
+            target_queries: list[CapturedQuery] = []
+            invoke_target(target_queries, target_index)
+            evidence_queries.extend(target_queries)
+        return latencies, query_count, max_page_rows, evidence_queries
+    finally:
+        if previous_database_url is None:
+            os.environ.pop("DATABASE_URL", None)
+        else:
+            os.environ["DATABASE_URL"] = previous_database_url
         engine.dispose()
 
 
@@ -445,6 +677,8 @@ def run(database_url: str) -> dict[str, Any]:
     _seed_dataset(database_url)
     runners = {
         "customer_list": _run_customer_list,
+        "sidebar_recent_messages": _run_sidebar_recent_messages,
+        "sidebar_timeline": _run_sidebar_timeline,
         "sidebar_workbench": _run_sidebar_workbench,
         "questionnaire_admin": _run_questionnaire_admin,
         "admin_jobs": _run_admin_jobs,

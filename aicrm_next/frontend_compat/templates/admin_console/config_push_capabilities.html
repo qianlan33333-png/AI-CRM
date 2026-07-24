@@ -11,12 +11,10 @@
   data-testid="push-capability-config"
   data-capabilities-api="{{ push_capabilities_api }}"
   data-scheduler-api="{{ push_capabilities_scheduler_api }}"
-  data-push-center-stats-api="{{ push_center_stats_api }}"
 >
   <input type="hidden" name="admin_action_token" value="{{ admin_action_token }}">
 
   <div class="push-capability-actions push-capability-actions-bar">
-    <a class="push-capability-btn primary" href="/admin/push-center">进入推送中心</a>
     <a class="push-capability-btn" href="/admin/api-docs">查看排障</a>
     <a class="push-capability-btn" href="/admin/config">返回配置中心</a>
   </div>
@@ -40,11 +38,6 @@
       <div class="push-capability-summary-value" id="summaryEnabled">-</div>
       <div class="push-capability-summary-sub">按业务能力开关统计</div>
     </article>
-    <article class="admin-card push-capability-summary-card">
-      <div class="push-capability-summary-label">异常任务</div>
-      <div class="push-capability-summary-value" id="summaryAbnormal">-</div>
-      <div class="push-capability-summary-sub">失败与阻断任务合计</div>
-    </article>
   </section>
 
   <section class="admin-card push-capability-panel" aria-label="业务推送能力">
@@ -63,9 +56,6 @@
           <col class="push-capability-col-owner">
           <col class="push-capability-col-types">
           <col class="push-capability-col-toggle">
-          <col class="push-capability-col-status">
-          <col class="push-capability-col-error">
-          <col class="push-capability-col-action">
         </colgroup>
         <thead>
           <tr>
@@ -73,13 +63,10 @@
             <th>业务归属</th>
             <th>关联 effect_type</th>
             <th>允许真实执行</th>
-            <th>队列状态</th>
-            <th>异常数</th>
-            <th>操作</th>
           </tr>
         </thead>
         <tbody id="capabilityTbody">
-          <tr><td colspan="7" class="admin-empty-cell">加载中...</td></tr>
+          <tr><td colspan="4" class="admin-empty-cell">加载中...</td></tr>
         </tbody>
       </table>
     </div>
@@ -109,7 +96,7 @@
 .push-capability-notice.show { display: block; }
 .push-capability-notice.error { border-color: #fecaca; background: #fef2f2; color: #991b1b; }
 .push-capability-notice.ok { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
-.push-capability-summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.push-capability-summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
 .push-capability-summary-card { padding: 14px 16px; }
 .push-capability-summary-label { color: var(--pc-muted); font-size: 12px; margin-bottom: 8px; }
 .push-capability-summary-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -127,9 +114,6 @@
 .push-capability-col-owner { width: 130px; }
 .push-capability-col-types { width: 270px; }
 .push-capability-col-toggle { width: 150px; }
-.push-capability-col-status { width: 170px; }
-.push-capability-col-error { width: 110px; }
-.push-capability-col-action { width: 130px; }
 .push-capability-name { font-weight: 700; margin-bottom: 6px; }
 .push-capability-desc-small { color: var(--pc-muted); font-size: 12px; line-height: 1.5; }
 .push-capability-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; }
@@ -178,7 +162,6 @@
   const API = {
     capabilities: root.dataset.capabilitiesApi || "/api/admin/config/push-capabilities",
     scheduler: root.dataset.schedulerApi || "/api/admin/config/push-capabilities/scheduler",
-    stats: root.dataset.pushCenterStatsApi || "/api/admin/push-center/stats",
     toggle(key) {
       return `${this.capabilities}/${encodeURIComponent(key)}`;
     }
@@ -188,8 +171,7 @@
     capabilities: [],
     summary: {},
     scheduler: {},
-    advanced: {},
-    stats: {}
+    advanced: {}
   };
 
   const els = {
@@ -200,7 +182,6 @@
     summarySchedulerSub: document.getElementById("summarySchedulerSub"),
     schedulerToggle: document.getElementById("schedulerToggle"),
     summaryEnabled: document.getElementById("summaryEnabled"),
-    summaryAbnormal: document.getElementById("summaryAbnormal"),
     advancedList: document.getElementById("advancedList")
   };
 
@@ -228,45 +209,9 @@
     }
   }
 
-  function toneClass(tone) {
-    if (tone === "ok") return "ok";
-    if (tone === "warn") return "warn";
-    if (tone === "danger") return "danger";
-    if (tone === "info") return "info";
-    return "neutral";
-  }
-
-  function globalStatusLabel(value) {
-    const map = {
-      enabled: "已开启",
-      disabled: "已关闭",
-      partial: "部分开启",
-      test_only: "测试模式"
-    };
-    return map[text(value)] || text(value) || "-";
-  }
-
-  function queueSummary(cap) {
-    const counts = cap.queue_counts || {};
-    const pending = Number(counts.queued || 0) + Number(counts.planned || 0);
-    const parts = [
-      `总数 ${Number(counts.total || 0)}`,
-      `待执行 ${pending}`,
-      `成功 ${Number(counts.succeeded || 0)}`
-    ];
-    const failed = Number(counts.failed || 0);
-    const blocked = Number(counts.blocked || 0);
-    if (failed || blocked) parts.push(`异常 ${failed + blocked}`);
-    return parts.join(" · ");
-  }
-
   function renderSummary() {
     const summary = state.summary || {};
     const scheduler = state.scheduler || {};
-    const stats = state.stats || {};
-    const recoverableFailed = stats["failed_" + "re" + "tryable"] || 0;
-    const abnormalFromStats = Number(recoverableFailed) + Number(stats.failed_terminal || 0) + Number(stats.blocked || 0);
-    const abnormal = abnormalFromStats || Number(summary.abnormal_count || 0);
 
     const schedulerEnabled = !!scheduler.enabled;
     els.summarySchedulerStatus.textContent = schedulerEnabled ? "已开启" : "未开启";
@@ -275,7 +220,6 @@
       : "开关打开后仍需生产 timer 调用统一 worker";
     if (els.schedulerToggle) els.schedulerToggle.checked = schedulerEnabled;
     els.summaryEnabled.textContent = `${Number(summary.enabled_count || 0)} / ${Number(summary.total || 0)}`;
-    els.summaryAbnormal.textContent = abnormal;
   }
 
   function renderAdvanced() {
@@ -305,7 +249,7 @@
   function renderCapabilities() {
     const items = state.capabilities || [];
     if (!items.length) {
-      els.tbody.innerHTML = '<tr><td colspan="7" class="admin-empty-cell">暂无推送能力数据</td></tr>';
+      els.tbody.innerHTML = '<tr><td colspan="4" class="admin-empty-cell">暂无推送能力数据</td></tr>';
       return;
     }
 
@@ -315,16 +259,13 @@
         ? types.map(item => `<span class="push-capability-type-pill push-capability-mono" title="${escapeHtml(item)}">${escapeHtml(item)}</span>`).join("")
         : '<span class="push-capability-type-pill">-</span>';
       const enabled = !!cap.enabled;
-      const healthTone = toneClass(cap.health_tone);
-      const abnormal = Number(cap.abnormal_count || 0);
-      const actionHref = cap.push_center_href || "/admin/push-center";
       const toggleHtml = cap.toggleable
         ? `
           <label class="push-capability-switch" title="切换是否允许真实执行">
             <input type="checkbox" data-action="toggle" data-key="${escapeHtml(cap.key)}"${enabled ? " checked" : ""}>
             <span class="push-capability-slider"></span>
           </label>
-          <div class="push-capability-readonly-reason">${enabled ? "允许进入真实执行通道" : "阻断该类真实执行"}</div>
+          <div class="push-capability-readonly-reason">${cap.gate_problem ? `门禁未满足：${escapeHtml(cap.gate_problem)}` : (enabled ? "允许进入真实执行通道" : "阻断该类真实执行")}</div>
         `
         : `
           <span class="push-capability-badge neutral">只读</span>
@@ -343,15 +284,6 @@
           </td>
           <td><div class="push-capability-type-list">${typeHtml}</div></td>
           <td>${toggleHtml}</td>
-          <td>
-            <span class="push-capability-badge ${healthTone}">${escapeHtml(cap.health_label || (enabled ? "已开启" : "未开启"))}</span>
-            <div class="push-capability-queue-text">${escapeHtml(queueSummary(cap))}</div>
-            ${enabled ? `<div class="push-capability-queue-text">自动执行：由统一调度器扫描，不单独配置</div>` : ""}
-            ${cap.gate_problem ? `<div class="push-capability-queue-text">门禁：${escapeHtml(cap.gate_problem)}</div>` : ""}
-            ${cap.last_error_code ? `<div class="push-capability-queue-text">最近错误：${escapeHtml(cap.last_error_code)}</div>` : ""}
-          </td>
-          <td><span class="push-capability-badge ${abnormal ? "danger" : "ok"}">${abnormal}</span></td>
-          <td><a class="push-capability-btn" href="${escapeHtml(actionHref)}">查看任务</a></td>
         </tr>
       `;
     }).join("");
@@ -381,21 +313,16 @@
     state.advanced = body.advanced || {};
   }
 
-  async function loadPushCenterStats() {
-    const body = await fetchJson(API.stats);
-    state.stats = body.counts || {};
-  }
-
   async function refreshPage() {
     els.refreshBtn.disabled = true;
     showNotice("", "ok");
     try {
-      await Promise.all([loadCapabilities(), loadPushCenterStats()]);
+      await loadCapabilities();
       renderSummary();
       renderCapabilities();
       renderAdvanced();
     } catch (err) {
-      els.tbody.innerHTML = `<tr><td colspan="7" class="admin-empty-cell">加载失败：${escapeHtml(err.message)}</td></tr>`;
+      els.tbody.innerHTML = `<tr><td colspan="4" class="admin-empty-cell">加载失败：${escapeHtml(err.message)}</td></tr>`;
       showNotice(err.message, "error");
     } finally {
       els.refreshBtn.disabled = false;

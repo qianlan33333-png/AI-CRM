@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 from fastapi.testclient import TestClient
 
@@ -17,7 +15,6 @@ from aicrm_next.platform_foundation.external_effects import (
 )
 from aicrm_next.platform_foundation.external_effects.repo import build_external_effect_repository
 from aicrm_next.platform_foundation.push_center.projection import BroadcastJobAdapter, PushCenterProjectionService
-from aicrm_next.platform_foundation.push_center import api as push_center_api
 from aicrm_next.platform_foundation.push_center.repository import PushCenterRepository
 from aicrm_next.platform_foundation.push_center.section_mapper import effect_types_for_section, label_for_section, section_for_job
 from aicrm_next.platform_foundation.push_center.sql_read_model import (
@@ -514,95 +511,6 @@ def test_push_center_sections_stats_retry_cancel_auth(next_client: TestClient, m
     assert retried.json()["missing_fields"] == ["actor"]
     assert cancelled.status_code == 422
     assert cancelled.json()["missing_fields"] == ["reason"]
-
-
-def test_push_center_page_smoke(next_client: TestClient) -> None:
-    reset_external_effect_fixture_state()
-    _plan_job(
-        effect_type=WEBHOOK_QUESTIONNAIRE_SUBMISSION_PUSH,
-        business_type="questionnaire",
-        business_id="q_page",
-        target_type="questionnaire_submission",
-        target_id="sub_page",
-    )
-
-    response = next_client.get("/admin/push-center")
-
-    assert response.status_code == 200
-    assert "推送中心" in response.text
-    assert 'id="statsGrid"' in response.text
-    assert 'id="sectionTabs"' in response.text
-    assert 'id="filterForm"' in response.text
-    assert 'id="pushCenterTable"' in response.text
-    assert 'data-execution-page="push-list"' in response.text
-    assert 'id="detailModal"' not in response.text
-    assert "push-center-modal" not in response.text
-    assert 'class="push-center-header"' not in response.text
-    assert "push-center-title" not in response.text
-    assert 'href="#refresh"' in response.text
-    assert 'href="#export"' in response.text
-    assert ">查询</button>" in response.text
-    assert "admin_execution_ui.css" in response.text
-    assert "admin_execution_ui.js" in response.text
-    assert "已计划" not in response.text
-    assert 'id="legacyDeprecationsPanel"' not in response.text
-    assert 'id="legacyDeprecationsList"' not in response.text
-    assert "/api/admin/push-center/legacy-deprecations" not in response.text
-    assert "旧链路下线状态" not in response.text
-    assert "下次删除" not in response.text
-    assert "/api/admin/push-center/stats" not in response.text
-    assert "/api/admin/push-center/jobs" not in response.text
-    assert "外部动作队列" not in response.text
-    assert "payload_json" not in response.text
-    assert "token" not in response.text.lower()
-    assert "secret" not in response.text.lower()
-    assert "Authorization" not in response.text
-    assert "access_token" not in response.text
-    assert "secret-token" not in response.text
-
-
-def test_push_center_page_shell_does_not_query_projection(monkeypatch, next_client: TestClient) -> None:
-    def fail_if_constructed(*_args, **_kwargs):
-        raise AssertionError("push center page shell must not query the projection")
-
-    monkeypatch.setattr(push_center_api, "PushCenterRepository", fail_if_constructed)
-
-    response = next_client.get("/admin/push-center")
-
-    assert response.status_code == 200
-    assert 'id="pushCenterTable"' in response.text
-    assert "/api/admin/push-center/stats" not in response.text
-    assert "admin_execution_ui.js" in response.text
-
-
-def test_push_center_frontend_uses_one_jobs_request_without_input_refresh() -> None:
-    source = (
-        Path("aicrm_next/frontend_compat/static/admin_console/admin_execution_ui.js")
-        .read_text(encoding="utf-8")
-    )
-
-    assert source.count("/api/admin/push-center/jobs?") == 1
-    assert "/api/admin/push-center/stats" not in source
-    assert 'addEventListener("input"' not in source
-    assert "setInterval" not in source
-    assert "window.prompt" not in source
-    assert "requestJson" in source
-
-
-def test_push_center_legacy_query_redirects_to_level_two_detail(next_client: TestClient) -> None:
-    redirect = next_client.get(
-        "/admin/push-center?job_id=external_effect_job:42",
-        follow_redirects=False,
-    )
-
-    assert redirect.status_code == 303
-    assert redirect.headers["location"] == "/admin/push-center/jobs/external_effect_job:42"
-
-    detail = next_client.get("/admin/push-center/jobs/external_effect_job:42")
-    assert detail.status_code == 200
-    assert 'data-execution-page="push-detail"' in detail.text
-    assert 'data-detail-id="external_effect_job:42"' in detail.text
-    assert 'id="detailModal"' not in detail.text
 
 
 def test_push_center_list_and_stats_reuse_one_projection_snapshot() -> None:

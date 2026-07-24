@@ -53,7 +53,6 @@ def test_api_docs_view_model_scans_current_fastapi_routes() -> None:
         ("GET", "/api/system/health"),
         ("GET", "/mcp"),
         ("POST", "/mcp"),
-        ("GET", "/api/admin/dashboard/shell-context"),
         ("GET", "/api/customers/{external_userid}/timeline"),
         ("GET", "/api/sidebar/contact-binding-status"),
         ("GET", "/api/admin/channels/{channel_id}/contacts"),

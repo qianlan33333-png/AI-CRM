@@ -10,10 +10,7 @@
   <script defer src="{{ url_for('static', filename='admin_console/admin_console.js') }}"></script>
   <script defer src="{{ url_for('static', filename='admin_console/operation_member_picker.js') }}?v=operation-member-picker-wecom-sync-20260709"></script>
 </head>
-<body
-  class="admin-shell"
-  data-shell-context-url="{{ url_for('api.admin_dashboard_shell_context') }}"
->
+<body class="admin-shell">
   <div class="admin-layout">
     <aside class="admin-sidebar">
       <div class="admin-brand">
@@ -67,7 +64,7 @@
       {% set page_header_visible = show_page_header if show_page_header is defined else True %}
       {% set topbar_actions = page_actions if page_actions is defined else [] %}
       {% set header_tabs = page_header_tabs if page_header_tabs is defined else [] %}
-      {% if page_header_visible or show_shell_meta or topbar_actions or header_tabs %}
+      {% if page_header_visible or topbar_actions or header_tabs %}
       <header class="admin-topbar">
         {% if page_header_visible %}
         <div class="admin-topbar-head">
@@ -87,11 +84,7 @@
         </div>
         {% endif %}
 
-        {% set _env_tone = shell_status.environment.tone if shell_status and shell_status.environment else "" %}
-        {% set _health_state = shell_status.health.state if shell_status and shell_status.health else "" %}
-        {% set _show_env_chip = show_shell_meta and _env_tone and _env_tone not in ("prod", "production") %}
-        {% set _show_health_chip = show_shell_meta and _health_state and _health_state not in ("healthy", "ok") %}
-        {% if topbar_actions or header_tabs or _show_env_chip or _show_health_chip %}
+        {% if topbar_actions or header_tabs %}
         <div class="admin-topbar-meta">
           {% if header_tabs %}
           <nav class="setup-topbar-tabs" aria-label="自动化运营方案导航">
@@ -108,16 +101,6 @@
             {{ action.label }}
           </a>
           {% endfor %}
-          {% if _show_env_chip %}
-          <div class="admin-chip admin-chip--{{ _env_tone }}" data-shell-env>
-            {{ shell_status.environment.label }}
-          </div>
-          {% endif %}
-          {% if _show_health_chip %}
-          <div class="admin-chip admin-chip--{{ _health_state }}" data-shell-health title="{{ shell_status.health.detail }}">
-            {{ shell_status.health.label }}
-          </div>
-          {% endif %}
         </div>
         {% endif %}
       </header>

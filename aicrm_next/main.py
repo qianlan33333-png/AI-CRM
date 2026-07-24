@@ -37,6 +37,7 @@ from .shared.release import current_release_sha
 from .shared.pii_audit import PiiAuditRepository, apply_pii_audit, pii_audit_enabled
 from .shared.route_policy import RoutePolicyIndex
 from .shared.runtime import assert_required_runtime_secrets, fixture_mode, public_https_environment, require_signing_secret
+from .shared.runtime_settings import runtime_settings_request_scope
 from .shared.safe_logging import safe_log_exception
 
 __all__ = [
@@ -125,30 +126,31 @@ def create_app(*, pii_audit_repository: PiiAuditRepository | None = None) -> Fas
 
     @app.middleware("http")
     async def write_route_owner_headers(request, call_next):
-        with internal_event_consumer_registry_scope(app.state.internal_event_consumer_registry):
-            auth_response = await route_policy_required_response(request, app=app, index=route_policy_index)
-            if auth_response is not None:
-                response = auth_response
-            else:
-                response = await call_next(request)
-        if pii_audit_enabled():
-            response = apply_pii_audit(
-                request=request,
-                response=response,
-                repository=audit_repository,
-                fingerprint_secret=pii_fingerprint_secret,
-            )
-        response.headers.setdefault("X-AICRM-Route-Owner", "ai_crm_next")
-        response.headers.setdefault("X-AICRM-Fallback-Used", "false")
-        response.headers.setdefault("X-AICRM-App", "ai_crm_next")
-        response.headers.setdefault("X-AICRM-Release-SHA", current_release_sha())
-        if public_https_environment():
-            response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
-        if request.url.path == "/sidebar/bind-mobile" or request.url.path.startswith("/api/sidebar/"):
-            response.headers.setdefault("Cache-Control", "no-store, max-age=0")
-            response.headers.setdefault("Pragma", "no-cache")
-            response.headers.setdefault("Expires", "0")
-        return response
+        with runtime_settings_request_scope():
+            with internal_event_consumer_registry_scope(app.state.internal_event_consumer_registry):
+                auth_response = await route_policy_required_response(request, app=app, index=route_policy_index)
+                if auth_response is not None:
+                    response = auth_response
+                else:
+                    response = await call_next(request)
+            if pii_audit_enabled():
+                response = apply_pii_audit(
+                    request=request,
+                    response=response,
+                    repository=audit_repository,
+                    fingerprint_secret=pii_fingerprint_secret,
+                )
+            response.headers.setdefault("X-AICRM-Route-Owner", "ai_crm_next")
+            response.headers.setdefault("X-AICRM-Fallback-Used", "false")
+            response.headers.setdefault("X-AICRM-App", "ai_crm_next")
+            response.headers.setdefault("X-AICRM-Release-SHA", current_release_sha())
+            if public_https_environment():
+                response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+            if request.url.path == "/sidebar/bind-mobile" or request.url.path.startswith("/api/sidebar/"):
+                response.headers.setdefault("Cache-Control", "no-store, max-age=0")
+                response.headers.setdefault("Pragma", "no-cache")
+                response.headers.setdefault("Expires", "0")
+            return response
 
     app.mount(
         "/static/group-ops",

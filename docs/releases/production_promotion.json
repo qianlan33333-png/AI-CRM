@@ -9,8 +9,8 @@
   },
   "target": {
     "repository": "qianlan333/AI-CRM",
-    "candidate_sha": "46d110da06bca2433933ee8dd504c50f28f537da",
-    "pull_request": 1770
+    "candidate_sha": "a3618dc29e58b38c0691f5e198594fc980a39f39",
+    "pull_request": 1787
   },
   "allowed_post_candidate_paths": [
     ".github/workflows/ai-audience-production-diagnostics.yml",
@@ -34,11 +34,16 @@
     "docs/ci/test_scope_policy.yml",
     "docs/releases/production_promotion.json",
     "docs/releases/production_terminal_history_acknowledgements.json",
+    "docs/releases/production_welcome_timeout_acknowledgement.json",
     "docs/releases/queue_all_scope_cutover.json",
+    "docs/runbooks/wecom_welcome_hard_realtime.md",
     "migrations/versions/0138_queue_terminal_acknowledgement.py",
     "migrations/versions/0139_queue_terminal_acknowledgement_scope.py",
+    "migrations/versions/0141_production_welcome_timeout_ack_scope.py",
     "scripts/ops/acknowledge_production_terminal_history.py",
+    "scripts/ops/acknowledge_production_welcome_timeout.py",
     "scripts/ops/acknowledge_pre_cutover_welcome_terminal.py",
+    "scripts/ops/acknowledge_release_terminal_histories.py",
     "scripts/ops/cutover_queue_runtime_generation.py",
     "scripts/ops/recover_all_scope_contact_detail.py",
     "scripts/ops/run_release_customer_read_model_refresh.py",
@@ -52,6 +57,7 @@
     "tests/test_github_action_pins.py",
     "tests/test_production_promotion_provenance.py",
     "tests/test_production_terminal_history_acknowledgement.py",
+    "tests/test_production_welcome_timeout_acknowledgement.py",
     "tests/test_alembic_revision_chain.py",
     "tests/test_ai_audience_production_diagnostics_workflow.py",
     "tests/test_ai_audience_external_api.py",

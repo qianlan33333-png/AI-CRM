@@ -137,6 +137,7 @@ class WebhookInboxRepository(Protocol):
         payload_xml: str,
         payload_json: dict[str, Any],
         payload_summary_json: dict[str, Any],
+        lane: str = "webhook_inbox",
         max_attempts: int = 8,
     ) -> dict[str, Any]: ...
 
@@ -212,8 +213,10 @@ class PostgresWebhookInboxRepository:
         payload_xml: str,
         payload_json: dict[str, Any],
         payload_summary_json: dict[str, Any],
+        lane: str = "webhook_inbox",
         max_attempts: int = 8,
     ) -> dict[str, Any]:
+        normalized_lane = _text(lane) or "webhook_inbox"
         with _connect(self._database_url) as conn, conn.cursor() as cur:
             cur.execute(
                 """
@@ -229,7 +232,7 @@ class PostgresWebhookInboxRepository:
                 VALUES (
                     %s, %s, %s, %s, %s, %s,
                     %s, %s, %s, %s,
-                    %s, '', 'webhook_inbox', CURRENT_TIMESTAMP, %s, %s,
+                    %s, '', %s, CURRENT_TIMESTAMP, %s, %s,
                     (SELECT policy_version FROM queue_runtime_control WHERE singleton = TRUE FOR SHARE),
                     %s, %s, %s, %s,
                     %s, %s, '{}'::jsonb, 'received', %s,
@@ -259,6 +262,7 @@ class PostgresWebhookInboxRepository:
                     _text(external_event_id),
                     _text(idempotency_key),
                     "exe_" + uuid4().hex,
+                    normalized_lane,
                     ":".join(
                         (
                             _text(provider),
@@ -825,6 +829,7 @@ class InMemoryWebhookInboxRepository:
         tenant = _text(kwargs.get("tenant_id")) or "aicrm"
         provider = _text(kwargs.get("provider"))
         key = _text(kwargs.get("idempotency_key"))
+        lane = _text(kwargs.get("lane")) or "webhook_inbox"
         now = datetime.now(timezone.utc)
         for row in self.rows:
             if row["tenant_id"] == tenant and row["provider"] == provider and row["idempotency_key"] == key:
@@ -856,7 +861,7 @@ class InMemoryWebhookInboxRepository:
             "idempotency_key": key,
             "execution_id": "exe_" + uuid4().hex,
             "parent_execution_id": "",
-            "lane": "webhook_inbox",
+            "lane": lane,
             "available_at": now,
             "ordering_key": ":".join(
                 (
