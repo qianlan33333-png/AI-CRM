@@ -11,6 +11,8 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_BASELINE_PATH = ROOT / "docs" / "performance" / "critical_read_path_baselines.json"
 REQUIRED_PROFILES = {
     "customer_list",
+    "sidebar_recent_messages",
+    "sidebar_timeline",
     "sidebar_workbench",
     "questionnaire_admin",
     "admin_jobs",

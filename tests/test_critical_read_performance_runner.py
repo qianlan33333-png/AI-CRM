@@ -57,10 +57,14 @@ def test_performance_runner_uses_existing_next_repository_paths() -> None:
     source = Path(check_critical_read_performance.__file__).read_text(encoding="utf-8")
 
     assert "SqlAlchemyCustomerReadModelRepository" in source
-    assert "SidebarWorkbenchReadModel" in source
+    assert "create_app" in source
     assert "PostgresQuestionnaireReadRepository" in source
     assert "build_jobs_payload" in source
     assert "SQLPushCenterReadModel" in source
+    assert "TestClient" in source
+    assert "_StaticCustomerContext" not in source
+    assert "generate_series(1, 100000)" in source
+    assert "generate_series(1, 1000000)" in source
     assert "generate_series(1, 95000)" in source
     assert "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)" in source
 
@@ -96,6 +100,8 @@ def test_critical_read_performance_against_fixed_postgres_dataset(next_pg_schema
     assert report["ok"] is True, report["failures"]
     assert set(report["profiles"]) == {
         "customer_list",
+        "sidebar_recent_messages",
+        "sidebar_timeline",
         "sidebar_workbench",
         "questionnaire_admin",
         "admin_jobs",

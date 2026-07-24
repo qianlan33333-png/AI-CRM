@@ -9,6 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
 from aicrm_next.shared.db_session import get_engine
+from aicrm_next.shared.runtime_settings import invalidate_runtime_settings_request_snapshot
 from aicrm_next.shared.safe_logging import safe_log_exception
 from aicrm_next.shared.secret_store import FileSecretStore, is_secret_reference
 from aicrm_next.shared.sensitive_data import redact_sensitive_data
@@ -89,6 +90,7 @@ class AdminConfigRepository:
                 text("SELECT key, value, updated_at FROM app_settings WHERE key = :key"),
                 {"key": normalized_key},
             ).mappings().first()
+        invalidate_runtime_settings_request_snapshot()
         return dict(row) if row else {"key": normalized_key, "value": stored_value}
 
     def insert_audit_log(
