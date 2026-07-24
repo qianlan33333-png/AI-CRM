@@ -863,7 +863,7 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/ai_audience_ops/service.py",
       "key": "AICRM_PUBLIC_BASE_URL",
-      "line": 615
+      "line": 656
     },
     {
       "accessor": "os.getenv",
