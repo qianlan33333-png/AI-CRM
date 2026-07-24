@@ -337,6 +337,7 @@ class AudienceRefreshIntentRepository:
     ) -> dict[str, Any]:
         normalized_source_type = _text(source_type)
         normalized_event_key = _text(source_event_key)
+        normalized_refresh_kind = _refresh_kind(refresh_kind)
         if not normalized_source_type or not normalized_event_key:
             raise ValueError("source_type_and_source_event_key_required")
         rows = session.execute(
@@ -344,11 +345,32 @@ class AudienceRefreshIntentRepository:
                 """
                 SELECT DISTINCT package.id AS package_id
                 FROM ai_audience_package package
+                JOIN ai_audience_package_version version
+                  ON version.id = package.current_version_id
                 JOIN ai_audience_package_dependency dependency
                   ON dependency.package_id = package.id
                  AND dependency.version_id = package.current_version_id
                 WHERE package.status = 'active'
                   AND package.current_version_id IS NOT NULL
+                  AND (
+                    (
+                      :refresh_kind = 'incremental'
+                      AND package.incremental_enabled = TRUE
+                      AND BTRIM(version.incremental_sql_text) <> ''
+                    )
+                    OR (
+                      :refresh_kind = 'daily'
+                      AND package.daily_enabled = TRUE
+                      AND (
+                        BTRIM(version.snapshot_sql_text) <> ''
+                        OR (
+                          package.query_mode = 'simple_sql'
+                          AND package.incremental_enabled = FALSE
+                          AND BTRIM(version.simple_compiled_sql_text) <> ''
+                        )
+                      )
+                    )
+                  )
                   AND dependency.source_type = :source_type
                   AND (
                     :source_key = ''
@@ -358,7 +380,11 @@ class AudienceRefreshIntentRepository:
                 ORDER BY package.id
                 """
             ),
-            {"source_type": normalized_source_type, "source_key": _text(source_key)},
+            {
+                "source_type": normalized_source_type,
+                "source_key": _text(source_key),
+                "refresh_kind": normalized_refresh_kind,
+            },
         ).mappings().all()
         items = [
             self.mark_package_dirty_in_session(
@@ -436,9 +462,18 @@ class AudienceRefreshIntentRepository:
         package = session.execute(
             text(
                 """
-                SELECT id, status, current_version_id
-                FROM ai_audience_package
-                WHERE id = :package_id
+                SELECT package.id,
+                       package.status,
+                       package.current_version_id,
+                       package.query_mode,
+                       package.incremental_enabled,
+                       package.daily_enabled,
+                       version.snapshot_sql_text,
+                       version.simple_compiled_sql_text
+                FROM ai_audience_package package
+                JOIN ai_audience_package_version version
+                  ON version.id = package.current_version_id
+                WHERE package.id = :package_id
                 FOR SHARE
                 """
             ),
@@ -524,6 +559,20 @@ class AudienceRefreshIntentRepository:
             {"package_id": package_id},
         ).mappings().one()
         current_status = _text(current["status"])
+        requested_kind = _refresh_kind(refresh_kind)
+        daily_sql_available = bool(_text(package.get("snapshot_sql_text"))) or (
+            _text(package.get("query_mode")) == "simple_sql"
+            and not bool(package.get("incremental_enabled"))
+            and bool(_text(package.get("simple_compiled_sql_text")))
+        )
+        recover_blocked_wrong_kind = (
+            current_status == "blocked"
+            and _text(current.get("last_error_code"))
+            in {"incremental_sql_not_configured", "daily_sql_not_configured"}
+            and requested_kind == "daily"
+            and bool(package.get("daily_enabled"))
+            and daily_sql_available
+        )
         owner_expected = (
             current_status in _OPEN_OWNER_STATUSES
             and int(current["signal_generation"] or 0)
@@ -540,7 +589,6 @@ class AudienceRefreshIntentRepository:
         )
         has_owner = owner_expected and owner_state != "history_frozen"
         generation = int(current["dirty_generation"] or 0) + 1
-        requested_kind = _refresh_kind(refresh_kind)
         has_pending_target = owner_expected and (
             current_status != "running"
             or int(current["dirty_generation"] or 0) > int(current["running_generation"] or 0)
@@ -553,7 +601,9 @@ class AudienceRefreshIntentRepository:
         preserve_target_payload = has_pending_target and target_kind != requested_kind
         target_params = _json_obj(current.get("target_params_json")) if preserve_target_payload else dict(params or {})
         target_row_limit = int(current.get("target_row_limit") or AI_AUDIENCE_REFRESH_DEFAULT_ROW_LIMIT) if preserve_target_payload else _bounded_row_limit(row_limit)
-        should_signal = not has_owner and current_status != "blocked"
+        should_signal = not has_owner and (
+            current_status != "blocked" or recover_blocked_wrong_kind
+        )
         status = "waiting" if should_signal else current_status
         signal_generation = generation if should_signal else int(current["signal_generation"] or 0)
         updated = session.execute(
@@ -572,6 +622,7 @@ class AudienceRefreshIntentRepository:
                     last_source_event_key = :source_event_key,
                     last_error_code = CASE WHEN :should_signal THEN '' ELSE last_error_code END,
                     last_error_message = CASE WHEN :should_signal THEN '' ELSE last_error_message END,
+                    attempt_count = CASE WHEN :recover_blocked_wrong_kind THEN 0 ELSE attempt_count END,
                     row_version = row_version + 1,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE package_id = :package_id
@@ -589,6 +640,7 @@ class AudienceRefreshIntentRepository:
                 "execution_id": root_execution_id,
                 "parent_execution_id": _text(parent_execution_id),
                 "should_signal": should_signal,
+                "recover_blocked_wrong_kind": recover_blocked_wrong_kind,
                 "source_event_key": event_key,
             },
         ).mappings().one()
@@ -621,6 +673,7 @@ class AudienceRefreshIntentRepository:
             "deduplicated": False,
             "signal_created": bool(signal),
             "history_frozen_signal_recovered": owner_state == "history_frozen" and bool(signal),
+            "blocked_wrong_kind_recovered": recover_blocked_wrong_kind and bool(signal),
             "intent": _intent_summary(updated),
             "signal": _public(signal) if signal else None,
             "real_external_call_executed": False,

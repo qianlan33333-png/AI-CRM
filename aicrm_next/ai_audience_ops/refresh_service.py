@@ -23,6 +23,25 @@ from .sql_executor import build_execution_plan
 AI_AUDIENCE_REFRESH_QUERY_TIMEOUT_SECONDS = 120
 
 
+def _refresh_sql(package: dict[str, Any], version: dict[str, Any], refresh_kind: str) -> str:
+    if refresh_kind != "daily":
+        return _text(version.get("incremental_sql_text"))
+    snapshot_sql = _text(version.get("snapshot_sql_text"))
+    if snapshot_sql:
+        return snapshot_sql
+    # Compatibility for one pre-runtime simple-SQL shape: the compiler output
+    # is canonical, but the legacy row stored it outside snapshot_sql_text.
+    # Keep the fallback deliberately narrow so arbitrary invalid packages stay
+    # fail-closed and visible to diagnostics.
+    if (
+        _text(package.get("query_mode")) == "simple_sql"
+        and bool(package.get("daily_enabled"))
+        and not bool(package.get("incremental_enabled"))
+    ):
+        return _text(version.get("simple_compiled_sql_text"))
+    return ""
+
+
 class AudienceRefreshService:
     def __init__(
         self,
@@ -99,7 +118,7 @@ class AudienceRefreshService:
         if not version:
             return {"ok": False, "error": "current_version_not_found"}
         refresh_kind = "daily" if run_type in {"daily", "snapshot", "snapshot_current"} else "incremental"
-        sql_text = _text(version.get("snapshot_sql_text")) if refresh_kind == "daily" else _text(version.get("incremental_sql_text"))
+        sql_text = _refresh_sql(package, version, refresh_kind)
         if not sql_text:
             return {"ok": False, "error": f"{refresh_kind}_sql_not_configured"}
 
