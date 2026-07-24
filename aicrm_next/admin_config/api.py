@@ -11,8 +11,11 @@ from fastapi.templating import Jinja2Templates
 from aicrm_next.admin_read_model.application import GetAdminConfigPageQuery, page_row_count
 from aicrm_next.admin_shell import admin_path_for, shell_context
 from aicrm_next.shared.admin_action_runtime import ensure_admin_action_token, validate_admin_action_token
+from aicrm_next.capability_registry import registry_summary
 
 from .api_docs_view_model import build_api_docs_view_model
+from .config_definitions import config_definition_summary
+from .config_releases import ConfigReleaseService
 from .application import (
     AdminConfigReadService,
     AdminConfigWriteCommand,
@@ -29,6 +32,7 @@ router = APIRouter()
 _TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "frontend_compat" / "templates"
 templates = Jinja2Templates(directory=_TEMPLATES_DIR)
 ADMIN_ACCESS_DETAIL_PATH = "/admin/config/detail/admin_access"
+CONFIG_RELEASE_ROWS = 8
 
 
 def _operator_from_request(request: Request, payload: dict[str, Any] | None = None, form: Any | None = None) -> str:
@@ -38,6 +42,10 @@ def _operator_from_request(request: Request, payload: dict[str, Any] | None = No
         or _text((payload or {}).get("operator") if payload else "")
         or "crm_console"
     )
+
+
+def _config_release_service(request: Request) -> ConfigReleaseService:
+    return ConfigReleaseService(profile=getattr(request.app.state, "deployment_profile", None))
 
 
 def _config_context(
@@ -183,6 +191,42 @@ def _push_capability_error(exc: Exception) -> JSONResponse:
     return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
 
 
+def _config_release_error(exc: Exception) -> JSONResponse:
+    if isinstance(exc, KeyError):
+        return JSONResponse({"ok": False, "error": "config release not found"}, status_code=404)
+    return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
+
+
+def _config_release_status_label(status: Any) -> str:
+    return {
+        "draft": "草稿",
+        "validated": "校验通过",
+        "validation_failed": "校验失败",
+        "published": "当前生效",
+        "superseded": "已被替代",
+    }.get(_text(status), _text(status) or "未知")
+
+
+def _config_release_view(release: dict[str, Any]) -> dict[str, Any]:
+    return {
+        **release,
+        "status_label": _config_release_status_label(release.get("status")),
+        "change_count": len(release.get("changed_keys") or []),
+    }
+
+
+def _config_release_changes_from_form(form: dict[str, Any]) -> dict[str, str | None]:
+    changes: dict[str, str | None] = {}
+    for index in range(CONFIG_RELEASE_ROWS):
+        key = _text(form.get(f"key__{index}"))
+        if not key:
+            continue
+        if key in changes:
+            raise ValueError(f"duplicate config key: {key}")
+        changes[key] = None if _bool(form.get(f"remove__{index}")) else _text(form.get(f"value__{index}"))
+    return changes
+
+
 @router.get("/admin/config", name="api.admin_config", response_class=HTMLResponse)
 def admin_config_home(request: Request):
     payload = AdminConfigReadService().build_home_payload()
@@ -322,6 +366,162 @@ async def admin_config_save_app_settings(request: Request):
     return _redirect("/admin/config/app-settings", saved=1)
 
 
+@router.get("/admin/config/releases", name="api.admin_config_releases", response_class=HTMLResponse)
+def admin_config_releases(request: Request):
+    service = _config_release_service(request)
+    releases = [_config_release_view(row) for row in service.list(limit=100)]
+    profile_state = service.profile_state()
+    active_release_id = profile_state.get("active_config_release_id")
+    return templates.TemplateResponse(
+        request,
+        "admin_console/config_releases.html",
+        _config_context(
+            request,
+            active_tab="releases",
+            page_title="配置发布",
+            page_summary="以草稿、校验、原子发布和回滚管理日常业务配置。",
+            page_notice=(
+                "配置发布成功"
+                if _bool(request.query_params.get("published"))
+                else "已创建回滚发布"
+                if _bool(request.query_params.get("rolled_back"))
+                else ""
+            ),
+            page_error=_text(request.query_params.get("error")),
+            releases=releases,
+            profile_state=profile_state,
+            summary_cards=[
+                {
+                    "label": "部署档案",
+                    "value": profile_state.get("profile_id") or "wecom-core",
+                    "description": "所有客户实例使用同一制品，通过静态部署档案区分。",
+                },
+                {
+                    "label": "当前发布",
+                    "value": f"#{active_release_id}" if active_release_id else "尚未发布",
+                    "description": "发布与 app_settings 写入处于同一数据库事务。",
+                },
+                {
+                    "label": "启用模式",
+                    "value": "观察模式" if profile_state.get("activation_mode") == "observe" else "强制模式",
+                    "description": "观察模式保持现有路由和运行行为不变。",
+                },
+            ],
+        ),
+    )
+
+
+@router.get("/admin/config/releases/new", name="api.admin_config_release_new", response_class=HTMLResponse)
+def admin_config_release_new(request: Request):
+    service = _config_release_service(request)
+    return templates.TemplateResponse(
+        request,
+        "admin_console/config_release_new.html",
+        _config_context(
+            request,
+            active_tab="releases",
+            page_title="新建配置发布",
+            page_summary="只提交本次需要变更的配置项；密钥只填写 Secret Store 引用。",
+            page_error=_text(request.query_params.get("error")),
+            definitions=service.definitions(),
+            profile_state=service.profile_state(),
+            release_row_indexes=range(CONFIG_RELEASE_ROWS),
+        ),
+    )
+
+
+@router.post("/admin/config/releases", name="api.admin_config_release_create", response_class=HTMLResponse)
+async def admin_config_release_create(request: Request):
+    token_error, form = await _token_error_from_form(request)
+    if token_error:
+        return _redirect("/admin/config/releases/new", error=token_error)
+    if not _bool(form.get("confirm")):
+        return _redirect("/admin/config/releases/new", error="confirm is required before creating a config release")
+    try:
+        release = _config_release_service(request).create_draft(
+            _config_release_changes_from_form(form),
+            operator=_operator_from_request(request, form=form),
+        )
+    except ValueError as exc:
+        return _redirect("/admin/config/releases/new", error=str(exc))
+    return _redirect(f"/admin/config/releases/{release['id']}", created=1)
+
+
+@router.get("/admin/config/releases/{release_id}", name="api.admin_config_release_detail", response_class=HTMLResponse)
+def admin_config_release_detail(request: Request, release_id: int):
+    service = _config_release_service(request)
+    release = service.get(release_id)
+    if not release:
+        raise HTTPException(status_code=404, detail="config release not found")
+    return templates.TemplateResponse(
+        request,
+        "admin_console/config_release_detail.html",
+        _config_context(
+            request,
+            active_tab="releases",
+            page_title=f"配置发布 #{release_id}",
+            page_summary="检查变更、校验结果与发布审计，再决定是否生效或回滚。",
+            page_notice=(
+                "草稿已创建"
+                if _bool(request.query_params.get("created"))
+                else "校验完成"
+                if _bool(request.query_params.get("validated"))
+                else ""
+            ),
+            page_error=_text(request.query_params.get("error")),
+            release=_config_release_view(release),
+            shadow_compare=service.shadow_compare(release_id),
+        ),
+    )
+
+
+@router.post("/admin/config/releases/{release_id}/validate", name="api.admin_config_release_validate", response_class=HTMLResponse)
+async def admin_config_release_validate(request: Request, release_id: int):
+    token_error, _form = await _token_error_from_form(request)
+    if token_error:
+        return _redirect(f"/admin/config/releases/{release_id}", error=token_error)
+    try:
+        _config_release_service(request).validate(release_id)
+    except (KeyError, ValueError) as exc:
+        return _redirect(f"/admin/config/releases/{release_id}", error=str(exc))
+    return _redirect(f"/admin/config/releases/{release_id}", validated=1)
+
+
+@router.post("/admin/config/releases/{release_id}/publish", name="api.admin_config_release_publish", response_class=HTMLResponse)
+async def admin_config_release_publish(request: Request, release_id: int):
+    token_error, form = await _token_error_from_form(request)
+    if token_error:
+        return _redirect(f"/admin/config/releases/{release_id}", error=token_error)
+    if not _bool(form.get("confirm")):
+        return _redirect(f"/admin/config/releases/{release_id}", error="confirm is required before publishing")
+    try:
+        _config_release_service(request).publish(
+            release_id,
+            expected_checksum=_text(form.get("checksum")),
+            operator=_operator_from_request(request, form=form),
+        )
+    except (KeyError, ValueError) as exc:
+        return _redirect(f"/admin/config/releases/{release_id}", error=str(exc))
+    return _redirect("/admin/config/releases", published=1)
+
+
+@router.post("/admin/config/releases/{release_id}/rollback", name="api.admin_config_release_rollback", response_class=HTMLResponse)
+async def admin_config_release_rollback(request: Request, release_id: int):
+    token_error, form = await _token_error_from_form(request)
+    if token_error:
+        return _redirect(f"/admin/config/releases/{release_id}", error=token_error)
+    if not _bool(form.get("confirm")):
+        return _redirect(f"/admin/config/releases/{release_id}", error="confirm is required before rollback")
+    try:
+        _config_release_service(request).rollback(
+            release_id,
+            operator=_operator_from_request(request, form=form),
+        )
+    except (KeyError, ValueError) as exc:
+        return _redirect(f"/admin/config/releases/{release_id}", error=str(exc))
+    return _redirect("/admin/config/releases", rolled_back=1)
+
+
 @router.get("/api/admin/config/overview", name="api.admin_config_overview")
 def api_admin_config_overview() -> dict[str, Any]:
     return {"ok": True, "overview": AdminConfigReadService().build_home_payload(), "source_status": "next_read_model", "fallback_used": False}
@@ -437,6 +637,176 @@ def api_admin_config_app_settings(request: Request) -> dict[str, Any]:
         ),
         "source_status": "next_read_model",
         "fallback_used": False,
+    }
+
+
+@router.get("/api/admin/config/capabilities", name="api.admin_config_capabilities")
+def api_admin_config_capabilities() -> dict[str, Any]:
+    return {
+        "ok": True,
+        "registry": registry_summary(),
+        "source_status": "static_capability_registry",
+        "fallback_used": False,
+    }
+
+
+@router.get("/api/admin/config/definitions", name="api.admin_config_definitions")
+def api_admin_config_definitions(request: Request) -> dict[str, Any]:
+    service = _config_release_service(request)
+    return {
+        "ok": True,
+        "schema": config_definition_summary(),
+        "enabled_definitions": service.definitions(),
+        "source_status": "static_config_definitions",
+        "fallback_used": False,
+    }
+
+
+@router.get("/api/admin/config/deployment-profile", name="api.admin_config_deployment_profile")
+def api_admin_config_deployment_profile(request: Request) -> dict[str, Any]:
+    return {
+        "ok": True,
+        "profile": _config_release_service(request).profile_state(),
+        "source_status": "deployment_profile",
+        "fallback_used": False,
+    }
+
+
+@router.get("/api/admin/config/releases", name="api.admin_config_releases_resource")
+def api_admin_config_releases_resource(request: Request, limit: int = 50) -> dict[str, Any]:
+    return {
+        "ok": True,
+        "releases": _config_release_service(request).list(limit=limit),
+        "source_status": "config_release_read_model",
+        "fallback_used": False,
+    }
+
+
+@router.post("/api/admin/config/releases", name="api.admin_config_release_create_resource")
+async def api_admin_config_release_create_resource(request: Request):
+    payload = await request.json()
+    if not isinstance(payload, dict):
+        return JSONResponse({"ok": False, "error": "payload must be an object"}, status_code=400)
+    token_error = _token_error_from_payload(request, payload)
+    if token_error:
+        return JSONResponse({"ok": False, "error": token_error}, status_code=401)
+    if not _bool(payload.get("confirm")):
+        return JSONResponse({"ok": False, "error": "confirm is required before creating a config release"}, status_code=400)
+    try:
+        release = _config_release_service(request).create_draft(
+            payload.get("changes") or {},
+            operator=_operator_from_request(request, payload=payload),
+            based_on_release_id=int(payload["based_on_release_id"]) if payload.get("based_on_release_id") else None,
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        return _config_release_error(exc)
+    return {
+        "ok": True,
+        "release": release,
+        "source_status": "config_release_command",
+        "fallback_used": False,
+        "real_external_call_executed": False,
+    }
+
+
+@router.get("/api/admin/config/releases/{release_id}", name="api.admin_config_release_resource")
+def api_admin_config_release_resource(release_id: int, request: Request):
+    release = _config_release_service(request).get(release_id)
+    if not release:
+        return JSONResponse({"ok": False, "error": "config release not found"}, status_code=404)
+    return {
+        "ok": True,
+        "release": release,
+        "source_status": "config_release_read_model",
+        "fallback_used": False,
+    }
+
+
+@router.get("/api/admin/config/releases/{release_id}/shadow-compare", name="api.admin_config_release_shadow_compare")
+def api_admin_config_release_shadow_compare(release_id: int, request: Request):
+    try:
+        comparison = _config_release_service(request).shadow_compare(release_id)
+    except KeyError as exc:
+        return _config_release_error(exc)
+    return {
+        "ok": comparison["ok"],
+        "comparison": comparison,
+        "source_status": "config_release_shadow_compare",
+        "fallback_used": False,
+    }
+
+
+@router.post("/api/admin/config/releases/{release_id}/validate", name="api.admin_config_release_validate_resource")
+async def api_admin_config_release_validate_resource(release_id: int, request: Request):
+    payload = await request.json()
+    if not isinstance(payload, dict):
+        return JSONResponse({"ok": False, "error": "payload must be an object"}, status_code=400)
+    token_error = _token_error_from_payload(request, payload)
+    if token_error:
+        return JSONResponse({"ok": False, "error": token_error}, status_code=401)
+    try:
+        release = _config_release_service(request).validate(release_id)
+    except (KeyError, ValueError) as exc:
+        return _config_release_error(exc)
+    return {
+        "ok": True,
+        "release": release,
+        "source_status": "config_release_command",
+        "fallback_used": False,
+        "real_external_call_executed": False,
+    }
+
+
+@router.post("/api/admin/config/releases/{release_id}/publish", name="api.admin_config_release_publish_resource")
+async def api_admin_config_release_publish_resource(release_id: int, request: Request):
+    payload = await request.json()
+    if not isinstance(payload, dict):
+        return JSONResponse({"ok": False, "error": "payload must be an object"}, status_code=400)
+    token_error = _token_error_from_payload(request, payload)
+    if token_error:
+        return JSONResponse({"ok": False, "error": token_error}, status_code=401)
+    if not _bool(payload.get("confirm")):
+        return JSONResponse({"ok": False, "error": "confirm is required before publishing"}, status_code=400)
+    try:
+        release = _config_release_service(request).publish(
+            release_id,
+            expected_checksum=_text(payload.get("checksum")),
+            operator=_operator_from_request(request, payload=payload),
+        )
+    except (KeyError, ValueError) as exc:
+        return _config_release_error(exc)
+    return {
+        "ok": True,
+        "release": release,
+        "source_status": "config_release_command",
+        "fallback_used": False,
+        "real_external_call_executed": False,
+    }
+
+
+@router.post("/api/admin/config/releases/{release_id}/rollback", name="api.admin_config_release_rollback_resource")
+async def api_admin_config_release_rollback_resource(release_id: int, request: Request):
+    payload = await request.json()
+    if not isinstance(payload, dict):
+        return JSONResponse({"ok": False, "error": "payload must be an object"}, status_code=400)
+    token_error = _token_error_from_payload(request, payload)
+    if token_error:
+        return JSONResponse({"ok": False, "error": token_error}, status_code=401)
+    if not _bool(payload.get("confirm")):
+        return JSONResponse({"ok": False, "error": "confirm is required before rollback"}, status_code=400)
+    try:
+        release = _config_release_service(request).rollback(
+            release_id,
+            operator=_operator_from_request(request, payload=payload),
+        )
+    except (KeyError, ValueError) as exc:
+        return _config_release_error(exc)
+    return {
+        "ok": True,
+        "release": release,
+        "source_status": "config_release_command",
+        "fallback_used": False,
+        "real_external_call_executed": False,
     }
 
 

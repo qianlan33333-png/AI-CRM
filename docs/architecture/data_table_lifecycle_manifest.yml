@@ -535,6 +535,50 @@ tables:
       - tests/test_unionid_identity_refactor_schema.py::test_id_dev_p1_baseline_tables_exist_in_fresh_schema
     notes: Runtime app configuration table. Push consumers read capability gates through the platform push-center boundary; secret values are masked at API/UI boundaries.
 
+  config_releases:
+    domain: admin_config
+    lifecycle: config
+    write_owner: aicrm_next.admin_config.config_release_repository
+    read_owners:
+      - aicrm_next.admin_config.config_release_repository
+      - aicrm_next.admin_config.config_releases
+      - aicrm_next.admin_config.api
+    replacement: ""
+    drop_candidate: false
+    runtime_entrypoints:
+      - admin config release draft and validation
+      - atomic config publish and rollback
+    migration_source: 0144_config_release_control_plane
+    pii_level: config_secret
+    guard_tests:
+      - tests/test_config_releases.py
+      - tests/test_config_releases_postgres.py
+      - tests/test_data_table_lifecycle_guard.py
+      - tests/test_repository_ownership_guard.py
+    notes: Versioned configuration release audit. Sensitive values may only be stored as Secret Store references and are redacted at API/UI boundaries.
+
+  deployment_profile_state:
+    domain: admin_config
+    lifecycle: config
+    write_owner: aicrm_next.admin_config.config_release_repository
+    read_owners:
+      - aicrm_next.admin_config.config_release_repository
+      - aicrm_next.admin_config.config_releases
+      - aicrm_next.admin_config.api
+    replacement: ""
+    drop_candidate: false
+    runtime_entrypoints:
+      - deployment profile readiness
+      - config release activation
+    migration_source: 0144_config_release_control_plane
+    pii_level: internal
+    guard_tests:
+      - tests/test_config_releases.py
+      - tests/test_config_releases_postgres.py
+      - tests/test_data_table_lifecycle_guard.py
+      - tests/test_repository_ownership_guard.py
+    notes: Records the deployed profile, enabled static capabilities, runtime roles, and active config release without containing runtime secrets.
+
   mcp_tool_settings:
     domain: admin_config
     lifecycle: config

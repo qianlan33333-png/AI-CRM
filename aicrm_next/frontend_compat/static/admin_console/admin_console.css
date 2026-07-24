@@ -2141,6 +2141,12 @@ body.admin-shell {
   background: #f5f6f7;
 }
 
+.admin-button--danger {
+  color: #fff;
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
 .admin-chip,
 .admin-badge,
 .admin-inline-chip {

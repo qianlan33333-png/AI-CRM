@@ -88,6 +88,7 @@ def _route_owner_index(router_specs: tuple[Any, ...]) -> dict[tuple[str, str], d
                 continue
             owners[_endpoint_key(endpoint)] = {
                 "capability_owner": str(spec.capability_owner),
+                "logical_capability_id": str(spec.logical_capability_id),
                 "route_group": str(spec.route_group),
             }
     return owners
@@ -119,7 +120,11 @@ def _runtime_routes_and_consumers() -> tuple[list[dict[str, Any]], dict[str, Any
                 continue
             owner = owner_index.get(
                 _endpoint_key(route.endpoint),
-                {"capability_owner": "unregistered", "route_group": "unregistered"},
+                {
+                    "capability_owner": "unregistered",
+                    "logical_capability_id": "unregistered",
+                    "route_group": "unregistered",
+                },
             )
             media_type = str(getattr(route.response_class, "media_type", "") or "")
             for method in sorted(set(route.methods or ()) - {"HEAD", "OPTIONS"}):
@@ -138,6 +143,7 @@ def _runtime_routes_and_consumers() -> tuple[list[dict[str, Any]], dict[str, Any
                         "kind": _route_kind(route.path, method, media_type),
                         "include_in_schema": bool(route.include_in_schema),
                         "capability_owner": owner["capability_owner"],
+                        "logical_capability_id": owner["logical_capability_id"],
                         "route_group": owner["route_group"],
                         "endpoint": ".".join(part for part in _endpoint_key(route.endpoint) if part),
                         "contract": contract,

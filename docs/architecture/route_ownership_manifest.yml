@@ -14625,3 +14625,343 @@ routes:
   rate_limit: public_strict
   principal_types:
   - public
+- path: /admin/config/releases
+  methods:
+  - GET
+  route_name: api.admin_config_releases
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: admin_page
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /admin/config/releases/new
+  methods:
+  - GET
+  route_name: api.admin_config_release_new
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: admin_page
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /admin/config/releases
+  methods:
+  - POST
+  route_name: api.admin_config_release_create
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: admin_page
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: true
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /admin/config/releases/{release_id}
+  methods:
+  - GET
+  route_name: api.admin_config_release_detail
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: admin_page
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /admin/config/releases/{release_id}/validate
+  methods:
+  - POST
+  route_name: api.admin_config_release_validate
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: admin_page
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: true
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /admin/config/releases/{release_id}/publish
+  methods:
+  - POST
+  route_name: api.admin_config_release_publish
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: admin_page
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: true
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /admin/config/releases/{release_id}/rollback
+  methods:
+  - POST
+  route_name: api.admin_config_release_rollback
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: admin_page
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: true
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/config/capabilities
+  methods:
+  - GET
+  route_name: api.admin_config_capabilities
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/config/definitions
+  methods:
+  - GET
+  route_name: api.admin_config_definitions
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/config/deployment-profile
+  methods:
+  - GET
+  route_name: api.admin_config_deployment_profile
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/config/releases
+  methods:
+  - GET
+  route_name: api.admin_config_releases_resource
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/config/releases
+  methods:
+  - POST
+  route_name: api.admin_config_release_create_resource
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: true
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/config/releases/{release_id}
+  methods:
+  - GET
+  route_name: api.admin_config_release_resource
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/config/releases/{release_id}/validate
+  methods:
+  - POST
+  route_name: api.admin_config_release_validate_resource
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: true
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/config/releases/{release_id}/publish
+  methods:
+  - POST
+  route_name: api.admin_config_release_publish_resource
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: true
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/config/releases/{release_id}/rollback
+  methods:
+  - POST
+  route_name: api.admin_config_release_rollback_resource
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: true
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/config/releases/{release_id}/shadow-compare
+  methods:
+  - GET
+  route_name: api.admin_config_release_shadow_compare
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human

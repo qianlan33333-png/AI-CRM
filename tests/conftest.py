@@ -243,6 +243,8 @@ _TABLES_TO_TRUNCATE = [
     "wechat_pay_orders",
     "alipay_pay_order_events",
     "alipay_pay_orders",
+    "config_releases",
+    "deployment_profile_state",
     "app_settings",
     "mcp_tool_settings",
     # — contacts / identity

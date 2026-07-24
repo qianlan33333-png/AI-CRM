@@ -116,6 +116,17 @@ class InternalEventConsumerRegistry:
     def seal_fanout_contract(self) -> None:
         self._fanout_authoritative = True
 
+    def remove_event_type(self, event_type: str) -> None:
+        if self._fanout_authoritative:
+            raise RuntimeError("internal event fanout contract is sealed")
+        normalized = str(event_type or "").strip()
+        self._consumers.pop(normalized, None)
+        self._handler_aliases = {
+            key: handler
+            for key, handler in self._handler_aliases.items()
+            if key[0] != normalized
+        }
+
     def fanout_manifest_for(self, event_type: str) -> dict[str, Any]:
         if not self._fanout_authoritative:
             raise RuntimeError("internal event fanout contract is not sealed")
