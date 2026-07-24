@@ -687,6 +687,9 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
     canary_blocked_count = int(row.get("canary_blocked_count") or 0)
     callback_welcome_failed_terminal_count = int(row.get("callback_welcome_failed_terminal_count") or 0)
     pre_cutover_acknowledged_welcome_count = int(row.get("pre_cutover_acknowledged_welcome_count") or 0)
+    acknowledged_production_welcome_41050_count = int(
+        row.get("acknowledged_production_welcome_41050_count") or 0
+    )
     acknowledged_private_message_84061_count = int(row.get("acknowledged_private_message_84061_count") or 0)
     acknowledged_refund_not_enough_count = int(row.get("acknowledged_refund_not_enough_count") or 0)
     expected_contact_absence_count = int(row.get("expected_contact_absence_count") or 0)
@@ -718,6 +721,14 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
         },
         "pre_cutover_welcome_terminal_acknowledgement": {
             "acknowledged_count": pre_cutover_acknowledged_welcome_count,
+            "excluded_from_business_health": True,
+            "operator_acknowledgement_required": True,
+            "provider_success_claimed": False,
+            "replay_prohibited": True,
+            "strict_provenance_required": True,
+        },
+        "production_welcome_41050_acknowledgement": {
+            "acknowledged_count": acknowledged_production_welcome_41050_count,
             "excluded_from_business_health": True,
             "operator_acknowledgement_required": True,
             "provider_success_claimed": False,

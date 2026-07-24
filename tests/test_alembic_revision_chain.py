@@ -103,8 +103,11 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     terminal_acknowledgement_scope_source = terminal_acknowledgement_scope.read_text(encoding="utf-8")
     welcome_realtime = VERSIONS / "0140_wecom_welcome_hard_realtime_lanes.py"
     welcome_realtime_source = welcome_realtime.read_text(encoding="utf-8")
+    production_welcome_ack_scope = VERSIONS / "0141_production_welcome_timeout_ack_scope.py"
+    production_welcome_ack_scope_source = production_welcome_ack_scope.read_text(encoding="utf-8")
 
-    assert heads == {"0140_wecom_welcome_hard_realtime_lanes"}
+    assert heads == {"0141_production_welcome_timeout_ack_scope"}
+    assert revisions["0141_production_welcome_timeout_ack_scope"]["down_revision"] == "0140_wecom_welcome_hard_realtime_lanes"
     assert revisions["0140_wecom_welcome_hard_realtime_lanes"]["down_revision"] == "0139_queue_terminal_acknowledgement_scope"
     assert revisions["0139_queue_terminal_acknowledgement_scope"]["down_revision"] == "0138_queue_terminal_acknowledgement"
     assert revisions["0138_queue_terminal_acknowledgement"]["down_revision"] == "0137_queue_production_scope_cutover"
@@ -155,6 +158,7 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     assert "def downgrade()" in terminal_acknowledgement_scope_source
     assert "wecom_welcome_ingress" in welcome_realtime_source
     assert "wecom_welcome" in welcome_realtime_source
+    assert "production_welcome_41050_job_2157_no_replay" in production_welcome_ack_scope_source
     assert "global_max_in_flight = global_max_in_flight +" in welcome_realtime_source
     assert "ix_automation_agent_output_unionid" in audit_source
     assert "idx_automation_agent_llm_call_log_agent_created" in audit_source

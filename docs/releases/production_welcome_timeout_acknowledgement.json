@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "authorization_base_sha": "1ccf3a056f21d3d023fcf77ac809d0569cc09820",
+  "authorization_recorded_at_utc": "2026-07-24T13:24:13Z",
+  "acknowledgement": {
+    "acknowledgement_type": "production_welcome_41050_job_2157_no_replay",
+    "confirmation": "ACKNOWLEDGE AI-CRM PRODUCTION WELCOME 41050 JOB 2157 AS NO-REPLAY HISTORY",
+    "confirmation_sha256": "e5a4f0fb09cb5d7e64069064139db7cd31ca4d152e5eaa3352f9cf97e2d510d7",
+    "maximum_job_count": 1,
+    "job_id": 2157,
+    "graph_id": 3,
+    "execution_id": "exe_channel_welcome_send_4795cc3d70964dc2b8a0fd5c6b875d33",
+    "business_id": "exe_channel_welcome_root_1ae456f3e96b4a97a478a5d4630e8907",
+    "attempt_id": "eea_be52aed9558e43e89c189dd6d472e6fc",
+    "effect_type": "wecom.welcome_message.send",
+    "adapter_name": "wecom_welcome_message",
+    "operation": "send",
+    "business_type": "channel_welcome_effect_graph",
+    "source_module": "channel_entry.application",
+    "source_route": "channel_entry.process_channel_entry",
+    "error_code": "wecom_error_41050",
+    "expected_lane": "wecom_interactive",
+    "expected_policy_version": "queue-v2-production-all-g1",
+    "expected_worker_generation": 1,
+    "job_created_at": "2026-07-24T11:30:38.262825+08:00",
+    "provider_call_started_at": "2026-07-24T11:31:32.223640+08:00",
+    "job_completed_at": "2026-07-24T11:31:32.739066+08:00",
+    "replay_prohibited": true,
+    "provider_success_claimed": false
+  }
+}
