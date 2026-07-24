@@ -191,7 +191,6 @@ jobs:
                                    MAX(relayed_at) AS newest_relayed_at
                             FROM internal_event_outbox
                             WHERE event_type = 'ai_audience.refresh.requested'
-                              AND created_at >= CURRENT_TIMESTAMP - INTERVAL '24 hours'
                             GROUP BY status, lane, policy_version, worker_generation,
                                      COALESCE(NULLIF(hold_reason, ''), 'none'),
                                      COALESCE(NULLIF(last_error_code, ''), 'none')
@@ -211,7 +210,6 @@ jobs:
                                    MAX(created_at) AS newest_created_at
                             FROM internal_event
                             WHERE event_type = 'ai_audience.refresh.requested'
-                              AND created_at >= CURRENT_TIMESTAMP - INTERVAL '24 hours'
                             GROUP BY event_type, expected_consumer_count,
                                      fanout_manifest_version, fanout_manifest_hash
                             ORDER BY expected_consumer_count, fanout_manifest_version
@@ -234,7 +232,6 @@ jobs:
                             FROM internal_event_consumer_run run
                             JOIN internal_event event ON event.event_id = run.event_id
                             WHERE event.event_type = 'ai_audience.refresh.requested'
-                              AND event.created_at >= CURRENT_TIMESTAMP - INTERVAL '24 hours'
                             GROUP BY run.consumer_name, run.status, run.lane,
                                      run.policy_version, run.worker_generation,
                                      COALESCE(NULLIF(run.hold_reason, ''), 'none'),
