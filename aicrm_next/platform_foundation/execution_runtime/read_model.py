@@ -181,7 +181,7 @@ class ExecutionRuntimeReadModel:
         external_scope_modes = {
             lane["lane"]: public_external_scope
             for lane in lane_items
-            if lane["lane"] in {"wecom_interactive", "wecom_bulk", "wecom_media", "outbound_webhook"}
+            if lane["lane"] in {"wecom_welcome", "wecom_interactive", "wecom_bulk", "wecom_media", "outbound_webhook"}
         }
         policy_payload = self._policy_payload(policy or {})
         policy_payload["external_claim_scope"] = durable_external_scope

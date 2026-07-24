@@ -11,6 +11,9 @@ from aicrm_next.platform_foundation.external_effects.repo_contract import _publi
 from aicrm_next.platform_foundation.external_effects.settlement_events import (
     build_external_effect_settled_event,
 )
+from aicrm_next.platform_foundation.execution_runtime.lanes import (
+    WECOM_WELCOME_RESERVED_LANES,
+)
 from aicrm_next.platform_foundation.internal_events.outbox import (
     enqueue_transactional_internal_event_outbox,
 )
@@ -264,13 +267,14 @@ class ExecutionRuntimeRepository:
     def claim_webhook_inbox_one(
         self,
         *,
+        lane: str = "webhook_inbox",
         worker_id: str,
         generation: int,
         lease_seconds: int = 30,
     ) -> RuntimeClaim | None:
         return self._claim_one(
             queue_kind="webhook_inbox",
-            lane="webhook_inbox",
+            lane=str(lane or "webhook_inbox").strip() or "webhook_inbox",
             worker_id=worker_id,
             generation=generation,
             lease_seconds=lease_seconds,
@@ -335,7 +339,22 @@ class ExecutionRuntimeRepository:
                 in_flight = connection.execute(self._in_flight_sql(), (normalized_lane,)).fetchone()
                 global_count = int((in_flight or {}).get("global_count") or 0)
                 lane_count = int((in_flight or {}).get("lane_count") or 0)
-                if global_count >= control.global_max_in_flight or lane_count >= policy.max_in_flight:
+                reserved_count = int((in_flight or {}).get("reserved_count") or 0)
+                reserved_capacity = self._active_reserved_capacity(
+                    connection,
+                    policy_version=control.policy_version,
+                )
+                ordinary_count = max(0, global_count - reserved_count)
+                ordinary_capacity = max(
+                    0,
+                    control.global_max_in_flight - reserved_capacity,
+                )
+                global_capacity_exhausted = (
+                    global_count >= control.global_max_in_flight
+                    if normalized_lane in WECOM_WELCOME_RESERVED_LANES
+                    else ordinary_count >= ordinary_capacity
+                )
+                if global_capacity_exhausted or lane_count >= policy.max_in_flight:
                     return None
                 row = connection.execute(
                     self._claim_sql(queue_kind=queue_kind, test_only=test_only),
@@ -718,9 +737,27 @@ class ExecutionRuntimeRepository:
                   AND lease_expires_at > CURRENT_TIMESTAMP
             )
             SELECT COUNT(*)::BIGINT AS global_count,
-                   COUNT(*) FILTER (WHERE lane = %s)::BIGINT AS lane_count
+                   COUNT(*) FILTER (WHERE lane = %s)::BIGINT AS lane_count,
+                   COUNT(*) FILTER (
+                       WHERE lane IN ('wecom_welcome_ingress', 'wecom_welcome')
+                   )::BIGINT AS reserved_count
             FROM active
         """
+
+    @staticmethod
+    def _active_reserved_capacity(connection: Any, *, policy_version: str) -> int:
+        row = connection.execute(
+            """
+            SELECT COALESCE(SUM(max_in_flight), 0)::BIGINT AS reserved_capacity
+            FROM queue_lane_policy
+            WHERE lane IN ('wecom_welcome_ingress', 'wecom_welcome')
+              AND enabled = TRUE
+              AND rollout_mode IN ('canary', 'execute')
+              AND policy_version = %s
+            """,
+            (str(policy_version or ""),),
+        ).fetchone()
+        return int((row or {}).get("reserved_capacity") or 0)
 
     @staticmethod
     def _claim_sql(*, queue_kind: str, test_only: bool) -> str:

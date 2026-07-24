@@ -1883,7 +1883,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/channel_entry/application.py",
       "key": "WECOM_CALLBACK_AES_KEY",
-      "line": 58
+      "line": 60
     },
     {
       "accessor": "os.getenv",
@@ -1913,7 +1913,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/channel_entry/application.py",
       "key": "WECOM_CALLBACK_TOKEN",
-      "line": 57
+      "line": 59
     },
     {
       "accessor": "os.getenv",
@@ -1967,7 +1967,7 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/channel_entry/application.py",
       "key": "WECOM_CORP_ID",
-      "line": 56
+      "line": 58
     },
     {
       "accessor": "os.getenv",
@@ -2117,13 +2117,13 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/channel_entry/application.py",
       "key": "WORKER_RELEASE_SHA",
-      "line": 1029
+      "line": 1075
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/channel_entry/application.py",
       "key": "WORKER_RELEASE_SHA",
-      "line": 1247
+      "line": 1293
     },
     {
       "accessor": "os.getenv",
@@ -3219,7 +3219,7 @@
     }
   ],
   "migration_heads": [
-    "0139_queue_terminal_acknowledgement_scope"
+    "0140_wecom_welcome_hard_realtime_lanes"
   ],
   "openapi_components": {
     "schemas": {

@@ -21,6 +21,7 @@ EXTERNAL_EFFECT_TERMINAL_STATUSES = frozenset(
         "failed_terminal",
         "blocked",
         "cancelled",
+        "expired",
     }
 )
 

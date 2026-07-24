@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -16,6 +17,7 @@ class ProcessWeComExternalContactEventCommand(BaseModel):
     event_data: dict[str, Any] = Field(default_factory=dict)
     payload_xml: str = ""
     route: str = ""
+    callback_received_at: datetime | None = None
 
 
 class ProcessChannelEntryCommand(BaseModel):
@@ -29,6 +31,7 @@ class ProcessChannelEntryCommand(BaseModel):
     event_action: str = "qrcode_enter"
     send_welcome_message: bool = False
     event_log_id: int | None = None
+    callback_received_at: datetime | None = None
     dry_run: bool = False
 
 

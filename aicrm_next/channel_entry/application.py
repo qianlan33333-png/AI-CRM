@@ -5,6 +5,7 @@ import logging
 import os
 import re
 import secrets
+from datetime import datetime, timezone
 from typing import Any
 
 from aicrm_next.shared.release import current_release_sha
@@ -31,6 +32,7 @@ from .schemas import (
     ProcessWeComExternalContactEventCommand,
     RepairChannelEntryCommand,
 )
+from .realtime_contract import utc_datetime, welcome_provider_deadline
 from .wecom_adapter import WeComAdapterBlocked, WeComApiError, get_wecom_adapter, wecom_adapter_diagnostics
 from .wecom_crypto import build_encrypted_reply, decrypt_message, parse_callback_xml, validate_callback_timestamp, verify_signature
 from aicrm_next.platform_foundation.command_bus.models import CommandContext
@@ -635,6 +637,23 @@ def _render_welcome_message_template(message: Any, command: ProcessChannelEntryC
     return CUSTOMER_NAME_PLACEHOLDER_RE.sub(_resolve_welcome_customer_name(command), rendered)
 
 
+def _welcome_callback_received_at(command: ProcessChannelEntryCommand) -> datetime | None:
+    # Historical repair is never allowed to replay a one-shot WelcomeCode.
+    if text(command.event_action) == "repair_channel_entry":
+        return None
+    received_at = utc_datetime(command.callback_received_at)
+    if received_at is not None:
+        return received_at
+    create_time = text(command.payload_json.get("CreateTime"))
+    if create_time:
+        try:
+            return datetime.fromtimestamp(int(create_time), tz=timezone.utc)
+        except (TypeError, ValueError, OSError):
+            return None
+    # Direct command callers are immediate by definition.
+    return datetime.now(timezone.utc)
+
+
 def _send_welcome(
     command: ProcessChannelEntryCommand,
     *,
@@ -670,6 +689,30 @@ def _send_welcome(
         payload["text"] = {"content": text_content}
     if attachments:
         payload["attachments"] = attachments
+    callback_received_at = _welcome_callback_received_at(command)
+    if callback_received_at is None:
+        result = {
+            "attempted": False,
+            "sent": False,
+            "expired": True,
+            "reason": "welcome_deadline_missing_no_replay",
+            "welcome_code": welcome_code,
+        }
+        _log_effect(command, effect_type="welcome_message", idempotency_key=key, status="skipped", channel_id=channel_id, scene_value=scene, reason=result["reason"], request_json=payload, response_json=result)
+        return result
+    provider_deadline_at = welcome_provider_deadline(callback_received_at)
+    if provider_deadline_at <= datetime.now(timezone.utc):
+        result = {
+            "attempted": False,
+            "sent": False,
+            "expired": True,
+            "reason": "welcome_provider_deadline_elapsed",
+            "welcome_code": welcome_code,
+            "callback_received_at": callback_received_at.isoformat(),
+            "provider_deadline_at": provider_deadline_at.isoformat(),
+        }
+        _log_effect(command, effect_type="welcome_message", idempotency_key=key, status="skipped", channel_id=channel_id, scene_value=scene, reason=result["reason"], request_json=payload, response_json=result)
+        return result
     if command.dry_run:
         return {"attempted": False, "sent": False, "reason": "dry_run", "request_payload": payload}
     target_type, target_id, target_payload = _channel_entry_target(command)
@@ -690,6 +733,8 @@ def _send_welcome(
                 actor_id=text(command.operator_id or command.follow_user_userid),
                 source_event_id=str(command.event_log_id or ""),
                 scene_value=scene,
+                callback_received_at=callback_received_at,
+                provider_deadline_at=provider_deadline_at,
             )
         )
     except Exception as exc:
@@ -954,6 +999,7 @@ def process_wecom_external_contact_event(
                         event_action=text(event.get("ChangeType")),
                         send_welcome_message=bool(text(event.get("WelcomeCode"))),
                         event_log_id=int(logged.get("id") or 0) or None,
+                        callback_received_at=command.callback_received_at,
                     ),
                     external_effect_adapter_registry=external_effect_adapter_registry,
                 )

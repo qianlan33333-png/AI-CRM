@@ -485,6 +485,9 @@ class InMemoryExternalEffectRepository(ExternalEffectRepository):
                 or bool(row.get("cancel_requested_at"))
             ):
                 return None
+            deadline = self._provider_deadline(row)
+            if deadline is False or (isinstance(deadline, datetime) and deadline <= utcnow()):
+                return None
             if any(int(attempt_row.get("job_id") or 0) == int(job.id) and attempt_row.get("status") == "dispatching" for attempt_row in self._attempts):
                 return None
             now = public_datetime(utcnow())
@@ -536,6 +539,61 @@ class InMemoryExternalEffectRepository(ExternalEffectRepository):
             updated = _public_job(row)
             attempt = _public_attempt(attempt_row)
             return (updated, attempt) if updated and attempt else None
+
+    @staticmethod
+    def _provider_deadline(row: dict[str, Any]) -> datetime | bool | None:
+        raw = _text(dict(row.get("payload_json") or {}).get("provider_deadline_at"))
+        if not raw:
+            return None
+        try:
+            parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError:
+            return False
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
+
+    def expire_provider_deadline(self, *, job: ExternalEffectJob) -> ExternalEffectJob | None:
+        with self._lock:
+            row = self._find(job.id)
+            if (
+                not row
+                or row.get("status") != "dispatching"
+                or not _text(job.lease_token)
+                or _text(row.get("lease_token")) != _text(job.lease_token)
+                or bool(row.get("provider_call_started_at"))
+            ):
+                return None
+            deadline = self._provider_deadline(row)
+            if deadline is None or (isinstance(deadline, datetime) and deadline > utcnow()):
+                return None
+            now = public_datetime(utcnow())
+            row.update(
+                {
+                    "status": "expired",
+                    "side_effect_executed": False,
+                    "provider_result_received": False,
+                    "reconciliation_required": False,
+                    "last_error_code": "provider_deadline_elapsed",
+                    "last_error_message": "Provider deadline elapsed before dispatch; replay is prohibited.",
+                    "result_summary_json": {
+                        **dict(row.get("result_summary_json") or {}),
+                        "provider_deadline_elapsed": True,
+                        "provider_boundary_crossed": False,
+                        "real_external_call_executed": False,
+                    },
+                    "lease_token": "",
+                    "lease_expires_at": "",
+                    "locked_by": "",
+                    "locked_at": "",
+                    "completed_at": now,
+                    "row_version": int(row.get("row_version") or 1) + 1,
+                    "updated_at": now,
+                }
+            )
+            expired = _public_job(row)
+            self._record_terminal_events(expired, None)
+            return expired
 
     def complete_dispatch(
         self,

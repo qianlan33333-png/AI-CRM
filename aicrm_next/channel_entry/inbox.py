@@ -9,6 +9,7 @@ from aicrm_next.shared.safe_logging import safe_log_exception
 
 from .application import process_wecom_external_contact_event
 from .domain import text
+from .realtime_contract import welcome_ingress_lane
 from .schemas import ProcessWeComExternalContactEventCommand
 
 
@@ -65,6 +66,7 @@ def ingest_wecom_callback(
     corp_id = text(event_data.get("ToUserName"))
     idempotency_key = wecom_callback_idempotency_key(corp_id, event_data)
     service = WebhookInboxService(repository)
+    payload_summary = _payload_summary(event_data)
     row = service.ingest(
         provider=WECOM_PROVIDER,
         event_family=WECOM_EXTERNAL_CONTACT_FAMILY,
@@ -81,7 +83,8 @@ def ingest_wecom_callback(
         raw_body=body or b"",
         payload_xml=plain_xml,
         payload_json=dict(event_data or {}),
-        payload_summary_json=_payload_summary(event_data),
+        payload_summary_json=payload_summary,
+        lane=welcome_ingress_lane(payload_summary),
         max_attempts=8,
     )
     return {
@@ -247,6 +250,7 @@ class WeComCallbackInboxWorker:
                     event_data=payload_json,
                     payload_xml=text(row.get("payload_xml")),
                     route=text(row.get("route")),
+                    callback_received_at=row.get("received_at"),
                 )
             )
             summary = _processing_summary(result)

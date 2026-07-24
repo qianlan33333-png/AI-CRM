@@ -101,8 +101,11 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     terminal_acknowledgement_source = terminal_acknowledgement.read_text(encoding="utf-8")
     terminal_acknowledgement_scope = VERSIONS / "0139_queue_terminal_acknowledgement_scope.py"
     terminal_acknowledgement_scope_source = terminal_acknowledgement_scope.read_text(encoding="utf-8")
+    welcome_realtime = VERSIONS / "0140_wecom_welcome_hard_realtime_lanes.py"
+    welcome_realtime_source = welcome_realtime.read_text(encoding="utf-8")
 
-    assert heads == {"0139_queue_terminal_acknowledgement_scope"}
+    assert heads == {"0140_wecom_welcome_hard_realtime_lanes"}
+    assert revisions["0140_wecom_welcome_hard_realtime_lanes"]["down_revision"] == "0139_queue_terminal_acknowledgement_scope"
     assert revisions["0139_queue_terminal_acknowledgement_scope"]["down_revision"] == "0138_queue_terminal_acknowledgement"
     assert revisions["0138_queue_terminal_acknowledgement"]["down_revision"] == "0137_queue_production_scope_cutover"
     assert revisions["0137_queue_production_scope_cutover"]["down_revision"] == "0136_queue_runtime_validation_soak"
@@ -150,6 +153,9 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     assert "production_wechat_refund_not_enough_no_replay" in terminal_acknowledgement_scope_source
     assert "ALTER COLUMN graph_id DROP NOT NULL" in terminal_acknowledgement_scope_source
     assert "def downgrade()" in terminal_acknowledgement_scope_source
+    assert "wecom_welcome_ingress" in welcome_realtime_source
+    assert "wecom_welcome" in welcome_realtime_source
+    assert "global_max_in_flight = global_max_in_flight +" in welcome_realtime_source
     assert "ix_automation_agent_output_unionid" in audit_source
     assert "idx_automation_agent_llm_call_log_agent_created" in audit_source
     assert "FOREIGN KEY" not in audit_source
