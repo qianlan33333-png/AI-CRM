@@ -163,7 +163,7 @@ def run(argv: list[str] | None = None) -> dict[str, Any]:
             "probes": {},
             "callback_route_signals": [],
             "user_facing_available": False,
-            "admin_webhook_inbox_deployed": False,
+            "admin_webhook_inbox_api_deployed": False,
             "admin_webhook_inbox_detail_route_deployed": False,
             "invalid_callback_plain_success": False,
             "app_level_callback_signal": False,
@@ -174,7 +174,6 @@ def run(argv: list[str] | None = None) -> dict[str, Any]:
         "health": _probe(_url(base_url, "/health"), timeout_seconds=timeout),
         "sidebar_bind_mobile": _probe(_url(base_url, "/sidebar/bind-mobile"), timeout_seconds=timeout),
         "admin_automation_conversion": _probe(_url(base_url, "/admin/automation-conversion"), timeout_seconds=timeout),
-        "admin_webhook_inbox": _probe(_url(base_url, "/admin/webhook-inbox"), timeout_seconds=timeout),
         "admin_webhook_inbox_metrics": _probe(
             _url(base_url, "/api/admin/webhook-inbox/metrics?provider=wecom&event_family=external_contact"),
             timeout_seconds=timeout,
@@ -209,9 +208,8 @@ def run(argv: list[str] | None = None) -> dict[str, Any]:
         and _is_2xx(probes["sidebar_bind_mobile"])
         and _is_2xx_or_3xx(probes["admin_automation_conversion"])
     )
-    admin_webhook_inbox_deployed = bool(
-        _is_route_deployed_signal(probes["admin_webhook_inbox"])
-        and _is_json_api_deployed_signal(
+    admin_webhook_inbox_api_deployed = bool(
+        _is_json_api_deployed_signal(
             probes["admin_webhook_inbox_metrics"],
             required_list_paths=(
                 "queue_metrics.provider_distribution",
@@ -248,8 +246,8 @@ def run(argv: list[str] | None = None) -> dict[str, Any]:
     warnings: list[str] = []
     if not user_facing_available:
         warnings.append("user-facing health/sidebar/admin probes are not all available")
-    if not admin_webhook_inbox_deployed:
-        warnings.append("admin webhook inbox public routes still look undeployed or unavailable")
+    if not admin_webhook_inbox_api_deployed:
+        warnings.append("admin webhook inbox APIs still look undeployed or unavailable")
     if not admin_webhook_inbox_detail_route_deployed:
         warnings.append("admin webhook inbox detail processing-chain route still looks undeployed or unavailable")
     if invalid_callback_plain_success:
@@ -259,13 +257,13 @@ def run(argv: list[str] | None = None) -> dict[str, Any]:
         warnings.append("callback public probes do not prove app-level 4xx verification/decrypt rejection for every callback route")
 
     permanent_fix_public_signals_ready = bool(
-        user_facing_available and admin_webhook_inbox_deployed and app_level_callback_signal
+        user_facing_available and admin_webhook_inbox_api_deployed and app_level_callback_signal
     )
     return {
         "ok": permanent_fix_public_signals_ready,
         "base_url": base_url,
         "user_facing_available": user_facing_available,
-        "admin_webhook_inbox_deployed": admin_webhook_inbox_deployed,
+        "admin_webhook_inbox_api_deployed": admin_webhook_inbox_api_deployed,
         "admin_webhook_inbox_detail_route_deployed": admin_webhook_inbox_detail_route_deployed,
         "invalid_callback_plain_success": invalid_callback_plain_success,
         "app_level_callback_signal": app_level_callback_signal,

@@ -47,8 +47,6 @@ SMOKE_PATHS = (
     "/admin/automation-conversion",
     "/admin/automation-conversion/group-ops/ui",
     "/admin/wecom-tags",
-    "/admin/push-center",
-    "/admin/internal-events",
     "/admin/automation-agents",
     "/api/admin/push-center/stats",
     "/api/admin/push-center/jobs?limit=1",

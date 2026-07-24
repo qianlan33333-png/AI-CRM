@@ -43,7 +43,6 @@ def _healthy_mapping() -> dict[str, tuple[int, str]]:
             200,
             '{"ok":true,"runtime":"ai_crm_wecom_ingress","durable_inbox_only":true,"ack_boundary":"signature_decrypt_and_durable_inbox_only"}',
         ),
-        "/admin/webhook-inbox": (200, "<html></html>"),
         "/api/admin/webhook-inbox/metrics": (
             200,
             '{"ok":true,"queue_metrics":{"provider_distribution":[],"route_distribution":[],"recent_errors":[]}}',
@@ -66,7 +65,6 @@ def test_deploy_smoke_accepts_local_callback_runtime_and_admin_routes(monkeypatc
     assert payload["web_health_ok"] is True
     assert payload["ingress_health_ok"] is True
     assert payload["ingress_durable_ack_ready"] is True
-    assert payload["admin_page_deployed"] is True
     assert payload["admin_api_deployed"] is True
     assert payload["admin_detail_route_deployed"] is True
     assert payload["ingress_callback_routes_ready"] is True
@@ -75,7 +73,6 @@ def test_deploy_smoke_accepts_local_callback_runtime_and_admin_routes(monkeypatc
 
 def test_deploy_smoke_rejects_missing_webhook_inbox_admin_routes(monkeypatch) -> None:
     mapping = _healthy_mapping()
-    mapping["/admin/webhook-inbox"] = (404, '{"detail":"Not Found"}')
     mapping["/api/admin/webhook-inbox/metrics"] = (404, '{"detail":"Not Found"}')
     mapping["/api/admin/webhook-inbox/items"] = (404, '{"detail":"Not Found"}')
     mapping["/api/admin/webhook-inbox/0"] = (404, '{"detail":"Not Found"}')
@@ -85,7 +82,6 @@ def test_deploy_smoke_rejects_missing_webhook_inbox_admin_routes(monkeypatch) ->
     payload = smoke.run([])
 
     assert payload["ok"] is False
-    assert payload["admin_page_deployed"] is False
     assert payload["admin_api_deployed"] is False
     assert any("webhook inbox admin" in warning for warning in payload["warnings"])
 
@@ -179,7 +175,7 @@ def test_deploy_smoke_rejects_missing_isolated_ingress_runtime(monkeypatch) -> N
     assert payload["ok"] is False
     assert payload["web_health_ok"] is True
     assert payload["ingress_health_ok"] is False
-    assert payload["admin_page_deployed"] is True
+    assert payload["admin_api_deployed"] is True
 
 
 def test_deploy_smoke_rejects_ingress_runtime_without_durable_ack_signal(monkeypatch) -> None:

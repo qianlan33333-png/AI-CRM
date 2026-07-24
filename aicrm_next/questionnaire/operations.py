@@ -91,7 +91,6 @@ def _capability_projection() -> dict[str, Any]:
         "configured_enabled": bool(capability.get("configured_enabled")),
         "readonly": bool(readonly_reason),
         "reason": _text(capability.get("reason")) or readonly_reason or _text(capability.get("gate_problem")),
-        "href": _text(capability.get("push_center_href")) or "/admin/push-center?section=questionnaire",
     }
 
 

@@ -38,7 +38,7 @@
       ]
     },
     "admin_jobs": {
-      "route": "/admin/jobs",
+      "route": "/api/admin/jobs/summary",
       "owner": "admin_jobs",
       "dataset_rows": 20000,
       "sample_count": 20,

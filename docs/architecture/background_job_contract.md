@@ -43,19 +43,6 @@ reference semantics. Production persistence continues to use existing
 `internal_event` and `external_effect_job` repositories until a later migration
 PR explicitly moves a business route.
 
-## Scheduled Data Quality Snapshot
-
-`scripts/run_data_quality_snapshot.py` is the Phase 7 scheduled entrypoint for
-data quality registry snapshots. It calls
-`aicrm_next.background_jobs.data_quality_snapshot.run_scheduled_data_quality_snapshot`
-and emits JSON with `database_probe_executed=false`,
-`real_external_call_executed=false`, and `persistence_status=not_configured`.
-
-This runner is safe for cron/systemd wiring because it only serializes registry
-metadata. It does not create tables, persist history, query production data, or
-execute external effects until a later approved PR attaches a production-safe
-read repository and snapshot store.
-
 ## Route Inventory Guard
 
 `tools/check_background_job_contract.py` validates the current route ownership

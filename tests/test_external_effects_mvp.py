@@ -1316,7 +1316,7 @@ def test_external_effect_admin_page_is_removed_and_troubleshooting_api_covers_qu
     detail = next_client.get(f"/api/admin/external-effects/troubleshooting/jobs/{job['id']}").json()
 
     assert page.status_code == 404
-    assert push_center.status_code == 200
+    assert push_center.status_code == 404
     assert summary["purpose"] == "external_effect_queue_troubleshooting"
     assert summary["real_external_call_executed"] is False
     assert summary["problem_count"] >= 1

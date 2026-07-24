@@ -595,7 +595,7 @@ def test_webhooks_push_category_controls_external_effect_runtime(monkeypatch, tm
     assert detail_page.status_code == 200
     assert "推送能力配置" in detail_page.text
     assert "/api/admin/config/push-capabilities" in detail_page.text
-    assert "/api/admin/push-center/stats" in detail_page.text
+    assert "/api/admin/push-center/stats" not in detail_page.text
     assert "/api/admin/push-center/legacy-deprecations" not in detail_page.text
     assert "Webhook 队列真实执行" not in detail_page.text
     assert "AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES" not in detail_page.text

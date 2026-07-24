@@ -2401,7 +2401,6 @@ tables:
     read_owners:
       - aicrm_next.admin_read_model
       - aicrm_next.ai_audience_ops
-      - aicrm_next.growth_orchestration
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2456,7 +2455,6 @@ tables:
     write_owner: aicrm_next.ai_audience_ops
     read_owners:
       - aicrm_next.ai_audience_ops
-      - aicrm_next.growth_orchestration
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -3132,7 +3130,6 @@ tables:
     read_owners:
       - aicrm_next.background_jobs
       - aicrm_next.cloud_orchestrator
-      - aicrm_next.growth_orchestration
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -3151,7 +3148,6 @@ tables:
     write_owner: aicrm_next.cloud_orchestrator
     read_owners:
       - aicrm_next.cloud_orchestrator
-      - aicrm_next.growth_orchestration
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -3650,7 +3646,6 @@ tables:
       - aicrm_next.admin_jobs
       - aicrm_next.admin_read_model
       - aicrm_next.background_jobs
-      - aicrm_next.growth_orchestration
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""

@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
+from fastapi.responses import JSONResponse
 
-from aicrm_next.shared.admin_action_runtime import ensure_admin_action_token, validate_admin_action_token
+from aicrm_next.shared.admin_action_runtime import validate_admin_action_token
 from aicrm_next.platform_foundation.auth_platform.context import AuthContext
 
 from .application import (
@@ -20,10 +18,8 @@ from .application import (
     build_jobs_deferred_jobs_payload,
     build_jobs_message_batch_detail_payload,
     build_jobs_message_batches_payload,
-    build_jobs_payload,
     build_jobs_summary_payload,
     build_jobs_webhook_deliveries_payload,
-    build_legacy_disabled_payload,
     cancel_broadcast_job,
     execute_jobs_action,
 )
@@ -35,13 +31,7 @@ from .notification_settings import (
     send_broadcast_job_hourly_feishu_report,
     upsert_feishu_notification_setting,
 )
-from aicrm_next.admin_shell import admin_path_for, shell_context
-
 router = APIRouter()
-
-_ADMIN_JOBS_TEMPLATE_DIR = Path(__file__).resolve().parent / "templates"
-_FRONTEND_COMPAT_TEMPLATE_DIR = Path(__file__).resolve().parents[1] / "frontend_compat" / "templates"
-templates = Jinja2Templates(directory=[_ADMIN_JOBS_TEMPLATE_DIR, _FRONTEND_COMPAT_TEMPLATE_DIR])
 
 
 def _operator_from_request(request: Request, payload: dict[str, Any] | None = None, form: Any | None = None) -> str:
@@ -50,11 +40,6 @@ def _operator_from_request(request: Request, payload: dict[str, Any] | None = No
     if isinstance(context, AuthContext) and normalized_text(context.sub):
         return normalized_text(context.sub)
     return "authenticated_admin"
-
-
-def _authenticated_actor(request: Request) -> str:
-    context = getattr(request.state, "auth_context", None)
-    return normalized_text(context.sub) if isinstance(context, AuthContext) else ""
 
 
 def _manual_action_contract(payload: dict[str, Any]) -> str:
@@ -92,64 +77,6 @@ async def _action_token_error(request: Request, payload: dict[str, Any] | None =
 
 async def _cron_or_action_token_error(request: Request, payload: dict[str, Any] | None = None) -> str:
     return await _action_token_error(request, payload)
-
-
-def _jobs_context(
-    request: Request, *, page_notice: str = "", page_error: str = "", action_result: dict[str, Any] | None = None, args: dict[str, Any] | None = None
-) -> dict[str, Any]:
-    context = shell_context(
-        request=request,
-        page_title="同步任务",
-        page_summary="在这里查看聊天同步、回调状态、消息批次、待处理作业、Webhook 投递和群发队列。",
-        active_endpoint="api.admin_jobs",
-    )
-    context.update(
-        {
-            "breadcrumbs": [{"label": "客户管理后台", "href": "/"}, {"label": "同步任务", "href": ""}],
-            "jobs_payload": build_jobs_payload(args if args is not None else dict(request.query_params)),
-            "page_notice": page_notice,
-            "page_error": page_error,
-            "action_result": action_result or {},
-            "admin_action_token": ensure_admin_action_token(),
-            "url_for": admin_path_for,
-        }
-    )
-    return context
-
-
-@router.get("/admin/jobs", name="api.admin_jobs", response_class=HTMLResponse)
-def admin_jobs(request: Request):
-    return templates.TemplateResponse(request, "admin_console/jobs.html", _jobs_context(request))
-
-
-@router.post("/admin/jobs/actions", name="api.admin_console_jobs_action", response_class=HTMLResponse)
-async def admin_jobs_action(request: Request):
-    form = await request.form()
-    active_tab = normalized_text(form.get("return_tab")) or normalized_text(request.query_params.get("tab"))
-    query_overrides = {
-        "tab": active_tab,
-        "batch_id": normalized_text(form.get("batch_id")),
-        "batch_status": normalized_text(form.get("batch_status")),
-        "batch_limit": normalized_text(form.get("batch_limit")),
-        "webhook_event_type": normalized_text(form.get("webhook_event_type")),
-        "webhook_status": normalized_text(form.get("webhook_status")),
-        "webhook_limit": normalized_text(form.get("webhook_limit")),
-    }
-    token_error = validate_admin_action_token(normalized_text(form.get("admin_action_token")), request=request)
-    if token_error:
-        return templates.TemplateResponse(request, "admin_console/jobs.html", _jobs_context(request, page_error=token_error, args=query_overrides))
-    try:
-        result = execute_jobs_action(
-            action=normalized_text(form.get("action")),
-            form=form,
-            operator=_operator_from_request(request, form=form),
-        )
-        notice = "这里会先展示操作预览，确认后才会真正执行同步。" if result.get("preview_only") else "操作已完成，结果与审计已刷新。"
-        return templates.TemplateResponse(
-            request, "admin_console/jobs.html", _jobs_context(request, page_notice=notice, action_result=result, args=query_overrides)
-        )
-    except Exception as exc:
-        return templates.TemplateResponse(request, "admin_console/jobs.html", _jobs_context(request, page_error=str(exc), args=query_overrides))
 
 
 @router.get("/api/admin/jobs/summary")
@@ -219,106 +146,9 @@ def api_admin_jobs_deferred_jobs(request: Request):
     return {"ok": True, "deferred_jobs": _jsonable(build_jobs_deferred_jobs_payload(dict(request.query_params)))}
 
 
-@router.post("/api/admin/jobs/deferred-jobs/run")
-async def api_admin_jobs_deferred_jobs_run(request: Request):
-    payload = await _request_payload(request)
-    token_error = await _action_token_error(request, payload)
-    if token_error:
-        return JSONResponse({"ok": False, "error": token_error}, status_code=401)
-    body = build_legacy_disabled_payload(
-        "old_admin_jobs_deferred_run",
-        error="legacy_deferred_jobs_runner_disabled",
-    )
-    return JSONResponse(body, status_code=409)
-
-
 @router.get("/api/admin/jobs/webhook-deliveries")
 def api_admin_jobs_webhook_deliveries(request: Request):
     return {"ok": True, "webhook_deliveries": _jsonable(build_jobs_webhook_deliveries_payload(dict(request.query_params)))}
-
-
-@router.post("/api/admin/jobs/webhook-deliveries/run")
-async def api_admin_jobs_webhook_deliveries_run(request: Request):
-    payload = await _request_payload(request)
-    token_error = await _action_token_error(request, payload)
-    if token_error:
-        return JSONResponse({"ok": False, "error": token_error}, status_code=401)
-    body = build_legacy_disabled_payload(
-        "old_customer_webhook_delivery_retry",
-        error="legacy_webhook_retry_disabled",
-    )
-    return JSONResponse(body, status_code=409)
-
-
-@router.post("/api/admin/jobs/webhook-deliveries/{delivery_id}/retry")
-async def api_admin_jobs_webhook_delivery_retry(delivery_id: int, request: Request):
-    payload = await _request_payload(request)
-    token_error = await _action_token_error(request, payload)
-    if token_error:
-        return JSONResponse({"ok": False, "error": token_error}, status_code=401)
-    body = build_legacy_disabled_payload(
-        "old_customer_webhook_delivery_retry",
-        error="legacy_webhook_retry_disabled",
-        extra={"delivery_id": int(delivery_id)},
-    )
-    return JSONResponse(body, status_code=409)
-
-
-@router.get("/admin/broadcast-jobs", name="api.admin_broadcast_jobs", response_class=HTMLResponse)
-def admin_broadcast_jobs(request: Request):
-    selected_job_id = normalized_text(request.query_params.get("job_id"))
-    if selected_job_id.isdigit():
-        return RedirectResponse(f"/admin/broadcast-jobs/{selected_job_id}", status_code=303)
-    payload = build_broadcast_jobs_payload(dict(request.query_params))
-    context = shell_context(
-        request=request,
-        page_title="群发任务队列",
-        page_summary="统一群发任务队列，展示审批、取消和发送结果。",
-        active_endpoint="api.admin_jobs",
-    )
-    context.update(
-        {
-            "breadcrumbs": [{"label": "客户管理后台", "href": "/"}, {"label": "同步任务", "href": "/admin/jobs"}, {"label": "群发队列", "href": ""}],
-            "jobs": payload["jobs"],
-            "counts": payload["counts"],
-            "total": payload["total"],
-            "operator_actor": _authenticated_actor(request),
-            "filters": payload["filters"],
-            "status_options": payload["status_options"],
-            "source_type_options": payload["source_type_options"],
-            "admin_action_token": ensure_admin_action_token(),
-            "url_for": admin_path_for,
-        }
-    )
-    return templates.TemplateResponse(request, "admin_console/broadcast_jobs.html", context)
-
-
-@router.get(
-    "/admin/broadcast-jobs/{job_id}",
-    name="api.admin_broadcast_job_page",
-    response_class=HTMLResponse,
-)
-def admin_broadcast_job_page(job_id: int, request: Request):
-    context = shell_context(
-        request=request,
-        page_title="群发任务详情",
-        page_summary="核对单个群发任务的审批、排队、发送与关联事件。",
-        active_endpoint="api.admin_jobs",
-    )
-    context.update(
-        {
-            "breadcrumbs": [
-                {"label": "客户管理后台", "href": "/"},
-                {"label": "群发队列", "href": "/admin/broadcast-jobs"},
-                {"label": f"#{job_id}", "href": ""},
-            ],
-            "job_id": int(job_id),
-            "operator_actor": _authenticated_actor(request),
-            "admin_action_token": ensure_admin_action_token(),
-            "url_for": admin_path_for,
-        }
-    )
-    return templates.TemplateResponse(request, "admin_console/broadcast_job_detail.html", context)
 
 
 @router.get("/api/admin/broadcast-jobs")

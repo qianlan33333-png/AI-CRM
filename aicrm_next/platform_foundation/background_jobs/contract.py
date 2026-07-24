@@ -195,7 +195,6 @@ def enqueue_webhook_job(
 def webhook_route_contracts() -> tuple[WebhookRouteContract, ...]:
     W = WebhookRouteContract
     return (
-        W("/admin/webhook-inbox", ("GET",), "api.admin_webhook_inbox_page", "none", "read_model", "admin page renders webhook inbox queue state only"),
         W("/api/admin/webhook-inbox/metrics", ("GET",), "webhook_inbox_metrics", "none", "read_model", "read-only webhook inbox queue metrics"),
         W("/api/admin/webhook-inbox/items", ("GET",), "list_webhook_inbox_items", "none", "read_model", "read-only webhook inbox queue items"),
         W("/api/admin/webhook-inbox/{inbox_id}", ("GET",), "get_webhook_inbox_item", "none", "read_model", "read-only webhook inbox processing chain"),
@@ -462,20 +461,4 @@ def webhook_route_contracts() -> tuple[WebhookRouteContract, ...]:
         ),
         W("/api/admin/jobs/callbacks", ("GET",), "api_admin_jobs_callbacks", "none", "read_model", "read-only callback inventory"),
         W("/api/admin/jobs/webhook-deliveries", ("GET",), "api_admin_jobs_webhook_deliveries", "none", "read_model", "read-only delivery inventory"),
-        W(
-            "/api/admin/jobs/webhook-deliveries/run",
-            ("POST",),
-            "api_admin_jobs_webhook_deliveries_run",
-            "none",
-            "command",
-            "retired customer webhook retry route returns disabled payload and creates no jobs",
-        ),
-        W(
-            "/api/admin/jobs/webhook-deliveries/{delivery_id}/retry",
-            ("POST",),
-            "api_admin_jobs_webhook_delivery_retry",
-            "none",
-            "command",
-            "retired customer webhook retry route returns disabled payload and creates no jobs",
-        ),
     )

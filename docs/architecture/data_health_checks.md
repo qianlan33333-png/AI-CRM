@@ -89,40 +89,6 @@ source change is not data staleness. `customer_360_freshness_guard` remains the
 release-blocking source-of-truth check and compares the latest identity, order,
 questionnaire, and message facts with the last successful managed refresh.
 
-## Data Quality Registry
-
-Phase 7 starts turning data health into an operator-readable issue list. The
-registry lives in `aicrm_next.data_health.quality_registry` and is metadata-only:
-it defines the rule IDs, groups, source tables, thresholds, and remediation
-language that later admin APIs and scheduled snapshots can execute through
-production-safe read probes.
-
-Registry API:
-
-- `GET /api/admin/data-quality/summary`
-- `GET /api/admin/data-quality/groups`
-- `GET /api/admin/data-quality/checks`
-- `GET /api/admin/data-quality/checks/{check_id}`
-
-These endpoints expose only registry metadata. They do not connect to the
-production database and do not evaluate rule status yet.
-
-Admin dashboard:
-
-- `GET /admin/data-quality`
-
-The dashboard groups rules by operator domain and displays rule severity,
-threshold, source table metadata, and remediation text from the registry.
-
-Scheduled snapshot entrypoint:
-
-- `scripts/run_data_quality_snapshot.py`
-- `aicrm_next.background_jobs.data_quality_snapshot.run_scheduled_data_quality_snapshot`
-
-The scheduled entrypoint currently generates a registry snapshot payload for
-cron/systemd orchestration. It reports `database_probe_executed=false` and
-`persistence_status=not_configured`; a later PR must attach production-safe
-read probes and persistence before it can become a historical DQ snapshot table.
 
 ## Development Guardrails
 

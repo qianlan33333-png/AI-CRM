@@ -407,21 +407,6 @@ def test_internal_event_api_redacts_questionnaire_summary_and_hides_payload(monk
     assert "13800138000" not in str(detail)
 
 
-def test_internal_events_admin_page_contains_reconciliation_ui(monkeypatch) -> None:
-    client = _client(monkeypatch, questionnaire_enabled=True)
-
-    list_response = client.get("/admin/internal-events")
-    detail_response = client.get("/admin/internal-events/questionnaire-reconciliation-contract")
-
-    assert list_response.status_code == 200
-    assert 'data-execution-page="internal-list"' in list_response.text
-    assert detail_response.status_code == 200
-    assert 'data-execution-page="internal-detail"' in detail_response.text
-    assert "业务效果核对" in detail_response.text
-    assert "消费者执行与对账证据" in detail_response.text
-    assert "admin_execution_ui.js" in detail_response.text
-
-
 def test_worker_payment_allowlist_does_not_scan_questionnaire_until_explicitly_allowed(monkeypatch) -> None:
     monkeypatch.setenv("AICRM_INTERNAL_EVENTS_ENABLED", "1")
     monkeypatch.setenv("AICRM_INTERNAL_EVENTS_AUTO_EXECUTE", "1")

@@ -1175,10 +1175,10 @@ def test_ci_manifest_only_references_existing_test_files() -> None:
 
 
 def test_frontend_typescript_change_runs_frontend_tests_and_build() -> None:
-    result = _select("frontend/admin/push_center/push_center_status.ts")
+    result = _select("frontend/admin/customer/customer_status.ts")
 
     assert "frontend_p1" in result["matched_scopes"]
-    assert "tests/frontend/p1_push_center_status.test.mjs" in result["frontend_tests"]
+    assert "tests/frontend/admin_request_security.test.mjs" in result["frontend_tests"]
     assert result["needs_frontend_build"] is True
     assert result["python_tests"] == []
 

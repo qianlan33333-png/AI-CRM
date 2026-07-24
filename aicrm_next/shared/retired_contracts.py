@@ -13,7 +13,7 @@ def retired_external_effect_payload(legacy_key: str, *, error: str) -> dict[str,
         "legacy_outbound_disabled": True,
         "external_effect_required": True,
         "migration_target": "external_effect_queue",
-        "push_center_url": "/admin/push-center",
+        "push_center_url": "/api/admin/push-center/jobs",
         "retirement_state": "physically_removed",
         "real_external_call_executed": False,
     }

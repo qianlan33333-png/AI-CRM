@@ -193,7 +193,10 @@ REQUIRED_TEST_PROOFS = {
     "admin_retry_skip": ("tests/test_webhook_inbox_admin_api.py", "test_webhook_inbox_admin_retry_and_skip_require_token"),
     "admin_dispatch_one": ("tests/test_webhook_inbox_admin_api.py", "test_webhook_inbox_admin_dispatch_one_requires_token_and_versioned_command"),
     "admin_run_due": ("tests/test_webhook_inbox_admin_api.py", "test_webhook_inbox_admin_run_due_defaults_to_dry_run"),
-    "admin_page_hooks": ("tests/test_webhook_inbox_admin_api.py", "test_webhook_inbox_admin_page_renders_shell_and_api_hooks"),
+    "admin_api_only_contract": (
+        "tests/test_monitoring_frontend_retirement.py",
+        "test_monitoring_frontend_and_duplicate_facades_are_absent_from_runtime",
+    ),
     "admin_incident_window_filter": (
         "tests/test_webhook_inbox_admin_api.py",
         "test_webhook_inbox_admin_filters_incident_window_pending_failed_rows",
@@ -351,7 +354,7 @@ OBJECTIVE_REQUIREMENTS = {
             "admin_retry_skip",
             "admin_dispatch_one",
             "admin_run_due",
-            "admin_page_hooks",
+            "admin_api_only_contract",
             "admin_incident_window_filter",
             "webhook_inbox_metrics_distribution",
             "deploy_smoke_completion_gate",
@@ -362,7 +365,6 @@ OBJECTIVE_REQUIREMENTS = {
         ],
         "readiness": [
             "ready_for_production_completion",
-            "admin_webhook_inbox_ok",
             "admin_webhook_inbox_metrics_ok",
             "admin_webhook_inbox_items_ok",
             "admin_webhook_inbox_reconciliation_ok",
@@ -403,7 +405,6 @@ def _readiness_check(path: str) -> dict[str, Any]:
     webhook_ingestion = payload.get("webhook_ingestion_evidence") if isinstance(payload.get("webhook_ingestion_evidence"), dict) else {}
     webhook_processing = payload.get("webhook_processing_evidence") if isinstance(payload.get("webhook_processing_evidence"), dict) else {}
     same_sample = payload.get("same_sample_evidence") if isinstance(payload.get("same_sample_evidence"), dict) else {}
-    admin_webhook_inbox = payload.get("admin_webhook_inbox") if isinstance(payload.get("admin_webhook_inbox"), dict) else {}
     admin_webhook_inbox_metrics = payload.get("admin_webhook_inbox_metrics") if isinstance(payload.get("admin_webhook_inbox_metrics"), dict) else {}
     admin_webhook_inbox_items = payload.get("admin_webhook_inbox_items") if isinstance(payload.get("admin_webhook_inbox_items"), dict) else {}
     admin_webhook_inbox_reconciliation = (
@@ -424,7 +425,6 @@ def _readiness_check(path: str) -> dict[str, Any]:
         and webhook_ingestion.get("ok") is True
         and webhook_processing.get("ok") is True
         and same_sample.get("ok") is True
-        and admin_webhook_inbox.get("ok") is True
         and admin_webhook_inbox_metrics.get("ok") is True
         and admin_webhook_inbox_items.get("ok") is True
         and admin_webhook_inbox_reconciliation.get("ok") is True
@@ -445,7 +445,6 @@ def _readiness_check(path: str) -> dict[str, Any]:
         "webhook_ingestion_ok": webhook_ingestion.get("ok"),
         "webhook_processing_ok": webhook_processing.get("ok"),
         "same_sample_ok": same_sample.get("ok"),
-        "admin_webhook_inbox_ok": admin_webhook_inbox.get("ok"),
         "admin_webhook_inbox_metrics_ok": admin_webhook_inbox_metrics.get("ok"),
         "admin_webhook_inbox_items_ok": admin_webhook_inbox_items.get("ok"),
         "admin_webhook_inbox_reconciliation_ok": admin_webhook_inbox_reconciliation.get("ok"),

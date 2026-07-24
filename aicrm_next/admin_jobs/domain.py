@@ -2,16 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 
-JOB_TABS = (
-    {"key": "overview", "label": "概览"},
-    {"key": "archive", "label": "聊天同步"},
-    {"key": "callbacks", "label": "回调状态"},
-    {"key": "batches", "label": "消息批次"},
-    {"key": "deferred", "label": "待处理作业"},
-    {"key": "webhooks", "label": "Webhook 投递"},
-    {"key": "broadcast_queue", "label": "群发队列", "href": "/admin/broadcast-jobs"},
-)
-
 BROADCAST_STATUSES = (
     "waiting_approval",
     "queued",

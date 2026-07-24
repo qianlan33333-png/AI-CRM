@@ -56,7 +56,6 @@ dry-run / due 队列 / 下游隔离证据，不得在主仓文档中保留可直
 
 - `/wecom/external-contact/callback`
 - `/api/wecom/events`
-- `/admin/webhook-inbox`
 - `/api/admin/webhook-inbox/metrics`
 - `/api/admin/webhook-inbox/items`
 - `/api/admin/wecom/callback/reconciliation`
@@ -72,7 +71,7 @@ dry-run / due 队列 / 下游隔离证据，不得在主仓文档中保留可直
 - `/admin/customers`
 - `/admin/questionnaires`
 - `/admin/automation-conversion`
-- `/admin/jobs`
+- `/api/admin/jobs/summary`
 
 ## 发布口径
 

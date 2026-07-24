@@ -89,7 +89,7 @@ def test_public_state_reports_current_emergency_quick_ack_shape(monkeypatch) -> 
 
     assert payload["ok"] is False
     assert payload["user_facing_available"] is True
-    assert payload["admin_webhook_inbox_deployed"] is False
+    assert payload["admin_webhook_inbox_api_deployed"] is False
     assert payload["invalid_callback_plain_success"] is True
     assert "emergency quick ACK" in " ".join(payload["warnings"])
 
@@ -121,7 +121,7 @@ def test_public_state_accepts_public_signals_after_cutover(monkeypatch) -> None:
 
     assert payload["ok"] is True
     assert payload["user_facing_available"] is True
-    assert payload["admin_webhook_inbox_deployed"] is True
+    assert payload["admin_webhook_inbox_api_deployed"] is True
     assert payload["admin_webhook_inbox_detail_route_deployed"] is True
     assert payload["invalid_callback_plain_success"] is False
     assert payload["app_level_callback_signal"] is True
@@ -184,9 +184,9 @@ def test_public_state_rejects_json_api_200_without_required_shape(monkeypatch) -
     payload = public_state.run(["--base-url", "https://example.test"])
 
     assert payload["ok"] is False
-    assert payload["admin_webhook_inbox_deployed"] is False
+    assert payload["admin_webhook_inbox_api_deployed"] is False
     assert payload["admin_webhook_inbox_detail_route_deployed"] is True
-    assert any("admin webhook inbox public routes" in warning for warning in payload["warnings"])
+    assert any("admin webhook inbox APIs" in warning for warning in payload["warnings"])
 
 
 def test_public_state_rejects_generic_404_for_webhook_inbox_detail_route(monkeypatch) -> None:
@@ -212,7 +212,7 @@ def test_public_state_rejects_generic_404_for_webhook_inbox_detail_route(monkeyp
     payload = public_state.run(["--base-url", "https://example.test"])
 
     assert payload["ok"] is False
-    assert payload["admin_webhook_inbox_deployed"] is False
+    assert payload["admin_webhook_inbox_api_deployed"] is False
     assert payload["admin_webhook_inbox_detail_route_deployed"] is False
     assert any("detail processing-chain route" in warning for warning in payload["warnings"])
 
@@ -240,7 +240,7 @@ def test_public_state_rejects_admin_webhook_inbox_server_error(monkeypatch) -> N
     payload = public_state.run(["--base-url", "https://example.test"])
 
     assert payload["ok"] is False
-    assert payload["admin_webhook_inbox_deployed"] is False
+    assert payload["admin_webhook_inbox_api_deployed"] is False
     assert payload["app_level_callback_signal"] is True
 
 
@@ -267,6 +267,6 @@ def test_public_state_rejects_invalid_callback_upstream_error(monkeypatch) -> No
     payload = public_state.run(["--base-url", "https://example.test"])
 
     assert payload["ok"] is False
-    assert payload["admin_webhook_inbox_deployed"] is True
+    assert payload["admin_webhook_inbox_api_deployed"] is True
     assert payload["invalid_callback_plain_success"] is False
     assert payload["app_level_callback_signal"] is False

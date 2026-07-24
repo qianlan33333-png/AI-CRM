@@ -275,7 +275,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/admin_jobs/application.py",
       "key": "AICRM_AUTH_MCP_CLIENT_ID",
-      "line": 282
+      "line": 256
     },
     {
       "accessor": "declared_runtime_environment_key",
@@ -383,7 +383,7 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/admin_jobs/application.py",
       "key": "AICRM_ENABLE_IN_PROCESS_ARCHIVE_SYNC",
-      "line": 397
+      "line": 371
     },
     {
       "accessor": "os.getenv",
@@ -599,7 +599,7 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/admin_config/application.py",
       "key": "AICRM_NEXT_ALIPAY_MODE",
-      "line": 1012
+      "line": 966
     },
     {
       "accessor": "os.getenv",
@@ -797,7 +797,7 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/admin_config/application.py",
       "key": "AICRM_NEXT_WECHAT_PAY_MODE",
-      "line": 1006
+      "line": 960
     },
     {
       "accessor": "os.getenv",
@@ -1233,12 +1233,6 @@
     },
     {
       "accessor": "os.getenv",
-      "file": "aicrm_next/growth_orchestration/repository.py",
-      "key": "DATABASE_URL",
-      "line": 89
-    },
-    {
-      "accessor": "os.getenv",
       "file": "aicrm_next/operation_cycles/repository.py",
       "key": "DATABASE_URL",
       "line": 1112
@@ -1367,7 +1361,7 @@
       "accessor": "os.getenv",
       "file": "scripts/ops/check_wecom_callback_permanent_fix_readiness.py",
       "key": "DATABASE_URL",
-      "line": 163
+      "line": 139
     },
     {
       "accessor": "os.getenv",
@@ -1404,12 +1398,6 @@
       "file": "scripts/precheck_retired_automation_tables.py",
       "key": "DATABASE_URL",
       "line": 326
-    },
-    {
-      "accessor": "os.getenv",
-      "file": "aicrm_next/background_jobs/data_quality_snapshot.py",
-      "key": "DATA_QUALITY_SNAPSHOT_OPERATOR",
-      "line": 26
     },
     {
       "accessor": "os.getenv",
@@ -2057,7 +2045,7 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/admin_jobs/application.py",
       "key": "WECOM_DEFAULT_OWNER_USERID",
-      "line": 83
+      "line": 63
     },
     {
       "accessor": "os.getenv",
@@ -2283,7 +2271,6 @@
     "CUSTOMER_READ_MODEL_REFRESH_MAX_CUSTOMERS",
     "CUSTOMER_READ_MODEL_REPO_BACKEND",
     "DATABASE_URL",
-    "DATA_QUALITY_SNAPSHOT_OPERATOR",
     "DB_APPLICATION_NAME",
     "ENVIRONMENT",
     "EXTERNAL_PUSH_WEBHOOK_TIMEOUT_SECONDS",
@@ -6598,84 +6585,6 @@
       "route_group": "ai_audience_admin_pages"
     },
     {
-      "capability_owner": "admin_jobs",
-      "contract": {
-        "parameters": [],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        }
-      },
-      "endpoint": "aicrm_next.admin_jobs.routes.admin_broadcast_jobs",
-      "include_in_schema": true,
-      "kind": "page",
-      "methods": [
-        "GET"
-      ],
-      "name": "api.admin_broadcast_jobs",
-      "operation_id": "api.admin_broadcast_jobs:GET:/admin/broadcast-jobs",
-      "path": "/admin/broadcast-jobs",
-      "route_group": "admin_jobs"
-    },
-    {
-      "capability_owner": "admin_jobs",
-      "contract": {
-        "parameters": [
-          {
-            "in": "path",
-            "name": "job_id",
-            "required": true,
-            "schema": {
-              "title": "Job Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        }
-      },
-      "endpoint": "aicrm_next.admin_jobs.routes.admin_broadcast_job_page",
-      "include_in_schema": true,
-      "kind": "page",
-      "methods": [
-        "GET"
-      ],
-      "name": "api.admin_broadcast_job_page",
-      "operation_id": "api.admin_broadcast_job_page:GET:/admin/broadcast-jobs/{job_id}",
-      "path": "/admin/broadcast-jobs/{job_id}",
-      "route_group": "admin_jobs"
-    },
-    {
       "capability_owner": "automation_engine",
       "contract": {
         "parameters": [],
@@ -7592,159 +7501,6 @@
       "route_group": "customer_admin_pages"
     },
     {
-      "capability_owner": "admin_shell",
-      "contract": {
-        "parameters": [],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        }
-      },
-      "endpoint": "aicrm_next.admin_shell.routes.admin_data_health_page",
-      "include_in_schema": true,
-      "kind": "page",
-      "methods": [
-        "GET"
-      ],
-      "name": "api.admin_data_health_page",
-      "operation_id": "api.admin_data_health_page:GET:/admin/data-health",
-      "path": "/admin/data-health",
-      "route_group": "admin_shell"
-    },
-    {
-      "capability_owner": "admin_shell",
-      "contract": {
-        "parameters": [],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        }
-      },
-      "endpoint": "aicrm_next.admin_shell.routes.admin_data_quality_page",
-      "include_in_schema": true,
-      "kind": "page",
-      "methods": [
-        "GET"
-      ],
-      "name": "api.admin_data_quality_page",
-      "operation_id": "api.admin_data_quality_page:GET:/admin/data-quality",
-      "path": "/admin/data-quality",
-      "route_group": "admin_shell"
-    },
-    {
-      "capability_owner": "admin_shell",
-      "contract": {
-        "parameters": [],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        }
-      },
-      "endpoint": "aicrm_next.admin_shell.routes.admin_delivery_lineage_page",
-      "include_in_schema": true,
-      "kind": "page",
-      "methods": [
-        "GET"
-      ],
-      "name": "api.admin_delivery_lineage_page",
-      "operation_id": "api.admin_delivery_lineage_page:GET:/admin/delivery-lineage",
-      "path": "/admin/delivery-lineage",
-      "route_group": "admin_shell"
-    },
-    {
-      "capability_owner": "media_library",
-      "contract": {
-        "parameters": [],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        }
-      },
-      "endpoint": "aicrm_next.media_library.admin_pages.admin_group_invite_library",
-      "include_in_schema": true,
-      "kind": "page",
-      "methods": [
-        "GET"
-      ],
-      "name": "api.admin_group_invite_library_workspace",
-      "operation_id": "api.admin_group_invite_library_workspace:GET:/admin/group-invite-library",
-      "path": "/admin/group-invite-library",
-      "route_group": "media_library_admin_pages"
-    },
-    {
-      "capability_owner": "admin_shell",
-      "contract": {
-        "parameters": [],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        }
-      },
-      "endpoint": "aicrm_next.admin_shell.routes.admin_growth_orchestration_page",
-      "include_in_schema": true,
-      "kind": "page",
-      "methods": [
-        "GET"
-      ],
-      "name": "api.admin_growth_orchestration_page",
-      "operation_id": "api.admin_growth_orchestration_page:GET:/admin/growth-orchestration",
-      "path": "/admin/growth-orchestration",
-      "route_group": "admin_shell"
-    },
-    {
-      "capability_owner": "admin_shell",
-      "contract": {
-        "parameters": [],
-        "request_body": null,
-        "responses": {}
-      },
-      "endpoint": "aicrm_next.admin_shell.routes.admin_growth_orchestration_detail_page",
-      "include_in_schema": true,
-      "kind": "page",
-      "methods": [
-        "GET"
-      ],
-      "name": "api.admin_growth_orchestration_detail_page",
-      "operation_id": "api.admin_growth_orchestration_detail_page:GET:/admin/growth-orchestration/{program_key:path}",
-      "path": "/admin/growth-orchestration/{program_key:path}",
-      "route_group": "admin_shell"
-    },
-    {
       "capability_owner": "hxc_dashboard",
       "contract": {
         "parameters": [],
@@ -7824,142 +7580,6 @@
       "operation_id": "api.admin_image_library_workspace:GET:/admin/image-library",
       "path": "/admin/image-library",
       "route_group": "media_library_admin_pages"
-    },
-    {
-      "capability_owner": "platform_foundation",
-      "contract": {
-        "parameters": [],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        }
-      },
-      "endpoint": "aicrm_next.platform_foundation.internal_events.api.admin_internal_events_page",
-      "include_in_schema": true,
-      "kind": "page",
-      "methods": [
-        "GET"
-      ],
-      "name": "api.admin_internal_events_page",
-      "operation_id": "api.admin_internal_events_page:GET:/admin/internal-events",
-      "path": "/admin/internal-events",
-      "route_group": "internal_events"
-    },
-    {
-      "capability_owner": "platform_foundation",
-      "contract": {
-        "parameters": [
-          {
-            "in": "path",
-            "name": "event_id",
-            "required": true,
-            "schema": {
-              "title": "Event Id",
-              "type": "string"
-            }
-          }
-        ],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        }
-      },
-      "endpoint": "aicrm_next.platform_foundation.internal_events.api.admin_internal_event_page",
-      "include_in_schema": true,
-      "kind": "page",
-      "methods": [
-        "GET"
-      ],
-      "name": "api.admin_internal_event_page",
-      "operation_id": "api.admin_internal_event_page:GET:/admin/internal-events/{event_id}",
-      "path": "/admin/internal-events/{event_id}",
-      "route_group": "internal_events"
-    },
-    {
-      "capability_owner": "admin_jobs",
-      "contract": {
-        "parameters": [],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        }
-      },
-      "endpoint": "aicrm_next.admin_jobs.routes.admin_jobs",
-      "include_in_schema": true,
-      "kind": "page",
-      "methods": [
-        "GET"
-      ],
-      "name": "api.admin_jobs",
-      "operation_id": "api.admin_jobs:GET:/admin/jobs",
-      "path": "/admin/jobs",
-      "route_group": "admin_jobs"
-    },
-    {
-      "capability_owner": "admin_jobs",
-      "contract": {
-        "parameters": [],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        }
-      },
-      "endpoint": "aicrm_next.admin_jobs.routes.admin_jobs_action",
-      "include_in_schema": true,
-      "kind": "api",
-      "methods": [
-        "POST"
-      ],
-      "name": "api.admin_console_jobs_action",
-      "operation_id": "api.admin_console_jobs_action:POST:/admin/jobs/actions",
-      "path": "/admin/jobs/actions",
-      "route_group": "admin_jobs"
     },
     {
       "capability_owner": "admin_shell",
@@ -8233,84 +7853,6 @@
       "operation_id": "api.admin_owner_migration_action:POST:/admin/owner-migration",
       "path": "/admin/owner-migration",
       "route_group": "owner_migration"
-    },
-    {
-      "capability_owner": "platform_foundation",
-      "contract": {
-        "parameters": [],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        }
-      },
-      "endpoint": "aicrm_next.platform_foundation.push_center.api.admin_push_center_page",
-      "include_in_schema": true,
-      "kind": "page",
-      "methods": [
-        "GET"
-      ],
-      "name": "api.admin_push_center_page",
-      "operation_id": "api.admin_push_center_page:GET:/admin/push-center",
-      "path": "/admin/push-center",
-      "route_group": "push_center"
-    },
-    {
-      "capability_owner": "platform_foundation",
-      "contract": {
-        "parameters": [
-          {
-            "in": "path",
-            "name": "job_id",
-            "required": true,
-            "schema": {
-              "title": "Job Id",
-              "type": "string"
-            }
-          }
-        ],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        }
-      },
-      "endpoint": "aicrm_next.platform_foundation.push_center.api.admin_push_center_job_page",
-      "include_in_schema": true,
-      "kind": "page",
-      "methods": [
-        "GET"
-      ],
-      "name": "api.admin_push_center_job_page",
-      "operation_id": "api.admin_push_center_job_page:GET:/admin/push-center/jobs/{job_id}",
-      "path": "/admin/push-center/jobs/{job_id}",
-      "route_group": "push_center"
     },
     {
       "capability_owner": "questionnaire",
@@ -8802,35 +8344,6 @@
       "operation_id": "api.admin_user_ops_ui:GET:/admin/user-ops/ui",
       "path": "/admin/user-ops/ui",
       "route_group": "user_ops_admin_pages"
-    },
-    {
-      "capability_owner": "platform_foundation",
-      "contract": {
-        "parameters": [],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        }
-      },
-      "endpoint": "aicrm_next.platform_foundation.webhook_inbox.api.admin_webhook_inbox_page",
-      "include_in_schema": true,
-      "kind": "page",
-      "methods": [
-        "GET"
-      ],
-      "name": "api.admin_webhook_inbox_page",
-      "operation_id": "api.admin_webhook_inbox_page:GET:/admin/webhook-inbox",
-      "path": "/admin/webhook-inbox",
-      "route_group": "webhook_inbox"
     },
     {
       "capability_owner": "commerce",
@@ -18728,37 +18241,6 @@
       "route_group": "customer_read_model"
     },
     {
-      "capability_owner": "admin_shell",
-      "contract": {
-        "parameters": [],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "title": "Response Api Admin Dashboard Shell Context Api Admin Dashboard Shell Context Get",
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        }
-      },
-      "endpoint": "aicrm_next.admin_shell.routes.admin_dashboard_shell_context",
-      "include_in_schema": true,
-      "kind": "api",
-      "methods": [
-        "GET"
-      ],
-      "name": "api.admin_dashboard_shell_context",
-      "operation_id": "api.admin_dashboard_shell_context:GET:/api/admin/dashboard/shell-context",
-      "path": "/api/admin/dashboard/shell-context",
-      "route_group": "admin_shell"
-    },
-    {
       "capability_owner": "data_health",
       "contract": {
         "parameters": [],
@@ -18857,134 +18339,6 @@
       "name": "api_data_health_summary",
       "operation_id": "api_data_health_summary:GET:/api/admin/data-health/summary",
       "path": "/api/admin/data-health/summary",
-      "route_group": "data_health"
-    },
-    {
-      "capability_owner": "data_health",
-      "contract": {
-        "parameters": [],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        }
-      },
-      "endpoint": "aicrm_next.data_health.api.api_data_quality_checks",
-      "include_in_schema": true,
-      "kind": "api",
-      "methods": [
-        "GET"
-      ],
-      "name": "api_data_quality_checks",
-      "operation_id": "api_data_quality_checks:GET:/api/admin/data-quality/checks",
-      "path": "/api/admin/data-quality/checks",
-      "route_group": "data_health"
-    },
-    {
-      "capability_owner": "data_health",
-      "contract": {
-        "parameters": [
-          {
-            "in": "path",
-            "name": "check_id",
-            "required": true,
-            "schema": {
-              "title": "Check Id",
-              "type": "string"
-            }
-          }
-        ],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        }
-      },
-      "endpoint": "aicrm_next.data_health.api.api_data_quality_check_detail",
-      "include_in_schema": true,
-      "kind": "api",
-      "methods": [
-        "GET"
-      ],
-      "name": "api_data_quality_check_detail",
-      "operation_id": "api_data_quality_check_detail:GET:/api/admin/data-quality/checks/{check_id}",
-      "path": "/api/admin/data-quality/checks/{check_id}",
-      "route_group": "data_health"
-    },
-    {
-      "capability_owner": "data_health",
-      "contract": {
-        "parameters": [],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        }
-      },
-      "endpoint": "aicrm_next.data_health.api.api_data_quality_groups",
-      "include_in_schema": true,
-      "kind": "api",
-      "methods": [
-        "GET"
-      ],
-      "name": "api_data_quality_groups",
-      "operation_id": "api_data_quality_groups:GET:/api/admin/data-quality/groups",
-      "path": "/api/admin/data-quality/groups",
-      "route_group": "data_health"
-    },
-    {
-      "capability_owner": "data_health",
-      "contract": {
-        "parameters": [],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        }
-      },
-      "endpoint": "aicrm_next.data_health.api.api_data_quality_summary",
-      "include_in_schema": true,
-      "kind": "api",
-      "methods": [
-        "GET"
-      ],
-      "name": "api_data_quality_summary",
-      "operation_id": "api_data_quality_summary:GET:/api/admin/data-quality/summary",
-      "path": "/api/admin/data-quality/summary",
       "route_group": "data_health"
     },
     {
@@ -20997,238 +20351,6 @@
       "route_group": "media_library"
     },
     {
-      "capability_owner": "growth_orchestration",
-      "contract": {
-        "parameters": [
-          {
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 50,
-              "title": "Limit",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "offset",
-            "required": false,
-            "schema": {
-              "default": 0,
-              "title": "Offset",
-              "type": "integer"
-            }
-          }
-        ],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        }
-      },
-      "endpoint": "aicrm_next.growth_orchestration.api.api_growth_orchestration_members",
-      "include_in_schema": true,
-      "kind": "api",
-      "methods": [
-        "GET"
-      ],
-      "name": "api_growth_orchestration_members",
-      "operation_id": "api_growth_orchestration_members:GET:/api/admin/growth-orchestration/members",
-      "path": "/api/admin/growth-orchestration/members",
-      "route_group": "growth_orchestration"
-    },
-    {
-      "capability_owner": "growth_orchestration",
-      "contract": {
-        "parameters": [
-          {
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 50,
-              "title": "Limit",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "offset",
-            "required": false,
-            "schema": {
-              "default": 0,
-              "title": "Offset",
-              "type": "integer"
-            }
-          }
-        ],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        }
-      },
-      "endpoint": "aicrm_next.growth_orchestration.api.api_growth_orchestration_programs",
-      "include_in_schema": true,
-      "kind": "api",
-      "methods": [
-        "GET"
-      ],
-      "name": "api_growth_orchestration_programs",
-      "operation_id": "api_growth_orchestration_programs:GET:/api/admin/growth-orchestration/programs",
-      "path": "/api/admin/growth-orchestration/programs",
-      "route_group": "growth_orchestration"
-    },
-    {
-      "capability_owner": "growth_orchestration",
-      "contract": {
-        "parameters": [
-          {
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 50,
-              "title": "Limit",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "offset",
-            "required": false,
-            "schema": {
-              "default": 0,
-              "title": "Offset",
-              "type": "integer"
-            }
-          }
-        ],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        }
-      },
-      "endpoint": "aicrm_next.growth_orchestration.api.api_growth_orchestration_tasks",
-      "include_in_schema": true,
-      "kind": "api",
-      "methods": [
-        "GET"
-      ],
-      "name": "api_growth_orchestration_tasks",
-      "operation_id": "api_growth_orchestration_tasks:GET:/api/admin/growth-orchestration/tasks",
-      "path": "/api/admin/growth-orchestration/tasks",
-      "route_group": "growth_orchestration"
-    },
-    {
-      "capability_owner": "growth_orchestration",
-      "contract": {
-        "parameters": [
-          {
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 50,
-              "title": "Limit",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "offset",
-            "required": false,
-            "schema": {
-              "default": 0,
-              "title": "Offset",
-              "type": "integer"
-            }
-          }
-        ],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        }
-      },
-      "endpoint": "aicrm_next.growth_orchestration.api.api_growth_orchestration_touchpoints",
-      "include_in_schema": true,
-      "kind": "api",
-      "methods": [
-        "GET"
-      ],
-      "name": "api_growth_orchestration_touchpoints",
-      "operation_id": "api_growth_orchestration_touchpoints:GET:/api/admin/growth-orchestration/touchpoints",
-      "path": "/api/admin/growth-orchestration/touchpoints",
-      "route_group": "growth_orchestration"
-    },
-    {
       "capability_owner": "hxc_dashboard",
       "contract": {
         "parameters": [],
@@ -23215,33 +22337,6 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_jobs.routes.api_admin_jobs_deferred_jobs_run",
-      "include_in_schema": true,
-      "kind": "api",
-      "methods": [
-        "POST"
-      ],
-      "name": "api_admin_jobs_deferred_jobs_run",
-      "operation_id": "api_admin_jobs_deferred_jobs_run:POST:/api/admin/jobs/deferred-jobs/run",
-      "path": "/api/admin/jobs/deferred-jobs/run",
-      "route_group": "admin_jobs"
-    },
-    {
-      "capability_owner": "admin_jobs",
-      "contract": {
-        "parameters": [],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        }
-      },
       "endpoint": "aicrm_next.admin_jobs.routes.api_admin_jobs_message_batches",
       "include_in_schema": true,
       "kind": "api",
@@ -23426,80 +22521,6 @@
       "name": "api_admin_jobs_webhook_deliveries",
       "operation_id": "api_admin_jobs_webhook_deliveries:GET:/api/admin/jobs/webhook-deliveries",
       "path": "/api/admin/jobs/webhook-deliveries",
-      "route_group": "admin_jobs"
-    },
-    {
-      "capability_owner": "admin_jobs",
-      "contract": {
-        "parameters": [],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        }
-      },
-      "endpoint": "aicrm_next.admin_jobs.routes.api_admin_jobs_webhook_deliveries_run",
-      "include_in_schema": true,
-      "kind": "api",
-      "methods": [
-        "POST"
-      ],
-      "name": "api_admin_jobs_webhook_deliveries_run",
-      "operation_id": "api_admin_jobs_webhook_deliveries_run:POST:/api/admin/jobs/webhook-deliveries/run",
-      "path": "/api/admin/jobs/webhook-deliveries/run",
-      "route_group": "admin_jobs"
-    },
-    {
-      "capability_owner": "admin_jobs",
-      "contract": {
-        "parameters": [
-          {
-            "in": "path",
-            "name": "delivery_id",
-            "required": true,
-            "schema": {
-              "title": "Delivery Id",
-              "type": "integer"
-            }
-          }
-        ],
-        "request_body": null,
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        }
-      },
-      "endpoint": "aicrm_next.admin_jobs.routes.api_admin_jobs_webhook_delivery_retry",
-      "include_in_schema": true,
-      "kind": "api",
-      "methods": [
-        "POST"
-      ],
-      "name": "api_admin_jobs_webhook_delivery_retry",
-      "operation_id": "api_admin_jobs_webhook_delivery_retry:POST:/api/admin/jobs/webhook-deliveries/{delivery_id}/retry",
-      "path": "/api/admin/jobs/webhook-deliveries/{delivery_id}/retry",
       "route_group": "admin_jobs"
     },
     {
@@ -45727,8 +44748,7 @@
       "pii_level": "internal_contact",
       "read_owners": [
         "aicrm_next.admin_read_model",
-        "aicrm_next.ai_audience_ops",
-        "aicrm_next.growth_orchestration"
+        "aicrm_next.ai_audience_ops"
       ],
       "table": "ai_audience_member_current",
       "write_owner": "aicrm_next.ai_audience_ops"
@@ -45764,8 +44784,7 @@
       "migration_source": "0045_ai_audience_ops",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.ai_audience_ops",
-        "aicrm_next.growth_orchestration"
+        "aicrm_next.ai_audience_ops"
       ],
       "table": "ai_audience_package",
       "write_owner": "aicrm_next.ai_audience_ops"
@@ -47275,8 +46294,7 @@
       "pii_level": "internal_contact",
       "read_owners": [
         "aicrm_next.background_jobs",
-        "aicrm_next.cloud_orchestrator",
-        "aicrm_next.growth_orchestration"
+        "aicrm_next.cloud_orchestrator"
       ],
       "table": "cloud_broadcast_plan_recipients",
       "write_owner": "aicrm_next.cloud_orchestrator"
@@ -47288,8 +46306,7 @@
       "migration_source": "0004_cloud_orchestrator",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.cloud_orchestrator",
-        "aicrm_next.growth_orchestration"
+        "aicrm_next.cloud_orchestrator"
       ],
       "table": "cloud_broadcast_plans",
       "write_owner": "aicrm_next.cloud_orchestrator"
@@ -48162,8 +47179,7 @@
       "read_owners": [
         "aicrm_next.admin_jobs",
         "aicrm_next.admin_read_model",
-        "aicrm_next.background_jobs",
-        "aicrm_next.growth_orchestration"
+        "aicrm_next.background_jobs"
       ],
       "table": "outbound_tasks",
       "write_owner": "aicrm_next.admin_jobs"

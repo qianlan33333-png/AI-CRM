@@ -20,11 +20,8 @@ _HYBRID_ADMIN_EXACT_PATHS = {
     "/api/admin/cloud-orchestrator/campaigns/run-due",
     "/api/admin/cloud-orchestrator/campaigns/run-due/preview",
     "/api/admin/jobs/archive-sync/run",
-    "/api/admin/jobs/deferred-jobs/run",
     "/api/admin/jobs/message-batches/{batch_id}/ack",
     "/api/admin/jobs/order-identity-repair/run",
-    "/api/admin/jobs/webhook-deliveries/run",
-    "/api/admin/jobs/webhook-deliveries/{delivery_id}/retry",
     "/api/admin/broadcast-jobs/feishu-hourly-report/run",
     "/api/admin/broadcast-jobs/notification-settings/feishu",
     "/api/admin/broadcast-jobs/notification-settings/feishu/validate",
@@ -83,7 +80,7 @@ def _admin_capability(entry: dict[str, Any]) -> str:
         return "manage_config"
     if owner == "questionnaire":
         return "manage_questionnaire"
-    if owner in {"automation_engine", "cloud_orchestrator", "growth_orchestration"}:
+    if owner in {"automation_engine", "cloud_orchestrator"}:
         return "manage_group_ops" if "group-ops" in path else "manage_automation"
     if owner in {"automation_agents", "ai_audience_ops", "ai_assist"}:
         return "manage_automation"

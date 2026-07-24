@@ -1,43 +1,3 @@
-function updateShellStatus(payload) {
-  if (!payload || !payload.shell_status) {
-    return;
-  }
-
-  const shellStatus = payload.shell_status;
-  const envNode = document.querySelector("[data-shell-env]");
-  const healthNode = document.querySelector("[data-shell-health]");
-
-  if (envNode && shellStatus.environment) {
-    envNode.textContent = shellStatus.environment.label || "UNKNOWN";
-    envNode.className = `admin-chip admin-chip--${shellStatus.environment.tone || "unknown"}`;
-  }
-  if (healthNode && shellStatus.health) {
-    healthNode.textContent = shellStatus.health.label || "UNKNOWN";
-    healthNode.className = `admin-chip admin-chip--${shellStatus.health.state || "unknown"}`;
-    if (shellStatus.health.detail) {
-      healthNode.title = shellStatus.health.detail;
-    }
-  }
-}
-
-function bootShellStatusPolling() {
-  const root = document.body;
-  const contextUrl = root.getAttribute("data-shell-context-url");
-  if (!contextUrl) {
-    return;
-  }
-
-  const refresh = () => {
-    fetch(contextUrl, { headers: { Accept: "application/json" } })
-      .then((response) => response.ok ? response.json() : null)
-      .then((payload) => updateShellStatus(payload))
-      .catch(() => {});
-  };
-
-  refresh();
-  window.setInterval(refresh, 60000);
-}
-
 function bootLegacyFrames() {
   document.querySelectorAll("[data-legacy-shell]").forEach((shell) => {
     const frame = shell.querySelector("[data-legacy-frame]");
@@ -208,7 +168,6 @@ window.AdminFmt = Object.assign(window.AdminFmt || {}, {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
-  bootShellStatusPolling();
   bootLegacyFrames();
   bootOutputModal();
   bootCopyButtons();
