@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import logging
+import re
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Iterator, TypedDict
@@ -15,6 +16,7 @@ from aicrm_next.shared.runtime import raw_database_url
 from aicrm_next.shared.safe_logging import safe_log_exception
 
 LOGGER = logging.getLogger(__name__)
+_APPLICATION_NAME_FORBIDDEN = re.compile(r"[^A-Za-z0-9_.:-]+")
 
 
 @dataclass(frozen=True)
@@ -60,6 +62,19 @@ def _raw_configured_database_url(settings: Settings | None = None) -> str:
     return raw_database_url() or settings.database_url
 
 
+def database_application_name(*, default: str = "aicrm-next-web") -> str:
+    """Return a safe PostgreSQL client label without request or customer data."""
+
+    configured = str(
+        os.getenv("DB_APPLICATION_NAME")
+        or os.getenv("PGAPPNAME")
+        or default
+        or "aicrm-next"
+    ).strip()
+    normalized = _APPLICATION_NAME_FORBIDDEN.sub("-", configured).strip("-.")
+    return (normalized or "aicrm-next")[:63]
+
+
 def get_sqlalchemy_database_url(database_url: str | None = None, settings: Settings | None = None) -> str:
     url = str(database_url or _raw_configured_database_url(settings) or "").strip()
     if url.startswith("postgres://"):
@@ -84,7 +99,7 @@ def _cache_key(database_url: str | None = None, settings: Settings | None = None
         max_overflow=_env_int("DB_MAX_OVERFLOW", default=0),
         pool_timeout=_env_float("DB_POOL_TIMEOUT", default=5.0),
         pool_recycle=_env_int("DB_POOL_RECYCLE", default=1800),
-        application_name=str(os.getenv("DB_APPLICATION_NAME") or "aicrm-next-web").strip() or "aicrm-next-web",
+        application_name=database_application_name(),
     )
 
 

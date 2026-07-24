@@ -10,4 +10,6 @@ WorkingDirectory=/home/ubuntu/极简 crm
 EnvironmentFile=/home/ubuntu/.openclaw-wecom-pg.env
 EnvironmentFile=-/home/ubuntu/.aicrm-queue-runtime-generation.env
 Environment=AICRM_GROUP_OPS_MATERIAL_UPLOAD_MODE=real
+Environment=DB_APPLICATION_NAME=aicrm-next-cron-broadcast
+Environment=PGAPPNAME=aicrm-next-cron-broadcast
 ExecStart=/home/ubuntu/venvs/openclaw/bin/python scripts/run_broadcast_queue_worker.py --limit 50

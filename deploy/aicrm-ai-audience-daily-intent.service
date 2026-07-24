@@ -8,5 +8,7 @@ Type=oneshot
 User=ubuntu
 WorkingDirectory=/home/ubuntu/极简 crm
 EnvironmentFile=/home/ubuntu/.openclaw-wecom-pg.env
+Environment=DB_APPLICATION_NAME=aicrm-next-cron-audience-intent
+Environment=PGAPPNAME=aicrm-next-cron-audience-intent
 ExecStartPre=/bin/bash -c 'source /home/ubuntu/venvs/openclaw/bin/activate && python scripts/ops/check_ai_audience_refresh_owner.py --code-only'
 ExecStart=/bin/bash -c 'source /home/ubuntu/venvs/openclaw/bin/activate && python scripts/run_ai_audience_scheduler.py --refresh-intent-clock --daily-at 02:00'
