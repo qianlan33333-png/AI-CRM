@@ -9,8 +9,8 @@
   },
   "target": {
     "repository": "qianlan333/AI-CRM",
-    "candidate_sha": "0797d292c2540f9ccbc7853afac87ae0472f4bdc",
-    "pull_request": 1784
+    "candidate_sha": "a3618dc29e58b38c0691f5e198594fc980a39f39",
+    "pull_request": 1787
   },
   "allowed_post_candidate_paths": [
     ".github/workflows/ai-audience-production-diagnostics.yml",
