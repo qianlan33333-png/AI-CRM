@@ -569,7 +569,7 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/platform_foundation/execution_runtime/listener.py",
       "key": "AICRM_LISTENER_DATABASE_URL",
-      "line": 34
+      "line": 35
     },
     {
       "accessor": "runtime_setting",
@@ -1403,7 +1403,7 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/shared/db_session.py",
       "key": "DB_APPLICATION_NAME",
-      "line": 87
+      "line": 69
     },
     {
       "accessor": "os.getenv",
@@ -1476,6 +1476,12 @@
       "file": "aicrm_next/owner_migration/repo.py",
       "key": "OWNER_MIGRATION_FIXTURE_STORE",
       "line": 178
+    },
+    {
+      "accessor": "os.getenv",
+      "file": "aicrm_next/shared/db_session.py",
+      "key": "PGAPPNAME",
+      "line": 70
     },
     {
       "accessor": "os.getenv",
@@ -2280,6 +2286,7 @@
     "GIT_SHA",
     "LOG_LEVEL",
     "OWNER_MIGRATION_FIXTURE_STORE",
+    "PGAPPNAME",
     "PRODUCTION_DATA_MODE",
     "PUBLIC_BASE_URL",
     "PYTEST_CURRENT_TEST",

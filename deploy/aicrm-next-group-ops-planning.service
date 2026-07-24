@@ -9,4 +9,6 @@ User=ubuntu
 WorkingDirectory=/home/ubuntu/极简 crm
 EnvironmentFile=/home/ubuntu/.openclaw-wecom-pg.env
 EnvironmentFile=-/home/ubuntu/.aicrm-queue-runtime-generation.env
+Environment=DB_APPLICATION_NAME=aicrm-next-cron-group-ops
+Environment=PGAPPNAME=aicrm-next-cron-group-ops
 ExecStart=/home/ubuntu/venvs/openclaw/bin/python scripts/run_automation_ops_scheduler.py --operator aicrm_next_group_ops_planner

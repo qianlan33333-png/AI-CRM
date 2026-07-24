@@ -8,6 +8,8 @@ Type=simple
 User=ubuntu
 WorkingDirectory=/home/ubuntu/极简 crm
 EnvironmentFile=/home/ubuntu/.openclaw-wecom-pg.env
+Environment=DB_APPLICATION_NAME=aicrm-next-callback-ingress
+Environment=PGAPPNAME=aicrm-next-callback-ingress
 Environment=WECOM_CALLBACK_INGRESS_HOST=127.0.0.1
 Environment=WECOM_CALLBACK_INGRESS_PORT=5002
 ExecStart=/bin/bash -lc 'source /home/ubuntu/venvs/openclaw/bin/activate && python scripts/run_wecom_callback_ingress.py'
