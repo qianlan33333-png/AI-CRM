@@ -1160,6 +1160,13 @@ class AudienceRefreshIntentService:
     ) -> dict[str, Any]:
         kind = _refresh_kind(refresh_kind)
         enabled_column = "daily_enabled" if kind == "daily" else "incremental_enabled"
+        due_predicate = """
+                      AND (
+                        (next_daily_refresh_at IS NOT NULL AND next_daily_refresh_at <= CURRENT_TIMESTAMP)
+                        OR (next_daily_refresh_at IS NULL AND last_daily_refreshed_at IS NULL)
+                      )
+                      AND (lease_expires_at IS NULL OR lease_expires_at <= CURRENT_TIMESTAMP)
+        """ if kind == "daily" else ""
         event_bucket = _text(bucket) or (date.today().isoformat() if kind == "daily" else datetime.now(timezone.utc).isoformat())
         with self._repo._session_factory() as session:
             packages = session.execute(
@@ -1170,6 +1177,7 @@ class AudienceRefreshIntentService:
                     WHERE status = 'active'
                       AND current_version_id IS NOT NULL
                       AND {enabled_column} = TRUE
+                      {due_predicate}
                     ORDER BY id
                     """
                 )

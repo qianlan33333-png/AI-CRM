@@ -675,11 +675,11 @@ class SQLAlchemyAudienceRepository(AudiencePackageRepositoryMixin, AudienceRepos
                   AND {enabled_column} = TRUE
                   AND current_version_id IS NOT NULL
                   AND (
-                    {watermark_column} IS NULL
-                    OR (
+                    (
                         {due_column} IS NOT NULL
                         AND {due_column} <= CURRENT_TIMESTAMP + (:due_window_seconds || ' seconds')::interval
                     )
+                    OR ({due_column} IS NULL AND {watermark_column} IS NULL)
                   )
                   AND (lease_expires_at IS NULL OR lease_expires_at <= CURRENT_TIMESTAMP)
                 ORDER BY COALESCE({watermark_column}, TIMESTAMPTZ '1970-01-01') ASC,
@@ -721,8 +721,8 @@ class SQLAlchemyAudienceRepository(AudiencePackageRepositoryMixin, AudienceRepos
               AND {enabled_column} = TRUE
               AND current_version_id IS NOT NULL
               AND (
-                {watermark_column} IS NULL
-                OR ({due_column} IS NOT NULL AND {due_column} <= CURRENT_TIMESTAMP)
+                ({due_column} IS NOT NULL AND {due_column} <= CURRENT_TIMESTAMP)
+                OR ({due_column} IS NULL AND {watermark_column} IS NULL)
               )
               AND (lease_expires_at IS NULL OR lease_expires_at <= CURRENT_TIMESTAMP)
             LIMIT 1

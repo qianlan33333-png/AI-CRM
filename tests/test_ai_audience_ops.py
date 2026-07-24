@@ -26,7 +26,7 @@ from aicrm_next.ai_audience_ops.outbound_service import AudienceOutboundService
 from aicrm_next.ai_audience_ops.refresh_intents import AudienceRefreshIntentRepository, AudienceRefreshIntentService
 from aicrm_next.ai_audience_ops.repository import build_audience_repository, next_daily_refresh_at
 from aicrm_next.ai_audience_ops.scheduler import ai_audience_event_consumer_pairs, emit_due_ticks
-from aicrm_next.ai_audience_ops.service import AudiencePackageService
+from aicrm_next.ai_audience_ops.service import AudiencePackageService, _tick_bucket
 from aicrm_next.ai_audience_ops.sql_catalog import ALLOWED_VIEWS, schema_catalog_payload
 from aicrm_next.ai_audience_ops.sql_linter import lint_sql
 from aicrm_next.ai_audience_ops.test_agent_service import AudienceTestAgentService, TEST_AGENT_MESSAGE_TEXT
@@ -134,8 +134,8 @@ def test_next_daily_refresh_uses_package_timezone_and_time() -> None:
 
 def test_ai_audience_scheduler_emits_incremental_every_run_and_daily_only_in_2am_window() -> None:
     class Service:
-        def emit_tick(self, tick_type):
-            return {"ok": True, "tick_type": tick_type}
+        def emit_tick(self, tick_type, **kwargs):
+            return {"ok": True, "tick_type": tick_type, "kwargs": kwargs}
 
     inside_window = datetime(2026, 6, 24, 2, 1, tzinfo=ZoneInfo("Asia/Shanghai"))
     outside_window = datetime(2026, 6, 24, 1, 59, tzinfo=ZoneInfo("Asia/Shanghai"))
@@ -158,8 +158,8 @@ def test_ai_audience_scheduler_emits_incremental_every_run_and_daily_only_in_2am
 
 def test_ai_audience_scheduler_catches_up_overdue_daily_refresh_outside_2am_window() -> None:
     class Service:
-        def emit_tick(self, tick_type):
-            return {"ok": True, "tick_type": tick_type}
+        def emit_tick(self, tick_type, **kwargs):
+            return {"ok": True, "tick_type": tick_type, "kwargs": kwargs}
 
         def has_refresh_due(self, refresh_kind):
             return refresh_kind == "daily"
@@ -178,6 +178,18 @@ def test_ai_audience_scheduler_catches_up_overdue_daily_refresh_outside_2am_wind
     assert [item["tick_type"] for item in due["items"]] == ["incremental", "daily"]
     assert due["daily_tick_due"] is True
     assert due["daily_tick_window_due"] is False
+    assert due["items"][1]["result"]["kwargs"] == {
+        "now": outside_window,
+        "daily_refresh_time": "02:00",
+    }
+
+
+def test_daily_tick_bucket_uses_the_latest_scheduled_boundary_not_calendar_midnight() -> None:
+    before_schedule = datetime(2026, 7, 25, 0, 3, tzinfo=ZoneInfo("Asia/Shanghai"))
+    after_schedule = datetime(2026, 7, 25, 2, 3, tzinfo=ZoneInfo("Asia/Shanghai"))
+
+    assert _tick_bucket("daily", now=before_schedule, daily_refresh_time="02:00") == "2026-07-24"
+    assert _tick_bucket("daily", now=after_schedule, daily_refresh_time="02:00") == "2026-07-25"
 
 
 def test_ai_audience_scheduler_consumer_pairs_cover_source_refresh_and_outbound() -> None:

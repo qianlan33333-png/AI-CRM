@@ -10,6 +10,7 @@ from aicrm_next.ai_audience_ops.refresh_intents import (
     AudienceRefreshIntentRepository,
     AudienceRefreshIntentService,
 )
+from aicrm_next.ai_audience_ops.repository import build_audience_repository
 from aicrm_next.internal_event_composition import build_internal_event_consumer_registry
 from aicrm_next.platform_foundation.internal_events.outbox import InternalEventOutboxRelay
 from aicrm_next.shared.db_session import get_session_factory
@@ -782,6 +783,60 @@ def test_daily_clock_intent_is_idempotent_and_never_runs_refresh_inline() -> Non
     assert intent["target_refresh_kind"] == "daily"
     assert _count("SELECT COUNT(*) FROM ai_audience_package_run") == 0
     assert _count("SELECT COUNT(*) FROM external_effect_attempt") == 0
+
+
+def test_daily_clock_only_marks_packages_whose_scheduled_refresh_is_due() -> None:
+    due_package_id = _create_package(daily_enabled=True, incremental_enabled=False)
+    future_package_id = _create_package(daily_enabled=True, incremental_enabled=False)
+    with get_session_factory()() as session:
+        session.execute(
+            text(
+                """
+                UPDATE ai_audience_package
+                SET next_daily_refresh_at = CASE
+                    WHEN id = :due_package_id THEN CURRENT_TIMESTAMP - INTERVAL '1 minute'
+                    ELSE CURRENT_TIMESTAMP + INTERVAL '1 hour'
+                END,
+                    last_daily_refreshed_at = NULL
+                WHERE id IN (:due_package_id, :future_package_id)
+                """
+            ),
+            {
+                "due_package_id": due_package_id,
+                "future_package_id": future_package_id,
+            },
+        )
+        session.commit()
+
+    result = AudienceRefreshIntentService().request_due_refreshes(
+        "daily",
+        bucket="2026-07-25",
+        actor_id="daily_timer",
+    )
+
+    assert result["candidate_count"] == 1
+    assert [int(item["package_id"]) for item in result["items"]] == [due_package_id]
+    assert AudienceRefreshIntentRepository().get(due_package_id) is not None
+    assert AudienceRefreshIntentRepository().get(future_package_id) is None
+
+
+def test_daily_due_check_honors_a_future_schedule_even_without_a_watermark() -> None:
+    package_id = _create_package(daily_enabled=True, incremental_enabled=False)
+    with get_session_factory()() as session:
+        session.execute(
+            text(
+                """
+                UPDATE ai_audience_package
+                SET next_daily_refresh_at = CURRENT_TIMESTAMP + INTERVAL '1 hour',
+                    last_daily_refreshed_at = NULL
+                WHERE id = :package_id
+                """
+            ),
+            {"package_id": package_id},
+        )
+        session.commit()
+
+    assert build_audience_repository().has_refresh_due("daily") is False
 
 
 def test_manual_api_only_persists_and_signals(next_client) -> None:

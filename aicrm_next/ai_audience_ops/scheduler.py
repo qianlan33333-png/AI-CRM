@@ -49,7 +49,16 @@ def emit_due_ticks(
         )
         daily_due = bool(force_daily) or window_daily_due or _daily_refresh_due(service)
     if include_daily and daily_due:
-        items.append({"tick_type": "daily", "result": service.emit_tick("daily")})
+        items.append(
+            {
+                "tick_type": "daily",
+                "result": service.emit_tick(
+                    "daily",
+                    now=now,
+                    daily_refresh_time=daily_refresh_time,
+                ),
+            }
+        )
     return {
         "ok": True,
         "items": items,
