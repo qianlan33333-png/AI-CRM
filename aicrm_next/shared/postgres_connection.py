@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from aicrm_next.shared.db_session import connect_raw_postgres
+from aicrm_next.shared.query_telemetry import begin_query, finish_query
 from aicrm_next.shared.runtime import raw_database_url
 
 _scoped_db: ContextVar["PostgresConnection | None"] = ContextVar("next_scoped_db", default=None)
@@ -43,12 +44,18 @@ class PostgresCursor:
 
     def execute(self, sql: str, params: tuple[Any, ...] | list[Any] | dict[str, Any] | None = None) -> "PostgresCursor":
         translated = _translate_sql(str(sql))
-        if params is None or (hasattr(params, "__len__") and len(params) == 0):
-            self._cursor.execute(translated)
-        elif isinstance(params, dict):
-            self._cursor.execute(translated, params)
-        else:
-            self._cursor.execute(translated, tuple(params))
+        execution = begin_query(translated)
+        try:
+            if params is None or (hasattr(params, "__len__") and len(params) == 0):
+                self._cursor.execute(translated)
+            elif isinstance(params, dict):
+                self._cursor.execute(translated, params)
+            else:
+                self._cursor.execute(translated, tuple(params))
+        except Exception:
+            finish_query(execution, failed=True)
+            raise
+        finish_query(execution)
         self.lastrowid = None
         if translated.lstrip().upper().startswith("INSERT") and self._cursor.rowcount and self._cursor.rowcount > 0:
             probe = self._conn.cursor()
@@ -68,7 +75,14 @@ class PostgresCursor:
         return self
 
     def executemany(self, sql: str, seq: list[tuple[Any, ...]] | list[list[Any]]) -> "PostgresCursor":
-        self._cursor.executemany(_translate_sql(str(sql)), list(seq))
+        translated = _translate_sql(str(sql))
+        execution = begin_query(translated)
+        try:
+            self._cursor.executemany(translated, list(seq))
+        except Exception:
+            finish_query(execution, failed=True)
+            raise
+        finish_query(execution)
         return self
 
     def fetchone(self) -> dict[str, Any] | None:
@@ -101,7 +115,14 @@ class PostgresConnection:
 
     def executemany(self, sql: str, seq: list[tuple[Any, ...]] | list[list[Any]]) -> Any:
         cursor = self._conn.cursor()
-        cursor.executemany(_translate_sql(str(sql)), list(seq))
+        translated = _translate_sql(str(sql))
+        execution = begin_query(translated)
+        try:
+            cursor.executemany(translated, list(seq))
+        except Exception:
+            finish_query(execution, failed=True)
+            raise
+        finish_query(execution)
         return cursor
 
     def commit(self) -> None:

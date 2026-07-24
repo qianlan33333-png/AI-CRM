@@ -1356,6 +1356,26 @@ def test_critical_read_performance_changes_force_postgres_full_ci() -> None:
     assert result["architecture_gate"] == "full"
 
 
+def test_query_observability_changes_force_postgres_full_ci() -> None:
+    result = _select(
+        "aicrm_next/main.py",
+        "aicrm_next/shared/db_session.py",
+        "aicrm_next/shared/postgres_connection.py",
+        "aicrm_next/shared/query_telemetry.py",
+        "docs/architecture/runtime_contract_inventory.json",
+        "docs/ops/query-observability.md",
+        "tests/test_query_telemetry.py",
+    )
+
+    assert result["unmatched_files"] == []
+    assert "query_observability" in result["matched_scopes"]
+    assert "tests/test_query_telemetry.py" in result["python_tests"]
+    assert "tests/test_critical_read_performance_runner.py" in result["python_tests"]
+    assert result["needs_postgres"] is True
+    assert result["needs_full_ci"] is True
+    assert result["architecture_gate"] == "full"
+
+
 def test_unmapped_path_fails_instead_of_falling_back_to_full_regression() -> None:
     completed = subprocess.run(
         [sys.executable, str(SELECTOR), "--changed-file", "aicrm_next/new_context/api.py"],

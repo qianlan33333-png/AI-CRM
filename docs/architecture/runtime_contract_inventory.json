@@ -1403,7 +1403,7 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/shared/db_session.py",
       "key": "DB_APPLICATION_NAME",
-      "line": 69
+      "line": 75
     },
     {
       "accessor": "os.getenv",
@@ -1481,7 +1481,7 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/shared/db_session.py",
       "key": "PGAPPNAME",
-      "line": 70
+      "line": 76
     },
     {
       "accessor": "os.getenv",

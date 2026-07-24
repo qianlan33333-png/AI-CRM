@@ -12,6 +12,12 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from aicrm_next.shared.config import Settings, get_settings
+from aicrm_next.shared.query_telemetry import (
+    InstrumentedDbApiCursor,
+    begin_query,
+    finish_query,
+    install_sqlalchemy_query_telemetry,
+)
 from aicrm_next.shared.runtime import raw_database_url
 from aicrm_next.shared.safe_logging import safe_log_exception
 
@@ -151,6 +157,8 @@ def get_engine(database_url: str | None = None, settings: Settings | None = None
         pool_settings["is_sqlite"],
     )
     engine = create_engine(key.database_url, **kwargs)
+    if isinstance(engine, Engine):
+        install_sqlalchemy_query_telemetry(engine)
     _ENGINE_CACHE[key] = engine
     return engine
 
@@ -282,7 +290,7 @@ class PooledPsycopgConnection:
         finally:
             self.close()
 
-    def cursor(self):
+    def _raw_cursor(self):
         try:
             from psycopg.rows import dict_row
 
@@ -291,9 +299,19 @@ class PooledPsycopgConnection:
             safe_log_exception(LOGGER, "failed to open pooled psycopg dict cursor", exc, level=logging.DEBUG)
             return self._conn.cursor()
 
+    def cursor(self) -> InstrumentedDbApiCursor:
+        return InstrumentedDbApiCursor(self._raw_cursor())
+
     def execute(self, query: str, params: object | None = None):
-        cursor = self.cursor()
-        return cursor.execute(query, params)
+        cursor = self._raw_cursor()
+        execution = begin_query(query)
+        try:
+            result = cursor.execute(query, params)
+        except Exception:
+            finish_query(execution, failed=True)
+            raise
+        finish_query(execution)
+        return result
 
     def commit(self) -> None:
         self._conn.commit()
