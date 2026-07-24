@@ -3206,7 +3206,7 @@
     }
   ],
   "migration_heads": [
-    "0141_production_welcome_timeout_ack_scope"
+    "0142_sidebar_recent_message_index"
   ],
   "openapi_components": {
     "schemas": {

@@ -105,8 +105,11 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     welcome_realtime_source = welcome_realtime.read_text(encoding="utf-8")
     production_welcome_ack_scope = VERSIONS / "0141_production_welcome_timeout_ack_scope.py"
     production_welcome_ack_scope_source = production_welcome_ack_scope.read_text(encoding="utf-8")
+    sidebar_recent_message_index = VERSIONS / "0142_sidebar_recent_message_index.py"
+    sidebar_recent_message_index_source = sidebar_recent_message_index.read_text(encoding="utf-8")
 
-    assert heads == {"0141_production_welcome_timeout_ack_scope"}
+    assert heads == {"0142_sidebar_recent_message_index"}
+    assert revisions["0142_sidebar_recent_message_index"]["down_revision"] == "0141_production_welcome_timeout_ack_scope"
     assert revisions["0141_production_welcome_timeout_ack_scope"]["down_revision"] == "0140_wecom_welcome_hard_realtime_lanes"
     assert revisions["0140_wecom_welcome_hard_realtime_lanes"]["down_revision"] == "0139_queue_terminal_acknowledgement_scope"
     assert revisions["0139_queue_terminal_acknowledgement_scope"]["down_revision"] == "0138_queue_terminal_acknowledgement"
@@ -160,6 +163,9 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     assert "wecom_welcome" in welcome_realtime_source
     assert "production_welcome_41050_job_2157_no_replay" in production_welcome_ack_scope_source
     assert "global_max_in_flight = global_max_in_flight +" in welcome_realtime_source
+    assert "CREATE INDEX CONCURRENTLY IF NOT EXISTS" in sidebar_recent_message_index_source
+    assert "ix_customer_recent_message_next_unionid_time_id" in sidebar_recent_message_index_source
+    assert "(unionid, send_time DESC, id DESC)" in sidebar_recent_message_index_source
     assert "ix_automation_agent_output_unionid" in audit_source
     assert "idx_automation_agent_llm_call_log_agent_created" in audit_source
     assert "FOREIGN KEY" not in audit_source

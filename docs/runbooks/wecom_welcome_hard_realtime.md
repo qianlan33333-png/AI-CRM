@@ -12,7 +12,7 @@
 
 ## Release checks
 
-1. Confirm Alembic head is `0141_production_welcome_timeout_ack_scope`.
+1. Confirm Alembic head is `0142_sidebar_recent_message_index`.
 2. Confirm both reserved lane policies are enabled with `max_in_flight = 2`.
    Confirm the ordinary-work admission budget is
    `global_max_in_flight - 4`; this is the actual reservation, not only a larger
