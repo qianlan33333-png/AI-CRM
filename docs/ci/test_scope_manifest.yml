@@ -236,6 +236,23 @@
       "architecture_gate": "full"
     },
     {
+      "name": "nginx_query_timing",
+      "paths": [
+        "deploy/nginx-query-timing.conf.example",
+        "docs/ops/nginx-query-timing.md",
+        "scripts/ops/check_nginx_query_timing_config.py",
+        "tests/test_nginx_query_timing_config.py"
+      ],
+      "python_tests": [
+        "tests/test_nginx_query_timing_config.py",
+        "tests/test_deploy_workflow_contract.py",
+        "tests/test_select_test_scope.py"
+      ],
+      "needs_postgres": false,
+      "needs_full_ci": true,
+      "architecture_gate": "full"
+    },
+    {
       "name": "retired_runtime_physical_cleanup",
       "paths": [
         "aicrm_next/platform_foundation/legacy_cleanup/**",

@@ -1376,6 +1376,23 @@ def test_query_observability_changes_force_postgres_full_ci() -> None:
     assert result["architecture_gate"] == "full"
 
 
+def test_nginx_query_timing_changes_have_permanent_full_ci_scope() -> None:
+    result = _select(
+        "deploy/nginx-query-timing.conf.example",
+        "docs/ops/nginx-query-timing.md",
+        "scripts/ops/check_nginx_query_timing_config.py",
+        "tests/test_nginx_query_timing_config.py",
+    )
+
+    assert result["unmatched_files"] == []
+    assert "nginx_query_timing" in result["matched_scopes"]
+    assert "tests/test_nginx_query_timing_config.py" in result["python_tests"]
+    assert "tests/test_deploy_workflow_contract.py" in result["python_tests"]
+    assert result["needs_postgres"] is False
+    assert result["needs_full_ci"] is True
+    assert result["architecture_gate"] == "full"
+
+
 def test_unmapped_path_fails_instead_of_falling_back_to_full_regression() -> None:
     completed = subprocess.run(
         [sys.executable, str(SELECTOR), "--changed-file", "aicrm_next/new_context/api.py"],
