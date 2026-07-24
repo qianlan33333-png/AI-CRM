@@ -13,10 +13,12 @@
     "pull_request": 1770
   },
   "allowed_post_candidate_paths": [
+    ".github/workflows/ai-audience-production-diagnostics.yml",
     ".github/workflows/deploy.yml",
     ".github/workflows/promote-production.yml",
     ".github/workflows/queue-production-cutover.yml",
     ".github/workflows/queue-production-diagnostics.yml",
+    "aicrm_next/ai_audience_ops/refresh_intents.py",
     "aicrm_next/data_health/checks.py",
     "aicrm_next/data_health/external_effect_provenance.py",
     "aicrm_next/platform_foundation/execution_runtime/cutover.py",
@@ -50,6 +52,8 @@
     "tests/test_production_promotion_provenance.py",
     "tests/test_production_terminal_history_acknowledgement.py",
     "tests/test_alembic_revision_chain.py",
+    "tests/test_ai_audience_production_diagnostics_workflow.py",
+    "tests/test_ai_audience_refresh_intents_postgres.py",
     "tests/test_queue_all_scope_cutover.py",
     "tests/test_queue_runtime_cutover.py",
     "tests/test_release_customer_read_model_refresh.py",

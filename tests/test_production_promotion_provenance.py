@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import subprocess
 
@@ -10,7 +11,14 @@ from scripts.ops.validate_production_promotion import PromotionValidationError, 
 
 pytestmark = pytest.mark.unit
 
+ROOT = Path(__file__).resolve().parents[1]
 SOURCE_SHA = "a" * 40
+AI_AUDIENCE_RECOVERY_PATHS = {
+    ".github/workflows/ai-audience-production-diagnostics.yml",
+    "aicrm_next/ai_audience_ops/refresh_intents.py",
+    "tests/test_ai_audience_production_diagnostics_workflow.py",
+    "tests/test_ai_audience_refresh_intents_postgres.py",
+}
 
 
 def _git(root: Path, *args: str) -> str:
@@ -202,3 +210,14 @@ def test_promotion_rejects_release_without_successful_main_ci(tmp_path: Path) ->
 
     with pytest.raises(PromotionValidationError, match="no successful main CI Fast run"):
         _validate(root, candidate_sha, release_sha, changed_paths, target_ci_runs={"workflow_runs": []})
+
+
+def test_production_manifest_allows_exact_ai_audience_recovery_paths() -> None:
+    manifest = json.loads(
+        (ROOT / "docs" / "releases" / "production_promotion.json").read_text(encoding="utf-8")
+    )
+
+    allowed_paths = set(manifest["allowed_post_candidate_paths"])
+
+    assert AI_AUDIENCE_RECOVERY_PATHS <= allowed_paths
+    assert not any("*" in path for path in allowed_paths)
