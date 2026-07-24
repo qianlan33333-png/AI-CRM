@@ -218,9 +218,12 @@
         "aicrm_next/shared/query_telemetry.py",
         "docs/architecture/runtime_contract_inventory.json",
         "docs/ops/query-observability.md",
+        "scripts/ops/summarize_query_observability.py",
+        "tests/test_query_observability_summary.py",
         "tests/test_query_telemetry.py"
       ],
       "python_tests": [
+        "tests/test_query_observability_summary.py",
         "tests/test_query_telemetry.py",
         "tests/test_shared_db_session.py",
         "tests/test_db_session_runtime_audit.py",
