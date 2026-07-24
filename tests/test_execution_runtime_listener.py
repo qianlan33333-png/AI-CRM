@@ -51,7 +51,8 @@ def test_listener_database_url_allows_database_fallback_outside_production(monke
     assert listener_database_url() == "postgresql://postgres@db/aicrm"
 
 
-def test_listener_uses_autocommit_direct_connection_and_listens_before_waiting() -> None:
+def test_listener_uses_runtime_specific_autocommit_connection_and_listens_before_waiting(monkeypatch) -> None:
+    monkeypatch.setenv("DB_APPLICATION_NAME", "aicrm-next-queue-external")
     calls: list[object] = []
 
     class FakeCursor:
@@ -89,7 +90,7 @@ def test_listener_uses_autocommit_direct_connection_and_listens_before_waiting()
         "connect",
         "postgresql://postgres@db/aicrm",
         True,
-        "aicrm-queue-listener",
+        "aicrm-next-queue-external-listener",
     )
     assert f'LISTEN "{QUEUE_WAKE_CHANNEL}"' in calls
     assert calls.index(f'LISTEN "{QUEUE_WAKE_CHANNEL}"') < calls.index(("notifies", 0.25, 1))

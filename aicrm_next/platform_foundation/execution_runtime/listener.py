@@ -6,6 +6,7 @@ import re
 from dataclasses import dataclass
 from typing import Any, Callable
 
+from aicrm_next.shared.db_session import database_application_name
 from aicrm_next.shared.runtime import production_environment, raw_database_url
 
 from .repository import open_listener_connection
@@ -64,11 +65,14 @@ class PostgresQueueWakeListener:
         database_url: str | None = None,
         *,
         connect: Callable[..., Any] = open_listener_connection,
-        application_name: str = "aicrm-queue-listener",
+        application_name: str = "",
     ) -> None:
         self._database_url = _direct_psycopg_url(database_url or listener_database_url())
         self._connect = connect
-        self._application_name = application_name
+        self._application_name = application_name or database_application_name(
+            default="aicrm-next-queue"
+        ) + "-listener"
+        self._application_name = self._application_name[:63]
         self._connection: Any | None = None
         self.connected = False
         self.last_error = ""

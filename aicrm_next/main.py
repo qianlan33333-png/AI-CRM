@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 import logging
 from pathlib import Path
+from time import perf_counter
 
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
@@ -35,6 +37,7 @@ from .shared.errors import ApplicationError
 from .shared.repository_provider import RepositoryProviderError
 from .shared.release import current_release_sha
 from .shared.pii_audit import PiiAuditRepository, apply_pii_audit, pii_audit_enabled
+from .shared.query_telemetry import RequestQueryTelemetry, request_query_telemetry_scope
 from .shared.route_policy import RoutePolicyIndex
 from .shared.runtime import assert_required_runtime_secrets, fixture_mode, public_https_environment, require_signing_secret
 from .shared.runtime_settings import runtime_settings_request_scope
@@ -60,6 +63,7 @@ _QUESTIONNAIRE_DIR = Path(__file__).resolve().parent / "questionnaire"
 _NAVIGATION_TARGET_DIR = Path(__file__).resolve().parent / "navigation_target"
 _SERVICE_PERIOD_DIR = Path(__file__).resolve().parent / "service_period"
 logger = logging.getLogger(__name__)
+query_telemetry_logger = logging.getLogger("uvicorn.error")
 
 
 def create_app(*, pii_audit_repository: PiiAuditRepository | None = None) -> FastAPI:
@@ -126,31 +130,46 @@ def create_app(*, pii_audit_repository: PiiAuditRepository | None = None) -> Fas
 
     @app.middleware("http")
     async def write_route_owner_headers(request, call_next):
-        with runtime_settings_request_scope():
-            with internal_event_consumer_registry_scope(app.state.internal_event_consumer_registry):
-                auth_response = await route_policy_required_response(request, app=app, index=route_policy_index)
-                if auth_response is not None:
-                    response = auth_response
-                else:
-                    response = await call_next(request)
-            if pii_audit_enabled():
-                response = apply_pii_audit(
+        request_started_at = perf_counter()
+        response = None
+        request_failed = False
+        with request_query_telemetry_scope() as query_telemetry:
+            try:
+                with runtime_settings_request_scope():
+                    with internal_event_consumer_registry_scope(app.state.internal_event_consumer_registry):
+                        auth_response = await route_policy_required_response(request, app=app, index=route_policy_index)
+                        if auth_response is not None:
+                            response = auth_response
+                        else:
+                            response = await call_next(request)
+                    if pii_audit_enabled():
+                        response = apply_pii_audit(
+                            request=request,
+                            response=response,
+                            repository=audit_repository,
+                            fingerprint_secret=pii_fingerprint_secret,
+                        )
+                    response.headers.setdefault("X-AICRM-Route-Owner", "ai_crm_next")
+                    response.headers.setdefault("X-AICRM-Fallback-Used", "false")
+                    response.headers.setdefault("X-AICRM-App", "ai_crm_next")
+                    response.headers.setdefault("X-AICRM-Release-SHA", current_release_sha())
+                    if public_https_environment():
+                        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+                    if request.url.path == "/sidebar/bind-mobile" or request.url.path.startswith("/api/sidebar/"):
+                        response.headers.setdefault("Cache-Control", "no-store, max-age=0")
+                        response.headers.setdefault("Pragma", "no-cache")
+                        response.headers.setdefault("Expires", "0")
+            except Exception:
+                request_failed = True
+                raise
+            finally:
+                _log_request_query_summary(
                     request=request,
-                    response=response,
-                    repository=audit_repository,
-                    fingerprint_secret=pii_fingerprint_secret,
+                    status_code=500 if request_failed or response is None else int(response.status_code),
+                    request_duration_ms=(perf_counter() - request_started_at) * 1000.0,
+                    query_telemetry=query_telemetry,
                 )
-            response.headers.setdefault("X-AICRM-Route-Owner", "ai_crm_next")
-            response.headers.setdefault("X-AICRM-Fallback-Used", "false")
-            response.headers.setdefault("X-AICRM-App", "ai_crm_next")
-            response.headers.setdefault("X-AICRM-Release-SHA", current_release_sha())
-            if public_https_environment():
-                response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
-            if request.url.path == "/sidebar/bind-mobile" or request.url.path.startswith("/api/sidebar/"):
-                response.headers.setdefault("Cache-Control", "no-store, max-age=0")
-                response.headers.setdefault("Pragma", "no-cache")
-                response.headers.setdefault("Expires", "0")
-            return response
+        return response
 
     app.mount(
         "/static/group-ops",
@@ -207,6 +226,40 @@ def _application_error_code(exc: ApplicationError) -> str:
     if error_code.endswith("_error"):
         error_code = error_code[: -len("_error")]
     return error_code or "application_error"
+
+
+def _log_request_query_summary(
+    *,
+    request,
+    status_code: int,
+    request_duration_ms: float,
+    query_telemetry: RequestQueryTelemetry,
+) -> None:
+    policy = getattr(request.state, "route_policy", None)
+    if policy is None:
+        return
+    snapshot = query_telemetry.snapshot()
+    summary = {
+        "event": "aicrm_request_query_summary",
+        "method": str(request.method or "").upper(),
+        "route": str(policy.path),
+        "route_name": str(policy.route_name),
+        "capability": str(policy.capability),
+        "status_code": int(status_code),
+        "request_duration_ms": round(max(0.0, request_duration_ms), 3),
+        "query_count": snapshot.query_count,
+        "failed_query_count": snapshot.failed_query_count,
+        "query_duration_ms": snapshot.query_duration_ms,
+        "query_fingerprint_overflow_count": snapshot.fingerprint_overflow_count,
+        "query_fingerprints": [
+            {"fingerprint": fingerprint, "calls": calls}
+            for fingerprint, calls in snapshot.fingerprints
+        ],
+    }
+    query_telemetry_logger.info(
+        "aicrm request query summary %s",
+        json.dumps(summary, ensure_ascii=True, sort_keys=True),
+    )
 
 
 app = create_app()

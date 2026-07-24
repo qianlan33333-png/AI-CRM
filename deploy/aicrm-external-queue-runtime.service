@@ -9,6 +9,8 @@ User=ubuntu
 WorkingDirectory=/home/ubuntu/极简 crm
 EnvironmentFile=/home/ubuntu/.openclaw-wecom-pg.env
 EnvironmentFile=-/home/ubuntu/.aicrm-queue-runtime-generation.env
+Environment=DB_APPLICATION_NAME=aicrm-next-queue-external
+Environment=PGAPPNAME=aicrm-next-queue-external
 ExecStart=/bin/bash -lc 'export AICRM_LISTENER_DATABASE_URL="${AICRM_LISTENER_DATABASE_URL:-${DATABASE_URL:-}}"; test -n "$AICRM_LISTENER_DATABASE_URL"; source /home/ubuntu/venvs/openclaw/bin/activate; exec python scripts/run_execution_runtime.py --queue-kind external'
 Restart=always
 RestartSec=2

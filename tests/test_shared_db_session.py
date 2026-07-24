@@ -86,6 +86,13 @@ def test_get_pool_settings_redacts_database_url_and_uses_env(monkeypatch) -> Non
     assert "user" not in str(settings)
 
 
+def test_database_application_name_uses_libpq_fallback_and_sanitizes(monkeypatch) -> None:
+    monkeypatch.delenv("DB_APPLICATION_NAME", raising=False)
+    monkeypatch.setenv("PGAPPNAME", "aicrm next / cron:sync")
+
+    assert db_session.database_application_name() == "aicrm-next-cron:sync"
+
+
 def test_engine_initialization_log_does_not_include_database_secret(monkeypatch) -> None:
     class FakeEngine:
         def dispose(self) -> None:

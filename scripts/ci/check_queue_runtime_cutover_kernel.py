@@ -148,8 +148,8 @@ def collect_errors(root: Path = ROOT) -> list[str]:
     manifest = json.loads(
         (root / "deploy" / "production_runtime_units.json").read_text(encoding="utf-8")
     )
-    if manifest.get("schema_version") != 4:
-        errors.append("production runtime manifest must use successor-aware schema_version 4")
+    if manifest.get("schema_version") != 5:
+        errors.append("production runtime manifest must use observability-aware schema_version 5")
     cutover = manifest.get("cutover_managed_legacy") or {}
     actual_timer_owners = tuple(
         (str(item.get("timer") or ""), str(item.get("service") or ""))

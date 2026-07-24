@@ -1,6 +1,19 @@
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "timer_service_drain_timeout_seconds": 600,
+  "database_application_names": {
+    "openclaw-wecom-postgres.service": "aicrm-next-web",
+    "openclaw-wecom-callback-ingress.service": "aicrm-next-callback-ingress",
+    "aicrm-internal-queue-runtime.service": "aicrm-next-queue-internal",
+    "aicrm-inbox-queue-runtime.service": "aicrm-next-queue-inbox",
+    "aicrm-external-queue-runtime.service": "aicrm-next-queue-external",
+    "aicrm-queue-invariant-check.service": "aicrm-next-cron-queue-invariant",
+    "aicrm-queue-soak-snapshot.service": "aicrm-next-cron-queue-soak",
+    "openclaw-wechat-pay-order-reconciliation-worker.service": "aicrm-next-cron-payment-reconcile",
+    "aicrm-ai-audience-daily-intent.service": "aicrm-next-cron-audience-intent",
+    "aicrm-next-broadcast-delegation.service": "aicrm-next-cron-broadcast",
+    "aicrm-next-group-ops-planning.service": "aicrm-next-cron-group-ops"
+  },
   "primary_web": {
     "service": "openclaw-wecom-postgres.service"
   },

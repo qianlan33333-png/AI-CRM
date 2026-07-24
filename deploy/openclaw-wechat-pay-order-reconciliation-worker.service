@@ -9,4 +9,6 @@ User=ubuntu
 WorkingDirectory=/home/ubuntu/极简 crm
 EnvironmentFile=/home/ubuntu/.openclaw-wecom-pg.env
 Environment=PYTHONUNBUFFERED=1
+Environment=DB_APPLICATION_NAME=aicrm-next-cron-payment-reconcile
+Environment=PGAPPNAME=aicrm-next-cron-payment-reconcile
 ExecStart=/bin/bash -lc 'source /home/ubuntu/venvs/openclaw/bin/activate && python scripts/run_wechat_pay_order_reconciliation_worker.py --execute'

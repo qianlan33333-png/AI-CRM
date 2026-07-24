@@ -62,6 +62,16 @@ def load_manifest(path: Path = MANIFEST_PATH) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def database_application_names(manifest: dict[str, Any]) -> dict[str, str]:
+    raw = manifest.get("database_application_names") or {}
+    if not isinstance(raw, dict):
+        raise ValueError("database_application_names must be an object")
+    return {
+        str(service or "").strip(): str(application_name or "").strip()
+        for service, application_name in raw.items()
+    }
+
+
 def active_timers(manifest: dict[str, Any]) -> list[TimerUnit]:
     timers: list[TimerUnit] = []
     for item in manifest.get("active_autostart") or []:
@@ -358,6 +368,18 @@ def _validate_managed_service(service: str) -> None:
         raise FileNotFoundError(f"managed service entrypoint does not exist: {service}: {entrypoint}")
 
 
+def _validate_database_application_name(service: str, expected: str) -> None:
+    body = _read_unit(service)
+    assignments: dict[str, list[str]] = {}
+    for directive in _directive_values(body, "Environment"):
+        key, separator, value = directive.strip().strip('"').partition("=")
+        if separator:
+            assignments.setdefault(key, []).append(value)
+    for key in ("DB_APPLICATION_NAME", "PGAPPNAME"):
+        if assignments.get(key) != [expected]:
+            raise ValueError(f"{service} must declare exactly one {key}={expected}")
+
+
 def _guarded_units(manifest: dict[str, Any]) -> list[str]:
     units = [
         primary_web_service(manifest).service,
@@ -403,8 +425,8 @@ def _validate_deploy_guards() -> None:
 
 
 def validate_manifest(manifest: dict[str, Any], *, validate_unit_files: bool = True) -> None:
-    if manifest.get("schema_version") != 4:
-        raise ValueError("production runtime units manifest schema_version must be 4")
+    if manifest.get("schema_version") != 5:
+        raise ValueError("production runtime units manifest schema_version must be 5")
     drain_timeout = int(manifest.get("timer_service_drain_timeout_seconds") or DEFAULT_TIMER_SERVICE_DRAIN_TIMEOUT_SECONDS)
     if drain_timeout < 1 or drain_timeout > 900:
         raise ValueError("timer_service_drain_timeout_seconds must be between 1 and 900")
@@ -439,6 +461,27 @@ def validate_manifest(manifest: dict[str, Any], *, validate_unit_files: bool = T
     cutover_service_names = [unit.service for unit in cutover_timers] + [unit.service for unit in cutover_persistent]
     replacement_timer_names = [unit.timer for unit in replacement_timers]
     replacement_service_names = [unit.service for unit in replacement_timers]
+    application_names = database_application_names(manifest)
+    application_name_services = {
+        primary_web.service,
+        *(service.service for service in services),
+        *(unit.service for unit in timers),
+        *replacement_service_names,
+    }
+    if set(application_names) != application_name_services:
+        missing = sorted(application_name_services - set(application_names))
+        extra = sorted(set(application_names) - application_name_services)
+        raise ValueError(
+            f"database_application_names must exactly cover active runtime services: missing={missing}, extra={extra}"
+        )
+    invalid_application_names = sorted(
+        application_name
+        for application_name in application_names.values()
+        if not re.fullmatch(r"[a-z][a-z0-9-]{0,62}", application_name)
+    )
+    if invalid_application_names:
+        raise ValueError(f"invalid database application_name values: {invalid_application_names}")
+    _unique(list(application_names.values()), "database application_name")
     legacy_owner_names = [unit.timer for unit in cutover_timers] + [
         unit.service for unit in cutover_persistent
     ]
@@ -524,6 +567,8 @@ def validate_manifest(manifest: dict[str, Any], *, validate_unit_files: bool = T
             _validate_timer_unit(unit)
         for service in (*managed_service_names, *replacement_service_names, *cutover_service_names):
             _validate_managed_service(service)
+        for service, application_name in application_names.items():
+            _validate_database_application_name(service, application_name)
 
 
 class Runner:

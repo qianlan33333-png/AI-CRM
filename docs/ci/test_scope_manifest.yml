@@ -210,6 +210,49 @@
       "architecture_gate": "full"
     },
     {
+      "name": "query_observability",
+      "paths": [
+        "aicrm_next/main.py",
+        "aicrm_next/shared/db_session.py",
+        "aicrm_next/shared/postgres_connection.py",
+        "aicrm_next/shared/query_telemetry.py",
+        "docs/architecture/runtime_contract_inventory.json",
+        "docs/ops/query-observability.md",
+        "tests/test_query_telemetry.py"
+      ],
+      "python_tests": [
+        "tests/test_query_telemetry.py",
+        "tests/test_shared_db_session.py",
+        "tests/test_db_session_runtime_audit.py",
+        "tests/test_route_policy_contract.py",
+        "tests/test_route_policy_enforcement.py",
+        "tests/test_critical_read_performance_contracts.py",
+        "tests/test_critical_read_performance_runner.py",
+        "tests/test_runtime_contract_inventory.py",
+        "tests/test_select_test_scope.py"
+      ],
+      "needs_postgres": true,
+      "needs_full_ci": true,
+      "architecture_gate": "full"
+    },
+    {
+      "name": "nginx_query_timing",
+      "paths": [
+        "deploy/nginx-query-timing.conf.example",
+        "docs/ops/nginx-query-timing.md",
+        "scripts/ops/check_nginx_query_timing_config.py",
+        "tests/test_nginx_query_timing_config.py"
+      ],
+      "python_tests": [
+        "tests/test_nginx_query_timing_config.py",
+        "tests/test_deploy_workflow_contract.py",
+        "tests/test_select_test_scope.py"
+      ],
+      "needs_postgres": false,
+      "needs_full_ci": true,
+      "architecture_gate": "full"
+    },
+    {
       "name": "retired_runtime_physical_cleanup",
       "paths": [
         "aicrm_next/platform_foundation/legacy_cleanup/**",

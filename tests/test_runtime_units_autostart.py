@@ -58,7 +58,30 @@ def test_runtime_units_manifest_classifies_every_deploy_timer() -> None:
 def test_runtime_units_manifest_declares_primary_web_service() -> None:
     assert _manifest()["primary_web"] == {"service": "openclaw-wecom-postgres.service"}
     assert _manifest()["timer_service_drain_timeout_seconds"] == 600
-    assert _manifest()["schema_version"] == 4
+    assert _manifest()["schema_version"] == 5
+
+
+def test_runtime_units_manifest_owns_unique_database_application_names() -> None:
+    manifest = _manifest()
+    application_names = manifest["database_application_names"]
+    expected_services = {
+        manifest["primary_web"]["service"],
+        *(item["service"] for item in manifest["active_services"]),
+        *(item["service"] for item in manifest["active_autostart"]),
+        *(item["service"] for item in manifest["cutover_replacement_autostart"]["timers"]),
+    }
+
+    assert set(application_names) == expected_services
+    assert len(set(application_names.values())) == len(application_names)
+    runtime_units.validate_manifest(manifest)
+
+
+def test_runtime_units_manifest_rejects_missing_database_application_name() -> None:
+    manifest = deepcopy(_manifest())
+    manifest["database_application_names"].pop("aicrm-internal-queue-runtime.service")
+
+    with pytest.raises(ValueError, match="exactly cover active runtime services"):
+        runtime_units.validate_manifest(manifest, validate_unit_files=False)
 
 
 def test_runtime_units_manifest_maps_every_retired_owner_to_one_successor() -> None:
