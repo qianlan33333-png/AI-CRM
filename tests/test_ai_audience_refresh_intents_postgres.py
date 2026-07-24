@@ -10,6 +10,8 @@ from aicrm_next.ai_audience_ops.refresh_intents import (
     AudienceRefreshIntentRepository,
     AudienceRefreshIntentService,
 )
+from aicrm_next.internal_event_composition import build_internal_event_consumer_registry
+from aicrm_next.platform_foundation.internal_events.outbox import InternalEventOutboxRelay
 from aicrm_next.shared.db_session import get_session_factory
 
 
@@ -83,6 +85,39 @@ def _count(statement: str, params: dict[str, Any] | None = None) -> int:
         return int(session.execute(text(statement), params or {}).scalar_one())
 
 
+def _freeze_signal_as_pr3_history(package_id: int, *, generation: int = 1) -> None:
+    relayed = InternalEventOutboxRelay(
+        consumer_registry=build_internal_event_consumer_registry(),
+    ).relay_due(limit=10)
+    assert relayed["ok"] is True
+    key = f"ai_audience.refresh.requested:{package_id}:{generation}"
+    with get_session_factory()() as session:
+        updated = session.execute(
+            text(
+                """
+                UPDATE internal_event_consumer_run run
+                SET status = 'pending',
+                    attempt_count = 0,
+                    worker_generation = 0,
+                    policy_version = (
+                        SELECT policy_version
+                        FROM queue_runtime_control
+                        WHERE singleton = TRUE
+                    ),
+                    hold_reason = 'history_frozen_at_pr3_generation_1',
+                    hold_at = CURRENT_TIMESTAMP,
+                    updated_at = CURRENT_TIMESTAMP
+                FROM internal_event_outbox outbox
+                WHERE outbox.internal_event_id = run.event_id
+                  AND outbox.idempotency_key = :idempotency_key
+                """
+            ),
+            {"idempotency_key": key},
+        )
+        assert int(updated.rowcount or 0) == 1
+        session.commit()
+
+
 def test_duplicate_source_event_is_idempotent_and_pending_events_coalesce() -> None:
     package_id = _create_package()
     repo = AudienceRefreshIntentRepository()
@@ -116,6 +151,118 @@ def test_duplicate_source_event_is_idempotent_and_pending_events_coalesce() -> N
         "SELECT COUNT(*) FROM internal_event_outbox WHERE idempotency_key LIKE 'ai_audience.refresh.requested:%'"
     ) == 1
     assert _count("SELECT COUNT(*) FROM ai_audience_refresh_source_receipt WHERE package_id = :package_id", {"package_id": package_id}) == 2
+
+
+def test_duplicate_clock_intent_recovers_frozen_history_without_replaying_old_run() -> None:
+    package_id = _create_package(daily_enabled=True)
+    repo = AudienceRefreshIntentRepository()
+    first = repo.mark_package_dirty(
+        package_id=package_id,
+        source_event_key="daily:2026-07-24",
+        source_type="daily_clock_intent",
+        refresh_kind="daily",
+    )
+    assert first["signal_created"] is True
+    _freeze_signal_as_pr3_history(package_id)
+
+    duplicate = repo.mark_package_dirty(
+        package_id=package_id,
+        source_event_key="daily:2026-07-24",
+        source_type="daily_clock_intent",
+        refresh_kind="daily",
+    )
+
+    assert duplicate["deduplicated"] is True
+    assert duplicate["signal_created"] is True
+    assert duplicate["history_frozen_signal_recovered"] is True
+    intent = repo.get(package_id)
+    assert intent is not None
+    assert intent["dirty_generation"] == 1
+    assert intent["signal_generation"] == 1
+    assert intent["status"] == "waiting"
+    assert _count(
+        "SELECT COUNT(*) FROM internal_event_outbox WHERE idempotency_key LIKE :key",
+        {"key": f"ai_audience.refresh.requested:{package_id}:1%"},
+    ) == 2
+    assert _count(
+        "SELECT COUNT(*) FROM internal_event_consumer_run WHERE hold_reason = 'history_frozen_at_pr3_generation_1'"
+    ) == 1
+
+
+def test_new_clock_generation_replaces_frozen_owner_but_preserves_daily_priority() -> None:
+    package_id = _create_package(daily_enabled=True)
+    repo = AudienceRefreshIntentRepository()
+    repo.mark_package_dirty(
+        package_id=package_id,
+        source_event_key="daily:2026-07-24",
+        source_type="daily_clock_intent",
+        refresh_kind="daily",
+    )
+    _freeze_signal_as_pr3_history(package_id)
+
+    recovered = repo.mark_package_dirty(
+        package_id=package_id,
+        source_event_key="incremental:2026-07-24T09:18:00+08:00",
+        source_type="incremental_clock_intent",
+        refresh_kind="incremental",
+    )
+
+    assert recovered["signal_created"] is True
+    assert recovered["history_frozen_signal_recovered"] is True
+    intent = repo.get(package_id)
+    assert intent is not None
+    assert intent["dirty_generation"] == 2
+    assert intent["signal_generation"] == 2
+    assert intent["target_refresh_kind"] == "daily"
+    assert _count(
+        "SELECT COUNT(*) FROM internal_event_outbox WHERE idempotency_key LIKE 'ai_audience.refresh.requested:%'"
+    ) == 2
+    assert _count(
+        "SELECT COUNT(*) FROM internal_event_consumer_run WHERE hold_reason = 'history_frozen_at_pr3_generation_1'"
+    ) == 1
+
+
+def test_non_history_hold_remains_fail_closed_and_is_not_resignalled() -> None:
+    package_id = _create_package()
+    repo = AudienceRefreshIntentRepository()
+    repo.mark_package_dirty(
+        package_id=package_id,
+        source_event_key="incremental:1",
+        source_type="incremental_clock_intent",
+        refresh_kind="incremental",
+    )
+    relayed = InternalEventOutboxRelay(
+        consumer_registry=build_internal_event_consumer_registry(),
+    ).relay_due(limit=10)
+    assert relayed["ok"] is True
+    with get_session_factory()() as session:
+        session.execute(
+            text(
+                """
+                UPDATE internal_event_consumer_run
+                SET hold_reason = 'operator_hold', hold_at = CURRENT_TIMESTAMP
+                WHERE consumer_name = 'ai_audience_refresh_intent_consumer'
+                """
+            )
+        )
+        session.commit()
+
+    second = repo.mark_package_dirty(
+        package_id=package_id,
+        source_event_key="incremental:2",
+        source_type="incremental_clock_intent",
+        refresh_kind="incremental",
+    )
+
+    assert second["signal_created"] is False
+    assert second["history_frozen_signal_recovered"] is False
+    intent = repo.get(package_id)
+    assert intent is not None
+    assert intent["dirty_generation"] == 2
+    assert intent["signal_generation"] == 1
+    assert _count(
+        "SELECT COUNT(*) FROM internal_event_outbox WHERE idempotency_key LIKE 'ai_audience.refresh.requested:%'"
+    ) == 1
 
 
 def test_business_row_dirty_intent_and_signal_share_one_transaction() -> None:

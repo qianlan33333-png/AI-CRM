@@ -24,6 +24,7 @@ from .refresh_service import AudienceRefreshService
 
 RefreshRunner = Callable[..., dict[str, Any]]
 _OPEN_OWNER_STATUSES = frozenset({"waiting", "running", "retry_wait"})
+_HISTORY_FROZEN_HOLD_PREFIX = "history_frozen_at_pr3_generation_"
 
 
 def _text(value: Any) -> str:
@@ -142,6 +143,157 @@ class AudienceRefreshIntentRepository:
                 {"package_id": int(package_id)},
             ).mappings().fetchone()
             return _public(row) if row else None
+
+    @staticmethod
+    def _signal_owner_state(
+        session: Session,
+        *,
+        package_id: int,
+        signal_generation: int,
+    ) -> str:
+        """Classify one durable signal without reviving frozen queue history.
+
+        A waiting intent only has a live owner when its outbox row or canonical
+        consumer run is still claimable by the active queue policy. PR-3 froze
+        pre-cutover runs on purpose; those rows remain immutable history and
+        require a new current-generation signal instead of being replayed.
+        """
+
+        if int(package_id) <= 0 or int(signal_generation) <= 0:
+            return "none"
+        idempotency_key = f"ai_audience.refresh.requested:{int(package_id)}:{int(signal_generation)}"
+        live_owner = bool(
+            session.execute(
+                text(
+                    """
+                    WITH control AS (
+                        SELECT active_generation, policy_version
+                        FROM queue_runtime_control
+                        WHERE singleton = TRUE
+                    )
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM internal_event_outbox outbox
+                        CROSS JOIN control
+                        WHERE outbox.tenant_id = 'aicrm'
+                          AND outbox.idempotency_key = :idempotency_key
+                          AND (
+                            (
+                              outbox.status IN ('pending', 'running', 'failed_retryable')
+                              AND outbox.hold_reason = ''
+                              AND outbox.policy_version = control.policy_version
+                              AND outbox.worker_generation IN (0, control.active_generation)
+                            )
+                            OR (
+                              outbox.status = 'relayed'
+                              AND EXISTS (
+                                SELECT 1
+                                FROM internal_event_consumer_run run
+                                WHERE run.event_id = outbox.internal_event_id
+                                  AND run.status IN ('pending', 'running', 'failed_retryable')
+                                  AND run.hold_reason = ''
+                                  AND run.policy_version = control.policy_version
+                                  AND run.worker_generation IN (0, control.active_generation)
+                              )
+                            )
+                          )
+                    )
+                    """
+                ),
+                {"idempotency_key": idempotency_key},
+            ).scalar_one()
+        )
+        if live_owner:
+            return "live"
+        history_frozen = bool(
+            session.execute(
+                text(
+                    """
+                    SELECT EXISTS (
+                        SELECT 1
+                        FROM internal_event_outbox outbox
+                        JOIN internal_event_consumer_run run
+                          ON run.event_id = outbox.internal_event_id
+                        WHERE outbox.tenant_id = 'aicrm'
+                          AND outbox.idempotency_key = :idempotency_key
+                          AND outbox.status = 'relayed'
+                          AND run.status = 'pending'
+                          AND run.attempt_count = 0
+                          AND run.hold_reason LIKE :history_frozen_prefix
+                    )
+                    """
+                ),
+                {
+                    "idempotency_key": idempotency_key,
+                    "history_frozen_prefix": _HISTORY_FROZEN_HOLD_PREFIX + "%",
+                },
+            ).scalar_one()
+        )
+        return "history_frozen" if history_frozen else "unknown"
+
+    def _recover_history_frozen_signal_in_session(
+        self,
+        session: Session,
+        *,
+        current: Any,
+    ) -> dict[str, Any] | None:
+        status = _text(current.get("status"))
+        dirty_generation = int(current.get("dirty_generation") or 0)
+        completed_generation = int(current.get("completed_generation") or 0)
+        signal_generation = int(current.get("signal_generation") or 0)
+        package_id = int(current.get("package_id") or 0)
+        if (
+            status not in {"waiting", "retry_wait"}
+            or dirty_generation <= completed_generation
+            or self._signal_owner_state(
+                session,
+                package_id=package_id,
+                signal_generation=signal_generation,
+            )
+            != "history_frozen"
+        ):
+            return None
+        recovery_execution_id = _new_execution_id("history_recovery")
+        recovery_sequence = int(current.get("row_version") or 0) + 1
+        signal = self._enqueue_refresh_signal(
+            session,
+            package_id=package_id,
+            generation=dirty_generation,
+            execution_id=recovery_execution_id,
+            parent_execution_id=_text(current.get("execution_id")),
+            refresh_kind=_text(current.get("target_refresh_kind")),
+            recovery_sequence=recovery_sequence,
+        )
+        updated = session.execute(
+            text(
+                """
+                UPDATE ai_audience_refresh_intent
+                SET signal_generation = :signal_generation,
+                    status = 'waiting',
+                    execution_id = :execution_id,
+                    parent_execution_id = :parent_execution_id,
+                    available_at = CURRENT_TIMESTAMP,
+                    last_error_code = '',
+                    last_error_message = '',
+                    row_version = row_version + 1,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE package_id = :package_id
+                RETURNING *
+                """
+            ),
+            {
+                "package_id": package_id,
+                "signal_generation": dirty_generation,
+                "execution_id": recovery_execution_id,
+                "parent_execution_id": _text(current.get("execution_id")),
+            },
+        ).mappings().one()
+        return {
+            "signal": signal,
+            "intent": updated,
+            "generation": dirty_generation,
+            "execution_id": recovery_execution_id,
+        }
 
     def mark_source_dirty(
         self,
@@ -336,17 +488,24 @@ class AudienceRefreshIntentRepository:
                 {"package_id": package_id, "source_event_key": event_key},
             ).mappings().one()
             intent = session.execute(
-                text("SELECT * FROM ai_audience_refresh_intent WHERE package_id = :package_id"),
+                text("SELECT * FROM ai_audience_refresh_intent WHERE package_id = :package_id FOR UPDATE"),
                 {"package_id": package_id},
             ).mappings().fetchone()
+            recovery = (
+                self._recover_history_frozen_signal_in_session(session, current=intent)
+                if intent
+                else None
+            )
             return {
                 "ok": True,
                 "package_id": package_id,
-                "generation": int(existing["generation"]),
-                "execution_id": _text(existing["execution_id"]),
+                "generation": int((recovery or {}).get("generation") or existing["generation"]),
+                "execution_id": _text((recovery or {}).get("execution_id")) or _text(existing["execution_id"]),
                 "parent_execution_id": _text(existing["parent_execution_id"]),
                 "deduplicated": True,
-                "intent": _intent_summary(intent) if intent else None,
+                "signal_created": bool((recovery or {}).get("signal")),
+                "history_frozen_signal_recovered": bool(recovery),
+                "intent": _intent_summary((recovery or {}).get("intent") or intent) if intent else None,
                 "real_external_call_executed": False,
             }
 
@@ -365,10 +524,24 @@ class AudienceRefreshIntentRepository:
             {"package_id": package_id},
         ).mappings().one()
         current_status = _text(current["status"])
-        has_owner = current_status in _OPEN_OWNER_STATUSES and int(current["signal_generation"] or 0) > int(current["completed_generation"] or 0)
+        owner_expected = (
+            current_status in _OPEN_OWNER_STATUSES
+            and int(current["signal_generation"] or 0)
+            > int(current["completed_generation"] or 0)
+        )
+        owner_state = (
+            self._signal_owner_state(
+                session,
+                package_id=package_id,
+                signal_generation=int(current["signal_generation"] or 0),
+            )
+            if owner_expected and current_status != "running"
+            else "live" if owner_expected else "none"
+        )
+        has_owner = owner_expected and owner_state != "history_frozen"
         generation = int(current["dirty_generation"] or 0) + 1
         requested_kind = _refresh_kind(refresh_kind)
-        has_pending_target = has_owner and (
+        has_pending_target = owner_expected and (
             current_status != "running"
             or int(current["dirty_generation"] or 0) > int(current["running_generation"] or 0)
         )
@@ -447,6 +620,7 @@ class AudienceRefreshIntentRepository:
             "parent_execution_id": _text(parent_execution_id),
             "deduplicated": False,
             "signal_created": bool(signal),
+            "history_frozen_signal_recovered": owner_state == "history_frozen" and bool(signal),
             "intent": _intent_summary(updated),
             "signal": _public(signal) if signal else None,
             "real_external_call_executed": False,
@@ -782,7 +956,11 @@ class AudienceRefreshIntentRepository:
         execution_id: str,
         parent_execution_id: str,
         refresh_kind: str,
+        recovery_sequence: int = 0,
     ) -> dict[str, Any]:
+        idempotency_key = f"ai_audience.refresh.requested:{int(package_id)}:{int(generation)}"
+        if int(recovery_sequence or 0) > 0:
+            idempotency_key += f":history-recovery:{int(recovery_sequence)}"
         return enqueue_internal_event_outbox_in_session(
             session,
             InternalEventCreateRequest(
@@ -791,7 +969,7 @@ class AudienceRefreshIntentRepository:
                 aggregate_id=str(int(package_id)),
                 subject_type="ai_audience_package",
                 subject_id=str(int(package_id)),
-                idempotency_key=f"ai_audience.refresh.requested:{int(package_id)}:{int(generation)}",
+                idempotency_key=idempotency_key,
                 source_module="ai_audience_ops.refresh_intents",
                 payload={
                     "package_id": int(package_id),

@@ -66,6 +66,11 @@ jobs:
             sudo systemctl show aicrm-ai-audience-daily-intent.timer \
               --property=ActiveState,UnitFileState,LastTriggerUSec,NextElapseUSecRealtime \
               --no-pager
+            sudo systemctl is-enabled --quiet aicrm-internal-queue-runtime.service
+            sudo systemctl is-active --quiet aicrm-internal-queue-runtime.service
+            sudo systemctl show aicrm-internal-queue-runtime.service \
+              --property=ActiveState,SubState,UnitFileState,NRestarts,ExecMainStatus,ExecMainCode,ActiveEnterTimestamp \
+              --no-pager
             set -a
             source /home/ubuntu/.openclaw-wecom-pg.env
             set +a
@@ -152,6 +157,112 @@ jobs:
                         )
                     ).mappings()
                 ]
+                runtime_heartbeat_state = [
+                    dict(row)
+                    for row in session.execute(
+                        text(
+                            """
+                            SELECT service_name, queue_kind, generation, release_sha,
+                                   rollout_mode, listener_connected,
+                                   EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - heartbeat_at))::BIGINT
+                                       AS heartbeat_age_seconds,
+                                   last_notification_at, last_drain_at
+                            FROM queue_worker_heartbeat
+                            WHERE service_name IN (
+                                'aicrm-internal_event-runtime',
+                                'aicrm-internal_outbox-runtime'
+                            )
+                            ORDER BY service_name
+                            """
+                        )
+                    ).mappings()
+                ]
+                refresh_outbox_state = [
+                    dict(row)
+                    for row in session.execute(
+                        text(
+                            """
+                            SELECT status, lane, policy_version, worker_generation,
+                                   COALESCE(NULLIF(hold_reason, ''), 'none') AS hold_reason,
+                                   COALESCE(NULLIF(last_error_code, ''), 'none') AS last_error_code,
+                                   COUNT(*) AS row_count,
+                                   MAX(attempt_count) AS max_attempt_count,
+                                   MAX(updated_at) AS newest_updated_at,
+                                   MAX(relayed_at) AS newest_relayed_at
+                            FROM internal_event_outbox
+                            WHERE event_type = 'ai_audience.refresh.requested'
+                            GROUP BY status, lane, policy_version, worker_generation,
+                                     COALESCE(NULLIF(hold_reason, ''), 'none'),
+                                     COALESCE(NULLIF(last_error_code, ''), 'none')
+                            ORDER BY status, lane, policy_version, worker_generation
+                            """
+                        )
+                    ).mappings()
+                ]
+                refresh_event_state = [
+                    dict(row)
+                    for row in session.execute(
+                        text(
+                            """
+                            SELECT event_type, expected_consumer_count,
+                                   fanout_manifest_version, fanout_manifest_hash,
+                                   COUNT(*) AS row_count,
+                                   MAX(created_at) AS newest_created_at
+                            FROM internal_event
+                            WHERE event_type = 'ai_audience.refresh.requested'
+                            GROUP BY event_type, expected_consumer_count,
+                                     fanout_manifest_version, fanout_manifest_hash
+                            ORDER BY expected_consumer_count, fanout_manifest_version
+                            """
+                        )
+                    ).mappings()
+                ]
+                refresh_consumer_run_state = [
+                    dict(row)
+                    for row in session.execute(
+                        text(
+                            """
+                            SELECT run.consumer_name, run.status, run.lane,
+                                   run.policy_version, run.worker_generation,
+                                   COALESCE(NULLIF(run.hold_reason, ''), 'none') AS hold_reason,
+                                   COALESCE(NULLIF(run.last_error_code, ''), 'none') AS last_error_code,
+                                   COUNT(*) AS row_count,
+                                   MAX(run.attempt_count) AS max_attempt_count,
+                                   MAX(run.updated_at) AS newest_updated_at
+                            FROM internal_event_consumer_run run
+                            JOIN internal_event event ON event.event_id = run.event_id
+                            WHERE event.event_type = 'ai_audience.refresh.requested'
+                            GROUP BY run.consumer_name, run.status, run.lane,
+                                     run.policy_version, run.worker_generation,
+                                     COALESCE(NULLIF(run.hold_reason, ''), 'none'),
+                                     COALESCE(NULLIF(run.last_error_code, ''), 'none')
+                            ORDER BY run.consumer_name, run.status
+                            """
+                        )
+                    ).mappings()
+                ]
+                refresh_intent_generation_state = [
+                    dict(row)
+                    for row in session.execute(
+                        text(
+                            """
+                            SELECT status, target_refresh_kind,
+                                   COUNT(*) AS row_count,
+                                   MIN(dirty_generation - completed_generation) AS min_generation_gap,
+                                   MAX(dirty_generation - completed_generation) AS max_generation_gap,
+                                   MAX(signal_generation) AS max_signal_generation,
+                                   MAX(completed_generation) AS max_completed_generation,
+                                   MAX(attempt_count) AS max_attempt_count,
+                                   COALESCE(NULLIF(last_error_code, ''), 'none') AS last_error_code,
+                                   MAX(updated_at) AS newest_updated_at
+                            FROM ai_audience_refresh_intent
+                            GROUP BY status, target_refresh_kind,
+                                     COALESCE(NULLIF(last_error_code, ''), 'none')
+                            ORDER BY status, target_refresh_kind
+                            """
+                        )
+                    ).mappings()
+                ]
 
             print(
                 json.dumps(
@@ -160,6 +271,11 @@ jobs:
                         "package_state": package_state,
                         "intent_state": intent_state,
                         "consumer_state": consumer_state,
+                        "runtime_heartbeat_state": runtime_heartbeat_state,
+                        "refresh_outbox_state": refresh_outbox_state,
+                        "refresh_event_state": refresh_event_state,
+                        "refresh_consumer_run_state": refresh_consumer_run_state,
+                        "refresh_intent_generation_state": refresh_intent_generation_state,
                         "contains_package_or_target_identifiers": False,
                         "real_external_call_executed": False,
                     },
