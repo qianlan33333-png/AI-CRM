@@ -24,6 +24,12 @@ from aicrm_next.platform_foundation.external_effects.settlement_events import (
 from aicrm_next.shared.db_session import get_session_factory
 from aicrm_next.shared.runtime import fixture_mode
 
+from .realtime_contract import (
+    PROVIDER_DEADLINE_FIELD,
+    WECOM_WELCOME_EFFECT_LANE,
+    welcome_provider_deadline,
+)
+
 
 WELCOME_EFFECT_BUSINESS_TYPE = "channel_welcome_effect_graph"
 WELCOME_MEDIA_COMPLETION_CONSUMER = "channel_welcome_media_dependency_release"
@@ -65,6 +71,8 @@ class WelcomeEffectGraphRequest:
     scene_value: str
     source_route: str = "channel_entry.process_channel_entry"
     parent_execution_id: str = ""
+    callback_received_at: datetime | None = None
+    provider_deadline_at: datetime | None = None
 
 
 class WelcomeEffectGraphRepository(Protocol):
@@ -97,6 +105,14 @@ def _response(
         "status_url": f"{STATUS_URL_PREFIX}{execution_id}",
         "real_external_call_executed": False,
     }
+
+
+def _request_deadline(request: WelcomeEffectGraphRequest) -> datetime:
+    if request.provider_deadline_at is not None:
+        value = request.provider_deadline_at
+        return value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
+    received_at = request.callback_received_at or _now()
+    return welcome_provider_deadline(received_at)
 
 
 def _provider_attachment(item: dict[str, Any]) -> dict[str, Any]:
@@ -438,6 +454,7 @@ class SQLAlchemyWelcomeEffectGraphRepository:
         *,
         held: bool,
     ) -> dict[str, Any]:
+        provider_deadline_at = _request_deadline(request)
         payload: dict[str, Any] = {
             "welcome_code": _clean(request.welcome_code),
             "external_userid": _clean(request.external_userid),
@@ -445,6 +462,12 @@ class SQLAlchemyWelcomeEffectGraphRepository:
             "channel_id": int(request.channel_id or 0),
             "scene_value": _clean(request.scene_value),
             "welcome_execution_id": execution_id,
+            PROVIDER_DEADLINE_FIELD: provider_deadline_at.isoformat(),
+            "callback_received_at": (
+                request.callback_received_at.isoformat()
+                if request.callback_received_at is not None
+                else ""
+            ),
             **dict(request.target_payload or {}),
         }
         if _clean(request.text_content):
@@ -478,6 +501,8 @@ class SQLAlchemyWelcomeEffectGraphRepository:
                 "dependency_count": sum(
                     1 for item in attachments if "dependency_key" in json.dumps(item, ensure_ascii=False)
                 ),
+                "provider_deadline_enforced": True,
+                PROVIDER_DEADLINE_FIELD: provider_deadline_at.isoformat(),
             },
             status="planned" if held else "queued",
             scheduled_at=_now(),
@@ -485,7 +510,9 @@ class SQLAlchemyWelcomeEffectGraphRepository:
             execution_mode="execute",
             execution_id=_execution_id("send"),
             parent_execution_id=execution_id,
-            lane="wecom_interactive",
+            lane=WECOM_WELCOME_EFFECT_LANE,
+            priority=1,
+            max_attempts=1,
             ordering_key=f"welcome:{request.corp_id}:{request.external_userid}:{request.follow_user_userid}",
             fairness_key=f"channel:{int(request.channel_id or 0)}",
             connection=session,
@@ -498,6 +525,7 @@ class SQLAlchemyWelcomeEffectGraphRepository:
         execution_id: str,
         material: dict[str, Any],
     ) -> dict[str, Any]:
+        provider_deadline_at = _request_deadline(request)
         return ExternalEffectService().plan_effect(
             effect_type=WECOM_MEDIA_UPLOAD,
             adapter_name="wecom_media_upload",
@@ -518,6 +546,7 @@ class SQLAlchemyWelcomeEffectGraphRepository:
                 "force_refresh": False,
                 "welcome_execution_id": execution_id,
                 "material_key": material["material_key"],
+                PROVIDER_DEADLINE_FIELD: provider_deadline_at.isoformat(),
             },
             payload_summary={
                 "welcome_execution_id": execution_id,
@@ -525,6 +554,8 @@ class SQLAlchemyWelcomeEffectGraphRepository:
                 "material_kind": material["library_kind"],
                 "material_id": int(material["material_id"]),
                 "source_payload_persisted": False,
+                "provider_deadline_enforced": True,
+                PROVIDER_DEADLINE_FIELD: provider_deadline_at.isoformat(),
             },
             status="queued",
             scheduled_at=_now(),
@@ -532,7 +563,9 @@ class SQLAlchemyWelcomeEffectGraphRepository:
             execution_mode="execute",
             execution_id=_execution_id("upload"),
             parent_execution_id=execution_id,
-            lane="wecom_media",
+            lane=WECOM_WELCOME_EFFECT_LANE,
+            priority=1,
+            max_attempts=1,
             ordering_key=f"welcome_material:{material['library_kind']}:{material['material_id']}",
             fairness_key=f"channel:{int(request.channel_id or 0)}",
             connection=session,
@@ -721,6 +754,7 @@ class SQLAlchemyWelcomeEffectGraphRepository:
             "failed_terminal",
             "blocked",
             "cancelled",
+            "expired",
         }:
             return {"ok": False, "applicable": False, "reason": "effect_not_terminal"}
         with self._session_factory() as session:
@@ -1028,12 +1062,18 @@ class InMemoryWelcomeEffectGraphRepository:
                     "follow_user_userid": request.follow_user_userid,
                     "text": {"content": request.text_content} if request.text_content else {},
                     "attachments": ready,
+                    PROVIDER_DEADLINE_FIELD: _request_deadline(request).isoformat(),
                 },
-                payload_summary={"dependency_count": len(unresolved)},
+                payload_summary={
+                    "dependency_count": len(unresolved),
+                    "provider_deadline_enforced": True,
+                },
                 status="planned" if unresolved else "queued",
                 execution_id=_execution_id("send"),
                 parent_execution_id=execution_id,
-                lane="wecom_interactive",
+                lane=WECOM_WELCOME_EFFECT_LANE,
+                priority=1,
+                max_attempts=1,
             )
             uploads: list[int] = []
             for item in unresolved:
@@ -1053,11 +1093,18 @@ class InMemoryWelcomeEffectGraphRepository:
                     source_module="channel_entry.application",
                     source_event_id=request.source_event_id,
                     idempotency_key=f"{request.idempotency_key}:upload:{msgtype}:{material_id}",
-                    payload={"material_kind": kind, "material_id": material_id, "upload_kind": "attachment" if msgtype == "file" else "image"},
+                    payload={
+                        "material_kind": kind,
+                        "material_id": material_id,
+                        "upload_kind": "attachment" if msgtype == "file" else "image",
+                        PROVIDER_DEADLINE_FIELD: _request_deadline(request).isoformat(),
+                    },
                     status="queued",
                     execution_id=_execution_id("upload"),
                     parent_execution_id=execution_id,
-                    lane="wecom_media",
+                    lane=WECOM_WELCOME_EFFECT_LANE,
+                    priority=1,
+                    max_attempts=1,
                 )
                 uploads.append(int(upload["id"]))
             result = _response(

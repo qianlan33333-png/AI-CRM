@@ -17,7 +17,11 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 ensure_repo_root_on_path()
 
 from aicrm_next.channel_entry_composition import build_wecom_callback_inbox_worker_factory
-from aicrm_next.external_effect_composition import build_external_effect_adapter_registry
+from aicrm_next.channel_entry.realtime_contract import WECOM_WELCOME_FALLBACK_SECONDS
+from aicrm_next.external_effect_composition import (
+    build_external_effect_adapter_registry,
+    run_welcome_realtime_post_commit,
+)
 from aicrm_next.internal_event_composition import build_internal_event_consumer_registry
 from aicrm_next.platform_foundation.execution_runtime.handlers import (
     external_effect_handler,
@@ -111,6 +115,11 @@ def _lane(name: str, *, claimless: bool) -> QueueLane:
         name=name,
         max_in_flight=DEFAULT_LANE_CAPACITY[name],
         rollout_mode="standby" if claimless else "canary",
+        fallback_seconds=(
+            WECOM_WELCOME_FALLBACK_SECONDS
+            if name in {"wecom_welcome_ingress", "wecom_welcome"}
+            else None
+        ),
     )
 
 
@@ -147,11 +156,13 @@ def _build_services(args: argparse.Namespace) -> tuple[QueueRuntimeService, ...]
             adapter_registry=build_external_effect_adapter_registry(),
             locked_by=worker_id,
             lease_seconds=30,
+            critical_post_commit_hook=run_welcome_realtime_post_commit,
         )
         return (
             _service(
                 queue_kind="external_effect",
                 lane_names=(
+                    "wecom_welcome",
                     "wecom_interactive",
                     "wecom_bulk",
                     "wecom_media",
@@ -171,7 +182,7 @@ def _build_services(args: argparse.Namespace) -> tuple[QueueRuntimeService, ...]
         return (
             _service(
                 queue_kind="webhook_inbox",
-                lane_names=("webhook_inbox",),
+                lane_names=("wecom_welcome_ingress", "webhook_inbox"),
                 generation=args.generation,
                 handler=webhook_inbox_handler(worker),
                 worker_id=worker_id,

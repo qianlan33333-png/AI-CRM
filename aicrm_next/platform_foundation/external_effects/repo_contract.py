@@ -21,7 +21,7 @@ from .models import (
 
 _MODEL_FIELD_NAMES: dict[type[Any], set[str]] = {}
 EXTERNAL_EFFECT_LANES = frozenset(
-    {"wecom_interactive", "wecom_bulk", "wecom_media", "outbound_webhook"}
+    {"wecom_welcome", "wecom_interactive", "wecom_bulk", "wecom_media", "outbound_webhook"}
 )
 
 
@@ -290,6 +290,11 @@ class ExternalEffectRepository:
         job: ExternalEffectJob,
         request_summary: dict[str, Any],
     ) -> tuple[ExternalEffectJob, ExternalEffectAttempt] | None:
+        raise NotImplementedError
+
+    def expire_provider_deadline(self, *, job: ExternalEffectJob) -> ExternalEffectJob | None:
+        """Expire a claimed job atomically before any provider boundary."""
+
         raise NotImplementedError
 
     def complete_dispatch(

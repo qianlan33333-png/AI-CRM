@@ -20,6 +20,7 @@ def process_wecom_callback_payload(inbox_item: WebhookInboxItem | dict[str, Any]
             event_data=payload_json,
             payload_xml=text(row.get("payload_xml")),
             route=text(row.get("route")),
+            callback_received_at=row.get("received_at"),
         )
     )
 

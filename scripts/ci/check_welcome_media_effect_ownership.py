@@ -56,6 +56,34 @@ def main() -> int:
     application_source = (ROOT / "aicrm_next/channel_entry/application.py").read_text(encoding="utf-8")
     if "WelcomeEffectGraphRequest" not in application_source:
         violations.append("channel-entry welcome callback does not plan a durable media dependency graph")
+    for token in ("callback_received_at", "provider_deadline_at", "welcome_provider_deadline"):
+        if token not in application_source:
+            violations.append(f"channel-entry welcome callback is missing hard deadline token: {token}")
+
+    graph_source = (ROOT / "aicrm_next/channel_entry/welcome_media_effects_repository.py").read_text(encoding="utf-8")
+    for token in ("WECOM_WELCOME_EFFECT_LANE", "max_attempts=1", "PROVIDER_DEADLINE_FIELD"):
+        if token not in graph_source:
+            violations.append(f"welcome effect graph is missing realtime execution token: {token}")
+
+    inbox_source = (ROOT / "aicrm_next/channel_entry/inbox.py").read_text(encoding="utf-8")
+    if "welcome_ingress_lane" not in inbox_source:
+        violations.append("welcome callback ingress does not select the reserved lane")
+
+    runtime_source = (ROOT / "scripts/run_execution_runtime.py").read_text(encoding="utf-8")
+    for token in ("wecom_welcome_ingress", "wecom_welcome", "critical_post_commit_hook"):
+        if token not in runtime_source:
+            violations.append(f"queue runtime is missing welcome realtime ownership token: {token}")
+
+    worker_source = (ROOT / "aicrm_next/platform_foundation/external_effects/worker.py").read_text(encoding="utf-8")
+    if "expire_provider_deadline" not in worker_source:
+        violations.append("external effect worker does not fail closed on elapsed provider deadlines")
+    if worker_source.find("complete_dispatch(") > worker_source.find("_run_post_success_continuations(updated"):
+        violations.append("critical welcome continuation must run only after dispatch completion is durable")
+
+    claim_source = (ROOT / "aicrm_next/platform_foundation/execution_runtime/repository.py").read_text(encoding="utf-8")
+    for token in ("WECOM_WELCOME_RESERVED_LANES", "ordinary_capacity", "_active_reserved_capacity"):
+        if token not in claim_source:
+            violations.append(f"queue admission does not reserve welcome capacity: {token}")
 
     if violations:
         for violation in violations:

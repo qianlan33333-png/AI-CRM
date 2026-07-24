@@ -677,6 +677,13 @@ repositories:
       - external_effect_attempt
     table_writes:
       - external_effect_attempt
+  aicrm_next/platform_foundation/external_effects/provider_attempt/repository.py:
+    capability_owner: aicrm_next.platform_foundation.external_effects
+    table_reads:
+      - external_effect_job
+    table_writes:
+      - external_effect_attempt
+      - external_effect_job
   aicrm_next/platform_foundation/external_effects/repo.py:
     capability_owner: aicrm_next.platform_foundation.external_effects
     table_reads:

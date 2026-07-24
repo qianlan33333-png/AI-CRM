@@ -764,6 +764,70 @@ def test_capacity_claims_only_real_slots_and_refills_immediately() -> None:
     assert time.monotonic() - started < 1.0
 
 
+def test_welcome_lanes_keep_capacity_when_ordinary_work_is_saturated() -> None:
+    ordinary = [_job(fairness_key=f"ordinary-{index}") for index in range(3)]
+    welcome = _job(lane="wecom_welcome", fairness_key="welcome")
+    inbox = PostgresWebhookInboxRepository(_database_url()).upsert_received(
+        provider="wecom",
+        event_family="external_contact",
+        route="/wecom/external-contact/callback",
+        method="POST",
+        tenant_id="aicrm",
+        corp_id="corp-welcome-reserved",
+        event_type="change_external_contact",
+        change_type="add_external_contact",
+        external_event_id=f"event-{uuid4().hex}",
+        idempotency_key=f"welcome-reserved-{uuid4().hex}",
+        raw_query_json={},
+        raw_headers_json={},
+        raw_body=b"<xml />",
+        payload_xml="<xml />",
+        payload_json={"WelcomeCode": "one-shot-code"},
+        payload_summary_json={"welcome_code_present": True},
+        lane="wecom_welcome_ingress",
+    )
+    _enable(
+        generation=7,
+        global_capacity=4,
+        wecom_interactive=4,
+        wecom_welcome=1,
+        wecom_welcome_ingress=1,
+    )
+    runtime = ExecutionRuntimeRepository(_database_url())
+
+    first = runtime.claim_external_effect_one(
+        lane="wecom_interactive",
+        worker_id="ordinary-1",
+        generation=7,
+    )
+    second = runtime.claim_external_effect_one(
+        lane="wecom_interactive",
+        worker_id="ordinary-2",
+        generation=7,
+    )
+    blocked = runtime.claim_external_effect_one(
+        lane="wecom_interactive",
+        worker_id="ordinary-3",
+        generation=7,
+    )
+    welcome_claim = runtime.claim_external_effect_one(
+        lane="wecom_welcome",
+        worker_id="welcome-effect",
+        generation=7,
+    )
+    ingress_claim = runtime.claim_webhook_inbox_one(
+        lane="wecom_welcome_ingress",
+        worker_id="welcome-ingress",
+        generation=7,
+    )
+
+    assert first is not None and second is not None
+    assert {first.item_id, second.item_id} <= {item["id"] for item in ordinary}
+    assert blocked is None
+    assert welcome_claim is not None and welcome_claim.item_id == welcome["id"]
+    assert ingress_claim is not None and ingress_claim.item_id == inbox["id"]
+
+
 def test_ordering_is_serial_and_fairness_rotates_between_keys() -> None:
     first = _job(ordering_key="customer-1", fairness_key="tenant-a")
     second = _job(ordering_key="customer-1", fairness_key="tenant-a")

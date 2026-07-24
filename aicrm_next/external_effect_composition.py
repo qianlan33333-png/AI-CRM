@@ -44,6 +44,7 @@ from .wecom_media_jobs import WeComMediaUploadAdapter
 from .platform_foundation.external_effects.continuations import (
     ExternalEffectContinuationConsumer,
     ExternalEffectContinuationRegistry,
+    run_external_effect_continuation,
 )
 from .questionnaire.external_effect_continuation import QUESTIONNAIRE_CONTACT_TAGS_CONTINUATION
 
@@ -130,6 +131,21 @@ def build_external_effect_settlement_consumers() -> tuple[ExternalEffectContinua
 def build_external_effect_continuation_registry() -> ExternalEffectContinuationRegistry:
     return ExternalEffectContinuationRegistry(
         consumer.continuation for consumer in build_external_effect_continuation_consumers()
+    )
+
+
+def run_welcome_realtime_post_commit(job, dispatch_result) -> dict:
+    """Release a welcome dependency immediately after upload persistence.
+
+    The ordinary ``external_effect.completed`` fan-out remains the durable,
+    idempotent recovery path.  This narrow hook only removes that fan-out's
+    latency from the 20-second welcome-code critical path.
+    """
+
+    return run_external_effect_continuation(
+        WELCOME_MEDIA_DEPENDENCY_CONTINUATION,
+        job,
+        dispatch_result,
     )
 
 
@@ -264,6 +280,7 @@ __all__ = [
     "WELCOME_MEDIA_EXTERNAL_EFFECT_CONTINUATION_CONSUMER",
     "WELCOME_EXTERNAL_EFFECT_SETTLEMENT_CONSUMER",
     "build_external_effect_adapter_registry",
+    "run_welcome_realtime_post_commit",
     "build_external_effect_continuation_consumers",
     "build_external_effect_continuation_registry",
     "build_external_effect_settlement_consumers",
