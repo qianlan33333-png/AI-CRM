@@ -977,6 +977,25 @@ def test_config_release_control_plane_selects_postgres_and_full_architecture_gat
     assert "tests/test_config_releases.py" in result["python_tests"]
     assert "tests/test_config_releases_postgres.py" in result["python_tests"]
     assert result["needs_postgres"] is True
+    assert result["needs_full_ci"] is True
+    assert result["architecture_gate"] == "full"
+
+
+def test_scrm_low_ops_foundation_files_are_all_mapped_to_the_control_plane_scope() -> None:
+    result = _select(
+        "aicrm_next/capability_registry.py",
+        "aicrm_next/scrm_contracts.py",
+        "scripts/run_job_catalog_scheduler.py",
+        "tests/test_capability_registry.py",
+        "tests/test_deployment_profile.py",
+        "tests/test_job_catalog.py",
+        "tests/test_scrm_contracts.py",
+    )
+
+    assert result["matched_scopes"] == ["config_release_control_plane"]
+    assert result["unmatched_files"] == []
+    assert result["needs_postgres"] is True
+    assert result["needs_full_ci"] is True
     assert result["architecture_gate"] == "full"
 
 
