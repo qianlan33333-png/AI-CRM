@@ -565,13 +565,25 @@ class AudienceRefreshIntentRepository:
             and not bool(package.get("incremental_enabled"))
             and bool(_text(package.get("simple_compiled_sql_text")))
         )
-        recover_blocked_wrong_kind = (
+        blocked_by_wrong_incremental_kind = (
+            _text(current.get("target_refresh_kind")) == "incremental"
+            and not bool(package.get("incremental_enabled"))
+        )
+        blocked_by_legacy_daily_simple_shape = (
+            _text(current.get("target_refresh_kind")) == "daily"
+            and _text(package.get("query_mode")) == "simple_sql"
+            and not bool(_text(package.get("snapshot_sql_text")))
+            and bool(_text(package.get("simple_compiled_sql_text")))
+        )
+        recover_blocked_incompatible_config = (
             current_status == "blocked"
-            and _text(current.get("last_error_code"))
-            in {"incremental_sql_not_configured", "daily_sql_not_configured"}
             and requested_kind == "daily"
             and bool(package.get("daily_enabled"))
             and daily_sql_available
+            and (
+                blocked_by_wrong_incremental_kind
+                or blocked_by_legacy_daily_simple_shape
+            )
         )
         owner_expected = (
             current_status in _OPEN_OWNER_STATUSES
@@ -602,7 +614,7 @@ class AudienceRefreshIntentRepository:
         target_params = _json_obj(current.get("target_params_json")) if preserve_target_payload else dict(params or {})
         target_row_limit = int(current.get("target_row_limit") or AI_AUDIENCE_REFRESH_DEFAULT_ROW_LIMIT) if preserve_target_payload else _bounded_row_limit(row_limit)
         should_signal = not has_owner and (
-            current_status != "blocked" or recover_blocked_wrong_kind
+            current_status != "blocked" or recover_blocked_incompatible_config
         )
         status = "waiting" if should_signal else current_status
         signal_generation = generation if should_signal else int(current["signal_generation"] or 0)
@@ -622,7 +634,7 @@ class AudienceRefreshIntentRepository:
                     last_source_event_key = :source_event_key,
                     last_error_code = CASE WHEN :should_signal THEN '' ELSE last_error_code END,
                     last_error_message = CASE WHEN :should_signal THEN '' ELSE last_error_message END,
-                    attempt_count = CASE WHEN :recover_blocked_wrong_kind THEN 0 ELSE attempt_count END,
+                    attempt_count = CASE WHEN :recover_blocked_incompatible_config THEN 0 ELSE attempt_count END,
                     row_version = row_version + 1,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE package_id = :package_id
@@ -640,7 +652,7 @@ class AudienceRefreshIntentRepository:
                 "execution_id": root_execution_id,
                 "parent_execution_id": _text(parent_execution_id),
                 "should_signal": should_signal,
-                "recover_blocked_wrong_kind": recover_blocked_wrong_kind,
+                "recover_blocked_incompatible_config": recover_blocked_incompatible_config,
                 "source_event_key": event_key,
             },
         ).mappings().one()
@@ -673,7 +685,7 @@ class AudienceRefreshIntentRepository:
             "deduplicated": False,
             "signal_created": bool(signal),
             "history_frozen_signal_recovered": owner_state == "history_frozen" and bool(signal),
-            "blocked_wrong_kind_recovered": recover_blocked_wrong_kind and bool(signal),
+            "blocked_incompatible_config_recovered": recover_blocked_incompatible_config and bool(signal),
             "intent": _intent_summary(updated),
             "signal": _public(signal) if signal else None,
             "real_external_call_executed": False,

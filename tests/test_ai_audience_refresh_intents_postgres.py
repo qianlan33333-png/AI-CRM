@@ -25,6 +25,8 @@ def _create_package(
     incremental_enabled: bool = True,
     incremental_sql_text: str = "SELECT 1 AS identity_type",
     snapshot_sql_text: str = "SELECT 1 AS identity_type",
+    query_mode: str = "hybrid",
+    simple_compiled_sql_text: str = "",
 ) -> int:
     with get_session_factory()() as session:
         package_id = int(
@@ -32,10 +34,12 @@ def _create_package(
                 text(
                     """
                     INSERT INTO ai_audience_package (
-                        package_key, name, status, incremental_enabled, daily_enabled
+                        package_key, name, status, query_mode,
+                        incremental_enabled, daily_enabled
                     ) VALUES (
                         'intent_pkg_' || nextval('ai_audience_package_id_seq')::text,
-                        'Intent package', 'draft', :incremental_enabled, :daily_enabled
+                        'Intent package', 'draft', :query_mode,
+                        :incremental_enabled, :daily_enabled
                     )
                     RETURNING id
                     """
@@ -43,6 +47,7 @@ def _create_package(
                 {
                     "daily_enabled": bool(daily_enabled),
                     "incremental_enabled": bool(incremental_enabled),
+                    "query_mode": query_mode,
                 },
             ).scalar_one()
         )
@@ -52,11 +57,13 @@ def _create_package(
                     """
                     INSERT INTO ai_audience_package_version (
                         package_id, version_number, status,
-                        incremental_sql_text, snapshot_sql_text
+                        incremental_sql_text, snapshot_sql_text,
+                        simple_compiled_sql_text
                     ) VALUES (
                         :package_id, 1, 'published',
                         :incremental_sql_text,
-                        :snapshot_sql_text
+                        :snapshot_sql_text,
+                        :simple_compiled_sql_text
                     )
                     RETURNING id
                     """
@@ -65,6 +72,7 @@ def _create_package(
                     "package_id": package_id,
                     "incremental_sql_text": incremental_sql_text,
                     "snapshot_sql_text": snapshot_sql_text,
+                    "simple_compiled_sql_text": simple_compiled_sql_text,
                 },
             ).scalar_one()
         )
@@ -337,7 +345,7 @@ def test_daily_clock_recovers_blocked_wrong_kind_without_replaying_old_signal() 
                     attempt_count, last_error_code, last_error_message
                 ) VALUES (
                     :package_id, 10, 0, 10, 'blocked', 'incremental',
-                    10, 'incremental_sql_not_configured', 'legacy wrong-kind request'
+                    10, 'refresh_failed', 'incremental_sql_not_configured'
                 )
                 """
             ),
@@ -351,7 +359,7 @@ def test_daily_clock_recovers_blocked_wrong_kind_without_replaying_old_signal() 
     )
 
     recovered = next(item for item in result["items"] if item["package_id"] == package_id)
-    assert recovered["blocked_wrong_kind_recovered"] is True
+    assert recovered["blocked_incompatible_config_recovered"] is True
     assert recovered["signal_created"] is True
     intent = AudienceRefreshIntentRepository().get(package_id)
     assert intent is not None
@@ -360,6 +368,50 @@ def test_daily_clock_recovers_blocked_wrong_kind_without_replaying_old_signal() 
     assert intent["attempt_count"] == 0
     assert intent["dirty_generation"] == 11
     assert intent["signal_generation"] == 11
+
+
+def test_daily_clock_recovers_blocked_legacy_simple_shape() -> None:
+    package_id = _create_package(
+        daily_enabled=True,
+        incremental_enabled=False,
+        incremental_sql_text="SELECT 1 AS identity_type",
+        snapshot_sql_text="",
+        query_mode="simple_sql",
+        simple_compiled_sql_text="SELECT 1 AS identity_type",
+    )
+    with get_session_factory()() as session:
+        session.execute(
+            text(
+                """
+                INSERT INTO ai_audience_refresh_intent (
+                    package_id, dirty_generation, completed_generation,
+                    signal_generation, status, target_refresh_kind,
+                    attempt_count, last_error_code, last_error_message
+                ) VALUES (
+                    :package_id, 3, 0, 3, 'blocked', 'daily',
+                    10, 'refresh_failed', 'daily_sql_not_configured'
+                )
+                """
+            ),
+            {"package_id": package_id},
+        )
+        session.commit()
+
+    result = AudienceRefreshIntentService().request_due_refreshes(
+        "daily",
+        bucket="recover-blocked-legacy-simple-shape",
+    )
+
+    recovered = next(item for item in result["items"] if item["package_id"] == package_id)
+    assert recovered["blocked_incompatible_config_recovered"] is True
+    assert recovered["signal_created"] is True
+    intent = AudienceRefreshIntentRepository().get(package_id)
+    assert intent is not None
+    assert intent["status"] == "waiting"
+    assert intent["target_refresh_kind"] == "daily"
+    assert intent["attempt_count"] == 0
+    assert intent["dirty_generation"] == 4
+    assert intent["signal_generation"] == 4
 
 
 def test_source_receipt_persists_only_opaque_identifiers() -> None:
