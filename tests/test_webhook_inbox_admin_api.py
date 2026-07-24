@@ -249,35 +249,3 @@ def test_webhook_inbox_admin_run_due_accepts_admin_action_token(monkeypatch):
     assert response.status_code == 200
     assert response.json()["dry_run"] is True
     assert response.json()["due_count"] == 1
-
-
-def test_webhook_inbox_admin_page_renders_shell_and_api_hooks():
-    client = TestClient(create_app(), raise_server_exceptions=False)
-
-    response = client.get("/admin/webhook-inbox")
-
-    assert response.status_code == 200
-    html = response.text
-    assert "<h1 class=\"admin-page-title\">Webhook Inbox</h1>" in html
-    assert "查看入站回调队列、失败重试、死信与企微回调链路。" in html
-    assert "Webhook Inbox" in html
-    assert "/api/admin/webhook-inbox/metrics" in html
-    assert "/api/admin/webhook-inbox/items" in html
-    assert "pending_failed" in html
-    assert "name=\"received_from\"" in html
-    assert "name=\"received_to\"" in html
-    assert "预演单条" in html
-    assert "执行单条" in html
-    assert "dispatch-preview" in html
-    assert "/api/admin/wecom/callback/reconciliation" in html
-    assert "processing_chain" in html
-    assert "internal_event_consumer_run" in html
-    assert "external_effect_attempt" in html
-    assert "webhook-inbox-stat-label\">待处理" in html
-    assert "webhook-inbox-card-title\">入站回调" in html
-    assert "Provider 分布" in html
-    assert "Route 分布" in html
-    assert "最近错误" in html
-    assert "providerDistribution" in html
-    assert "routeDistribution" in html
-    assert "recentErrors" in html

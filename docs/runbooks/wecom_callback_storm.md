@@ -131,7 +131,7 @@ python scripts/ops/check_wecom_callback_permanent_fix_readiness.py
 ```
 
 After the 5002 service, worker timer, webhook inbox schema, and nginx cutover are
-all in place, `/admin/webhook-inbox` is available on the 5001 web runtime, and
+all in place,
 `/api/admin/webhook-inbox/metrics?provider=wecom&event_family=external_contact`
 returns JSON `ok=true` with `queue_metrics.provider_distribution`,
 `queue_metrics.route_distribution`, and `queue_metrics.recent_errors` arrays,
@@ -339,15 +339,15 @@ dedupe, and inbox-ingestion proof, while the worker records it as a non-entry
 event and does not run identity sync, channel-entry projection, or external
 effect planning.
 
-For a single failed/dead-letter row, use the Webhook Inbox detail panel's
-`预演单条` action first. If the preview is acceptable, use `执行单条`, which calls
-`POST /api/admin/webhook-inbox/{id}/dispatch` with an admin action token and
-runs `dispatch_one(inbox_id)` for that row only. `retry` only marks a row due
-again; `dispatch` performs the targeted replay immediately.
+For a single failed/dead-letter row, call
+`POST /api/admin/webhook-inbox/{id}/dispatch` with `dry_run=true` and an admin
+action token first. If the preview is acceptable, call the same route with a
+versioned durable queue command and `dry_run=false`. `retry` only marks a row
+due again; `dispatch` accepts the targeted replay command for that row only.
 
-To inspect the 2026-06-27 incident window after the permanent cutover, filter
-`/admin/webhook-inbox` with status `待处理/失败`, 接收开始
-`2026-06-27T11:00`, and 接收结束 `2026-06-27T11:20` (北京时间). The API equivalent is:
+To inspect the 2026-06-27 incident window after the permanent cutover, query
+the Webhook Inbox API with status `pending_failed` and the Beijing-time receive
+window directly:
 
 ```bash
 curl -sS 'http://127.0.0.1:5001/api/admin/webhook-inbox/items?provider=wecom&event_family=external_contact&status=pending_failed&received_from=2026-06-27T11:00&received_to=2026-06-27T11:20'

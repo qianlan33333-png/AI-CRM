@@ -57,12 +57,6 @@ ADMIN_ROUTE_REGISTRY: dict[str, AdminRoute] = {
         "api.admin_group_ops_groups_ui",
         "/admin/automation-conversion/group-ops/groups/ui",
     ),
-    "api.admin_jobs": AdminRoute("api.admin_jobs", "/admin/jobs"),
-    "api.admin_push_center_page": AdminRoute("api.admin_push_center_page", "/admin/push-center"),
-    "api.admin_internal_events_page": AdminRoute("api.admin_internal_events_page", "/admin/internal-events"),
-    "api.admin_webhook_inbox_page": AdminRoute("api.admin_webhook_inbox_page", "/admin/webhook-inbox"),
-    "api.admin_broadcast_jobs": AdminRoute("api.admin_broadcast_jobs", "/admin/broadcast-jobs"),
-    "api.admin_console_jobs_action": AdminRoute("api.admin_console_jobs_action", "/admin/jobs/actions"),
     "api.admin_wechat_pay_transactions_page": AdminRoute(
         "api.admin_wechat_pay_transactions_page",
         "/admin/wechat-pay/transactions",
@@ -87,29 +81,13 @@ ADMIN_ROUTE_REGISTRY: dict[str, AdminRoute] = {
         "api.admin_attachment_library_workspace",
         "/admin/attachment-library",
     ),
-    "api.admin_group_invite_library_workspace": AdminRoute(
-        "api.admin_group_invite_library_workspace",
-        "/admin/group-invite-library",
-    ),
     "api.admin_config": AdminRoute("api.admin_config", "/admin/config"),
     "api.admin_config_app_settings": AdminRoute("api.admin_config_app_settings", "/admin/config/app-settings"),
     "api.admin_api_docs": AdminRoute("api.admin_api_docs", "/admin/api-docs"),
     "api.admin_console_api_docs": AdminRoute("api.admin_console_api_docs", "/admin/api-docs"),
-    "api.admin_console_jobs": AdminRoute("api.admin_console_jobs", "/admin/jobs"),
-    "api.admin_data_health_page": AdminRoute("api.admin_data_health_page", "/admin/data-health"),
-    "api.admin_data_quality_page": AdminRoute("api.admin_data_quality_page", "/admin/data-quality"),
-    "api.admin_delivery_lineage_page": AdminRoute("api.admin_delivery_lineage_page", "/admin/delivery-lineage"),
-    "api.admin_growth_orchestration_page": AdminRoute(
-        "api.admin_growth_orchestration_page",
-        "/admin/growth-orchestration",
-    ),
     "api.admin_operation_cycles_page": AdminRoute(
         "api.admin_operation_cycles_page",
         "/admin/operation-cycles",
-    ),
-    "api.admin_dashboard_shell_context": AdminRoute(
-        "api.admin_dashboard_shell_context",
-        "/api/admin/dashboard/shell-context",
     ),
     "api.admin_logout": AdminRoute("api.admin_logout", "/logout"),
 }
@@ -137,9 +115,6 @@ def admin_path_for(name: str, **path_params: object) -> str:
         return "/admin/wechat-shop/transactions/" + str(path_params.get("order_id", "")).strip()
     if name == "api.admin_console_questionnaire_detail":
         return "/admin/questionnaires/" + str(path_params.get("questionnaire_id", "")).strip()
-    if name == "api.admin_growth_orchestration_detail_page":
-        program_key = quote(str(path_params.get("program_key", "")).strip(), safe="")
-        return f"/admin/growth-orchestration/{program_key}"
     if name == "api.admin_operation_cycle_strategy_page":
         strategy_key = quote(str(path_params.get("strategy_key", "")).strip(), safe="")
         return f"/admin/operation-cycles/{strategy_key}"
@@ -147,16 +122,6 @@ def admin_path_for(name: str, **path_params: object) -> str:
         strategy_key = quote(str(path_params.get("strategy_key", "")).strip(), safe="")
         run_key = quote(str(path_params.get("run_key", "")).strip(), safe="")
         return f"/admin/operation-cycles/{strategy_key}/runs/{run_key}"
-    if name == "api.admin_push_center_job_page":
-        job_id = quote(str(path_params.get("job_id", "")).strip(), safe=":")
-        return f"/admin/push-center/jobs/{job_id}"
-    if name == "api.admin_internal_event_page":
-        event_id = quote(str(path_params.get("event_id", "")).strip(), safe="")
-        return f"/admin/internal-events/{event_id}"
-    if name == "api.admin_broadcast_job_page":
-        job_id = quote(str(path_params.get("job_id", "")).strip(), safe="")
-        return f"/admin/broadcast-jobs/{job_id}"
-
     route = ADMIN_ROUTE_REGISTRY.get(name)
     base = route.path if route else "#"
     query = {key: value for key, value in path_params.items() if value not in (None, "")}
@@ -199,15 +164,6 @@ ADMIN_NAV_GROUPS: list[dict[str, Any]] = [
     {
         "title": "配置及后台",
         "items": [
-            {"key": "group_invite_library", "label": "群邀请托管", "endpoint": "api.admin_group_invite_library_workspace"},
-            {"key": "jobs", "label": "同步任务配置 / 同步任务", "endpoint": "api.admin_jobs"},
-            {"key": "push_center", "label": "推送中心", "endpoint": "api.admin_push_center_page"},
-            {"key": "internal_events", "label": "事件中心", "endpoint": "api.admin_internal_events_page"},
-            {"key": "webhook_inbox", "label": "Webhook Inbox", "endpoint": "api.admin_webhook_inbox_page"},
-            {"key": "data_health", "label": "数据健康", "endpoint": "api.admin_data_health_page"},
-            {"key": "data_quality", "label": "数据质量规则", "endpoint": "api.admin_data_quality_page"},
-            {"key": "delivery_lineage", "label": "投递排障", "endpoint": "api.admin_delivery_lineage_page"},
-            {"key": "growth_orchestration", "label": "增长运营", "endpoint": "api.admin_growth_orchestration_page"},
             {"key": "automation_agents", "label": "自动化话术", "endpoint": "api.admin_automation_agents_page"},
             {"key": "owner_migration", "label": "负责人迁移", "endpoint": "api.admin_owner_migration_page"},
             {"key": "config", "label": "配置", "endpoint": "api.admin_config"},
@@ -246,11 +202,6 @@ def shell_context(
         "breadcrumbs": [{"label": "客户管理后台", "href": admin_path_for("api.admin_console_dashboard")}],
         "nav_items": nav_items(active_endpoint),
         "current_admin_user": None,
-        "show_shell_meta": False,
-        "shell_status": {
-            "environment": {"tone": "prod", "label": "AI-CRM Next"},
-            "health": {"state": "ok", "label": "OK", "detail": "postgres"},
-        },
         "page_notice": "",
         "page_error": "",
         "admin_path_for": admin_path_for,

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import json
-import re
 from types import SimpleNamespace
 
 import pytest
@@ -14,10 +12,10 @@ from aicrm_next.admin_auth.action_token import (
     validate_action_token,
     validate_action_token_for_request,
 )
-from aicrm_next.admin_jobs.routes import ensure_admin_action_token, validate_admin_action_token
 from aicrm_next.platform_foundation.auth_platform.context import AuthContext
+from aicrm_next.shared.admin_action_runtime import ensure_admin_action_token, validate_admin_action_token
 from aicrm_next.main import create_app
-from tests.admin_auth_test_helpers import auth_context, install_admin_session
+from tests.admin_auth_test_helpers import auth_context, install_admin_action_tokens, install_admin_session
 
 
 def _context(*, username: str = "security-admin", sid: str = "session-a") -> AuthContext:
@@ -189,19 +187,17 @@ def test_legacy_unbound_token_generator_is_empty_and_rejected(monkeypatch: pytes
     assert error == "缺少 admin_action_token"
 
 
-def test_rendered_admin_page_supplies_route_bound_token_used_by_backend(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_route_bound_token_is_used_by_backend_without_monitoring_page(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("AICRM_NEXT_ENV", "test")
     monkeypatch.setenv("AICRM_ROUTE_POLICY_ENFORCED", "true")
     monkeypatch.delenv("DATABASE_URL", raising=False)
     client = TestClient(create_app(), raise_server_exceptions=False)
     install_admin_session(client, "super_admin")
 
-    page = client.get("/admin/jobs")
-    match = re.search(r'<script id="aicrmAdminActionGrants" type="application/json">(.*?)</script>', page.text, re.DOTALL)
-    assert page.status_code == 200
-    assert match
-    tokens = json.loads(match.group(1))
-    token = tokens["POST /api/admin/jobs/order-identity-repair/run"]
+    token = install_admin_action_tokens(
+        client,
+        ("POST", "/api/admin/jobs/order-identity-repair/run"),
+    )[("POST", "/api/admin/jobs/order-identity-repair/run")]
 
     response = client.post(
         "/api/admin/jobs/order-identity-repair/run",
@@ -209,5 +205,6 @@ def test_rendered_admin_page_supplies_route_bound_token_used_by_backend(monkeypa
         json={},
     )
 
+    assert client.get("/admin/jobs").status_code == 404
     assert response.status_code == 410
     assert response.json()["error"] == "order_identity_repair_retired"

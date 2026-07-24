@@ -729,14 +729,6 @@
       "duration_seconds": 46.365,
       "items": 25
     },
-    "tests/test_data_quality_registry.py": {
-      "duration_seconds": 19.124,
-      "items": 8
-    },
-    "tests/test_data_quality_snapshot_job.py": {
-      "duration_seconds": 25.178,
-      "items": 4
-    },
     "tests/test_data_table_lifecycle_guard.py": {
       "duration_seconds": 7.597,
       "items": 5
@@ -1017,10 +1009,6 @@
       "duration_seconds": 6.602,
       "items": 5
     },
-    "tests/test_growth_orchestration_programs.py": {
-      "duration_seconds": 8.06,
-      "items": 5
-    },
     "tests/test_h5_payment_unknown_paths.py": {
       "duration_seconds": 18.593,
       "items": 3
@@ -1156,10 +1144,6 @@
     "tests/test_internal_event_admin_api.py": {
       "duration_seconds": 12.294,
       "items": 2
-    },
-    "tests/test_internal_event_admin_page.py": {
-      "duration_seconds": 15.165,
-      "items": 4
     },
     "tests/test_internal_event_gray_runbook_contract.py": {
       "duration_seconds": 1.886,
@@ -2548,7 +2532,7 @@
   },
   "source_run_id": 29720345351,
   "source_sha": "c8d2849debc39f493bb12da2b6553125cbdd9707",
-  "total_duration_seconds": 10467.071,
-  "total_items": 4122,
+  "total_duration_seconds": 10399.544,
+  "total_items": 4101,
   "version": 1
 }

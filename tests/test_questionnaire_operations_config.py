@@ -361,7 +361,6 @@ def test_external_push_test_only_queues_synthetic_effect(client: TestClient, mon
                 "enabled": True,
                 "configured_enabled": True,
                 "readonly_reason": "",
-                "push_center_href": "/admin/push-center?section=questionnaire",
             }
 
     monkeypatch.setattr(

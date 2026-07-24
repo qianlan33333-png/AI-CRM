@@ -47,7 +47,6 @@ class PushCapability:
     main_visible: bool
     toggleable: bool
     setting_key: str
-    push_center_href: str
     readonly_reason: str = ""
 
     def to_dict(self) -> dict[str, Any]:
@@ -75,7 +74,6 @@ PUSH_CAPABILITIES: tuple[PushCapability, ...] = (
         main_visible=True,
         toggleable=True,
         setting_key=_setting_key("questionnaire_external_push"),
-        push_center_href="/admin/push-center?section=questionnaire",
     ),
     PushCapability(
         key="order_paid_push",
@@ -91,7 +89,6 @@ PUSH_CAPABILITIES: tuple[PushCapability, ...] = (
         main_visible=True,
         toggleable=True,
         setting_key=_setting_key("order_paid_push"),
-        push_center_href="/admin/push-center?section=order",
     ),
     PushCapability(
         key="ai_assist_push",
@@ -107,7 +104,6 @@ PUSH_CAPABILITIES: tuple[PushCapability, ...] = (
         main_visible=True,
         toggleable=True,
         setting_key=_setting_key("ai_assist_push"),
-        push_center_href="/admin/push-center?section=ai_assist",
     ),
     PushCapability(
         key="private_broadcast",
@@ -123,7 +119,6 @@ PUSH_CAPABILITIES: tuple[PushCapability, ...] = (
         main_visible=True,
         toggleable=True,
         setting_key=_setting_key("private_broadcast"),
-        push_center_href="/admin/push-center?section=private_broadcast",
     ),
     PushCapability(
         key="group_ops_push",
@@ -139,7 +134,6 @@ PUSH_CAPABILITIES: tuple[PushCapability, ...] = (
         main_visible=True,
         toggleable=True,
         setting_key=_setting_key("group_ops_push"),
-        push_center_href="/admin/push-center?section=group_ops",
     ),
     PushCapability(
         key="group_broadcast",
@@ -155,7 +149,6 @@ PUSH_CAPABILITIES: tuple[PushCapability, ...] = (
         main_visible=True,
         toggleable=True,
         setting_key=_setting_key("group_broadcast"),
-        push_center_href="/admin/push-center?section=group_broadcast",
     ),
     PushCapability(
         key="customer_webhook",
@@ -171,7 +164,6 @@ PUSH_CAPABILITIES: tuple[PushCapability, ...] = (
         main_visible=True,
         toggleable=True,
         setting_key=_setting_key("customer_webhook"),
-        push_center_href="/admin/push-center?section=customer_webhook",
     ),
     PushCapability(
         key="tags",
@@ -187,7 +179,6 @@ PUSH_CAPABILITIES: tuple[PushCapability, ...] = (
         main_visible=True,
         toggleable=True,
         setting_key=_setting_key("tags"),
-        push_center_href="/admin/push-center?section=tags",
     ),
     PushCapability(
         key="welcome_message",
@@ -203,7 +194,6 @@ PUSH_CAPABILITIES: tuple[PushCapability, ...] = (
         main_visible=True,
         toggleable=True,
         setting_key=_setting_key("welcome_message"),
-        push_center_href="/admin/push-center?section=welcome",
     ),
     PushCapability(
         key="payment_query",
@@ -219,7 +209,6 @@ PUSH_CAPABILITIES: tuple[PushCapability, ...] = (
         main_visible=True,
         toggleable=True,
         setting_key=_setting_key("payment_query"),
-        push_center_href="/admin/push-center?section=payment",
     ),
     PushCapability(
         key="integrations",
@@ -235,7 +224,6 @@ PUSH_CAPABILITIES: tuple[PushCapability, ...] = (
         main_visible=True,
         toggleable=True,
         setting_key=_setting_key("integrations"),
-        push_center_href="/admin/push-center?section=integrations",
     ),
     PushCapability(
         key="test_receiver",
@@ -251,7 +239,6 @@ PUSH_CAPABILITIES: tuple[PushCapability, ...] = (
         main_visible=True,
         toggleable=True,
         setting_key="AICRM_EXTERNAL_EFFECT_TEST_RECEIVER_ENABLED",
-        push_center_href="/admin/push-center?section=test_receiver",
     ),
 )
 

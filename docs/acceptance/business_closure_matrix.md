@@ -37,7 +37,7 @@ Non-goals for this matrix:
 | Event / Approval / Task Loop | Internal event admin routes, run-due controls, reconciliation route, and background job contract exist. | An approved plan can be traced through internal event, consumer run, generated job/effect, and Push Center visibility with duplicate-safe behavior. | Operators can replay/retry failed consumers, see linked jobs/effects, and audit who approved, triggered, retried, or skipped every step. | E1 ops-plan-to-broadcast E2E acceptance; E2 event business explanation payload. |
 | External Orders | Read-only external order APIs use registered `external_agent` client credentials and short-lived JWT; local WeChat Pay / WeChat Shop reads are Next-owned. | Client readiness, auth failures, read/query shape, idempotency expectations, and order/customer/channel correlation are verified before production enablement. | Approved external systems can create/query/update gray orders, duplicate calls are idempotent, and CRM/admin pages show reconciled order status. | O1 external-orders enablement package; O2 external-orders gray acceptance. |
 | WeCom Real Auth / Callback | Admin WeCom auth and channel-entry callback routes are Next-owned and guarded; external calls remain approval-gated through integration gateway. | Operator auth readiness, callback signature behavior, duplicate event idempotency, and event/job visibility are validated without leaking secrets or raw IDs. | Real operator login, callback, contact/group permissions, token refresh, and gray send are validated in approved production-like conditions. | W1 WeCom auth operator readiness; W2 WeCom callback gray acceptance. |
-| Core CRM Admin Operations | Channel, config, tags, broadcast jobs, Push Center, and internal event pages/routes exist; old draft PR `#974` remains unrelated and stale. | Critical admin flows show accurate save/error/status explanations and do not rely on stale assets or legacy fallback. | Admin operators can configure channels, inspect jobs/events/orders/auth state, and resolve common failure modes without engineer DB inspection. | A1 close or rebase #974; A2 channel auto-accept save/error refresh; A3 admin status language audit. |
+| Core CRM Admin Operations | Channel, config, tags, orders, and direct-use business pages remain; broadcast, Push Center, and internal-event diagnostics are API/database-only. | Critical write flows show accurate save/error explanations and do not rely on stale assets or legacy fallback. | Admin operators use direct-use pages for configuration and actions; AI operations inspect jobs/events/auth state through authenticated APIs and production data. | A1 close or rebase #974; A2 channel auto-accept save/error refresh; A3 direct-use status language audit. |
 
 ## Push Center / Group Ops
 
@@ -48,8 +48,8 @@ where it failed, whether it can be retried, and whether manual action is needed.
 
 ### Current status
 
-- Relevant pages: `/admin/push-center`, `/admin/broadcast-jobs`,
-  `/admin/automation-conversion/group-ops/ui`, group-ops plan detail pages.
+- Direct-use pages: `/admin/automation-conversion/group-ops/ui` and group-ops
+  plan detail pages. Push Center and broadcast diagnostics are API/database-only.
 - Relevant API / route owners:
   - `platform_foundation`: `/api/admin/push-center/sections`,
     `/api/admin/push-center/jobs`, `/api/admin/push-center/jobs/{job_id}`,
@@ -127,8 +127,8 @@ engineer-only database inspection.
 
 ### Current status
 
-- Relevant pages: `/admin/internal-events`, Cloud Orchestrator plan/campaign
-  pages, Push Center, broadcast jobs.
+- Direct-use pages: Cloud Orchestrator plan/campaign pages. Internal Event,
+  Push Center, and broadcast diagnostics are API/database-only.
 - Relevant API / route owners:
   - `platform_foundation`: `/api/admin/internal-events`,
     `/api/admin/internal-events/{event_id}`,
@@ -340,10 +340,9 @@ failures without engineer intervention.
 
 ### Current status
 
-- Relevant pages: `/admin/channels`, channel edit/new pages,
-  `/admin/config/*`, `/admin/wecom-tags`, `/admin/broadcast-jobs`,
-  `/admin/push-center`, `/admin/internal-events`, order/transaction admin
-  pages, HXC dashboard, media library.
+- Relevant direct-use pages: `/admin/channels`, channel edit/new pages,
+  `/admin/config/*`, `/admin/wecom-tags`, order/transaction admin pages, HXC
+  dashboard, and media library. Queue and event diagnostics are API/database-only.
 - Relevant route owners:
   - `automation_engine`: channel and group-ops admin APIs/pages.
   - `admin_config`: config pages.

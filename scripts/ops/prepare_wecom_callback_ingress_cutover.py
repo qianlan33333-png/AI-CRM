@@ -289,7 +289,7 @@ def build_plan(args: argparse.Namespace) -> dict[str, Any]:
         "/tmp/wecom-callback-public-state.json proves public webhook inbox routes are deployed and invalid callback returns app-level 4xx",
         "/tmp/wecom-callback-deploy-smoke.json proves web, ingress, admin API, and detail routes are deployed after cutover",
         "callback pressure probe at 1200/min meets P95/P99 targets and page samples stay non-5xx",
-        "/admin/webhook-inbox shows queue metrics and dead-letter rows are replayable",
+        "webhook inbox JSON APIs expose queue metrics and replayable dead-letter rows",
     ]
     warnings = []
     if missing_assets:

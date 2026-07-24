@@ -6,16 +6,11 @@ from scripts.ops import check_wecom_callback_permanent_fix_readiness as readines
 
 
 SAMPLE_IDEMPOTENCY_KEY = "ww-test|change_external_contact|del_external_contact|wm-a|sales-a|1782530000||scene-a"
-ORIGINAL_PROBE_ADMIN_PAGE = readiness.probe_admin_page
 ORIGINAL_PROBE_JSON_OK = readiness.probe_json_ok
 
 
 def _health() -> dict:
     return {"checked": True, "ok": True, "status_code": 200, "body": '{"ok":true}', "error": ""}
-
-
-def _admin_page() -> dict:
-    return {"checked": True, "ok": True, "status_code": 200, "body": "<html>Webhook Inbox</html>", "error": ""}
 
 
 def _admin_metrics() -> dict:
@@ -82,8 +77,6 @@ def _service(unit: str) -> dict:
 
 @pytest.fixture(autouse=True)
 def _stub_admin_webhook_inbox(monkeypatch) -> None:
-    monkeypatch.setattr(readiness, "probe_admin_page", lambda url, timeout: _admin_page())
-
     def fake_probe_json_ok(
         url: str,
         timeout: float,
@@ -121,7 +114,6 @@ def test_wecom_callback_permanent_fix_readiness_accepts_cutover_state(monkeypatc
     assert payload["ready_for_production_cutover"] is True
     assert payload["ready_for_production_completion"] is False
     assert payload["ok"] is False
-    assert payload["admin_webhook_inbox"]["ok"] is True
     assert payload["admin_webhook_inbox_metrics"]["ok"] is True
     assert payload["admin_webhook_inbox_items"]["ok"] is True
     assert payload["admin_webhook_inbox_reconciliation"]["ok"] is True
@@ -184,33 +176,6 @@ def test_readiness_rejects_failed_quick_ack_state_check(monkeypatch, tmp_path) -
     assert payload["ready_for_production_cutover"] is False
     assert payload["ready_for_production_completion"] is False
     assert "quick ACK state check failed: nginx config not readable" in payload["warnings"]
-
-
-def test_readiness_rejects_missing_admin_webhook_inbox_page(monkeypatch, tmp_path) -> None:
-    config = tmp_path / "nginx.conf"
-    config.write_text("nginx", encoding="utf-8")
-    monkeypatch.setattr(readiness, "_load_env_file", lambda path: True)
-    monkeypatch.setattr(
-        readiness,
-        "run_quick_ack_check",
-        lambda argv: {"ok": True, "emergency_quick_ack_enabled": False, "business_processing_suppressed": False},
-    )
-    monkeypatch.setattr(
-        readiness,
-        "run_cutover_check",
-        lambda argv: {"ok": True, "ready_for_cutover": True},
-    )
-    monkeypatch.setattr(readiness, "probe_health", lambda url, timeout: _health())
-    monkeypatch.setattr(readiness, "probe_admin_page", lambda url, timeout: {"checked": True, "ok": False, "status_code": 404, "body": "", "error": ""})
-    monkeypatch.setattr(readiness, "read_webhook_inbox_metrics", lambda: _inbox())
-    monkeypatch.setattr(readiness, "systemctl_is_active", lambda unit: _service(unit))
-
-    payload = readiness.run(["--nginx-config", str(config), "--env-file", str(tmp_path / "env")])
-
-    assert payload["ready_for_production_cutover"] is False
-    assert payload["ready_for_production_completion"] is False
-    assert payload["admin_webhook_inbox"]["status_code"] == 404
-    assert "admin webhook inbox page is not available: 404" in payload["warnings"]
 
 
 def test_readiness_rejects_failed_admin_webhook_inbox_metrics_api(monkeypatch, tmp_path) -> None:
@@ -399,31 +364,6 @@ def test_readiness_rejects_failed_admin_webhook_inbox_reconciliation_api(monkeyp
     assert payload["ready_for_production_completion"] is False
     assert payload["admin_webhook_inbox_reconciliation"]["required_list_ok"] is False
     assert "admin webhook inbox reconciliation API is not available: recent_items is not a list" in payload["warnings"]
-
-
-def test_admin_page_probe_accepts_auth_redirect(monkeypatch) -> None:
-    class RedirectResponse:
-        status = 302
-
-        def read(self, limit: int) -> bytes:
-            return b""
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *args) -> None:
-            return None
-
-    class Opener:
-        def open(self, request, timeout):  # noqa: ANN001
-            return RedirectResponse()
-
-    monkeypatch.setattr(readiness, "build_opener", lambda handler: Opener())
-
-    payload = ORIGINAL_PROBE_ADMIN_PAGE("http://example.test/admin/webhook-inbox", 1)
-
-    assert payload["ok"] is True
-    assert payload["status_code"] == 302
 
 
 def test_json_ok_probe_accepts_ok_payload(monkeypatch) -> None:
@@ -762,7 +702,7 @@ def _public_state_payload(*, ok: bool = True) -> dict:
         "ok": ok,
         "base_url": "https://www.youcangogogo.com",
         "user_facing_available": ok,
-        "admin_webhook_inbox_deployed": ok,
+        "admin_webhook_inbox_api_deployed": ok,
         "admin_webhook_inbox_detail_route_deployed": ok,
         "invalid_callback_plain_success": False if ok else True,
         "app_level_callback_signal": ok,
@@ -798,7 +738,6 @@ def _deploy_smoke_payload(*, ok: bool = True) -> dict:
         "web_health_ok": ok,
         "ingress_health_ok": ok,
         "ingress_durable_ack_ready": ok,
-        "admin_page_deployed": ok,
         "admin_api_deployed": ok,
         "admin_detail_route_deployed": ok,
         "ingress_callback_routes_ready": ok,

@@ -45,7 +45,6 @@ def test_key_admin_pages_render_server_side_rows_or_stats(monkeypatch):
         "/admin/image-library",
         "/admin/miniprogram-library",
         "/admin/attachment-library",
-        "/admin/jobs",
         "/admin/runtime-config",
         "/admin/api-docs",
     ]:
@@ -363,15 +362,3 @@ def test_api_docs_page_lists_real_route_groups(monkeypatch):
     assert "/api/admin/ai-audience/packages" in response.text
     assert "/api/wechat-pay/notify" in response.text
     assert checker._row_count(response.text) >= 10
-
-
-def test_jobs_page_mentions_scheduled_safe_mode_without_disabled_timer_copy(monkeypatch):
-    response = _client(monkeypatch).get("/admin/jobs")
-
-    assert response.status_code == 200
-    assert "同步与任务总览" in response.text
-    assert "Webhook 投递" in response.text
-    assert "群发队列" in response.text
-    assert "数据读取状态" not in response.text
-    assert "degraded" not in response.text
-    assert "disabled timers" not in response.text.lower()

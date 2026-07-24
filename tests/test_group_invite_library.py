@@ -79,23 +79,11 @@ def test_group_invite_in_memory_repository_crud() -> None:
     assert deleted["deleted"] is True
 
 
-def test_group_invite_admin_api_and_page_contract() -> None:
+def test_group_invite_admin_api_remains_without_standalone_page() -> None:
     client = TestClient(create_app())
 
     page = client.get("/admin/group-invite-library")
-    assert page.status_code == 200
-    assert "群邀请托管" in page.text
-    assert "已同步客户群" in page.text
-    assert "/api/admin/automation-conversion/group-ops/groups" in page.text
-    assert "无需填写链接或参数" in page.text
-    assert "首次选用时自动生成" in page.text
-    assert "立即生成" not in page.text
-    assert "企业微信「加入群聊」链接" not in page.text
-    assert "work.weixin.qq.com/gm" not in page.text
-    assert "素材名称" not in page.text
-    assert "卡片标题" not in page.text
-    assert "企微入群方式 config_id" not in page.text
-    assert "卡片封面 URL" not in page.text
+    assert page.status_code == 404
 
     created = client.post(
         "/api/admin/group-invite-library",

@@ -16,6 +16,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from tools import check_admin_pages_real_data_binding as real_data_checker
+from aicrm_next.admin_shell.navigation import nav_items
 
 try:
     from fastapi.testclient import TestClient
@@ -26,10 +27,10 @@ except ModuleNotFoundError:
     raise
 
 TARGET_NAV_GROUPS = [
-    ("运营", ["自动化运营", "群运营计划", "渠道码中心", "AI 助手", "客户激活 / 客户列表", "漏斗 / 数据看板", "问卷", "内容雷达", "企微标签管理"]),
-    ("交易", ["交易管理", "商品管理"]),
+    ("运营", ["自动化运营", "运营闭环", "群运营计划", "渠道码中心", "AI 助手", "客户激活 / 客户列表", "漏斗 / 数据看板", "问卷", "内容雷达", "企微标签管理"]),
+    ("交易", ["交易管理", "商品管理", "周期商品管理", "优惠券"]),
     ("素材", ["图片素材库", "小程序素材库", "附件素材库"]),
-    ("配置及后台", ["同步任务配置 / 同步任务", "负责人迁移", "配置", "API 文档"]),
+    ("配置及后台", ["自动化话术", "负责人迁移", "配置", "API 文档"]),
 ]
 
 ADMIN_PAGES = [
@@ -50,7 +51,6 @@ ADMIN_PAGES = [
     "/admin/image-library",
     "/admin/miniprogram-library",
     "/admin/attachment-library",
-    "/admin/jobs",
     "/admin/owner-migration",
     "/admin/api-docs",
 ]
@@ -173,10 +173,9 @@ def _static_production_data_contracts_ready() -> tuple[bool, list[str]]:
 def run_check() -> dict[str, Any]:
     with local_admin_probe_env():
         client = _client()
-        shell_context = client.get("/api/admin/dashboard/shell-context").json()
         page_statuses, route_404_blockers, fixture_markers = _admin_pages(client)
     real_data_result = real_data_checker.run_check()
-    nav_groups_ready = _nav_groups_ready(shell_context)
+    nav_groups_ready = _nav_groups_ready({"nav_groups": nav_items("")})
     production_data_ready, data_blockers = _static_production_data_contracts_ready()
     data_blockers.extend(real_data_result["data_blockers"])
     data_blockers.extend(real_data_result["empty_data_pages"])

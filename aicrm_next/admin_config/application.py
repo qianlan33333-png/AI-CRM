@@ -35,7 +35,6 @@ from .application_support import (
     MCP_TOOL_GROUP_LABELS,
     PUSH_CAPABILITY_ADVANCED_KEYS,
     PushCapability,
-    PushCenterRepository,
     REALTIME_ALLOWED_TYPES_KEY,
     REALTIME_ENABLED_KEY,
     REALTIME_MAX_CONCURRENCY_KEY,
@@ -57,7 +56,6 @@ from .application_support import (
     _bool,
     _bounded_int,
     _capability_enabled_from_value,
-    _capability_queue_counts,
     _capability_requires_webhook_gate,
     _default_display_name,
     _default_mcp_tool_defs,
@@ -66,7 +64,6 @@ from .application_support import (
     _derived_gate_payload,
     _effect_type_union_for_enabled_capabilities,
     _filter_text_match,
-    _health_for_capability,
     _input_type_for_schema_type,
     _is_boolean_setting,
     _is_integer_setting,
@@ -266,9 +263,6 @@ class AdminConfigReadService:
                     "enabled_key": category.enabled_key,
                     "special_view": "push_capabilities",
                     "capabilities_api": "/api/admin/config/push-capabilities",
-                    "push_center_stats_api": "/api/admin/push-center/stats",
-                    "push_center_sections_api": "/api/admin/push-center/sections",
-                    "push_center_jobs_api": "/api/admin/push-center/jobs",
                 },
                 "blocks": [],
                 "special_view": "push_capabilities",
@@ -324,41 +318,10 @@ class AdminConfigReadService:
             return False, "test_receiver_disabled"
         return True, ""
 
-    def _last_problem_for_section(self, section: str, repository: PushCenterRepository) -> dict[str, str]:
-        jobs, _total = repository.list_jobs({"section": section}, limit=50, offset=0)
-        for job in jobs:
-            raw = (
-                job
-                if isinstance(job, dict)
-                else {
-                    "status": getattr(job, "status", ""),
-                    "last_error_code": getattr(job, "last_error_code", ""),
-                    "last_error_message": getattr(job, "last_error_message", ""),
-                }
-            )
-            last_error_code = _text(raw.get("last_error_code"))
-            status = _text(raw.get("status"))
-            if last_error_code or status in {"blocked", "failed_retryable", "failed_terminal", "unknown_after_dispatch"}:
-                return {
-                    "last_error_code": last_error_code,
-                    "last_error_message": _text(raw.get("last_error_message")),
-                }
-        return {"last_error_code": "", "last_error_message": ""}
-
-    def _serialize_push_capability(self, capability: PushCapability, *, repository: PushCenterRepository) -> dict[str, Any]:
+    def _serialize_push_capability(self, capability: PushCapability) -> dict[str, Any]:
         configured_enabled = self._capability_enabled(capability, default=False)
         gate_consistent, gate_problem = self._capability_gate_consistent(capability, configured_enabled=configured_enabled)
         enabled = configured_enabled and gate_consistent
-        counts = _capability_queue_counts(repository.counts({"section": capability.section}))
-        problem = self._last_problem_for_section(capability.section, repository)
-        health_label, health_tone = _health_for_capability(
-            capability=capability,
-            enabled=enabled,
-            counts=counts,
-            last_error_code=gate_problem or problem["last_error_code"],
-        )
-        if configured_enabled and not gate_consistent:
-            health_label, health_tone = "门禁未同步", "danger"
         return {
             **capability.to_dict(),
             "enabled": enabled if capability.toggleable else False,
@@ -366,12 +329,6 @@ class AdminConfigReadService:
             "gate_consistent": gate_consistent,
             "gate_problem": gate_problem,
             "readonly_reason": capability.readonly_reason,
-            "queue_counts": counts,
-            "abnormal_count": counts["blocked"] + counts["failed"],
-            "last_error_code": problem["last_error_code"],
-            "last_error_message": problem["last_error_message"],
-            "health_label": health_label,
-            "health_tone": health_tone,
         }
 
     def _advanced_push_items(self) -> list[dict[str, Any]]:
@@ -393,12 +350,10 @@ class AdminConfigReadService:
             )
         return items
 
-    def get_push_capabilities(self, *, repository: PushCenterRepository | None = None) -> dict[str, Any]:
-        repository = repository or PushCenterRepository()
-        capabilities = [self._serialize_push_capability(item, repository=repository) for item in visible_push_capabilities(main_only=True)]
+    def get_push_capabilities(self) -> dict[str, Any]:
+        capabilities = [self._serialize_push_capability(item) for item in visible_push_capabilities(main_only=True)]
         enabled_count = sum(1 for item in capabilities if item["toggleable"] and item["enabled"])
         toggleable_count = sum(1 for item in capabilities if item["toggleable"])
-        abnormal_count = sum(int(item["abnormal_count"]) for item in capabilities)
         test_only = self._capability_enabled_from_setting("AICRM_EXTERNAL_EFFECT_TEST_EXECUTION_ONLY")
         scheduler = _scheduler_state_for_read_service(self)
         if test_only:
@@ -415,7 +370,6 @@ class AdminConfigReadService:
                 "total": len(capabilities),
                 "enabled_count": enabled_count,
                 "toggleable_count": toggleable_count,
-                "abnormal_count": abnormal_count,
                 "global_status": global_status,
             },
             "capabilities": capabilities,
