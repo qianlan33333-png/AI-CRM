@@ -94,3 +94,10 @@ customer_recent_message_next = Table(
     Index("ix_customer_recent_message_next_unionid", "unionid"),
     Index("ix_customer_recent_message_next_send_time", "send_time"),
 )
+
+Index(
+    "ix_customer_recent_message_next_unionid_time_id",
+    customer_recent_message_next.c.unionid,
+    customer_recent_message_next.c.send_time.desc(),
+    customer_recent_message_next.c.id.desc(),
+)
