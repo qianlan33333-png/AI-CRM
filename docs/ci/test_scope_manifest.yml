@@ -1001,6 +1001,7 @@
     {
       "name": "identity_contact",
       "paths": [
+        "aicrm_next/identity_composition.py",
         "aicrm_next/identity_contact/**",
         "aicrm_next/channel_entry/**",
         "aicrm_next/platform_foundation/external_effects/**",

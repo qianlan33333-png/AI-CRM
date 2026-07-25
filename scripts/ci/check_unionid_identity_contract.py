@@ -41,8 +41,7 @@ CANONICAL_WRITE_OWNERS = {
     Path("aicrm_next/identity_contact/oauth_projection_repo.py"),
     Path("aicrm_next/identity_contact/payment_projection.py"),
     Path("aicrm_next/identity_contact/repo.py"),
-    Path("aicrm_next/public_product/h5_wechat_pay.py"),
-    Path("aicrm_next/sidebar_write/repo.py"),
+    Path("aicrm_next/identity_contact/write_repository.py"),
 }
 
 RAW_ALIAS_SQL = (

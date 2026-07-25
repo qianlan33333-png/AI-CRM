@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from aicrm_next.identity_composition import build_identity_write_port
 from aicrm_next.identity_contact.application import ListExternalContactOwnerCandidatesQuery
 from aicrm_next.identity_contact.dto import BindMobileToExternalContactRequest
 from aicrm_next.platform_foundation.audit_ledger import InMemoryAuditLedger
@@ -55,6 +56,10 @@ _PRODUCTION_READY_COMMANDS = (
     UpdateSidebarProfileCommand,
     PlanMaterialSendCommand,
 )
+
+
+def _postgres_sidebar_write_repository() -> PostgresSidebarWriteRepository:
+    return PostgresSidebarWriteRepository(identity_write_port=build_identity_write_port())
 
 
 def _audit_hook(command: Command, result: CommandResult) -> None:
@@ -169,7 +174,7 @@ def _handle_bind_mobile(command: Command) -> dict[str, Any]:
     if not mobile:
         raise SidebarWriteInputError("mobile is required")
     if production_data_ready():
-        write = PostgresSidebarWriteRepository().bind_mobile(
+        write = _postgres_sidebar_write_repository().bind_mobile(
             command_id=command.command_id,
             external_userid=str(command.payload["external_userid"]),
             mobile=mobile,
@@ -349,7 +354,7 @@ def _handle_update_profile(command: Command) -> dict[str, Any]:
     has_profile_fields = any(key in payload for key in profile_field_keys)
     if not has_profile_fields and not any([remark, description, display_name]):
         raise SidebarWriteInputError("profile field, remark, description, or display_name is required")
-    repository = PostgresSidebarWriteRepository() if production_data_ready() else _repo
+    repository = _postgres_sidebar_write_repository() if production_data_ready() else _repo
     write = repository.update_profile(
         command_id=command.command_id,
         external_userid=str(command.payload["external_userid"]),
@@ -393,7 +398,7 @@ def _handle_plan_material_send(command: Command) -> dict[str, Any]:
     material_id = str(payload.get("material_id") or "").strip()
     if not material_id:
         raise SidebarWriteInputError("material_id is required")
-    repository = PostgresSidebarWriteRepository() if production_data_ready() else _repo
+    repository = _postgres_sidebar_write_repository() if production_data_ready() else _repo
     write = repository.record_material_send_plan(
         command_id=command.command_id,
         external_userid=str(command.payload["external_userid"]),

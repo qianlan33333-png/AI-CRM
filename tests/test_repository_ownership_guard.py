@@ -116,6 +116,40 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "domain_event_outbox",
         "external_push_delivery",
     ]
+    assert repositories["aicrm_next/channel_entry/identity_bridge_repo.py"]["capability_owner"] == (
+        "aicrm_next.identity_contact"
+    )
+    assert repositories["aicrm_next/identity_contact/write_repository.py"]["table_writes"] == [
+        "crm_user_identity",
+        "crm_user_identity_resolution_queue",
+    ]
+    assert repositories["aicrm_next/sidebar_write/repo.py"]["table_writes"] == [
+        "sidebar_customer_profile_fields"
+    ]
+    assert "write_owners" not in manifest["tables"]["crm_user_identity"]
+    assert "write_owners" not in manifest["tables"]["crm_user_identity_conflicts"]
+    assert "aicrm_next.sidebar_write" not in manifest["tables"]["crm_user_identity_resolution_queue"][
+        "write_owners"
+    ]
+
+
+def test_canonical_identity_table_sql_writes_resolve_to_identity_contact_owner() -> None:
+    registry = yaml.safe_load(REGISTRY_PATH.read_text(encoding="utf-8"))["repositories"]
+    canonical_tables = {"crm_user_identity", "crm_user_identity_conflicts"}
+    offenders: list[str] = []
+
+    for path in sorted((ROOT / "aicrm_next").rglob("*.py")):
+        access = extract_repository_sql_access(path)
+        if not canonical_tables.intersection(access.table_writes):
+            continue
+        relative_path = path.relative_to(ROOT).as_posix()
+        if relative_path.startswith("aicrm_next/identity_contact/"):
+            continue
+        owner = str((registry.get(relative_path) or {}).get("capability_owner") or "")
+        if owner != "aicrm_next.identity_contact":
+            offenders.append(f"{relative_path}:{owner or 'undeclared'}")
+
+    assert offenders == []
 
 
 def test_admin_read_count_allowlist_excludes_retired_tables() -> None:

@@ -3226,11 +3226,6 @@ tables:
     domain: identity_contact
     lifecycle: canonical
     write_owner: aicrm_next.identity_contact
-    write_owners:
-      - aicrm_next.channel_entry
-      - aicrm_next.identity_contact
-      - aicrm_next.public_product
-      - aicrm_next.sidebar_write
     read_owners:
       - aicrm_next.ai_assist
       - aicrm_next.ai_audience_ops
@@ -3253,15 +3248,12 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Unionid is the only canonical business identity. Channel entry, public payment projection, and sidebar are bounded ingress adapters; every mutation alias lookup uses aicrm_next.identity_contact.resolver and every write targets a resolved active unionid. Declared cross-context read projections must fail closed instead of selecting an arbitrary identity when an alias has multiple candidates.
+    notes: Unionid is the only canonical business identity. Channel entry, public payment projection, and sidebar are bounded ingress adapters that mutate only through the identity_contact owner port; every mutation alias lookup uses aicrm_next.identity_contact.resolver and every write targets a resolved active unionid. Declared cross-context read projections must fail closed instead of selecting an arbitrary identity when an alias has multiple candidates.
 
   crm_user_identity_conflicts:
     domain: identity_contact
     lifecycle: canonical
     write_owner: aicrm_next.identity_contact
-    write_owners:
-      - aicrm_next.channel_entry
-      - aicrm_next.identity_contact
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3304,7 +3296,6 @@ tables:
       - aicrm_next.identity_contact
       - aicrm_next.message_archive
       - aicrm_next.questionnaire
-      - aicrm_next.sidebar_write
     read_owners:
       - aicrm_next.channel_entry
     replacement: none; active production schema table registered during schema drift closeout

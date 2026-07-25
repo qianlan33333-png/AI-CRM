@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from copy import deepcopy
-import json
 import re
 from typing import Any
 
 from aicrm_next.customer_read_model.repo import FixtureCustomerReadRepository
 from aicrm_next.identity_contact.dto import ResolvePersonIdentityRequest
 from aicrm_next.identity_contact.resolver import resolve_identity_with_dbapi, resolved_unionid
+from aicrm_next.identity_contact.write_port import IdentityWritePort
 from aicrm_next.platform_foundation.command_bus.models import utcnow_iso
 from aicrm_next.shared.repository_provider import RepositoryProviderError
 from aicrm_next.shared.runtime import raw_database_url
@@ -33,10 +33,6 @@ def normalize_mobile(value: str) -> str:
 
 def _text(value: Any) -> str:
     return str(value or "").strip()
-
-
-def _json_dump(value: dict[str, Any]) -> str:
-    return json.dumps(value, ensure_ascii=True, sort_keys=True)
 
 
 def _usable_wecom_media_id(value: Any) -> str:
@@ -266,7 +262,8 @@ class SidebarWriteRepository:
 
 
 class PostgresSidebarWriteRepository:
-    def __init__(self, database_url: str | None = None) -> None:
+    def __init__(self, *, identity_write_port: IdentityWritePort, database_url: str | None = None) -> None:
+        self._identity_write_port = identity_write_port
         self._database_url = _psycopg_url(str(database_url or raw_database_url()).strip())
         if not self._database_url:
             raise RepositoryProviderError("sidebar_write production repository unavailable: DATABASE_URL is required")
@@ -310,7 +307,7 @@ class PostgresSidebarWriteRepository:
                 raise KeyError("customer not found")
 
             if not identity:
-                resolution = self._enqueue_identity_resolution(
+                resolution = self._identity_write_port.enqueue_sidebar_identity_resolution(
                     conn,
                     command_id=command_id,
                     external_userid=normalized_external_userid,
@@ -356,46 +353,14 @@ class PostgresSidebarWriteRepository:
             if existing_mobile and existing_mobile != normalized_mobile and not force_rebind:
                 raise ValueError("unionid already bound to another mobile")
 
-            updated = conn.execute(
-                """
-                UPDATE crm_user_identity
-                SET mobile = %s,
-                    mobile_normalized = %s,
-                    mobile_verified = TRUE,
-                    mobile_source = 'sidebar_bind',
-                    primary_owner_userid = COALESCE(NULLIF(%s, ''), primary_owner_userid),
-                    profile_json = profile_json || jsonb_build_object(
-                        'sidebar_bind_by_userid', %s::text,
-                        'sidebar_external_userid', %s::text
-                    ),
-                    last_seen_at = NOW(),
-                    updated_at = NOW()
-                WHERE unionid = %s
-                  AND identity_status = 'active'
-                RETURNING
-                    unionid,
-                    primary_external_userid,
-                    external_userids_json,
-                    mobile,
-                    mobile_normalized,
-                    mobile_source,
-                    primary_owner_userid,
-                    customer_name,
-                    remark,
-                    created_at,
-                    updated_at
-                """,
-                (
-                    normalized_mobile,
-                    normalized_mobile,
-                    normalized_owner_userid,
-                    normalized_bind_by_userid,
-                    normalized_external_userid,
-                    identity["unionid"],
-                ),
-            ).fetchone()
-            if not updated:
-                raise RuntimeError("crm_user_identity mobile bind failed")
+            updated = self._identity_write_port.bind_sidebar_mobile(
+                conn,
+                unionid=_text(identity.get("unionid")),
+                external_userid=normalized_external_userid,
+                mobile=normalized_mobile,
+                owner_userid=normalized_owner_userid,
+                bind_by_userid=normalized_bind_by_userid,
+            )
             conn.commit()
 
             binding = self._binding_response(dict(updated), owner_userid=normalized_owner_userid)
@@ -501,29 +466,14 @@ class PostgresSidebarWriteRepository:
                     }
                     updated_at = _text(profile_row.get("updated_at"))
             if any(contact_changes.values()):
-                identity_row = conn.execute(
-                    """
-                    UPDATE crm_user_identity
-                    SET customer_name = CASE WHEN %s <> '' THEN %s ELSE customer_name END,
-                        remark = CASE WHEN %s <> '' THEN %s ELSE remark END,
-                        profile_json = COALESCE(profile_json, '{}'::jsonb) || jsonb_strip_nulls(jsonb_build_object(
-                            'description', NULLIF(%s::text, ''),
-                            'sidebar_profile_updated_by', NULLIF(%s::text, '')
-                        )),
-                        updated_at = NOW()
-                    WHERE unionid = %s
-                    RETURNING customer_name, remark, profile_json, updated_at
-                    """,
-                    (
-                        contact_changes["display_name"],
-                        contact_changes["display_name"],
-                        contact_changes["remark"],
-                        contact_changes["remark"],
-                        contact_changes["description"],
-                        normalized_updated_by,
-                        unionid,
-                    ),
-                ).fetchone()
+                identity_row = self._identity_write_port.update_sidebar_contact_profile(
+                    conn,
+                    unionid=unionid,
+                    display_name=contact_changes["display_name"],
+                    remark=contact_changes["remark"],
+                    description=contact_changes["description"],
+                    updated_by=normalized_updated_by,
+                )
                 if identity_row:
                     changes["contact"] = {
                         "customer_name": _text(identity_row.get("customer_name")),
@@ -573,18 +523,11 @@ class PostgresSidebarWriteRepository:
                 "media_id": media_id,
                 "title": _text(material.get("title")),
             }
-            updated = conn.execute(
-                """
-                UPDATE crm_user_identity
-                SET profile_json = COALESCE(profile_json, '{}'::jsonb) || jsonb_build_object(
-                        'last_material_send_plan', CAST(%s AS jsonb)
-                    ),
-                    updated_at = NOW()
-                WHERE unionid = %s
-                RETURNING updated_at
-                """,
-                (_json_dump(plan), identity["unionid"]),
-            ).fetchone()
+            updated = self._identity_write_port.record_sidebar_material_send_plan(
+                conn,
+                unionid=_text(identity.get("unionid")),
+                plan=plan,
+            )
             conn.commit()
             return {
                 "external_userid": normalized_external_userid,
@@ -709,79 +652,6 @@ class PostgresSidebarWriteRepository:
             if owner:
                 candidates.add(owner)
         return candidates
-
-    def _enqueue_identity_resolution(
-        self,
-        conn,
-        *,
-        command_id: str,
-        external_userid: str,
-        mobile: str,
-        owner_userid: str,
-        bind_by_userid: str,
-    ) -> JsonDict:
-        source_key = f"sidebar_bind_mobile:{external_userid}:{command_id}"
-        cursor = conn.execute(
-            """
-            INSERT INTO crm_user_identity_resolution_queue (
-                source_type,
-                source_key,
-                external_userid,
-                mobile,
-                payload_json,
-                reason,
-                status,
-                next_attempt_at,
-                first_seen_at,
-                last_seen_at,
-                created_at,
-                updated_at
-            )
-            VALUES ('sidebar_bind_mobile', %s, %s, %s, CAST(%s AS jsonb), 'missing_unionid', 'pending', NOW(), NOW(), NOW(), NOW(), NOW())
-            ON CONFLICT (source_type, source_key) WHERE status = 'pending' AND source_type <> '' AND source_key <> ''
-            DO UPDATE SET
-                external_userid = COALESCE(NULLIF(EXCLUDED.external_userid, ''), crm_user_identity_resolution_queue.external_userid),
-                mobile = COALESCE(NULLIF(EXCLUDED.mobile, ''), crm_user_identity_resolution_queue.mobile),
-                payload_json = crm_user_identity_resolution_queue.payload_json || EXCLUDED.payload_json,
-                reason = EXCLUDED.reason,
-                last_seen_at = NOW(),
-                updated_at = NOW()
-            RETURNING *
-            """,
-            (
-                source_key,
-                external_userid,
-                mobile,
-                json.dumps(
-                    {
-                        "external_userid": external_userid,
-                        "mobile": mobile,
-                        "owner_userid": owner_userid,
-                        "bind_by_userid": bind_by_userid,
-                        "source": "sidebar_bind_mobile",
-                    },
-                    ensure_ascii=True,
-                    sort_keys=True,
-                ),
-            ),
-        )
-        row = cursor.fetchone()
-        planned: JsonDict = {}
-        if row:
-            from aicrm_next.identity_contact.resolution_effects import plan_identity_resolution_effect
-
-            planned = plan_identity_resolution_effect(
-                conn,
-                dict(row),
-                parent_execution_id=command_id,
-                source_route="sidebar_write.identity_resolution.enqueue",
-            )
-        return {
-            "status": "pending" if planned.get("external_effect_job_id") else "held",
-            "reason": "identity_pending_unionid",
-            "source_key": source_key,
-            **planned,
-        }
 
     def _binding_response(self, row: JsonDict, *, owner_userid: str) -> JsonDict:
         unionid = str(row.get("unionid") or "").strip()

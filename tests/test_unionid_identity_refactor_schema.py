@@ -361,15 +361,20 @@ def test_channel_entry_business_write_requires_and_persists_unionid() -> None:
 
 def test_sidebar_bind_mobile_writes_user_identity_not_legacy_binding_tables() -> None:
     source = _read("aicrm_next/sidebar_write/repo.py")
+    identity_write_source = _read("aicrm_next/identity_contact/write_repository.py")
     event_source = _read("aicrm_next/platform_foundation/internal_events/customer_identity.py")
 
     postgres_section = source.split("class PostgresSidebarWriteRepository:", 1)[1]
-    assert "UPDATE crm_user_identity" in postgres_section
-    assert "INSERT INTO crm_user_identity_resolution_queue" in postgres_section
-    assert "primary_owner_userid" in postgres_section
+    assert "UPDATE crm_user_identity" not in postgres_section
+    assert "INSERT INTO crm_user_identity_resolution_queue" not in postgres_section
+    assert "self._identity_write_port.bind_sidebar_mobile" in postgres_section
+    assert "self._identity_write_port.enqueue_sidebar_identity_resolution" in postgres_section
+    assert "UPDATE crm_user_identity" in identity_write_source
+    assert "INSERT INTO crm_user_identity_resolution_queue" in identity_write_source
+    assert "primary_owner_userid" in identity_write_source
     assert "primary_follow_user_userid" not in postgres_section
-    assert "mobile_normalized = %s" in postgres_section
-    assert "mobile_source = 'sidebar_bind'" in postgres_section
+    assert "mobile_normalized = %s" in identity_write_source
+    assert "mobile_source = 'sidebar_bind'" in identity_write_source
     assert "profile_json ->> 'mobile_source'" not in postgres_section
     assert "external_contact_bindings" not in postgres_section
     assert "INSERT INTO people" not in postgres_section

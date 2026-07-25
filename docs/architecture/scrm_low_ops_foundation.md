@@ -51,6 +51,12 @@ physical package move, legacy table deletion, or real provider call.
   `AudienceSpec`, `ContentBundle`, `CampaignExecution`, and `ProviderReceipt`,
   plus their public ports. It does not introduce an arbitrary object model or
   executable audience DSL.
+- `crm_user_identity` and `crm_user_identity_conflicts` now have one logical
+  writer, `aicrm_next.identity_contact`. Channel-entry identity ingestion is
+  classified under that owner, and sidebar mobile/profile/material mutations
+  use the injected `IdentityWritePort` with the caller's existing transaction.
+  The ownership guard scans all runtime Python SQL for those canonical tables,
+  so a new cross-capability direct writer fails CI.
 - The versioned Job Catalog binds work to `web`, `callback`, `internal_worker`,
   `external_worker`, and `scheduler`. Only `external_worker` may call a real
   provider. The internal worker entrypoint combines inbox, internal-event, and

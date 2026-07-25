@@ -337,7 +337,7 @@ repositories:
       - cloud_broadcast_plan_recipients
       - outbound_tasks
   aicrm_next/channel_entry/identity_bridge_repo.py:
-    capability_owner: aicrm_next.channel_entry
+    capability_owner: aicrm_next.identity_contact
     table_reads:
       - crm_user_identity
       - crm_user_identity_resolution_queue
@@ -539,6 +539,12 @@ repositories:
       - crm_user_identity_resolution_queue
     non_literal_table_reads:
       - external_contact_bindings
+  aicrm_next/identity_contact/write_repository.py:
+    capability_owner: aicrm_next.identity_contact
+    table_reads: []
+    table_writes:
+      - crm_user_identity
+      - crm_user_identity_resolution_queue
   aicrm_next/media_library/postgres_repo.py:
     capability_owner: aicrm_next.media_library
     table_reads:
@@ -836,8 +842,6 @@ repositories:
       - wecom_external_contact_follow_users
       - wecom_external_contact_identity_map
     table_writes:
-      - crm_user_identity
-      - crm_user_identity_resolution_queue
       - sidebar_customer_profile_fields
     non_literal_table_reads:
       - crm_user_identity
