@@ -30,6 +30,15 @@ previous complete generation. The online read cutover remains a separate
 release so runtime activation and API compatibility can be verified and rolled
 back independently.
 
+The third slice moves all three online APIs to one indexed singleton snapshot
+read per request. Their successful JSON bodies remain unchanged. Production
+never falls back to running the 16 live checks inline: a missing, invalid, or
+older-than-25-minutes snapshot returns a privacy-safe `503` error so a stopped
+timer is visible instead of silently restoring the original high-cost path.
+Offline fixture/test runtimes without a production repository keep the direct
+check runner for local contract tests only. Detail lookup scans only the 16
+already-loaded aggregate results and does not execute check prefixes eagerly.
+
 ## Initial Checks
 
 Green static checks:
