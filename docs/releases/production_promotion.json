@@ -9,8 +9,8 @@
   },
   "target": {
     "repository": "qianlan333/AI-CRM",
-    "candidate_sha": "88635014c667a8970629dcac7a766ff0341905ed",
-    "pull_request": 1834
+    "candidate_sha": "0c7253935ab9dd2060764ff870e8d63bbdcecdcf",
+    "pull_request": 1838
   },
   "allowed_post_candidate_paths": [
     "aicrm_next/admin_config/api.py",
@@ -137,9 +137,13 @@
     "aicrm_next/background_jobs/external_contact_sync.py",
     "aicrm_next/channel_entry/application.py",
     "aicrm_next/channel_entry/identity_bridge_service.py",
+    "aicrm_next/channel_entry/identity_external_effect.py",
+    "aicrm_next/channel_entry/identity_resolution_worker.py",
     "aicrm_next/commerce/coupons/admin_api.py",
     "aicrm_next/identity_contact/api.py",
     "aicrm_next/identity_contact/domain.py",
+    "aicrm_next/identity_contact/resolution_queue_port.py",
+    "aicrm_next/identity_contact/resolution_queue_repository.py",
     "aicrm_next/identity_contact/sidebar_jssdk.py",
     "aicrm_next/integration_gateway/payment_adapters.py",
     "aicrm_next/integration_gateway/wecom_jssdk_adapter.py",
@@ -168,7 +172,9 @@
     "aicrm_next/sidebar_write/api.py",
     "scripts/ci/check_queue_runtime_cutover_kernel.py",
     "tests/test_admin_config_secret_references.py",
+    "tests/test_identity_resolution_queue_port.py",
     "tests/test_internal_oauth_client_purpose.py",
+    "tests/test_repository_ownership_guard.py",
     "tests/test_runtime_configuration_contract.py",
     "tools/check_runtime_configuration_contract.py",
     "migrations/versions/0147_alipay_order_created_index.py",
