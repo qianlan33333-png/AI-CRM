@@ -169,6 +169,8 @@
     "tests/test_admin_config_secret_references.py",
     "tests/test_internal_oauth_client_purpose.py",
     "tests/test_runtime_configuration_contract.py",
-    "tools/check_runtime_configuration_contract.py"
+    "tools/check_runtime_configuration_contract.py",
+    "migrations/versions/0147_alipay_order_created_index.py",
+    "tests/test_order_source_created_index_postgres.py"
   ]
 }
