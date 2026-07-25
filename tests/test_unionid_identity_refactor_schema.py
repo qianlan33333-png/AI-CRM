@@ -631,6 +631,7 @@ def test_customer_fact_read_sources_drop_legacy_identity_columns() -> None:
     customer_repo_source = _read("aicrm_next/customer_read_model/repo_live_source.py")
     message_archive_source = _read("aicrm_next/message_archive/repo.py")
     channel_entry_repo_source = _read("aicrm_next/channel_entry/repo.py")
+    contact_tag_projection_source = _read("aicrm_next/customer_tags/projection_repository.py")
     identity_queue_source = _read("aicrm_next/identity_contact/resolution_queue_repository.py")
 
     for table_name in ["contact_tags", "archived_messages", "class_user_status_current", "class_user_status_history"]:
@@ -657,9 +658,11 @@ def test_customer_fact_read_sources_drop_legacy_identity_columns() -> None:
     assert "INSERT INTO crm_user_identity_resolution_queue" not in message_archive_source
     assert "build_identity_resolution_queue_port().enqueue_dbapi" in message_archive_source
 
-    tag_insert = channel_entry_repo_source.split("INSERT INTO contact_tags", 1)[1].split("conn.commit()", 1)[0]
+    tag_insert = contact_tag_projection_source.split("INSERT INTO contact_tags", 1)[1]
     assert "unionid" in tag_insert
     assert "external_userid" not in tag_insert
+    assert "build_customer_tag_projection_port().save_channel_snapshot_dbapi" in channel_entry_repo_source
+    assert "INSERT INTO contact_tags" not in channel_entry_repo_source
     assert "INSERT INTO crm_user_identity_resolution_queue" not in channel_entry_repo_source
     assert "build_identity_resolution_queue_port().enqueue_dbapi" in channel_entry_repo_source
     assert "INSERT INTO crm_user_identity_resolution_queue" in identity_queue_source

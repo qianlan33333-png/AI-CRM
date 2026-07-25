@@ -128,12 +128,18 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "table_reads": ["wecom_external_contact_event_logs"],
         "table_writes": ["wecom_external_contact_event_logs"],
     }
+    assert repositories["aicrm_next/customer_tags/projection_repository.py"] == {
+        "capability_owner": "aicrm_next.customer_tags",
+        "table_reads": [],
+        "table_writes": ["contact_tags"],
+    }
     assert "wecom_external_contact_event_logs" not in repositories["aicrm_next/channel_entry/repo.py"][
         "table_reads"
     ]
     assert "wecom_external_contact_event_logs" not in repositories["aicrm_next/channel_entry/repo.py"][
         "table_writes"
     ]
+    assert "contact_tags" not in repositories["aicrm_next/channel_entry/repo.py"]["table_writes"]
     assert repositories["aicrm_next/identity_contact/resolution_queue_repository.py"]["table_reads"] == [
         "crm_user_identity_resolution_queue",
         "identity_resolution_completion_receipt",
@@ -159,6 +165,8 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
     assert manifest["tables"]["wecom_external_contact_event_logs"]["write_owners"] == [
         "aicrm_next.identity_contact"
     ]
+    assert manifest["tables"]["contact_tags"]["write_owner"] == "aicrm_next.customer_tags"
+    assert manifest["tables"]["contact_tags"]["write_owners"] == ["aicrm_next.customer_tags"]
     for path in (
         "aicrm_next/ai_audience_ops/repository.py",
         "aicrm_next/channel_entry/repo.py",
@@ -213,6 +221,20 @@ def test_external_contact_event_log_write_sql_is_confined_to_identity_contact() 
             continue
         relative_path = path.relative_to(ROOT).as_posix()
         if not relative_path.startswith("aicrm_next/identity_contact/"):
+            offenders.append(relative_path)
+
+    assert offenders == []
+
+
+def test_contact_tag_write_sql_is_confined_to_customer_tags() -> None:
+    offenders: list[str] = []
+
+    for path in sorted((ROOT / "aicrm_next").rglob("*.py")):
+        access = extract_repository_sql_access(path)
+        if "contact_tags" not in access.table_writes:
+            continue
+        relative_path = path.relative_to(ROOT).as_posix()
+        if not relative_path.startswith("aicrm_next/customer_tags/"):
             offenders.append(relative_path)
 
     assert offenders == []

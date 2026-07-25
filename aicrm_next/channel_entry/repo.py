@@ -7,6 +7,7 @@ import json
 from typing import Any
 from uuid import UUID
 
+from aicrm_next.customer_tags.projection_port import build_customer_tag_projection_port
 from aicrm_next.identity_contact.dto import ResolvePersonIdentityRequest
 from aicrm_next.identity_contact.event_log_port import build_identity_event_log_port
 from aicrm_next.identity_contact.resolver import resolve_external_userid_with_dbapi, resolve_identity_with_dbapi, resolved_unionid
@@ -1298,27 +1299,13 @@ def save_tag_snapshot(owner_staff_id: str, external_contact_id: str, tag_ids: li
             _enqueue_tag_identity_resolution(cur, owner_staff_id=owner_staff_id, external_contact_id=external_contact_id, tag_ids=tag_ids, tag_names=tag_names)
             conn.commit()
             return
-        for tag_id in tag_ids:
-            cur.execute(
-                """
-                UPDATE contact_tags
-                SET tag_name = %s,
-                    created_at = CURRENT_TIMESTAMP
-                WHERE unionid = %s
-                  AND userid = %s
-                  AND tag_id = %s
-                """,
-                (text(tag_names.get(tag_id)), unionid, text(owner_staff_id), text(tag_id)),
-            )
-            if cur.rowcount:
-                continue
-            cur.execute(
-                """
-                INSERT INTO contact_tags (unionid, userid, tag_id, tag_name, created_at)
-                VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
-                """,
-                (unionid, text(owner_staff_id), text(tag_id), text(tag_names.get(tag_id))),
-            )
+        build_customer_tag_projection_port().save_channel_snapshot_dbapi(
+            cur,
+            unionid=unionid,
+            owner_userid=owner_staff_id,
+            tag_ids=tag_ids,
+            tag_names=tag_names,
+        )
         conn.commit()
 
 

@@ -115,10 +115,9 @@ tables:
   contact_tags:
     domain: customer_tags
     lifecycle: read_model
-    write_owner: aicrm_next.customer_tags.local_projection
+    write_owner: aicrm_next.customer_tags
     write_owners:
-      - aicrm_next.channel_entry
-      - aicrm_next.customer_tags.local_projection
+      - aicrm_next.customer_tags
     read_owners:
       - customer read model
       - admin WeCom tags payload
@@ -135,7 +134,9 @@ tables:
     guard_tests:
       - tests/test_unionid_identity_refactor_schema.py::test_contact_tags_mirror_has_fresh_schema_table
       - tests/test_data_table_lifecycle_guard.py
-    notes: Unionid-only local cache for successful externalcontact tag writes; external_userid belongs only in identity mapping or resolution queue.
+      - tests/test_customer_tag_projection_port.py
+      - tests/test_repository_ownership_guard.py::test_contact_tag_write_sql_is_confined_to_customer_tags
+    notes: Unionid-only local cache for successful externalcontact tag writes. Questionnaire and channel-entry projections are both customer_tags-owned. Channel ingress resolves unionid first and writes through CustomerTagProjectionPort in the caller transaction; unresolved identities enqueue recovery and never create alias-tag rows.
 
   class_user_status_current:
     domain: customer_read_model

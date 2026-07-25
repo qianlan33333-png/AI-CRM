@@ -61,6 +61,10 @@ physical package move, legacy table deletion, or real provider call.
   `aicrm_next.identity_contact`. Channel callback processing keeps its existing
   transaction and compatibility functions but reaches audit and identity-sync
   state only through the versioned `IdentityEventLogPort`.
+- `contact_tags` now has one logical writer, `aicrm_next.customer_tags`.
+  Channel-entry snapshots resolve canonical unionid and then use the public
+  `CustomerTagProjectionPort` in the existing transaction; unresolved aliases
+  continue into identity recovery without creating tag rows.
 - Unresolved identity ingress from AI Audience, questionnaire submissions,
   archived messages, and channel contact tags now uses one versioned
   `IdentityResolutionQueuePort`. Source-specific idempotency keys, the caller's

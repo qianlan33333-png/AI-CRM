@@ -49424,7 +49424,7 @@
         "questionnaire H5 tag apply diagnostics"
       ],
       "table": "contact_tags",
-      "write_owner": "aicrm_next.customer_tags.local_projection"
+      "write_owner": "aicrm_next.customer_tags"
     },
     {
       "domain": "contacts",
