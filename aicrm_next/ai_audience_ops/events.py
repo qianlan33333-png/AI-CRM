@@ -16,7 +16,9 @@ from .event_types import (
     DAILY_REFRESH_CONSUMER,
     DAILY_TICK_EVENT,
     HXC_DAILY_PROJECTION_CONSUMER,
+    HXC_DAILY_PROJECTION_REQUESTED_EVENT,
     HXC_INCREMENTAL_PROJECTION_CONSUMER,
+    HXC_INCREMENTAL_PROJECTION_REQUESTED_EVENT,
     INCREMENTAL_REFRESH_CONSUMER,
     INCREMENTAL_TICK_EVENT,
     INBOUND_ACTION_CONSUMER,
@@ -193,13 +195,13 @@ def register_ai_audience_event_consumers(registry: InternalEventConsumerRegistry
     registry.register(INCREMENTAL_TICK_EVENT, INCREMENTAL_REFRESH_CONSUMER, incremental_refresh_consumer, consumer_type="orchestration")
     registry.register(DAILY_TICK_EVENT, DAILY_REFRESH_CONSUMER, daily_refresh_consumer, consumer_type="orchestration")
     registry.register(
-        INCREMENTAL_TICK_EVENT,
+        HXC_INCREMENTAL_PROJECTION_REQUESTED_EVENT,
         HXC_INCREMENTAL_PROJECTION_CONSUMER,
         hxc_incremental_projection_consumer,
         consumer_type="projection",
     )
     registry.register(
-        DAILY_TICK_EVENT,
+        HXC_DAILY_PROJECTION_REQUESTED_EVENT,
         HXC_DAILY_PROJECTION_CONSUMER,
         hxc_daily_projection_consumer,
         consumer_type="projection",

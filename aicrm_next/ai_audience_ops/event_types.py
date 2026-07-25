@@ -2,6 +2,10 @@ from __future__ import annotations
 
 INCREMENTAL_TICK_EVENT = "ai_audience.refresh.incremental_tick"
 DAILY_TICK_EVENT = "ai_audience.refresh.daily_tick"
+HXC_INCREMENTAL_PROJECTION_REQUESTED_EVENT = (
+    "ai_audience.hxc_projection.incremental_requested"
+)
+HXC_DAILY_PROJECTION_REQUESTED_EVENT = "ai_audience.hxc_projection.daily_requested"
 SOURCE_CHANGED_EVENT = "ai_audience.source.changed"
 REFRESH_REQUESTED_EVENT = "ai_audience.refresh.requested"
 MEMBER_EVENT_PREFIX = "ai_audience.member."

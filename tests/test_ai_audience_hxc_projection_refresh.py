@@ -24,10 +24,21 @@ from aicrm_next.ai_audience_ops.hxc_projection_incremental import (
     initial_source_watermarks,
     public_source_watermarks,
 )
+from aicrm_next.ai_audience_ops.hxc_projection_intents import (
+    HxcProjectionRefreshIntentService,
+)
+from aicrm_next.ai_audience_ops.event_types import (
+    HXC_INCREMENTAL_PROJECTION_CONSUMER,
+    HXC_INCREMENTAL_PROJECTION_REQUESTED_EVENT,
+)
+from aicrm_next.internal_event_composition import build_internal_event_consumer_registry
 from aicrm_next.shared.db_session import get_session_factory
 from aicrm_next.platform_foundation.internal_events import (
     InternalEvent,
     InternalEventConsumerRun,
+)
+from aicrm_next.platform_foundation.internal_events.outbox import (
+    InternalEventOutboxRelay,
 )
 from scripts.ops import refresh_ai_audience_hxc_projection
 
@@ -70,6 +81,68 @@ def test_hxc_projection_watermark_status_redacts_stable_identity_cursor() -> Non
     assert "cursor_key" not in public["crm_user_identity"]
     assert "union_private_cursor" not in json.dumps(public, ensure_ascii=False)
     assert public["new_version_user_subscriptions"]["mode"] == "daily_only"
+
+
+@pytest.mark.usefixtures("next_pg_schema")
+def test_hxc_projection_clock_intent_is_durable_idempotent_and_scoped() -> None:
+    service = HxcProjectionRefreshIntentService()
+
+    first = service.request("incremental", bucket="2026-07-26T01:00:00Z")
+    duplicate = service.request("incremental", bucket="2026-07-26T01:00:00Z")
+
+    assert first["ok"] is True
+    assert duplicate["ok"] is True
+    with get_session_factory()() as session:
+        outbox_count = session.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM internal_event_outbox
+                WHERE event_type = :event_type
+                """
+            ),
+            {"event_type": HXC_INCREMENTAL_PROJECTION_REQUESTED_EVENT},
+        ).scalar_one()
+    assert int(outbox_count) == 1
+
+    relayed = InternalEventOutboxRelay(
+        consumer_registry=build_internal_event_consumer_registry(),
+    ).relay_due(limit=10)
+
+    assert relayed["ok"] is True
+    with get_session_factory()() as session:
+        runs = session.execute(
+            text(
+                """
+                SELECT run.consumer_name
+                FROM internal_event_consumer_run run
+                JOIN internal_event event ON event.event_id = run.event_id
+                WHERE event.event_type = :event_type
+                """
+            ),
+            {"event_type": HXC_INCREMENTAL_PROJECTION_REQUESTED_EVENT},
+        ).scalars().all()
+    assert runs == [HXC_INCREMENTAL_PROJECTION_CONSUMER]
+
+
+@pytest.mark.usefixtures("next_pg_schema")
+def test_hxc_projection_daily_intent_catches_up_missing_full_calibration() -> None:
+    service = HxcProjectionRefreshIntentService()
+
+    assert service.daily_refresh_due() is True
+    with get_session_factory()() as session:
+        session.execute(
+            text(
+                """
+                UPDATE ai_audience_hxc_member_usage_projection_control
+                SET last_full_refreshed_at = CURRENT_TIMESTAMP
+                WHERE singleton = TRUE
+                """
+            )
+        )
+        session.commit()
+
+    assert service.daily_refresh_due() is False
 
 
 def _seed_projection_sources() -> None:

@@ -3977,6 +3977,20 @@
   "fixture_records_included": false,
   "internal_event_consumers": [
     {
+      "consumer_name": "ai_audience_hxc_daily_projection_consumer",
+      "consumer_type": "projection",
+      "event_type": "ai_audience.hxc_projection.daily_requested",
+      "handler_registered": true,
+      "max_attempts": 5
+    },
+    {
+      "consumer_name": "ai_audience_hxc_incremental_projection_consumer",
+      "consumer_type": "projection",
+      "event_type": "ai_audience.hxc_projection.incremental_requested",
+      "handler_registered": true,
+      "max_attempts": 5
+    },
+    {
       "consumer_name": "ai_audience_inbound_action_planner",
       "consumer_type": "external_effect_planner",
       "event_type": "ai_audience.inbound.received",
@@ -3987,20 +4001,6 @@
       "consumer_name": "ai_audience_daily_refresh_consumer",
       "consumer_type": "orchestration",
       "event_type": "ai_audience.refresh.daily_tick",
-      "handler_registered": true,
-      "max_attempts": 5
-    },
-    {
-      "consumer_name": "ai_audience_hxc_daily_projection_consumer",
-      "consumer_type": "projection",
-      "event_type": "ai_audience.refresh.daily_tick",
-      "handler_registered": true,
-      "max_attempts": 5
-    },
-    {
-      "consumer_name": "ai_audience_hxc_incremental_projection_consumer",
-      "consumer_type": "projection",
-      "event_type": "ai_audience.refresh.incremental_tick",
       "handler_registered": true,
       "max_attempts": 5
     },

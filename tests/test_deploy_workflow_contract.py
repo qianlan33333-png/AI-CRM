@@ -1220,9 +1220,9 @@ def test_ai_audience_scheduler_runs_through_internal_event_queue_only():
     assert "ai_audience.refresh.incremental_tick,ai_audience.refresh.daily_tick" in service
     assert "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_CONSUMERS=" in service
     assert "ai_audience.refresh.incremental_tick:ai_audience_incremental_refresh_consumer" in service
-    assert "ai_audience.refresh.incremental_tick:ai_audience_hxc_incremental_projection_consumer" in service
+    assert "ai_audience.hxc_projection.incremental_requested:ai_audience_hxc_incremental_projection_consumer" in service
     assert "ai_audience.refresh.daily_tick:ai_audience_daily_refresh_consumer" in service
-    assert "ai_audience.refresh.daily_tick:ai_audience_hxc_daily_projection_consumer" in service
+    assert "ai_audience.hxc_projection.daily_requested:ai_audience_hxc_daily_projection_consumer" in service
     assert "ai_audience.run.refreshed:ai_audience_outbound_effect_planner" in service
     assert "ai_audience.member.updated:ai_audience_outbound_effect_planner" not in service
     assert "ai_audience.member.exited:ai_audience_outbound_effect_planner" not in service

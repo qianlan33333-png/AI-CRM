@@ -15,7 +15,9 @@ from aicrm_next.ai_audience_ops.event_types import (
     DAILY_REFRESH_CONSUMER,
     DAILY_TICK_EVENT,
     HXC_DAILY_PROJECTION_CONSUMER,
+    HXC_DAILY_PROJECTION_REQUESTED_EVENT,
     HXC_INCREMENTAL_PROJECTION_CONSUMER,
+    HXC_INCREMENTAL_PROJECTION_REQUESTED_EVENT,
     INCREMENTAL_REFRESH_CONSUMER,
     INCREMENTAL_TICK_EVENT,
     MEMBER_EVENT_PREFIX,
@@ -139,21 +141,33 @@ def test_ai_audience_scheduler_emits_incremental_every_run_and_daily_only_in_2am
         def emit_tick(self, tick_type, **kwargs):
             return {"ok": True, "tick_type": tick_type, "kwargs": kwargs}
 
+    class ProjectionIntents:
+        def request(self, refresh_kind, *, bucket):
+            return {"ok": True, "refresh_kind": refresh_kind, "bucket": bucket}
+
+        def daily_refresh_due(self, **_kwargs):
+            return False
+
     inside_window = datetime(2026, 6, 24, 2, 1, tzinfo=ZoneInfo("Asia/Shanghai"))
     outside_window = datetime(2026, 6, 24, 1, 59, tzinfo=ZoneInfo("Asia/Shanghai"))
 
     from aicrm_next.ai_audience_ops import scheduler as scheduler_module
 
     original = scheduler_module.AudiencePackageService
+    original_projection_intents = scheduler_module.HxcProjectionRefreshIntentService
     scheduler_module.AudiencePackageService = lambda: Service()
+    scheduler_module.HxcProjectionRefreshIntentService = lambda: ProjectionIntents()
     try:
         due = emit_due_ticks(now=inside_window, daily_refresh_time="02:00", daily_window_minutes=60)
         not_due = emit_due_ticks(now=outside_window, daily_refresh_time="02:00", daily_window_minutes=60)
     finally:
         scheduler_module.AudiencePackageService = original
+        scheduler_module.HxcProjectionRefreshIntentService = original_projection_intents
 
     assert [item["tick_type"] for item in due["items"]] == ["incremental", "daily"]
     assert due["daily_tick_due"] is True
+    assert due["items"][0]["hxc_projection_intent"]["refresh_kind"] == "incremental"
+    assert due["items"][1]["hxc_projection_intent"]["refresh_kind"] == "daily"
     assert [item["tick_type"] for item in not_due["items"]] == ["incremental"]
     assert not_due["daily_tick_due"] is False
 
@@ -166,16 +180,26 @@ def test_ai_audience_scheduler_catches_up_overdue_daily_refresh_outside_2am_wind
         def has_refresh_due(self, refresh_kind):
             return refresh_kind == "daily"
 
+    class ProjectionIntents:
+        def request(self, refresh_kind, *, bucket):
+            return {"ok": True, "refresh_kind": refresh_kind, "bucket": bucket}
+
+        def daily_refresh_due(self, **_kwargs):
+            return False
+
     outside_window = datetime(2026, 6, 24, 1, 30, tzinfo=ZoneInfo("Asia/Shanghai"))
 
     from aicrm_next.ai_audience_ops import scheduler as scheduler_module
 
     original = scheduler_module.AudiencePackageService
+    original_projection_intents = scheduler_module.HxcProjectionRefreshIntentService
     scheduler_module.AudiencePackageService = lambda: Service()
+    scheduler_module.HxcProjectionRefreshIntentService = lambda: ProjectionIntents()
     try:
         due = emit_due_ticks(now=outside_window, daily_refresh_time="02:00", daily_window_minutes=60)
     finally:
         scheduler_module.AudiencePackageService = original
+        scheduler_module.HxcProjectionRefreshIntentService = original_projection_intents
 
     assert [item["tick_type"] for item in due["items"]] == ["incremental", "daily"]
     assert due["daily_tick_due"] is True
@@ -184,6 +208,43 @@ def test_ai_audience_scheduler_catches_up_overdue_daily_refresh_outside_2am_wind
         "now": outside_window,
         "daily_refresh_time": "02:00",
     }
+
+
+def test_ai_audience_scheduler_catches_up_hxc_projection_daily_refresh() -> None:
+    class Service:
+        def emit_tick(self, tick_type, **kwargs):
+            return {"ok": True, "tick_type": tick_type, "kwargs": kwargs}
+
+        def has_refresh_due(self, _refresh_kind):
+            return False
+
+    class ProjectionIntents:
+        def request(self, refresh_kind, *, bucket):
+            return {"ok": True, "refresh_kind": refresh_kind, "bucket": bucket}
+
+        def daily_refresh_due(self, **_kwargs):
+            return True
+
+    outside_window = datetime(2026, 6, 24, 6, 30, tzinfo=ZoneInfo("Asia/Shanghai"))
+    from aicrm_next.ai_audience_ops import scheduler as scheduler_module
+
+    original = scheduler_module.AudiencePackageService
+    original_projection_intents = scheduler_module.HxcProjectionRefreshIntentService
+    scheduler_module.AudiencePackageService = lambda: Service()
+    scheduler_module.HxcProjectionRefreshIntentService = lambda: ProjectionIntents()
+    try:
+        due = emit_due_ticks(
+            now=outside_window,
+            daily_refresh_time="02:00",
+            daily_window_minutes=60,
+        )
+    finally:
+        scheduler_module.AudiencePackageService = original
+        scheduler_module.HxcProjectionRefreshIntentService = original_projection_intents
+
+    assert [item["tick_type"] for item in due["items"]] == ["incremental", "daily"]
+    assert due["daily_tick_due"] is True
+    assert due["daily_tick_window_due"] is False
 
 
 def test_daily_tick_bucket_uses_the_latest_scheduled_boundary_not_calendar_midnight() -> None:
@@ -199,9 +260,9 @@ def test_ai_audience_scheduler_consumer_pairs_cover_source_refresh_and_outbound(
 
     assert f"{SOURCE_CHANGED_EVENT}:{SOURCE_POKE_CONSUMER}" in pairs
     assert f"{INCREMENTAL_TICK_EVENT}:{INCREMENTAL_REFRESH_CONSUMER}" in pairs
-    assert f"{INCREMENTAL_TICK_EVENT}:{HXC_INCREMENTAL_PROJECTION_CONSUMER}" in pairs
+    assert f"{HXC_INCREMENTAL_PROJECTION_REQUESTED_EVENT}:{HXC_INCREMENTAL_PROJECTION_CONSUMER}" in pairs
     assert f"{DAILY_TICK_EVENT}:{DAILY_REFRESH_CONSUMER}" in pairs
-    assert f"{DAILY_TICK_EVENT}:{HXC_DAILY_PROJECTION_CONSUMER}" in pairs
+    assert f"{HXC_DAILY_PROJECTION_REQUESTED_EVENT}:{HXC_DAILY_PROJECTION_CONSUMER}" in pairs
     assert f"{RUN_REFRESHED_EVENT}:{OUTBOUND_EFFECT_CONSUMER}" in pairs
     assert f"{MEMBER_EVENT_PREFIX}entered:{OUTBOUND_EFFECT_CONSUMER}" not in pairs
     assert f"{MEMBER_EVENT_PREFIX}updated:{OUTBOUND_EFFECT_CONSUMER}" not in pairs
