@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 
-from aicrm_next.admin_shell import shell_context
+from aicrm_next.admin_shell_contract import shell_context
 from aicrm_next.shared.errors import ContractError
 
 from .application import CreateHxcBroadcastTaskCommand

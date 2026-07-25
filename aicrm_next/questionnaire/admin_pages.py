@@ -7,7 +7,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
-from aicrm_next.admin_shell import shell_context
+from aicrm_next.admin_shell_contract import shell_context
 
 from .application import GetQuestionnaireEditorQuery, GetQuestionnairePreflightQuery, ListQuestionnairesQuery
 from .external_push_logs import QuestionnaireExternalPushLogReadService

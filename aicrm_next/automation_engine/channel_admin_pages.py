@@ -6,7 +6,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import Response
 from fastapi.templating import Jinja2Templates
 
-from aicrm_next.admin_shell import admin_path_for, shell_context
+from aicrm_next.admin_shell_contract import admin_path_for, shell_context
 from aicrm_next.automation_engine.channels_api import default_channel_form_payload, get_channel_resource
 
 router = APIRouter()

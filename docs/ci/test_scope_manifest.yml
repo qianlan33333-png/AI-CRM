@@ -1649,6 +1649,8 @@
     {
       "name": "admin_read_pages",
       "paths": [
+        "aicrm_next/admin_shell/**",
+        "aicrm_next/admin_shell_contract.py",
         "aicrm_next/admin_jobs/application.py",
         "aicrm_next/admin_jobs/domain.py",
         "aicrm_next/admin_jobs/repository.py",
@@ -1661,8 +1663,12 @@
         "aicrm_next/automation_engine/group_ops/api.py",
         "aicrm_next/automation_engine/group_ops/application.py",
         "aicrm_next/automation_engine/group_ops/picker_application.py",
+        "aicrm_next/automation_engine/channel_admin_pages.py",
+        "aicrm_next/customer_tags/admin_pages.py",
         "aicrm_next/customer_tags/api.py",
+        "aicrm_next/hxc_dashboard/api.py",
         "aicrm_next/ops_enrollment/api.py",
+        "aicrm_next/owner_migration/api.py",
         "aicrm_next/frontend_compat/static/admin_console/admin_console.js",
         "aicrm_next/platform_foundation/execution_runtime/read_model.py",
         "aicrm_next/platform_foundation/internal_events/api.py",

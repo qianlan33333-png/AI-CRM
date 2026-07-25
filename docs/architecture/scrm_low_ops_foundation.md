@@ -101,11 +101,11 @@ and historical-data parity evidence.
   shadow comparison, and cutover activation are operational release steps and
   are not inferred from repository tests. No
   `AICRM_RUNTIME_CONFIG_CUTOVER_KEYS` value is activated by this change.
-- The cross-context import baseline is reduced from 162 to 148 by injecting the
-  composed FastAPI route registry and keeping the runtime-config projection in
-  `admin_config`; the target of 120 is not yet reached. Physical directory moves
-  remain disabled until public ports and unique table-write ownership are
-  proven.
+- The cross-context import baseline is reduced from 162 to 130 by injecting the
+  composed FastAPI route registry, keeping the runtime-config projection in
+  `admin_config`, and publishing the management shell as a static app contract.
+  The target of 120 is not yet reached. Physical directory moves remain disabled
+  until public ports and unique table-write ownership are proven.
 - Existing service and timer units remain authoritative. The new scheduler is
   catalog-only and fails closed on `--execute`; successor parity is required
   before any unit retirement.

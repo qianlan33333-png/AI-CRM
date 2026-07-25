@@ -6,7 +6,7 @@ from urllib.parse import urlencode
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
 
-from aicrm_next.admin_shell import shell_context
+from aicrm_next.admin_shell_contract import shell_context
 
 from .application import GetAdminCustomerProfileQuery, GetCustomer360ProfileQuery, ListCustomersQuery
 from .dto import ListCustomersRequest

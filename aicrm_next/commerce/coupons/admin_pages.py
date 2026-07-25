@@ -10,7 +10,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from aicrm_next.admin_shell import admin_path_for, shell_context
+from aicrm_next.admin_shell_contract import admin_path_for, shell_context
 from aicrm_next.shared.safe_logging import safe_log_exception
 
 from .application import CouponAdminApplication

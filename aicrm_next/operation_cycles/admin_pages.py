@@ -10,7 +10,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from aicrm_next.admin_shell.navigation import admin_path_for, shell_context
+from aicrm_next.admin_shell_contract import admin_path_for, shell_context
 
 from .application import get_run, get_strategy, list_strategies
 from .markdown_renderer import render_markdown

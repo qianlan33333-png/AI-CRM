@@ -14,7 +14,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.templating import Jinja2Templates
 
-from aicrm_next.admin_shell import shell_context
+from aicrm_next.admin_shell_contract import shell_context
 from aicrm_next.shared.errors import NotFoundError
 from aicrm_next.shared.pii_audit import infer_pii_result_count, set_pii_audit_result_count
 from aicrm_next.shared.safe_logging import safe_log_exception

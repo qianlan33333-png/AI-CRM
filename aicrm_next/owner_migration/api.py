@@ -8,7 +8,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, Response
 from fastapi.templating import Jinja2Templates
 
-from aicrm_next.admin_shell import shell_context
+from aicrm_next.admin_shell_contract import shell_context
 
 from .application import (
     DEFAULT_TRANSFER_WELCOME_MSG,

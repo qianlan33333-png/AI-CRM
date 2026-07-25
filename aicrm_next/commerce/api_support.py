@@ -7,7 +7,7 @@ from fastapi import Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
-from aicrm_next.admin_shell import shell_context
+from aicrm_next.admin_shell_contract import shell_context
 from aicrm_next.shared.runtime_settings import (
     managed_runtime_setting,
     startup_environment_setting,

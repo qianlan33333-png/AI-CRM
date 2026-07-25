@@ -6,7 +6,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from .navigation import admin_path_for, shell_context
+from aicrm_next.admin_shell_contract import admin_path_for, shell_context
 router = APIRouter()
 _TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 templates = Jinja2Templates(directory=_TEMPLATES_DIR)

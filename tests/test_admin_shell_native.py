@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 from starlette.routing import Match
 
 from aicrm_next.main import create_app
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _client(monkeypatch) -> TestClient:
@@ -88,3 +93,18 @@ def test_frontend_compat_legacy_inventory_endpoint_removed(monkeypatch) -> None:
     response = _client(monkeypatch).get("/api/frontend-compat/legacy-routes")
 
     assert response.status_code == 404
+
+
+def test_business_contexts_depend_on_static_admin_shell_contract() -> None:
+    offenders: list[str] = []
+    package_root = ROOT / "aicrm_next"
+
+    for path in package_root.rglob("*.py"):
+        relative = path.relative_to(package_root)
+        if relative.parts[0] == "admin_shell":
+            continue
+        source = path.read_text(encoding="utf-8")
+        if "from aicrm_next.admin_shell import" in source or "from aicrm_next.admin_shell.navigation import" in source:
+            offenders.append(relative.as_posix())
+
+    assert offenders == []

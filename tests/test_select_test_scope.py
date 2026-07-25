@@ -959,6 +959,22 @@ def test_admin_read_smoke_test_file_selects_admin_read_scope() -> None:
     assert result["architecture_gate"] == "fast"
 
 
+def test_static_admin_shell_contract_and_contributors_select_admin_read_scope() -> None:
+    result = _select(
+        "aicrm_next/admin_shell/__init__.py",
+        "aicrm_next/admin_shell_contract.py",
+        "aicrm_next/automation_engine/channel_admin_pages.py",
+        "aicrm_next/customer_tags/admin_pages.py",
+        "aicrm_next/hxc_dashboard/api.py",
+        "aicrm_next/owner_migration/api.py",
+    )
+
+    assert "admin_read_pages" in result["matched_scopes"]
+    assert result["unmatched_files"] == []
+    assert "tests/test_admin_shell_native.py" in result["python_tests"]
+    assert result["architecture_gate"] == "fast"
+
+
 def test_admin_config_page_change_selects_config_scope() -> None:
     result = _select(
         "aicrm_next/mcp_tool_catalog.py",

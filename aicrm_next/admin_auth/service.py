@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 from urllib.parse import quote
 
-from aicrm_next.admin_shell import admin_path_for
+from aicrm_next.admin_shell_contract import admin_path_for
 from aicrm_next.platform_foundation.auth_platform.repository import PostgresAuthRepository
 from aicrm_next.shared.runtime_settings import managed_runtime_bool, managed_runtime_setting
 

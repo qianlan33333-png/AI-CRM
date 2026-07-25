@@ -12,7 +12,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from aicrm_next.service_period_grid_auth import admin_auth_enforcement_enabled, current_auth_context
-from aicrm_next.admin_shell import shell_context
+from aicrm_next.admin_shell_contract import shell_context
 from aicrm_next.public_product import h5_wechat_pay
 from aicrm_next.shared.errors import ContractError, NotFoundError
 from aicrm_next.shared.safe_logging import safe_log_exception, safe_log_fields

@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from aicrm_next.admin_shell import admin_path_for, shell_context
+from aicrm_next.admin_shell_contract import admin_path_for, shell_context
 from aicrm_next.shared.admin_action_runtime import ensure_admin_action_token, validate_admin_action_token
 from aicrm_next.capability_registry import registry_summary
 
