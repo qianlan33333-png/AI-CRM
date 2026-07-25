@@ -602,10 +602,7 @@ tables:
   sidebar_customer_profile_fields:
     domain: customer_read_model
     lifecycle: read_model
-    write_owner: aicrm_next.customer_read_model.sidebar_v2
-    write_owners:
-      - aicrm_next.customer_read_model.sidebar_v2
-      - aicrm_next.sidebar_write
+    write_owner: aicrm_next.customer_read_model
     read_owners:
       - aicrm_next.customer_read_model.sidebar_v2
     replacement: ""
@@ -617,7 +614,7 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_unionid_runtime_breakage_hotfix.py
-    notes: Sidebar-only editable customer profile projection keyed by unionid.
+    notes: Sidebar-only editable customer profile projection keyed by unionid; writes use the customer-read-model owner port inside the sidebar command transaction.
 
   wecom_customer_acquisition_links:
     domain: channel_entry

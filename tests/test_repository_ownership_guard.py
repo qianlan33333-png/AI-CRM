@@ -148,9 +148,12 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "crm_user_identity_resolution_queue",
         "identity_resolution_completion_receipt",
     ]
-    assert repositories["aicrm_next/sidebar_write/repo.py"]["table_writes"] == [
-        "sidebar_customer_profile_fields"
-    ]
+    assert repositories["aicrm_next/customer_read_model/sidebar_profile_repository.py"] == {
+        "capability_owner": "aicrm_next.customer_read_model",
+        "table_reads": [],
+        "table_writes": ["sidebar_customer_profile_fields"],
+    }
+    assert repositories["aicrm_next/sidebar_write/repo.py"]["table_writes"] == []
     assert "write_owners" not in manifest["tables"]["crm_user_identity"]
     assert "write_owners" not in manifest["tables"]["crm_user_identity_conflicts"]
     assert "aicrm_next.sidebar_write" not in manifest["tables"]["crm_user_identity_resolution_queue"][

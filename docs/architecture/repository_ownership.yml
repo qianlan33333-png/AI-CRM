@@ -468,6 +468,11 @@ repositories:
       - questionnaire_submissions
       - wechat_pay_orders
     table_writes: []
+  aicrm_next/customer_read_model/sidebar_profile_repository.py:
+    capability_owner: aicrm_next.customer_read_model
+    table_reads: []
+    table_writes:
+      - sidebar_customer_profile_fields
   aicrm_next/customer_tags/write_repo.py:
     capability_owner: aicrm_next.customer_tags
     table_reads:
@@ -859,8 +864,7 @@ repositories:
       - miniprogram_library
       - wecom_external_contact_follow_users
       - wecom_external_contact_identity_map
-    table_writes:
-      - sidebar_customer_profile_fields
+    table_writes: []
     non_literal_table_reads:
       - crm_user_identity
   aicrm_next/operation_cycles/repository.py:

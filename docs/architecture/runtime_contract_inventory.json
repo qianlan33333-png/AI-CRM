@@ -50857,7 +50857,7 @@
         "aicrm_next.customer_read_model.sidebar_v2"
       ],
       "table": "sidebar_customer_profile_fields",
-      "write_owner": "aicrm_next.customer_read_model.sidebar_v2"
+      "write_owner": "aicrm_next.customer_read_model"
     },
     {
       "domain": "legacy_customer_tags",

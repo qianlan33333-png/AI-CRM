@@ -5,6 +5,10 @@ import re
 from typing import Any
 
 from aicrm_next.customer_read_model.repo import FixtureCustomerReadRepository
+from aicrm_next.customer_read_model.sidebar_profile_port import (
+    SaveSidebarProfileFieldsRequest,
+    build_sidebar_customer_profile_projection_port,
+)
 from aicrm_next.identity_contact.dto import ResolvePersonIdentityRequest
 from aicrm_next.identity_contact.resolver import resolve_identity_with_dbapi, resolved_unionid
 from aicrm_next.identity_contact.write_port import IdentityWritePort
@@ -419,43 +423,17 @@ class PostgresSidebarWriteRepository:
             changes: dict[str, Any] = {}
             updated_at = ""
             if profile_fields_present:
-                profile_row = conn.execute(
-                    """
-                    INSERT INTO sidebar_customer_profile_fields (
-                        unionid,
-                        source,
-                        industry,
-                        industry_description,
-                        needs_blockers_followup,
-                        updated_by,
-                        created_at,
-                        updated_at
-                    )
-                    VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
-                    ON CONFLICT (unionid) DO UPDATE SET
-                        source = EXCLUDED.source,
-                        industry = EXCLUDED.industry,
-                        industry_description = EXCLUDED.industry_description,
-                        needs_blockers_followup = EXCLUDED.needs_blockers_followup,
-                        updated_by = EXCLUDED.updated_by,
-                        updated_at = NOW()
-                    RETURNING
-                        source,
-                        industry,
-                        industry_description,
-                        needs_blockers_followup,
-                        updated_by,
-                        updated_at
-                    """,
-                    (
-                        unionid,
-                        profile_fields["source"],
-                        profile_fields["industry"],
-                        profile_fields["industry_description"],
-                        profile_fields["needs_blockers_followup"],
-                        profile_fields["updated_by"],
+                profile_row = build_sidebar_customer_profile_projection_port().save_fields_dbapi(
+                    conn,
+                    request=SaveSidebarProfileFieldsRequest(
+                        unionid=unionid,
+                        source=profile_fields["source"],
+                        industry=profile_fields["industry"],
+                        industry_description=profile_fields["industry_description"],
+                        needs_blockers_followup=profile_fields["needs_blockers_followup"],
+                        updated_by=profile_fields["updated_by"],
                     ),
-                ).fetchone()
+                )
                 if profile_row:
                     changes["profile_fields"] = {
                         "source": _text(profile_row.get("source")),
