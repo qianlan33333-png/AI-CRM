@@ -382,10 +382,7 @@ class PostgresQuestionnaireReadRepository:
         if _text(filters.get("unionid")).strip():
             clauses.append("qs.unionid = %s")
             params.append(_text(filters.get("unionid")).strip())
-        if _text(filters.get("external_userid")).strip():
-            clauses.append("(identity.primary_external_userid = %s OR jsonb_exists(identity.external_userids_json, %s))")
-            external_userid = _text(filters.get("external_userid")).strip()
-            params.extend([external_userid, external_userid])
+        external_userid = _text(filters.get("external_userid")).strip()
         if filters.get("questionnaire_id") not in (None, ""):
             clauses.append("qs.questionnaire_id = %s")
             params.append(int(filters.get("questionnaire_id") or 0))
@@ -396,8 +393,28 @@ class PostgresQuestionnaireReadRepository:
             clauses.append("qs.submitted_at <= %s")
             params.append(_text(filters.get("submitted_to")).strip())
 
-        where_sql = " AND ".join(clauses)
         with self._connect() as conn:
+            if external_userid:
+                identity = conn.execute(
+                    """
+                    SELECT unionid
+                    FROM crm_user_identity
+                    WHERE primary_external_userid = %s
+                       OR external_userids_json @> jsonb_build_array(CAST(%s AS text))
+                       OR external_userids_json @> jsonb_build_array(
+                            jsonb_build_object('external_userid', CAST(%s AS text))
+                       )
+                    LIMIT 1
+                    """,
+                    (external_userid, external_userid, external_userid),
+                ).fetchone()
+                resolved_unionid = _text((identity or {}).get("unionid"))
+                if not resolved_unionid:
+                    return [], 0
+                clauses.append("qs.unionid = %s AND qs.unionid <> ''")
+                params.append(resolved_unionid)
+
+            where_sql = " AND ".join(clauses)
             total = int(
                 (
                     conn.execute(

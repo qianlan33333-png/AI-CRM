@@ -197,12 +197,9 @@ class PostgresIdentityRepository:
                     FROM crm_user_identity
                     WHERE (
                             primary_external_userid = %s
-                            OR jsonb_exists(external_userids_json, %s)
-                            OR EXISTS (
-                                SELECT 1
-                                FROM jsonb_array_elements(external_userids_json) AS alias(value)
-                                WHERE jsonb_typeof(alias.value) = 'object'
-                                  AND alias.value ->> 'external_userid' = %s
+                            OR external_userids_json @> jsonb_build_array(CAST(%s AS text))
+                            OR external_userids_json @> jsonb_build_array(
+                                jsonb_build_object('external_userid', CAST(%s AS text))
                             )
                           )
                       AND COALESCE(identity_status, 'active') = 'active'
