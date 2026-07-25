@@ -278,7 +278,6 @@ repositories:
       - automation_group_ops_effect_graph
       - automation_group_ops_effect_material
       - external_effect_job
-      - image_library
   aicrm_next/automation_engine/group_ops/effect_graph_lifecycle_repository.py:
     capability_owner: aicrm_next.automation_engine.group_ops
     table_reads:
@@ -564,6 +563,11 @@ repositories:
     table_writes:
       - crm_user_identity
       - crm_user_identity_resolution_queue
+  aicrm_next/media_library/effect_material_repository.py:
+    capability_owner: aicrm_next.media_library
+    table_reads: []
+    table_writes:
+      - image_library
   aicrm_next/media_library/postgres_repo.py:
     capability_owner: aicrm_next.media_library
     table_reads:

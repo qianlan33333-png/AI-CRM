@@ -1404,10 +1404,7 @@ tables:
   image_library:
     domain: media_library
     lifecycle: canonical
-    write_owner: aicrm_next.media_library.postgres_repo
-    write_owners:
-      - aicrm_next.automation_engine.group_ops.durable_effects_repository
-      - aicrm_next.media_library.postgres_repo
+    write_owner: aicrm_next.media_library
     read_owners:
       - aicrm_next.media_library.postgres_repo
       - aicrm_next.send_content.postgres_repo
@@ -1429,7 +1426,7 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_material_library_table_boundary.py
-    notes: Canonical local image material metadata/payload table; real external storage and WeCom upload remain guarded outside this lifecycle PR.
+    notes: Canonical local image material metadata/payload table; group-ops durable material creation uses the media-library owner port inside the caller transaction. Real external storage and WeCom upload remain separately guarded.
 
   image_library_variants:
     domain: media_library

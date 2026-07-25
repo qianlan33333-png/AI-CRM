@@ -29,7 +29,12 @@ def test_material_library_core_tables_are_active_and_owned() -> None:
         assert entry["domain"] == "media_library"
         assert entry["lifecycle"] == "canonical"
         assert entry["drop_candidate"] is False
-        assert entry["write_owner"] == "aicrm_next.media_library.postgres_repo"
+        expected_owner = (
+            "aicrm_next.media_library"
+            if table_name == "image_library"
+            else "aicrm_next.media_library.postgres_repo"
+        )
+        assert entry["write_owner"] == expected_owner
         assert "aicrm_next.send_content.postgres_repo" in entry["read_owners"]
 
 

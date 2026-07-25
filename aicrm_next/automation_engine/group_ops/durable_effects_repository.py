@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import base64
 import hashlib
 import json
 from dataclasses import dataclass, field
@@ -12,6 +11,10 @@ from uuid import uuid4
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from aicrm_next.media_library.effect_material_port import (
+    EphemeralImageMaterialRequest,
+    build_image_library_effect_material_port,
+)
 from aicrm_next.platform_foundation.command_bus.models import CommandContext
 from aicrm_next.platform_foundation.external_effects import (
     GROUP_OPS_MESSAGE_LOOPBACK,
@@ -630,34 +633,16 @@ class SQLAlchemyGroupOpsEffectGraphRepository(SQLAlchemyGroupOpsEffectGraphLifec
         if library_material_id <= 0:
             if not material.file_bytes:
                 raise ValueError("group ops effect material requires source bytes or library_material_id")
-            library_row = (
-                session.execute(
-                    text(
-                        """
-                        INSERT INTO image_library (
-                            name, file_name, source, source_url, data_base64, mime_type,
-                            file_size, enabled, description, category, created_at, updated_at
-                        ) VALUES (
-                            :name, :file_name, 'group_ops_effect_graph', '', :data_base64,
-                            :mime_type, :file_size, TRUE,
-                            :description, 'group_ops_ephemeral', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-                        )
-                        RETURNING id
-                        """
-                    ),
-                    {
-                        "name": f"Group Ops {material.role} {execution_id}",
-                        "file_name": clean_text(material.file_name) or "group-ops-image",
-                        "data_base64": base64.b64encode(bytes(material.file_bytes)).decode("ascii"),
-                        "mime_type": clean_text(material.content_type) or "image/png",
-                        "file_size": len(material.file_bytes),
-                        "description": f"durable source for {execution_id}:{material.material_key}",
-                    },
-                )
-                .mappings()
-                .one()
+            library_material_id = build_image_library_effect_material_port().create_group_ops_ephemeral_image_in_session(
+                session,
+                request=EphemeralImageMaterialRequest(
+                    name=f"Group Ops {material.role} {execution_id}",
+                    file_name=clean_text(material.file_name) or "group-ops-image",
+                    content_type=clean_text(material.content_type) or "image/png",
+                    file_bytes=bytes(material.file_bytes),
+                    description=f"durable source for {execution_id}:{material.material_key}",
+                ),
             )
-            library_material_id = int(library_row["id"])
             library_kind = "image"
         material_row = (
             session.execute(
