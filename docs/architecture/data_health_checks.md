@@ -20,9 +20,15 @@ leaves the previous generation untouched. The table stores aggregate check
 results, release provenance, duration, and the refresh timestamp; it contains
 no customer identifier or message payload.
 
-This foundation does not change the three HTTP APIs and does not schedule the
-writer. Timer activation and the online read cutover are separate releases so
-each change can be verified and rolled back independently.
+The foundation release did not change the three HTTP APIs or schedule the
+writer. The second slice registers an active systemd timer that refreshes the
+aggregate singleton every 15 minutes. It uses a dedicated PostgreSQL
+`application_name`, a one-connection pool, bounded statement/lock/transaction
+timeouts, and a 240-second process boundary. The service completes all checks
+before its short atomic upsert, so a timeout or failed check run preserves the
+previous complete generation. The online read cutover remains a separate
+release so runtime activation and API compatibility can be verified and rolled
+back independently.
 
 ## Initial Checks
 

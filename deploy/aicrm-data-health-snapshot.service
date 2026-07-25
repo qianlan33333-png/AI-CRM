@@ -1,0 +1,17 @@
+[Unit]
+Description=AI-CRM aggregate data health snapshot refresh
+After=network.target openclaw-wecom-postgres.service
+Requires=openclaw-wecom-postgres.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/极简 crm
+EnvironmentFile=/home/ubuntu/.openclaw-wecom-pg.env
+Environment=DB_APPLICATION_NAME=aicrm-next-cron-data-health
+Environment=PGAPPNAME=aicrm-next-cron-data-health
+Environment=DB_POOL_SIZE=1
+Environment=DB_MAX_OVERFLOW=0
+Environment="PGOPTIONS=-c statement_timeout=120s -c idle_in_transaction_session_timeout=60s -c lock_timeout=5s"
+TimeoutStartSec=240
+ExecStart=/home/ubuntu/venvs/openclaw/bin/python scripts/ops/refresh_data_health_snapshot.py

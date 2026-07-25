@@ -9,6 +9,7 @@
     "aicrm-external-queue-runtime.service": "aicrm-next-queue-external",
     "aicrm-queue-invariant-check.service": "aicrm-next-cron-queue-invariant",
     "aicrm-queue-soak-snapshot.service": "aicrm-next-cron-queue-soak",
+    "aicrm-data-health-snapshot.service": "aicrm-next-cron-data-health",
     "openclaw-wechat-pay-order-reconciliation-worker.service": "aicrm-next-cron-payment-reconcile",
     "aicrm-ai-audience-daily-intent.service": "aicrm-next-cron-audience-intent",
     "aicrm-next-broadcast-delegation.service": "aicrm-next-cron-broadcast",
@@ -43,6 +44,12 @@
     {
       "timer": "aicrm-queue-soak-snapshot.timer",
       "service": "aicrm-queue-soak-snapshot.service"
+    },
+    {
+      "timer": "aicrm-data-health-snapshot.timer",
+      "service": "aicrm-data-health-snapshot.service",
+      "kick_after_timer_restart": true,
+      "kick_failure_fatal": true
     },
     {
       "timer": "openclaw-wechat-pay-order-reconciliation-worker.timer",

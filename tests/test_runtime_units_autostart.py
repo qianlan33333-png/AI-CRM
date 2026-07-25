@@ -44,6 +44,7 @@ def test_runtime_units_manifest_classifies_every_deploy_timer() -> None:
     assert "aicrm-next-group-ops-planning.timer" in replacements
     assert "aicrm-ai-audience-daily-intent.timer" not in active
     assert "openclaw-wechat-pay-order-reconciliation-worker.timer" in active
+    assert "aicrm-data-health-snapshot.timer" in active
     assert "openclaw-external-push-worker.timer" in retired_forbidden
     assert "openclaw-external-push-worker.service" in retired_forbidden
     assert "openclaw-external-push-worker.timer" not in deploy_timers
@@ -74,6 +75,38 @@ def test_runtime_units_manifest_owns_unique_database_application_names() -> None
     assert set(application_names) == expected_services
     assert len(set(application_names.values())) == len(application_names)
     runtime_units.validate_manifest(manifest)
+
+
+def test_data_health_snapshot_timer_is_bounded_and_kicked_after_release() -> None:
+    manifest = _manifest()
+    timer_entry = next(
+        item
+        for item in manifest["active_autostart"]
+        if item["timer"] == "aicrm-data-health-snapshot.timer"
+    )
+    service = (ROOT / "deploy" / timer_entry["service"]).read_text(encoding="utf-8")
+    timer = (ROOT / "deploy" / timer_entry["timer"]).read_text(encoding="utf-8")
+
+    assert timer_entry == {
+        "timer": "aicrm-data-health-snapshot.timer",
+        "service": "aicrm-data-health-snapshot.service",
+        "kick_after_timer_restart": True,
+        "kick_failure_fatal": True,
+    }
+    assert manifest["database_application_names"][timer_entry["service"]] == "aicrm-next-cron-data-health"
+    assert "Environment=DB_APPLICATION_NAME=aicrm-next-cron-data-health" in service
+    assert "Environment=PGAPPNAME=aicrm-next-cron-data-health" in service
+    assert "Environment=DB_POOL_SIZE=1" in service
+    assert "Environment=DB_MAX_OVERFLOW=0" in service
+    assert "statement_timeout=120s" in service
+    assert "idle_in_transaction_session_timeout=60s" in service
+    assert "lock_timeout=5s" in service
+    assert "TimeoutStartSec=240" in service
+    assert "ExecStart=/home/ubuntu/venvs/openclaw/bin/python scripts/ops/refresh_data_health_snapshot.py" in service
+    assert "OnCalendar=*:0/15" in timer
+    assert "Persistent=true" in timer
+    assert "RandomizedDelaySec=120" in timer
+    assert "Unit=aicrm-data-health-snapshot.service" in timer
 
 
 def test_runtime_units_manifest_rejects_missing_database_application_name() -> None:
@@ -266,6 +299,11 @@ def test_runtime_units_install_dry_run_copies_and_enables_only_active_units(caps
     assert "sudo systemctl restart aicrm-archive-sync.timer" not in output
     assert "sudo cp deploy/aicrm-archive-sync.service /etc/systemd/system/" in output
     assert "sudo cp deploy/aicrm-archive-sync.timer /etc/systemd/system/" in output
+    assert "sudo cp deploy/aicrm-data-health-snapshot.service /etc/systemd/system/" in output
+    assert "sudo cp deploy/aicrm-data-health-snapshot.timer /etc/systemd/system/" in output
+    assert "sudo systemctl enable aicrm-data-health-snapshot.timer" in output
+    assert "sudo systemctl restart aicrm-data-health-snapshot.timer" in output
+    assert "sudo systemctl start aicrm-data-health-snapshot.service" in output
     assert "curl -sSf http://127.0.0.1:5002/health" in output
     assert "sudo cp deploy/openclaw-wecom-callback-inbox-worker.service /etc/systemd/system/" not in output
     assert "sudo systemctl enable openclaw-wecom-callback-inbox-worker.service" not in output
