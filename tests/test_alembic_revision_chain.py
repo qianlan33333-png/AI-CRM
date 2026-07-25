@@ -117,8 +117,11 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     payment_event_lookup_index_source = payment_event_lookup_index.read_text(encoding="utf-8")
     alipay_order_created_index = VERSIONS / "0147_alipay_order_created_index.py"
     alipay_order_created_index_source = alipay_order_created_index.read_text(encoding="utf-8")
+    order_source_sort_indexes = VERSIONS / "0148_order_source_sort_indexes.py"
+    order_source_sort_indexes_source = order_source_sort_indexes.read_text(encoding="utf-8")
 
-    assert heads == {"0147_alipay_order_created_index"}
+    assert heads == {"0148_order_source_sort_indexes"}
+    assert revisions["0148_order_source_sort_indexes"]["down_revision"] == "0147_alipay_order_created_index"
     assert revisions["0147_alipay_order_created_index"]["down_revision"] == "0146_wechat_pay_event_lookup_index"
     assert revisions["0146_wechat_pay_event_lookup_index"]["down_revision"] == "0145_archived_message_search_trgm"
     assert revisions["0145_archived_message_search_trgm"]["down_revision"] == "0144_config_release_control_plane"
@@ -160,6 +163,11 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     assert "ix_alipay_pay_orders_created_id" in alipay_order_created_index_source
     assert "(created_at DESC, id DESC)" in alipay_order_created_index_source
     assert "DROP INDEX CONCURRENTLY IF EXISTS" in alipay_order_created_index_source
+    assert "CREATE INDEX CONCURRENTLY" in order_source_sort_indexes_source
+    assert "idx_wechat_pay_orders_created" in order_source_sort_indexes_source
+    assert "idx_wechat_shop_orders_provider_created" in order_source_sort_indexes_source
+    assert "provider, created_at DESC, id DESC" in order_source_sort_indexes_source
+    assert "A release rollback must not delete pre-existing performance protection" in order_source_sort_indexes_source
     assert "0018_hxc_dashboard_broadcast_tasks" in source
     assert "CREATE TABLE IF NOT EXISTS data_health_snapshot" in data_health_snapshot_source
     assert "CHECK (singleton IS TRUE)" in data_health_snapshot_source
