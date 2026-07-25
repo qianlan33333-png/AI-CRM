@@ -47,7 +47,7 @@ def production_environment() -> bool:
 
 
 def test_environment() -> bool:
-    if str(os.getenv("PYTEST_CURRENT_TEST", "") or "").strip():
+    if pytest_environment():
         return True
     values = {
         str(os.getenv("AICRM_NEXT_ENV", "") or "").strip().lower(),
@@ -56,6 +56,10 @@ def test_environment() -> bool:
         str(os.getenv("FLASK_ENV", "") or "").strip().lower(),
     }
     return "test" in values
+
+
+def pytest_environment() -> bool:
+    return bool(str(os.getenv("PYTEST_CURRENT_TEST", "") or "").strip())
 
 
 def public_https_environment() -> bool:

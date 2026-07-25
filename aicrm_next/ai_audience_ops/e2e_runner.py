@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import re
 import secrets
 from dataclasses import dataclass
@@ -8,7 +7,7 @@ from typing import Any, Protocol
 
 from aicrm_next.platform_foundation.external_effects import ExternalEffectService, WEBHOOK_GENERIC_PUSH, WECOM_MESSAGE_PRIVATE_SEND
 from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
-from aicrm_next.shared.runtime_settings import runtime_bool
+from aicrm_next.shared.runtime_settings import runtime_bool, startup_environment_setting
 
 from .outbound_service import AudienceOutboundService
 from .package_spec import package_payload_from_spec, parse_markdown_spec_text, validate_spec
@@ -567,7 +566,10 @@ def _source_for_scenario(scenario: str) -> str:
 
 
 def _test_agent_url() -> str:
-    base_url = _text(os.getenv("AICRM_PUBLIC_BASE_URL")) or "https://www.youcangogogo.com"
+    base_url = (
+        _text(startup_environment_setting("AICRM_PUBLIC_BASE_URL"))
+        or "https://www.youcangogogo.com"
+    )
     return base_url.rstrip("/") + "/api/ai/audience/test-agent/webhook"
 
 

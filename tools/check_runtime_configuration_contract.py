@@ -20,7 +20,9 @@ from aicrm_next.runtime_configuration import (  # noqa: E402
 MIGRATED_PATHS = (
     "aicrm_next/admin_auth",
     "aicrm_next/admin_config",
+    "aicrm_next/ai_audience_ops",
     "aicrm_next/auth_wecom",
+    "aicrm_next/commerce",
     "aicrm_next/integration_gateway",
     "aicrm_next/platform_foundation",
     "aicrm_next/shared/pii_audit.py",
@@ -36,15 +38,20 @@ RUNTIME_ACCESSORS = frozenset(
         "runtime_csv",
         "runtime_int",
         "runtime_setting",
+        "startup_environment_setting",
     }
 )
 DECLARED_KEY_NAMES = frozenset({"RUNTIME_ENVIRONMENT_KEYS", "RUNTIME_SETTING_KEYS"})
 STARTUP_ONLY_KEYS = frozenset(
     {
+        "AICRM_AUDIENCE_READONLY_DATABASE_URL",
         "AICRM_DOMAIN_VERIFICATION_DIR",
         "AICRM_LISTENER_DATABASE_URL",
+        "AICRM_NEXT_ENV",
         "AICRM_PUBLIC_BASE_URL",
+        "APP_BASE_URL",
         "APP_EXTERNAL_BASE_URL",
+        "DATABASE_URL",
         "EXTERNAL_BASE_URL",
         "NEXT_PUBLIC_BASE_URL",
         "PUBLIC_BASE_URL",
@@ -138,6 +145,37 @@ def check_runtime_configuration_contract(
             if accessor not in RUNTIME_ACCESSORS | {"environment_fallback"}:
                 continue
             key = _resolved_string(node.args[0] if node.args else None, constants)
+            if accessor == "startup_environment_setting":
+                if key:
+                    if key not in STARTUP_ONLY_KEYS:
+                        violations.append(
+                            RuntimeConfigurationViolation(
+                                path=relative,
+                                line=int(getattr(node, "lineno", 0) or 0),
+                                rule="non_startup_environment_setting",
+                                detail=f"{key} must use a published ConfigDefinition",
+                            )
+                        )
+                elif not has_declared_keys:
+                    violations.append(
+                        RuntimeConfigurationViolation(
+                            path=relative,
+                            line=int(getattr(node, "lineno", 0) or 0),
+                            rule="dynamic_startup_setting_without_declaration",
+                            detail="startup_environment_setting must be backed by RUNTIME_ENVIRONMENT_KEYS",
+                        )
+                    )
+                else:
+                    for declared_key in sorted(declared_keys - STARTUP_ONLY_KEYS):
+                        violations.append(
+                            RuntimeConfigurationViolation(
+                                path=relative,
+                                line=int(getattr(node, "lineno", 0) or 0),
+                                rule="non_startup_environment_setting",
+                                detail=f"{declared_key} must use a published ConfigDefinition",
+                            )
+                        )
+                continue
             if not key:
                 if accessor.startswith("managed_runtime_"):
                     for declared_key in sorted(declared_keys - MANAGED_RUNTIME_SETTING_KEYS):

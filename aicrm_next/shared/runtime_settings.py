@@ -52,6 +52,17 @@ def environment_fallback(
     return str(source.get(normalized_key, default) or "")
 
 
+def startup_environment_setting(key: str, default: str = "") -> str:
+    """Read a process-start setting through the single environment boundary.
+
+    Database URLs, public origins, release identity, and environment labels are
+    deployment inputs rather than publishable business configuration.  Business
+    modules may consume those values through this explicit boundary only.
+    """
+
+    return environment_fallback(key, default)
+
+
 def environment_snapshot(
     keys: Iterable[str],
     *,

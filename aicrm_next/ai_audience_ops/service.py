@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from urllib.parse import quote
@@ -8,6 +7,7 @@ from zoneinfo import ZoneInfo
 
 from aicrm_next.platform_foundation.external_effects import ExternalEffectService
 from aicrm_next.platform_foundation.internal_events import InternalEventService
+from aicrm_next.shared.runtime_settings import startup_environment_setting
 
 from .repository import AudienceRepository, build_audience_repository, default_refresh_started_at, previous_watermark, _text
 from .schemas import PackageCreateRequest, PackageVersionCreateRequest, PreviewRequest
@@ -653,7 +653,11 @@ def build_preview_runtime_params(
 
 
 def inbound_webhook_url(package: dict[str, Any], *, request_base_url: str = "") -> str:
-    base_url = _text(os.getenv("AICRM_PUBLIC_BASE_URL")) or _text(request_base_url) or "https://www.youcangogogo.com"
+    base_url = (
+        _text(startup_environment_setting("AICRM_PUBLIC_BASE_URL"))
+        or _text(request_base_url)
+        or "https://www.youcangogogo.com"
+    )
     base_url = base_url.rstrip("/")
     package_key = quote(_text(package.get("package_key")), safe="")
     return f"{base_url}/api/ai/audience/packages/{package_key}/webhook"

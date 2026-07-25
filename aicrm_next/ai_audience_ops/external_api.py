@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import os
 from typing import Any
 
 from fastapi import APIRouter, Body, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
+
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 
 from .package_spec import package_payload_from_spec, parse_markdown_spec_text, validate_spec
 from .repository import build_audience_repository, _text
@@ -557,7 +558,9 @@ def _resolve_package_key(package_key: str, package_key_prefix: str) -> str:
 
 
 def _allow_publish() -> bool:
-    return _text(os.getenv("AICRM_AI_AUDIENCE_SPEC_ALLOW_PUBLISH")).lower() in {"1", "true", "yes"}
+    return _text(
+        managed_runtime_setting("AICRM_AI_AUDIENCE_SPEC_ALLOW_PUBLISH")
+    ).lower() in {"1", "true", "yes"}
 
 
 def _prefix_gate_error(package_key: str) -> str:
@@ -575,12 +578,14 @@ def _prefix_gate_error(package_key: str) -> str:
 
 
 def _allowed_prefixes() -> list[str]:
-    raw = _text(os.getenv("AICRM_AI_AUDIENCE_SPEC_ALLOWED_PREFIXES"))
+    raw = _text(managed_runtime_setting("AICRM_AI_AUDIENCE_SPEC_ALLOWED_PREFIXES"))
     return [item.strip() for item in raw.split(",") if item.strip()]
 
 
 def _allow_non_verify_prefix() -> bool:
-    return _text(os.getenv("AICRM_AI_AUDIENCE_SPEC_ALLOW_NON_VERIFY_PREFIX")).lower() in {"1", "true", "yes"}
+    return _text(
+        managed_runtime_setting("AICRM_AI_AUDIENCE_SPEC_ALLOW_NON_VERIFY_PREFIX")
+    ).lower() in {"1", "true", "yes"}
 
 
 def _apply_simple_webhook_and_senders(service: AudiencePackageService, package_id: int, request: SimpleSqlApplyRequest) -> None:

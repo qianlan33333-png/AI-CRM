@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import os
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from aicrm_next.shared.runtime import production_data_ready
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 
 from .repo import connect_commerce_db
 
@@ -20,7 +20,10 @@ def _int(value: Any, default: int) -> int:
 
 
 def pending_order_ttl_hours() -> int:
-    configured = _int(os.getenv("WECHAT_PAY_PENDING_ORDER_TTL_HOURS"), DEFAULT_PENDING_ORDER_TTL_HOURS)
+    configured = _int(
+        managed_runtime_setting("WECHAT_PAY_PENDING_ORDER_TTL_HOURS"),
+        DEFAULT_PENDING_ORDER_TTL_HOURS,
+    )
     return max(1, min(configured, 24))
 
 

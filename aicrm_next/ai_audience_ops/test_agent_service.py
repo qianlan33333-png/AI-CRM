@@ -9,6 +9,12 @@ from .webhook_service import AudienceInboundWebhookService
 
 
 TEST_AGENT_MESSAGE_TEXT = "【AI人群包生产真实测试】你好，这是一条由 AI 人群包自测 Agent 生成的测试消息。"
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "AICRM_AI_AUDIENCE_TEST_AGENT_ALLOWED_EXTERNAL_USERIDS",
+        "AICRM_AI_AUDIENCE_TEST_AGENT_PACKAGE_KEYS",
+    }
+)
 
 
 class AudienceTestAgentService:

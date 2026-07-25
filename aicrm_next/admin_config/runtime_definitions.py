@@ -190,6 +190,59 @@ _INTEGRATION_GATEWAY_NEW_KEYS = frozenset(
     | _INTEGRATION_GATEWAY_STRING_KEYS
 )
 
+_BUSINESS_RUNTIME_BOOLEAN_KEYS = frozenset(
+    {
+        "AICRM_AI_AUDIENCE_E2E_RUNNER_ENABLED",
+        "AICRM_AI_AUDIENCE_AGENT_FAKE_ALLOWED",
+        "AICRM_AI_AUDIENCE_INBOUND_ACTION_EXECUTE",
+        "AICRM_AI_AUDIENCE_SPEC_ALLOW_NON_VERIFY_PREFIX",
+        "AICRM_AI_AUDIENCE_SPEC_ALLOW_PUBLISH",
+        "AICRM_AI_AUDIENCE_TEST_AGENT_ENABLED",
+        "AICRM_RUNTIME_V2_AGENT_FAKE_ALLOWED",
+    }
+)
+
+_BUSINESS_RUNTIME_INTEGER_DEFAULTS = {
+    "AICRM_AI_AUDIENCE_AGENT_TIMEOUT_SECONDS": (30, 1, 3600),
+    "AICRM_RUNTIME_V2_AGENT_TIMEOUT_SECONDS": (30, 1, 3600),
+    "WECHAT_PAY_PENDING_ORDER_TTL_HOURS": (2, 1, 24),
+    "WECHAT_PAY_RECONCILIATION_PROPAGATION_SECONDS": (120, 30, 3600),
+}
+
+_BUSINESS_RUNTIME_MODE_KEYS = frozenset(
+    {
+        "AICRM_AI_AUDIENCE_AGENT_MODE",
+        "AICRM_RUNTIME_V2_AGENT_MODE",
+    }
+)
+
+_BUSINESS_RUNTIME_STRING_KEYS = frozenset(
+    {
+        "AICRM_AI_AUDIENCE_AGENT_API_KEY",
+        "AICRM_AI_AUDIENCE_AGENT_BASE_URL",
+        "AICRM_AI_AUDIENCE_AGENT_FAKE_OUTPUT",
+        "AICRM_AI_AUDIENCE_AGENT_MODEL",
+        "AICRM_AI_AUDIENCE_SPEC_ALLOWED_PREFIXES",
+        "AICRM_AI_AUDIENCE_TEST_AGENT_ALLOWED_EXTERNAL_USERIDS",
+        "AICRM_AI_AUDIENCE_TEST_AGENT_PACKAGE_KEYS",
+        "AICRM_AI_AUDIENCE_TEST_AGENT_SENDER_USERID",
+        "AICRM_NEXT_ACTION_TOKEN_SECRET",
+        "AICRM_RUNTIME_V2_AGENT_API_KEY",
+        "AICRM_RUNTIME_V2_AGENT_BASE_URL",
+        "AICRM_RUNTIME_V2_AGENT_FAKE_OUTPUT",
+        "AICRM_RUNTIME_V2_AGENT_MODEL",
+        "SECRET_KEY",
+        "WECHAT_PAY_REFUND_NOTIFY_URL",
+    }
+)
+
+_BUSINESS_RUNTIME_NEW_KEYS = frozenset(
+    _BUSINESS_RUNTIME_BOOLEAN_KEYS
+    | set(_BUSINESS_RUNTIME_INTEGER_DEFAULTS)
+    | _BUSINESS_RUNTIME_MODE_KEYS
+    | _BUSINESS_RUNTIME_STRING_KEYS
+)
+
 
 def _integration_gateway_capability(key: str) -> str:
     if key.startswith("AICRM_HUANGYOUCAN_"):
@@ -294,6 +347,67 @@ def _integration_gateway_definition(key: str) -> dict[str, Any]:
                 if key.endswith("_API_BASE")
                 else ""
             ),
+        ),
+        **common,
+    }
+
+
+def _business_runtime_definition(key: str) -> dict[str, Any]:
+    platform_owned = key in {"AICRM_NEXT_ACTION_TOKEN_SECRET", "SECRET_KEY"}
+    ai_owned = key.startswith(("AICRM_AI_AUDIENCE_", "AICRM_RUNTIME_V2_AGENT_"))
+    capability_id = (
+        "core.platform"
+        if platform_owned
+        else "extension.ai"
+        if ai_owned
+        else "extension.commerce"
+    )
+    section = "infrastructure" if platform_owned else "ai_services" if ai_owned else "wechat_pay_h5"
+    common = {
+        "capability_id": capability_id,
+        "description": "通过配置发布管理；切换前现有环境值保持权威。",
+    }
+    if key in _BUSINESS_RUNTIME_BOOLEAN_KEYS:
+        return {
+            **_definition(
+                key,
+                f"运行开关：{key}",
+                section=section,
+                value_type="boolean",
+                default="false",
+            ),
+            **common,
+        }
+    if key in _BUSINESS_RUNTIME_INTEGER_DEFAULTS:
+        default, minimum, maximum = _BUSINESS_RUNTIME_INTEGER_DEFAULTS[key]
+        return {
+            **_definition(
+                key,
+                f"运行参数：{key}",
+                section=section,
+                value_type="integer",
+                default=str(default),
+                minimum=minimum,
+                maximum=maximum,
+            ),
+            **common,
+        }
+    if key in _BUSINESS_RUNTIME_MODE_KEYS:
+        return {
+            **_definition(
+                key,
+                f"Adapter 模式：{key}",
+                section=section,
+                default="disabled",
+                options=("disabled", "fake", "staging", "production"),
+            ),
+            **common,
+        }
+    return {
+        **_definition(
+            key,
+            f"运行参数：{key}",
+            section=section,
         ),
         **common,
     }
@@ -469,6 +583,10 @@ RUNTIME_CONFIG_DEFINITIONS: dict[str, dict[str, Any]] = {
     **{
         key: _integration_gateway_definition(key)
         for key in sorted(_INTEGRATION_GATEWAY_NEW_KEYS)
+    },
+    **{
+        key: _business_runtime_definition(key)
+        for key in sorted(_BUSINESS_RUNTIME_NEW_KEYS)
     },
 }
 

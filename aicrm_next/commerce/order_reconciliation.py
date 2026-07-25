@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-import os
 from typing import Any, Callable
 
 from psycopg.types.json import Jsonb
@@ -12,6 +11,7 @@ from aicrm_next.integration_gateway.wechat_pay_client import (
     WeChatPayClientError,
     wechat_pay_client_config_from_env,
 )
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 from .order_expiration import pending_order_ttl_hours
 from .repo import connect_commerce_db
 
@@ -24,7 +24,14 @@ _apply_transaction: Callable[..., dict[str, Any]] | None = None
 
 def provider_unknown_propagation_seconds() -> int:
     try:
-        configured = int(str(os.getenv("WECHAT_PAY_RECONCILIATION_PROPAGATION_SECONDS") or "").strip())
+        configured = int(
+            str(
+                managed_runtime_setting(
+                    "WECHAT_PAY_RECONCILIATION_PROPAGATION_SECONDS"
+                )
+                or ""
+            ).strip()
+        )
     except (TypeError, ValueError):
         configured = DEFAULT_PROVIDER_UNKNOWN_PROPAGATION_SECONDS
     return max(30, min(configured, 3600))

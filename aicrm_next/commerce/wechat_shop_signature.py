@@ -3,11 +3,10 @@ from __future__ import annotations
 import hashlib
 import hmac
 import logging
-import os
 from typing import Any
 
 from aicrm_next.shared.runtime import production_environment
-from aicrm_next.shared.runtime_settings import runtime_setting
+from aicrm_next.shared.runtime_settings import runtime_setting, startup_environment_setting
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +28,10 @@ def callback_token() -> str:
 
 
 def should_skip_signature_without_token() -> bool:
-    if _text(os.getenv("AICRM_NEXT_ENV")).lower() == "test" or not production_environment():
+    if (
+        _text(startup_environment_setting("AICRM_NEXT_ENV")).lower() == "test"
+        or not production_environment()
+    ):
         return True
     logger.error("WECHAT_SHOP_CALLBACK_TOKEN is not configured; rejecting WeChat Shop callback")
     return False

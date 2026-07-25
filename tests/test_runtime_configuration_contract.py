@@ -6,6 +6,7 @@ import pytest
 
 from aicrm_next.admin_config.config_definitions import CONFIG_DEFINITIONS_BY_KEY
 from aicrm_next.runtime_configuration import (
+    BUSINESS_RUNTIME_SETTING_KEYS,
     INTEGRATION_GATEWAY_RUNTIME_SETTING_KEYS,
     MANAGED_RUNTIME_SETTING_KEYS,
 )
@@ -27,7 +28,7 @@ def test_integration_gateway_runtime_catalog_is_complete_owned_and_gated() -> No
 
     assert "aicrm_next/integration_gateway" in MIGRATED_PATHS
     assert len(gateway_keys) == 126
-    assert len(MANAGED_RUNTIME_SETTING_KEYS) == 171
+    assert len(MANAGED_RUNTIME_SETTING_KEYS) == 184
     assert gateway_keys <= MANAGED_RUNTIME_SETTING_KEYS
     assert gateway_keys <= set(CONFIG_DEFINITIONS_BY_KEY)
     assert all(CONFIG_DEFINITIONS_BY_KEY[key].capability_id for key in gateway_keys)
@@ -43,6 +44,23 @@ def test_integration_gateway_runtime_catalog_is_complete_owned_and_gated() -> No
         "AICRM_HUANGYOUCAN_DB_PASSWORD": "extension.hxc",
         "AICRM_ENABLE_REAL_WECOM_GROUP_MESSAGE": "core.automation",
         "AICRM_ENABLE_REAL_WECOM_PRIVATE_MESSAGE": "core.automation",
+    }
+    assert {
+        key: CONFIG_DEFINITIONS_BY_KEY[key].capability_id for key in expected_owners
+    } == expected_owners
+
+
+def test_ai_and_commerce_runtime_catalog_is_complete_owned_and_gated() -> None:
+    assert {"aicrm_next/ai_audience_ops", "aicrm_next/commerce"} <= set(MIGRATED_PATHS)
+    assert len(BUSINESS_RUNTIME_SETTING_KEYS) == 13
+    assert BUSINESS_RUNTIME_SETTING_KEYS <= MANAGED_RUNTIME_SETTING_KEYS
+    assert BUSINESS_RUNTIME_SETTING_KEYS <= set(CONFIG_DEFINITIONS_BY_KEY)
+    expected_owners = {
+        "AICRM_AI_AUDIENCE_AGENT_FAKE_ALLOWED": "extension.ai",
+        "AICRM_AI_AUDIENCE_SPEC_ALLOW_PUBLISH": "extension.ai",
+        "WECHAT_PAY_PENDING_ORDER_TTL_HOURS": "extension.commerce",
+        "WECHAT_PAY_REFUND_NOTIFY_URL": "extension.commerce",
+        "WECHAT_SHOP_APPID": "extension.commerce",
     }
     assert {
         key: CONFIG_DEFINITIONS_BY_KEY[key].capability_id for key in expected_owners
@@ -92,6 +110,26 @@ def test_runtime_setting_requires_config_definition(tmp_path: Path) -> None:
     )
 
     assert [item.rule for item in violations] == ["runtime_setting_missing_definition"]
+
+
+def test_startup_environment_setting_rejects_publishable_business_key(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "aicrm_next" / "example.py"
+    path.parent.mkdir(parents=True)
+    path.write_text(
+        "from aicrm_next.shared.runtime_settings import startup_environment_setting\n"
+        'VALUE = startup_environment_setting("AICRM_BUSINESS_RULE")\n',
+        encoding="utf-8",
+    )
+
+    violations = check_runtime_configuration_contract(
+        root=tmp_path,
+        migrated_paths=("aicrm_next/example.py",),
+        definition_keys={"AICRM_BUSINESS_RULE"},
+    )
+
+    assert [item.rule for item in violations] == ["non_startup_environment_setting"]
 
 
 def test_dynamic_runtime_setting_requires_declared_key_catalog(tmp_path: Path) -> None:

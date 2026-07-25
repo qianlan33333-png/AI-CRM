@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
-import os
 import re
 import secrets
 from typing import Any
@@ -17,7 +16,7 @@ from aicrm_next.platform_foundation.command_bus.models import CommandContext
 from aicrm_next.platform_foundation.internal_events.models import InternalEventCreateRequest
 from aicrm_next.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
 from aicrm_next.shared.runtime import database_mode
-from aicrm_next.shared.runtime_settings import runtime_setting
+from aicrm_next.shared.runtime_settings import managed_runtime_setting, runtime_setting
 
 from .product_code_aliases import canonical_product_code, canonical_product_name
 from .repo import connect_commerce_db
@@ -107,12 +106,13 @@ def sanitize_wechat_shop_error(value: Any) -> str:
 
 
 def _client() -> WeChatShopClient:
-    timeout = _int(os.getenv("WECHAT_SHOP_HTTP_TIMEOUT_SECONDS"), 5) or 5
+    timeout = _int(managed_runtime_setting("WECHAT_SHOP_HTTP_TIMEOUT_SECONDS"), 5) or 5
     return WeChatShopClient(
         WeChatShopClientConfig(
-            appid=_text(os.getenv("WECHAT_SHOP_APPID")),
+            appid=_text(managed_runtime_setting("WECHAT_SHOP_APPID")),
             appsecret=_text(runtime_setting("WECHAT_SHOP_APPSECRET")),
-            api_base=_text(os.getenv("WECHAT_SHOP_API_BASE")) or "https://api.weixin.qq.com",
+            api_base=_text(managed_runtime_setting("WECHAT_SHOP_API_BASE"))
+            or "https://api.weixin.qq.com",
             timeout_seconds=timeout,
         )
     )
@@ -700,7 +700,7 @@ def normalize_wechat_shop_order(order: dict[str, Any], *, raw_response: dict[str
 
 
 def _get_access_token(*, force_refresh: bool = False) -> str:
-    appid = _text(os.getenv("WECHAT_SHOP_APPID"))
+    appid = _text(managed_runtime_setting("WECHAT_SHOP_APPID"))
     if database_mode() == "postgres" and appid and not force_refresh:
         cached = _load_cached_token(appid)
         if cached:

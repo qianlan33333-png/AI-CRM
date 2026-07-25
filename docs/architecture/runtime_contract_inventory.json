@@ -44,28 +44,58 @@
       "line": 48
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/ai_audience_ops/agent_gateway.py",
-      "key": "AICRM_AI_AUDIENCE_AGENT_FAKE_ALLOWED",
-      "line": 41
+      "key": "AICRM_AI_AUDIENCE_AGENT_API_KEY",
+      "line": 16
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/ai_audience_ops/agent_gateway.py",
+      "key": "AICRM_AI_AUDIENCE_AGENT_BASE_URL",
+      "line": 16
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/ai_audience_ops/agent_gateway.py",
+      "key": "AICRM_AI_AUDIENCE_AGENT_FAKE_ALLOWED",
+      "line": 16
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/ai_audience_ops/agent_gateway.py",
       "key": "AICRM_AI_AUDIENCE_AGENT_FAKE_OUTPUT",
-      "line": 100
+      "line": 16
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/ai_audience_ops/agent_gateway.py",
+      "key": "AICRM_AI_AUDIENCE_AGENT_MODE",
+      "line": 16
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/ai_audience_ops/agent_gateway.py",
+      "key": "AICRM_AI_AUDIENCE_AGENT_MODEL",
+      "line": 16
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/ai_audience_ops/agent_gateway.py",
+      "key": "AICRM_AI_AUDIENCE_AGENT_TIMEOUT_SECONDS",
+      "line": 16
     },
     {
       "accessor": "runtime_bool",
       "file": "aicrm_next/ai_audience_ops/e2e_runner.py",
       "key": "AICRM_AI_AUDIENCE_E2E_RUNNER_ENABLED",
-      "line": 147
+      "line": 146
     },
     {
       "accessor": "runtime_bool",
       "file": "aicrm_next/ai_audience_ops/test_agent_service.py",
       "key": "AICRM_AI_AUDIENCE_E2E_RUNNER_ENABLED",
-      "line": 160
+      "line": 166
     },
     {
       "accessor": "runtime_bool",
@@ -74,58 +104,58 @@
       "line": 180
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/ai_audience_ops/external_api.py",
       "key": "AICRM_AI_AUDIENCE_SPEC_ALLOWED_PREFIXES",
-      "line": 578
+      "line": 581
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/ai_audience_ops/external_api.py",
       "key": "AICRM_AI_AUDIENCE_SPEC_ALLOW_NON_VERIFY_PREFIX",
-      "line": 583
+      "line": 587
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/ai_audience_ops/external_api.py",
       "key": "AICRM_AI_AUDIENCE_SPEC_ALLOW_PUBLISH",
-      "line": 560
+      "line": 562
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/ai_audience_ops/test_agent_service.py",
+      "key": "AICRM_AI_AUDIENCE_TEST_AGENT_ALLOWED_EXTERNAL_USERIDS",
+      "line": 12
     },
     {
       "accessor": "runtime_bool",
       "file": "aicrm_next/ai_audience_ops/e2e_runner.py",
       "key": "AICRM_AI_AUDIENCE_TEST_AGENT_ENABLED",
-      "line": 225
+      "line": 224
     },
     {
       "accessor": "runtime_bool",
       "file": "aicrm_next/ai_audience_ops/test_agent_service.py",
       "key": "AICRM_AI_AUDIENCE_TEST_AGENT_ENABLED",
-      "line": 24
+      "line": 30
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/ai_audience_ops/test_agent_service.py",
+      "key": "AICRM_AI_AUDIENCE_TEST_AGENT_PACKAGE_KEYS",
+      "line": 12
     },
     {
       "accessor": "runtime_setting",
       "file": "aicrm_next/ai_audience_ops/test_agent_service.py",
       "key": "AICRM_AI_AUDIENCE_TEST_AGENT_SENDER_USERID",
-      "line": 54
+      "line": 60
     },
     {
       "accessor": "runtime_setting",
       "file": "aicrm_next/ai_audience_ops/test_agent_service.py",
       "key": "AICRM_AI_AUDIENCE_TEST_AGENT_SENDER_USERID",
-      "line": 108
-    },
-    {
-      "accessor": "os.getenv",
-      "file": "aicrm_next/ai_audience_ops/repository.py",
-      "key": "AICRM_AUDIENCE_READONLY_DATABASE_URL",
-      "line": 395
-    },
-    {
-      "accessor": "os.getenv",
-      "file": "aicrm_next/ai_audience_ops/repository.py",
-      "key": "AICRM_AUDIENCE_READONLY_DATABASE_URL",
-      "line": 409
+      "line": 114
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -1137,12 +1167,6 @@
     },
     {
       "accessor": "os.getenv",
-      "file": "aicrm_next/commerce/wechat_shop_signature.py",
-      "key": "AICRM_NEXT_ENV",
-      "line": 32
-    },
-    {
-      "accessor": "os.getenv",
       "file": "aicrm_next/customer_tags/wecom_tag_live_adapter.py",
       "key": "AICRM_NEXT_ENV",
       "line": 280
@@ -1526,24 +1550,6 @@
       "line": 92
     },
     {
-      "accessor": "os.getenv",
-      "file": "aicrm_next/ai_audience_ops/e2e_runner.py",
-      "key": "AICRM_PUBLIC_BASE_URL",
-      "line": 570
-    },
-    {
-      "accessor": "os.getenv",
-      "file": "aicrm_next/ai_audience_ops/service.py",
-      "key": "AICRM_PUBLIC_BASE_URL",
-      "line": 656
-    },
-    {
-      "accessor": "os.getenv",
-      "file": "aicrm_next/commerce/api_support.py",
-      "key": "AICRM_PUBLIC_BASE_URL",
-      "line": 225
-    },
-    {
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/integration_gateway/questionnaire_adapters.py",
       "key": "AICRM_PUBLIC_BASE_URL",
@@ -1676,16 +1682,46 @@
       "line": 66
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/ai_audience_ops/agent_gateway.py",
-      "key": "AICRM_RUNTIME_V2_AGENT_FAKE_ALLOWED",
-      "line": 42
+      "key": "AICRM_RUNTIME_V2_AGENT_API_KEY",
+      "line": 16
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/ai_audience_ops/agent_gateway.py",
+      "key": "AICRM_RUNTIME_V2_AGENT_BASE_URL",
+      "line": 16
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/ai_audience_ops/agent_gateway.py",
+      "key": "AICRM_RUNTIME_V2_AGENT_FAKE_ALLOWED",
+      "line": 16
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/ai_audience_ops/agent_gateway.py",
       "key": "AICRM_RUNTIME_V2_AGENT_FAKE_OUTPUT",
-      "line": 100
+      "line": 16
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/ai_audience_ops/agent_gateway.py",
+      "key": "AICRM_RUNTIME_V2_AGENT_MODE",
+      "line": 16
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/ai_audience_ops/agent_gateway.py",
+      "key": "AICRM_RUNTIME_V2_AGENT_MODEL",
+      "line": 16
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/ai_audience_ops/agent_gateway.py",
+      "key": "AICRM_RUNTIME_V2_AGENT_TIMEOUT_SECONDS",
+      "line": 16
     },
     {
       "accessor": "os.getenv",
@@ -2042,12 +2078,6 @@
       "line": 276
     },
     {
-      "accessor": "os.getenv",
-      "file": "aicrm_next/commerce/api_support.py",
-      "key": "APP_BASE_URL",
-      "line": 227
-    },
-    {
       "accessor": "runtime_setting",
       "file": "aicrm_next/public_product/h5_wechat_pay.py",
       "key": "APP_BASE_URL",
@@ -2172,12 +2202,6 @@
       "file": "aicrm_next/cloud_orchestrator/repository.py",
       "key": "DATABASE_URL",
       "line": 356
-    },
-    {
-      "accessor": "os.getenv",
-      "file": "aicrm_next/commerce/admin_transactions.py",
-      "key": "DATABASE_URL",
-      "line": 85
     },
     {
       "accessor": "os.getenv",
@@ -2360,6 +2384,30 @@
       "line": 75
     },
     {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/ai_audience_ops/agent_gateway.py",
+      "key": "DEEPSEEK_API_KEY",
+      "line": 16
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/ai_audience_ops/agent_gateway.py",
+      "key": "DEEPSEEK_BASE_URL",
+      "line": 16
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/ai_audience_ops/agent_gateway.py",
+      "key": "DEEPSEEK_EXECUTION_MODEL",
+      "line": 16
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/ai_audience_ops/agent_gateway.py",
+      "key": "DEEPSEEK_TIMEOUT_SECONDS",
+      "line": 16
+    },
+    {
       "accessor": "os.getenv",
       "file": "aicrm_next/shared/runtime.py",
       "key": "ENVIRONMENT",
@@ -2456,12 +2504,6 @@
       "line": 290
     },
     {
-      "accessor": "os.getenv",
-      "file": "aicrm_next/commerce/api_support.py",
-      "key": "PUBLIC_BASE_URL",
-      "line": 226
-    },
-    {
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/integration_gateway/questionnaire_adapters.py",
       "key": "PUBLIC_BASE_URL",
@@ -2481,27 +2523,15 @@
     },
     {
       "accessor": "os.getenv",
-      "file": "aicrm_next/ai_audience_ops/agent_gateway.py",
-      "key": "PYTEST_CURRENT_TEST",
-      "line": 43
-    },
-    {
-      "accessor": "os.getenv",
-      "file": "aicrm_next/commerce/coupons/admin_api.py",
-      "key": "PYTEST_CURRENT_TEST",
-      "line": 65
-    },
-    {
-      "accessor": "os.getenv",
       "file": "aicrm_next/shared/runtime.py",
       "key": "PYTEST_CURRENT_TEST",
-      "line": 50
+      "line": 62
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/shared/runtime.py",
       "key": "REDIS_URL",
-      "line": 159
+      "line": 163
     },
     {
       "accessor": "os.getenv",
@@ -2543,7 +2573,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/shared/runtime.py",
       "key": "SECRET_KEY",
-      "line": 131
+      "line": 135
     },
     {
       "accessor": "runtime_setting",
@@ -2678,10 +2708,10 @@
       "line": 473
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/commerce/order_expiration.py",
       "key": "WECHAT_PAY_PENDING_ORDER_TTL_HOURS",
-      "line": 23
+      "line": 24
     },
     {
       "accessor": "managed_runtime_setting",
@@ -2702,22 +2732,22 @@
       "line": 60
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/commerce/order_reconciliation.py",
       "key": "WECHAT_PAY_RECONCILIATION_PROPAGATION_SECONDS",
-      "line": 27
+      "line": 29
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/commerce/admin_transactions.py",
       "key": "WECHAT_PAY_REFUND_NOTIFY_URL",
       "line": 568
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/commerce/api_support.py",
       "key": "WECHAT_PAY_REFUND_NOTIFY_URL",
-      "line": 233
+      "line": 237
     },
     {
       "accessor": "managed_runtime_setting",
@@ -2726,19 +2756,19 @@
       "line": 70
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/commerce/wechat_shop_service.py",
       "key": "WECHAT_SHOP_API_BASE",
-      "line": 115
+      "line": 114
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/commerce/wechat_shop_service.py",
       "key": "WECHAT_SHOP_APPID",
-      "line": 113
+      "line": 112
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/commerce/wechat_shop_service.py",
       "key": "WECHAT_SHOP_APPID",
       "line": 703
@@ -2747,37 +2777,37 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/commerce/wechat_shop_service.py",
       "key": "WECHAT_SHOP_APPSECRET",
-      "line": 99
+      "line": 98
     },
     {
       "accessor": "runtime_setting",
       "file": "aicrm_next/commerce/wechat_shop_service.py",
       "key": "WECHAT_SHOP_APPSECRET",
-      "line": 114
+      "line": 113
     },
     {
       "accessor": "runtime_setting",
       "file": "aicrm_next/commerce/wechat_shop_service.py",
       "key": "WECHAT_SHOP_CALLBACK_TOKEN",
-      "line": 99
+      "line": 98
     },
     {
       "accessor": "runtime_setting",
       "file": "aicrm_next/commerce/wechat_shop_signature.py",
       "key": "WECHAT_SHOP_CALLBACK_TOKEN",
-      "line": 28
+      "line": 27
     },
     {
       "accessor": "runtime_setting",
       "file": "aicrm_next/shared/runtime.py",
       "key": "WECHAT_SHOP_CALLBACK_TOKEN",
-      "line": 132
+      "line": 136
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/commerce/wechat_shop_service.py",
       "key": "WECHAT_SHOP_HTTP_TIMEOUT_SECONDS",
-      "line": 110
+      "line": 109
     },
     {
       "accessor": "managed_runtime_setting",
@@ -3197,7 +3227,7 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/shared/runtime.py",
       "key": "WORKER_RELEASE_SHA",
-      "line": 153
+      "line": 157
     }
   ],
   "environment_variables": [
@@ -3205,16 +3235,22 @@
     "AICRM_ADMIN_AUTH_ENFORCED",
     "AICRM_ADMIN_SESSION_COOKIE",
     "AICRM_ADMIN_SESSION_COOKIE_SECURE",
+    "AICRM_AI_AUDIENCE_AGENT_API_KEY",
+    "AICRM_AI_AUDIENCE_AGENT_BASE_URL",
     "AICRM_AI_AUDIENCE_AGENT_FAKE_ALLOWED",
     "AICRM_AI_AUDIENCE_AGENT_FAKE_OUTPUT",
+    "AICRM_AI_AUDIENCE_AGENT_MODE",
+    "AICRM_AI_AUDIENCE_AGENT_MODEL",
+    "AICRM_AI_AUDIENCE_AGENT_TIMEOUT_SECONDS",
     "AICRM_AI_AUDIENCE_E2E_RUNNER_ENABLED",
     "AICRM_AI_AUDIENCE_INBOUND_ACTION_EXECUTE",
     "AICRM_AI_AUDIENCE_SPEC_ALLOWED_PREFIXES",
     "AICRM_AI_AUDIENCE_SPEC_ALLOW_NON_VERIFY_PREFIX",
     "AICRM_AI_AUDIENCE_SPEC_ALLOW_PUBLISH",
+    "AICRM_AI_AUDIENCE_TEST_AGENT_ALLOWED_EXTERNAL_USERIDS",
     "AICRM_AI_AUDIENCE_TEST_AGENT_ENABLED",
+    "AICRM_AI_AUDIENCE_TEST_AGENT_PACKAGE_KEYS",
     "AICRM_AI_AUDIENCE_TEST_AGENT_SENDER_USERID",
-    "AICRM_AUDIENCE_READONLY_DATABASE_URL",
     "AICRM_AUTH_ARCHIVE_WORKER_CLIENT_ID",
     "AICRM_AUTH_ARCHIVE_WORKER_CLIENT_SECRET_REF",
     "AICRM_AUTH_AUTOMATION_WORKER_CLIENT_ID",
@@ -3390,8 +3426,13 @@
     "AICRM_READINESS_MAX_QUEUE_AGE_SECONDS",
     "AICRM_READINESS_MAX_TERMINAL_COUNT",
     "AICRM_ROUTE_POLICY_ENFORCED",
+    "AICRM_RUNTIME_V2_AGENT_API_KEY",
+    "AICRM_RUNTIME_V2_AGENT_BASE_URL",
     "AICRM_RUNTIME_V2_AGENT_FAKE_ALLOWED",
     "AICRM_RUNTIME_V2_AGENT_FAKE_OUTPUT",
+    "AICRM_RUNTIME_V2_AGENT_MODE",
+    "AICRM_RUNTIME_V2_AGENT_MODEL",
+    "AICRM_RUNTIME_V2_AGENT_TIMEOUT_SECONDS",
     "AICRM_SECRET_STORE_DIR",
     "AICRM_SIDEBAR_JSSDK_ADAPTER_MODE",
     "AICRM_SIDEBAR_JSSDK_ALLOWED_HOSTS",
@@ -3448,6 +3489,10 @@
     "CUSTOMER_READ_MODEL_REPO_BACKEND",
     "DATABASE_URL",
     "DB_APPLICATION_NAME",
+    "DEEPSEEK_API_KEY",
+    "DEEPSEEK_BASE_URL",
+    "DEEPSEEK_EXECUTION_MODEL",
+    "DEEPSEEK_TIMEOUT_SECONDS",
     "ENVIRONMENT",
     "EXTERNAL_BASE_URL",
     "EXTERNAL_PUSH_WEBHOOK_TIMEOUT_SECONDS",

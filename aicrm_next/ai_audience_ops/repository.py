@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -16,6 +15,7 @@ from sqlalchemy.orm import Session
 from aicrm_next.identity_contact.dto import ResolvePersonIdentityRequest
 from aicrm_next.identity_contact.resolver import SQLAlchemyIdentityResolver, resolved_unionid
 from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.shared.runtime_settings import startup_environment_setting
 
 
 def _text(value: Any) -> str:
@@ -392,7 +392,9 @@ class SQLAlchemyAudienceRepository(AudiencePackageRepositoryMixin, AudienceRepos
         )
 
     def execute_readonly_query(self, sql: str, params: dict[str, Any], *, limit: int, timeout_seconds: int) -> list[dict[str, Any]]:
-        readonly_url = _text(os.getenv("AICRM_AUDIENCE_READONLY_DATABASE_URL"))
+        readonly_url = _text(
+            startup_environment_setting("AICRM_AUDIENCE_READONLY_DATABASE_URL")
+        )
         if not readonly_url:
             raise RuntimeError("audience_readonly_database_url_not_configured")
         session_factory = get_session_factory(database_url=readonly_url)
@@ -406,7 +408,9 @@ class SQLAlchemyAudienceRepository(AudiencePackageRepositoryMixin, AudienceRepos
             return [_public_row(dict(row)) or {} for row in rows]
 
     def explain_readonly_query(self, sql: str, params: dict[str, Any], *, timeout_seconds: int) -> Any:
-        readonly_url = _text(os.getenv("AICRM_AUDIENCE_READONLY_DATABASE_URL"))
+        readonly_url = _text(
+            startup_environment_setting("AICRM_AUDIENCE_READONLY_DATABASE_URL")
+        )
         if not readonly_url:
             raise RuntimeError("audience_readonly_database_url_not_configured")
         session_factory = get_session_factory(database_url=readonly_url)

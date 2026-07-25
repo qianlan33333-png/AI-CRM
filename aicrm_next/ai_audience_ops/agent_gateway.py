@@ -2,15 +2,39 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
-import os
 import time
 from typing import Any
 from urllib import request
 from urllib.error import HTTPError, URLError
 
+from aicrm_next.shared.runtime import pytest_environment
 from aicrm_next.shared.runtime_settings import runtime_setting
 
 from .repository import _text
+
+
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "AICRM_AI_AUDIENCE_AGENT_API_KEY",
+        "AICRM_AI_AUDIENCE_AGENT_BASE_URL",
+        "AICRM_AI_AUDIENCE_AGENT_FAKE_ALLOWED",
+        "AICRM_AI_AUDIENCE_AGENT_FAKE_OUTPUT",
+        "AICRM_AI_AUDIENCE_AGENT_MODE",
+        "AICRM_AI_AUDIENCE_AGENT_MODEL",
+        "AICRM_AI_AUDIENCE_AGENT_TIMEOUT_SECONDS",
+        "AICRM_RUNTIME_V2_AGENT_API_KEY",
+        "AICRM_RUNTIME_V2_AGENT_BASE_URL",
+        "AICRM_RUNTIME_V2_AGENT_FAKE_ALLOWED",
+        "AICRM_RUNTIME_V2_AGENT_FAKE_OUTPUT",
+        "AICRM_RUNTIME_V2_AGENT_MODE",
+        "AICRM_RUNTIME_V2_AGENT_MODEL",
+        "AICRM_RUNTIME_V2_AGENT_TIMEOUT_SECONDS",
+        "DEEPSEEK_API_KEY",
+        "DEEPSEEK_BASE_URL",
+        "DEEPSEEK_EXECUTION_MODEL",
+        "DEEPSEEK_TIMEOUT_SECONDS",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -38,9 +62,9 @@ def _agent_mode() -> str:
 
 def _fake_allowed() -> bool:
     return (
-        _truthy(os.getenv("AICRM_AI_AUDIENCE_AGENT_FAKE_ALLOWED"))
-        or _truthy(os.getenv("AICRM_RUNTIME_V2_AGENT_FAKE_ALLOWED"))
-        or bool(os.getenv("PYTEST_CURRENT_TEST"))
+        _truthy(_setting("AICRM_AI_AUDIENCE_AGENT_FAKE_ALLOWED"))
+        or _truthy(_setting("AICRM_RUNTIME_V2_AGENT_FAKE_ALLOWED"))
+        or pytest_environment()
     )
 
 
@@ -97,7 +121,11 @@ def generate_agent_reply(
     if mode == "fake":
         if not _fake_allowed():
             return AgentGatewayResult(ok=False, mode=mode, request_summary=request_summary, error_code="agent_fake_mode_not_allowed", error_message="Fake AI Audience agent mode is not allowed outside tests")
-        final = _text(mock_output or os.getenv("AICRM_AI_AUDIENCE_AGENT_FAKE_OUTPUT") or os.getenv("AICRM_RUNTIME_V2_AGENT_FAKE_OUTPUT"))
+        final = _text(
+            mock_output
+            or _setting("AICRM_AI_AUDIENCE_AGENT_FAKE_OUTPUT")
+            or _setting("AICRM_RUNTIME_V2_AGENT_FAKE_OUTPUT")
+        )
         return AgentGatewayResult(
             ok=bool(final),
             final_text=final,

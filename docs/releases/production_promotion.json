@@ -197,6 +197,16 @@
     "aicrm_next/media_library/application.py",
     "aicrm_next/shared/secret_store.py",
     "migrations/versions/0148_order_source_sort_indexes.py",
-    "tests/test_huangyoucan_usage_sync.py"
+    "tests/test_huangyoucan_usage_sync.py",
+    "aicrm_next/ai_audience_ops/agent_gateway.py",
+    "aicrm_next/ai_audience_ops/e2e_runner.py",
+    "aicrm_next/ai_audience_ops/external_api.py",
+    "aicrm_next/ai_audience_ops/test_agent_service.py",
+    "aicrm_next/commerce/admin_transactions.py",
+    "aicrm_next/commerce/api_support.py",
+    "aicrm_next/commerce/order_expiration.py",
+    "aicrm_next/commerce/order_reconciliation.py",
+    "aicrm_next/commerce/wechat_shop_service.py",
+    "aicrm_next/commerce/wechat_shop_signature.py"
   ]
 }

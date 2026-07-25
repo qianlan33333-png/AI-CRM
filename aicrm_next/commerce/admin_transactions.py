@@ -3,7 +3,6 @@ from __future__ import annotations
 import csv
 import io
 import json
-import os
 import secrets
 from datetime import datetime, timedelta
 from importlib.util import find_spec
@@ -14,7 +13,8 @@ from aicrm_next.platform_foundation.command_bus import CommandContext
 from aicrm_next.platform_foundation.external_effects import ExternalEffectService, PAYMENT_WECHAT_REFUND_REQUEST
 from aicrm_next.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
 from aicrm_next.platform_foundation.internal_events.refund import build_refund_succeeded_event_request
-from aicrm_next.shared.runtime import database_mode
+from aicrm_next.shared.runtime import database_mode, raw_database_url
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 from aicrm_next.shared.text_encoding import repair_utf8_mojibake
 
 from .repo import build_commerce_repository, connect_commerce_db
@@ -82,7 +82,7 @@ def normalize_filters(source: dict[str, Any] | None) -> dict[str, str]:
 
 
 def _database_url() -> str:
-    return str(os.getenv("DATABASE_URL", "") or "").strip()
+    return raw_database_url()
 
 
 def _psycopg_available() -> bool:
@@ -565,7 +565,7 @@ def create_wechat_refund_request(order_id: str, payload: dict[str, Any]) -> dict
     refund_notify_url = str(
         payload.get("refund_notify_url")
         or payload.get("notify_url")
-        or os.getenv("WECHAT_PAY_REFUND_NOTIFY_URL")
+        or managed_runtime_setting("WECHAT_PAY_REFUND_NOTIFY_URL")
         or ""
     ).strip()
     request_payload = _refund_request_payload(

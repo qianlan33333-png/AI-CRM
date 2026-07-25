@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 from urllib.parse import quote
 
 from fastapi import Request
@@ -9,6 +8,10 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
 from aicrm_next.admin_shell import shell_context
+from aicrm_next.shared.runtime_settings import (
+    managed_runtime_setting,
+    startup_environment_setting,
+)
 from aicrm_next.shared.share_qr import svg_qr_data_url
 
 from .admin_transactions import (
@@ -222,15 +225,17 @@ def _payment_final_options_payload(route: str, methods: list[str], *, source_sta
 
 def _external_base_url(request: Request) -> str:
     configured = str(
-        os.getenv("AICRM_PUBLIC_BASE_URL")
-        or os.getenv("PUBLIC_BASE_URL")
-        or os.getenv("APP_BASE_URL")
+        startup_environment_setting("AICRM_PUBLIC_BASE_URL")
+        or startup_environment_setting("PUBLIC_BASE_URL")
+        or startup_environment_setting("APP_BASE_URL")
         or ""
     ).strip()
     return configured.rstrip("/") if configured else str(request.base_url).rstrip("/")
 
 def _refund_notify_url(request: Request) -> str:
-    configured = str(os.getenv("WECHAT_PAY_REFUND_NOTIFY_URL") or "").strip()
+    configured = str(
+        managed_runtime_setting("WECHAT_PAY_REFUND_NOTIFY_URL") or ""
+    ).strip()
     return configured or f"{_external_base_url(request)}/api/h5/wechat-pay/refund/notify"
 
 def _product_admin_context(

@@ -17,16 +17,18 @@ physical package move, legacy table deletion, or real provider call.
   consumers, external-effect continuations, provider adapters, effects, and
   jobs. The external worker also blocks residual queued effects before the
   provider boundary.
-- `ConfigDefinition` contributes 269 schema and app-setting definitions,
-  including 33 sensitive values that accept only `secretref:` references. Configuration releases use
+- `ConfigDefinition` contributes 297 schema and app-setting definitions,
+  including 37 sensitive values that accept only `secretref:` references. Configuration releases use
   draft, validation, checksum-protected atomic publish, audit history, shadow
   comparison, and rollback-as-a-new-release.
-- The first two configuration-cutover slices cover 171 settings. The initial 50
+- The first three configuration-cutover slices cover 184 settings. The initial 50
   are owned by `admin_auth`, `auth_wecom`, `admin_config`, and
   `platform_foundation`; the provider-boundary slice catalogs all 126 settings
   consumed by `integration_gateway` across channels, engagement, CRM,
-  automation, commerce, forms, archive, AI, and industry capabilities. Those
-  contexts no longer read `os.getenv` / `os.environ` directly. Every registered
+  automation, commerce, forms, archive, AI, and industry capabilities. The
+  third slice adds 13 AI Audience and commerce settings and makes both complete
+  directories direct-environment-free. Those contexts no longer read
+  `os.getenv` / `os.environ` directly. Every registered
   cutover key is resolved centrally, including callers that pass keys through a
   dynamic helper, and a repository-wide business-code gate rejects direct
   environment access to any cutover-eligible key. The same gate requires every
@@ -75,10 +77,10 @@ and historical-data parity evidence.
 ## Deliberately not completed in this release
 
 - Repository-wide business-domain environment reads have not yet reached zero.
-  The platform/auth and complete `integration_gateway` slices are enforced at
-  zero direct reads. The checked-in runtime inventory currently reports 90
-  remaining direct business-code references across 61 unique keys, which stay
-  visible for owner-by-owner migration.
+  The platform/auth, complete `integration_gateway`, `ai_audience_ops`, and
+  `commerce` slices are enforced at zero direct reads. The checked-in runtime
+  inventory currently reports 64 remaining direct application-code references
+  across 44 unique keys, which stay visible for owner-by-owner migration.
 - The historical cross-context import baseline has not yet been reduced to the
   target of 120. Physical directory moves remain disabled until public ports
   and unique table-write ownership are proven.
@@ -96,7 +98,7 @@ and historical-data parity evidence.
 
 ## Next safe sequence
 
-1. Deploy this release in observation mode, stage the 171 managed settings, and
+1. Deploy this release in observation mode, stage the 184 managed settings, and
    collect redacted configuration shadow comparisons per instance.
 2. Activate only matching keys through the cutover catalog; migrate the next
    capability slice with the same expand/contract rule and add public
