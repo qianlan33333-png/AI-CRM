@@ -10,6 +10,10 @@ from aicrm_next.platform_foundation.internal_events.worker import InternalEventW
 from .event_types import (
     DAILY_REFRESH_CONSUMER,
     DAILY_TICK_EVENT,
+    HXC_DAILY_PROJECTION_CONSUMER,
+    HXC_DAILY_PROJECTION_REQUESTED_EVENT,
+    HXC_INCREMENTAL_PROJECTION_CONSUMER,
+    HXC_INCREMENTAL_PROJECTION_REQUESTED_EVENT,
     INCREMENTAL_REFRESH_CONSUMER,
     INCREMENTAL_TICK_EVENT,
     OUTBOUND_EFFECT_CONSUMER,
@@ -19,7 +23,8 @@ from .event_types import (
     SOURCE_CHANGED_EVENT,
     SOURCE_POKE_CONSUMER,
 )
-from .service import AudiencePackageService
+from .hxc_projection_intents import HxcProjectionRefreshIntentService
+from .service import AudiencePackageService, _tick_bucket
 
 
 DEFAULT_DAILY_REFRESH_TIME = "02:00"
@@ -36,9 +41,24 @@ def emit_due_ticks(
     force_daily: bool = False,
 ) -> dict[str, Any]:
     service = AudiencePackageService()
+    projection_intents = HxcProjectionRefreshIntentService()
     items: list[dict[str, Any]] = []
     if include_incremental:
-        items.append({"tick_type": "incremental", "result": service.emit_tick("incremental")})
+        incremental_bucket = _tick_bucket(
+            "incremental",
+            now=now,
+            daily_refresh_time=daily_refresh_time,
+        )
+        items.append(
+            {
+                "tick_type": "incremental",
+                "result": service.emit_tick("incremental"),
+                "hxc_projection_intent": projection_intents.request(
+                    "incremental",
+                    bucket=incremental_bucket,
+                ),
+            }
+        )
     window_daily_due = False
     daily_due = False
     if include_daily:
@@ -47,8 +67,21 @@ def emit_due_ticks(
             daily_refresh_time=daily_refresh_time,
             daily_window_minutes=daily_window_minutes,
         )
-        daily_due = bool(force_daily) or window_daily_due or _daily_refresh_due(service)
+        daily_due = (
+            bool(force_daily)
+            or window_daily_due
+            or _daily_refresh_due(service)
+            or projection_intents.daily_refresh_due(
+                now=now,
+                daily_refresh_time=daily_refresh_time,
+            )
+        )
     if include_daily and daily_due:
+        daily_bucket = _tick_bucket(
+            "daily",
+            now=now,
+            daily_refresh_time=daily_refresh_time,
+        )
         items.append(
             {
                 "tick_type": "daily",
@@ -57,10 +90,18 @@ def emit_due_ticks(
                     now=now,
                     daily_refresh_time=daily_refresh_time,
                 ),
+                "hxc_projection_intent": projection_intents.request(
+                    "daily",
+                    bucket=daily_bucket,
+                ),
             }
         )
     return {
-        "ok": True,
+        "ok": all(
+            bool(item["result"].get("ok"))
+            and bool(item["hxc_projection_intent"].get("ok"))
+            for item in items
+        ),
         "items": items,
         "daily_tick_due": daily_due,
         "daily_tick_window_due": window_daily_due,
@@ -81,11 +122,13 @@ def run_due_refresh_consumers(
     event_types: list[str] = []
     consumer_names: list[str] = []
     if include_incremental:
-        event_types.append(INCREMENTAL_TICK_EVENT)
-        consumer_names.append(INCREMENTAL_REFRESH_CONSUMER)
+        event_types.extend(
+            [INCREMENTAL_TICK_EVENT, HXC_INCREMENTAL_PROJECTION_REQUESTED_EVENT]
+        )
+        consumer_names.extend([INCREMENTAL_REFRESH_CONSUMER, HXC_INCREMENTAL_PROJECTION_CONSUMER])
     if include_daily:
-        event_types.append(DAILY_TICK_EVENT)
-        consumer_names.append(DAILY_REFRESH_CONSUMER)
+        event_types.extend([DAILY_TICK_EVENT, HXC_DAILY_PROJECTION_REQUESTED_EVENT])
+        consumer_names.extend([DAILY_REFRESH_CONSUMER, HXC_DAILY_PROJECTION_CONSUMER])
     if not event_types:
         return {
             "ok": True,
@@ -152,7 +195,9 @@ def ai_audience_event_consumer_pairs(*, include_source_poke: bool = True, includ
         pairs.extend(
             [
                 f"{INCREMENTAL_TICK_EVENT}:{INCREMENTAL_REFRESH_CONSUMER}",
+                f"{HXC_INCREMENTAL_PROJECTION_REQUESTED_EVENT}:{HXC_INCREMENTAL_PROJECTION_CONSUMER}",
                 f"{DAILY_TICK_EVENT}:{DAILY_REFRESH_CONSUMER}",
+                f"{HXC_DAILY_PROJECTION_REQUESTED_EVENT}:{HXC_DAILY_PROJECTION_CONSUMER}",
                 f"{REFRESH_REQUESTED_EVENT}:{REFRESH_INTENT_CONSUMER}",
             ]
         )

@@ -15,6 +15,10 @@ from aicrm_next.platform_foundation.internal_events import (
 from .event_types import (
     DAILY_REFRESH_CONSUMER,
     DAILY_TICK_EVENT,
+    HXC_DAILY_PROJECTION_CONSUMER,
+    HXC_DAILY_PROJECTION_REQUESTED_EVENT,
+    HXC_INCREMENTAL_PROJECTION_CONSUMER,
+    HXC_INCREMENTAL_PROJECTION_REQUESTED_EVENT,
     INCREMENTAL_REFRESH_CONSUMER,
     INCREMENTAL_TICK_EVENT,
     INBOUND_ACTION_CONSUMER,
@@ -26,6 +30,7 @@ from .event_types import (
     SOURCE_CHANGED_EVENT,
     SOURCE_POKE_CONSUMER,
 )
+from .hxc_projection import HxcMemberUsageProjectionService
 from .outbound_service import AudienceOutboundService
 from .refresh_intents import AudienceRefreshIntentService
 from .repository import _text
@@ -62,6 +67,22 @@ def daily_refresh_consumer(event: InternalEvent, run: InternalEventConsumerRun) 
         error_code="" if result.get("ok") else _text(result.get("error")) or "ai_audience_daily_refresh_failed",
         error_message="" if result.get("ok") else _text(result.get("error")),
     )
+
+
+def hxc_incremental_projection_consumer(
+    event: InternalEvent,
+    run: InternalEventConsumerRun,
+) -> InternalEventConsumerResult:
+    result = HxcMemberUsageProjectionService().refresh_incremental()
+    return _hxc_projection_result(event, run, result)
+
+
+def hxc_daily_projection_consumer(
+    event: InternalEvent,
+    run: InternalEventConsumerRun,
+) -> InternalEventConsumerResult:
+    result = HxcMemberUsageProjectionService().refresh_full()
+    return _hxc_projection_result(event, run, result)
 
 
 def source_poke_consumer(event: InternalEvent, run: InternalEventConsumerRun) -> InternalEventConsumerResult:
@@ -174,6 +195,18 @@ def register_ai_audience_event_consumers(registry: InternalEventConsumerRegistry
     registry.register(INCREMENTAL_TICK_EVENT, INCREMENTAL_REFRESH_CONSUMER, incremental_refresh_consumer, consumer_type="orchestration")
     registry.register(DAILY_TICK_EVENT, DAILY_REFRESH_CONSUMER, daily_refresh_consumer, consumer_type="orchestration")
     registry.register(
+        HXC_INCREMENTAL_PROJECTION_REQUESTED_EVENT,
+        HXC_INCREMENTAL_PROJECTION_CONSUMER,
+        hxc_incremental_projection_consumer,
+        consumer_type="projection",
+    )
+    registry.register(
+        HXC_DAILY_PROJECTION_REQUESTED_EVENT,
+        HXC_DAILY_PROJECTION_CONSUMER,
+        hxc_daily_projection_consumer,
+        consumer_type="projection",
+    )
+    registry.register(
         REFRESH_REQUESTED_EVENT,
         REFRESH_INTENT_CONSUMER,
         refresh_intent_consumer,
@@ -231,10 +264,41 @@ def _summary(payload: dict[str, Any]) -> dict[str, Any]:
         "inbound_event_id",
         "external_effect_job_id",
         "deduplicated",
+        "batch_size",
+        "scanned_change_count",
+        "dirty_identity_count",
+        "deleted_count",
+        "inserted_count",
+        "projected_row_count",
+        "has_more",
+        "skipped_reason",
     ):
         if key in payload:
             result[key] = payload.get(key)
     return result
+
+
+def _hxc_projection_result(
+    event: InternalEvent,
+    run: InternalEventConsumerRun,
+    result: dict[str, Any],
+) -> InternalEventConsumerResult:
+    ok = bool(result.get("ok"))
+    error_code = _text(result.get("error_code"))
+    retryable = error_code == "projection_refresh_busy"
+    status = "succeeded" if ok else "failed_retryable" if retryable else "failed_terminal"
+    return InternalEventConsumerResult(
+        status=status,
+        request_summary={
+            "event_id": event.event_id,
+            "consumer_name": run.consumer_name,
+        },
+        response_summary=_summary(result),
+        result_summary=_summary(result),
+        error_code="" if ok else error_code or "hxc_projection_refresh_failed",
+        error_message="",
+        retry_after_seconds=60 if retryable else None,
+    )
 
 
 def _source_from_event(event: InternalEvent, payload: dict[str, Any]) -> tuple[str, str]:
