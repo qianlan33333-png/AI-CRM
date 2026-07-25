@@ -51252,7 +51252,8 @@
       "pii_level": "internal_contact",
       "read_owners": [
         "aicrm_next.admin_jobs",
-        "aicrm_next.admin_read_model"
+        "aicrm_next.admin_read_model",
+        "aicrm_next.identity_contact"
       ],
       "table": "wecom_external_contact_event_logs",
       "write_owner": "aicrm_next.identity_contact"

@@ -123,6 +123,17 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "crm_user_identity",
         "crm_user_identity_resolution_queue",
     ]
+    assert repositories["aicrm_next/identity_contact/event_log_repository.py"] == {
+        "capability_owner": "aicrm_next.identity_contact",
+        "table_reads": ["wecom_external_contact_event_logs"],
+        "table_writes": ["wecom_external_contact_event_logs"],
+    }
+    assert "wecom_external_contact_event_logs" not in repositories["aicrm_next/channel_entry/repo.py"][
+        "table_reads"
+    ]
+    assert "wecom_external_contact_event_logs" not in repositories["aicrm_next/channel_entry/repo.py"][
+        "table_writes"
+    ]
     assert repositories["aicrm_next/identity_contact/resolution_queue_repository.py"]["table_reads"] == [
         "crm_user_identity_resolution_queue",
         "identity_resolution_completion_receipt",
@@ -145,6 +156,9 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
     assert manifest["tables"]["identity_resolution_completion_receipt"]["write_owner"] == (
         "aicrm_next.identity_contact"
     )
+    assert manifest["tables"]["wecom_external_contact_event_logs"]["write_owners"] == [
+        "aicrm_next.identity_contact"
+    ]
     for path in (
         "aicrm_next/ai_audience_ops/repository.py",
         "aicrm_next/channel_entry/repo.py",
@@ -186,6 +200,20 @@ def test_canonical_identity_table_sql_writes_resolve_to_identity_contact_owner()
         owner = str((registry.get(relative_path) or {}).get("capability_owner") or "")
         if owner != "aicrm_next.identity_contact":
             offenders.append(f"{relative_path}:{owner or 'undeclared'}")
+
+    assert offenders == []
+
+
+def test_external_contact_event_log_write_sql_is_confined_to_identity_contact() -> None:
+    offenders: list[str] = []
+
+    for path in sorted((ROOT / "aicrm_next").rglob("*.py")):
+        access = extract_repository_sql_access(path)
+        if "wecom_external_contact_event_logs" not in access.table_writes:
+            continue
+        relative_path = path.relative_to(ROOT).as_posix()
+        if not relative_path.startswith("aicrm_next/identity_contact/"):
+            offenders.append(relative_path)
 
     assert offenders == []
 

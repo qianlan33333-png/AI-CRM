@@ -4339,22 +4339,23 @@ tables:
     lifecycle: audit
     write_owner: aicrm_next.identity_contact
     write_owners:
-      - aicrm_next.channel_entry
       - aicrm_next.identity_contact
     read_owners:
       - aicrm_next.admin_jobs
       - aicrm_next.admin_read_model
+      - aicrm_next.identity_contact
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - existing production runtime
+      - channel_entry callback processing through IdentityEventLogPort
     migration_source: migrations/baselines/0001_post_legacy.sql
     pii_level: internal_contact
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+      - tests/test_identity_event_log_port.py
+    notes: External-contact callback audit and identity-sync diagnostics are written only through the identity_contact event-log port. Channel callback processing keeps its existing compatibility functions but no longer owns table SQL.
 
   wecom_external_contact_follow_users:
     domain: identity_contact

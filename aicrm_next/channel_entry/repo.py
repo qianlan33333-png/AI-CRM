@@ -8,6 +8,7 @@ from typing import Any
 from uuid import UUID
 
 from aicrm_next.identity_contact.dto import ResolvePersonIdentityRequest
+from aicrm_next.identity_contact.event_log_port import build_identity_event_log_port
 from aicrm_next.identity_contact.resolver import resolve_external_userid_with_dbapi, resolve_identity_with_dbapi, resolved_unionid
 from aicrm_next.identity_contact.resolution_queue_port import (
     EnqueueIdentityResolutionRequest,
@@ -1246,53 +1247,25 @@ def log_external_contact_event(
     payload_xml: str,
     payload_json: dict[str, Any],
 ) -> dict[str, Any]:
-    with _connect() as conn, conn.cursor() as cur:
-        cur.execute(
-            """
-            INSERT INTO wecom_external_contact_event_logs (
-                corp_id, event_type, change_type, external_userid, user_id, event_time, event_key,
-                payload_xml, payload_json, process_status, retry_count, error_message, created_at, updated_at
-            )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'pending', 0, '', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-            ON CONFLICT (event_key) DO UPDATE
-            SET payload_json = EXCLUDED.payload_json, updated_at = CURRENT_TIMESTAMP
-            RETURNING *
-            """,
-            (
-                text(corp_id),
-                text(event_type),
-                text(change_type),
-                text(external_userid),
-                text(user_id),
-                int(event_time or 0),
-                text(event_key),
-                text(payload_xml),
-                _json(payload_json),
-            ),
-        )
-        row = cur.fetchone()
-        conn.commit()
-        return dict(row) if row else {}
+    return build_identity_event_log_port().log_external_contact_event(
+        corp_id=corp_id,
+        event_type=event_type,
+        change_type=change_type,
+        external_userid=external_userid,
+        user_id=user_id,
+        event_time=event_time,
+        event_key=event_key,
+        payload_xml=payload_xml,
+        payload_json=payload_json,
+    )
 
 
 def get_external_contact_event_log(event_log_id: int) -> dict[str, Any] | None:
-    with _connect() as conn, conn.cursor() as cur:
-        cur.execute("SELECT * FROM wecom_external_contact_event_logs WHERE id = %s LIMIT 1", (int(event_log_id),))
-        row = cur.fetchone()
-        return dict(row) if row else None
+    return build_identity_event_log_port().get_external_contact_event_log(event_log_id)
 
 
 def mark_event_status(event_log_id: int, status: str, error_message: str = "") -> None:
-    with _connect() as conn, conn.cursor() as cur:
-        cur.execute(
-            """
-            UPDATE wecom_external_contact_event_logs
-            SET process_status = %s, error_message = %s, updated_at = CURRENT_TIMESTAMP
-            WHERE id = %s
-            """,
-            (text(status), text(error_message), int(event_log_id)),
-        )
-        conn.commit()
+    build_identity_event_log_port().mark_event_status(event_log_id, status, error_message)
 
 
 def record_identity_sync_result(
@@ -1303,43 +1276,17 @@ def record_identity_sync_result(
     error_message: str = "",
     response_json: dict[str, Any] | None = None,
 ) -> None:
-    with _connect() as conn, conn.cursor() as cur:
-        cur.execute(
-            """
-            UPDATE wecom_external_contact_event_logs
-            SET identity_sync_status = %s,
-                identity_sync_error_code = %s,
-                identity_sync_error_message = %s,
-                identity_sync_response_json = %s,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = %s
-            """,
-            (
-                text(status),
-                text(error_code),
-                text(error_message),
-                _json(response_json or {}),
-                int(event_log_id),
-            ),
-        )
-        conn.commit()
+    build_identity_event_log_port().record_identity_sync_result(
+        event_log_id,
+        status=status,
+        error_code=error_code,
+        error_message=error_message,
+        response_json=response_json,
+    )
 
 
 def list_recent_events(scene_value: str, limit: int = 20) -> list[dict[str, Any]]:
-    with _connect() as conn, conn.cursor() as cur:
-        cur.execute(
-            """
-            SELECT id, change_type, external_userid, user_id, process_status, error_message,
-                   identity_sync_status, identity_sync_error_code, identity_sync_error_message,
-                   created_at
-            FROM wecom_external_contact_event_logs
-            WHERE COALESCE(NULLIF(payload_json->>'State', ''), NULLIF(payload_json->>'state', '')) = %s
-            ORDER BY created_at DESC, id DESC
-            LIMIT %s
-            """,
-            (text(scene_value), max(1, min(int(limit or 20), 100))),
-        )
-        return [dict(row) for row in cur.fetchall() or []]
+    return build_identity_event_log_port().list_recent_events(scene_value, limit)
 
 
 def save_tag_snapshot(owner_staff_id: str, external_contact_id: str, tag_ids: list[str], tag_names: dict[str, str]) -> None:

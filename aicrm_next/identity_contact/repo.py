@@ -152,6 +152,16 @@ def _psycopg_url(url: str) -> str:
     return url
 
 
+def open_identity_connection(database_url: str | None = None):
+    url = _psycopg_url(str(database_url or raw_database_url()).strip())
+    if not url.startswith(("postgresql://", "postgres://")):
+        raise RuntimeError("PostgreSQL DATABASE_URL is required for identity_contact repository")
+    import psycopg
+    from psycopg.rows import dict_row
+
+    return psycopg.connect(url, row_factory=dict_row)
+
+
 def _json_default(value: Any) -> str:
     if isinstance(value, datetime):
         return value.isoformat()

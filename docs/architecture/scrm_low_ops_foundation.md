@@ -57,6 +57,10 @@ physical package move, legacy table deletion, or real provider call.
   use the injected `IdentityWritePort` with the caller's existing transaction.
   The ownership guard scans all runtime Python SQL for those canonical tables,
   so a new cross-capability direct writer fails CI.
+- `wecom_external_contact_event_logs` now has one storage owner,
+  `aicrm_next.identity_contact`. Channel callback processing keeps its existing
+  transaction and compatibility functions but reaches audit and identity-sync
+  state only through the versioned `IdentityEventLogPort`.
 - Unresolved identity ingress from AI Audience, questionnaire submissions,
   archived messages, and channel contact tags now uses one versioned
   `IdentityResolutionQueuePort`. Source-specific idempotency keys, the caller's

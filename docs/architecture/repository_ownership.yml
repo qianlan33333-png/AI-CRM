@@ -354,7 +354,6 @@ repositories:
       - automation_channel_qrcode_asset
       - automation_channel_scene_alias
       - crm_user_identity
-      - wecom_external_contact_event_logs
     non_literal_table_reads:
       - crm_user_identity
     table_writes:
@@ -367,7 +366,6 @@ repositories:
       - automation_channel_qrcode_asset
       - automation_channel_scene_alias
       - contact_tags
-      - wecom_external_contact_event_logs
   aicrm_next/channel_entry/welcome_media_effects_repository.py:
     capability_owner: aicrm_next.channel_entry.welcome_media_effects_repository
     table_reads:
@@ -537,6 +535,12 @@ repositories:
       - crm_user_identity_resolution_queue
     non_literal_table_reads:
       - external_contact_bindings
+  aicrm_next/identity_contact/event_log_repository.py:
+    capability_owner: aicrm_next.identity_contact
+    table_reads:
+      - wecom_external_contact_event_logs
+    table_writes:
+      - wecom_external_contact_event_logs
   aicrm_next/identity_contact/resolution_queue_repository.py:
     capability_owner: aicrm_next.identity_contact
     table_reads:
