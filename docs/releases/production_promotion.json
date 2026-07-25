@@ -84,6 +84,7 @@
     "aicrm_next/shared/wecom_runtime.py",
     "docs/adr/2026-07-17-cross-repository-production-promotion.md",
     "docs/architecture/data_table_lifecycle_manifest.yml",
+    "docs/architecture/r02_sensitive_data_inventory.yml",
     "docs/architecture/runtime_contract_inventory.json",
     "docs/ci/test_scope_manifest.yml",
     "docs/ci/test_scope_policy.yml",
