@@ -255,6 +255,7 @@ CAPABILITY_SPECS: tuple[CapabilitySpec, ...] = (
         dependencies=("core.platform", "core.channels", "core.crm", "core.engagement", "core.automation"),
         current_contexts=("admin_read_model", "data_health", "delivery_lineage"),
         route_groups=("data_health", "delivery_lineage"),
+        table_domains=("data_health",),
         health_checks=("read_models", "data_health"),
     ),
     _spec(
