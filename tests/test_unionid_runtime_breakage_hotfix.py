@@ -266,7 +266,8 @@ def test_sidebar_v2_reads_orders_and_messages_via_unionid_identity() -> None:
     assert "FROM wechat_shop_orders o" in orders_source
     assert "JOIN identity_scope identity ON identity.unionid = o.unionid" in orders_source
     assert "JOIN crm_user_identity identity ON identity.unionid = s.unionid" in questionnaire_source
-    assert "JOIN crm_user_identity identity ON identity.unionid = message.unionid" in messages_source
+    assert "WHERE message.unionid = :unionid" in messages_source
+    assert "message.unionid <> ''" in messages_source
     for forbidden in [
         "buyer_mobile",
         "openid AS payer",

@@ -190,7 +190,9 @@
         "migrations/versions/0106_critical_read_path_indexes.py",
         ".github/workflows/full-regression.yml",
         "tests/test_critical_read_performance_contracts.py",
-        "tests/test_critical_read_performance_runner.py"
+        "tests/test_critical_read_performance_runner.py",
+        "tests/test_sidebar_other_staff_message_query.py",
+        "tests/test_sidebar_other_staff_message_query_postgres.py"
       ],
       "python_tests": [
         "tests/test_critical_read_performance_contracts.py",
@@ -201,6 +203,8 @@
         "tests/test_sidebar_v2_api.py",
         "tests/test_identity_query_performance_guard.py",
         "tests/test_identity_query_performance_postgres.py",
+        "tests/test_sidebar_other_staff_message_query.py",
+        "tests/test_sidebar_other_staff_message_query_postgres.py",
         "tests/test_unionid_identity_refactor_schema.py",
         "tests/test_unionid_runtime_breakage_hotfix.py",
         "tests/test_alembic_revision_chain.py",
