@@ -10,6 +10,8 @@ INBOUND_RECEIVED_EVENT = "ai_audience.inbound.received"
 
 INCREMENTAL_REFRESH_CONSUMER = "ai_audience_incremental_refresh_consumer"
 DAILY_REFRESH_CONSUMER = "ai_audience_daily_refresh_consumer"
+HXC_INCREMENTAL_PROJECTION_CONSUMER = "ai_audience_hxc_incremental_projection_consumer"
+HXC_DAILY_PROJECTION_CONSUMER = "ai_audience_hxc_daily_projection_consumer"
 SOURCE_POKE_CONSUMER = "ai_audience_source_poke_consumer"
 REFRESH_INTENT_CONSUMER = "ai_audience_refresh_intent_consumer"
 OUTBOUND_EFFECT_CONSUMER = "ai_audience_outbound_effect_planner"

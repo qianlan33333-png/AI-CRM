@@ -14,6 +14,8 @@ from sqlalchemy import text
 from aicrm_next.ai_audience_ops.event_types import (
     DAILY_REFRESH_CONSUMER,
     DAILY_TICK_EVENT,
+    HXC_DAILY_PROJECTION_CONSUMER,
+    HXC_INCREMENTAL_PROJECTION_CONSUMER,
     INCREMENTAL_REFRESH_CONSUMER,
     INCREMENTAL_TICK_EVENT,
     MEMBER_EVENT_PREFIX,
@@ -197,7 +199,9 @@ def test_ai_audience_scheduler_consumer_pairs_cover_source_refresh_and_outbound(
 
     assert f"{SOURCE_CHANGED_EVENT}:{SOURCE_POKE_CONSUMER}" in pairs
     assert f"{INCREMENTAL_TICK_EVENT}:{INCREMENTAL_REFRESH_CONSUMER}" in pairs
+    assert f"{INCREMENTAL_TICK_EVENT}:{HXC_INCREMENTAL_PROJECTION_CONSUMER}" in pairs
     assert f"{DAILY_TICK_EVENT}:{DAILY_REFRESH_CONSUMER}" in pairs
+    assert f"{DAILY_TICK_EVENT}:{HXC_DAILY_PROJECTION_CONSUMER}" in pairs
     assert f"{RUN_REFRESHED_EVENT}:{OUTBOUND_EFFECT_CONSUMER}" in pairs
     assert f"{MEMBER_EVENT_PREFIX}entered:{OUTBOUND_EFFECT_CONSUMER}" not in pairs
     assert f"{MEMBER_EVENT_PREFIX}updated:{OUTBOUND_EFFECT_CONSUMER}" not in pairs

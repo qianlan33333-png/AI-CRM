@@ -3991,6 +3991,20 @@
       "max_attempts": 5
     },
     {
+      "consumer_name": "ai_audience_hxc_daily_projection_consumer",
+      "consumer_type": "projection",
+      "event_type": "ai_audience.refresh.daily_tick",
+      "handler_registered": true,
+      "max_attempts": 5
+    },
+    {
+      "consumer_name": "ai_audience_hxc_incremental_projection_consumer",
+      "consumer_type": "projection",
+      "event_type": "ai_audience.refresh.incremental_tick",
+      "handler_registered": true,
+      "max_attempts": 5
+    },
+    {
       "consumer_name": "ai_audience_incremental_refresh_consumer",
       "consumer_type": "orchestration",
       "event_type": "ai_audience.refresh.incremental_tick",

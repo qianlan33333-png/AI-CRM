@@ -13,12 +13,8 @@ HXC_OPTIONAL_SOURCE_REQUIRED_COLUMNS: dict[str, frozenset[str]] = {
             "finished_at",
         }
     ),
-    "user_ops_huangxiaocan_activation_source": frozenset(
-        {"mobile", "activation_state", "is_active", "created_at", "updated_at"}
-    ),
-    "user_ops_activation_status_source": frozenset(
-        {"mobile", "activation_status", "is_active", "created_at", "updated_at"}
-    ),
+    "user_ops_huangxiaocan_activation_source": frozenset({"mobile", "activation_state", "is_active", "created_at", "updated_at"}),
+    "user_ops_activation_status_source": frozenset({"mobile", "activation_status", "is_active", "created_at", "updated_at"}),
 }
 
 
@@ -140,6 +136,7 @@ WITH contact_rows AS MATERIALIZED (
            wc.updated_at
     FROM audience_read.wecom_contacts_v1 wc
     WHERE COALESCE(wc.unionid, '') <> ''
+__CONTACT_SCOPE_FILTER__
 ),
 contacts AS MATERIALIZED (
     SELECT wc.unionid,
@@ -475,22 +472,14 @@ SET mobile_hash = EXCLUDED.mobile_hash,
 """
 
 
-def build_hxc_full_projection_select_sql(optional_sources: set[str]) -> str:
-    optional_membership_sql = "".join(
-        sql
-        for source, sql in _OPTIONAL_MEMBERSHIP_SOURCE_SQL.items()
-        if source in optional_sources
-    )
-    optional_registration_sql = "".join(
-        sql
-        for source, sql in _OPTIONAL_REGISTRATION_SOURCE_SQL.items()
-        if source in optional_sources
-    )
-    optional_sql = "".join(
-        sql
-        for source, sql in _OPTIONAL_USAGE_SOURCE_SQL.items()
-        if source in optional_sources
-    )
+def build_hxc_full_projection_select_sql(
+    optional_sources: set[str],
+    *,
+    contact_scope_filter: str = "",
+) -> str:
+    optional_membership_sql = "".join(sql for source, sql in _OPTIONAL_MEMBERSHIP_SOURCE_SQL.items() if source in optional_sources)
+    optional_registration_sql = "".join(sql for source, sql in _OPTIONAL_REGISTRATION_SOURCE_SQL.items() if source in optional_sources)
+    optional_sql = "".join(sql for source, sql in _OPTIONAL_USAGE_SOURCE_SQL.items() if source in optional_sources)
     return (
         _HXC_FULL_PROJECTION_SELECT_SQL_TEMPLATE.replace(
             "__OPTIONAL_MEMBERSHIP_SOURCES__",
@@ -504,6 +493,10 @@ def build_hxc_full_projection_select_sql(optional_sources: set[str]) -> str:
             "__OPTIONAL_USAGE_SOURCES__",
             optional_sql,
         )
+        .replace(
+            "__CONTACT_SCOPE_FILTER__",
+            contact_scope_filter,
+        )
     )
 
 
@@ -511,6 +504,24 @@ def build_hxc_full_projection_insert_sql(optional_sources: set[str]) -> str:
     return _HXC_FULL_PROJECTION_INSERT_SQL_TEMPLATE.replace(
         "__PROJECTION_SELECT_SQL__",
         build_hxc_full_projection_select_sql(optional_sources),
+    )
+
+
+def build_hxc_scoped_projection_insert_sql(optional_sources: set[str]) -> str:
+    contact_scope_filter = """
+      AND wc.unionid IN (
+          SELECT value
+          FROM jsonb_array_elements_text(
+              CAST(:dirty_unionids_json AS jsonb)
+          ) AS dirty(value)
+      )
+    """
+    return _HXC_FULL_PROJECTION_INSERT_SQL_TEMPLATE.replace(
+        "__PROJECTION_SELECT_SQL__",
+        build_hxc_full_projection_select_sql(
+            optional_sources,
+            contact_scope_filter=contact_scope_filter,
+        ),
     )
 
 

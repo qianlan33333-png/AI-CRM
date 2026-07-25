@@ -10,6 +10,8 @@ from aicrm_next.platform_foundation.internal_events.worker import InternalEventW
 from .event_types import (
     DAILY_REFRESH_CONSUMER,
     DAILY_TICK_EVENT,
+    HXC_DAILY_PROJECTION_CONSUMER,
+    HXC_INCREMENTAL_PROJECTION_CONSUMER,
     INCREMENTAL_REFRESH_CONSUMER,
     INCREMENTAL_TICK_EVENT,
     OUTBOUND_EFFECT_CONSUMER,
@@ -82,10 +84,10 @@ def run_due_refresh_consumers(
     consumer_names: list[str] = []
     if include_incremental:
         event_types.append(INCREMENTAL_TICK_EVENT)
-        consumer_names.append(INCREMENTAL_REFRESH_CONSUMER)
+        consumer_names.extend([INCREMENTAL_REFRESH_CONSUMER, HXC_INCREMENTAL_PROJECTION_CONSUMER])
     if include_daily:
         event_types.append(DAILY_TICK_EVENT)
-        consumer_names.append(DAILY_REFRESH_CONSUMER)
+        consumer_names.extend([DAILY_REFRESH_CONSUMER, HXC_DAILY_PROJECTION_CONSUMER])
     if not event_types:
         return {
             "ok": True,
@@ -152,7 +154,9 @@ def ai_audience_event_consumer_pairs(*, include_source_poke: bool = True, includ
         pairs.extend(
             [
                 f"{INCREMENTAL_TICK_EVENT}:{INCREMENTAL_REFRESH_CONSUMER}",
+                f"{INCREMENTAL_TICK_EVENT}:{HXC_INCREMENTAL_PROJECTION_CONSUMER}",
                 f"{DAILY_TICK_EVENT}:{DAILY_REFRESH_CONSUMER}",
+                f"{DAILY_TICK_EVENT}:{HXC_DAILY_PROJECTION_CONSUMER}",
                 f"{REFRESH_REQUESTED_EVENT}:{REFRESH_INTENT_CONSUMER}",
             ]
         )
