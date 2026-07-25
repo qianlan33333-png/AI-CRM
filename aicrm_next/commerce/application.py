@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from aicrm_next.integration_gateway.payment_adapters import (
+from aicrm_next.integration_ports import (
     AlipayAdapter,
     PaymentNotifyGateway,
     PaymentReturnGateway,

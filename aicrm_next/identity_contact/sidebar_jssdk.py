@@ -9,13 +9,13 @@ from fastapi import APIRouter, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 
-from aicrm_next.integration_gateway.wecom_jssdk_adapter import (
+from aicrm_next.integration_ports import (
     SidebarJSSDKConfigError,
     SidebarJSSDKInputError,
     build_sidebar_jssdk_config,
     normalize_jssdk_url,
 )
-from aicrm_next.integration_gateway.wecom_admin_auth_client import (
+from aicrm_next.integration_ports import (
     WeComAdminAuthClientError,
     build_wecom_admin_auth_client,
 )

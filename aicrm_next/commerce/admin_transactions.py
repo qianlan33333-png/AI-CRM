@@ -22,7 +22,7 @@ from .application import GetTransactionQuery, ListProductsQuery, ListTransaction
 from .order_expiration import close_expired_wechat_pay_orders
 from .product_code_aliases import canonical_product_code, product_code_filter_values
 from .refund_status import active_wechat_refund_sql
-from aicrm_next.integration_gateway.wechat_pay_client import WeChatPayClient, WeChatPayClientConfig, wechat_pay_client_config_from_env
+from aicrm_next.integration_ports import WeChatPayClient, WeChatPayClientConfig, wechat_pay_client_config_from_env
 
 ADMIN_TZ = ZoneInfo("Asia/Shanghai")
 ALLOWED_LIMITS = {20, 50, 100}

@@ -5,8 +5,8 @@ import hashlib
 import uuid
 from typing import Any
 
-from aicrm_next.integration_gateway.media_adapters import build_cloud_storage_adapter, build_wecom_media_adapter, extract_base64_payload
-from aicrm_next.integration_gateway.wecom_group_invite_adapter import build_wecom_group_invite_adapter
+from aicrm_next.integration_ports import build_cloud_storage_adapter, build_wecom_media_adapter, extract_base64_payload
+from aicrm_next.integration_ports import build_wecom_group_invite_adapter
 from aicrm_next.shared.errors import ContractError
 from aicrm_next.shared import runtime
 from aicrm_next.shared.runtime_settings import runtime_setting

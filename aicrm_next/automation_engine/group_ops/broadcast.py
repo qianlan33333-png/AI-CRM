@@ -6,7 +6,7 @@ from typing import Any
 from urllib.parse import parse_qs, urlsplit
 from uuid import UUID
 
-from aicrm_next.integration_gateway.lesson_card_cover_client import (
+from aicrm_next.integration_ports import (
     LessonCardCoverClientError,
     build_lesson_card_cover_client,
 )

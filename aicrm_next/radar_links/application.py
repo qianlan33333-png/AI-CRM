@@ -8,7 +8,7 @@ import hashlib
 import secrets
 from typing import Any
 
-from aicrm_next.integration_gateway.questionnaire_adapters import WeChatOAuthAdapter, build_wechat_oauth_adapter
+from aicrm_next.integration_ports import WeChatOAuthAdapter, build_wechat_oauth_adapter
 from aicrm_next.identity_contact.application import ResolvePersonIdentityQuery
 from aicrm_next.identity_contact.wechat_unionid_guard import resolve_oauth_unionid
 from aicrm_next.media_library.application import GetImageVariantQuery, GetMediaItemQuery, UploadAttachmentCommand

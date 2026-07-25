@@ -7,7 +7,7 @@ import hashlib
 import json
 from typing import Any
 
-from aicrm_next.integration_gateway.wecom_tag_live_gateway import WeComTagLiveGateway, build_wecom_tag_live_gateway
+from aicrm_next.integration_ports import WeComTagLiveGateway, build_wecom_tag_live_gateway
 from aicrm_next.shared.runtime_settings import (
     managed_runtime_bool,
     managed_runtime_setting,

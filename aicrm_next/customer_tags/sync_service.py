@@ -8,7 +8,7 @@ from typing import Any, Protocol
 from sqlalchemy import bindparam, text
 from sqlalchemy.engine import Engine
 
-from aicrm_next.integration_gateway.wecom_tag_live_gateway import build_wecom_tag_live_gateway
+from aicrm_next.integration_ports import build_wecom_tag_live_gateway
 from aicrm_next.shared.db_session import get_engine
 from aicrm_next.shared.runtime import fixture_mode
 

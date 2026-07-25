@@ -5,7 +5,7 @@ import logging
 from typing import Any, Callable, Protocol
 from zoneinfo import ZoneInfo
 
-from aicrm_next.integration_gateway.huangyoucan_usage_client import (
+from aicrm_next.integration_ports import (
     HuangYouCanUsageSource,
     build_huangyoucan_usage_source,
 )

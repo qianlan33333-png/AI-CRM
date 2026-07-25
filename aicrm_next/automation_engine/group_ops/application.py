@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from aicrm_next.integration_gateway.wecom_group_contract import WeComGroupAssetAdapterContract
+from aicrm_next.integration_ports import WeComGroupAssetAdapterContract
 from aicrm_next.shared.admin_read_fallback import admin_read_unavailable_payload
 from aicrm_next.shared.errors import ContractError, NotFoundError
 from aicrm_next.shared.repository_provider import RepositoryProviderError, blocked_production_payload
@@ -151,7 +151,7 @@ def _coerce_plan_id(value: Any) -> int:
 
 def _queue_count() -> int:
     try:
-        from aicrm_next.integration_gateway.wecom_group_adapter import build_group_ops_queue_stats_gateway
+        from aicrm_next.integration_ports import build_group_ops_queue_stats_gateway
 
         return int(build_group_ops_queue_stats_gateway().count_group_ops_queue())
     except Exception:
@@ -519,7 +519,7 @@ class ListGroupOpsGroupsQuery:
 
 
 def _group_sync_adapter() -> WeComGroupAssetAdapterContract:
-    from aicrm_next.integration_gateway.wecom_group_adapter import build_wecom_group_asset_adapter
+    from aicrm_next.integration_ports import build_wecom_group_asset_adapter
 
     return build_wecom_group_asset_adapter()
 

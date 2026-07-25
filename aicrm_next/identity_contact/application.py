@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.integration_gateway.customer_sync_adapters import build_identity_mapping_adapter
+from aicrm_next.integration_ports import build_identity_mapping_adapter
 from aicrm_next.platform_foundation.internal_events.customer_identity import emit_customer_phone_bound_event
 from aicrm_next.platform_foundation.internal_events.shadow import safe_emit
 from aicrm_next.shared.runtime import production_data_ready

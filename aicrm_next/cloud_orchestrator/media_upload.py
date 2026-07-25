@@ -6,8 +6,8 @@ import uuid
 from dataclasses import dataclass
 from typing import Any, Callable
 
-from aicrm_next.integration_gateway.media_adapters import WeComMediaAdapter
-from aicrm_next.integration_gateway.wecom_media_upload_client import (
+from aicrm_next.integration_ports import WeComMediaAdapter
+from aicrm_next.integration_ports import (
     WeComMediaUploadClientError,
     build_wecom_media_upload_client,
 )

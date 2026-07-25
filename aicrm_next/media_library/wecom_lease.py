@@ -11,7 +11,7 @@ from uuid import uuid4
 
 from sqlalchemy import text
 
-from aicrm_next.integration_gateway.wecom_media_upload_client import (
+from aicrm_next.integration_ports import (
     WeComMediaUploadClientError,
     build_wecom_media_upload_client,
 )

@@ -179,9 +179,9 @@ def test_group_ops_detail_api_regression_keeps_existing_business_endpoints(group
 
 
 def test_plan_list_returns_group_ops_queue_count(group_ops_api_client, monkeypatch):
-    from aicrm_next.integration_gateway import wecom_group_adapter
+    from aicrm_next import integration_ports
 
-    monkeypatch.setattr(wecom_group_adapter, "build_group_ops_queue_stats_gateway", lambda: FixedQueueStatsGateway())
+    monkeypatch.setattr(integration_ports, "build_group_ops_queue_stats_gateway", lambda: FixedQueueStatsGateway())
 
     response = group_ops_api_client.get("/api/admin/automation-conversion/group-ops/plans")
 

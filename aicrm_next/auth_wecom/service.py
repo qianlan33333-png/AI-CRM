@@ -16,7 +16,7 @@ from aicrm_next.admin_auth.service import (
     safe_next_path,
 )
 from aicrm_next.admin_config.repository import AdminConfigRepository
-from aicrm_next.integration_gateway.wecom_admin_auth_client import (
+from aicrm_next.integration_ports import (
     WeComAdminAuthClient,
     WeComAdminAuthClientError,
     build_wecom_admin_auth_client,

@@ -8,7 +8,7 @@ from aicrm_next.shared.errors import NotFoundError
 from aicrm_next.shared.safe_logging import safe_log_exception
 from aicrm_next.shared.runtime_settings import managed_runtime_bool
 from aicrm_next.shared.typing import JsonDict
-from aicrm_next.integration_gateway.customer_sync_adapters import (
+from aicrm_next.integration_ports import (
     build_archive_sync_adapter,
     build_contacts_sync_adapter,
     build_customer_projection_sync_gateway,

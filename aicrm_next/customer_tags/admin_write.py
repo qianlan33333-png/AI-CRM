@@ -7,7 +7,7 @@ from aicrm_next.platform_foundation.command_bus import Command, CommandBus, Comm
 from aicrm_next.platform_foundation.side_effects import InMemorySideEffectPlanRepository, SideEffectPlan
 from aicrm_next.shared.runtime import production_data_ready, production_environment
 
-from aicrm_next.integration_gateway.wecom_tag_live_gateway import build_wecom_tag_live_gateway
+from aicrm_next.integration_ports import build_wecom_tag_live_gateway
 
 from .commands import (
     CreateWeComTagCommand,

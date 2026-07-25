@@ -29,8 +29,8 @@ from aicrm_next.identity_contact.wechat_unionid_guard import (
     evaluate_wechat_unionid_access,
     resolve_oauth_unionid,
 )
-from aicrm_next.integration_gateway.wechat_pay_client import WeChatPayClient, WeChatPayClientConfig, WeChatPayClientError
-from aicrm_next.integration_gateway.wechat_oauth_client import WeChatOAuthClientError, build_wechat_oauth_client
+from aicrm_next.integration_ports import WeChatPayClient, WeChatPayClientConfig, WeChatPayClientError
+from aicrm_next.integration_ports import WeChatOAuthClientError, build_wechat_oauth_client
 from aicrm_next.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
 from aicrm_next.platform_foundation.internal_events.payment import PAYMENT_SUCCEEDED_EVENT_TYPE, build_payment_succeeded_event_request
 from aicrm_next.shared.errors import ContractError

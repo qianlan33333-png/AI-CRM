@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
-from aicrm_next.integration_gateway.channel_completion_client import (
+from aicrm_next.integration_ports import (
     ChannelCompletionClient,
     ChannelCompletionReadPort,
 )

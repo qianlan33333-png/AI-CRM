@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.integration_gateway.wechat_pay_client import (
+from aicrm_next.integration_ports import (
     WeChatPayClient,
     WeChatPayClientConfig,
     WeChatPayClientError,

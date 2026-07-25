@@ -379,6 +379,7 @@
       "name": "zero_scc_runtime_composition",
       "paths": [
         "aicrm_next/channel_entry_composition.py",
+        "aicrm_next/integration_ports.py",
         "aicrm_next/mcp_composition.py",
         "aicrm_next/read_model_composition.py",
         "aicrm_next/shared/admin_action_runtime.py",
@@ -390,7 +391,8 @@
         "tests/test_internal_events_ai_campaign_slice.py",
         "tests/test_internal_events_customer_tags_slice.py",
         "tests/test_internal_events_ops_plan_slice.py",
-        "tests/test_internal_events_ops_shadow.py"
+        "tests/test_internal_events_ops_shadow.py",
+        "tests/test_integration_ports.py"
       ],
       "python_tests": [
         "tests/test_zero_runtime_import_scc.py",
@@ -400,6 +402,7 @@
         "tests/test_external_effect_continuation_composition.py",
         "tests/test_ai_assist_external_effect_queue.py",
         "tests/test_next_channel_entry_orchestrator.py",
+        "tests/test_integration_ports.py",
         "tests/test_mcp_business_tools.py",
         "tests/test_customer_context_read_model_unification.py",
         "tests/test_order_reconciliation_worker.py",
@@ -1579,6 +1582,7 @@
       "name": "wecom_tag_catalog_write",
       "paths": [
         "aicrm_next/customer_tags/admin_write.py",
+        "aicrm_next/customer_tags/sync_service.py",
         "aicrm_next/customer_tags/wecom_tag_live_adapter.py",
         "aicrm_next/integration_gateway/wecom_tag_live_gateway.py",
         "tests/test_wecom_tag_next_sync.py",

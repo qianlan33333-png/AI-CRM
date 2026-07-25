@@ -6,7 +6,7 @@ import re
 import secrets
 from typing import Any
 
-from aicrm_next.integration_gateway.wechat_shop_client import (
+from aicrm_next.integration_ports import (
     WeChatShopClient,
     WeChatShopClientConfig,
     WeChatShopClientError,

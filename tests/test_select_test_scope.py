@@ -118,6 +118,7 @@ def test_import_graph_governance_changes_force_mapped_full_ci() -> None:
 def test_zero_scc_runtime_composition_files_force_full_postgres_ci() -> None:
     result = _select(
         "aicrm_next/channel_entry_composition.py",
+        "aicrm_next/integration_ports.py",
         "aicrm_next/mcp_composition.py",
         "aicrm_next/read_model_composition.py",
         "aicrm_next/shared/admin_action_runtime.py",
@@ -128,12 +129,14 @@ def test_zero_scc_runtime_composition_files_force_full_postgres_ci() -> None:
         "scripts/run_wechat_pay_order_reconciliation_worker.py",
         "tests/test_order_reconciliation_worker.py",
         "tests/test_internal_events_ops_shadow.py",
+        "tests/test_integration_ports.py",
     )
 
     assert "zero_scc_runtime_composition" in result["matched_scopes"]
     assert result["unmatched_files"] == []
     assert "tests/test_zero_runtime_import_scc.py" in result["python_tests"]
     assert "tests/test_internal_event_registry_composition.py" in result["python_tests"]
+    assert "tests/test_integration_ports.py" in result["python_tests"]
     assert "tests/test_order_reconciliation_worker.py" in result["python_tests"]
     assert result["needs_postgres"] is True
     assert result["architecture_gate"] == "full"

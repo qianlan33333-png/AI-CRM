@@ -7,8 +7,8 @@ from aicrm_next.customer_tags.local_projection import project_questionnaire_tags
 from aicrm_next.customer_tags.mutation_commands import PlanQuestionnaireTagSideEffectCommand
 from aicrm_next.identity_contact.application import BindMobileToExternalContactCommand
 from aicrm_next.identity_contact.dto import BindMobileToExternalContactRequest
-from aicrm_next.integration_gateway.idempotency import make_idempotency_key
-from aicrm_next.integration_gateway.questionnaire_adapters import QuestionnaireSubmitSideEffectGateway
+from aicrm_next.integration_ports import make_idempotency_key
+from aicrm_next.integration_ports import QuestionnaireSubmitSideEffectGateway
 
 
 def build_questionnaire_submit_side_effect_gateway() -> QuestionnaireSubmitSideEffectGateway:

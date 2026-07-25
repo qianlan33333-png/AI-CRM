@@ -5,7 +5,7 @@ import json
 import logging
 from datetime import datetime, timezone
 
-from aicrm_next.integration_gateway.user_ops_adapters import (
+from aicrm_next.integration_ports import (
     UserOpsBatchSendGateway,
     UserOpsDeferredJobGateway,
     UserOpsDndWriteGateway,

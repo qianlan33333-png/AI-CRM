@@ -5,7 +5,7 @@ from typing import Any, Callable
 
 from psycopg.types.json import Jsonb
 
-from aicrm_next.integration_gateway.wechat_pay_client import (
+from aicrm_next.integration_ports import (
     WeChatPayClient,
     WeChatPayClientConfig,
     WeChatPayClientError,
