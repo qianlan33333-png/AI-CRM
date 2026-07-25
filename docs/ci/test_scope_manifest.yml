@@ -2044,6 +2044,7 @@
         "tests/test_alembic_revision_chain.py",
         "tests/test_database_bootstrap.py",
         "tests/test_payment_event_index_postgres.py",
+        "tests/test_order_source_created_index_postgres.py",
         "tests/test_data_table_lifecycle_guard.py",
         "tests/test_repository_ownership_guard.py",
         "tests/test_*migration*.py",
@@ -2053,6 +2054,7 @@
         "tests/test_alembic_revision_chain.py",
         "tests/test_database_bootstrap.py",
         "tests/test_payment_event_index_postgres.py",
+        "tests/test_order_source_created_index_postgres.py",
         "tests/test_data_table_lifecycle_guard.py",
         "tests/test_repository_ownership_guard.py",
         "tests/test_sql_static_guard.py"

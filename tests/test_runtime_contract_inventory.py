@@ -31,7 +31,7 @@ def test_runtime_contract_inventory_covers_r00_behavior_surfaces() -> None:
     assert all(route["logical_capability_id"] for route in routes)
     assert all("responses" in route["contract"] for route in routes)
 
-    assert inventory["migration_heads"] == ["0146_wechat_pay_event_lookup_index"]
+    assert inventory["migration_heads"] == ["0147_alipay_order_created_index"]
     assert len(inventory["tables"]) >= 150
     owned_lifecycles = {"canonical", "read_model", "event", "queue", "config"}
     assert all(table["write_owner"] for table in inventory["tables"] if table["lifecycle"] in owned_lifecycles)
