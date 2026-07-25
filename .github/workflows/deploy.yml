@@ -516,6 +516,21 @@ jobs:
               --apply \
               | tee /tmp/aicrm-release-terminal-history-acknowledgements.json
             unset AICRM_QUEUE_TERMINAL_ACK_AUTHORIZED
+            # A timer generation may have started before this deploy and drained
+            # after the checkout switched. Always replace it with one generation
+            # pinned to the current release before the all-green admin smoke.
+            if ! DB_APPLICATION_NAME=aicrm-next-deploy-data-health \
+              PGAPPNAME=aicrm-next-deploy-data-health \
+              DB_POOL_SIZE=1 \
+              DB_MAX_OVERFLOW=0 \
+              PGOPTIONS='-c statement_timeout=120s -c idle_in_transaction_session_timeout=60s -c lock_timeout=5s' \
+              python3 scripts/ops/refresh_data_health_snapshot.py \
+                --expected-release-sha "$after_sha" \
+                | tee /tmp/aicrm-data-health-release-snapshot.json; then
+              sudo systemctl status openclaw-wecom-postgres.service --no-pager || true
+              sudo journalctl -u openclaw-wecom-postgres.service -n 120 --no-pager || true
+              exit 1
+            fi
             deploy_smoke_session_file="$(mktemp /tmp/aicrm-deploy-smoke-session.XXXXXX)"
             python3 scripts/ops/create_deploy_smoke_session.py issue \
               --output-file "$deploy_smoke_session_file" \

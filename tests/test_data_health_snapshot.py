@@ -81,6 +81,32 @@ def test_capture_data_health_snapshot_writes_one_complete_generation() -> None:
     assert [check.check_id for check in result.checks] == ["first", "second"]
 
 
+def test_capture_pins_release_sha_before_long_running_checks(monkeypatch) -> None:
+    from aicrm_next.data_health import snapshot_service
+
+    repository = _RecordingRepository()
+    order: list[str] = []
+
+    def _release_sha() -> str:
+        order.append("release")
+        return "d" * 40
+
+    def _checks() -> list[DataHealthCheckResult]:
+        assert order == ["release"]
+        order.append("checks")
+        return [_check("safe")]
+
+    monkeypatch.setattr(snapshot_service, "current_release_sha", _release_sha)
+
+    result = capture_data_health_snapshot(
+        repository=repository,  # type: ignore[arg-type]
+        check_runner=_checks,
+    )
+
+    assert order == ["release", "checks"]
+    assert result.source_release_sha == "d" * 40
+
+
 @pytest.mark.parametrize(
     ("checks", "error_code"),
     [
@@ -156,6 +182,26 @@ def test_refresh_cli_prints_only_snapshot_metadata(monkeypatch, capsys) -> None:
     }
     assert "summary" not in output
     assert "evidence" not in output
+
+
+def test_refresh_cli_rejects_generation_from_another_release(monkeypatch, capsys) -> None:
+    from scripts.ops import refresh_data_health_snapshot
+
+    snapshot = DataHealthSnapshotRecord(
+        generation_id="12345678-1234-5678-1234-567812345678",
+        source_release_sha="b" * 40,
+        overall_status="ok",
+        checks=(_check("safe"),),
+        duration_ms=42,
+        captured_at=datetime(2026, 7, 25, tzinfo=timezone.utc),
+    )
+    monkeypatch.setattr(refresh_data_health_snapshot, "capture_data_health_snapshot", lambda: snapshot)
+
+    assert refresh_data_health_snapshot.run(expected_release_sha="c" * 40) == 1
+
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert json.loads(captured.err) == {"ok": False, "error": "ValueError"}
 
 
 def test_refresh_cli_redacts_exception_details(monkeypatch, capsys) -> None:
