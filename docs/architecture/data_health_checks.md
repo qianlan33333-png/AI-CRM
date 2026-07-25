@@ -158,3 +158,8 @@ Groups and registered rule counts:
 Until each rule gets a read-only probe, `probe_status` remains `needs_probe`.
 The registry must not expose raw identity values, payload JSON, phone numbers,
 OpenIDs, or customer content; it may expose only rule metadata and table names.
+
+Production snapshot provenance is pinned before the long-running checks begin,
+so an in-flight timer cannot be relabelled when a deploy switches the checkout.
+After the new Web release is healthy, the deploy creates and validates one
+generation for that exact release SHA before running the all-green admin smoke.

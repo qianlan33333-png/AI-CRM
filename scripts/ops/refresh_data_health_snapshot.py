@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -16,9 +17,11 @@ ensure_repo_root_on_path()
 from aicrm_next.data_health.snapshot_service import capture_data_health_snapshot  # noqa: E402
 
 
-def run() -> int:
+def run(*, expected_release_sha: str | None = None) -> int:
     try:
         snapshot = capture_data_health_snapshot()
+        if expected_release_sha is not None and snapshot.source_release_sha != expected_release_sha.strip().lower():
+            raise ValueError("data_health_snapshot_release_sha_mismatch")
     except Exception as exc:
         print(
             json.dumps(
@@ -49,4 +52,7 @@ def run() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(run())
+    parser = argparse.ArgumentParser(description="Refresh the aggregate AI-CRM data health snapshot")
+    parser.add_argument("--expected-release-sha")
+    args = parser.parse_args()
+    raise SystemExit(run(expected_release_sha=args.expected_release_sha))

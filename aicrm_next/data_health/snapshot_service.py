@@ -59,6 +59,13 @@ def capture_data_health_snapshot(
     monotonic: Callable[[], float] = time.monotonic,
 ) -> DataHealthSnapshotRecord:
     started = monotonic()
+    # Pin provenance before any potentially long-running checks. A production
+    # deploy can switch the checkout while an already-started timer is still
+    # draining; reading .release-sha after the checks would mislabel that old
+    # generation as belonging to the new release.
+    normalized_release_sha = str(release_sha if release_sha is not None else current_release_sha()).strip().lower()
+    if _FULL_RELEASE_SHA.fullmatch(normalized_release_sha) is None:
+        normalized_release_sha = "unknown"
     checks = tuple(DataHealthCheckResult.model_validate(check) for check in check_runner())
     if not checks:
         raise ValueError("data_health_snapshot_checks_empty")
@@ -70,9 +77,6 @@ def capture_data_health_snapshot(
     captured_at = (now or (lambda: datetime.now(timezone.utc)))()
     if captured_at.tzinfo is None or captured_at.utcoffset() is None:
         raise ValueError("data_health_snapshot_captured_at_must_be_timezone_aware")
-    normalized_release_sha = str(release_sha if release_sha is not None else current_release_sha()).strip().lower()
-    if _FULL_RELEASE_SHA.fullmatch(normalized_release_sha) is None:
-        normalized_release_sha = "unknown"
     duration_ms = max(0, int(round((monotonic() - started) * 1000)))
     snapshot = DataHealthSnapshotRecord(
         generation_id=str(generation_id or uuid4()),
