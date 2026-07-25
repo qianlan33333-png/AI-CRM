@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import time
 from typing import Any
 
@@ -9,6 +8,7 @@ from fastapi import APIRouter, File, Form, Header, HTTPException, Query, UploadF
 from fastapi.responses import JSONResponse, Response
 
 from aicrm_next.shared.errors import ContractError, NotFoundError
+from aicrm_next.shared.runtime_settings import runtime_setting
 from aicrm_next.shared.safe_logging import safe_log_exception
 
 from .application import (
@@ -43,8 +43,8 @@ logger = logging.getLogger(__name__)
 
 
 def _adapter_mode() -> str:
-    storage = _visible_media_mode(os.getenv("AICRM_NEXT_MEDIA_STORAGE_MODE", "fake"))
-    wecom = _visible_media_mode(os.getenv("AICRM_NEXT_WECOM_MEDIA_MODE", "fake"))
+    storage = _visible_media_mode(runtime_setting("AICRM_NEXT_MEDIA_STORAGE_MODE", "fake"))
+    wecom = _visible_media_mode(runtime_setting("AICRM_NEXT_WECOM_MEDIA_MODE", "fake"))
     if storage == wecom:
         return storage
     return f"storage:{storage},wecom:{wecom}"

@@ -176,6 +176,48 @@ def test_managed_runtime_setting_preserves_environment_until_explicit_cutover(
     assert runtime_settings.runtime_setting("WECOM_CORP_ID") == "ww-published"
 
 
+def test_gateway_secret_preserves_environment_then_cuts_over_to_secret_store(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    engine = _engine(tmp_path)
+    root = tmp_path / "secrets"
+    monkeypatch.setenv("AICRM_SECRET_STORE_DIR", str(root))
+    published_reference = FileSecretStore(root).write(
+        "AICRM_HUANGYOUCAN_DB_PASSWORD",
+        "published-password",
+    )
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO app_settings (key, value) "
+                "VALUES ('AICRM_HUANGYOUCAN_DB_PASSWORD', :value)"
+            ),
+            {"value": published_reference},
+        )
+    monkeypatch.setattr(runtime_settings, "get_engine", lambda: engine)
+    monkeypatch.setenv("AICRM_HUANGYOUCAN_DB_PASSWORD", "environment-password")
+
+    assert (
+        runtime_settings.runtime_setting("AICRM_HUANGYOUCAN_DB_PASSWORD")
+        == "environment-password"
+    )
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO app_settings (key, value) "
+                "VALUES ('AICRM_RUNTIME_CONFIG_CUTOVER_KEYS', "
+                "'AICRM_HUANGYOUCAN_DB_PASSWORD')"
+            )
+        )
+
+    assert (
+        runtime_settings.runtime_setting("AICRM_HUANGYOUCAN_DB_PASSWORD")
+        == "published-password"
+    )
+
+
 def test_runtime_setting_preserves_valid_client_secret_reference(monkeypatch) -> None:
     reference = (
         "secretref:file:AICRM_AUTH_ARCHIVE_WORKER_CLIENT_SECRET:"

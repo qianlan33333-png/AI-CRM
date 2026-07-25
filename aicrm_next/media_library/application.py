@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import base64
 import hashlib
-import os
 import uuid
 from typing import Any
 
@@ -10,6 +9,7 @@ from aicrm_next.integration_gateway.media_adapters import build_cloud_storage_ad
 from aicrm_next.integration_gateway.wecom_group_invite_adapter import build_wecom_group_invite_adapter
 from aicrm_next.shared.errors import ContractError
 from aicrm_next.shared import runtime
+from aicrm_next.shared.runtime_settings import runtime_setting
 
 from .dto import AttachmentUpsertRequest, GroupInviteBindingEnsureRequest, GroupInviteBindingUpdateRequest, GroupInviteUpsertRequest, ImageFromBase64Request, ImageFromUrlRequest, ImageUpsertRequest, MiniprogramUpsertRequest, normalize_group_invite_join_url
 from .repo import MediaLibraryRepository, build_media_library_repository, normalize_tags
@@ -93,7 +93,7 @@ def _looks_like_fake_media_id(media_id: str) -> bool:
 
 
 def _production_wecom_media_required() -> bool:
-    mode = str(os.getenv("AICRM_NEXT_WECOM_MEDIA_MODE", "") or "").strip().lower()
+    mode = str(runtime_setting("AICRM_NEXT_WECOM_MEDIA_MODE", "") or "").strip().lower()
     return runtime.production_environment() or mode == "production"
 
 

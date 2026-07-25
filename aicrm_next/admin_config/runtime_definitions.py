@@ -68,6 +68,236 @@ _PUSH_CAPABILITY_OWNERS = {
     "AICRM_PUSH_CAPABILITY_WELCOME_MESSAGE_ENABLED": "core.engagement",
 }
 
+_INTEGRATION_GATEWAY_BOOLEAN_KEYS = frozenset(
+    {
+        "AICRM_ENABLE_REAL_WECOM_GROUP_SYNC",
+        "AICRM_MEDIA_UPLOAD_CONFIG_REVIEWED",
+        "AICRM_MEDIA_UPLOAD_LIVE_ADAPTER_ENABLED",
+        "AICRM_MEDIA_UPLOAD_LIVE_UPLOAD_APPROVED",
+        "AICRM_NEXT_ENABLE_REAL_ALIPAY",
+        "AICRM_NEXT_ENABLE_REAL_ARCHIVE_SYNC",
+        "AICRM_NEXT_ENABLE_REAL_CLOUD_STORAGE",
+        "AICRM_NEXT_ENABLE_REAL_CONTACTS_SYNC",
+        "AICRM_NEXT_ENABLE_REAL_CUSTOMER_PROJECTION_SYNC",
+        "AICRM_NEXT_ENABLE_REAL_IDENTITY_MAPPING",
+        "AICRM_NEXT_ENABLE_REAL_MCP_TOOLS",
+        "AICRM_NEXT_ENABLE_REAL_OPENCLAW_BRIDGE",
+        "AICRM_NEXT_ENABLE_REAL_PAYMENT_NOTIFY",
+        "AICRM_NEXT_ENABLE_REAL_PRODUCT_WRITES",
+        "AICRM_NEXT_ENABLE_REAL_QUESTIONNAIRE_WEBHOOK",
+        "AICRM_NEXT_ENABLE_REAL_USER_OPS_BATCH_SEND",
+        "AICRM_NEXT_ENABLE_REAL_USER_OPS_DEFERRED_JOBS",
+        "AICRM_NEXT_ENABLE_REAL_USER_OPS_DND",
+        "AICRM_NEXT_ENABLE_REAL_WECHAT_OAUTH",
+        "AICRM_NEXT_ENABLE_REAL_WECHAT_PAY",
+        "AICRM_NEXT_ENABLE_REAL_WECOM_DISPATCH",
+        "AICRM_NEXT_ENABLE_REAL_WECOM_MEDIA",
+        "AICRM_NEXT_ENABLE_REAL_WECOM_TAG",
+        "AICRM_OAUTH_IDENTITY_CONFIG_REVIEWED",
+        "AICRM_OAUTH_IDENTITY_LIVE_ADAPTER_ENABLED",
+        "AICRM_OAUTH_IDENTITY_LIVE_CALLBACK_APPROVED",
+        "AICRM_OPENCLAW_MCP_AI_ASSIST_CONFIG_REVIEWED",
+        "AICRM_OPENCLAW_MCP_AI_ASSIST_CREDENTIAL_SOURCE_REVIEWED",
+        "AICRM_OPENCLAW_MCP_AI_ASSIST_ENDPOINT_REVIEWED",
+        "AICRM_OPENCLAW_MCP_AI_ASSIST_LIVE_ADAPTER_ENABLED",
+        "AICRM_OPENCLAW_MCP_AI_ASSIST_LIVE_CALL_APPROVED",
+        "AICRM_OPENCLAW_MCP_AI_ASSIST_NO_AUTOMATION_EXECUTION_CONFIRMED",
+        "AICRM_OPENCLAW_MCP_AI_ASSIST_NO_OUTBOUND_SEND_CONFIRMED",
+        "AICRM_OPENCLAW_MCP_AI_ASSIST_PROMPT_REDACTION_CONFIRMED",
+        "AICRM_PAYMENT_COMMERCE_LIVE_ADAPTER_ENABLED",
+        "AICRM_PAYMENT_COMMERCE_LIVE_CALL_APPROVED",
+        "AICRM_PAYMENT_COMMERCE_NO_MONEY_MOVEMENT_CONFIRMED",
+        "AICRM_PAYMENT_COMMERCE_PROVIDER_CONFIG_REVIEWED",
+        "AICRM_PAYMENT_COMMERCE_SANDBOX_MODE_APPROVED",
+        "AICRM_WECOM_CONTACT_CALLBACK_CONFIG_REVIEWED",
+        "AICRM_WECOM_CONTACT_CALLBACK_LIVE_ADAPTER_ENABLED",
+        "AICRM_WECOM_CONTACT_CALLBACK_LIVE_PROCESSING_APPROVED",
+    }
+)
+
+_INTEGRATION_GATEWAY_MODE_KEYS = frozenset(
+    {
+        "AICRM_NEXT_ARCHIVE_SYNC_MODE",
+        "AICRM_NEXT_CONTACTS_SYNC_MODE",
+        "AICRM_NEXT_CUSTOMER_CONTEXT_TOOL_MODE",
+        "AICRM_NEXT_CUSTOMER_PROJECTION_SYNC_MODE",
+        "AICRM_NEXT_IDENTITY_MAPPING_MODE",
+        "AICRM_NEXT_MCP_TOOL_MODE",
+        "AICRM_NEXT_MEDIA_STORAGE_MODE",
+        "AICRM_NEXT_OPENCLAW_LEGACY_MODE",
+        "AICRM_NEXT_PAYMENT_NOTIFY_MODE",
+        "AICRM_NEXT_PRODUCT_WRITE_MODE",
+        "AICRM_NEXT_QUESTIONNAIRE_WEBHOOK_MODE",
+        "AICRM_NEXT_USER_OPS_BATCH_SEND_MODE",
+        "AICRM_NEXT_USER_OPS_DEFERRED_JOBS_MODE",
+        "AICRM_NEXT_USER_OPS_DND_MODE",
+        "AICRM_NEXT_WECHAT_OAUTH_MODE",
+        "AICRM_NEXT_WECOM_DISPATCH_MODE",
+        "AICRM_NEXT_WECOM_MEDIA_MODE",
+        "AICRM_NEXT_WECOM_TAG_MODE",
+    }
+)
+
+_INTEGRATION_GATEWAY_INTEGER_DEFAULTS = {
+    "AICRM_HUANGYOUCAN_DB_CONNECT_TIMEOUT_SECONDS": 10,
+    "AICRM_HUANGYOUCAN_DB_PORT": 3306,
+    "AICRM_HUANGYOUCAN_DB_READ_TIMEOUT_SECONDS": 60,
+    "AICRM_NEXT_WECHAT_OAUTH_TIMEOUT": 15,
+    "AICRM_WECOM_ADMIN_AUTH_TIMEOUT": 10,
+    "AICRM_WECOM_GROUP_TIMEOUT": 15,
+    "AICRM_WECOM_MEDIA_TIMEOUT": 15,
+    "AICRM_WECOM_OPERATION_MEMBERS_TIMEOUT": 15,
+    "AICRM_WECOM_TAG_TIMEOUT_SECONDS": 15,
+    "WECHAT_OAUTH_TIMEOUT": 15,
+    "WECOM_AUTH_TIMEOUT": 10,
+}
+
+_INTEGRATION_GATEWAY_STRING_KEYS = frozenset(
+    {
+        "AICRM_HUANGYOUCAN_DB_HOST",
+        "AICRM_HUANGYOUCAN_DB_NAME",
+        "AICRM_HUANGYOUCAN_DB_PASSWORD",
+        "AICRM_HUANGYOUCAN_DB_USER",
+        "AICRM_MEDIA_UPLOAD_PROVIDER_NAME",
+        "AICRM_MEDIA_UPLOAD_PROVIDER_SECRET",
+        "AICRM_NEXT_WECHAT_OAUTH_BASE_URL",
+        "AICRM_OAUTH_IDENTITY_APP_ID",
+        "AICRM_OAUTH_IDENTITY_APP_SECRET",
+        "AICRM_PAYMENT_COMMERCE_PROVIDER_NAME",
+        "AICRM_PAYMENT_COMMERCE_PROVIDER_SECRET",
+        "AICRM_WECOM_CONTACT_CALLBACK_AES_KEY",
+        "AICRM_WECOM_CONTACT_CALLBACK_CORP_ID",
+        "AICRM_WECOM_CONTACT_CALLBACK_TOKEN",
+        "AICRM_WECOM_GROUP_API_BASE",
+        "AICRM_WECOM_GROUP_CORP_ID",
+        "AICRM_WECOM_GROUP_SECRET",
+        "AICRM_WECOM_MEDIA_API_BASE",
+        "AICRM_WECOM_MEDIA_CORP_ID",
+        "AICRM_WECOM_MEDIA_SECRET",
+        "AICRM_WECOM_OPERATION_MEMBERS_API_BASE",
+        "AICRM_WECOM_OPERATION_MEMBERS_CORP_ID",
+        "AICRM_WECOM_OPERATION_MEMBERS_SECRET",
+        "AICRM_WECOM_TAG_AGENT_SECRET",
+        "AICRM_WECOM_TAG_API_BASE",
+        "AICRM_WECOM_TAG_CORP_ID",
+    }
+)
+
+_INTEGRATION_GATEWAY_NEW_KEYS = frozenset(
+    _INTEGRATION_GATEWAY_BOOLEAN_KEYS
+    | _INTEGRATION_GATEWAY_MODE_KEYS
+    | set(_INTEGRATION_GATEWAY_INTEGER_DEFAULTS)
+    | _INTEGRATION_GATEWAY_STRING_KEYS
+)
+
+
+def _integration_gateway_capability(key: str) -> str:
+    if key.startswith("AICRM_HUANGYOUCAN_"):
+        return "extension.hxc"
+    if "OPENCLAW" in key or "MCP_" in key or "CUSTOMER_CONTEXT_TOOL" in key:
+        return "extension.ai"
+    if "PAYMENT" in key or "WECHAT_PAY" in key or "ALIPAY" in key or "PRODUCT_WRITE" in key:
+        return "extension.commerce"
+    if "ARCHIVE_SYNC" in key:
+        return "extension.archive"
+    if "QUESTIONNAIRE" in key or "WECHAT_OAUTH" in key:
+        return "extension.forms"
+    if "USER_OPS" in key or "WECOM_DISPATCH" in key:
+        return "core.automation"
+    if (
+        "CONTACTS_SYNC" in key
+        or "CUSTOMER_PROJECTION" in key
+        or "IDENTITY_MAPPING" in key
+        or "WECOM_OPERATION_MEMBERS" in key
+        or "WECOM_TAG" in key
+    ):
+        return "core.crm"
+    if (
+        "MEDIA_UPLOAD" in key
+        or "MEDIA_STORAGE" in key
+        or "WECOM_MEDIA" in key
+        or "WECOM_GROUP" in key
+        or "CLOUD_STORAGE" in key
+    ):
+        return "core.engagement"
+    return "core.channels"
+
+
+def _integration_gateway_section(capability_id: str) -> str:
+    return {
+        "extension.ai": "ai_services",
+        "extension.archive": "wecom_archive",
+        "extension.commerce": "wechat_pay_h5",
+        "extension.forms": "wechat_mp",
+        "core.automation": "reliability",
+    }.get(capability_id, "wecom_base" if capability_id != "extension.hxc" else "infrastructure")
+
+
+def _integration_gateway_definition(key: str) -> dict[str, Any]:
+    capability_id = _integration_gateway_capability(key)
+    common = {
+        "capability_id": capability_id,
+        "description": (
+            "通过配置发布管理；切换前现有环境值保持权威。真实 Provider 开关仍需同时满足外发执行门禁。"
+        ),
+    }
+    if key in _INTEGRATION_GATEWAY_BOOLEAN_KEYS:
+        return {
+            **_definition(
+                key,
+                f"运行开关：{key}",
+                section=_integration_gateway_section(capability_id),
+                value_type="boolean",
+                default="false",
+            ),
+            **common,
+        }
+    if key in _INTEGRATION_GATEWAY_MODE_KEYS:
+        options = (
+            ("disabled", "fake", "staging")
+            if key in {"AICRM_NEXT_MEDIA_STORAGE_MODE", "AICRM_NEXT_WECOM_MEDIA_MODE"}
+            else ("disabled", "fake", "staging", "production")
+        )
+        return {
+            **_definition(
+                key,
+                f"Adapter 模式：{key}",
+                section=_integration_gateway_section(capability_id),
+                default="fake",
+                options=options,
+            ),
+            **common,
+        }
+    if key in _INTEGRATION_GATEWAY_INTEGER_DEFAULTS:
+        maximum = 65535 if key.endswith("_PORT") else 3600
+        return {
+            **_definition(
+                key,
+                f"运行参数：{key}",
+                section=_integration_gateway_section(capability_id),
+                value_type="integer",
+                default=str(_INTEGRATION_GATEWAY_INTEGER_DEFAULTS[key]),
+                minimum=1,
+                maximum=maximum,
+            ),
+            **common,
+        }
+    return {
+        **_definition(
+            key,
+            f"运行参数：{key}",
+            section=_integration_gateway_section(capability_id),
+            default=(
+                "https://api.weixin.qq.com"
+                if key == "AICRM_NEXT_WECHAT_OAUTH_BASE_URL"
+                else "https://qyapi.weixin.qq.com"
+                if key.endswith("_API_BASE")
+                else ""
+            ),
+        ),
+        **common,
+    }
+
 
 RUNTIME_CONFIG_DEFINITIONS: dict[str, dict[str, Any]] = {
     RUNTIME_CONFIG_CUTOVER_KEYS_KEY: _definition(
@@ -236,6 +466,10 @@ RUNTIME_CONFIG_DEFINITIONS: dict[str, dict[str, Any]] = {
         default="fake",
         options=("disabled", "fake", "staging", "production"),
     ),
+    **{
+        key: _integration_gateway_definition(key)
+        for key in sorted(_INTEGRATION_GATEWAY_NEW_KEYS)
+    },
 }
 
 

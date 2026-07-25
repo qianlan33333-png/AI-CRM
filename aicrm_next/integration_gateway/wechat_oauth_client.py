@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import os
 from typing import Any, Callable
 
 import requests
+
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 
 
 JsonDict = dict[str, Any]
@@ -27,7 +28,11 @@ class WeChatOAuthClient:
     ) -> None:
         self.timeout = timeout if timeout is not None else _oauth_timeout()
         self._http_get = http_get or requests.get
-        self._oauth_base_url = (oauth_base_url or os.getenv("AICRM_NEXT_WECHAT_OAUTH_BASE_URL") or "https://api.weixin.qq.com").rstrip("/")
+        self._oauth_base_url = (
+            oauth_base_url
+            or managed_runtime_setting("AICRM_NEXT_WECHAT_OAUTH_BASE_URL")
+            or "https://api.weixin.qq.com"
+        ).rstrip("/")
 
     def exchange_code(self, *, app_id: str, app_secret: str, code: str) -> JsonDict:
         return self._get_json(
@@ -83,7 +88,11 @@ class WeChatOAuthClient:
 
 
 def _oauth_timeout() -> int | float:
-    raw = os.getenv("AICRM_NEXT_WECHAT_OAUTH_TIMEOUT") or os.getenv("WECHAT_OAUTH_TIMEOUT") or "15"
+    raw = (
+        managed_runtime_setting("AICRM_NEXT_WECHAT_OAUTH_TIMEOUT")
+        or managed_runtime_setting("WECHAT_OAUTH_TIMEOUT")
+        or "15"
+    )
     try:
         value = float(raw)
     except (TypeError, ValueError):

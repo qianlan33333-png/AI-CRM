@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import hashlib
-import os
 from typing import Any
+
+from aicrm_next.shared.runtime_settings import managed_runtime_bool, managed_runtime_setting
 
 from .audit import record_audit_event
 from .customer_sync_contracts import AdapterMode, Json
@@ -10,6 +11,18 @@ from .idempotency import get_or_create, make_idempotency_key
 
 
 VALID_MODES = {"fake", "disabled", "staging", "production"}
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "AICRM_NEXT_ARCHIVE_SYNC_MODE",
+        "AICRM_NEXT_CONTACTS_SYNC_MODE",
+        "AICRM_NEXT_CUSTOMER_PROJECTION_SYNC_MODE",
+        "AICRM_NEXT_ENABLE_REAL_ARCHIVE_SYNC",
+        "AICRM_NEXT_ENABLE_REAL_CONTACTS_SYNC",
+        "AICRM_NEXT_ENABLE_REAL_CUSTOMER_PROJECTION_SYNC",
+        "AICRM_NEXT_ENABLE_REAL_IDENTITY_MAPPING",
+        "AICRM_NEXT_IDENTITY_MAPPING_MODE",
+    }
+)
 
 
 def _normalise_mode(value: str | None, *, default: AdapterMode = "fake") -> AdapterMode:
@@ -20,7 +33,7 @@ def _normalise_mode(value: str | None, *, default: AdapterMode = "fake") -> Adap
 
 
 def _env_true(name: str) -> bool:
-    return os.getenv(name, "").strip().lower() in {"1", "true", "yes", "on"}
+    return managed_runtime_bool(name)
 
 
 def _digest(value: str) -> str:
@@ -396,19 +409,21 @@ class CustomerProjectionSyncGateway(_GuardedCustomerSyncAdapter):
 
 
 def build_archive_sync_adapter() -> ArchiveSyncAdapter:
-    return ArchiveSyncAdapter(os.getenv("AICRM_NEXT_ARCHIVE_SYNC_MODE", "fake"))
+    return ArchiveSyncAdapter(managed_runtime_setting("AICRM_NEXT_ARCHIVE_SYNC_MODE", "fake"))
 
 
 def build_contacts_sync_adapter() -> ContactsSyncAdapter:
-    return ContactsSyncAdapter(os.getenv("AICRM_NEXT_CONTACTS_SYNC_MODE", "fake"))
+    return ContactsSyncAdapter(managed_runtime_setting("AICRM_NEXT_CONTACTS_SYNC_MODE", "fake"))
 
 
 def build_identity_mapping_adapter() -> IdentityMappingAdapter:
-    return IdentityMappingAdapter(os.getenv("AICRM_NEXT_IDENTITY_MAPPING_MODE", "fake"))
+    return IdentityMappingAdapter(managed_runtime_setting("AICRM_NEXT_IDENTITY_MAPPING_MODE", "fake"))
 
 
 def build_customer_projection_sync_gateway() -> CustomerProjectionSyncGateway:
-    return CustomerProjectionSyncGateway(os.getenv("AICRM_NEXT_CUSTOMER_PROJECTION_SYNC_MODE", "fake"))
+    return CustomerProjectionSyncGateway(
+        managed_runtime_setting("AICRM_NEXT_CUSTOMER_PROJECTION_SYNC_MODE", "fake")
+    )
 
 
 def customer_sync_side_effect_safety() -> dict[str, bool]:

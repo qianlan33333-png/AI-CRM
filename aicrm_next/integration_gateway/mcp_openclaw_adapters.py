@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import hashlib
-import os
 from typing import Any
+
+from aicrm_next.shared.runtime_settings import managed_runtime_bool, managed_runtime_setting
 
 from .audit import record_audit_event
 from .idempotency import get_or_create, make_idempotency_key
@@ -11,6 +12,15 @@ from .mcp_openclaw_contracts import AdapterMode, Json
 
 VALID_MODES = {"fake", "disabled", "staging", "production"}
 OPENCLAW_WEBHOOK_PRODUCTION_FLAG = "AICRM_NEXT_ENABLE_REAL_OPENCLAW_WEBHOOK"
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "AICRM_NEXT_CUSTOMER_CONTEXT_TOOL_MODE",
+        "AICRM_NEXT_ENABLE_REAL_MCP_TOOLS",
+        "AICRM_NEXT_ENABLE_REAL_OPENCLAW_BRIDGE",
+        "AICRM_NEXT_MCP_TOOL_MODE",
+        "AICRM_NEXT_OPENCLAW_LEGACY_MODE",
+    }
+)
 
 
 def _normalise_mode(value: str | None, *, default: AdapterMode = "fake") -> AdapterMode:
@@ -21,7 +31,7 @@ def _normalise_mode(value: str | None, *, default: AdapterMode = "fake") -> Adap
 
 
 def _env_true(name: str) -> bool:
-    return os.getenv(name, "").strip().lower() in {"1", "true", "yes", "on"}
+    return managed_runtime_bool(name)
 
 
 def _digest(value: str) -> str:
@@ -429,16 +439,22 @@ class McpCompatibilityGateway(_GuardedMcpOpenClawAdapter):
 
 
 def build_mcp_tool_gateway() -> McpToolGateway:
-    return McpToolGateway(os.getenv("AICRM_NEXT_MCP_TOOL_MODE", "fake"))
+    return McpToolGateway(managed_runtime_setting("AICRM_NEXT_MCP_TOOL_MODE", "fake"))
 
 
 def build_customer_context_tool_adapter() -> CustomerContextToolAdapter:
-    return CustomerContextToolAdapter(os.getenv("AICRM_NEXT_CUSTOMER_CONTEXT_TOOL_MODE", "fake"))
+    return CustomerContextToolAdapter(
+        managed_runtime_setting("AICRM_NEXT_CUSTOMER_CONTEXT_TOOL_MODE", "fake")
+    )
 
 
 def build_openclaw_legacy_bridge_adapter() -> OpenClawLegacyBridgeAdapter:
-    return OpenClawLegacyBridgeAdapter(os.getenv("AICRM_NEXT_OPENCLAW_LEGACY_MODE", "fake"))
+    return OpenClawLegacyBridgeAdapter(
+        managed_runtime_setting("AICRM_NEXT_OPENCLAW_LEGACY_MODE", "fake")
+    )
 
 
 def build_mcp_compatibility_gateway() -> McpCompatibilityGateway:
-    return McpCompatibilityGateway(os.getenv("AICRM_NEXT_MCP_TOOL_MODE", "fake"))
+    return McpCompatibilityGateway(
+        managed_runtime_setting("AICRM_NEXT_MCP_TOOL_MODE", "fake")
+    )

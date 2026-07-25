@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import json
-import os
 from typing import Any
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-from aicrm_next.shared.runtime_settings import managed_runtime_setting, runtime_setting
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 
 
 Json = dict[str, Any]
@@ -15,8 +14,13 @@ Json = dict[str, Any]
 class WeComTagLiveGateway:
     def __init__(self, *, client: Any | None = None, api_base: str | None = None, timeout: int | None = None) -> None:
         self._client = client
-        self._api_base = (api_base or os.getenv("AICRM_WECOM_TAG_API_BASE", "https://qyapi.weixin.qq.com")).rstrip("/")
-        self._timeout = timeout or int(os.getenv("AICRM_WECOM_TAG_TIMEOUT_SECONDS", "15") or "15")
+        self._api_base = (
+            api_base
+            or managed_runtime_setting("AICRM_WECOM_TAG_API_BASE", "https://qyapi.weixin.qq.com")
+        ).rstrip("/")
+        self._timeout = timeout or int(
+            managed_runtime_setting("AICRM_WECOM_TAG_TIMEOUT_SECONDS", "15") or "15"
+        )
 
     def _build_client(self) -> Any:
         if self._client is not None:
@@ -25,14 +29,14 @@ class WeComTagLiveGateway:
 
     def _access_token(self) -> str:
         corp_id = (
-            os.getenv("AICRM_WECOM_TAG_CORP_ID")
+            managed_runtime_setting("AICRM_WECOM_TAG_CORP_ID")
             or managed_runtime_setting("WECOM_CORP_ID")
             or ""
         )
         secret = (
-            runtime_setting("AICRM_WECOM_TAG_AGENT_SECRET")
-            or runtime_setting("WECOM_CONTACT_SECRET")
-            or runtime_setting("WECOM_SECRET")
+            managed_runtime_setting("AICRM_WECOM_TAG_AGENT_SECRET")
+            or managed_runtime_setting("WECOM_CONTACT_SECRET")
+            or managed_runtime_setting("WECOM_SECRET")
         )
         if not corp_id.strip() or not secret.strip():
             raise RuntimeError("WECOM_CORP_ID and WECOM_CONTACT_SECRET are required for WeCom tag sync")

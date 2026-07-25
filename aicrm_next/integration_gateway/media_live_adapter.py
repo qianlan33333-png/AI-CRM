@@ -5,10 +5,9 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
 import json
-import os
 from typing import Any
 
-from aicrm_next.shared.runtime_settings import runtime_setting
+from aicrm_next.shared.runtime_settings import runtime_bool, runtime_setting
 
 from .media_live_gateway import MediaUploadLiveGateway, build_media_upload_live_gateway
 
@@ -19,6 +18,15 @@ FLAG_APPROVED = "AICRM_MEDIA_UPLOAD_LIVE_UPLOAD_APPROVED"
 FLAG_CONFIG_REVIEWED = "AICRM_MEDIA_UPLOAD_CONFIG_REVIEWED"
 FLAG_PROVIDER_NAME = "AICRM_MEDIA_UPLOAD_PROVIDER_NAME"
 FLAG_PROVIDER_SECRET = "AICRM_MEDIA_UPLOAD_PROVIDER_SECRET"
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "AICRM_MEDIA_UPLOAD_CONFIG_REVIEWED",
+        "AICRM_MEDIA_UPLOAD_LIVE_ADAPTER_ENABLED",
+        "AICRM_MEDIA_UPLOAD_LIVE_UPLOAD_APPROVED",
+        "AICRM_MEDIA_UPLOAD_PROVIDER_NAME",
+        "AICRM_MEDIA_UPLOAD_PROVIDER_SECRET",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -28,11 +36,11 @@ class IdempotencyRecord:
 
 
 def _enabled(name: str) -> bool:
-    return str(os.getenv(name, "") or "").strip().lower() in {"1", "true", "yes", "on"}
+    return runtime_bool(name)
 
 
 def _present(name: str) -> bool:
-    return bool(runtime_setting(name, ""))
+    return bool(runtime_setting(name))
 
 
 def _timestamp() -> str:

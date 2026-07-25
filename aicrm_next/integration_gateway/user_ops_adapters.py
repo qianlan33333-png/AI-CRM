@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import hashlib
-import os
 from typing import Any
+
+from aicrm_next.shared.runtime_settings import managed_runtime_bool, managed_runtime_setting
 
 from .audit import record_audit_event
 from .idempotency import get_or_create, make_idempotency_key
@@ -10,6 +11,18 @@ from .user_ops_contracts import AdapterMode, Json
 
 
 VALID_MODES = {"fake", "disabled", "staging", "production"}
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "AICRM_NEXT_ENABLE_REAL_USER_OPS_BATCH_SEND",
+        "AICRM_NEXT_ENABLE_REAL_USER_OPS_DEFERRED_JOBS",
+        "AICRM_NEXT_ENABLE_REAL_USER_OPS_DND",
+        "AICRM_NEXT_ENABLE_REAL_WECOM_DISPATCH",
+        "AICRM_NEXT_USER_OPS_BATCH_SEND_MODE",
+        "AICRM_NEXT_USER_OPS_DEFERRED_JOBS_MODE",
+        "AICRM_NEXT_USER_OPS_DND_MODE",
+        "AICRM_NEXT_WECOM_DISPATCH_MODE",
+    }
+)
 
 
 def _normalise_mode(value: str | None, *, default: AdapterMode = "fake") -> AdapterMode:
@@ -20,7 +33,7 @@ def _normalise_mode(value: str | None, *, default: AdapterMode = "fake") -> Adap
 
 
 def _env_true(name: str) -> bool:
-    return os.getenv(name, "").strip().lower() in {"1", "true", "yes", "on"}
+    return managed_runtime_bool(name)
 
 
 def _digest(value: str) -> str:
@@ -765,16 +778,22 @@ class UserOpsDeferredJobGateway(_GuardedUserOpsAdapter):
 
 
 def build_user_ops_dnd_gateway() -> UserOpsDndWriteGateway:
-    return UserOpsDndWriteGateway(os.getenv("AICRM_NEXT_USER_OPS_DND_MODE", "fake"))
+    return UserOpsDndWriteGateway(managed_runtime_setting("AICRM_NEXT_USER_OPS_DND_MODE", "fake"))
 
 
 def build_user_ops_batch_send_gateway() -> UserOpsBatchSendGateway:
-    return UserOpsBatchSendGateway(os.getenv("AICRM_NEXT_USER_OPS_BATCH_SEND_MODE", "fake"))
+    return UserOpsBatchSendGateway(
+        managed_runtime_setting("AICRM_NEXT_USER_OPS_BATCH_SEND_MODE", "fake")
+    )
 
 
 def build_wecom_message_dispatch_adapter() -> WeComMessageDispatchAdapter:
-    return WeComMessageDispatchAdapter(os.getenv("AICRM_NEXT_WECOM_DISPATCH_MODE", "fake"))
+    return WeComMessageDispatchAdapter(
+        managed_runtime_setting("AICRM_NEXT_WECOM_DISPATCH_MODE", "fake")
+    )
 
 
 def build_user_ops_deferred_job_gateway() -> UserOpsDeferredJobGateway:
-    return UserOpsDeferredJobGateway(os.getenv("AICRM_NEXT_USER_OPS_DEFERRED_JOBS_MODE", "fake"))
+    return UserOpsDeferredJobGateway(
+        managed_runtime_setting("AICRM_NEXT_USER_OPS_DEFERRED_JOBS_MODE", "fake")
+    )

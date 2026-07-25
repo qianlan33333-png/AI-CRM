@@ -293,6 +293,7 @@ EXTRA_SETTING_DEFINITIONS: dict[str, dict[str, Any]] = {
     },
     "AICRM_WECOM_PRIVATE_ADAPTER_MODE": {
         "key": "AICRM_WECOM_PRIVATE_ADAPTER_MODE",
+        "capability_id": "core.automation",
         "label": "企微私信群发 Adapter 模式",
         "mode": "editable",
         "input_type": "text",
@@ -301,6 +302,7 @@ EXTRA_SETTING_DEFINITIONS: dict[str, dict[str, Any]] = {
     },
     "AICRM_ENABLE_REAL_WECOM_PRIVATE_MESSAGE": {
         "key": "AICRM_ENABLE_REAL_WECOM_PRIVATE_MESSAGE",
+        "capability_id": "core.automation",
         "label": "允许真实企微私信群发",
         "mode": "editable",
         "input_type": "text",
@@ -309,6 +311,7 @@ EXTRA_SETTING_DEFINITIONS: dict[str, dict[str, Any]] = {
     },
     "AICRM_WECOM_GROUP_ADAPTER_MODE": {
         "key": "AICRM_WECOM_GROUP_ADAPTER_MODE",
+        "capability_id": "core.automation",
         "label": "企微客户群 Adapter 模式",
         "mode": "editable",
         "input_type": "text",
@@ -317,6 +320,7 @@ EXTRA_SETTING_DEFINITIONS: dict[str, dict[str, Any]] = {
     },
     "AICRM_ENABLE_REAL_WECOM_GROUP_MESSAGE": {
         "key": "AICRM_ENABLE_REAL_WECOM_GROUP_MESSAGE",
+        "capability_id": "core.automation",
         "label": "允许真实企微客户群群发",
         "mode": "editable",
         "input_type": "text",

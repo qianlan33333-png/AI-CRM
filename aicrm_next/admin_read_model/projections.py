@@ -273,7 +273,7 @@ def config_payload(repo: AdminReadRepository) -> dict[str, Any]:
         ["production_data_ready", health.get("production_data_ready")],
         ["release_sha", current_release_sha()],
         ["wechat_callback_token", "configured" if runtime_setting("WECOM_CALLBACK_TOKEN") else "missing"],
-        ["wechat_pay_config", "configured" if os.getenv("WECHAT_PAY_MCH_ID") else "missing"],
+        ["wechat_pay_config", "configured" if runtime_setting("WECHAT_PAY_MCH_ID") else "missing"],
         ["oauth_config", "configured" if os.getenv("WECHAT_OAUTH_APPID") or os.getenv("WECHAT_MP_APPID") else "missing"],
     ]
     return _base_payload(

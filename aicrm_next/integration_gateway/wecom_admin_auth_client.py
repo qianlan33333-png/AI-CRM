@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import os
 from typing import Any, Callable
 
 import requests
+
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 
 
 JsonDict = dict[str, Any]
@@ -27,7 +28,11 @@ class WeComAdminAuthClient:
     ) -> None:
         self.timeout = timeout if timeout is not None else _timeout()
         self._http_get = http_get or requests.get
-        self._api_base_url = (api_base_url or os.getenv("WECOM_API_BASE") or "https://qyapi.weixin.qq.com").rstrip("/")
+        self._api_base_url = (
+            api_base_url
+            or managed_runtime_setting("WECOM_API_BASE")
+            or "https://qyapi.weixin.qq.com"
+        ).rstrip("/")
 
     def fetch_access_token(self, *, corp_id: str, corp_secret: str) -> JsonDict:
         return self._get_json(
@@ -74,7 +79,11 @@ class WeComAdminAuthClient:
 
 
 def _timeout() -> int | float:
-    raw = os.getenv("AICRM_WECOM_ADMIN_AUTH_TIMEOUT") or os.getenv("WECOM_AUTH_TIMEOUT") or "10"
+    raw = (
+        managed_runtime_setting("AICRM_WECOM_ADMIN_AUTH_TIMEOUT")
+        or managed_runtime_setting("WECOM_AUTH_TIMEOUT")
+        or "10"
+    )
     try:
         value = float(raw)
     except (TypeError, ValueError):

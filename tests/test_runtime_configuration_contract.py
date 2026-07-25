@@ -2,7 +2,17 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tools.check_runtime_configuration_contract import check_runtime_configuration_contract
+import pytest
+
+from aicrm_next.admin_config.config_definitions import CONFIG_DEFINITIONS_BY_KEY
+from aicrm_next.runtime_configuration import (
+    INTEGRATION_GATEWAY_RUNTIME_SETTING_KEYS,
+    MANAGED_RUNTIME_SETTING_KEYS,
+)
+from tools.check_runtime_configuration_contract import (
+    MIGRATED_PATHS,
+    check_runtime_configuration_contract,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -10,6 +20,47 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def test_migrated_contexts_satisfy_runtime_configuration_contract() -> None:
     assert check_runtime_configuration_contract(root=ROOT) == []
+
+
+def test_integration_gateway_runtime_catalog_is_complete_owned_and_gated() -> None:
+    gateway_keys = INTEGRATION_GATEWAY_RUNTIME_SETTING_KEYS
+
+    assert "aicrm_next/integration_gateway" in MIGRATED_PATHS
+    assert len(gateway_keys) == 126
+    assert len(MANAGED_RUNTIME_SETTING_KEYS) == 171
+    assert gateway_keys <= MANAGED_RUNTIME_SETTING_KEYS
+    assert gateway_keys <= set(CONFIG_DEFINITIONS_BY_KEY)
+    assert all(CONFIG_DEFINITIONS_BY_KEY[key].capability_id for key in gateway_keys)
+
+    expected_owners = {
+        "AICRM_NEXT_CUSTOMER_CONTEXT_TOOL_MODE": "extension.ai",
+        "AICRM_NEXT_MEDIA_STORAGE_MODE": "core.engagement",
+        "AICRM_NEXT_ENABLE_REAL_WECOM_DISPATCH": "core.automation",
+        "AICRM_NEXT_ENABLE_REAL_WECOM_TAG": "core.crm",
+        "AICRM_NEXT_ENABLE_REAL_WECHAT_PAY": "extension.commerce",
+        "AICRM_NEXT_ENABLE_REAL_QUESTIONNAIRE_WEBHOOK": "extension.forms",
+        "AICRM_WECOM_CONTACT_CALLBACK_TOKEN": "core.channels",
+        "AICRM_HUANGYOUCAN_DB_PASSWORD": "extension.hxc",
+        "AICRM_ENABLE_REAL_WECOM_GROUP_MESSAGE": "core.automation",
+        "AICRM_ENABLE_REAL_WECOM_PRIVATE_MESSAGE": "core.automation",
+    }
+    assert {
+        key: CONFIG_DEFINITIONS_BY_KEY[key].capability_id for key in expected_owners
+    } == expected_owners
+
+
+def test_integration_gateway_secret_definitions_require_secret_references() -> None:
+    password = CONFIG_DEFINITIONS_BY_KEY["AICRM_HUANGYOUCAN_DB_PASSWORD"]
+
+    assert password.sensitive is True
+    assert password.storage == "secret_store"
+    with pytest.raises(ValueError, match="secret reference"):
+        password.validate("raw-password")
+    reference = (
+        "secretref:file:AICRM_HUANGYOUCAN_DB_PASSWORD:"
+        "v1_0000000000000000_0123456789abcdef"
+    )
+    assert password.validate(reference) == reference
 
 
 def test_direct_environment_access_is_rejected(tmp_path: Path) -> None:

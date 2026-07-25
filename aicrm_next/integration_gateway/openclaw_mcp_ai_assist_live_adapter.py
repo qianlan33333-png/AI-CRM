@@ -5,9 +5,10 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
 import json
-import os
 import re
 from typing import Any
+
+from aicrm_next.shared.runtime_settings import runtime_bool
 
 from .openclaw_mcp_ai_assist_live_gateway import OpenClawMcpAiAssistLiveGateway, build_openclaw_mcp_ai_assist_live_gateway
 
@@ -21,6 +22,18 @@ FLAG_CREDENTIAL_SOURCE_REVIEWED = "AICRM_OPENCLAW_MCP_AI_ASSIST_CREDENTIAL_SOURC
 FLAG_PROMPT_REDACTION_CONFIRMED = "AICRM_OPENCLAW_MCP_AI_ASSIST_PROMPT_REDACTION_CONFIRMED"
 FLAG_NO_OUTBOUND_SEND = "AICRM_OPENCLAW_MCP_AI_ASSIST_NO_OUTBOUND_SEND_CONFIRMED"
 FLAG_NO_AUTOMATION_EXECUTION = "AICRM_OPENCLAW_MCP_AI_ASSIST_NO_AUTOMATION_EXECUTION_CONFIRMED"
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "AICRM_OPENCLAW_MCP_AI_ASSIST_CONFIG_REVIEWED",
+        "AICRM_OPENCLAW_MCP_AI_ASSIST_CREDENTIAL_SOURCE_REVIEWED",
+        "AICRM_OPENCLAW_MCP_AI_ASSIST_ENDPOINT_REVIEWED",
+        "AICRM_OPENCLAW_MCP_AI_ASSIST_LIVE_ADAPTER_ENABLED",
+        "AICRM_OPENCLAW_MCP_AI_ASSIST_LIVE_CALL_APPROVED",
+        "AICRM_OPENCLAW_MCP_AI_ASSIST_NO_AUTOMATION_EXECUTION_CONFIRMED",
+        "AICRM_OPENCLAW_MCP_AI_ASSIST_NO_OUTBOUND_SEND_CONFIRMED",
+        "AICRM_OPENCLAW_MCP_AI_ASSIST_PROMPT_REDACTION_CONFIRMED",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -30,7 +43,7 @@ class IdempotencyRecord:
 
 
 def _enabled(name: str) -> bool:
-    return str(os.getenv(name, "") or "").strip().lower() in {"1", "true", "yes", "on"}
+    return runtime_bool(name)
 
 
 def _timestamp() -> str:

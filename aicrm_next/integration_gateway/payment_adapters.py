@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import hashlib
-import os
 from typing import Any
 
-from aicrm_next.shared.runtime_settings import managed_runtime_setting
+from aicrm_next.shared.runtime_settings import managed_runtime_bool, managed_runtime_setting
 
 from .audit import record_audit_event
 from .idempotency import get_or_create, make_idempotency_key
@@ -12,6 +11,18 @@ from .payment_contracts import AdapterMode, Json
 
 
 VALID_MODES = {"fake", "disabled", "staging", "production"}
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "AICRM_NEXT_ALIPAY_MODE",
+        "AICRM_NEXT_ENABLE_REAL_ALIPAY",
+        "AICRM_NEXT_ENABLE_REAL_PAYMENT_NOTIFY",
+        "AICRM_NEXT_ENABLE_REAL_PRODUCT_WRITES",
+        "AICRM_NEXT_ENABLE_REAL_WECHAT_PAY",
+        "AICRM_NEXT_PAYMENT_NOTIFY_MODE",
+        "AICRM_NEXT_PRODUCT_WRITE_MODE",
+        "AICRM_NEXT_WECHAT_PAY_MODE",
+    }
+)
 
 
 def _normalise_mode(value: str | None, *, default: AdapterMode = "fake") -> AdapterMode:
@@ -22,7 +33,7 @@ def _normalise_mode(value: str | None, *, default: AdapterMode = "fake") -> Adap
 
 
 def _env_true(name: str) -> bool:
-    return os.getenv(name, "").strip().lower() in {"1", "true", "yes", "on"}
+    return managed_runtime_bool(name)
 
 
 def _digest(value: str) -> str:
@@ -462,7 +473,7 @@ class PaymentReturnGateway(_GuardedPaymentAdapter):
 
 
 def build_product_write_gateway() -> ProductWriteGateway:
-    return ProductWriteGateway(os.getenv("AICRM_NEXT_PRODUCT_WRITE_MODE", "fake"))
+    return ProductWriteGateway(managed_runtime_setting("AICRM_NEXT_PRODUCT_WRITE_MODE", "fake"))
 
 
 def build_wechat_pay_adapter() -> WeChatPayAdapter:
@@ -476,8 +487,8 @@ def build_alipay_adapter() -> AlipayAdapter:
 
 
 def build_payment_notify_gateway() -> PaymentNotifyGateway:
-    return PaymentNotifyGateway(os.getenv("AICRM_NEXT_PAYMENT_NOTIFY_MODE", "fake"))
+    return PaymentNotifyGateway(managed_runtime_setting("AICRM_NEXT_PAYMENT_NOTIFY_MODE", "fake"))
 
 
 def build_payment_return_gateway() -> PaymentReturnGateway:
-    return PaymentReturnGateway(os.getenv("AICRM_NEXT_PAYMENT_NOTIFY_MODE", "fake"))
+    return PaymentReturnGateway(managed_runtime_setting("AICRM_NEXT_PAYMENT_NOTIFY_MODE", "fake"))

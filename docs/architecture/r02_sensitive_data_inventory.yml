@@ -55,6 +55,10 @@ secret_keys:
     <<: *secret_defaults
     runtime_consumers:
       - aicrm_next.ai_audience_ops.agent_gateway
+  AICRM_HUANGYOUCAN_DB_PASSWORD:
+    <<: *secret_defaults
+    runtime_consumers:
+      - aicrm_next.integration_gateway.huangyoucan_usage_client
   AICRM_MEDIA_UPLOAD_PROVIDER_SECRET:
     <<: *secret_defaults
     runtime_consumers:

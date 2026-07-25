@@ -6,7 +6,7 @@ from typing import Any, Callable
 
 from aicrm_next.platform_foundation.external_effects.execution_gates import explicit_wecom_execution_disabled
 from aicrm_next.shared.postgres_connection import get_db
-from aicrm_next.shared.runtime_settings import runtime_bool, runtime_setting
+from aicrm_next.shared.runtime_settings import managed_runtime_bool, managed_runtime_setting
 from aicrm_next.shared.wecom_payload_contract import normalize_group_admin_userids
 from aicrm_next.shared.wecom_runtime import classify_wecom_provider_error
 
@@ -15,17 +15,24 @@ from .wecom_customer_group_client import WeComCustomerGroupClient, WeComCustomer
 from .wecom_group_contract import Json
 
 WECOM_GROUP_CHAT_ID_LIST_FIELD = "chat_id_list"
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "AICRM_ENABLE_REAL_WECOM_GROUP_MESSAGE",
+        "AICRM_ENABLE_REAL_WECOM_GROUP_SYNC",
+        "AICRM_WECOM_GROUP_ADAPTER_MODE",
+    }
+)
 
 
 def _mode() -> str:
     if explicit_wecom_execution_disabled():
         return "disabled"
-    value = str(runtime_setting("AICRM_WECOM_GROUP_ADAPTER_MODE") or "").strip().lower()
+    value = managed_runtime_setting("AICRM_WECOM_GROUP_ADAPTER_MODE").strip().lower()
     return value if value in {"disabled", "fake", "staging", "production"} else "disabled"
 
 
 def _enabled(name: str) -> bool:
-    return runtime_bool(name)
+    return managed_runtime_bool(name)
 
 
 def _hash_payload(payload: dict[str, Any]) -> str:

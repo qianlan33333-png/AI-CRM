@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import base64
 import hashlib
-import os
+
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 
 from .audit import record_audit_event
 from .idempotency import get_or_create, make_idempotency_key
@@ -222,11 +223,11 @@ class WeComMediaAdapter(_GuardedMediaAdapter):
 
 
 def build_cloud_storage_adapter() -> CloudStorageAdapter:
-    return CloudStorageAdapter(os.getenv("AICRM_NEXT_MEDIA_STORAGE_MODE", "fake"))
+    return CloudStorageAdapter(managed_runtime_setting("AICRM_NEXT_MEDIA_STORAGE_MODE", "fake"))
 
 
 def build_wecom_media_adapter() -> WeComMediaAdapter:
-    return WeComMediaAdapter(os.getenv("AICRM_NEXT_WECOM_MEDIA_MODE", "fake"))
+    return WeComMediaAdapter(managed_runtime_setting("AICRM_NEXT_WECOM_MEDIA_MODE", "fake"))
 
 
 def extract_base64_payload(data_url_or_base64: str) -> str:

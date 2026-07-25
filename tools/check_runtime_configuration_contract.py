@@ -21,6 +21,7 @@ MIGRATED_PATHS = (
     "aicrm_next/admin_auth",
     "aicrm_next/admin_config",
     "aicrm_next/auth_wecom",
+    "aicrm_next/integration_gateway",
     "aicrm_next/platform_foundation",
     "aicrm_next/shared/pii_audit.py",
     "aicrm_next/shared/sidebar_access.py",
@@ -42,11 +43,17 @@ STARTUP_ONLY_KEYS = frozenset(
     {
         "AICRM_DOMAIN_VERIFICATION_DIR",
         "AICRM_LISTENER_DATABASE_URL",
+        "AICRM_PUBLIC_BASE_URL",
+        "APP_EXTERNAL_BASE_URL",
+        "EXTERNAL_BASE_URL",
+        "NEXT_PUBLIC_BASE_URL",
+        "PUBLIC_BASE_URL",
     }
 )
 ENVIRONMENT_FALLBACK_BOUNDARIES = frozenset(
     {
         "aicrm_next/admin_config/secret_settings.py",
+        "aicrm_next/integration_gateway/questionnaire_adapters.py",
         "aicrm_next/platform_foundation/execution_runtime/listener.py",
         "aicrm_next/platform_foundation/push_center/capability_repository.py",
         "aicrm_next/platform_foundation/verification_files.py",

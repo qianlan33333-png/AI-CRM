@@ -5,10 +5,10 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
 import json
-import os
 from typing import Any
 
-from aicrm_next.shared.runtime_settings import runtime_setting
+from aicrm_next.shared.runtime import production_environment
+from aicrm_next.shared.runtime_settings import runtime_bool, runtime_setting
 
 from .oauth_identity_adapter import FakeStubOAuthIdentityAdapter
 from .oauth_identity_live_gateway import OAuthIdentityLiveGateway, build_oauth_identity_live_gateway
@@ -21,6 +21,15 @@ FLAG_APPROVED = "AICRM_OAUTH_IDENTITY_LIVE_CALLBACK_APPROVED"
 FLAG_CONFIG_REVIEWED = "AICRM_OAUTH_IDENTITY_CONFIG_REVIEWED"
 FLAG_APP_ID = "AICRM_OAUTH_IDENTITY_APP_ID"
 FLAG_APP_SECRET = "AICRM_OAUTH_IDENTITY_APP_SECRET"
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "AICRM_OAUTH_IDENTITY_APP_ID",
+        "AICRM_OAUTH_IDENTITY_APP_SECRET",
+        "AICRM_OAUTH_IDENTITY_CONFIG_REVIEWED",
+        "AICRM_OAUTH_IDENTITY_LIVE_ADAPTER_ENABLED",
+        "AICRM_OAUTH_IDENTITY_LIVE_CALLBACK_APPROVED",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -30,11 +39,11 @@ class IdempotencyRecord:
 
 
 def _enabled(name: str) -> bool:
-    return str(os.getenv(name, "") or "").strip().lower() in {"1", "true", "yes", "on"}
+    return runtime_bool(name)
 
 
 def _present(name: str) -> bool:
-    return bool(runtime_setting(name, ""))
+    return bool(runtime_setting(name))
 
 
 def _timestamp() -> str:
@@ -137,7 +146,7 @@ class LiveOAuthIdentityAdapter:
             return {"ok": False, "error_code": "oauth_config_missing", "missing_gate": FLAG_CONFIG_REVIEWED}
         if not _present(FLAG_APP_ID) or not _present(FLAG_APP_SECRET):
             return {"ok": False, "error_code": "oauth_config_missing", "missing_gate": "oauth_secret_material"}
-        if str(os.getenv("AICRM_NEXT_ENV", "")).strip().lower() == "production" and not _enabled(FLAG_APPROVED):
+        if production_environment() and not _enabled(FLAG_APPROVED):
             return {"ok": False, "error_code": "forbidden_in_production_without_approval", "missing_gate": FLAG_APPROVED}
         if not self._confirm_live_oauth_callback:
             return {"ok": False, "error_code": "live_oauth_callback_not_approved", "missing_gate": "--confirm-live-oauth-callback"}

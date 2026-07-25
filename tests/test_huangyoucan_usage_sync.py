@@ -20,6 +20,7 @@ from aicrm_next.service_period.huangyoucan_usage_sync import (
     sync_huangyoucan_usage,
 )
 from aicrm_next.service_period.repo import PostgresServicePeriodRepository
+from aicrm_next.shared import runtime_settings
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -38,6 +39,31 @@ def _snapshot(user_id: str, *, unionid: str = "", mobile: str = "") -> dict:
         "last_open_at": "2026-07-13T01:30:00+00:00",
         "refreshed_at": "2026-07-13T01:00:00+00:00",
     }
+
+
+def test_readonly_database_config_keeps_legacy_environment_parsing(monkeypatch) -> None:
+    def unavailable_engine():
+        raise RuntimeError("database unavailable")
+
+    monkeypatch.setattr(runtime_settings, "get_engine", unavailable_engine)
+    monkeypatch.setenv("AICRM_HUANGYOUCAN_DB_HOST", "readonly.example")
+    monkeypatch.setenv("AICRM_HUANGYOUCAN_DB_NAME", "huangyoucan")
+    monkeypatch.setenv("AICRM_HUANGYOUCAN_DB_USER", "readonly")
+    monkeypatch.setenv("AICRM_HUANGYOUCAN_DB_PASSWORD", "environment-password")
+    monkeypatch.setenv("AICRM_HUANGYOUCAN_DB_PORT", "3307")
+    monkeypatch.setenv("AICRM_HUANGYOUCAN_DB_CONNECT_TIMEOUT_SECONDS", "11")
+    monkeypatch.setenv("AICRM_HUANGYOUCAN_DB_READ_TIMEOUT_SECONDS", "61")
+
+    config = HuangYouCanReadonlyDatabaseConfig.from_env()
+
+    assert config.port == 3307
+    assert config.connect_timeout_seconds == 11
+    assert config.read_timeout_seconds == 61
+    assert config.password == "environment-password"
+
+    monkeypatch.setenv("AICRM_HUANGYOUCAN_DB_PORT", "invalid")
+    with pytest.raises(ValueError):
+        HuangYouCanReadonlyDatabaseConfig.from_env()
 
 
 def test_identity_match_prefers_unionid_then_unique_mobile_and_isolates_conflicts() -> None:

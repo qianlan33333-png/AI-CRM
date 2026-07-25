@@ -5,10 +5,10 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
 import json
-import os
 from typing import Any
 
-from aicrm_next.shared.runtime_settings import runtime_setting
+from aicrm_next.shared.runtime import production_environment
+from aicrm_next.shared.runtime_settings import runtime_bool, runtime_setting
 
 from .wecom_contact_callback_adapter import FakeStubWeComContactCallbackAdapter
 from .wecom_contact_callback_live_gateway import (
@@ -26,6 +26,16 @@ FLAG_CONFIG_REVIEWED = "AICRM_WECOM_CONTACT_CALLBACK_CONFIG_REVIEWED"
 FLAG_CORP_ID = "AICRM_WECOM_CONTACT_CALLBACK_CORP_ID"
 FLAG_TOKEN = "AICRM_WECOM_CONTACT_CALLBACK_TOKEN"
 FLAG_AES_KEY = "AICRM_WECOM_CONTACT_CALLBACK_AES_KEY"
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "AICRM_WECOM_CONTACT_CALLBACK_AES_KEY",
+        "AICRM_WECOM_CONTACT_CALLBACK_CONFIG_REVIEWED",
+        "AICRM_WECOM_CONTACT_CALLBACK_CORP_ID",
+        "AICRM_WECOM_CONTACT_CALLBACK_LIVE_ADAPTER_ENABLED",
+        "AICRM_WECOM_CONTACT_CALLBACK_LIVE_PROCESSING_APPROVED",
+        "AICRM_WECOM_CONTACT_CALLBACK_TOKEN",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -35,11 +45,11 @@ class IdempotencyRecord:
 
 
 def _enabled(name: str) -> bool:
-    return str(os.getenv(name, "") or "").strip().lower() in {"1", "true", "yes", "on"}
+    return runtime_bool(name)
 
 
 def _present(name: str) -> bool:
-    return bool(runtime_setting(name, ""))
+    return bool(runtime_setting(name))
 
 
 def _timestamp() -> str:
@@ -209,7 +219,7 @@ class LiveWeComContactCallbackAdapter:
             return {"ok": False, "error_code": "callback_config_missing", "missing_gate": FLAG_CONFIG_REVIEWED}
         if not _present(FLAG_CORP_ID) or not _present(FLAG_TOKEN) or not _present(FLAG_AES_KEY):
             return {"ok": False, "error_code": "callback_config_missing", "missing_gate": "callback_secret_material"}
-        if str(os.getenv("AICRM_NEXT_ENV", "")).strip().lower() == "production" and not _enabled(FLAG_LIVE_APPROVED):
+        if production_environment() and not _enabled(FLAG_LIVE_APPROVED):
             return {"ok": False, "error_code": "forbidden_in_production_without_approval", "missing_gate": FLAG_LIVE_APPROVED}
         if not self._confirm_live_wecom_callback:
             return {"ok": False, "error_code": "live_callback_not_approved", "missing_gate": "--confirm-live-wecom-callback"}

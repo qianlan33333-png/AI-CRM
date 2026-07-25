@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import secrets
 import time
 from dataclasses import asdict, dataclass
@@ -13,10 +12,11 @@ from urllib.request import urlopen
 
 from aicrm_next.platform_foundation.audit_ledger import InMemoryAuditLedger
 from aicrm_next.shared.runtime import production_environment
-from aicrm_next.shared.runtime_settings import managed_runtime_setting, runtime_setting
+from aicrm_next.shared.runtime_settings import managed_runtime_bool, managed_runtime_setting
 
 
 DEFAULT_JS_API_LIST = ("getContext", "getCurExternalContact", "sendChatMessage")
+RUNTIME_SETTING_KEYS = frozenset({"AICRM_SIDEBAR_JSSDK_REAL_ENABLED"})
 _audit_ledger = InMemoryAuditLedger()
 _REAL_CACHE: dict[str, tuple[str, float]] = {}
 
@@ -56,7 +56,7 @@ def list_sidebar_jssdk_attempts() -> list[dict[str, Any]]:
 
 
 def sidebar_jssdk_adapter_mode() -> str:
-    explicit = str(os.getenv("AICRM_SIDEBAR_JSSDK_ADAPTER_MODE") or "").strip().lower()
+    explicit = managed_runtime_setting("AICRM_SIDEBAR_JSSDK_ADAPTER_MODE").strip().lower()
     if explicit in {"fake", "sandbox", "real_blocked"}:
         return explicit
     if explicit == "real_enabled" and _env_flag("AICRM_SIDEBAR_JSSDK_REAL_ENABLED"):
@@ -211,7 +211,9 @@ def _build_real_jssdk_config(
     debug: bool,
     http_get_json: Any | None,
 ) -> dict[str, Any]:
-    secret = runtime_setting("WECOM_SECRET") or runtime_setting("AICRM_SIDEBAR_JSSDK_SECRET")
+    secret = managed_runtime_setting("WECOM_SECRET") or managed_runtime_setting(
+        "AICRM_SIDEBAR_JSSDK_SECRET"
+    )
     if not corp_id:
         raise SidebarJSSDKConfigError("WECOM_CORP_ID is required")
     if not agent_id:
@@ -219,8 +221,10 @@ def _build_real_jssdk_config(
     if not secret:
         raise SidebarJSSDKConfigError("WECOM_SECRET is required")
 
-    api_base = str(os.getenv("WECOM_API_BASE") or "https://qyapi.weixin.qq.com").strip().rstrip("/")
-    timeout = int(str(os.getenv("AICRM_SIDEBAR_JSSDK_TIMEOUT_SECONDS") or "10").strip() or "10")
+    api_base = (
+        managed_runtime_setting("WECOM_API_BASE") or "https://qyapi.weixin.qq.com"
+    ).strip().rstrip("/")
+    timeout = int(managed_runtime_setting("AICRM_SIDEBAR_JSSDK_TIMEOUT_SECONDS", "10") or "10")
     getter = http_get_json or _http_get_json
     access_token = _cached_value(
         f"access_token:{corp_id}",
@@ -337,5 +341,4 @@ def _record_attempt(attempt: ExternalCallAttempt) -> None:
 
 
 def _env_flag(name: str) -> bool:
-    value = str(os.getenv(name) or "").strip().lower()
-    return value in {"1", "true", "yes", "on"}
+    return managed_runtime_bool(name)

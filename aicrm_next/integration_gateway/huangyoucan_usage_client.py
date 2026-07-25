@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-import os
 from typing import Any, Callable, Protocol
 from zoneinfo import ZoneInfo
+
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 
 
 HUANGYOUCAN_USAGE_SQL = """
@@ -92,22 +93,32 @@ class HuangYouCanReadonlyDatabaseConfig:
     @classmethod
     def from_env(cls) -> "HuangYouCanReadonlyDatabaseConfig":
         values = {
-            "host": os.getenv("AICRM_HUANGYOUCAN_DB_HOST", "").strip(),
-            "database": os.getenv("AICRM_HUANGYOUCAN_DB_NAME", "").strip(),
-            "user": os.getenv("AICRM_HUANGYOUCAN_DB_USER", "").strip(),
-            "password": os.getenv("AICRM_HUANGYOUCAN_DB_PASSWORD", ""),
+            "host": managed_runtime_setting("AICRM_HUANGYOUCAN_DB_HOST").strip(),
+            "database": managed_runtime_setting("AICRM_HUANGYOUCAN_DB_NAME").strip(),
+            "user": managed_runtime_setting("AICRM_HUANGYOUCAN_DB_USER").strip(),
+            "password": managed_runtime_setting("AICRM_HUANGYOUCAN_DB_PASSWORD"),
         }
         missing = [key for key, value in values.items() if not value]
         if missing:
             raise RuntimeError(f"missing HuangYouCan readonly database configuration: {', '.join(sorted(missing))}")
         return cls(
             host=values["host"],
-            port=int(os.getenv("AICRM_HUANGYOUCAN_DB_PORT", "3306")),
+            port=int(managed_runtime_setting("AICRM_HUANGYOUCAN_DB_PORT", "3306")),
             database=values["database"],
             user=values["user"],
             password=values["password"],
-            connect_timeout_seconds=int(os.getenv("AICRM_HUANGYOUCAN_DB_CONNECT_TIMEOUT_SECONDS", "10")),
-            read_timeout_seconds=int(os.getenv("AICRM_HUANGYOUCAN_DB_READ_TIMEOUT_SECONDS", "60")),
+            connect_timeout_seconds=int(
+                managed_runtime_setting(
+                    "AICRM_HUANGYOUCAN_DB_CONNECT_TIMEOUT_SECONDS",
+                    "10",
+                )
+            ),
+            read_timeout_seconds=int(
+                managed_runtime_setting(
+                    "AICRM_HUANGYOUCAN_DB_READ_TIMEOUT_SECONDS",
+                    "60",
+                )
+            ),
         )
 
 

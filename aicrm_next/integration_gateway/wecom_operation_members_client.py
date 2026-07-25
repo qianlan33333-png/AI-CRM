@@ -1,14 +1,25 @@
 from __future__ import annotations
 
-import os
 import time
 from typing import Any, Callable
 
-from aicrm_next.shared.runtime_settings import runtime_setting
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 
 
 JsonDict = dict[str, Any]
 HttpGet = Callable[..., Any]
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "AICRM_WECOM_OPERATION_MEMBERS_API_BASE",
+        "AICRM_WECOM_OPERATION_MEMBERS_CORP_ID",
+        "AICRM_WECOM_OPERATION_MEMBERS_SECRET",
+        "AICRM_WECOM_OPERATION_MEMBERS_TIMEOUT",
+        "WECOM_API_BASE",
+        "WECOM_CONTACT_SECRET",
+        "WECOM_CORP_ID",
+        "WECOM_SECRET",
+    }
+)
 
 
 def _text(value: Any) -> str:
@@ -17,7 +28,7 @@ def _text(value: Any) -> str:
 
 def _first_env(*names: str) -> str:
     for name in names:
-        value = _text(runtime_setting(name, ""))
+        value = _text(managed_runtime_setting(name))
         if value:
             return value
     return ""
@@ -66,7 +77,11 @@ class WeComOperationMembersClient:
             or _first_env("AICRM_WECOM_OPERATION_MEMBERS_API_BASE", "WECOM_API_BASE")
             or "https://qyapi.weixin.qq.com"
         ).rstrip("/")
-        self.timeout = int(timeout or _text(os.getenv("AICRM_WECOM_OPERATION_MEMBERS_TIMEOUT")) or 15)
+        self.timeout = int(
+            timeout
+            or _text(managed_runtime_setting("AICRM_WECOM_OPERATION_MEMBERS_TIMEOUT"))
+            or 15
+        )
         self.http_get = http_get or self._requests_get
         self._access_token = ""
         self._token_expires_at = 0.0

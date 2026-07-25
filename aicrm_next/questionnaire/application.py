@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import secrets
 from typing import Any
 
@@ -296,7 +295,7 @@ class GetQuestionnairePreflightQuery:
     def execute(self) -> dict[str, Any]:
         secret_key = runtime_setting("SECRET_KEY")
         wechat_oauth_configured = bool(
-            os.getenv("WECHAT_MP_APP_ID", "").strip()
+            runtime_setting("WECHAT_MP_APP_ID", "").strip()
             and runtime_setting("WECHAT_MP_APP_SECRET")
             and secret_key
             and secret_key != "dev-secret-key-change-me"
@@ -308,7 +307,7 @@ class GetQuestionnairePreflightQuery:
         wecom_tags_api_available = bool(
             managed_runtime_setting("WECOM_CORP_ID").strip()
             and runtime_setting("WECOM_SECRET")
-            and os.getenv("WECOM_API_BASE", "https://qyapi.weixin.qq.com").strip()
+            and runtime_setting("WECOM_API_BASE", "https://qyapi.weixin.qq.com").strip()
         )
         return {
             "ok": True,

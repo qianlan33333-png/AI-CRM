@@ -5,10 +5,9 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
 import json
-import os
 from typing import Any
 
-from aicrm_next.shared.runtime_settings import runtime_setting
+from aicrm_next.shared.runtime_settings import runtime_bool, runtime_setting
 
 from .payment_commerce_live_gateway import PaymentCommerceLiveGateway, build_payment_commerce_live_gateway
 
@@ -21,6 +20,17 @@ FLAG_SANDBOX_APPROVED = "AICRM_PAYMENT_COMMERCE_SANDBOX_MODE_APPROVED"
 FLAG_NO_MONEY = "AICRM_PAYMENT_COMMERCE_NO_MONEY_MOVEMENT_CONFIRMED"
 FLAG_PROVIDER_NAME = "AICRM_PAYMENT_COMMERCE_PROVIDER_NAME"
 FLAG_PROVIDER_SECRET = "AICRM_PAYMENT_COMMERCE_PROVIDER_SECRET"
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "AICRM_PAYMENT_COMMERCE_LIVE_ADAPTER_ENABLED",
+        "AICRM_PAYMENT_COMMERCE_LIVE_CALL_APPROVED",
+        "AICRM_PAYMENT_COMMERCE_NO_MONEY_MOVEMENT_CONFIRMED",
+        "AICRM_PAYMENT_COMMERCE_PROVIDER_CONFIG_REVIEWED",
+        "AICRM_PAYMENT_COMMERCE_PROVIDER_NAME",
+        "AICRM_PAYMENT_COMMERCE_PROVIDER_SECRET",
+        "AICRM_PAYMENT_COMMERCE_SANDBOX_MODE_APPROVED",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -30,11 +40,11 @@ class IdempotencyRecord:
 
 
 def _enabled(name: str) -> bool:
-    return str(os.getenv(name, "") or "").strip().lower() in {"1", "true", "yes", "on"}
+    return runtime_bool(name)
 
 
 def _present(name: str) -> bool:
-    return bool(runtime_setting(name, ""))
+    return bool(runtime_setting(name))
 
 
 def _timestamp() -> str:

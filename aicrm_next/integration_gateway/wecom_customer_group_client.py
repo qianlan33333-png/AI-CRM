@@ -4,11 +4,24 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from aicrm_next.shared.runtime_settings import runtime_setting
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 
 
 HttpGet = Callable[..., Any]
 HttpPost = Callable[..., Any]
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "AICRM_WECOM_GROUP_API_BASE",
+        "AICRM_WECOM_GROUP_CORP_ID",
+        "AICRM_WECOM_GROUP_SECRET",
+        "AICRM_WECOM_GROUP_TIMEOUT",
+        "WECOM_API_BASE",
+        "WECOM_ARCHIVE_TIMEOUT",
+        "WECOM_CONTACT_SECRET",
+        "WECOM_CORP_ID",
+        "WECOM_SECRET",
+    }
+)
 
 
 class WeComCustomerGroupClientError(RuntimeError):
@@ -28,7 +41,7 @@ class WeComCustomerGroupClientError(RuntimeError):
 
 def _env_first(*names: str) -> str:
     for name in names:
-        value = runtime_setting(name, "")
+        value = managed_runtime_setting(name)
         if value:
             return value
     return ""

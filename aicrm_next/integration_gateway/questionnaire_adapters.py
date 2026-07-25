@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import hashlib
-import os
 from typing import Any, Callable
 from urllib.parse import quote, urlencode, urlparse
 
-from aicrm_next.shared.runtime_settings import runtime_setting
+from aicrm_next.shared.runtime import production_environment
+from aicrm_next.shared.runtime_settings import (
+    environment_fallback,
+    managed_runtime_setting,
+    runtime_bool,
+)
 
 from .audit import record_audit_event
 from .idempotency import get_or_create, make_idempotency_key
@@ -14,6 +18,25 @@ from .wechat_oauth_client import WeChatOAuthClientError, build_wechat_oauth_clie
 
 
 VALID_MODES = {"fake", "disabled", "staging", "production"}
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "AICRM_NEXT_ENABLE_REAL_QUESTIONNAIRE_WEBHOOK",
+        "AICRM_NEXT_ENABLE_REAL_WECHAT_OAUTH",
+        "AICRM_NEXT_ENABLE_REAL_WECOM_TAG",
+        "AICRM_NEXT_QUESTIONNAIRE_WEBHOOK_MODE",
+        "AICRM_NEXT_WECHAT_OAUTH_MODE",
+        "AICRM_NEXT_WECOM_TAG_MODE",
+        "AICRM_PUBLIC_BASE_URL",
+        "APP_EXTERNAL_BASE_URL",
+        "EXTERNAL_BASE_URL",
+        "NEXT_PUBLIC_BASE_URL",
+        "PUBLIC_BASE_URL",
+        "WECHAT_MP_APP_ID",
+        "WECHAT_MP_APP_SECRET",
+        "WECHAT_MP_OAUTH_SCOPE",
+        "WECHAT_PAY_NOTIFY_URL",
+    }
+)
 
 
 def _normalise_mode(value: str | None, *, default: AdapterMode = "fake") -> AdapterMode:
@@ -24,7 +47,7 @@ def _normalise_mode(value: str | None, *, default: AdapterMode = "fake") -> Adap
 
 
 def _env_true(name: str) -> bool:
-    return os.getenv(name, "").strip().lower() in {"1", "true", "yes", "on"}
+    return runtime_bool(name)
 
 
 def _digest(value: str) -> str:
@@ -413,15 +436,15 @@ class WeChatOAuthAdapter(_GuardedQuestionnaireAdapter):
 
     @staticmethod
     def _wechat_app_id() -> str:
-        return str(os.getenv("WECHAT_MP_APP_ID", "") or "").strip()
+        return managed_runtime_setting("WECHAT_MP_APP_ID")
 
     @staticmethod
     def _wechat_app_secret() -> str:
-        return runtime_setting("WECHAT_MP_APP_SECRET")
+        return managed_runtime_setting("WECHAT_MP_APP_SECRET")
 
     @staticmethod
     def _oauth_scope() -> str:
-        return str(os.getenv("WECHAT_MP_OAUTH_SCOPE", "snsapi_userinfo") or "snsapi_userinfo").strip() or "snsapi_userinfo"
+        return managed_runtime_setting("WECHAT_MP_OAUTH_SCOPE", "snsapi_userinfo").strip() or "snsapi_userinfo"
 
     @classmethod
     def _absolute_redirect_uri(cls, redirect: str | None) -> str:
@@ -434,13 +457,7 @@ class WeChatOAuthAdapter(_GuardedQuestionnaireAdapter):
 
     @staticmethod
     def _public_base_url() -> str:
-        env_values = {
-            str(os.getenv("AICRM_NEXT_ENV", "") or "").strip().lower(),
-            str(os.getenv("ENVIRONMENT", "") or "").strip().lower(),
-            str(os.getenv("APP_ENV", "") or "").strip().lower(),
-            str(os.getenv("FLASK_ENV", "") or "").strip().lower(),
-        }
-        production = bool(env_values & {"prod", "production"})
+        production = production_environment()
         for key in (
             "AICRM_PUBLIC_BASE_URL",
             "PUBLIC_BASE_URL",
@@ -448,12 +465,12 @@ class WeChatOAuthAdapter(_GuardedQuestionnaireAdapter):
             "APP_EXTERNAL_BASE_URL",
             "NEXT_PUBLIC_BASE_URL",
         ):
-            value = str(os.getenv(key, "") or "").strip().rstrip("/")
+            value = environment_fallback(key).strip().rstrip("/")
             if value:
                 if production and "localhost" in value:
                     continue
                 return value
-        notify_url = str(os.getenv("WECHAT_PAY_NOTIFY_URL", "") or "").strip()
+        notify_url = managed_runtime_setting("WECHAT_PAY_NOTIFY_URL").strip()
         parsed = urlparse(notify_url)
         if parsed.scheme in {"http", "https"} and parsed.netloc:
             candidate = f"{parsed.scheme}://{parsed.netloc}"
@@ -806,12 +823,14 @@ class QuestionnaireSubmitSideEffectGateway:
 
 
 def build_wechat_oauth_adapter() -> WeChatOAuthAdapter:
-    return WeChatOAuthAdapter(os.getenv("AICRM_NEXT_WECHAT_OAUTH_MODE", "fake"))
+    return WeChatOAuthAdapter(managed_runtime_setting("AICRM_NEXT_WECHAT_OAUTH_MODE", "fake"))
 
 
 def build_wecom_tag_adapter() -> WeComTagAdapter:
-    return WeComTagAdapter(os.getenv("AICRM_NEXT_WECOM_TAG_MODE", "fake"))
+    return WeComTagAdapter(managed_runtime_setting("AICRM_NEXT_WECOM_TAG_MODE", "fake"))
 
 
 def build_questionnaire_external_push_adapter() -> QuestionnaireExternalPushAdapter:
-    return QuestionnaireExternalPushAdapter(os.getenv("AICRM_NEXT_QUESTIONNAIRE_WEBHOOK_MODE", "fake"))
+    return QuestionnaireExternalPushAdapter(
+        managed_runtime_setting("AICRM_NEXT_QUESTIONNAIRE_WEBHOOK_MODE", "fake")
+    )
