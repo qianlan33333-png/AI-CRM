@@ -595,23 +595,42 @@ class SidebarV2SqlRepository:
             {"unionid": _text(identity.unionid)},
         )
 
-    def list_other_staff_messages(self, external_userid: str, *, limit: int = 200) -> list[dict[str, Any]]:
+    def list_other_staff_messages(
+        self,
+        external_userid: str,
+        *,
+        current_userid: str = "",
+        limit: int = 20,
+    ) -> list[dict[str, Any]]:
         identity = self._resolve_identity(external_userid=external_userid)
         if identity is None:
             return []
+        safe_limit = _limit(limit, default=20, maximum=100)
         return self._all(
             """
             SELECT message.id, message.msgid, message.chat_type,
-                   identity.primary_external_userid AS external_userid,
+                   :canonical_external_userid AS external_userid,
                    message.owner_userid, message.sender, message.receiver,
                    message.msgtype, message.content, message.send_time, message.raw_payload, message.created_at
             FROM archived_messages message
-            JOIN crm_user_identity identity ON identity.unionid = message.unionid
-            WHERE identity.unionid = :unionid
-            ORDER BY send_time ASC, id ASC
-            LIMIT :limit
+            WHERE message.unionid = :unionid
+              AND message.unionid <> ''
+              AND message.send_time IS NOT NULL
+              AND message.sender <> ''
+              AND message.sender <> :requested_external_userid
+              AND message.sender <> :canonical_external_userid
+              AND message.sender <> :current_userid
+              AND message.msgtype IN ('text', 'image')
+            ORDER BY message.send_time DESC, message.id DESC
+            LIMIT :limit_plus_one
             """,
-            {"unionid": _text(identity.unionid), "limit": _limit(limit, default=200, maximum=500)},
+            {
+                "unionid": _text(identity.unionid),
+                "requested_external_userid": _text(external_userid),
+                "canonical_external_userid": _text(identity.external_userid),
+                "current_userid": _text(current_userid),
+                "limit_plus_one": safe_limit + 1,
+            },
         )
 
     def owner_names(self, userids: set[str]) -> dict[str, str]:
@@ -1087,20 +1106,23 @@ class SidebarOtherStaffMessagesReadModel:
             raise ValueError("external_userid is required")
         safe_limit = _limit(limit, default=20, maximum=100)
         repo = self._sql_repo()
-        rows = repo.list_other_staff_messages(_text(external_userid), limit=200)
-        current_staff = {_text(current_userid)}
-        filtered: list[dict[str, Any]] = []
-        for row in rows:
-            sender = _text(row.get("sender"))
-            msgtype = _text(row.get("msgtype"))
-            if not sender or sender == _text(external_userid) or sender in current_staff or msgtype not in {"text", "image"}:
-                continue
-            filtered.append(row)
-        selected = filtered[-safe_limit:]
+        rows = repo.list_other_staff_messages(
+            _text(external_userid),
+            current_userid=_text(current_userid),
+            limit=safe_limit,
+        )
+        has_more = len(rows) > safe_limit
+        selected = list(reversed(rows[:safe_limit]))
         staff_names = repo.owner_names({_text(item.get("sender")) for item in selected})
         chat_ids = {self._chat_id(item) for item in selected}
         group_names = repo.group_names(chat_ids)
-        return _with_route_owner({"ok": True, "messages": [self._message_item(item, staff_names, group_names) for item in selected]})
+        return _with_route_owner(
+            {
+                "ok": True,
+                "messages": [self._message_item(item, staff_names, group_names) for item in selected],
+                "has_more": has_more,
+            }
+        )
 
     def _chat_id(self, message: dict[str, Any]) -> str:
         payload = _json(message.get("raw_payload"), {})
