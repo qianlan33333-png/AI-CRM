@@ -5,9 +5,12 @@ import os
 
 import psycopg
 
+from aicrm_next.message_archive.repo import PostgresMessageArchiveReadRepository
+
 
 INDEX_NAME = "ix_archived_messages_content_trgm"
 UNIONID = "union-message-search-growth"
+EXTERNAL_USERID = "external-message-search-growth"
 
 
 def _database_url() -> str:
@@ -49,6 +52,24 @@ def test_archived_message_growth_search_uses_trigram_index(next_pg_schema) -> No
     with psycopg.connect(_database_url()) as connection:
         connection.execute(
             """
+            INSERT INTO crm_user_identity (
+                unionid,
+                primary_external_userid,
+                external_userids_json,
+                primary_owner_userid,
+                identity_status
+            ) VALUES (
+                %s,
+                %s,
+                jsonb_build_array(jsonb_build_object('external_userid', CAST(%s AS text))),
+                'staff-message-search-growth',
+                'active'
+            )
+            """,
+            (UNIONID, EXTERNAL_USERID, EXTERNAL_USERID),
+        )
+        connection.execute(
+            """
             INSERT INTO archived_messages (
                 seq,
                 msgid,
@@ -83,10 +104,17 @@ def test_archived_message_growth_search_uses_trigram_index(next_pg_schema) -> No
               AND message.content <> ''
               AND message.content LIKE %s
             ORDER BY message.send_time DESC, message.id DESC
-            LIMIT 21 OFFSET 0
+            LIMIT 21 OFFSET 20
             """,
             (UNIONID, "%needle-growth%"),
         ).fetchone()[0]
+
+    rows = PostgresMessageArchiveReadRepository(_database_url()).search_messages(
+        external_userid=EXTERNAL_USERID,
+        keyword="needle-growth",
+        limit=21,
+        offset=20,
+    )
 
     root, nodes = _plan_nodes(plan)
     index_names = {str(node.get("Index Name") or "") for node in nodes}
@@ -98,3 +126,7 @@ def test_archived_message_growth_search_uses_trigram_index(next_pg_schema) -> No
     )
     assert max(int(node.get("Actual Rows") or 0) for node in nodes) < 1000
     assert float(root.get("Execution Time") or 0.0) < 250.0
+    assert [row["msgid"] for row in rows] == [
+        f"message-search-growth-{value}"
+        for value in range(21000, 42000, 1000)
+    ]

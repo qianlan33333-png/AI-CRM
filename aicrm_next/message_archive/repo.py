@@ -276,12 +276,41 @@ class PostgresMessageArchiveReadRepository:
         limit: int | None = None,
         offset: int = 0,
     ) -> list[JsonDict]:
-        rows = [
-            row
-            for row in self.list_messages(external_userid, chat_type=chat_type, limit=200, offset=0)
-            if str(keyword or "") in str(row.get("content") or "")
-        ]
-        return _page(rows, limit=limit, offset=offset)
+        normalized = str(chat_type or "").strip().lower()
+        needle = str(keyword or "")
+        if not needle:
+            return []
+        with self._connect() as conn:
+            unionid = resolve_external_userid_with_dbapi(conn, str(external_userid or "").strip())
+            if not unionid:
+                return []
+            clauses = [
+                "message.unionid = %s",
+                "message.unionid <> ''",
+                "message.content <> ''",
+                "message.content LIKE %s ESCAPE '\\'",
+            ]
+            params: list[Any] = [unionid, _literal_like_pattern(needle)]
+            if normalized:
+                scene_values = ("private", "single") if _normalize_stored_chat_scene(normalized) == "private" else ("group",)
+                clauses.append("message.chat_type = ANY(%s)")
+                params.append(list(scene_values))
+            where_sql = " AND ".join(clauses)
+            rows = conn.execute(
+                f"""
+                SELECT message.id, message.msgid, message.chat_type, message.unionid,
+                       COALESCE(identity.primary_external_userid, '') AS external_userid,
+                       message.owner_userid, message.sender, message.receiver,
+                       message.msgtype, message.content, message.send_time, message.raw_payload, message.created_at
+                FROM archived_messages message
+                LEFT JOIN crm_user_identity identity ON identity.unionid = message.unionid
+                WHERE {where_sql}
+                ORDER BY message.send_time DESC, message.id DESC
+                LIMIT %s OFFSET %s
+                """,
+                tuple(params + [int(limit or 20), max(0, int(offset or 0))]),
+            ).fetchall()
+        return [_project_external_chat_record(dict(row)) for row in rows]
 
     def list_external_chat_records(
         self,
@@ -501,6 +530,11 @@ def _page(rows: list[JsonDict], *, limit: int | None, offset: int) -> list[JsonD
     if limit is None:
         return rows[offset:] if offset else rows
     return rows[offset : offset + limit]
+
+
+def _literal_like_pattern(value: str) -> str:
+    escaped = str(value).replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return f"%{escaped}%"
 
 
 def _psycopg_url(url: str) -> str:
