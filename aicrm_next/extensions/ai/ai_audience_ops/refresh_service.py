@@ -21,6 +21,11 @@ from .sql_executor import build_execution_plan
 
 
 AI_AUDIENCE_REFRESH_QUERY_TIMEOUT_SECONDS = 120
+AI_AUDIENCE_DAILY_REFRESH_QUERY_TIMEOUT_SECONDS = 600
+# Stable PostgreSQL advisory-lock namespace for the read-only daily snapshot.
+# This is intentionally global: the three daily packages share expensive
+# catalog views and must not execute those scans concurrently across workers.
+AI_AUDIENCE_DAILY_REFRESH_SERIALIZATION_LOCK_KEY = 0x414943524D444159
 
 
 def _refresh_sql(package: dict[str, Any], version: dict[str, Any], refresh_kind: str) -> str:
@@ -144,7 +149,16 @@ class AudienceRefreshService:
                 plan.sql,
                 plan.params,
                 limit=plan.limit,
-                timeout_seconds=AI_AUDIENCE_REFRESH_QUERY_TIMEOUT_SECONDS,
+                timeout_seconds=(
+                    AI_AUDIENCE_DAILY_REFRESH_QUERY_TIMEOUT_SECONDS
+                    if refresh_kind == "daily"
+                    else AI_AUDIENCE_REFRESH_QUERY_TIMEOUT_SECONDS
+                ),
+                serialization_lock_key=(
+                    AI_AUDIENCE_DAILY_REFRESH_SERIALIZATION_LOCK_KEY
+                    if refresh_kind == "daily"
+                    else None
+                ),
             )
             normalized_rows = [normalize_audience_row(row) for row in raw_rows]
             diff = self._apply_diff(package, run, normalized_rows, refresh_kind=refresh_kind, occurred_at=started_at)
