@@ -3213,7 +3213,7 @@
     }
   ],
   "migration_heads": [
-    "0142_sidebar_recent_message_index"
+    "0143_data_health_snapshot"
   ],
   "openapi_components": {
     "schemas": {
@@ -46633,6 +46633,18 @@
       ],
       "table": "customer_value_segment_history",
       "write_owner": "legacy.production_runtime"
+    },
+    {
+      "domain": "data_health",
+      "drop_candidate": false,
+      "lifecycle": "read_model",
+      "migration_source": "0143_data_health_snapshot",
+      "pii_level": "aggregate_only",
+      "read_owners": [
+        "aicrm_next.data_health.application"
+      ],
+      "table": "data_health_snapshot",
+      "write_owner": "aicrm_next.data_health.snapshot_repository"
     },
     {
       "domain": "commerce_events",

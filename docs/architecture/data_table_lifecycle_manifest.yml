@@ -4347,6 +4347,27 @@ tables:
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
     notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
 
+  data_health_snapshot:
+    domain: data_health
+    lifecycle: read_model
+    write_owner: aicrm_next.data_health.snapshot_repository
+    read_owners:
+      - aicrm_next.data_health.application
+    replacement: none; singleton last-known-good aggregate health projection
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - scripts/ops/refresh_data_health_snapshot.py
+      - data-health read APIs after separately verified cutover
+    migration_source: 0143_data_health_snapshot
+    pii_level: aggregate_only
+    guard_tests:
+      - tests/test_data_health_snapshot.py
+      - tests/test_data_health_snapshot_postgres.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: One atomically replaced row containing only validated data-health results, counts, release provenance, duration and refresh time. Failed or partial refreshes never replace the last successful generation; no customer identifier or message payload is stored.
+
   customer_read_model_refresh_state:
     domain: customer_read_model
     lifecycle: read_model

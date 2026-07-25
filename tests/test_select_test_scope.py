@@ -1364,13 +1364,36 @@ def test_query_observability_changes_force_postgres_full_ci() -> None:
         "aicrm_next/shared/query_telemetry.py",
         "docs/architecture/runtime_contract_inventory.json",
         "docs/ops/query-observability.md",
+        "scripts/ops/summarize_query_observability.py",
+        "tests/test_query_observability_summary.py",
         "tests/test_query_telemetry.py",
     )
 
     assert result["unmatched_files"] == []
     assert "query_observability" in result["matched_scopes"]
+    assert "tests/test_query_observability_summary.py" in result["python_tests"]
     assert "tests/test_query_telemetry.py" in result["python_tests"]
     assert "tests/test_critical_read_performance_runner.py" in result["python_tests"]
+    assert result["needs_postgres"] is True
+    assert result["needs_full_ci"] is True
+    assert result["architecture_gate"] == "full"
+
+
+def test_data_health_snapshot_changes_force_postgres_full_ci() -> None:
+    result = _select(
+        "aicrm_next/data_health/snapshot_repository.py",
+        "aicrm_next/data_health/snapshot_service.py",
+        "migrations/versions/0143_data_health_snapshot.py",
+        "scripts/ops/refresh_data_health_snapshot.py",
+        "tests/test_data_health_snapshot.py",
+        "tests/test_data_health_snapshot_postgres.py",
+    )
+
+    assert result["unmatched_files"] == []
+    assert "data_health_snapshot" in result["matched_scopes"]
+    assert "tests/test_data_health_snapshot.py" in result["python_tests"]
+    assert "tests/test_data_health_snapshot_postgres.py" in result["python_tests"]
+    assert "tests/test_database_bootstrap.py" in result["python_tests"]
     assert result["needs_postgres"] is True
     assert result["needs_full_ci"] is True
     assert result["architecture_gate"] == "full"

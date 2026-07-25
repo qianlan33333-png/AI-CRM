@@ -10,6 +10,20 @@ PR #19 turns the existing table and identity governance checks into a Next-nativ
 
 Responses use only check metadata, counts, table names, and remediation hints. They must not expose raw payloads, phone numbers, OpenIDs, external user IDs, or other identity fields outside the existing identity boundary.
 
+## Snapshot rollout
+
+The first snapshot slice adds `data_health_snapshot` and the explicit
+`scripts/ops/refresh_data_health_snapshot.py` writer. The writer completes and
+validates every registered check before atomically replacing one singleton
+row. An exception, empty result, duplicate check ID, or failed transaction
+leaves the previous generation untouched. The table stores aggregate check
+results, release provenance, duration, and the refresh timestamp; it contains
+no customer identifier or message payload.
+
+This foundation does not change the three HTTP APIs and does not schedule the
+writer. Timer activation and the online read cutover are separate releases so
+each change can be verified and rolled back independently.
+
 ## Initial Checks
 
 Green static checks:

@@ -94,6 +94,8 @@ def _resolve_worker_database_url() -> str:
 
 # 测试间需要清理的关键表（FK 反向顺序：子表先清，autouse 用 CASCADE 兜底剩余 FK）
 _TABLES_TO_TRUNCATE = [
+    # — data health read model
+    "data_health_snapshot",
     # durable callback ingress
     "webhook_inbox",
     # — ai audience ops

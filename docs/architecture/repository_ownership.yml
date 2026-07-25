@@ -467,6 +467,12 @@ repositories:
     table_writes:
       - wecom_corp_tag_groups
       - wecom_corp_tags
+  aicrm_next/data_health/snapshot_repository.py:
+    capability_owner: aicrm_next.data_health
+    table_reads:
+      - data_health_snapshot
+    table_writes:
+      - data_health_snapshot
   aicrm_next/delivery_lineage/repository.py:
     capability_owner: aicrm_next.delivery_lineage
     table_reads:
