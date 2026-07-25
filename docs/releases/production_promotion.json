@@ -9,7 +9,7 @@
   },
   "target": {
     "repository": "qianlan333/AI-CRM",
-    "candidate_sha": "5481fc64e400fe7a99d3f6c1c1618b33206c4874",
+    "candidate_sha": "a07f91d73d0fc9a67551e2af2f6b00deb2a06e2b",
     "pull_request": 1816
   },
   "allowed_post_candidate_paths": [
