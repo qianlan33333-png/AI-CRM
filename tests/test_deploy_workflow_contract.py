@@ -57,6 +57,31 @@ def test_deploy_acknowledges_only_authorized_pre_cutover_welcome_before_green_he
     assert "requeue" not in acknowledgement_block.lower()
 
 
+def test_production_deploy_refreshes_release_pinned_data_health_before_admin_smoke() -> None:
+    workflow = PRODUCTION_DEPLOY_WORKFLOW.read_text(encoding="utf-8")
+
+    web_health_index = workflow.index("cat /tmp/aicrm_health.json")
+    snapshot_index = workflow.index(
+        "python3 scripts/ops/refresh_data_health_snapshot.py",
+        web_health_index,
+    )
+    expected_sha_index = workflow.index(
+        '--expected-release-sha "$after_sha"',
+        snapshot_index,
+    )
+    admin_smoke_index = workflow.index(
+        "python scripts/ops/check_admin_read_pages_smoke.py",
+        expected_sha_index,
+    )
+    runtime_start_index = _deploy_runtime_phase_index(workflow, "authorize-runtime-start")
+
+    assert web_health_index < snapshot_index < expected_sha_index < admin_smoke_index < runtime_start_index
+    snapshot_block = workflow[snapshot_index - 500 : admin_smoke_index]
+    assert "DB_APPLICATION_NAME=aicrm-next-deploy-data-health" in snapshot_block
+    assert "PGAPPNAME=aicrm-next-deploy-data-health" in snapshot_block
+    assert "tee /tmp/aicrm-data-health-release-snapshot.json" in snapshot_block
+
+
 def test_deploy_acknowledges_only_exact_authorized_production_terminal_histories_before_green_health() -> None:
     workflow = PRODUCTION_DEPLOY_WORKFLOW.read_text(encoding="utf-8")
     orchestrator = TERMINAL_ACKNOWLEDGEMENT_ORCHESTRATOR.read_text(encoding="utf-8")
