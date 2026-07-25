@@ -9,6 +9,10 @@ from uuid import UUID
 
 from aicrm_next.identity_contact.dto import ResolvePersonIdentityRequest
 from aicrm_next.identity_contact.resolver import resolve_external_userid_with_dbapi, resolve_identity_with_dbapi, resolved_unionid
+from aicrm_next.identity_contact.resolution_queue_port import (
+    EnqueueIdentityResolutionRequest,
+    build_identity_resolution_queue_port,
+)
 from aicrm_next.shared.runtime import raw_database_url
 
 from .domain import text
@@ -1383,60 +1387,21 @@ def _enqueue_tag_identity_resolution(
     if not external_userid:
         return
     source_key = f"{external_userid}:{text(owner_staff_id)}:contact_tags"
-    cur.execute(
-        """
-        INSERT INTO crm_user_identity_resolution_queue (
-            source_type,
-            source_key,
-            external_userid,
-            payload_json,
-            reason,
-            status,
-            first_seen_at,
-            last_seen_at,
-            created_at,
-            updated_at
-        ) VALUES (
-            'contact_tags',
-            %s,
-            %s,
-            %s,
-            'missing_unionid',
-            'pending',
-            NOW(),
-            NOW(),
-            NOW(),
-            NOW()
-        )
-        ON CONFLICT (source_type, source_key) WHERE status = 'pending' AND source_type <> '' AND source_key <> ''
-        DO UPDATE SET
-            external_userid = COALESCE(NULLIF(EXCLUDED.external_userid, ''), crm_user_identity_resolution_queue.external_userid),
-            payload_json = crm_user_identity_resolution_queue.payload_json || EXCLUDED.payload_json,
-            reason = EXCLUDED.reason,
-            last_seen_at = NOW(),
-            updated_at = NOW()
-        RETURNING *
-        """,
-        (
-            source_key,
-            external_userid,
-            _json(
-                {
-                    "owner_staff_id": text(owner_staff_id),
-                    "external_contact_id": external_userid,
-                    "tag_ids": [text(tag_id) for tag_id in tag_ids],
-                    "tag_names": {text(key): text(value) for key, value in tag_names.items()},
-                }
-            ),
-        ),
-    )
-    row = dict(cur.fetchone() or {})
-    from aicrm_next.identity_contact.resolution_effects import plan_identity_resolution_effect
-
-    plan_identity_resolution_effect(
+    build_identity_resolution_queue_port().enqueue_dbapi(
         cur,
-        row,
-        source_route="channel_entry.contact_tags.identity_resolution",
+        EnqueueIdentityResolutionRequest(
+            source_type="contact_tags",
+            source_key=source_key,
+            reason="missing_unionid",
+            source_route="channel_entry.contact_tags.identity_resolution",
+            external_userid=external_userid,
+            payload_json={
+                "owner_staff_id": text(owner_staff_id),
+                "external_contact_id": external_userid,
+                "tag_ids": [text(tag_id) for tag_id in tag_ids],
+                "tag_names": {text(key): text(value) for key, value in tag_names.items()},
+            },
+        ),
     )
 
 

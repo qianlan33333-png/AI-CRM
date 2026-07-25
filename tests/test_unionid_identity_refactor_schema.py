@@ -242,9 +242,12 @@ def test_runtime_jsonb_membership_avoids_placeholder_collision() -> None:
 def test_questionnaire_postgres_submit_queues_unresolved_identity_without_fake_canonical() -> None:
     source = _read("aicrm_next/questionnaire/repo.py")
     queue_source = _read("aicrm_next/questionnaire/identity_resolution.py")
+    owner_source = _read("aicrm_next/identity_contact/resolution_queue_repository.py")
 
     assert "enqueue_questionnaire_identity_resolution" in source
-    assert "INSERT INTO crm_user_identity_resolution_queue" in queue_source
+    assert "build_identity_resolution_queue_port().enqueue_dbapi" in queue_source
+    assert "INSERT INTO crm_user_identity_resolution_queue" not in queue_source
+    assert "INSERT INTO crm_user_identity_resolution_queue" in owner_source
     assert "identity_unresolved" in queue_source
     assert "INSERT INTO questionnaire_submissions" in source
 
@@ -329,6 +332,7 @@ def test_customer_api_exposes_unionid_user_route() -> None:
 def test_channel_entry_business_write_requires_and_persists_unionid() -> None:
     application = _read("aicrm_next/channel_entry/application.py")
     repo = _read("aicrm_next/channel_entry/repo.py")
+    identity_queue_owner = _read("aicrm_next/identity_contact/resolution_queue_repository.py")
     cleanup = _read("migrations/versions/0069_unionid_channel_contact_cleanup.py")
 
     assert 'subject_type="unionid"' in application
@@ -352,7 +356,9 @@ def test_channel_entry_business_write_requires_and_persists_unionid() -> None:
     assert "ON CONFLICT (channel_id, unionid)" in channel_contact_insert
     assert "def upsert_channel_entry_runtime" in repo
     assert "INSERT INTO automation_channel_entry_runtime" in repo
-    assert "INSERT INTO crm_user_identity_resolution_queue" in repo
+    assert "INSERT INTO crm_user_identity_resolution_queue" not in repo
+    assert "build_identity_resolution_queue_port().enqueue_dbapi" in repo
+    assert "INSERT INTO crm_user_identity_resolution_queue" in identity_queue_owner
 
     assert "ALTER TABLE IF EXISTS automation_channel_contact DROP COLUMN IF EXISTS external_userid" in cleanup
     assert "INSERT INTO crm_user_identity_resolution_queue" in cleanup
@@ -625,6 +631,7 @@ def test_customer_fact_read_sources_drop_legacy_identity_columns() -> None:
     customer_repo_source = _read("aicrm_next/customer_read_model/repo_live_source.py")
     message_archive_source = _read("aicrm_next/message_archive/repo.py")
     channel_entry_repo_source = _read("aicrm_next/channel_entry/repo.py")
+    identity_queue_source = _read("aicrm_next/identity_contact/resolution_queue_repository.py")
 
     for table_name in ["contact_tags", "archived_messages", "class_user_status_current", "class_user_status_history"]:
         assert table_name in cleanup_source
@@ -647,12 +654,15 @@ def test_customer_fact_read_sources_drop_legacy_identity_columns() -> None:
     archive_insert = message_archive_source.split("INSERT INTO archived_messages", 1)[1].split("ON CONFLICT (msgid)", 1)[0]
     assert "unionid" in archive_insert
     assert "external_userid" not in archive_insert
-    assert "INSERT INTO crm_user_identity_resolution_queue" in message_archive_source
+    assert "INSERT INTO crm_user_identity_resolution_queue" not in message_archive_source
+    assert "build_identity_resolution_queue_port().enqueue_dbapi" in message_archive_source
 
     tag_insert = channel_entry_repo_source.split("INSERT INTO contact_tags", 1)[1].split("conn.commit()", 1)[0]
     assert "unionid" in tag_insert
     assert "external_userid" not in tag_insert
-    assert "INSERT INTO crm_user_identity_resolution_queue" in channel_entry_repo_source
+    assert "INSERT INTO crm_user_identity_resolution_queue" not in channel_entry_repo_source
+    assert "build_identity_resolution_queue_port().enqueue_dbapi" in channel_entry_repo_source
+    assert "INSERT INTO crm_user_identity_resolution_queue" in identity_queue_source
 
 
 def test_wechat_shop_orders_keep_customer_identity_in_unionid_and_raw_payload() -> None:

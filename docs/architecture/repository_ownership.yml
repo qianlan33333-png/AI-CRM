@@ -158,7 +158,6 @@ repositories:
       - ai_audience_package_run
       - ai_audience_package_sender
       - ai_audience_package_version
-      - crm_user_identity_resolution_queue
   aicrm_next/automation_agents/repository.py:
     capability_owner: aicrm_next.automation_agents
     table_reads:
@@ -368,7 +367,6 @@ repositories:
       - automation_channel_qrcode_asset
       - automation_channel_scene_alias
       - contact_tags
-      - crm_user_identity_resolution_queue
       - wecom_external_contact_event_logs
   aicrm_next/channel_entry/welcome_media_effects_repository.py:
     capability_owner: aicrm_next.channel_entry.welcome_media_effects_repository
@@ -539,6 +537,11 @@ repositories:
       - crm_user_identity_resolution_queue
     non_literal_table_reads:
       - external_contact_bindings
+  aicrm_next/identity_contact/resolution_queue_repository.py:
+    capability_owner: aicrm_next.identity_contact
+    table_reads: []
+    table_writes:
+      - crm_user_identity_resolution_queue
   aicrm_next/identity_contact/write_repository.py:
     capability_owner: aicrm_next.identity_contact
     table_reads: []
@@ -576,7 +579,6 @@ repositories:
     table_writes:
       - archive_sync_state
       - archived_messages
-      - crm_user_identity_resolution_queue
       - sync_runs
     non_literal_table_reads:
       - app_settings
@@ -761,7 +763,6 @@ repositories:
       - questionnaire_submissions
       - questionnaires
     table_writes:
-      - crm_user_identity_resolution_queue
       - questionnaire_options
       - questionnaire_questions
       - questionnaire_score_rules
@@ -770,8 +771,6 @@ repositories:
       - questionnaires
     non_literal_table_reads:
       - app_settings
-    non_literal_table_writes:
-      - crm_user_identity_resolution_queue
   aicrm_next/radar_links/repo.py:
     capability_owner: aicrm_next.radar_links
     table_reads:

@@ -123,6 +123,9 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "crm_user_identity",
         "crm_user_identity_resolution_queue",
     ]
+    assert repositories["aicrm_next/identity_contact/resolution_queue_repository.py"]["table_writes"] == [
+        "crm_user_identity_resolution_queue"
+    ]
     assert repositories["aicrm_next/sidebar_write/repo.py"]["table_writes"] == [
         "sidebar_customer_profile_fields"
     ]
@@ -131,6 +134,41 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
     assert "aicrm_next.sidebar_write" not in manifest["tables"]["crm_user_identity_resolution_queue"][
         "write_owners"
     ]
+    assert manifest["tables"]["crm_user_identity_resolution_queue"]["write_owners"] == [
+        "aicrm_next.channel_entry",
+        "aicrm_next.identity_contact",
+        "aicrm_next.platform_foundation.execution_runtime.repository",
+    ]
+    for path in (
+        "aicrm_next/ai_audience_ops/repository.py",
+        "aicrm_next/channel_entry/repo.py",
+        "aicrm_next/message_archive/repo.py",
+        "aicrm_next/questionnaire/repo.py",
+    ):
+        assert "crm_user_identity_resolution_queue" not in repositories[path]["table_writes"]
+
+
+def test_identity_resolution_queue_ingress_sql_is_confined_to_owner_and_transition_modules() -> None:
+    transitional_writers = {
+        "aicrm_next/channel_entry/identity_external_effect.py",
+        "aicrm_next/channel_entry/identity_resolution_worker.py",
+        "aicrm_next/platform_foundation/execution_runtime/cutover.py",
+    }
+    offenders: list[str] = []
+
+    for path in sorted((ROOT / "aicrm_next").rglob("*.py")):
+        access = extract_repository_sql_access(path)
+        if "crm_user_identity_resolution_queue" not in access.table_writes:
+            continue
+        relative_path = path.relative_to(ROOT).as_posix()
+        if relative_path.startswith("aicrm_next/identity_contact/"):
+            continue
+        if relative_path == "aicrm_next/channel_entry/identity_bridge_repo.py":
+            continue
+        if relative_path not in transitional_writers:
+            offenders.append(relative_path)
+
+    assert offenders == []
 
 
 def test_canonical_identity_table_sql_writes_resolve_to_identity_contact_owner() -> None:

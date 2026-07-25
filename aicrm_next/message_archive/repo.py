@@ -7,6 +7,10 @@ from datetime import datetime, timezone
 from typing import Any, Callable, Protocol
 
 from aicrm_next.identity_contact.resolver import resolve_external_userid_with_dbapi
+from aicrm_next.identity_contact.resolution_queue_port import (
+    EnqueueIdentityResolutionRequest,
+    build_identity_resolution_queue_port,
+)
 from aicrm_next.shared.repository_provider import assert_repository_allowed
 from aicrm_next.shared.runtime import production_data_ready, raw_database_url
 from aicrm_next.shared.runtime_settings import runtime_setting
@@ -560,51 +564,17 @@ def _enqueue_archive_identity_resolution(conn, message: JsonDict) -> None:
     source_key = external_userid
     if not external_userid:
         return
-    cursor = conn.execute(
-        """
-        INSERT INTO crm_user_identity_resolution_queue (
-            source_type,
-            source_key,
-            external_userid,
-            payload_json,
-            reason,
-            status,
-            first_seen_at,
-            last_seen_at,
-            created_at,
-            updated_at
-        ) VALUES (
-            'archived_messages',
-            %s,
-            %s,
-            %s::jsonb,
-            'missing_unionid',
-            'pending',
-            NOW(),
-            NOW(),
-            NOW(),
-            NOW()
-        )
-        ON CONFLICT (source_type, source_key) WHERE status = 'pending' AND source_type <> '' AND source_key <> ''
-        DO UPDATE SET
-            external_userid = COALESCE(NULLIF(EXCLUDED.external_userid, ''), crm_user_identity_resolution_queue.external_userid),
-            payload_json = crm_user_identity_resolution_queue.payload_json || EXCLUDED.payload_json,
-        reason = EXCLUDED.reason,
-        last_seen_at = NOW(),
-        updated_at = NOW()
-        RETURNING *
-        """,
-        (source_key, external_userid, json.dumps({"message": message}, ensure_ascii=False, default=str)),
-    )
-    row = cursor.fetchone()
-    if row:
-        from aicrm_next.identity_contact.resolution_effects import plan_identity_resolution_effect
-
-        plan_identity_resolution_effect(
-            conn,
-            dict(row),
+    build_identity_resolution_queue_port().enqueue_dbapi(
+        conn,
+        EnqueueIdentityResolutionRequest(
+            source_type="archived_messages",
+            source_key=source_key,
+            reason="missing_unionid",
             source_route="message_archive.identity_resolution.enqueue",
-        )
+            external_userid=external_userid,
+            payload_json={"message": message},
+        ),
+    )
 
 
 def _normalize_stored_chat_scene(value: str | None) -> str:
