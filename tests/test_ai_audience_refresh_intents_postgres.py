@@ -415,6 +415,104 @@ def test_daily_clock_recovers_blocked_legacy_simple_shape() -> None:
     assert intent["signal_generation"] == 4
 
 
+@pytest.mark.parametrize(
+    (
+        "query_mode",
+        "incremental_enabled",
+        "incremental_sql_text",
+        "snapshot_sql_text",
+        "simple_compiled_sql_text",
+        "blocked_kind",
+        "error_message",
+    ),
+    [
+        (
+            "hybrid",
+            False,
+            "",
+            "SELECT 1 AS identity_type",
+            "",
+            "incremental",
+            "incremental_sql_not_configured",
+        ),
+        (
+            "simple_sql",
+            False,
+            "SELECT 1 AS identity_type",
+            "",
+            "SELECT 1 AS identity_type",
+            "daily",
+            "daily_sql_not_configured",
+        ),
+    ],
+)
+def test_duplicate_daily_clock_receipt_recovers_strict_compatibility_block(
+    query_mode: str,
+    incremental_enabled: bool,
+    incremental_sql_text: str,
+    snapshot_sql_text: str,
+    simple_compiled_sql_text: str,
+    blocked_kind: str,
+    error_message: str,
+) -> None:
+    package_id = _create_package(
+        daily_enabled=True,
+        incremental_enabled=incremental_enabled,
+        incremental_sql_text=incremental_sql_text,
+        snapshot_sql_text=snapshot_sql_text,
+        query_mode=query_mode,
+        simple_compiled_sql_text=simple_compiled_sql_text,
+    )
+    service = AudienceRefreshIntentService()
+    first = service.request_due_refreshes("daily", bucket="2026-07-25")
+    first_item = next(item for item in first["items"] if item["package_id"] == package_id)
+    assert first_item["signal_created"] is True
+
+    with get_session_factory()() as session:
+        session.execute(
+            text(
+                """
+                UPDATE ai_audience_refresh_intent
+                SET dirty_generation = 2,
+                    completed_generation = 0,
+                    signal_generation = 1,
+                    status = 'blocked',
+                    target_refresh_kind = :blocked_kind,
+                    attempt_count = 10,
+                    last_error_code = 'refresh_failed',
+                    last_error_message = :error_message
+                WHERE package_id = :package_id
+                """
+            ),
+            {
+                "package_id": package_id,
+                "blocked_kind": blocked_kind,
+                "error_message": error_message,
+            },
+        )
+        session.commit()
+
+    duplicate = service.request_due_refreshes("daily", bucket="2026-07-25")
+    recovered = next(item for item in duplicate["items"] if item["package_id"] == package_id)
+
+    assert recovered["deduplicated"] is True
+    assert recovered["blocked_incompatible_config_recovered"] is True
+    assert recovered["history_frozen_signal_recovered"] is False
+    assert recovered["signal_created"] is True
+    intent = AudienceRefreshIntentRepository().get(package_id)
+    assert intent is not None
+    assert intent["status"] == "waiting"
+    assert intent["target_refresh_kind"] == "daily"
+    assert intent["attempt_count"] == 0
+    assert intent["dirty_generation"] == 2
+    assert intent["signal_generation"] == 2
+    assert _count(
+        "SELECT COUNT(*) FROM internal_event_outbox WHERE idempotency_key LIKE :key",
+        {"key": f"ai_audience.refresh.requested:{package_id}:%"},
+    ) == 2
+    assert _count("SELECT COUNT(*) FROM internal_event_consumer_run") == 0
+
+
 def test_source_receipt_persists_only_opaque_identifiers() -> None:
     package_id = _create_package()
     raw_event_key = "questionnaire.submitted:mobile:13800138000"
