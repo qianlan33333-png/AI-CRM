@@ -18,6 +18,7 @@ from .automation_engine.repo import reset_automation_fixture_state
 from .automation_engine.channel_completion import ChannelQrReadService
 from .channel_entry_composition import build_wecom_callback_inbox_worker_factory
 from .commerce.repo import reset_commerce_fixture_state
+from .deployment_profile import DeploymentProfile, deployment_profile_from_environment
 from .external_effect_composition import (
     build_external_effect_adapter_registry,
     build_external_effect_continuation_registry,
@@ -66,22 +67,28 @@ logger = logging.getLogger(__name__)
 query_telemetry_logger = logging.getLogger("uvicorn.error")
 
 
-def create_app(*, pii_audit_repository: PiiAuditRepository | None = None) -> FastAPI:
+def create_app(
+    *,
+    pii_audit_repository: PiiAuditRepository | None = None,
+    deployment_profile: DeploymentProfile | None = None,
+) -> FastAPI:
     assert_required_runtime_secrets()
+    profile = deployment_profile or deployment_profile_from_environment()
     configure_channel_completion_provider(ChannelQrReadService())
     app = FastAPI(title="AI-CRM Next", version="0.1.0")
+    app.state.deployment_profile = profile
     app.state.admin_action_token_bundle_builder = build_admin_action_token_bundle
     app.state.admin_action_token_validator = validate_action_token_for_request
     app.state.mcp_jsonrpc_application = build_mcp_jsonrpc_application()
-    app.state.external_effect_adapter_registry = build_external_effect_adapter_registry()
+    app.state.external_effect_adapter_registry = build_external_effect_adapter_registry(profile)
     app.state.wecom_callback_inbox_worker_factory = build_wecom_callback_inbox_worker_factory(
         external_effect_adapter_registry=app.state.external_effect_adapter_registry,
     )
-    app.state.external_effect_continuation_registry = build_external_effect_continuation_registry()
+    app.state.external_effect_continuation_registry = build_external_effect_continuation_registry(profile)
     app.state.ai_audience_e2e_runner_factory = build_ai_audience_e2e_runner_factory(
         external_effect_adapter_registry=app.state.external_effect_adapter_registry,
     )
-    app.state.internal_event_consumer_registry = build_internal_event_consumer_registry()
+    app.state.internal_event_consumer_registry = build_internal_event_consumer_registry(profile)
     app.state.sidebar_contact_binding_status_query_factory = build_sidebar_contact_binding_status_query
     app.state.external_customer_detail_query = get_customer_detail
     app.state.service_period_member_grid_access_service_factory = build_service_period_member_grid_access_service
@@ -171,47 +178,53 @@ def create_app(*, pii_audit_repository: PiiAuditRepository | None = None) -> Fas
                 )
         return response
 
-    app.mount(
-        "/static/group-ops",
-        StaticFiles(directory=_GROUP_OPS_DIR / "static"),
-        name="group_ops_static",
-    )
-    app.mount(
-        "/static/automation-engine",
-        StaticFiles(directory=_AUTOMATION_ENGINE_DIR / "static"),
-        name="automation_engine_static",
-    )
-    app.mount(
-        "/static/customer-tags",
-        StaticFiles(directory=_CUSTOMER_TAGS_DIR / "static"),
-        name="customer_tags_static",
-    )
-    app.mount(
-        "/static/questionnaire",
-        StaticFiles(directory=_QUESTIONNAIRE_DIR / "static"),
-        name="questionnaire_static",
-    )
-    app.mount(
-        "/static/navigation-target",
-        StaticFiles(directory=_NAVIGATION_TARGET_DIR / "static"),
-        name="navigation_target_static",
-    )
-    app.mount(
-        "/static/operation-cycles",
-        StaticFiles(directory=_OPERATION_CYCLES_DIR / "static"),
-        name="operation_cycles_static",
-    )
-    app.mount(
-        "/static/service-period",
-        StaticFiles(directory=_SERVICE_PERIOD_DIR / "static"),
-        name="service_period_static",
-    )
+    if profile.allows_runtime("core.automation"):
+        app.mount(
+            "/static/group-ops",
+            StaticFiles(directory=_GROUP_OPS_DIR / "static"),
+            name="group_ops_static",
+        )
+        app.mount(
+            "/static/automation-engine",
+            StaticFiles(directory=_AUTOMATION_ENGINE_DIR / "static"),
+            name="automation_engine_static",
+        )
+    if profile.allows_runtime("core.crm"):
+        app.mount(
+            "/static/customer-tags",
+            StaticFiles(directory=_CUSTOMER_TAGS_DIR / "static"),
+            name="customer_tags_static",
+        )
+    if profile.allows_runtime("extension.forms"):
+        app.mount(
+            "/static/questionnaire",
+            StaticFiles(directory=_QUESTIONNAIRE_DIR / "static"),
+            name="questionnaire_static",
+        )
+    if profile.allows_runtime("core.app"):
+        app.mount(
+            "/static/navigation-target",
+            StaticFiles(directory=_NAVIGATION_TARGET_DIR / "static"),
+            name="navigation_target_static",
+        )
+    if profile.allows_runtime("extension.hxc"):
+        app.mount(
+            "/static/operation-cycles",
+            StaticFiles(directory=_OPERATION_CYCLES_DIR / "static"),
+            name="operation_cycles_static",
+        )
+    if profile.allows_runtime("extension.commerce"):
+        app.mount(
+            "/static/service-period",
+            StaticFiles(directory=_SERVICE_PERIOD_DIR / "static"),
+            name="service_period_static",
+        )
     app.mount(
         "/static",
         StaticFiles(directory=_FRONTEND_COMPAT_DIR / "static"),
         name="static",
     )
-    register_routers(app)
+    register_routers(app, profile=profile)
     return app
 
 

@@ -17,6 +17,7 @@ def test_router_registry_specs_have_capability_owner_and_route_group() -> None:
     for spec in ROUTER_SPECS:
         assert spec.capability_owner
         assert spec.capability_owner != "unknown"
+        assert spec.logical_capability_id
         assert spec.route_group
         assert spec.router.routes
 
@@ -27,6 +28,7 @@ def test_router_registry_summary_exposes_stable_metadata() -> None:
     assert summary == [
         {
             "capability_owner": spec.capability_owner,
+            "logical_capability_id": spec.logical_capability_id,
             "route_group": spec.route_group,
             "route_count": len(spec.router.routes),
             "notes": spec.notes,

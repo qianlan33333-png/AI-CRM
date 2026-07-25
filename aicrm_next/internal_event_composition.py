@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from functools import partial
 
+from .capability_registry import capability_for_event_type
 from .commerce.external_push_admin import plan_order_paid_external_push_effect
 from .commerce.repo import execute_commerce_transaction
 from .commerce.payment_tagging import (
@@ -10,7 +11,9 @@ from .commerce.payment_tagging import (
 )
 from .identity_contact.payment_projection import project_payment_order_mobile
 from .external_effect_composition import (
+    AUTOMATION_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
     EXTERNAL_EFFECT_PROVIDER_RESULT_ACCESS_ALLOWLIST,
+    QUESTIONNAIRE_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
     build_external_effect_continuation_consumers,
     build_external_effect_continuation_registry,
     build_external_effect_settlement_consumers,
@@ -40,6 +43,7 @@ from .platform_foundation.execution_runtime.commands import (
     register_queue_runtime_command_consumer,
 )
 from .shared.runtime import production_data_ready
+from .deployment_profile import DeploymentProfile
 
 
 def _plan_order_paid_external_push_effect_from_db(
@@ -137,27 +141,53 @@ def register_shadow_event_consumers(registry: InternalEventConsumerRegistry | No
     )
 
 
-def register_external_effect_completion_consumers(registry: InternalEventConsumerRegistry | None = None) -> None:
+_CONTINUATION_CAPABILITY = {
+    QUESTIONNAIRE_EXTERNAL_EFFECT_CONTINUATION_CONSUMER: "extension.forms",
+    AUTOMATION_EXTERNAL_EFFECT_CONTINUATION_CONSUMER: "extension.ai",
+}
+
+
+def _runtime_consumers(consumers, profile: DeploymentProfile | None):
+    if profile is None or profile.activation_mode == "observe":
+        return consumers
+    return tuple(
+        consumer
+        for consumer in consumers
+        if profile.allows_runtime(_CONTINUATION_CAPABILITY.get(consumer.consumer_name, "core.platform"))
+    )
+
+
+def register_external_effect_completion_consumers(
+    registry: InternalEventConsumerRegistry | None = None,
+    *,
+    profile: DeploymentProfile | None = None,
+) -> None:
     registry = registry or current_internal_event_consumer_registry()
     register_external_effect_completed_consumers(
         registry,
-        consumers=build_external_effect_continuation_consumers(),
+        consumers=_runtime_consumers(build_external_effect_continuation_consumers(), profile),
         repository_factory=build_external_effect_repository,
-        legacy_continuation_registry_factory=build_external_effect_continuation_registry,
+        legacy_continuation_registry_factory=partial(build_external_effect_continuation_registry, profile),
         provider_result_access_allowlist=EXTERNAL_EFFECT_PROVIDER_RESULT_ACCESS_ALLOWLIST,
     )
 
 
-def register_external_effect_settlement_consumers(registry: InternalEventConsumerRegistry | None = None) -> None:
+def register_external_effect_settlement_consumers(
+    registry: InternalEventConsumerRegistry | None = None,
+    *,
+    profile: DeploymentProfile | None = None,
+) -> None:
     registry = registry or current_internal_event_consumer_registry()
     register_external_effect_settled_consumers(
         registry,
-        consumers=build_external_effect_settlement_consumers(),
+        consumers=_runtime_consumers(build_external_effect_settlement_consumers(), profile),
         repository_factory=build_external_effect_repository,
     )
 
 
-def build_internal_event_consumer_registry() -> InternalEventConsumerRegistry:
+def build_internal_event_consumer_registry(
+    profile: DeploymentProfile | None = None,
+) -> InternalEventConsumerRegistry:
     registry = InternalEventConsumerRegistry()
     register_payment_succeeded_consumers(registry)
     register_refund_succeeded_consumers(registry)
@@ -165,9 +195,14 @@ def build_internal_event_consumer_registry() -> InternalEventConsumerRegistry:
     register_shadow_event_consumers(registry)
     register_ai_audience_event_consumers(registry)
     register_customer_read_model_event_consumers(registry)
-    register_external_effect_completion_consumers(registry)
-    register_external_effect_settlement_consumers(registry)
+    register_external_effect_completion_consumers(registry, profile=profile)
+    register_external_effect_settlement_consumers(registry, profile=profile)
     register_queue_runtime_command_consumer(registry)
+    if profile is not None and profile.activation_mode == "enforce":
+        for event_type in tuple(registry.to_dict()):
+            capability = capability_for_event_type(event_type)
+            if capability is not None and not profile.allows_runtime(capability.capability_id):
+                registry.remove_event_type(event_type)
     registry.seal_fanout_contract()
     return registry
 

@@ -109,8 +109,11 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     sidebar_recent_message_index_source = sidebar_recent_message_index.read_text(encoding="utf-8")
     data_health_snapshot = VERSIONS / "0143_data_health_snapshot.py"
     data_health_snapshot_source = data_health_snapshot.read_text(encoding="utf-8")
+    config_release_control_plane = VERSIONS / "0144_config_release_control_plane.py"
+    config_release_control_plane_source = config_release_control_plane.read_text(encoding="utf-8")
 
-    assert heads == {"0143_data_health_snapshot"}
+    assert heads == {"0144_config_release_control_plane"}
+    assert revisions["0144_config_release_control_plane"]["down_revision"] == "0143_data_health_snapshot"
     assert revisions["0143_data_health_snapshot"]["down_revision"] == "0142_sidebar_recent_message_index"
     assert revisions["0142_sidebar_recent_message_index"]["down_revision"] == "0141_production_welcome_timeout_ack_scope"
     assert revisions["0141_production_welcome_timeout_ack_scope"]["down_revision"] == "0140_wecom_welcome_hard_realtime_lanes"
@@ -132,6 +135,9 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     assert revisions["0125_execution_runtime_correctness"]["down_revision"] == "0124_agent_audit_tables"
     assert revisions["0124_agent_audit_tables"]["down_revision"] == "0123_required_physical_schema_repair"
     assert revisions["0123_required_physical_schema_repair"]["down_revision"] == "0122_internal_event_fanout_manifest"
+    assert "CREATE TABLE IF NOT EXISTS config_releases" in config_release_control_plane_source
+    assert "CREATE TABLE IF NOT EXISTS deployment_profile_state" in config_release_control_plane_source
+    assert "uq_config_releases_profile_published" in config_release_control_plane_source
     assert "0018_hxc_dashboard_broadcast_tasks" in source
     assert "CREATE TABLE IF NOT EXISTS data_health_snapshot" in data_health_snapshot_source
     assert "CHECK (singleton IS TRUE)" in data_health_snapshot_source

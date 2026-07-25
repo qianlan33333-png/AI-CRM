@@ -27,6 +27,7 @@ from scripts.ops.bootstrap_database import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+ALEMBIC_HEAD_REVISION = "0144_config_release_control_plane"
 CREATE_TABLE_PATTERN = re.compile(
     r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?([a-zA-Z_][a-zA-Z0-9_]*)",
     re.IGNORECASE,
@@ -74,7 +75,7 @@ def test_empty_postgres_database_installs_and_reuses_alembic_head() -> None:
 
         assert first.baseline_applied is True
         assert first.revision_before is None
-        assert first.revision_after == "0143_data_health_snapshot"
+        assert first.revision_after == ALEMBIC_HEAD_REVISION
         assert second.baseline_applied is False
         assert second.revision_before == first.revision_after
         assert second.revision_after == first.revision_after
@@ -300,7 +301,7 @@ def test_production_shape_alembic_database_upgrades_without_reapplying_baseline(
 
         assert result.baseline_applied is False
         assert result.revision_before == "0098_admin_session_revocation"
-        assert result.revision_after == "0143_data_health_snapshot"
+        assert result.revision_after == ALEMBIC_HEAD_REVISION
         with psycopg.connect(database_url) as connection:
             preserved = connection.execute(
                 "SELECT wecom_userid, session_version FROM admin_users WHERE id = %s",
@@ -328,7 +329,7 @@ def test_upgrade_repairs_missing_or_partial_automation_agent_audit_tables_withou
 
         assert result.baseline_applied is False
         assert result.revision_before == "0123_required_physical_schema_repair"
-        assert result.revision_after == "0143_data_health_snapshot"
+        assert result.revision_after == ALEMBIC_HEAD_REVISION
 
         expected_columns = {
             "automation_agent_output": {
@@ -1001,7 +1002,7 @@ def test_identity_customer_cutover_holds_historical_work_without_replay() -> Non
         _upgrade_database_to(database_url, "head")
         with psycopg.connect(database_url) as connection:
             assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
-                "0143_data_health_snapshot",
+                ALEMBIC_HEAD_REVISION,
             )
 
 
@@ -1095,7 +1096,7 @@ def test_external_claim_scope_policy_upgrade_downgrade_and_reupgrade() -> None:
         _upgrade_database_to(database_url, "head")
         with psycopg.connect(database_url) as connection:
             assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
-                "0143_data_health_snapshot",
+                ALEMBIC_HEAD_REVISION,
             )
             assert connection.execute(
                 """
@@ -1143,7 +1144,7 @@ def test_execution_timeline_graph_indexes_upgrade_downgrade_and_reupgrade() -> N
                 "SELECT indexname FROM pg_indexes WHERE schemaname = 'public' AND indexname = ANY(%s)",
                 (sorted(expected_indexes),),
             ).fetchall()
-        assert version == ("0143_data_health_snapshot",)
+        assert version == (ALEMBIC_HEAD_REVISION,)
         assert control == (0, False)
         assert {row[0] for row in installed} == expected_indexes
 
@@ -1336,7 +1337,7 @@ def test_queue_validation_audits_are_append_only_and_survive_additive_rollback()
         _upgrade_database_to(database_url, "head")
         with psycopg.connect(database_url) as connection:
             assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
-                "0143_data_health_snapshot",
+                ALEMBIC_HEAD_REVISION,
             )
 
 

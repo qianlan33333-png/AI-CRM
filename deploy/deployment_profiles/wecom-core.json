@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "profile_id": "wecom-core",
+  "description": "Single-corp, multi-app WeCom SCRM core profile",
+  "core_version": "0.1.0",
+  "corp_mode": "single_corp_multi_app",
+  "activation_mode": "observe",
+  "config_schema_version": 1,
+  "enabled_capabilities": [
+    "core.platform",
+    "core.channels",
+    "core.crm",
+    "core.engagement",
+    "core.automation",
+    "core.insights",
+    "core.app"
+  ],
+  "runtime_roles": [
+    "web",
+    "callback",
+    "internal_worker",
+    "external_worker",
+    "scheduler"
+  ]
+}
