@@ -170,13 +170,9 @@ class AutomationAgentRepository:
                         SELECT unionid
                         FROM crm_user_identity
                         WHERE primary_external_userid = :external_userid
-                           OR EXISTS (
-                               SELECT 1
-                               FROM jsonb_array_elements(external_userids_json) AS external_item(value)
-                               WHERE CASE
-                                   WHEN jsonb_typeof(external_item.value) = 'object' THEN external_item.value->>'external_userid'
-                                   ELSE trim('"' from external_item.value::text)
-                               END = :external_userid
+                           OR external_userids_json @> jsonb_build_array(CAST(:external_userid AS text))
+                           OR external_userids_json @> jsonb_build_array(
+                               jsonb_build_object('external_userid', CAST(:external_userid AS text))
                            )
                         LIMIT 1
                         """
@@ -259,8 +255,28 @@ class AutomationAgentRepository:
         if safe_submission_id <= 0 and safe_questionnaire_id <= 0 and not external_userid:
             return []
         try:
+            identity_clause = ""
+            resolved_unionid = ""
+            if external_userid:
+                identity = self._one(
+                    """
+                    SELECT unionid
+                    FROM crm_user_identity
+                    WHERE primary_external_userid = :external_userid
+                       OR external_userids_json @> jsonb_build_array(CAST(:external_userid AS text))
+                       OR external_userids_json @> jsonb_build_array(
+                           jsonb_build_object('external_userid', CAST(:external_userid AS text))
+                       )
+                    LIMIT 1
+                    """,
+                    {"external_userid": external_userid},
+                )
+                resolved_unionid = _text((identity or {}).get("unionid"))
+                if not resolved_unionid:
+                    return []
+                identity_clause = "AND s.unionid = :unionid AND s.unionid <> ''"
             return self._all(
-                """
+                f"""
                 SELECT
                     s.id AS submission_id,
                     s.questionnaire_id,
@@ -279,30 +295,14 @@ class AutomationAgentRepository:
                 LEFT JOIN questionnaire_questions qq ON qq.id = a.question_id
                 WHERE (:submission_id <= 0 OR s.id = :submission_id)
                   AND (:questionnaire_id <= 0 OR s.questionnaire_id = :questionnaire_id)
-                  AND (
-                    :external_userid = ''
-                    OR s.unionid = (
-                        SELECT identity.unionid
-                        FROM crm_user_identity identity
-                        WHERE identity.primary_external_userid = :external_userid
-                           OR EXISTS (
-                               SELECT 1
-                               FROM jsonb_array_elements(identity.external_userids_json) AS external_item(value)
-                               WHERE CASE
-                                   WHEN jsonb_typeof(external_item.value) = 'object' THEN external_item.value->>'external_userid'
-                                   ELSE trim('"' from external_item.value::text)
-                               END = :external_userid
-                           )
-                        LIMIT 1
-                    )
-                  )
+                  {identity_clause}
                 ORDER BY s.submitted_at DESC NULLS LAST, s.id DESC, a.id ASC
                 LIMIT :limit
                 """,
                 {
                     "submission_id": safe_submission_id,
                     "questionnaire_id": safe_questionnaire_id,
-                    "external_userid": external_userid,
+                    "unionid": resolved_unionid,
                     "limit": safe_limit,
                 },
             )
