@@ -6,6 +6,8 @@ from typing import Any, Callable, Mapping
 from urllib.parse import urlparse
 from uuid import uuid4
 
+from aicrm_next.capability_registry import capability_for_effect_type
+from aicrm_next.deployment_profile import DeploymentProfile, deployment_profile_from_environment
 from aicrm_next.platform_foundation.push_center.capability_registry import capability_for_section
 from aicrm_next.shared.automation_agent_webhook_contract import automation_agent_code_from_webhook_url
 from aicrm_next.platform_foundation.push_center.section_mapper import section_for_job
@@ -100,6 +102,7 @@ class ExternalEffectWorker:
         | None = None,
         locked_by: str = "",
         lease_seconds: int = 300,
+        deployment_profile: DeploymentProfile | None = None,
     ):
         self._repo = repository or build_external_effect_repository()
         self._adapters = adapter_registry or DEFAULT_ADAPTER_REGISTRY
@@ -107,6 +110,7 @@ class ExternalEffectWorker:
         self._critical_post_commit_hook = critical_post_commit_hook
         self._locked_by = locked_by or f"external-effect-worker-{uuid4().hex[:8]}"
         self._lease_seconds = max(30, min(int(lease_seconds or 300), 3600))
+        self._deployment_profile = deployment_profile or deployment_profile_from_environment()
 
     @staticmethod
     def _empty_counts(*, candidate_count: int = 0) -> dict[str, int]:
@@ -281,7 +285,9 @@ class ExternalEffectWorker:
                 "settlement_event_queued": bool(cancelled),
                 "real_external_call_executed": False,
             }
-        dispatch_result = self._block_if_wecom_execution_disabled(job)
+        dispatch_result = self._block_if_capability_disabled(job)
+        if dispatch_result is None:
+            dispatch_result = self._block_if_wecom_execution_disabled(job)
         if dispatch_result is None and _enabled("AICRM_EXTERNAL_EFFECT_TEST_EXECUTION_ONLY") and not _is_test_job(job):
             dispatch_result = ExternalEffectDispatchResult(
                 status="blocked",
@@ -523,6 +529,24 @@ class ExternalEffectWorker:
             },
             error_code=block_code,
             error_message=block_message,
+        )
+
+    def _block_if_capability_disabled(self, job: ExternalEffectJob) -> ExternalEffectDispatchResult | None:
+        capability = capability_for_effect_type(job.effect_type)
+        if capability is None or self._deployment_profile.allows_runtime(capability.capability_id):
+            return None
+        return ExternalEffectDispatchResult(
+            status="blocked",
+            adapter_mode="disabled",
+            request_summary={
+                "effect_type": job.effect_type,
+                "adapter_name": job.adapter_name,
+                "capability_id": capability.capability_id,
+            },
+            response_summary={"blocked": True, "real_external_call_executed": False},
+            error_code="capability_disabled",
+            error_message=f"External effect capability is disabled: {capability.capability_id}",
+            real_external_call_executed=False,
         )
 
     def _run_post_success_continuations(self, job: ExternalEffectJob, dispatch_result) -> dict[str, Any]:

@@ -1,0 +1,36 @@
+schema_version: 1
+source_of_truth: aicrm_next.capability_registry
+phase: dependency_inversion
+
+stable_core_domains:
+  - app
+  - platform
+  - crm
+  - channels
+  - engagement
+  - automation
+  - insights
+
+static_package_domain: extensions
+
+physical_moves:
+  enabled: false
+  enable_after:
+    - public command and query ports are in use
+    - table write ownership is unique
+    - current HTTP event and effect contracts have parity evidence
+  forbidden_in_same_release:
+    - table_drop
+    - runtime_unit_cutover
+
+dependency_targets:
+  cyclic_contexts: 0
+  cross_context_edges: 120
+  current_baseline_file: docs/architecture/import_graph_baseline.yml
+
+compatibility:
+  preserve_http_paths: true
+  preserve_auth_contracts: true
+  preserve_event_names: true
+  preserve_effect_types: true
+  preserve_database_behavior_until_owner_cutover: true

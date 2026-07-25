@@ -25,6 +25,16 @@ repositories:
       - marketing_automation_configs
       - marketing_automation_question_rules
       - mcp_tool_settings
+  aicrm_next/admin_config/config_release_repository.py:
+    capability_owner: aicrm_next.admin_config
+    table_reads:
+      - app_settings
+      - config_releases
+      - deployment_profile_state
+    table_writes:
+      - app_settings
+      - config_releases
+      - deployment_profile_state
   aicrm_next/admin_config/pii_audit_repository.py:
     capability_owner: aicrm_next.admin_config
     table_reads: []

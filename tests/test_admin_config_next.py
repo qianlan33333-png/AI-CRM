@@ -44,6 +44,55 @@ def _prepare_client(monkeypatch, tmp_path) -> TestClient:
         conn.execute(
             text(
                 """
+                CREATE TABLE config_releases (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    release_key TEXT NOT NULL UNIQUE,
+                    profile_id TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'draft',
+                    changes_json TEXT NOT NULL DEFAULT '{}',
+                    before_json TEXT NOT NULL DEFAULT '{}',
+                    validation_errors_json TEXT NOT NULL DEFAULT '[]',
+                    checksum TEXT NOT NULL,
+                    based_on_release_id INTEGER,
+                    rollback_of_release_id INTEGER,
+                    created_by TEXT NOT NULL,
+                    published_by TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    validated_at TEXT,
+                    published_at TEXT
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                CREATE UNIQUE INDEX uq_config_releases_profile_published
+                ON config_releases(profile_id)
+                WHERE status = 'published'
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                CREATE TABLE deployment_profile_state (
+                    profile_id TEXT PRIMARY KEY,
+                    core_version TEXT NOT NULL,
+                    config_schema_version INTEGER NOT NULL,
+                    activation_mode TEXT NOT NULL,
+                    enabled_capabilities_json TEXT NOT NULL DEFAULT '[]',
+                    runtime_roles_json TEXT NOT NULL DEFAULT '[]',
+                    active_config_release_id INTEGER,
+                    updated_by TEXT NOT NULL DEFAULT '',
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
                 CREATE TABLE admin_operation_logs (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     operator TEXT NOT NULL DEFAULT '',
@@ -270,6 +319,8 @@ def test_admin_config_pages_are_next_owned_and_nonblank(monkeypatch, tmp_path) -
     for path, marker in [
         ("/admin/config", "系统配置"),
         ("/admin/config/app-settings", "系统设置"),
+        ("/admin/config/releases", "配置发布"),
+        ("/admin/config/releases/new", "新建配置发布"),
         ("/admin/config/detail/admin_access", "后台访问"),
         ("/admin/config/checklist", "配置检查清单"),
         ("/setup/wizard", "系统配置向导"),
@@ -301,6 +352,94 @@ def test_legacy_login_access_page_redirects_to_admin_access_detail(monkeypatch, 
     assert wecom_tags_alias.status_code == 302
     assert wecom_tags_alias.headers["location"] == "/admin/wecom-tags"
     assert "X-AICRM-Compatibility-Facade" not in wecom_tags_alias.headers
+
+
+def test_config_release_api_validates_publishes_and_rolls_back_without_external_effects(monkeypatch, tmp_path) -> None:
+    client = _prepare_client(monkeypatch, tmp_path)
+    token_page = client.get("/admin/config/releases").text
+
+    capabilities = client.get("/api/admin/config/capabilities")
+    definitions = client.get("/api/admin/config/definitions")
+    assert capabilities.status_code == 200
+    assert capabilities.json()["registry"]["core_count"] == 7
+    assert definitions.status_code == 200
+    assert definitions.json()["schema"]["definition_count"] >= 100
+    assert "super-secret-value" not in definitions.text
+
+    create = client.post(
+        "/api/admin/config/releases",
+        json={
+            "admin_action_token": _token(token_page, method="POST", path="/api/admin/config/releases"),
+            "confirm": True,
+            "operator": "release-author",
+            "changes": {"WECOM_CORP_ID": "ww-release"},
+        },
+    )
+    assert create.status_code == 200
+    draft = create.json()["release"]
+    release_id = draft["id"]
+    assert draft["status"] == "draft"
+    assert create.json()["real_external_call_executed"] is False
+
+    detail_page = client.get(f"/admin/config/releases/{release_id}")
+    assert detail_page.status_code == 200
+    assert "WECOM_CORP_ID" in detail_page.text
+    assert "ww-release" in detail_page.text
+    shadow = client.get(f"/api/admin/config/releases/{release_id}/shadow-compare")
+    assert shadow.status_code == 200
+    assert shadow.json()["comparison"]["changed_count"] == 1
+
+    validate = client.post(
+        f"/api/admin/config/releases/{release_id}/validate",
+        json={
+            "admin_action_token": _token(
+                token_page,
+                method="POST",
+                path="/api/admin/config/releases/{release_id}/validate",
+            )
+        },
+    )
+    assert validate.status_code == 200
+    assert validate.json()["release"]["status"] == "validated"
+
+    publish = client.post(
+        f"/api/admin/config/releases/{release_id}/publish",
+        json={
+            "admin_action_token": _token(
+                token_page,
+                method="POST",
+                path="/api/admin/config/releases/{release_id}/publish",
+            ),
+            "confirm": True,
+            "operator": "release-publisher",
+            "checksum": draft["checksum"],
+        },
+    )
+    assert publish.status_code == 200
+    assert publish.json()["release"]["status"] == "published"
+    assert publish.json()["real_external_call_executed"] is False
+    assert _scalar(_db_url(monkeypatch), "SELECT value FROM app_settings WHERE key = 'WECOM_CORP_ID'") == "ww-release"
+
+    profile = client.get("/api/admin/config/deployment-profile")
+    assert profile.status_code == 200
+    assert profile.json()["profile"]["active_config_release_id"] == release_id
+
+    rollback = client.post(
+        f"/api/admin/config/releases/{release_id}/rollback",
+        json={
+            "admin_action_token": _token(
+                token_page,
+                method="POST",
+                path="/api/admin/config/releases/{release_id}/rollback",
+            ),
+            "confirm": True,
+            "operator": "release-rollback",
+        },
+    )
+    assert rollback.status_code == 200
+    assert rollback.json()["release"]["status"] == "published"
+    assert rollback.json()["release"]["rollback_of_release_id"] == release_id
+    assert _scalar(_db_url(monkeypatch), "SELECT COUNT(*) FROM app_settings WHERE key = 'WECOM_CORP_ID'") == 0
 
 
 def test_app_settings_api_masks_secrets_and_save_is_idempotent(monkeypatch, tmp_path) -> None:

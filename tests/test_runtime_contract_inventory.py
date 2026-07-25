@@ -28,9 +28,10 @@ def test_runtime_contract_inventory_covers_r00_behavior_surfaces() -> None:
     assert any(route["path"] == "/health" and route["methods"] == ["GET"] for route in routes)
     assert any(route["kind"] == "page" for route in routes)
     assert all(route["capability_owner"] for route in routes)
+    assert all(route["logical_capability_id"] for route in routes)
     assert all("responses" in route["contract"] for route in routes)
 
-    assert inventory["migration_heads"] == ["0143_data_health_snapshot"]
+    assert inventory["migration_heads"] == ["0144_config_release_control_plane"]
     assert len(inventory["tables"]) >= 150
     owned_lifecycles = {"canonical", "read_model", "event", "queue", "config"}
     assert all(table["write_owner"] for table in inventory["tables"] if table["lifecycle"] in owned_lifecycles)

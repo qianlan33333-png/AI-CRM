@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from .deployment_profile import DeploymentProfile
 from .commerce.admin_transactions import apply_wechat_refund_result, mark_wechat_refund_request_failed
 from .channel_entry.identity_external_effect import (
     IDENTITY_EXTERNAL_CONTACT_DETAIL_CONTINUATION,
@@ -128,9 +129,26 @@ def build_external_effect_settlement_consumers() -> tuple[ExternalEffectContinua
     )
 
 
-def build_external_effect_continuation_registry() -> ExternalEffectContinuationRegistry:
+def _continuation_runtime_enabled(
+    consumer: ExternalEffectContinuationConsumer,
+    profile: DeploymentProfile | None,
+) -> bool:
+    if profile is None or profile.activation_mode == "observe":
+        return True
+    capability_id = {
+        QUESTIONNAIRE_EXTERNAL_EFFECT_CONTINUATION_CONSUMER: "extension.forms",
+        AUTOMATION_EXTERNAL_EFFECT_CONTINUATION_CONSUMER: "extension.ai",
+    }.get(consumer.consumer_name, "core.platform")
+    return profile.allows_runtime(capability_id)
+
+
+def build_external_effect_continuation_registry(
+    profile: DeploymentProfile | None = None,
+) -> ExternalEffectContinuationRegistry:
     return ExternalEffectContinuationRegistry(
-        consumer.continuation for consumer in build_external_effect_continuation_consumers()
+        consumer.continuation
+        for consumer in build_external_effect_continuation_consumers()
+        if _continuation_runtime_enabled(consumer, profile)
     )
 
 
@@ -149,34 +167,37 @@ def run_welcome_realtime_post_commit(job, dispatch_result) -> dict:
     )
 
 
-def build_external_effect_adapter_registry() -> ExternalEffectAdapterRegistry:
+def build_external_effect_adapter_registry(
+    profile: DeploymentProfile | None = None,
+) -> ExternalEffectAdapterRegistry:
     provider_factory = _build_production_wecom_adapter
     generic_webhook_adapter = WebhookAdapter()
-    return ExternalEffectAdapterRegistry(
-        {
-            "outbound_webhook": WebhookAdapter(),
-            "webhook": AutomationAgentRoutingWebhookAdapter(generic_webhook_adapter),
-            "wechat_payment": WeChatPaymentAdapter(
-                client_factory=_build_wechat_pay_client,
-                refund_result_sync=apply_wechat_refund_result,
-                refund_failure_sync=mark_wechat_refund_request_failed,
-            ),
-            "wecom_private_message": WeComPrivateMessageAdapter(
-                adapter_factory=wecom_private_adapter.build_wecom_private_message_adapter,
-            ),
-            "wecom_group_message": WeComGroupMessageExternalEffectAdapter(
-                adapter_factory=wecom_group_adapter.build_wecom_group_message_adapter,
-            ),
-            "wecom_welcome_message": WeComWelcomeMessageAdapter(
-                adapter_factory=provider_factory,
-                material_resolver=_resolve_production_wecom_welcome_materials,
-            ),
-            "wecom_media_upload": WeComMediaUploadAdapter(),
-            "wecom_tag": WeComContactTagAdapter(adapter_factory=provider_factory),
-            "wecom_profile": WeComProfileUpdateAdapter(adapter_factory=provider_factory),
-            "wecom_external_contact_detail": WeComExternalContactDetailAdapter(adapter_factory=provider_factory),
-        }
-    )
+    adapters = {
+        "outbound_webhook": WebhookAdapter(),
+        "webhook": AutomationAgentRoutingWebhookAdapter(generic_webhook_adapter),
+        "wechat_payment": WeChatPaymentAdapter(
+            client_factory=_build_wechat_pay_client,
+            refund_result_sync=apply_wechat_refund_result,
+            refund_failure_sync=mark_wechat_refund_request_failed,
+        ),
+        "wecom_private_message": WeComPrivateMessageAdapter(
+            adapter_factory=wecom_private_adapter.build_wecom_private_message_adapter,
+        ),
+        "wecom_group_message": WeComGroupMessageExternalEffectAdapter(
+            adapter_factory=wecom_group_adapter.build_wecom_group_message_adapter,
+        ),
+        "wecom_welcome_message": WeComWelcomeMessageAdapter(
+            adapter_factory=provider_factory,
+            material_resolver=_resolve_production_wecom_welcome_materials,
+        ),
+        "wecom_media_upload": WeComMediaUploadAdapter(),
+        "wecom_tag": WeComContactTagAdapter(adapter_factory=provider_factory),
+        "wecom_profile": WeComProfileUpdateAdapter(adapter_factory=provider_factory),
+        "wecom_external_contact_detail": WeComExternalContactDetailAdapter(adapter_factory=provider_factory),
+    }
+    if profile is not None and profile.activation_mode == "enforce" and not profile.allows_runtime("extension.commerce"):
+        adapters.pop("wechat_payment", None)
+    return ExternalEffectAdapterRegistry(adapters)
 
 
 def _build_production_wecom_adapter():

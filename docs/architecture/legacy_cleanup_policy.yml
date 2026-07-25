@@ -1,0 +1,21 @@
+schema_version: 1
+minimum_zero_read_write_days: 30
+evidence_directory: docs/architecture/legacy_cleanup_evidence
+enforce_for_migrations_after: 0144_config_release_control_plane
+
+required_evidence:
+  - table
+  - zero_read_write_observed_since
+  - observation_days
+  - export_verified_at
+  - rollback_rehearsed_at
+  - successor_owner
+  - approved_by
+  - code_sha
+  - drop_migration
+
+release_separation:
+  table_drop_with_directory_move: forbidden
+  table_drop_with_runtime_unit_cutover: forbidden
+
+rollback_policy: restore_export_then_previous_release

@@ -1,0 +1,66 @@
+{% extends "admin_console/config_base.html" %}
+
+{% block config_content %}
+<section class="admin-card">
+  <div class="admin-card-head">
+    <div>
+      <h2>填写本次变更</h2>
+      <p>只填写要改变的项目。普通值进入配置发布；密钥必须先写入 Secret Store，这里仅保存 <code>secretref:</code> 引用。</p>
+    </div>
+    <a class="admin-button admin-button--ghost" href="/admin/config/releases">返回发布记录</a>
+  </div>
+
+  <form class="admin-form-grid admin-form-grid--stacked" method="post" action="/admin/config/releases">
+    <input type="hidden" name="admin_action_token" value="{{ admin_action_token }}">
+    {% for index in release_row_indexes %}
+    <fieldset class="admin-card admin-stat-card--nested">
+      <legend>变更项 {{ index + 1 }}</legend>
+      <label>
+        <span>配置项</span>
+        <select name="key__{{ index }}">
+          <option value="">不使用这一行</option>
+          {% for definition in definitions %}
+          <option value="{{ definition.key }}">{{ definition.label }} · {{ definition.key }}{% if definition.sensitive %} · 密钥引用{% endif %}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        <span>新值</span>
+        <textarea name="value__{{ index }}" rows="2" placeholder="布尔值填写 true/false；敏感项填写 secretref:...；删除时留空"></textarea>
+      </label>
+      <label class="admin-check-line">
+        <input type="checkbox" name="remove__{{ index }}" value="1">
+        <span>删除该配置项，使运行时回退到环境启动值或默认值</span>
+      </label>
+    </fieldset>
+    {% endfor %}
+
+    <label>
+      <span>操作人</span>
+      <input type="text" name="operator" required placeholder="填写本次变更负责人">
+    </label>
+    <label class="admin-check-line">
+      <input type="checkbox" name="confirm" value="1" required>
+      <span>我确认创建草稿；草稿不会立即改变线上配置</span>
+    </label>
+    <div class="admin-form-actions">
+      <button class="admin-button admin-button--primary" type="submit">保存草稿</button>
+      <a class="admin-button admin-button--ghost" href="/admin/config/releases">取消</a>
+    </div>
+  </form>
+</section>
+
+<section class="admin-card">
+  <div class="admin-card-head">
+    <div>
+      <h2>发布边界</h2>
+      <p>当前档案为 <code>{{ profile_state.profile_id }}</code>，只允许编辑已启用能力贡献的配置定义。</p>
+    </div>
+  </div>
+  <dl class="admin-definition-list">
+    <div><dt>启用模式</dt><dd>{{ profile_state.activation_mode }}</dd></div>
+    <div><dt>定义数量</dt><dd>{{ definitions | length }}</dd></div>
+    <div><dt>流程</dt><dd>保存草稿 → 跨模块校验 → 原子发布 → 必要时生成回滚发布</dd></div>
+  </dl>
+</section>
+{% endblock %}

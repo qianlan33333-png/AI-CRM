@@ -18,6 +18,7 @@ ensure_repo_root_on_path()
 
 from aicrm_next.channel_entry_composition import build_wecom_callback_inbox_worker_factory
 from aicrm_next.channel_entry.realtime_contract import WECOM_WELCOME_FALLBACK_SECONDS
+from aicrm_next.deployment_profile import DeploymentProfile, deployment_profile_from_environment
 from aicrm_next.external_effect_composition import (
     build_external_effect_adapter_registry,
     run_welcome_realtime_post_commit,
@@ -54,10 +55,15 @@ def _truthy(value: str) -> bool:
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the PostgreSQL LISTEN/NOTIFY execution runtime in standby or execute mode.")
-    parser.add_argument(
+    target = parser.add_mutually_exclusive_group(required=True)
+    target.add_argument(
         "--queue-kind",
-        required=True,
         choices=("external", "internal", "webhook"),
+    )
+    target.add_argument(
+        "--role",
+        choices=("internal_worker", "external_worker"),
+        help="Run the stable deployment role; internal_worker combines inbox and internal-event lanes.",
     )
     parser.add_argument(
         "--generation",
@@ -81,8 +87,9 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         parser.error("--execute requires --generation > 0")
     if args.execute and not _truthy(os.getenv(EXECUTE_ENV, "")):
         parser.error(f"--execute requires {EXECUTE_ENV}=1")
+    external_selected = "external" in _selected_queue_kinds(args)
     if (
-        args.queue_kind == "external"
+        external_selected
         and args.execute
         and not args.test_only
         and not _truthy(os.getenv(ALLOWLISTED_CANARY_ENV, ""))
@@ -91,15 +98,23 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         parser.error(
             "external execute requires a reviewed allowlisted or all-scope generation marker"
         )
-    if args.queue_kind == "external" and args.test_only and _truthy(
+    if external_selected and args.test_only and _truthy(
         os.getenv(ALLOWLISTED_CANARY_ENV, "")
     ):
         parser.error("external runtime cannot be both test-only and allowlisted canary")
-    if args.queue_kind == "external" and args.test_only and _truthy(os.getenv(ALL_SCOPE_ENV, "")):
+    if external_selected and args.test_only and _truthy(os.getenv(ALL_SCOPE_ENV, "")):
         parser.error("external runtime cannot be both test-only and all-scope")
     if _truthy(os.getenv(ALLOWLISTED_CANARY_ENV, "")) and _truthy(os.getenv(ALL_SCOPE_ENV, "")):
         parser.error("external runtime cannot be both allowlisted canary and all-scope")
     return args
+
+
+def _selected_queue_kinds(args: argparse.Namespace) -> tuple[str, ...]:
+    if getattr(args, "role", None) == "internal_worker":
+        return ("internal", "webhook")
+    if getattr(args, "role", None) == "external_worker":
+        return ("external",)
+    return (str(args.queue_kind),)
 
 
 def _install_signal_handlers(stop_event: threading.Event) -> None:
@@ -149,14 +164,28 @@ def _service(
 
 
 def _build_services(args: argparse.Namespace) -> tuple[QueueRuntimeService, ...]:
+    services: list[QueueRuntimeService] = []
+    profile = deployment_profile_from_environment()
+    for queue_kind in _selected_queue_kinds(args):
+        services.extend(_build_queue_services(args, queue_kind=queue_kind, profile=profile))
+    return tuple(services)
+
+
+def _build_queue_services(
+    args: argparse.Namespace,
+    *,
+    queue_kind: str,
+    profile: DeploymentProfile,
+) -> tuple[QueueRuntimeService, ...]:
     claimless = not bool(args.execute)
-    worker_id = f"{socket.gethostname()}:{args.queue_kind}"
-    if args.queue_kind == "external":
+    worker_id = f"{socket.gethostname()}:{queue_kind}"
+    if queue_kind == "external":
         worker = ExternalEffectWorker(
-            adapter_registry=build_external_effect_adapter_registry(),
+            adapter_registry=build_external_effect_adapter_registry(profile),
             locked_by=worker_id,
             lease_seconds=30,
             critical_post_commit_hook=run_welcome_realtime_post_commit,
+            deployment_profile=profile,
         )
         return (
             _service(
@@ -175,9 +204,9 @@ def _build_services(args: argparse.Namespace) -> tuple[QueueRuntimeService, ...]
                 test_only=bool(args.test_only),
             ),
         )
-    if args.queue_kind == "webhook":
+    if queue_kind == "webhook":
         worker = build_wecom_callback_inbox_worker_factory(
-            external_effect_adapter_registry=build_external_effect_adapter_registry(),
+            external_effect_adapter_registry=build_external_effect_adapter_registry(profile),
         )()
         return (
             _service(
@@ -189,7 +218,7 @@ def _build_services(args: argparse.Namespace) -> tuple[QueueRuntimeService, ...]
                 claimless=claimless,
             ),
         )
-    registry = build_internal_event_consumer_registry()
+    registry = build_internal_event_consumer_registry(profile)
     consumer_worker = InternalEventWorker(
         consumer_registry=registry,
         locked_by=worker_id,
@@ -243,7 +272,8 @@ def run(args: argparse.Namespace, *, stop_event: threading.Event) -> dict[str, A
         thread.join()
     return {
         "ok": not errors and all(result.ok for result in results),
-        "queue_kind": args.queue_kind,
+        "queue_kind": "+".join(_selected_queue_kinds(args)),
+        "runtime_role": str(getattr(args, "role", None) or "legacy_queue_kind"),
         "generation": int(args.generation),
         "mode": "execute" if args.execute else "standby_claimless",
         "test_only": bool(args.test_only),
@@ -269,7 +299,8 @@ def main(argv: list[str] | None = None) -> int:
     except Exception as exc:
         payload = {
             "ok": False,
-            "queue_kind": args.queue_kind,
+            "queue_kind": "+".join(_selected_queue_kinds(args)),
+            "runtime_role": str(getattr(args, "role", None) or "legacy_queue_kind"),
             "generation": int(args.generation),
             "error": "execution_runtime_failed",
             "error_class": exc.__class__.__name__,

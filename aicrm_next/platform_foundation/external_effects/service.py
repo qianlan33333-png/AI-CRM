@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
+from aicrm_next.capability_registry import capability_for_effect_type
+from aicrm_next.deployment_profile import DeploymentProfile, deployment_profile_from_environment
 from aicrm_next.platform_foundation.command_bus.models import CommandContext
 
 from .execution_gates import (
@@ -17,8 +19,14 @@ from .repo import ExternalEffectRepository, build_external_effect_repository
 
 
 class ExternalEffectService:
-    def __init__(self, repository: ExternalEffectRepository | None = None):
+    def __init__(
+        self,
+        repository: ExternalEffectRepository | None = None,
+        *,
+        deployment_profile: DeploymentProfile | None = None,
+    ):
         self._repo = repository or build_external_effect_repository()
+        self._deployment_profile = deployment_profile or deployment_profile_from_environment()
 
     def plan_effect(
         self,
@@ -53,6 +61,9 @@ class ExternalEffectService:
         rate_scope_key: str = "",
         connection: Any | None = None,
     ) -> dict[str, Any]:
+        capability = capability_for_effect_type(effect_type)
+        if capability is not None and not self._deployment_profile.allows_runtime(capability.capability_id):
+            raise ValueError(f"external effect capability is disabled: {capability.capability_id}")
         initial_status = str(status or "queued").strip() or "queued"
         if requires_approval and initial_status in {"queued", "approved"}:
             initial_status = "planned"

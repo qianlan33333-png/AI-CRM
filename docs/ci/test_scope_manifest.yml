@@ -1449,6 +1449,37 @@
       "architecture_gate": "full"
     },
     {
+      "name": "config_release_control_plane",
+      "paths": [
+        "aicrm_next/admin_config/config_definitions.py",
+        "aicrm_next/admin_config/config_release_repository.py",
+        "aicrm_next/admin_config/config_releases.py",
+        "aicrm_next/capability_registry.py",
+        "aicrm_next/deployment_profile.py",
+        "aicrm_next/scrm_contracts.py",
+        "migrations/versions/0144_config_release_control_plane.py",
+        "scripts/run_job_catalog_scheduler.py",
+        "tests/test_capability_registry.py",
+        "tests/test_config_releases.py",
+        "tests/test_config_releases_postgres.py",
+        "tests/test_deployment_profile.py",
+        "tests/test_job_catalog.py",
+        "tests/test_scrm_contracts.py"
+      ],
+      "python_tests": [
+        "tests/test_capability_registry.py",
+        "tests/test_config_releases.py",
+        "tests/test_config_releases_postgres.py",
+        "tests/test_deployment_profile.py",
+        "tests/test_job_catalog.py",
+        "tests/test_scrm_contracts.py",
+        "tests/test_alembic_revision_chain.py"
+      ],
+      "needs_postgres": true,
+      "needs_full_ci": true,
+      "architecture_gate": "full"
+    },
+    {
       "name": "admin_config",
       "paths": [
         "aicrm_next/admin_config/**",

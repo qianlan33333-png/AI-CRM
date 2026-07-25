@@ -20,6 +20,11 @@ else
 fi
 
 run_fast() {
+"$PYTHON" tools/check_capability_registry.py
+"$PYTHON" tools/check_deployment_profiles.py
+"$PYTHON" tools/check_job_catalog.py
+"$PYTHON" tools/check_domain_migration_contract.py
+"$PYTHON" tools/check_legacy_cleanup_contract.py
 "$PYTHON" tools/check_import_graph.py
 "$PYTHON" tools/check_runtime_module_sizes.py
 "$PYTHON" scripts/ci/check_auth_credential_boundaries.py

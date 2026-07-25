@@ -6,6 +6,9 @@ from typing import Any
 from fastapi import APIRouter, FastAPI
 from fastapi.routing import APIRoute
 
+from .capability_registry import capability_for_route_group
+from .deployment_profile import DeploymentProfile
+
 try:  # FastAPI 0.139 keeps included router routes behind include contexts.
     from fastapi.routing import _iter_routes_with_context
 except ImportError:  # FastAPI <=0.136 materializes included routes eagerly.
@@ -84,6 +87,11 @@ class RouterSpec:
     router: APIRouter
     notes: str = ""
 
+    @property
+    def logical_capability_id(self) -> str:
+        capability = capability_for_route_group(self.route_group)
+        return capability.capability_id if capability else ""
+
 
 ROUTER_SPECS: tuple[RouterSpec, ...] = (
     RouterSpec("platform_foundation", "platform", platform_router, "foundation health and shell contracts"),
@@ -157,8 +165,27 @@ ROUTER_SPECS: tuple[RouterSpec, ...] = (
 )
 
 
-def register_routers(app: FastAPI, specs: tuple[RouterSpec, ...] = ROUTER_SPECS) -> None:
-    for spec in specs:
+def active_router_specs(
+    profile: DeploymentProfile | None,
+    specs: tuple[RouterSpec, ...] = ROUTER_SPECS,
+) -> tuple[RouterSpec, ...]:
+    missing = sorted(spec.route_group for spec in specs if not spec.logical_capability_id)
+    if missing:
+        raise RuntimeError("router groups are missing from capability registry: " + ", ".join(missing))
+    if profile is None or profile.activation_mode == "observe":
+        return specs
+    return tuple(spec for spec in specs if profile.allows_runtime(spec.logical_capability_id))
+
+
+def register_routers(
+    app: FastAPI,
+    specs: tuple[RouterSpec, ...] = ROUTER_SPECS,
+    *,
+    profile: DeploymentProfile | None = None,
+) -> None:
+    for spec in active_router_specs(profile, specs):
+        if not spec.logical_capability_id:
+            raise RuntimeError(f"router group is missing from capability registry: {spec.route_group}")
         app.include_router(spec.router)
     _materialize_included_router_routes(app)
 
@@ -167,6 +194,7 @@ def router_registry_summary(specs: tuple[RouterSpec, ...] = ROUTER_SPECS) -> lis
     return [
         {
             "capability_owner": spec.capability_owner,
+            "logical_capability_id": spec.logical_capability_id,
             "route_group": spec.route_group,
             "route_count": len(getattr(spec.router, "routes", ()) or ()),
             "notes": spec.notes,

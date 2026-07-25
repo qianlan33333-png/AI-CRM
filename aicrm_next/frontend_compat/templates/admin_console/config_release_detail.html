@@ -1,0 +1,127 @@
+{% extends "admin_console/config_base.html" %}
+
+{% block config_content %}
+<section class="admin-card">
+  <div class="admin-card-head">
+    <div>
+      <h2>发布状态</h2>
+      <p><code>{{ release.release_key }}</code></p>
+    </div>
+    <a class="admin-button admin-button--ghost" href="/admin/config/releases">返回发布记录</a>
+  </div>
+  <dl class="admin-definition-list">
+    <div><dt>状态</dt><dd><span class="admin-badge">{{ release.status_label }}</span></dd></div>
+    <div><dt>部署档案</dt><dd><code>{{ release.profile_id }}</code></dd></div>
+    <div><dt>创建</dt><dd>{{ release.created_by }} · {{ release.created_at }}</dd></div>
+    <div><dt>发布</dt><dd>{{ release.published_by or "-" }} · {{ release.published_at or "-" }}</dd></div>
+    <div><dt>校验时间</dt><dd>{{ release.validated_at or "-" }}</dd></div>
+    <div><dt>校验和</dt><dd><code>{{ release.checksum }}</code></dd></div>
+  </dl>
+</section>
+
+<section class="admin-card">
+  <div class="admin-card-head">
+    <div>
+      <h2>变更内容</h2>
+      <p>敏感值始终显示为掩码；删除项显示为“删除”。</p>
+    </div>
+  </div>
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead><tr><th>配置项</th><th>发布值</th><th>发布前</th></tr></thead>
+      <tbody>
+        {% for key in release.changed_keys %}
+        <tr>
+          <td><code>{{ key }}</code></td>
+          <td>{% if release.changes[key] is none %}<span class="admin-muted">删除</span>{% else %}{{ release.changes[key] }}{% endif %}</td>
+          <td>
+            {% if key in release.before %}
+              {% if release.before[key].exists %}{{ release.before[key].value or "空值" }}{% else %}<span class="admin-muted">未设置</span>{% endif %}
+            {% else %}<span class="admin-muted">发布后记录</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="admin-card">
+  <div class="admin-card-head">
+    <div>
+      <h2>影子比对</h2>
+      <p>比较当前 DB / 环境回退值与发布后的语义；密钥只比较解析结果，页面永不返回明文或引用。</p>
+    </div>
+  </div>
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead><tr><th>配置项</th><th>当前来源</th><th>发布后来源</th><th>当前值</th><th>发布值</th><th>结果</th></tr></thead>
+      <tbody>
+        {% for row in shadow_compare.rows %}
+        <tr>
+          <td><code>{{ row.key }}</code></td>
+          <td>{{ row.before_source }}</td>
+          <td>{{ row.after_source }}</td>
+          <td>{{ row.before or "空值" }}</td>
+          <td>{{ row.after or "空值" }}</td>
+          <td><span class="admin-badge">{{ "语义一致" if row.equivalent else "将发生变化" }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% if release.validation_errors %}
+<section class="admin-alert admin-alert--error">
+  <strong>校验未通过</strong>
+  <ul>
+    {% for item in release.validation_errors %}
+    <li><code>{{ item.key }}</code>：{{ item.error }}</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section class="admin-card">
+  <div class="admin-card-head">
+    <div>
+      <h2>发布操作</h2>
+      <p>校验不会改变生效配置；发布和回滚使用单个数据库事务。</p>
+    </div>
+  </div>
+  <div class="admin-form-actions">
+    {% if release.status in ["draft", "validated", "validation_failed"] %}
+    <form method="post" action="/admin/config/releases/{{ release.id }}/validate">
+      <input type="hidden" name="admin_action_token" value="{{ admin_action_token }}">
+      <button class="admin-button admin-button--ghost" type="submit">运行跨模块校验</button>
+    </form>
+    {% endif %}
+  </div>
+
+  {% if release.status == "validated" %}
+  <form class="admin-form-grid admin-form-grid--stacked" method="post" action="/admin/config/releases/{{ release.id }}/publish">
+    <input type="hidden" name="admin_action_token" value="{{ admin_action_token }}">
+    <input type="hidden" name="checksum" value="{{ release.checksum }}">
+    <label><span>发布人</span><input type="text" name="operator" required></label>
+    <label class="admin-check-line">
+      <input type="checkbox" name="confirm" value="1" required>
+      <span>我已核对变更与校验和，确认原子发布到当前部署档案</span>
+    </label>
+    <div class="admin-form-actions"><button class="admin-button admin-button--primary" type="submit">发布配置</button></div>
+  </form>
+  {% endif %}
+
+  {% if release.status in ["published", "superseded"] %}
+  <form class="admin-form-grid admin-form-grid--stacked" method="post" action="/admin/config/releases/{{ release.id }}/rollback">
+    <input type="hidden" name="admin_action_token" value="{{ admin_action_token }}">
+    <label><span>回滚操作人</span><input type="text" name="operator" required></label>
+    <label class="admin-check-line">
+      <input type="checkbox" name="confirm" value="1" required>
+      <span>我确认以该发布的“发布前快照”创建并立即发布一条新的回滚记录</span>
+    </label>
+    <div class="admin-form-actions"><button class="admin-button admin-button--danger" type="submit">创建回滚发布</button></div>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

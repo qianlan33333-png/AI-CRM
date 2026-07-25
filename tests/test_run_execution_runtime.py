@@ -15,6 +15,18 @@ def test_runtime_defaults_to_claimless_standby(monkeypatch) -> None:
     assert args.generation == 0
 
 
+def test_internal_worker_role_combines_inbox_and_internal_lanes(monkeypatch) -> None:
+    monkeypatch.delenv("AICRM_QUEUE_RUNTIME_EXECUTE", raising=False)
+    monkeypatch.delenv("AICRM_QUEUE_WORKER_GENERATION", raising=False)
+
+    internal = run_execution_runtime._parse_args(["--role", "internal_worker"])
+    external = run_execution_runtime._parse_args(["--role", "external_worker"])
+
+    assert run_execution_runtime._selected_queue_kinds(internal) == ("internal", "webhook")
+    assert run_execution_runtime._selected_queue_kinds(external) == ("external",)
+    assert internal.execute is False
+
+
 def test_runtime_can_be_armed_from_numeric_generation_environment(monkeypatch) -> None:
     monkeypatch.setenv("AICRM_QUEUE_RUNTIME_EXECUTE", "1")
     monkeypatch.setenv("AICRM_QUEUE_RUNTIME_TEST_ONLY", "1")
@@ -34,7 +46,7 @@ def test_worker_id_is_stable_for_the_same_host_and_queue(monkeypatch) -> None:
     monkeypatch.setattr(
         run_execution_runtime,
         "build_external_effect_adapter_registry",
-        lambda: object(),
+        lambda *_args, **_kwargs: object(),
     )
     monkeypatch.setattr(
         run_execution_runtime,
