@@ -956,13 +956,16 @@ def test_admin_read_smoke_test_file_selects_admin_read_scope() -> None:
 
 def test_admin_config_page_change_selects_config_scope() -> None:
     result = _select(
+        "aicrm_next/mcp_tool_catalog.py",
         "aicrm_next/admin_config/api.py",
         "aicrm_next/frontend_compat/static/admin_console/config_center.js",
         "aicrm_next/frontend_compat/templates/admin_console/config_admin_access_detail.html",
         "tests/test_admin_config_next.py",
+        "tests/test_support_admin_pages_native.py",
     )
 
     assert result["matched_scopes"] == ["admin_config"]
+    assert result["unmatched_files"] == []
     assert "tests/test_admin_config_next.py" in result["python_tests"]
     assert "tests/test_operation_member_picker_frontend.py" in result["python_tests"]
     assert "tests/test_admin_auth_login_pages.py" in result["python_tests"]

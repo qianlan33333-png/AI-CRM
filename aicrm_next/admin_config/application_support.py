@@ -733,7 +733,7 @@ def _normalize_silent_thresholds(value: Any) -> dict[str, int]:
 
 
 def _default_mcp_tool_defs() -> list[dict[str, Any]]:
-    from aicrm_next.integration_gateway.mcp import MCP_TOOLS
+    from aicrm_next.mcp_tool_catalog import MCP_TOOLS
 
     return [dict(item) for item in MCP_TOOLS]
 

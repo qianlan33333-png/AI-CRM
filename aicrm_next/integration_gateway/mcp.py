@@ -1,53 +1,11 @@
 from __future__ import annotations
 
+from aicrm_next.mcp_tool_catalog import MCP_TOOLS
 from aicrm_next.shared.errors import ApplicationError
 from aicrm_next.shared.typing import JsonDict
 
 from .dispatch import McpToolDispatcher
 from .mcp_openclaw_adapters import build_mcp_tool_gateway
-
-MCP_TOOLS = [
-    {
-        "name": "resolve_customer",
-        "description": "Resolve a customer by customer_ref, mobile, or external_userid.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "customer_ref": {"type": "string"},
-                "external_userid": {"type": "string"},
-                "include_context": {"type": "boolean"},
-                "recent_message_limit": {"type": "integer"},
-                "timeline_limit": {"type": "integer"},
-            },
-        },
-    },
-    {
-        "name": "get_customer_context",
-        "description": "Return customer detail, recent messages, and timeline context.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "customer_ref": {"type": "string"},
-                "external_userid": {"type": "string"},
-                "recent_message_limit": {"type": "integer"},
-                "timeline_limit": {"type": "integer"},
-            },
-        },
-    },
-    {
-        "name": "get_recent_messages",
-        "description": "Return recent single-customer archived messages.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "customer_ref": {"type": "string"},
-                "external_userid": {"type": "string"},
-                "limit": {"type": "integer"},
-            },
-        },
-    },
-]
-
 
 class McpJsonRpcApplication:
     def __init__(self, dispatcher: McpToolDispatcher | None = None, tool_gateway=None) -> None:

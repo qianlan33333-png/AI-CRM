@@ -5,7 +5,6 @@ import re
 from dataclasses import dataclass
 from typing import Any, Iterable
 
-from fastapi import APIRouter
 from fastapi.routing import APIRoute
 
 _METHOD_ORDER = {"GET": 0, "POST": 1, "PUT": 2, "PATCH": 3, "DELETE": 4}
@@ -120,57 +119,6 @@ _AUTH_LABEL_MD = {
     "bearer": "Bearer Token",
     "signature": "签名 / Webhook Token",
 }
-
-
-def _router_sources(frontend_router: APIRouter | None = None) -> list[APIRouter]:
-    from aicrm_next.ai_audience_ops.admin_api import router as ai_audience_admin_router
-    from aicrm_next.ai_audience_ops.api import router as ai_audience_router
-    from aicrm_next.ai_assist.api import router as ai_assist_router
-    from aicrm_next.admin_shell.routes import router as admin_shell_router
-    from aicrm_next.automation_engine.api import router as automation_router
-    from aicrm_next.automation_engine.channels_api import router as automation_channels_router
-    from aicrm_next.cloud_orchestrator.api import router as cloud_orchestrator_router
-    from aicrm_next.commerce.api import router as commerce_router
-    from aicrm_next.customer_read_model.api import router as customer_router
-    from aicrm_next.customer_tags.api import read_router as customer_tags_read_router
-    from aicrm_next.customer_tags.api import router as customer_tags_router
-    from aicrm_next.identity_contact.api import router as identity_router
-    from aicrm_next.integration_gateway.api import router as mcp_router
-    from aicrm_next.media_library.api import router as media_library_router
-    from aicrm_next.ops_enrollment.api import router as user_ops_router
-    from aicrm_next.platform_foundation.api import router as platform_router
-    from aicrm_next.platform_foundation.external_effects.api import router as external_effects_router
-    from aicrm_next.platform_foundation.push_center.api import router as push_center_router
-    from aicrm_next.public_product.api import router as public_product_router
-    from aicrm_next.questionnaire.api import router as questionnaire_router
-    from aicrm_next.send_content.api import router as send_content_router
-
-    routers = [
-        platform_router,
-        admin_shell_router,
-        automation_channels_router,
-        customer_router,
-        customer_tags_read_router,
-        customer_tags_router,
-        user_ops_router,
-        mcp_router,
-        identity_router,
-        questionnaire_router,
-        automation_router,
-        cloud_orchestrator_router,
-        public_product_router,
-        commerce_router,
-        media_library_router,
-        ai_audience_admin_router,
-        ai_audience_router,
-        ai_assist_router,
-        send_content_router,
-        push_center_router,
-        external_effects_router,
-    ]
-    if frontend_router is not None:
-        routers.append(frontend_router)
-    return routers
 
 
 def _normalize_path(path: str) -> str:
@@ -528,22 +476,21 @@ def _iter_api_routes(routes: Iterable[Any], prefix: str = "") -> Iterable[tuple[
             yield route, prefix
 
 
-def _iter_route_endpoints(frontend_router: APIRouter | None = None) -> list[dict[str, Any]]:
+def _iter_route_endpoints(routes: Iterable[Any]) -> list[dict[str, Any]]:
     endpoints: list[dict[str, Any]] = []
     seen: set[tuple[str, str]] = set()
-    for router in _router_sources(frontend_router):
-        for route, prefix in _iter_api_routes(router.routes):
-            path = _path_for_route(route, prefix)
-            if not _should_document(path):
+    for route, prefix in _iter_api_routes(routes):
+        path = _path_for_route(route, prefix)
+        if not _should_document(path):
+            continue
+        for method in sorted(route.methods or [], key=lambda item: _METHOD_ORDER.get(item, 99)):
+            if method in _SKIPPED_METHODS:
                 continue
-            for method in sorted(route.methods or [], key=lambda item: _METHOD_ORDER.get(item, 99)):
-                if method in _SKIPPED_METHODS:
-                    continue
-                key = (method, path)
-                if key in seen:
-                    continue
-                seen.add(key)
-                endpoints.append(_endpoint_from_route(route, method, path))
+            key = (method, path)
+            if key in seen:
+                continue
+            seen.add(key)
+            endpoints.append(_endpoint_from_route(route, method, path))
     return endpoints
 
 
@@ -656,8 +603,9 @@ def _size_label(value: str) -> str:
     return f"{max(1, round(size / 1024))} KB"
 
 
-def build_api_docs_view_model(*, frontend_router: APIRouter | None = None) -> dict[str, Any]:
-    groups = _build_groups(_iter_route_endpoints(frontend_router))
+def build_api_docs_view_model(*, routes: Iterable[Any]) -> dict[str, Any]:
+    """Build docs from the routes composed for the active application profile."""
+    groups = _build_groups(_iter_route_endpoints(routes))
     quick_reference = _build_quick_reference(groups)
     markdown_data = _build_markdown_data(groups)
     return {

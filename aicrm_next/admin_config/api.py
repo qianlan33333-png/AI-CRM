@@ -8,7 +8,6 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from aicrm_next.admin_read_model.application import GetAdminConfigPageQuery, page_row_count
 from aicrm_next.admin_shell import admin_path_for, shell_context
 from aicrm_next.shared.admin_action_runtime import ensure_admin_action_token, validate_admin_action_token
 from aicrm_next.capability_registry import registry_summary
@@ -16,6 +15,7 @@ from aicrm_next.capability_registry import registry_summary
 from .api_docs_view_model import build_api_docs_view_model
 from .config_definitions import config_definition_summary
 from .config_releases import ConfigReleaseService
+from .runtime_view_model import GetAdminConfigPageQuery, page_row_count
 from .application import (
     AdminConfigReadService,
     AdminConfigWriteCommand,
@@ -314,7 +314,7 @@ def admin_api_docs(request: Request):
                 {"label": "客户管理后台", "href": request.url_for("api.admin_console_dashboard")},
                 {"label": "API 文档"},
             ],
-            **build_api_docs_view_model(),
+            **build_api_docs_view_model(routes=request.app.routes),
         }
     )
     return templates.TemplateResponse(request, "admin_console/api_docs.html", context)

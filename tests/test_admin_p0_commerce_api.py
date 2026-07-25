@@ -32,7 +32,8 @@ def _paths(view_model: dict) -> dict[tuple[str, str], str]:
 
 
 def test_admin_p0_routes_are_in_api_docs() -> None:
-    view_model = build_api_docs_view_model()
+    app = create_app()
+    view_model = build_api_docs_view_model(routes=app.routes)
     paths = _paths(view_model)
     assert view_model["endpoint_count"] > 80
     assert view_model["markdown_data"]["full"]

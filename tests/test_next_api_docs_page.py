@@ -26,7 +26,8 @@ def _endpoint_paths(view_model: dict) -> set[tuple[str, str]]:
 
 
 def test_api_docs_view_model_scans_current_fastapi_routes() -> None:
-    view_model = build_api_docs_view_model()
+    app = create_app()
+    view_model = build_api_docs_view_model(routes=app.routes)
     paths = _endpoint_paths(view_model)
     group_titles = {group["title"] for group in view_model["endpoint_groups"]}
 

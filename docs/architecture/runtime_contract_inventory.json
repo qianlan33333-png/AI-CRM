@@ -2709,6 +2709,12 @@
     },
     {
       "accessor": "managed_runtime_setting",
+      "file": "aicrm_next/admin_config/runtime_view_model.py",
+      "key": "WECHAT_MP_APPID",
+      "line": 28
+    },
+    {
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/admin_read_model/projections.py",
       "key": "WECHAT_MP_APPID",
       "line": 280
@@ -2781,6 +2787,12 @@
     },
     {
       "accessor": "managed_runtime_setting",
+      "file": "aicrm_next/admin_config/runtime_view_model.py",
+      "key": "WECHAT_OAUTH_APPID",
+      "line": 28
+    },
+    {
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/admin_read_model/projections.py",
       "key": "WECHAT_OAUTH_APPID",
       "line": 279
@@ -2844,6 +2856,12 @@
       "file": "aicrm_next/public_product/h5_wechat_pay.py",
       "key": "WECHAT_PAY_ENABLED",
       "line": 76
+    },
+    {
+      "accessor": "runtime_setting",
+      "file": "aicrm_next/admin_config/runtime_view_model.py",
+      "key": "WECHAT_PAY_MCH_ID",
+      "line": 24
     },
     {
       "accessor": "runtime_setting",
@@ -3162,6 +3180,12 @@
       "file": "scripts/run_wecom_callback_ingress.py",
       "key": "WECOM_CALLBACK_INGRESS_PORT",
       "line": 32
+    },
+    {
+      "accessor": "runtime_setting",
+      "file": "aicrm_next/admin_config/runtime_view_model.py",
+      "key": "WECOM_CALLBACK_TOKEN",
+      "line": 23
     },
     {
       "accessor": "runtime_setting",

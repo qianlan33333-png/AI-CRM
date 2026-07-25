@@ -1528,6 +1528,7 @@
     {
       "name": "admin_config",
       "paths": [
+        "aicrm_next/mcp_tool_catalog.py",
         "aicrm_next/admin_config/**",
         "aicrm_next/common_operation_members.py",
         "aicrm_next/operation_members/**",
@@ -1547,6 +1548,7 @@
         "aicrm_next/frontend_compat/templates/admin_console/hxc_send_config.html",
         "aicrm_next/frontend_compat/templates/admin_console/setup_wizard.html",
         "tests/test_admin_config_next.py",
+        "tests/test_support_admin_pages_native.py",
         "tests/test_push_capabilities_config.py",
         "tests/test_operation_member_picker_frontend.py",
         "tests/test_channel_multi_staff_frontend_contract.py",

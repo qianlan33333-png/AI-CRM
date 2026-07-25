@@ -68,3 +68,25 @@ def test_api_docs_view_model_import_path_is_native() -> None:
 
     assert callable(build_api_docs_view_model)
     assert not (ROOT / "aicrm_next/frontend_compat/api_docs_view_model.py").exists()
+
+
+def test_api_docs_view_model_has_no_business_router_imports() -> None:
+    source = (ROOT / "aicrm_next/admin_config/api_docs_view_model.py").read_text(encoding="utf-8")
+
+    assert "def _router_sources" not in source
+    assert "from aicrm_next." not in source
+    assert "routes: Iterable[Any]" in source
+
+
+def test_admin_config_api_has_no_admin_read_model_reverse_dependency() -> None:
+    source = (ROOT / "aicrm_next/admin_config/api.py").read_text(encoding="utf-8")
+
+    assert "aicrm_next.admin_read_model" not in source
+    assert "from .runtime_view_model import GetAdminConfigPageQuery" in source
+
+
+def test_admin_config_mcp_defaults_use_static_composition_catalog() -> None:
+    source = (ROOT / "aicrm_next/admin_config/application_support.py").read_text(encoding="utf-8")
+
+    assert "aicrm_next.integration_gateway.mcp" not in source
+    assert "from aicrm_next.mcp_tool_catalog import MCP_TOOLS" in source
