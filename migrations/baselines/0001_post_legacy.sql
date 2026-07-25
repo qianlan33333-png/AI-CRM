@@ -481,6 +481,9 @@ CREATE TABLE IF NOT EXISTS wechat_pay_order_events (
             created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
 
+CREATE INDEX IF NOT EXISTS ix_wechat_pay_order_events_trade_created_id
+        ON wechat_pay_order_events (out_trade_no, created_at DESC, id DESC);
+
 CREATE TABLE IF NOT EXISTS automation_channel_qrcode_asset (
     id BIGSERIAL PRIMARY KEY,
     corp_id TEXT NOT NULL DEFAULT '',

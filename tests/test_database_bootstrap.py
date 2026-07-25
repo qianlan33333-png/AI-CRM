@@ -27,7 +27,7 @@ from scripts.ops.bootstrap_database import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ALEMBIC_HEAD_REVISION = "0145_archived_message_search_trgm"
+ALEMBIC_HEAD_REVISION = "0146_wechat_pay_event_lookup_index"
 CREATE_TABLE_PATTERN = re.compile(
     r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?([a-zA-Z_][a-zA-Z0-9_]*)",
     re.IGNORECASE,
@@ -1163,6 +1163,45 @@ def test_execution_timeline_graph_indexes_upgrade_downgrade_and_reupgrade() -> N
                 (sorted(expected_indexes),),
             ).fetchall()
         assert {row[0] for row in reinstalled} == expected_indexes
+
+
+def test_wechat_payment_event_index_upgrade_downgrade_and_reupgrade() -> None:
+    index_name = "ix_wechat_pay_order_events_trade_created_id"
+    with _isolated_database("wechat_payment_event_index") as database_url:
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            connection.execute(BASELINE_PATH.read_text(encoding="utf-8"))
+        _upgrade_database_to(database_url, "0145_archived_message_search_trgm")
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            connection.execute(f"DROP INDEX IF EXISTS {index_name}")
+
+        _upgrade_database_to(database_url, "head")
+        with psycopg.connect(database_url) as connection:
+            installed = connection.execute(
+                """
+                SELECT index_state.indisvalid, index_state.indisready
+                FROM pg_index index_state
+                JOIN pg_class index_relation ON index_relation.oid = index_state.indexrelid
+                WHERE index_relation.relname = %s
+                """,
+                (index_name,),
+            ).fetchone()
+        assert installed == (True, True)
+
+        _downgrade_database_to(database_url, "0145_archived_message_search_trgm")
+        with psycopg.connect(database_url) as connection:
+            downgraded = connection.execute(
+                "SELECT to_regclass(%s)",
+                (f"public.{index_name}",),
+            ).fetchone()
+        assert downgraded == (None,)
+
+        _upgrade_database_to(database_url, "head")
+        with psycopg.connect(database_url) as connection:
+            reinstalled = connection.execute(
+                "SELECT to_regclass(%s)",
+                (f"public.{index_name}",),
+            ).fetchone()
+        assert reinstalled == (index_name,)
 
 
 def test_queue_validation_audits_are_append_only_and_survive_additive_rollback() -> None:

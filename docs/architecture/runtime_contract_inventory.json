@@ -3213,7 +3213,7 @@
     }
   ],
   "migration_heads": [
-    "0145_archived_message_search_trgm"
+    "0146_wechat_pay_event_lookup_index"
   ],
   "openapi_components": {
     "schemas": {

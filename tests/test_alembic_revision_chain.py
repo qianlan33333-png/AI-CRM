@@ -113,8 +113,11 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     config_release_control_plane_source = config_release_control_plane.read_text(encoding="utf-8")
     archived_message_search_trgm = VERSIONS / "0145_archived_message_search_trgm.py"
     archived_message_search_trgm_source = archived_message_search_trgm.read_text(encoding="utf-8")
+    payment_event_lookup_index = VERSIONS / "0146_wechat_pay_event_lookup_index.py"
+    payment_event_lookup_index_source = payment_event_lookup_index.read_text(encoding="utf-8")
 
-    assert heads == {"0145_archived_message_search_trgm"}
+    assert heads == {"0146_wechat_pay_event_lookup_index"}
+    assert revisions["0146_wechat_pay_event_lookup_index"]["down_revision"] == "0145_archived_message_search_trgm"
     assert revisions["0145_archived_message_search_trgm"]["down_revision"] == "0144_config_release_control_plane"
     assert revisions["0144_config_release_control_plane"]["down_revision"] == "0143_data_health_snapshot"
     assert revisions["0143_data_health_snapshot"]["down_revision"] == "0142_sidebar_recent_message_index"
@@ -146,6 +149,10 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     assert "ix_archived_messages_content_trgm" in archived_message_search_trgm_source
     assert "content gin_trgm_ops" in archived_message_search_trgm_source
     assert "DROP INDEX CONCURRENTLY IF EXISTS" in archived_message_search_trgm_source
+    assert "CREATE INDEX CONCURRENTLY" in payment_event_lookup_index_source
+    assert "ix_wechat_pay_order_events_trade_created_id" in payment_event_lookup_index_source
+    assert "(out_trade_no, created_at DESC, id DESC)" in payment_event_lookup_index_source
+    assert "DROP INDEX CONCURRENTLY IF EXISTS" in payment_event_lookup_index_source
     assert "0018_hxc_dashboard_broadcast_tasks" in source
     assert "CREATE TABLE IF NOT EXISTS data_health_snapshot" in data_health_snapshot_source
     assert "CHECK (singleton IS TRUE)" in data_health_snapshot_source
