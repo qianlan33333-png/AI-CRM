@@ -49184,7 +49184,8 @@
       "pii_level": "",
       "read_owners": [
         "aicrm_next.cloud_orchestrator.campaigns_read",
-        "aicrm_next.cloud_orchestrator.repository"
+        "aicrm_next.cloud_orchestrator.repository",
+        "aicrm_next.media_library"
       ],
       "table": "campaign_steps",
       "write_owner": "aicrm_next.cloud_orchestrator.repository"
@@ -50727,7 +50728,7 @@
         "aicrm_next.cloud_orchestrator.repository"
       ],
       "table": "segments",
-      "write_owner": "aicrm_next.cloud_orchestrator.repository"
+      "write_owner": "aicrm_next.cloud_orchestrator"
     },
     {
       "domain": "service_period",

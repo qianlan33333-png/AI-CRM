@@ -273,6 +273,6 @@ def test_repository_import_graph_matches_registered_r12_baseline() -> None:
 
     assert violations == []
     assert len(report.contexts) == 40
-    assert len(report.edges) == 114
+    assert len(report.edges) == 115
     assert report.cyclic_components == ()
     assert report.cyclic_context_count == 0

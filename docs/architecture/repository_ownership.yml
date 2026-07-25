@@ -409,6 +409,11 @@ repositories:
       - campaigns
     non_table_relations:
       - customer_read_model_current
+  aicrm_next/cloud_orchestrator/campaign_step_media_repository.py:
+    capability_owner: aicrm_next.cloud_orchestrator
+    table_reads: []
+    table_writes:
+      - campaign_steps
   aicrm_next/commerce/repo.py:
     capability_owner: aicrm_next.commerce
     table_reads:
@@ -569,7 +574,6 @@ repositories:
       - miniprogram_library
     table_writes:
       - attachment_library
-      - campaign_steps
       - group_invite_library
       - image_library
       - image_library_variants

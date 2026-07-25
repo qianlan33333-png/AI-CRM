@@ -5,6 +5,7 @@ import logging
 from datetime import datetime
 from typing import Any
 
+from aicrm_next.cloud_orchestrator.campaign_step_media_port import build_campaign_step_media_reference_port
 from aicrm_next.shared.errors import ContractError, NotFoundError
 from aicrm_next.shared.safe_logging import safe_log_exception
 
@@ -1042,29 +1043,10 @@ class PostgresMediaLibraryRepository:
                 if force:
                     cur.execute("UPDATE miniprogram_library SET thumb_image_id = NULL, thumb_media_id = '', thumb_media_id_expires_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE thumb_image_id = %s", (int(item_id),))
                     cleared["miniprograms_cleared"] = int(cur.rowcount or 0)
-                    cur.execute(
-                        """
-                        UPDATE campaign_steps
-                        SET content_payload_json = jsonb_set(
-                            COALESCE(content_payload_json, '{}'::jsonb),
-                            '{image_library_ids}',
-                            COALESCE((
-                                SELECT jsonb_agg(elem)
-                                FROM jsonb_array_elements(COALESCE(content_payload_json->'image_library_ids', '[]'::jsonb)) AS elem
-                                WHERE trim(both '"' from elem::text) <> %s
-                            ), '[]'::jsonb),
-                            true
-                        ),
-                        updated_at = CURRENT_TIMESTAMP
-                        WHERE EXISTS (
-                            SELECT 1
-                            FROM jsonb_array_elements_text(COALESCE(content_payload_json->'image_library_ids', '[]'::jsonb)) AS iid
-                            WHERE iid = %s
-                        )
-                        """,
-                        (str(item_id), str(item_id)),
+                    cleared["campaign_steps_cleared"] = build_campaign_step_media_reference_port().clear_image_references_dbapi(
+                        cur,
+                        image_library_id=item_id,
                     )
-                    cleared["campaign_steps_cleared"] = int(cur.rowcount or 0)
                 cur.execute("DELETE FROM image_library WHERE id = %s", (int(item_id),))
                 deleted = int(cur.rowcount or 0)
             conn.commit()

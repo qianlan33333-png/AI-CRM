@@ -1238,20 +1238,25 @@
     {
       "name": "cloud_plan_repository",
       "paths": [
+        "aicrm_next/cloud_orchestrator/campaign_step_media_*.py",
         "aicrm_next/cloud_orchestrator/repository.py",
+        "tests/test_campaign_step_media_reference_port*.py",
         "tests/test_internal_events_broadcast_task_slice.py",
         "tests/test_ops_plan_broadcast_planner_consumer.py",
         "tests/test_unionid_identity_refactor_schema.py",
         "tests/test_unionid_runtime_breakage_hotfix.py"
       ],
       "python_tests": [
+        "tests/test_campaign_step_media_reference_port.py",
+        "tests/test_campaign_step_media_reference_port_postgres.py",
         "tests/test_unionid_runtime_breakage_hotfix.py",
         "tests/test_unionid_identity_refactor_schema.py",
         "tests/test_ops_plan_broadcast_planner_consumer.py",
         "tests/test_internal_events_broadcast_task_slice.py"
       ],
-      "needs_postgres": false,
-      "architecture_gate": "fast"
+      "needs_postgres": true,
+      "needs_full_ci": true,
+      "architecture_gate": "full"
     },
     {
       "name": "user_ops",

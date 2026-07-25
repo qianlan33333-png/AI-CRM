@@ -719,7 +719,7 @@ tables:
   segments:
     domain: campaign
     lifecycle: canonical
-    write_owner: aicrm_next.cloud_orchestrator.repository
+    write_owner: aicrm_next.cloud_orchestrator
     read_owners:
       - aicrm_next.ai_assist.external_campaigns_repo
       - aicrm_next.cloud_orchestrator.repository
@@ -830,12 +830,10 @@ tables:
     domain: campaign
     lifecycle: canonical
     write_owner: aicrm_next.cloud_orchestrator.repository
-    write_owners:
-      - aicrm_next.cloud_orchestrator.repository
-      - aicrm_next.media_library
     read_owners:
       - aicrm_next.cloud_orchestrator.repository
       - aicrm_next.cloud_orchestrator.campaigns_read
+      - aicrm_next.media_library
     replacement: future campaign command model plus broadcast_jobs scheduling projection
     drop_candidate: false
     drop_after: ""
@@ -847,7 +845,7 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_campaign_automation_table_boundary.py
-    notes: Active campaign step definition table; external sends still belong to broadcast/external-effect records.
+    notes: Active campaign step definition table; all writes, including media-reference cleanup, go through the cloud-orchestrator owner port. External sends still belong to broadcast/external-effect records.
 
   campaign_members:
     domain: campaign

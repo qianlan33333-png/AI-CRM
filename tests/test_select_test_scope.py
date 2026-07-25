@@ -923,6 +923,22 @@ def test_shared_send_target_change_selects_ai_assist_campaign_slice() -> None:
     assert result["architecture_gate"] == "fast"
 
 
+def test_campaign_step_media_owner_selects_cloud_plan_postgres_scope() -> None:
+    result = _select(
+        "aicrm_next/cloud_orchestrator/campaign_step_media_port.py",
+        "aicrm_next/cloud_orchestrator/campaign_step_media_repository.py",
+        "tests/test_campaign_step_media_reference_port.py",
+        "tests/test_campaign_step_media_reference_port_postgres.py",
+    )
+
+    assert "cloud_plan_repository" in result["matched_scopes"]
+    assert result["unmatched_files"] == []
+    assert "tests/test_campaign_step_media_reference_port_postgres.py" in result["python_tests"]
+    assert result["needs_postgres"] is True
+    assert result["needs_full_ci"] is True
+    assert result["architecture_gate"] == "full"
+
+
 def test_user_ops_change_selects_batch_send_contract_slice() -> None:
     result = _select("aicrm_next/ops_enrollment/application.py")
 
