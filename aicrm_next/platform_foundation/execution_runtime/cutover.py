@@ -160,6 +160,18 @@ class GenerationCASConflict(RuntimeError):
     """The runtime control row no longer matches the cutover precondition."""
 
 
+class IdentityResolutionQueueReopener(Protocol):
+    """Owner-port callback supplied by the composition boundary for queue adoption."""
+
+    def __call__(
+        self,
+        connection: Any,
+        *,
+        queue_ids: list[int],
+        external_effect_job_ids: list[int],
+    ) -> list[int]: ...
+
+
 class RuntimeGenerationRepository:
     """Fail-closed numeric generation control over PR-2's canonical tables."""
 
@@ -420,6 +432,7 @@ class RuntimeGenerationRepository:
         target_scope: str,
         actor: str,
         reason: str,
+        identity_queue_reopen: IdentityResolutionQueueReopener | None = None,
     ) -> GenerationState:
         generation = self._generation(expected_generation, allow_zero=False)
         policy_version = str(expected_policy_version or "").strip()
@@ -505,11 +518,14 @@ class RuntimeGenerationRepository:
                     "adopted_runtime_count": 0,
                 }
                 if source_scope == "test_loopback" and destination_scope == "all":
+                    if identity_queue_reopen is None:
+                        raise RuntimeError("identity resolution queue owner port is required for all-scope adoption")
                     adoption = self._adopt_pre_provider_identity_effects(
                         connection,
                         generation=generation,
                         source_policy_version=policy_version,
                         target_policy_version=next_policy_version,
+                        identity_queue_reopen=identity_queue_reopen,
                     )
                 after_policy = {
                     **before_policy,
@@ -632,6 +648,7 @@ class RuntimeGenerationRepository:
         generation: int,
         source_policy_version: str,
         target_policy_version: str,
+        identity_queue_reopen: IdentityResolutionQueueReopener,
     ) -> dict[str, int]:
         """Adopt only generation-0 identity effects proven never to reach WeCom.
 
@@ -699,24 +716,11 @@ class RuntimeGenerationRepository:
             """,
             (generation, target_policy_version, job_ids, source_policy_version),
         ).fetchall()
-        adopted_queues = connection.execute(
-            """
-            UPDATE crm_user_identity_resolution_queue
-            SET status = 'pending',
-                hold_reason = '',
-                held_at = NULL,
-                next_attempt_at = CURRENT_TIMESTAMP,
-                last_error = '',
-                completed_at = NULL,
-                row_version = row_version + 1,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = ANY(%s)
-              AND external_effect_job_id = ANY(%s)
-              AND status IN ('pending', 'held')
-            RETURNING id
-            """,
-            (queue_ids, job_ids),
-        ).fetchall()
+        adopted_queue_ids = identity_queue_reopen(
+            connection,
+            queue_ids=queue_ids,
+            external_effect_job_ids=job_ids,
+        )
         adopted_runtime = connection.execute(
             """
             UPDATE automation_channel_entry_runtime
@@ -732,12 +736,12 @@ class RuntimeGenerationRepository:
             """,
             (job_ids,),
         ).fetchall()
-        if len(adopted_jobs) != len(job_ids) or len(adopted_queues) != len(queue_ids):
+        if len(adopted_jobs) != len(job_ids) or len(adopted_queue_ids) != len(queue_ids):
             raise GenerationCASConflict("pre-provider identity adoption CAS lost")
         return {
             "eligible_count": len(job_ids),
             "adopted_job_count": len(adopted_jobs),
-            "adopted_queue_count": len(adopted_queues),
+            "adopted_queue_count": len(adopted_queue_ids),
             "adopted_runtime_count": len(adopted_runtime),
         }
 

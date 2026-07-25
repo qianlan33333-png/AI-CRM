@@ -4,6 +4,8 @@ from typing import Any, Callable
 
 from psycopg.types.json import Jsonb
 
+from aicrm_next.identity_contact.resolution_queue_port import build_identity_resolution_queue_port
+
 from . import application
 from .repo import _connect, json_safe, text
 
@@ -213,36 +215,12 @@ def _runtime_reserve(conn: Any, *, limit: int, max_attempts: int) -> int:
 
 
 def _claim_queue_rows(conn: Any, *, limit: int, locked_by: str, lease_seconds: int) -> list[dict[str, Any]]:
-    rows = conn.execute(
-        """
-        WITH due AS (
-            SELECT id
-            FROM crm_user_identity_resolution_queue
-            WHERE status = 'pending'
-              AND external_effect_job_id IS NULL
-              AND (next_attempt_at IS NULL OR next_attempt_at <= CURRENT_TIMESTAMP)
-            ORDER BY COALESCE(next_attempt_at, first_seen_at, created_at) ASC, id ASC
-            LIMIT %s
-            FOR UPDATE SKIP LOCKED
-        )
-        UPDATE crm_user_identity_resolution_queue q
-        SET attempts = COALESCE(attempts, 0) + 1,
-            attempt_count = COALESCE(attempt_count, 0) + 1,
-            last_seen_at = CURRENT_TIMESTAMP,
-            next_attempt_at = CURRENT_TIMESTAMP + make_interval(secs => %s),
-            updated_at = CURRENT_TIMESTAMP,
-            payload_json = payload_json || %s
-        FROM due
-        WHERE q.id = due.id
-        RETURNING q.*
-        """,
-        (
-            max(1, min(int(limit or 100), 500)),
-            max(30, min(int(lease_seconds or DEFAULT_CLAIM_LEASE_SECONDS), 3600)),
-            Jsonb({"identity_backfill_claim": {"locked_by": locked_by, "lease_seconds": lease_seconds}}),
-        ),
-    ).fetchall()
-    return [dict(row) for row in rows or []]
+    return build_identity_resolution_queue_port().claim_due_dbapi(
+        conn,
+        limit=limit,
+        locked_by=locked_by,
+        lease_seconds=lease_seconds,
+    )
 
 
 def _claim_runtime_rows(
@@ -315,50 +293,29 @@ def _event_from_runtime_row(row: dict[str, Any]) -> dict[str, Any]:
 
 
 def _mark_queue_resolved(conn: Any, row: dict[str, Any], result: dict[str, Any]) -> None:
-    unionid = text(result.get("unionid"))
-    conn.execute(
-        """
-        UPDATE crm_user_identity_resolution_queue
-        SET status = 'resolved',
-            resolved_unionid = %s,
-            resolved_at = CURRENT_TIMESTAMP,
-            last_error = '',
-            payload_json = payload_json || %s,
-            next_attempt_at = NULL,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE id = %s
-        """,
-        (unionid, Jsonb({"identity_backfill_result": json_safe(result)}), int(row.get("id") or 0)),
+    build_identity_resolution_queue_port().record_backfill_result_dbapi(
+        conn,
+        queue_id=int(row.get("id") or 0),
+        outcome="resolved",
+        result=result,
     )
 
 
 def _mark_queue_retryable(conn: Any, row: dict[str, Any], result: dict[str, Any]) -> None:
-    conn.execute(
-        """
-        UPDATE crm_user_identity_resolution_queue
-        SET status = 'pending',
-            last_error = %s,
-            payload_json = payload_json || %s,
-            next_attempt_at = CURRENT_TIMESTAMP + (LEAST(GREATEST(COALESCE(attempts, 1), 1), 30) || ' minutes')::interval,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE id = %s
-        """,
-        (_result_error(result), Jsonb({"identity_backfill_result": json_safe(result)}), int(row.get("id") or 0)),
+    build_identity_resolution_queue_port().record_backfill_result_dbapi(
+        conn,
+        queue_id=int(row.get("id") or 0),
+        outcome="retryable",
+        result=result,
     )
 
 
 def _mark_queue_failed(conn: Any, row: dict[str, Any], result: dict[str, Any]) -> None:
-    conn.execute(
-        """
-        UPDATE crm_user_identity_resolution_queue
-        SET status = 'failed',
-            last_error = %s,
-            payload_json = payload_json || %s,
-            next_attempt_at = NULL,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE id = %s
-        """,
-        (_result_error(result), Jsonb({"identity_backfill_result": json_safe(result)}), int(row.get("id") or 0)),
+    build_identity_resolution_queue_port().record_backfill_result_dbapi(
+        conn,
+        queue_id=int(row.get("id") or 0),
+        outcome="failed",
+        result=result,
     )
 
 

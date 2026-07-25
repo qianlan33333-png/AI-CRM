@@ -61,7 +61,10 @@ physical package move, legacy table deletion, or real provider call.
   archived messages, and channel contact tags now uses one versioned
   `IdentityResolutionQueuePort`. Source-specific idempotency keys, the caller's
   transaction, effect lineage, and fail-closed missing-unionid behavior remain
-  intact; their former repository write-owner exceptions are removed.
+  intact; their former repository write-owner exceptions are removed. Queue
+  claims, backfill outcomes, terminal settlement, completion receipts, and the
+  authorized pre-provider cutover reopen also use the same owner port, leaving
+  no cross-capability direct queue writer.
 - The versioned Job Catalog binds work to `web`, `callback`, `internal_worker`,
   `external_worker`, and `scheduler`. Only `external_worker` may call a real
   provider. The internal worker entrypoint combines inbox, internal-event, and

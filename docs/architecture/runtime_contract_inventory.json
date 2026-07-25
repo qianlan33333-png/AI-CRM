@@ -49890,11 +49890,11 @@
       "migration_source": "0129_identity_customer_event_driven",
       "pii_level": "aggregate_only",
       "read_owners": [
-        "aicrm_next.channel_entry.identity_external_effect",
+        "aicrm_next.identity_contact",
         "identity resolution reconciliation"
       ],
       "table": "identity_resolution_completion_receipt",
-      "write_owner": "aicrm_next.channel_entry.identity_external_effect"
+      "write_owner": "aicrm_next.identity_contact"
     },
     {
       "domain": "media_library",

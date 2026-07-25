@@ -3329,9 +3329,7 @@ tables:
     lifecycle: queue
     write_owner: aicrm_next.identity_contact
     write_owners:
-      - aicrm_next.channel_entry
       - aicrm_next.identity_contact
-      - aicrm_next.platform_foundation.execution_runtime.repository
     read_owners:
       - aicrm_next.channel_entry
     replacement: none; active production schema table registered during schema drift closeout
@@ -3346,14 +3344,14 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Durable unresolved identity intent. AI Audience, questionnaire, message archive, and contact-tag ingress enqueue only through the identity_contact owner port. Revision 0129 gives each new eligible row an execution_id and exactly one canonical wecom_interactive external effect; linked rows are excluded from the legacy poller. All pre-cutover pending/polling rows are held for manual classification and never auto-replayed. Missing aliases remain held/conflict and must never be treated as a canonical identity or successful consumer outcome.
+    notes: Durable unresolved identity intent. Ingress, claims, backfill results, external-effect completion, terminal settlement, and authorized pre-provider reopen all mutate the queue only through the identity_contact owner port. Revision 0129 gives each new eligible row an execution_id and exactly one canonical wecom_interactive external effect; linked rows are excluded from the legacy poller. All pre-cutover pending/polling rows are held for manual classification and never auto-replayed. Missing aliases remain held/conflict and must never be treated as a canonical identity or successful consumer outcome.
 
   identity_resolution_completion_receipt:
     domain: identity_contact
     lifecycle: audit
-    write_owner: aicrm_next.channel_entry.identity_external_effect
+    write_owner: aicrm_next.identity_contact
     read_owners:
-      - aicrm_next.channel_entry.identity_external_effect
+      - aicrm_next.identity_contact
       - identity resolution reconciliation
     replacement: none; idempotent local continuation evidence after provider success
     drop_candidate: false

@@ -17,6 +17,9 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
+from aicrm_next.identity_contact.resolution_queue_port import (  # noqa: E402
+    build_identity_resolution_queue_port,
+)
 from aicrm_next.platform_foundation.execution_runtime.cutover import (  # noqa: E402
     GenerationCASConflict,
     RuntimeGenerationRepository,
@@ -254,6 +257,7 @@ def main(argv: list[str] | None = None) -> int:
         )
     repository.wait_claims_drained(timeout_seconds=int(args.drain_timeout_seconds))
     if source_matches:
+        identity_queue_port = build_identity_resolution_queue_port()
         state = repository.transition_external_claim_scope(
             expected_generation=int(args.generation),
             expected_policy_version=str(args.expected_policy_version),
@@ -262,6 +266,7 @@ def main(argv: list[str] | None = None) -> int:
             target_scope=str(args.target_scope),
             actor=str(args.actor),
             reason=str(args.reason),
+            identity_queue_reopen=identity_queue_port.reopen_pre_provider_dbapi,
         )
 
     lifecycle = SystemdQueueRuntimeLifecycle()

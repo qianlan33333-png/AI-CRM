@@ -123,8 +123,13 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "crm_user_identity",
         "crm_user_identity_resolution_queue",
     ]
+    assert repositories["aicrm_next/identity_contact/resolution_queue_repository.py"]["table_reads"] == [
+        "crm_user_identity_resolution_queue",
+        "identity_resolution_completion_receipt",
+    ]
     assert repositories["aicrm_next/identity_contact/resolution_queue_repository.py"]["table_writes"] == [
-        "crm_user_identity_resolution_queue"
+        "crm_user_identity_resolution_queue",
+        "identity_resolution_completion_receipt",
     ]
     assert repositories["aicrm_next/sidebar_write/repo.py"]["table_writes"] == [
         "sidebar_customer_profile_fields"
@@ -135,10 +140,11 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "write_owners"
     ]
     assert manifest["tables"]["crm_user_identity_resolution_queue"]["write_owners"] == [
-        "aicrm_next.channel_entry",
         "aicrm_next.identity_contact",
-        "aicrm_next.platform_foundation.execution_runtime.repository",
     ]
+    assert manifest["tables"]["identity_resolution_completion_receipt"]["write_owner"] == (
+        "aicrm_next.identity_contact"
+    )
     for path in (
         "aicrm_next/ai_audience_ops/repository.py",
         "aicrm_next/channel_entry/repo.py",
@@ -148,12 +154,7 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         assert "crm_user_identity_resolution_queue" not in repositories[path]["table_writes"]
 
 
-def test_identity_resolution_queue_ingress_sql_is_confined_to_owner_and_transition_modules() -> None:
-    transitional_writers = {
-        "aicrm_next/channel_entry/identity_external_effect.py",
-        "aicrm_next/channel_entry/identity_resolution_worker.py",
-        "aicrm_next/platform_foundation/execution_runtime/cutover.py",
-    }
+def test_identity_resolution_queue_write_sql_is_confined_to_logical_owner() -> None:
     offenders: list[str] = []
 
     for path in sorted((ROOT / "aicrm_next").rglob("*.py")):
@@ -165,8 +166,7 @@ def test_identity_resolution_queue_ingress_sql_is_confined_to_owner_and_transiti
             continue
         if relative_path == "aicrm_next/channel_entry/identity_bridge_repo.py":
             continue
-        if relative_path not in transitional_writers:
-            offenders.append(relative_path)
+        offenders.append(relative_path)
 
     assert offenders == []
 

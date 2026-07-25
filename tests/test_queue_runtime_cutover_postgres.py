@@ -10,6 +10,7 @@ import pytest
 from psycopg.rows import dict_row
 
 from aicrm_next.data_health import checks as data_health_checks
+from aicrm_next.identity_contact.resolution_queue_port import build_identity_resolution_queue_port
 from aicrm_next.platform_foundation.execution_runtime.commands import (
     QUEUE_RUNTIME_COMMAND_APPLIED,
     QueueCommandConflict,
@@ -1064,6 +1065,7 @@ def test_scope_transition_can_enter_all_scope_and_resume_execute_mode() -> None:
         target_scope="all",
         actor="pytest",
         reason="explicit production all scope transition",
+        identity_queue_reopen=build_identity_resolution_queue_port().reopen_pre_provider_dbapi,
     )
     resumed = repository.resume_claims(
         expected_generation=81,
@@ -1111,6 +1113,7 @@ def test_all_scope_transition_adopts_only_pre_provider_identity_effect_and_prese
         target_scope="all",
         actor="pytest",
         reason="adopt exact pre-provider identity effect",
+        identity_queue_reopen=build_identity_resolution_queue_port().reopen_pre_provider_dbapi,
     )
 
     with _connect() as connection:
@@ -1239,6 +1242,7 @@ def test_all_scope_transition_never_adopts_ambiguous_or_wrong_provenance_identit
         target_scope="all",
         actor="pytest",
         reason="prove ambiguous identity effects remain terminal",
+        identity_queue_reopen=build_identity_resolution_queue_port().reopen_pre_provider_dbapi,
     )
 
     with _connect() as connection:
@@ -1372,6 +1376,7 @@ def test_post_cutover_contact_detail_recovery_reopens_exact_one_and_two_attempt_
         target_scope="all",
         actor="pytest",
         reason="adopt before typed gate block",
+        identity_queue_reopen=build_identity_resolution_queue_port().reopen_pre_provider_dbapi,
     )
     with _connect() as connection:
         _simulate_post_cutover_contact_detail_gate_block(
@@ -1508,6 +1513,7 @@ def test_post_cutover_contact_detail_recovery_rejects_any_provider_boundary() ->
         target_scope="all",
         actor="pytest",
         reason="adopt before ambiguous provider block",
+        identity_queue_reopen=build_identity_resolution_queue_port().reopen_pre_provider_dbapi,
     )
     with _connect() as connection:
         _simulate_post_cutover_contact_detail_gate_block(
@@ -1568,6 +1574,7 @@ def test_data_health_excludes_only_exact_post_cutover_recovery_candidate() -> No
         target_scope="all",
         actor="pytest",
         reason="adopt exact health candidates",
+        identity_queue_reopen=build_identity_resolution_queue_port().reopen_pre_provider_dbapi,
     )
     with _connect() as connection:
         _simulate_post_cutover_contact_detail_gate_block(

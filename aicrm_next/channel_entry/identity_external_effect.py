@@ -5,6 +5,10 @@ from uuid import uuid4
 
 from sqlalchemy import text
 
+from aicrm_next.identity_contact.resolution_queue_port import (
+    CompleteIdentityResolutionRequest,
+    build_identity_resolution_queue_port,
+)
 from aicrm_next.platform_foundation.command_bus.models import CommandContext
 from aicrm_next.platform_foundation.external_effects import WECOM_EXTERNAL_CONTACT_DETAIL_FETCH
 from aicrm_next.platform_foundation.external_effects.continuations import ExternalEffectContinuation
@@ -67,31 +71,13 @@ def _settle_terminal_identity(job, _dispatch_result) -> dict[str, Any]:
         return {"ok": True, "projected": False, "reason": "identity_effect_status_not_terminal"}
     error_code = _text(job.last_error_code) or f"external_effect_{_text(job.status)}"
     with get_session_factory()() as session:
-        queue_row = session.execute(
-            text(
-                """
-                UPDATE crm_user_identity_resolution_queue
-                SET status = :status,
-                    last_error = :last_error,
-                    next_attempt_at = NULL,
-                    hold_reason = CASE WHEN :status = 'held' THEN :last_error ELSE '' END,
-                    held_at = CASE WHEN :status = 'held' THEN COALESCE(held_at, CURRENT_TIMESTAMP) ELSE held_at END,
-                    completed_at = CASE WHEN :status IN ('failed', 'ignored') THEN COALESCE(completed_at, CURRENT_TIMESTAMP) ELSE completed_at END,
-                    row_version = row_version + 1,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = :queue_id
-                  AND external_effect_job_id = :job_id
-                  AND status IN ('pending', 'polling')
-                RETURNING id
-                """
-            ),
-            {
-                "status": target_status,
-                "last_error": error_code,
-                "queue_id": queue_id,
-                "job_id": int(job.id),
-            },
-        ).scalar_one_or_none()
+        queue_updated = build_identity_resolution_queue_port().settle_terminal_sqlalchemy(
+            session,
+            queue_id=queue_id,
+            external_effect_job_id=int(job.id),
+            status=target_status,
+            error_code=error_code,
+        )
         runtime_count = session.execute(
             text(
                 """
@@ -114,7 +100,7 @@ def _settle_terminal_identity(job, _dispatch_result) -> dict[str, Any]:
         session.commit()
     return {
         "ok": True,
-        "projected": bool(queue_row or runtime_count),
+        "projected": bool(queue_updated or runtime_count),
         "queue_id": queue_id,
         "queue_status": target_status,
         "runtime_updated_count": int(runtime_count or 0),
@@ -137,18 +123,12 @@ def _run_private(job, dispatch_result) -> dict[str, Any]:
     if queue_id <= 0 or not attempt_id:
         return {"ok": False, "error": "identity_resolution_completion_identifiers_missing"}
 
+    queue_port = build_identity_resolution_queue_port()
     with get_session_factory()() as session:
-        existing = session.execute(
-            text(
-                """
-                SELECT *
-                FROM identity_resolution_completion_receipt
-                WHERE external_effect_job_id = :job_id
-                LIMIT 1
-                """
-            ),
-            {"job_id": int(job.id)},
-        ).mappings().fetchone()
+        existing = queue_port.get_completion_receipt_sqlalchemy(
+            session,
+            external_effect_job_id=int(job.id),
+        )
         if existing:
             _consume_provider_result(attempt_id, job_id=int(job.id))
             return {
@@ -158,10 +138,7 @@ def _run_private(job, dispatch_result) -> dict[str, Any]:
                 "result_status": _text(existing.get("result_status")),
                 "provider_result_consumed": True,
             }
-        queue_row = session.execute(
-            text("SELECT * FROM crm_user_identity_resolution_queue WHERE id = :queue_id"),
-            {"queue_id": queue_id},
-        ).mappings().fetchone()
+        queue_row = queue_port.get_queue_sqlalchemy(session, queue_id=queue_id)
     if not queue_row:
         return {"ok": False, "error": "identity_resolution_queue_not_found"}
     if int(queue_row.get("external_effect_job_id") or 0) != int(job.id):
@@ -287,59 +264,24 @@ def _persist_completion_receipt(
     result: dict[str, Any],
 ) -> bool:
     with get_session_factory()() as session:
-        receipt = session.execute(
-            text(
-                """
-                INSERT INTO identity_resolution_completion_receipt (
-                    external_effect_job_id, attempt_id, queue_id, result_status,
-                    result_summary_json, execution_id, parent_execution_id, created_at
-                ) VALUES (
-                    :job_id, :attempt_id, :queue_id, :result_status,
-                    CAST(:result_summary AS jsonb), :execution_id, :parent_execution_id,
-                    CURRENT_TIMESTAMP
-                )
-                ON CONFLICT (external_effect_job_id) DO NOTHING
-                RETURNING id
-                """
-            ),
-            {
-                "job_id": int(job.id),
-                "attempt_id": attempt_id,
-                "queue_id": queue_id,
-                "result_status": result_status,
-                "result_summary": _json_summary(result),
-                "execution_id": f"exe_identity_completion_{uuid4().hex}",
-                "parent_execution_id": _text(job.execution_id),
-            },
-        ).fetchone()
-        if receipt:
-            session.execute(
-                text(
-                    """
-                    UPDATE crm_user_identity_resolution_queue
-                    SET status = :status,
-                        resolved_unionid = :resolved_unionid,
-                        conflict_reason = :conflict_reason,
-                        completed_at = CURRENT_TIMESTAMP,
-                        resolved_at = CASE WHEN :status = 'resolved' THEN CURRENT_TIMESTAMP ELSE resolved_at END,
-                        last_error = '',
-                        row_version = row_version + 1,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE id = :queue_id
-                      AND external_effect_job_id = :job_id
-                      AND status = 'pending'
-                    """
+        receipt_created = build_identity_resolution_queue_port().complete_sqlalchemy(
+            session,
+            CompleteIdentityResolutionRequest(
+                job_id=int(job.id),
+                attempt_id=attempt_id,
+                queue_id=queue_id,
+                result_status="resolved" if result_status == "resolved" else "conflict",
+                result_summary_json=_json_summary(result),
+                execution_id=f"exe_identity_completion_{uuid4().hex}",
+                parent_execution_id=_text(job.execution_id),
+                resolved_unionid=_text(result.get("unionid")),
+                conflict_reason=(
+                    "" if result_status == "resolved" else _text(result.get("reason")) or "missing_unionid"
                 ),
-                {
-                    "queue_id": queue_id,
-                    "job_id": int(job.id),
-                    "status": result_status,
-                    "resolved_unionid": _text(result.get("unionid")),
-                    "conflict_reason": "" if result_status == "resolved" else _text(result.get("reason")) or "missing_unionid",
-                },
-            )
+            ),
+        )
         session.commit()
-        return bool(receipt)
+        return receipt_created
 
 
 def _consume_provider_result(attempt_id: str, *, job_id: int) -> bool:

@@ -539,9 +539,12 @@ repositories:
       - external_contact_bindings
   aicrm_next/identity_contact/resolution_queue_repository.py:
     capability_owner: aicrm_next.identity_contact
-    table_reads: []
+    table_reads:
+      - crm_user_identity_resolution_queue
+      - identity_resolution_completion_receipt
     table_writes:
       - crm_user_identity_resolution_queue
+      - identity_resolution_completion_receipt
   aicrm_next/identity_contact/write_repository.py:
     capability_owner: aicrm_next.identity_contact
     table_reads: []
