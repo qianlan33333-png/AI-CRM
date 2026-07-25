@@ -44448,6 +44448,14 @@
       "unit": "aicrm-campaign-run-due.timer"
     },
     {
+      "kick_after_timer_restart": true,
+      "kick_failure_fatal": true,
+      "kind": "timer",
+      "service": "aicrm-data-health-snapshot.service",
+      "state": "active_autostart",
+      "unit": "aicrm-data-health-snapshot.timer"
+    },
+    {
       "health_url": "",
       "kind": "service",
       "state": "active",
