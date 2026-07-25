@@ -19,6 +19,10 @@ def test_ai_audience_production_diagnostics_is_exact_release_read_only() -> None
     assert "systemctl is-active --quiet aicrm-ai-audience-daily-intent.timer" in workflow
     assert "systemctl is-active --quiet aicrm-internal-queue-runtime.service" in workflow
     assert "runtime_heartbeat_state" in workflow
+    assert "package_config_state" in workflow
+    assert "incremental_sql_configured" in workflow
+    assert "daily_sql_configured" in workflow
+    assert "simple_compiled_sql_configured" in workflow
     assert "refresh_outbox_state" in workflow
     assert "refresh_event_state" in workflow
     assert "refresh_consumer_run_state" in workflow

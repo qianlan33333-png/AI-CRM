@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
@@ -480,13 +480,25 @@ class AudiencePackageService:
         subscription = self._repo.update_subscription(subscription_id, payload)
         return {"ok": bool(subscription), "subscription": subscription, "error": "" if subscription else "subscription_not_found"}
 
-    def emit_tick(self, tick_type: str, *, actor_id: str = "ai_audience_scheduler") -> dict[str, Any]:
+    def emit_tick(
+        self,
+        tick_type: str,
+        *,
+        actor_id: str = "ai_audience_scheduler",
+        bucket: str = "",
+        now: datetime | None = None,
+        daily_refresh_time: str = "02:00",
+    ) -> dict[str, Any]:
         from .refresh_intents import AudienceRefreshIntentService
 
-        bucket = _tick_bucket(tick_type)
+        resolved_bucket = _text(bucket) or _tick_bucket(
+            tick_type,
+            now=now,
+            daily_refresh_time=daily_refresh_time,
+        )
         return AudienceRefreshIntentService().request_due_refreshes(
             "daily" if tick_type == "daily" else "incremental",
-            bucket=bucket,
+            bucket=resolved_bucket,
             actor_id=actor_id,
         )
 
@@ -525,14 +537,43 @@ class AudiencePackageService:
         return {"ok": True, **self._repo.health()}
 
 
-def _tick_bucket(tick_type: str) -> str:
-    from datetime import datetime, timezone
-
-    now = datetime.now(ZoneInfo("Asia/Shanghai")) if tick_type == "daily" else datetime.now(timezone.utc)
+def _tick_bucket(
+    tick_type: str,
+    *,
+    now: datetime | None = None,
+    daily_refresh_time: str = "02:00",
+    timezone_name: str = "Asia/Shanghai",
+) -> str:
     if tick_type == "daily":
-        return now.strftime("%Y-%m-%d")
-    minute = (now.minute // 3) * 3
-    return now.replace(minute=minute, second=0, microsecond=0).isoformat()
+        local_zone = ZoneInfo(timezone_name)
+        reference = now or datetime.now(local_zone)
+        if reference.tzinfo is None:
+            reference = reference.replace(tzinfo=local_zone)
+        local_now = reference.astimezone(local_zone)
+        hour, minute = _parse_tick_hhmm(daily_refresh_time)
+        latest_boundary = local_now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        if local_now < latest_boundary:
+            latest_boundary -= timedelta(days=1)
+        return latest_boundary.date().isoformat()
+    reference = now or datetime.now(timezone.utc)
+    if reference.tzinfo is None:
+        reference = reference.replace(tzinfo=timezone.utc)
+    utc_now = reference.astimezone(timezone.utc)
+    minute = (utc_now.minute // 3) * 3
+    return utc_now.replace(minute=minute, second=0, microsecond=0).isoformat()
+
+
+def _parse_tick_hhmm(value: str) -> tuple[int, int]:
+    raw = _text(value) or "02:00"
+    try:
+        hour_text, minute_text = raw.split(":", 1)
+        hour = int(hour_text)
+        minute = int(minute_text)
+    except (TypeError, ValueError):
+        return 2, 0
+    if not (0 <= hour <= 23 and 0 <= minute <= 59):
+        return 2, 0
+    return hour, minute
 
 
 def _admin_package_item(row: dict[str, Any]) -> dict[str, Any]:

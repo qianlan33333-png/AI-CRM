@@ -10,6 +10,7 @@ from aicrm_next.ai_audience_ops.refresh_intents import (
     AudienceRefreshIntentRepository,
     AudienceRefreshIntentService,
 )
+from aicrm_next.ai_audience_ops.repository import build_audience_repository
 from aicrm_next.internal_event_composition import build_internal_event_consumer_registry
 from aicrm_next.platform_foundation.internal_events.outbox import InternalEventOutboxRelay
 from aicrm_next.shared.db_session import get_session_factory
@@ -18,22 +19,37 @@ from aicrm_next.shared.db_session import get_session_factory
 pytestmark = pytest.mark.usefixtures("next_pg_schema")
 
 
-def _create_package(*, source_type: str = "questionnaire_submission", daily_enabled: bool = False) -> int:
+def _create_package(
+    *,
+    source_type: str = "questionnaire_submission",
+    daily_enabled: bool = False,
+    incremental_enabled: bool = True,
+    incremental_sql_text: str = "SELECT 1 AS identity_type",
+    snapshot_sql_text: str = "SELECT 1 AS identity_type",
+    query_mode: str = "hybrid",
+    simple_compiled_sql_text: str = "",
+) -> int:
     with get_session_factory()() as session:
         package_id = int(
             session.execute(
                 text(
                     """
                     INSERT INTO ai_audience_package (
-                        package_key, name, status, incremental_enabled, daily_enabled
+                        package_key, name, status, query_mode,
+                        incremental_enabled, daily_enabled
                     ) VALUES (
                         'intent_pkg_' || nextval('ai_audience_package_id_seq')::text,
-                        'Intent package', 'draft', TRUE, :daily_enabled
+                        'Intent package', 'draft', :query_mode,
+                        :incremental_enabled, :daily_enabled
                     )
                     RETURNING id
                     """
                 ),
-                {"daily_enabled": bool(daily_enabled)},
+                {
+                    "daily_enabled": bool(daily_enabled),
+                    "incremental_enabled": bool(incremental_enabled),
+                    "query_mode": query_mode,
+                },
             ).scalar_one()
         )
         version_id = int(
@@ -42,16 +58,23 @@ def _create_package(*, source_type: str = "questionnaire_submission", daily_enab
                     """
                     INSERT INTO ai_audience_package_version (
                         package_id, version_number, status,
-                        incremental_sql_text, snapshot_sql_text
+                        incremental_sql_text, snapshot_sql_text,
+                        simple_compiled_sql_text
                     ) VALUES (
                         :package_id, 1, 'published',
-                        'SELECT 1 AS identity_type',
-                        'SELECT 1 AS identity_type'
+                        :incremental_sql_text,
+                        :snapshot_sql_text,
+                        :simple_compiled_sql_text
                     )
                     RETURNING id
                     """
                 ),
-                {"package_id": package_id},
+                {
+                    "package_id": package_id,
+                    "incremental_sql_text": incremental_sql_text,
+                    "snapshot_sql_text": snapshot_sql_text,
+                    "simple_compiled_sql_text": simple_compiled_sql_text,
+                },
             ).scalar_one()
         )
         session.execute(
@@ -285,6 +308,111 @@ def test_business_row_dirty_intent_and_signal_share_one_transaction() -> None:
     assert _count("SELECT COUNT(*) FROM ai_audience_refresh_intent WHERE package_id = :package_id", {"package_id": package_id}) == 0
     assert _count("SELECT COUNT(*) FROM ai_audience_refresh_source_receipt WHERE package_id = :package_id", {"package_id": package_id}) == 0
     assert _count("SELECT COUNT(*) FROM internal_event_outbox WHERE event_type = 'ai_audience.refresh.requested'") == 0
+
+
+def test_source_change_skips_daily_only_package_without_incremental_sql() -> None:
+    package_id = _create_package(
+        daily_enabled=True,
+        incremental_enabled=False,
+        incremental_sql_text="",
+    )
+
+    result = AudienceRefreshIntentRepository().mark_source_dirty(
+        source_event_key="daily-only-source-change",
+        source_type="questionnaire_submission",
+    )
+
+    assert result["matched_package_count"] == 0
+    assert result["updated_package_count"] == 0
+    assert _count(
+        "SELECT COUNT(*) FROM ai_audience_refresh_intent WHERE package_id = :package_id",
+        {"package_id": package_id},
+    ) == 0
+
+
+def test_daily_clock_recovers_blocked_wrong_kind_without_replaying_old_signal() -> None:
+    package_id = _create_package(
+        daily_enabled=True,
+        incremental_enabled=False,
+        incremental_sql_text="",
+    )
+    with get_session_factory()() as session:
+        session.execute(
+            text(
+                """
+                INSERT INTO ai_audience_refresh_intent (
+                    package_id, dirty_generation, completed_generation,
+                    signal_generation, status, target_refresh_kind,
+                    attempt_count, last_error_code, last_error_message
+                ) VALUES (
+                    :package_id, 10, 0, 10, 'blocked', 'incremental',
+                    10, 'refresh_failed', 'incremental_sql_not_configured'
+                )
+                """
+            ),
+            {"package_id": package_id},
+        )
+        session.commit()
+
+    result = AudienceRefreshIntentService().request_due_refreshes(
+        "daily",
+        bucket="recover-blocked-wrong-kind",
+    )
+
+    recovered = next(item for item in result["items"] if item["package_id"] == package_id)
+    assert recovered["blocked_incompatible_config_recovered"] is True
+    assert recovered["signal_created"] is True
+    intent = AudienceRefreshIntentRepository().get(package_id)
+    assert intent is not None
+    assert intent["status"] == "waiting"
+    assert intent["target_refresh_kind"] == "daily"
+    assert intent["attempt_count"] == 0
+    assert intent["dirty_generation"] == 11
+    assert intent["signal_generation"] == 11
+
+
+def test_daily_clock_recovers_blocked_legacy_simple_shape() -> None:
+    package_id = _create_package(
+        daily_enabled=True,
+        incremental_enabled=False,
+        incremental_sql_text="SELECT 1 AS identity_type",
+        snapshot_sql_text="",
+        query_mode="simple_sql",
+        simple_compiled_sql_text="SELECT 1 AS identity_type",
+    )
+    with get_session_factory()() as session:
+        session.execute(
+            text(
+                """
+                INSERT INTO ai_audience_refresh_intent (
+                    package_id, dirty_generation, completed_generation,
+                    signal_generation, status, target_refresh_kind,
+                    attempt_count, last_error_code, last_error_message
+                ) VALUES (
+                    :package_id, 3, 0, 3, 'blocked', 'daily',
+                    10, 'refresh_failed', 'daily_sql_not_configured'
+                )
+                """
+            ),
+            {"package_id": package_id},
+        )
+        session.commit()
+
+    result = AudienceRefreshIntentService().request_due_refreshes(
+        "daily",
+        bucket="recover-blocked-legacy-simple-shape",
+    )
+
+    recovered = next(item for item in result["items"] if item["package_id"] == package_id)
+    assert recovered["blocked_incompatible_config_recovered"] is True
+    assert recovered["signal_created"] is True
+    intent = AudienceRefreshIntentRepository().get(package_id)
+    assert intent is not None
+    assert intent["status"] == "waiting"
+    assert intent["target_refresh_kind"] == "daily"
+    assert intent["attempt_count"] == 0
+    assert intent["dirty_generation"] == 4
+    assert intent["signal_generation"] == 4
 
 
 def test_source_receipt_persists_only_opaque_identifiers() -> None:
@@ -655,6 +783,60 @@ def test_daily_clock_intent_is_idempotent_and_never_runs_refresh_inline() -> Non
     assert intent["target_refresh_kind"] == "daily"
     assert _count("SELECT COUNT(*) FROM ai_audience_package_run") == 0
     assert _count("SELECT COUNT(*) FROM external_effect_attempt") == 0
+
+
+def test_daily_clock_only_marks_packages_whose_scheduled_refresh_is_due() -> None:
+    due_package_id = _create_package(daily_enabled=True, incremental_enabled=False)
+    future_package_id = _create_package(daily_enabled=True, incremental_enabled=False)
+    with get_session_factory()() as session:
+        session.execute(
+            text(
+                """
+                UPDATE ai_audience_package
+                SET next_daily_refresh_at = CASE
+                    WHEN id = :due_package_id THEN CURRENT_TIMESTAMP - INTERVAL '1 minute'
+                    ELSE CURRENT_TIMESTAMP + INTERVAL '1 hour'
+                END,
+                    last_daily_refreshed_at = NULL
+                WHERE id IN (:due_package_id, :future_package_id)
+                """
+            ),
+            {
+                "due_package_id": due_package_id,
+                "future_package_id": future_package_id,
+            },
+        )
+        session.commit()
+
+    result = AudienceRefreshIntentService().request_due_refreshes(
+        "daily",
+        bucket="2026-07-25",
+        actor_id="daily_timer",
+    )
+
+    assert result["candidate_count"] == 1
+    assert [int(item["package_id"]) for item in result["items"]] == [due_package_id]
+    assert AudienceRefreshIntentRepository().get(due_package_id) is not None
+    assert AudienceRefreshIntentRepository().get(future_package_id) is None
+
+
+def test_daily_due_check_honors_a_future_schedule_even_without_a_watermark() -> None:
+    package_id = _create_package(daily_enabled=True, incremental_enabled=False)
+    with get_session_factory()() as session:
+        session.execute(
+            text(
+                """
+                UPDATE ai_audience_package
+                SET next_daily_refresh_at = CURRENT_TIMESTAMP + INTERVAL '1 hour',
+                    last_daily_refreshed_at = NULL
+                WHERE id = :package_id
+                """
+            ),
+            {"package_id": package_id},
+        )
+        session.commit()
+
+    assert build_audience_repository().has_refresh_due("daily") is False
 
 
 def test_manual_api_only_persists_and_signals(next_client) -> None:

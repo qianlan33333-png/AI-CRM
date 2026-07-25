@@ -123,6 +123,52 @@ jobs:
                         )
                     ).mappings().one()
                 )
+                package_config_state = [
+                    dict(row)
+                    for row in session.execute(
+                        text(
+                            """
+                            SELECT
+                                package.query_mode,
+                                package.incremental_enabled,
+                                package.daily_enabled,
+                                (NULLIF(BTRIM(version.incremental_sql_text), '') IS NOT NULL)
+                                    AS incremental_sql_configured,
+                                (NULLIF(BTRIM(version.snapshot_sql_text), '') IS NOT NULL)
+                                    AS daily_sql_configured,
+                                (NULLIF(BTRIM(version.simple_compiled_sql_text), '') IS NOT NULL)
+                                    AS simple_compiled_sql_configured,
+                                COUNT(*) AS row_count,
+                                MIN(package.last_incremental_watermark_at)
+                                    AS oldest_incremental_watermark_at,
+                                MAX(package.last_incremental_watermark_at)
+                                    AS newest_incremental_watermark_at,
+                                MIN(package.last_daily_refreshed_at)
+                                    AS oldest_daily_refresh_at,
+                                MAX(package.last_daily_refreshed_at)
+                                    AS newest_daily_refresh_at
+                            FROM ai_audience_package package
+                            JOIN ai_audience_package_version version
+                              ON version.id = package.current_version_id
+                            WHERE package.status = 'active'
+                            GROUP BY
+                                package.query_mode,
+                                package.incremental_enabled,
+                                package.daily_enabled,
+                                (NULLIF(BTRIM(version.incremental_sql_text), '') IS NOT NULL),
+                                (NULLIF(BTRIM(version.snapshot_sql_text), '') IS NOT NULL),
+                                (NULLIF(BTRIM(version.simple_compiled_sql_text), '') IS NOT NULL)
+                            ORDER BY
+                                package.query_mode,
+                                package.incremental_enabled,
+                                package.daily_enabled,
+                                incremental_sql_configured,
+                                daily_sql_configured,
+                                simple_compiled_sql_configured
+                            """
+                        )
+                    ).mappings()
+                ]
                 intent_state = [
                     dict(row)
                     for row in session.execute(
@@ -269,6 +315,7 @@ jobs:
                     {
                         "ok": True,
                         "package_state": package_state,
+                        "package_config_state": package_config_state,
                         "intent_state": intent_state,
                         "consumer_state": consumer_state,
                         "runtime_heartbeat_state": runtime_heartbeat_state,
