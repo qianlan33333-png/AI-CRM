@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import Any, Mapping
 
 import yaml
 from sqlalchemy import text
+
+from aicrm_next.shared.runtime import raw_database_url
 
 from aicrm_next.shared.db_session import get_session_factory
 
@@ -57,7 +58,7 @@ def public_schema_snapshot(session_factory: Any | None = None) -> dict[str, set[
 
 
 def database_schema_available() -> bool:
-    return bool(str(os.getenv("DATABASE_URL") or "").strip())
+    return bool(raw_database_url())
 
 
 def evaluate_schema_drift(

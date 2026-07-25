@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import base64
 import json
-import os
 from typing import Any
 
 from fastapi import APIRouter, Query, Request
@@ -10,6 +9,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
 from aicrm_next.admin_jobs_archive_sync_gateway import execute_archive_sync
+from aicrm_next.shared.runtime_settings import managed_runtime_bool
 
 from .application import (
     ListExternalChatRecordsQuery,
@@ -145,7 +145,7 @@ async def archive_sync(request: Request) -> JSONResponse:
     except Exception:
         raw_payload = {}
     payload = raw_payload if isinstance(raw_payload, dict) else {}
-    if os.getenv("AICRM_ENABLE_IN_PROCESS_ARCHIVE_SYNC", "").strip().lower() not in {"1", "true", "yes", "on"}:
+    if not managed_runtime_bool("AICRM_ENABLE_IN_PROCESS_ARCHIVE_SYNC", False):
         return JSONResponse(
             {
                 "ok": False,

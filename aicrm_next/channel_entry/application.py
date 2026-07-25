@@ -2,14 +2,17 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import re
 import secrets
 from datetime import datetime, timezone
 from typing import Any
 
 from aicrm_next.shared.release import current_release_sha
-from aicrm_next.shared.runtime_settings import managed_runtime_setting, runtime_setting
+from aicrm_next.shared.runtime_settings import (
+    managed_runtime_setting,
+    runtime_setting,
+    startup_environment_setting,
+)
 from aicrm_next.shared.safe_logging import safe_log_exception
 
 from . import repo
@@ -1072,7 +1075,8 @@ def diagnose_channel_runtime(query: DiagnoseChannelRuntimeQuery) -> dict[str, An
         "runtime_route_map": runtime_route_map_payload(),
         "callback_route_owner": "aicrm_next.channel_entry",
         "web_release_sha": current_release_sha(),
-        "worker_release_sha": text(os.getenv("WORKER_RELEASE_SHA")) or "unknown",
+        "worker_release_sha": text(startup_environment_setting("WORKER_RELEASE_SHA"))
+        or "unknown",
     }
 
 
@@ -1290,5 +1294,6 @@ def runtime_route_map_payload() -> dict[str, Any]:
         "callback_async_enabled": "next_task_queue",
         "legacy_callback_fallback_enabled": False,
         "web_release_sha": current_release_sha(),
-        "worker_release_sha": text(os.getenv("WORKER_RELEASE_SHA")) or "unknown",
+        "worker_release_sha": text(startup_environment_setting("WORKER_RELEASE_SHA"))
+        or "unknown",
     }

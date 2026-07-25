@@ -11,29 +11,28 @@ physical package move, legacy table deletion, or real provider call.
   internal event types, 26 external effect types, and 11 job types.
 - `DeploymentProfile` validates the core version, capability dependency closure,
   five runtime roles, configuration schema version, and secret-free profile
-  content. `AICRM_DEPLOYMENT_PROFILE_PATH` is the only startup reference needed
-  to select a checked-in profile.
+  content. Startup-only infrastructure values are isolated in a 32-key catalog;
+  `AICRM_DEPLOYMENT_PROFILE_PATH` selects a checked-in profile through that
+  boundary.
 - Enforced profiles remove disabled extension routes, static assets, event
   consumers, external-effect continuations, provider adapters, effects, and
   jobs. The external worker also blocks residual queued effects before the
   provider boundary.
-- `ConfigDefinition` contributes 297 schema and app-setting definitions,
-  including 37 sensitive values that accept only `secretref:` references. Configuration releases use
+- `ConfigDefinition` contributes 348 schema and app-setting definitions,
+  including 38 sensitive values that accept only `secretref:` references. Configuration releases use
   draft, validation, checksum-protected atomic publish, audit history, shadow
   comparison, and rollback-as-a-new-release.
-- The first three configuration-cutover slices cover 184 settings. The initial 50
-  are owned by `admin_auth`, `auth_wecom`, `admin_config`, and
-  `platform_foundation`; the provider-boundary slice catalogs all 126 settings
-  consumed by `integration_gateway` across channels, engagement, CRM,
-  automation, commerce, forms, archive, AI, and industry capabilities. The
-  third slice adds 13 AI Audience and commerce settings and makes both complete
-  directories direct-environment-free. Those contexts no longer read
-  `os.getenv` / `os.environ` directly. Every registered
-  cutover key is resolved centrally, including callers that pass keys through a
-  dynamic helper, and a repository-wide business-code gate rejects direct
-  environment access to any cutover-eligible key. The same gate requires every
-  runtime key to have a `ConfigDefinition` and keeps remaining environment
-  access inside reviewed startup or compatibility boundaries.
+- The configuration-cutover catalog now covers 237 unique managed settings. The
+  initial platform/auth slice, provider-boundary slice, AI/commerce slice, and
+  final domain slice assign an explicit capability owner and definition to every
+  business runtime key. All business and application modules under
+  `aicrm_next` are direct-environment-free: the generated inventory reports zero
+  direct `os.getenv` / `os.environ` reads outside shared startup/runtime
+  boundaries. Direct access is restricted by the architecture gate to six
+  reviewed shared files; four currently contain 19 direct references. Every
+  registered cutover key is resolved centrally, including callers that pass keys
+  through a dynamic helper. The same gate requires every runtime key to have a
+  `ConfigDefinition` and rejects new business-domain environment access.
 - Migrated settings use an expand/contract cutover. Before activation, an
   existing environment value remains authoritative while the published value
   is shadow-compared. `AICRM_RUNTIME_CONFIG_CUTOVER_KEYS` can activate only a
@@ -76,11 +75,10 @@ and historical-data parity evidence.
 
 ## Deliberately not completed in this release
 
-- Repository-wide business-domain environment reads have not yet reached zero.
-  The platform/auth, complete `integration_gateway`, `ai_audience_ops`, and
-  `commerce` slices are enforced at zero direct reads. The checked-in runtime
-  inventory currently reports 64 remaining direct application-code references
-  across 44 unique keys, which stay visible for owner-by-owner migration.
+- Managed values remain in observation mode. Per-instance staging, redacted
+  shadow comparison, and cutover activation are operational release steps and
+  are not inferred from repository tests. No
+  `AICRM_RUNTIME_CONFIG_CUTOVER_KEYS` value is activated by this change.
 - The historical cross-context import baseline has not yet been reduced to the
   target of 120. Physical directory moves remain disabled until public ports
   and unique table-write ownership are proven.
@@ -98,7 +96,7 @@ and historical-data parity evidence.
 
 ## Next safe sequence
 
-1. Deploy this release in observation mode, stage the 184 managed settings, and
+1. Deploy this release in observation mode, stage the 237 managed settings, and
    collect redacted configuration shadow comparisons per instance.
 2. Activate only matching keys through the cutover catalog; migrate the next
    capability slice with the same expand/contract rule and add public

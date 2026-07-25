@@ -4,7 +4,6 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
-import os
 from datetime import date, datetime, timezone
 from typing import Any, Protocol
 
@@ -353,7 +352,7 @@ from .repository_legacy import CloudLegacyPostgresRepositoryMixin
 
 class PostgresCloudPlanRepository(CloudLegacyPostgresRepositoryMixin):
     def __init__(self, database_url: str | None = None) -> None:
-        self._database_url = _psycopg_url(_text(database_url or raw_database_url() or os.getenv("DATABASE_URL")))
+        self._database_url = _psycopg_url(_text(database_url or raw_database_url()))
         if not self._database_url:
             raise RepositoryProviderError("cloud_orchestrator production repository unavailable: DATABASE_URL is required")
 

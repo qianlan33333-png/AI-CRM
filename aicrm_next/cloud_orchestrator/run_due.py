@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-import os
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import uuid4
@@ -13,6 +12,7 @@ from aicrm_next.platform_foundation.external_effects import AI_ASSIST_CAMPAIGN_M
 from aicrm_next.platform_foundation.external_effects.models import public_datetime, utcnow
 from aicrm_next.platform_foundation.external_effects.test_receiver import TEST_RECEIVER_PATH_PREFIX, canonical_payload_hash
 from aicrm_next.platform_foundation.side_effects import InMemorySideEffectPlanRepository, SideEffectPlan
+from aicrm_next.shared.runtime_settings import managed_runtime_bool, managed_runtime_setting
 
 from .campaigns_read import build_campaign_read_repository
 
@@ -24,6 +24,12 @@ DEFAULT_BATCH_SIZE = 200
 MAX_BATCH_SIZE = 1000
 AI_ASSIST_EXTERNAL_EFFECT_TEST_MODE_KEY = "AI_ASSIST_EXTERNAL_EFFECT_TEST_MODE"
 AI_ASSIST_EXTERNAL_EFFECT_SEND_MODE_KEY = "AI_ASSIST_EXTERNAL_EFFECT_SEND_MODE"
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "AI_ASSIST_EXTERNAL_EFFECT_TEST_MODE",
+        "AI_ASSIST_EXTERNAL_EFFECT_SEND_MODE",
+    }
+)
 
 
 class CloudCampaignRunDueInputError(ValueError):
@@ -292,7 +298,7 @@ def _due_candidates(batch_size: int, *, now: datetime | None = None) -> tuple[li
 
 
 def _enabled(name: str) -> bool:
-    return str(os.getenv(name, "") or "").strip().lower() in {"1", "true", "yes", "on"}
+    return managed_runtime_bool(name, False)
 
 
 def _is_loopback_test_mode(command: Command) -> bool:
@@ -302,7 +308,10 @@ def _is_loopback_test_mode(command: Command) -> bool:
 def _send_mode(command: Command) -> str:
     if _is_loopback_test_mode(command):
         return "loopback"
-    mode = str(os.getenv(AI_ASSIST_EXTERNAL_EFFECT_SEND_MODE_KEY, "") or "").strip().lower()
+    mode = managed_runtime_setting(
+        AI_ASSIST_EXTERNAL_EFFECT_SEND_MODE_KEY,
+        "",
+    ).strip().lower()
     if mode in {"wecom", "wecom_private", "private_message"}:
         return "wecom_private"
     return "shadow"

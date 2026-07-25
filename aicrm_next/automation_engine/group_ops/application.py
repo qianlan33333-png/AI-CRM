@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import os
 from typing import Any
 
 from aicrm_next.integration_gateway.wecom_group_contract import WeComGroupAssetAdapterContract
 from aicrm_next.shared.admin_read_fallback import admin_read_unavailable_payload
 from aicrm_next.shared.errors import ContractError, NotFoundError
 from aicrm_next.shared.repository_provider import RepositoryProviderError, blocked_production_payload
+from aicrm_next.shared.runtime_settings import startup_environment_setting
 
 from . import CAPABILITY_OWNER
 from .domain import (
@@ -55,6 +55,11 @@ from . import plan_effect_lifecycle
 from .projections import group_asset_item, plan_list_item, plan_public_payload
 from .repo import GroupOpsRepository, build_group_ops_repository, plan_binding_summary
 from .runtime_guards import ConflictError, assert_webhook_rate_limit
+
+
+RUNTIME_ENVIRONMENT_KEYS = frozenset(
+    {"AICRM_PUBLIC_BASE_URL", "PUBLIC_BASE_URL", "EXTERNAL_BASE_URL"}
+)
 
 
 def group_ops_side_effect_safety(**overrides: bool) -> dict[str, bool]:
@@ -123,7 +128,7 @@ def _repo_or_block(repo: GroupOpsRepository | None) -> GroupOpsRepository | None
 
 def _public_base_url() -> str:
     for key in ("AICRM_PUBLIC_BASE_URL", "PUBLIC_BASE_URL", "EXTERNAL_BASE_URL"):
-        value = str(os.getenv(key, "") or "").strip().rstrip("/")
+        value = startup_environment_setting(key).strip().rstrip("/")
         if value:
             return value
     return "https://www.youcangogogo.com"

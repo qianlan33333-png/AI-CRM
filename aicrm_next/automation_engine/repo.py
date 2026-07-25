@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from copy import deepcopy
 from typing import Any, Protocol
 
@@ -8,6 +7,7 @@ from aicrm_next.shared.db_session import get_engine
 from aicrm_next.shared.errors import ContractError
 from aicrm_next.shared.repository_provider import assert_repository_allowed
 from aicrm_next.shared.runtime import production_data_ready, raw_database_url
+from aicrm_next.shared.runtime_settings import startup_environment_setting
 
 from .agent_outputs import agent_output_projection, normalize_agent_output_filters
 from .agent_runs import agent_run_projection, normalize_agent_run_filters
@@ -345,11 +345,15 @@ _fixture_repo = InMemoryAutomationRepository()
 
 
 def _agent_repository_backend() -> str:
-    return str(os.getenv(AGENT_BACKEND_ENV) or "fixture").strip().lower()
+    return startup_environment_setting(AGENT_BACKEND_ENV, "fixture").strip().lower()
 
 
 def _agent_database_url() -> str:
-    return str(os.getenv(AGENT_TEST_DATABASE_URL_ENV) or os.getenv(AGENT_STAGING_DATABASE_URL_ENV) or raw_database_url()).strip()
+    return str(
+        startup_environment_setting(AGENT_TEST_DATABASE_URL_ENV)
+        or startup_environment_setting(AGENT_STAGING_DATABASE_URL_ENV)
+        or raw_database_url()
+    ).strip()
 
 
 def agent_postgres_enabled() -> bool:
@@ -357,19 +361,25 @@ def agent_postgres_enabled() -> bool:
 
 
 def _agent_output_repository_backend() -> str:
-    return str(os.getenv(AGENT_OUTPUT_BACKEND_ENV) or "fixture").strip().lower()
+    return startup_environment_setting(AGENT_OUTPUT_BACKEND_ENV, "fixture").strip().lower()
 
 
 def _agent_output_database_url() -> str:
-    return str(os.getenv(AGENT_OUTPUT_TEST_DATABASE_URL_ENV) or os.getenv(AGENT_OUTPUT_STAGING_DATABASE_URL_ENV) or "").strip()
+    return str(
+        startup_environment_setting(AGENT_OUTPUT_TEST_DATABASE_URL_ENV)
+        or startup_environment_setting(AGENT_OUTPUT_STAGING_DATABASE_URL_ENV)
+    ).strip()
 
 
 def _agent_run_repository_backend() -> str:
-    return str(os.getenv(AGENT_RUN_BACKEND_ENV) or "fixture").strip().lower()
+    return startup_environment_setting(AGENT_RUN_BACKEND_ENV, "fixture").strip().lower()
 
 
 def _agent_run_database_url() -> str:
-    return str(os.getenv(AGENT_RUN_TEST_DATABASE_URL_ENV) or os.getenv(AGENT_RUN_STAGING_DATABASE_URL_ENV) or "").strip()
+    return str(
+        startup_environment_setting(AGENT_RUN_TEST_DATABASE_URL_ENV)
+        or startup_environment_setting(AGENT_RUN_STAGING_DATABASE_URL_ENV)
+    ).strip()
 
 
 def build_automation_repository(

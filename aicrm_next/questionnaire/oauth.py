@@ -4,7 +4,6 @@ import base64
 import hashlib
 import hmac
 import json
-import os
 import secrets
 import time
 from dataclasses import dataclass
@@ -14,7 +13,7 @@ from urllib.parse import parse_qsl, urlencode, urlparse, urlsplit, urlunsplit
 from aicrm_next.integration_gateway.questionnaire_adapters import WeChatOAuthAdapter, build_wechat_oauth_adapter
 from aicrm_next.platform_foundation.audit_ledger import InMemoryAuditLedger
 from aicrm_next.shared.runtime import production_data_ready, production_environment
-from aicrm_next.shared.runtime_settings import runtime_setting
+from aicrm_next.shared.runtime_settings import runtime_bool, runtime_setting
 
 from .dto import OAuthCallbackRequest, OAuthStartRequest
 
@@ -29,6 +28,16 @@ SOURCE_PARAM_FIELDS = ("source_channel", "campaign_id", "staff_id")
 _AUDIT_LEDGER = InMemoryAuditLedger()
 _DIAGNOSTICS: list[Json] = []
 _USED_NONCES: set[str] = set()
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "AICRM_QUESTIONNAIRE_OAUTH_STATE_SECRET",
+        "AICRM_NEXT_ACTION_TOKEN_SECRET",
+        "SECRET_KEY",
+        "AICRM_QUESTIONNAIRE_OAUTH_ADAPTER_MODE",
+        "AICRM_QUESTIONNAIRE_OAUTH_ENABLE_REAL",
+        "AICRM_QUESTIONNAIRE_OAUTH_REDIRECT_ALLOWLIST",
+    }
+)
 
 
 def _now() -> int:
@@ -83,11 +92,14 @@ def _load_signed_blob(value: str) -> Json:
 
 
 def _env_true(name: str) -> bool:
-    return str(os.getenv(name, "") or "").strip().lower() in {"1", "true", "yes", "on"}
+    return runtime_bool(name, False)
 
 
 def resolve_adapter_mode() -> str:
-    explicit = str(os.getenv("AICRM_QUESTIONNAIRE_OAUTH_ADAPTER_MODE") or "").strip().lower()
+    explicit = runtime_setting(
+        "AICRM_QUESTIONNAIRE_OAUTH_ADAPTER_MODE",
+        "",
+    ).strip().lower()
     if explicit in ADAPTER_MODES:
         if explicit == "real_enabled" and not _env_true("AICRM_QUESTIONNAIRE_OAUTH_ENABLE_REAL"):
             return "real_blocked"
@@ -103,7 +115,10 @@ def _normalize_redirect(redirect: str | None, slug: str | None) -> str:
     if parsed.scheme or parsed.netloc:
         allowed = {
             item.strip().rstrip("/")
-            for item in str(os.getenv("AICRM_QUESTIONNAIRE_OAUTH_REDIRECT_ALLOWLIST") or "").split(",")
+            for item in runtime_setting(
+                "AICRM_QUESTIONNAIRE_OAUTH_REDIRECT_ALLOWLIST",
+                "",
+            ).split(",")
             if item.strip()
         }
         origin = f"{parsed.scheme}://{parsed.netloc}".rstrip("/")

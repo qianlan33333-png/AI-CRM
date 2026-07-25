@@ -1,13 +1,16 @@
 from __future__ import annotations
 
-import os
 import re
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from typing import Any
 
 from aicrm_next.admin_jobs_archive_sync_gateway import execute_archive_sync
-from aicrm_next.shared.runtime_settings import runtime_setting
+from aicrm_next.shared.runtime_settings import (
+    managed_runtime_bool,
+    managed_runtime_setting,
+    runtime_setting,
+)
 from aicrm_next.shared.sensitive_data import redact_sensitive_data, redact_sensitive_text
 
 from .domain import (
@@ -60,7 +63,7 @@ def _archive_sync_form_defaults() -> dict[str, str]:
     return {
         "start_time": start_time.strftime("%Y-%m-%d %H:%M:%S"),
         "end_time": end_time.strftime("%Y-%m-%d %H:%M:%S"),
-        "owner_userid": normalized_text(os.getenv("WECOM_DEFAULT_OWNER_USERID")),
+        "owner_userid": normalized_text(managed_runtime_setting("WECOM_DEFAULT_OWNER_USERID")),
         "cursor": "",
         "operator": "",
     }
@@ -368,7 +371,7 @@ def execute_jobs_action(*, action: str, form: Any, operator: str, repo: AdminJob
                 after=preview,
             )
             return preview
-        if os.getenv("AICRM_ENABLE_IN_PROCESS_ARCHIVE_SYNC", "").strip().lower() not in {"1", "true", "yes", "on"}:
+        if not managed_runtime_bool("AICRM_ENABLE_IN_PROCESS_ARCHIVE_SYNC", False):
             return {
                 "ok": False,
                 "error_code": "in_process_archive_sync_disabled",

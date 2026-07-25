@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
@@ -12,6 +11,7 @@ from aicrm_next.shared.config import get_settings
 from aicrm_next.shared.db_session import get_db
 from aicrm_next.shared.errors import NotFoundError
 from aicrm_next.shared.runtime import database_mode, production_data_ready
+from aicrm_next.shared.runtime_settings import startup_environment_setting
 from aicrm_next.shared.sidebar_access import sidebar_owner_context_from_request as _sidebar_owner_context_from_request
 from aicrm_next.service_period.application import UpdateServicePeriodMemberRemarkCommand
 
@@ -52,7 +52,9 @@ _SQL_REPO_BACKENDS = {"sql", "sqlalchemy", "postgres", "postgresql"}
 
 
 def _customer_read_model_sql_backend_enabled() -> bool:
-    configured_backend = str(os.getenv("CUSTOMER_READ_MODEL_REPO_BACKEND", "") or "").strip().lower()
+    configured_backend = startup_environment_setting(
+        "CUSTOMER_READ_MODEL_REPO_BACKEND"
+    ).strip().lower()
     backend = configured_backend or get_settings().customer_read_model_repo_backend.strip().lower()
     if not configured_backend and database_mode() == "postgres":
         backend = "sqlalchemy"

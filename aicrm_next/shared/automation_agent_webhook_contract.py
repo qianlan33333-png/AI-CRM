@@ -14,6 +14,7 @@ _CANONICAL_FIRST_PARTY_ORIGINS = {
     ("https", "www.youcangogogo.com", 443),
     ("https", "id-dev.youcangogogo.com", 443),
 }
+RUNTIME_SETTING_KEYS = frozenset({"AICRM_PUBLIC_BASE_URL", "AICRM_AUTH_ISSUER"})
 
 
 def _origin(value: str) -> tuple[str, str, int] | None:

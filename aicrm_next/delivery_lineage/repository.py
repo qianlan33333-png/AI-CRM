@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import os
 from typing import Protocol
 
 from sqlalchemy import text
 
 from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.shared.runtime import raw_database_url
 
 from .dto import DeliveryLineageDailyMetric, DeliveryLineageItem
 
@@ -100,7 +100,7 @@ class PostgresDeliveryLineageRepository:
 
 
 def build_delivery_lineage_repository() -> DeliveryLineageRepository:
-    if not str(os.getenv("DATABASE_URL") or "").strip():
+    if not raw_database_url():
         return EmptyDeliveryLineageRepository()
     return PostgresDeliveryLineageRepository()
 

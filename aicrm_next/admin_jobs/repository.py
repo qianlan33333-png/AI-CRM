@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import copy
 import json
-import os
 from datetime import datetime, timezone
 from typing import Any, Protocol
 
-from aicrm_next.shared.runtime import production_data_ready
+from aicrm_next.shared.runtime import production_data_ready, raw_database_url
 
 from .domain import BROADCAST_SOURCE_TYPES, BROADCAST_STATUSES
 
@@ -77,7 +76,7 @@ class PostgresAdminJobsRepository:
         import psycopg
         from psycopg.rows import dict_row
 
-        return psycopg.connect(os.getenv("DATABASE_URL", ""), row_factory=dict_row)
+        return psycopg.connect(raw_database_url(), row_factory=dict_row)
 
     def _rows(self, query: str, params: tuple[Any, ...] = ()) -> list[dict[str, Any]]:
         with self._connect() as conn:

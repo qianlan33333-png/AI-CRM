@@ -18,7 +18,7 @@ from aicrm_next.platform_foundation.external_effects.execution_gates import (
     explicit_wecom_execution_disabled,
     wecom_execution_disabled_message,
 )
-from aicrm_next.shared.runtime_settings import runtime_setting
+from aicrm_next.shared.runtime_settings import managed_runtime_int, runtime_setting
 
 from .db import connect, has_database_url, int_value, json_list, utcnow
 
@@ -386,7 +386,11 @@ class PostgresBroadcastQueueRepository:
             or _json_dict(response_payload.get("result")).get("task_id")
         )
         task_type = _text(outcome.get("task_type")) or "broadcast_job/group_ops"
-        retry_delay_seconds = int(os.getenv("BROADCAST_QUEUE_RETRY_DELAY_SECONDS", "300"))
+        retry_delay_seconds = managed_runtime_int(
+            "BROADCAST_QUEUE_RETRY_DELAY_SECONDS",
+            300,
+            minimum=0,
+        )
         with connect() as conn:
             job = conn.execute(
                 """
@@ -1217,7 +1221,14 @@ def run_broadcast_queue_worker(
     current_time = now or utcnow()
     if current_time.tzinfo is None:
         current_time = current_time.replace(tzinfo=timezone.utc)
-    lease = int(lease_seconds or int(os.getenv("BROADCAST_QUEUE_LEASE_SECONDS", "900")))
+    lease = int(
+        lease_seconds
+        or managed_runtime_int(
+            "BROADCAST_QUEUE_LEASE_SECONDS",
+            900,
+            minimum=1,
+        )
+    )
     try:
         claim_token = f"{os.getpid()}:{uuid.uuid4().hex}"
         jobs = repo.claim_due_jobs(limit=int(limit), now=current_time, claim_token=claim_token, lease_seconds=lease)

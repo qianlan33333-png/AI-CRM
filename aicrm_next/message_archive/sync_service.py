@@ -22,6 +22,16 @@ DEFAULT_END_TIME = "2099-12-31 23:59:59"
 DEFAULT_LIMIT = 100
 DEFAULT_MAX_PAGES = 1000
 MAX_LIMIT = 1000
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "WECOM_CORP_ID",
+        "WECOM_ARCHIVE_SECRET",
+        "WECOM_PRIVATE_KEY_PATH",
+        "WECOM_SDK_LIB_PATH",
+        "WECOM_DEFAULT_OWNER_USERID",
+        "WECOM_ARCHIVE_TIMEOUT",
+    }
+)
 
 
 class ArchiveChatDataClient(Protocol):
@@ -295,10 +305,6 @@ def _int_setting(key: str, default: int) -> int:
         return int(_setting(key) or default)
     except ValueError:
         return default
-
-
-def _db_setting(key: str) -> str:
-    return runtime_setting(key, "")
 
 
 def dump_archive_sync_payload(payload: dict[str, Any]) -> str:

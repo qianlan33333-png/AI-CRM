@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass
@@ -9,6 +8,7 @@ from pathlib import Path
 from typing import Literal
 
 from .capability_registry import CAPABILITY_SPECS, CORE_VERSION, default_capability_ids, get_capability_spec
+from .shared.runtime_settings import startup_environment_setting
 
 
 ActivationMode = Literal["observe", "enforce"]
@@ -83,8 +83,10 @@ def load_deployment_profile(path: str | Path) -> DeploymentProfile:
 
 
 def deployment_profile_from_environment(environ: Mapping[str, str] | None = None) -> DeploymentProfile:
-    values = environ if environ is not None else os.environ
-    path = str(values.get(DEPLOYMENT_PROFILE_PATH_ENV) or "").strip()
+    path = startup_environment_setting(
+        DEPLOYMENT_PROFILE_PATH_ENV,
+        environment=environ,
+    ).strip()
     return load_deployment_profile(path) if path else default_deployment_profile()
 
 

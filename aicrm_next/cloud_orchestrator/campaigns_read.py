@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import copy
 import json
-import os
 from typing import Any, Protocol
 
 from aicrm_next.shared import runtime
@@ -174,7 +173,7 @@ class CloudCampaignReadRepository(Protocol):
 
 class PostgresCloudCampaignReadRepository:
     def __init__(self, database_url: str | None = None) -> None:
-        self._database_url = _psycopg_url(_text(database_url or raw_database_url() or os.getenv("DATABASE_URL")))
+        self._database_url = _psycopg_url(_text(database_url or raw_database_url()))
         if not self._database_url:
             raise RepositoryProviderError("cloud campaign read repository unavailable: DATABASE_URL is required")
 

@@ -22,6 +22,7 @@ from aicrm_next.shared.sensitive_data import redact_sensitive_text
 
 
 ADAPTER_NAME = "wecom_media_upload"
+RUNTIME_SETTING_KEYS = frozenset({"AICRM_WECOM_PROVIDER_TARGET_POLICY"})
 
 
 def _safe_int(value: Any) -> int:

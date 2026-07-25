@@ -3,13 +3,13 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
-import os
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from aicrm_next.platform_foundation.command_bus import CommandContext
 from aicrm_next.platform_foundation.external_effects import ExternalEffectService, WEBHOOK_GENERIC_PUSH, WEBHOOK_ORDER_PAID_PUSH
 from aicrm_next.shared.sensitive_data import redact_sensitive_data, redact_sensitive_text
+from aicrm_next.shared.runtime_settings import managed_runtime_int
 
 from . import repo
 from .security import WebhookUrlValidationError, resolve_and_validate_public_https_url, validate_webhook_url
@@ -276,7 +276,13 @@ def schedule_next_retry(attempt_count: int) -> str | None:
 
 
 def _webhook_timeout_seconds() -> float:
-    return float(os.getenv("EXTERNAL_PUSH_WEBHOOK_TIMEOUT_SECONDS") or 5)
+    return float(
+        managed_runtime_int(
+            "EXTERNAL_PUSH_WEBHOOK_TIMEOUT_SECONDS",
+            5,
+            minimum=1,
+        )
+    )
 
 
 def _attempt_delivery(

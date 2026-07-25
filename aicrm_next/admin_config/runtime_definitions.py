@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from aicrm_next.runtime_configuration import RUNTIME_CONFIG_CUTOVER_KEYS_KEY
+from aicrm_next.runtime_configuration import (
+    DOMAIN_RUNTIME_SETTING_KEYS,
+    RUNTIME_CONFIG_CUTOVER_KEYS_KEY,
+)
 
 
 def _definition(
@@ -242,6 +245,211 @@ _BUSINESS_RUNTIME_NEW_KEYS = frozenset(
     | _BUSINESS_RUNTIME_MODE_KEYS
     | _BUSINESS_RUNTIME_STRING_KEYS
 )
+
+_DOMAIN_RUNTIME_BOOLEAN_KEYS = frozenset(
+    {
+        "AICRM_ENABLE_IN_PROCESS_ARCHIVE_SYNC",
+        "AICRM_NEXT_WECOM_REAL_CALLS_ENABLED",
+        "AICRM_QUESTIONNAIRE_EXTERNAL_SUBMIT_CONFIG_REVIEWED",
+        "AICRM_QUESTIONNAIRE_EXTERNAL_SUBMIT_LIVE_ADAPTER_ENABLED",
+        "AICRM_QUESTIONNAIRE_EXTERNAL_SUBMIT_LIVE_CALL_APPROVED",
+        "AICRM_QUESTIONNAIRE_EXTERNAL_SUBMIT_NO_PRODUCTION_WRITE_CONFIRMED",
+        "AICRM_QUESTIONNAIRE_EXTERNAL_SUBMIT_TARGET_POLICY_REVIEWED",
+        "AICRM_QUESTIONNAIRE_OAUTH_ENABLE_REAL",
+        "AICRM_SIDEBAR_WECOM_OAUTH_ENABLE_REAL",
+        "AICRM_USER_OPS_SEND_DISABLE_EXECUTE",
+        "AICRM_USER_OPS_SEND_REQUIRES_APPROVAL",
+        "AICRM_WECOM_TAG_CONFIG_REVIEWED",
+        "AICRM_WECOM_TAG_LIVE_ADAPTER_ENABLED",
+        "AICRM_WECOM_TAG_LIVE_CALL_APPROVED",
+        "AI_ASSIST_EXTERNAL_EFFECT_TEST_MODE",
+        "CUSTOMER_READ_MODEL_LIVE_SOURCE_FALLBACK_ENABLED",
+        "CUSTOMER_READ_MODEL_NEXT_PRIMARY",
+        "WECHAT_PAY_ENABLED",
+    }
+)
+
+_DOMAIN_RUNTIME_INTEGER_DEFAULTS = {
+    "AICRM_COMPLETION_URL_LINK_TIMEOUT_SECONDS": (5, 1, 60),
+    "AICRM_DATA_HEALTH_BROADCAST_BLOCKED_MAX_COUNT": (0, 0, 1_000_000),
+    "AICRM_DATA_HEALTH_BROADCAST_RETRYABLE_DUE_MAX_COUNT": (100, 0, 1_000_000),
+    "AICRM_DATA_HEALTH_BROADCAST_TERMINAL_LOOKBACK_HOURS": (24, 1, 8760),
+    "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_RETRYABLE_DUE_MAX_COUNT": (100, 0, 1_000_000),
+    "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS": (24, 1, 8760),
+    "AICRM_DATA_HEALTH_PROJECTION_FRESHNESS_MAX_MINUTES": (60, 1, 43_200),
+    "AICRM_GROUP_OPS_BROADCAST_PLAN_ID": (11, 1, 2_147_483_647),
+    "AICRM_QUESTIONNAIRE_RESULT_GRANT_TTL_SECONDS": (3600, 60, 86_400),
+    "BROADCAST_QUEUE_LEASE_SECONDS": (900, 1, 86_400),
+    "BROADCAST_QUEUE_RETRY_DELAY_SECONDS": (300, 0, 86_400),
+    "CUSTOMER_READ_MODEL_REFRESH_MAX_CUSTOMERS": (100_000, 1, 10_000_000),
+    "EXTERNAL_PUSH_WEBHOOK_TIMEOUT_SECONDS": (5, 1, 3600),
+    "SIDEBAR_OWNER_CONTEXT_TOKEN_TTL_SECONDS": (900, 60, 86_400),
+    "WECOM_TIMEOUT_SECONDS": (15, 1, 3600),
+}
+
+_DOMAIN_RUNTIME_SECRET_KEYS = frozenset(
+    {
+        "AICRM_QUESTIONNAIRE_OAUTH_STATE_SECRET",
+        "AICRM_WECOM_TAG_AGENT_SECRET",
+    }
+)
+
+_DOMAIN_RUNTIME_OPTIONS = {
+    "AICRM_NEXT_CLOUD_ORCHESTRATOR_MEDIA_UPLOAD_MODE": (
+        "fake",
+        "local",
+        "real_blocked",
+        "production",
+        "real_enabled",
+    ),
+    "AICRM_QUESTIONNAIRE_OAUTH_ADAPTER_MODE": (
+        "fake",
+        "sandbox",
+        "real_blocked",
+        "real_enabled",
+    ),
+}
+
+_DOMAIN_RUNTIME_STRING_DEFAULTS = {
+    "AICRM_COMPLETION_URL_LINK_API_ALLOWLIST": "ip.lhbl.com.cn",
+    "AICRM_COMPLETION_URL_LINK_API_PATH_PREFIXES": "/api/wxlink",
+    "AICRM_COMPLETION_URL_LINK_TARGET_ALLOWLIST": "wxaurl.cn,wxmpurl.cn",
+    "AICRM_GROUP_OPS_MINIPROGRAM_APPID": "wx0ca836834b18e989",
+    "AICRM_GROUP_OPS_TIMEZONE": "Asia/Shanghai",
+    "AICRM_USER_OPS_SEND_EXECUTION_MODE": "execute",
+    "AICRM_USER_OPS_SEND_RISK_LEVEL": "high",
+    "AICRM_WECOM_API_BASE": "https://qyapi.weixin.qq.com",
+    "AI_ASSIST_EXTERNAL_EFFECT_SEND_MODE": "shadow",
+    "AUTOMATION_OPS_SCHEDULER_OPERATOR": "automation_ops_scheduler",
+    "WECHAT_PAY_OAUTH_SCOPE": "snsapi_userinfo",
+}
+
+
+def _domain_runtime_capability(key: str) -> str:
+    if key.startswith("AICRM_DATA_HEALTH_"):
+        return "core.insights"
+    if key.startswith(
+        (
+            "AICRM_GROUP_OPS_",
+            "AICRM_USER_OPS_",
+            "BROADCAST_QUEUE_",
+        )
+    ) or key == "AUTOMATION_OPS_SCHEDULER_OPERATOR":
+        return "core.automation"
+    if key.startswith("AI_ASSIST_"):
+        return "extension.ai"
+    if key.startswith("AICRM_QUESTIONNAIRE_") or key in {
+        "WECHAT_MP_APPID",
+        "WECHAT_OAUTH_APPID",
+    }:
+        return "extension.forms"
+    if key.startswith("AICRM_WECOM_TAG_") or key.startswith("CUSTOMER_READ_MODEL_"):
+        return "core.crm"
+    if key.startswith(("AICRM_SIDEBAR_", "SIDEBAR_")) or key in {
+        "AICRM_NEXT_WECOM_REAL_CALLS_ENABLED",
+        "AICRM_WECOM_API_BASE",
+        "WECOM_DEFAULT_OWNER_USERID",
+        "WECOM_TIMEOUT_SECONDS",
+    }:
+        return "core.channels"
+    if key.startswith("AICRM_COMPLETION_URL_LINK_") or key == (
+        "AICRM_NEXT_CLOUD_ORCHESTRATOR_MEDIA_UPLOAD_MODE"
+    ):
+        return "core.engagement"
+    if key == "AICRM_ENABLE_IN_PROCESS_ARCHIVE_SYNC":
+        return "extension.archive"
+    if key.startswith("WECHAT_PAY_"):
+        return "extension.commerce"
+    return "core.platform"
+
+
+def _domain_runtime_section(capability_id: str) -> str:
+    return {
+        "core.automation": "reliability",
+        "core.channels": "wecom_base",
+        "core.crm": "wecom_base",
+        "core.engagement": "wecom_base",
+        "core.insights": "reliability",
+        "extension.ai": "ai_services",
+        "extension.archive": "wecom_archive",
+        "extension.commerce": "wechat_pay_h5",
+        "extension.forms": "wechat_mp",
+    }.get(capability_id, "reliability")
+
+
+def _domain_runtime_definition(key: str) -> dict[str, Any]:
+    capability_id = _domain_runtime_capability(key)
+    section = _domain_runtime_section(capability_id)
+    common = {
+        "capability_id": capability_id,
+        "description": "通过配置发布管理；切换前现有环境值保持权威。",
+    }
+    if key in _DOMAIN_RUNTIME_SECRET_KEYS:
+        return {
+            **_definition(
+                key,
+                f"运行密钥：{key}",
+                section=section,
+                value_type="secret",
+            ),
+            "mode": "masked",
+            "input_type": "password",
+            **common,
+        }
+    if key in _DOMAIN_RUNTIME_BOOLEAN_KEYS:
+        return {
+            **_definition(
+                key,
+                f"运行开关：{key}",
+                section=section,
+                value_type="boolean",
+                default=(
+                    "true"
+                    if key
+                    in {
+                        "CUSTOMER_READ_MODEL_LIVE_SOURCE_FALLBACK_ENABLED",
+                        "CUSTOMER_READ_MODEL_NEXT_PRIMARY",
+                        "AICRM_USER_OPS_SEND_REQUIRES_APPROVAL",
+                    }
+                    else "false"
+                ),
+            ),
+            **common,
+        }
+    if key in _DOMAIN_RUNTIME_INTEGER_DEFAULTS:
+        default, minimum, maximum = _DOMAIN_RUNTIME_INTEGER_DEFAULTS[key]
+        return {
+            **_definition(
+                key,
+                f"运行参数：{key}",
+                section=section,
+                value_type="integer",
+                default=str(default),
+                minimum=minimum,
+                maximum=maximum,
+            ),
+            **common,
+        }
+    return {
+        **_definition(
+            key,
+            f"运行参数：{key}",
+            section=section,
+            default=_DOMAIN_RUNTIME_STRING_DEFAULTS.get(key, ""),
+            options=_DOMAIN_RUNTIME_OPTIONS.get(key, ()),
+            deprecated_after=(
+                "2026-10-01"
+                if key
+                in {
+                    "AICRM_ENABLE_IN_PROCESS_ARCHIVE_SYNC",
+                    "WECHAT_MP_APPID",
+                    "WECHAT_OAUTH_APPID",
+                }
+                else ""
+            ),
+        ),
+        **common,
+    }
 
 
 def _integration_gateway_capability(key: str) -> str:
@@ -587,6 +795,10 @@ RUNTIME_CONFIG_DEFINITIONS: dict[str, dict[str, Any]] = {
     **{
         key: _business_runtime_definition(key)
         for key in sorted(_BUSINESS_RUNTIME_NEW_KEYS)
+    },
+    **{
+        key: _domain_runtime_definition(key)
+        for key in sorted(DOMAIN_RUNTIME_SETTING_KEYS)
     },
 }
 

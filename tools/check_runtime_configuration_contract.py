@@ -14,21 +14,11 @@ if str(ROOT) not in sys.path:
 from aicrm_next.runtime_configuration import (  # noqa: E402
     CUTOVER_ELIGIBLE_RUNTIME_SETTING_KEYS,
     MANAGED_RUNTIME_SETTING_KEYS,
+    STARTUP_ENVIRONMENT_SETTING_KEYS,
 )
 
 
-MIGRATED_PATHS = (
-    "aicrm_next/admin_auth",
-    "aicrm_next/admin_config",
-    "aicrm_next/ai_audience_ops",
-    "aicrm_next/auth_wecom",
-    "aicrm_next/commerce",
-    "aicrm_next/integration_gateway",
-    "aicrm_next/platform_foundation",
-    "aicrm_next/shared/pii_audit.py",
-    "aicrm_next/shared/sidebar_access.py",
-    "aicrm_next/shared/signed_session.py",
-)
+MIGRATED_PATHS = ("aicrm_next",)
 RUNTIME_ACCESSORS = frozenset(
     {
         "managed_runtime_bool",
@@ -42,19 +32,23 @@ RUNTIME_ACCESSORS = frozenset(
     }
 )
 DECLARED_KEY_NAMES = frozenset({"RUNTIME_ENVIRONMENT_KEYS", "RUNTIME_SETTING_KEYS"})
-STARTUP_ONLY_KEYS = frozenset(
+STARTUP_ONLY_KEYS = STARTUP_ENVIRONMENT_SETTING_KEYS
+DIRECT_ENVIRONMENT_ACCESS_BOUNDARIES = frozenset(
     {
-        "AICRM_AUDIENCE_READONLY_DATABASE_URL",
-        "AICRM_DOMAIN_VERIFICATION_DIR",
-        "AICRM_LISTENER_DATABASE_URL",
-        "AICRM_NEXT_ENV",
-        "AICRM_PUBLIC_BASE_URL",
-        "APP_BASE_URL",
-        "APP_EXTERNAL_BASE_URL",
-        "DATABASE_URL",
-        "EXTERNAL_BASE_URL",
-        "NEXT_PUBLIC_BASE_URL",
-        "PUBLIC_BASE_URL",
+        "aicrm_next/shared/database.py",
+        "aicrm_next/shared/db_session.py",
+        "aicrm_next/shared/release.py",
+        "aicrm_next/shared/runtime.py",
+        "aicrm_next/shared/runtime_settings.py",
+        "aicrm_next/shared/secret_store.py",
+    }
+)
+DYNAMIC_RUNTIME_ACCESS_BOUNDARIES = frozenset(
+    {
+        "aicrm_next/message_archive/repo.py",
+        "aicrm_next/questionnaire/repo.py",
+        "aicrm_next/shared/runtime.py",
+        "aicrm_next/shared/runtime_settings.py",
     }
 )
 ENVIRONMENT_FALLBACK_BOUNDARIES = frozenset(
@@ -64,6 +58,7 @@ ENVIRONMENT_FALLBACK_BOUNDARIES = frozenset(
         "aicrm_next/platform_foundation/execution_runtime/listener.py",
         "aicrm_next/platform_foundation/push_center/capability_repository.py",
         "aicrm_next/platform_foundation/verification_files.py",
+        "aicrm_next/shared/runtime_settings.py",
     }
 )
 
@@ -116,15 +111,16 @@ def check_runtime_configuration_contract(
         constants = _module_string_constants(tree)
         declared_keys = _declared_keys(tree)
 
-        for line, detail in _direct_environment_accesses(tree):
-            violations.append(
-                RuntimeConfigurationViolation(
-                    path=relative,
-                    line=line,
-                    rule="direct_environment_access_forbidden",
-                    detail=detail,
+        if relative not in DIRECT_ENVIRONMENT_ACCESS_BOUNDARIES:
+            for line, detail in _direct_environment_accesses(tree):
+                violations.append(
+                    RuntimeConfigurationViolation(
+                        path=relative,
+                        line=line,
+                        rule="direct_environment_access_forbidden",
+                        detail=detail,
+                    )
                 )
-            )
 
         for key in sorted(declared_keys):
             if key not in known_keys and key not in STARTUP_ONLY_KEYS:
@@ -187,7 +183,11 @@ def check_runtime_configuration_contract(
                                 detail=f"{declared_key} is not registered for expand/contract cutover",
                             )
                         )
-                if not has_declared_keys and relative not in ENVIRONMENT_FALLBACK_BOUNDARIES:
+                if (
+                    not has_declared_keys
+                    and relative not in ENVIRONMENT_FALLBACK_BOUNDARIES
+                    and relative not in DYNAMIC_RUNTIME_ACCESS_BOUNDARIES
+                ):
                     violations.append(
                         RuntimeConfigurationViolation(
                             path=relative,

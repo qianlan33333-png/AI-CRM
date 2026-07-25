@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import re
 from dataclasses import dataclass
 from typing import Any
@@ -17,6 +16,7 @@ from aicrm_next.platform_foundation.external_effects.repo import (
     ExternalEffectRepository,
     build_external_effect_repository,
 )
+from aicrm_next.shared.runtime_settings import managed_runtime_int, managed_runtime_setting
 
 from .durable_effects_repository import (
     GroupOpsEffectGraphRepository,
@@ -267,7 +267,11 @@ class ExecuteGroupOpsTokenBroadcastCommand:
 
     def _plan_id(self) -> int:
         try:
-            value = int(clean_text(os.getenv("AICRM_GROUP_OPS_BROADCAST_PLAN_ID")) or DEFAULT_PLAN_ID)
+            value = managed_runtime_int(
+                "AICRM_GROUP_OPS_BROADCAST_PLAN_ID",
+                DEFAULT_PLAN_ID,
+                minimum=1,
+            )
         except ValueError as exc:
             raise GroupOpsBroadcastError("broadcast_plan_not_configured", "group broadcast plan id is invalid", status_code=503) from exc
         if value <= 0:
@@ -275,7 +279,10 @@ class ExecuteGroupOpsTokenBroadcastCommand:
         return value
 
     def _miniprogram_appid(self) -> str:
-        appid = clean_text(os.getenv("AICRM_GROUP_OPS_MINIPROGRAM_APPID")) or DEFAULT_MINIPROGRAM_APPID
+        appid = (
+            clean_text(managed_runtime_setting("AICRM_GROUP_OPS_MINIPROGRAM_APPID"))
+            or DEFAULT_MINIPROGRAM_APPID
+        )
         if not appid:
             raise GroupOpsBroadcastError("miniprogram_appid_not_configured", "mini-program appid is not configured", status_code=503)
         return appid

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from copy import deepcopy
 from typing import Any, Protocol
 
@@ -8,6 +7,7 @@ from aicrm_next.shared.db_session import get_engine
 from aicrm_next.shared.errors import ContractError, NotFoundError
 from aicrm_next.shared.repository_provider import assert_repository_allowed
 from aicrm_next.shared.runtime import production_data_ready, raw_database_url
+from aicrm_next.shared.runtime_settings import startup_environment_setting
 
 from .domain import (
     binding_stats,
@@ -883,9 +883,12 @@ _fixture_repo = InMemoryGroupOpsRepository()
 
 
 def build_group_ops_repository() -> GroupOpsRepository:
-    backend = clean_text(os.getenv(GROUP_OPS_BACKEND_ENV)).lower()
+    backend = clean_text(startup_environment_setting(GROUP_OPS_BACKEND_ENV)).lower()
     if production_data_ready() or backend in GROUP_OPS_SQL_BACKENDS:
-        database_url = clean_text(os.getenv(GROUP_OPS_DATABASE_URL_ENV)) or raw_database_url()
+        database_url = (
+            clean_text(startup_environment_setting(GROUP_OPS_DATABASE_URL_ENV))
+            or raw_database_url()
+        )
         if not database_url:
             raise ContractError(f"{GROUP_OPS_DATABASE_URL_ENV} or DATABASE_URL is required for group ops Postgres repository")
         from .postgres_repo import PostgresGroupOpsRepository

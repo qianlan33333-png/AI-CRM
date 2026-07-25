@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
 from time import time
 from typing import Any
+
+from aicrm_next.shared.runtime_settings import managed_runtime_int
 from uuid import uuid4
 
 from aicrm_next.shared.signed_session import sign_session_payload, verify_session_payload
@@ -83,7 +84,12 @@ def result_grant_cookie_path(slug: str) -> str:
 def _grant_ttl_seconds(override: int | None = None) -> int:
     raw_value: Any = override
     if raw_value is None:
-        raw_value = os.getenv("AICRM_QUESTIONNAIRE_RESULT_GRANT_TTL_SECONDS")
+        raw_value = managed_runtime_int(
+            "AICRM_QUESTIONNAIRE_RESULT_GRANT_TTL_SECONDS",
+            DEFAULT_RESULT_GRANT_TTL_SECONDS,
+            minimum=60,
+            maximum=MAX_RESULT_GRANT_TTL_SECONDS,
+        )
     try:
         value = int(raw_value or DEFAULT_RESULT_GRANT_TTL_SECONDS)
     except (TypeError, ValueError):

@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 from copy import deepcopy
 from datetime import datetime, timezone
@@ -20,6 +19,7 @@ from aicrm_next.shared.config import Settings, get_settings
 from aicrm_next.shared.db_session import get_session_factory
 from aicrm_next.shared.repository_provider import assert_repository_allowed
 from aicrm_next.shared.runtime import database_mode
+from aicrm_next.shared.runtime_settings import startup_environment_setting
 from aicrm_next.shared.typing import JsonDict
 
 from .models import (
@@ -692,7 +692,9 @@ def build_customer_read_model_repository(
     engine: Engine | None = None,
 ) -> CustomerReadRepository:
     settings = settings or get_settings()
-    configured_backend = str(os.getenv("CUSTOMER_READ_MODEL_REPO_BACKEND", "") or "").strip().lower()
+    configured_backend = startup_environment_setting(
+        "CUSTOMER_READ_MODEL_REPO_BACKEND"
+    ).strip().lower()
     backend = configured_backend or settings.customer_read_model_repo_backend.strip().lower()
     if not configured_backend and database_mode() == "postgres":
         backend = "sqlalchemy"

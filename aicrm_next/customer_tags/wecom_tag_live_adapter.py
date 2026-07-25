@@ -5,10 +5,14 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
 import json
-import os
 from typing import Any
 
 from aicrm_next.integration_gateway.wecom_tag_live_gateway import WeComTagLiveGateway, build_wecom_tag_live_gateway
+from aicrm_next.shared.runtime_settings import (
+    managed_runtime_bool,
+    managed_runtime_setting,
+    startup_environment_setting,
+)
 
 
 Json = dict[str, Any]
@@ -19,6 +23,15 @@ FLAG_LIVE_APPROVED = "AICRM_WECOM_TAG_LIVE_CALL_APPROVED"
 FLAG_CONFIG_REVIEWED = "AICRM_WECOM_TAG_CONFIG_REVIEWED"
 FLAG_CORP_ID = "AICRM_WECOM_TAG_CORP_ID"
 FLAG_AGENT_SECRET = "AICRM_WECOM_TAG_AGENT_SECRET"
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "AICRM_WECOM_TAG_LIVE_ADAPTER_ENABLED",
+        "AICRM_WECOM_TAG_LIVE_CALL_APPROVED",
+        "AICRM_WECOM_TAG_CONFIG_REVIEWED",
+        "AICRM_WECOM_TAG_CORP_ID",
+        "AICRM_WECOM_TAG_AGENT_SECRET",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -28,11 +41,11 @@ class IdempotencyRecord:
 
 
 def _enabled(name: str) -> bool:
-    return str(os.getenv(name, "") or "").strip().lower() in {"1", "true", "yes", "on"}
+    return managed_runtime_bool(name, False)
 
 
 def _present(name: str) -> bool:
-    return bool(str(os.getenv(name, "") or "").strip())
+    return bool(managed_runtime_setting(name).strip())
 
 
 def _timestamp() -> str:
@@ -277,7 +290,11 @@ class LiveWeComTagAdapter:
             return {"ok": False, "error_code": "live_call_not_approved", "reason": f"{FLAG_LIVE_APPROVED}=1 is required"}
         if not _enabled(FLAG_CONFIG_REVIEWED) or not _present(FLAG_CORP_ID) or not _present(FLAG_AGENT_SECRET):
             return {"ok": False, "error_code": "wecom_config_missing", "reason": "WeCom tag live config review, CorpID, and agent secret are required"}
-        if os.getenv("AICRM_NEXT_ENV", "").strip().lower() == "production" and not _enabled(FLAG_LIVE_APPROVED):
+        if (
+            startup_environment_setting("AICRM_NEXT_ENV").strip().lower()
+            == "production"
+            and not _enabled(FLAG_LIVE_APPROVED)
+        ):
             return {"ok": False, "error_code": "forbidden_in_production_without_approval", "reason": "production live call requires explicit approval"}
         if not self._confirm_live_wecom_call:
             return {"ok": False, "error_code": "live_call_not_approved", "reason": "--confirm-live-wecom-call is required for runner-driven execution"}

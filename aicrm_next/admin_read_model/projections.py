@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import os
 from datetime import datetime, timezone
 from typing import Any
 
 from aicrm_next.shared.release import current_release_sha
-from aicrm_next.shared.runtime_settings import runtime_setting
+from aicrm_next.shared.runtime_settings import managed_runtime_setting, runtime_setting
 
 from .repo import AdminReadRepository
 
@@ -274,7 +273,13 @@ def config_payload(repo: AdminReadRepository) -> dict[str, Any]:
         ["release_sha", current_release_sha()],
         ["wechat_callback_token", "configured" if runtime_setting("WECOM_CALLBACK_TOKEN") else "missing"],
         ["wechat_pay_config", "configured" if runtime_setting("WECHAT_PAY_MCH_ID") else "missing"],
-        ["oauth_config", "configured" if os.getenv("WECHAT_OAUTH_APPID") or os.getenv("WECHAT_MP_APPID") else "missing"],
+        [
+            "oauth_config",
+            "configured"
+            if managed_runtime_setting("WECHAT_OAUTH_APPID")
+            or managed_runtime_setting("WECHAT_MP_APPID")
+            else "missing",
+        ],
     ]
     return _base_payload(
         repo,

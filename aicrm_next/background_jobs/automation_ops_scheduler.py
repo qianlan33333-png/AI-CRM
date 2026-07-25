@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-import os
 from datetime import datetime, timezone
 from typing import Any, Callable
+
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 
 def _utc(value: datetime | None = None) -> datetime:
     current = value or datetime.now(timezone.utc)
@@ -32,7 +33,13 @@ def run_automation_ops_scheduler(
     media_refresh_runner: Callable[..., dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     scanned_at = _utc(now)
-    actor = (operator or os.getenv("AUTOMATION_OPS_SCHEDULER_OPERATOR", "automation_ops_scheduler")).strip() or "automation_ops_scheduler"
+    actor = (
+        operator
+        or managed_runtime_setting(
+            "AUTOMATION_OPS_SCHEDULER_OPERATOR",
+            "automation_ops_scheduler",
+        )
+    ).strip() or "automation_ops_scheduler"
     components: list[dict[str, Any]] = []
     errors: list[dict[str, Any]] = []
 

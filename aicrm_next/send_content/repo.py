@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import os
 from copy import deepcopy
 from typing import Any, Protocol
 
 from aicrm_next.shared.errors import ContractError
 from aicrm_next.shared.repository_provider import RepositoryProviderError, assert_repository_allowed
 from aicrm_next.shared.runtime import production_data_ready, production_environment, raw_database_url
+from aicrm_next.shared.runtime_settings import startup_environment_setting
 
 
 SEND_CONTENT_BACKEND_ENV = "AICRM_SEND_CONTENT_REPO_BACKEND"
@@ -299,11 +299,14 @@ def _clamp_limit(limit: int) -> int:
 
 
 def _send_content_backend() -> str:
-    return str(os.getenv(SEND_CONTENT_BACKEND_ENV) or "fixture").strip().lower()
+    return startup_environment_setting(SEND_CONTENT_BACKEND_ENV, "fixture").strip().lower()
 
 
 def _send_content_database_url() -> str:
-    return str(os.getenv(SEND_CONTENT_DATABASE_URL_ENV) or raw_database_url()).strip()
+    return str(
+        startup_environment_setting(SEND_CONTENT_DATABASE_URL_ENV)
+        or raw_database_url()
+    ).strip()
 
 
 def build_send_content_repository() -> SendContentRepository:

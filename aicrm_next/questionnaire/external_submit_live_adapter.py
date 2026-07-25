@@ -5,8 +5,9 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
 import json
-import os
 from typing import Any
+
+from aicrm_next.shared.runtime_settings import managed_runtime_bool
 
 from .external_submit_live_gateway import QuestionnaireExternalSubmitLiveGateway, build_questionnaire_external_submit_live_gateway
 
@@ -19,6 +20,15 @@ REQUIRED_FLAGS = {
     "AICRM_QUESTIONNAIRE_EXTERNAL_SUBMIT_TARGET_POLICY_REVIEWED": "target_policy_not_reviewed",
     "AICRM_QUESTIONNAIRE_EXTERNAL_SUBMIT_NO_PRODUCTION_WRITE_CONFIRMED": "confirm_no_production_write_required",
 }
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "AICRM_QUESTIONNAIRE_EXTERNAL_SUBMIT_LIVE_ADAPTER_ENABLED",
+        "AICRM_QUESTIONNAIRE_EXTERNAL_SUBMIT_LIVE_CALL_APPROVED",
+        "AICRM_QUESTIONNAIRE_EXTERNAL_SUBMIT_CONFIG_REVIEWED",
+        "AICRM_QUESTIONNAIRE_EXTERNAL_SUBMIT_TARGET_POLICY_REVIEWED",
+        "AICRM_QUESTIONNAIRE_EXTERNAL_SUBMIT_NO_PRODUCTION_WRITE_CONFIRMED",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -28,7 +38,7 @@ class _IdempotencyRecord:
 
 
 def _enabled(name: str) -> bool:
-    return str(os.getenv(name, "") or "").strip().lower() in {"1", "true", "yes", "on"}
+    return managed_runtime_bool(name, False)
 
 
 def _timestamp() -> str:

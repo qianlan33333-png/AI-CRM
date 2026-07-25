@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from copy import deepcopy
 from datetime import datetime, timezone
 from typing import Any, Protocol
@@ -8,6 +7,7 @@ from typing import Any, Protocol
 from aicrm_next.shared.errors import ContractError, NotFoundError
 from aicrm_next.shared.repository_provider import assert_repository_allowed
 from aicrm_next.shared.runtime import production_data_ready, raw_database_url
+from aicrm_next.shared.runtime_settings import startup_environment_setting
 
 from .variants import (
     THUMBNAIL_SIZE_TO_VARIANT,
@@ -650,9 +650,12 @@ _GLOBAL_REPO = InMemoryMediaLibraryRepository()
 
 
 def build_media_library_repository() -> MediaLibraryRepository:
-    backend = str(os.getenv(MEDIA_LIBRARY_BACKEND_ENV, "") or "").strip().lower()
+    backend = startup_environment_setting(MEDIA_LIBRARY_BACKEND_ENV).strip().lower()
     if production_data_ready() or backend in MEDIA_LIBRARY_SQL_BACKENDS:
-        database_url = str(os.getenv(MEDIA_LIBRARY_DATABASE_URL_ENV, "") or "").strip() or raw_database_url()
+        database_url = (
+            startup_environment_setting(MEDIA_LIBRARY_DATABASE_URL_ENV).strip()
+            or raw_database_url()
+        )
         if not database_url:
             raise ContractError(f"{MEDIA_LIBRARY_DATABASE_URL_ENV} or DATABASE_URL is required for media library Postgres repository")
         from .postgres_repo import PostgresMediaLibraryRepository

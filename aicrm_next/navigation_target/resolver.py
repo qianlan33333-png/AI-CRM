@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 from urllib.request import Request, urlopen
@@ -9,6 +8,7 @@ from urllib.request import Request, urlopen
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 
 from aicrm_next.shared.errors import ContractError
+from aicrm_next.shared.runtime_settings import managed_runtime_int, managed_runtime_setting
 
 from .domain import safe_completion_url
 
@@ -17,30 +17,49 @@ def _text(value: Any) -> str:
     return str(value or "").strip()
 
 
-def _csv_env(name: str, default: str) -> set[str]:
-    raw = os.getenv(name, default)
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "AICRM_COMPLETION_URL_LINK_API_ALLOWLIST",
+        "AICRM_COMPLETION_URL_LINK_API_PATH_PREFIXES",
+        "AICRM_COMPLETION_URL_LINK_TARGET_ALLOWLIST",
+        "AICRM_COMPLETION_URL_LINK_TIMEOUT_SECONDS",
+    }
+)
+
+
+def _csv_setting(name: str, default: str) -> set[str]:
+    raw = managed_runtime_setting(name, default)
     return {item.strip().lower() for item in raw.split(",") if item.strip()}
 
 
 def _timeout() -> float:
-    try:
-        return float(os.getenv("AICRM_COMPLETION_URL_LINK_TIMEOUT_SECONDS", "5"))
-    except ValueError:
-        return 5.0
+    return float(
+        managed_runtime_int(
+            "AICRM_COMPLETION_URL_LINK_TIMEOUT_SECONDS",
+            5,
+            minimum=1,
+        )
+    )
 
 
 def _allowed_source_hosts() -> set[str]:
-    return _csv_env("AICRM_COMPLETION_URL_LINK_API_ALLOWLIST", "ip.lhbl.com.cn")
+    return _csv_setting("AICRM_COMPLETION_URL_LINK_API_ALLOWLIST", "ip.lhbl.com.cn")
 
 
 def _allowed_source_path_prefixes() -> tuple[str, ...]:
-    raw = os.getenv("AICRM_COMPLETION_URL_LINK_API_PATH_PREFIXES", "/api/wxlink")
+    raw = managed_runtime_setting(
+        "AICRM_COMPLETION_URL_LINK_API_PATH_PREFIXES",
+        "/api/wxlink",
+    )
     prefixes = tuple(item.strip() for item in raw.split(",") if item.strip())
     return prefixes or ("/api/wxlink",)
 
 
 def _allowed_target_hosts() -> set[str]:
-    return _csv_env("AICRM_COMPLETION_URL_LINK_TARGET_ALLOWLIST", "wxaurl.cn,wxmpurl.cn")
+    return _csv_setting(
+        "AICRM_COMPLETION_URL_LINK_TARGET_ALLOWLIST",
+        "wxaurl.cn,wxmpurl.cn",
+    )
 
 
 def _normalize_response_key(value: Any) -> str:

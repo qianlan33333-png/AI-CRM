@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
 from typing import Any
 
 from .errors import ApplicationError
 from .runtime import fixture_mode, production_data_ready
+from .runtime_settings import startup_environment_setting
 
 
 class RepositoryProviderError(ApplicationError):
@@ -29,7 +29,9 @@ class RepositoryProviderDecision:
 
 
 def allow_fixture_repo_in_prod() -> bool:
-    value = str(os.getenv("AICRM_NEXT_ALLOW_FIXTURE_REPO_IN_PROD", "") or "").strip().lower()
+    value = startup_environment_setting(
+        "AICRM_NEXT_ALLOW_FIXTURE_REPO_IN_PROD"
+    ).strip().lower()
     return value in {"1", "true", "yes", "on"}
 
 

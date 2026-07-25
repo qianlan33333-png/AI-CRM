@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import os
+from aicrm_next.shared.runtime import raw_database_url
 from contextlib import contextmanager
 from typing import Any, Iterator
 
 
 def database_url() -> str:
-    return str(os.getenv("DATABASE_URL", "") or "").strip()
+    return raw_database_url()
 
 
 def has_database_url() -> bool:

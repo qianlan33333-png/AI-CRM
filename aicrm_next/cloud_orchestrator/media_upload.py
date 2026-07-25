@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import base64
 import hashlib
-import os
 import uuid
 from dataclasses import dataclass
 from typing import Any, Callable
@@ -13,6 +12,7 @@ from aicrm_next.integration_gateway.wecom_media_upload_client import (
     build_wecom_media_upload_client,
 )
 from aicrm_next.shared import runtime
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 
 SOURCE_STATUS = "next_cloud_orchestrator_media_upload"
 ROUTE_OWNER = "ai_crm_next"
@@ -24,7 +24,9 @@ def _text(value: Any) -> str:
 
 
 def _adapter_mode() -> str:
-    configured = _text(os.getenv("AICRM_NEXT_CLOUD_ORCHESTRATOR_MEDIA_UPLOAD_MODE")).lower()
+    configured = _text(
+        managed_runtime_setting("AICRM_NEXT_CLOUD_ORCHESTRATOR_MEDIA_UPLOAD_MODE")
+    ).lower()
     if configured in {"fake", "local", "real_blocked", "production", "real_enabled"}:
         return configured
     if runtime.production_environment() or runtime.database_mode() == "postgres":

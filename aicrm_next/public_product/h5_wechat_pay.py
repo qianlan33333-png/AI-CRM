@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 import hmac
 import json
 import logging
-import os
 import re
 import secrets
 from typing import Any
@@ -41,6 +40,7 @@ from aicrm_next.shared.runtime import (
     runtime_setting,
     secure_cookie_environment,
 )
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 from aicrm_next.shared.safe_logging import safe_log_exception, safe_log_fields
 from aicrm_next.shared.wechat_identity_page import wechat_identity_failure_response
 from aicrm_next.shared.wechat_h5_session import (
@@ -73,6 +73,7 @@ _OAUTH_STATE_CLOCK_SKEW_SECONDS = 300
 _OAUTH_STATE_PATTERN = re.compile(r"^[a-f0-9]{48}$")
 LOGGER = logging.getLogger(__name__)
 _OAUTH_CLIENT_FACTORY = build_wechat_oauth_client
+RUNTIME_SETTING_KEYS = frozenset({"WECHAT_MP_APP_ID", "WECHAT_MP_APP_SECRET", "WECHAT_PAY_API_BASE", "WECHAT_PAY_API_V3_KEY", "WECHAT_PAY_APP_ID", "WECHAT_PAY_CERT_SERIAL_NO", "WECHAT_PAY_ENABLED", "WECHAT_PAY_MCH_ID", "WECHAT_PAY_NOTIFY_URL", "WECHAT_PAY_OAUTH_SCOPE", "WECHAT_PAY_PLATFORM_CERT_SERIAL_NO", "WECHAT_PAY_PLATFORM_PUBLIC_KEY_PATH", "WECHAT_PAY_PRIVATE_KEY_PATH", "WECHAT_PAY_TIMEOUT_SECONDS"})
 
 
 def _normalized_text(value: Any) -> str:
@@ -80,7 +81,7 @@ def _normalized_text(value: Any) -> str:
 
 
 def _env(name: str, default: str = "") -> str:
-    return _normalized_text(os.getenv(name, default))
+    return _normalized_text(managed_runtime_setting(name, default))
 
 
 def _sensitive_setting(name: str, default: str = "") -> str:

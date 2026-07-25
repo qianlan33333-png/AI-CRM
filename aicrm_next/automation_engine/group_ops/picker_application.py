@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import os
 from datetime import datetime, timezone
 from typing import Any
 
 from aicrm_next.integration_gateway.wecom_group_contract import WeComGroupAssetAdapterContract
 from aicrm_next.shared.errors import ContractError
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 
 from .application import ListGroupOpsGroupsQuery, SyncGroupOpsOwnerGroupsCommand
 from .domain import clamp_limit, clean_text
@@ -14,7 +14,7 @@ from .repo import GroupOpsRepository
 
 
 def _picker_owner(owner_userid: str = "") -> str:
-    return clean_text(owner_userid or os.getenv("WECOM_DEFAULT_OWNER_USERID"))
+    return clean_text(owner_userid or managed_runtime_setting("WECOM_DEFAULT_OWNER_USERID"))
 
 
 def _picker_binding_map() -> dict[str, dict[str, Any]]:

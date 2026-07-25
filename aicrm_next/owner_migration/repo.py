@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
-import os
 import tempfile
 from pathlib import Path
 from typing import Any
+
+from aicrm_next.shared.runtime import raw_database_url
+from aicrm_next.shared.runtime_settings import startup_environment_setting
 
 
 def _table_exists(conn, table_name: str) -> bool:
@@ -175,7 +177,7 @@ class FixtureOwnerMigrationRepository:
         self._save_store(store)
 
     def _store_path(self) -> Path:
-        configured = os.getenv("OWNER_MIGRATION_FIXTURE_STORE", "").strip()
+        configured = startup_environment_setting("OWNER_MIGRATION_FIXTURE_STORE").strip()
         return Path(configured) if configured else Path(tempfile.gettempdir()) / "aicrm_owner_migration_fixture_store.json"
 
     def _load_store(self) -> dict[str, Any]:
@@ -203,7 +205,7 @@ class PostgresOwnerMigrationRepository:
         import psycopg
         from psycopg.rows import dict_row
 
-        return psycopg.connect(os.getenv("DATABASE_URL", ""), row_factory=dict_row)
+        return psycopg.connect(raw_database_url(), row_factory=dict_row)
 
     def preview_owner_migration(
         self,

@@ -20,6 +20,15 @@ SIDEBAR_OWNER_CONTEXT_SOURCE = "sidebar_owner_context_v2"
 SIDEBAR_OWNER_CONTEXT_RESOLVED_SOURCE = "signed_sidebar_owner_context"
 SIDEBAR_OWNER_CONTEXT_SALT = "aicrm-sidebar-owner-context-v2"
 DEFAULT_SIDEBAR_OWNER_CONTEXT_TTL_SECONDS = 15 * 60
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "AICRM_NEXT_ACTION_TOKEN_SECRET",
+        "SECRET_KEY",
+        "SIDEBAR_PRODUCT_CONTEXT_TOKEN_TTL_SECONDS",
+        "SIDEBAR_OWNER_CONTEXT_TOKEN_TTL_SECONDS",
+        "SIDEBAR_CONTEXT_TOKEN_TTL_SECONDS",
+    }
+)
 
 
 def _text(value: Any) -> str:

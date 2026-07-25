@@ -2,11 +2,11 @@
 from __future__ import annotations
 
 import logging
-import os
 from collections.abc import Callable
 
 from aicrm_next.shared.errors import NotFoundError
 from aicrm_next.shared.safe_logging import safe_log_exception
+from aicrm_next.shared.runtime_settings import managed_runtime_bool
 from aicrm_next.shared.typing import JsonDict
 from aicrm_next.integration_gateway.customer_sync_adapters import (
     build_archive_sync_adapter,
@@ -28,13 +28,16 @@ from .projections import detail_projection, list_item_projection
 from .repo import CustomerReadRepository, build_customer_live_source_repository, build_customer_read_model_repository
 
 LOGGER = logging.getLogger(__name__)
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "CUSTOMER_READ_MODEL_NEXT_PRIMARY",
+        "CUSTOMER_READ_MODEL_LIVE_SOURCE_FALLBACK_ENABLED",
+    }
+)
 
 
 def _env_flag(name: str, *, default: bool = False) -> bool:
-    value = str(os.getenv(name, "") or "").strip().lower()
-    if not value:
-        return default
-    return value in {"1", "true", "yes", "on"}
+    return managed_runtime_bool(name, default)
 
 
 def _customer_read_model_next_primary_enabled() -> bool:

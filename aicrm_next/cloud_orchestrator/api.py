@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +16,7 @@ from aicrm_next.admin_shell import admin_path_for, shell_context
 from aicrm_next.shared.admin_action_runtime import ensure_admin_action_token
 from aicrm_next.platform_foundation.internal_run_due_guard import maybe_guard_internal_run_due_request
 from aicrm_next.platform_foundation.external_effects.test_receiver import safe_current_base_url
+from aicrm_next.shared.runtime_settings import managed_runtime_bool
 
 from .application import (
     ApproveCloudPlanCommand,
@@ -273,7 +273,7 @@ def _receiver_response_status_payload(value: Any) -> int:
 
 
 def _ai_assist_external_effect_test_mode_enabled() -> bool:
-    return str(os.getenv("AI_ASSIST_EXTERNAL_EFFECT_TEST_MODE", "") or "").strip().lower() in {"1", "true", "yes", "on"}
+    return managed_runtime_bool("AI_ASSIST_EXTERNAL_EFFECT_TEST_MODE", False)
 
 
 async def _run_due_payload(request: Request) -> dict[str, Any]:

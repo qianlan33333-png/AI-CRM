@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 from copy import deepcopy
 from datetime import datetime, timezone
 from threading import RLock
@@ -10,6 +9,7 @@ from typing import Any, Protocol, cast
 from sqlalchemy import text
 
 from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.shared.runtime import raw_database_url
 
 from .domain import (
     OperationCycleConflictError,
@@ -1109,7 +1109,7 @@ def _strategy_summary_from_row(row: dict[str, Any]) -> StrategySummary:
 
 
 def build_operation_cycle_repository() -> OperationCycleRepository:
-    if not _text(os.getenv("DATABASE_URL")):
+    if not _text(raw_database_url()):
         raise RuntimeError("DATABASE_URL is required for operation-cycle persistence")
     return PostgresOperationCycleRepository()
 

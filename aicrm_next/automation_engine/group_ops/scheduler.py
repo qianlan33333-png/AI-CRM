@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 from dataclasses import dataclass, field
 from datetime import datetime, time, timezone, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from aicrm_next.shared.errors import ContractError
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 
 from .domain import build_node_group_message_content, clean_text, derive_node_scheduled_time
 from .durable_effects_repository import (
@@ -27,7 +27,10 @@ DEFAULT_GROUP_OPS_TIMEZONE = "Asia/Shanghai"
 
 
 def _business_timezone() -> ZoneInfo:
-    name = clean_text(os.getenv("AICRM_GROUP_OPS_TIMEZONE")) or DEFAULT_GROUP_OPS_TIMEZONE
+    name = (
+        clean_text(managed_runtime_setting("AICRM_GROUP_OPS_TIMEZONE"))
+        or DEFAULT_GROUP_OPS_TIMEZONE
+    )
     try:
         return ZoneInfo(name)
     except ZoneInfoNotFoundError:

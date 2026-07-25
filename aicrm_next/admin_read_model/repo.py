@@ -1,9 +1,13 @@
 from __future__ import annotations
 
-import os
 from typing import Any, Protocol
 
-from aicrm_next.shared.runtime import database_mode, production_data_ready, runtime_health_state
+from aicrm_next.shared.runtime import (
+    database_mode,
+    production_data_ready,
+    raw_database_url,
+    runtime_health_state,
+)
 from aicrm_next.shared.repository_provider import assert_repository_allowed
 
 from .dto import AdminReadDiagnostics
@@ -28,7 +32,7 @@ class AdminReadRepository(Protocol):
 
 
 def _database_url() -> str:
-    return str(os.getenv("DATABASE_URL", "") or "").strip()
+    return raw_database_url()
 
 
 class PostgresAdminReadRepository:

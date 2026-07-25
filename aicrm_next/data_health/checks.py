@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Callable
@@ -12,6 +11,7 @@ from aicrm_next.shared.release_cutovers import (
     QUESTIONNAIRE_AUTO_EXECUTE_CUTOVER_SQL,
 )
 from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.shared.runtime_settings import environment_contains, managed_runtime_int
 from aicrm_next.shared.queue_provenance import (
     POST_CUTOVER_IDENTITY_RECOVERY_PREDICATE_VERSION,
     PRE_PROVIDER_IDENTITY_ADOPTION_PREDICATE_VERSION,
@@ -32,17 +32,41 @@ from .schema_drift import (
 
 
 ROOT = Path(__file__).resolve().parents[2]
-PROJECTION_FRESHNESS_MAX_MINUTES = int(os.getenv("AICRM_DATA_HEALTH_PROJECTION_FRESHNESS_MAX_MINUTES", "60") or 60)
-BROADCAST_BLOCKED_MAX_COUNT = int(os.getenv("AICRM_DATA_HEALTH_BROADCAST_BLOCKED_MAX_COUNT", "0") or 0)
-BROADCAST_RETRYABLE_DUE_MAX_COUNT = int(os.getenv("AICRM_DATA_HEALTH_BROADCAST_RETRYABLE_DUE_MAX_COUNT", "100") or 100)
+PROJECTION_FRESHNESS_MAX_MINUTES = managed_runtime_int(
+    "AICRM_DATA_HEALTH_PROJECTION_FRESHNESS_MAX_MINUTES",
+    60,
+    minimum=1,
+)
+BROADCAST_BLOCKED_MAX_COUNT = managed_runtime_int(
+    "AICRM_DATA_HEALTH_BROADCAST_BLOCKED_MAX_COUNT",
+    0,
+    minimum=0,
+)
+BROADCAST_RETRYABLE_DUE_MAX_COUNT = managed_runtime_int(
+    "AICRM_DATA_HEALTH_BROADCAST_RETRYABLE_DUE_MAX_COUNT",
+    100,
+    minimum=0,
+)
 BROADCAST_TERMINAL_LOOKBACK_HOURS = max(
     1,
-    int(os.getenv("AICRM_DATA_HEALTH_BROADCAST_TERMINAL_LOOKBACK_HOURS", "24") or 24),
+    managed_runtime_int(
+        "AICRM_DATA_HEALTH_BROADCAST_TERMINAL_LOOKBACK_HOURS",
+        24,
+        minimum=1,
+    ),
 )
-EXTERNAL_EFFECT_RETRYABLE_DUE_MAX_COUNT = int(os.getenv("AICRM_DATA_HEALTH_EXTERNAL_EFFECT_RETRYABLE_DUE_MAX_COUNT", "100") or 100)
+EXTERNAL_EFFECT_RETRYABLE_DUE_MAX_COUNT = managed_runtime_int(
+    "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_RETRYABLE_DUE_MAX_COUNT",
+    100,
+    minimum=0,
+)
 EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS = max(
     1,
-    int(os.getenv("AICRM_DATA_HEALTH_EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS", "24") or 24),
+    managed_runtime_int(
+        "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS",
+        24,
+        minimum=1,
+    ),
 )
 QUESTIONNAIRE_CONTINUATION_CUTOVER_SQL = QUESTIONNAIRE_AUTO_EXECUTE_CUTOVER_SQL
 COMMERCE_CONTINUATION_CUTOVER_SQL = "TIMESTAMPTZ '2026-07-13 09:46:09+00'"
@@ -793,7 +817,7 @@ def _deprecated_execution_settings_present() -> DataHealthCheckResult:
             "AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES",
             "AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS",
         )
-        if str(os.getenv(key) or "").strip()
+        if environment_contains(key)
     ]
     if deprecated:
         return DataHealthCheckResult(

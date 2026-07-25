@@ -854,6 +854,7 @@
         "aicrm_next/media_library/application.py",
         "aicrm_next/media_library/postgres_repo.py",
         "aicrm_next/media_library/wecom_lease.py",
+        "aicrm_next/cloud_orchestrator/media_upload.py",
         "aicrm_next/integration_gateway/wecom_media_upload_client.py",
         "aicrm_next/wecom_media_jobs.py",
         "migrations/versions/0115_wecom_media_leases.py",
@@ -863,6 +864,9 @@
         "tests/test_wecom_media_upload_client.py"
       ],
       "python_tests": [
+        "tests/test_cloud_orchestrator_media.py",
+        "tests/test_cloud_orchestrator_media_upload_adapter.py",
+        "tests/test_cloud_orchestrator_media_upload_no_real_external_calls.py",
         "tests/test_media_library_no_real_external_calls.py",
         "tests/test_wecom_media_lease.py",
         "tests/test_wecom_media_upload_client.py",
@@ -1339,6 +1343,7 @@
       "paths": [
         "aicrm_next/shared/sensitive_data.py",
         "aicrm_next/shared/safe_logging.py",
+        "aicrm_next/shared/repository_provider.py",
         "aicrm_next/platform_foundation/auth_platform/client_authentication.py",
         "aicrm_next/shared/secret_store.py",
         "aicrm_next/shared/pii_audit.py",
@@ -1402,6 +1407,7 @@
         "tests/test_webhook_inbox_admin_api.py"
       ],
       "python_tests": [
+        "tests/test_repository_provider_hardening.py",
         "tests/test_r02_sensitive_data_inventory.py",
         "tests/test_sensitive_data_redaction.py",
         "tests/test_external_push_next_native_service.py",
@@ -1444,6 +1450,7 @@
         "aicrm_next/integration_gateway/channel_completion_client.py",
         "aicrm_next/navigation_target/__init__.py",
         "aicrm_next/navigation_target/domain.py",
+        "aicrm_next/navigation_target/resolver.py",
         "aicrm_next/navigation_target/static/completion_target_config.js",
         "aicrm_next/platform_foundation/push_center/capability_repository.py",
         "aicrm_next/platform_foundation/push_center/capability_status.py",
@@ -1559,11 +1566,13 @@
       "name": "wecom_tag_catalog_write",
       "paths": [
         "aicrm_next/customer_tags/admin_write.py",
+        "aicrm_next/customer_tags/wecom_tag_live_adapter.py",
         "aicrm_next/integration_gateway/wecom_tag_live_gateway.py",
         "tests/test_wecom_tag_next_sync.py",
         "tests/test_wecom_tag_write_*.py"
       ],
       "python_tests": [
+        "tests/test_wecom_tag_live_mutation_no_real_side_effects.py",
         "tests/test_wecom_tag_write_no_real_side_effects.py",
         "tests/test_wecom_tag_next_sync.py",
         "tests/test_wecom_tag_write_commands.py",

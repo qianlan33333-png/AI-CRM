@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import secrets
 from time import time
 from typing import Any
@@ -352,11 +351,11 @@ def _sidebar_oauth_metadata(request: Request, external_userid: str) -> dict[str,
 def _sidebar_oauth_config(request: Request) -> dict[str, Any]:
     request_base = f"{request.url.scheme}://{request.url.netloc}"
     return {
-        "enabled": _truthy(os.getenv(SIDEBAR_OAUTH_ENABLE_ENV))
+        "enabled": _truthy(managed_runtime_setting(SIDEBAR_OAUTH_ENABLE_ENV))
         or _truthy(managed_runtime_setting(ADMIN_AUTH_ENABLE_ENV)),
         "corp_id": str(managed_runtime_setting("WECOM_CORP_ID") or "").strip(),
         "corp_secret": runtime_setting("WECOM_SECRET"),
-        "redirect_uri": str(os.getenv(SIDEBAR_OAUTH_REDIRECT_URI_ENV) or "").strip()
+        "redirect_uri": managed_runtime_setting(SIDEBAR_OAUTH_REDIRECT_URI_ENV).strip()
         or f"{request_base.rstrip('/')}/api/sidebar/oauth/callback",
     }
 
@@ -470,6 +469,6 @@ def _allowed_jssdk_hosts(request: Request) -> set[str]:
         str(request.url.hostname or "").strip().lower(),
         str(request.headers.get("host") or "").split(":", 1)[0].strip().lower(),
     }
-    configured = str(os.getenv("AICRM_SIDEBAR_JSSDK_ALLOWED_HOSTS") or "")
+    configured = managed_runtime_setting("AICRM_SIDEBAR_JSSDK_ALLOWED_HOSTS")
     hosts.update(item.strip().lower() for item in configured.split(",") if item.strip())
     return {host for host in hosts if host}

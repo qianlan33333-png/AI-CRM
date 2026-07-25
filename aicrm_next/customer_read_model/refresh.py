@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-import os
 import time
 from typing import Any, Callable
 
 from sqlalchemy import text
 
 from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.shared.runtime_settings import managed_runtime_int
 
 from .repo import (
     CustomerReadRepository,
@@ -60,7 +60,14 @@ class CustomerReadModelRefreshService:
         bounded_max = max(
             1,
             min(
-                int(max_customers or os.getenv("CUSTOMER_READ_MODEL_REFRESH_MAX_CUSTOMERS", DEFAULT_MAX_CUSTOMERS)),
+                int(
+                    max_customers
+                    or managed_runtime_int(
+                        "CUSTOMER_READ_MODEL_REFRESH_MAX_CUSTOMERS",
+                        DEFAULT_MAX_CUSTOMERS,
+                        minimum=1,
+                    )
+                ),
                 500_000,
             ),
         )
