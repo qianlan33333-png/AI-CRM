@@ -2398,6 +2398,44 @@ tables:
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
     notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
 
+  ai_audience_hxc_member_usage_projection:
+    domain: ai_audience_ops
+    lifecycle: read_model
+    write_owner: aicrm_next.ai_audience_ops
+    read_owners:
+      - aicrm_next.ai_audience_ops
+    replacement: none; generation-based maintained projection replaces the dynamic multi-source audience join after a separately verified cutover
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - HuangXiaoCan audience projection refresh
+      - audience_read.huangxiaocan_member_usage_status_v1 after cutover
+    migration_source: 0149_ai_audience_hxc_projection
+    pii_level: internal_contact
+    guard_tests:
+      - tests/test_ai_audience_hxc_projection_foundation.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Stores canonical unionid, owner_userid and one-way mobile hashes; legacy contact identifiers, raw mobile values and source payloads are forbidden.
+
+  ai_audience_hxc_member_usage_projection_control:
+    domain: ai_audience_ops
+    lifecycle: canonical
+    write_owner: aicrm_next.ai_audience_ops
+    read_owners:
+      - aicrm_next.ai_audience_ops
+    replacement: none; singleton active-generation and freshness watermark control
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - HuangXiaoCan audience projection refresh
+      - projection readiness diagnostics
+    migration_source: 0149_ai_audience_hxc_projection
+    pii_level: none
+    guard_tests:
+      - tests/test_ai_audience_hxc_projection_foundation.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Contains generation numbers, aggregate row counts, timestamps, redacted error codes, and source watermarks only.
+
   ai_audience_refresh_intent:
     domain: ai_audience_ops
     lifecycle: canonical

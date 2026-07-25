@@ -4675,7 +4675,7 @@
     }
   ],
   "migration_heads": [
-    "0148_order_source_sort_indexes"
+    "0149_ai_audience_hxc_projection"
   ],
   "openapi_components": {
     "schemas": {
@@ -47701,6 +47701,30 @@
       ],
       "table": "admin_wecom_directory_members",
       "write_owner": "aicrm_next.operation_members.SyncOperationMembersFromWeComCommand"
+    },
+    {
+      "domain": "ai_audience_ops",
+      "drop_candidate": false,
+      "lifecycle": "read_model",
+      "migration_source": "0149_ai_audience_hxc_projection",
+      "pii_level": "internal_contact",
+      "read_owners": [
+        "aicrm_next.ai_audience_ops"
+      ],
+      "table": "ai_audience_hxc_member_usage_projection",
+      "write_owner": "aicrm_next.ai_audience_ops"
+    },
+    {
+      "domain": "ai_audience_ops",
+      "drop_candidate": false,
+      "lifecycle": "canonical",
+      "migration_source": "0149_ai_audience_hxc_projection",
+      "pii_level": "none",
+      "read_owners": [
+        "aicrm_next.ai_audience_ops"
+      ],
+      "table": "ai_audience_hxc_member_usage_projection_control",
+      "write_owner": "aicrm_next.ai_audience_ops"
     },
     {
       "domain": "ai_audience_ops",

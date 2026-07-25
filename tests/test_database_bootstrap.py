@@ -27,7 +27,7 @@ from scripts.ops.bootstrap_database import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ALEMBIC_HEAD_REVISION = "0148_order_source_sort_indexes"
+ALEMBIC_HEAD_REVISION = "0149_ai_audience_hxc_projection"
 CREATE_TABLE_PATTERN = re.compile(
     r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?([a-zA-Z_][a-zA-Z0-9_]*)",
     re.IGNORECASE,
@@ -94,6 +94,8 @@ def test_empty_postgres_database_installs_and_reuses_alembic_head() -> None:
             "automation_channel_qrcode_asset",
             "automation_channel_scene_alias",
             "data_health_snapshot",
+            "ai_audience_hxc_member_usage_projection",
+            "ai_audience_hxc_member_usage_projection_control",
             "service_period_huangyoucan_usage_snapshot",
             "service_period_huangyoucan_usage_sync_runs",
             "sync_runs",
