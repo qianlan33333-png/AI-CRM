@@ -1379,6 +1379,26 @@ def test_query_observability_changes_force_postgres_full_ci() -> None:
     assert result["architecture_gate"] == "full"
 
 
+def test_data_health_snapshot_changes_force_postgres_full_ci() -> None:
+    result = _select(
+        "aicrm_next/data_health/snapshot_repository.py",
+        "aicrm_next/data_health/snapshot_service.py",
+        "migrations/versions/0143_data_health_snapshot.py",
+        "scripts/ops/refresh_data_health_snapshot.py",
+        "tests/test_data_health_snapshot.py",
+        "tests/test_data_health_snapshot_postgres.py",
+    )
+
+    assert result["unmatched_files"] == []
+    assert "data_health_snapshot" in result["matched_scopes"]
+    assert "tests/test_data_health_snapshot.py" in result["python_tests"]
+    assert "tests/test_data_health_snapshot_postgres.py" in result["python_tests"]
+    assert "tests/test_database_bootstrap.py" in result["python_tests"]
+    assert result["needs_postgres"] is True
+    assert result["needs_full_ci"] is True
+    assert result["architecture_gate"] == "full"
+
+
 def test_nginx_query_timing_changes_have_permanent_full_ci_scope() -> None:
     result = _select(
         "deploy/nginx-query-timing.conf.example",

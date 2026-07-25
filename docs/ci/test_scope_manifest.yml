@@ -1224,15 +1224,42 @@
       "name": "data_health",
       "paths": [
         "aicrm_next/data_health/**",
+        "docs/architecture/data_health_checks.md",
+        "scripts/ops/refresh_data_health_snapshot.py",
         "tests/test_data_health_checks.py",
+        "tests/test_data_health_snapshot.py",
+        "tests/test_data_health_snapshot_postgres.py",
         "tests/test_data_quality_*.py"
       ],
       "python_tests": [
         "tests/test_data_health_checks.py",
+        "tests/test_data_health_snapshot.py",
+        "tests/test_data_health_snapshot_postgres.py",
         "tests/test_monitoring_frontend_retirement.py"
       ],
       "needs_postgres": false,
       "architecture_gate": "fast"
+    },
+    {
+      "name": "data_health_snapshot",
+      "paths": [
+        "aicrm_next/data_health/snapshot_repository.py",
+        "aicrm_next/data_health/snapshot_service.py",
+        "migrations/versions/0143_data_health_snapshot.py",
+        "scripts/ops/refresh_data_health_snapshot.py",
+        "tests/test_data_health_snapshot.py",
+        "tests/test_data_health_snapshot_postgres.py"
+      ],
+      "python_tests": [
+        "tests/test_data_health_snapshot.py",
+        "tests/test_data_health_snapshot_postgres.py",
+        "tests/test_database_bootstrap.py",
+        "tests/test_alembic_revision_chain.py",
+        "tests/test_data_table_lifecycle_guard.py",
+        "tests/test_repository_ownership_guard.py"
+      ],
+      "needs_postgres": true,
+      "architecture_gate": "full"
     },
     {
       "name": "admin_auth_security",

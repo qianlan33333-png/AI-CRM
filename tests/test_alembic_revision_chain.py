@@ -107,8 +107,11 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     production_welcome_ack_scope_source = production_welcome_ack_scope.read_text(encoding="utf-8")
     sidebar_recent_message_index = VERSIONS / "0142_sidebar_recent_message_index.py"
     sidebar_recent_message_index_source = sidebar_recent_message_index.read_text(encoding="utf-8")
+    data_health_snapshot = VERSIONS / "0143_data_health_snapshot.py"
+    data_health_snapshot_source = data_health_snapshot.read_text(encoding="utf-8")
 
-    assert heads == {"0142_sidebar_recent_message_index"}
+    assert heads == {"0143_data_health_snapshot"}
+    assert revisions["0143_data_health_snapshot"]["down_revision"] == "0142_sidebar_recent_message_index"
     assert revisions["0142_sidebar_recent_message_index"]["down_revision"] == "0141_production_welcome_timeout_ack_scope"
     assert revisions["0141_production_welcome_timeout_ack_scope"]["down_revision"] == "0140_wecom_welcome_hard_realtime_lanes"
     assert revisions["0140_wecom_welcome_hard_realtime_lanes"]["down_revision"] == "0139_queue_terminal_acknowledgement_scope"
@@ -130,6 +133,8 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     assert revisions["0124_agent_audit_tables"]["down_revision"] == "0123_required_physical_schema_repair"
     assert revisions["0123_required_physical_schema_repair"]["down_revision"] == "0122_internal_event_fanout_manifest"
     assert "0018_hxc_dashboard_broadcast_tasks" in source
+    assert "CREATE TABLE IF NOT EXISTS data_health_snapshot" in data_health_snapshot_source
+    assert "CHECK (singleton IS TRUE)" in data_health_snapshot_source
     assert "0023_group_ops_webhook_rules" in source
     assert "0028_owner_migration_excel_sessions" in source
     assert "def downgrade()" in source
