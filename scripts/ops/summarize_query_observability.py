@@ -14,7 +14,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, TextIO
 
-from aicrm_next.shared.route_ownership import load_route_manifest
+try:
+    from scripts.script_runtime import ensure_repo_root_on_path
+except ModuleNotFoundError:  # pragma: no cover - direct script execution
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from scripts.script_runtime import ensure_repo_root_on_path
+
+ensure_repo_root_on_path()
+
+from aicrm_next.shared.route_ownership import load_route_manifest  # noqa: E402
 
 
 _EVENT = "aicrm_request_query_summary"

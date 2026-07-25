@@ -50,6 +50,9 @@ prevents an accidental requested path or customer identifier from becoming an
 aggregate key. Fingerprints must be 16 lowercase hexadecimal characters and
 their call counts must reconcile to the request query count.
 
+Run the command from the repository working directory. The script initializes
+the repository import path itself; operators must not need to set `PYTHONPATH`.
+
 Collect slightly more than seven days so the first and last accepted events can
 span the required 168 hours:
 

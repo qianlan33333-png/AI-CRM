@@ -3,8 +3,13 @@ from __future__ import annotations
 import io
 import json
 from pathlib import Path
+import subprocess
+import sys
 
 from scripts.ops.summarize_query_observability import _default_route_manifest, build_report, run
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _event(
@@ -46,6 +51,25 @@ def _journal_line(event: dict, timestamp_us: int) -> str:
 
 def test_default_manifest_path_is_safe_for_a_shallow_temporary_copy() -> None:
     assert _default_route_manifest(Path("/tmp/tool.py")) == Path("/docs/architecture/route_ownership_manifest.yml")
+
+
+def test_cli_can_run_directly_outside_the_repository(tmp_path: Path) -> None:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "scripts" / "ops" / "summarize_query_observability.py"),
+            "--route-manifest",
+            str(ROOT / "docs" / "architecture" / "route_ownership_manifest.yml"),
+        ],
+        cwd=tmp_path,
+        input=json.dumps(_event()),
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert json.loads(completed.stdout)["accepted_event_count"] == 1
 
 
 def test_build_report_ranks_routes_and_fingerprints_without_sql() -> None:
