@@ -265,6 +265,22 @@
     "aicrm_next/commerce/api.py",
     "aicrm_next/commerce/external_orders.py",
     "tests/test_unified_order_cursor.py",
-    "tests/test_unified_order_query_postgres.py"
+    "tests/test_unified_order_query_postgres.py",
+    "aicrm_next/admin_config/api_docs_view_model.py",
+    "aicrm_next/admin_config/runtime_view_model.py",
+    "aicrm_next/customer_tags/projection_port.py",
+    "aicrm_next/customer_tags/projection_repository.py",
+    "aicrm_next/integration_gateway/mcp.py",
+    "aicrm_next/mcp_tool_catalog.py",
+    "docs/architecture/import_graph_baseline.yml",
+    "migrations/versions/0150_crm_identity_updated_cursor_index.py",
+    "tests/test_admin_p0_commerce_api.py",
+    "tests/test_ai_audience_hxc_projection_cursor_index.py",
+    "tests/test_customer_tag_projection_port.py",
+    "tests/test_customer_tag_projection_port_postgres.py",
+    "tests/test_import_graph_guard.py",
+    "tests/test_next_api_docs_page.py",
+    "tests/test_support_admin_pages_native.py",
+    "tests/test_unionid_identity_refactor_schema.py"
   ]
 }
