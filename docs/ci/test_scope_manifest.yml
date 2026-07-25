@@ -893,6 +893,8 @@
         "deploy/openclaw-ai-audience-scheduler.timer",
         "migrations/versions/0128_ai_audience_refresh_intents.py",
         "migrations/versions/0149_ai_audience_hxc_projection_foundation.py",
+        "docs/ops/ai-audience-hxc-projection.md",
+        "scripts/ops/refresh_ai_audience_hxc_projection.py",
         "scripts/ops/check_ai_audience_refresh_owner.py",
         "scripts/run_ai_audience_scheduler.py",
         "tests/test_ai_audience_*.py",
@@ -903,6 +905,7 @@
         "tests/test_ai_audience_production_diagnostics_workflow.py",
         "tests/test_ai_audience_scheduler_cli.py",
         "tests/test_ai_audience_refresh_intents_postgres.py",
+        "tests/test_ai_audience_hxc_projection_refresh.py",
         "tests/test_ai_audience_runtime_hotfixes.py",
         "tests/test_ai_audience_external_api.py"
       ],

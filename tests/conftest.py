@@ -101,6 +101,7 @@ _TABLES_TO_TRUNCATE = [
     # — ai audience ops
     "ai_audience_refresh_source_receipt",
     "ai_audience_refresh_intent",
+    "ai_audience_hxc_member_usage_projection",
     "ai_audience_inbound_webhook_event",
     "ai_audience_package_sender",
     "ai_audience_outbound_subscription",
@@ -341,7 +342,22 @@ _truncate_state: dict[str, Any] = {
 }
 
 _QUEUE_RUNTIME_RESET_SQL = """
-WITH reset_control AS (
+WITH reset_hxc_projection AS (
+    UPDATE ai_audience_hxc_member_usage_projection_control
+    SET active_generation = 0,
+        status = 'empty',
+        projected_row_count = 0,
+        last_incremental_watermark_at = NULL,
+        last_full_refreshed_at = NULL,
+        last_refresh_started_at = NULL,
+        last_refresh_finished_at = NULL,
+        source_watermarks_json = '{}'::jsonb,
+        last_error_code = '',
+        updated_at = CURRENT_TIMESTAMP
+    WHERE singleton = TRUE
+    RETURNING singleton
+),
+reset_control AS (
     UPDATE queue_runtime_control
     SET active_generation = 0,
         claim_enabled = FALSE,
@@ -374,6 +390,7 @@ SET max_in_flight = CASE lane
     updated_reason = 'reset mutable queue lane policy between tests',
     updated_at = CURRENT_TIMESTAMP
 WHERE EXISTS (SELECT 1 FROM reset_control)
+  AND EXISTS (SELECT 1 FROM reset_hxc_projection)
 """
 
 
