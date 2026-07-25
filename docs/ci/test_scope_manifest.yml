@@ -180,6 +180,7 @@
         "aicrm_next/platform_foundation/push_center/view_model.py",
         "aicrm_next/customer_read_model/repo.py",
         "aicrm_next/customer_read_model/sidebar_v2.py",
+        "aicrm_next/message_archive/repo.py",
         "aicrm_next/identity_contact/repo.py",
         "aicrm_next/identity_contact/resolver.py",
         "aicrm_next/questionnaire/repo.py",
@@ -188,11 +189,13 @@
         "docs/performance/critical_read_path_baselines.json",
         "tools/check_critical_read_performance.py",
         "migrations/versions/0106_critical_read_path_indexes.py",
+        "migrations/versions/0145_archived_message_search_trgm.py",
         ".github/workflows/full-regression.yml",
         "tests/test_critical_read_performance_contracts.py",
         "tests/test_critical_read_performance_runner.py",
         "tests/test_sidebar_other_staff_message_query.py",
-        "tests/test_sidebar_other_staff_message_query_postgres.py"
+        "tests/test_sidebar_other_staff_message_query_postgres.py",
+        "tests/test_message_archive_search_*.py"
       ],
       "python_tests": [
         "tests/test_critical_read_performance_contracts.py",
@@ -205,6 +208,7 @@
         "tests/test_identity_query_performance_postgres.py",
         "tests/test_sidebar_other_staff_message_query.py",
         "tests/test_sidebar_other_staff_message_query_postgres.py",
+        "tests/test_message_archive_search_index_postgres.py",
         "tests/test_unionid_identity_refactor_schema.py",
         "tests/test_unionid_runtime_breakage_hotfix.py",
         "tests/test_alembic_revision_chain.py",

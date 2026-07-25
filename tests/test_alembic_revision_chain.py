@@ -111,8 +111,11 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     data_health_snapshot_source = data_health_snapshot.read_text(encoding="utf-8")
     config_release_control_plane = VERSIONS / "0144_config_release_control_plane.py"
     config_release_control_plane_source = config_release_control_plane.read_text(encoding="utf-8")
+    archived_message_search_trgm = VERSIONS / "0145_archived_message_search_trgm.py"
+    archived_message_search_trgm_source = archived_message_search_trgm.read_text(encoding="utf-8")
 
-    assert heads == {"0144_config_release_control_plane"}
+    assert heads == {"0145_archived_message_search_trgm"}
+    assert revisions["0145_archived_message_search_trgm"]["down_revision"] == "0144_config_release_control_plane"
     assert revisions["0144_config_release_control_plane"]["down_revision"] == "0143_data_health_snapshot"
     assert revisions["0143_data_health_snapshot"]["down_revision"] == "0142_sidebar_recent_message_index"
     assert revisions["0142_sidebar_recent_message_index"]["down_revision"] == "0141_production_welcome_timeout_ack_scope"
@@ -138,6 +141,11 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     assert "CREATE TABLE IF NOT EXISTS config_releases" in config_release_control_plane_source
     assert "CREATE TABLE IF NOT EXISTS deployment_profile_state" in config_release_control_plane_source
     assert "uq_config_releases_profile_published" in config_release_control_plane_source
+    assert "CREATE EXTENSION IF NOT EXISTS pg_trgm" in archived_message_search_trgm_source
+    assert "CREATE INDEX CONCURRENTLY IF NOT EXISTS" in archived_message_search_trgm_source
+    assert "ix_archived_messages_content_trgm" in archived_message_search_trgm_source
+    assert "content gin_trgm_ops" in archived_message_search_trgm_source
+    assert "DROP INDEX CONCURRENTLY IF EXISTS" in archived_message_search_trgm_source
     assert "0018_hxc_dashboard_broadcast_tasks" in source
     assert "CREATE TABLE IF NOT EXISTS data_health_snapshot" in data_health_snapshot_source
     assert "CHECK (singleton IS TRUE)" in data_health_snapshot_source
