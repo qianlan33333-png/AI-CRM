@@ -58,18 +58,6 @@ def _encode_cursor(offset: int | None) -> str:
     return base64.urlsafe_b64encode(payload).decode("ascii").rstrip("=")
 
 
-def _decode_cursor(cursor: str | None) -> int:
-    token = _text(cursor)
-    if not token:
-        return 0
-    try:
-        padded = token + "=" * (-len(token) % 4)
-        payload = json.loads(base64.urlsafe_b64decode(padded.encode("ascii")).decode("utf-8"))
-        return max(0, int(payload.get("offset") or 0))
-    except Exception as exc:
-        raise ValueError("cursor is invalid") from exc
-
-
 def _timestamp_filter(value: int | None, name: str) -> str | None:
     if value is None:
         return None
@@ -149,7 +137,6 @@ def list_external_orders(
     cursor: str | None = Query(None, description="下一页游标"),
 ) -> JSONResponse:
     try:
-        offset = _decode_cursor(cursor)
         payload = list_orders(
             provider=provider,
             filters=_filters(
@@ -168,8 +155,9 @@ def list_external_orders(
                 unionid=unionid,
             ),
             limit=limit,
-            offset=offset,
+            offset=0,
             max_limit=500,
+            cursor=cursor,
         )
     except ValueError as exc:
         return _error(error_code="invalid_request", message=str(exc), status_code=400, source_status=SOURCE_STATUS_LIST)
@@ -179,7 +167,7 @@ def list_external_orders(
         "items": items,
         "total": int(payload.get("total") or len(items)),
         "limit": int(payload.get("limit") or limit),
-        "next_cursor": _encode_cursor(payload.get("next_offset")),
+        "next_cursor": _text(payload.get("next_cursor")) or _encode_cursor(payload.get("next_offset")),
         "has_more": bool(payload.get("has_more")),
         "filters": payload.get("filters") or {},
         "providers": payload.get("providers") or [],

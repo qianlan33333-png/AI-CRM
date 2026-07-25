@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import base64
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import hashlib
+import json
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -125,16 +128,24 @@ class PaymentTimelineProjection:
             provider_state = _text(event.get("trade_state") or event.get("trade_status"))
             timeline.append({"time": _format_time(event.get("created_at")), "event": event_type, "status": provider_state})
         latest_event = events[0] if events else {}
-        callback_payload = _json_dict(order.get("notify_payload_json"))
-        if provider == "alipay" and not callback_payload:
-            callback_payload = _json_dict(order.get("return_payload_json"))
+        notify_payload = _json_dict(order.get("notify_payload_json"))
+        return_payload = _json_dict(order.get("return_payload_json"))
+        callback_payload = return_payload if provider == "alipay" and not notify_payload else notify_payload
+        notify_payload_present = bool(notify_payload) or bool(order.get("notify_payload_present"))
+        return_payload_present = bool(return_payload) or bool(order.get("return_payload_present"))
+        projected_payload_keys = order.get("callback_payload_keys")
+        payload_keys = (
+            sorted(_text(item) for item in projected_payload_keys if _text(item))[:12]
+            if isinstance(projected_payload_keys, list)
+            else sorted(callback_payload.keys())[:12]
+        )
         callback_summary = {
             "event_count": len(events),
             "latest_event_type": _text(latest_event.get("event_type")) or "-",
             "latest_provider_status": _text(latest_event.get("trade_state") or latest_event.get("trade_status")) or "-",
-            "notify_payload_present": bool(_json_dict(order.get("notify_payload_json"))),
-            "return_payload_present": bool(_json_dict(order.get("return_payload_json"))),
-            "payload_keys": sorted(callback_payload.keys())[:12],
+            "notify_payload_present": notify_payload_present,
+            "return_payload_present": return_payload_present,
+            "payload_keys": payload_keys,
         }
         return {"timeline": timeline, "callback_summary": callback_summary}
 
@@ -153,6 +164,100 @@ PROVIDERS = {
     "alipay": _ProviderConfig("alipay", "支付宝", "支付宝交易号", "/admin/alipay/transactions", "/api/admin/alipay/transactions"),
     "wechat_shop": _ProviderConfig("wechat_shop", "微信小店", "小店订单号", "/admin/wechat-shop/transactions", "/api/admin/orders?provider=wechat_shop"),
 }
+PROVIDER_SORT_RANK = {"wechat": 3, "alipay": 2, "wechat_shop": 1}
+
+
+@dataclass(frozen=True)
+class UnifiedOrderPageCursor:
+    created_at: datetime
+    provider_rank: int
+    source_id: int
+    position: int
+    scope: str
+
+
+def unified_order_cursor_scope(providers: list[str] | tuple[str, ...], filters: dict[str, Any]) -> str:
+    payload = json.dumps(
+        {
+            "providers": list(providers),
+            "filters": {str(key): _text(value) for key, value in sorted(filters.items()) if _text(value)},
+        },
+        ensure_ascii=True,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
+
+
+def _cursor_datetime(value: Any) -> datetime:
+    if isinstance(value, datetime):
+        parsed = value
+    else:
+        parsed = datetime.fromisoformat(_text(value).replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def encode_unified_order_cursor(
+    *,
+    created_at: Any,
+    provider_rank: int,
+    source_id: int,
+    position: int,
+    scope: str,
+) -> str:
+    timestamp = _cursor_datetime(created_at).isoformat().replace("+00:00", "Z")
+    payload = json.dumps(
+        {
+            "v": 1,
+            "created_at": timestamp,
+            "provider_rank": int(provider_rank),
+            "source_id": int(source_id),
+            "position": max(0, int(position)),
+            "scope": _text(scope),
+        },
+        ensure_ascii=True,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return base64.urlsafe_b64encode(payload).decode("ascii").rstrip("=")
+
+
+def decode_unified_order_cursor(
+    cursor: str | None,
+    *,
+    expected_scope: str,
+) -> UnifiedOrderPageCursor | int | None:
+    token = _text(cursor)
+    if not token:
+        return None
+    try:
+        padded = token + "=" * (-len(token) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(padded.encode("ascii")).decode("utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError
+        if "v" not in payload and "offset" in payload:
+            return max(0, int(payload.get("offset") or 0))
+        if int(payload.get("v") or 0) != 1:
+            raise ValueError
+        scope = _text(payload.get("scope"))
+        if not scope or scope != expected_scope:
+            raise ValueError
+        provider_rank = int(payload.get("provider_rank") or 0)
+        source_id = int(payload.get("source_id") or 0)
+        position = int(payload.get("position") or 0)
+        if provider_rank not in PROVIDER_SORT_RANK.values() or source_id <= 0 or position < 0:
+            raise ValueError
+        return UnifiedOrderPageCursor(
+            created_at=_cursor_datetime(payload.get("created_at")),
+            provider_rank=provider_rank,
+            source_id=source_id,
+            position=position,
+            scope=scope,
+        )
+    except Exception as exc:
+        raise ValueError("cursor is invalid") from exc
 
 WECHAT_SHOP_BUYER_MOBILE_SQL = (
     "COALESCE("
@@ -511,6 +616,262 @@ def _postgres_table(provider: str) -> str:
     return "wechat_pay_orders"
 
 
+def _postgres_provider_clause(provider: str, clause: str) -> str:
+    if provider == "wechat_shop":
+        return f"({clause}) AND o.provider = 'wechat_shop'"
+    return clause
+
+
+def _postgres_unified_join(provider: str) -> str:
+    if provider in {"wechat", "alipay"}:
+        return "LEFT JOIN crm_user_identity identity ON identity.unionid = o.unionid"
+    return ""
+
+
+def _postgres_payload_keys_json(payload_expression: str) -> str:
+    return f"""
+        COALESCE(
+            (
+                SELECT jsonb_agg(payload_key ORDER BY payload_key)
+                FROM (
+                    SELECT payload_key
+                    FROM jsonb_object_keys({payload_expression}) AS expanded(payload_key)
+                    ORDER BY payload_key
+                    LIMIT 12
+                ) projected_payload_keys
+            ),
+            '[]'::jsonb
+        )
+    """
+
+
+def _postgres_unified_order_json(provider: str) -> str:
+    if provider == "alipay":
+        callback_payload = "CASE WHEN o.notify_payload_json <> '{}'::jsonb THEN o.notify_payload_json ELSE o.return_payload_json END"
+        return f"""
+            jsonb_build_object(
+                'id', o.id,
+                'out_trade_no', o.out_trade_no,
+                'trade_no', o.trade_no,
+                'buyer_logon_id', o.buyer_logon_id,
+                'mobile_snapshot', COALESCE(identity.mobile, ''),
+                'identity_snapshot', COALESCE(identity.primary_external_userid, ''),
+                'unionid', o.unionid,
+                'product_name', o.product_name,
+                'product_code', o.product_code,
+                'amount_total', o.amount_total,
+                'currency', o.currency,
+                'status', o.status,
+                'trade_status', o.trade_status,
+                'refunded_amount_total', o.refunded_amount_total,
+                'refund_status', o.refund_status,
+                'active_refund_amount_total', 0,
+                'notify_payload_present', o.notify_payload_json <> '{{}}'::jsonb,
+                'return_payload_present', o.return_payload_json <> '{{}}'::jsonb,
+                'callback_payload_keys', {_postgres_payload_keys_json(callback_payload)}
+            )
+        """
+    if provider == "wechat_shop":
+        return """
+            jsonb_build_object(
+                'id', o.id,
+                'order_id', o.order_id,
+                'out_trade_no', o.order_id,
+                'transaction_id', o.transaction_id,
+                'buyer_mobile', {buyer_mobile_sql},
+                'openid', {openid_sql},
+                'unionid', o.unionid,
+                'product_name', o.product_name,
+                'product_code', o.product_code,
+                'product_count', o.product_count,
+                'amount_total', o.amount_total,
+                'currency', o.currency,
+                'business_status', o.business_status,
+                'status_code', o.status_code,
+                'deal_recorded', o.deal_recorded,
+                'returned_recorded', o.returned_recorded,
+                'refunded_amount_total', o.refunded_amount_total,
+                'refund_status', '',
+                'on_aftersale_order_count', o.on_aftersale_order_count,
+                'active_refund_amount_total', (
+                    SELECT COALESCE(SUM(r.refund_amount_total), 0)
+                    FROM wechat_shop_refunds r
+                    WHERE r.order_id = o.order_id
+                      AND r.status NOT IN ('failed', 'closed', 'CLOSED', 'SUCCESS')
+                ),
+                'notify_payload_present', o.raw_order_json <> '{{}}'::jsonb,
+                'return_payload_present', false,
+                'callback_payload_keys', {payload_keys_sql}
+            )
+        """.format(
+            buyer_mobile_sql=WECHAT_SHOP_BUYER_MOBILE_SQL,
+            openid_sql=WECHAT_SHOP_OPENID_SQL,
+            payload_keys_sql=_postgres_payload_keys_json("o.raw_order_json"),
+        )
+    return f"""
+        jsonb_build_object(
+            'id', o.id,
+            'out_trade_no', o.out_trade_no,
+            'transaction_id', o.transaction_id,
+            'payer_name_snapshot', o.payer_name_snapshot,
+            'mobile_snapshot', COALESCE(
+                NULLIF(identity.mobile, ''),
+                NULLIF(o.metadata_json #>> '{{payer_identity,mobile}}', ''),
+                NULLIF(o.metadata_json #>> '{{buyer_identity,mobile}}', ''),
+                ''
+            ),
+            'userid_snapshot', '',
+            'external_userid', COALESCE(identity.primary_external_userid, ''),
+            'unionid', o.unionid,
+            'product_name', o.product_name,
+            'product_code', o.product_code,
+            'amount_total', o.amount_total,
+            'currency', o.currency,
+            'status', o.status,
+            'trade_state', o.trade_state,
+            'refunded_amount_total', o.refunded_amount_total,
+            'refund_status', o.refund_status,
+            'active_refund_amount_total', (
+                SELECT COALESCE(SUM(r.refund_amount_total), 0)
+                FROM wechat_pay_refunds r
+                WHERE r.order_id = o.id
+                  AND {active_wechat_refund_sql("r")}
+            ),
+            'notify_payload_present', o.notify_payload_json <> '{{}}'::jsonb,
+            'return_payload_present', false,
+            'callback_payload_keys', {_postgres_payload_keys_json("o.notify_payload_json")}
+        )
+    """
+
+
+def _postgres_unified_list(
+    providers: list[str] | tuple[str, ...],
+    filters: dict[str, Any],
+    *,
+    limit: int,
+    offset: int,
+    cursor: str | None,
+    maximum: int,
+) -> dict[str, Any]:
+    selected = tuple(providers)
+    if not selected or any(provider not in PROVIDERS for provider in selected):
+        raise ValueError("provider must be one of wechat/alipay/wechat_shop")
+    page_limit = max(1, min(_int(limit) or 50, max(1, int(maximum))))
+    requested_offset = max(0, _int(offset))
+    scope = unified_order_cursor_scope(selected, filters)
+    decoded_cursor = decode_unified_order_cursor(cursor, expected_scope=scope)
+    if cursor and requested_offset:
+        raise ValueError("cursor and offset cannot be used together")
+    keyset_cursor = decoded_cursor if isinstance(decoded_cursor, UnifiedOrderPageCursor) else None
+    if isinstance(decoded_cursor, int):
+        page_offset = decoded_cursor
+    elif keyset_cursor is not None:
+        page_offset = keyset_cursor.position
+    else:
+        page_offset = requested_offset
+    sql_offset = 0 if keyset_cursor is not None else page_offset
+    branch_limit = page_limit + 1 if keyset_cursor is not None else page_offset + page_limit + 1
+
+    count_parts: list[str] = []
+    count_params: list[Any] = []
+    list_parts: list[str] = []
+    list_params: list[Any] = []
+    for provider in selected:
+        provider_params: list[Any] = []
+        clause = _postgres_provider_clause(
+            provider,
+            _postgres_filter_clause(provider, filters, provider_params),
+        )
+        table = _postgres_table(provider)
+        count_parts.append(f"SELECT o.id FROM {table} o WHERE {clause}")
+        count_params.extend(provider_params)
+
+        cursor_clause = ""
+        cursor_params: list[Any] = []
+        if keyset_cursor is not None:
+            cursor_clause = f"""
+                AND (o.created_at, {PROVIDER_SORT_RANK[provider]}::integer, o.id)
+                    < (%s::timestamptz, %s::integer, %s::bigint)
+            """
+            cursor_params.extend(
+                [
+                    keyset_cursor.created_at,
+                    keyset_cursor.provider_rank,
+                    keyset_cursor.source_id,
+                ]
+            )
+        list_parts.append(
+            f"""
+            (
+                SELECT
+                    '{provider}'::text AS provider,
+                    {PROVIDER_SORT_RANK[provider]}::integer AS provider_rank,
+                    o.id::bigint AS source_id,
+                    o.created_at AS sort_created_at,
+                    o.paid_at,
+                    {_postgres_unified_order_json(provider)} AS order_json
+                FROM {table} o
+                {_postgres_unified_join(provider)}
+                WHERE {clause}
+                {cursor_clause}
+                ORDER BY o.created_at DESC, o.id DESC
+                LIMIT %s
+            )
+            """
+        )
+        list_params.extend([*provider_params, *cursor_params, branch_limit])
+
+    count_sql = f"""
+        SELECT count(*) AS total
+        FROM ({' UNION ALL '.join(count_parts)}) unified_count
+    """
+    list_sql = f"""
+        SELECT provider, provider_rank, source_id, sort_created_at, paid_at, order_json
+        FROM ({' UNION ALL '.join(list_parts)}) unified_orders
+        ORDER BY sort_created_at DESC, provider_rank DESC, source_id DESC
+        LIMIT %s OFFSET %s
+    """
+    with _connect() as conn:
+        if "wechat" in selected:
+            close_expired_wechat_pay_orders(conn=conn)
+            conn.commit()
+        total_row = conn.execute(count_sql, tuple(count_params)).fetchone() or {}
+        rows = conn.execute(
+            list_sql,
+            tuple([*list_params, page_limit + 1, sql_offset]),
+        ).fetchall()
+
+    has_more = len(rows) > page_limit
+    page_rows = list(rows[:page_limit])
+    items: list[dict[str, Any]] = []
+    for row in page_rows:
+        mapped = dict(row)
+        order = _json_dict(mapped.get("order_json"))
+        order["created_at"] = mapped.get("sort_created_at")
+        order["paid_at"] = mapped.get("paid_at")
+        items.append(_present(_text(mapped.get("provider")), order))
+    next_position = page_offset + len(page_rows)
+    next_cursor = ""
+    if has_more and page_rows:
+        last = dict(page_rows[-1])
+        next_cursor = encode_unified_order_cursor(
+            created_at=last["sort_created_at"],
+            provider_rank=int(last["provider_rank"]),
+            source_id=int(last["source_id"]),
+            position=next_position,
+            scope=scope,
+        )
+    return {
+        "items": items,
+        "total": int(total_row.get("total") or 0),
+        "limit": page_limit,
+        "offset": page_offset,
+        "has_more": has_more,
+        "next_offset": next_position if has_more else None,
+        "next_cursor": next_cursor,
+    }
+
+
 def _postgres_events(provider: str, out_trade_no: str) -> list[dict[str, Any]]:
     table = "alipay_pay_order_events" if provider == "alipay" else "wechat_shop_order_events" if provider == "wechat_shop" else "wechat_pay_order_events"
     column = "order_id" if provider == "wechat_shop" else "out_trade_no"
@@ -634,6 +995,34 @@ class CommerceAdminTransactionListReadModel:
             "provider_label": provider_config(self.provider).provider_label,
             "filters": dict(filters or {}),
             **payload,
+        }
+
+
+class CommerceAdminUnifiedTransactionListReadModel:
+    def execute(
+        self,
+        providers: list[str] | tuple[str, ...],
+        filters: dict[str, Any] | None = None,
+        *,
+        limit: int = 50,
+        offset: int = 0,
+        cursor: str | None = None,
+        maximum: int = 100,
+    ) -> dict[str, Any]:
+        if database_mode() != "postgres":
+            raise RuntimeError("unified order SQL read model requires postgres")
+        return {
+            "ok": True,
+            "providers": list(providers),
+            "filters": dict(filters or {}),
+            **_postgres_unified_list(
+                providers,
+                dict(filters or {}),
+                limit=limit,
+                offset=offset,
+                cursor=cursor,
+                maximum=maximum,
+            ),
         }
 
 

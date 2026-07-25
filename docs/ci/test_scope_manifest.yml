@@ -676,6 +676,29 @@
       "architecture_gate": "fast"
     },
     {
+      "name": "commerce_unified_order_query",
+      "paths": [
+        "aicrm_next/commerce/admin_transaction_detail.py",
+        "aicrm_next/commerce/admin_unified_orders.py",
+        "aicrm_next/commerce/api.py",
+        "aicrm_next/commerce/external_orders.py",
+        "tests/test_unified_order_cursor.py",
+        "tests/test_unified_order_query_postgres.py"
+      ],
+      "python_tests": [
+        "tests/test_unified_order_cursor.py",
+        "tests/test_unified_order_query_postgres.py",
+        "tests/test_admin_p0_commerce_api.py",
+        "tests/test_external_orders_api.py",
+        "tests/test_commerce_admin_transaction_detail.py",
+        "tests/test_order_source_created_index_postgres.py",
+        "tests/test_select_test_scope.py"
+      ],
+      "needs_postgres": true,
+      "needs_full_ci": true,
+      "architecture_gate": "full"
+    },
+    {
       "name": "commerce_coupons",
       "paths": [
         "aicrm_next/commerce/coupons/**",

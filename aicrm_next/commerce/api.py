@@ -761,7 +761,7 @@ def _unified_order_filters(**kwargs) -> dict:
 @router.get(
     "/api/admin/orders",
     summary="后台统一订单列表",
-    description="Session Cookie 后台接口，聚合微信、支付宝和微信小店订单。provider=all 时分别读取各侧 CommerceAdminTransactionListReadModel 后按 created_at 倒序合并。",
+    description="Session Cookie 后台接口，聚合微信、支付宝和微信小店订单。PostgreSQL 模式使用条件下推的 UNION ALL 与稳定游标分页。",
 )
 def list_admin_orders(
     provider: str = Query("all", description="支付 provider，可取 all/wechat/alipay/wechat_shop，默认 all"),
@@ -781,6 +781,7 @@ def list_admin_orders(
     date_to: str | None = Query(None, description="订单创建结束时间别名"),
     limit: int = Query(50, description="分页条数，默认 50，最大 100"),
     offset: int = Query(0, description="分页偏移，默认 0"),
+    cursor: str | None = Query(None, description="可选下一页游标；与非零 offset 不能同时使用"),
 ) -> dict:
     try:
         return _payment_final_payload(
@@ -804,6 +805,7 @@ def list_admin_orders(
                 ),
                 limit=limit,
                 offset=offset,
+                cursor=cursor,
             ),
             source_status="next_admin_orders",
         )
@@ -864,6 +866,7 @@ def list_admin_payments(
     paid_to: str | None = Query(None, description="支付完成结束时间"),
     limit: int = Query(50, description="分页条数，默认 50，最大 100"),
     offset: int = Query(0, description="分页偏移，默认 0"),
+    cursor: str | None = Query(None, description="可选下一页游标；与非零 offset 不能同时使用"),
 ) -> dict:
     try:
         return _payment_final_payload(
@@ -887,6 +890,7 @@ def list_admin_payments(
                 ),
                 limit=limit,
                 offset=offset,
+                cursor=cursor,
             ),
             source_status="next_admin_payments",
         )
@@ -965,9 +969,18 @@ def get_admin_customer_orders(
     product_code: str | None = Query(None, description="商品编码"),
     limit: int = Query(20, description="分页条数，默认 20，最大 100"),
     offset: int = Query(0, description="分页偏移，默认 0"),
+    cursor: str | None = Query(None, description="可选下一页游标；与非零 offset 不能同时使用"),
 ) -> dict:
     return _payment_final_payload(
-        list_customer_orders(external_userid, provider=provider, status=status, product_code=product_code, limit=limit, offset=offset),
+        list_customer_orders(
+            external_userid,
+            provider=provider,
+            status=status,
+            product_code=product_code,
+            limit=limit,
+            offset=offset,
+            cursor=cursor,
+        ),
         source_status="next_customer_orders",
     )
 

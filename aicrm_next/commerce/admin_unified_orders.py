@@ -4,8 +4,16 @@ from datetime import datetime, timezone
 from typing import Any
 
 from aicrm_next.shared.errors import NotFoundError
+from aicrm_next.shared.runtime import database_mode
 
-from .admin_transaction_detail import CommerceAdminTransactionDetailReadModel, CommerceAdminTransactionListReadModel
+from .admin_transaction_detail import (
+    CommerceAdminTransactionDetailReadModel,
+    CommerceAdminTransactionListReadModel,
+    CommerceAdminUnifiedTransactionListReadModel,
+    UnifiedOrderPageCursor,
+    decode_unified_order_cursor,
+    unified_order_cursor_scope,
+)
 
 ROUTE_OWNER = "ai_crm_next"
 PROVIDERS = ("wechat", "alipay", "wechat_shop")
@@ -175,6 +183,7 @@ def list_orders(
     limit: int = 50,
     offset: int = 0,
     max_limit: int = 100,
+    cursor: str | None = None,
 ) -> dict[str, Any]:
     normalized_provider = normalize_provider(provider)
     if normalized_provider == "auto":
@@ -183,6 +192,41 @@ def list_orders(
     page_offset = normalize_offset(offset)
     normalized_filters = normalize_order_filters(filters)
     selected = list(PROVIDERS if normalized_provider == "all" else (normalized_provider,))
+    if cursor and page_offset:
+        raise ValueError("cursor and offset cannot be used together")
+    if database_mode() == "postgres":
+        payload = CommerceAdminUnifiedTransactionListReadModel().execute(
+            selected,
+            normalized_filters,
+            limit=page_limit,
+            offset=page_offset,
+            cursor=cursor,
+            maximum=max_limit,
+        )
+        items = [_normalize_order_item(dict(item)) for item in payload.get("items", [])]
+        return {
+            "ok": True,
+            "items": items,
+            "total": int(payload.get("total") or 0),
+            "limit": int(payload.get("limit") or page_limit),
+            "offset": int(payload.get("offset") or 0),
+            "has_more": bool(payload.get("has_more")),
+            "next_offset": payload.get("next_offset"),
+            "next_cursor": _text(payload.get("next_cursor")),
+            "filters": normalized_filters,
+            "providers": selected,
+            "route_owner": ROUTE_OWNER,
+            "source_status": "next_admin_orders",
+            "fallback_used": False,
+        }
+    if cursor:
+        decoded = decode_unified_order_cursor(
+            cursor,
+            expected_scope=unified_order_cursor_scope(selected, normalized_filters),
+        )
+        if isinstance(decoded, UnifiedOrderPageCursor):
+            raise ValueError("cursor is invalid")
+        page_offset = int(decoded or 0)
     query_limit = page_limit + page_offset if normalized_provider == "all" else page_limit
     items: list[dict[str, Any]] = []
     total = 0
@@ -212,6 +256,7 @@ def list_orders(
         "offset": page_offset,
         "has_more": has_more,
         "next_offset": page_offset + page_limit if has_more else None,
+        "next_cursor": "",
         "filters": normalized_filters,
         "providers": selected,
         "route_owner": ROUTE_OWNER,
@@ -270,8 +315,15 @@ def list_payments(
     filters: dict[str, Any] | None = None,
     limit: int = 50,
     offset: int = 0,
+    cursor: str | None = None,
 ) -> dict[str, Any]:
-    orders = list_orders(provider=provider, filters=filters, limit=limit, offset=offset)
+    orders = list_orders(
+        provider=provider,
+        filters=filters,
+        limit=limit,
+        offset=offset,
+        cursor=cursor,
+    )
     payments = []
     for order in orders["items"]:
         payments.append(
@@ -301,6 +353,7 @@ def list_payments(
         "offset": orders["offset"],
         "has_more": orders["has_more"],
         "next_offset": orders["next_offset"],
+        "next_cursor": orders.get("next_cursor") or "",
         "filters": orders["filters"],
         "providers": orders["providers"],
         "route_owner": ROUTE_OWNER,
@@ -317,12 +370,14 @@ def list_customer_orders(
     product_code: str | None = None,
     limit: int = 20,
     offset: int = 0,
+    cursor: str | None = None,
 ) -> dict[str, Any]:
     payload = list_orders(
         provider=provider,
         filters={"external_userid": external_userid, "status": status, "product_code": product_code},
         limit=limit,
         offset=offset,
+        cursor=cursor,
     )
     return {
         "ok": True,
@@ -333,6 +388,7 @@ def list_customer_orders(
         "offset": payload["offset"],
         "has_more": payload["has_more"],
         "next_offset": payload["next_offset"],
+        "next_cursor": payload.get("next_cursor") or "",
         "route_owner": ROUTE_OWNER,
         "source_status": "next_customer_orders",
         "fallback_used": False,

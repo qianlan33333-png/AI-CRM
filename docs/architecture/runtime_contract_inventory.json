@@ -20331,6 +20331,24 @@
               "title": "Offset",
               "type": "integer"
             }
+          },
+          {
+            "description": "可选下一页游标；与非零 offset 不能同时使用",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "可选下一页游标；与非零 offset 不能同时使用",
+              "title": "Cursor"
+            }
           }
         ],
         "request_body": null,
@@ -25958,6 +25976,24 @@
               "title": "Offset",
               "type": "integer"
             }
+          },
+          {
+            "description": "可选下一页游标；与非零 offset 不能同时使用",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "可选下一页游标；与非零 offset 不能同时使用",
+              "title": "Cursor"
+            }
           }
         ],
         "request_body": null,
@@ -26667,6 +26703,24 @@
               "description": "分页偏移，默认 0",
               "title": "Offset",
               "type": "integer"
+            }
+          },
+          {
+            "description": "可选下一页游标；与非零 offset 不能同时使用",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "可选下一页游标；与非零 offset 不能同时使用",
+              "title": "Cursor"
             }
           }
         ],
