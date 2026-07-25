@@ -16,7 +16,7 @@ from ..external_effects.wecom_canary_policy import wecom_canary_job_gate_error
 from .repository import normalize_runtime_database_url, open_runtime_connection
 
 
-CANARY_CONFIG_KEYS = (
+RUNTIME_SETTING_KEYS = (
     "AICRM_WECOM_PROVIDER_TARGET_POLICY",
     "AICRM_EXTERNAL_EFFECT_ALLOWED_TARGET_EXTERNAL_USERIDS",
     "AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS",
@@ -35,6 +35,7 @@ CANARY_CONFIG_KEYS = (
     "AICRM_ENABLE_REAL_WECOM_GROUP_MESSAGE",
     "AICRM_EXTERNAL_EFFECT_MEDIA_UPLOAD_EXECUTE",
 )
+CANARY_CONFIG_KEYS = RUNTIME_SETTING_KEYS
 REQUIRED_FAULT_EVIDENCE = frozenset({"listener_reconnect", "worker_restart", "database_reconnect"})
 REQUIRED_VALIDATION_EVIDENCE = frozenset(
     {

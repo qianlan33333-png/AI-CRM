@@ -1456,6 +1456,8 @@
     {
       "name": "config_release_control_plane",
       "paths": [
+        "aicrm_next/runtime_configuration.py",
+        "aicrm_next/shared/runtime_settings.py",
         "aicrm_next/admin_config/config_definitions.py",
         "aicrm_next/admin_config/config_release_repository.py",
         "aicrm_next/admin_config/config_releases.py",
@@ -1464,11 +1466,13 @@
         "aicrm_next/scrm_contracts.py",
         "migrations/versions/0144_config_release_control_plane.py",
         "scripts/run_job_catalog_scheduler.py",
+        "tools/check_runtime_configuration_contract.py",
         "tests/test_capability_registry.py",
         "tests/test_config_releases.py",
         "tests/test_config_releases_postgres.py",
         "tests/test_deployment_profile.py",
         "tests/test_job_catalog.py",
+        "tests/test_runtime_configuration_contract.py",
         "tests/test_scrm_contracts.py"
       ],
       "python_tests": [
@@ -1477,6 +1481,8 @@
         "tests/test_config_releases_postgres.py",
         "tests/test_deployment_profile.py",
         "tests/test_job_catalog.py",
+        "tests/test_runtime_configuration_contract.py",
+        "tests/test_admin_config_secret_references.py",
         "tests/test_scrm_contracts.py",
         "tests/test_alembic_revision_chain.py"
       ],

@@ -91,6 +91,49 @@ def test_internal_access_token_request_uses_tls_basic_and_exact_secret_reference
     assert lease.access_token == "header.payload.signature"
 
 
+def test_internal_access_token_reads_published_runtime_settings_as_one_snapshot(monkeypatch) -> None:
+    values = {
+        "AICRM_AUTH_ISSUER": "https://crm.example.test/oauth",
+        "AICRM_AUTH_ARCHIVE_WORKER_CLIENT_ID": "archive-worker-client",
+        "AICRM_AUTH_ARCHIVE_WORKER_CLIENT_SECRET_REF": "secretref:file:ARCHIVE:v1_test",
+        "AICRM_AUTH_CA_FILE": "",
+    }
+    lookups: list[str] = []
+    scopes_entered: list[str] = []
+
+    class _Scope:
+        def __enter__(self):
+            scopes_entered.append("enter")
+
+        def __exit__(self, *_args):
+            scopes_entered.append("exit")
+
+    monkeypatch.setattr(access_client, "runtime_settings_request_scope", _Scope)
+    monkeypatch.setattr(
+        access_client,
+        "managed_runtime_setting",
+        lambda key: lookups.append(key) or values.get(key, ""),
+    )
+    monkeypatch.setattr(access_client.ssl, "create_default_context", lambda *, cafile: object())
+
+    lease = fetch_internal_access_token(
+        purpose="archive",
+        audience="internal_worker",
+        scopes=("read",),
+        urlopen=lambda *_args, **_kwargs: _Response(),
+        secret_resolver=lambda _reference: "resolved-secret",
+    )
+
+    assert lease.access_token == "header.payload.signature"
+    assert scopes_entered == ["enter", "exit"]
+    assert lookups == [
+        "AICRM_AUTH_ISSUER",
+        "AICRM_AUTH_ARCHIVE_WORKER_CLIENT_ID",
+        "AICRM_AUTH_ARCHIVE_WORKER_CLIENT_SECRET_REF",
+        "AICRM_AUTH_CA_FILE",
+    ]
+
+
 def test_machine_routes_use_signed_jwt_with_exact_purpose_and_capability() -> None:
     entries = load_route_manifest("docs/architecture/route_ownership_manifest.yml")
     by_route = {(entry["path"], entry["route_name"]): entry for entry in entries}

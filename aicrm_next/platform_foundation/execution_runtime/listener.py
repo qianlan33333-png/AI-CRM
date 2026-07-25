@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 from dataclasses import dataclass
 from typing import Any, Callable
 
 from aicrm_next.shared.db_session import database_application_name
 from aicrm_next.shared.runtime import production_environment, raw_database_url
+from aicrm_next.shared.runtime_settings import environment_fallback
 
 from .repository import open_listener_connection
 
@@ -32,7 +32,7 @@ def _direct_psycopg_url(value: str) -> str:
 
 
 def listener_database_url() -> str:
-    configured = _direct_psycopg_url(os.getenv("AICRM_LISTENER_DATABASE_URL", ""))
+    configured = _direct_psycopg_url(environment_fallback("AICRM_LISTENER_DATABASE_URL"))
     if configured:
         return configured
     if production_environment():

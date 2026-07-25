@@ -216,6 +216,7 @@ def test_architecture_gate_script_has_fast_db_and_full_modes() -> None:
     assert "tools/check_route_ownership_manifest.py" in script
     assert "scripts/ci/update_route_policy_manifest.py --check" in script
     assert "tools/check_repository_ownership.py" in script
+    assert "tools/check_runtime_configuration_contract.py" in script
     assert "tools/check_admin_route_auth.py" in script
     assert "tools/check_db_access_boundary.py" in script
     assert "tools/check_sql_static_guard.py" in script

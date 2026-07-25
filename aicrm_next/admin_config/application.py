@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from aicrm_next.service_period_grid_ports import SERVICE_PERIOD_GRID_COLLABORATOR_ROLE
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 from aicrm_next.shared.wecom_runtime import (
     WECOM_ENABLED_EFFECT_TYPES_KEY,
     WECOM_EXECUTION_MODE_KEY,
@@ -88,7 +89,6 @@ from .application_support import (
     get_push_capability,
     json,
     mask_value,
-    os,
     public_changed_row,
     setting_details,
     stored_value_matches,
@@ -958,13 +958,13 @@ class AdminConfigWriteCommand:
         if category.key == "wechat_pay":
             adapter_preview = {
                 "adapter": "wechat_pay",
-                "mode": _text(os.getenv("AICRM_NEXT_WECHAT_PAY_MODE")) or "fake",
+                "mode": _text(managed_runtime_setting("AICRM_NEXT_WECHAT_PAY_MODE")) or "fake",
                 "real_external_call_executed": False,
             }
         elif category.key == "alipay":
             adapter_preview = {
                 "adapter": "alipay",
-                "mode": _text(os.getenv("AICRM_NEXT_ALIPAY_MODE")) or "fake",
+                "mode": _text(managed_runtime_setting("AICRM_NEXT_ALIPAY_MODE")) or "fake",
                 "real_external_call_executed": False,
             }
         elif category.key == "wechat_shop":

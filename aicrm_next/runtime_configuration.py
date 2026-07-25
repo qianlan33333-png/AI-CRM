@@ -1,0 +1,86 @@
+from __future__ import annotations
+
+import re
+
+
+RUNTIME_CONFIG_CUTOVER_KEYS_KEY = "AICRM_RUNTIME_CONFIG_CUTOVER_KEYS"
+
+# These keys have moved from direct business-module environment access to the
+# published runtime configuration boundary.  Until a key is explicitly added
+# to RUNTIME_CONFIG_CUTOVER_KEYS_KEY, an existing environment value remains
+# authoritative so the first deployment is behavior-preserving.
+MANAGED_RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "ADMIN_LOGIN_REDIRECT_URI",
+        "AICRM_ADMIN_AUTH_ENFORCED",
+        "AICRM_ADMIN_SESSION_COOKIE_SECURE",
+        "AICRM_AUTH_ARCHIVE_WORKER_CLIENT_ID",
+        "AICRM_AUTH_ARCHIVE_WORKER_CLIENT_SECRET_REF",
+        "AICRM_AUTH_AUTOMATION_WORKER_CLIENT_ID",
+        "AICRM_AUTH_AUTOMATION_WORKER_CLIENT_SECRET_REF",
+        "AICRM_AUTH_CALLBACK_WORKER_CLIENT_ID",
+        "AICRM_AUTH_CALLBACK_WORKER_CLIENT_SECRET_REF",
+        "AICRM_AUTH_CAMPAIGN_AGENT_CLIENT_ID",
+        "AICRM_AUTH_CAMPAIGN_AGENT_CLIENT_SECRET_REF",
+        "AICRM_AUTH_CA_FILE",
+        "AICRM_AUTH_EXTERNAL_AGENT_CLIENT_ID",
+        "AICRM_AUTH_EXTERNAL_AGENT_CLIENT_SECRET_REF",
+        "AICRM_AUTH_GROUP_BROADCAST_CLIENT_ID",
+        "AICRM_AUTH_GROUP_BROADCAST_CLIENT_SECRET_REF",
+        "AICRM_AUTH_IDENTITY_CLIENT_ID",
+        "AICRM_AUTH_IDENTITY_CLIENT_SECRET_REF",
+        "AICRM_AUTH_ISSUER",
+        "AICRM_AUTH_MCP_CLIENT_ID",
+        "AICRM_AUTH_MCP_CLIENT_SECRET_REF",
+        "AICRM_AUTH_OPS_REPORTER_CLIENT_ID",
+        "AICRM_AUTH_OPS_REPORTER_CLIENT_SECRET_REF",
+        "AICRM_INTERNAL_EVENTS_AI_CAMPAIGN_ENABLED",
+        "AICRM_INTERNAL_EVENTS_ALLOWED_CONSUMERS",
+        "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_CONSUMERS",
+        "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_TYPES",
+        "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE",
+        "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE_MAX_BATCH_SIZE",
+        "AICRM_INTERNAL_EVENTS_BROADCAST_TASK_ENABLED",
+        "AICRM_INTERNAL_EVENTS_CUSTOMER_IDENTITY_ENABLED",
+        "AICRM_INTERNAL_EVENTS_CUSTOMER_TAGS_ENABLED",
+        "AICRM_INTERNAL_EVENTS_ENABLED",
+        "AICRM_INTERNAL_EVENTS_LEGACY_PATH_MARKERS_ENABLED",
+        "AICRM_INTERNAL_EVENTS_LEGACY_PATH_RETIRE_AFTER_DAYS",
+        "AICRM_INTERNAL_EVENTS_OPS_PLAN_ENABLED",
+        "AICRM_INTERNAL_EVENTS_OWNER_MIGRATION_ENABLED",
+        "AICRM_INTERNAL_EVENTS_PAYMENT_ENABLED",
+        "AICRM_INTERNAL_EVENTS_QUESTIONNAIRE_ENABLED",
+        "AICRM_INTERNAL_EVENTS_SHADOW_ONLY",
+        "AICRM_INTERNAL_EVENTS_WORKER_BATCH_SIZE",
+        "AICRM_INTERNAL_EVENT_WORKER_BATCH_SIZE",
+        "AICRM_NEXT_ALIPAY_MODE",
+        "AICRM_NEXT_WECHAT_PAY_MODE",
+        "AICRM_PII_AUDIT_ENABLED",
+        "AICRM_ROUTE_POLICY_ENFORCED",
+        "AICRM_WECOM_ADMIN_AUTH_ENABLE_REAL",
+        "WECOM_AGENT_ID",
+        "WECOM_CORP_ID",
+        "WECOM_SECRET",
+    }
+)
+
+# A managed key may be observed through the compatibility resolver before it is
+# safe to activate.  This explicit set is the publication allowlist and is also
+# enforced by the all-business-code direct-environment CI scan.
+CUTOVER_ELIGIBLE_RUNTIME_SETTING_KEYS = frozenset(MANAGED_RUNTIME_SETTING_KEYS)
+
+
+def parse_runtime_config_cutover_keys(value: object) -> frozenset[str]:
+    return frozenset(
+        item.strip()
+        for item in re.split(r"[,\s]+", str(value or ""))
+        if item.strip()
+    )
+
+
+__all__ = [
+    "CUTOVER_ELIGIBLE_RUNTIME_SETTING_KEYS",
+    "MANAGED_RUNTIME_SETTING_KEYS",
+    "RUNTIME_CONFIG_CUTOVER_KEYS_KEY",
+    "parse_runtime_config_cutover_keys",
+]

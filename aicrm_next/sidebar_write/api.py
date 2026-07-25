@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from typing import Any, Type
 from uuid import uuid4
 
@@ -12,6 +11,7 @@ from aicrm_next.shared.signed_context import (
     SIDEBAR_VIEWER_SESSION_COOKIE,
     validate_sidebar_owner_context,
 )
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 
 from .application import (
     SidebarWriteConflictError,
@@ -139,7 +139,7 @@ def _trusted_sidebar_context(request: Request, *, external_userid: str) -> dict[
         token=str(request.headers.get("X-AICRM-Sidebar-Owner-Token") or "").strip(),
         viewer_session_cookie=str(request.cookies.get(SIDEBAR_VIEWER_SESSION_COOKIE) or "").strip(),
         external_userid=external_userid,
-        expected_corp_id=str(os.getenv("WECOM_CORP_ID") or "").strip(),
+        expected_corp_id=str(managed_runtime_setting("WECOM_CORP_ID") or "").strip(),
     )
     if not result.get("ok"):
         raise SidebarWriteForbiddenError("sidebar context required")

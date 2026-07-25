@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import os
 import re
+from collections.abc import Iterable, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
@@ -11,6 +12,11 @@ from typing import Iterator
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
+from aicrm_next.runtime_configuration import (
+    MANAGED_RUNTIME_SETTING_KEYS,
+    RUNTIME_CONFIG_CUTOVER_KEYS_KEY,
+    parse_runtime_config_cutover_keys,
+)
 from aicrm_next.shared.db_session import get_engine
 from aicrm_next.shared.secret_store import (
     SECRET_REFERENCE_CUTOVER_KEY,
@@ -23,6 +29,52 @@ from aicrm_next.shared.safe_logging import safe_log_exception
 
 LOGGER = logging.getLogger(__name__)
 _TRUE_VALUES = {"1", "true", "yes", "y", "on"}
+
+
+def environment_fallback(
+    key: str,
+    default: str = "",
+    *,
+    environment: Mapping[str, str] | None = None,
+) -> str:
+    """Centralize the temporary environment fallback used during config cutover.
+
+    Business modules must resolve published settings through ``runtime_setting``.
+    Repository adapters that already hold an explicit database transaction may
+    use this helper only for the compatibility fallback, avoiding nested engine
+    lookups while keeping direct environment access inside the platform boundary.
+    """
+
+    normalized_key = str(key or "").strip()
+    if not normalized_key:
+        return str(default or "")
+    source = os.environ if environment is None else environment
+    return str(source.get(normalized_key, default) or "")
+
+
+def environment_snapshot(
+    keys: Iterable[str],
+    *,
+    environment: Mapping[str, str] | None = None,
+) -> dict[str, str]:
+    """Return only requested compatibility values from the central env boundary."""
+
+    source = os.environ if environment is None else environment
+    return {
+        normalized: str(source.get(normalized) or "")
+        for key in keys
+        for normalized in (str(key or "").strip(),)
+        if normalized and normalized in source
+    }
+
+
+def environment_contains(
+    key: str,
+    *,
+    environment: Mapping[str, str] | None = None,
+) -> bool:
+    source = os.environ if environment is None else environment
+    return str(key or "").strip() in source
 
 
 @dataclass
@@ -41,6 +93,9 @@ _REQUEST_SETTINGS_SNAPSHOT: ContextVar[_RequestSettingsSnapshot | None] = Contex
 def runtime_settings_request_scope() -> Iterator[None]:
     """Reuse one non-logging app-settings snapshot within a single request."""
 
+    if _REQUEST_SETTINGS_SNAPSHOT.get() is not None:
+        yield
+        return
     token = _REQUEST_SETTINGS_SNAPSHOT.set(_RequestSettingsSnapshot())
     try:
         yield
@@ -83,7 +138,7 @@ def _request_settings_snapshot() -> _RequestSettingsSnapshot | None:
 
 
 def _cutover_enabled(conn=None) -> bool:
-    if str(os.getenv(SECRET_REFERENCE_CUTOVER_KEY, "") or "").strip().lower() in _TRUE_VALUES:
+    if environment_fallback(SECRET_REFERENCE_CUTOVER_KEY).strip().lower() in _TRUE_VALUES:
         return True
     if conn is None:
         return False
@@ -102,6 +157,10 @@ def _resolve_candidate(key: str, candidate: str, *, default: str, cutover_enable
     if normalized.startswith("secretref:"):
         try:
             reference = parse_secret_reference(normalized)
+            if key.endswith("_SECRET_REF"):
+                if reference.key != key.removesuffix("_REF"):
+                    raise SecretStoreError("secret reference does not match requested reference key")
+                return normalized
             if reference.key != key:
                 raise SecretStoreError("secret reference does not match requested key")
             return FileSecretStore.from_environment().read(normalized).strip()
@@ -114,12 +173,14 @@ def _resolve_candidate(key: str, candidate: str, *, default: str, cutover_enable
     return normalized
 
 
-def runtime_setting(key: str, default: str = "") -> str:
+def _raw_runtime_setting(key: str, default: str = "") -> str:
+    """Resolve a setting without applying the expand/contract compatibility rule."""
+
     normalized_key = str(key or "").strip()
     if not normalized_key:
         return default
     fallback = str(default or "").strip()
-    cutover_enabled = str(os.getenv(SECRET_REFERENCE_CUTOVER_KEY, "") or "").strip().lower() in _TRUE_VALUES
+    cutover_enabled = environment_fallback(SECRET_REFERENCE_CUTOVER_KEY).strip().lower() in _TRUE_VALUES
     request_snapshot = _request_settings_snapshot()
     if request_snapshot is not None:
         stored_value = request_snapshot.values.get(normalized_key)
@@ -128,7 +189,7 @@ def runtime_setting(key: str, default: str = "") -> str:
                 request_snapshot.values.get(SECRET_REFERENCE_CUTOVER_KEY, "").strip().lower()
                 in _TRUE_VALUES
             )
-        candidate = stored_value if stored_value is not None else str(os.getenv(normalized_key, fallback) or "")
+        candidate = stored_value if stored_value is not None else environment_fallback(normalized_key, fallback)
         return _resolve_candidate(
             normalized_key,
             candidate,
@@ -156,17 +217,130 @@ def runtime_setting(key: str, default: str = "") -> str:
         )
     return _resolve_candidate(
         normalized_key,
-        str(os.getenv(normalized_key, fallback) or ""),
+        environment_fallback(normalized_key, fallback),
         default=fallback,
         cutover_enabled=cutover_enabled,
     )
 
 
+def _managed_runtime_setting(key: str, default: str = "") -> str:
+    normalized_key = str(key or "").strip()
+    if not normalized_key:
+        return str(default or "")
+    fallback = str(default or "").strip()
+    with runtime_settings_request_scope():
+        cutover_keys = parse_runtime_config_cutover_keys(
+            _raw_runtime_setting(RUNTIME_CONFIG_CUTOVER_KEYS_KEY, "")
+        )
+        if normalized_key in cutover_keys or not environment_contains(normalized_key):
+            return _raw_runtime_setting(normalized_key, fallback)
+        candidate = environment_fallback(normalized_key, fallback)
+        secret_cutover = (
+            environment_fallback(SECRET_REFERENCE_CUTOVER_KEY).strip().lower()
+            in _TRUE_VALUES
+            or _raw_runtime_setting(SECRET_REFERENCE_CUTOVER_KEY, "").lower()
+            in _TRUE_VALUES
+        )
+        return _resolve_candidate(
+            normalized_key,
+            candidate,
+            default=fallback,
+            cutover_enabled=secret_cutover,
+        )
+
+
+def runtime_setting(key: str, default: str = "") -> str:
+    """Resolve one runtime setting through its registered cutover policy.
+
+    Registration is intentionally enforced here, rather than only at selected
+    callers, so existing helpers that resolve a dynamic key cannot bypass the
+    environment-to-release expand/contract boundary.
+    """
+
+    normalized_key = str(key or "").strip()
+    if normalized_key in MANAGED_RUNTIME_SETTING_KEYS:
+        return _managed_runtime_setting(normalized_key, default)
+    return _raw_runtime_setting(normalized_key, default)
+
+
 def runtime_bool(key: str, default: bool = False) -> bool:
-    fallback = "true" if default else ""
-    return runtime_setting(key, fallback).lower() in _TRUE_VALUES
+    raw = runtime_setting(key, "")
+    if not raw:
+        return bool(default)
+    return raw.lower() in _TRUE_VALUES
+
+
+def runtime_int(
+    key: str,
+    default: int = 0,
+    *,
+    minimum: int | None = None,
+    maximum: int | None = None,
+) -> int:
+    raw = runtime_setting(key, str(default))
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        value = int(default)
+    if minimum is not None:
+        value = max(int(minimum), value)
+    if maximum is not None:
+        value = min(int(maximum), value)
+    return value
+
+
+def managed_runtime_setting(key: str, default: str = "") -> str:
+    """Resolve a migrated key without changing behavior before cutover.
+
+    An existing environment value wins in observe mode.  ConfigRelease becomes
+    authoritative only after the exact key is added to the cutover catalog.
+    """
+
+    return _managed_runtime_setting(key, default)
+
+
+def managed_runtime_bool(key: str, default: bool = False) -> bool:
+    raw = managed_runtime_setting(key, "")
+    if not raw:
+        return bool(default)
+    return raw.lower() in _TRUE_VALUES
+
+
+def managed_runtime_int(
+    key: str,
+    default: int = 0,
+    *,
+    minimum: int | None = None,
+    maximum: int | None = None,
+) -> int:
+    raw = managed_runtime_setting(key, str(default))
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        value = int(default)
+    if minimum is not None:
+        value = max(int(minimum), value)
+    if maximum is not None:
+        value = min(int(maximum), value)
+    return value
 
 
 def runtime_csv(key: str) -> set[str]:
     raw = runtime_setting(key, "")
     return {item.strip() for item in re.split(r"[,\s]+", raw) if item.strip()}
+
+
+__all__ = [
+    "environment_fallback",
+    "environment_contains",
+    "environment_snapshot",
+    "invalidate_runtime_settings_request_snapshot",
+    "managed_runtime_bool",
+    "managed_runtime_int",
+    "managed_runtime_setting",
+    "runtime_bool",
+    "runtime_csv",
+    "runtime_int",
+    "runtime_setting",
+    "runtime_settings_request_scope",
+]

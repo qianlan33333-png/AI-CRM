@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import os
 from typing import Any
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
+
+from aicrm_next.shared.runtime import production_environment, raw_database_url
 
 
 CLOUD_CAMPAIGN_RUN_DUE_PATH = "/api/admin/cloud-orchestrator/campaigns/run-due"
@@ -22,7 +23,6 @@ PREVIEW_PATHS = frozenset({CLOUD_CAMPAIGN_RUN_DUE_PREVIEW_PATH})
 CAMPAIGN_ALLOWLIST_FIELDS = ("allow_campaign_ids",)
 
 _SAFE_LOCAL_DB_SENTINELS = ("127.0.0.1:1", "localhost:1")
-_PRODUCTION_ENV_VALUES = {"prod", "production"}
 
 _GUARD_HEADERS = {
     "X-AICRM-Route-Owner": "ai_crm_next",
@@ -43,10 +43,9 @@ def parse_truthy(value: Any) -> bool:
 
 
 def is_production_runtime() -> bool:
-    for key in ("AICRM_NEXT_ENV", "ENVIRONMENT", "APP_ENV", "FLASK_ENV"):
-        if str(os.getenv(key) or "").strip().lower() in _PRODUCTION_ENV_VALUES:
-            return True
-    database_url = str(os.getenv("DATABASE_URL") or "").strip()
+    if production_environment():
+        return True
+    database_url = raw_database_url()
     if not database_url:
         return False
     return not any(sentinel in database_url for sentinel in _SAFE_LOCAL_DB_SENTINELS)

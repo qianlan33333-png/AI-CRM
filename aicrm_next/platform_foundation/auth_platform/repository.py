@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
 from aicrm_next.shared.db_session import get_session_factory
@@ -36,6 +37,14 @@ class PostgresAuthRepository:
         database_url: str | None = None,
     ) -> None:
         self._session_factory = session_factory or get_session_factory(database_url)
+
+    def count_admin_users(self) -> int:
+        try:
+            with self._session_factory() as session:
+                value = session.execute(text("SELECT COUNT(*) FROM admin_users")).scalar()
+        except SQLAlchemyError:
+            return 0
+        return int(value or 0)
 
     def api_client(self, client_id: str) -> ApiClientRecord | None:
         with self._session_factory() as session:

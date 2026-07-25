@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from aicrm_next.shared.errors import ContractError, NotFoundError
 from aicrm_next.shared.admin_action_runtime import validate_admin_action_token
 from aicrm_next.shared.public_url import canonical_public_base_url
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 
 from .application import CouponAdminApplication
 from .dto import CouponUpsertRequest
@@ -62,8 +63,8 @@ def _unsafe_action_error(request: Request) -> JSONResponse | None:
     # security test opts in.  Production always validates the route-bound
     # token issued by Admin Shell and attached by AdminApi.
     if os.getenv("PYTEST_CURRENT_TEST") and str(
-        os.getenv("AICRM_ROUTE_POLICY_ENFORCED")
-        or os.getenv("AICRM_ADMIN_AUTH_ENFORCED")
+        managed_runtime_setting("AICRM_ROUTE_POLICY_ENFORCED")
+        or managed_runtime_setting("AICRM_ADMIN_AUTH_ENFORCED")
         or ""
     ).strip().lower() in {"", "0", "false", "no", "off"}:
         return None

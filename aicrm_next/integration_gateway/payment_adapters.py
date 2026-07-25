@@ -4,6 +4,8 @@ import hashlib
 import os
 from typing import Any
 
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
+
 from .audit import record_audit_event
 from .idempotency import get_or_create, make_idempotency_key
 from .payment_contracts import AdapterMode, Json
@@ -464,11 +466,13 @@ def build_product_write_gateway() -> ProductWriteGateway:
 
 
 def build_wechat_pay_adapter() -> WeChatPayAdapter:
-    return WeChatPayAdapter(os.getenv("AICRM_NEXT_WECHAT_PAY_MODE", "fake"))
+    return WeChatPayAdapter(
+        managed_runtime_setting("AICRM_NEXT_WECHAT_PAY_MODE", "fake")
+    )
 
 
 def build_alipay_adapter() -> AlipayAdapter:
-    return AlipayAdapter(os.getenv("AICRM_NEXT_ALIPAY_MODE", "fake"))
+    return AlipayAdapter(managed_runtime_setting("AICRM_NEXT_ALIPAY_MODE", "fake"))
 
 
 def build_payment_notify_gateway() -> PaymentNotifyGateway:

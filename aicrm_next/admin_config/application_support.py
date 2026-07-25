@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-import os
 from typing import TYPE_CHECKING, Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -29,6 +28,7 @@ from aicrm_next.platform_foundation.push_center.repository import PushCenterRepo
 from .category_registry import CONFIG_CATEGORIES, ConfigCategory, ConfigCategoryField, get_config_category
 from .definitions import APP_SETTING_DEFINITIONS
 from .repository import AdminConfigRepository
+from .runtime_definitions import RUNTIME_CONFIG_DEFINITIONS
 from .schema import CONFIG_SCHEMA, build_config_checklist, validate_config
 from .secret_settings import current_setting_values, public_changed_row, setting_details, stored_value_matches
 from .settings import SENSITIVE_KEYS, mask_value
@@ -101,6 +101,7 @@ PUSH_CAPABILITY_ADVANCED_KEYS = (
     ("QUESTIONNAIRE_SUBMIT_WEBHOOK_URL", "QUESTIONNAIRE_SUBMIT_WEBHOOK_URL", "问卷提交 Webhook 地址"),
 )
 EXTRA_SETTING_DEFINITIONS: dict[str, dict[str, Any]] = {
+    **RUNTIME_CONFIG_DEFINITIONS,
     "SIDEBAR_PRODUCT_CONTEXT_TOKEN_TTL_SECONDS": {
         "key": "SIDEBAR_PRODUCT_CONTEXT_TOKEN_TTL_SECONDS",
         "label": "侧边栏商品上下文有效期",
@@ -503,7 +504,12 @@ def _validate_known_setting(key: str, value: str) -> str:
         "AICRM_ENABLE_REAL_WECOM_PRIVATE_MESSAGE",
         "AICRM_ENABLE_REAL_WECOM_GROUP_MESSAGE",
     }:
-        return "true" if normalized.lower() in {"1", "true", "yes", "y", "on"} else "false"
+        lowered = normalized.lower()
+        if lowered in {"1", "true", "yes", "y", "on"}:
+            return "true"
+        if not lowered or lowered in {"0", "false", "no", "n", "off"}:
+            return "false"
+        raise ValueError(f"{key} 必须是 true / false")
     if key == "AICRM_QUESTIONNAIRE_EXTERNAL_PUSH_MODE":
         return "queue"
     if key == "AICRM_WECOM_EXECUTION_MODE":

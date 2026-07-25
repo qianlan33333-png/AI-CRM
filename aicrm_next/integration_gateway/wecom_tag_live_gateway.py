@@ -6,7 +6,7 @@ from typing import Any
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-from aicrm_next.shared.runtime_settings import runtime_setting
+from aicrm_next.shared.runtime_settings import managed_runtime_setting, runtime_setting
 
 
 Json = dict[str, Any]
@@ -24,7 +24,11 @@ class WeComTagLiveGateway:
         return self
 
     def _access_token(self) -> str:
-        corp_id = os.getenv("AICRM_WECOM_TAG_CORP_ID") or os.getenv("WECOM_CORP_ID") or ""
+        corp_id = (
+            os.getenv("AICRM_WECOM_TAG_CORP_ID")
+            or managed_runtime_setting("WECOM_CORP_ID")
+            or ""
+        )
         secret = (
             runtime_setting("AICRM_WECOM_TAG_AGENT_SECRET")
             or runtime_setting("WECOM_CONTACT_SECRET")

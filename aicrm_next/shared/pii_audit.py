@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import re
 from dataclasses import dataclass
 from typing import Any, Protocol
@@ -13,6 +12,7 @@ from fastapi.responses import JSONResponse, Response
 
 from .route_policy import RoutePolicy
 from .runtime import production_environment
+from .runtime_settings import managed_runtime_setting
 from .sensitive_data import redact_sensitive_text, stable_hmac_identifier
 
 
@@ -89,7 +89,7 @@ class PiiAuditRepository(Protocol):
 
 
 def pii_audit_enabled() -> bool:
-    configured = str(os.getenv("AICRM_PII_AUDIT_ENABLED", "") or "").strip().lower()
+    configured = managed_runtime_setting("AICRM_PII_AUDIT_ENABLED").lower()
     if configured in _TRUE_VALUES:
         return True
     if configured in _FALSE_VALUES:

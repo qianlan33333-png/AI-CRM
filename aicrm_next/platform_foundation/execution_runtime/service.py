@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from typing import Any
 from uuid import uuid4
 
+from aicrm_next.shared.runtime_settings import runtime_settings_request_scope
+
 from .heartbeat import LeaseHeartbeat
 from .lanes import QueueLane
 from .listener import PostgresQueueWakeListener
@@ -176,7 +178,8 @@ class QueueRuntimeService:
             ),
             interval_seconds=self._heartbeat_seconds,
         ) as heartbeat:
-            result = self._handler(claim)
+            with runtime_settings_request_scope():
+                result = self._handler(claim)
         if isinstance(result, Mapping):
             ok = bool(result.get("ok"))
             error = str(result.get("error") or "")

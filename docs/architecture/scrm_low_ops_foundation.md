@@ -17,10 +17,29 @@ physical package move, legacy table deletion, or real provider call.
   consumers, external-effect continuations, provider adapters, effects, and
   jobs. The external worker also blocks residual queued effects before the
   provider boundary.
-- `ConfigDefinition` contributes all 130 schema and app-setting definitions,
+- `ConfigDefinition` contributes 172 schema and app-setting definitions,
   including 23 sensitive values that accept only `secretref:` references. Configuration releases use
   draft, validation, checksum-protected atomic publish, audit history, shadow
   comparison, and rollback-as-a-new-release.
+- The first configuration-cutover slice covers 50 settings owned by
+  `admin_auth`, `auth_wecom`, `admin_config`, and `platform_foundation`. Those
+  contexts no longer read `os.getenv` / `os.environ` directly. Every registered
+  cutover key is resolved centrally, including callers that pass keys through a
+  dynamic helper, and a repository-wide business-code gate rejects direct
+  environment access to any cutover-eligible key. The same gate requires every
+  runtime key to have a `ConfigDefinition` and keeps remaining environment
+  access inside reviewed startup or compatibility boundaries.
+- Migrated settings use an expand/contract cutover. Before activation, an
+  existing environment value remains authoritative while the published value
+  is shadow-compared. `AICRM_RUNTIME_CONFIG_CUTOVER_KEYS` can activate only a
+  previously staged key whose semantic value matches the current environment;
+  unknown keys, wildcard activation, same-release stage-and-switch, invalid
+  secret references, and mismatches fail validation.
+- Publish rechecks every affected setting with compare-and-swap preconditions
+  inside the publish transaction. Cutover activation also guards the staged
+  values that are not themselves changed by the activation release. After a
+  key is activated, legacy admin-setting writes fail closed and only Config
+  Release may update it or the cutover catalog.
 - The admin console and API expose capability, deployment profile,
   configuration-definition, release, validation, publish, rollback, and
   redacted shadow-comparison views.
@@ -32,6 +51,8 @@ physical package move, legacy table deletion, or real provider call.
   `external_worker`, and `scheduler`. Only `external_worker` may call a real
   provider. The internal worker entrypoint combines inbox, internal-event, and
   outbox lanes in one process while preserving the legacy queue-kind arguments.
+  Each claimed job executes against one request-scoped runtime-settings
+  snapshot so a multi-key configuration release cannot split a single job.
 - Architecture gates forbid premature physical moves and legacy table drops
   without 30 days of zero-read/write evidence, verified export, rollback
   rehearsal, successor ownership, and approval.
@@ -50,9 +71,10 @@ and historical-data parity evidence.
 
 ## Deliberately not completed in this release
 
-- Business-domain environment reads have not yet reached zero. The runtime
-  contract inventory continues to expose every reference while settings are
-  migrated owner by owner through shadow comparison.
+- Repository-wide business-domain environment reads have not yet reached zero.
+  The first platform/auth slice is enforced at zero direct reads, while the
+  runtime contract inventory continues to expose every remaining reference for
+  owner-by-owner migration.
 - The historical cross-context import baseline has not yet been reduced to the
   target of 120. Physical directory moves remain disabled until public ports
   and unique table-write ownership are proven.
@@ -70,10 +92,11 @@ and historical-data parity evidence.
 
 ## Next safe sequence
 
-1. Deploy this release in observation mode and collect configuration shadow
-   comparisons per instance.
-2. Migrate direct business configuration reads one capability at a time and
-   add public command/query ports before changing package paths.
+1. Deploy this release in observation mode, stage the 50 managed settings, and
+   collect redacted configuration shadow comparisons per instance.
+2. Activate only matching keys through the cutover catalog; migrate the next
+   capability slice with the same expand/contract rule and add public
+   command/query ports before changing package paths.
 3. Run successor parity for each candidate job, then switch one runtime unit in
    an independent release with the legacy unit still recoverable.
 4. Enable extension enforcement on a baseline instance, verify no residual

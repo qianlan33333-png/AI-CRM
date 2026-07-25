@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from typing import Any
 
 from fastapi import HTTPException, Request
@@ -9,6 +8,7 @@ from aicrm_next.shared.signed_context import (
     SIDEBAR_VIEWER_SESSION_COOKIE,
     validate_sidebar_owner_context,
 )
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 
 
 SIDEBAR_OWNER_TOKEN_HEADER = "x-aicrm-sidebar-owner-token"
@@ -31,7 +31,7 @@ def sidebar_owner_context_from_request(
             token=str(request.headers.get(SIDEBAR_OWNER_TOKEN_HEADER) or "").strip(),
             viewer_session_cookie=str(request.cookies.get(SIDEBAR_VIEWER_SESSION_COOKIE) or "").strip(),
             external_userid=str(external_userid or "").strip(),
-            expected_corp_id=str(os.getenv("WECOM_CORP_ID") or "").strip(),
+            expected_corp_id=managed_runtime_setting("WECOM_CORP_ID"),
         )
         if not token_result.get("ok"):
             raise HTTPException(status_code=403, detail="sidebar context required")

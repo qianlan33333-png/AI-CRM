@@ -17,14 +17,24 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 ENV_CALL_NAMES = {
+    "environment_fallback",
+    "env_bool",
     "getenv",
+    "managed_runtime_bool",
+    "managed_runtime_int",
+    "managed_runtime_setting",
     "runtime_setting",
     "runtime_bool",
+    "runtime_csv",
     "runtime_int",
     "_env_flag",
     "env_flag",
 }
-DECLARED_ENVIRONMENT_KEY_NAMES = {"RUNTIME_ENVIRONMENT_KEYS"}
+DECLARED_ENVIRONMENT_KEY_NAMES = {
+    "MANAGED_RUNTIME_SETTING_KEYS",
+    "RUNTIME_ENVIRONMENT_KEYS",
+    "RUNTIME_SETTING_KEYS",
+}
 EFFECT_PREFIXES = (
     "ai_assist.",
     "feishu.",
@@ -347,13 +357,17 @@ def _environment_references(root: Path) -> list[dict[str, Any]]:
                     value = node.value
                 if target_name not in DECLARED_ENVIRONMENT_KEY_NAMES:
                     continue
+                accessor = {
+                    "MANAGED_RUNTIME_SETTING_KEYS": "declared_managed_runtime_setting_key",
+                    "RUNTIME_SETTING_KEYS": "declared_runtime_setting_key",
+                }.get(target_name, "declared_runtime_environment_key")
                 for key in sorted(_literal_strings(value)):
                     references.append(
                         {
                             "key": key,
                             "file": relative,
                             "line": int(getattr(node, "lineno", 0) or 0),
-                            "accessor": "declared_runtime_environment_key",
+                            "accessor": accessor,
                         }
                     )
             for node in ast.walk(tree):

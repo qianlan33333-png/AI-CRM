@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import os
 from typing import Any
 
 from aicrm_next.shared.secret_store import FileSecretStore, SecretStoreError, is_secret_reference, parse_secret_reference
+from aicrm_next.shared.runtime_settings import environment_fallback
 
 from .settings import SENSITIVE_KEYS, mask_value
 
@@ -26,7 +26,7 @@ def setting_details(repo: Any, key: str) -> tuple[str, str, str, str]:
     if row is not None:
         value = _text(row.get("value"))
         return value, "app_settings", _version(value), _text(row.get("updated_at"))
-    value = _text(os.getenv(key))
+    value = _text(environment_fallback(key))
     return value, "config", _version(value), ""
 
 

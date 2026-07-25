@@ -125,6 +125,75 @@ def test_runtime_setting_resolves_db_and_environment_references(monkeypatch, tmp
     assert runtime_setting("WECOM_CONTACT_SECRET") == "complete-env-secret"
 
 
+def test_typed_runtime_integer_uses_central_environment_fallback(monkeypatch) -> None:
+    def unavailable_engine():
+        raise RuntimeError("database unavailable")
+
+    monkeypatch.setattr(runtime_settings, "get_engine", unavailable_engine)
+    monkeypatch.setenv("AICRM_TYPED_INTEGER", "600")
+
+    assert runtime_settings.runtime_int(
+        "AICRM_TYPED_INTEGER",
+        50,
+        minimum=1,
+        maximum=500,
+    ) == 500
+
+    monkeypatch.setenv("AICRM_TYPED_INTEGER", "invalid")
+    assert runtime_settings.runtime_int("AICRM_TYPED_INTEGER", 50, minimum=1) == 50
+
+
+def test_environment_snapshot_is_detached_from_source_mapping() -> None:
+    source = {"AICRM_FLAG": "before"}
+
+    snapshot = runtime_settings.environment_snapshot(source, environment=source)
+    source["AICRM_FLAG"] = "after"
+
+    assert snapshot == {"AICRM_FLAG": "before"}
+
+
+def test_managed_runtime_setting_preserves_environment_until_explicit_cutover(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    engine = _engine(tmp_path)
+    with engine.begin() as conn:
+        conn.execute(
+            text("INSERT INTO app_settings (key, value) VALUES ('WECOM_CORP_ID', 'ww-published')")
+        )
+    monkeypatch.setattr(runtime_settings, "get_engine", lambda: engine)
+    monkeypatch.setenv("WECOM_CORP_ID", "ww-environment")
+
+    assert runtime_settings.managed_runtime_setting("WECOM_CORP_ID") == "ww-environment"
+    assert runtime_settings.runtime_setting("WECOM_CORP_ID") == "ww-environment"
+
+    with engine.begin() as conn:
+        conn.execute(
+            text("INSERT INTO app_settings (key, value) VALUES ('AICRM_RUNTIME_CONFIG_CUTOVER_KEYS', 'WECOM_CORP_ID')")
+        )
+
+    assert runtime_settings.managed_runtime_setting("WECOM_CORP_ID") == "ww-published"
+    assert runtime_settings.runtime_setting("WECOM_CORP_ID") == "ww-published"
+
+
+def test_runtime_setting_preserves_valid_client_secret_reference(monkeypatch) -> None:
+    reference = (
+        "secretref:file:AICRM_AUTH_ARCHIVE_WORKER_CLIENT_SECRET:"
+        "v1_0000000000000000_0123456789abcdef"
+    )
+
+    def unavailable_engine():
+        raise RuntimeError("database unavailable")
+
+    monkeypatch.setattr(runtime_settings, "get_engine", unavailable_engine)
+    monkeypatch.setenv("AICRM_AUTH_ARCHIVE_WORKER_CLIENT_SECRET_REF", reference)
+
+    assert (
+        runtime_setting("AICRM_AUTH_ARCHIVE_WORKER_CLIENT_SECRET_REF")
+        == reference
+    )
+
+
 def test_runtime_settings_request_scope_uses_one_database_snapshot(monkeypatch, tmp_path: Path) -> None:
     engine = _engine(tmp_path)
     with engine.begin() as conn:
@@ -167,6 +236,23 @@ def test_runtime_settings_request_scope_can_be_invalidated_after_write(monkeypat
         assert runtime_setting("RUNTIME_FLAG") == "after"
 
 
+def test_nested_runtime_settings_scope_reuses_outer_snapshot(monkeypatch, tmp_path: Path) -> None:
+    engine = _engine(tmp_path)
+    with engine.begin() as conn:
+        conn.execute(text("INSERT INTO app_settings (key, value) VALUES ('RUNTIME_FLAG', 'before')"))
+    monkeypatch.setattr(runtime_settings, "get_engine", lambda: engine)
+
+    with runtime_settings_request_scope():
+        assert runtime_setting("RUNTIME_FLAG") == "before"
+        with runtime_settings_request_scope():
+            with engine.begin() as conn:
+                conn.execute(text("UPDATE app_settings SET value = 'after' WHERE key = 'RUNTIME_FLAG'"))
+            assert runtime_setting("RUNTIME_FLAG") == "before"
+        assert runtime_setting("RUNTIME_FLAG") == "before"
+
+    assert runtime_setting("RUNTIME_FLAG") == "after"
+
+
 def test_legacy_shared_runtime_facade_resolves_secret_references(monkeypatch, tmp_path: Path) -> None:
     engine = _engine(tmp_path)
     root = tmp_path / "secrets"
@@ -202,6 +288,25 @@ def test_runtime_setting_allows_expand_mode_but_rejects_raw_secret_after_cutover
     monkeypatch.setenv("WECOM_SECRET", raw_secret)
     assert runtime_setting("WECOM_SECRET", "missing") == "missing"
     assert runtime_setting("WECOM_CORP_ID", "ww-default") == "ww-default"
+
+
+def test_managed_sensitive_environment_value_fails_closed_when_secret_cutover_is_environment_enabled(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    engine = _engine(tmp_path)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO app_settings (key, value) VALUES "
+                "('AICRM_SECRET_REFERENCE_CUTOVER', 'false')"
+            )
+        )
+    monkeypatch.setattr(runtime_settings, "get_engine", lambda: engine)
+    monkeypatch.setenv("AICRM_SECRET_REFERENCE_CUTOVER", "true")
+    monkeypatch.setenv("WECOM_SECRET", "complete-legacy-secret")
+
+    assert runtime_setting("WECOM_SECRET", "missing") == "missing"
 
 
 def test_runtime_setting_fails_closed_for_unreadable_reference_without_logging_it(monkeypatch, tmp_path: Path, caplog) -> None:

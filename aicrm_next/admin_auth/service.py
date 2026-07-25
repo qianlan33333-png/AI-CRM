@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import os
 from typing import Any
 from urllib.parse import quote
 
 from aicrm_next.admin_shell import admin_path_for
+from aicrm_next.platform_foundation.auth_platform.repository import PostgresAuthRepository
+from aicrm_next.shared.runtime_settings import managed_runtime_bool, managed_runtime_setting
 
 
 SESSION_COOKIE = "aicrm_next_admin_session"
@@ -65,11 +66,7 @@ def wecom_login_links(next_path: str) -> dict[str, str]:
 
 
 def admin_user_count() -> int:
-    value = normalize_text(os.getenv("AICRM_NEXT_ADMIN_AUTH_USER_COUNT"))
-    try:
-        return max(0, int(value))
-    except ValueError:
-        return 0
+    return PostgresAuthRepository().count_admin_users()
 
 
 def login_context(*, request: Any, next_path: Any = "", page_error: str = "", page_notice: str = "") -> dict[str, Any]:
@@ -82,8 +79,8 @@ def login_context(*, request: Any, next_path: Any = "", page_error: str = "", pa
         "next_path": safe_next,
         "login_links": wecom_login_links(safe_next),
         "wecom_auth_mode": "next_safe_mode",
-        "wecom_corp_id": normalize_text(os.getenv("WECOM_CORP_ID")),
-        "wecom_agent_id": normalize_text(os.getenv("WECOM_AGENT_ID")),
+        "wecom_corp_id": normalize_text(managed_runtime_setting("WECOM_CORP_ID")),
+        "wecom_agent_id": normalize_text(managed_runtime_setting("WECOM_AGENT_ID")),
         "admin_user_count": admin_user_count(),
         "route_owner": "ai_crm_next",
         "fallback_used": False,
@@ -124,7 +121,4 @@ def admin_cookie_secure() -> bool:
 
     if secure_cookie_environment():
         return True
-    value = normalize_text(os.getenv("AICRM_ADMIN_SESSION_COOKIE_SECURE")).lower()
-    if value:
-        return value in {"1", "true", "yes", "on"}
-    return False
+    return managed_runtime_bool("AICRM_ADMIN_SESSION_COOKIE_SECURE", False)

@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import os
 from contextlib import nullcontext
 from datetime import datetime, timezone
 from typing import Any, Callable, ContextManager
 
 from aicrm_next.shared.postgres_connection import db_session
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 
 from .domain import ENTRY_CHANGE_TYPES, text
 from .identity_bridge_repo import IdentityBridgeRepository, PostgresIdentityBridgeRepository, build_identity_bridge_repository
@@ -15,7 +15,7 @@ SIDEBAR_IDENTITY_REFRESH_INTERVAL_SECONDS = 60
 
 
 def _single_corp_id(requested_corp_id: str) -> tuple[str, str]:
-    configured = text(os.getenv("WECOM_CORP_ID"))
+    configured = text(managed_runtime_setting("WECOM_CORP_ID"))
     requested = text(requested_corp_id)
     if configured and requested and requested != configured:
         return "", "corp_id_mismatch"

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import os
 from typing import Any, Protocol
 
 from aicrm_next.channel_entry.wecom_adapter import get_wecom_adapter, wecom_adapter_diagnostics
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 
 from .db import connect, has_database_url
 
@@ -156,7 +156,7 @@ def run_external_contact_sync(
         payload = {**summary, "status": "skipped", "skipped": 1, "skipped_components": [skipped]}
         return payload if dry_run else {**payload, "ok": False, "errors": [{"code": "database_url_missing", "message": "DATABASE_URL is required"}]}
     repo = repo or PostgresExternalContactSyncRepository()
-    corp = _text(corp_id or os.getenv("WECOM_CORP_ID")) or "default"
+    corp = _text(corp_id or managed_runtime_setting("WECOM_CORP_ID")) or "default"
     existing = repo.existing_external_userids(corp_id=corp) if not full else set()
     remaining = int(limit) if limit is not None else None
     try:

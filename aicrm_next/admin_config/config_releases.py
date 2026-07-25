@@ -1,11 +1,17 @@
 from __future__ import annotations
 
 import hmac
-import os
 from collections.abc import Mapping
 from typing import Any
 
 from aicrm_next.deployment_profile import DeploymentProfile, deployment_profile_from_environment
+from aicrm_next.runtime_configuration import (
+    CUTOVER_ELIGIBLE_RUNTIME_SETTING_KEYS,
+    MANAGED_RUNTIME_SETTING_KEYS,
+    RUNTIME_CONFIG_CUTOVER_KEYS_KEY,
+    parse_runtime_config_cutover_keys,
+)
+from aicrm_next.shared.runtime_settings import environment_snapshot
 from aicrm_next.shared.sensitive_data import SECRET_MASK
 from aicrm_next.shared.secret_store import FileSecretStore, SecretStoreError, is_secret_reference
 
@@ -24,7 +30,10 @@ class ConfigReleaseService:
     ) -> None:
         self.repo = repo or ConfigReleaseRepository()
         self.profile = profile or deployment_profile_from_environment()
-        self._environment = environment if environment is not None else os.environ
+        self._environment = environment_snapshot(
+            (definition.key for definition in CONFIG_DEFINITIONS),
+            environment=environment,
+        )
         self._secret_store = secret_store
 
     def definitions(self) -> list[dict[str, Any]]:
@@ -63,7 +72,10 @@ class ConfigReleaseService:
         return public_config_release(validated)
 
     def publish(self, release_id: int, *, expected_checksum: str, operator: str) -> dict[str, Any]:
-        validated = self.validate(release_id)
+        release = self.repo.get_release(release_id)
+        if not release:
+            raise KeyError("config release not found")
+        validated, expected_settings = self._validate_for_publish(release)
         if validated["status"] != "validated":
             raise ValueError("config release validation failed")
         published = self.repo.publish(
@@ -72,6 +84,7 @@ class ConfigReleaseService:
             operator=_required_operator(operator),
             profile=self.profile,
             sensitive_keys={definition.key for definition in CONFIG_DEFINITIONS if definition.sensitive},
+            expected_settings=expected_settings,
         )
         return public_config_release(published)
 
@@ -93,10 +106,7 @@ class ConfigReleaseService:
             based_on_release_id=int(target["id"]),
             rollback_of_release_id=int(target["id"]),
         )
-        validated = self.repo.set_validation(
-            release_id=int(draft["id"]),
-            errors=self._validation_errors(draft),
-        )
+        validated, expected_settings = self._validate_for_publish(draft)
         if validated["status"] != "validated":
             raise ValueError("rollback config release validation failed")
         published = self.repo.publish(
@@ -105,6 +115,7 @@ class ConfigReleaseService:
             operator=_required_operator(operator),
             profile=self.profile,
             sensitive_keys={definition.key for definition in CONFIG_DEFINITIONS if definition.sensitive},
+            expected_settings=expected_settings,
         )
         return public_config_release(published)
 
@@ -153,7 +164,13 @@ class ConfigReleaseService:
         if not release:
             raise KeyError("config release not found")
         changes = dict(release.get("changes") or {})
-        stored = self.repo.get_app_settings(list(changes))
+        stored = self.repo.get_app_settings([*changes, RUNTIME_CONFIG_CUTOVER_KEYS_KEY])
+        active_cutover_keys = parse_runtime_config_cutover_keys(
+            stored.get(
+                RUNTIME_CONFIG_CUTOVER_KEYS_KEY,
+                self._environment.get(RUNTIME_CONFIG_CUTOVER_KEYS_KEY, ""),
+            )
+        )
         rows: list[dict[str, Any]] = []
         errors: list[dict[str, str]] = []
         for key, candidate in sorted(changes.items()):
@@ -162,8 +179,23 @@ class ConfigReleaseService:
                 errors.append({"key": key, "error": "unknown config key"})
                 continue
             fallback = str(self._environment.get(key) or definition.default or "")
-            before_source = "app_settings" if key in stored else "environment" if key in self._environment else "default"
-            before_value = stored.get(key, fallback)
+            environment_authoritative = (
+                key in MANAGED_RUNTIME_SETTING_KEYS
+                and key not in active_cutover_keys
+                and key in self._environment
+            )
+            if environment_authoritative:
+                before_source = "environment_compat"
+                before_value = str(self._environment.get(key) or "")
+            elif key in stored:
+                before_source = "app_settings"
+                before_value = stored[key]
+            elif key in self._environment:
+                before_source = "environment"
+                before_value = str(self._environment.get(key) or "")
+            else:
+                before_source = "default"
+                before_value = str(definition.default or "")
             after_source = "release" if candidate is not None else "environment" if key in self._environment else "default"
             after_value = candidate if candidate is not None else fallback
             try:
@@ -183,6 +215,7 @@ class ConfigReleaseService:
                     "before": SECRET_MASK if definition.sensitive and before_value else "" if definition.sensitive else before_value,
                     "after": SECRET_MASK if definition.sensitive and after_value else "" if definition.sensitive else after_value,
                     "equivalent": equivalent,
+                    "cutover_active": key in active_cutover_keys,
                 }
             )
         return {
@@ -230,7 +263,12 @@ class ConfigReleaseService:
             result[key] = normalized
         return result
 
-    def _validation_errors(self, release: dict[str, Any]) -> list[dict[str, str]]:
+    def _validation_errors(
+        self,
+        release: dict[str, Any],
+        *,
+        settings_state: dict[str, dict[str, Any]] | None = None,
+    ) -> list[dict[str, str]]:
         errors: list[dict[str, str]] = []
         if release.get("profile_id") != self.profile.profile_id:
             errors.append({"key": "profile_id", "error": "deployment profile mismatch"})
@@ -243,7 +281,123 @@ class ConfigReleaseService:
                 )
             except ValueError as exc:
                 errors.append({"key": str(key), "error": str(exc)})
+        errors.extend(
+            self._cutover_validation_errors(
+                release,
+                settings_state=settings_state,
+            )
+        )
         return errors
+
+    def _cutover_validation_errors(
+        self,
+        release: dict[str, Any],
+        *,
+        settings_state: dict[str, dict[str, Any]] | None = None,
+    ) -> list[dict[str, str]]:
+        changes = dict(release.get("changes") or {})
+        if RUNTIME_CONFIG_CUTOVER_KEYS_KEY not in changes:
+            return []
+        requested = parse_runtime_config_cutover_keys(
+            changes.get(RUNTIME_CONFIG_CUTOVER_KEYS_KEY)
+        )
+        errors: list[dict[str, str]] = []
+        unknown = sorted(requested - CUTOVER_ELIGIBLE_RUNTIME_SETTING_KEYS)
+        for key in unknown:
+            errors.append(
+                {
+                    "key": RUNTIME_CONFIG_CUTOVER_KEYS_KEY,
+                    "error": f"unknown or non-cutover-eligible runtime config key: {key}",
+                }
+            )
+        if unknown:
+            return errors
+
+        if settings_state is None:
+            stored = self.repo.get_app_settings(
+                [RUNTIME_CONFIG_CUTOVER_KEYS_KEY, *requested]
+            )
+        else:
+            stored = {
+                key: str(item.get("value") or "")
+                for key, item in settings_state.items()
+                if bool(item.get("exists"))
+            }
+        current = parse_runtime_config_cutover_keys(
+            stored.get(
+                RUNTIME_CONFIG_CUTOVER_KEYS_KEY,
+                self._environment.get(RUNTIME_CONFIG_CUTOVER_KEYS_KEY, ""),
+            )
+        )
+        for key in sorted(requested - current):
+            definition = get_config_definition(key)
+            if definition is None or not self.profile.is_enabled(definition.capability_id):
+                errors.append(
+                    {
+                        "key": RUNTIME_CONFIG_CUTOVER_KEYS_KEY,
+                        "error": f"runtime config capability is disabled: {key}",
+                    }
+                )
+                continue
+            if key in changes:
+                errors.append(
+                    {
+                        "key": RUNTIME_CONFIG_CUTOVER_KEYS_KEY,
+                        "error": f"stage {key} in an earlier release before activating cutover",
+                    }
+                )
+                continue
+            if key not in stored:
+                errors.append(
+                    {
+                        "key": RUNTIME_CONFIG_CUTOVER_KEYS_KEY,
+                        "error": f"runtime config has no staged app_settings value: {key}",
+                    }
+                )
+                continue
+            if key not in self._environment:
+                continue
+            try:
+                environment_value = self._semantic_value(key, self._environment[key])
+                staged_value = self._semantic_value(key, stored[key])
+            except SecretStoreError as exc:
+                errors.append({"key": key, "error": str(exc)})
+                continue
+            if not hmac.compare_digest(environment_value, staged_value):
+                errors.append(
+                    {
+                        "key": key,
+                        "error": "staged app_settings value differs from the environment compatibility source",
+                    }
+                )
+        return errors
+
+    def _validate_for_publish(
+        self,
+        release: dict[str, Any],
+    ) -> tuple[dict[str, Any], dict[str, dict[str, Any]]]:
+        precondition_keys = self._publish_precondition_keys(release)
+        settings_state = self.repo.get_app_settings_state(precondition_keys)
+        validated = self.repo.set_validation(
+            release_id=int(release["id"]),
+            errors=self._validation_errors(
+                release,
+                settings_state=settings_state,
+            ),
+        )
+        return validated, settings_state
+
+    @staticmethod
+    def _publish_precondition_keys(release: dict[str, Any]) -> set[str]:
+        changes = dict(release.get("changes") or {})
+        keys = set(changes)
+        if RUNTIME_CONFIG_CUTOVER_KEYS_KEY in changes:
+            keys.update(
+                parse_runtime_config_cutover_keys(
+                    changes.get(RUNTIME_CONFIG_CUTOVER_KEYS_KEY)
+                )
+            )
+        return keys
 
 
 def public_config_release(release: dict[str, Any]) -> dict[str, Any]:

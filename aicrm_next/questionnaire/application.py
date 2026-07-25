@@ -8,7 +8,7 @@ from aicrm_next.identity_contact.application import ResolvePersonIdentityQuery
 from aicrm_next.identity_contact.dto import ResolvePersonIdentityRequest
 from aicrm_next.shared.repository_provider import RepositoryProviderError, blocked_production_payload
 from aicrm_next.shared.runtime import production_data_ready
-from aicrm_next.shared.runtime_settings import runtime_setting
+from aicrm_next.shared.runtime_settings import managed_runtime_setting, runtime_setting
 from aicrm_next.shared.errors import ContractError, NotFoundError
 
 from .domain import admin_detail_projection, extract_submission_mobile, normalize_questionnaire, score_and_tags, summary_projection, validate_required_answers
@@ -302,11 +302,11 @@ class GetQuestionnairePreflightQuery:
             and secret_key != "dev-secret-key-change-me"
         )
         wecom_contact_configured = bool(
-            os.getenv("WECOM_CORP_ID", "").strip()
+            managed_runtime_setting("WECOM_CORP_ID").strip()
             and runtime_setting("WECOM_CONTACT_SECRET")
         )
         wecom_tags_api_available = bool(
-            os.getenv("WECOM_CORP_ID", "").strip()
+            managed_runtime_setting("WECOM_CORP_ID").strip()
             and runtime_setting("WECOM_SECRET")
             and os.getenv("WECOM_API_BASE", "https://qyapi.weixin.qq.com").strip()
         )

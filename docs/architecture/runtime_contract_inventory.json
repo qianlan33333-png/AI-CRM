@@ -2,28 +2,40 @@
   "composition_root": "aicrm_next.main:create_app",
   "environment_variable_references": [
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/auth_wecom/service.py",
       "key": "ADMIN_LOGIN_REDIRECT_URI",
       "line": 75
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "ADMIN_LOGIN_REDIRECT_URI",
+      "line": 12
+    },
+    {
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/admin_auth/guards.py",
       "key": "AICRM_ADMIN_AUTH_ENFORCED",
       "line": 72
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/admin_auth/route_policy.py",
       "key": "AICRM_ADMIN_AUTH_ENFORCED",
-      "line": 76
+      "line": 77
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/commerce/coupons/admin_api.py",
       "key": "AICRM_ADMIN_AUTH_ENFORCED",
-      "line": 66
+      "line": 67
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_ADMIN_AUTH_ENFORCED",
+      "line": 12
     },
     {
       "accessor": "os.getenv",
@@ -32,13 +44,19 @@
       "line": 317
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_bool",
       "file": "aicrm_next/admin_auth/service.py",
       "key": "AICRM_ADMIN_SESSION_COOKIE_SECURE",
-      "line": 127
+      "line": 124
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_ADMIN_SESSION_COOKIE_SECURE",
+      "line": 12
+    },
+    {
+      "accessor": "managed_runtime_bool",
       "file": "aicrm_next/shared/signed_session.py",
       "key": "AICRM_ADMIN_SESSION_COOKIE_SECURE",
       "line": 48
@@ -128,22 +146,40 @@
       "line": 409
     },
     {
-      "accessor": "declared_runtime_environment_key",
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_ARCHIVE_WORKER_CLIENT_ID",
       "line": 33
     },
     {
-      "accessor": "declared_runtime_environment_key",
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_AUTH_ARCHIVE_WORKER_CLIENT_ID",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_ARCHIVE_WORKER_CLIENT_SECRET_REF",
       "line": 33
     },
     {
-      "accessor": "declared_runtime_environment_key",
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_AUTH_ARCHIVE_WORKER_CLIENT_SECRET_REF",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_AUTOMATION_WORKER_CLIENT_ID",
       "line": 33
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_AUTH_AUTOMATION_WORKER_CLIENT_ID",
+      "line": 12
     },
     {
       "accessor": "os.getenv",
@@ -170,34 +206,70 @@
       "line": 884
     },
     {
-      "accessor": "declared_runtime_environment_key",
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_AUTOMATION_WORKER_CLIENT_SECRET_REF",
       "line": 33
     },
     {
-      "accessor": "declared_runtime_environment_key",
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_AUTH_AUTOMATION_WORKER_CLIENT_SECRET_REF",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_CALLBACK_WORKER_CLIENT_ID",
       "line": 33
     },
     {
-      "accessor": "declared_runtime_environment_key",
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_AUTH_CALLBACK_WORKER_CLIENT_ID",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_CALLBACK_WORKER_CLIENT_SECRET_REF",
       "line": 33
     },
     {
-      "accessor": "declared_runtime_environment_key",
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_AUTH_CALLBACK_WORKER_CLIENT_SECRET_REF",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_CAMPAIGN_AGENT_CLIENT_ID",
       "line": 33
     },
     {
-      "accessor": "declared_runtime_environment_key",
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_AUTH_CAMPAIGN_AGENT_CLIENT_ID",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_CAMPAIGN_AGENT_CLIENT_SECRET_REF",
       "line": 33
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_AUTH_CAMPAIGN_AGENT_CLIENT_SECRET_REF",
+      "line": 12
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_AUTH_CA_FILE",
+      "line": 12
     },
     {
       "accessor": "os.getenv",
@@ -206,43 +278,79 @@
       "line": 318
     },
     {
-      "accessor": "declared_runtime_environment_key",
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_EXTERNAL_AGENT_CLIENT_ID",
       "line": 33
     },
     {
-      "accessor": "declared_runtime_environment_key",
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_AUTH_EXTERNAL_AGENT_CLIENT_ID",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_EXTERNAL_AGENT_CLIENT_SECRET_REF",
       "line": 33
     },
     {
-      "accessor": "declared_runtime_environment_key",
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_AUTH_EXTERNAL_AGENT_CLIENT_SECRET_REF",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_GROUP_BROADCAST_CLIENT_ID",
       "line": 33
     },
     {
-      "accessor": "declared_runtime_environment_key",
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_AUTH_GROUP_BROADCAST_CLIENT_ID",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_GROUP_BROADCAST_CLIENT_SECRET_REF",
       "line": 33
     },
     {
-      "accessor": "declared_runtime_environment_key",
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_AUTH_GROUP_BROADCAST_CLIENT_SECRET_REF",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_IDENTITY_CLIENT_ID",
       "line": 33
     },
     {
-      "accessor": "declared_runtime_environment_key",
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_AUTH_IDENTITY_CLIENT_ID",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_IDENTITY_CLIENT_SECRET_REF",
       "line": 33
     },
     {
-      "accessor": "declared_runtime_environment_key",
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_AUTH_IDENTITY_CLIENT_SECRET_REF",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_ISSUER",
       "line": 33
@@ -252,6 +360,12 @@
       "file": "aicrm_next/platform_foundation/auth_platform/api.py",
       "key": "AICRM_AUTH_ISSUER",
       "line": 27
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_AUTH_ISSUER",
+      "line": 12
     },
     {
       "accessor": "os.getenv",
@@ -278,28 +392,52 @@
       "line": 256
     },
     {
-      "accessor": "declared_runtime_environment_key",
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_MCP_CLIENT_ID",
       "line": 33
     },
     {
-      "accessor": "declared_runtime_environment_key",
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_AUTH_MCP_CLIENT_ID",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_MCP_CLIENT_SECRET_REF",
       "line": 33
     },
     {
-      "accessor": "declared_runtime_environment_key",
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_AUTH_MCP_CLIENT_SECRET_REF",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_OPS_REPORTER_CLIENT_ID",
       "line": 33
     },
     {
-      "accessor": "declared_runtime_environment_key",
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_AUTH_OPS_REPORTER_CLIENT_ID",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_OPS_REPORTER_CLIENT_SECRET_REF",
       "line": 33
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_AUTH_OPS_REPORTER_CLIENT_SECRET_REF",
+      "line": 12
     },
     {
       "accessor": "runtime_setting",
@@ -318,6 +456,18 @@
       "file": "scripts/ops/create_deploy_smoke_session.py",
       "key": "AICRM_AUTH_SESSION_HASH_PEPPER",
       "line": 227
+    },
+    {
+      "accessor": "runtime_csv",
+      "file": "aicrm_next/platform_foundation/auth_platform/api.py",
+      "key": "AICRM_AUTH_TRUSTED_PROXY_ADDRESSES",
+      "line": 69
+    },
+    {
+      "accessor": "runtime_csv",
+      "file": "aicrm_next/platform_foundation/auth_platform/api.py",
+      "key": "AICRM_AUTH_TRUSTED_PROXY_ADDRESSES",
+      "line": 103
     },
     {
       "accessor": "os.getenv",
@@ -392,15 +542,51 @@
       "line": 148
     },
     {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "key": "AICRM_ENABLE_REAL_WECOM_GROUP_MESSAGE",
+      "line": 19
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "key": "AICRM_ENABLE_REAL_WECOM_PRIVATE_MESSAGE",
+      "line": 19
+    },
+    {
       "accessor": "os.getenv",
       "file": "scripts/ops/check_callback_quick_ack_state.py",
       "key": "AICRM_ENV_FILE",
       "line": 202
     },
     {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/external_effects/test_receiver.py",
+      "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_BASE_HOSTS",
+      "line": 33
+    },
+    {
+      "accessor": "runtime_csv",
+      "file": "aicrm_next/platform_foundation/external_effects/test_receiver.py",
+      "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_BASE_HOSTS",
+      "line": 114
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_GROUP_CHAT_IDS",
+      "line": 19
+    },
+    {
       "accessor": "declared_runtime_environment_key",
       "file": "aicrm_next/shared/wecom_runtime.py",
       "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_GROUP_CHAT_IDS",
+      "line": 19
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_GROUP_OPS_WEBHOOK_KEYS",
       "line": 19
     },
     {
@@ -416,9 +602,21 @@
       "line": 839
     },
     {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS",
+      "line": 19
+    },
+    {
       "accessor": "declared_runtime_environment_key",
       "file": "aicrm_next/shared/wecom_runtime.py",
       "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS",
+      "line": 19
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_TARGET_EXTERNAL_USERIDS",
       "line": 19
     },
     {
@@ -428,16 +626,76 @@
       "line": 19
     },
     {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/external_effects/adapters.py",
+      "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES",
+      "line": 72
+    },
+    {
       "accessor": "declared_runtime_environment_key",
       "file": "aicrm_next/shared/wecom_runtime.py",
       "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES",
       "line": 19
     },
     {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "key": "AICRM_EXTERNAL_EFFECT_MEDIA_UPLOAD_EXECUTE",
+      "line": 19
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/external_effects/adapters.py",
+      "key": "AICRM_EXTERNAL_EFFECT_PAYMENT_EXECUTE",
+      "line": 72
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "key": "AICRM_EXTERNAL_EFFECT_TEST_EXECUTION_ONLY",
+      "line": 19
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/external_effects/test_receiver.py",
+      "key": "AICRM_EXTERNAL_EFFECT_TEST_EXECUTION_ONLY",
+      "line": 33
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/external_effects/worker.py",
+      "key": "AICRM_EXTERNAL_EFFECT_TEST_EXECUTION_ONLY",
+      "line": 38
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "key": "AICRM_EXTERNAL_EFFECT_TEST_RECEIVER_ENABLED",
+      "line": 19
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/external_effects/test_receiver.py",
+      "key": "AICRM_EXTERNAL_EFFECT_TEST_RECEIVER_ENABLED",
+      "line": 33
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/external_effects/adapters.py",
+      "key": "AICRM_EXTERNAL_EFFECT_WEBHOOK_EXECUTE",
+      "line": 72
+    },
+    {
       "accessor": "runtime_setting",
       "file": "aicrm_next/platform_foundation/external_effects/adapters.py",
       "key": "AICRM_EXTERNAL_EFFECT_WEBHOOK_TIMEOUT_SECONDS",
-      "line": 354
+      "line": 358
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "key": "AICRM_EXTERNAL_EFFECT_WECOM_EXECUTE",
+      "line": 19
     },
     {
       "accessor": "declared_runtime_environment_key",
@@ -518,55 +776,361 @@
       "line": 52
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_AI_CAMPAIGN_ENABLED",
+      "line": 16
+    },
+    {
+      "accessor": "env_bool",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_AI_CAMPAIGN_ENABLED",
+      "line": 82
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_INTERNAL_EVENTS_AI_CAMPAIGN_ENABLED",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_ALLOWED_CONSUMERS",
-      "line": 100
+      "line": 16
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_ALLOWED_CONSUMERS",
+      "line": 124
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_INTERNAL_EVENTS_ALLOWED_CONSUMERS",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_CONSUMERS",
-      "line": 105
+      "line": 16
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_CONSUMERS",
+      "line": 129
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_CONSUMERS",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_TYPES",
-      "line": 95
+      "line": 16
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_TYPES",
+      "line": 119
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_TYPES",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE",
+      "line": 16
+    },
+    {
+      "accessor": "env_bool",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE",
+      "line": 115
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE_MAX_BATCH_SIZE",
-      "line": 195
+      "line": 16
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_int",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE_MAX_BATCH_SIZE",
+      "line": 227
+    },
+    {
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/platform_foundation/internal_events/worker.py",
       "key": "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE_MAX_BATCH_SIZE",
-      "line": 247
+      "line": 248
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE_MAX_BATCH_SIZE",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/internal_events/config.py",
-      "key": "AICRM_INTERNAL_EVENTS_LEGACY_PATH_RETIRE_AFTER_DAYS",
+      "key": "AICRM_INTERNAL_EVENTS_BROADCAST_TASK_ENABLED",
+      "line": 16
+    },
+    {
+      "accessor": "env_bool",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_BROADCAST_TASK_ENABLED",
+      "line": 90
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_INTERNAL_EVENTS_BROADCAST_TASK_ENABLED",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_CUSTOMER_IDENTITY_ENABLED",
+      "line": 16
+    },
+    {
+      "accessor": "env_bool",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_CUSTOMER_IDENTITY_ENABLED",
       "line": 78
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_INTERNAL_EVENTS_CUSTOMER_IDENTITY_ENABLED",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_CUSTOMER_TAGS_ENABLED",
+      "line": 16
+    },
+    {
+      "accessor": "env_bool",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_CUSTOMER_TAGS_ENABLED",
+      "line": 74
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_INTERNAL_EVENTS_CUSTOMER_TAGS_ENABLED",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_ENABLED",
+      "line": 16
+    },
+    {
+      "accessor": "env_bool",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_ENABLED",
+      "line": 62
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_INTERNAL_EVENTS_ENABLED",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_LEGACY_PATH_MARKERS_ENABLED",
+      "line": 16
+    },
+    {
+      "accessor": "env_bool",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_LEGACY_PATH_MARKERS_ENABLED",
+      "line": 98
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_INTERNAL_EVENTS_LEGACY_PATH_MARKERS_ENABLED",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_LEGACY_PATH_RETIRE_AFTER_DAYS",
+      "line": 16
+    },
+    {
+      "accessor": "managed_runtime_int",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_LEGACY_PATH_RETIRE_AFTER_DAYS",
+      "line": 102
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_INTERNAL_EVENTS_LEGACY_PATH_RETIRE_AFTER_DAYS",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_OPS_PLAN_ENABLED",
+      "line": 16
+    },
+    {
+      "accessor": "env_bool",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_OPS_PLAN_ENABLED",
+      "line": 86
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_INTERNAL_EVENTS_OPS_PLAN_ENABLED",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_OWNER_MIGRATION_ENABLED",
+      "line": 16
+    },
+    {
+      "accessor": "env_bool",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_OWNER_MIGRATION_ENABLED",
+      "line": 94
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_INTERNAL_EVENTS_OWNER_MIGRATION_ENABLED",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_PAYMENT_ENABLED",
+      "line": 16
+    },
+    {
+      "accessor": "env_bool",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_PAYMENT_ENABLED",
+      "line": 66
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_INTERNAL_EVENTS_PAYMENT_ENABLED",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_QUESTIONNAIRE_ENABLED",
+      "line": 16
+    },
+    {
+      "accessor": "env_bool",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_QUESTIONNAIRE_ENABLED",
+      "line": 70
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_INTERNAL_EVENTS_QUESTIONNAIRE_ENABLED",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_SHADOW_ONLY",
+      "line": 16
+    },
+    {
+      "accessor": "env_bool",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_SHADOW_ONLY",
+      "line": 111
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_INTERNAL_EVENTS_SHADOW_ONLY",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_WORKER_BATCH_SIZE",
-      "line": 186
+      "line": 16
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_WORKER_BATCH_SIZE",
+      "line": 210
+    },
+    {
+      "accessor": "managed_runtime_int",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENTS_WORKER_BATCH_SIZE",
+      "line": 212
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_INTERNAL_EVENTS_WORKER_BATCH_SIZE",
+      "line": 12
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENT_WORKER_BATCH_SIZE",
-      "line": 186
+      "line": 16
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_int",
+      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "key": "AICRM_INTERNAL_EVENT_WORKER_BATCH_SIZE",
+      "line": 218
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_INTERNAL_EVENT_WORKER_BATCH_SIZE",
+      "line": 12
+    },
+    {
+      "accessor": "environment_fallback",
       "file": "aicrm_next/platform_foundation/execution_runtime/listener.py",
       "key": "AICRM_LISTENER_DATABASE_URL",
       "line": 35
@@ -590,22 +1154,22 @@
       "line": 30
     },
     {
-      "accessor": "os.getenv",
-      "file": "aicrm_next/admin_auth/service.py",
-      "key": "AICRM_NEXT_ADMIN_AUTH_USER_COUNT",
-      "line": 68
-    },
-    {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/admin_config/application.py",
       "key": "AICRM_NEXT_ALIPAY_MODE",
       "line": 967
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/integration_gateway/payment_adapters.py",
       "key": "AICRM_NEXT_ALIPAY_MODE",
-      "line": 471
+      "line": 475
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_NEXT_ALIPAY_MODE",
+      "line": 12
     },
     {
       "accessor": "os.getenv",
@@ -645,12 +1209,6 @@
     },
     {
       "accessor": "os.getenv",
-      "file": "aicrm_next/admin_auth/guards.py",
-      "key": "AICRM_NEXT_ENV",
-      "line": 87
-    },
-    {
-      "accessor": "os.getenv",
       "file": "aicrm_next/commerce/wechat_shop_signature.py",
       "key": "AICRM_NEXT_ENV",
       "line": 32
@@ -684,6 +1242,12 @@
       "file": "aicrm_next/shared/runtime.py",
       "key": "AICRM_NEXT_ENV",
       "line": 41
+    },
+    {
+      "accessor": "os.getenv",
+      "file": "aicrm_next/shared/runtime.py",
+      "key": "AICRM_NEXT_ENV",
+      "line": 53
     },
     {
       "accessor": "os.getenv",
@@ -725,19 +1289,19 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/integration_gateway/payment_adapters.py",
       "key": "AICRM_NEXT_PAYMENT_NOTIFY_MODE",
-      "line": 475
-    },
-    {
-      "accessor": "os.getenv",
-      "file": "aicrm_next/integration_gateway/payment_adapters.py",
-      "key": "AICRM_NEXT_PAYMENT_NOTIFY_MODE",
       "line": 479
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/integration_gateway/payment_adapters.py",
+      "key": "AICRM_NEXT_PAYMENT_NOTIFY_MODE",
+      "line": 483
+    },
+    {
+      "accessor": "os.getenv",
+      "file": "aicrm_next/integration_gateway/payment_adapters.py",
       "key": "AICRM_NEXT_PRODUCT_WRITE_MODE",
-      "line": 463
+      "line": 465
     },
     {
       "accessor": "os.getenv",
@@ -794,16 +1358,22 @@
       "line": 86
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/admin_config/application.py",
       "key": "AICRM_NEXT_WECHAT_PAY_MODE",
       "line": 961
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/integration_gateway/payment_adapters.py",
       "key": "AICRM_NEXT_WECHAT_PAY_MODE",
-      "line": 467
+      "line": 470
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_NEXT_WECHAT_PAY_MODE",
+      "line": 12
     },
     {
       "accessor": "os.getenv",
@@ -848,7 +1418,13 @@
       "line": 201
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_PII_AUDIT_ENABLED",
+      "line": 12
+    },
+    {
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/shared/pii_audit.py",
       "key": "AICRM_PII_AUDIT_ENABLED",
       "line": 92
@@ -884,6 +1460,72 @@
       "line": 15
     },
     {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/external_effects/worker.py",
+      "key": "AICRM_PUSH_CAPABILITY_AI_ASSIST_PUSH_ENABLED",
+      "line": 38
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/external_effects/worker.py",
+      "key": "AICRM_PUSH_CAPABILITY_CUSTOMER_WEBHOOK_ENABLED",
+      "line": 38
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/external_effects/worker.py",
+      "key": "AICRM_PUSH_CAPABILITY_GROUP_BROADCAST_ENABLED",
+      "line": 38
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/external_effects/worker.py",
+      "key": "AICRM_PUSH_CAPABILITY_GROUP_OPS_PUSH_ENABLED",
+      "line": 38
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/external_effects/worker.py",
+      "key": "AICRM_PUSH_CAPABILITY_INTEGRATIONS_ENABLED",
+      "line": 38
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/external_effects/worker.py",
+      "key": "AICRM_PUSH_CAPABILITY_ORDER_PAID_PUSH_ENABLED",
+      "line": 38
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/external_effects/worker.py",
+      "key": "AICRM_PUSH_CAPABILITY_PAYMENT_QUERY_ENABLED",
+      "line": 38
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/external_effects/worker.py",
+      "key": "AICRM_PUSH_CAPABILITY_PRIVATE_BROADCAST_ENABLED",
+      "line": 38
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/external_effects/worker.py",
+      "key": "AICRM_PUSH_CAPABILITY_QUESTIONNAIRE_EXTERNAL_PUSH_ENABLED",
+      "line": 38
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/external_effects/worker.py",
+      "key": "AICRM_PUSH_CAPABILITY_TAGS_ENABLED",
+      "line": 38
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/external_effects/worker.py",
+      "key": "AICRM_PUSH_CAPABILITY_WELCOME_MESSAGE_ENABLED",
+      "line": 38
+    },
+    {
       "accessor": "os.getenv",
       "file": "aicrm_next/questionnaire/oauth.py",
       "key": "AICRM_QUESTIONNAIRE_OAUTH_ADAPTER_MODE",
@@ -908,16 +1550,34 @@
       "line": 86
     },
     {
-      "accessor": "os.getenv",
-      "file": "aicrm_next/admin_auth/route_policy.py",
-      "key": "AICRM_ROUTE_POLICY_ENFORCED",
-      "line": 74
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/readiness.py",
+      "key": "AICRM_READINESS_MAX_QUEUE_AGE_SECONDS",
+      "line": 21
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/readiness.py",
+      "key": "AICRM_READINESS_MAX_TERMINAL_COUNT",
+      "line": 21
+    },
+    {
+      "accessor": "managed_runtime_setting",
+      "file": "aicrm_next/admin_auth/route_policy.py",
+      "key": "AICRM_ROUTE_POLICY_ENFORCED",
+      "line": 75
+    },
+    {
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/commerce/coupons/admin_api.py",
       "key": "AICRM_ROUTE_POLICY_ENFORCED",
-      "line": 65
+      "line": 66
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_ROUTE_POLICY_ENFORCED",
+      "line": 12
     },
     {
       "accessor": "os.getenv",
@@ -959,7 +1619,7 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/identity_contact/sidebar_jssdk.py",
       "key": "AICRM_SIDEBAR_JSSDK_ALLOWED_HOSTS",
-      "line": 472
+      "line": 473
     },
     {
       "accessor": "_env_flag",
@@ -971,13 +1631,13 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/integration_gateway/wecom_jssdk_adapter.py",
       "key": "AICRM_SIDEBAR_JSSDK_SECRET",
-      "line": 206
+      "line": 214
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/integration_gateway/wecom_jssdk_adapter.py",
       "key": "AICRM_SIDEBAR_JSSDK_TIMEOUT_SECONDS",
-      "line": 215
+      "line": 223
     },
     {
       "accessor": "runtime_bool",
@@ -1004,6 +1664,12 @@
       "line": 35
     },
     {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "AICRM_WECOM_ADMIN_AUTH_ENABLE_REAL",
+      "line": 12
+    },
+    {
       "accessor": "os.getenv",
       "file": "aicrm_next/integration_gateway/wecom_admin_auth_client.py",
       "key": "AICRM_WECOM_ADMIN_AUTH_TIMEOUT",
@@ -1016,15 +1682,39 @@
       "line": 19
     },
     {
-      "accessor": "declared_runtime_environment_key",
-      "file": "aicrm_next/shared/wecom_runtime.py",
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
       "key": "AICRM_WECOM_CANARY_ALLOWED_MEDIA_TARGETS",
       "line": 19
     },
     {
       "accessor": "declared_runtime_environment_key",
       "file": "aicrm_next/shared/wecom_runtime.py",
+      "key": "AICRM_WECOM_CANARY_ALLOWED_MEDIA_TARGETS",
+      "line": 19
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
       "key": "AICRM_WECOM_DEFAULT_SENDER_USERID",
+      "line": 19
+    },
+    {
+      "accessor": "declared_runtime_environment_key",
+      "file": "aicrm_next/shared/wecom_runtime.py",
+      "key": "AICRM_WECOM_DEFAULT_SENDER_USERID",
+      "line": 19
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "key": "AICRM_WECOM_ENABLED_EFFECT_TYPES",
+      "line": 19
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "key": "AICRM_WECOM_EXECUTION_MODE",
       "line": 19
     },
     {
@@ -1040,6 +1730,12 @@
       "line": 21
     },
     {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "key": "AICRM_WECOM_GROUP_ADAPTER_MODE",
+      "line": 19
+    },
+    {
       "accessor": "os.getenv",
       "file": "aicrm_next/integration_gateway/wecom_operation_members_client.py",
       "key": "AICRM_WECOM_OPERATION_MEMBERS_TIMEOUT",
@@ -1052,6 +1748,18 @@
       "line": 21
     },
     {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "key": "AICRM_WECOM_PRIVATE_ADAPTER_MODE",
+      "line": 19
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "key": "AICRM_WECOM_PROVIDER_TARGET_POLICY",
+      "line": 19
+    },
+    {
       "accessor": "declared_runtime_environment_key",
       "file": "aicrm_next/shared/wecom_runtime.py",
       "key": "AICRM_WECOM_PROVIDER_TARGET_POLICY",
@@ -1061,7 +1769,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/integration_gateway/wecom_tag_live_gateway.py",
       "key": "AICRM_WECOM_TAG_AGENT_SECRET",
-      "line": 29
+      "line": 33
     },
     {
       "accessor": "os.getenv",
@@ -1073,7 +1781,7 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/integration_gateway/wecom_tag_live_gateway.py",
       "key": "AICRM_WECOM_TAG_CORP_ID",
-      "line": 27
+      "line": 28
     },
     {
       "accessor": "os.getenv",
@@ -1116,6 +1824,12 @@
       "file": "aicrm_next/shared/runtime.py",
       "key": "APP_ENV",
       "line": 43
+    },
+    {
+      "accessor": "os.getenv",
+      "file": "aicrm_next/shared/runtime.py",
+      "key": "APP_ENV",
+      "line": 55
     },
     {
       "accessor": "os.getenv",
@@ -1242,12 +1956,6 @@
       "file": "aicrm_next/owner_migration/repo.py",
       "key": "DATABASE_URL",
       "line": 206
-    },
-    {
-      "accessor": "os.getenv",
-      "file": "aicrm_next/platform_foundation/internal_run_due_guard.py",
-      "key": "DATABASE_URL",
-      "line": 49
     },
     {
       "accessor": "os.getenv",
@@ -1419,6 +2127,12 @@
     },
     {
       "accessor": "os.getenv",
+      "file": "aicrm_next/shared/runtime.py",
+      "key": "ENVIRONMENT",
+      "line": 54
+    },
+    {
+      "accessor": "os.getenv",
       "file": "aicrm_next/external_push/service.py",
       "key": "EXTERNAL_PUSH_WEBHOOK_TIMEOUT_SECONDS",
       "line": 279
@@ -1434,6 +2148,12 @@
       "file": "aicrm_next/shared/runtime.py",
       "key": "FLASK_ENV",
       "line": 44
+    },
+    {
+      "accessor": "os.getenv",
+      "file": "aicrm_next/shared/runtime.py",
+      "key": "FLASK_ENV",
+      "line": 56
     },
     {
       "accessor": "os.environ.get",
@@ -1509,18 +2229,6 @@
     },
     {
       "accessor": "os.getenv",
-      "file": "aicrm_next/admin_auth/guards.py",
-      "key": "PYTEST_CURRENT_TEST",
-      "line": 85
-    },
-    {
-      "accessor": "os.getenv",
-      "file": "aicrm_next/admin_auth/route_policy.py",
-      "key": "PYTEST_CURRENT_TEST",
-      "line": 72
-    },
-    {
-      "accessor": "os.getenv",
       "file": "aicrm_next/ai_audience_ops/agent_gateway.py",
       "key": "PYTEST_CURRENT_TEST",
       "line": 43
@@ -1529,13 +2237,19 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/commerce/coupons/admin_api.py",
       "key": "PYTEST_CURRENT_TEST",
-      "line": 64
+      "line": 65
+    },
+    {
+      "accessor": "os.getenv",
+      "file": "aicrm_next/shared/runtime.py",
+      "key": "PYTEST_CURRENT_TEST",
+      "line": 50
     },
     {
       "accessor": "os.getenv",
       "file": "aicrm_next/shared/runtime.py",
       "key": "REDIS_URL",
-      "line": 147
+      "line": 159
     },
     {
       "accessor": "os.getenv",
@@ -1577,7 +2291,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/shared/runtime.py",
       "key": "SECRET_KEY",
-      "line": 119
+      "line": 131
     },
     {
       "accessor": "runtime_setting",
@@ -1781,7 +2495,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/shared/runtime.py",
       "key": "WECHAT_SHOP_CALLBACK_TOKEN",
-      "line": 120
+      "line": 132
     },
     {
       "accessor": "os.getenv",
@@ -1790,34 +2504,40 @@
       "line": 110
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/admin_auth/service.py",
       "key": "WECOM_AGENT_ID",
-      "line": 86
+      "line": 83
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/auth_wecom/service.py",
       "key": "WECOM_AGENT_ID",
       "line": 81
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/integration_gateway/wecom_jssdk_adapter.py",
       "key": "WECOM_AGENT_ID",
-      "line": 82
+      "line": 88
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/platform_foundation/external_effects/rate_limit.py",
       "key": "WECOM_AGENT_ID",
-      "line": 59
+      "line": 60
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/platform_foundation/external_effects/repo_contract.py",
       "key": "WECOM_AGENT_ID",
       "line": 200
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "WECOM_AGENT_ID",
+      "line": 12
     },
     {
       "accessor": "os.getenv",
@@ -1829,7 +2549,7 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/integration_gateway/wecom_jssdk_adapter.py",
       "key": "WECOM_API_BASE",
-      "line": 214
+      "line": 222
     },
     {
       "accessor": "os.getenv",
@@ -1919,7 +2639,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/integration_gateway/wecom_tag_live_gateway.py",
       "key": "WECOM_CONTACT_SECRET",
-      "line": 30
+      "line": 34
     },
     {
       "accessor": "runtime_setting",
@@ -1934,97 +2654,103 @@
       "line": 19
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/admin_auth/route_policy.py",
       "key": "WECOM_CORP_ID",
-      "line": 250
+      "line": 251
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/admin_auth/service.py",
       "key": "WECOM_CORP_ID",
-      "line": 85
+      "line": 82
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/auth_wecom/service.py",
       "key": "WECOM_CORP_ID",
       "line": 80
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/background_jobs/external_contact_sync.py",
       "key": "WECOM_CORP_ID",
       "line": 159
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/channel_entry/application.py",
       "key": "WECOM_CORP_ID",
       "line": 58
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/channel_entry/identity_bridge_service.py",
       "key": "WECOM_CORP_ID",
       "line": 18
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/identity_contact/api.py",
       "key": "WECOM_CORP_ID",
       "line": 246
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/identity_contact/domain.py",
       "key": "WECOM_CORP_ID",
       "line": 12
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/identity_contact/sidebar_jssdk.py",
       "key": "WECOM_CORP_ID",
-      "line": 356
+      "line": 357
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/integration_gateway/wecom_jssdk_adapter.py",
       "key": "WECOM_CORP_ID",
-      "line": 81
+      "line": 83
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/integration_gateway/wecom_tag_live_gateway.py",
       "key": "WECOM_CORP_ID",
-      "line": 27
+      "line": 29
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/platform_foundation/external_effects/rate_limit.py",
       "key": "WECOM_CORP_ID",
-      "line": 51
+      "line": 52
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/platform_foundation/external_effects/repo_contract.py",
       "key": "WECOM_CORP_ID",
       "line": 186
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/questionnaire/application.py",
       "key": "WECOM_CORP_ID",
       "line": 305
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/questionnaire/application.py",
       "key": "WECOM_CORP_ID",
       "line": 309
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "WECOM_CORP_ID",
+      "line": 12
+    },
+    {
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/shared/sidebar_access.py",
       "key": "WECOM_CORP_ID",
       "line": 34
@@ -2036,7 +2762,7 @@
       "line": 19
     },
     {
-      "accessor": "os.getenv",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/sidebar_write/api.py",
       "key": "WECOM_CORP_ID",
       "line": 142
@@ -2066,7 +2792,7 @@
       "line": 29
     },
     {
-      "accessor": "runtime_setting",
+      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/auth_wecom/service.py",
       "key": "WECOM_SECRET",
       "line": 82
@@ -2075,25 +2801,31 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/identity_contact/sidebar_jssdk.py",
       "key": "WECOM_SECRET",
-      "line": 357
+      "line": 358
     },
     {
       "accessor": "runtime_setting",
       "file": "aicrm_next/integration_gateway/wecom_jssdk_adapter.py",
       "key": "WECOM_SECRET",
-      "line": 206
+      "line": 214
     },
     {
       "accessor": "runtime_setting",
       "file": "aicrm_next/integration_gateway/wecom_tag_live_gateway.py",
       "key": "WECOM_SECRET",
-      "line": 31
+      "line": 35
     },
     {
       "accessor": "runtime_setting",
       "file": "aicrm_next/questionnaire/application.py",
       "key": "WECOM_SECRET",
       "line": 310
+    },
+    {
+      "accessor": "declared_managed_runtime_setting_key",
+      "file": "aicrm_next/runtime_configuration.py",
+      "key": "WECOM_SECRET",
+      "line": 12
     },
     {
       "accessor": "declared_runtime_environment_key",
@@ -2123,7 +2855,7 @@
       "accessor": "os.getenv",
       "file": "aicrm_next/shared/runtime.py",
       "key": "WORKER_RELEASE_SHA",
-      "line": 141
+      "line": 153
     }
   ],
   "environment_variables": [
@@ -2149,6 +2881,7 @@
     "AICRM_AUTH_CALLBACK_WORKER_CLIENT_SECRET_REF",
     "AICRM_AUTH_CAMPAIGN_AGENT_CLIENT_ID",
     "AICRM_AUTH_CAMPAIGN_AGENT_CLIENT_SECRET_REF",
+    "AICRM_AUTH_CA_FILE",
     "AICRM_AUTH_CLI_ACCESS_TOKEN",
     "AICRM_AUTH_EXTERNAL_AGENT_CLIENT_ID",
     "AICRM_AUTH_EXTERNAL_AGENT_CLIENT_SECRET_REF",
@@ -2164,6 +2897,7 @@
     "AICRM_AUTH_OPS_REPORTER_CLIENT_SECRET_REF",
     "AICRM_AUTH_OUTBOUND_WEBHOOK_CLIENT_ID",
     "AICRM_AUTH_SESSION_HASH_PEPPER",
+    "AICRM_AUTH_TRUSTED_PROXY_ADDRESSES",
     "AICRM_COMPLETION_URL_LINK_API_PATH_PREFIXES",
     "AICRM_COMPLETION_URL_LINK_TIMEOUT_SECONDS",
     "AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED",
@@ -2174,12 +2908,20 @@
     "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS",
     "AICRM_DATA_HEALTH_PROJECTION_FRESHNESS_MAX_MINUTES",
     "AICRM_ENABLE_IN_PROCESS_ARCHIVE_SYNC",
+    "AICRM_ENABLE_REAL_WECOM_GROUP_MESSAGE",
+    "AICRM_ENABLE_REAL_WECOM_PRIVATE_MESSAGE",
     "AICRM_ENV_FILE",
+    "AICRM_EXTERNAL_EFFECT_ALLOWED_BASE_HOSTS",
     "AICRM_EXTERNAL_EFFECT_ALLOWED_GROUP_CHAT_IDS",
     "AICRM_EXTERNAL_EFFECT_ALLOWED_GROUP_OPS_WEBHOOK_KEYS",
     "AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS",
     "AICRM_EXTERNAL_EFFECT_ALLOWED_TARGET_EXTERNAL_USERIDS",
     "AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES",
+    "AICRM_EXTERNAL_EFFECT_MEDIA_UPLOAD_EXECUTE",
+    "AICRM_EXTERNAL_EFFECT_PAYMENT_EXECUTE",
+    "AICRM_EXTERNAL_EFFECT_TEST_EXECUTION_ONLY",
+    "AICRM_EXTERNAL_EFFECT_TEST_RECEIVER_ENABLED",
+    "AICRM_EXTERNAL_EFFECT_WEBHOOK_EXECUTE",
     "AICRM_EXTERNAL_EFFECT_WEBHOOK_TIMEOUT_SECONDS",
     "AICRM_EXTERNAL_EFFECT_WECOM_EXECUTE",
     "AICRM_FORCE_FULL_CI",
@@ -2194,16 +2936,27 @@
     "AICRM_HUANGYOUCAN_DB_READ_TIMEOUT_SECONDS",
     "AICRM_HUANGYOUCAN_DB_USER",
     "AICRM_INTERNAL_API_BASE_URL",
+    "AICRM_INTERNAL_EVENTS_AI_CAMPAIGN_ENABLED",
     "AICRM_INTERNAL_EVENTS_ALLOWED_CONSUMERS",
     "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_CONSUMERS",
     "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_TYPES",
+    "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE",
     "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE_MAX_BATCH_SIZE",
+    "AICRM_INTERNAL_EVENTS_BROADCAST_TASK_ENABLED",
+    "AICRM_INTERNAL_EVENTS_CUSTOMER_IDENTITY_ENABLED",
+    "AICRM_INTERNAL_EVENTS_CUSTOMER_TAGS_ENABLED",
+    "AICRM_INTERNAL_EVENTS_ENABLED",
+    "AICRM_INTERNAL_EVENTS_LEGACY_PATH_MARKERS_ENABLED",
     "AICRM_INTERNAL_EVENTS_LEGACY_PATH_RETIRE_AFTER_DAYS",
+    "AICRM_INTERNAL_EVENTS_OPS_PLAN_ENABLED",
+    "AICRM_INTERNAL_EVENTS_OWNER_MIGRATION_ENABLED",
+    "AICRM_INTERNAL_EVENTS_PAYMENT_ENABLED",
+    "AICRM_INTERNAL_EVENTS_QUESTIONNAIRE_ENABLED",
+    "AICRM_INTERNAL_EVENTS_SHADOW_ONLY",
     "AICRM_INTERNAL_EVENTS_WORKER_BATCH_SIZE",
     "AICRM_INTERNAL_EVENT_WORKER_BATCH_SIZE",
     "AICRM_LISTENER_DATABASE_URL",
     "AICRM_NEXT_ACTION_TOKEN_SECRET",
-    "AICRM_NEXT_ADMIN_AUTH_USER_COUNT",
     "AICRM_NEXT_ALIPAY_MODE",
     "AICRM_NEXT_ALLOW_FIXTURE_REPO_IN_PROD",
     "AICRM_NEXT_ARCHIVE_SYNC_MODE",
@@ -2235,10 +2988,23 @@
     "AICRM_NGINX_CONFIG",
     "AICRM_PII_AUDIT_ENABLED",
     "AICRM_PUBLIC_BASE_URL",
+    "AICRM_PUSH_CAPABILITY_AI_ASSIST_PUSH_ENABLED",
+    "AICRM_PUSH_CAPABILITY_CUSTOMER_WEBHOOK_ENABLED",
+    "AICRM_PUSH_CAPABILITY_GROUP_BROADCAST_ENABLED",
+    "AICRM_PUSH_CAPABILITY_GROUP_OPS_PUSH_ENABLED",
+    "AICRM_PUSH_CAPABILITY_INTEGRATIONS_ENABLED",
+    "AICRM_PUSH_CAPABILITY_ORDER_PAID_PUSH_ENABLED",
+    "AICRM_PUSH_CAPABILITY_PAYMENT_QUERY_ENABLED",
+    "AICRM_PUSH_CAPABILITY_PRIVATE_BROADCAST_ENABLED",
+    "AICRM_PUSH_CAPABILITY_QUESTIONNAIRE_EXTERNAL_PUSH_ENABLED",
+    "AICRM_PUSH_CAPABILITY_TAGS_ENABLED",
+    "AICRM_PUSH_CAPABILITY_WELCOME_MESSAGE_ENABLED",
     "AICRM_QUESTIONNAIRE_OAUTH_ADAPTER_MODE",
     "AICRM_QUESTIONNAIRE_OAUTH_REDIRECT_ALLOWLIST",
     "AICRM_QUESTIONNAIRE_OAUTH_STATE_SECRET",
     "AICRM_QUESTIONNAIRE_RESULT_GRANT_TTL_SECONDS",
+    "AICRM_READINESS_MAX_QUEUE_AGE_SECONDS",
+    "AICRM_READINESS_MAX_TERMINAL_COUNT",
     "AICRM_ROUTE_POLICY_ENFORCED",
     "AICRM_RUNTIME_V2_AGENT_FAKE_ALLOWED",
     "AICRM_RUNTIME_V2_AGENT_FAKE_OUTPUT",
@@ -2252,10 +3018,13 @@
     "AICRM_USER_OPS_SEND_EXECUTION_MODE",
     "AICRM_USER_OPS_SEND_REQUIRES_APPROVAL",
     "AICRM_USER_OPS_SEND_RISK_LEVEL",
+    "AICRM_WECOM_ADMIN_AUTH_ENABLE_REAL",
     "AICRM_WECOM_ADMIN_AUTH_TIMEOUT",
     "AICRM_WECOM_API_BASE",
     "AICRM_WECOM_CANARY_ALLOWED_MEDIA_TARGETS",
     "AICRM_WECOM_DEFAULT_SENDER_USERID",
+    "AICRM_WECOM_ENABLED_EFFECT_TYPES",
+    "AICRM_WECOM_EXECUTION_MODE",
     "AICRM_WECOM_GROUP_ADAPTER_MODE",
     "AICRM_WECOM_OPERATION_MEMBERS_TIMEOUT",
     "AICRM_WECOM_PRIVATE_ADAPTER_MODE",

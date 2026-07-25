@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from urllib.parse import quote
 
 from fastapi import HTTPException, Request
@@ -9,7 +8,8 @@ from fastapi.responses import JSONResponse, RedirectResponse, Response
 from aicrm_next.platform_foundation.auth_platform.api import auth_session_service
 from aicrm_next.platform_foundation.auth_platform.context import AuthContext
 from aicrm_next.platform_foundation.auth_platform.sessions import SessionIntrospection
-from aicrm_next.shared.runtime import production_data_ready, production_environment
+from aicrm_next.shared.runtime import production_data_ready, production_environment, test_environment
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 
 from .service import SESSION_COOKIE, normalize_text, route_headers, safe_next_path
 
@@ -69,7 +69,7 @@ def current_auth_context(request: Request) -> AuthContext | None:
 
 
 def admin_auth_enforcement_enabled() -> bool:
-    value = normalize_text(os.getenv("AICRM_ADMIN_AUTH_ENFORCED")).lower()
+    value = normalize_text(managed_runtime_setting("AICRM_ADMIN_AUTH_ENFORCED")).lower()
     if value in {"1", "true", "yes", "on"}:
         return True
     if value in {"0", "false", "no", "off"}:
@@ -82,9 +82,7 @@ def _production_admin_auth_required() -> bool:
 
 
 def _admin_auth_disable_override_allowed() -> bool:
-    if normalize_text(os.getenv("PYTEST_CURRENT_TEST")):
-        return True
-    if normalize_text(os.getenv("AICRM_NEXT_ENV")).lower() == "test":
+    if test_environment():
         return True
     return not _production_admin_auth_required()
 

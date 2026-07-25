@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import os
 from datetime import datetime
 from typing import Any
 
 from sqlalchemy import text
+
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 
 from .models import (
     ExternalEffectAttempt,
@@ -48,7 +49,7 @@ def _scope_metadata(job: ExternalEffectJob) -> tuple[str, str]:
             for key in ("corp_id", "CorpId", "ToUserName", "wecom_corp_id")
             if _text(payload.get(key))
         ),
-        _text(os.getenv("WECOM_CORP_ID")) if wecom_provider else "",
+        _text(managed_runtime_setting("WECOM_CORP_ID")) if wecom_provider else "",
     )
     app_id = next(
         (
@@ -56,7 +57,7 @@ def _scope_metadata(job: ExternalEffectJob) -> tuple[str, str]:
             for key in ("app_id", "agent_id", "wecom_agent_id")
             if _text(payload.get(key))
         ),
-        _text(os.getenv("WECOM_AGENT_ID")) if wecom_provider else "",
+        _text(managed_runtime_setting("WECOM_AGENT_ID")) if wecom_provider else "",
     )
     return corp_id[:160], app_id[:160]
 

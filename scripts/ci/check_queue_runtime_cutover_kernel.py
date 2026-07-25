@@ -34,6 +34,7 @@ CANARY_SCOPE_LITERAL_ALLOWLIST = frozenset(
     {
         "aicrm_next/admin_config/application.py",
         "aicrm_next/admin_config/application_support.py",
+        "aicrm_next/admin_config/runtime_definitions.py",
         "aicrm_next/platform_foundation/execution_runtime/repository.py",
         "aicrm_next/platform_foundation/execution_runtime/validation.py",
         "aicrm_next/platform_foundation/external_effects/canary_repository.py",

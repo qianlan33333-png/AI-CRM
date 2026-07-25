@@ -46,6 +46,18 @@ def production_environment() -> bool:
     return bool(values & {"prod", "production"})
 
 
+def test_environment() -> bool:
+    if str(os.getenv("PYTEST_CURRENT_TEST", "") or "").strip():
+        return True
+    values = {
+        str(os.getenv("AICRM_NEXT_ENV", "") or "").strip().lower(),
+        str(os.getenv("ENVIRONMENT", "") or "").strip().lower(),
+        str(os.getenv("APP_ENV", "") or "").strip().lower(),
+        str(os.getenv("FLASK_ENV", "") or "").strip().lower(),
+    }
+    return "test" in values
+
+
 def public_https_environment() -> bool:
     """Whether configured browser-facing origins are HTTPS.
 

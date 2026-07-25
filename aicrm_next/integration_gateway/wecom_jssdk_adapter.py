@@ -13,7 +13,7 @@ from urllib.request import urlopen
 
 from aicrm_next.platform_foundation.audit_ledger import InMemoryAuditLedger
 from aicrm_next.shared.runtime import production_environment
-from aicrm_next.shared.runtime_settings import runtime_setting
+from aicrm_next.shared.runtime_settings import managed_runtime_setting, runtime_setting
 
 
 DEFAULT_JS_API_LIST = ("getContext", "getCurExternalContact", "sendChatMessage")
@@ -78,8 +78,16 @@ def build_sidebar_jssdk_config(
     mode = adapter_mode or sidebar_jssdk_adapter_mode()
     normalized_url = normalize_jssdk_url(url)
     context = dict(corp_context or {})
-    corp_id = str(context.get("corp_id") or os.getenv("WECOM_CORP_ID") or "ww-next-sidebar-fixture").strip()
-    agent_id = str(context.get("agent_id") or os.getenv("WECOM_AGENT_ID") or "1000002").strip()
+    corp_id = str(
+        context.get("corp_id")
+        or managed_runtime_setting("WECOM_CORP_ID")
+        or "ww-next-sidebar-fixture"
+    ).strip()
+    agent_id = str(
+        context.get("agent_id")
+        or managed_runtime_setting("WECOM_AGENT_ID")
+        or "1000002"
+    ).strip()
     apis = [str(item).strip() for item in (js_api_list or DEFAULT_JS_API_LIST) if str(item).strip()]
     if mode == "real_enabled":
         try:

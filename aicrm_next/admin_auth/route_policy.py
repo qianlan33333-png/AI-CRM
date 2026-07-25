@@ -3,7 +3,6 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
-import os
 from collections import defaultdict, deque
 from threading import RLock
 from time import monotonic
@@ -24,6 +23,8 @@ from aicrm_next.platform_foundation.auth_platform.client_authentication import C
 from aicrm_next.platform_foundation.auth_platform.context import AuthContext, PrincipalType
 from aicrm_next.platform_foundation.auth_platform.service import AuthError
 from aicrm_next.shared.route_policy import RoutePolicy, RoutePolicyIndex, match_route_policy
+from aicrm_next.shared.runtime import test_environment
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 from aicrm_next.shared.signed_context import SIDEBAR_VIEWER_SESSION_COOKIE, validate_sidebar_owner_context
 
 from .capabilities import context_can, viewer_only
@@ -69,11 +70,11 @@ RATE_LIMITER = RouteRateLimiter()
 
 
 def route_policy_enforcement_enabled() -> bool:
-    if not normalize_text(os.getenv("PYTEST_CURRENT_TEST")):
+    if not test_environment():
         return True
-    test_override = normalize_text(os.getenv("AICRM_ROUTE_POLICY_ENFORCED")).lower()
+    test_override = normalize_text(managed_runtime_setting("AICRM_ROUTE_POLICY_ENFORCED")).lower()
     if not test_override:
-        test_override = normalize_text(os.getenv("AICRM_ADMIN_AUTH_ENFORCED")).lower()
+        test_override = normalize_text(managed_runtime_setting("AICRM_ADMIN_AUTH_ENFORCED")).lower()
     return test_override not in {"0", "false", "no", "off"}
 
 
@@ -247,7 +248,7 @@ async def _enforce_sidebar_grant(request: Request, policy: RoutePolicy) -> Respo
         token=token,
         viewer_session_cookie=normalize_text(request.cookies.get(SIDEBAR_VIEWER_SESSION_COOKIE)),
         external_userid=target_external_userid,
-        expected_corp_id=normalize_text(os.getenv("WECOM_CORP_ID")),
+        expected_corp_id=normalize_text(managed_runtime_setting("WECOM_CORP_ID")),
     )
     if not result.get("ok"):
         status = normalize_text(result.get("status"))

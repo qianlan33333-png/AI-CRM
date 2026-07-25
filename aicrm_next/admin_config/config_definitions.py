@@ -4,7 +4,12 @@ from dataclasses import asdict, dataclass
 from typing import Any, Literal
 
 from aicrm_next.capability_registry import capability_for_config_section, get_capability_spec
-from aicrm_next.shared.secret_store import SENSITIVE_SETTING_KEYS, is_secret_reference
+from aicrm_next.shared.secret_store import (
+    SENSITIVE_SETTING_KEYS,
+    SecretStoreError,
+    is_secret_reference,
+    parse_secret_reference,
+)
 
 from .application_support import APP_SETTING_DEFINITIONS, EXTRA_SETTING_DEFINITIONS, _validate_known_setting
 from .schema import CONFIG_SCHEMA
@@ -27,6 +32,9 @@ class ConfigDefinition:
     default: str = ""
     restart_required: bool = False
     deprecated_after: str = ""
+    minimum: int | None = None
+    maximum: int | None = None
+    choices: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -38,8 +46,37 @@ class ConfigDefinition:
                 return normalized
             if not is_secret_reference(normalized):
                 raise ValueError(f"{self.key} must be stored as a secret reference")
+            try:
+                reference = parse_secret_reference(normalized)
+            except SecretStoreError as exc:
+                raise ValueError(f"{self.key} must contain a valid secret reference") from exc
+            expected_key = self.key.removesuffix("_REF") if self.key.endswith("_SECRET_REF") else self.key
+            if reference.key != expected_key:
+                raise ValueError(f"{self.key} secret reference must target {expected_key}")
             return normalized
-        return _validate_known_setting(self.key, normalized)
+        normalized = _validate_known_setting(self.key, normalized)
+        if not normalized and not self.required:
+            return ""
+        if self.value_type == "boolean":
+            lowered = normalized.strip().lower()
+            if lowered in {"1", "true", "yes", "y", "on"}:
+                return "true"
+            if lowered in {"0", "false", "no", "n", "off"}:
+                return "false"
+            raise ValueError(f"{self.key} must be a boolean")
+        if self.value_type == "integer":
+            try:
+                parsed = int(normalized)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(f"{self.key} must be an integer") from exc
+            if self.minimum is not None and parsed < self.minimum:
+                raise ValueError(f"{self.key} must be at least {self.minimum}")
+            if self.maximum is not None and parsed > self.maximum:
+                raise ValueError(f"{self.key} must be at most {self.maximum}")
+            normalized = str(parsed)
+        if self.choices and normalized not in self.choices:
+            raise ValueError(f"{self.key} must be one of: {', '.join(self.choices)}")
+        return normalized
 
 
 def build_config_definitions() -> tuple[ConfigDefinition, ...]:
@@ -57,13 +94,19 @@ def build_config_definitions() -> tuple[ConfigDefinition, ...]:
     result: list[ConfigDefinition] = []
     for key in sorted(set(metadata) | set(schema_fields)):
         item = metadata.get(key, {})
-        section, schema = schema_fields.get(key, (_inferred_section(key), {}))
-        capability = capability_for_config_section(section)
+        schema_section, schema = schema_fields.get(key, ("", {}))
+        section = str(item.get("section") or schema_section or _inferred_section(key))
+        explicit_capability_id = str(item.get("capability_id") or "").strip()
+        capability = get_capability_spec(explicit_capability_id) if explicit_capability_id else None
+        if explicit_capability_id and capability is None:
+            raise ValueError(f"config key has unknown capability owner: {key} -> {explicit_capability_id}")
+        if capability is None:
+            capability = capability_for_config_section(section)
         if capability is None:
             capability = get_capability_spec(_inferred_capability_id(key))
         if capability is None:
             raise ValueError(f"config key has no capability owner: {key}")
-        value_type = str(schema.get("type") or item.get("input_type") or "string").strip()
+        value_type = str(schema.get("type") or item.get("type") or item.get("input_type") or "string").strip()
         sensitive = bool(
             key in SENSITIVE_SETTING_KEYS
             or item.get("mode") == "masked"
@@ -78,10 +121,15 @@ def build_config_definitions() -> tuple[ConfigDefinition, ...]:
                 value_type=value_type,
                 label=str(schema.get("label") or item.get("label") or key),
                 description=str(schema.get("help") or item.get("description") or ""),
-                required=bool(schema.get("required", False)),
+                required=bool(schema.get("required", item.get("required", False))),
                 sensitive=sensitive,
                 storage="secret_store" if sensitive else "app_settings",
-                default=str(schema.get("default") or ""),
+                default=str(schema.get("default", item.get("default", "")) or ""),
+                restart_required=bool(schema.get("restart_required", item.get("restart_required", False))),
+                deprecated_after=str(schema.get("deprecated_after") or item.get("deprecated_after") or ""),
+                minimum=_optional_int(schema.get("min", item.get("min"))),
+                maximum=_optional_int(schema.get("max", item.get("max"))),
+                choices=tuple(str(value) for value in (schema.get("options") or item.get("options") or ())),
             )
         )
     return tuple(result)
@@ -109,6 +157,12 @@ def _inferred_capability_id(key: str) -> str:
     section = _inferred_section(key)
     capability = capability_for_config_section(section)
     return capability.capability_id if capability else "core.platform"
+
+
+def _optional_int(value: Any) -> int | None:
+    if value is None or value == "":
+        return None
+    return int(value)
 
 
 CONFIG_DEFINITIONS = build_config_definitions()

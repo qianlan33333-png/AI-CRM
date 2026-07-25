@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import os
 from datetime import timedelta
 from typing import Any
 from uuid import uuid4
 
 from aicrm_next.shared.runtime import fixture_mode
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 
 from .config import (
     allowed_consumers,
@@ -244,7 +244,9 @@ class InternalEventWorker:
                 error="pair_allowlist_required_for_multi_event_auto_execute",
                 message="Set AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_CONSUMERS before auto-executing multiple event types.",
             )
-        max_batch_size_explicit = bool(str(os.getenv("AICRM_INTERNAL_EVENTS_AUTO_EXECUTE_MAX_BATCH_SIZE") or "").strip())
+        max_batch_size_explicit = bool(
+            managed_runtime_setting("AICRM_INTERNAL_EVENTS_AUTO_EXECUTE_MAX_BATCH_SIZE").strip()
+        )
         if int(batch_size or 0) > auto_execute_max_batch_size() and (not fixture_mode() or max_batch_size_explicit):
             return self._empty_due_response(
                 dry_run=False,

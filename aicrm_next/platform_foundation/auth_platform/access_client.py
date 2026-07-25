@@ -3,13 +3,13 @@ from __future__ import annotations
 import base64
 from dataclasses import dataclass
 import json
-import os
 import ssl
 from typing import Any, Callable
 from urllib.parse import urlencode
 import urllib.request
 
 from aicrm_next.shared.secret_store import FileSecretStore, is_secret_reference
+from aicrm_next.shared.runtime_settings import managed_runtime_setting, runtime_settings_request_scope
 
 
 INTERNAL_CLIENT_ID_KEYS = {
@@ -30,7 +30,7 @@ INTERNAL_CLIENT_SECRET_REFERENCE_KEYS = {
 
 # Kept explicit so the runtime-contract inventory can audit settings that are
 # otherwise accessed indirectly through the purpose-to-setting maps above.
-RUNTIME_ENVIRONMENT_KEYS = {
+RUNTIME_SETTING_KEYS = {
     "AICRM_AUTH_ISSUER",
     "AICRM_AUTH_AUTOMATION_WORKER_CLIENT_ID",
     "AICRM_AUTH_AUTOMATION_WORKER_CLIENT_SECRET_REF",
@@ -75,15 +75,46 @@ def fetch_internal_access_token(
     secret_resolver: SecretResolver | None = None,
     timeout_seconds: int = 30,
 ) -> AccessTokenLease:
-    env = dict(os.environ if environ is None else environ)
+    if environ is None:
+        with runtime_settings_request_scope():
+            return _fetch_internal_access_token(
+                purpose=purpose,
+                audience=audience,
+                scopes=scopes,
+                urlopen=urlopen,
+                environ=None,
+                secret_resolver=secret_resolver,
+                timeout_seconds=timeout_seconds,
+            )
+    return _fetch_internal_access_token(
+        purpose=purpose,
+        audience=audience,
+        scopes=scopes,
+        urlopen=urlopen,
+        environ=environ,
+        secret_resolver=secret_resolver,
+        timeout_seconds=timeout_seconds,
+    )
+
+
+def _fetch_internal_access_token(
+    *,
+    purpose: str,
+    audience: str,
+    scopes: tuple[str, ...],
+    urlopen: UrlOpen,
+    environ: dict[str, str] | None,
+    secret_resolver: SecretResolver | None,
+    timeout_seconds: int,
+) -> AccessTokenLease:
     normalized_purpose = str(purpose or "").strip()
     client_key = INTERNAL_CLIENT_ID_KEYS.get(normalized_purpose)
     secret_key = INTERNAL_CLIENT_SECRET_REFERENCE_KEYS.get(normalized_purpose)
     if not client_key or not secret_key:
         raise ValueError(f"unknown auth client purpose: {normalized_purpose or '<empty>'}")
-    issuer = str(env.get("AICRM_AUTH_ISSUER") or "").rstrip("/")
-    client_id = str(env.get(client_key) or "").strip()
-    secret_reference = str(env.get(secret_key) or "").strip()
+    issuer = _setting("AICRM_AUTH_ISSUER", environ=environ).rstrip("/")
+    client_id = _setting(client_key, environ=environ).strip()
+    secret_reference = _setting(secret_key, environ=environ).strip()
     normalized_scopes = tuple(sorted({str(scope or "").strip() for scope in scopes if str(scope or "").strip()}))
     if not issuer or not client_id or not secret_reference or not audience or not normalized_scopes:
         raise RuntimeError("internal API client configuration is incomplete")
@@ -106,7 +137,7 @@ def fetch_internal_access_token(
         },
         method="POST",
     )
-    with urlopen(request, timeout=timeout_seconds, context=build_tls_ssl_context(environ=env)) as response:
+    with urlopen(request, timeout=timeout_seconds, context=build_tls_ssl_context(environ=environ)) as response:
         payload = json.loads(response.read().decode("utf-8"))
     access_token = str(payload.get("access_token") or "").strip()
     if access_token.count(".") != 2:
@@ -120,9 +151,14 @@ def fetch_internal_access_token(
 
 
 def build_tls_ssl_context(*, environ: dict[str, str] | None = None) -> ssl.SSLContext:
-    env = dict(os.environ if environ is None else environ)
-    ca_file = str(env.get("AICRM_AUTH_CA_FILE") or "").strip()
+    ca_file = _setting("AICRM_AUTH_CA_FILE", environ=environ).strip()
     return ssl.create_default_context(cafile=ca_file or None)
+
+
+def _setting(key: str, *, environ: dict[str, str] | None) -> str:
+    if environ is not None:
+        return str(environ.get(key) or "")
+    return managed_runtime_setting(key)
 
 
 def _resolve_secret(reference: str) -> str:

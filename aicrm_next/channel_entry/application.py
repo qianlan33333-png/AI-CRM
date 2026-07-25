@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from aicrm_next.shared.release import current_release_sha
-from aicrm_next.shared.runtime_settings import runtime_setting
+from aicrm_next.shared.runtime_settings import managed_runtime_setting, runtime_setting
 from aicrm_next.shared.safe_logging import safe_log_exception
 
 from . import repo
@@ -55,7 +55,7 @@ LOGGER = logging.getLogger(__name__)
 
 def callback_config() -> dict[str, str]:
     return {
-        "corp_id": text(os.getenv("WECOM_CORP_ID")),
+        "corp_id": text(managed_runtime_setting("WECOM_CORP_ID")),
         "token": text(runtime_setting("WECOM_CALLBACK_TOKEN")),
         "aes_key": text(runtime_setting("WECOM_CALLBACK_AES_KEY")),
     }

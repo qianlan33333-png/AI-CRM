@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import os
-from typing import Any
-
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
@@ -10,6 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from aicrm_next.shared.db_session import get_engine
 from aicrm_next.shared.repository_provider import RepositoryProviderError
 from aicrm_next.shared.runtime import production_repository_required
+from aicrm_next.shared.runtime_settings import environment_fallback
 
 
 class PushCapabilitySettingRepository:
@@ -23,7 +21,7 @@ class PushCapabilitySettingRepository:
         if not normalized_keys:
             return {}
         if self._engine is None and not production_repository_required():
-            return {key: str(os.getenv(key, "") or "").strip() for key in normalized_keys}
+            return {key: environment_fallback(key).strip() for key in normalized_keys}
         try:
             engine = self._engine or get_engine()
             with engine.connect() as conn:
@@ -33,7 +31,7 @@ class PushCapabilitySettingRepository:
                         text("SELECT value FROM app_settings WHERE key = :key"),
                         {"key": key},
                     ).mappings().first()
-                    rows[key] = str((row or {}).get("value") or os.getenv(key, "") or "").strip()
+                    rows[key] = str((row or {}).get("value") or environment_fallback(key)).strip()
         except (AttributeError, RuntimeError, SQLAlchemyError) as exc:
             raise RepositoryProviderError("push capability setting source unavailable") from exc
         return rows

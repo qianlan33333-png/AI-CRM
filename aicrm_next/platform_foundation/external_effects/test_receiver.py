@@ -30,6 +30,13 @@ _HOST_PATTERN = re.compile(r"^[A-Za-z0-9.-]+(?::[0-9]{1,5})?$")
 _BLOCKED_HOSTS = {"localhost", "127.0.0.1", "0.0.0.0", "::1", "[::1]", "testserver"}
 _SENSITIVE_HEADER_NAMES = {"authorization", "cookie", "set-cookie", "x-admin-action-token", "x-api-key"}
 _ALLOWED_RESPONSE_STATUSES = {200, 400, 500}
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "AICRM_EXTERNAL_EFFECT_ALLOWED_BASE_HOSTS",
+        "AICRM_EXTERNAL_EFFECT_TEST_EXECUTION_ONLY",
+        "AICRM_EXTERNAL_EFFECT_TEST_RECEIVER_ENABLED",
+    }
+)
 
 SCENARIOS: dict[str, dict[str, Any]] = {
     "questionnaire_submission_push_success": {

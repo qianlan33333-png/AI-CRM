@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-import os
 import re
 
 from aicrm_next.shared.errors import ContractError
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 
 from .dto import BindMobileToExternalContactRequest, ResolvePersonIdentityRequest
 
 
 def resolve_single_corp_id(requested_corp_id: str | None) -> str:
-    configured = str(os.getenv("WECOM_CORP_ID") or "").strip()
+    configured = str(managed_runtime_setting("WECOM_CORP_ID") or "").strip()
     requested = str(requested_corp_id or "").strip()
     if configured and requested and configured != requested:
         raise ContractError("corp_id_mismatch")

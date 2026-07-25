@@ -18,6 +18,12 @@ from .repository import ConnectionFactory, RuntimeReadinessRepository
 
 ROOT = Path(__file__).resolve().parents[2]
 FULL_SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "AICRM_READINESS_MAX_QUEUE_AGE_SECONDS",
+        "AICRM_READINESS_MAX_TERMINAL_COUNT",
+    }
+)
 
 
 def _component(status: str, *, critical: bool, **details: Any) -> dict[str, Any]:

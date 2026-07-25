@@ -6,8 +6,12 @@ from typing import Any
 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import text
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Connection, Engine
 
+from aicrm_next.runtime_configuration import (
+    RUNTIME_CONFIG_CUTOVER_KEYS_KEY,
+    parse_runtime_config_cutover_keys,
+)
 from aicrm_next.shared.db_session import get_engine
 from aicrm_next.shared.runtime_settings import invalidate_runtime_settings_request_snapshot
 from aicrm_next.shared.safe_logging import safe_log_exception
@@ -61,19 +65,33 @@ class AdminConfigRepository:
     def upsert_app_setting(self, *, key: str, value: str) -> dict[str, Any]:
         normalized_key = str(key or "").strip()
         normalized_value = str(value if value is not None else "")
-        stored_value = normalized_value
         if normalized_key in SENSITIVE_KEYS:
             if is_secret_reference(normalized_value):
                 raise ValueError("secret references cannot be submitted as setting values")
-            current = self.get_app_setting(normalized_key)
-            current_value = str((current or {}).get("value") or "").strip()
-            current_reference = current_value if is_secret_reference(current_value) else ""
-            stored_value = FileSecretStore.from_environment().write(
-                normalized_key,
-                normalized_value,
-                current_reference=current_reference,
-            )
         with self._engine.begin() as conn:
+            if self._engine.dialect.name == "postgresql":
+                conn.execute(text("LOCK TABLE app_settings IN SHARE ROW EXCLUSIVE MODE"))
+            self._assert_legacy_writes_allowed_in_connection(
+                conn,
+                {normalized_key},
+            )
+            stored_value = normalized_value
+            if normalized_key in SENSITIVE_KEYS:
+                current_value = str(
+                    conn.execute(
+                        text("SELECT value FROM app_settings WHERE key = :key"),
+                        {"key": normalized_key},
+                    ).scalar_one_or_none()
+                    or ""
+                ).strip()
+                current_reference = (
+                    current_value if is_secret_reference(current_value) else ""
+                )
+                stored_value = FileSecretStore.from_environment().write(
+                    normalized_key,
+                    normalized_value,
+                    current_reference=current_reference,
+                )
             conn.execute(
                 text(
                     """
@@ -92,6 +110,43 @@ class AdminConfigRepository:
             ).mappings().first()
         invalidate_runtime_settings_request_snapshot()
         return dict(row) if row else {"key": normalized_key, "value": stored_value}
+
+    def assert_legacy_writes_allowed(self, keys: set[str]) -> None:
+        normalized = {str(key or "").strip() for key in keys if str(key or "").strip()}
+        if not normalized:
+            return
+        if RUNTIME_CONFIG_CUTOVER_KEYS_KEY in normalized:
+            raise ValueError("runtime cutover catalog must be changed through Config Release")
+        try:
+            with self._engine.connect() as conn:
+                self._assert_legacy_writes_allowed_in_connection(conn, normalized)
+        except SQLAlchemyError as exc:
+            safe_log_exception(
+                LOGGER,
+                "admin config cutover guard unavailable",
+                exc,
+                level=logging.WARNING,
+            )
+            raise ValueError("runtime cutover guard unavailable; legacy write blocked") from exc
+
+    @staticmethod
+    def _assert_legacy_writes_allowed_in_connection(
+        conn: Connection,
+        keys: set[str],
+    ) -> None:
+        if RUNTIME_CONFIG_CUTOVER_KEYS_KEY in keys:
+            raise ValueError("runtime cutover catalog must be changed through Config Release")
+        value = conn.execute(
+            text("SELECT value FROM app_settings WHERE key = :key"),
+            {"key": RUNTIME_CONFIG_CUTOVER_KEYS_KEY},
+        ).scalar_one_or_none()
+        active = parse_runtime_config_cutover_keys(value)
+        blocked = sorted(keys & active)
+        if blocked:
+            raise ValueError(
+                "runtime settings already owned by Config Release: "
+                + ", ".join(blocked)
+            )
 
     def insert_audit_log(
         self,

@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import os
-
 from fastapi import APIRouter, HTTPException, Path, Query, Request
 from fastapi.responses import JSONResponse
 
 from aicrm_next.shared.errors import ContractError
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 from aicrm_next.shared.signed_context import (
     SIDEBAR_VIEWER_SESSION_COOKIE,
     validate_sidebar_owner_context,
@@ -243,7 +242,9 @@ def _sidebar_owner_userid_from_request(
             token=str(request.headers.get(SIDEBAR_OWNER_TOKEN_HEADER) or "").strip(),
             viewer_session_cookie=str(request.cookies.get(SIDEBAR_VIEWER_SESSION_COOKIE) or "").strip(),
             external_userid=str(external_userid or "").strip(),
-            expected_corp_id=str(os.getenv("WECOM_CORP_ID") or "").strip(),
+            expected_corp_id=str(
+                managed_runtime_setting("WECOM_CORP_ID") or ""
+            ).strip(),
         )
         if not result.get("ok"):
             status = str(result.get("status") or "").strip()

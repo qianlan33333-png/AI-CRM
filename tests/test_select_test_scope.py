@@ -80,6 +80,24 @@ def test_runtime_security_contract_has_a_permanent_scope() -> None:
     assert result["needs_full_ci"] is True
 
 
+def test_runtime_configuration_cutover_has_a_permanent_control_plane_scope() -> None:
+    changed_paths = (
+        "aicrm_next/runtime_configuration.py",
+        "tools/check_runtime_configuration_contract.py",
+        "tests/test_runtime_configuration_contract.py",
+    )
+
+    result = _select(*changed_paths)
+
+    assert "config_release_control_plane" in result["matched_scopes"]
+    assert result["unmatched_files"] == []
+    assert "tests/test_runtime_configuration_contract.py" in result["python_tests"]
+    assert "tests/test_config_releases.py" in result["python_tests"]
+    assert result["needs_postgres"] is True
+    assert result["architecture_gate"] == "full"
+    assert result["needs_full_ci"] is True
+
+
 def test_import_graph_governance_changes_force_mapped_full_ci() -> None:
     result = _select(
         "aicrm_next/automation_agents/__init__.py",

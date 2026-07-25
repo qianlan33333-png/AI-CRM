@@ -1,14 +1,41 @@
 from __future__ import annotations
 
-import os
 from collections.abc import Iterable
 from typing import Any
 
 from aicrm_next.shared.runtime import fixture_mode
+from aicrm_next.shared.runtime_settings import (
+    managed_runtime_bool,
+    managed_runtime_int,
+    managed_runtime_setting,
+)
 
 
 DEFAULT_WORKER_BATCH_SIZE = 50
 DEFAULT_AUTO_EXECUTE_MAX_BATCH_SIZE = 1
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "AICRM_INTERNAL_EVENTS_AI_CAMPAIGN_ENABLED",
+        "AICRM_INTERNAL_EVENTS_ALLOWED_CONSUMERS",
+        "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_CONSUMERS",
+        "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_TYPES",
+        "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE",
+        "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE_MAX_BATCH_SIZE",
+        "AICRM_INTERNAL_EVENTS_BROADCAST_TASK_ENABLED",
+        "AICRM_INTERNAL_EVENTS_CUSTOMER_IDENTITY_ENABLED",
+        "AICRM_INTERNAL_EVENTS_CUSTOMER_TAGS_ENABLED",
+        "AICRM_INTERNAL_EVENTS_ENABLED",
+        "AICRM_INTERNAL_EVENTS_LEGACY_PATH_MARKERS_ENABLED",
+        "AICRM_INTERNAL_EVENTS_LEGACY_PATH_RETIRE_AFTER_DAYS",
+        "AICRM_INTERNAL_EVENTS_OPS_PLAN_ENABLED",
+        "AICRM_INTERNAL_EVENTS_OWNER_MIGRATION_ENABLED",
+        "AICRM_INTERNAL_EVENTS_PAYMENT_ENABLED",
+        "AICRM_INTERNAL_EVENTS_QUESTIONNAIRE_ENABLED",
+        "AICRM_INTERNAL_EVENTS_SHADOW_ONLY",
+        "AICRM_INTERNAL_EVENTS_WORKER_BATCH_SIZE",
+        "AICRM_INTERNAL_EVENT_WORKER_BATCH_SIZE",
+    }
+)
 CONSUMER_METADATA: dict[str, dict[str, str]] = {
     "automation_questionnaire_consumer": {
         "type": "placeholder",
@@ -28,10 +55,7 @@ def _text(value: Any) -> str:
 
 
 def env_bool(name: str, *, default: bool = False) -> bool:
-    value = _text(os.getenv(name)).lower()
-    if not value:
-        return default
-    return value in {"1", "true", "yes", "on"}
+    return managed_runtime_bool(name, default)
 
 
 def internal_events_enabled() -> bool:
@@ -75,12 +99,12 @@ def legacy_path_markers_enabled() -> bool:
 
 
 def legacy_path_retire_after_days() -> int:
-    raw = _text(os.getenv("AICRM_INTERNAL_EVENTS_LEGACY_PATH_RETIRE_AFTER_DAYS"))
-    try:
-        parsed = int(raw or 7)
-    except (TypeError, ValueError):
-        parsed = 7
-    return max(1, min(parsed, 365))
+    return managed_runtime_int(
+        "AICRM_INTERNAL_EVENTS_LEGACY_PATH_RETIRE_AFTER_DAYS",
+        7,
+        minimum=1,
+        maximum=365,
+    )
 
 
 def internal_events_shadow_only() -> bool:
@@ -92,17 +116,17 @@ def auto_execute_enabled() -> bool:
 
 
 def allowed_event_types() -> list[str]:
-    raw = _text(os.getenv("AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_TYPES"))
+    raw = _text(managed_runtime_setting("AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_TYPES"))
     return [item.strip() for item in raw.split(",") if item.strip()]
 
 
 def allowed_consumers() -> list[str]:
-    raw = _text(os.getenv("AICRM_INTERNAL_EVENTS_ALLOWED_CONSUMERS"))
+    raw = _text(managed_runtime_setting("AICRM_INTERNAL_EVENTS_ALLOWED_CONSUMERS"))
     return [item.strip() for item in raw.split(",") if item.strip()]
 
 
 def allowed_event_consumers() -> list[str]:
-    raw = _text(os.getenv("AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_CONSUMERS"))
+    raw = _text(managed_runtime_setting("AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_CONSUMERS"))
     normalized = raw.replace("\n", ",")
     pairs: list[str] = []
     seen: set[str] = set()
@@ -183,21 +207,29 @@ def worker_allows(
 
 
 def worker_batch_size() -> int:
-    raw = _text(os.getenv("AICRM_INTERNAL_EVENTS_WORKER_BATCH_SIZE")) or _text(os.getenv("AICRM_INTERNAL_EVENT_WORKER_BATCH_SIZE"))
-    try:
-        parsed = int(raw)
-    except (TypeError, ValueError):
-        parsed = DEFAULT_WORKER_BATCH_SIZE
-    return max(1, min(parsed, 500))
+    raw = _text(managed_runtime_setting("AICRM_INTERNAL_EVENTS_WORKER_BATCH_SIZE"))
+    if raw:
+        return managed_runtime_int(
+            "AICRM_INTERNAL_EVENTS_WORKER_BATCH_SIZE",
+            DEFAULT_WORKER_BATCH_SIZE,
+            minimum=1,
+            maximum=500,
+        )
+    return managed_runtime_int(
+        "AICRM_INTERNAL_EVENT_WORKER_BATCH_SIZE",
+        DEFAULT_WORKER_BATCH_SIZE,
+        minimum=1,
+        maximum=500,
+    )
 
 
 def auto_execute_max_batch_size() -> int:
-    raw = _text(os.getenv("AICRM_INTERNAL_EVENTS_AUTO_EXECUTE_MAX_BATCH_SIZE"))
-    try:
-        parsed = int(raw)
-    except (TypeError, ValueError):
-        parsed = DEFAULT_AUTO_EXECUTE_MAX_BATCH_SIZE
-    return max(1, min(parsed, 500))
+    return managed_runtime_int(
+        "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE_MAX_BATCH_SIZE",
+        DEFAULT_AUTO_EXECUTE_MAX_BATCH_SIZE,
+        minimum=1,
+        maximum=500,
+    )
 
 
 def diagnostics_payload() -> dict[str, Any]:
@@ -222,5 +254,5 @@ def diagnostics_payload() -> dict[str, Any]:
         "worker_batch_size": worker_batch_size(),
         "auto_execute_max_batch_size": auto_execute_max_batch_size(),
         "config_warnings": config_warnings(),
-        "config_source": "env",
+        "config_source": "config_release_with_environment_fallback",
     }

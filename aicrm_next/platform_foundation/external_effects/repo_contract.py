@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import json
-import os
 from dataclasses import fields
 from datetime import datetime
 from typing import Any
 
 from aicrm_next.platform_foundation.external_calls import scrub_summary
+from aicrm_next.shared.runtime_settings import managed_runtime_setting
 from aicrm_next.shared.sensitive_data import redact_sensitive_text
 
 from .models import (
@@ -183,7 +183,7 @@ def _rate_scope_key(request: ExternalEffectCreateRequest) -> str:
             if _text(payload.get(key))
         ),
         (
-            _text(os.getenv("WECOM_CORP_ID"))
+            _text(managed_runtime_setting("WECOM_CORP_ID"))
             if provider.startswith("wecom")
             else ""
         )
@@ -197,7 +197,7 @@ def _rate_scope_key(request: ExternalEffectCreateRequest) -> str:
             if _text(payload.get(key))
         ),
         (
-            _text(os.getenv("WECOM_AGENT_ID"))
+            _text(managed_runtime_setting("WECOM_AGENT_ID"))
             if provider.startswith("wecom")
             else ""
         )

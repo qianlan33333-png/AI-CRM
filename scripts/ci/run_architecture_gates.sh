@@ -32,6 +32,7 @@ run_fast() {
 "$PYTHON" scripts/ci/update_route_policy_manifest.py --check
 "$PYTHON" tools/check_admin_route_auth.py
 "$PYTHON" tools/check_repository_ownership.py
+"$PYTHON" tools/check_runtime_configuration_contract.py
 "$PYTHON" tools/check_retired_runtime_references.py
 "$PYTHON" scripts/ci/check_github_action_pins.py
 "$PYTHON" scripts/ci/check_github_actions_expression_length.py

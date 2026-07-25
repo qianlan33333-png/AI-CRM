@@ -69,6 +69,14 @@ WECOM_EFFECT_TYPES = (
     WECOM_EXTERNAL_CONTACT_DETAIL_FETCH,
     WECOM_MEDIA_UPLOAD,
 )
+RUNTIME_SETTING_KEYS = frozenset(
+    {
+        "AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES",
+        "AICRM_EXTERNAL_EFFECT_PAYMENT_EXECUTE",
+        "AICRM_EXTERNAL_EFFECT_WEBHOOK_EXECUTE",
+        WECOM_PROVIDER_TARGET_POLICY_KEY,
+    }
+)
 
 
 class ExternalEffectAdapter(Protocol):
@@ -81,10 +89,6 @@ def _enabled(name: str) -> bool:
 
 def _csv_env(name: str) -> set[str]:
     return runtime_csv(name)
-
-
-def _runtime_present(*names: str) -> bool:
-    return any(bool(runtime_setting(name, "")) for name in names)
 
 
 def _normalized_wecom_execution_mode() -> tuple[str, str]:

@@ -4,11 +4,11 @@ import base64
 import hashlib
 import hmac
 import json
-import os
 from time import time
 from typing import Any
 
 from aicrm_next.shared.runtime import require_signing_secret, secure_cookie_environment
+from aicrm_next.shared.runtime_settings import managed_runtime_bool
 
 
 ADMIN_SESSION_COOKIE = "aicrm_next_admin_session"
@@ -45,10 +45,7 @@ def verify_state_payload(value: str | None, *, max_age_seconds: int = DEFAULT_ST
 def session_cookie_secure() -> bool:
     if secure_cookie_environment():
         return True
-    value = str(os.getenv("AICRM_ADMIN_SESSION_COOKIE_SECURE") or "").strip().lower()
-    if value:
-        return value in {"1", "true", "yes", "on"}
-    return False
+    return managed_runtime_bool("AICRM_ADMIN_SESSION_COOKIE_SECURE", False)
 
 
 def _load_signed_payload(value: str | None) -> dict[str, Any] | None:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 from typing import Any
 from uuid import uuid4
@@ -10,6 +11,7 @@ from sqlalchemy.engine import Connection, Engine
 
 from aicrm_next.deployment_profile import DeploymentProfile
 from aicrm_next.shared.db_session import get_engine
+from aicrm_next.shared.runtime_settings import invalidate_runtime_settings_request_snapshot
 from aicrm_next.shared.secret_store import is_secret_reference
 
 
@@ -127,6 +129,7 @@ class ConfigReleaseRepository:
         operator: str,
         profile: DeploymentProfile,
         sensitive_keys: set[str],
+        expected_settings: dict[str, dict[str, Any]],
     ) -> dict[str, Any]:
         with self._engine.begin() as conn:
             release = self._get_release_for_update(conn, release_id)
@@ -138,6 +141,29 @@ class ConfigReleaseRepository:
                 raise ValueError("deployment profile does not match config release")
             if release["checksum"] != str(expected_checksum or "").strip():
                 raise ValueError("config release checksum changed; refresh before publishing")
+
+            if self._engine.dialect.name == "postgresql":
+                conn.execute(text("LOCK TABLE app_settings IN SHARE ROW EXCLUSIVE MODE"))
+            row_lock = " FOR UPDATE" if self._engine.dialect.name == "postgresql" else ""
+            for key, expected in sorted(expected_settings.items()):
+                row = conn.execute(
+                    text(
+                        f"SELECT key, value FROM app_settings "
+                        f"WHERE key = :key{row_lock}"
+                    ),
+                    {"key": key},
+                ).mappings().first()
+                expected_exists = bool(expected.get("exists"))
+                current_exists = row is not None
+                expected_value = str(expected.get("value") or "")
+                current_value = str((row or {}).get("value") or "")
+                if expected_exists != current_exists or not hmac.compare_digest(
+                    expected_value,
+                    current_value,
+                ):
+                    raise ValueError(
+                        f"app_settings changed after validation: {key}; revalidate before publishing"
+                    )
 
             changes = dict(release.get("changes") or {})
             before: dict[str, dict[str, Any]] = {}
@@ -236,6 +262,7 @@ class ConfigReleaseRepository:
                 text("SELECT * FROM config_releases WHERE id = :release_id"),
                 {"release_id": int(release_id)},
             ).mappings().first()
+        invalidate_runtime_settings_request_snapshot()
         return _release_row(row)
 
     def get_profile_state(self, profile_id: str) -> dict[str, Any] | None:
@@ -261,6 +288,26 @@ class ConfigReleaseRepository:
                 ).mappings().first()
                 if row is not None:
                     result[key] = str(row.get("value") or "")
+        return result
+
+    def get_app_settings_state(
+        self,
+        keys: list[str] | set[str],
+    ) -> dict[str, dict[str, Any]]:
+        normalized = sorted(
+            {str(item or "").strip() for item in keys if str(item or "").strip()}
+        )
+        result: dict[str, dict[str, Any]] = {}
+        with self._engine.connect() as conn:
+            for key in normalized:
+                row = conn.execute(
+                    text("SELECT value FROM app_settings WHERE key = :key"),
+                    {"key": key},
+                ).mappings().first()
+                result[key] = {
+                    "exists": row is not None,
+                    "value": str((row or {}).get("value") or ""),
+                }
         return result
 
     def _get_release_for_update(self, conn: Connection, release_id: int) -> dict[str, Any] | None:
