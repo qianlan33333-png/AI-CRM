@@ -31,6 +31,7 @@ customer_list_index_next = Table(
     Index("ix_customer_list_index_next_owner_userid", "owner_userid"),
     Index("ix_customer_list_index_next_mobile", "mobile"),
     Index("ix_customer_list_index_next_updated_at", "updated_at"),
+    Index("uq_customer_list_index_next_unionid", "unionid", unique=True),
 )
 
 customer_detail_snapshot_next = Table(
@@ -49,6 +50,7 @@ customer_detail_snapshot_next = Table(
     Column("updated_at", DateTime(timezone=True), nullable=False),
     Column("created_at", DateTime(timezone=True), nullable=False),
     Index("ix_customer_detail_snapshot_next_unionid", "unionid"),
+    Index("uq_customer_detail_snapshot_next_unionid", "unionid", unique=True),
 )
 
 customer_timeline_event_next = Table(

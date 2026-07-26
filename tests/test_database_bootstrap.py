@@ -27,7 +27,7 @@ from scripts.ops.bootstrap_database import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ALEMBIC_HEAD_REVISION = "0151_ai_audience_hxc_projection_view"
+ALEMBIC_HEAD_REVISION = "0152_customer_read_model_incremental"
 CREATE_TABLE_PATTERN = re.compile(
     r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?([a-zA-Z_][a-zA-Z0-9_]*)",
     re.IGNORECASE,
@@ -1621,6 +1621,93 @@ def test_continuation_fanout_cutover_holds_legacy_completion_work_without_replay
                 WHERE outbox_id = 'ieo-completion-new'
                 """
             ).fetchone() == (reason,)
+
+
+def test_customer_read_model_incremental_foundation_repairs_sequences_and_installs_keys() -> None:
+    with _isolated_database("customer_incremental_foundation") as database_url:
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            connection.execute(BASELINE_PATH.read_text(encoding="utf-8"))
+        _upgrade_database_to(database_url, "0151_ai_audience_hxc_projection_view")
+        with psycopg.connect(database_url) as connection:
+            connection.execute(
+                "INSERT INTO customer_list_index_next (id, unionid) VALUES (500, 'unionid-foundation-existing')"
+            )
+            connection.execute(
+                "INSERT INTO customer_detail_snapshot_next (id, unionid) VALUES (600, 'unionid-foundation-existing')"
+            )
+            connection.execute(
+                """
+                INSERT INTO customer_recent_message_next (id, msgid, unionid)
+                VALUES (700, 'message-foundation-existing', 'unionid-foundation-existing')
+                """
+            )
+            connection.execute(
+                """
+                INSERT INTO customer_read_model_refresh_source_receipt (
+                    source_event_key, source_event_type, generation
+                ) VALUES ('sha256:foundation', 'identity.resolved', 1)
+                """
+            )
+            connection.commit()
+
+        _upgrade_database_to(database_url, "head")
+
+        with psycopg.connect(database_url) as connection:
+            generated_ids = (
+                connection.execute(
+                    """
+                    INSERT INTO customer_list_index_next (unionid)
+                    VALUES ('unionid-foundation-new')
+                    RETURNING id
+                    """
+                ).fetchone()[0],
+                connection.execute(
+                    """
+                    INSERT INTO customer_detail_snapshot_next (unionid)
+                    VALUES ('unionid-foundation-new')
+                    RETURNING id
+                    """
+                ).fetchone()[0],
+                connection.execute(
+                    """
+                    INSERT INTO customer_recent_message_next (msgid, unionid)
+                    VALUES ('message-foundation-new', 'unionid-foundation-new')
+                    RETURNING id
+                    """
+                ).fetchone()[0],
+            )
+            receipt = connection.execute(
+                """
+                SELECT source_event_id
+                FROM customer_read_model_refresh_source_receipt
+                WHERE source_event_key = 'sha256:foundation'
+                """
+            ).fetchone()
+            indexes = connection.execute(
+                """
+                SELECT index_relation.relname,
+                       index_state.indisunique,
+                       index_state.indisvalid,
+                       index_state.indisready
+                FROM pg_index index_state
+                JOIN pg_class index_relation ON index_relation.oid = index_state.indexrelid
+                WHERE index_relation.relname IN (
+                    'uq_customer_list_index_next_unionid',
+                    'uq_customer_detail_snapshot_next_unionid',
+                    'idx_customer_refresh_source_generation_id'
+                )
+                ORDER BY index_relation.relname
+                """
+            ).fetchall()
+            connection.commit()
+
+        assert generated_ids == (501, 601, 701)
+        assert receipt == ("",)
+        assert indexes == [
+            ("idx_customer_refresh_source_generation_id", False, True, True),
+            ("uq_customer_detail_snapshot_next_unionid", True, True, True),
+            ("uq_customer_list_index_next_unionid", True, True, True),
+        ]
 
 
 def _upgrade_database_to(database_url: str, revision: str) -> None:
