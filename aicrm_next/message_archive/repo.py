@@ -6,6 +6,8 @@ from copy import deepcopy
 from datetime import datetime, timezone
 from typing import Any, Callable, Protocol
 
+from aicrm_next.platform_foundation.job_runs import FinishJobRunRequest, StartJobRunRequest, build_job_run_ledger_port
+
 from aicrm_next.identity_contact.resolver import resolve_external_userid_with_dbapi
 from aicrm_next.identity_contact.resolution_queue_port import (
     EnqueueIdentityResolutionRequest,
@@ -383,16 +385,17 @@ class PostgresArchiveSyncRepository:
 
     def create_sync_run(self, *, start_time: str, end_time: str, owner_userid: str, cursor: str) -> int:
         with self._connect() as conn:
-            row = conn.execute(
-                """
-                INSERT INTO sync_runs (status, start_time, end_time, owner_userid, cursor)
-                VALUES ('running', %s, %s, %s, %s)
-                RETURNING id
-                """,
-                (start_time, end_time, owner_userid, cursor),
-            ).fetchone()
+            run_id = build_job_run_ledger_port().start_dbapi(
+                conn,
+                request=StartJobRunRequest(
+                    start_time=start_time,
+                    end_time=end_time,
+                    owner_userid=owner_userid,
+                    cursor=cursor,
+                ),
+            )
             conn.commit()
-        return int((row or {}).get("id") or 0)
+        return run_id
 
     def finish_sync_run(
         self,
@@ -405,24 +408,15 @@ class PostgresArchiveSyncRepository:
         error_message: str = "",
     ) -> None:
         with self._connect() as conn:
-            conn.execute(
-                """
-                UPDATE sync_runs
-                SET status = %s,
-                    fetched_count = %s,
-                    inserted_count = %s,
-                    raw_response = %s,
-                    error_message = %s,
-                    finished_at = CURRENT_TIMESTAMP
-                WHERE id = %s
-                """,
-                (
-                    status,
-                    int(fetched_count),
-                    int(inserted_count),
-                    json.dumps(raw_response, ensure_ascii=False, default=str) if raw_response is not None else None,
-                    error_message,
-                    int(run_id),
+            build_job_run_ledger_port().finish_dbapi(
+                conn,
+                run_id,
+                request=FinishJobRunRequest(
+                    status=status,
+                    fetched_count=fetched_count,
+                    inserted_count=inserted_count,
+                    raw_response=raw_response,
+                    error_message=error_message,
                 ),
             )
             conn.commit()

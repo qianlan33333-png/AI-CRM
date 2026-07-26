@@ -18,7 +18,6 @@ repositories:
       - questionnaires
     table_writes:
       - admin_login_audit
-      - admin_operation_logs
       - admin_user_roles
       - admin_users
       - app_settings
@@ -38,8 +37,7 @@ repositories:
   aicrm_next/admin_config/pii_audit_repository.py:
     capability_owner: aicrm_next.admin_config
     table_reads: []
-    table_writes:
-      - admin_operation_logs
+    table_writes: []
   aicrm_next/admin_jobs/repository.py:
     capability_owner: aicrm_next.admin_jobs
     table_reads:
@@ -51,7 +49,6 @@ repositories:
       - sync_runs
       - wecom_external_contact_event_logs
     table_writes:
-      - admin_operation_logs
       - broadcast_job_hourly_reports
       - broadcast_jobs
       - broadcast_queue_notification_settings
@@ -148,7 +145,6 @@ repositories:
       - wecom_external_contact_follow_users
       - wecom_external_contact_identity_map
     table_writes:
-      - admin_operation_logs
       - ai_audience_inbound_webhook_event
       - ai_audience_member_current
       - ai_audience_member_event
@@ -217,20 +213,12 @@ repositories:
       - miniprogram_library
       - wecom_customer_acquisition_links
       - wecom_external_contact_event_logs
-    table_writes:
-      - automation_channel
-      - automation_channel_assignee
-      - automation_channel_assignment_event
-      - automation_channel_qrcode_asset
+    table_writes: []
     non_literal_table_reads:
       - automation_channel_assignee
       - automation_channel_assignment_event
       - automation_channel_entry_effect_log
       - wecom_external_contact_event_logs
-    non_literal_table_writes:
-      - automation_channel_assignee
-      - automation_channel_assignment_event
-      - automation_channel_qrcode_asset
   aicrm_next/automation_engine/group_ops/postgres_repo.py:
     capability_owner: aicrm_next.automation_engine.group_ops
     table_reads:
@@ -343,6 +331,11 @@ repositories:
       - crm_user_identity
       - crm_user_identity_conflicts
       - crm_user_identity_resolution_queue
+  aicrm_next/channel_entry/channel_write_repository.py:
+    capability_owner: aicrm_next.channel_entry
+    table_reads: []
+    table_writes:
+      - automation_channel
   aicrm_next/channel_entry/repo.py:
     capability_owner: aicrm_next.channel_entry
     table_reads:
@@ -356,7 +349,6 @@ repositories:
     non_literal_table_reads:
       - crm_user_identity
     table_writes:
-      - automation_channel
       - automation_channel_assignee
       - automation_channel_assignment_event
       - automation_channel_contact
@@ -392,7 +384,6 @@ repositories:
       - crm_user_identity
       - customer_read_model_current
     table_writes:
-      - admin_operation_logs
       - broadcast_jobs
       - campaign_members
       - campaign_steps
@@ -603,7 +594,6 @@ repositories:
     table_writes:
       - archive_sync_state
       - archived_messages
-      - sync_runs
     non_literal_table_reads:
       - app_settings
   aicrm_next/ops_enrollment/repo.py:
@@ -638,7 +628,6 @@ repositories:
       - wecom_external_contact_follow_users
       - wecom_external_contact_identity_map
     table_writes:
-      - admin_operation_logs
       - customer_detail_snapshot_next
       - customer_list_index_next
       - external_contact_bindings
@@ -655,6 +644,11 @@ repositories:
       - admin_wecom_directory_members
     non_literal_table_reads:
       - admin_wecom_directory_members
+  aicrm_next/platform_foundation/admin_audit/repository.py:
+    capability_owner: aicrm_next.platform_foundation.admin_audit
+    table_reads: []
+    table_writes:
+      - admin_operation_logs
   aicrm_next/platform_foundation/auth_platform/repository.py:
     capability_owner: aicrm_next.platform_foundation.auth_platform
     table_reads:
@@ -686,10 +680,8 @@ repositories:
       - internal_event_consumer_run
       - internal_event_outbox
       - queue_fairness_cursor
-      - queue_rate_scope_cooldown
       - queue_runtime_lease_recovery_event
       - queue_worker_heartbeat
-      - webhook_inbox
   aicrm_next/platform_foundation/external_effects/canary_repository.py:
     capability_owner: aicrm_next.platform_foundation.external_effects
     table_reads: []
@@ -740,6 +732,16 @@ repositories:
       - internal_event_consumer_attempt
       - internal_event_consumer_run
       - internal_event_outbox
+  aicrm_next/platform_foundation/job_runs/repository.py:
+    capability_owner: aicrm_next.platform_foundation.job_runs
+    table_reads: []
+    table_writes:
+      - sync_runs
+  aicrm_next/platform_foundation/rate_scope_cooldown/repository.py:
+    capability_owner: aicrm_next.platform_foundation.rate_scope_cooldown
+    table_reads: []
+    table_writes:
+      - queue_rate_scope_cooldown
   aicrm_next/platform_foundation/push_center/capability_repository.py:
     capability_owner: aicrm_next.platform_foundation.push_center
     table_reads:
@@ -766,6 +768,14 @@ repositories:
   aicrm_next/platform_foundation/webhook_inbox/repository.py:
     capability_owner: aicrm_next.platform_foundation.webhook_inbox
     table_reads:
+      - queue_runtime_control
+      - webhook_inbox
+    table_writes:
+      - webhook_inbox
+  aicrm_next/platform_foundation/webhook_inbox/runtime_write_repository.py:
+    capability_owner: aicrm_next.platform_foundation.webhook_inbox
+    table_reads:
+      - queue_fairness_cursor
       - queue_runtime_control
       - webhook_inbox
     table_writes:

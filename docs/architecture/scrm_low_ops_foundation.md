@@ -65,6 +65,27 @@ physical package move, legacy table deletion, or real provider call.
   Channel-entry snapshots resolve canonical unionid and then use the public
   `CustomerTagProjectionPort` in the existing transaction; unresolved aliases
   continue into identity recovery without creating tag rows.
+- `sync_runs` now has one platform owner. Message-archive and customer-tag
+  synchronization write through `JobRunLedgerPort` using their existing DBAPI
+  and SQLAlchemy transactions; the port never commits on their behalf.
+- `queue_rate_scope_cooldown` now has one platform owner. Runtime administration
+  and provider-429 settlement use `RateScopeCooldownPort` with their existing
+  DBAPI and SQLAlchemy transactions, while the monotonic deadline rule remains
+  unchanged.
+- Channel assignees, assignment events, and QR assets now declare their actual
+  single SQL owner, `channel_entry`. Automation channel services keep their
+  compatibility methods but delegate mutations to that owner.
+- Canonical channel metadata also has one SQL owner. Admin save, assignment
+  settings, and QR updates use `ChannelWritePort`; callers retain their current
+  connection and commit boundaries.
+- `admin_operation_logs` now has one platform owner. Admin config, PII access,
+  job administration, AI Audience, cloud orchestration, and owner migration
+  append through `AdminAuditPort`; redaction and every caller's existing commit
+  boundary remain unchanged.
+- `webhook_inbox` now has one platform owner. Callback ingestion, worker
+  settlement, queue claim/recovery/heartbeat, and operator CAS commands all use
+  the webhook-inbox public ports while preserving the execution runtime's
+  policy locks, fairness cursor, wakeup, and command-audit transaction.
 - Unresolved identity ingress from AI Audience, questionnaire submissions,
   archived messages, and channel contact tags now uses one versioned
   `IdentityResolutionQueuePort`. Source-specific idempotency keys, the caller's
@@ -101,12 +122,14 @@ and historical-data parity evidence.
   shadow comparison, and cutover activation are operational release steps and
   are not inferred from repository tests. No
   `AICRM_RUNTIME_CONFIG_CUTOVER_KEYS` value is activated by this change.
-- The cross-context import baseline is reduced from 162 to 114 by injecting the
+- The cross-context import baseline is reduced from 162 to 116 by injecting the
   composed FastAPI route registry, keeping the runtime-config projection in
   `admin_config`, publishing the management shell as a static app contract, and
   routing all business-provider dependencies through the versioned
-  `integration_ports` surface. The target of 120 is reached without introducing
-  a broker or runtime plugin system. Physical directory moves remain disabled
+  `integration_ports` surface. The provider surface reaches 114 edges; two
+  explicit owner-port dependencies for cross-domain transactional tables leave
+  the current graph at 116. The target of 120 remains met without introducing a
+  broker or runtime plugin system. Physical directory moves remain disabled
   until public ports and unique table-write ownership are proven.
 - Existing service and timer units remain authoritative. The new scheduler is
   catalog-only and fails closed on `--execute`; successor parity is required

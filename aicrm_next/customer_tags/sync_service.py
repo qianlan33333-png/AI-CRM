@@ -9,6 +9,7 @@ from sqlalchemy import bindparam, text
 from sqlalchemy.engine import Engine
 
 from aicrm_next.integration_ports import build_wecom_tag_live_gateway
+from aicrm_next.platform_foundation.job_runs import FinishJobRunRequest, StartJobRunRequest, build_job_run_ledger_port
 from aicrm_next.shared.db_session import get_engine
 from aicrm_next.shared.runtime import fixture_mode
 
@@ -96,16 +97,15 @@ class PostgresWeComTagSyncRepository:
 
     def refresh_catalog(self, *, groups: list[Json], tags: list[Json], synced_at: str, operator: str, raw_response: Json) -> Json:
         with self._engine().begin() as connection:
-            run_id = connection.execute(
-                text(
-                    """
-                    INSERT INTO sync_runs (status, start_time, owner_userid, raw_response, created_at)
-                    VALUES ('running', :synced_at, :operator, :raw_response, CURRENT_TIMESTAMP)
-                    RETURNING id
-                    """
+            job_run_ledger = build_job_run_ledger_port()
+            run_id = job_run_ledger.start_sqlalchemy(
+                connection,
+                request=StartJobRunRequest(
+                    start_time=synced_at,
+                    owner_userid=operator,
+                    raw_response=raw_response,
                 ),
-                {"synced_at": synced_at, "operator": operator, "raw_response": _json(raw_response)},
-            ).scalar_one_or_none()
+            )
 
             upserted_groups = 0
             for group in groups:
@@ -224,27 +224,16 @@ class PostgresWeComTagSyncRepository:
                 "upserted_tags": upserted_tags,
                 "marked_deleted_tags": marked_deleted,
             }
-            connection.execute(
-                text(
-                    """
-                    UPDATE sync_runs
-                    SET status = 'success',
-                        end_time = :synced_at,
-                        fetched_count = :fetched_count,
-                        inserted_count = :inserted_count,
-                        raw_response = :raw_response,
-                        error_message = '',
-                        finished_at = CURRENT_TIMESTAMP
-                    WHERE id = :run_id
-                    """
+            job_run_ledger.finish_sqlalchemy(
+                connection,
+                run_id,
+                request=FinishJobRunRequest(
+                    status="success",
+                    end_time=synced_at,
+                    fetched_count=len(tags),
+                    inserted_count=upserted_tags,
+                    raw_response={"ok": True, **result},
                 ),
-                {
-                    "synced_at": synced_at,
-                    "fetched_count": len(tags),
-                    "inserted_count": upserted_tags,
-                    "raw_response": _json({"ok": True, **result}),
-                    "run_id": run_id,
-                },
             )
             return result
 

@@ -45,7 +45,6 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
     ]
     assert repositories["aicrm_next/admin_config/repository.py"]["table_writes"] == [
         "admin_login_audit",
-        "admin_operation_logs",
         "admin_user_roles",
         "admin_users",
         "app_settings",
@@ -63,7 +62,6 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "wecom_external_contact_event_logs",
     ]
     assert repositories["aicrm_next/admin_jobs/repository.py"]["table_writes"] == [
-        "admin_operation_logs",
         "broadcast_job_hourly_reports",
         "broadcast_jobs",
         "broadcast_queue_notification_settings",
@@ -89,6 +87,17 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "wecom_external_contact_event_logs",
         "wecom_external_contact_follow_users",
         "wecom_external_contact_identity_map",
+    ]
+    assert repositories["aicrm_next/platform_foundation/admin_audit/repository.py"] == {
+        "capability_owner": "aicrm_next.platform_foundation.admin_audit",
+        "table_reads": [],
+        "table_writes": ["admin_operation_logs"],
+    }
+    assert manifest["tables"]["admin_operation_logs"]["write_owner"] == (
+        "aicrm_next.platform_foundation.admin_audit"
+    )
+    assert manifest["tables"]["admin_operation_logs"]["write_owners"] == [
+        "aicrm_next.platform_foundation.admin_audit"
     ]
     assert "aicrm_next.external_push.repo" in manifest["tables"]["domain_event_outbox"]["read_owners"]
     assert "aicrm_next.external_push.repo" in manifest["tables"]["external_push_delivery"]["read_owners"]

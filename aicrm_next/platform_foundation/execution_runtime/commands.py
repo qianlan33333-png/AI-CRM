@@ -22,6 +22,9 @@ from aicrm_next.platform_foundation.internal_events.models import (
 from aicrm_next.platform_foundation.internal_events.outbox import (
     enqueue_internal_event_outbox_in_session,
 )
+from aicrm_next.platform_foundation.webhook_inbox.runtime_write_port import (
+    build_webhook_inbox_runtime_write_port,
+)
 from aicrm_next.shared.db_session import get_session_factory
 
 
@@ -312,35 +315,43 @@ class QueueRuntimeCommandService:
 
         with self._session_factory() as session:
             with session.begin():
-                row = (
-                    session.execute(
-                        text(
-                            f"""
-                            UPDATE {fact.table}
-                            SET available_at = CURRENT_TIMESTAMP,
-                                next_retry_at = CURRENT_TIMESTAMP,
-                                worker_generation = 0,
-                                {fact.version_assignment}
-                                updated_at = CURRENT_TIMESTAMP
-                            WHERE id = :item_id
-                              AND status = :expected_status
-                              AND {fact.version_predicate}
-                              AND hold_reason = ''
-                              AND (lease_expires_at IS NULL OR lease_expires_at <= CURRENT_TIMESTAMP)
-                              {fact.provider_boundary_predicate}
-                            RETURNING id, execution_id, lane, status, hold_reason,
-                                      {fact.version_expression} AS version_token
-                            """
-                        ),
-                        {
-                            "item_id": int(item_id),
-                            "expected_status": normalized_status,
-                            "expected_version": normalized_version,
-                        },
+                if normalized_kind == "webhook_inbox":
+                    row = build_webhook_inbox_runtime_write_port().make_eligible_now_sqlalchemy(
+                        session,
+                        item_id=int(item_id),
+                        expected_status=normalized_status,
+                        expected_version=normalized_version,
                     )
-                    .mappings()
-                    .fetchone()
-                )
+                else:
+                    row = (
+                        session.execute(
+                            text(
+                                f"""
+                                UPDATE {fact.table}
+                                SET available_at = CURRENT_TIMESTAMP,
+                                    next_retry_at = CURRENT_TIMESTAMP,
+                                    worker_generation = 0,
+                                    {fact.version_assignment}
+                                    updated_at = CURRENT_TIMESTAMP
+                                WHERE id = :item_id
+                                  AND status = :expected_status
+                                  AND {fact.version_predicate}
+                                  AND hold_reason = ''
+                                  AND (lease_expires_at IS NULL OR lease_expires_at <= CURRENT_TIMESTAMP)
+                                  {fact.provider_boundary_predicate}
+                                RETURNING id, execution_id, lane, status, hold_reason,
+                                          {fact.version_expression} AS version_token
+                                """
+                            ),
+                            {
+                                "item_id": int(item_id),
+                                "expected_status": normalized_status,
+                                "expected_version": normalized_version,
+                            },
+                        )
+                        .mappings()
+                        .fetchone()
+                    )
                 if not row:
                     raise QueueCommandConflict(
                         "queue command CAS failed; target changed, is held, leased, or crossed the provider boundary"
@@ -446,30 +457,40 @@ class QueueRuntimeCommandService:
                 "duplicate_risk_confirmed=true is required for unknown_after_dispatch"
             )
 
-        statement = self._manual_action_statement(
-            queue_kind=normalized_kind,
-            action=normalized_action,
-            version_predicate=fact.version_predicate,
-            version_expression=fact.version_expression,
-        )
         with self._session_factory() as session:
             with session.begin():
-                row = (
-                    session.execute(
-                        text(statement),
-                        {
-                            "item_id": int(item_id),
-                            "expected_status": normalized_status,
-                            "expected_version": normalized_version,
-                            "actor": normalized_actor,
-                            "actor_ref_hash": sha256(normalized_actor.encode("utf-8")).hexdigest(),
-                            "reason": normalized_reason[:500],
-                            "attempt_id": "iea_" + uuid4().hex,
-                        },
+                if normalized_kind == "webhook_inbox":
+                    row = build_webhook_inbox_runtime_write_port().manual_action_sqlalchemy(
+                        session,
+                        action=normalized_action,
+                        item_id=int(item_id),
+                        expected_status=normalized_status,
+                        expected_version=normalized_version,
+                        reason=normalized_reason,
                     )
-                    .mappings()
-                    .fetchone()
-                )
+                else:
+                    statement = self._manual_action_statement(
+                        queue_kind=normalized_kind,
+                        action=normalized_action,
+                        version_predicate=fact.version_predicate,
+                        version_expression=fact.version_expression,
+                    )
+                    row = (
+                        session.execute(
+                            text(statement),
+                            {
+                                "item_id": int(item_id),
+                                "expected_status": normalized_status,
+                                "expected_version": normalized_version,
+                                "actor": normalized_actor,
+                                "actor_ref_hash": sha256(normalized_actor.encode("utf-8")).hexdigest(),
+                                "reason": normalized_reason[:500],
+                                "attempt_id": "iea_" + uuid4().hex,
+                            },
+                        )
+                        .mappings()
+                        .fetchone()
+                    )
                 if not row:
                     raise QueueCommandConflict(
                         "manual queue command CAS failed; target changed, is leased, held, or terminal"
@@ -731,68 +752,6 @@ class QueueRuntimeCommandService:
                   AND attempt.consumer_run_id = target.id
                 RETURNING run.id, run.execution_id, run.lane, run.status,
                           run.hold_reason, run.xmin::text AS version_token
-            """
-        if queue_kind == "webhook_inbox" and action == "retry":
-            return f"""
-                UPDATE webhook_inbox
-                SET status = 'failed_retryable',
-                    next_retry_at = CURRENT_TIMESTAMP,
-                    available_at = CURRENT_TIMESTAMP,
-                    locked_at = NULL, locked_by = '',
-                    lease_token = '', lease_expires_at = NULL,
-                    heartbeat_at = NULL, worker_generation = 0,
-                    max_attempts = GREATEST(max_attempts, attempt_count + 1),
-                    last_error_code = 'operator_retry',
-                    last_error_message = :reason,
-                    finished_at = NULL,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = :item_id
-                  AND status = :expected_status
-                  AND {version_predicate}
-                  AND status IN (
-                      'failed_retryable', 'failed_terminal', 'dead_letter', 'processing'
-                  )
-                  AND hold_reason = ''
-                  AND (
-                      status <> 'processing'
-                      OR lease_expires_at <= CURRENT_TIMESTAMP
-                      OR (
-                          lease_expires_at IS NULL
-                          AND locked_at <= CURRENT_TIMESTAMP - INTERVAL '5 minutes'
-                      )
-                  )
-                RETURNING id, execution_id, lane, status, hold_reason,
-                          {version_expression} AS version_token
-            """
-        if queue_kind == "webhook_inbox" and action == "skip":
-            return f"""
-                UPDATE webhook_inbox
-                SET status = 'ignored',
-                    next_retry_at = NULL,
-                    locked_at = NULL, locked_by = '',
-                    lease_token = '', lease_expires_at = NULL,
-                    heartbeat_at = NULL, worker_generation = 0,
-                    last_error_code = 'operator_skip',
-                    last_error_message = :reason,
-                    finished_at = CURRENT_TIMESTAMP,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = :item_id
-                  AND status = :expected_status
-                  AND {version_predicate}
-                  AND status IN (
-                      'received', 'failed_retryable', 'failed_terminal',
-                      'dead_letter', 'processing'
-                  )
-                  AND (
-                      status <> 'processing'
-                      OR lease_expires_at <= CURRENT_TIMESTAMP
-                      OR (
-                          lease_expires_at IS NULL
-                          AND locked_at <= CURRENT_TIMESTAMP - INTERVAL '5 minutes'
-                      )
-                  )
-                RETURNING id, execution_id, lane, status, hold_reason,
-                          {version_expression} AS version_token
             """
         raise ValueError(f"unsupported manual queue action: {queue_kind}:{action}")
 

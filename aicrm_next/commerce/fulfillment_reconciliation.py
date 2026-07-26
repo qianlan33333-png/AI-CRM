@@ -5,6 +5,7 @@ import json
 from dataclasses import replace
 from typing import Any
 
+from aicrm_next.external_push.delivery_projection_port import build_external_push_delivery_projection_port
 from aicrm_next.platform_foundation.command_bus.models import CommandContext
 from aicrm_next.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
 from aicrm_next.platform_foundation.internal_events.payment import build_payment_succeeded_event_request
@@ -348,36 +349,16 @@ class CommerceFulfillmentReconciliationService:
                 """,
                 (bounded_limit,),
             ).fetchall()
+            delivery_projection_port = build_external_push_delivery_projection_port()
             for row in stale_deliveries:
-                updated = conn.execute(
-                    """
-                    UPDATE external_push_delivery
-                    SET status = 'success',
-                        attempt_count = GREATEST(attempt_count, 1),
-                        response_status = COALESCE(%s, response_status),
-                        response_body = %s,
-                        error_message = '',
-                        next_retry_at = NULL,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE delivery_id = %s
-                      AND status <> 'success'
-                    RETURNING id
-                    """,
-                    (
-                        row.get("response_status"),
-                        json.dumps(
-                            {
-                                "external_effect_job_id": int(row["external_effect_job_id"]),
-                                "external_effect_status": "succeeded",
-                                "reconciled": True,
-                                "repair_actor_hash": actor_hash,
-                                "repair_reason_hash": _reason_hash(normalized_reason),
-                            },
-                            ensure_ascii=False,
-                        ),
-                        row["delivery_id"],
-                    ),
-                ).fetchone()
+                updated = delivery_projection_port.reconcile_succeeded_dbapi(
+                    conn,
+                    delivery_id=row["delivery_id"],
+                    external_effect_job_id=int(row["external_effect_job_id"]),
+                    response_status=row.get("response_status"),
+                    actor_hash=actor_hash,
+                    reason_hash=_reason_hash(normalized_reason),
+                )
                 if updated:
                     repaired_external_push_delivery_projection += 1
             conn.commit()

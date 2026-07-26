@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-import json
 from datetime import datetime, timezone
 from typing import Any
+
+from aicrm_next.external_push.domain_event_outbox_port import build_domain_event_outbox_port
 
 from .product_code_aliases import canonical_product_code, product_code_filter_values
 
@@ -30,12 +31,6 @@ def _iso(value: Any = None) -> str:
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
-
-
-def _jsonb(value: Any):
-    from psycopg.types.json import Jsonb
-
-    return Jsonb(value, dumps=lambda data: json.dumps(data, ensure_ascii=False, default=str))
 
 
 def resolve_product_for_order(conn: Any, order: dict[str, Any]) -> dict[str, Any]:
@@ -94,22 +89,11 @@ def enqueue_transaction_paid_outbox(conn: Any, order: dict[str, Any]) -> dict[st
     aggregate_id = _text(order.get("id") or order.get("out_trade_no"))
     if not aggregate_id:
         raise ValueError("wechat_pay_order aggregate_id is required")
-    row = conn.execute(
-        """
-        INSERT INTO domain_event_outbox (
-            tenant_id, event_type, aggregate_type, aggregate_id, payload, status,
-            retry_count, next_retry_at, created_at, updated_at
-        )
-        VALUES (%s, %s, %s, %s, %s::jsonb, 'pending', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        ON CONFLICT (tenant_id, event_type, aggregate_type, aggregate_id) DO NOTHING
-        RETURNING *
-        """,
-        (
-            DEFAULT_TENANT_ID,
-            EVENT_TRANSACTION_PAID,
-            AGGREGATE_TYPE_WECHAT_PAY_ORDER,
-            aggregate_id,
-            _jsonb(payload),
-        ),
-    ).fetchone()
-    return dict(row) if row else None
+    return build_domain_event_outbox_port().enqueue_dbapi(
+        conn,
+        tenant_id=DEFAULT_TENANT_ID,
+        event_type=EVENT_TRANSACTION_PAID,
+        aggregate_type=AGGREGATE_TYPE_WECHAT_PAY_ORDER,
+        aggregate_id=aggregate_id,
+        payload=payload,
+    )

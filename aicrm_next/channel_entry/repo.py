@@ -17,6 +17,11 @@ from aicrm_next.identity_contact.resolution_queue_port import (
 )
 from aicrm_next.shared.runtime import raw_database_url
 
+from .channel_write_port import (
+    UpdateChannelAssignmentRequest,
+    UpdateChannelQRCodeRequest,
+    build_channel_write_port,
+)
 from .domain import text
 
 
@@ -643,16 +648,14 @@ def save_channel_assignees(
     normalized_overflow = text(overflow_policy) or "least_loaded"
     active_staff_ids = [item["staff_id"] for item in normalized if item["status"] == "active"]
     with _connect() as conn, conn.cursor() as cur:
-        cur.execute(
-            """
-            UPDATE automation_channel
-            SET assignment_mode = %s,
-                assignment_strategy = %s,
-                overflow_policy = %s,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = %s
-            """,
-            (normalized_mode, normalized_strategy, normalized_overflow, int(channel_id)),
+        build_channel_write_port().update_assignment(
+            cur,
+            request=UpdateChannelAssignmentRequest(
+                channel_id=int(channel_id),
+                assignment_mode=normalized_mode,
+                assignment_strategy=normalized_strategy,
+                overflow_policy=normalized_overflow,
+            ),
         )
         for item in normalized:
             cur.execute(
@@ -904,23 +907,17 @@ def choose_channel_assignee(
 
 def update_channel_qrcode(*, channel_id: int, scene_value: str, qr_url: str, config_id: str = "") -> dict[str, Any]:
     with _connect() as conn, conn.cursor() as cur:
-        cur.execute(
-            """
-            UPDATE automation_channel
-            SET scene_value = %s,
-                qr_url = %s,
-                qr_ticket = %s,
-                carrier_type = CASE WHEN carrier_type = '' THEN 'qrcode' ELSE carrier_type END,
-                channel_type = CASE WHEN channel_type = '' THEN 'qrcode' ELSE channel_type END,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = %s
-            RETURNING *
-            """,
-            (text(scene_value), text(qr_url), text(config_id), int(channel_id)),
+        row = build_channel_write_port().update_qrcode(
+            cur,
+            request=UpdateChannelQRCodeRequest(
+                channel_id=int(channel_id),
+                scene_value=text(scene_value),
+                qr_url=text(qr_url),
+                config_id=text(config_id),
+            ),
         )
-        row = cur.fetchone()
         conn.commit()
-        return dict(row) if row else {}
+        return row
 
 
 def upsert_channel_contact(*, channel_id: int, unionid: str = "", external_contact_id: str, owner_staff_id: str, source_payload: dict[str, Any]) -> dict[str, Any]:

@@ -17,6 +17,13 @@ from aicrm_next.platform_foundation.execution_runtime.lanes import (
 from aicrm_next.platform_foundation.internal_events.outbox import (
     enqueue_transactional_internal_event_outbox,
 )
+from aicrm_next.platform_foundation.rate_scope_cooldown import (
+    RateScopeCooldownRequest,
+    build_rate_scope_cooldown_port,
+)
+from aicrm_next.platform_foundation.webhook_inbox.runtime_write_port import (
+    build_webhook_inbox_runtime_write_port,
+)
 
 
 def normalize_runtime_database_url(value: str) -> str:
@@ -356,17 +363,27 @@ class ExecutionRuntimeRepository:
                 )
                 if global_capacity_exhausted or lane_count >= policy.max_in_flight:
                     return None
-                row = connection.execute(
-                    self._claim_sql(queue_kind=queue_kind, test_only=test_only),
-                    (
-                        normalized_lane,
-                        int(generation),
-                        str(worker_id or "").strip(),
-                        lease_token,
-                        ttl,
-                        int(generation),
-                    ),
-                ).fetchone()
+                if queue_kind == "webhook_inbox":
+                    row = build_webhook_inbox_runtime_write_port().claim_dbapi(
+                        connection,
+                        lane=normalized_lane,
+                        generation=int(generation),
+                        worker_id=str(worker_id or "").strip(),
+                        lease_token=lease_token,
+                        lease_seconds=ttl,
+                    )
+                else:
+                    row = connection.execute(
+                        self._claim_sql(queue_kind=queue_kind, test_only=test_only),
+                        (
+                            normalized_lane,
+                            int(generation),
+                            str(worker_id or "").strip(),
+                            lease_token,
+                            ttl,
+                            int(generation),
+                        ),
+                    ).fetchone()
                 if not row:
                     return None
                 fairness_key = str(row.get("fairness_key") or "default")
@@ -643,41 +660,9 @@ class ExecutionRuntimeRepository:
             """,
             (lane,),
         )
-        connection.execute(
-            """
-            UPDATE webhook_inbox
-            SET status = CASE
-                    WHEN attempt_count + 1 >= max_attempts THEN 'dead_letter'
-                    ELSE 'failed_retryable'
-                END,
-                attempt_count = attempt_count + 1,
-                available_at = CASE
-                    WHEN attempt_count + 1 < max_attempts THEN CURRENT_TIMESTAMP
-                    ELSE available_at
-                END,
-                next_retry_at = CASE
-                    WHEN attempt_count + 1 < max_attempts THEN CURRENT_TIMESTAMP
-                    ELSE NULL
-                END,
-                worker_generation = CASE
-                    WHEN attempt_count + 1 < max_attempts THEN 0
-                    ELSE worker_generation
-                END,
-                last_error_code = 'lease_expired',
-                last_error_message = 'Webhook processing lease expired before completion.',
-                lease_token = '', lease_expires_at = NULL, heartbeat_at = NULL,
-                locked_by = '', locked_at = NULL,
-                finished_at = CASE
-                    WHEN attempt_count + 1 >= max_attempts THEN CURRENT_TIMESTAMP
-                    ELSE NULL
-                END,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE lane = %s
-              AND status = 'processing'
-              AND lease_expires_at IS NOT NULL
-              AND lease_expires_at <= CURRENT_TIMESTAMP
-            """,
-            (lane,),
+        build_webhook_inbox_runtime_write_port().recover_expired_dbapi(
+            connection,
+            lane=lane,
         )
 
     @staticmethod
@@ -911,51 +896,7 @@ class ExecutionRuntimeRepository:
                 WHERE outbox.id = candidate.id
                 RETURNING outbox.*
             """
-        return """
-            WITH candidate AS (
-                SELECT inbox.id
-                FROM webhook_inbox inbox
-                LEFT JOIN queue_fairness_cursor fairness
-                  ON fairness.lane = inbox.lane
-                 AND fairness.fairness_key = inbox.fairness_key
-                WHERE inbox.lane = %s
-                  AND inbox.worker_generation IN (0, %s)
-                  AND inbox.policy_version = (
-                      SELECT policy_version FROM queue_runtime_control WHERE singleton = TRUE
-                  )
-                  AND inbox.status IN ('received', 'failed_retryable')
-                  AND inbox.hold_reason = ''
-                  AND inbox.attempt_count < inbox.max_attempts
-                  AND inbox.available_at <= CURRENT_TIMESTAMP
-                  AND (inbox.lease_expires_at IS NULL OR inbox.lease_expires_at <= CURRENT_TIMESTAMP)
-                  AND NOT EXISTS (
-                      SELECT 1
-                      FROM webhook_inbox active
-                      WHERE active.lane = inbox.lane
-                        AND active.ordering_key = inbox.ordering_key
-                        AND active.ordering_key <> ''
-                        AND active.status = 'processing'
-                        AND active.lease_expires_at > CURRENT_TIMESTAMP
-                  )
-                ORDER BY COALESCE(fairness.last_claimed_at, '-infinity'),
-                         inbox.received_at ASC, inbox.id ASC
-                LIMIT 1
-                FOR UPDATE OF inbox SKIP LOCKED
-            )
-            UPDATE webhook_inbox inbox
-            SET status = 'processing',
-                locked_by = %s,
-                lease_token = %s,
-                locked_at = CURRENT_TIMESTAMP,
-                started_at = COALESCE(started_at, CURRENT_TIMESTAMP),
-                lease_expires_at = CURRENT_TIMESTAMP + (%s * INTERVAL '1 second'),
-                heartbeat_at = CURRENT_TIMESTAMP,
-                worker_generation = %s,
-                updated_at = CURRENT_TIMESTAMP
-            FROM candidate
-            WHERE inbox.id = candidate.id
-            RETURNING inbox.*
-        """
+        raise ValueError(f"unsupported queue kind: {queue_kind}")
 
     def renew_lease(
         self,
@@ -966,11 +907,21 @@ class ExecutionRuntimeRepository:
         generation: int,
         lease_seconds: int = 30,
     ) -> bool:
+        if queue_kind == "webhook_inbox":
+            with self._connect(self._database_url) as connection:
+                renewed = build_webhook_inbox_runtime_write_port().renew_lease_dbapi(
+                    connection,
+                    item_id=int(item_id),
+                    lease_token=str(lease_token or ""),
+                    generation=int(generation),
+                    lease_seconds=lease_seconds,
+                )
+                connection.commit()
+            return renewed
         table, status = {
             "external_effect": ("external_effect_job", "dispatching"),
             "internal_event": ("internal_event_consumer_run", "running"),
             "internal_outbox": ("internal_event_outbox", "running"),
-            "webhook_inbox": ("webhook_inbox", "processing"),
         }.get(queue_kind, ("", ""))
         if not table:
             raise ValueError("unsupported queue kind")
@@ -1149,34 +1100,17 @@ class ExecutionRuntimeRepository:
         if not str(rate_scope_key or "").strip():
             raise ValueError("rate_scope_key is required")
         with self._connect(self._database_url) as connection:
-            connection.execute(
-                """
-                INSERT INTO queue_rate_scope_cooldown (
-                    rate_scope_key, provider, corp_id, app_id, operation,
-                    blocked_until, reason, source_attempt_id, updated_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
-                ON CONFLICT (rate_scope_key) DO UPDATE
-                SET blocked_until = GREATEST(
-                        queue_rate_scope_cooldown.blocked_until,
-                        EXCLUDED.blocked_until
-                    ),
-                    provider = EXCLUDED.provider,
-                    corp_id = EXCLUDED.corp_id,
-                    app_id = EXCLUDED.app_id,
-                    operation = EXCLUDED.operation,
-                    reason = EXCLUDED.reason,
-                    source_attempt_id = EXCLUDED.source_attempt_id,
-                    updated_at = CURRENT_TIMESTAMP
-                """,
-                (
-                    str(rate_scope_key),
-                    str(provider),
-                    str(corp_id),
-                    str(app_id),
-                    str(operation),
-                    blocked_until,
-                    str(reason),
-                    str(source_attempt_id),
+            build_rate_scope_cooldown_port().persist_dbapi(
+                connection,
+                request=RateScopeCooldownRequest(
+                    rate_scope_key=str(rate_scope_key),
+                    provider=str(provider),
+                    corp_id=str(corp_id),
+                    app_id=str(app_id),
+                    operation=str(operation),
+                    blocked_until=blocked_until,
+                    reason=str(reason),
+                    source_attempt_id=str(source_attempt_id),
                 ),
             )
             connection.commit()

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from aicrm_next.channel_entry import repo as channel_entry_repo
+from aicrm_next.channel_entry.channel_write_port import SaveChannelRequest, build_channel_write_port
 
 from .repo import channel_admin_uses_postgres, connect_channel_admin_db
 
@@ -124,52 +125,12 @@ def save_channel(data: dict[str, Any], *, channel_id: int | None = None) -> int:
     conn = connect_channel_admin_db()
     if conn is None:
         return 0
-    from psycopg.types.json import Jsonb
-
-    columns = [
-        "channel_type",
-        "carrier_type",
-        "channel_name",
-        "channel_code",
-        "scene_value",
-        "qr_url",
-        "status",
-        "owner_staff_id",
-        "customer_channel",
-        "link_url",
-        "final_url",
-        "welcome_message",
-        "welcome_image_library_ids",
-        "welcome_miniprogram_library_ids",
-        "welcome_attachment_library_ids",
-        "welcome_group_invite_library_ids",
-        "auto_accept_friend",
-        "entry_tag_id",
-        "entry_tag_name",
-        "entry_tag_group_name",
-        "assignment_mode",
-        "assignment_strategy",
-        "overflow_policy",
-        "assignment_config_json",
-    ]
-    values = [Jsonb(data[key]) if key.endswith("_ids") else data[key] for key in columns]
-    values = [Jsonb(data[key]) if key == "assignment_config_json" else value for key, value in zip(columns, values)]
     with conn:
         with conn.cursor() as cur:
-            if channel_id:
-                assignments = ", ".join(f"{column} = %s" for column in columns)
-                cur.execute(
-                    f"UPDATE automation_channel SET {assignments}, updated_at = CURRENT_TIMESTAMP WHERE id = %s RETURNING id",
-                    tuple(values + [int(channel_id)]),
-                )
-                saved_id = int((cur.fetchone() or {}).get("id") or channel_id)
-            else:
-                placeholders = ", ".join(["%s"] * len(columns))
-                cur.execute(
-                    f"INSERT INTO automation_channel ({', '.join(columns)}) VALUES ({placeholders}) RETURNING id",
-                    tuple(values),
-                )
-                saved_id = int((cur.fetchone() or {}).get("id") or 0)
+            saved_id = build_channel_write_port().save(
+                cur,
+                request=SaveChannelRequest(data=data, channel_id=channel_id),
+            )
         conn.commit()
     return saved_id
 

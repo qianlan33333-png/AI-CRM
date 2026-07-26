@@ -3,8 +3,10 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import text
-
+from aicrm_next.platform_foundation.rate_scope_cooldown import (
+    RateScopeCooldownRequest,
+    build_rate_scope_cooldown_port,
+)
 from aicrm_next.shared.runtime_settings import managed_runtime_setting
 
 from .models import (
@@ -73,41 +75,18 @@ def persist_rate_limit_cooldown(
     if not is_rate_limited(result):
         return False
     corp_id, app_id = _scope_metadata(job)
-    session.execute(
-        text(
-            """
-            INSERT INTO queue_rate_scope_cooldown (
-                rate_scope_key, provider, corp_id, app_id, operation,
-                blocked_until, reason, source_attempt_id, updated_at
-            ) VALUES (
-                :rate_scope_key, :provider, :corp_id, :app_id, :operation,
-                CAST(:blocked_until AS timestamptz), :reason,
-                :source_attempt_id, CURRENT_TIMESTAMP
-            )
-            ON CONFLICT (rate_scope_key) DO UPDATE
-            SET blocked_until = GREATEST(
-                    queue_rate_scope_cooldown.blocked_until,
-                    EXCLUDED.blocked_until
-                ),
-                provider = EXCLUDED.provider,
-                corp_id = EXCLUDED.corp_id,
-                app_id = EXCLUDED.app_id,
-                operation = EXCLUDED.operation,
-                reason = EXCLUDED.reason,
-                source_attempt_id = EXCLUDED.source_attempt_id,
-                updated_at = CURRENT_TIMESTAMP
-            """
+    build_rate_scope_cooldown_port().persist_sqlalchemy(
+        session,
+        request=RateScopeCooldownRequest(
+            rate_scope_key=job.rate_scope_key,
+            provider=job.adapter_name,
+            corp_id=corp_id,
+            app_id=app_id,
+            operation=job.operation,
+            blocked_until=public_datetime(blocked_until or utcnow()),
+            reason=_text(result.error_code) or "provider_429",
+            source_attempt_id=attempt.attempt_id,
         ),
-        {
-            "rate_scope_key": job.rate_scope_key,
-            "provider": job.adapter_name,
-            "corp_id": corp_id,
-            "app_id": app_id,
-            "operation": job.operation,
-            "blocked_until": public_datetime(blocked_until or utcnow()),
-            "reason": _text(result.error_code) or "provider_429",
-            "source_attempt_id": attempt.attempt_id,
-        },
     )
     return True
 

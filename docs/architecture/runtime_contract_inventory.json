@@ -3053,7 +3053,7 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/platform_foundation/external_effects/rate_limit.py",
       "key": "WECOM_AGENT_ID",
-      "line": 60
+      "line": 62
     },
     {
       "accessor": "managed_runtime_setting",
@@ -3335,7 +3335,7 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/platform_foundation/external_effects/rate_limit.py",
       "key": "WECOM_CORP_ID",
-      "line": 52
+      "line": 54
     },
     {
       "accessor": "managed_runtime_setting",
@@ -47675,21 +47675,17 @@
       "write_owner": "aicrm_next.admin_config"
     },
     {
-      "domain": "admin_config",
+      "domain": "platform_foundation",
       "drop_candidate": false,
       "lifecycle": "audit",
       "migration_source": "0085_admin_config_audit_baseline",
       "pii_level": "internal_contact",
       "read_owners": [
         "aicrm_next.admin_config",
-        "aicrm_next.admin_jobs",
-        "aicrm_next.admin_read_model",
-        "aicrm_next.ai_audience_ops",
-        "aicrm_next.cloud_orchestrator",
-        "aicrm_next.owner_migration"
+        "aicrm_next.admin_read_model"
       ],
       "table": "admin_operation_logs",
-      "write_owner": "aicrm_next.admin_config"
+      "write_owner": "aicrm_next.platform_foundation.admin_audit"
     },
     {
       "domain": "legacy_auth",
@@ -48102,7 +48098,7 @@
         "historical schema drift guard"
       ],
       "table": "automation_agent_audit_log",
-      "write_owner": "aicrm_next.automation_agents"
+      "write_owner": "aicrm_next.automation_engine"
     },
     {
       "domain": "automation_agents",
@@ -48126,7 +48122,7 @@
         "historical schema drift guard"
       ],
       "table": "automation_agent_idempotency",
-      "write_owner": "aicrm_next.automation_agents"
+      "write_owner": "aicrm_next.automation_engine"
     },
     {
       "domain": "ai_audience_ops",
@@ -48270,7 +48266,7 @@
         "historical schema drift guard"
       ],
       "table": "automation_agents",
-      "write_owner": "aicrm_next.automation_agents"
+      "write_owner": "aicrm_next.automation_engine"
     },
     {
       "domain": "automation_engine",
@@ -48295,7 +48291,7 @@
         "historical schema drift guard"
       ],
       "table": "automation_channel",
-      "write_owner": "aicrm_next.automation_engine.channels_api"
+      "write_owner": "aicrm_next.channel_entry"
     },
     {
       "domain": "channel_entry",
@@ -48307,7 +48303,7 @@
         "historical schema drift guard"
       ],
       "table": "automation_channel_assignee",
-      "write_owner": "aicrm_next.automation_engine.channels_api"
+      "write_owner": "aicrm_next.channel_entry"
     },
     {
       "domain": "channel_entry",
@@ -48319,7 +48315,7 @@
         "historical schema drift guard"
       ],
       "table": "automation_channel_assignment_event",
-      "write_owner": "aicrm_next.automation_engine.channels_api"
+      "write_owner": "aicrm_next.channel_entry"
     },
     {
       "domain": "channel_entry",
@@ -48331,7 +48327,7 @@
         "historical schema drift guard"
       ],
       "table": "automation_channel_contact",
-      "write_owner": "aicrm_next.automation_engine.channels_api"
+      "write_owner": "aicrm_next.channel_entry"
     },
     {
       "domain": "channel_entry",
@@ -48368,7 +48364,7 @@
         "historical schema drift guard"
       ],
       "table": "automation_channel_qrcode_asset",
-      "write_owner": "aicrm_next.automation_engine.channels_api"
+      "write_owner": "aicrm_next.channel_entry"
     },
     {
       "domain": "channel_entry",
@@ -48380,7 +48376,7 @@
         "historical schema drift guard"
       ],
       "table": "automation_channel_scene_alias",
-      "write_owner": "aicrm_next.automation_engine.channels_api"
+      "write_owner": "aicrm_next.channel_entry"
     },
     {
       "domain": "automation_legacy",
@@ -49109,7 +49105,7 @@
         "aicrm_next.delivery_lineage"
       ],
       "table": "broadcast_job_events",
-      "write_owner": "aicrm_next.admin_jobs"
+      "write_owner": "aicrm_next.background_jobs.broadcast_queue_worker"
     },
     {
       "domain": "broadcast_jobs",
@@ -49715,7 +49711,7 @@
         "aicrm_next.external_push.repo"
       ],
       "table": "domain_event_outbox",
-      "write_owner": "aicrm_next.commerce.external_push_outbox"
+      "write_owner": "aicrm_next.external_push"
     },
     {
       "domain": "identity_contact",
@@ -49770,7 +49766,7 @@
         "historical schema drift guard"
       ],
       "table": "external_effect_test_receipt",
-      "write_owner": "aicrm_next.external_effect"
+      "write_owner": "aicrm_next.platform_foundation.external_effects"
     },
     {
       "domain": "external",
@@ -49782,7 +49778,7 @@
         "aicrm_next.external_push"
       ],
       "table": "external_push_config",
-      "write_owner": "aicrm_next.external_push"
+      "write_owner": "aicrm_next.commerce"
     },
     {
       "domain": "commerce_events",
@@ -49796,7 +49792,7 @@
         "external_effect compatibility diagnostics"
       ],
       "table": "external_push_delivery",
-      "write_owner": "aicrm_next.commerce.external_push_admin"
+      "write_owner": "aicrm_next.external_push"
     },
     {
       "domain": "group_ops",
@@ -49920,7 +49916,7 @@
         "historical schema drift guard"
       ],
       "table": "hxc_dashboard_broadcast_tasks",
-      "write_owner": "aicrm_next.user_ops"
+      "write_owner": "aicrm_next.hxc_dashboard"
     },
     {
       "domain": "identity_contact",
@@ -50259,7 +50255,7 @@
         "aicrm_next.background_jobs"
       ],
       "table": "outbound_tasks",
-      "write_owner": "aicrm_next.admin_jobs"
+      "write_owner": "aicrm_next.background_jobs.broadcast_queue_worker"
     },
     {
       "domain": "outbound_webhook",
@@ -50271,7 +50267,7 @@
         "aicrm_next.admin_jobs.repository"
       ],
       "table": "outbound_webhook_deliveries",
-      "write_owner": "outbound webhook worker/runtime"
+      "write_owner": "aicrm_next.admin_jobs"
     },
     {
       "domain": "owner_migration",
@@ -50539,7 +50535,7 @@
         "execution runtime admin read model"
       ],
       "table": "queue_rate_scope_cooldown",
-      "write_owner": "aicrm_next.platform_foundation.execution_runtime.repository"
+      "write_owner": "aicrm_next.platform_foundation.rate_scope_cooldown"
     },
     {
       "domain": "platform_foundation",
@@ -50882,7 +50878,7 @@
         "aicrm_next.admin_read_model"
       ],
       "table": "sync_runs",
-      "write_owner": "aicrm_next.admin_jobs"
+      "write_owner": "aicrm_next.platform_foundation.job_runs"
     },
     {
       "domain": "legacy_user_ops",
@@ -51085,11 +51081,13 @@
       "migration_source": "0054_webhook_inbox",
       "pii_level": "internal_contact",
       "read_owners": [
+        "aicrm_next.platform_foundation.execution_runtime",
         "aicrm_next.platform_foundation.execution_runtime.read_model",
+        "aicrm_next.platform_foundation.webhook_inbox",
         "historical schema drift guard"
       ],
       "table": "webhook_inbox",
-      "write_owner": "aicrm_next.webhook_ingress"
+      "write_owner": "aicrm_next.platform_foundation.webhook_inbox"
     },
     {
       "domain": "commerce",

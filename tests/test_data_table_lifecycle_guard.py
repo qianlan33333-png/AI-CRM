@@ -90,6 +90,96 @@ MATERIAL_LIBRARY_TABLES = {
     "attachment_library",
 }
 
+SINGLE_OWNER_RUNTIME_WRITES = {
+    "admin_operation_logs": (
+        "aicrm_next.platform_foundation.admin_audit",
+        {"aicrm_next/platform_foundation/admin_audit/repository.py"},
+    ),
+    "automation_channel": (
+        "aicrm_next.channel_entry",
+        {"aicrm_next/channel_entry/channel_write_repository.py"},
+    ),
+    "automation_channel_contact": (
+        "aicrm_next.channel_entry",
+        {"aicrm_next/channel_entry/repo.py"},
+    ),
+    "automation_channel_scene_alias": (
+        "aicrm_next.channel_entry",
+        {"aicrm_next/channel_entry/repo.py"},
+    ),
+    "automation_channel_assignee": (
+        "aicrm_next.channel_entry",
+        {"aicrm_next/channel_entry/repo.py"},
+    ),
+    "automation_channel_assignment_event": (
+        "aicrm_next.channel_entry",
+        {"aicrm_next/channel_entry/repo.py"},
+    ),
+    "automation_channel_qrcode_asset": (
+        "aicrm_next.channel_entry",
+        {"aicrm_next/channel_entry/repo.py"},
+    ),
+    "domain_event_outbox": (
+        "aicrm_next.external_push",
+        {"aicrm_next/external_push/repo.py"},
+    ),
+    "external_push_delivery": (
+        "aicrm_next.external_push",
+        {"aicrm_next/external_push/repo.py"},
+    ),
+    "outbound_webhook_deliveries": (
+        "aicrm_next.admin_jobs",
+        {"aicrm_next/admin_jobs/repository.py"},
+    ),
+    "queue_rate_scope_cooldown": (
+        "aicrm_next.platform_foundation.rate_scope_cooldown",
+        {"aicrm_next/platform_foundation/rate_scope_cooldown/repository.py"},
+    ),
+    "sync_runs": (
+        "aicrm_next.platform_foundation.job_runs",
+        {"aicrm_next/platform_foundation/job_runs/repository.py"},
+    ),
+    "webhook_inbox": (
+        "aicrm_next.platform_foundation.webhook_inbox",
+        {
+            "aicrm_next/platform_foundation/webhook_inbox/repository.py",
+            "aicrm_next/platform_foundation/webhook_inbox/runtime_write_repository.py",
+        },
+    ),
+    "automation_agent_audit_log": (
+        "aicrm_next.automation_engine",
+        {"aicrm_next/automation_engine/agent_sqlalchemy_repository.py"},
+    ),
+    "automation_agent_idempotency": (
+        "aicrm_next.automation_engine",
+        {"aicrm_next/automation_engine/agent_sqlalchemy_repository.py"},
+    ),
+    "automation_agents": (
+        "aicrm_next.automation_engine",
+        {"aicrm_next/automation_engine/agent_sqlalchemy_repository.py"},
+    ),
+    "broadcast_job_events": (
+        "aicrm_next.background_jobs.broadcast_queue_worker",
+        {"aicrm_next/background_jobs/broadcast_queue_worker.py"},
+    ),
+    "external_effect_test_receipt": (
+        "aicrm_next.platform_foundation.external_effects",
+        {"aicrm_next/platform_foundation/external_effects/repo.py"},
+    ),
+    "external_push_config": (
+        "aicrm_next.commerce",
+        {"aicrm_next/commerce/repo.py"},
+    ),
+    "hxc_dashboard_broadcast_tasks": (
+        "aicrm_next.hxc_dashboard",
+        {"aicrm_next/hxc_dashboard/postgres_repo.py"},
+    ),
+    "outbound_tasks": (
+        "aicrm_next.background_jobs.broadcast_queue_worker",
+        {"aicrm_next/background_jobs/broadcast_queue_worker.py"},
+    ),
+}
+
 OWNED_LIFECYCLES = {"canonical", "read_model", "event", "queue", "config"}
 
 
@@ -164,6 +254,34 @@ def test_lifecycle_manifest_registers_pr10_scope() -> None:
         assert entry.get("replacement") or entry.get("lifecycle") != "retired", table_name
         if entry.get("lifecycle") in OWNED_LIFECYCLES:
             assert entry.get("write_owner"), table_name
+
+
+def test_corrected_single_owner_tables_match_runtime_sql_writers() -> None:
+    tables = _table_entries()
+    runtime_sources = {
+        path.relative_to(ROOT).as_posix(): path.read_text(encoding="utf-8")
+        for path in sorted(NEXT_RUNTIME_ROOT.rglob("*.py"))
+    }
+
+    for table_name, (expected_owner, expected_paths) in SINGLE_OWNER_RUNTIME_WRITES.items():
+        entry = tables[table_name]
+        declared_owners = {str(entry.get("write_owner") or "").strip()}
+        declared_owners.update(
+            str(owner or "").strip() for owner in entry.get("write_owners") or []
+        )
+        declared_owners.discard("")
+        assert declared_owners == {expected_owner}, table_name
+
+        write_pattern = re.compile(
+            rf"\b(?:INSERT\s+INTO|UPDATE|DELETE\s+FROM|TRUNCATE(?:\s+TABLE)?)\s+{re.escape(table_name)}\b",
+            flags=re.IGNORECASE,
+        )
+        actual_paths = {
+            path
+            for path, source in runtime_sources.items()
+            if write_pattern.search(source)
+        }
+        assert actual_paths == expected_paths, table_name
 
 
 def test_automation_agent_audit_tables_are_additive_versioned_evidence() -> None:

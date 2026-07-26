@@ -5,6 +5,10 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from aicrm_next.platform_foundation.admin_audit import (
+    AdminAuditRecord,
+    build_admin_audit_port,
+)
 from aicrm_next.shared.runtime import raw_database_url
 from aicrm_next.shared.runtime_settings import startup_environment_setting
 
@@ -681,23 +685,22 @@ class PostgresOwnerMigrationRepository:
     def audit_owner_migration_event(self, event_type: str, payload: dict[str, Any]) -> None:
         with self._connect() as conn:
             if _table_exists(conn, "admin_operation_logs"):
-                with conn.cursor() as cur:
-                    cur.execute(
-                        """
-                        INSERT INTO admin_operation_logs (
-                            operator, action_type, target_type, target_id, before_json, after_json, created_at
-                        )
-                        VALUES (%s, %s, %s, %s, %s::jsonb, %s::jsonb, CURRENT_TIMESTAMP)
-                        """,
-                        (
-                            str(payload.get("operator") or "crm_console"),
-                            event_type,
-                            "owner_migration",
-                            str(payload.get("session_id") or payload.get("result_id") or payload.get("preview_token") or ""),
-                            "{}",
-                            json.dumps(payload, ensure_ascii=False),
+                build_admin_audit_port().append_dbapi(
+                    conn,
+                    record=AdminAuditRecord(
+                        operator=str(payload.get("operator") or "crm_console"),
+                        action_type=event_type,
+                        target_type="owner_migration",
+                        target_id=str(
+                            payload.get("session_id")
+                            or payload.get("result_id")
+                            or payload.get("preview_token")
+                            or ""
                         ),
+                        before={},
+                        after=payload,
                     )
+                )
             conn.commit()
 
     def _ensure_state_tables(self, conn) -> None:
@@ -857,20 +860,14 @@ class PostgresOwnerMigrationRepository:
     ) -> None:
         if not _table_exists(conn, "admin_operation_logs"):
             return
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO admin_operation_logs (
-                    operator, action_type, target_type, target_id, before_json, after_json, created_at
-                )
-                VALUES (%s, %s, %s, %s, %s::jsonb, %s::jsonb, CURRENT_TIMESTAMP)
-                """,
-                (
-                    operator,
-                    "owner_migration_execute",
-                    "owner_migration",
-                    f"{source_owner_userid}->{target_owner_userid}",
-                    json.dumps(before, ensure_ascii=False),
-                    json.dumps(after, ensure_ascii=False),
-                ),
+        build_admin_audit_port().append_dbapi(
+            conn,
+            record=AdminAuditRecord(
+                operator=operator,
+                action_type="owner_migration_execute",
+                target_type="owner_migration",
+                target_id=f"{source_owner_userid}->{target_owner_userid}",
+                before=before,
+                after=after,
             )
+        )

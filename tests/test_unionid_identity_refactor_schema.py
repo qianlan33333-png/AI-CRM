@@ -185,7 +185,7 @@ def test_id_dev_p1_baseline_tables_exist_in_fresh_schema() -> None:
 def test_admin_config_audit_baseline_tables_exist_in_fresh_schema() -> None:
     source = _read("migrations/versions/0085_admin_config_audit_baseline.py")
     manifest = _read("docs/architecture/data_table_lifecycle_manifest.yml")
-    admin_repo_source = _read("aicrm_next/admin_config/repository.py")
+    admin_audit_owner_source = _read("aicrm_next/platform_foundation/admin_audit/repository.py")
 
     for table_name in ["admin_operation_logs", "admin_users", "admin_user_roles", "admin_login_audit"]:
         assert f"CREATE TABLE IF NOT EXISTS {table_name}" in source
@@ -200,8 +200,9 @@ def test_admin_config_audit_baseline_tables_exist_in_fresh_schema() -> None:
         "migration_source: 0085_admin_config_audit_baseline",
     ]:
         assert required in source or required in manifest
-    assert "CAST(:before_json AS jsonb)" in admin_repo_source
-    assert "CAST(:after_json AS jsonb)" in admin_repo_source
+    assert "CAST(:{name} AS jsonb)" in admin_audit_owner_source
+    assert 'json_expression.format(name="before_json")' in admin_audit_owner_source
+    assert 'json_expression.format(name="after_json")' in admin_audit_owner_source
 
 
 def test_wecom_identity_bridge_writes_new_identity_tables_not_legacy_maps() -> None:

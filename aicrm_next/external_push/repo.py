@@ -5,6 +5,7 @@ import secrets
 from collections.abc import Callable
 from typing import Any
 
+from psycopg.types.json import Jsonb
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -77,6 +78,206 @@ def _public_outbox(row: dict[str, Any] | None) -> dict[str, Any] | None:
 
 def generate_delivery_id() -> str:
     return "deliv_" + secrets.token_urlsafe(18).replace("-", "").replace("_", "")[:24]
+
+
+class DBAPIDomainEventOutboxRepository:
+    """Canonical outbox writer that participates in the caller DBAPI transaction."""
+
+    def enqueue_dbapi(
+        self,
+        executor: Any,
+        *,
+        tenant_id: str,
+        event_type: str,
+        aggregate_type: str,
+        aggregate_id: str,
+        payload: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        normalized_aggregate_id = _normalized_text(aggregate_id)
+        if not normalized_aggregate_id:
+            raise ValueError("domain event outbox aggregate_id is required")
+        row = executor.execute(
+            """
+            INSERT INTO domain_event_outbox (
+                tenant_id, event_type, aggregate_type, aggregate_id, payload, status,
+                retry_count, next_retry_at, created_at, updated_at
+            )
+            VALUES (%s, %s, %s, %s, %s::jsonb, 'pending', 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT (tenant_id, event_type, aggregate_type, aggregate_id) DO NOTHING
+            RETURNING *
+            """,
+            (
+                _normalized_text(tenant_id) or DEFAULT_TENANT_ID,
+                _normalized_text(event_type),
+                _normalized_text(aggregate_type),
+                normalized_aggregate_id,
+                Jsonb(payload or {}, dumps=lambda data: json.dumps(data, ensure_ascii=False, default=str)),
+            ),
+        ).fetchone()
+        return dict(row) if row else None
+
+
+class DBAPIExternalPushDeliveryProjectionRepository:
+    """Canonical writer for the legacy delivery projection in caller transactions."""
+
+    def create_order_delivery_once_dbapi(
+        self,
+        executor: Any,
+        *,
+        tenant_id: str,
+        config_id: int,
+        event_type: str,
+        target_id: str,
+        order_id: int,
+        product_id: int,
+        request_url: str,
+    ) -> dict[str, Any]:
+        row = executor.execute(
+            """
+            INSERT INTO external_push_delivery (
+                tenant_id, config_id, event_type, delivery_id, target_type, target_id,
+                order_id, product_id, status, attempt_count, request_url, request_headers,
+                request_body, response_status, response_body, error_message, next_retry_at,
+                created_at, updated_at
+            )
+            VALUES (
+                %s, %s, %s, %s, 'product', %s, %s, %s, 'pending', 0, %s,
+                '{}'::jsonb, '{}'::jsonb, NULL, '', '', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            )
+            ON CONFLICT (config_id, order_id, event_type) WHERE order_id > 0
+            DO UPDATE SET updated_at = external_push_delivery.updated_at
+            RETURNING *
+            """,
+            (
+                _normalized_text(tenant_id) or DEFAULT_TENANT_ID,
+                int(config_id),
+                _normalized_text(event_type),
+                generate_delivery_id(),
+                _normalized_text(target_id),
+                int(order_id),
+                int(product_id),
+                _normalized_text(request_url),
+            ),
+        ).fetchone()
+        return dict(row) if row else {}
+
+    def create_test_delivery_dbapi(
+        self,
+        executor: Any,
+        *,
+        tenant_id: str,
+        config_id: int,
+        target_id: str,
+        product_id: int,
+        request_url: str,
+    ) -> dict[str, Any]:
+        row = executor.execute(
+            """
+            INSERT INTO external_push_delivery (
+                tenant_id, config_id, event_type, delivery_id, target_type, target_id,
+                order_id, product_id, status, attempt_count, request_url, request_headers,
+                request_body, response_status, response_body, error_message, next_retry_at,
+                created_at, updated_at
+            )
+            VALUES (%s, %s, 'external_push.test', %s, 'product', %s, 0, %s, 'pending', 0, %s, '{}'::jsonb, '{}'::jsonb, NULL, '', '', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            RETURNING *
+            """,
+            (
+                _normalized_text(tenant_id) or DEFAULT_TENANT_ID,
+                int(config_id),
+                generate_delivery_id(),
+                _normalized_text(target_id),
+                int(product_id),
+                _normalized_text(request_url),
+            ),
+        ).fetchone()
+        return dict(row) if row else {}
+
+    def update_delivery_result_dbapi(
+        self,
+        executor: Any,
+        *,
+        delivery_id: str,
+        status: str,
+        attempt_count: int,
+        request_url: str,
+        request_headers: dict[str, Any],
+        request_body: dict[str, Any],
+        response_status: int | None,
+        response_body: str,
+        error_message: str,
+        next_retry_at: str | None,
+    ) -> dict[str, Any]:
+        row = executor.execute(
+            """
+            UPDATE external_push_delivery
+            SET status = %s,
+                attempt_count = %s,
+                request_url = %s,
+                request_headers = %s::jsonb,
+                request_body = %s::jsonb,
+                response_status = %s,
+                response_body = %s,
+                error_message = %s,
+                next_retry_at = NULLIF(%s, '')::timestamptz,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE delivery_id = %s
+            RETURNING *
+            """,
+            (
+                _normalized_text(status),
+                int(attempt_count),
+                _normalized_text(request_url),
+                _json_dumps(request_headers or {}),
+                _json_dumps(request_body or {}),
+                response_status,
+                _normalized_text(response_body),
+                _normalized_text(error_message),
+                _normalized_text(next_retry_at),
+                _normalized_text(delivery_id),
+            ),
+        ).fetchone()
+        return dict(row) if row else {}
+
+    def reconcile_succeeded_dbapi(
+        self,
+        executor: Any,
+        *,
+        delivery_id: str,
+        external_effect_job_id: int,
+        response_status: int | None,
+        actor_hash: str,
+        reason_hash: str,
+    ) -> bool:
+        row = executor.execute(
+            """
+            UPDATE external_push_delivery
+            SET status = 'success',
+                attempt_count = GREATEST(attempt_count, 1),
+                response_status = COALESCE(%s, response_status),
+                response_body = %s,
+                error_message = '',
+                next_retry_at = NULL,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE delivery_id = %s
+              AND status <> 'success'
+            RETURNING id
+            """,
+            (
+                response_status,
+                _json_dumps(
+                    {
+                        "external_effect_job_id": int(external_effect_job_id),
+                        "external_effect_status": "succeeded",
+                        "reconciled": True,
+                        "repair_actor_hash": _normalized_text(actor_hash),
+                        "repair_reason_hash": _normalized_text(reason_hash),
+                    }
+                ),
+                _normalized_text(delivery_id),
+            ),
+        ).fetchone()
+        return bool(row)
 
 
 class SQLAlchemyExternalPushRepository:

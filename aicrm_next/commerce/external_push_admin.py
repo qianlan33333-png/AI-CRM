@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import json
-import secrets
 import socket  # noqa: F401 -- compatibility export for legacy monkeypatch callers
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from aicrm_next.external_push.delivery_projection_port import build_external_push_delivery_projection_port
 from aicrm_next.external_push.security import WebhookUrlValidationError, resolve_and_validate_public_https_url  # noqa: F401
 from aicrm_next.external_push.service import (
     build_external_push_payload as _build_external_push_payload,
@@ -83,12 +83,6 @@ def _resolve_order_mobile(conn: Any | None, order: dict[str, Any]) -> str:
     return _identity_mobile_for_order(conn, order)
 
 
-def _jsonb(value: Any):
-    from psycopg.types.json import Jsonb
-
-    return Jsonb(value, dumps=lambda data: json.dumps(data, ensure_ascii=False, default=str))
-
-
 def _json_obj(value: Any) -> dict[str, Any]:
     if isinstance(value, dict):
         return value
@@ -142,10 +136,6 @@ def _public_config(row: dict[str, Any] | None) -> dict[str, Any]:
     payload["has_secret"] = bool(_text(payload.get("secret")))
     payload.pop("secret", None)
     return payload
-
-
-def _delivery_id() -> str:
-    return "deliv_" + secrets.token_urlsafe(18).replace("-", "").replace("_", "")[:24]
 
 
 def _retry_at(attempt_count: int) -> str | None:
@@ -229,61 +219,30 @@ def _update_delivery_result(
     error_message: str,
     next_retry_at: str | None,
 ) -> dict[str, Any]:
-    row = conn.execute(
-        """
-        UPDATE external_push_delivery
-        SET status = %s,
-            attempt_count = %s,
-            request_url = %s,
-            request_headers = %s::jsonb,
-            request_body = %s::jsonb,
-            response_status = %s,
-            response_body = %s,
-            error_message = %s,
-            next_retry_at = NULLIF(%s, '')::timestamptz,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE delivery_id = %s
-        RETURNING *
-        """,
-        (
-            _text(status),
-            int(attempt_count),
-            _text(request_url),
-            _jsonb(request_headers or {}),
-            _jsonb(request_body or {}),
-            response_status,
-            _text(response_body),
-            _text(error_message),
-            _text(next_retry_at),
-            _text(delivery_id),
-        ),
-    ).fetchone()
-    return dict(row) if row else {}
+    return build_external_push_delivery_projection_port().update_delivery_result_dbapi(
+        conn,
+        delivery_id=delivery_id,
+        status=status,
+        attempt_count=attempt_count,
+        request_url=request_url,
+        request_headers=request_headers,
+        request_body=request_body,
+        response_status=response_status,
+        response_body=response_body,
+        error_message=error_message,
+        next_retry_at=next_retry_at,
+    )
 
 
 def _create_test_delivery(conn: Any, *, config: dict[str, Any], product_id: int, request_url: str) -> dict[str, Any]:
-    row = conn.execute(
-        """
-        INSERT INTO external_push_delivery (
-            tenant_id, config_id, event_type, delivery_id, target_type, target_id,
-            order_id, product_id, status, attempt_count, request_url, request_headers,
-            request_body, response_status, response_body, error_message, next_retry_at,
-            created_at, updated_at
-        )
-        VALUES (%s, %s, %s, %s, 'product', %s, 0, %s, 'pending', 0, %s, '{}'::jsonb, '{}'::jsonb, NULL, '', '', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        RETURNING *
-        """,
-        (
-            DEFAULT_TENANT_ID,
-            int(config.get("id") or 0),
-            EVENT_EXTERNAL_PUSH_TEST,
-            _delivery_id(),
-            str(int(product_id)),
-            int(product_id),
-            request_url,
-        ),
-    ).fetchone()
-    return dict(row) if row else {}
+    return build_external_push_delivery_projection_port().create_test_delivery_dbapi(
+        conn,
+        tenant_id=DEFAULT_TENANT_ID,
+        config_id=int(config.get("id") or 0),
+        target_id=str(int(product_id)),
+        product_id=int(product_id),
+        request_url=request_url,
+    )
 
 
 def _create_order_delivery_once(
@@ -294,34 +253,16 @@ def _create_order_delivery_once(
     product: dict[str, Any],
     request_url: str,
 ) -> dict[str, Any]:
-    row = conn.execute(
-        """
-        INSERT INTO external_push_delivery (
-            tenant_id, config_id, event_type, delivery_id, target_type, target_id,
-            order_id, product_id, status, attempt_count, request_url, request_headers,
-            request_body, response_status, response_body, error_message, next_retry_at,
-            created_at, updated_at
-        )
-        VALUES (
-            %s, %s, %s, %s, 'product', %s, %s, %s, 'pending', 0, %s,
-            '{}'::jsonb, '{}'::jsonb, NULL, '', '', NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-        )
-        ON CONFLICT (config_id, order_id, event_type) WHERE order_id > 0
-        DO UPDATE SET updated_at = external_push_delivery.updated_at
-        RETURNING *
-        """,
-        (
-            DEFAULT_TENANT_ID,
-            int(config.get("id") or 0),
-            EVENT_TRANSACTION_PAID,
-            _delivery_id(),
-            str(int(product.get("id") or 0)),
-            int(order.get("id") or 0),
-            int(product.get("id") or 0),
-            request_url,
-        ),
-    ).fetchone()
-    return dict(row) if row else {}
+    return build_external_push_delivery_projection_port().create_order_delivery_once_dbapi(
+        conn,
+        tenant_id=DEFAULT_TENANT_ID,
+        config_id=int(config.get("id") or 0),
+        event_type=EVENT_TRANSACTION_PAID,
+        target_id=str(int(product.get("id") or 0)),
+        order_id=int(order.get("id") or 0),
+        product_id=int(product.get("id") or 0),
+        request_url=request_url,
+    )
 
 
 def _extract_external_effect_job_id(delivery: dict[str, Any]) -> int | None:

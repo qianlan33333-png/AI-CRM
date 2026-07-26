@@ -599,6 +599,23 @@ def test_admin_queue_commands_have_a_permanent_postgres_runtime_scope() -> None:
     assert result["architecture_gate"] == "full"
 
 
+def test_webhook_inbox_runtime_owner_has_permanent_postgres_scope() -> None:
+    result = _select(
+        "aicrm_next/platform_foundation/webhook_inbox/runtime_write_port.py",
+        "aicrm_next/platform_foundation/webhook_inbox/runtime_write_repository.py",
+        "tests/test_webhook_inbox_runtime_owner_postgres.py",
+    )
+
+    assert result["unmatched_files"] == []
+    assert "postgres_execution_runtime" in result["matched_scopes"]
+    assert "tests/test_webhook_inbox_runtime_owner.py" in result["python_tests"]
+    assert "tests/test_webhook_inbox_runtime_owner_postgres.py" in result["python_tests"]
+    assert "tests/test_execution_runtime_postgres.py" in result["python_tests"]
+    assert result["needs_postgres"] is True
+    assert result["needs_full_ci"] is True
+    assert result["architecture_gate"] == "full"
+
+
 def test_prod_remediation_security_and_heading_files_have_permanent_scopes() -> None:
     result = _select(
         "aicrm_next/automation_agents/templates/admin_console/automation_agent_list.html",
@@ -1012,6 +1029,22 @@ def test_admin_config_page_change_selects_config_scope() -> None:
     assert "tests/test_admin_pages_real_data_binding.py" in result["python_tests"]
     assert result["needs_postgres"] is False
     assert result["architecture_gate"] == "fast"
+
+
+def test_admin_audit_owner_change_selects_postgres_and_full_ci() -> None:
+    result = _select(
+        "aicrm_next/platform_foundation/admin_audit/port.py",
+        "aicrm_next/platform_foundation/admin_audit/repository.py",
+        "tests/test_admin_audit_owner_postgres.py",
+    )
+
+    assert "admin_audit_owner" in result["matched_scopes"]
+    assert result["unmatched_files"] == []
+    assert "tests/test_admin_audit_owner.py" in result["python_tests"]
+    assert "tests/test_admin_audit_owner_postgres.py" in result["python_tests"]
+    assert result["needs_postgres"] is True
+    assert result["needs_full_ci"] is True
+    assert result["architecture_gate"] == "full"
 
 
 def test_operation_member_picker_static_assets_select_admin_config_scope() -> None:
@@ -1507,6 +1540,58 @@ def test_nginx_query_timing_changes_have_permanent_full_ci_scope() -> None:
     assert result["needs_postgres"] is False
     assert result["needs_full_ci"] is True
     assert result["architecture_gate"] == "full"
+
+
+def test_job_run_ledger_owner_changes_select_platform_postgres_scope() -> None:
+    expected_tests = {
+        "tests/test_job_run_ledger_owner.py",
+        "tests/test_job_run_ledger_owner_postgres.py",
+    }
+
+    for changed_path in (
+        "aicrm_next/platform_foundation/job_runs/repository.py",
+        *sorted(expected_tests),
+    ):
+        result = _select(changed_path)
+        assert result["unmatched_files"] == []
+        assert result["needs_postgres"] is True
+        assert result["needs_full_ci"] is True
+        assert expected_tests.issubset(result["python_tests"])
+
+
+def test_channel_write_owner_changes_select_identity_postgres_scope() -> None:
+    expected_tests = {
+        "tests/test_channel_write_owner.py",
+        "tests/test_channel_write_owner_postgres.py",
+    }
+
+    for changed_path in (
+        "aicrm_next/channel_entry/channel_write_repository.py",
+        *sorted(expected_tests),
+    ):
+        result = _select(changed_path)
+        assert result["unmatched_files"] == []
+        assert "identity_contact" in result["matched_scopes"]
+        assert result["needs_postgres"] is True
+        assert result["needs_full_ci"] is True
+        assert expected_tests.issubset(result["python_tests"])
+
+
+def test_rate_scope_cooldown_owner_changes_select_platform_postgres_scope() -> None:
+    expected_tests = {
+        "tests/test_rate_scope_cooldown_owner.py",
+        "tests/test_rate_scope_cooldown_owner_postgres.py",
+    }
+
+    for changed_path in (
+        "aicrm_next/platform_foundation/rate_scope_cooldown/repository.py",
+        *sorted(expected_tests),
+    ):
+        result = _select(changed_path)
+        assert result["unmatched_files"] == []
+        assert result["needs_postgres"] is True
+        assert result["needs_full_ci"] is True
+        assert expected_tests.issubset(result["python_tests"])
 
 
 def test_unmapped_path_fails_instead_of_falling_back_to_full_regression() -> None:

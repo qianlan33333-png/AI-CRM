@@ -18,6 +18,10 @@ from aicrm_next.identity_contact.resolution_queue_port import (
     EnqueueIdentityResolutionRequest,
     build_identity_resolution_queue_port,
 )
+from aicrm_next.platform_foundation.admin_audit import (
+    AdminAuditRecord,
+    build_admin_audit_port,
+)
 from aicrm_next.shared.db_session import get_session_factory
 from aicrm_next.shared.runtime_settings import startup_environment_setting
 
@@ -374,26 +378,20 @@ class SQLAlchemyAudienceRepository(AudiencePackageRepositoryMixin, AudienceRepos
 
 
     def insert_external_spec_audit(self, *, operator: str, action_type: str, package_key: str, before: dict[str, Any], after: dict[str, Any]) -> None:
-        self._write_one(
-            """
-            INSERT INTO admin_operation_logs (
-                operator, action_type, target_type, target_id,
-                before_json, after_json, created_at
+        with self._session_factory() as session:
+            build_admin_audit_port().append_sqlalchemy(
+                session,
+                dialect_name=session.get_bind().dialect.name,
+                record=AdminAuditRecord(
+                    operator=_text(operator) or "external",
+                    action_type=_text(action_type),
+                    target_type="ai_audience_external_spec",
+                    target_id=_text(package_key) or "-",
+                    before=before,
+                    after=after,
+                ),
             )
-            VALUES (
-                :operator, :action_type, 'ai_audience_external_spec', :target_id,
-                CAST(:before_json AS jsonb), CAST(:after_json AS jsonb), CURRENT_TIMESTAMP
-            )
-            RETURNING id
-            """,
-            {
-                "operator": _text(operator) or "external",
-                "action_type": _text(action_type),
-                "target_id": _text(package_key) or "-",
-                "before_json": _json_dumps(before or {}),
-                "after_json": _json_dumps(after or {}),
-            },
-        )
+            session.commit()
 
     def execute_readonly_query(self, sql: str, params: dict[str, Any], *, limit: int, timeout_seconds: int) -> list[dict[str, Any]]:
         readonly_url = _text(

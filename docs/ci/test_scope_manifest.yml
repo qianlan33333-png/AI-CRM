@@ -1031,6 +1031,8 @@
         "scripts/run_wecom_callback_inbox_worker.py",
         "tests/test_identity_*.py",
         "tests/test_channel_entry_*.py",
+        "tests/test_channel_write_owner.py",
+        "tests/test_channel_write_owner_postgres.py",
         "tests/test_channel_identity_bridge_native_service.py",
         "tests/test_next_channel_*.py",
         "tests/test_r05_wecom_callback_architecture.py",
@@ -1053,6 +1055,8 @@
         "tests/test_channel_welcome_media_dependencies_postgres.py",
         "tests/test_wecom_welcome_hard_realtime.py",
         "tests/test_channel_identity_bridge_native_service.py",
+        "tests/test_channel_write_owner.py",
+        "tests/test_channel_write_owner_postgres.py",
         "tests/test_next_channel_entry_orchestrator.py",
         "tests/test_next_channel_identity_bridge.py",
         "tests/test_wecom_callback_external_effect_boundary.py",
@@ -1542,6 +1546,32 @@
       "architecture_gate": "full"
     },
     {
+      "name": "admin_audit_owner",
+      "paths": [
+        "aicrm_next/platform_foundation/admin_audit/**",
+        "tests/test_admin_audit_owner.py",
+        "tests/test_admin_audit_owner_postgres.py"
+      ],
+      "python_tests": [
+        "tests/test_admin_audit_owner.py",
+        "tests/test_admin_audit_owner_postgres.py",
+        "tests/test_admin_config_secret_references.py",
+        "tests/test_pii_audit_contract.py",
+        "tests/test_ai_audience_external_api.py",
+        "tests/test_next_admin_jobs_native.py",
+        "tests/test_cloud_orchestrator_campaign_write_commands.py",
+        "tests/test_owner_migration.py",
+        "tests/test_owner_migration_execute.py",
+        "tests/test_owner_migration_import.py",
+        "tests/test_repository_ownership_guard.py",
+        "tests/test_data_table_lifecycle_guard.py",
+        "tests/test_runtime_contract_inventory.py"
+      ],
+      "needs_postgres": true,
+      "needs_full_ci": true,
+      "architecture_gate": "full"
+    },
+    {
       "name": "admin_config",
       "paths": [
         "aicrm_next/mcp_tool_catalog.py",
@@ -1744,6 +1774,7 @@
       "name": "internal_event_outbox_reliability",
       "paths": [
         "aicrm_next/platform_foundation/internal_events/**",
+        "aicrm_next/platform_foundation/job_runs/**",
         "aicrm_next/public_product/h5_wechat_pay.py",
         "migrations/versions/0099_internal_event_outbox_and_consumer_lease.py",
         "migrations/versions/0122_internal_event_fanout_manifest.py",
@@ -1761,7 +1792,9 @@
         "tests/test_internal_events_payment_slice.py",
         "tests/test_internal_events_single_consumer_run.py",
         "tests/test_data_table_lifecycle_guard.py",
-        "tests/test_event_effect_table_lineage.py"
+        "tests/test_event_effect_table_lineage.py",
+        "tests/test_job_run_ledger_owner.py",
+        "tests/test_job_run_ledger_owner_postgres.py"
       ],
       "python_tests": [
         "tests/test_internal_event_outbox.py",
@@ -1772,7 +1805,9 @@
         "tests/test_internal_events_single_consumer_run.py",
         "tests/test_event_effect_table_lineage.py",
         "tests/test_data_table_lifecycle_guard.py",
-        "tests/test_repository_ownership_guard.py"
+        "tests/test_repository_ownership_guard.py",
+        "tests/test_job_run_ledger_owner.py",
+        "tests/test_job_run_ledger_owner_postgres.py"
       ],
       "needs_postgres": true,
       "needs_full_ci": true,
@@ -1837,6 +1872,8 @@
       "name": "postgres_execution_runtime",
       "paths": [
         "aicrm_next/platform_foundation/execution_runtime/**",
+        "aicrm_next/platform_foundation/webhook_inbox/**",
+        "aicrm_next/platform_foundation/rate_scope_cooldown/**",
         "aicrm_next/shared/queue_provenance.py",
         "aicrm_next/platform_foundation/external_effects/direct_claim_repository.py",
         "aicrm_next/platform_foundation/external_effects/rate_limit.py",
@@ -1885,7 +1922,11 @@
         "tests/test_queue_all_scope_cutover.py",
         "tests/test_production_terminal_history_acknowledgement.py",
         "tests/test_production_welcome_timeout_acknowledgement.py",
-        "tests/test_run_execution_runtime.py"
+        "tests/test_run_execution_runtime.py",
+        "tests/test_webhook_inbox_runtime_owner.py",
+        "tests/test_webhook_inbox_runtime_owner_postgres.py",
+        "tests/test_rate_scope_cooldown_owner.py",
+        "tests/test_rate_scope_cooldown_owner_postgres.py"
       ],
       "python_tests": [
         "tests/test_execution_runtime_api.py",
@@ -1906,6 +1947,10 @@
         "tests/test_production_terminal_history_acknowledgement.py",
         "tests/test_production_welcome_timeout_acknowledgement.py",
         "tests/test_run_execution_runtime.py",
+        "tests/test_webhook_inbox_runtime_owner.py",
+        "tests/test_webhook_inbox_runtime_owner_postgres.py",
+        "tests/test_rate_scope_cooldown_owner.py",
+        "tests/test_rate_scope_cooldown_owner_postgres.py",
         "tests/test_alembic_revision_chain.py",
         "tests/test_database_bootstrap.py",
         "tests/test_data_table_lifecycle_guard.py",

@@ -8,6 +8,10 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import text
 from sqlalchemy.engine import Connection, Engine
 
+from aicrm_next.platform_foundation.admin_audit import (
+    AdminAuditRecord,
+    build_admin_audit_port,
+)
 from aicrm_next.runtime_configuration import (
     RUNTIME_CONFIG_CUTOVER_KEYS_KEY,
     parse_runtime_config_cutover_keys,
@@ -159,37 +163,19 @@ class AdminConfigRepository:
         after: dict[str, Any] | None,
     ) -> None:
         with self._engine.begin() as conn:
-            conn.execute(
-                text(
-                    """
-                    INSERT INTO admin_operation_logs (
-                        operator, action_type, target_type, target_id,
-                        before_json, after_json, created_at
-                    )
-                    VALUES (
-                        :operator, :action_type, :target_type, :target_id,
-                        CAST(:before_json AS jsonb), CAST(:after_json AS jsonb), CURRENT_TIMESTAMP
-                    )
-                    """
+            build_admin_audit_port().append_sqlalchemy(
+                conn,
+                dialect_name=str(
+                    getattr(getattr(self._engine, "dialect", None), "name", "postgresql")
                 ),
-                {
-                    "operator": str(operator or "").strip(),
-                    "action_type": str(action_type or "").strip(),
-                    "target_type": str(target_type or "").strip(),
-                    "target_id": str(target_id or "").strip(),
-                    "before_json": json.dumps(
-                        redact_sensitive_data(before or {}, sensitive_keys=SENSITIVE_KEYS),
-                        ensure_ascii=False,
-                        sort_keys=True,
-                        default=str,
-                    ),
-                    "after_json": json.dumps(
-                        redact_sensitive_data(after or {}, sensitive_keys=SENSITIVE_KEYS),
-                        ensure_ascii=False,
-                        sort_keys=True,
-                        default=str,
-                    ),
-                },
+                record=AdminAuditRecord(
+                    operator=operator,
+                    action_type=action_type,
+                    target_type=target_type,
+                    target_id=target_id,
+                    before=redact_sensitive_data(before or {}, sensitive_keys=SENSITIVE_KEYS),
+                    after=redact_sensitive_data(after or {}, sensitive_keys=SENSITIVE_KEYS),
+                ),
             )
 
     def latest_audit_map(self, *, target_type: str, target_ids: list[str]) -> dict[str, dict[str, Any]]:

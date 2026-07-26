@@ -183,7 +183,6 @@ def test_external_push_attempt_queues_external_effect_and_updates_delivery(monke
         assert kwargs.pop("connection") is connection
         return real_plan_effect(self, **kwargs)
 
-    monkeypatch.setattr(external_push_admin, "_jsonb", lambda value: value)
     monkeypatch.setattr(external_push_admin.ExternalEffectService, "plan_effect", fixture_plan_effect)
 
     result = external_push_admin._attempt_delivery(
@@ -197,8 +196,8 @@ def test_external_push_attempt_queues_external_effect_and_updates_delivery(monke
     assert result["delivery"]["status"] == "retrying"
     assert result["external_effect_job_id"]
     assert result["real_external_call_executed"] is False
-    assert updates[0]["request_headers"]["X-AICRM-Signature"].startswith("sha256=")
-    assert updates[0]["request_body"]["phone_number"] == "[pii]"
+    assert json.loads(updates[0]["request_headers"])["X-AICRM-Signature"].startswith("sha256=")
+    assert json.loads(updates[0]["request_body"])["phone_number"] == "[pii]"
     assert updates[0]["response_status"] is None
     items, total = ExternalEffectService().list_jobs({"effect_type": WEBHOOK_ORDER_PAID_PUSH, "target_id": "deliv_attempt"})
     assert total == 1

@@ -5,6 +5,10 @@ import json
 from datetime import datetime, timezone
 from typing import Any, Protocol
 
+from aicrm_next.platform_foundation.admin_audit import (
+    AdminAuditRecord,
+    build_admin_audit_port,
+)
 from aicrm_next.shared.runtime import production_data_ready, raw_database_url
 
 from .domain import BROADCAST_SOURCE_TYPES, BROADCAST_STATUSES
@@ -584,13 +588,20 @@ class PostgresAdminJobsRepository:
         }
 
     def insert_audit(self, *, operator: str, action_type: str, target_type: str, target_id: str, before: dict[str, Any], after: dict[str, Any]) -> None:
-        self._execute(
-            """
-            INSERT INTO admin_operation_logs (operator, action_type, target_type, target_id, before_json, after_json, created_at)
-            VALUES (%s, %s, %s, %s, %s::jsonb, %s::jsonb, CURRENT_TIMESTAMP)
-            """,
-            (operator, action_type, target_type, target_id, json.dumps(before, ensure_ascii=False), json.dumps(after, ensure_ascii=False)),
-        )
+        with self._connect() as conn:
+            with conn.cursor() as cur:
+                build_admin_audit_port().append_dbapi(
+                    cur,
+                    record=AdminAuditRecord(
+                        operator=operator,
+                        action_type=action_type,
+                        target_type=target_type,
+                        target_id=target_id,
+                        before=before,
+                        after=after,
+                    ),
+                )
+                conn.commit()
 
 
 def _count_row(row: dict[str, Any] | None) -> dict[str, int]:

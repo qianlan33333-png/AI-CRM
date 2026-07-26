@@ -1688,10 +1688,9 @@ tables:
   domain_event_outbox:
     domain: commerce_events
     lifecycle: event
-    write_owner: aicrm_next.commerce.external_push_outbox
+    write_owner: aicrm_next.external_push
     write_owners:
-      - aicrm_next.commerce.external_push_outbox
-      - aicrm_next.external_push.repo
+      - aicrm_next.external_push
     read_owners:
       - aicrm_next.commerce.external_push_admin
       - aicrm_next.external_push.repo
@@ -1705,15 +1704,15 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_event_effect_table_lineage.py
-    notes: Business event outbox for commerce external push; not an external side-effect executor.
+      - tests/test_external_push_domain_event_outbox_owner_postgres.py
+    notes: Business event outbox for commerce external push; Commerce writes through the External Push owner port inside the payment transaction. It is not an external side-effect executor.
 
   external_push_delivery:
     domain: commerce_events
     lifecycle: legacy_boundary
-    write_owner: aicrm_next.commerce.external_push_admin
+    write_owner: aicrm_next.external_push
     write_owners:
-      - aicrm_next.commerce.external_push_admin
-      - aicrm_next.external_push.repo
+      - aicrm_next.external_push
     read_owners:
       - aicrm_next.commerce.external_push_admin
       - aicrm_next.external_push.repo
@@ -1728,15 +1727,15 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_event_effect_table_lineage.py
-    notes: Active legacy delivery ledger; future work should converge retries and status to external_effect.
+      - tests/test_external_push_delivery_projection_owner_postgres.py
+    notes: Active legacy delivery ledger. Commerce commands and reconciliation write through the External Push owner port inside their caller transaction; future work should converge retries and status to external_effect.
 
   outbound_webhook_deliveries:
     domain: outbound_webhook
     lifecycle: queue
-    write_owner: outbound webhook worker/runtime
+    write_owner: aicrm_next.admin_jobs
     write_owners:
-      - aicrm_next.admin_jobs.repository
-      - outbound webhook worker/runtime
+      - aicrm_next.admin_jobs
     status_enum:
       column: status
     read_owners:
@@ -1751,7 +1750,7 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_event_effect_table_lineage.py
-    notes: Queue-like webhook delivery ledger; overlaps with external_effect but remains active.
+    notes: Queue-like webhook delivery ledger; current runtime mutation is confined to the admin-jobs repository. It overlaps with external_effect but remains active until parity and migration evidence exist.
 
   outbound_event_outbox:
     domain: outbound_webhook
@@ -1978,10 +1977,9 @@ tables:
   queue_rate_scope_cooldown:
     domain: platform_foundation
     lifecycle: queue
-    write_owner: aicrm_next.platform_foundation.execution_runtime.repository
+    write_owner: aicrm_next.platform_foundation.rate_scope_cooldown
     write_owners:
-      - aicrm_next.platform_foundation.execution_runtime.repository
-      - aicrm_next.platform_foundation.external_effects.rate_limit
+      - aicrm_next.platform_foundation.rate_scope_cooldown
     read_owners:
       - PostgreSQL execution runtime external-effect claim selector
       - execution runtime admin read model
@@ -1998,7 +1996,8 @@ tables:
       - tests/test_execution_runtime_postgres.py
       - tests/test_database_bootstrap.py
       - tests/test_data_table_lifecycle_guard.py
-    notes: Durable rate-scope deadline releases worker capacity instead of sleeping. The external-effect rate_limit helper persists 429 cooldown in the same transaction as attempt and job result state. It records provider/corp/app/operation identifiers and audit reason only; request payload, recipient identity, content and secrets are forbidden.
+      - tests/test_rate_scope_cooldown_owner_postgres.py
+    notes: Durable rate-scope deadline releases worker capacity instead of sleeping. Execution-runtime administration and external-effect 429 settlement write through the public RateScopeCooldownPort. The port preserves each caller's existing transaction, never commits on its behalf, and is the sole SQL writer. It records provider/corp/app/operation identifiers and audit reason only; request payload, recipient identity, content and secrets are forbidden.
 
   queue_worker_heartbeat:
     domain: platform_foundation
@@ -2305,22 +2304,14 @@ tables:
     notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
 
   admin_operation_logs:
-    domain: admin_config
+    domain: platform_foundation
     lifecycle: audit
-    write_owner: aicrm_next.admin_config
+    write_owner: aicrm_next.platform_foundation.admin_audit
     write_owners:
-      - aicrm_next.admin_config
-      - aicrm_next.admin_jobs
-      - aicrm_next.ai_audience_ops
-      - aicrm_next.cloud_orchestrator
-      - aicrm_next.owner_migration
+      - aicrm_next.platform_foundation.admin_audit
     read_owners:
       - aicrm_next.admin_config
-      - aicrm_next.admin_jobs
       - aicrm_next.admin_read_model
-      - aicrm_next.ai_audience_ops
-      - aicrm_next.cloud_orchestrator
-      - aicrm_next.owner_migration
     replacement: none; canonical admin operation audit log
     drop_candidate: false
     drop_after: ""
@@ -2334,8 +2325,10 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_repository_ownership_guard.py
+      - tests/test_admin_audit_owner.py
+      - tests/test_admin_audit_owner_postgres.py
       - tests/test_unionid_identity_refactor_schema.py::test_admin_config_audit_baseline_tables_exist_in_fresh_schema
-    notes: JSONB before/after audit payloads for admin-facing configuration and operations.
+    notes: JSONB before/after audit payloads use the platform admin_audit port; callers retain their original transaction boundaries and redaction responsibilities.
 
   admin_user_roles:
     domain: admin_config
@@ -2671,10 +2664,7 @@ tables:
   automation_agent_audit_log:
     domain: automation_agents
     lifecycle: audit
-    write_owner: aicrm_next.automation_agents
-    write_owners:
-      - aicrm_next.automation_agents
-      - aicrm_next.automation_engine
+    write_owner: aicrm_next.automation_engine
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2687,7 +2677,7 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: Automation-engine persistence is the only runtime writer; automation_agents routes consume that owner service.
 
   automation_agent_config:
     domain: automation_agents
@@ -2710,10 +2700,7 @@ tables:
   automation_agent_idempotency:
     domain: automation_agents
     lifecycle: canonical
-    write_owner: aicrm_next.automation_agents
-    write_owners:
-      - aicrm_next.automation_agents
-      - aicrm_next.automation_engine
+    write_owner: aicrm_next.automation_engine
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2726,7 +2713,7 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: Automation-engine persistence is the only runtime writer; automation_agents routes consume that owner service.
 
   automation_agent_llm_call_log:
     domain: ai_audience_ops
@@ -2839,10 +2826,7 @@ tables:
   automation_agents:
     domain: automation_agents
     lifecycle: canonical
-    write_owner: aicrm_next.automation_agents
-    write_owners:
-      - aicrm_next.automation_agents
-      - aicrm_next.automation_engine
+    write_owner: aicrm_next.automation_engine
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2855,7 +2839,7 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: Automation-engine persistence is the only runtime writer; automation_agents routes consume that owner service.
 
   automation_ai_push_log:
     domain: automation_engine
@@ -2878,9 +2862,8 @@ tables:
   automation_channel:
     domain: channel_entry
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine.channels_api
+    write_owner: aicrm_next.channel_entry
     write_owners:
-      - aicrm_next.automation_engine.channels_api
       - aicrm_next.channel_entry
     read_owners:
       - historical schema drift guard
@@ -2896,14 +2879,14 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Canonical channel metadata; questionnaire reads it only through the channel application-layer completion projection.
+      - tests/test_channel_write_owner_postgres.py
+    notes: Canonical channel metadata owned by channel_entry. Admin create/update, assignment settings, and QR metadata changes use ChannelWritePort while preserving each caller's existing DBAPI transaction. Questionnaire reads it only through the channel application-layer completion projection.
 
   automation_channel_assignee:
     domain: channel_entry
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine.channels_api
+    write_owner: aicrm_next.channel_entry
     write_owners:
-      - aicrm_next.automation_engine.channels_api
       - aicrm_next.channel_entry
     read_owners:
       - historical schema drift guard
@@ -2917,14 +2900,13 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: Canonical channel-assignee projection. Runtime mutation is confined to channel_entry; automation channel services delegate to its public repository functions and are read-only SQL consumers.
 
   automation_channel_assignment_event:
     domain: channel_entry
     lifecycle: audit
-    write_owner: aicrm_next.automation_engine.channels_api
+    write_owner: aicrm_next.channel_entry
     write_owners:
-      - aicrm_next.automation_engine.channels_api
       - aicrm_next.channel_entry
     read_owners:
       - historical schema drift guard
@@ -2938,14 +2920,13 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: Canonical channel-assignment audit. Runtime mutation is confined to channel_entry; automation channel services delegate event creation and only read the resulting audit projection.
 
   automation_channel_contact:
     domain: channel_entry
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine.channels_api
+    write_owner: aicrm_next.channel_entry
     write_owners:
-      - aicrm_next.automation_engine.channels_api
       - aicrm_next.channel_entry
     read_owners:
       - historical schema drift guard
@@ -2959,14 +2940,13 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: Canonical channel-entry contact projection. Runtime mutation is confined to the channel-entry repository; automation channel services are read-only consumers.
 
   automation_channel_qrcode_asset:
     domain: channel_entry
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine.channels_api
+    write_owner: aicrm_next.channel_entry
     write_owners:
-      - aicrm_next.automation_engine.channels_api
       - aicrm_next.channel_entry
     read_owners:
       - historical schema drift guard
@@ -2982,14 +2962,13 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Canonical channel QR asset table; questionnaire stores only channel ID and resolves the active QR asset at response time.
+    notes: Canonical channel QR asset table owned by channel_entry. Automation channel services delegate stale-state mutation to that owner and otherwise read the active asset; questionnaire stores only channel ID and resolves the active QR asset at response time.
 
   automation_channel_scene_alias:
     domain: channel_entry
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine.channels_api
+    write_owner: aicrm_next.channel_entry
     write_owners:
-      - aicrm_next.automation_engine.channels_api
       - aicrm_next.channel_entry
     read_owners:
       - historical schema drift guard
@@ -3003,7 +2982,7 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: Canonical callback scene-alias projection. Runtime mutation is confined to the channel-entry repository; automation channel services are read-only consumers.
 
   automation_frequency_budget:
     domain: automation_engine
@@ -3080,10 +3059,7 @@ tables:
   broadcast_job_events:
     domain: broadcast_jobs
     lifecycle: audit
-    write_owner: aicrm_next.admin_jobs
-    write_owners:
-      - aicrm_next.admin_jobs
-      - aicrm_next.background_jobs.broadcast_queue_worker
+    write_owner: aicrm_next.background_jobs.broadcast_queue_worker
     read_owners:
       - aicrm_next.admin_jobs
       - aicrm_next.background_jobs
@@ -3454,10 +3430,7 @@ tables:
   external_effect_test_receipt:
     domain: external
     lifecycle: audit
-    write_owner: aicrm_next.external_effect
-    write_owners:
-      - aicrm_next.external_effect
-      - aicrm_next.platform_foundation.external_effects
+    write_owner: aicrm_next.platform_foundation.external_effects
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3470,15 +3443,12 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: The platform external-effect receipt repository is the only runtime writer.
 
   external_push_config:
     domain: external
     lifecycle: config
-    write_owner: aicrm_next.external_push
-    write_owners:
-      - aicrm_next.commerce
-      - aicrm_next.external_push
+    write_owner: aicrm_next.commerce
     read_owners:
       - aicrm_next.external_push
     replacement: none; active production schema table registered during schema drift closeout
@@ -3491,7 +3461,7 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: Commerce product configuration is the only runtime writer; external_push consumes this configuration read model.
 
   group_chats:
     domain: group_ops
@@ -3647,10 +3617,7 @@ tables:
   hxc_dashboard_broadcast_tasks:
     domain: user_ops
     lifecycle: canonical
-    write_owner: aicrm_next.user_ops
-    write_owners:
-      - aicrm_next.hxc_dashboard
-      - aicrm_next.user_ops
+    write_owner: aicrm_next.hxc_dashboard
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3663,7 +3630,7 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: The HXC dashboard repository is the only runtime writer; user_ops is a logical product surface, not a second storage owner.
 
   legacy_webhook_cleanup_audit:
     domain: legacy_webhook_cleanup
@@ -3700,10 +3667,7 @@ tables:
   outbound_tasks:
     domain: admin_jobs
     lifecycle: canonical
-    write_owner: aicrm_next.admin_jobs
-    write_owners:
-      - aicrm_next.admin_jobs
-      - aicrm_next.background_jobs.broadcast_queue_worker
+    write_owner: aicrm_next.background_jobs.broadcast_queue_worker
     read_owners:
       - aicrm_next.admin_jobs
       - aicrm_next.admin_read_model
@@ -3780,11 +3744,9 @@ tables:
   sync_runs:
     domain: admin_jobs
     lifecycle: canonical
-    write_owner: aicrm_next.admin_jobs
+    write_owner: aicrm_next.platform_foundation.job_runs
     write_owners:
-      - aicrm_next.admin_jobs
-      - aicrm_next.customer_tags
-      - aicrm_next.message_archive
+      - aicrm_next.platform_foundation.job_runs
     read_owners:
       - aicrm_next.admin_jobs
       - aicrm_next.admin_read_model
@@ -3792,13 +3754,15 @@ tables:
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - existing production runtime
+      - message archive synchronization
+      - WeCom tag catalog synchronization
     migration_source: migrations/baselines/0001_post_legacy.sql
     pii_level: internal_contact
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+      - tests/test_job_run_ledger_owner_postgres.py
+    notes: Shared task-run audit ledger owned by Platform. Message archive and customer-tag synchronization write through the public JobRunLedgerPort while preserving their existing caller transactions.
 
   user_ops_hxc_dashboard_meta:
     domain: user_ops
@@ -3857,13 +3821,13 @@ tables:
   webhook_inbox:
     domain: webhook_ingress
     lifecycle: canonical
-    write_owner: aicrm_next.webhook_ingress
+    write_owner: aicrm_next.platform_foundation.webhook_inbox
     write_owners:
-      - aicrm_next.platform_foundation.execution_runtime.repository
       - aicrm_next.platform_foundation.webhook_inbox
-      - aicrm_next.webhook_ingress
     read_owners:
+      - aicrm_next.platform_foundation.execution_runtime
       - aicrm_next.platform_foundation.execution_runtime.read_model
+      - aicrm_next.platform_foundation.webhook_inbox
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
@@ -3876,7 +3840,11 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes. Revision 0125 makes available_at mandatory and constrains lane to webhook_inbox. Unified timeline reads summary projections only and applies centralized sensitive-data redaction; raw callback bodies are excluded.
+      - tests/test_webhook_inbox_runtime_owner.py
+      - tests/test_webhook_inbox_runtime_owner_postgres.py
+      - tests/test_execution_runtime_postgres.py
+      - tests/test_queue_runtime_cutover_postgres.py
+    notes: The platform webhook_inbox capability owns ingestion, worker settlement, runtime claim/recovery/heartbeat, and operator CAS mutations. Revision 0125 makes available_at mandatory and constrains lane to webhook_inbox. Unified timeline reads summary projections only and applies centralized sensitive-data redaction; raw callback bodies are excluded.
 
   commerce_coupons:
     domain: commerce
