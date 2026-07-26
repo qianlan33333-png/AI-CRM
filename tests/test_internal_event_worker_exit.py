@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from aicrm_next.platform_foundation.internal_events.repository import InMemoryInternalEventRepository
 from aicrm_next.platform_foundation.internal_events.consumer_registry import InternalEventConsumerRegistry
 from aicrm_next.platform_foundation.internal_events.models import InternalEventConsumerResult, InternalEventCreateRequest
@@ -106,3 +108,63 @@ def test_script_dry_run_remains_zero_exit(monkeypatch) -> None:
     monkeypatch.setattr(run_internal_event_worker, "print_json", lambda payload: None)
 
     assert run_internal_event_worker.main(["--limit", "1"]) == 0
+
+
+def test_release_customer_refresh_override_requires_authorization(monkeypatch) -> None:
+    monkeypatch.delenv(
+        run_internal_event_worker.RELEASE_CUSTOMER_REFRESH_AUTHORIZATION_ENV,
+        raising=False,
+    )
+
+    with pytest.raises(SystemExit):
+        run_internal_event_worker._parse_args(
+            [
+                "--execute",
+                "--limit",
+                "1",
+                "--release-customer-read-model-refresh",
+                "--event-types",
+                run_internal_event_worker.RELEASE_CUSTOMER_REFRESH_EVENT_TYPE,
+                "--consumer-names",
+                run_internal_event_worker.RELEASE_CUSTOMER_REFRESH_CONSUMER,
+                "--outbox-idempotency-key",
+                f"{run_internal_event_worker.RELEASE_CUSTOMER_REFRESH_EVENT_TYPE}:1",
+            ]
+        )
+
+
+def test_release_customer_refresh_override_passes_only_the_immutable_pair(monkeypatch) -> None:
+    monkeypatch.setenv(
+        run_internal_event_worker.RELEASE_CUSTOMER_REFRESH_AUTHORIZATION_ENV,
+        "1",
+    )
+    captured: dict[str, object] = {}
+
+    def fake_run(**kwargs):
+        captured.update(kwargs)
+        return {"ok": True, "dry_run": False, "exit_code": 0}
+
+    monkeypatch.setattr(run_internal_event_worker, "run", fake_run)
+    monkeypatch.setattr(run_internal_event_worker, "print_json", lambda payload: None)
+
+    assert (
+        run_internal_event_worker.main(
+            [
+                "--execute",
+                "--limit",
+                "1",
+                "--release-customer-read-model-refresh",
+                "--event-types",
+                run_internal_event_worker.RELEASE_CUSTOMER_REFRESH_EVENT_TYPE,
+                "--consumer-names",
+                run_internal_event_worker.RELEASE_CUSTOMER_REFRESH_CONSUMER,
+                "--outbox-idempotency-key",
+                f"{run_internal_event_worker.RELEASE_CUSTOMER_REFRESH_EVENT_TYPE}:12",
+            ]
+        )
+        == 0
+    )
+    assert captured["exact_target_config_override"] == (
+        run_internal_event_worker.RELEASE_CUSTOMER_REFRESH_EVENT_TYPE,
+        run_internal_event_worker.RELEASE_CUSTOMER_REFRESH_CONSUMER,
+    )

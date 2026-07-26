@@ -144,6 +144,7 @@ def run_release_refresh(
                 "--execute",
                 "--limit",
                 "1",
+                "--release-customer-read-model-refresh",
                 "--event-types",
                 REFRESH_EVENT_TYPE,
                 "--consumer-names",
@@ -184,7 +185,23 @@ def run_release_refresh(
             or relay_pair not in {(0, 0), (1, 1)}
             or relay_failures != 0
         ):
-            raise ReleaseRefreshError("release_refresh_targeted_relay_count_mismatch")
+            raise ReleaseRefreshError(
+                "release_refresh_targeted_relay_count_mismatch",
+                diagnostics={
+                    "targeted_relay": {
+                        "targeted": relay.get("targeted") is True,
+                        "event_type_matches": str(relay.get("event_type") or "") == REFRESH_EVENT_TYPE,
+                        "enabled": relay.get("enabled") is True,
+                        "relay_role": str(relay.get("relay_role") or ""),
+                        "counts": targeted_relay_counts,
+                        "error": str(relay.get("error") or ""),
+                    },
+                    "worker_event_type_matches": list(consumer.get("event_types") or [])
+                    == [REFRESH_EVENT_TYPE],
+                    "worker_consumer_matches": list(consumer.get("consumer_names") or [])
+                    == [REFRESH_CONSUMER],
+                },
+            )
         targeted_relay_mode = "relayed" if relay_pair == (1, 1) else "already_owned"
         counts = dict(consumer.get("counts") or {})
         consumer_counts = {key: int(counts.get(key) or 0) for key in expected_counts}

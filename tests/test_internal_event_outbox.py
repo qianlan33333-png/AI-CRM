@@ -32,7 +32,7 @@ from aicrm_next.platform_foundation.internal_events.repository import (
 )
 from aicrm_next.platform_foundation.internal_events.service import InternalEventService
 from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.shared.db_session import get_session_factory, reset_engine_cache_for_tests
 from scripts.ops import reconcile_internal_event_outbox
 
 
@@ -543,6 +543,74 @@ def test_lost_lease_cannot_write_attempt_or_result() -> None:
     assert repo.get_consumer_run_by_id(acquired.id).attempt_count == 0
 
 
+def test_exact_target_override_survives_published_allowlist_cutover(monkeypatch) -> None:
+    monkeypatch.setenv("AICRM_INTERNAL_EVENTS_ENABLED", "1")
+    monkeypatch.setenv("AICRM_INTERNAL_EVENTS_AUTO_EXECUTE", "1")
+    monkeypatch.setenv("AICRM_INTERNAL_EVENTS_AUTO_EXECUTE_MAX_BATCH_SIZE", "1")
+    monkeypatch.setenv("AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_TYPES", "payment.succeeded")
+    monkeypatch.setenv(
+        "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_CONSUMERS",
+        "payment.succeeded:order_projection_consumer",
+    )
+    monkeypatch.setenv("AICRM_INTERNAL_EVENTS_ALLOWED_CONSUMERS", "")
+    repo = InMemoryInternalEventRepository()
+    registry = _registry("projection-a")
+    repo.enqueue_outbox(_request("targeted-config-cutover:release"))
+    worker = InternalEventWorker(repo, registry, relay_role="owner")
+
+    excluded = worker.run_due(
+        batch_size=1,
+        dry_run=False,
+        event_types=[EVENT_TYPE],
+        consumer_names=["projection-a"],
+        outbox_idempotency_key="targeted-config-cutover:release",
+    )
+    released = worker.run_due(
+        batch_size=1,
+        dry_run=False,
+        event_types=[EVENT_TYPE],
+        consumer_names=["projection-a"],
+        outbox_idempotency_key="targeted-config-cutover:release",
+        exact_target_config_override=(EVENT_TYPE, "projection-a"),
+    )
+
+    assert excluded["ok"] is True
+    assert excluded["counts"]["candidate_count"] == 0
+    assert "outbox_relay" not in excluded
+    assert released["ok"] is True
+    assert released["outbox_relay"]["targeted"] is True
+    assert released["outbox_relay"]["counts"] == {
+        "candidate_count": 1,
+        "relayed_count": 1,
+        "failed_retryable_count": 0,
+        "failed_terminal_count": 0,
+        "lost_lease_count": 0,
+        "unhandled_failure_count": 0,
+    }
+    assert released["counts"]["succeeded_count"] == 1
+
+
+def test_exact_target_override_rejects_a_different_requested_pair(monkeypatch) -> None:
+    _enable_internal_event_worker(monkeypatch, "projection-a")
+    worker = InternalEventWorker(
+        InMemoryInternalEventRepository(),
+        _registry("projection-a"),
+        relay_role="owner",
+    )
+
+    result = worker.run_due(
+        batch_size=1,
+        dry_run=False,
+        event_types=[EVENT_TYPE],
+        consumer_names=["projection-a"],
+        outbox_idempotency_key="targeted-config-cutover:mismatch",
+        exact_target_config_override=(EVENT_TYPE, "different-consumer"),
+    )
+
+    assert result["ok"] is False
+    assert result["error"] == "exact_target_config_override_mismatch"
+
+
 def test_manual_retry_requires_actor_reason_and_records_audit_without_execution_attempt_increment() -> None:
     repo = InMemoryInternalEventRepository()
     event, runs = repo.create_event_with_consumer_runs(
@@ -685,6 +753,72 @@ def test_postgres_targeted_relay_and_retry_do_not_advance_older_work(monkeypatch
     assert retried["outbox_relay"]["counts"]["candidate_count"] == 0
     assert retried["counts"]["succeeded_count"] == 1
     assert repo.get_consumer_run(older_event.event_id, "projection-a").status == "pending"
+
+
+@pytest.mark.skipif(not _database_url(), reason="PostgreSQL integration database is not configured")
+def test_postgres_exact_target_override_survives_config_release_cutover(monkeypatch) -> None:
+    import psycopg
+
+    database_url = _database_url()
+    monkeypatch.setenv("DATABASE_URL", database_url)
+    published_values = {
+        "AICRM_RUNTIME_CONFIG_CUTOVER_KEYS": ",".join(
+            (
+                "AICRM_INTERNAL_EVENTS_ALLOWED_CONSUMERS",
+                "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_CONSUMERS",
+                "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_TYPES",
+                "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE",
+                "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE_MAX_BATCH_SIZE",
+                "AICRM_INTERNAL_EVENTS_ENABLED",
+            )
+        ),
+        "AICRM_INTERNAL_EVENTS_ALLOWED_CONSUMERS": "",
+        "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_CONSUMERS": "payment.succeeded:order_projection_consumer",
+        "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_TYPES": "payment.succeeded",
+        "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE": "true",
+        "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE_MAX_BATCH_SIZE": "1",
+        "AICRM_INTERNAL_EVENTS_ENABLED": "true",
+    }
+    with psycopg.connect(database_url, row_factory=dict_row) as conn:
+        with conn.cursor() as cursor:
+            cursor.executemany(
+                "INSERT INTO app_settings (key, value) VALUES (%s, %s) "
+                "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+                list(published_values.items()),
+            )
+        enqueue_transactional_internal_event_outbox(
+            conn,
+            _request("postgres-targeted:config-release"),
+        )
+        conn.commit()
+
+    reset_engine_cache_for_tests()
+    try:
+        repo = SQLAlchemyInternalEventRepository(get_session_factory(database_url))
+        worker = InternalEventWorker(repo, _registry("projection-a"), relay_role="owner")
+        excluded = worker.run_due(
+            batch_size=1,
+            dry_run=False,
+            event_types=[EVENT_TYPE],
+            consumer_names=["projection-a"],
+            outbox_idempotency_key="postgres-targeted:config-release",
+        )
+        released = worker.run_due(
+            batch_size=1,
+            dry_run=False,
+            event_types=[EVENT_TYPE],
+            consumer_names=["projection-a"],
+            outbox_idempotency_key="postgres-targeted:config-release",
+            exact_target_config_override=(EVENT_TYPE, "projection-a"),
+        )
+    finally:
+        reset_engine_cache_for_tests()
+
+    assert excluded["ok"] is True
+    assert excluded["counts"]["candidate_count"] == 0
+    assert released["ok"] is True
+    assert released["outbox_relay"]["counts"]["relayed_count"] == 1
+    assert released["counts"]["succeeded_count"] == 1
 
 
 @pytest.mark.skipif(not _database_url(), reason="PostgreSQL integration database is not configured")
