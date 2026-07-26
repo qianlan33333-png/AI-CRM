@@ -100,7 +100,7 @@ jobs:
               fi
               printf 'scheduler_runtime_contract=absent_for_release residue=%s\n' "$scheduler_residue"
             elif [ "$scheduler_mode" = "observe" ]; then
-              test -f aicrm_next/platform_foundation/jobs/scheduler_runtime.py
+              test -f aicrm_next/platform_foundation/background_jobs/scheduler_runtime.py
               systemctl is-enabled --quiet aicrm-job-catalog-scheduler.timer
               systemctl is-active --quiet aicrm-job-catalog-scheduler.timer
               python3 tools/check_job_catalog.py
