@@ -50,18 +50,18 @@ def test_checked_in_profiles_are_valid_and_secret_free() -> None:
     assert all(not capability_id.startswith("extension.") for capability_id in profile.enabled_capabilities)
 
 
-def test_production_profile_stages_every_current_capability_without_enforcing_yet() -> None:
+def test_production_profile_enforces_every_current_capability() -> None:
     profile = load_deployment_profile(DEFAULT_PROFILE_DIR / "production-current.json")
 
     assert profile.profile_id == "production-current"
-    assert profile.activation_mode == "observe"
+    assert profile.activation_mode == "enforce"
     assert profile.enabled_capabilities == tuple(spec.capability_id for spec in CAPABILITY_SPECS)
     assert profile.runtime_roles == RUNTIME_ROLES
 
 
-def test_production_profile_is_behavior_equivalent_when_switched_to_enforce() -> None:
-    observed = load_deployment_profile(DEFAULT_PROFILE_DIR / "production-current.json")
-    enforced = replace(observed, activation_mode="enforce")
+def test_production_profile_is_behavior_equivalent_to_observe_mode() -> None:
+    enforced = load_deployment_profile(DEFAULT_PROFILE_DIR / "production-current.json")
+    observed = replace(enforced, activation_mode="observe")
 
     assert active_router_specs(enforced) == active_router_specs(observed)
     assert build_internal_event_consumer_registry(enforced).to_dict() == build_internal_event_consumer_registry(

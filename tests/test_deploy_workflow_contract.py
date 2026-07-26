@@ -1429,4 +1429,14 @@ def test_deploy_runs_runtime_environment_as_repository_module():
     flag_index = workflow.index("runtime_environment_args+=(--allow-missing-wechat-shop-callback-token)")
 
     assert flag_index < persistence_index < runtime_start_index
+    assert (
+        "--deployment-profile-path '/home/ubuntu/极简 crm/deploy/deployment_profiles/production-current.json'"
+        in workflow[persistence_index:runtime_start_index]
+    )
+    profile_preflight_index = workflow.index(
+        "python3 scripts/ops/validate_production_deployment_profile.py",
+        persistence_index,
+    )
+    runtime_mutation_index = workflow.index("runtime_mutation_started=1", persistence_index)
+    assert persistence_index < profile_preflight_index < runtime_mutation_index < runtime_start_index
     assert '"${runtime_environment_args[@]}"' in workflow[persistence_index:runtime_start_index]
