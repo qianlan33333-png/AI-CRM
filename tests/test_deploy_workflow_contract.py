@@ -1298,7 +1298,7 @@ def test_production_runtime_declares_exactly_one_internal_event_relay_owner():
 
     assert "openclaw-ai-audience-scheduler.service" in legacy
     assert "openclaw-internal-event-worker.service" in legacy
-    assert successors["internal_event_dispatch"] == "aicrm-internal-queue-runtime.service"
+    assert successors["internal_event_dispatch"] == "aicrm-internal-worker.service"
     assert successors["ai_audience_refresh_intent_clock"] == "aicrm-ai-audience-daily-intent.timer"
 
     owner_sources = [

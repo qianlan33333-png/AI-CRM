@@ -83,8 +83,8 @@ def static_boundary_state(root: Path = REPO_ROOT) -> dict[str, int]:
         "process_local_executor_reference_count": realtime_source.count("ThreadPoolExecutor") + realtime_source.count("_EXECUTOR.submit"),
         "welcome_fallback_cancel_reference_count": application_source.count("welcome_realtime_not_scheduled") + application_source.count("channel_entry_welcome_fallback"),
         "retired_timer_manifest_count": int("openclaw-wecom-callback-inbox-worker.timer" in retired),
-        "durable_inbox_runtime_manifest_count": int("aicrm-inbox-queue-runtime.service" in active_services),
-        "persistent_worker_manifest_count": int("aicrm-inbox-queue-runtime.service" in active_services),
+        "durable_inbox_runtime_manifest_count": int("aicrm-internal-worker.service" in active_services),
+        "persistent_worker_manifest_count": int("aicrm-internal-worker.service" in active_services),
         "legacy_persistent_worker_active_count": int("openclaw-wecom-callback-inbox-worker.service" in active_services),
         "legacy_persistent_worker_managed_count": int("openclaw-wecom-callback-inbox-worker.service" in managed_legacy_services),
     }

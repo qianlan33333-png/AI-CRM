@@ -112,7 +112,7 @@ def test_data_health_snapshot_timer_is_bounded_and_kicked_after_release() -> Non
 
 def test_runtime_units_manifest_rejects_missing_database_application_name() -> None:
     manifest = deepcopy(_manifest())
-    manifest["database_application_names"].pop("aicrm-internal-queue-runtime.service")
+    manifest["database_application_names"].pop("aicrm-internal-worker.service")
 
     with pytest.raises(ValueError, match="exactly cover active runtime services"):
         runtime_units.validate_manifest(manifest, validate_unit_files=False)
@@ -378,6 +378,17 @@ def test_runtime_units_install_dry_run_copies_and_enables_only_active_units(caps
     assert runtime_units.main(["--phase", "install-enable-after-web-health", "--dry-run"]) == 0
     output = capsys.readouterr().out
 
+    assert "sudo cp deploy/aicrm-internal-worker.service /etc/systemd/system/" in output
+    assert "sudo systemctl enable aicrm-internal-worker.service" in output
+    assert "sudo systemctl restart aicrm-internal-worker.service" in output
+    for predecessor in (
+        "aicrm-internal-queue-runtime.service",
+        "aicrm-inbox-queue-runtime.service",
+        "aicrm-internal-worker-observer.service",
+    ):
+        assert f"sudo cp deploy/{predecessor} /etc/systemd/system/" not in output
+        assert f"sudo systemctl enable {predecessor}" not in output
+        assert f"sudo systemctl restart {predecessor}" not in output
     assert "sudo cp deploy/openclaw-external-effect-worker.service /etc/systemd/system/" not in output
     assert "sudo cp deploy/openclaw-external-effect-worker.timer /etc/systemd/system/" not in output
     assert "sudo systemctl enable openclaw-external-effect-worker.timer" not in output
@@ -408,6 +419,19 @@ def test_runtime_units_install_dry_run_copies_and_enables_only_active_units(caps
     assert "sudo systemctl disable --now aicrm-ai-audience-daily-intent.timer" in output
     assert "cutover_replacement_autostart=pr3 generation=0 action=verified_disabled" in output
     assert "cutover_managed_legacy=pr3 generation=0 action=restarted_installed_units" in output
+
+
+def test_internal_worker_cutover_removes_predecessor_files_before_runtime_install(capsys) -> None:
+    assert runtime_units.main(["--phase", "install-primary-web", "--dry-run"]) == 0
+    output = capsys.readouterr().out
+
+    for predecessor in (
+        "aicrm-internal-queue-runtime.service",
+        "aicrm-inbox-queue-runtime.service",
+        "aicrm-internal-worker-observer.service",
+    ):
+        assert f"sudo rm -f /etc/systemd/system/{predecessor}" in output
+    assert "sudo cp deploy/aicrm-internal-worker.service /etc/systemd/system/" not in output
 
 
 class _RecordingRunner:

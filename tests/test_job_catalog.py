@@ -20,7 +20,7 @@ def test_job_catalog_has_one_owner_and_external_worker_boundary() -> None:
     assert validate_runtime_role_catalog() == []
 
 
-def test_internal_worker_observer_contract_is_claimless_and_preserves_predecessors() -> None:
+def test_internal_worker_owner_contract_is_enforced_and_retires_predecessors() -> None:
     assert validate_internal_worker_consolidation_manifest() == []
 
 

@@ -66,9 +66,9 @@ jobs:
             sudo systemctl show aicrm-ai-audience-daily-intent.timer \
               --property=ActiveState,UnitFileState,LastTriggerUSec,NextElapseUSecRealtime \
               --no-pager
-            sudo systemctl is-enabled --quiet aicrm-internal-queue-runtime.service
-            sudo systemctl is-active --quiet aicrm-internal-queue-runtime.service
-            sudo systemctl show aicrm-internal-queue-runtime.service \
+            sudo systemctl is-enabled --quiet aicrm-internal-worker.service
+            sudo systemctl is-active --quiet aicrm-internal-worker.service
+            sudo systemctl show aicrm-internal-worker.service \
               --property=ActiveState,SubState,UnitFileState,NRestarts,ExecMainStatus,ExecMainCode,ActiveEnterTimestamp \
               --no-pager
             set -a

@@ -4,10 +4,8 @@
   "database_application_names": {
     "openclaw-wecom-postgres.service": "aicrm-next-web",
     "openclaw-wecom-callback-ingress.service": "aicrm-next-callback-ingress",
-    "aicrm-internal-queue-runtime.service": "aicrm-next-queue-internal",
-    "aicrm-inbox-queue-runtime.service": "aicrm-next-queue-inbox",
+    "aicrm-internal-worker.service": "aicrm-next-internal-worker",
     "aicrm-external-queue-runtime.service": "aicrm-next-queue-external",
-    "aicrm-internal-worker-observer.service": "aicrm-next-internal-worker-observer",
     "aicrm-queue-invariant-check.service": "aicrm-next-cron-queue-invariant",
     "aicrm-queue-soak-snapshot.service": "aicrm-next-cron-queue-soak",
     "aicrm-data-health-snapshot.service": "aicrm-next-cron-data-health",
@@ -26,19 +24,11 @@
       "health_url": "http://127.0.0.1:5002/health"
     },
     {
-      "service": "aicrm-internal-queue-runtime.service",
-      "stop_for_migration": true
-    },
-    {
-      "service": "aicrm-inbox-queue-runtime.service",
+      "service": "aicrm-internal-worker.service",
       "stop_for_migration": true
     },
     {
       "service": "aicrm-external-queue-runtime.service",
-      "stop_for_migration": true
-    },
-    {
-      "service": "aicrm-internal-worker-observer.service",
       "stop_for_migration": true
     }
   ],
@@ -128,7 +118,7 @@
         "legacy_owner": "openclaw-internal-event-worker.timer",
         "capability": "internal_event_dispatch",
         "successor_kind": "persistent_service",
-        "successor_unit": "aicrm-internal-queue-runtime.service",
+        "successor_unit": "aicrm-internal-worker.service",
         "health_contract": "queue_worker_heartbeat:aicrm-internal_event-runtime",
         "backlog_contract": "internal_event_consumer_run"
       },
@@ -168,7 +158,7 @@
         "legacy_owner": "openclaw-customer-read-model-refresh.timer",
         "capability": "customer_read_model_refresh",
         "successor_kind": "persistent_service",
-        "successor_unit": "aicrm-internal-queue-runtime.service",
+        "successor_unit": "aicrm-internal-worker.service",
         "health_contract": "queue_worker_heartbeat:aicrm-internal_event-runtime",
         "backlog_contract": "customer_read_model_refresh_intent+internal_event_consumer_run"
       },
@@ -184,7 +174,7 @@
         "legacy_owner": "openclaw-wecom-callback-inbox-worker.service",
         "capability": "wecom_callback_inbox_dispatch",
         "successor_kind": "persistent_service",
-        "successor_unit": "aicrm-inbox-queue-runtime.service",
+        "successor_unit": "aicrm-internal-worker.service",
         "health_contract": "queue_worker_heartbeat:aicrm-webhook_inbox-runtime",
         "backlog_contract": "webhook_inbox"
       }
@@ -238,9 +228,9 @@
     "legacy_units_remain_authoritative": true
   },
   "internal_worker_consolidation": {
-    "activation_mode": "observe",
+    "activation_mode": "enforce",
     "runtime_role": "internal_worker",
-    "observer_service": "aicrm-internal-worker-observer.service",
+    "service": "aicrm-internal-worker.service",
     "predecessor_services": [
       "aicrm-internal-queue-runtime.service",
       "aicrm-inbox-queue-runtime.service"
@@ -252,10 +242,13 @@
     ],
     "worker_id_namespace": ":role:internal_worker:",
     "requires_successor_parity": true,
-    "legacy_units_remain_authoritative": true,
+    "legacy_units_remain_authoritative": false,
     "real_external_calls_allowed": false
   },
   "retired_forbidden": [
+    "aicrm-internal-queue-runtime.service",
+    "aicrm-inbox-queue-runtime.service",
+    "aicrm-internal-worker-observer.service",
     "aicrm-web.service",
     "openclaw-wecom-callback-inbox-worker.timer",
     "openclaw-external-push-worker.timer",
@@ -272,6 +265,9 @@
     "openclaw-automation-conversion-due-runner.timer"
   ],
   "retired_unit_files": [
+    "aicrm-internal-queue-runtime.service",
+    "aicrm-inbox-queue-runtime.service",
+    "aicrm-internal-worker-observer.service",
     "aicrm-web.service",
     "openclaw-wecom-callback-inbox-worker.timer",
     "openclaw-external-push-worker.timer",

@@ -118,17 +118,25 @@ def collect_errors(root: Path = ROOT) -> list[str]:
         path.name
         for path in (root / "deploy").glob("aicrm-*-queue-runtime.service")
     }
+    combined_internal_worker = root / "deploy" / "aicrm-internal-worker.service"
+    if combined_internal_worker.exists():
+        discovered.add(combined_internal_worker.name)
     if discovered != expected:
         errors.append(
-            "queue runtime services must reuse the three PR-2 canonical units: "
+            "queue runtime services must reuse the canonical owner units: "
             f"missing={sorted(expected - discovered)} extra={sorted(discovered - expected)}"
         )
     for service in sorted(expected & discovered):
         body = (root / "deploy" / service).read_text(encoding="utf-8")
+        entrypoint_token = (
+            "scripts/run_execution_runtime.py --role internal_worker"
+            if service == "aicrm-internal-worker.service"
+            else "scripts/run_execution_runtime.py --queue-kind"
+        )
         required = (
             "EnvironmentFile=/home/ubuntu/.openclaw-wecom-pg.env",
             "EnvironmentFile=-/home/ubuntu/.aicrm-queue-runtime-generation.env",
-            "scripts/run_execution_runtime.py --queue-kind",
+            entrypoint_token,
             "Restart=always",
         )
         for token in required:
