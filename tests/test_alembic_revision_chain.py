@@ -125,8 +125,11 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     identity_cursor_index_source = identity_cursor_index.read_text(encoding="utf-8")
     hxc_projection_view = VERSIONS / "0151_ai_audience_hxc_projection_view.py"
     hxc_projection_view_source = hxc_projection_view.read_text(encoding="utf-8")
+    customer_incremental = VERSIONS / "0152_customer_read_model_incremental_foundation.py"
+    customer_incremental_source = customer_incremental.read_text(encoding="utf-8")
 
-    assert heads == {"0151_ai_audience_hxc_projection_view"}
+    assert heads == {"0152_customer_read_model_incremental"}
+    assert revisions["0152_customer_read_model_incremental"]["down_revision"] == "0151_ai_audience_hxc_projection_view"
     assert revisions["0151_ai_audience_hxc_projection_view"]["down_revision"] == "0150_crm_identity_updated_cursor_index"
     assert revisions["0150_crm_identity_updated_cursor_index"]["down_revision"] == "0149_ai_audience_hxc_projection"
     assert revisions["0149_ai_audience_hxc_projection"]["down_revision"] == "0148_order_source_sort_indexes"
@@ -194,6 +197,15 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     assert "audience_read.wecom_contacts_v1" not in hxc_projection_view_source.split("def downgrade()", 1)[0]
     assert "user_ops_hxc_dashboard_snapshot" not in hxc_projection_view_source.split("def downgrade()", 1)[0]
     assert "DROP TABLE" not in hxc_projection_view_source
+    assert "source_event_id TEXT NOT NULL DEFAULT ''" in customer_incremental_source
+    assert "CREATE UNIQUE INDEX IF NOT EXISTS" in customer_incremental_source
+    assert "CREATE INDEX CONCURRENTLY" in customer_incremental_source
+    assert "uq_customer_list_index_next_unionid" in customer_incremental_source
+    assert "uq_customer_detail_snapshot_next_unionid" in customer_incremental_source
+    assert "idx_customer_refresh_source_generation_id" in customer_incremental_source
+    assert "pg_get_serial_sequence" in customer_incremental_source
+    assert "DROP INDEX" not in customer_incremental_source
+    assert "DROP COLUMN" not in customer_incremental_source
     assert "0018_hxc_dashboard_broadcast_tasks" in source
     assert "CREATE TABLE IF NOT EXISTS data_health_snapshot" in data_health_snapshot_source
     assert "CHECK (singleton IS TRUE)" in data_health_snapshot_source
