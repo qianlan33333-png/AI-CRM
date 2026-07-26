@@ -46,11 +46,12 @@ python scripts/ops/refresh_ai_audience_hxc_projection.py --incremental --batch-s
 公开状态只输出来源、时间水位和是否有积压，不输出稳定排序键、手机号、`external_userid`
 或 `unionid`。没有可靠变更时间的旧订阅表和派生注册视图标记为 `daily_only`。
 
-生产 `aicrm-ai-audience-daily-intent.timer` 每三分钟写入一个幂等的黄小璨增量刷新意图，
+生产 `aicrm-job-catalog-scheduler.timer` 按版本化 `ai_audience.refresh` 三分钟计划写入一个幂等的黄小璨增量刷新意图，
 内部队列运行 `ai_audience_hxc_incremental_projection_consumer`；每日 02:00 或错过窗口后的
 首次补偿时写入全量刷新意图。黄小璨刷新与普通 AI Audience 包刷新使用不同事件和 consumer，
 任一链路失败不会回滚或替代另一条链路的结果。退役中的 legacy scheduler 只保留同样的精确
-event/consumer allowlist 作为回滚保护，不是生产刷新 owner。
+event/consumer allowlist 作为历史保护，不是生产刷新 owner；中间态
+`aicrm-ai-audience-daily-intent.timer` 也已退役。
 
 命令使用事务级 advisory lock 保证单实例执行。成功时新 generation 完整写入后才原子切换；
 失败时事务回滚并保留上一 ready generation，只记录稳定错误码，不记录 SQL 绑定值或异常正文。

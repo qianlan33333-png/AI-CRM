@@ -28,6 +28,15 @@ INTERNAL_WORKER_HEARTBEATS = {
     "aicrm-internal_outbox-runtime",
     "aicrm-webhook_inbox-runtime",
 }
+SCHEDULER_PREDECESSORS = {
+    "aicrm-next-broadcast-delegation.timer": "aicrm-next-broadcast-delegation.service",
+    "aicrm-next-group-ops-planning.timer": "aicrm-next-group-ops-planning.service",
+    "aicrm-ai-audience-daily-intent.timer": "aicrm-ai-audience-daily-intent.service",
+}
+SCHEDULER_EXECUTE_COMMAND = (
+    "python scripts/run_job_catalog_scheduler.py --execute "
+    "--confirmation EXECUTE_SAFE_JOB_CATALOG_SCHEDULER"
+)
 
 
 def validate_job_catalog_scheduler_manifest(
@@ -79,6 +88,14 @@ def validate_job_catalog_scheduler_manifest(
             errors.append("enforced scheduler must explicitly open the execute environment gate")
         if "run_job_catalog_scheduler.py --execute" not in service_body:
             errors.append("enforced scheduler service must use execute mode")
+        for token in (
+            "--confirmation EXECUTE_SAFE_JOB_CATALOG_SCHEDULER",
+            "EnvironmentFile=-/home/ubuntu/.aicrm-queue-runtime-generation.env",
+        ):
+            if token not in service_body:
+                errors.append(f"enforced scheduler service is missing parity token: {token}")
+        if "AICRM_GROUP_OPS_MATERIAL_UPLOAD_MODE=real" in service_body:
+            errors.append("enforced scheduler must not own synchronous WeCom material upload")
         if scheduler.get("legacy_units_remain_authoritative") is not False:
             errors.append("enforced scheduler cannot leave predecessor units authoritative")
     else:
@@ -86,12 +103,27 @@ def validate_job_catalog_scheduler_manifest(
     predecessor_timers = dict(scheduler.get("predecessor_timers") or {})
     if not set(predecessor_timers).issubset(safe_jobs):
         errors.append("scheduler predecessor mappings must reference safe catalog jobs")
+    if set(predecessor_timers.values()) != set(SCHEDULER_PREDECESSORS):
+        errors.append("scheduler must declare the three reviewed predecessor timers")
     replacement_timers = {
         str(item.get("timer") or "")
         for item in dict(raw.get("cutover_replacement_autostart") or {}).get("timers") or []
     }
     if mode == "observe" and not set(predecessor_timers.values()).issubset(replacement_timers):
         errors.append("observer scheduler predecessors must remain replacement timers")
+    if mode == "enforce":
+        retired = set(raw.get("retired_forbidden") or [])
+        retired_files = set(raw.get("retired_unit_files") or [])
+        predecessor_units = set(SCHEDULER_PREDECESSORS) | set(SCHEDULER_PREDECESSORS.values())
+        if not predecessor_units.issubset(retired & retired_files):
+            errors.append("enforced scheduler must retire every predecessor timer and service")
+        if set(SCHEDULER_PREDECESSORS) & replacement_timers:
+            errors.append("enforced scheduler predecessors cannot remain cutover replacements")
+        residue = sorted(
+            unit for unit in predecessor_units if (ROOT / "deploy" / unit).exists()
+        )
+        if residue:
+            errors.append("enforced scheduler predecessor unit files remain deployable: " + ", ".join(residue))
     return errors
 
 
@@ -202,8 +234,15 @@ def validate_runtime_role_catalog(path: Path = DEFAULT_ROLE_CATALOG) -> list[str
     }
     if dict(raw.get("role_activation") or {}) != expected_role_activation:
         errors.append("runtime role activation must match the production owner manifest")
-    if raw.get("activation_mode") != "mixed":
-        errors.append("runtime role catalog must declare mixed activation during staged cutover")
+    expected_activation_mode = (
+        "enforce"
+        if set(expected_role_activation.values()) == {"enforce"}
+        else "mixed"
+    )
+    if raw.get("activation_mode") != expected_activation_mode:
+        errors.append(
+            "runtime role catalog activation mode must match staged role activation"
+        )
     cutover = dict(raw.get("cutover_policy") or {})
     if cutover.get("activate_new_units") is not True:
         errors.append("runtime cutover must activate the reviewed internal_worker owner")
@@ -213,14 +252,26 @@ def validate_runtime_role_catalog(path: Path = DEFAULT_ROLE_CATALOG) -> list[str
         errors.append("runtime cutover must retire the claimless internal_worker observer")
     if cutover.get("internal_worker_predecessors_authoritative") is not False:
         errors.append("runtime cutover must retire internal_worker predecessor owners")
-    if cutover.get("scheduler_predecessors_authoritative") is not True:
-        errors.append("runtime cutover must preserve scheduler predecessor owners")
+    expected_scheduler_predecessors = scheduler_mode == "observe"
+    if cutover.get("scheduler_predecessors_authoritative") is not expected_scheduler_predecessors:
+        errors.append("runtime cutover scheduler predecessor authority must match scheduler mode")
     internal_worker = next(
         (item for item in roles if str(item.get("role") or "") == "internal_worker"),
         {},
     )
     if internal_worker.get("command") != "python scripts/run_execution_runtime.py --role internal_worker":
         errors.append("internal_worker role command must bind the enforced combined owner")
+    scheduler = next(
+        (item for item in roles if str(item.get("role") or "") == "scheduler"),
+        {},
+    )
+    expected_scheduler_command = (
+        SCHEDULER_EXECUTE_COMMAND
+        if scheduler_mode == "enforce"
+        else "python scripts/run_job_catalog_scheduler.py --dry-run"
+    )
+    if scheduler.get("command") != expected_scheduler_command:
+        errors.append("scheduler role command must match its activation mode")
     catalog_roles = {spec.runtime_role for spec in JOB_SPECS}
     if not catalog_roles <= set(role_names):
         errors.append("job catalog references an undeclared runtime role")

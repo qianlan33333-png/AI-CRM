@@ -20,6 +20,9 @@ LEGACY_SERVICE = ROOT / "deploy" / "openclaw-ai-audience-scheduler.service"
 LEGACY_TIMER = ROOT / "deploy" / "openclaw-ai-audience-scheduler.timer"
 DAILY_SERVICE = ROOT / "deploy" / "aicrm-ai-audience-daily-intent.service"
 DAILY_TIMER = ROOT / "deploy" / "aicrm-ai-audience-daily-intent.timer"
+SCHEDULER_SERVICE = ROOT / "deploy" / "aicrm-job-catalog-scheduler.service"
+SCHEDULER_TIMER = ROOT / "deploy" / "aicrm-job-catalog-scheduler.timer"
+SCHEDULER_ENTRYPOINT = ROOT / "scripts" / "run_job_catalog_scheduler.py"
 RUNTIME_MANIFEST = ROOT / "deploy" / "production_runtime_units.json"
 EVENTS = ROOT / "aicrm_next" / "ai_audience_ops" / "events.py"
 INTENTS = ROOT / "aicrm_next" / "ai_audience_ops" / "refresh_intents.py"
@@ -28,8 +31,9 @@ INTENTS = ROOT / "aicrm_next" / "ai_audience_ops" / "refresh_intents.py"
 def _code_checks() -> dict[str, bool]:
     legacy_service = LEGACY_SERVICE.read_text(encoding="utf-8")
     legacy_timer = LEGACY_TIMER.read_text(encoding="utf-8")
-    daily_service = DAILY_SERVICE.read_text(encoding="utf-8")
-    daily_timer = DAILY_TIMER.read_text(encoding="utf-8")
+    scheduler_service = SCHEDULER_SERVICE.read_text(encoding="utf-8")
+    scheduler_timer = SCHEDULER_TIMER.read_text(encoding="utf-8")
+    scheduler_entrypoint = SCHEDULER_ENTRYPOINT.read_text(encoding="utf-8")
     manifest = json.loads(RUNTIME_MANIFEST.read_text(encoding="utf-8"))
     cutover = manifest.get("cutover_managed_legacy") or {}
     cutover_pairs = {
@@ -40,11 +44,9 @@ def _code_checks() -> dict[str, bool]:
         (str(item.get("timer") or ""), str(item.get("service") or ""))
         for item in manifest.get("active_autostart") or []
     }
-    replacement = manifest.get("cutover_replacement_autostart") or {}
-    replacement_pairs = {
-        (str(item.get("timer") or ""), str(item.get("service") or ""))
-        for item in replacement.get("timers") or []
-    }
+    successor_rows = list((manifest.get("cutover_successor_matrix") or {}).get("owners") or [])
+    retired = set(manifest.get("retired_forbidden") or [])
+    retired_files = set(manifest.get("retired_unit_files") or [])
     events = EVENTS.read_text(encoding="utf-8")
     intents = INTENTS.read_text(encoding="utf-8")
     return {
@@ -53,17 +55,39 @@ def _code_checks() -> dict[str, bool]:
             (LEGACY_TIMER.name, LEGACY_SERVICE.name) in cutover_pairs
             and (LEGACY_TIMER.name, LEGACY_SERVICE.name) not in active_pairs
         ),
-        "refresh_intent_clock_only": "--refresh-intent-clock" in daily_service and "--run-consumers" not in daily_service and "--execute" not in daily_service,
-        "refresh_intent_clock_is_distinct_cutover_replacement": (
-            (DAILY_TIMER.name, DAILY_SERVICE.name) in replacement_pairs
-            and (DAILY_TIMER.name, DAILY_SERVICE.name) not in active_pairs
-            and "*:0/3:00" in daily_timer
+        "refresh_intent_clock_only": (
+            "run_job_catalog_scheduler.py --execute" in scheduler_service
+            and "emit_due_ticks(" in scheduler_entrypoint
+            and "dispatch_one(" not in scheduler_entrypoint
         ),
-        "owner_precheck_installed": "check_ai_audience_refresh_owner.py --code-only" in daily_service,
+        "refresh_intent_clock_is_consolidated_successor": (
+            (SCHEDULER_TIMER.name, SCHEDULER_SERVICE.name) in active_pairs
+            and "*:*:40" in scheduler_timer
+            and any(
+                str(item.get("legacy_owner") or "") == LEGACY_TIMER.name
+                and str(item.get("successor_unit") or "") == SCHEDULER_TIMER.name
+                for item in successor_rows
+            )
+        ),
+        "retired_intermediate_timer_absent": (
+            not DAILY_SERVICE.exists()
+            and not DAILY_TIMER.exists()
+            and DAILY_SERVICE.name in retired
+            and DAILY_TIMER.name in retired
+            and DAILY_SERVICE.name in retired_files
+            and DAILY_TIMER.name in retired_files
+        ),
+        "scheduler_has_no_inline_material_upload": (
+            "AICRM_GROUP_OPS_MATERIAL_UPLOAD_MODE=real" not in scheduler_service
+        ),
         "single_package_consumer_registered": "REFRESH_REQUESTED_EVENT" in events and "refresh_intent_consumer" in events,
         "legacy_ticks_are_intent_only": "request_due_refreshes(" in events and "run_due(" not in events,
         "coalescing_intent_present": "ai_audience_refresh_intent" in intents and "claim_latest" in intents,
-        "no_inline_provider_dispatch": "dispatch_one(" not in intents and ".dispatch(" not in intents,
+        "no_inline_provider_dispatch": (
+            "dispatch_one(" not in intents
+            and ".dispatch(" not in intents
+            and "run_external_effect_queue_worker.py" not in scheduler_service
+        ),
     }
 
 

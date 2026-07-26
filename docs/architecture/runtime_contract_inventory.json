@@ -2375,13 +2375,13 @@
       "accessor": "os.getenv",
       "file": "scripts/ops/check_ai_audience_refresh_owner.py",
       "key": "DATABASE_URL",
-      "line": 110
+      "line": 134
     },
     {
       "accessor": "os.getenv",
       "file": "scripts/ops/check_ai_audience_refresh_owner.py",
       "key": "DATABASE_URL",
-      "line": 139
+      "line": 163
     },
     {
       "accessor": "os.getenv",
@@ -47412,10 +47412,13 @@
   ],
   "runtime_units": [
     {
+      "kind": "service",
+      "state": "retired_forbidden",
+      "unit": "aicrm-ai-audience-daily-intent.service"
+    },
+    {
       "kind": "timer",
-      "owner_inventory": "pr3",
-      "service": "aicrm-ai-audience-daily-intent.service",
-      "state": "cutover_replacement_autostart",
+      "state": "retired_forbidden",
       "unit": "aicrm-ai-audience-daily-intent.timer"
     },
     {
@@ -47496,17 +47499,23 @@
       "unit": "aicrm-job-catalog-scheduler.timer"
     },
     {
-      "kind": "timer",
-      "owner_inventory": "pr3",
-      "service": "aicrm-next-broadcast-delegation.service",
-      "state": "cutover_replacement_autostart",
-      "unit": "aicrm-next-broadcast-delegation.timer"
+      "kind": "service",
+      "state": "retired_forbidden",
+      "unit": "aicrm-next-broadcast-delegation.service"
     },
     {
       "kind": "timer",
-      "owner_inventory": "pr3",
-      "service": "aicrm-next-group-ops-planning.service",
-      "state": "cutover_replacement_autostart",
+      "state": "retired_forbidden",
+      "unit": "aicrm-next-broadcast-delegation.timer"
+    },
+    {
+      "kind": "service",
+      "state": "retired_forbidden",
+      "unit": "aicrm-next-group-ops-planning.service"
+    },
+    {
+      "kind": "timer",
+      "state": "retired_forbidden",
       "unit": "aicrm-next-group-ops-planning.timer"
     },
     {

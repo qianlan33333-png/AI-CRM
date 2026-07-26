@@ -40,9 +40,7 @@ PR3_LEGACY_PERSISTENT_SERVICES = (
     "openclaw-wecom-callback-inbox-worker.service",
 )
 PR3_REPLACEMENT_TIMER_OWNERS = (
-    ("aicrm-ai-audience-daily-intent.timer", "aicrm-ai-audience-daily-intent.service"),
-    ("aicrm-next-broadcast-delegation.timer", "aicrm-next-broadcast-delegation.service"),
-    ("aicrm-next-group-ops-planning.timer", "aicrm-next-group-ops-planning.service"),
+    ("aicrm-job-catalog-scheduler.timer", "aicrm-job-catalog-scheduler.service"),
 )
 PR3_SUCCESSOR_OWNERS = (
     (
@@ -65,16 +63,16 @@ PR3_SUCCESSOR_OWNERS = (
         "openclaw-broadcast-queue-worker.timer",
         "broadcast_external_effect_delegation",
         "timer",
-        "aicrm-next-broadcast-delegation.timer",
-        "systemd_timer:aicrm-next-broadcast-delegation.timer",
+        "aicrm-job-catalog-scheduler.timer",
+        "systemd_timer:aicrm-job-catalog-scheduler.timer",
         "broadcast_jobs",
     ),
     (
         "openclaw-ai-audience-scheduler.timer",
         "ai_audience_refresh_intent_clock",
         "timer",
-        "aicrm-ai-audience-daily-intent.timer",
-        "systemd_timer:aicrm-ai-audience-daily-intent.timer",
+        "aicrm-job-catalog-scheduler.timer",
+        "systemd_timer:aicrm-job-catalog-scheduler.timer",
         "ai_audience_refresh_intent+internal_event_outbox",
     ),
     (
@@ -97,8 +95,8 @@ PR3_SUCCESSOR_OWNERS = (
         "openclaw-automation-ops-scheduler.timer",
         "group_ops_effect_graph_planning",
         "timer",
-        "aicrm-next-group-ops-planning.timer",
-        "systemd_timer:aicrm-next-group-ops-planning.timer",
+        "aicrm-job-catalog-scheduler.timer",
+        "systemd_timer:aicrm-job-catalog-scheduler.timer",
         "automation_group_ops_plan+automation_group_ops_effect_graph",
     ),
     (

@@ -207,8 +207,14 @@ def collect_errors(root: Path = ROOT) -> list[str]:
     )
     if str(replacement.get("owner_inventory") or "") != PR3_OWNER_INVENTORY_NAME:
         errors.append("cutover replacement timers must use the reviewed PR-3 owner inventory")
-    if replacement_pairs != PR3_REPLACEMENT_TIMER_OWNERS:
-        errors.append("cutover replacement timers must exactly match the reviewed PR-3 inventory")
+    if replacement_pairs:
+        errors.append("consolidated scheduler successors must not remain staged as cutover replacements")
+    missing_active_successors = sorted(set(PR3_REPLACEMENT_TIMER_OWNERS) - active_timer_pairs)
+    if missing_active_successors:
+        errors.append(
+            "current PR-3 timer successors must be active autostart owners: "
+            f"{missing_active_successors}"
+        )
     successor = manifest.get("cutover_successor_matrix") or {}
     successor_rows = tuple(
         (

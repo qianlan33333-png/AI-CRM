@@ -1,14 +1,16 @@
 # Broadcast Jobs Queue Contract
 
 `broadcast_jobs` is the durable business-intent queue for scheduled broadcast
-sends. After the PR-3 cutover, `aicrm-next-broadcast-delegation.timer` is its
-only automatic claim owner. The Next-native worker converts supported rows into
+sends. After the scheduler consolidation cutover,
+`aicrm-job-catalog-scheduler.timer` is its only automatic clock owner and invokes
+the versioned `campaign.plan` handler. The Next-native worker converts supported rows into
 `external_effect_job` records in one database transaction; it never owns the
 provider call. The persistent External Effect runtime remains the only WeCom
 delivery owner.
 
-`openclaw-broadcast-queue-worker.timer` is a retired legacy owner. It must stay
-disabled and must not be restored as a fallback.
+`openclaw-broadcast-queue-worker.timer` and the intermediate
+`aicrm-next-broadcast-delegation.timer` are retired owners. They must stay
+disabled and must not be restored as fallbacks.
 
 ## Field Roles
 

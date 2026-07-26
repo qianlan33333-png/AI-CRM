@@ -684,6 +684,8 @@ def test_ai_audience_refresh_owner_code_contract_uses_queue_v2_intent_clock() ->
     checks = check_ai_audience_refresh_owner._code_checks()
 
     assert checks["refresh_intent_clock_only"] is True
-    assert checks["refresh_intent_clock_is_distinct_cutover_replacement"] is True
+    assert checks["refresh_intent_clock_is_consolidated_successor"] is True
+    assert checks["retired_intermediate_timer_absent"] is True
+    assert checks["scheduler_has_no_inline_material_upload"] is True
     assert checks["legacy_owner_cutover_managed"] is True
     assert checks["no_inline_provider_dispatch"] is True

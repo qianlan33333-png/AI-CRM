@@ -63,8 +63,13 @@ jobs:
               aicrm-job-catalog-scheduler.timer \
               aicrm-job-catalog-scheduler.service \
               aicrm-next-broadcast-delegation.timer \
+              aicrm-next-broadcast-delegation.service \
               aicrm-next-group-ops-planning.timer \
-              aicrm-ai-audience-daily-intent.timer
+              aicrm-next-group-ops-planning.service \
+              aicrm-ai-audience-daily-intent.timer \
+              aicrm-ai-audience-daily-intent.service \
+              openclaw-wechat-pay-order-reconciliation-worker.timer \
+              openclaw-wechat-pay-order-reconciliation-worker.service
             do
               load_state="$(systemctl show "$unit" --property=LoadState --value 2>/dev/null || true)"
               enabled="$(systemctl is-enabled "$unit" 2>/dev/null || true)"
@@ -103,6 +108,64 @@ jobs:
               test -f aicrm_next/platform_foundation/background_jobs/scheduler_runtime.py
               systemctl is-enabled --quiet aicrm-job-catalog-scheduler.timer
               systemctl is-active --quiet aicrm-job-catalog-scheduler.timer
+            elif [ "$scheduler_mode" = "enforce" ]; then
+              test -f aicrm_next/platform_foundation/background_jobs/scheduler_runtime.py
+              systemctl is-enabled --quiet aicrm-job-catalog-scheduler.timer
+              systemctl is-active --quiet aicrm-job-catalog-scheduler.timer
+              systemctl is-enabled --quiet openclaw-wechat-pay-order-reconciliation-worker.timer
+              systemctl is-active --quiet openclaw-wechat-pay-order-reconciliation-worker.timer
+              grep -Fq 'Environment=AICRM_JOB_CATALOG_SCHEDULER_EXECUTE=1' \
+                deploy/aicrm-job-catalog-scheduler.service
+              grep -Fq -- '--confirmation EXECUTE_SAFE_JOB_CATALOG_SCHEDULER' \
+                deploy/aicrm-job-catalog-scheduler.service
+              grep -Fq 'EnvironmentFile=-/home/ubuntu/.aicrm-queue-runtime-generation.env' \
+                deploy/aicrm-job-catalog-scheduler.service
+              ! grep -Fq 'AICRM_GROUP_OPS_MATERIAL_UPLOAD_MODE=real' \
+                deploy/aicrm-job-catalog-scheduler.service
+
+              for unit in \
+                aicrm-next-broadcast-delegation.timer \
+                aicrm-next-broadcast-delegation.service \
+                aicrm-next-group-ops-planning.timer \
+                aicrm-next-group-ops-planning.service \
+                aicrm-ai-audience-daily-intent.timer \
+                aicrm-ai-audience-daily-intent.service
+              do
+                load_state="$(systemctl show "$unit" --property=LoadState --value 2>/dev/null || true)"
+                enabled="$(systemctl is-enabled "$unit" 2>/dev/null || true)"
+                active="$(systemctl is-active "$unit" 2>/dev/null || true)"
+                test "$load_state" = "not-found"
+                test "$enabled" != "enabled"
+                test "$active" != "active"
+                test ! -e "/etc/systemd/system/$unit"
+              done
+
+              release_epoch="$(stat -c %Y .release-sha)"
+              scheduler_exit_epoch=0
+              for _attempt in 1 2 3 4 5 6 7 8 9
+              do
+                scheduler_result="$(systemctl show aicrm-job-catalog-scheduler.service --property=Result --value)"
+                scheduler_status="$(systemctl show aicrm-job-catalog-scheduler.service --property=ExecMainStatus --value)"
+                scheduler_exit="$(systemctl show aicrm-job-catalog-scheduler.service --property=InactiveExitTimestamp --value)"
+                scheduler_exit_epoch="$(date -d "$scheduler_exit" +%s 2>/dev/null || printf '0')"
+                if [ "$scheduler_result" = "success" ] \
+                  && [ "$scheduler_status" = "0" ] \
+                  && [ "$scheduler_exit_epoch" -ge "$release_epoch" ]; then
+                  break
+                fi
+                sleep 10
+              done
+              test "$scheduler_result" = "success"
+              test "$scheduler_status" = "0"
+              test "$scheduler_exit_epoch" -ge "$release_epoch"
+              printf 'scheduler_owner_last_exit_epoch=%s release_epoch=%s\n' \
+                "$scheduler_exit_epoch" "$release_epoch"
+            else
+              echo "unsupported scheduler activation mode: $scheduler_mode"
+              exit 1
+            fi
+
+            if [ "$scheduler_mode" = "observe" ] || [ "$scheduler_mode" = "enforce" ]; then
               python3 tools/check_job_catalog.py
               python3 scripts/run_job_catalog_scheduler.py \
                 --dry-run \
@@ -125,9 +188,6 @@ jobs:
             assert "client_secret" not in body.lower()
             print(json.dumps(report, ensure_ascii=False, sort_keys=True, default=str))
             PY
-            else
-              echo "unsupported scheduler activation mode: $scheduler_mode"
-              exit 1
             fi
 
             python3 - <<'PY'

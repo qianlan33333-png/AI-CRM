@@ -110,27 +110,15 @@ def test_runtime_contract_inventory_covers_r00_behavior_surfaces() -> None:
     ):
         assert runtime_units[unit_name]["state"] == "cutover_managed_legacy"
         assert runtime_units[unit_name]["owner_inventory"] == "pr3"
-    assert runtime_units["aicrm-ai-audience-daily-intent.timer"] == {
-        "unit": "aicrm-ai-audience-daily-intent.timer",
-        "kind": "timer",
-        "state": "cutover_replacement_autostart",
-        "service": "aicrm-ai-audience-daily-intent.service",
-        "owner_inventory": "pr3",
-    }
-    assert runtime_units["aicrm-next-broadcast-delegation.timer"] == {
-        "unit": "aicrm-next-broadcast-delegation.timer",
-        "kind": "timer",
-        "state": "cutover_replacement_autostart",
-        "service": "aicrm-next-broadcast-delegation.service",
-        "owner_inventory": "pr3",
-    }
-    assert runtime_units["aicrm-next-group-ops-planning.timer"] == {
-        "unit": "aicrm-next-group-ops-planning.timer",
-        "kind": "timer",
-        "state": "cutover_replacement_autostart",
-        "service": "aicrm-next-group-ops-planning.service",
-        "owner_inventory": "pr3",
-    }
+    for unit_name in (
+        "aicrm-ai-audience-daily-intent.timer",
+        "aicrm-ai-audience-daily-intent.service",
+        "aicrm-next-broadcast-delegation.timer",
+        "aicrm-next-broadcast-delegation.service",
+        "aicrm-next-group-ops-planning.timer",
+        "aicrm-next-group-ops-planning.service",
+    ):
+        assert runtime_units[unit_name]["state"] == "retired_forbidden"
     assert "DATABASE_URL" in inventory["environment_variables"]
     assert {
         "AICRM_AUTH_ARCHIVE_WORKER_CLIENT_ID",
