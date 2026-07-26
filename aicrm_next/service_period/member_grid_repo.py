@@ -677,8 +677,7 @@ class PostgresMemberGridRepositoryMixin:
                 ),
                 ranked AS (
                     SELECT
-                        filtered.*,
-                        COUNT(*) OVER () AS total_count
+                        filtered.*
                         {group_count_sql}
                     FROM filtered
                 )
@@ -702,7 +701,8 @@ class PostgresMemberGridRepositoryMixin:
         return {
             "ok": True,
             "rows": [public_grid_row(row, normalized_config) for row in page],
-            "total": int(page[0].get("total_count") or 0) if page else (None if cursor else 0),
+            "total": None,
+            "has_more": has_more,
             "next_cursor": next_cursor,
             "snapshot_at": snapshot_at.isoformat(),
             "page_size": page_size,

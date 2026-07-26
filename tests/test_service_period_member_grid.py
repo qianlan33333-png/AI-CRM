@@ -112,6 +112,56 @@ def test_member_grid_schema_is_code_owned_and_fixed_to_ten_fields() -> None:
     assert [field["id"] for field in schema["fields"] if field["editable"]] == ["remark", "alliance"]
 
 
+def test_postgres_member_grid_page_query_does_not_compute_global_exact_total() -> None:
+    class CapturedResult:
+        @staticmethod
+        def fetchall() -> list[dict]:
+            return []
+
+    class CapturedConnection:
+        statement = ""
+        params: tuple = ()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, traceback) -> None:
+            return None
+
+        def execute(self, statement: str, params: tuple):
+            self.statement = statement
+            self.params = params
+            return CapturedResult()
+
+    connection = CapturedConnection()
+
+    class CapturedRepository(PostgresServicePeriodRepository):
+        def __init__(self) -> None:
+            self.connection = connection
+
+        @staticmethod
+        def get_product(service_product_id: str) -> dict:
+            return {"id": service_product_id}
+
+        def _connect(self):
+            return self.connection
+
+    repository = CapturedRepository()
+
+    payload = repository.query_member_grid(
+        "1",
+        config=empty_view_config(),
+        limit=20,
+        cursor="",
+    )
+
+    assert "COUNT(*) OVER () AS total_count" not in connection.statement
+    assert "LIMIT %s" in connection.statement
+    assert connection.params[-1] == 21
+    assert payload["total"] is None
+    assert payload["has_more"] is False
+
+
 @pytest.mark.parametrize(
     ("mutate", "message"),
     (
@@ -211,7 +261,9 @@ def test_signed_keyset_cursor_has_no_cross_page_duplicates_and_rejects_tampering
 
     assert len(record_ids) == 235
     assert len(set(record_ids)) == 235
-    assert first["total"] == 235
+    assert first["total"] is None
+    assert first["has_more"] is True
+    assert third["has_more"] is False
     assert third["next_cursor"] == ""
 
     tampered = first["next_cursor"][:-1] + ("A" if first["next_cursor"][-1] != "A" else "B")
@@ -571,7 +623,9 @@ def test_postgres_grid_query_and_view_repository_contract(next_pg_schema) -> Non
     rows = [row for page in pages for row in page["rows"]]
     assert len(rows) == 230
     assert len({row["record_id"] for row in rows}) == 230
-    assert pages[0]["total"] == 230
+    assert pages[0]["total"] is None
+    assert pages[0]["has_more"] is True
+    assert pages[-1]["has_more"] is False
     assert all(len(row["group_path"]) == 2 for row in rows)
     assert {row["values"]["renewal_count"] for row in rows} == {0, 1, 2, 3}
     rows_by_unionid = {row["unionid"]: row for row in rows}

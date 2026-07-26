@@ -798,7 +798,6 @@ def query_in_memory_rows(
     member_items = [dict(member) for member in members]
     rows = [normalize_member_row(member, snapshot_at=snapshot_at) for member in member_items]
     rows = [row for row in rows if _matches_filters(row, normalized_config)]
-    total = len(rows)
     rows.sort(key=cmp_to_key(lambda left, right: _compare_rows(left, right, normalized_config)))
     _attach_in_memory_group_counts(rows, normalized_config)
     cursor_keys = decoded.get("keys") or []
@@ -818,7 +817,8 @@ def query_in_memory_rows(
     return {
         "ok": True,
         "rows": [public_grid_row(row, normalized_config) for row in page],
-        "total": total,
+        "total": None,
+        "has_more": has_more,
         "next_cursor": next_cursor,
         "snapshot_at": snapshot_at.isoformat(),
         "page_size": page_size,
