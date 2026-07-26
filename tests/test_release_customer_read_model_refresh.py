@@ -93,6 +93,7 @@ def test_release_refresh_runs_only_the_exact_internal_projection_consumer(monkey
         "completed_generation": 26,
         "status": "idle",
     }
+    assert result["consumer_mode"] == "executed"
     assert len(calls) == 3
     worker_call = calls[1]
     assert worker_call["env"]["AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_TYPES"] == REFRESH_EVENT_TYPE
@@ -105,7 +106,7 @@ def test_release_refresh_runs_only_the_exact_internal_projection_consumer(monkey
     assert worker_call["command"][-4:] == ["--event-types", REFRESH_EVENT_TYPE, "--consumer-names", REFRESH_CONSUMER]
 
 
-def test_release_refresh_fails_closed_on_empty_or_non_exact_consumer_result(monkeypatch) -> None:
+def test_release_refresh_fails_closed_on_non_exact_consumer_result(monkeypatch) -> None:
     monkeypatch.setenv("AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED", "1")
     call_count = 0
 
@@ -127,13 +128,79 @@ def test_release_refresh_fails_closed_on_empty_or_non_exact_consumer_result(monk
         else:
             payload = {
                 "ok": True,
-                "counts": {"candidate_count": 0, "processed_count": 0, "succeeded_count": 0},
+                "counts": {"candidate_count": 1, "processed_count": 0, "succeeded_count": 0},
                 "real_external_call_executed": False,
             }
         return CompletedProcess(command, 0, stdout=json.dumps(payload), stderr="")
 
     with pytest.raises(ReleaseRefreshError, match="release_refresh_consumer_count_mismatch"):
         run_release_refresh(release_sha="b" * 40, command_runner=runner)
+
+
+def test_release_refresh_waits_for_a_concurrent_consumer_owner(monkeypatch) -> None:
+    monkeypatch.setenv("AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED", "1")
+    calls: list[list[str]] = []
+
+    def runner(command, **kwargs):
+        del kwargs
+        calls.append(list(command))
+        if "--wait-seconds" in command:
+            payload = {
+                "ok": True,
+                "wait": {
+                    "ok": True,
+                    "target_generation": 31,
+                    "dirty_generation": 31,
+                    "completed_generation": 31,
+                    "status": "idle",
+                },
+                "real_external_call_executed": False,
+            }
+        elif "scripts/run_customer_read_model_refresh.py" in command:
+            payload = {
+                "ok": True,
+                "accepted": True,
+                "deduplicated": False,
+                "generation": 31,
+                "intent": {
+                    "dirty_generation": 31,
+                    "completed_generation": 30,
+                    "status": "waiting",
+                },
+                "real_external_call_executed": False,
+            }
+        else:
+            payload = {
+                "ok": True,
+                "counts": {
+                    "candidate_count": 0,
+                    "processed_count": 0,
+                    "succeeded_count": 0,
+                    "failed_retryable_count": 0,
+                    "failed_terminal_count": 0,
+                    "blocked_count": 0,
+                    "lost_lease_count": 0,
+                    "unhandled_failure_count": 0,
+                },
+                "real_external_call_executed": False,
+            }
+        return CompletedProcess(command, 0, stdout=json.dumps(payload), stderr="")
+
+    result = run_release_refresh(release_sha="e" * 40, command_runner=runner)
+
+    assert result["ok"] is True
+    assert result["consumer_mode"] == "concurrent_handoff"
+    assert result["consumer_counts"] == {
+        "candidate_count": 0,
+        "processed_count": 0,
+        "succeeded_count": 0,
+        "failed_retryable_count": 0,
+        "failed_terminal_count": 0,
+        "blocked_count": 0,
+        "lost_lease_count": 0,
+        "unhandled_failure_count": 0,
+    }
+    assert calls[-1][-2:] == ["--wait-seconds", "300"]
 
 
 def test_release_refresh_is_idempotent_when_the_exact_release_generation_already_completed(monkeypatch) -> None:
@@ -172,6 +239,7 @@ def test_release_refresh_is_idempotent_when_the_exact_release_generation_already
     result = run_release_refresh(release_sha="d" * 40, command_runner=runner)
 
     assert result["request"]["already_completed"] is True
+    assert result["consumer_mode"] == "already_completed"
     assert result["consumer_counts"] == {
         "candidate_count": 0,
         "processed_count": 0,
