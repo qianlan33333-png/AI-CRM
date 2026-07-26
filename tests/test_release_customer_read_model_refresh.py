@@ -12,6 +12,7 @@ from scripts.ops.run_release_customer_read_model_refresh import (
     REFRESH_CONSUMER,
     REFRESH_EVENT_TYPE,
     ReleaseRefreshError,
+    main,
     run_release_refresh,
 )
 
@@ -133,8 +134,63 @@ def test_release_refresh_fails_closed_on_non_exact_consumer_result(monkeypatch) 
             }
         return CompletedProcess(command, 0, stdout=json.dumps(payload), stderr="")
 
-    with pytest.raises(ReleaseRefreshError, match="release_refresh_consumer_count_mismatch"):
+    with pytest.raises(ReleaseRefreshError, match="release_refresh_consumer_count_mismatch") as exc_info:
         run_release_refresh(release_sha="b" * 40, command_runner=runner)
+
+    assert exc_info.value.diagnostics == {
+        "consumer_counts": {
+            "candidate_count": 1,
+            "processed_count": 0,
+            "succeeded_count": 0,
+            "failed_retryable_count": 0,
+            "failed_terminal_count": 0,
+            "blocked_count": 0,
+            "lost_lease_count": 0,
+            "unhandled_failure_count": 0,
+            "skipped_count": 0,
+        },
+        "expected_consumer_counts": {
+            "candidate_count": 1,
+            "processed_count": 1,
+            "succeeded_count": 1,
+            "failed_retryable_count": 0,
+            "failed_terminal_count": 0,
+            "blocked_count": 0,
+            "lost_lease_count": 0,
+            "unhandled_failure_count": 0,
+        },
+        "consumer_mode": "rejected",
+    }
+
+
+def test_release_refresh_main_prints_only_safe_failure_diagnostics(monkeypatch, capsys) -> None:
+    def fail(**_kwargs):
+        raise ReleaseRefreshError(
+            "release_refresh_consumer_count_mismatch",
+            diagnostics={
+                "consumer_counts": {"candidate_count": 0, "processed_count": 0},
+                "consumer_mode": "rejected",
+            },
+        )
+
+    monkeypatch.setattr(
+        "scripts.ops.run_release_customer_read_model_refresh.run_release_refresh",
+        fail,
+    )
+
+    assert main(["--release-sha", "f" * 40]) == 1
+    payload = json.loads(capsys.readouterr().out)
+
+    assert payload == {
+        "ok": False,
+        "reason": "release_refresh_consumer_count_mismatch",
+        "real_external_call_executed": False,
+        "target_values_redacted": True,
+        "diagnostics": {
+            "consumer_counts": {"candidate_count": 0, "processed_count": 0},
+            "consumer_mode": "rejected",
+        },
+    }
 
 
 def test_release_refresh_waits_for_a_concurrent_consumer_owner(monkeypatch) -> None:

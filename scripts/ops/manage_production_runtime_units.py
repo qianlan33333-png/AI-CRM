@@ -395,6 +395,22 @@ def _guarded_units(manifest: dict[str, Any]) -> list[str]:
     return list(dict.fromkeys(units))
 
 
+def installable_runtime_units(manifest: dict[str, Any]) -> list[str]:
+    """Return unit files copied by this release's runtime installer."""
+
+    units = [
+        primary_web_service(manifest).service,
+        *(service.service for service in active_services(manifest)),
+        *(unit.timer for unit in active_timers(manifest)),
+        *(unit.service for unit in active_timers(manifest)),
+        *(unit.timer for unit in cutover_replacement_timers(manifest)),
+        *(unit.service for unit in cutover_replacement_timers(manifest)),
+        *(unit.timer for unit in approval_timers(manifest)),
+        *(unit.service for unit in approval_timers(manifest)),
+    ]
+    return list(dict.fromkeys(units))
+
+
 def _deploy_guard_source(manifest: dict[str, Any], unit: str) -> Path:
     if unit == primary_web_service(manifest).service:
         return PRIMARY_WEB_GUARD_SOURCE
@@ -722,6 +738,41 @@ def phase_retire_legacy_overlays(manifest: dict[str, Any], runner: Runner) -> No
         runner.run(["sudo", "rm", "-f", str(_retired_dropin_path(item))])
     runner.systemctl("daemon-reload")
     _verify_retired_dropins_absent(manifest, runner)
+
+
+def phase_remove_candidate_only_runtime(
+    manifest: dict[str, Any],
+    previous_manifest: dict[str, Any],
+    runner: Runner,
+) -> None:
+    """Remove unit files and transaction guards introduced only by a failed candidate."""
+
+    candidate_only_units = sorted(
+        set(installable_runtime_units(manifest))
+        - set(installable_runtime_units(previous_manifest))
+    )
+    candidate_only_guards = sorted(
+        set(_guarded_units(manifest)) - set(_guarded_units(previous_manifest))
+    )
+    for unit in candidate_only_units:
+        runner.systemctl("disable", "--now", unit, check=False)
+        runner.systemctl("stop", unit, check=False)
+        runner.systemctl("reset-failed", unit, check=False)
+        runner.run(["sudo", "rm", "-f", str(SYSTEMD_DIR / unit)])
+    for unit in candidate_only_guards:
+        runner.run(["sudo", "rm", "-f", str(_deploy_guard_destination(unit))])
+    runner.systemctl("daemon-reload")
+    for unit in candidate_only_units:
+        runner.run(["sudo", "test", "!", "-e", str(SYSTEMD_DIR / unit)])
+        _verify_retired_unit_state(runner, unit, allow_static=True)
+    for unit in candidate_only_guards:
+        runner.run(["sudo", "test", "!", "-e", str(_deploy_guard_destination(unit))])
+    print(
+        "candidate_only_runtime_removed="
+        + ",".join(candidate_only_units)
+        + " candidate_only_guards_removed="
+        + ",".join(candidate_only_guards)
+    )
 
 
 def _timer_service_active_state(runner: Runner, service: str) -> str:
@@ -1127,6 +1178,7 @@ def main(argv: list[str] | None = None) -> int:
             "stop-for-migration",
             "stop-for-migration-recovery",
             "install-primary-web",
+            "remove-candidate-only-runtime",
             "release-runtime-guard",
             "install-enable-after-web-health",
             "verify",
@@ -1134,6 +1186,7 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument("--manifest", default=str(MANIFEST_PATH))
+    parser.add_argument("--previous-manifest", default="")
     parser.add_argument("--execute", action="store_true", default=False)
     parser.add_argument("--dry-run", action="store_true", default=False)
     args = parser.parse_args(argv)
@@ -1150,9 +1203,17 @@ def main(argv: list[str] | None = None) -> int:
             "ensure-stopped-for-rollback",
             "stop-for-migration",
             "stop-for-migration-recovery",
+            "remove-candidate-only-runtime",
             "release-runtime-guard",
         },
     )
+    previous_manifest: dict[str, Any] | None = None
+    if args.phase == "remove-candidate-only-runtime":
+        previous_manifest_path = str(args.previous_manifest or "").strip()
+        if not previous_manifest_path:
+            parser.error("--previous-manifest is required for remove-candidate-only-runtime")
+        previous_manifest = load_manifest(Path(previous_manifest_path))
+        validate_manifest(previous_manifest, validate_unit_files=False)
     runner = Runner(execute=bool(args.execute and not args.dry_run))
     if args.phase == "authorize-runtime-start":
         phase_authorize_runtime_start(manifest, runner)
@@ -1172,6 +1233,9 @@ def main(argv: list[str] | None = None) -> int:
         phase_stop_for_migration(manifest, runner, allow_already_stopped=True)
     elif args.phase == "install-primary-web":
         phase_install_primary_web(manifest, runner)
+    elif args.phase == "remove-candidate-only-runtime":
+        assert previous_manifest is not None
+        phase_remove_candidate_only_runtime(manifest, previous_manifest, runner)
     elif args.phase == "release-runtime-guard":
         phase_release_runtime_guard(manifest, runner)
     elif args.phase == "install-enable-after-web-health":

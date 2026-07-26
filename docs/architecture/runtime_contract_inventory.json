@@ -407,7 +407,7 @@
       "accessor": "os.getenv",
       "file": "scripts/ops/run_release_customer_read_model_refresh.py",
       "key": "AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED",
-      "line": 78
+      "line": 83
     },
     {
       "accessor": "os.getenv",
