@@ -350,6 +350,7 @@ class InternalEventWorker:
         event_types: list[str] | None = None,
         consumer_names: list[str] | None = None,
         outbox_idempotency_key: str = "",
+        exact_target_config_override: tuple[str, str] | None = None,
     ) -> dict[str, Any]:
         target_outbox_key = str(outbox_idempotency_key or "").strip()
         if dry_run:
@@ -363,12 +364,49 @@ class InternalEventWorker:
             payload = self.preview_due(batch_size=batch_size, event_types=event_types, consumer_names=consumer_names)
             payload["dry_run"] = True
             return payload
-        effective_event_types = self._effective_event_types(event_types)
-        effective_event_consumers = self._effective_event_consumers(event_types=event_types, consumer_names=consumer_names)
-        if effective_event_consumers is not None:
-            effective_consumers = self._requested_consumers(consumer_names) or None
+        requested_event_types = self._requested_event_types(event_types)
+        requested_consumers = self._requested_consumers(consumer_names)
+        if exact_target_config_override is not None:
+            if len(exact_target_config_override) != 2:
+                return self._empty_due_response(
+                    dry_run=False,
+                    event_types=requested_event_types,
+                    consumer_names=requested_consumers,
+                    error="exact_target_config_override_invalid",
+                )
+            override_event_type = str(exact_target_config_override[0] or "").strip()
+            override_consumer = str(exact_target_config_override[1] or "").strip()
+            if not target_outbox_key:
+                return self._empty_due_response(
+                    dry_run=False,
+                    event_types=requested_event_types,
+                    consumer_names=requested_consumers,
+                    error="exact_target_config_override_requires_outbox_key",
+                )
+            if requested_event_types != [override_event_type] or requested_consumers != [override_consumer]:
+                return self._empty_due_response(
+                    dry_run=False,
+                    event_types=requested_event_types,
+                    consumer_names=requested_consumers,
+                    error="exact_target_config_override_mismatch",
+                )
+            # ConfigRelease is authoritative in production, so process-local env
+            # allowlists cannot select a deploy-only event there.  The caller must
+            # provide one pre-authorized immutable pair and one exact outbox key;
+            # broader workers still use the published rollout allowlists below.
+            effective_event_types = requested_event_types
+            effective_consumers = requested_consumers
+            effective_event_consumers = [(override_event_type, override_consumer)]
         else:
-            effective_consumers = self._effective_consumers(consumer_names)
+            effective_event_types = self._effective_event_types(event_types)
+            effective_event_consumers = self._effective_event_consumers(
+                event_types=event_types,
+                consumer_names=consumer_names,
+            )
+            if effective_event_consumers is not None:
+                effective_consumers = requested_consumers or None
+            else:
+                effective_consumers = self._effective_consumers(consumer_names)
         if effective_event_types == [] or effective_consumers == [] or effective_event_consumers == []:
             return self._empty_due_response(
                 dry_run=False,
@@ -400,7 +438,7 @@ class InternalEventWorker:
                 event_consumers=effective_event_consumers,
                 error="targeted_outbox_relay_requires_one_event_type",
             )
-        target_consumers = self._requested_consumers(consumer_names)
+        target_consumers = requested_consumers
         if target_outbox_key and len(target_consumers) != 1:
             return self._empty_due_response(
                 dry_run=False,

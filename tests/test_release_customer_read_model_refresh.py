@@ -117,6 +117,7 @@ def test_release_refresh_runs_only_the_exact_internal_projection_consumer(monkey
     assert worker_call["env"]["AICRM_INTERNAL_EVENTS_ALLOWED_CONSUMERS"] == ""
     assert worker_call["env"]["AICRM_INTERNAL_EVENTS_AUTO_EXECUTE"] == "1"
     assert worker_call["env"]["AICRM_INTERNAL_EVENTS_SHADOW_ONLY"] == "0"
+    assert "--release-customer-read-model-refresh" in worker_call["command"]
     assert worker_call["command"][-6:] == [
         "--event-types",
         REFRESH_EVENT_TYPE,
