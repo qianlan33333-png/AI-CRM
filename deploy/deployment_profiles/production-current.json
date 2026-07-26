@@ -4,7 +4,7 @@
   "description": "Behavior-equivalent production profile with every currently deployed capability staged",
   "core_version": "0.1.0",
   "corp_mode": "single_corp_multi_app",
-  "activation_mode": "observe",
+  "activation_mode": "enforce",
   "config_schema_version": 1,
   "enabled_capabilities": [
     "core.platform",

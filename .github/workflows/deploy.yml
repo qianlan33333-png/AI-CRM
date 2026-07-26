@@ -402,10 +402,14 @@ jobs:
               --environment-file /home/ubuntu/.openclaw-wecom-pg.env \
               --target-environment "$deploy_target" \
               --public-base-url "$auth_issuer" \
+              --deployment-profile-path '/home/ubuntu/极简 crm/deploy/deployment_profiles/production-current.json' \
               "${runtime_environment_args[@]}"
             set -a
             source /home/ubuntu/.openclaw-wecom-pg.env
             set +a
+            python3 scripts/ops/validate_production_deployment_profile.py \
+              --expected-profile-path '/home/ubuntu/极简 crm/deploy/deployment_profiles/production-current.json' \
+              | tee /tmp/aicrm-deployment-profile-preflight.json
             # Identity preflight must fail before any runtime unit is stopped.
             python3 scripts/ops/check_unionid_identity_cutover.py \
               --phase preflight \

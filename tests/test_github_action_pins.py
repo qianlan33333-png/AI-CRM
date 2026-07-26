@@ -21,7 +21,7 @@ def test_repository_external_actions_are_immutable_and_trusted() -> None:
     # AI-CRM owns CI, regression and test-governance workflows plus the guarded
     # production promotion, runtime-config control, and reusable production
     # deployment workflows.
-    assert workflow_count == 14
+    assert workflow_count == 15
     assert external_use_count > 0
 
 

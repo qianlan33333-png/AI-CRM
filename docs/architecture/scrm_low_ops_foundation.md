@@ -125,29 +125,29 @@ physical package move, legacy table deletion, or real provider call.
   without 30 days of zero-read/write evidence, verified export, rollback
   rehearsal, successor ownership, and approval.
 
-## Compatibility mode
+## Production profile enforcement and compatibility
 
 `deploy/deployment_profiles/wecom-core.json` remains in observation mode. The
-separate `deploy/deployment_profiles/production-current.json` profile stages
-all currently deployed core and extension capabilities in observation mode; it
-is not selected by production in this release. This establishes a rollback-safe
-file boundary before the later release that changes the staged profile to
-`enforce` and selects it through the single startup reference. The
-job-catalog observer timer is active, but its execute gate is closed and all
-existing authoritative task timers remain unchanged. HTTP paths, auth rules,
-event names, effect types, database behavior, and extension behavior therefore
-remain compatible while scheduler parity evidence is collected.
+separate `deploy/deployment_profiles/production-current.json` profile enables
+all currently deployed core and extension capabilities in `enforce` mode. The
+deployment workflow persists that checked-in file through
+`AICRM_DEPLOYMENT_PROFILE_PATH` before restarting any runtime. Tests and the
+production read-only diagnostic compare enforce against observe composition
+for routes, static mounts, consumers, continuations, provider adapters, and
+jobs. HTTP paths, auth rules, event names, effect types, database behavior, and
+extension behavior therefore remain compatible while capability activation is
+now fail-closed and versioned.
 
-An `enforce` profile is a separate reviewed release decision. It must not be
-enabled until the target instance has route, event, effect, job, configuration,
-and historical-data parity evidence.
+The job-catalog scheduler remains an observer and the combined
+`internal_worker` remains claimless until their independent successor-parity
+cutovers. Profile enforcement does not authorize either runtime owner switch.
 
 ## Deliberately not completed in this release
 
-- Managed values remain in observation mode. The per-instance staging,
-  redacted shadow comparison, and cutover workflow now exists, but production
-  evidence must come from executing it after the observation deployment. No
-  `AICRM_RUNTIME_CONFIG_CUTOVER_KEYS` value is activated by this change.
+- The first 57 matching production settings have been activated through
+  Config Release. Remaining managed definitions continue to use the same
+  stage, redacted shadow comparison, bounded activation, and rollback path;
+  this profile release does not widen that activated key set.
 - The cross-context import baseline is reduced from 162 to 116 by injecting the
   composed FastAPI route registry, keeping the runtime-config projection in
   `admin_config`, publishing the management shell as a static app contract, and
@@ -172,15 +172,16 @@ and historical-data parity evidence.
 
 ## Next safe sequence
 
-1. Deploy this release in observation mode, stage the 237 managed settings, and
-   collect redacted configuration shadow comparisons per instance.
-2. Activate only matching keys through the cutover catalog; migrate the next
-   capability slice with the same expand/contract rule and add public
-   command/query ports before changing package paths.
-3. Run successor parity for each candidate job, then switch one runtime unit in
-   an independent release with the legacy unit still recoverable.
-4. Enable extension enforcement on a baseline instance, verify no residual
-   route, consumer, effect, or job, and then upgrade customer instances one at
-   a time.
-5. Start the 30-day zero-read/write clock for each legacy table only after its
-   successor owner is authoritative.
+1. Enable the full production profile on the baseline instance, run the
+   release-bound read-only composition diagnostic, and then upgrade customer
+   instances one at a time.
+2. Use the collected combined `internal_worker` parity evidence to switch that
+   owner in an independent release while the predecessor release remains the
+   immediate rollback target.
+3. Finish real-handler parity for each scheduler candidate before replacing
+   any predecessor timer; payment reconciliation remains observe-only.
+4. Move physical packages into the seven stable domains only after public-port
+   imports remain within the dependency baseline.
+5. Run the 1,200 callbacks/minute acceptance test and start the 30-day
+   zero-read/write clock for each legacy table only after its successor owner
+   is authoritative.

@@ -1,0 +1,171 @@
+name: Deployment Profile Production Diagnostics (Read Only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_release_sha:
+        description: Exact release SHA currently exposed by production
+        required: true
+        type: string
+      confirmation:
+        description: Exact read-only diagnostics confirmation
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aicrm-production-deployment-profile-diagnostics
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Verify public release and confirmation
+        env:
+          EXPECTED_RELEASE_SHA: ${{ inputs.expected_release_sha }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -e
+          test "$CONFIRMATION" = 'DIAGNOSE AI-CRM DEPLOYMENT PROFILE READ ONLY'
+          printf '%s' "$EXPECTED_RELEASE_SHA" | grep -Eq '^[0-9a-f]{40}$'
+          curl -sSf -D /tmp/aicrm-deployment-profile-health.headers \
+            https://www.youcangogogo.com/health \
+            -o /tmp/aicrm-deployment-profile-health.json
+          public_sha="$(awk 'tolower($1) == "x-aicrm-release-sha:" {gsub("\\r", "", $2); print $2}' /tmp/aicrm-deployment-profile-health.headers)"
+          test "$public_sha" = "$EXPECTED_RELEASE_SHA"
+
+      - name: Read active production profile evidence
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        env:
+          EXPECTED_RELEASE_SHA: ${{ inputs.expected_release_sha }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          command_timeout: 10m
+          envs: EXPECTED_RELEASE_SHA
+          script: |
+            set -e
+            set -o pipefail
+            cd '/home/ubuntu/极简 crm'
+            test "$(git rev-parse HEAD)" = "$EXPECTED_RELEASE_SHA"
+            test "$(tr -d '\r\n' < .release-sha)" = "$EXPECTED_RELEASE_SHA"
+
+            profile_path='/home/ubuntu/极简 crm/deploy/deployment_profiles/production-current.json'
+            set -a
+            source /home/ubuntu/.openclaw-wecom-pg.env
+            set +a
+            test "${AICRM_DEPLOYMENT_PROFILE_PATH:-}" = "$profile_path"
+            test -f "$profile_path"
+
+            for unit in \
+              openclaw-wecom-postgres.service \
+              openclaw-wecom-callback-ingress.service \
+              aicrm-internal-queue-runtime.service \
+              aicrm-inbox-queue-runtime.service \
+              aicrm-external-queue-runtime.service \
+              aicrm-internal-worker-observer.service
+            do
+              systemctl is-active --quiet "$unit"
+              pid="$(systemctl show "$unit" --property=MainPID --value)"
+              test "$pid" -gt 0
+              sudo cat "/proc/$pid/environ" \
+                | tr '\0' '\n' \
+                | grep -Fx "AICRM_DEPLOYMENT_PROFILE_PATH=$profile_path" >/dev/null
+            done
+
+            source /home/ubuntu/venvs/openclaw/bin/activate
+            python3 - <<'PY'
+            import json
+            from dataclasses import replace
+
+            from aicrm_next.capability_registry import CAPABILITY_SPECS
+            from aicrm_next.deployment_profile import deployment_profile_from_environment
+            from aicrm_next.external_effect_composition import (
+                build_external_effect_adapter_registry,
+                build_external_effect_continuation_registry,
+            )
+            from aicrm_next.internal_event_composition import build_internal_event_consumer_registry
+            from aicrm_next.main import create_app
+            from aicrm_next.platform_foundation.background_jobs.catalog import JobCatalog
+            from aicrm_next.router_registry import active_router_specs
+
+
+            profile = deployment_profile_from_environment()
+            observed = replace(profile, activation_mode="observe")
+            expected_capabilities = tuple(spec.capability_id for spec in CAPABILITY_SPECS)
+            assert profile.profile_id == "production-current"
+            assert profile.activation_mode == "enforce"
+            assert profile.enabled_capabilities == expected_capabilities
+
+            enforced_routes = active_router_specs(profile)
+            observed_routes = active_router_specs(observed)
+            assert enforced_routes == observed_routes
+            enforced_consumers = build_internal_event_consumer_registry(profile).to_dict()
+            observed_consumers = build_internal_event_consumer_registry(observed).to_dict()
+            assert enforced_consumers == observed_consumers
+            enforced_continuations = build_external_effect_continuation_registry(profile).names
+            observed_continuations = build_external_effect_continuation_registry(observed).names
+            assert enforced_continuations == observed_continuations
+            enforced_jobs = JobCatalog(profile=profile).summary()["jobs"]
+            observed_jobs = JobCatalog(profile=observed).summary()["jobs"]
+            assert enforced_jobs == observed_jobs
+
+            adapter_names = (
+                "outbound_webhook",
+                "webhook",
+                "wechat_payment",
+                "wecom_private_message",
+                "wecom_group_message",
+                "wecom_welcome_message",
+                "wecom_media_upload",
+                "wecom_tag",
+                "wecom_profile",
+                "wecom_external_contact_detail",
+            )
+            enforced_adapters = build_external_effect_adapter_registry(profile)
+            observed_adapters = build_external_effect_adapter_registry(observed)
+            assert {
+                name: type(enforced_adapters.get(name)).__name__
+                for name in adapter_names
+            } == {
+                name: type(observed_adapters.get(name)).__name__
+                for name in adapter_names
+            }
+
+            enforced_paths = {
+                str(getattr(route, "path", ""))
+                for route in create_app(deployment_profile=profile).routes
+            }
+            observed_paths = {
+                str(getattr(route, "path", ""))
+                for route in create_app(deployment_profile=observed).routes
+            }
+            assert enforced_paths == observed_paths
+
+            print(
+                json.dumps(
+                    {
+                        "profile_id": profile.profile_id,
+                        "activation_mode": profile.activation_mode,
+                        "capability_count": len(profile.enabled_capabilities),
+                        "route_group_count": len(enforced_routes),
+                        "route_count": len(enforced_paths),
+                        "event_type_count": len(enforced_consumers),
+                        "continuation_count": len(enforced_continuations),
+                        "job_count": len(enforced_jobs),
+                        "adapter_count": len(adapter_names),
+                        "observe_enforce_behavior_equivalent": True,
+                        "target_values_redacted": True,
+                        "real_external_call_executed": False,
+                        "read_only": True,
+                    },
+                    ensure_ascii=False,
+                    sort_keys=True,
+                )
+            )
+            PY

@@ -1144,9 +1144,13 @@ def test_scrm_low_ops_foundation_files_are_all_mapped_to_the_control_plane_scope
         "aicrm_next/capability_registry.py",
         "aicrm_next/scrm_contracts.py",
         "deploy/deployment_profiles/production-current.json",
+        ".github/workflows/deployment-profile-production-diagnostics.yml",
+        "scripts/ops/validate_production_deployment_profile.py",
         "scripts/run_job_catalog_scheduler.py",
         "tests/test_capability_registry.py",
         "tests/test_deployment_profile.py",
+        "tests/test_deployment_profile_production_workflow.py",
+        "tests/test_validate_production_deployment_profile.py",
         "tests/test_job_catalog.py",
         "tests/test_scrm_contracts.py",
     )

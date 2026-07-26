@@ -15,20 +15,21 @@ changing existing HTTP, database, event, or external-effect behavior.
 - `core.automation`
 - `core.insights`
 
-Extensions are disabled by default in the target deployment profile. The
-checked-in profile remains in `observe` mode so the first release preserves all
-current behavior. Switching a reviewed profile to `enforce` removes disabled
-routes, event consumers, external effects, provider adapters, static assets,
-and jobs together. Hiding a navigation entry alone is never considered
-capability deactivation.
+Extensions remain disabled by default in the core-only development profile.
+Switching a reviewed profile to `enforce` removes disabled routes, event
+consumers, external effects, provider adapters, static assets, and jobs
+together. Hiding a navigation entry alone is never considered capability
+deactivation.
 
-`deploy/deployment_profiles/production-current.json` is a separately versioned
-production staging profile. It lists every capability currently deployed on the
-baseline instance and initially remains in `observe` mode. This makes the next
-`enforce` release behavior-equivalent: no route, consumer, effect adapter, job,
-or historical extension is removed merely by enabling profile enforcement.
-The production runtime does not select this staged file until a later,
-independently reviewed release.
+`deploy/deployment_profiles/production-current.json` is the separately
+versioned production profile. It lists every capability currently deployed on
+the baseline instance and runs in `enforce` mode. The deployment workflow
+persists its absolute path through the one startup reference before any runtime
+is restarted. Because every currently deployed extension is explicitly
+enabled, enforcement is behavior-equivalent: no route, consumer, effect
+adapter, job, static mount, or historical extension is removed by this cutover.
+The core-only `wecom-core.json` remains the safe default when no production
+profile is selected.
 
 ## Ownership rules
 
