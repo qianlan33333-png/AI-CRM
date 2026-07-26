@@ -5,9 +5,15 @@ import re
 import hashlib
 from typing import Any, Protocol
 
-from aicrm_next.identity_contact.dto import IdentityResolveResult, ResolvePersonIdentityRequest
-from aicrm_next.identity_contact.resolver import resolve_identity_with_dbapi, resolved_unionid
 from aicrm_next.shared.postgres_connection import get_db
+
+from .crm_port import (
+    IdentityResolveResult,
+    ResolvePersonIdentityRequest,
+    plan_identity_resolution_effect,
+    resolve_identity_with_dbapi,
+    resolved_unionid,
+)
 
 
 class IdentityBridgeRepositoryError(RuntimeError):
@@ -440,8 +446,6 @@ class PostgresIdentityBridgeRepository:
         )
         row = cursor.fetchone()
         if row:
-            from aicrm_next.identity_contact.resolution_effects import plan_identity_resolution_effect
-
             plan_identity_resolution_effect(
                 db,
                 dict(row),

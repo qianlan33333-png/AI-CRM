@@ -6,13 +6,17 @@ from aicrm_next.cloud_orchestrator.campaign_step_media_port import build_campaig
 
 
 class _Executor:
-    def __init__(self, *, rowcount: int = 0) -> None:
+    def __init__(self, *, rowcount: int = 0, rows: list[dict] | None = None) -> None:
         self.rowcount = rowcount
-        self.calls: list[tuple[str, tuple[str, str]]] = []
+        self.rows = list(rows or [])
+        self.calls: list[tuple[str, tuple[str, ...]]] = []
 
-    def execute(self, sql: str, params: tuple[str, str]) -> "_Executor":
+    def execute(self, sql: str, params: tuple[str, ...]) -> "_Executor":
         self.calls.append((" ".join(sql.split()), params))
         return self
+
+    def fetchall(self) -> list[dict]:
+        return list(self.rows)
 
 
 def test_campaign_step_media_cleanup_uses_owner_sql_and_normalized_id() -> None:
@@ -39,3 +43,16 @@ def test_campaign_step_media_cleanup_rejects_empty_image_id() -> None:
         )
 
     assert executor.calls == []
+
+
+def test_campaign_step_media_reference_query_uses_owner_sql_and_normalized_id() -> None:
+    executor = _Executor(rows=[{"id": 9, "campaign_id": 3, "campaign_segment_id": 4, "step_index": 1}])
+
+    rows = build_campaign_step_media_reference_port().list_image_references_dbapi(
+        executor,
+        image_library_id=" 42 ",
+    )
+
+    assert rows == [{"id": 9, "campaign_id": 3, "campaign_segment_id": 4, "step_index": 1}]
+    assert executor.calls[0][0].startswith("SELECT id, campaign_id")
+    assert executor.calls[0][1] == ("42",)

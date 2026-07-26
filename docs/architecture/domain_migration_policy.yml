@@ -13,6 +13,49 @@ stable_core_domains:
 
 static_package_domain: extensions
 
+# Import direction for the target modular monolith. Same-domain imports are
+# always allowed. A source domain may import only the domains listed here.
+# ``app`` is the composition root; ``extensions`` are static capability packs
+# and may consume stable core ports, but core domains must never import an
+# extension implementation.
+allowed_domain_dependencies:
+  app:
+    - platform
+    - channels
+    - crm
+    - engagement
+    - automation
+    - insights
+    - extensions
+  platform: []
+  channels:
+    - platform
+  crm:
+    - platform
+    - channels
+  engagement:
+    - platform
+    - channels
+    - crm
+  automation:
+    - platform
+    - channels
+    - crm
+    - engagement
+  insights:
+    - platform
+    - channels
+    - crm
+    - engagement
+    - automation
+  extensions:
+    - platform
+    - channels
+    - crm
+    - engagement
+    - automation
+    - insights
+
 physical_moves:
   enabled: false
   enable_after:
@@ -25,7 +68,7 @@ physical_moves:
 
 dependency_targets:
   cyclic_contexts: 0
-  cross_context_edges: 120
+  cross_context_edges: 110
   current_baseline_file: docs/architecture/import_graph_baseline.yml
 
 compatibility:

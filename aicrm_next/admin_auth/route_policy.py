@@ -276,7 +276,7 @@ async def _enforce_sidebar_grant(request: Request, policy: RoutePolicy) -> Respo
 
 
 def _enforce_public_result_grant(request: Request, policy: RoutePolicy) -> Response | None:
-    from aicrm_next.questionnaire.result_access import (
+    from .public_result_grant import (
         RESULT_GRANT_COOKIE_NAME,
         questionnaire_result_token_from_grant,
     )

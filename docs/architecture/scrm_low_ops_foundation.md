@@ -122,6 +122,14 @@ physical package move, legacy table deletion, or real provider call.
   it delegates provider work through External Effect. The
   execute path additionally requires an environment gate and an exact fixed
   confirmation, and fails if any handler reports a real external call.
+- The seven logical domains now have one explicit acyclic import policy that is
+  enforced from the current context graph. Consumer-owned ports remove the
+  remaining reverse dependencies for public result grants, AI Audience target
+  reads, campaign media references, sidebar extension data, identity
+  resolution, identity audit, and customer-tag projection. Composition roots
+  inject the concrete owners for web, callback, internal-worker,
+  external-worker, and identity-backfill entrypoints; missing composition fails
+  closed. The ratcheted context graph is 110 edges with zero cycles.
 - Architecture gates forbid premature physical moves and legacy table drops
   without 30 days of zero-read/write evidence, verified export, rollback
   rehearsal, successor ownership, and approval.
@@ -154,15 +162,13 @@ its separate reviewed timer and stays `observe_only` in the catalog.
   Config Release. Remaining managed definitions continue to use the same
   stage, redacted shadow comparison, bounded activation, and rollback path;
   this profile release does not widen that activated key set.
-- The cross-context import baseline is reduced from 162 to 116 by injecting the
+- The cross-context import baseline is reduced from 162 to 110 by injecting the
   composed FastAPI route registry, keeping the runtime-config projection in
   `admin_config`, publishing the management shell as a static app contract, and
-  routing all business-provider dependencies through the versioned
-  `integration_ports` surface. The provider surface reaches 114 edges; two
-  explicit owner-port dependencies for cross-domain transactional tables leave
-  the current graph at 116. The target of 120 remains met without introducing a
-  broker or runtime plugin system. Physical directory moves remain disabled
-  until public ports and unique table-write ownership are proven.
+  routing provider and owner dependencies through versioned consumer-owned
+  ports. The target of 120 is exceeded with margin without introducing a broker
+  or runtime plugin system. Physical directory moves remain a separate release
+  so this dependency-inversion batch can be promoted and observed independently.
 - The five canonical SCRM contracts are stable integration seams; existing
   identity, audience, content, campaign, and receipt tables are not bulk-moved
   or dual-written by this change.

@@ -509,6 +509,15 @@ def _ensure_schema_once():
     _close_truncate_conn()
 
 
+@pytest.fixture(scope="session", autouse=True)
+def _configure_static_domain_ports():
+    """Mirror production composition for tests that exercise workers directly."""
+
+    from aicrm_next.channel_entry_composition import configure_channel_crm_dependencies
+
+    configure_channel_crm_dependencies()
+
+
 @pytest.fixture(autouse=True)
 def _truncate_before_each_test():
     """每个 test 起点单条 TRUNCATE 清完所有缓存的表。

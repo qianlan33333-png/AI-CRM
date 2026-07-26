@@ -16,6 +16,8 @@ from aicrm_next.shared.sensitive_data import redact_sensitive_data, redact_sensi
 
 SOURCE_ROOT = ROOT / "aicrm_next"
 RESOLVER = Path("aicrm_next/identity_contact/resolver.py")
+CHANNEL_CRM_PORT = Path("aicrm_next/channel_entry/crm_port.py")
+CHANNEL_CRM_COMPOSITION = Path("aicrm_next/channel_entry_composition.py")
 
 HIGH_RISK_ALIAS_CONSUMERS = (
     Path("aicrm_next/ai_assist/external_campaigns_repo.py"),
@@ -35,6 +37,11 @@ HIGH_RISK_ALIAS_CONSUMERS = (
     Path("aicrm_next/service_period/repo.py"),
     Path("aicrm_next/sidebar_write/repo.py"),
 )
+
+CHANNEL_CRM_PORT_CONSUMERS = {
+    Path("aicrm_next/channel_entry/identity_bridge_repo.py"),
+    Path("aicrm_next/channel_entry/repo.py"),
+}
 
 CANONICAL_WRITE_OWNERS = {
     Path("aicrm_next/channel_entry/identity_bridge_repo.py"),
@@ -95,6 +102,24 @@ def check() -> list[str]:
     if "LIMIT 1" in resolver_source:
         errors.append("central resolver must collect all canonical candidates; LIMIT 1 is forbidden")
 
+    channel_crm_port_source = _read(CHANNEL_CRM_PORT)
+    channel_crm_composition_source = _read(CHANNEL_CRM_COMPOSITION)
+    for required in (
+        "class ResolvePersonIdentityRequest(BaseModel)",
+        "def resolve_identity_with_dbapi(",
+        "_dependencies().resolve_identity_with_dbapi(",
+        'raise RuntimeError("channel_crm_port_not_configured")',
+    ):
+        if required not in channel_crm_port_source:
+            errors.append(f"channel CRM resolver port missing token: {required}")
+    for required in (
+        "resolve_external_userid_with_dbapi, resolve_identity_with_dbapi",
+        "ChannelCrmDependencies(",
+        "configure_channel_crm_port(",
+    ):
+        if required not in channel_crm_composition_source:
+            errors.append(f"channel CRM resolver composition missing token: {required}")
+
     private_resolver_pattern = re.compile(r"^\s*def\s+_resolve_unionids?", re.MULTILINE)
     for source_path in SOURCE_ROOT.rglob("*.py"):
         relative = source_path.relative_to(ROOT)
@@ -104,7 +129,13 @@ def check() -> list[str]:
 
     for relative in HIGH_RISK_ALIAS_CONSUMERS:
         source = _read(relative)
-        if "identity_contact.resolver" not in source and relative != Path("aicrm_next/hxc_dashboard/postgres_repo.py"):
+        imports_central_resolver = "identity_contact.resolver" in source
+        imports_channel_crm_port = relative in CHANNEL_CRM_PORT_CONSUMERS and "from .crm_port import" in source
+        if (
+            not imports_central_resolver
+            and not imports_channel_crm_port
+            and relative != Path("aicrm_next/hxc_dashboard/postgres_repo.py")
+        ):
             errors.append(f"high-risk identity consumer does not import central resolver: {relative}")
         for pattern in RAW_ALIAS_SQL:
             if pattern.search(source):

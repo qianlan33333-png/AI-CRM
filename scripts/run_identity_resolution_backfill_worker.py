@@ -12,6 +12,7 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 ensure_repo_root_on_path()
 
 from aicrm_next.channel_entry.identity_resolution_worker import IdentityResolutionBackfillWorker
+from aicrm_next.channel_entry_composition import configure_channel_crm_dependencies
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -26,6 +27,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
+    configure_channel_crm_dependencies()
     dry_run = not bool(args.execute)
     if args.dry_run:
         dry_run = True

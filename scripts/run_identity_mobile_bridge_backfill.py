@@ -13,6 +13,7 @@ ensure_repo_root_on_path()
 
 from aicrm_next.channel_entry.identity_bridge_repo import build_identity_bridge_repository
 from aicrm_next.channel_entry.identity_bridge_service import build_identity_bridge_service
+from aicrm_next.channel_entry_composition import configure_channel_crm_dependencies
 from aicrm_next.shared.runtime import raw_database_url
 
 
@@ -85,6 +86,7 @@ def _execute_external_userid(external_userid: str) -> dict[str, Any]:
 
 
 def run_backfill(*, execute: bool, limit: int, external_userids: list[str] | None = None) -> dict[str, Any]:
+    configure_channel_crm_dependencies()
     repo = build_identity_bridge_repository()
     targets = [value.strip() for value in (external_userids or []) if value.strip()]
     if not targets:

@@ -10,14 +10,20 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .ai_audience_e2e_composition import build_ai_audience_e2e_runner_factory
+from .ai_audience_ops.target_provider import AiAudienceTargetProvider
 from . import fixture_reset_registry
 from .admin_auth.route_policy import route_policy_required_response
 from .admin_auth.action_token import build_admin_action_token_bundle, validate_action_token_for_request
 from .admin_config.pii_audit_repository import AdminConfigPiiAuditRepository
 from .automation_engine.repo import reset_automation_fixture_state
 from .automation_engine.channel_completion import ChannelQrReadService
-from .channel_entry_composition import build_wecom_callback_inbox_worker_factory
+from .channel_entry_composition import (
+    build_wecom_callback_inbox_worker_factory,
+    configure_channel_crm_dependencies,
+)
+from .cloud_orchestrator.campaign_step_media_repository import PostgresCampaignStepMediaReferenceRepository
 from .commerce.repo import reset_commerce_fixture_state
+from .customer_read_model.extension_port import configure_sidebar_extension_port
 from .deployment_profile import DeploymentProfile, deployment_profile_from_environment
 from .external_effect_composition import (
     build_external_effect_adapter_registry,
@@ -25,14 +31,17 @@ from .external_effect_composition import (
 )
 from .internal_event_composition import build_internal_event_consumer_registry
 from .integration_gateway.channel_completion_client import configure_channel_completion_provider
+from .media_library.campaign_reference_port import configure_campaign_media_reference_port
 from .media_library.repo import reset_media_library_fixture_state
 from .mcp_composition import build_mcp_jsonrpc_application
 from .ops_enrollment.application import reset_user_ops_fixture_state
+from .ops_enrollment.audience_target_port import configure_audience_target_query
 from .platform_foundation.internal_events import internal_event_consumer_registry_scope
 from .questionnaire.repo import reset_questionnaire_fixture_state
 from .read_model_composition import build_sidebar_contact_binding_status_query, get_customer_detail
 from .radar_links.repo import reset_radar_links_fixture_state
 from .service_period_composition import build_service_period_member_grid_access_service
+from .service_period.sidebar_extension_adapter import DefaultSidebarExtensionAdapter
 from .router_registry import register_routers
 from .shared.errors import ApplicationError
 from .shared.repository_provider import RepositoryProviderError
@@ -74,7 +83,11 @@ def create_app(
 ) -> FastAPI:
     assert_required_runtime_secrets()
     profile = deployment_profile or deployment_profile_from_environment()
+    configure_channel_crm_dependencies()
     configure_channel_completion_provider(ChannelQrReadService())
+    configure_audience_target_query(AiAudienceTargetProvider)
+    configure_campaign_media_reference_port(PostgresCampaignStepMediaReferenceRepository)
+    configure_sidebar_extension_port(DefaultSidebarExtensionAdapter)
     app = FastAPI(title="AI-CRM Next", version="0.1.0")
     app.state.deployment_profile = profile
     app.state.admin_action_token_bundle_builder = build_admin_action_token_bundle
