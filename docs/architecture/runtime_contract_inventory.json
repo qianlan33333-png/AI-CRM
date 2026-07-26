@@ -545,7 +545,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/background_jobs/broadcast_queue_worker.py",
       "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS",
-      "line": 760
+      "line": 698
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -2279,13 +2279,13 @@
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/background_jobs/broadcast_queue_worker.py",
       "key": "BROADCAST_QUEUE_LEASE_SECONDS",
-      "line": 1122
+      "line": 1060
     },
     {
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/background_jobs/broadcast_queue_worker.py",
       "key": "BROADCAST_QUEUE_RETRY_DELAY_SECONDS",
-      "line": 352
+      "line": 328
     },
     {
       "accessor": "declared_runtime_setting_key",

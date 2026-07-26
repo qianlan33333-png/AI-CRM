@@ -121,7 +121,10 @@ def test_automation_agent_webhook_item_upsert_matches_partial_index() -> None:
 
 
 def test_cloud_plan_recipient_upsert_matches_partial_index() -> None:
-    source = _read("aicrm_next/cloud_orchestrator/repository.py")
+    source = _read(
+        "aicrm_next/platform_foundation/background_jobs/"
+        "cloud_broadcast_projection_write_repository.py"
+    )
     assert "ON CONFLICT (plan_id, unionid) WHERE unionid <> '' DO UPDATE" in source
 
 

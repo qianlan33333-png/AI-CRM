@@ -275,17 +275,23 @@ repositories:
   aicrm_next/background_jobs/broadcast_effect_repository.py:
     capability_owner: aicrm_next.background_jobs.broadcast_queue_worker
     table_reads:
-      - cloud_broadcast_plan_recipients
       - external_effect_job
-    table_writes:
-      - cloud_broadcast_plan_recipient_messages
-      - cloud_broadcast_plan_recipients
+    table_writes: []
   aicrm_next/platform_foundation/background_jobs/broadcast_job_write_repository.py:
     capability_owner: aicrm_next.background_jobs
     table_reads:
       - broadcast_jobs
     table_writes:
       - broadcast_jobs
+  aicrm_next/platform_foundation/background_jobs/cloud_broadcast_projection_write_repository.py:
+    capability_owner: aicrm_next.cloud_orchestrator
+    table_reads:
+      - broadcast_jobs
+      - cloud_broadcast_plan_recipient_messages
+      - cloud_broadcast_plan_recipients
+    table_writes:
+      - cloud_broadcast_plan_recipient_messages
+      - cloud_broadcast_plan_recipients
   aicrm_next/automation_engine/group_ops/repo.py:
     capability_owner: aicrm_next.automation_engine.group_ops
     table_reads: []
@@ -299,28 +305,20 @@ repositories:
     table_reads:
       - broadcast_job_events
       - broadcast_jobs
-      - cloud_broadcast_plan_recipient_messages
-      - cloud_broadcast_plan_recipients
       - crm_user_identity
       - outbound_tasks
     table_writes:
       - broadcast_job_events
       - broadcast_jobs
-      - cloud_broadcast_plan_recipient_messages
-      - cloud_broadcast_plan_recipients
       - outbound_tasks
     non_literal_table_reads:
       - broadcast_job_events
       - broadcast_jobs
-      - cloud_broadcast_plan_recipient_messages
-      - cloud_broadcast_plan_recipients
       - crm_user_identity
       - outbound_tasks
     non_literal_table_writes:
       - broadcast_job_events
       - broadcast_jobs
-      - cloud_broadcast_plan_recipient_messages
-      - cloud_broadcast_plan_recipients
       - outbound_tasks
   aicrm_next/channel_entry/identity_bridge_repo.py:
     capability_owner: aicrm_next.identity_contact
@@ -386,8 +384,6 @@ repositories:
       - campaign_members
       - campaign_steps
       - campaigns
-      - cloud_broadcast_plan_recipient_messages
-      - cloud_broadcast_plan_recipients
       - cloud_broadcast_plans
     non_literal_table_reads:
       - crm_user_identity

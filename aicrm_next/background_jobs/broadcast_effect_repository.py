@@ -8,6 +8,9 @@ from aicrm_next.platform_foundation.external_effects.continuations import Extern
 from aicrm_next.platform_foundation.background_jobs.broadcast_job_write_port import (
     build_broadcast_job_write_port,
 )
+from aicrm_next.platform_foundation.background_jobs.cloud_broadcast_projection_write_port import (
+    build_cloud_broadcast_projection_write_port,
+)
 from aicrm_next.shared.db_session import get_session_factory
 from aicrm_next.shared.runtime import fixture_mode
 
@@ -105,38 +108,14 @@ def _project(job, _dispatch_result):
                 "" if aggregate_status == "sent" else f"external_effect_{aggregate_status}"
             ),
         )
-        session.execute(
-            text(
-                """
-                UPDATE cloud_broadcast_plan_recipients
-                SET send_status = :status, last_error = :last_error, updated_at = CURRENT_TIMESTAMP
-                WHERE broadcast_job_id = :job_id
-                """
+        build_cloud_broadcast_projection_write_port().settle_from_external_effect_sqlalchemy(
+            session,
+            job_id=broadcast_job_id,
+            recipient_status=recipient_status,
+            message_status=message_status,
+            last_error=(
+                "" if aggregate_status == "sent" else f"external_effect_{aggregate_status}"
             ),
-            {
-                "job_id": broadcast_job_id,
-                "status": recipient_status,
-                "last_error": "" if aggregate_status == "sent" else f"external_effect_{aggregate_status}",
-            },
-        )
-        session.execute(
-            text(
-                """
-                UPDATE cloud_broadcast_plan_recipient_messages message
-                SET status = :status,
-                    sent_at = CASE WHEN :status = 'sent' THEN COALESCE(sent_at, CURRENT_TIMESTAMP) ELSE sent_at END,
-                    last_error = :last_error, updated_at = CURRENT_TIMESTAMP
-                FROM cloud_broadcast_plan_recipients recipient
-                WHERE recipient.broadcast_job_id = :job_id
-                  AND message.recipient_id = recipient.id
-                  AND (message.status <> 'sent' OR :status = 'sent')
-                """
-            ),
-            {
-                "job_id": broadcast_job_id,
-                "status": message_status,
-                "last_error": "" if aggregate_status == "sent" else f"external_effect_{aggregate_status}",
-            },
         )
         session.commit()
     return {

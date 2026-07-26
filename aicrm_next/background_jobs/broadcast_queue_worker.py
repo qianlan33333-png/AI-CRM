@@ -15,6 +15,9 @@ from aicrm_next.platform_foundation.external_effects.service import ExternalEffe
 from aicrm_next.platform_foundation.background_jobs.broadcast_job_write_port import (
     build_broadcast_job_write_port,
 )
+from aicrm_next.platform_foundation.background_jobs.cloud_broadcast_projection_write_port import (
+    build_cloud_broadcast_projection_write_port,
+)
 
 from aicrm_next.platform_foundation.external_effects.execution_gates import (
     WECOM_EXECUTION_DISABLED_CODE,
@@ -280,36 +283,9 @@ class PostgresBroadcastQueueRepository:
             )
             if not row:
                 return None
-            conn.execute(
-                """
-                UPDATE cloud_broadcast_plan_recipients recipient
-                SET send_status = 'dispatching', last_error = '', updated_at = CURRENT_TIMESTAMP
-                FROM broadcast_jobs job
-                WHERE job.id = %s
-                  AND job.source_type = 'cloud_plan'
-                  AND job.source_table = 'cloud_broadcast_plan_recipients'
-                  AND recipient.broadcast_job_id = job.id
-                  AND recipient.send_status IN ('pending', 'queued', 'sending', 'failed_retryable')
-                """,
-                (int(job_id),),
-            )
-            conn.execute(
-                """
-                WITH next_message AS (
-                    SELECT message.id
-                    FROM cloud_broadcast_plan_recipient_messages message
-                    JOIN cloud_broadcast_plan_recipients recipient ON recipient.id = message.recipient_id
-                    WHERE recipient.broadcast_job_id = %s
-                      AND message.status IN ('pending', 'queued', 'failed_retryable')
-                    ORDER BY message.sequence_index ASC, message.id ASC
-                    LIMIT 1
-                )
-                UPDATE cloud_broadcast_plan_recipient_messages message
-                SET status = 'dispatching', last_error = '', updated_at = CURRENT_TIMESTAMP
-                FROM next_message
-                WHERE message.id = next_message.id
-                """,
-                (int(job_id),),
+            build_cloud_broadcast_projection_write_port().mark_dispatching_dbapi(
+                conn,
+                job_id=int(job_id),
             )
             conn.execute(
                 """
@@ -411,34 +387,11 @@ class PostgresBroadcastQueueRepository:
             ).fetchone()
             outbound_task_id = int((outbound_task or {}).get("id") or 0) or None
             self._fault("after_outbound_task")
-            conn.execute(
-                """
-                UPDATE cloud_broadcast_plan_recipients recipient
-                SET send_status = %s,
-                    last_error = %s,
-                    updated_at = CURRENT_TIMESTAMP
-                FROM broadcast_jobs job
-                WHERE job.id = %s
-                  AND job.source_type = 'cloud_plan'
-                  AND job.source_table = 'cloud_broadcast_plan_recipients'
-                  AND recipient.broadcast_job_id = job.id
-                  AND recipient.send_status = 'dispatching'
-                """,
-                (final_status, error_text, int(job_id)),
-            )
-            conn.execute(
-                """
-                UPDATE cloud_broadcast_plan_recipient_messages message
-                SET status = %s,
-                    sent_at = CASE WHEN %s = 'sent' THEN CURRENT_TIMESTAMP ELSE NULL END,
-                    last_error = %s,
-                    updated_at = CURRENT_TIMESTAMP
-                FROM cloud_broadcast_plan_recipients recipient
-                WHERE recipient.broadcast_job_id = %s
-                  AND message.recipient_id = recipient.id
-                  AND message.status = 'dispatching'
-                """,
-                (final_status, final_status, error_text, int(job_id)),
+            build_cloud_broadcast_projection_write_port().finalize_dispatch_dbapi(
+                conn,
+                job_id=int(job_id),
+                status=final_status,
+                last_error=error_text,
             )
             self._fault("after_projection_updates")
             result_summary = {
@@ -502,25 +455,10 @@ class PostgresBroadcastQueueRepository:
             ).fetchone()
             if not job:
                 return None
-            conn.execute(
-                """
-                UPDATE cloud_broadcast_plan_recipients recipient
-                SET send_status = 'unknown_after_dispatch', last_error = %s, updated_at = CURRENT_TIMESTAMP
-                WHERE recipient.broadcast_job_id = %s AND recipient.send_status = 'dispatching'
-                """,
-                (error_text, int(job_id)),
-            )
-            conn.execute(
-                """
-                UPDATE cloud_broadcast_plan_recipient_messages message
-                SET status = 'unknown_after_dispatch', sent_at = NULL,
-                    last_error = %s, updated_at = CURRENT_TIMESTAMP
-                FROM cloud_broadcast_plan_recipients recipient
-                WHERE recipient.broadcast_job_id = %s
-                  AND message.recipient_id = recipient.id
-                  AND message.status = 'dispatching'
-                """,
-                (error_text, int(job_id)),
+            build_cloud_broadcast_projection_write_port().mark_unknown_after_dispatch_dbapi(
+                conn,
+                job_id=int(job_id),
+                last_error=error_text,
             )
             summary = {
                 "status": "unknown_after_dispatch",

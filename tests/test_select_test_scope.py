@@ -1449,6 +1449,23 @@ def test_broadcast_job_owner_has_permanent_postgres_scope() -> None:
     assert result["needs_full_ci"] is True
 
 
+def test_cloud_broadcast_projection_owner_has_permanent_postgres_scope() -> None:
+    result = _select(
+        "aicrm_next/platform_foundation/background_jobs/cloud_broadcast_projection_write_port.py",
+        "aicrm_next/platform_foundation/background_jobs/cloud_broadcast_projection_write_repository.py",
+        "tests/test_cloud_broadcast_projection_owner_postgres.py",
+    )
+
+    assert result["unmatched_files"] == []
+    assert "broadcast_group_ops" in result["matched_scopes"]
+    assert "tests/test_cloud_broadcast_projection_owner.py" in result["python_tests"]
+    assert "tests/test_cloud_broadcast_projection_owner_postgres.py" in result["python_tests"]
+    assert "tests/test_broadcast_queue_worker_postgres_state_machine.py" in result["python_tests"]
+    assert result["needs_postgres"] is True
+    assert result["architecture_gate"] == "full"
+    assert result["needs_full_ci"] is True
+
+
 def test_retired_group_ops_workspace_paths_remain_mapped_to_broadcast_scope() -> None:
     changed_paths = (
         "aicrm_next/admin_shell/routes.py",

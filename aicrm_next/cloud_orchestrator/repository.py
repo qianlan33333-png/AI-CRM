@@ -13,6 +13,9 @@ from aicrm_next.platform_foundation.background_jobs.broadcast_job_write_port imp
     BroadcastJobCreate,
     build_broadcast_job_write_port,
 )
+from aicrm_next.platform_foundation.background_jobs.cloud_broadcast_projection_write_port import (
+    build_cloud_broadcast_projection_write_port,
+)
 from aicrm_next.platform_foundation.admin_audit import (
     AdminAuditRecord,
     build_admin_audit_port,
@@ -878,28 +881,12 @@ class PostgresCloudPlanRepository(CloudLegacyPostgresRepositoryMixin):
                         execution_id=execution_id,
                     )
                     job_ids.append(job_id)
-                    conn.execute(
-                        """
-                        UPDATE cloud_broadcast_plan_recipients
-                        SET approval_status = 'approved',
-                            send_status = CASE WHEN send_status = 'pending' THEN 'queued' ELSE send_status END,
-                            approved_by = CASE WHEN COALESCE(approved_by, '') = '' THEN %s ELSE approved_by END,
-                            approved_at = COALESCE(approved_at, CURRENT_TIMESTAMP),
-                            broadcast_job_id = COALESCE(broadcast_job_id, %s),
-                            updated_at = CURRENT_TIMESTAMP
-                        WHERE id = %s
-                        """,
-                        (_text(operator) or "internal_event_worker", job_id, recipient_id),
-                    )
-                    conn.execute(
-                        """
-                        UPDATE cloud_broadcast_plan_recipient_messages
-                        SET status = CASE WHEN status = 'pending' THEN 'queued' ELSE status END,
-                            updated_at = CURRENT_TIMESTAMP
-                        WHERE plan_id = %s
-                          AND recipient_id = %s
-                        """,
-                        (normalized_plan_id, recipient_id),
+                    build_cloud_broadcast_projection_write_port().queue_planned_recipient_dbapi(
+                        conn,
+                        plan_id=normalized_plan_id,
+                        recipient_id=recipient_id,
+                        job_id=job_id,
+                        approved_by=_text(operator) or "internal_event_worker",
                     )
             if not job_ids:
                 return {"status": "skipped", "reason": "missing_send_content"}
@@ -1018,65 +1005,23 @@ class PostgresCloudPlanRepository(CloudLegacyPostgresRepositoryMixin):
                         review_status,
                     ),
                 )
-            recipient = conn.execute(
-                """
-                INSERT INTO cloud_broadcast_plan_recipients (
-                    plan_id, unionid, owner_userid, display_name, planned_message_count,
-                    approval_status, send_status, created_at, updated_at
-                ) VALUES (
-                    %s, %s, %s, %s, 1, %s, 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-                )
-                ON CONFLICT (plan_id, unionid) WHERE unionid <> '' DO UPDATE SET
-                    owner_userid = EXCLUDED.owner_userid,
-                    planned_message_count = 1,
-                    updated_at = CURRENT_TIMESTAMP
-                RETURNING *
-                """,
-                (plan_id, normalized_unionid, normalized_owner, normalized_unionid, approval_status),
-            ).fetchone()
+            recipient = build_cloud_broadcast_projection_write_port().upsert_agent_recipient_dbapi(
+                conn,
+                plan_id=plan_id,
+                unionid=normalized_unionid,
+                owner_userid=normalized_owner,
+                display_name=normalized_unionid,
+                approval_status=approval_status,
+            )
             recipient_id = int((recipient or {}).get("id") or 0)
-            existing_message = conn.execute(
-                """
-                SELECT id
-                FROM cloud_broadcast_plan_recipient_messages
-                WHERE plan_id = %s AND recipient_id = %s AND sequence_index = 1
-                ORDER BY id ASC
-                LIMIT 1
-                """,
-                (plan_id, recipient_id),
-            ).fetchone()
-            if existing_message:
-                message_id = int(existing_message["id"])
-                conn.execute(
-                    """
-                    UPDATE cloud_broadcast_plan_recipient_messages
-                    SET content_text = %s,
-                        content_payload_json = %s::jsonb,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE id = %s
-                    """,
-                    (_text(content_package.get("content_text")), _json_dump(content_payload), message_id),
-                )
-            else:
-                inserted_message = conn.execute(
-                    """
-                    INSERT INTO cloud_broadcast_plan_recipient_messages (
-                        plan_id, recipient_id, unionid, sequence_index, day_offset, send_time,
-                        content_text, content_payload_json, attachments_json, status, created_at, updated_at
-                    ) VALUES (
-                        %s, %s, %s, 1, 0, '', %s, %s::jsonb, '[]'::jsonb, 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-                    )
-                    RETURNING id
-                    """,
-                    (
-                        plan_id,
-                        recipient_id,
-                        normalized_unionid,
-                        _text(content_package.get("content_text")),
-                        _json_dump(content_payload),
-                    ),
-                ).fetchone()
-                message_id = int((inserted_message or {}).get("id") or 0)
+            message_id = build_cloud_broadcast_projection_write_port().upsert_agent_message_dbapi(
+                conn,
+                plan_id=plan_id,
+                recipient_id=recipient_id,
+                unionid=normalized_unionid,
+                content_text=_text(content_package.get("content_text")),
+                content_payload_json=_json_dump(content_payload),
+            )
             self._audit(
                 conn,
                 operator=_text(operator) or "automation_agent",
@@ -1162,23 +1107,11 @@ class PostgresCloudPlanRepository(CloudLegacyPostgresRepositoryMixin):
                 else:
                     existing = conn.execute("SELECT id FROM broadcast_jobs WHERE idempotency_key = %s ORDER BY id DESC LIMIT 1", (idempotency_key,)).fetchone()
                     job_id = int(existing["id"]) if existing else 0
-            row = conn.execute(
-                """
-                UPDATE cloud_broadcast_plan_recipients
-                SET approval_status = 'approved', send_status = CASE WHEN send_status = 'pending' THEN 'queued' ELSE send_status END,
-                    approved_by = %s, approved_at = CURRENT_TIMESTAMP, broadcast_job_id = %s, updated_at = CURRENT_TIMESTAMP
-                WHERE id = %s
-                RETURNING *
-                """,
-                (_text(operator) or "crm_console", job_id or None, int(recipient_id)),
-            ).fetchone()
-            conn.execute(
-                """
-                UPDATE cloud_broadcast_plan_recipient_messages
-                SET status = CASE WHEN status = 'pending' THEN 'queued' ELSE status END, updated_at = CURRENT_TIMESTAMP
-                WHERE recipient_id = %s
-                """,
-                (int(recipient_id),),
+            row = build_cloud_broadcast_projection_write_port().approve_recipient_dbapi(
+                conn,
+                recipient_id=int(recipient_id),
+                approved_by=_text(operator) or "crm_console",
+                job_id=job_id or None,
             )
             self._audit(conn, operator=operator, action_type="cloud_plan_recipient_approve", target_type="cloud_broadcast_plan_recipient", target_id=f"{normalized_plan_id}:{int(recipient_id)}", before=before, after=dict(row or {}))
             conn.commit()
@@ -1200,16 +1133,12 @@ class PostgresCloudPlanRepository(CloudLegacyPostgresRepositoryMixin):
             before = dict(recipient)
             if _text(recipient.get("send_status")) == "sent":
                 raise ValueError("sent recipient cannot be rejected")
-            row = conn.execute(
-                """
-                UPDATE cloud_broadcast_plan_recipients
-                SET approval_status = 'rejected', send_status = CASE WHEN send_status IN ('pending', 'queued') THEN 'cancelled' ELSE send_status END,
-                    rejected_by = %s, rejected_at = CURRENT_TIMESTAMP, reject_reason = %s, updated_at = CURRENT_TIMESTAMP
-                WHERE id = %s
-                RETURNING *
-                """,
-                (_text(operator) or "crm_console", _text(reason)[:500], int(recipient_id)),
-            ).fetchone()
+            row = build_cloud_broadcast_projection_write_port().reject_recipient_dbapi(
+                conn,
+                recipient_id=int(recipient_id),
+                rejected_by=_text(operator) or "crm_console",
+                reason=_text(reason)[:500],
+            )
             self._audit(conn, operator=operator, action_type="cloud_plan_recipient_reject", target_type="cloud_broadcast_plan_recipient", target_id=f"{_text(plan_id)}:{int(recipient_id)}", before=before, after=dict(row or {}))
             conn.commit()
         return {"status": "rejected", "recipient": _recipient_view(dict(row or {}))}
@@ -1271,26 +1200,14 @@ class PostgresCloudPlanRepository(CloudLegacyPostgresRepositoryMixin):
             except (TypeError, ValueError):
                 normalized_day_offset = int(message.get("day_offset") or 0)
             normalized_send_time = (_text(send_time) or _text(message.get("send_time")))[:16]
-            row = conn.execute(
-                """
-                UPDATE cloud_broadcast_plan_recipient_messages
-                SET content_text = %s,
-                    content_payload_json = %s::jsonb,
-                    attachments_json = '[]'::jsonb,
-                    day_offset = %s,
-                    send_time = %s,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = %s
-                RETURNING *
-                """,
-                (
-                    _text(content_package.get("content_text")),
-                    _json_dump(content_payload),
-                    normalized_day_offset,
-                    normalized_send_time,
-                    normalized_message_id,
-                ),
-            ).fetchone()
+            row = build_cloud_broadcast_projection_write_port().update_recipient_message_dbapi(
+                conn,
+                message_id=normalized_message_id,
+                content_text=_text(content_package.get("content_text")),
+                content_payload_json=_json_dump(content_payload),
+                day_offset=normalized_day_offset,
+                send_time=normalized_send_time,
+            )
             recipient_row = conn.execute(
                 "SELECT *, 'cloud_plan' AS source_type, TRUE AS supports_recipient_approval FROM cloud_broadcast_plan_recipients WHERE id = %s",
                 (normalized_recipient_id,),

@@ -3155,7 +3155,6 @@ tables:
     lifecycle: canonical
     write_owner: aicrm_next.cloud_orchestrator
     write_owners:
-      - aicrm_next.background_jobs.broadcast_queue_worker
       - aicrm_next.cloud_orchestrator
     read_owners:
       - aicrm_next.background_jobs
@@ -3171,14 +3170,15 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Cloud-plan message projection finalized atomically with broadcast_jobs and outbound_tasks. Fake execution is simulated without sent_at; ambiguous execution is unknown_after_dispatch.
+      - tests/test_cloud_broadcast_projection_owner.py
+      - tests/test_cloud_broadcast_projection_owner_postgres.py
+    notes: Cloud orchestrator owns every recipient-message mutation through one public projection write port. Planning, approval, worker finalization and External Effect settlement retain their original transactions. Fake execution is simulated without sent_at; ambiguous execution is unknown_after_dispatch.
 
   cloud_broadcast_plan_recipients:
     domain: cloud_orchestrator
     lifecycle: canonical
     write_owner: aicrm_next.cloud_orchestrator
     write_owners:
-      - aicrm_next.background_jobs.broadcast_queue_worker
       - aicrm_next.cloud_orchestrator
     read_owners:
       - aicrm_next.background_jobs
@@ -3193,7 +3193,9 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Cloud-plan recipient projection finalized atomically with broadcast_jobs and outbound_tasks. Fake execution is simulated; ambiguous execution is unknown_after_dispatch.
+      - tests/test_cloud_broadcast_projection_owner.py
+      - tests/test_cloud_broadcast_projection_owner_postgres.py
+    notes: Cloud orchestrator owns every recipient mutation through one public projection write port. Planning, approval, worker finalization and External Effect settlement retain their original transactions. Fake execution is simulated; ambiguous execution is unknown_after_dispatch.
 
   cloud_broadcast_plans:
     domain: cloud_orchestrator

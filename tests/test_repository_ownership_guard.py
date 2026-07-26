@@ -208,6 +208,27 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
     assert "broadcast_jobs" not in repositories[
         "aicrm_next/cloud_orchestrator/repository.py"
     ]["table_writes"]
+    for table in (
+        "cloud_broadcast_plan_recipient_messages",
+        "cloud_broadcast_plan_recipients",
+    ):
+        assert manifest["tables"][table]["write_owner"] == "aicrm_next.cloud_orchestrator"
+        assert manifest["tables"][table]["write_owners"] == [
+            "aicrm_next.cloud_orchestrator"
+        ]
+        assert table not in repositories[
+            "aicrm_next/background_jobs/broadcast_effect_repository.py"
+        ]["table_writes"]
+        assert table not in repositories[
+            "aicrm_next/cloud_orchestrator/repository.py"
+        ]["table_writes"]
+    assert repositories[
+        "aicrm_next/platform_foundation/background_jobs/"
+        "cloud_broadcast_projection_write_repository.py"
+    ]["table_writes"] == [
+        "cloud_broadcast_plan_recipient_messages",
+        "cloud_broadcast_plan_recipients",
+    ]
     assert manifest["tables"]["contact_tags"]["write_owners"] == ["aicrm_next.customer_tags"]
     for path in (
         "aicrm_next/ai_audience_ops/repository.py",
