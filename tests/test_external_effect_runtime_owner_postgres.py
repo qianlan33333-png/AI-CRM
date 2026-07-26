@@ -99,6 +99,16 @@ def test_external_effect_owner_claim_recovery_and_heartbeat(next_pg_schema) -> N
             "SELECT heartbeat_at FROM external_effect_job WHERE id = %s",
             (first.item_id,),
         ).fetchone()
+        recovery_count_before = int(
+            connection.execute(
+                """
+                SELECT COUNT(*) AS count
+                FROM queue_runtime_lease_recovery_event
+                WHERE queue_kind = 'external_effect' AND queue_row_id = %s
+                """,
+                (first.item_id,),
+            ).fetchone()["count"]
+        )
         connection.execute(
             """
             UPDATE external_effect_job
@@ -125,20 +135,22 @@ def test_external_effect_owner_claim_recovery_and_heartbeat(next_pg_schema) -> N
             """,
             (first.item_id,),
         ).fetchone()
-        recovery_count = connection.execute(
-            """
-            SELECT COUNT(*) AS count
-            FROM queue_runtime_lease_recovery_event
-            WHERE queue_kind = 'external_effect' AND queue_row_id = %s
-            """,
-            (first.item_id,),
-        ).fetchone()
+        recovery_count_after = int(
+            connection.execute(
+                """
+                SELECT COUNT(*) AS count
+                FROM queue_runtime_lease_recovery_event
+                WHERE queue_kind = 'external_effect' AND queue_row_id = %s
+                """,
+                (first.item_id,),
+            ).fetchone()["count"]
+        )
     assert row == {
         "status": "dispatching",
         "locked_by": "external-owner-worker-2",
         "last_error_code": "lease_expired_before_dispatch",
     }
-    assert recovery_count["count"] == 1
+    assert recovery_count_after == recovery_count_before + 1
 
 
 def test_external_effect_owner_manual_cancel_keeps_audit_transaction(next_pg_schema) -> None:

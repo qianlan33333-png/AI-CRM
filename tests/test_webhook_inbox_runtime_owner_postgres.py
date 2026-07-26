@@ -95,6 +95,16 @@ def test_webhook_owner_runtime_claim_recovery_and_heartbeat(next_pg_schema) -> N
             "SELECT heartbeat_at FROM webhook_inbox WHERE id = %s",
             (first.item_id,),
         ).fetchone()
+        recovery_count_before = int(
+            connection.execute(
+                """
+                SELECT COUNT(*) AS count
+                FROM queue_runtime_lease_recovery_event
+                WHERE queue_kind = 'webhook_inbox' AND queue_row_id = %s
+                """,
+                (first.item_id,),
+            ).fetchone()["count"]
+        )
         connection.execute(
             "UPDATE webhook_inbox SET lease_expires_at = CURRENT_TIMESTAMP - INTERVAL '1 second' WHERE id = %s",
             (first.item_id,),
@@ -112,16 +122,18 @@ def test_webhook_owner_runtime_claim_recovery_and_heartbeat(next_pg_schema) -> N
             "SELECT status, attempt_count, locked_by FROM webhook_inbox WHERE id = %s",
             (first.item_id,),
         ).fetchone()
-        recovery_count = connection.execute(
-            """
-            SELECT COUNT(*) AS count
-            FROM queue_runtime_lease_recovery_event
-            WHERE queue_kind = 'webhook_inbox' AND queue_row_id = %s
-            """,
-            (first.item_id,),
-        ).fetchone()
+        recovery_count_after = int(
+            connection.execute(
+                """
+                SELECT COUNT(*) AS count
+                FROM queue_runtime_lease_recovery_event
+                WHERE queue_kind = 'webhook_inbox' AND queue_row_id = %s
+                """,
+                (first.item_id,),
+            ).fetchone()["count"]
+        )
     assert row == {"status": "processing", "attempt_count": 1, "locked_by": "owner-worker-2"}
-    assert recovery_count["count"] == 1
+    assert recovery_count_after == recovery_count_before + 1
 
 
 def test_webhook_owner_operator_retry_and_skip_keep_command_transaction(next_pg_schema) -> None:

@@ -108,6 +108,16 @@ def test_internal_event_consumer_owner_runtime_claim_recovery_and_heartbeat(next
             "SELECT heartbeat_at FROM internal_event_consumer_run WHERE id = %s",
             (first.item_id,),
         ).fetchone()
+        recovery_count_before = int(
+            connection.execute(
+                """
+                SELECT COUNT(*) AS count
+                FROM queue_runtime_lease_recovery_event
+                WHERE queue_kind = 'internal_event' AND queue_row_id = %s
+                """,
+                (first.item_id,),
+            ).fetchone()["count"]
+        )
         connection.execute(
             "UPDATE internal_event_consumer_run SET lease_expires_at = CURRENT_TIMESTAMP - INTERVAL '1 second' WHERE id = %s",
             (first.item_id,),
@@ -125,16 +135,18 @@ def test_internal_event_consumer_owner_runtime_claim_recovery_and_heartbeat(next
             "SELECT status, attempt_count, locked_by FROM internal_event_consumer_run WHERE id = %s",
             (first.item_id,),
         ).fetchone()
-        recovery_count = connection.execute(
-            """
-            SELECT COUNT(*) AS count
-            FROM queue_runtime_lease_recovery_event
-            WHERE queue_kind = 'internal_event' AND queue_row_id = %s
-            """,
-            (first.item_id,),
-        ).fetchone()
+        recovery_count_after = int(
+            connection.execute(
+                """
+                SELECT COUNT(*) AS count
+                FROM queue_runtime_lease_recovery_event
+                WHERE queue_kind = 'internal_event' AND queue_row_id = %s
+                """,
+                (first.item_id,),
+            ).fetchone()["count"]
+        )
     assert row == {"status": "running", "attempt_count": 1, "locked_by": "internal-owner-worker-2"}
-    assert recovery_count["count"] == 1
+    assert recovery_count_after == recovery_count_before + 1
 
 
 def test_internal_event_consumer_owner_operator_retry_and_skip_are_atomic(next_pg_schema) -> None:
