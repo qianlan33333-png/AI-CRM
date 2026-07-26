@@ -110,6 +110,21 @@ class ClosableNextCustomerReadRepository(FakeNextCustomerReadRepository):
         self.closed = True
 
 
+class WatermarkedNextCustomerReadRepository(ClosableNextCustomerReadRepository):
+    def get_projection_watermark(self):
+        return {
+            "last_succeeded_at": "2026-07-26T19:07:00+00:00",
+            "source_count": 23823,
+            "target_count": 23823,
+            "dirty_generation": 203,
+            "completed_generation": 203,
+            "refresh_status": "idle",
+        }
+
+    def count_customers(self, filters=None):
+        raise AssertionError("unfiltered list must use the refresh watermark instead of exact count")
+
+
 class EmptyClosableNextCustomerReadRepository(ClosableNextCustomerReadRepository):
     def list_customers(self, filters=None, *, limit=None, offset=0):
         self.list_calls += 1
@@ -368,6 +383,30 @@ def test_customer_list_query_passes_limit_offset_and_uses_count(monkeypatch):
     assert all(limit is not None for _, limit, _ in repo.list_args[:1])
 
 
+def test_unfiltered_customer_list_uses_refresh_watermark_without_exact_count(monkeypatch):
+    from aicrm_next.customer_read_model.application import ListCustomersQuery
+
+    _production_env(monkeypatch)
+    repo = WatermarkedNextCustomerReadRepository()
+
+    payload = ListCustomersQuery(repo)(ListCustomersRequest(limit=50, offset=0))
+
+    assert payload["ok"] is True
+    assert payload["total"] == 23823
+    assert payload["has_more"] is True
+    assert payload["total_source"] == "refresh_watermark"
+    assert payload["projection_watermark"] == {
+        "last_succeeded_at": "2026-07-26T19:07:00+00:00",
+        "source_count": 23823,
+        "target_count": 23823,
+        "dirty_generation": 203,
+        "completed_generation": 203,
+        "refresh_status": "idle",
+        "freshness": "fresh",
+    }
+    assert repo.list_args[0][1:] == (50, 0)
+
+
 def test_next_repository_unavailable_does_not_fallback_to_legacy(monkeypatch):
     from aicrm_next.customer_read_model import application
     from aicrm_next.customer_read_model.application import ListCustomersQuery
@@ -436,7 +475,7 @@ def test_next_repository_unavailable_uses_live_source_fallback(monkeypatch):
     assert messages["messages"][0]["msgid"] == "msg-1"
 
 
-def test_empty_primary_customer_list_uses_live_source_fallback_when_source_has_rows(monkeypatch):
+def test_empty_primary_customer_list_does_not_run_online_live_source_freshness_count(monkeypatch):
     from aicrm_next.customer_read_model.application import ListCustomersQuery
 
     _production_env(monkeypatch)
@@ -448,17 +487,19 @@ def test_empty_primary_customer_list_uses_live_source_fallback_when_source_has_r
     payload = ListCustomersQuery()(ListCustomersRequest(limit=10))
 
     assert payload["ok"] is True
-    assert payload["source_status"] == "live_source_fallback"
-    assert payload["read_model_status"] == "fallback"
-    assert payload["fallback_used"] is True
-    assert payload["customers"][0]["external_userid"] == "wx_ext_001"
-    assert "primary returned 0" in payload["fallback_reason"]
+    assert payload["source_status"] == "next_read_model"
+    assert payload["read_model_status"] == "primary"
+    assert payload["fallback_used"] is False
+    assert payload["customers"] == []
+    assert payload["total"] == 0
     assert primary_repo.closed is True
-    assert live_source_repo.closed is True
+    assert live_source_repo.list_calls == 0
+    assert live_source_repo.count_args == []
+    assert live_source_repo.closed is False
     assert "legacy_production_facade" not in str(payload)
 
 
-def test_partial_primary_customer_list_uses_live_source_fallback_when_source_has_more_rows(monkeypatch):
+def test_partial_primary_customer_list_does_not_compare_live_source_online(monkeypatch):
     from aicrm_next.customer_read_model.application import ListCustomersQuery
 
     _production_env(monkeypatch)
@@ -470,14 +511,15 @@ def test_partial_primary_customer_list_uses_live_source_fallback_when_source_has
     payload = ListCustomersQuery()(ListCustomersRequest(limit=50))
 
     assert payload["ok"] is True
-    assert payload["source_status"] == "live_source_fallback"
-    assert payload["read_model_status"] == "fallback"
-    assert payload["fallback_used"] is True
-    assert [customer["external_userid"] for customer in payload["customers"]] == ["wx_ext_001", "wx_ext_002", "wx_ext_003"]
-    assert payload["total"] == 3
-    assert "primary returned 1 matching customers while live source has 3" in payload["fallback_reason"]
+    assert payload["source_status"] == "next_read_model"
+    assert payload["read_model_status"] == "primary"
+    assert payload["fallback_used"] is False
+    assert [customer["external_userid"] for customer in payload["customers"]] == ["wx_ext_001"]
+    assert payload["total"] == 1
     assert primary_repo.closed is True
-    assert live_source_repo.closed is True
+    assert live_source_repo.list_calls == 0
+    assert live_source_repo.count_args == []
+    assert live_source_repo.closed is False
 
 
 def test_customer_context_uses_live_source_fallback_when_primary_detail_is_missing(monkeypatch):
@@ -518,7 +560,9 @@ def test_empty_primary_customer_list_stays_empty_when_live_source_has_no_match(m
     assert payload["customers"] == []
     assert payload["total"] == 0
     assert primary_repo.closed is True
-    assert live_source_repo.closed is True
+    assert live_source_repo.list_calls == 0
+    assert live_source_repo.count_args == []
+    assert live_source_repo.closed is False
 
 
 def test_customer_list_live_source_fallback_uses_limit_offset_and_count(monkeypatch):

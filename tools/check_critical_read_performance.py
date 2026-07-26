@@ -135,6 +135,33 @@ def _seed_dataset(database_url: str) -> None:
             )
             conn.execute(
                 """
+                INSERT INTO customer_read_model_refresh_state (
+                    singleton_id, last_succeeded_at, source_count, target_count,
+                    duration_ms, updated_at
+                ) VALUES (1, CURRENT_TIMESTAMP, 10000, 10000, 0, CURRENT_TIMESTAMP)
+                ON CONFLICT (singleton_id) DO UPDATE SET
+                    last_succeeded_at = EXCLUDED.last_succeeded_at,
+                    source_count = EXCLUDED.source_count,
+                    target_count = EXCLUDED.target_count,
+                    duration_ms = EXCLUDED.duration_ms,
+                    updated_at = EXCLUDED.updated_at
+                """
+            )
+            conn.execute(
+                """
+                UPDATE customer_read_model_refresh_intent
+                SET dirty_generation = 1,
+                    completed_generation = 1,
+                    signal_generation = 1,
+                    running_generation = 0,
+                    status = 'idle',
+                    updated_at = CURRENT_TIMESTAMP,
+                    completed_at = CURRENT_TIMESTAMP
+                WHERE singleton_id = 1
+                """
+            )
+            conn.execute(
+                """
                 INSERT INTO questionnaires (id, slug, name, title, updated_at, created_at)
                 SELECT n, 'perf-questionnaire-' || n, '匿名问卷' || n, '匿名问卷' || n,
                        CURRENT_TIMESTAMP - (n || ' seconds')::interval,
@@ -390,8 +417,13 @@ def _run_customer_list(database_url: str, profile: ReadPathBaseline):
         try:
             with Session(engine) as session:
                 repo = SqlAlchemyCustomerReadModelRepository(session)
-                rows = repo.list_customers({"owner_userid": "owner_1"}, limit=50, offset=0)
-                repo.count_customers({"owner_userid": "owner_1"})
+                rows = repo.list_customers({}, limit=50, offset=0)
+                watermark = repo.get_projection_watermark()
+                if int(watermark.get("target_count") or 0) != profile.dataset_rows:
+                    raise RuntimeError(
+                        f"customer_list: expected watermark {profile.dataset_rows}, "
+                        f"got {watermark.get('target_count')}"
+                    )
                 return len(rows)
         finally:
             event.remove(engine, "before_cursor_execute", listener)

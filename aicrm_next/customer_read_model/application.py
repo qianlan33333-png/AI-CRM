@@ -127,6 +127,9 @@ def _list_customers_unavailable_payload(query: ListCustomersRequest, exc: Except
         "items": [],
         "count": 0,
         "total": 0,
+        "has_more": False,
+        "total_source": "unavailable",
+        "projection_watermark": {},
         "limit": query.limit,
         "offset": query.offset,
         "filters": {
@@ -282,62 +285,61 @@ def _list_filters(query: ListCustomersRequest) -> JsonDict:
     }
 
 
-def _count_customers(repo: CustomerReadRepository, filters: JsonDict, page: list[JsonDict], *, limit: int, offset: int) -> int:
+def _has_customer_list_filters(filters: JsonDict) -> bool:
+    if any(str(filters.get(key) or "").strip() for key in ("owner_userid", "tag", "status", "mobile", "keyword")):
+        return True
+    return _normalize_bool_filter(filters.get("is_bound")) is not None
+
+
+def _projection_watermark(repo: CustomerReadRepository, filters: JsonDict) -> JsonDict:
+    if _has_customer_list_filters(filters):
+        return {}
+    read_watermark = getattr(repo, "get_projection_watermark", None)
+    if not callable(read_watermark):
+        return {}
+    try:
+        raw = dict(read_watermark() or {})
+    except Exception as exc:
+        safe_log_exception(LOGGER, "customer read model projection watermark unavailable", exc, level=logging.WARNING)
+        return {}
+    if not raw.get("last_succeeded_at") or raw.get("target_count") is None:
+        return {}
+    source_count = max(0, int(raw.get("source_count") or 0))
+    target_count = max(0, int(raw.get("target_count") or 0))
+    dirty_generation = max(0, int(raw.get("dirty_generation") or 0))
+    completed_generation = max(0, int(raw.get("completed_generation") or 0))
+    refresh_status = str(raw.get("refresh_status") or "idle")
+    freshness = "fresh"
+    if source_count != target_count or dirty_generation > completed_generation or refresh_status != "idle":
+        freshness = "refresh_pending"
+    return {
+        "last_succeeded_at": str(raw.get("last_succeeded_at") or ""),
+        "source_count": source_count,
+        "target_count": target_count,
+        "dirty_generation": dirty_generation,
+        "completed_generation": completed_generation,
+        "refresh_status": refresh_status,
+        "freshness": freshness,
+    }
+
+
+def _count_customers(
+    repo: CustomerReadRepository,
+    filters: JsonDict,
+    page: list[JsonDict],
+    *,
+    limit: int,
+    offset: int,
+    projection_watermark: JsonDict | None = None,
+) -> int:
+    if projection_watermark and projection_watermark.get("target_count") is not None:
+        return max(int(projection_watermark["target_count"]), offset + len(page))
     count = getattr(repo, "count_customers", None)
     if callable(count):
         return int(count(filters) or 0)
     if offset == 0 and len(page) < limit:
         return len(page)
     return len(repo.list_customers(filters, limit=None, offset=0))
-
-
-def _live_source_has_matching_customers(
-    query: ListCustomersRequest,
-    *,
-    repo: CustomerReadRepository | None = None,
-) -> bool:
-    count = _live_source_matching_customer_count(query, repo=repo)
-    return count > 0
-
-
-def _live_source_matching_customer_count(
-    query: ListCustomersRequest,
-    *,
-    repo: CustomerReadRepository | None = None,
-) -> int:
-    if not _customer_read_model_live_source_fallback_enabled():
-        return 0
-    owned_repo = repo is None
-    repo = repo or build_customer_live_source_repository()
-    try:
-        filters = _list_filters(query)
-        return _count_customers(repo, filters, [], limit=query.limit, offset=query.offset)
-    finally:
-        if owned_repo:
-            _close_repository(repo)
-
-
-def _primary_customer_list_stale_reason(
-    query: ListCustomersRequest,
-    *,
-    primary_total: int,
-    live_source_repo: CustomerReadRepository | None = None,
-) -> str:
-    if not _customer_read_model_live_source_fallback_enabled():
-        return ""
-    if primary_total > query.offset + query.limit:
-        return ""
-    try:
-        live_total = _live_source_matching_customer_count(query, repo=live_source_repo)
-    except Exception as exc:
-        safe_log_exception(LOGGER, "customer read model live source freshness check failed", exc, level=logging.WARNING)
-        return ""
-    if live_total > primary_total:
-        return (
-            "customer read model stale: "
-            f"primary returned {primary_total} matching customers while live source has {live_total}"
-        )
-    return ""
 
 
 def _list_customers_live_source_payload(query: ListCustomersRequest, exc: Exception, repo: CustomerReadRepository | None = None) -> JsonDict:
@@ -355,6 +357,9 @@ def _list_customers_live_source_payload(query: ListCustomersRequest, exc: Except
             "items": page,
             "count": len(page),
             "total": total,
+            "has_more": query.offset + len(page) < total,
+            "total_source": "exact_query",
+            "projection_watermark": {},
             "limit": query.limit,
             "offset": query.offset,
             "filters": filters,
@@ -497,14 +502,15 @@ class ListCustomersQuery:
                 try:
                     filters = _list_filters(query)
                     page = [list_item_projection(item) for item in repo.list_customers(filters, limit=query.limit, offset=query.offset)]
-                    total = _count_customers(repo, filters, page, limit=query.limit, offset=query.offset)
-                    stale_reason = _primary_customer_list_stale_reason(
-                        query,
-                        primary_total=total,
-                        live_source_repo=self._live_source_repo,
+                    projection_watermark = _projection_watermark(repo, filters)
+                    total = _count_customers(
+                        repo,
+                        filters,
+                        page,
+                        limit=query.limit,
+                        offset=query.offset,
+                        projection_watermark=projection_watermark,
                     )
-                    if stale_reason:
-                        raise RuntimeError(stale_reason)
                 finally:
                     if self._repo is None:
                         _close_repository(repo)
@@ -514,6 +520,9 @@ class ListCustomersQuery:
                     "items": page,
                     "count": len(page),
                     "total": total,
+                    "has_more": query.offset + len(page) < total,
+                    "total_source": "refresh_watermark" if projection_watermark else "exact_query",
+                    "projection_watermark": projection_watermark,
                     "limit": query.limit,
                     "offset": query.offset,
                     "filters": filters,

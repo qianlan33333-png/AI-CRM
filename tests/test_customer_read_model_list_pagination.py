@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from types import SimpleNamespace
 
 from sqlalchemy import create_engine, event, insert
 from sqlalchemy.orm import sessionmaker
@@ -77,6 +78,49 @@ def test_sqlalchemy_customer_list_uses_sql_limit_offset_and_count() -> None:
     list_sql = next(statement for statement in statements if "FROM customer_list_index_next" in statement and "LIMIT" in statement.upper())
     assert "LIMIT" in list_sql.upper()
     assert "OFFSET" in list_sql.upper()
+
+
+def test_projection_watermark_reads_singleton_state_without_customer_scan() -> None:
+    class WatermarkResult:
+        def mappings(self):
+            return self
+
+        def first(self):
+            return {
+                "last_succeeded_at": datetime(2026, 7, 26, 19, 7, tzinfo=timezone.utc),
+                "source_count": 23823,
+                "target_count": 23823,
+                "dirty_generation": 203,
+                "completed_generation": 203,
+                "refresh_status": "idle",
+            }
+
+    class WatermarkSession:
+        def __init__(self) -> None:
+            self.statement = ""
+
+        def get_bind(self):
+            return SimpleNamespace(dialect=SimpleNamespace(name="postgresql"))
+
+        def execute(self, statement):
+            self.statement = str(statement)
+            return WatermarkResult()
+
+    session = WatermarkSession()
+
+    watermark = SqlAlchemyCustomerReadModelRepository(session).get_projection_watermark()
+
+    assert watermark == {
+        "last_succeeded_at": "2026-07-26T19:07:00+00:00",
+        "source_count": 23823,
+        "target_count": 23823,
+        "dirty_generation": 203,
+        "completed_generation": 203,
+        "refresh_status": "idle",
+    }
+    assert "customer_read_model_refresh_state" in session.statement
+    assert "customer_read_model_refresh_intent" in session.statement
+    assert "customer_list_index_next" not in session.statement
 
 
 def test_list_customers_query_response_schema_uses_repo_page_and_total(monkeypatch) -> None:
