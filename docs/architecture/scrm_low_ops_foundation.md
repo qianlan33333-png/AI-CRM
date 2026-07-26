@@ -113,17 +113,25 @@ physical package move, legacy table deletion, or real provider call.
   outbox lanes in one process while preserving the legacy queue-kind arguments.
   Each claimed job executes against one request-scoped runtime-settings
   snapshot so a multi-key configuration release cannot split a single job.
+- The catalog scheduler now has a production observer unit. It evaluates the
+  versioned minute schedules and runs only redacted dry-run handlers while the
+  three predecessor timers remain authoritative. Four commands are statically
+  classified as provider-free (`external_effect.reconcile`, `campaign.plan`,
+  `group_ops.plan`, and `ai_audience.refresh`); payment reconciliation remains
+  `observe_only` until it delegates provider work through External Effect. The
+  execute path additionally requires an environment gate and an exact fixed
+  confirmation, and fails if any handler reports a real external call.
 - Architecture gates forbid premature physical moves and legacy table drops
   without 30 days of zero-read/write evidence, verified export, rollback
   rehearsal, successor ownership, and approval.
 
 ## Compatibility mode
 
-`deploy/deployment_profiles/wecom-core.json` and
-`deploy/runtime_role_catalog.json` are checked in with observation/cutover
-disabled. In this state all existing HTTP paths, auth rules, event names,
-effect types, database behavior, runtime units, and extension behavior remain
-unchanged. This is the safe first release for shadow comparison.
+`deploy/deployment_profiles/wecom-core.json` remains in observation mode. The
+job-catalog observer timer is active, but its execute gate is closed and all
+existing authoritative task timers remain unchanged. HTTP paths, auth rules,
+event names, effect types, database behavior, and extension behavior therefore
+remain compatible while scheduler parity evidence is collected.
 
 An `enforce` profile is a separate reviewed release decision. It must not be
 enabled until the target instance has route, event, effect, job, configuration,
@@ -144,9 +152,10 @@ and historical-data parity evidence.
   the current graph at 116. The target of 120 remains met without introducing a
   broker or runtime plugin system. Physical directory moves remain disabled
   until public ports and unique table-write ownership are proven.
-- Existing service and timer units remain authoritative. The new scheduler is
-  catalog-only and fails closed on `--execute`; successor parity is required
-  before any unit retirement.
+- Existing task timers remain authoritative. The scheduler observer is active
+  and redacted, while `--execute` stays fail-closed without both its environment
+  gate and exact confirmation. Successor parity is required before any unit
+  retirement.
 - The five canonical SCRM contracts are stable integration seams; existing
   identity, audience, content, campaign, and receipt tables are not bulk-moved
   or dual-written by this change.

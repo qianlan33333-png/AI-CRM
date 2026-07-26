@@ -10,6 +10,7 @@
     "aicrm-queue-invariant-check.service": "aicrm-next-cron-queue-invariant",
     "aicrm-queue-soak-snapshot.service": "aicrm-next-cron-queue-soak",
     "aicrm-data-health-snapshot.service": "aicrm-next-cron-data-health",
+    "aicrm-job-catalog-scheduler.service": "aicrm-next-cron-job-catalog",
     "openclaw-wechat-pay-order-reconciliation-worker.service": "aicrm-next-cron-payment-reconcile",
     "aicrm-ai-audience-daily-intent.service": "aicrm-next-cron-audience-intent",
     "aicrm-next-broadcast-delegation.service": "aicrm-next-cron-broadcast",
@@ -50,6 +51,10 @@
       "service": "aicrm-data-health-snapshot.service",
       "kick_after_timer_restart": true,
       "kick_failure_fatal": true
+    },
+    {
+      "timer": "aicrm-job-catalog-scheduler.timer",
+      "service": "aicrm-job-catalog-scheduler.service"
     },
     {
       "timer": "openclaw-wechat-pay-order-reconciliation-worker.timer",
@@ -206,6 +211,27 @@
       "service": "openclaw-external-contact-sync.service"
     }
   ],
+  "job_catalog_scheduler": {
+    "activation_mode": "observe",
+    "timer": "aicrm-job-catalog-scheduler.timer",
+    "service": "aicrm-job-catalog-scheduler.service",
+    "safe_job_types": [
+      "external_effect.reconcile",
+      "campaign.plan",
+      "group_ops.plan",
+      "ai_audience.refresh"
+    ],
+    "observe_only_job_types": [
+      "payment.reconcile"
+    ],
+    "predecessor_timers": {
+      "campaign.plan": "aicrm-next-broadcast-delegation.timer",
+      "group_ops.plan": "aicrm-next-group-ops-planning.timer",
+      "ai_audience.refresh": "aicrm-ai-audience-daily-intent.timer"
+    },
+    "requires_successor_parity": true,
+    "legacy_units_remain_authoritative": true
+  },
   "retired_forbidden": [
     "aicrm-web.service",
     "openclaw-wecom-callback-inbox-worker.timer",

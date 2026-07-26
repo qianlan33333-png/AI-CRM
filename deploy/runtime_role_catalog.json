@@ -36,6 +36,7 @@
   ],
   "cutover_policy": {
     "activate_new_units": false,
+    "observer_unit_active": true,
     "requires_successor_parity": true,
     "requires_independent_release": true,
     "legacy_units_remain_authoritative": true

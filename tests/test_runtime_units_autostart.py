@@ -45,6 +45,7 @@ def test_runtime_units_manifest_classifies_every_deploy_timer() -> None:
     assert "aicrm-ai-audience-daily-intent.timer" not in active
     assert "openclaw-wechat-pay-order-reconciliation-worker.timer" in active
     assert "aicrm-data-health-snapshot.timer" in active
+    assert "aicrm-job-catalog-scheduler.timer" in active
     assert "openclaw-external-push-worker.timer" in retired_forbidden
     assert "openclaw-external-push-worker.service" in retired_forbidden
     assert "openclaw-external-push-worker.timer" not in deploy_timers
@@ -147,6 +148,37 @@ def test_runtime_units_manifest_maps_every_retired_owner_to_one_successor() -> N
         assert item["successor_unit"]
         assert item["health_contract"]
         assert item["backlog_contract"]
+
+
+def test_job_catalog_scheduler_is_observer_only_before_successor_cutover() -> None:
+    scheduler = _manifest()["job_catalog_scheduler"]
+    service = (ROOT / "deploy" / scheduler["service"]).read_text(encoding="utf-8")
+    timer = (ROOT / "deploy" / scheduler["timer"]).read_text(encoding="utf-8")
+
+    assert scheduler == {
+        "activation_mode": "observe",
+        "timer": "aicrm-job-catalog-scheduler.timer",
+        "service": "aicrm-job-catalog-scheduler.service",
+        "safe_job_types": [
+            "external_effect.reconcile",
+            "campaign.plan",
+            "group_ops.plan",
+            "ai_audience.refresh",
+        ],
+        "observe_only_job_types": ["payment.reconcile"],
+        "predecessor_timers": {
+            "campaign.plan": "aicrm-next-broadcast-delegation.timer",
+            "group_ops.plan": "aicrm-next-group-ops-planning.timer",
+            "ai_audience.refresh": "aicrm-ai-audience-daily-intent.timer",
+        },
+        "requires_successor_parity": True,
+        "legacy_units_remain_authoritative": True,
+    }
+    assert "AICRM_JOB_CATALOG_SCHEDULER_EXECUTE=0" in service
+    assert "run_job_catalog_scheduler.py --dry-run" in service
+    assert "--execute" not in service
+    assert "OnCalendar=*-*-* *:*:40" in timer
+    assert "Persistent=true" in timer
 
 
 def test_runtime_units_manifest_rejects_a_retired_owner_without_successor() -> None:
@@ -304,6 +336,10 @@ def test_runtime_units_install_dry_run_copies_and_enables_only_active_units(caps
     assert "sudo systemctl enable aicrm-data-health-snapshot.timer" in output
     assert "sudo systemctl restart aicrm-data-health-snapshot.timer" in output
     assert "sudo systemctl start aicrm-data-health-snapshot.service" in output
+    assert "sudo cp deploy/aicrm-job-catalog-scheduler.service /etc/systemd/system/" in output
+    assert "sudo cp deploy/aicrm-job-catalog-scheduler.timer /etc/systemd/system/" in output
+    assert "sudo systemctl enable aicrm-job-catalog-scheduler.timer" in output
+    assert "sudo systemctl restart aicrm-job-catalog-scheduler.timer" in output
     assert "curl -sSf http://127.0.0.1:5002/health" in output
     assert "sudo cp deploy/openclaw-wecom-callback-inbox-worker.service /etc/systemd/system/" not in output
     assert "sudo systemctl enable openclaw-wecom-callback-inbox-worker.service" not in output

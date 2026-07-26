@@ -545,7 +545,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/background_jobs/broadcast_queue_worker.py",
       "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS",
-      "line": 698
+      "line": 699
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -2279,7 +2279,7 @@
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/background_jobs/broadcast_queue_worker.py",
       "key": "BROADCAST_QUEUE_LEASE_SECONDS",
-      "line": 1060
+      "line": 1061
     },
     {
       "accessor": "managed_runtime_int",
@@ -47478,6 +47478,14 @@
       "state": "active",
       "stop_for_migration": true,
       "unit": "aicrm-internal-queue-runtime.service"
+    },
+    {
+      "kick_after_timer_restart": false,
+      "kick_failure_fatal": false,
+      "kind": "timer",
+      "service": "aicrm-job-catalog-scheduler.service",
+      "state": "active_autostart",
+      "unit": "aicrm-job-catalog-scheduler.timer"
     },
     {
       "kind": "timer",

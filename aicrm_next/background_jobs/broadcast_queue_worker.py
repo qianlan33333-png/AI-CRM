@@ -503,6 +503,7 @@ def _summary(*, limit: int, dry_run: bool) -> dict[str, Any]:
         "skipped": 0,
         "results": [],
         "errors": [],
+        "real_external_call_executed": False,
     }
 
 

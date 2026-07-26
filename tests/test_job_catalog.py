@@ -17,6 +17,25 @@ def test_job_catalog_has_one_owner_and_external_worker_boundary() -> None:
     assert validate_runtime_role_catalog() == []
 
 
+def test_scheduler_execution_policy_keeps_provider_reconciliation_observe_only() -> None:
+    scheduler_jobs = {
+        spec.job_type: spec.scheduler_execution
+        for spec in JOB_SPECS
+        if spec.runtime_role == "scheduler"
+    }
+
+    assert scheduler_jobs == {
+        "external_effect.reconcile": "safe_command",
+        "campaign.plan": "safe_command",
+        "group_ops.plan": "safe_command",
+        "ai_audience.refresh": "safe_command",
+        "payment.reconcile": "observe_only",
+    }
+    assert next(spec for spec in JOB_SPECS if spec.job_type == "campaign.plan").handler_ref == (
+        "background_jobs.broadcast_queue_worker:delegate_external_effects"
+    )
+
+
 def test_enforce_profile_removes_disabled_extension_jobs() -> None:
     profile = replace(default_deployment_profile(), activation_mode="enforce")
     active = JobCatalog(profile=profile).active_specs()
