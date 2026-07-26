@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SHA_PATTERN = re.compile(r"[0-9a-f]{40}")
 REFRESH_EVENT_TYPE = "customer_read_model.refresh.requested"
 REFRESH_CONSUMER = "customer_read_model_refresh_intent_consumer"
-COMPLETION_WAIT_SECONDS = "5"
+COMPLETION_WAIT_SECONDS = "300"
 CommandRunner = Callable[..., subprocess.CompletedProcess[str]]
 
 
@@ -118,6 +118,8 @@ def run_release_refresh(
         "lost_lease_count": 0,
         "unhandled_failure_count": 0,
     }
+    consumer_counts = dict(expected_counts)
+    consumer_mode = "already_completed" if already_completed else ""
     if not already_completed:
         worker_env = {
             **base_env,
@@ -144,8 +146,19 @@ def run_release_refresh(
             command_runner=command_runner,
         )
         counts = dict(consumer.get("counts") or {})
-        if any(int(counts.get(key) or 0) != expected for key, expected in expected_counts.items()):
+        consumer_counts = {key: int(counts.get(key) or 0) for key in expected_counts}
+        exact_execution = all(
+            consumer_counts[key] == expected for key, expected in expected_counts.items()
+        )
+        # The durable relay or another runtime may claim the exact signal between
+        # the request and this scoped worker. Zero work is safe only when the
+        # generation completion check below subsequently proves that ownership.
+        concurrent_handoff = all(value == 0 for value in consumer_counts.values()) and int(
+            counts.get("skipped_count") or 0
+        ) == 0
+        if not exact_execution and not concurrent_handoff:
             raise ReleaseRefreshError("release_refresh_consumer_count_mismatch")
+        consumer_mode = "executed" if exact_execution else "concurrent_handoff"
 
     completion = _run_json_command(
         (*request_command, "--wait-seconds", COMPLETION_WAIT_SECONDS),
@@ -171,7 +184,8 @@ def run_release_refresh(
             "generation": target_generation,
             "already_completed": already_completed,
         },
-        "consumer_counts": expected_counts,
+        "consumer_counts": consumer_counts,
+        "consumer_mode": consumer_mode,
         "completion": {
             "target_generation": target_generation,
             "completed_generation": int(wait.get("completed_generation") or 0),
