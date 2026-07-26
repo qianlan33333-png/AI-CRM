@@ -10,6 +10,9 @@ from uuid import uuid4
 from psycopg import sql
 
 from aicrm_next.shared.runtime import raw_database_url
+from aicrm_next.platform_foundation.external_effects.runtime_write_port import (
+    build_external_effect_runtime_write_port,
+)
 from aicrm_next.shared.queue_provenance import (
     PRE_PROVIDER_IDENTITY_ADOPTION_PREDICATE_VERSION,
     PRE_PROVIDER_IDENTITY_ADOPTION_SOURCE_POLICY,
@@ -682,40 +685,13 @@ class RuntimeGenerationRepository:
                 "adopted_runtime_count": 0,
             }
 
-        adopted_jobs = connection.execute(
-            """
-            UPDATE external_effect_job
-            SET status = 'queued',
-                worker_generation = %s,
-                policy_version = %s,
-                available_at = CURRENT_TIMESTAMP,
-                scheduled_at = LEAST(scheduled_at, CURRENT_TIMESTAMP),
-                next_retry_at = NULL,
-                lease_token = '',
-                lease_expires_at = NULL,
-                locked_by = '',
-                locked_at = NULL,
-                dispatch_started_at = NULL,
-                heartbeat_at = NULL,
-                completed_at = NULL,
-                last_error_code = '',
-                last_error_message = '',
-                result_summary_json = jsonb_build_object(
-                    'pre_provider_attempt_preserved', TRUE,
-                    'adoption_reason', 'authorized_all_scope_cutover'
-                ),
-                row_version = row_version + 1,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = ANY(%s)
-              AND status = 'blocked'
-              AND policy_version = %s
-              AND provider_call_started_at IS NULL
-              AND side_effect_executed = FALSE
-              AND provider_result_received = FALSE
-            RETURNING id
-            """,
-            (generation, target_policy_version, job_ids, source_policy_version),
-        ).fetchall()
+        adopted_jobs = build_external_effect_runtime_write_port().adopt_pre_provider_dbapi(
+            connection,
+            job_ids=job_ids,
+            generation=generation,
+            source_policy_version=source_policy_version,
+            target_policy_version=target_policy_version,
+        )
         adopted_queue_ids = identity_queue_reopen(
             connection,
             queue_ids=queue_ids,
@@ -1040,8 +1016,12 @@ class RuntimeGenerationRepository:
             (revision, hold_reason, actor, reason, cutoff_at, cutoff_at),
         )
 
+        build_external_effect_runtime_write_port().apply_history_freeze_dbapi(
+            connection,
+            freeze_revision=revision,
+            cutoff_at=cutoff_at,
+        )
         for table_name, queue_kind in (
-            ("external_effect_job", "external_effect"),
             ("internal_event_consumer_run", "internal_event_consumer"),
             ("internal_event_outbox", "internal_event_outbox"),
             ("webhook_inbox", "webhook_inbox"),
@@ -1059,20 +1039,6 @@ class RuntimeGenerationRepository:
                 """,
                 (cutoff_at, revision, queue_kind),
             )
-        connection.execute(
-            """
-            UPDATE external_effect_job target
-            SET status = 'unknown_after_dispatch',
-                reconciliation_required = TRUE
-            FROM queue_history_classification audit
-            WHERE audit.freeze_revision = %s
-              AND audit.queue_kind = 'external_effect'
-              AND audit.queue_row_id = target.id
-              AND audit.classification = 'inconsistent_quarantine'
-              AND COALESCE((audit.evidence_json ->> 'provider_boundary_started')::BOOLEAN, FALSE)
-            """,
-            (revision,),
-        )
         rows = connection.execute(
             """
             SELECT queue_kind, COUNT(*)::BIGINT AS count

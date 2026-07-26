@@ -49738,7 +49738,7 @@
         "push center projection"
       ],
       "table": "external_effect_attempt",
-      "write_owner": "aicrm_next.platform_foundation.external_effects.worker"
+      "write_owner": "aicrm_next.platform_foundation.external_effects"
     },
     {
       "domain": "external_effects",
@@ -49754,7 +49754,7 @@
         "push center projection"
       ],
       "table": "external_effect_job",
-      "write_owner": "aicrm_next.platform_foundation.external_effects.service"
+      "write_owner": "aicrm_next.platform_foundation.external_effects"
     },
     {
       "domain": "external",

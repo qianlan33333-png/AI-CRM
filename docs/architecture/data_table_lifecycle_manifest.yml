@@ -2178,13 +2178,9 @@ tables:
   external_effect_job:
     domain: external_effects
     lifecycle: queue
-    write_owner: aicrm_next.platform_foundation.external_effects.service
+    write_owner: aicrm_next.platform_foundation.external_effects
     write_owners:
-      - aicrm_next.automation_engine.group_ops.durable_effects_repository
-      - aicrm_next.channel_entry.welcome_media_effects_repository
-      - aicrm_next.platform_foundation.execution_runtime.repository
-      - aicrm_next.platform_foundation.external_effects.service
-      - aicrm_next.platform_foundation.external_effects.transactional
+      - aicrm_next.platform_foundation.external_effects
     status_enum:
       column: status
     read_owners:
@@ -2208,15 +2204,16 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_event_effect_table_lineage.py
-    notes: Canonical queue for real external side effects. Scheduler, realtime, and manual dispatch share lease-token CAS; uncertain outcomes are quarantined for reconciliation and fake outcomes are simulated. Every new runtime terminal transition transactionally emits payload-minimal external_effect.settled; succeeded also retains the provider-result-gated external_effect.completed hand-off. Revision 0125 makes available_at mandatory and constrains lane to the four external-effect lanes. Unified timeline reads summary projections only and applies centralized sensitive-data redaction; provider request payloads are excluded.
+      - tests/test_external_effect_runtime_owner.py
+      - tests/test_external_effect_runtime_owner_postgres.py
+    notes: Canonical queue for real external side effects. Every mutation is confined to the external_effects capability; execution runtime, welcome and group-ops callers cross the public write port while retaining their surrounding transaction and settlement-event append. Scheduler, realtime, and manual dispatch share lease-token CAS; uncertain outcomes are quarantined for reconciliation and fake outcomes are simulated. Every new runtime terminal transition transactionally emits payload-minimal external_effect.settled; succeeded also retains the provider-result-gated external_effect.completed hand-off. Revision 0125 makes available_at mandatory and constrains lane to the four external-effect lanes. Unified timeline reads summary projections only and applies centralized sensitive-data redaction; provider request payloads are excluded.
 
   external_effect_attempt:
     domain: external_effects
     lifecycle: audit
-    write_owner: aicrm_next.platform_foundation.external_effects.worker
+    write_owner: aicrm_next.platform_foundation.external_effects
     write_owners:
-      - aicrm_next.platform_foundation.execution_runtime.repository
-      - aicrm_next.platform_foundation.external_effects.worker
+      - aicrm_next.platform_foundation.external_effects
     read_owners:
       - aicrm_next.platform_foundation.execution_runtime.read_model
       - push center projection
@@ -2231,6 +2228,8 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_event_effect_table_lineage.py
+      - tests/test_external_effect_runtime_owner.py
+      - tests/test_external_effect_runtime_owner_postgres.py
     notes: Append-only public attempt audit for external_effect_job execution. Provider result and job state are committed atomically under the active lease. Revision 0129 adds a repository-only restricted provider-result handoff; it is absent from ExternalEffectAttempt, Push Center, timeline, and admin API models, and is loaded only by the explicitly allowlisted identity continuation after predicate plus job/attempt/tenant linkage validation, then cleared after its idempotent local receipt commits. Revision 0125 freezes a historical dispatching attempt as unknown_after_dispatch when its parent job has already left dispatching, recording historical_freeze_orphan evidence instead of replaying it. Unified timeline redacts combined request/response summaries before returning them.
 
   owner_migration_import_sessions:

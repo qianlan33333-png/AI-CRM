@@ -178,6 +178,27 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "aicrm_next.identity_contact"
     ]
     assert manifest["tables"]["contact_tags"]["write_owner"] == "aicrm_next.customer_tags"
+    assert manifest["tables"]["external_effect_job"]["write_owner"] == (
+        "aicrm_next.platform_foundation.external_effects"
+    )
+    assert manifest["tables"]["external_effect_job"]["write_owners"] == [
+        "aicrm_next.platform_foundation.external_effects"
+    ]
+    assert manifest["tables"]["external_effect_attempt"]["write_owner"] == (
+        "aicrm_next.platform_foundation.external_effects"
+    )
+    assert manifest["tables"]["external_effect_attempt"]["write_owners"] == [
+        "aicrm_next.platform_foundation.external_effects"
+    ]
+    assert repositories[
+        "aicrm_next/platform_foundation/external_effects/runtime_write_repository.py"
+    ]["table_writes"] == ["external_effect_attempt", "external_effect_job"]
+    assert "external_effect_job" not in repositories[
+        "aicrm_next/automation_engine/group_ops/durable_effects_repository.py"
+    ]["table_writes"]
+    assert "external_effect_job" not in repositories[
+        "aicrm_next/channel_entry/welcome_media_effects_repository.py"
+    ]["table_writes"]
     assert manifest["tables"]["contact_tags"]["write_owners"] == ["aicrm_next.customer_tags"]
     for path in (
         "aicrm_next/ai_audience_ops/repository.py",

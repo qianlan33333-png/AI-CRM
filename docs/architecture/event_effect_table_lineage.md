@@ -13,8 +13,8 @@ merges must be done in later PRs with producer/consumer evidence.
 | `internal_event` | Canonical internal event ledger | event | `platform_foundation.internal_events.service` | Keep. Internal handlers must not execute real external calls directly. |
 | `internal_event_consumer_run` | Internal event consumer queue state | queue | `platform_foundation.internal_events` | Keep. One row per event/consumer execution state. |
 | `internal_event_consumer_attempt` | Internal consumer attempt audit | audit | `platform_foundation.internal_events` | Keep. Append-only execution evidence. |
-| `external_effect_job` | Canonical external side-effect queue | queue | `platform_foundation.external_effects.service` | Keep. Real external calls should enter here. |
-| `external_effect_attempt` | External side-effect attempt audit | audit | `platform_foundation.external_effects.worker` | Keep. Append-only execution evidence. |
+| `external_effect_job` | Canonical external side-effect queue | queue | `platform_foundation.external_effects` | Keep. Real external calls enter through the capability-owned ports. |
+| `external_effect_attempt` | External side-effect attempt audit | audit | `platform_foundation.external_effects` | Keep. Append-only execution evidence owned with the queue. |
 | `domain_event_outbox` | Historical commerce business-event outbox | legacy boundary | no active payment producer | Read-only parity/reconciliation after R08; do not create new `transaction.paid` rows. |
 | `external_push_delivery` | Commerce order-push projection | legacy_boundary | `payment.succeeded:webhook_order_paid_consumer` | Created atomically with one canonical `external_effect_job`; keep for existing admin read compatibility. |
 | `outbound_webhook_deliveries` | Legacy outbound webhook delivery queue/ledger | queue | outbound webhook runtime/admin jobs | Candidate to converge to external effects after webhook retry parity is proven. |

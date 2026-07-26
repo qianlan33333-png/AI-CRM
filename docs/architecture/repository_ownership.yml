@@ -257,7 +257,6 @@ repositories:
       - automation_group_ops_effect_dependency
       - automation_group_ops_effect_graph
       - automation_group_ops_effect_material
-      - external_effect_attempt
       - external_effect_job
       - image_library
       - miniprogram_library
@@ -265,7 +264,6 @@ repositories:
       - automation_group_ops_effect_dependency
       - automation_group_ops_effect_graph
       - automation_group_ops_effect_material
-      - external_effect_job
   aicrm_next/automation_engine/group_ops/effect_graph_lifecycle_repository.py:
     capability_owner: aicrm_next.automation_engine.group_ops
     table_reads:
@@ -276,7 +274,6 @@ repositories:
     table_writes:
       - automation_group_ops_effect_dependency
       - automation_group_ops_effect_graph
-      - external_effect_job
   aicrm_next/background_jobs/broadcast_effect_repository.py:
     capability_owner: aicrm_next.background_jobs.broadcast_queue_worker
     table_reads:
@@ -370,7 +367,6 @@ repositories:
     table_writes:
       - channel_welcome_effect_dependency
       - channel_welcome_effect_graph
-      - external_effect_job
   aicrm_next/cloud_orchestrator/repository.py:
     capability_owner: aicrm_next.cloud_orchestrator
     table_reads:
@@ -669,14 +665,11 @@ repositories:
       - external_effect_job
       - internal_event_consumer_run
       - internal_event_outbox
-      - queue_fairness_cursor
       - queue_lane_policy
       - queue_rate_scope_cooldown
       - queue_runtime_control
       - webhook_inbox
     table_writes:
-      - external_effect_attempt
-      - external_effect_job
       - queue_fairness_cursor
       - queue_runtime_lease_recovery_event
       - queue_worker_heartbeat
@@ -716,6 +709,18 @@ repositories:
       - external_effect_attempt
       - external_effect_job
       - external_effect_test_receipt
+  aicrm_next/platform_foundation/external_effects/runtime_write_repository.py:
+    capability_owner: aicrm_next.platform_foundation.external_effects
+    table_reads:
+      - external_effect_attempt
+      - external_effect_job
+      - queue_fairness_cursor
+      - queue_history_classification
+      - queue_rate_scope_cooldown
+      - queue_runtime_control
+    table_writes:
+      - external_effect_attempt
+      - external_effect_job
   aicrm_next/platform_foundation/internal_events/consumer_run_write_repository.py:
     capability_owner: aicrm_next.platform_foundation.internal_events
     table_reads:

@@ -10,6 +10,9 @@ from sqlalchemy.orm import Session
 
 from aicrm_next.platform_foundation.command_bus.models import CommandContext
 from aicrm_next.platform_foundation.external_effects.repo_contract import _public_job
+from aicrm_next.platform_foundation.external_effects.runtime_write_port import (
+    build_external_effect_runtime_write_port,
+)
 from aicrm_next.platform_foundation.external_effects.settlement_events import (
     build_external_effect_settled_event,
 )
@@ -343,34 +346,11 @@ class QueueRuntimeCommandService:
                         expected_version=normalized_version,
                     )
                 else:
-                    row = (
-                        session.execute(
-                            text(
-                                f"""
-                                UPDATE {fact.table}
-                                SET available_at = CURRENT_TIMESTAMP,
-                                    next_retry_at = CURRENT_TIMESTAMP,
-                                    worker_generation = 0,
-                                    {fact.version_assignment}
-                                    updated_at = CURRENT_TIMESTAMP
-                                WHERE id = :item_id
-                                  AND status = :expected_status
-                                  AND {fact.version_predicate}
-                                  AND hold_reason = ''
-                                  AND (lease_expires_at IS NULL OR lease_expires_at <= CURRENT_TIMESTAMP)
-                                  {fact.provider_boundary_predicate}
-                                RETURNING id, execution_id, lane, status, hold_reason,
-                                          {fact.version_expression} AS version_token
-                                """
-                            ),
-                            {
-                                "item_id": int(item_id),
-                                "expected_status": normalized_status,
-                                "expected_version": normalized_version,
-                            },
-                        )
-                        .mappings()
-                        .fetchone()
+                    row = build_external_effect_runtime_write_port().make_eligible_now_sqlalchemy(
+                        session,
+                        item_id=int(item_id),
+                        expected_status=normalized_status,
+                        expected_version=normalized_version,
                     )
                 if not row:
                     raise QueueCommandConflict(
@@ -500,27 +480,14 @@ class QueueRuntimeCommandService:
                         reason=normalized_reason,
                     )
                 else:
-                    statement = self._manual_action_statement(
-                        queue_kind=normalized_kind,
+                    row = build_external_effect_runtime_write_port().manual_action_sqlalchemy(
+                        session,
                         action=normalized_action,
-                        version_predicate=fact.version_predicate,
-                        version_expression=fact.version_expression,
-                    )
-                    row = (
-                        session.execute(
-                            text(statement),
-                            {
-                                "item_id": int(item_id),
-                                "expected_status": normalized_status,
-                                "expected_version": normalized_version,
-                                "actor": normalized_actor,
-                                "actor_ref_hash": sha256(normalized_actor.encode("utf-8")).hexdigest(),
-                                "reason": normalized_reason[:500],
-                                "attempt_id": "iea_" + uuid4().hex,
-                            },
-                        )
-                        .mappings()
-                        .fetchone()
+                        item_id=int(item_id),
+                        expected_status=normalized_status,
+                        expected_version=normalized_version,
+                        actor=normalized_actor,
+                        reason=normalized_reason,
                     )
                 if not row:
                     raise QueueCommandConflict(
@@ -603,81 +570,6 @@ class QueueRuntimeCommandService:
             action=normalized_action,
         )
 
-    @staticmethod
-    def _manual_action_statement(
-        *,
-        queue_kind: str,
-        action: str,
-        version_predicate: str,
-        version_expression: str,
-    ) -> str:
-        if queue_kind == "external_effect" and action == "retry":
-            return f"""
-                UPDATE external_effect_job
-                SET status = 'queued',
-                    locked_by = '', locked_at = NULL,
-                    lease_token = '', lease_expires_at = NULL,
-                    heartbeat_at = NULL, worker_generation = 0,
-                    next_retry_at = CURRENT_TIMESTAMP,
-                    available_at = CURRENT_TIMESTAMP,
-                    reconciliation_required = FALSE,
-                    cancel_requested_at = NULL,
-                    cancel_requested_by = '', cancel_reason = '',
-                    max_attempts = GREATEST(max_attempts, attempt_count + 1),
-                    completed_at = NULL,
-                    row_version = row_version + 1,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = :item_id
-                  AND status = :expected_status
-                  AND {version_predicate}
-                  AND status IN (
-                      'failed_retryable', 'failed_terminal', 'blocked',
-                      'unknown_after_dispatch'
-                  )
-                  AND hold_reason = ''
-                  AND (lease_expires_at IS NULL OR lease_expires_at <= CURRENT_TIMESTAMP)
-                RETURNING id, execution_id, lane, status, hold_reason,
-                          {version_expression} AS version_token
-            """
-        if queue_kind == "external_effect" and action == "cancel":
-            return f"""
-                UPDATE external_effect_job
-                SET cancel_requested_at = COALESCE(cancel_requested_at, CURRENT_TIMESTAMP),
-                    cancel_requested_by = CASE
-                        WHEN cancel_requested_by = '' THEN :actor ELSE cancel_requested_by
-                    END,
-                    cancel_reason = CASE
-                        WHEN cancel_reason = '' THEN :reason ELSE cancel_reason
-                    END,
-                    status = CASE WHEN status = 'dispatching' THEN status ELSE 'cancelled' END,
-                    locked_by = CASE WHEN status = 'dispatching' THEN locked_by ELSE '' END,
-                    locked_at = CASE WHEN status = 'dispatching' THEN locked_at ELSE NULL END,
-                    lease_token = CASE WHEN status = 'dispatching' THEN lease_token ELSE '' END,
-                    lease_expires_at = CASE
-                        WHEN status = 'dispatching' THEN lease_expires_at ELSE NULL
-                    END,
-                    heartbeat_at = CASE WHEN status = 'dispatching' THEN heartbeat_at ELSE NULL END,
-                    worker_generation = CASE
-                        WHEN status = 'dispatching' THEN worker_generation ELSE 0
-                    END,
-                    cancelled_at = CASE
-                        WHEN status = 'dispatching' THEN cancelled_at ELSE CURRENT_TIMESTAMP
-                    END,
-                    completed_at = CASE
-                        WHEN status = 'dispatching' THEN completed_at ELSE CURRENT_TIMESTAMP
-                    END,
-                    row_version = row_version + 1,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = :item_id
-                  AND status = :expected_status
-                  AND {version_predicate}
-                  AND status IN (
-                      'planned', 'approved', 'queued', 'failed_retryable', 'dispatching'
-                  )
-                RETURNING id, execution_id, lane, status, hold_reason,
-                          {version_expression} AS version_token
-            """
-        raise ValueError(f"unsupported manual queue action: {queue_kind}:{action}")
 
     @staticmethod
     def _target(queue_kind: str, row: Any) -> QueueCommandTarget:

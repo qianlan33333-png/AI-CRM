@@ -30,6 +30,9 @@ from aicrm_next.platform_foundation.external_effects.service import ExternalEffe
 from aicrm_next.platform_foundation.external_effects.settlement_events import (
     enqueue_external_effect_settled_rows_in_session,
 )
+from aicrm_next.platform_foundation.external_effects.runtime_write_port import (
+    build_external_effect_runtime_write_port,
+)
 from aicrm_next.platform_foundation.external_effects.test_receiver import (
     TEST_RECEIVER_PATH_PREFIX,
     canonical_payload_hash,
@@ -41,6 +44,7 @@ from .domain import clean_text, mask_sensitive_payload
 from .effect_graph_lifecycle_repository import (
     InMemoryGroupOpsEffectGraphLifecycleMixin,
     SQLAlchemyGroupOpsEffectGraphLifecycleMixin,
+    group_ops_effect_job_ids_in_session,
     request_cancel_dispatching_group_ops_jobs_in_session,
 )
 from .external_effects import content_payload_summary, parse_external_effect_scheduled_at
@@ -481,45 +485,17 @@ class SQLAlchemyGroupOpsEffectGraphRepository(SQLAlchemyGroupOpsEffectGraphLifec
                 actor=actor or "group_ops_plan_editor",
                 reason="group_ops_plan_version_superseded",
             )
-            cancelled_rows = session.execute(
-                text(
-                    """
-                    UPDATE external_effect_job job
-                    SET status = 'cancelled',
-                        cancel_requested_at = COALESCE(cancel_requested_at, CURRENT_TIMESTAMP),
-                        cancel_requested_by = CASE WHEN cancel_requested_by = '' THEN :actor ELSE cancel_requested_by END,
-                        cancel_reason = CASE WHEN cancel_reason = '' THEN 'group_ops_plan_version_superseded' ELSE cancel_reason END,
-                        cancelled_at = COALESCE(cancelled_at, CURRENT_TIMESTAMP),
-                        completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP),
-                        row_version = row_version + 1,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE job.id IN (
-                        SELECT dependent_effect_job_id
-                        FROM automation_group_ops_effect_dependency
-                        WHERE graph_id = :graph_id
-                        UNION
-                        SELECT prerequisite_effect_job_id
-                        FROM automation_group_ops_effect_dependency
-                        WHERE graph_id = :graph_id
-                        UNION
-                        SELECT :final_effect_job_id
-                    )
-                      AND job.status IN ('planned', 'approved', 'queued', 'failed_retryable')
-                      AND job.provider_call_started_at IS NULL
-                      AND NOT EXISTS (
-                          SELECT 1 FROM external_effect_attempt attempt
-                          WHERE attempt.job_id = job.id
-                            AND attempt.provider_call_started_at IS NOT NULL
-                      )
-                    RETURNING job.*
-                    """
+            cancelled_rows = build_external_effect_runtime_write_port().cancel_pre_provider_sqlalchemy(
+                session,
+                job_ids=group_ops_effect_job_ids_in_session(
+                    session,
+                    graph_id=int(graph["id"]),
+                    final_effect_job_id=int(graph["final_effect_job_id"] or 0),
                 ),
-                {
-                    "graph_id": int(graph["id"]),
-                    "final_effect_job_id": int(graph["final_effect_job_id"] or 0),
-                    "actor": actor or "group_ops_plan_editor",
-                },
-            ).mappings().all()
+                exclude_job_id=0,
+                actor=actor or "group_ops_plan_editor",
+                reason="group_ops_plan_version_superseded",
+            )
             enqueue_external_effect_settled_rows_in_session(session, cancelled_rows)
             session.execute(
                 text(
@@ -907,28 +883,17 @@ class SQLAlchemyGroupOpsEffectGraphRepository(SQLAlchemyGroupOpsEffectGraphLifec
             payload_summary = dict(final_job["payload_summary_json"] or {})
             payload_summary["dependencies_resolved"] = True
             payload_summary["dependency_count"] = len(dependencies)
-            released = session.execute(
-                text(
-                    """
-                    UPDATE external_effect_job
-                    SET payload_json = CAST(:payload_json AS jsonb),
-                        payload_summary_json = CAST(:payload_summary_json AS jsonb),
-                        status = 'queued', available_at = scheduled_at,
-                        hold_reason = '', hold_at = NULL,
-                        row_version = row_version + 1,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE id = :job_id
-                      AND status = 'planned'
-                      AND provider_call_started_at IS NULL
-                    RETURNING id
-                    """
+            released = build_external_effect_runtime_write_port().release_planned_sqlalchemy(
+                session,
+                job_id=int(final_job["id"]),
+                payload_json=json.dumps(payload, ensure_ascii=False, separators=(",", ":")),
+                payload_summary_json=json.dumps(
+                    payload_summary,
+                    ensure_ascii=False,
+                    separators=(",", ":"),
                 ),
-                {
-                    "payload_json": json.dumps(payload, ensure_ascii=False, separators=(",", ":")),
-                    "payload_summary_json": json.dumps(payload_summary, ensure_ascii=False, separators=(",", ":")),
-                    "job_id": int(final_job["id"]),
-                },
-            ).scalar_one_or_none()
+                available_at_mode="scheduled",
+            )
             if not released:
                 session.rollback()
                 return {
@@ -1013,36 +978,16 @@ class SQLAlchemyGroupOpsEffectGraphRepository(SQLAlchemyGroupOpsEffectGraphLifec
                 actor=clean_text(actor),
                 reason=clean_text(reason),
             )
-            cancelled_rows = (
-                session.execute(
-                    text(
-                        """
-                    UPDATE external_effect_job job
-                    SET status = 'cancelled', cancel_requested_at = CURRENT_TIMESTAMP,
-                        cancel_requested_by = :actor, cancel_reason = :reason,
-                        cancelled_at = CURRENT_TIMESTAMP, completed_at = CURRENT_TIMESTAMP,
-                        row_version = row_version + 1, updated_at = CURRENT_TIMESTAMP
-                    WHERE job.id IN (
-                        SELECT prerequisite_effect_job_id FROM automation_group_ops_effect_dependency WHERE graph_id = :graph_id
-                        UNION
-                        SELECT dependent_effect_job_id FROM automation_group_ops_effect_dependency WHERE graph_id = :graph_id
-                        UNION
-                        SELECT :final_effect_job_id
-                    )
-                      AND job.status IN ('planned', 'approved', 'queued', 'failed_retryable')
-                      AND job.provider_call_started_at IS NULL
-                    RETURNING job.*
-                    """
-                    ),
-                    {
-                        "graph_id": int(graph["id"]),
-                        "final_effect_job_id": int(graph["final_effect_job_id"] or 0),
-                        "actor": clean_text(actor),
-                        "reason": clean_text(reason),
-                    },
-                )
-                .mappings()
-                .all()
+            cancelled_rows = build_external_effect_runtime_write_port().cancel_pre_provider_sqlalchemy(
+                session,
+                job_ids=group_ops_effect_job_ids_in_session(
+                    session,
+                    graph_id=int(graph["id"]),
+                    final_effect_job_id=int(graph["final_effect_job_id"] or 0),
+                ),
+                exclude_job_id=0,
+                actor=clean_text(actor),
+                reason=clean_text(reason),
             )
             updated = enqueue_external_effect_settled_rows_in_session(session, cancelled_rows)
             session.execute(

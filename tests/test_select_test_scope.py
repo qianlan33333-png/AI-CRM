@@ -652,6 +652,24 @@ def test_internal_event_outbox_runtime_owner_has_permanent_postgres_scope() -> N
     assert result["architecture_gate"] == "full"
 
 
+def test_external_effect_runtime_owner_has_permanent_postgres_scope() -> None:
+    result = _select(
+        "aicrm_next/platform_foundation/external_effects/claim_policy.py",
+        "aicrm_next/platform_foundation/external_effects/runtime_write_port.py",
+        "aicrm_next/platform_foundation/external_effects/runtime_write_repository.py",
+        "tests/test_external_effect_runtime_owner_postgres.py",
+    )
+
+    assert result["unmatched_files"] == []
+    assert "postgres_execution_runtime" in result["matched_scopes"]
+    assert "tests/test_external_effect_runtime_owner.py" in result["python_tests"]
+    assert "tests/test_external_effect_runtime_owner_postgres.py" in result["python_tests"]
+    assert "tests/test_execution_runtime_postgres.py" in result["python_tests"]
+    assert result["needs_postgres"] is True
+    assert result["needs_full_ci"] is True
+    assert result["architecture_gate"] == "full"
+
+
 def test_prod_remediation_security_and_heading_files_have_permanent_scopes() -> None:
     result = _select(
         "aicrm_next/automation_agents/templates/admin_console/automation_agent_list.html",

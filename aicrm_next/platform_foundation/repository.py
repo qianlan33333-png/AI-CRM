@@ -5,7 +5,7 @@ from typing import Any, Callable
 
 from aicrm_next.shared.runtime import raw_database_url
 from aicrm_next.platform_foundation.execution_runtime.read_model import queue_policy_eligible_predicate
-from aicrm_next.platform_foundation.execution_runtime.repository import (
+from aicrm_next.platform_foundation.external_effects.claim_policy import (
     external_canary_authorization_predicate,
 )
 

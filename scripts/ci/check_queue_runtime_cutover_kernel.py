@@ -38,8 +38,10 @@ CANARY_SCOPE_LITERAL_ALLOWLIST = frozenset(
         "aicrm_next/platform_foundation/execution_runtime/repository.py",
         "aicrm_next/platform_foundation/execution_runtime/validation.py",
         "aicrm_next/platform_foundation/external_effects/canary_repository.py",
+        "aicrm_next/platform_foundation/external_effects/claim_policy.py",
         "aicrm_next/platform_foundation/external_effects/models.py",
         "aicrm_next/platform_foundation/external_effects/repo_memory.py",
+        "aicrm_next/platform_foundation/external_effects/runtime_write_repository.py",
         "aicrm_next/platform_foundation/external_effects/wecom_canary_policy.py",
     }
 )
@@ -274,10 +276,13 @@ def collect_errors(root: Path = ROOT) -> list[str]:
         ),
         "aicrm_next/platform_foundation/execution_runtime/repository.py": (
             "external_claim_scope_predicate",
-            "external_canary_authorization_predicate",
-            "canary_authorized_expression",
             "def next_due_at(",
             "test_only: bool = False",
+        ),
+        "aicrm_next/platform_foundation/external_effects/claim_policy.py": (
+            "def external_claim_scope_predicate(",
+            "def external_canary_authorization_predicate(",
+            "canary_authorized_expression",
         ),
         "aicrm_next/platform_foundation/execution_runtime/read_model.py": (
             "external_claim_scope_predicate",

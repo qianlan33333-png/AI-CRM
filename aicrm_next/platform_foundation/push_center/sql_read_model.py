@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from aicrm_next.platform_foundation.execution_runtime.read_model import (
     queue_policy_eligible_predicate,
 )
-from aicrm_next.platform_foundation.execution_runtime.repository import (
+from aicrm_next.platform_foundation.external_effects.claim_policy import (
     external_canary_authorization_predicate,
     external_claim_scope_predicate,
     external_effect_claim_order_sql,

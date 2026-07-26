@@ -7,7 +7,13 @@ from uuid import uuid4
 
 from aicrm_next.shared.release import current_release_sha
 from aicrm_next.shared.runtime import raw_database_url
+from aicrm_next.platform_foundation.external_effects.claim_policy import (
+    external_claim_scope_predicate,
+)
 from aicrm_next.platform_foundation.external_effects.repo_contract import _public_attempt, _public_job
+from aicrm_next.platform_foundation.external_effects.runtime_write_port import (
+    build_external_effect_runtime_write_port,
+)
 from aicrm_next.platform_foundation.external_effects.settlement_events import (
     build_external_effect_settled_event,
 )
@@ -63,96 +69,6 @@ def open_listener_connection(url: str, *, autocommit: bool, application_name: st
         url,
         autocommit=autocommit,
         application_name=application_name,
-    )
-
-
-def external_canary_authorization_predicate(*, row_alias: str = "job") -> str:
-    """Return the durable SQL proof required by an allowlisted canary row."""
-
-    authorization = f"COALESCE({row_alias}.payload_summary_json, '{{}}'::jsonb)->'canary_authorization'"
-    authorized_job_id = f"""
-        CASE
-            WHEN jsonb_typeof({authorization}->'authorized_job_id') = 'number'
-             AND ({authorization}->>'authorized_job_id') ~ '^[1-9][0-9]*$'
-            THEN ({authorization}->>'authorized_job_id')::numeric
-            ELSE 0::numeric
-        END
-    """
-    authorized_from_version = f"""
-        CASE
-            WHEN jsonb_typeof({authorization}->'authorized_from_version') = 'number'
-             AND ({authorization}->>'authorized_from_version') ~ '^[1-9][0-9]*$'
-            THEN ({authorization}->>'authorized_from_version')::numeric
-            ELSE 0::numeric
-        END
-    """
-    return f"""
-        (
-            jsonb_typeof({authorization}) = 'object'
-            AND COALESCE({authorization}->>'actor', '') <> ''
-            AND COALESCE({authorization}->>'reason', '') <> ''
-            AND COALESCE({authorization}->>'authorized_at', '') <> ''
-            AND ({authorized_job_id}) = {row_alias}.id::numeric
-            AND ({authorized_from_version}) >= 1::numeric
-            AND {row_alias}.row_version::numeric >= ({authorized_from_version}) + 1::numeric
-            AND {authorization}->'duplicate_risk_confirmed' = 'false'::jsonb
-        )
-    """
-
-
-def external_claim_scope_predicate(
-    *,
-    row_alias: str = "job",
-    scope_expression: str = "control.external_claim_scope",
-    execution_scope_expression: str | None = None,
-    canary_authorized_expression: str | None = None,
-) -> str:
-    """Return the canonical SQL gate for external-effect execution scope.
-
-    The expression is composed only from trusted static aliases supplied by
-    this module and the read model; no request data is interpolated here.
-    """
-
-    execution_scope = execution_scope_expression or f"COALESCE({row_alias}.payload_json->>'execution_scope', '')"
-    canary_authorized = canary_authorized_expression or external_canary_authorization_predicate(
-        row_alias=row_alias
-    )
-    return f"""
-        (
-            (
-                {execution_scope} <> 'allowlisted_canary'
-                OR ({canary_authorized})
-            )
-            AND (
-                {scope_expression} = 'all'
-                OR (
-                    {scope_expression} = 'allowlisted'
-                    AND {execution_scope} IN ('test_loopback', 'allowlisted_canary')
-                )
-                OR (
-                    {scope_expression} = 'test_loopback'
-                    AND {execution_scope} = 'test_loopback'
-                )
-            )
-        )
-    """
-
-
-def external_effect_claim_order_sql(
-    *,
-    row_alias: str = "job",
-    fairness_alias: str = "fairness",
-) -> str:
-    """Return the canonical external-effect claim order.
-
-    Keep operational read models on the same fairness/priority/due ordering as
-    ``claim_external_effect_one``.  Aliases are trusted static identifiers
-    supplied by repository code, never request input.
-    """
-
-    return (
-        f"COALESCE({fairness_alias}.last_claimed_at, '-infinity'::timestamptz), "
-        f"{row_alias}.priority ASC, {row_alias}.available_at ASC, {row_alias}.id ASC"
     )
 
 
@@ -397,17 +313,15 @@ class ExecutionRuntimeRepository:
                         lease_seconds=ttl,
                     )
                 else:
-                    row = connection.execute(
-                        self._claim_sql(queue_kind=queue_kind, test_only=test_only),
-                        (
-                            normalized_lane,
-                            int(generation),
-                            str(worker_id or "").strip(),
-                            lease_token,
-                            ttl,
-                            int(generation),
-                        ),
-                    ).fetchone()
+                    row = build_external_effect_runtime_write_port().claim_dbapi(
+                        connection,
+                        lane=normalized_lane,
+                        generation=int(generation),
+                        worker_id=str(worker_id or "").strip(),
+                        lease_token=lease_token,
+                        lease_seconds=ttl,
+                        test_only=bool(test_only),
+                    )
                 if not row:
                     return None
                 fairness_key = str(row.get("fairness_key") or "default")
@@ -460,62 +374,12 @@ class ExecutionRuntimeRepository:
                 """,
                 (lane,),
             )
-            connection.execute(
-                """
-                UPDATE external_effect_attempt attempt
-                SET status = 'unknown_after_dispatch',
-                    response_summary_json = COALESCE(attempt.response_summary_json, '{}'::jsonb)
-                        || '{"provider_result_received":false,"lease_expired":true}'::jsonb,
-                    error_code = CASE
-                        WHEN attempt.error_code = '' THEN 'lease_expired_after_dispatch'
-                        ELSE attempt.error_code
-                    END,
-                    error_message = CASE
-                        WHEN attempt.error_message = ''
-                        THEN 'Dispatch lease expired; reconcile provider outcome before retry.'
-                        ELSE attempt.error_message
-                    END,
-                    completed_at = COALESCE(attempt.completed_at, CURRENT_TIMESTAMP)
-                FROM external_effect_job job
-                WHERE job.lane = %s
-                  AND job.status = 'dispatching'
-                  AND job.lease_expires_at IS NOT NULL
-                  AND job.lease_expires_at <= CURRENT_TIMESTAMP
-                  AND job.provider_call_started_at IS NOT NULL
-                  AND attempt.job_id = job.id
-                  AND attempt.attempt_id = job.last_attempt_id
-                  AND attempt.lease_token = job.lease_token
-                  AND attempt.status = 'dispatching'
-                """,
-                (lane,),
+            unknown_rows = build_external_effect_runtime_write_port().recover_expired_dbapi(
+                connection,
+                lane=lane,
             )
-            unknown_rows = connection.execute(
-                """
-                UPDATE external_effect_job
-                SET status = 'unknown_after_dispatch',
-                    attempt_count = attempt_count + 1,
-                    reconciliation_required = TRUE,
-                    last_error_code = 'lease_expired_after_dispatch',
-                    last_error_message = 'Dispatch lease expired; reconcile provider outcome before retry.',
-                    lease_token = '',
-                    lease_expires_at = NULL,
-                    heartbeat_at = NULL,
-                    locked_by = '',
-                    locked_at = NULL,
-                    completed_at = CURRENT_TIMESTAMP,
-                    row_version = row_version + 1,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE lane = %s
-                  AND status = 'dispatching'
-                  AND lease_expires_at IS NOT NULL
-                  AND lease_expires_at <= CURRENT_TIMESTAMP
-                  AND provider_call_started_at IS NOT NULL
-                RETURNING *
-                """,
-                (lane,),
-            ).fetchall()
             for unknown_row in unknown_rows:
-                job = _public_job(dict(unknown_row))
+                job = _public_job(unknown_row)
                 if job is None:
                     raise RuntimeError("stale external effect settlement job projection failed")
                 attempt_row = connection.execute(
@@ -527,31 +391,6 @@ class ExecutionRuntimeRepository:
                     connection,
                     build_external_effect_settled_event(job=job, attempt=attempt),
                 )
-            connection.execute(
-                """
-                UPDATE external_effect_job
-                SET status = 'queued',
-                    available_at = CURRENT_TIMESTAMP,
-                    next_retry_at = CURRENT_TIMESTAMP,
-                    worker_generation = 0,
-                    last_error_code = 'lease_expired_before_dispatch',
-                    last_error_message = 'Pre-dispatch lease expired and was safely requeued.',
-                    lease_token = '',
-                    lease_expires_at = NULL,
-                    heartbeat_at = NULL,
-                    locked_by = '',
-                    locked_at = NULL,
-                    dispatch_started_at = NULL,
-                    row_version = row_version + 1,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE lane = %s
-                  AND status = 'dispatching'
-                  AND lease_expires_at IS NOT NULL
-                  AND lease_expires_at <= CURRENT_TIMESTAMP
-                  AND provider_call_started_at IS NULL
-                """,
-                (lane,),
-            )
             return
 
         if queue_kind == "internal_event":
@@ -709,69 +548,6 @@ class ExecutionRuntimeRepository:
         ).fetchone()
         return int((row or {}).get("reserved_capacity") or 0)
 
-    @staticmethod
-    def _claim_sql(*, queue_kind: str, test_only: bool) -> str:
-        if queue_kind == "external_effect":
-            test_predicate = "AND COALESCE(job.payload_json->>'execution_scope', '') = 'test_loopback'" if test_only else ""
-            scope_predicate = external_claim_scope_predicate(
-                row_alias="job",
-                scope_expression="(SELECT external_claim_scope FROM queue_runtime_control WHERE singleton = TRUE)",
-            )
-            claim_order = external_effect_claim_order_sql()
-            return f"""
-                WITH candidate AS (
-                    SELECT job.id
-                    FROM external_effect_job job
-                    LEFT JOIN queue_fairness_cursor fairness
-                      ON fairness.lane = job.lane
-                     AND fairness.fairness_key = job.fairness_key
-                    LEFT JOIN queue_rate_scope_cooldown cooldown
-                      ON cooldown.rate_scope_key = job.rate_scope_key
-                     AND cooldown.blocked_until > CURRENT_TIMESTAMP
-                    WHERE job.lane = %s
-                      AND job.worker_generation IN (0, %s)
-                      AND job.policy_version = (
-                          SELECT policy_version FROM queue_runtime_control WHERE singleton = TRUE
-                      )
-                      AND job.status IN ('queued', 'failed_retryable')
-                      AND job.hold_reason = ''
-                      AND job.attempt_count < job.max_attempts
-                      AND job.available_at <= CURRENT_TIMESTAMP
-                      AND {scope_predicate}
-                      AND (job.lease_expires_at IS NULL OR job.lease_expires_at <= CURRENT_TIMESTAMP)
-                      AND cooldown.rate_scope_key IS NULL
-                      AND NOT EXISTS (
-                          SELECT 1
-                          FROM external_effect_job active
-                          WHERE active.lane = job.lane
-                            AND active.ordering_key = job.ordering_key
-                            AND active.ordering_key <> ''
-                            AND active.status = 'dispatching'
-                            AND active.lease_expires_at > CURRENT_TIMESTAMP
-                      )
-                      {test_predicate}
-                    ORDER BY {claim_order}
-                    LIMIT 1
-                    FOR UPDATE OF job SKIP LOCKED
-                )
-                UPDATE external_effect_job job
-                SET status = 'dispatching',
-                    locked_by = %s,
-                    lease_token = %s,
-                    locked_at = CURRENT_TIMESTAMP,
-                    dispatch_started_at = CURRENT_TIMESTAMP,
-                    provider_call_started_at = NULL,
-                    lease_expires_at = CURRENT_TIMESTAMP + (%s * INTERVAL '1 second'),
-                    heartbeat_at = CURRENT_TIMESTAMP,
-                    worker_generation = %s,
-                    row_version = row_version + 1,
-                    updated_at = CURRENT_TIMESTAMP
-                FROM candidate
-                WHERE job.id = candidate.id
-                RETURNING job.*
-            """
-        raise ValueError(f"unsupported queue kind: {queue_kind}")
-
     def renew_lease(
         self,
         *,
@@ -814,30 +590,18 @@ class ExecutionRuntimeRepository:
                 )
                 connection.commit()
             return renewed
-        table, status = {
-            "external_effect": ("external_effect_job", "dispatching"),
-        }.get(queue_kind, ("", ""))
-        if not table:
+        if queue_kind != "external_effect":
             raise ValueError("unsupported queue kind")
-        ttl = max(10, min(int(lease_seconds or 30), 300))
         with self._connect(self._database_url) as connection:
-            row = connection.execute(
-                f"""
-                UPDATE {table}
-                SET heartbeat_at = CURRENT_TIMESTAMP,
-                    lease_expires_at = CURRENT_TIMESTAMP + (%s * INTERVAL '1 second'),
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = %s
-                  AND status = %s
-                  AND lease_token = %s
-                  AND worker_generation = %s
-                  AND lease_expires_at > CURRENT_TIMESTAMP
-                RETURNING id
-                """,
-                (ttl, int(item_id), status, str(lease_token or ""), int(generation)),
-            ).fetchone()
+            renewed = build_external_effect_runtime_write_port().renew_lease_dbapi(
+                connection,
+                item_id=int(item_id),
+                lease_token=str(lease_token or ""),
+                generation=int(generation),
+                lease_seconds=lease_seconds,
+            )
             connection.commit()
-        return bool(row)
+        return renewed
 
     def next_due_at(
         self,

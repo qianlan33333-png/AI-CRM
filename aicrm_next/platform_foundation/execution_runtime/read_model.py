@@ -10,12 +10,11 @@ from aicrm_next.shared.release import current_release_sha
 from aicrm_next.shared.runtime import raw_database_url
 from aicrm_next.shared.sensitive_data import redact_sensitive_data
 
-from .repository import (
-    _default_connect,
-    _psycopg_url,
+from aicrm_next.platform_foundation.external_effects.claim_policy import (
     external_canary_authorization_predicate,
     external_claim_scope_predicate,
 )
+from .repository import _default_connect, _psycopg_url
 
 
 PROVENANCE_PATH = Path("/home/ubuntu/.aicrm-releases/id-validation.json")

@@ -8,6 +8,9 @@ from sqlalchemy.orm import Session
 from aicrm_next.platform_foundation.external_effects.settlement_events import (
     enqueue_external_effect_settled_rows_in_session,
 )
+from aicrm_next.platform_foundation.external_effects.runtime_write_port import (
+    build_external_effect_runtime_write_port,
+)
 
 from .domain import clean_text
 
@@ -22,6 +25,39 @@ _TERMINAL_EFFECT_STATUSES = {
 }
 
 
+def group_ops_effect_job_ids_in_session(
+    session: Session,
+    *,
+    graph_id: int,
+    final_effect_job_id: int,
+) -> list[int]:
+    """Resolve business graph membership before crossing the owner boundary."""
+
+    values = (
+        session.execute(
+            text(
+                """
+                SELECT dependent_effect_job_id AS job_id
+                FROM automation_group_ops_effect_dependency
+                WHERE graph_id = :graph_id
+                UNION
+                SELECT prerequisite_effect_job_id AS job_id
+                FROM automation_group_ops_effect_dependency
+                WHERE graph_id = :graph_id
+                UNION SELECT :final_effect_job_id AS job_id
+                """
+            ),
+            {
+                "graph_id": int(graph_id),
+                "final_effect_job_id": int(final_effect_job_id),
+            },
+        )
+        .scalars()
+        .all()
+    )
+    return sorted({int(value) for value in values if int(value or 0) > 0})
+
+
 def request_cancel_dispatching_group_ops_jobs_in_session(
     session: Session,
     *,
@@ -33,54 +69,17 @@ def request_cancel_dispatching_group_ops_jobs_in_session(
 ) -> list[int]:
     """Fence claimed graph jobs that have not crossed the provider boundary."""
 
-    rows = (
-        session.execute(
-            text(
-                """
-                UPDATE external_effect_job job
-                SET cancel_requested_at = COALESCE(cancel_requested_at, CURRENT_TIMESTAMP),
-                    cancel_requested_by = CASE
-                        WHEN cancel_requested_by = '' THEN :actor ELSE cancel_requested_by
-                    END,
-                    cancel_reason = CASE
-                        WHEN cancel_reason = '' THEN :reason ELSE cancel_reason
-                    END,
-                    row_version = row_version + 1,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE job.id IN (
-                    SELECT dependent_effect_job_id
-                    FROM automation_group_ops_effect_dependency
-                    WHERE graph_id = :graph_id
-                    UNION
-                    SELECT prerequisite_effect_job_id
-                    FROM automation_group_ops_effect_dependency
-                    WHERE graph_id = :graph_id
-                    UNION SELECT :final_effect_job_id
-                )
-                  AND job.id <> :exclude_job_id
-                  AND job.status = 'dispatching'
-                  AND job.cancel_requested_at IS NULL
-                  AND job.provider_call_started_at IS NULL
-                  AND NOT EXISTS (
-                      SELECT 1 FROM external_effect_attempt attempt
-                      WHERE attempt.job_id = job.id
-                        AND attempt.provider_call_started_at IS NOT NULL
-                  )
-                RETURNING job.id
-                """
-            ),
-            {
-                "graph_id": int(graph_id),
-                "final_effect_job_id": int(final_effect_job_id),
-                "exclude_job_id": int(exclude_job_id),
-                "actor": clean_text(actor),
-                "reason": clean_text(reason),
-            },
-        )
-        .scalars()
-        .all()
+    return build_external_effect_runtime_write_port().request_cancel_dispatching_sqlalchemy(
+        session,
+        job_ids=group_ops_effect_job_ids_in_session(
+            session,
+            graph_id=int(graph_id),
+            final_effect_job_id=int(final_effect_job_id),
+        ),
+        exclude_job_id=int(exclude_job_id),
+        actor=clean_text(actor),
+        reason=clean_text(reason),
     )
-    return [int(value) for value in rows]
 
 
 class SQLAlchemyGroupOpsEffectGraphLifecycleMixin:
@@ -161,54 +160,16 @@ class SQLAlchemyGroupOpsEffectGraphLifecycleMixin:
                     actor="group_ops_graph_settlement",
                     reason="group_ops_sibling_terminal",
                 )
-                cancelled_rows = (
-                    session.execute(
-                        text(
-                            """
-                            UPDATE external_effect_job job
-                            SET status = 'cancelled',
-                                cancel_requested_at = COALESCE(cancel_requested_at, CURRENT_TIMESTAMP),
-                                cancel_requested_by = CASE
-                                    WHEN cancel_requested_by = '' THEN 'group_ops_dependency_settlement'
-                                    ELSE cancel_requested_by
-                                END,
-                                cancel_reason = CASE
-                                    WHEN cancel_reason = '' THEN 'group_ops_dependency_terminal'
-                                    ELSE cancel_reason
-                                END,
-                                cancelled_at = COALESCE(cancelled_at, CURRENT_TIMESTAMP),
-                                completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP),
-                                row_version = row_version + 1,
-                                updated_at = CURRENT_TIMESTAMP
-                            WHERE job.id IN (
-                                SELECT dependent_effect_job_id
-                                FROM automation_group_ops_effect_dependency
-                                WHERE graph_id = :graph_id
-                                UNION
-                                SELECT prerequisite_effect_job_id
-                                FROM automation_group_ops_effect_dependency
-                                WHERE graph_id = :graph_id
-                                UNION SELECT :final_effect_job_id
-                            )
-                              AND job.id <> :effect_job_id
-                              AND job.status IN ('planned', 'approved', 'queued', 'failed_retryable')
-                              AND job.provider_call_started_at IS NULL
-                              AND NOT EXISTS (
-                                  SELECT 1 FROM external_effect_attempt attempt
-                                  WHERE attempt.job_id = job.id
-                                    AND attempt.provider_call_started_at IS NOT NULL
-                              )
-                            RETURNING job.*
-                            """
-                        ),
-                        {
-                            "graph_id": int(graph["id"]),
-                            "effect_job_id": int(effect_job_id),
-                            "final_effect_job_id": int(graph.get("final_effect_job_id") or 0),
-                        },
-                    )
-                    .mappings()
-                    .all()
+                cancelled_rows = build_external_effect_runtime_write_port().cancel_pre_provider_sqlalchemy(
+                    session,
+                    job_ids=group_ops_effect_job_ids_in_session(
+                        session,
+                        graph_id=int(graph["id"]),
+                        final_effect_job_id=int(graph.get("final_effect_job_id") or 0),
+                    ),
+                    exclude_job_id=int(effect_job_id),
+                    actor="group_ops_dependency_settlement",
+                    reason="group_ops_dependency_terminal",
                 )
                 cancelled_job_ids = enqueue_external_effect_settled_rows_in_session(
                     session,
@@ -320,52 +281,16 @@ class SQLAlchemyGroupOpsEffectGraphLifecycleMixin:
                         reason=normalized_reason,
                     )
                 )
-                cancelled_rows = (
-                    session.execute(
-                        text(
-                            """
-                            UPDATE external_effect_job job
-                            SET status = 'cancelled',
-                                cancel_requested_at = COALESCE(cancel_requested_at, CURRENT_TIMESTAMP),
-                                cancel_requested_by = CASE
-                                    WHEN cancel_requested_by = '' THEN :actor ELSE cancel_requested_by
-                                END,
-                                cancel_reason = CASE
-                                    WHEN cancel_reason = '' THEN :reason ELSE cancel_reason
-                                END,
-                                cancelled_at = COALESCE(cancelled_at, CURRENT_TIMESTAMP),
-                                completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP),
-                                row_version = row_version + 1,
-                                updated_at = CURRENT_TIMESTAMP
-                            WHERE job.id IN (
-                                SELECT dependent_effect_job_id
-                                FROM automation_group_ops_effect_dependency
-                                WHERE graph_id = :graph_id
-                                UNION
-                                SELECT prerequisite_effect_job_id
-                                FROM automation_group_ops_effect_dependency
-                                WHERE graph_id = :graph_id
-                                UNION SELECT :final_effect_job_id
-                            )
-                              AND job.status IN ('planned', 'approved', 'queued', 'failed_retryable')
-                              AND job.provider_call_started_at IS NULL
-                              AND NOT EXISTS (
-                                  SELECT 1 FROM external_effect_attempt attempt
-                                  WHERE attempt.job_id = job.id
-                                    AND attempt.provider_call_started_at IS NOT NULL
-                              )
-                            RETURNING job.*
-                            """
-                        ),
-                        {
-                            "graph_id": int(graph["id"]),
-                            "final_effect_job_id": int(graph.get("final_effect_job_id") or 0),
-                            "actor": normalized_actor,
-                            "reason": normalized_reason,
-                        },
-                    )
-                    .mappings()
-                    .all()
+                cancelled_rows = build_external_effect_runtime_write_port().cancel_pre_provider_sqlalchemy(
+                    session,
+                    job_ids=group_ops_effect_job_ids_in_session(
+                        session,
+                        graph_id=int(graph["id"]),
+                        final_effect_job_id=int(graph.get("final_effect_job_id") or 0),
+                    ),
+                    exclude_job_id=0,
+                    actor=normalized_actor,
+                    reason=normalized_reason,
                 )
                 cancelled_job_ids.extend(
                     enqueue_external_effect_settled_rows_in_session(session, cancelled_rows)
