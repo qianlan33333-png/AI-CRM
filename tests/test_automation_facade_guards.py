@@ -25,3 +25,4 @@ def test_next_background_job_modules_are_the_active_owners() -> None:
         source = (ROOT / rel_path).read_text(encoding="utf-8")
         assert "def run_" in source
         assert "wecom_ability" + "_service" not in source
+        assert "aicrm_next.automation_engine" not in source

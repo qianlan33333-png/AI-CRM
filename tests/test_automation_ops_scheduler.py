@@ -72,3 +72,15 @@ def test_automation_ops_scheduler_reports_group_ops_failure() -> None:
 
     assert summary["ok"] is False
     assert summary["errors"] == [{"scope": "group_ops_scheduler", "error": "repo unavailable"}]
+
+
+def test_automation_ops_scheduler_requires_composition_root_runner() -> None:
+    summary = run_automation_ops_scheduler(operator="pytest")
+
+    assert summary["ok"] is False
+    assert summary["errors"] == [
+        {
+            "scope": "group_ops_scheduler",
+            "error": "group_ops_runner is required for non-dry-run execution",
+        }
+    ]

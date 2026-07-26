@@ -754,10 +754,7 @@ tables:
     lifecycle: queue
     write_owner: aicrm_next.background_jobs
     write_owners:
-      - aicrm_next.ai_assist.external_campaigns_repo
-      - aicrm_next.admin_jobs.repository
-      - aicrm_next.background_jobs.broadcast_queue_worker
-      - aicrm_next.cloud_orchestrator.repository
+      - aicrm_next.background_jobs
     read_owners:
       - aicrm_next.admin_jobs.repository
       - aicrm_next.admin_read_model.repo
@@ -778,7 +775,9 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_repository_ownership_guard.py
-    notes: Background jobs owns claim, dispatching, evidence, and terminal finalization. Planning writers may insert queued rows only. Fake provider success is simulated; ambiguous post-provider outcomes stop at unknown_after_dispatch and are never lease-reclaimed.
+      - tests/test_broadcast_job_owner.py
+      - tests/test_broadcast_job_owner_postgres.py
+    notes: Background jobs owns the complete broadcast job lifecycle through one public write port. Admin approval, AI Assist, cloud planning, worker claim/finalization and external-effect settlement retain their original transactions but no longer write the fact directly. Fake provider success is simulated; ambiguous post-provider outcomes stop at unknown_after_dispatch and are never lease-reclaimed.
 
   campaigns:
     domain: campaign
@@ -802,7 +801,7 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_campaign_automation_table_boundary.py
-    notes: Active campaign business state; external token sends create broadcast_jobs directly and no longer write campaigns.
+    notes: Active campaign business state; external token sends request broadcast jobs through the canonical background-jobs write port and no longer write campaigns.
 
   campaign_segments:
     domain: campaign

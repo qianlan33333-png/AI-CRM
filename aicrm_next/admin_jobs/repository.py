@@ -9,6 +9,9 @@ from aicrm_next.platform_foundation.admin_audit import (
     AdminAuditRecord,
     build_admin_audit_port,
 )
+from aicrm_next.platform_foundation.background_jobs.broadcast_job_write_port import (
+    build_broadcast_job_write_port,
+)
 from aicrm_next.shared.runtime import production_data_ready, raw_database_url
 
 from .domain import BROADCAST_SOURCE_TYPES, BROADCAST_STATUSES
@@ -258,31 +261,11 @@ class PostgresAdminJobsRepository:
         return int((row or {}).get("total") or 0)
 
     def ack_message_batch(self, batch_id: int, *, ack_note: str, acked_by: str) -> dict[str, Any] | None:
-        return self._execute_returning(
-            """
-            UPDATE broadcast_jobs
-            SET metadata_json = metadata_json || jsonb_build_object(
-                    'message_batch_ack',
-                    jsonb_build_object(
-                        'ack_note', %s::text,
-                        'acked_by', %s::text,
-                        'acked_at', to_char(CURRENT_TIMESTAMP AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
-                    )
-                ),
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = %s
-            RETURNING id,
-                      COALESCE(NULLIF(batch_key, ''), 'broadcast:' || id::text) AS batch_key,
-                      scheduled_for AS window_start,
-                      COALESCE(sent_at, updated_at, created_at) AS window_end,
-                      'acked' AS status,
-                      COALESCE(NULLIF(target_count, 0), jsonb_array_length(target_unionids_json)) AS message_count,
-                      created_at,
-                      metadata_json #>> '{message_batch_ack,acked_at}' AS acked_at,
-                      metadata_json #>> '{message_batch_ack,ack_note}' AS ack_note,
-                      metadata_json #>> '{message_batch_ack,acked_by}' AS acked_by
-            """,
-            (ack_note, acked_by, batch_id),
+        return build_broadcast_job_write_port().ack_message_batch_via(
+            self._execute_returning,
+            batch_id=int(batch_id),
+            ack_note=ack_note,
+            acked_by=acked_by,
         )
 
     def list_deferred_jobs(self, *, status: str = "", owner_userid: str = "", external_userid: str = "", limit: int = 20) -> list[dict[str, Any]]:
@@ -474,26 +457,18 @@ class PostgresAdminJobsRepository:
         return self._one("SELECT * FROM broadcast_jobs WHERE id = %s", (job_id,))
 
     def approve_broadcast_job(self, job_id: int, *, approved_by: str) -> dict[str, Any] | None:
-        return self._execute_returning(
-            """
-            UPDATE broadcast_jobs
-            SET status = 'queued', approved_by = %s, approved_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-            WHERE id = %s AND status = 'waiting_approval'
-            RETURNING *
-            """,
-            (approved_by, job_id),
+        return build_broadcast_job_write_port().approve_via(
+            self._execute_returning,
+            job_id=int(job_id),
+            approved_by=approved_by,
         )
 
     def cancel_broadcast_job(self, job_id: int, *, cancelled_by: str, reason: str) -> dict[str, Any] | None:
-        return self._execute_returning(
-            """
-            UPDATE broadcast_jobs
-            SET status = 'cancelled', cancelled_by = %s, cancelled_at = CURRENT_TIMESTAMP,
-                cancel_reason = %s, updated_at = CURRENT_TIMESTAMP
-            WHERE id = %s AND status IN ('queued', 'waiting_approval')
-            RETURNING *
-            """,
-            (cancelled_by, reason[:1000], job_id),
+        return build_broadcast_job_write_port().cancel_via(
+            self._execute_returning,
+            job_id=int(job_id),
+            cancelled_by=cancelled_by,
+            reason=reason,
         )
 
     def get_broadcast_notification_setting(self, channel: str) -> dict[str, Any] | None:

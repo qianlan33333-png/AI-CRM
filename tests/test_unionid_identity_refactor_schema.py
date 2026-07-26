@@ -697,6 +697,9 @@ def test_broadcast_cloud_and_agent_targets_are_unionid_only() -> None:
     cleanup_source = _read("migrations/versions/0066_unionid_broadcast_target_cleanup.py")
     worker_source = _read("aicrm_next/background_jobs/broadcast_queue_worker.py")
     cloud_repo_source = _read("aicrm_next/cloud_orchestrator/repository.py")
+    broadcast_owner_source = _read(
+        "aicrm_next/platform_foundation/background_jobs/broadcast_job_write_repository.py"
+    )
     agent_repo_source = _read("aicrm_next/automation_agents/repository.py")
     agent_worker_source = _read("aicrm_next/automation_agents/worker.py")
 
@@ -721,7 +724,8 @@ def test_broadcast_cloud_and_agent_targets_are_unionid_only() -> None:
     assert "target_unionids_missing" in worker_source
     assert "identity_external_userid_missing" in worker_source
 
-    assert "target_unionids_json" in cloud_repo_source
+    assert 'target_unionids=(_text(recipient.get("unionid")),)' in cloud_repo_source
+    assert "target_unionids_json" in broadcast_owner_source
     assert "target_external_userids" not in cloud_repo_source
     assert "target_kind" in cloud_repo_source
     assert "unionid" in cloud_repo_source
@@ -739,6 +743,9 @@ def test_campaign_frequency_and_agent_outputs_are_unionid_only() -> None:
     cleanup_source = _read("migrations/versions/0067_unionid_campaign_frequency_cleanup.py")
     campaign_repo_source = _read("aicrm_next/cloud_orchestrator/repository.py")
     external_campaign_repo_source = _read("aicrm_next/ai_assist/external_campaigns_repo.py")
+    broadcast_owner_source = _read(
+        "aicrm_next/platform_foundation/background_jobs/broadcast_job_write_repository.py"
+    )
     agent_copywriting_source = _read("aicrm_next/ai_audience_ops/agent_copywriting.py")
     admin_projection_source = _read("aicrm_next/admin_read_model/projections.py")
     agent_run_repo_source = _read("aicrm_next/automation_engine/agent_run_sqlalchemy_repository.py")
@@ -758,13 +765,15 @@ def test_campaign_frequency_and_agent_outputs_are_unionid_only() -> None:
     assert "DROP COLUMN IF EXISTS external_contact_id" in cleanup_source
     assert "ix_{table}_unionid" in cleanup_source
 
-    campaign_insert = external_campaign_repo_source.split("INSERT INTO broadcast_jobs", 1)[1].split("RETURNING *", 1)[0]
+    campaign_insert = broadcast_owner_source.split("INSERT INTO broadcast_jobs", 1)[1].split("RETURNING *", 1)[0]
     assert "target_unionids_json" in campaign_insert
     assert "target_kind" in campaign_insert
     assert "target_external_userids" not in campaign_insert
     assert "external_contact_id" not in campaign_insert
+    assert "BroadcastJobCreate(" in external_campaign_repo_source
+    assert "target_unionids=tuple(" in external_campaign_repo_source
     assert "_CAMPAIGN_QUEUE_TARGET_KIND = \"unionid\"" in campaign_repo_source
-    assert "target_unionids_json" in campaign_repo_source
+    assert 'target_unionids=(_text(recipient.get("unionid")),)' in campaign_repo_source
 
     assert '"unionid": _text(member_event.get("unionid")' in agent_copywriting_source
     assert '"external_contact_id": _text(member_event' not in agent_copywriting_source

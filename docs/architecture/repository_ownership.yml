@@ -50,7 +50,6 @@ repositories:
       - wecom_external_contact_event_logs
     table_writes:
       - broadcast_job_hourly_reports
-      - broadcast_jobs
       - broadcast_queue_notification_settings
       - outbound_webhook_deliveries
   aicrm_next/admin_read_model/repo.py:
@@ -111,8 +110,7 @@ repositories:
       - user_ops_do_not_disturb_next
       - wecom_external_contact_follow_users
       - wecom_external_contact_identity_map
-    table_writes:
-      - broadcast_jobs
+    table_writes: []
     non_literal_table_reads:
       - crm_user_identity
   aicrm_next/send_targets/repo.py:
@@ -280,9 +278,14 @@ repositories:
       - cloud_broadcast_plan_recipients
       - external_effect_job
     table_writes:
-      - broadcast_jobs
       - cloud_broadcast_plan_recipient_messages
       - cloud_broadcast_plan_recipients
+  aicrm_next/platform_foundation/background_jobs/broadcast_job_write_repository.py:
+    capability_owner: aicrm_next.background_jobs
+    table_reads:
+      - broadcast_jobs
+    table_writes:
+      - broadcast_jobs
   aicrm_next/automation_engine/group_ops/repo.py:
     capability_owner: aicrm_next.automation_engine.group_ops
     table_reads: []
@@ -380,7 +383,6 @@ repositories:
       - crm_user_identity
       - customer_read_model_current
     table_writes:
-      - broadcast_jobs
       - campaign_members
       - campaign_steps
       - campaigns

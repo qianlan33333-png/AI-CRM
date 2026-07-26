@@ -6,6 +6,10 @@ from typing import Any, Protocol
 
 from aicrm_next.identity_contact.dto import ResolvePersonIdentityRequest
 from aicrm_next.identity_contact.resolver import resolve_identity_with_dbapi
+from aicrm_next.platform_foundation.background_jobs.broadcast_job_write_port import (
+    BroadcastJobCreate,
+    build_broadcast_job_write_port,
+)
 from aicrm_next.shared.postgres_connection import get_db
 
 JsonDict = dict[str, Any]
@@ -241,44 +245,31 @@ class PostgresExternalCampaignRepository:
         existing = self.get_broadcast_job_by_idempotency_key(idempotency_key)
         if existing:
             return {**existing, "status": _text(existing.get("status")) or "exists", "idempotent_existing": True}
-        row = self.db.execute(
-            """
-            INSERT INTO broadcast_jobs (
-                source_type, source_id, source_table, scheduled_for, priority, batch_key, status,
-                requires_approval, target_unionids_json, target_count, target_summary,
-                content_type, content_payload, content_summary, trace_id, created_by,
-                business_domain, idempotency_key, channel, target_kind, metadata_json
-            )
-            VALUES (
-                ?, ?, ?, ?, ?, ?, 'queued',
-                FALSE, CAST(? AS jsonb), ?, ?,
-                ?, CAST(? AS jsonb), ?, ?, ?,
-                ?, ?, ?, ?, CAST(? AS jsonb)
-            )
-            RETURNING *
-            """,
-            (
-                _text(source_type),
-                _text(source_id),
-                _text(source_table),
-                _text(scheduled_for) or _now_iso(),
-                int(priority),
-                _text(batch_key),
-                json.dumps([_text(item) for item in target_unionids if _text(item)], ensure_ascii=False),
-                len([item for item in target_unionids if _text(item)]),
-                _text(target_summary)[:1000],
-                _text(content_type) or "private_message",
-                json.dumps(content_payload or {}, ensure_ascii=False, default=str),
-                _text(content_summary)[:1000],
-                _text(trace_id)[:100],
-                _text(created_by)[:100],
-                _text(business_domain) or "ai_assistant",
-                _text(idempotency_key)[:255],
-                _text(channel) or "wecom_private",
-                _text(target_kind) or "unionid",
-                json.dumps(metadata or {}, ensure_ascii=False, default=str),
+        row = build_broadcast_job_write_port().create_dbapi(
+            self.db,
+            BroadcastJobCreate(
+                source_type=_text(source_type),
+                source_id=_text(source_id),
+                source_table=_text(source_table),
+                scheduled_for=_text(scheduled_for) or _now_iso(),
+                priority=int(priority),
+                batch_key=_text(batch_key),
+                idempotency_key=_text(idempotency_key),
+                target_unionids=tuple(
+                    _text(item) for item in target_unionids if _text(item)
+                ),
+                target_summary=_text(target_summary),
+                content_type=_text(content_type) or "private_message",
+                content_payload=dict(content_payload or {}),
+                content_summary=_text(content_summary),
+                trace_id=_text(trace_id),
+                created_by=_text(created_by),
+                business_domain=_text(business_domain) or "ai_assistant",
+                channel=_text(channel) or "wecom_private",
+                target_kind=_text(target_kind) or "unionid",
+                metadata=dict(metadata or {}),
             ),
-        ).fetchone()
+        )
         return self._decode_broadcast_job(row) or {}
 
     def _decode_campaign(self, row: Any) -> JsonDict | None:

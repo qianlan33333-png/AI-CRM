@@ -12,6 +12,9 @@ from aicrm_next.platform_foundation.external_effects import (
     WECOM_MESSAGE_PRIVATE_SEND,
 )
 from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
+from aicrm_next.platform_foundation.background_jobs.broadcast_job_write_port import (
+    build_broadcast_job_write_port,
+)
 
 from aicrm_next.platform_foundation.external_effects.execution_gates import (
     WECOM_EXECUTION_DISABLED_CODE,
@@ -256,65 +259,25 @@ class PostgresBroadcastQueueRepository:
 
     def claim_due_jobs(self, *, limit: int, now: datetime, claim_token: str, lease_seconds: int) -> list[dict[str, Any]]:
         with connect() as conn:
-            rows = conn.execute(
-                """
-                WITH due AS (
-                    SELECT id
-                    FROM broadcast_jobs
-                    WHERE scheduled_for <= %s
-                      AND hold_reason = ''
-                      AND attempt_count < max_attempts
-                      AND (
-                        status = 'queued'
-                        OR (
-                            status = 'claimed'
-                            AND lease_expires_at IS NOT NULL
-                            AND lease_expires_at <= %s
-                        )
-                        OR (
-                            status = 'failed_retryable'
-                            AND (next_retry_at IS NULL OR next_retry_at <= %s)
-                        )
-                      )
-                    ORDER BY priority ASC, scheduled_for ASC, id ASC
-                    FOR UPDATE SKIP LOCKED
-                    LIMIT %s
-                )
-                UPDATE broadcast_jobs bj
-                SET status = 'claimed',
-                    claimed_at = %s,
-                    claim_token = %s,
-                    lease_expires_at = %s,
-                    attempt_count = attempt_count + 1,
-                    updated_at = CURRENT_TIMESTAMP
-                FROM due
-                WHERE bj.id = due.id
-                RETURNING bj.*
-                """,
-                (now, now, now, int(limit), now, claim_token, now + timedelta(seconds=int(lease_seconds))),
-            ).fetchall()
-            return [dict(row) for row in rows]
+            return build_broadcast_job_write_port().claim_due_dbapi(
+                conn,
+                limit=int(limit),
+                now=now,
+                claim_token=claim_token,
+                lease_expires_at=now + timedelta(seconds=int(lease_seconds)),
+            )
 
     def begin_dispatch(self, job_id: int, *, claim_token: str, now: datetime) -> dict[str, Any] | None:
         token = _text(claim_token)
         if not token:
             raise ValueError("claim_token is required")
         with connect() as conn:
-            row = conn.execute(
-                """
-                UPDATE broadcast_jobs
-                SET status = 'dispatching',
-                    dispatch_started_at = %s,
-                    reconciliation_required = FALSE,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = %s
-                  AND hold_reason = ''
-                  AND status = 'claimed'
-                  AND claim_token = %s
-                RETURNING *
-                """,
-                (now, int(job_id), token),
-            ).fetchone()
+            row = build_broadcast_job_write_port().begin_dispatch_dbapi(
+                conn,
+                job_id=int(job_id),
+                claim_token=token,
+                now=now,
+            )
             if not row:
                 return None
             conn.execute(
@@ -356,7 +319,7 @@ class PostgresBroadcastQueueRepository:
                 """,
                 (int(job_id), token[:200]),
             )
-            return dict(row)
+            return row
 
     def finalize_dispatch(self, job_id: int, *, claim_token: str, outcome: dict[str, Any]) -> dict[str, Any] | None:
         token = _text(claim_token)
@@ -485,54 +448,23 @@ class PostgresBroadcastQueueRepository:
                 "provider_result_received": provider_result_received,
                 "wecom_task_id_present": bool(wecom_task_id),
             }
-            finalized = conn.execute(
-                """
-                UPDATE broadcast_jobs
-                SET status = %s,
-                    outbound_task_id = %s,
-                    sent_count = %s,
-                    failed_count = %s,
-                    failure_type = %s,
-                    last_error = %s,
-                    side_effect_executed = %s,
-                    provider_result_received = %s,
-                    result_summary_json = CAST(%s AS jsonb),
-                    reconciliation_required = %s,
-                    external_effect_job_id = COALESCE(external_effect_job_id, %s),
-                    execution_owner = CASE WHEN CAST(%s AS BIGINT) IS NULL THEN execution_owner ELSE 'external_effect_job' END,
-                    claim_token = '',
-                    lease_expires_at = NULL
-                    ,next_retry_at = CASE WHEN %s = 'failed_retryable'
-                        THEN CURRENT_TIMESTAMP + (%s * INTERVAL '1 second') ELSE NULL END
-                    ,sent_at = CASE WHEN %s = 'sent' THEN CURRENT_TIMESTAMP ELSE NULL END
-                    ,completed_at = CASE WHEN %s IN ('failed_retryable', 'delegated') THEN NULL ELSE CURRENT_TIMESTAMP END
-                    ,updated_at = CURRENT_TIMESTAMP
-                WHERE id = %s
-                  AND status = 'dispatching'
-                  AND claim_token = %s
-                RETURNING *
-                """,
-                (
-                    final_status,
-                    outbound_task_id,
-                    int_value(outcome.get("sent_count")),
-                    int_value(outcome.get("failed_count")),
-                    failure_type,
-                    error_text,
-                    side_effect_executed,
-                    provider_result_received,
-                    _json_dumps(result_summary),
-                    reconciliation_required,
-                    external_effect_job_id,
-                    external_effect_job_id,
-                    final_status,
-                    retry_delay_seconds,
-                    final_status,
-                    final_status,
-                    int(job_id),
-                    token,
-                ),
-            ).fetchone()
+            finalized = build_broadcast_job_write_port().finalize_dispatch_dbapi(
+                conn,
+                job_id=int(job_id),
+                claim_token=token,
+                final_status=final_status,
+                outbound_task_id=outbound_task_id,
+                sent_count=int_value(outcome.get("sent_count")),
+                failed_count=int_value(outcome.get("failed_count")),
+                failure_type=failure_type,
+                error_text=error_text,
+                side_effect_executed=side_effect_executed,
+                provider_result_received=provider_result_received,
+                result_summary_json=_json_dumps(result_summary),
+                reconciliation_required=reconciliation_required,
+                external_effect_job_id=external_effect_job_id,
+                retry_delay_seconds=retry_delay_seconds,
+            )
             if not finalized:
                 raise RuntimeError("broadcast finalizer lost claim ownership")
             conn.execute(
@@ -544,7 +476,7 @@ class PostgresBroadcastQueueRepository:
                 (int(job_id), final_status, _json_dumps(result_summary), token[:200]),
             )
             self._fault("before_commit")
-            return dict(finalized)
+            return finalized
 
     def mark_unknown_after_dispatch(
         self,
@@ -596,30 +528,15 @@ class PostgresBroadcastQueueRepository:
                 "side_effect_executed": bool(side_effect_executed),
                 "provider_result_received": bool(provider_result_received),
             }
-            updated = conn.execute(
-                """
-                UPDATE broadcast_jobs
-                SET status = 'unknown_after_dispatch',
-                    failure_type = 'post_provider_persistence_unknown',
-                    last_error = %s,
-                    side_effect_executed = %s,
-                    provider_result_received = %s,
-                    result_summary_json = CAST(%s AS jsonb),
-                    reconciliation_required = TRUE,
-                    claim_token = '', lease_expires_at = NULL, next_retry_at = NULL,
-                    completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-                WHERE id = %s AND status = 'dispatching' AND claim_token = %s
-                RETURNING *
-                """,
-                (
-                    error_text,
-                    bool(side_effect_executed),
-                    bool(provider_result_received),
-                    _json_dumps(summary),
-                    int(job_id),
-                    token,
-                ),
-            ).fetchone()
+            updated = build_broadcast_job_write_port().mark_unknown_after_dispatch_dbapi(
+                conn,
+                job_id=int(job_id),
+                claim_token=token,
+                error_text=error_text,
+                side_effect_executed=bool(side_effect_executed),
+                provider_result_received=bool(provider_result_received),
+                result_summary_json=_json_dumps(summary),
+            )
             conn.execute(
                 """
                 INSERT INTO broadcast_job_events (
@@ -629,7 +546,7 @@ class PostgresBroadcastQueueRepository:
                 """,
                 (int(job_id), _json_dumps(summary), token[:200]),
             )
-            return dict(updated) if updated else None
+            return updated
 
 
 def _summary(*, limit: int, dry_run: bool) -> dict[str, Any]:
@@ -947,34 +864,13 @@ def _extract_private_content_package(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def _resolve_private_attachments(content_package: dict[str, Any]) -> list[dict[str, Any]]:
-    if not any(
-        _json_list(content_package.get(key)) for key in ("image_library_ids", "miniprogram_library_ids", "attachment_library_ids", "group_invite_library_ids")
-    ):
-        return []
-    from aicrm_next.automation_engine.group_ops.integration_gateway import resolve_group_ops_content_package_materials
-
-    attachments, image_media_ids = resolve_group_ops_content_package_materials(content_package)
-    image_attachments = [{"msgtype": "image", "image": {"media_id": media_id}} for media_id in image_media_ids if _text(media_id)]
-    return list(attachments or []) + image_attachments
+    del content_package
+    raise RuntimeError("retired_direct_broadcast_material_resolution_use_external_effect")
 
 
 def _normalize_private_attachments_for_wecom(attachments: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    if not attachments:
-        return []
-    from aicrm_next.automation_engine.group_ops.message_content import normalize_miniprogram_attachment_payload
-
-    normalized: list[dict[str, Any]] = []
-    for item in attachments:
-        if not isinstance(item, dict):
-            normalized.append(item)
-            continue
-        msgtype = _text(item.get("msgtype")).lower()
-        if msgtype != "miniprogram":
-            normalized.append(dict(item))
-            continue
-        payload = item.get("miniprogram") if isinstance(item.get("miniprogram"), dict) else {}
-        normalized.append({"msgtype": "miniprogram", "miniprogram": normalize_miniprogram_attachment_payload(payload)})
-    return normalized
+    del attachments
+    raise RuntimeError("retired_direct_broadcast_material_normalization_use_external_effect")
 
 
 def _dispatch_wecom_private(job: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:

@@ -5,6 +5,9 @@ import json
 from sqlalchemy import text
 
 from aicrm_next.platform_foundation.external_effects.continuations import ExternalEffectContinuation
+from aicrm_next.platform_foundation.background_jobs.broadcast_job_write_port import (
+    build_broadcast_job_write_port,
+)
 from aicrm_next.shared.db_session import get_session_factory
 from aicrm_next.shared.runtime import fixture_mode
 
@@ -84,33 +87,23 @@ def _project(job, _dispatch_result):
             "aggregate_status": aggregate_status,
             "reconciliation_required": reconciliation_required,
         }
-        session.execute(
-            text(
-                """
-                UPDATE broadcast_jobs
-                SET status = :status, sent_count = :sent_count, failed_count = :failed_count,
-                    side_effect_executed = :side_effect_executed,
-                    provider_result_received = :provider_result_received,
-                    reconciliation_required = :reconciliation_required,
-                    result_summary_json = CAST(:result_summary AS jsonb),
-                    last_error = :last_error,
-                    sent_at = CASE WHEN :status = 'sent' THEN COALESCE(sent_at, CURRENT_TIMESTAMP) ELSE sent_at END,
-                    completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP),
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE id = :job_id AND execution_owner = 'external_effect_job'
-                """
+        build_broadcast_job_write_port().settle_from_external_effect_sqlalchemy(
+            session,
+            job_id=broadcast_job_id,
+            status=aggregate_status,
+            sent_count=succeeded_count,
+            failed_count=failed_count,
+            side_effect_executed=side_effect_executed,
+            provider_result_received=provider_result_received,
+            reconciliation_required=reconciliation_required,
+            result_summary_json=json.dumps(
+                result_summary,
+                ensure_ascii=False,
+                separators=(",", ":"),
             ),
-            {
-                "job_id": broadcast_job_id,
-                "status": aggregate_status,
-                "sent_count": succeeded_count,
-                "failed_count": failed_count,
-                "side_effect_executed": side_effect_executed,
-                "provider_result_received": provider_result_received,
-                "reconciliation_required": reconciliation_required,
-                "result_summary": json.dumps(result_summary, ensure_ascii=False, separators=(",", ":")),
-                "last_error": "" if aggregate_status == "sent" else f"external_effect_{aggregate_status}",
-            },
+            last_error=(
+                "" if aggregate_status == "sent" else f"external_effect_{aggregate_status}"
+            ),
         )
         session.execute(
             text(

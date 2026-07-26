@@ -63,7 +63,6 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
     ]
     assert repositories["aicrm_next/admin_jobs/repository.py"]["table_writes"] == [
         "broadcast_job_hourly_reports",
-        "broadcast_jobs",
         "broadcast_queue_notification_settings",
         "outbound_webhook_deliveries",
     ]
@@ -101,9 +100,7 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
     ]
     assert "aicrm_next.external_push.repo" in manifest["tables"]["domain_event_outbox"]["read_owners"]
     assert "aicrm_next.external_push.repo" in manifest["tables"]["external_push_delivery"]["read_owners"]
-    assert repositories["aicrm_next/ai_assist/external_campaigns_repo.py"]["table_writes"] == [
-        "broadcast_jobs",
-    ]
+    assert repositories["aicrm_next/ai_assist/external_campaigns_repo.py"]["table_writes"] == []
     assert repositories["aicrm_next/ai_assist/external_campaigns_repo.py"]["table_reads"] == [
         "broadcast_jobs",
         "campaign_members",
@@ -198,6 +195,18 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
     ]["table_writes"]
     assert "external_effect_job" not in repositories[
         "aicrm_next/channel_entry/welcome_media_effects_repository.py"
+    ]["table_writes"]
+    assert manifest["tables"]["broadcast_jobs"]["write_owner"] == (
+        "aicrm_next.background_jobs"
+    )
+    assert manifest["tables"]["broadcast_jobs"]["write_owners"] == [
+        "aicrm_next.background_jobs"
+    ]
+    assert repositories[
+        "aicrm_next/platform_foundation/background_jobs/broadcast_job_write_repository.py"
+    ]["table_writes"] == ["broadcast_jobs"]
+    assert "broadcast_jobs" not in repositories[
+        "aicrm_next/cloud_orchestrator/repository.py"
     ]["table_writes"]
     assert manifest["tables"]["contact_tags"]["write_owners"] == ["aicrm_next.customer_tags"]
     for path in (

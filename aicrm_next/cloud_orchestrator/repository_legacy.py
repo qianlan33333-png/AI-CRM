@@ -2,6 +2,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from aicrm_next.platform_foundation.background_jobs.broadcast_job_write_port import (
+    BroadcastJobCreate,
+    build_broadcast_job_write_port,
+)
+
 from .repository import (
     _CAMPAIGN_OPEN_JOB_STATUSES,
     _CAMPAIGN_QUEUE_CONTENT_TYPE,
@@ -12,9 +17,7 @@ from .repository import (
     _LEGACY_GROUP_KEY_SQL,
     _LEGACY_GROUP_KEY_UPDATE_SQL,
     _LEGACY_GROUP_LABEL_SQL,
-    _broadcast_job_columns,
     _campaign_job_source_id,
-    _campaign_private_broadcast_job_extra_fields,
     _campaign_private_broadcast_payload,
     _content_payload_for_package,
     _json,
@@ -193,10 +196,6 @@ class CloudLegacyPostgresRepositoryMixin:
                         "campaign_segment_id": int(row["campaign_segment_id"]),
                     }
                 )
-        broadcast_columns = _broadcast_job_columns(conn)
-        extra_columns, extra_placeholders, extra_params = _campaign_private_broadcast_job_extra_fields(broadcast_columns)
-        extra_columns_sql = (", " + ", ".join(extra_columns)) if extra_columns else ""
-        extra_values_sql = (", " + ", ".join(extra_placeholders)) if extra_placeholders else ""
         enqueued = 0
         for source_id, group in groups.items():
             members = group["members"]
@@ -221,41 +220,35 @@ class CloudLegacyPostgresRepositoryMixin:
             target_unionids, normalized_members = _unionid_targets_from_external_members(conn, members)
             if not target_unionids:
                 continue
-            inserted = conn.execute(
-                """
-                INSERT INTO broadcast_jobs (
-                    source_type, source_id, source_table, scheduled_for, priority, batch_key,
-                    idempotency_key""" + extra_columns_sql + """, status, requires_approval,
-                    target_unionids_json, target_count, target_summary,
-                    content_type, content_payload, content_summary, trace_id, created_by
-                ) VALUES (
-                    %s, %s, %s, %s::timestamptz, 100, %s,
-                    %s""" + extra_values_sql + """, 'queued', FALSE,
-                    %s::jsonb, %s, %s,
-                    %s, %s::jsonb, %s, %s, %s
-                )
-                ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL AND idempotency_key <> ''
-                DO NOTHING
-                RETURNING id
-                """,
-                (
-                    _CAMPAIGN_QUEUE_SOURCE_TYPE,
-                    source_id,
-                    _CAMPAIGN_QUEUE_SOURCE_TABLE,
-                    group["scheduled_for"],
-                    normalized_plan_id,
-                    f"campaign_member_step:{source_id}",
-                    *extra_params,
-                    _json_dump(target_unionids),
-                    len(target_unionids),
-                    f"campaign={campaign.get('campaign_code')} step={step.get('step_index')}",
-                    _CAMPAIGN_QUEUE_CONTENT_TYPE,
-                    _json_dump(_campaign_private_broadcast_payload(campaign=campaign, step=step, members=normalized_members)),
-                    _text(step.get("content_text"))[:200],
-                    _text(campaign.get("trace_id")),
-                    _text(operator) or "crm_console",
+            inserted = build_broadcast_job_write_port().create_dbapi(
+                conn,
+                BroadcastJobCreate(
+                    source_type=_CAMPAIGN_QUEUE_SOURCE_TYPE,
+                    source_id=source_id,
+                    source_table=_CAMPAIGN_QUEUE_SOURCE_TABLE,
+                    scheduled_for=group["scheduled_for"],
+                    priority=100,
+                    batch_key=normalized_plan_id,
+                    idempotency_key=f"campaign_member_step:{source_id}",
+                    target_unionids=tuple(target_unionids),
+                    target_summary=(
+                        f"campaign={campaign.get('campaign_code')} "
+                        f"step={step.get('step_index')}"
+                    ),
+                    content_type=_CAMPAIGN_QUEUE_CONTENT_TYPE,
+                    content_payload=_campaign_private_broadcast_payload(
+                        campaign=campaign,
+                        step=step,
+                        members=normalized_members,
+                    ),
+                    content_summary=_text(step.get("content_text"))[:200],
+                    trace_id=_text(campaign.get("trace_id")),
+                    created_by=_text(operator) or "crm_console",
+                    business_domain="automation_ops",
+                    channel="wecom_private",
+                    target_kind="unionid",
                 ),
-            ).fetchone()
+            )
             if inserted:
                 enqueued += 1
         after = conn.execute(
@@ -327,34 +320,15 @@ class CloudLegacyPostgresRepositoryMixin:
             """,
             (campaign_ids,),
         ).fetchall()
-        cancelled_jobs = conn.execute(
-            """
-            UPDATE broadcast_jobs bj
-            SET status = 'cancelled',
-                cancelled_by = %s,
-                cancelled_at = CURRENT_TIMESTAMP,
-                cancel_reason = %s,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE bj.source_type = %s
-              AND COALESCE(bj.source_table, %s) = %s
-              AND bj.status = ANY(%s)
-              AND EXISTS (
-                  SELECT 1
-                  FROM unnest(%s::int[]) AS campaign_id
-                  WHERE bj.source_id LIKE (campaign_id::text || ':%%')
-              )
-            RETURNING bj.id
-            """,
-            (
-                _text(operator) or "crm_console",
-                reason_text,
-                _CAMPAIGN_QUEUE_SOURCE_TYPE,
-                _CAMPAIGN_QUEUE_SOURCE_TABLE,
-                _CAMPAIGN_QUEUE_SOURCE_TABLE,
-                _CAMPAIGN_OPEN_JOB_STATUSES,
-                campaign_ids,
-            ),
-        ).fetchall()
+        cancelled_jobs = build_broadcast_job_write_port().cancel_campaign_jobs_dbapi(
+            conn,
+            campaign_ids=campaign_ids,
+            actor=_text(operator) or "crm_console",
+            reason=reason_text,
+            source_type=_CAMPAIGN_QUEUE_SOURCE_TYPE,
+            source_table=_CAMPAIGN_QUEUE_SOURCE_TABLE,
+            open_statuses=_CAMPAIGN_OPEN_JOB_STATUSES,
+        )
         self._audit(
             conn,
             operator=operator,

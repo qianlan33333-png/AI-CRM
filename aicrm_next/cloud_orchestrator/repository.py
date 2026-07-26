@@ -9,6 +9,10 @@ from typing import Any, Protocol
 
 from aicrm_next.identity_contact.dto import ResolvePersonIdentityRequest
 from aicrm_next.identity_contact.resolver import resolve_external_userid_with_dbapi, resolve_identity_with_dbapi, resolved_unionid
+from aicrm_next.platform_foundation.background_jobs.broadcast_job_write_port import (
+    BroadcastJobCreate,
+    build_broadcast_job_write_port,
+)
 from aicrm_next.platform_foundation.admin_audit import (
     AdminAuditRecord,
     build_admin_audit_port,
@@ -824,44 +828,38 @@ class PostgresCloudPlanRepository(CloudLegacyPostgresRepositoryMixin):
                         "plan_idempotency_key": planner_idempotency_key,
                         "duplicate_policy": "reuse_recipient_idempotency_key",
                     }
-                    inserted = conn.execute(
-                        """
-                        INSERT INTO broadcast_jobs (
-                            source_type, source_id, source_table, scheduled_for, priority, batch_key,
-                            business_domain, idempotency_key, channel, target_kind, retry_policy_json, metadata_json,
-                            status, requires_approval, target_unionids_json, target_count, target_summary,
-                            content_type, content_payload, content_summary, trace_id, created_by, execution_id
-                        ) VALUES (
-                            'cloud_plan', %s, 'cloud_broadcast_plan_recipients', CURRENT_TIMESTAMP, 100, %s,
-                            'ai_assistant', %s, 'wecom_private', 'unionid', '{}'::jsonb, %s::jsonb,
-                            'queued', FALSE, %s::jsonb, 1, %s,
-                            'cloud_plan', %s::jsonb, %s, %s, %s, %s
-                        )
-                        ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL AND idempotency_key <> ''
-                        DO NOTHING
-                        RETURNING id
-                        """,
-                        (
-                            f"{normalized_plan_id}:{recipient_id}",
-                            f"cloud_plan_recipient:{normalized_plan_id}",
-                            recipient_idempotency_key,
-                            _json_dump(metadata),
-                            _json_dump([_text(recipient.get("unionid"))]),
-                            _text(recipient.get("display_name")) or _text(recipient.get("unionid")),
-                            _json_dump(
-                                {
-                                    "plan_id": normalized_plan_id,
-                                    "recipient_id": recipient_id,
-                                    "unionid": _text(recipient.get("unionid")),
-                                    "message_mode": "recipient_messages",
-                                }
+                    inserted = build_broadcast_job_write_port().create_dbapi(
+                        conn,
+                        BroadcastJobCreate(
+                            source_type="cloud_plan",
+                            source_id=f"{normalized_plan_id}:{recipient_id}",
+                            source_table="cloud_broadcast_plan_recipients",
+                            scheduled_for=None,
+                            priority=100,
+                            batch_key=f"cloud_plan_recipient:{normalized_plan_id}",
+                            idempotency_key=recipient_idempotency_key,
+                            target_unionids=(_text(recipient.get("unionid")),),
+                            target_summary=(
+                                _text(recipient.get("display_name"))
+                                or _text(recipient.get("unionid"))
                             ),
-                            f"{_text(plan_dict.get('display_name')) or _text(plan_dict.get('intent')) or normalized_plan_id} · {_text(recipient.get('display_name')) or _text(recipient.get('unionid'))}",
-                            _text(plan_dict.get("trace_id")) or normalized_plan_id,
-                            _text(operator) or "internal_event_worker",
-                            execution_id,
+                            content_type="cloud_plan",
+                            content_payload={
+                                "plan_id": normalized_plan_id,
+                                "recipient_id": recipient_id,
+                                "unionid": _text(recipient.get("unionid")),
+                                "message_mode": "recipient_messages",
+                            },
+                            content_summary=f"{_text(plan_dict.get('display_name')) or _text(plan_dict.get('intent')) or normalized_plan_id} · {_text(recipient.get('display_name')) or _text(recipient.get('unionid'))}",
+                            trace_id=_text(plan_dict.get("trace_id")) or normalized_plan_id,
+                            created_by=_text(operator) or "internal_event_worker",
+                            business_domain="ai_assistant",
+                            channel="wecom_private",
+                            target_kind="unionid",
+                            metadata=metadata,
+                            execution_id=execution_id,
                         ),
-                    ).fetchone()
+                    )
                     if inserted:
                         job_id = int(inserted["id"])
                         created_count += 1
@@ -874,13 +872,10 @@ class PostgresCloudPlanRepository(CloudLegacyPostgresRepositoryMixin):
                         if job_id:
                             reused_count += 1
                 if job_id:
-                    conn.execute(
-                        """
-                        UPDATE broadcast_jobs
-                        SET execution_id = %s, updated_at = CURRENT_TIMESTAMP
-                        WHERE id = %s AND COALESCE(execution_id, '') = ''
-                        """,
-                        (execution_id, job_id),
+                    build_broadcast_job_write_port().set_execution_id_dbapi(
+                        conn,
+                        job_id=job_id,
+                        execution_id=execution_id,
                     )
                     job_ids.append(job_id)
                     conn.execute(
@@ -1132,42 +1127,36 @@ class PostgresCloudPlanRepository(CloudLegacyPostgresRepositoryMixin):
             existing = conn.execute("SELECT id FROM broadcast_jobs WHERE idempotency_key = %s ORDER BY id DESC LIMIT 1", (idempotency_key,)).fetchone()
             job_id = int(existing["id"]) if existing else 0
             if not job_id:
-                inserted = conn.execute(
-                    """
-                    INSERT INTO broadcast_jobs (
-                        source_type, source_id, source_table, scheduled_for, priority, batch_key,
-                        business_domain, idempotency_key, channel, target_kind, retry_policy_json, metadata_json,
-                        status, requires_approval, target_unionids_json, target_count, target_summary,
-                        content_type, content_payload, content_summary, trace_id, created_by
-                    ) VALUES (
-                        'cloud_plan', %s, 'cloud_broadcast_plan_recipients', CURRENT_TIMESTAMP, 100, %s,
-                        'ai_assistant', %s, 'wecom_private', 'unionid', '{}'::jsonb, '{}'::jsonb,
-                        'queued', FALSE, %s::jsonb, 1, %s,
-                        'cloud_plan', %s::jsonb, %s, %s, %s
-                    )
-                    ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL AND idempotency_key <> ''
-                    DO NOTHING
-                    RETURNING id
-                    """,
-                    (
-                        f"{normalized_plan_id}:{int(recipient_id)}",
-                        f"cloud_plan_recipient:{normalized_plan_id}",
-                        idempotency_key,
-                        _json_dump([_text(recipient.get("unionid"))]),
-                        _text(recipient.get("display_name")) or _text(recipient.get("unionid")),
-                        _json_dump(
-                            {
-                                "plan_id": normalized_plan_id,
-                                "recipient_id": int(recipient_id),
-                                "unionid": _text(recipient.get("unionid")),
-                                "message_mode": "recipient_messages",
-                            }
+                inserted = build_broadcast_job_write_port().create_dbapi(
+                    conn,
+                    BroadcastJobCreate(
+                        source_type="cloud_plan",
+                        source_id=f"{normalized_plan_id}:{int(recipient_id)}",
+                        source_table="cloud_broadcast_plan_recipients",
+                        scheduled_for=None,
+                        priority=100,
+                        batch_key=f"cloud_plan_recipient:{normalized_plan_id}",
+                        idempotency_key=idempotency_key,
+                        target_unionids=(_text(recipient.get("unionid")),),
+                        target_summary=(
+                            _text(recipient.get("display_name"))
+                            or _text(recipient.get("unionid"))
                         ),
-                        f"{_text(plan.get('display_name')) or _text(plan.get('intent')) or normalized_plan_id} · {_text(recipient.get('display_name')) or _text(recipient.get('unionid'))}",
-                        _text(plan.get("trace_id")),
-                        _text(operator) or "crm_console",
+                        content_type="cloud_plan",
+                        content_payload={
+                            "plan_id": normalized_plan_id,
+                            "recipient_id": int(recipient_id),
+                            "unionid": _text(recipient.get("unionid")),
+                            "message_mode": "recipient_messages",
+                        },
+                        content_summary=f"{_text(plan.get('display_name')) or _text(plan.get('intent')) or normalized_plan_id} · {_text(recipient.get('display_name')) or _text(recipient.get('unionid'))}",
+                        trace_id=_text(plan.get("trace_id")),
+                        created_by=_text(operator) or "crm_console",
+                        business_domain="ai_assistant",
+                        channel="wecom_private",
+                        target_kind="unionid",
                     ),
-                ).fetchone()
+                )
                 if inserted:
                     job_id = int(inserted["id"])
                 else:

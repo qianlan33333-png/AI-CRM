@@ -5,6 +5,10 @@ from typing import Any, Callable
 
 from aicrm_next.shared.runtime_settings import managed_runtime_setting
 
+
+GroupOpsRunner = Callable[..., dict[str, Any]]
+
+
 def _utc(value: datetime | None = None) -> datetime:
     current = value or datetime.now(timezone.utc)
     if current.tzinfo is None:
@@ -19,9 +23,8 @@ def _skipped(component: str, reason: str) -> dict[str, str]:
 def _run_group_ops(*, now: datetime, operator: str, dry_run: bool) -> dict[str, Any]:
     if dry_run:
         return _skipped("group_ops_scheduler", "dry_run")
-    from aicrm_next.automation_engine.group_ops.scheduler import run_group_ops_due_scheduler
-
-    return {"component": "group_ops_scheduler", "status": "ok", **run_group_ops_due_scheduler(now=now, operator=operator)}
+    del now, operator
+    raise RuntimeError("group_ops_runner is required for non-dry-run execution")
 
 
 def run_automation_ops_scheduler(
@@ -29,7 +32,7 @@ def run_automation_ops_scheduler(
     dry_run: bool = False,
     now: datetime | None = None,
     operator: str | None = None,
-    group_ops_runner: Callable[..., dict[str, Any]] | None = None,
+    group_ops_runner: GroupOpsRunner | None = None,
     media_refresh_runner: Callable[..., dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     scanned_at = _utc(now)
