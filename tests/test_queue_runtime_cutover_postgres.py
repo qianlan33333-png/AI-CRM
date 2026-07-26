@@ -1697,6 +1697,21 @@ def test_invariant_checker_reports_missing_active_generation_heartbeats() -> Non
         actor="pytest",
         reason="heartbeat invariant test",
     )
+    heartbeat_repository = ExecutionRuntimeRepository(_database_url())
+    for service_name, queue_kind in (
+        ("aicrm-internal_event-runtime", "internal_event"),
+        ("aicrm-internal_outbox-runtime", "internal_outbox"),
+        ("aicrm-webhook_inbox-runtime", "webhook_inbox"),
+        ("aicrm-external_effect-runtime", "external_effect"),
+    ):
+        heartbeat_repository.heartbeat_worker(
+            service_name=service_name,
+            worker_id=f"observer:{queue_kind}",
+            queue_kind=queue_kind,
+            generation=77,
+            rollout_mode="standby",
+            listener_connected=True,
+        )
 
     report = QueueRuntimeInvariantChecker(_database_url()).check()
 

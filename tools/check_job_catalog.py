@@ -17,6 +17,16 @@ from aicrm_next.platform_foundation.background_jobs.catalog import JOB_SPECS, va
 
 DEFAULT_ROLE_CATALOG = ROOT / "deploy" / "runtime_role_catalog.json"
 DEFAULT_RUNTIME_UNITS = ROOT / "deploy" / "production_runtime_units.json"
+INTERNAL_WORKER_OBSERVER = "aicrm-internal-worker-observer.service"
+INTERNAL_WORKER_PREDECESSORS = {
+    "aicrm-internal-queue-runtime.service",
+    "aicrm-inbox-queue-runtime.service",
+}
+INTERNAL_WORKER_HEARTBEATS = {
+    "aicrm-internal_event-runtime",
+    "aicrm-internal_outbox-runtime",
+    "aicrm-webhook_inbox-runtime",
+}
 
 
 def validate_job_catalog_scheduler_manifest(
@@ -84,9 +94,59 @@ def validate_job_catalog_scheduler_manifest(
     return errors
 
 
+def validate_internal_worker_consolidation_manifest(
+    path: Path = DEFAULT_RUNTIME_UNITS,
+) -> list[str]:
+    errors: list[str] = []
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    consolidation = dict(raw.get("internal_worker_consolidation") or {})
+    active_services = {
+        str(item.get("service") or ""): dict(item)
+        for item in raw.get("active_services") or []
+    }
+    if consolidation.get("activation_mode") != "observe":
+        errors.append("internal_worker consolidation must begin in observe mode")
+    if consolidation.get("runtime_role") != "internal_worker":
+        errors.append("internal_worker consolidation must bind the stable internal_worker role")
+    if consolidation.get("observer_service") != INTERNAL_WORKER_OBSERVER:
+        errors.append("internal_worker consolidation must declare the reviewed observer service")
+    observer = active_services.get(INTERNAL_WORKER_OBSERVER)
+    if not observer or observer.get("stop_for_migration") is not True:
+        errors.append("internal_worker observer must be an active migration-safe service")
+    if set(consolidation.get("predecessor_services") or []) != INTERNAL_WORKER_PREDECESSORS:
+        errors.append("internal_worker observer must preserve both authoritative predecessor services")
+    if not INTERNAL_WORKER_PREDECESSORS.issubset(active_services):
+        errors.append("internal_worker predecessors must remain active during observer parity")
+    if set(consolidation.get("heartbeat_service_names") or []) != INTERNAL_WORKER_HEARTBEATS:
+        errors.append("internal_worker observer must declare all three heartbeat contracts")
+    if consolidation.get("worker_id_namespace") != ":role:internal_worker:":
+        errors.append("internal_worker observer must use the isolated role worker-id namespace")
+    for key in ("requires_successor_parity", "legacy_units_remain_authoritative"):
+        if consolidation.get(key) is not True:
+            errors.append(f"internal_worker observer must keep {key}=true")
+    if consolidation.get("real_external_calls_allowed") is not False:
+        errors.append("internal_worker observer must forbid real external calls")
+    observer_path = ROOT / "deploy" / INTERNAL_WORKER_OBSERVER
+    if not observer_path.exists():
+        errors.append("internal_worker observer service file is missing")
+        return errors
+    body = observer_path.read_text(encoding="utf-8")
+    for token in (
+        "scripts/run_execution_runtime.py --role internal_worker --standby",
+        "EnvironmentFile=-/home/ubuntu/.aicrm-queue-runtime-generation.env",
+        "Restart=always",
+    ):
+        if token not in body:
+            errors.append(f"internal_worker observer is missing fail-closed token: {token}")
+    if "--execute" in body:
+        errors.append("internal_worker observer must never enable execution mode")
+    return errors
+
+
 def validate_runtime_role_catalog(path: Path = DEFAULT_ROLE_CATALOG) -> list[str]:
     errors = list(validate_job_catalog())
     errors.extend(validate_job_catalog_scheduler_manifest())
+    errors.extend(validate_internal_worker_consolidation_manifest())
     raw = json.loads(path.read_text(encoding="utf-8"))
     roles = list(raw.get("roles") or [])
     role_names = [str(item.get("role") or "") for item in roles]
@@ -102,6 +162,16 @@ def validate_runtime_role_catalog(path: Path = DEFAULT_ROLE_CATALOG) -> list[str
         errors.append("candidate runtime roles must not activate units before successor parity")
     if cutover.get("requires_successor_parity") is not True:
         errors.append("runtime cutover must require successor parity")
+    if cutover.get("observer_unit_active") is not True:
+        errors.append("runtime cutover must keep the reviewed observer unit active")
+    internal_worker = next(
+        (item for item in roles if str(item.get("role") or "") == "internal_worker"),
+        {},
+    )
+    if internal_worker.get("command") != (
+        "python scripts/run_execution_runtime.py --role internal_worker --standby"
+    ):
+        errors.append("internal_worker role command must be explicitly claimless during observe mode")
     catalog_roles = {spec.runtime_role for spec in JOB_SPECS}
     if not catalog_roles <= set(role_names):
         errors.append("job catalog references an undeclared runtime role")
