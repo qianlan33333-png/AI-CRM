@@ -12,6 +12,12 @@ from sqlalchemy.orm import Session
 from aicrm_next.platform_foundation.command_bus.models import CommandContext
 from aicrm_next.platform_foundation.internal_events.models import DEFAULT_TENANT_ID, InternalEventCreateRequest
 from aicrm_next.platform_foundation.internal_events.outbox import enqueue_internal_event_outbox_in_session
+from aicrm_next.platform_foundation.internal_events.consumer_run_write_port import (
+    build_internal_event_consumer_run_write_port,
+)
+from aicrm_next.platform_foundation.internal_events.outbox_runtime_write_port import (
+    build_internal_event_outbox_runtime_write_port,
+)
 from aicrm_next.shared.db_session import get_session_factory
 from aicrm_next.shared.sensitive_data import redact_sensitive_text
 
@@ -354,89 +360,23 @@ class CustomerReadModelRefreshIntentRepository:
             "idempotency_key": idempotency_key,
             "consumer_name": CUSTOMER_REFRESH_CONSUMER,
         }
-        outbox_rows = session.execute(
-            text(
-                """
-                WITH control AS (
-                    SELECT active_generation, policy_version
-                    FROM queue_runtime_control
-                    WHERE singleton = TRUE
-                )
-                UPDATE internal_event_outbox outbox
-                SET status = 'failed_terminal',
-                    hold_reason = 'superseded_missing_signal_owner',
-                    lease_token = '', locked_by = '', locked_at = NULL,
-                    lease_expires_at = NULL, heartbeat_at = NULL,
-                    last_error_code = 'superseded_missing_signal_owner',
-                    last_error_message = '', updated_at = CURRENT_TIMESTAMP
-                FROM control
-                WHERE outbox.tenant_id = :tenant_id
-                  AND outbox.idempotency_key = :idempotency_key
-                  AND (
-                      (
-                          outbox.status IN ('pending', 'failed_retryable')
-                          AND (
-                              outbox.policy_version <> control.policy_version
-                              OR outbox.worker_generation NOT IN (0, control.active_generation)
-                              OR outbox.hold_reason <> ''
-                              OR outbox.attempt_count >= outbox.max_attempts
-                          )
-                      )
-                      OR (
-                          outbox.status = 'running'
-                          AND COALESCE(outbox.lease_expires_at, '-infinity'::timestamptz)
-                              <= CURRENT_TIMESTAMP
-                      )
-                  )
-                RETURNING outbox.id
-                """
-            ),
-            params,
-        ).mappings().fetchall()
-        consumer_rows = session.execute(
-            text(
-                """
-                WITH control AS (
-                    SELECT active_generation, policy_version
-                    FROM queue_runtime_control
-                    WHERE singleton = TRUE
-                ), signal_event AS (
-                    SELECT event_id
-                    FROM internal_event
-                    WHERE tenant_id = :tenant_id
-                      AND idempotency_key = :idempotency_key
-                )
-                UPDATE internal_event_consumer_run run
-                SET status = 'blocked',
-                    hold_reason = 'superseded_missing_signal_owner',
-                    lease_token = '', locked_by = '', locked_at = NULL,
-                    lease_expires_at = NULL, heartbeat_at = NULL,
-                    last_error_code = 'superseded_missing_signal_owner',
-                    last_error_message = '', updated_at = CURRENT_TIMESTAMP
-                FROM control, signal_event
-                WHERE run.event_id = signal_event.event_id
-                  AND run.consumer_name = :consumer_name
-                  AND (
-                      (
-                          run.status IN ('pending', 'failed_retryable')
-                          AND (
-                              run.policy_version <> control.policy_version
-                              OR run.worker_generation NOT IN (0, control.active_generation)
-                              OR run.hold_reason <> ''
-                              OR run.attempt_count >= run.max_attempts
-                          )
-                      )
-                      OR (
-                          run.status = 'running'
-                          AND COALESCE(run.lease_expires_at, '-infinity'::timestamptz)
-                              <= CURRENT_TIMESTAMP
-                      )
-                  )
-                RETURNING run.id
-                """
-            ),
-            params,
-        ).mappings().fetchall()
+        outbox_rows = (
+            build_internal_event_outbox_runtime_write_port()
+            .quarantine_superseded_signal_owner_sqlalchemy(
+                session,
+                tenant_id=params["tenant_id"],
+                idempotency_key=params["idempotency_key"],
+            )
+        )
+        consumer_rows = (
+            build_internal_event_consumer_run_write_port()
+            .quarantine_superseded_signal_owner_sqlalchemy(
+                session,
+                tenant_id=params["tenant_id"],
+                idempotency_key=params["idempotency_key"],
+                consumer_name=params["consumer_name"],
+            )
+        )
         return {
             "outbox_count": len(outbox_rows),
             "consumer_run_count": len(consumer_rows),

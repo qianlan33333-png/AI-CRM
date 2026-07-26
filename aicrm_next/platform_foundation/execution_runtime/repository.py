@@ -17,6 +17,12 @@ from aicrm_next.platform_foundation.execution_runtime.lanes import (
 from aicrm_next.platform_foundation.internal_events.outbox import (
     enqueue_transactional_internal_event_outbox,
 )
+from aicrm_next.platform_foundation.internal_events.consumer_run_write_port import (
+    build_internal_event_consumer_run_write_port,
+)
+from aicrm_next.platform_foundation.internal_events.outbox_runtime_write_port import (
+    build_internal_event_outbox_runtime_write_port,
+)
 from aicrm_next.platform_foundation.rate_scope_cooldown import (
     RateScopeCooldownRequest,
     build_rate_scope_cooldown_port,
@@ -363,7 +369,25 @@ class ExecutionRuntimeRepository:
                 )
                 if global_capacity_exhausted or lane_count >= policy.max_in_flight:
                     return None
-                if queue_kind == "webhook_inbox":
+                if queue_kind == "internal_event":
+                    row = build_internal_event_consumer_run_write_port().claim_dbapi(
+                        connection,
+                        lane=normalized_lane,
+                        generation=int(generation),
+                        worker_id=str(worker_id or "").strip(),
+                        lease_token=lease_token,
+                        lease_seconds=ttl,
+                    )
+                elif queue_kind == "internal_outbox":
+                    row = build_internal_event_outbox_runtime_write_port().claim_dbapi(
+                        connection,
+                        lane=normalized_lane,
+                        generation=int(generation),
+                        worker_id=str(worker_id or "").strip(),
+                        lease_token=lease_token,
+                        lease_seconds=ttl,
+                    )
+                elif queue_kind == "webhook_inbox":
                     row = build_webhook_inbox_runtime_write_port().claim_dbapi(
                         connection,
                         lane=normalized_lane,
@@ -550,41 +574,9 @@ class ExecutionRuntimeRepository:
                 """,
                 (lane,),
             )
-            connection.execute(
-                """
-                UPDATE internal_event_consumer_run
-                SET status = CASE
-                        WHEN attempt_count + 1 >= max_attempts THEN 'failed_terminal'
-                        ELSE 'failed_retryable'
-                    END,
-                    attempt_count = attempt_count + 1,
-                    available_at = CASE
-                        WHEN attempt_count + 1 < max_attempts THEN CURRENT_TIMESTAMP
-                        ELSE available_at
-                    END,
-                    next_retry_at = CASE
-                        WHEN attempt_count + 1 < max_attempts THEN CURRENT_TIMESTAMP
-                        ELSE NULL
-                    END,
-                    worker_generation = CASE
-                        WHEN attempt_count + 1 < max_attempts THEN 0
-                        ELSE worker_generation
-                    END,
-                    last_error_code = 'lease_expired',
-                    last_error_message = 'Consumer lease expired before completion.',
-                    lease_token = '', lease_expires_at = NULL, heartbeat_at = NULL,
-                    locked_by = '', locked_at = NULL,
-                    finished_at = CASE
-                        WHEN attempt_count + 1 >= max_attempts THEN CURRENT_TIMESTAMP
-                        ELSE NULL
-                    END,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE lane = %s
-                  AND status = 'running'
-                  AND lease_expires_at IS NOT NULL
-                  AND lease_expires_at <= CURRENT_TIMESTAMP
-                """,
-                (lane,),
+            build_internal_event_consumer_run_write_port().recover_expired_dbapi(
+                connection,
+                lane=lane,
             )
             return
 
@@ -608,36 +600,9 @@ class ExecutionRuntimeRepository:
                 """,
                 (lane,),
             )
-            connection.execute(
-                """
-                UPDATE internal_event_outbox
-                SET status = CASE
-                        WHEN attempt_count >= max_attempts THEN 'failed_terminal'
-                        ELSE 'failed_retryable'
-                    END,
-                    available_at = CASE
-                        WHEN attempt_count < max_attempts THEN CURRENT_TIMESTAMP
-                        ELSE available_at
-                    END,
-                    next_retry_at = CASE
-                        WHEN attempt_count < max_attempts THEN CURRENT_TIMESTAMP
-                        ELSE NULL
-                    END,
-                    worker_generation = CASE
-                        WHEN attempt_count < max_attempts THEN 0
-                        ELSE worker_generation
-                    END,
-                    last_error_code = 'lease_expired',
-                    last_error_message = 'Outbox relay lease expired before completion.',
-                    lease_token = '', lease_expires_at = NULL, heartbeat_at = NULL,
-                    locked_by = '', locked_at = NULL,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE lane = %s
-                  AND status = 'running'
-                  AND lease_expires_at IS NOT NULL
-                  AND lease_expires_at <= CURRENT_TIMESTAMP
-                """,
-                (lane,),
+            build_internal_event_outbox_runtime_write_port().recover_expired_dbapi(
+                connection,
+                lane=lane,
             )
             return
 
@@ -805,97 +770,6 @@ class ExecutionRuntimeRepository:
                 WHERE job.id = candidate.id
                 RETURNING job.*
             """
-        if queue_kind == "internal_event":
-            return """
-                WITH candidate AS (
-                    SELECT run.id
-                    FROM internal_event_consumer_run run
-                    LEFT JOIN queue_fairness_cursor fairness
-                      ON fairness.lane = run.lane
-                     AND fairness.fairness_key = run.fairness_key
-                    WHERE run.lane = %s
-                      AND run.worker_generation IN (0, %s)
-                      AND run.policy_version = (
-                          SELECT policy_version FROM queue_runtime_control WHERE singleton = TRUE
-                      )
-                      AND run.status IN ('pending', 'failed_retryable')
-                      AND run.hold_reason = ''
-                      AND run.attempt_count < run.max_attempts
-                      AND run.available_at <= CURRENT_TIMESTAMP
-                      AND (run.lease_expires_at IS NULL OR run.lease_expires_at <= CURRENT_TIMESTAMP)
-                      AND NOT EXISTS (
-                          SELECT 1
-                          FROM internal_event_consumer_run active
-                          WHERE active.lane = run.lane
-                            AND active.ordering_key = run.ordering_key
-                            AND active.ordering_key <> ''
-                            AND active.status = 'running'
-                            AND active.lease_expires_at > CURRENT_TIMESTAMP
-                      )
-                    ORDER BY COALESCE(fairness.last_claimed_at, '-infinity'),
-                             run.available_at ASC, run.id ASC
-                    LIMIT 1
-                    FOR UPDATE OF run SKIP LOCKED
-                )
-                UPDATE internal_event_consumer_run run
-                SET status = 'running',
-                    locked_by = %s,
-                    lease_token = %s,
-                    locked_at = CURRENT_TIMESTAMP,
-                    lease_expires_at = CURRENT_TIMESTAMP + (%s * INTERVAL '1 second'),
-                    heartbeat_at = CURRENT_TIMESTAMP,
-                    worker_generation = %s,
-                    updated_at = CURRENT_TIMESTAMP
-                FROM candidate
-                WHERE run.id = candidate.id
-                RETURNING run.*
-            """
-        if queue_kind == "internal_outbox":
-            return """
-                WITH candidate AS (
-                    SELECT outbox.id
-                    FROM internal_event_outbox outbox
-                    LEFT JOIN queue_fairness_cursor fairness
-                      ON fairness.lane = outbox.lane
-                     AND fairness.fairness_key = outbox.fairness_key
-                    WHERE outbox.lane = %s
-                      AND outbox.worker_generation IN (0, %s)
-                      AND outbox.policy_version = (
-                          SELECT policy_version FROM queue_runtime_control WHERE singleton = TRUE
-                      )
-                      AND outbox.status IN ('pending', 'failed_retryable')
-                      AND outbox.hold_reason = ''
-                      AND outbox.attempt_count < outbox.max_attempts
-                      AND outbox.available_at <= CURRENT_TIMESTAMP
-                      AND (outbox.lease_expires_at IS NULL OR outbox.lease_expires_at <= CURRENT_TIMESTAMP)
-                      AND NOT EXISTS (
-                          SELECT 1
-                          FROM internal_event_outbox active
-                          WHERE active.lane = outbox.lane
-                            AND active.ordering_key = outbox.ordering_key
-                            AND active.ordering_key <> ''
-                            AND active.status = 'running'
-                            AND active.lease_expires_at > CURRENT_TIMESTAMP
-                      )
-                    ORDER BY COALESCE(fairness.last_claimed_at, '-infinity'),
-                             outbox.available_at ASC, outbox.id ASC
-                    LIMIT 1
-                    FOR UPDATE OF outbox SKIP LOCKED
-                )
-                UPDATE internal_event_outbox outbox
-                SET status = 'running',
-                    attempt_count = attempt_count + 1,
-                    locked_by = %s,
-                    lease_token = %s,
-                    locked_at = CURRENT_TIMESTAMP,
-                    lease_expires_at = CURRENT_TIMESTAMP + (%s * INTERVAL '1 second'),
-                    heartbeat_at = CURRENT_TIMESTAMP,
-                    worker_generation = %s,
-                    updated_at = CURRENT_TIMESTAMP
-                FROM candidate
-                WHERE outbox.id = candidate.id
-                RETURNING outbox.*
-            """
         raise ValueError(f"unsupported queue kind: {queue_kind}")
 
     def renew_lease(
@@ -907,6 +781,28 @@ class ExecutionRuntimeRepository:
         generation: int,
         lease_seconds: int = 30,
     ) -> bool:
+        if queue_kind == "internal_event":
+            with self._connect(self._database_url) as connection:
+                renewed = build_internal_event_consumer_run_write_port().renew_lease_dbapi(
+                    connection,
+                    item_id=int(item_id),
+                    lease_token=str(lease_token or ""),
+                    generation=int(generation),
+                    lease_seconds=lease_seconds,
+                )
+                connection.commit()
+            return renewed
+        if queue_kind == "internal_outbox":
+            with self._connect(self._database_url) as connection:
+                renewed = build_internal_event_outbox_runtime_write_port().renew_lease_dbapi(
+                    connection,
+                    item_id=int(item_id),
+                    lease_token=str(lease_token or ""),
+                    generation=int(generation),
+                    lease_seconds=lease_seconds,
+                )
+                connection.commit()
+            return renewed
         if queue_kind == "webhook_inbox":
             with self._connect(self._database_url) as connection:
                 renewed = build_webhook_inbox_runtime_write_port().renew_lease_dbapi(
@@ -920,8 +816,6 @@ class ExecutionRuntimeRepository:
             return renewed
         table, status = {
             "external_effect": ("external_effect_job", "dispatching"),
-            "internal_event": ("internal_event_consumer_run", "running"),
-            "internal_outbox": ("internal_event_outbox", "running"),
         }.get(queue_kind, ("", ""))
         if not table:
             raise ValueError("unsupported queue kind")

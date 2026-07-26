@@ -86,6 +86,14 @@ physical package move, legacy table deletion, or real provider call.
   settlement, queue claim/recovery/heartbeat, and operator CAS commands all use
   the webhook-inbox public ports while preserving the execution runtime's
   policy locks, fairness cursor, wakeup, and command-audit transaction.
+- `internal_event_consumer_run` now has one platform owner. Consumer creation,
+  settlement, runtime claim/recovery/heartbeat, audited operator CAS, and stale
+  signal quarantine all cross the internal-events public port; caller-owned
+  policy locks, fairness, wakeup, and transaction boundaries remain unchanged.
+- `internal_event_outbox` now has one platform owner. Business modules append
+  through transaction-preserving owner functions; runtime claim/recovery,
+  heartbeat, operator wake CAS, stale-signal quarantine, relay settlement, and
+  reconciliation no longer write the table across capability boundaries.
 - Unresolved identity ingress from AI Audience, questionnaire submissions,
   archived messages, and channel contact tags now uses one versioned
   `IdentityResolutionQueuePort`. Source-specific idempotency keys, the caller's

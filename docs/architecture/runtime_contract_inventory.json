@@ -49986,7 +49986,7 @@
         "internal event admin/reconciliation APIs"
       ],
       "table": "internal_event_consumer_attempt",
-      "write_owner": "aicrm_next.platform_foundation.internal_events.worker"
+      "write_owner": "aicrm_next.platform_foundation.internal_events"
     },
     {
       "domain": "internal_events",
@@ -49999,7 +49999,7 @@
         "internal event admin/reconciliation APIs"
       ],
       "table": "internal_event_consumer_run",
-      "write_owner": "aicrm_next.platform_foundation.internal_events.worker"
+      "write_owner": "aicrm_next.platform_foundation.internal_events"
     },
     {
       "domain": "internal_events",
@@ -50014,7 +50014,7 @@
         "aicrm_next.platform_foundation.internal_events.worker"
       ],
       "table": "internal_event_outbox",
-      "write_owner": "aicrm_next.platform_foundation.internal_events.outbox"
+      "write_owner": "aicrm_next.platform_foundation.internal_events"
     },
     {
       "domain": "legacy_webhook_cleanup",

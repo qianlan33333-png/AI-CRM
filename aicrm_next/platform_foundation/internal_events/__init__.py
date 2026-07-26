@@ -24,6 +24,14 @@ from .payment import PAYMENT_SUCCEEDED_EVENT_TYPE, PAYMENT_SUCCEEDED_EVENT_TYPES
 from .refund import REFUND_SUCCEEDED_EVENT_TYPE, register_refund_succeeded_consumers
 from .questionnaire import QUESTIONNAIRE_SUBMITTED_EVENT_TYPE, register_questionnaire_event_consumers
 from .shadow import register_shadow_event_consumers
+from .consumer_run_write_port import (
+    InternalEventConsumerRunWritePort,
+    build_internal_event_consumer_run_write_port,
+)
+from .outbox_runtime_write_port import (
+    InternalEventOutboxRuntimeWritePort,
+    build_internal_event_outbox_runtime_write_port,
+)
 
 __all__ = [
     "DEFAULT_INTERNAL_EVENT_CONSUMER_REGISTRY",
@@ -35,6 +43,8 @@ __all__ = [
     "internal_event_consumer_registry_scope",
     "InternalEventConsumerResult",
     "InternalEventConsumerRun",
+    "InternalEventConsumerRunWritePort",
+    "InternalEventOutboxRuntimeWritePort",
     "InternalEventService",
     "legacy_path_marker_diagnostics",
     "mark_legacy_path_invoked",
@@ -48,6 +58,8 @@ __all__ = [
     "register_refund_succeeded_consumers",
     "register_questionnaire_event_consumers",
     "register_shadow_event_consumers",
+    "build_internal_event_consumer_run_write_port",
+    "build_internal_event_outbox_runtime_write_port",
     "reset_legacy_path_marker_state",
     "reset_internal_event_fixture_state",
 ]

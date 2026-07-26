@@ -677,8 +677,6 @@ repositories:
     table_writes:
       - external_effect_attempt
       - external_effect_job
-      - internal_event_consumer_run
-      - internal_event_outbox
       - queue_fairness_cursor
       - queue_runtime_lease_recovery_event
       - queue_worker_heartbeat
@@ -718,6 +716,24 @@ repositories:
       - external_effect_attempt
       - external_effect_job
       - external_effect_test_receipt
+  aicrm_next/platform_foundation/internal_events/consumer_run_write_repository.py:
+    capability_owner: aicrm_next.platform_foundation.internal_events
+    table_reads:
+      - internal_event
+      - internal_event_consumer_run
+      - queue_fairness_cursor
+      - queue_runtime_control
+    table_writes:
+      - internal_event_consumer_attempt
+      - internal_event_consumer_run
+  aicrm_next/platform_foundation/internal_events/outbox_runtime_write_repository.py:
+    capability_owner: aicrm_next.platform_foundation.internal_events
+    table_reads:
+      - internal_event_outbox
+      - queue_fairness_cursor
+      - queue_runtime_control
+    table_writes:
+      - internal_event_outbox
   aicrm_next/platform_foundation/internal_events/repository.py:
     capability_owner: aicrm_next.platform_foundation.internal_events
     table_reads:

@@ -9,10 +9,10 @@ merges must be done in later PRs with producer/consumer evidence.
 
 | Table | Role | Lifecycle | Current owner | Convergence rule |
 | --- | --- | --- | --- | --- |
-| `internal_event_outbox` | Transactional durability boundary for existing internal business events | queue | `platform_foundation.internal_events.outbox` | Keep. Business-critical producers write it in the business transaction; relay creates the canonical event and runs. |
+| `internal_event_outbox` | Transactional durability boundary for existing internal business events | queue | `platform_foundation.internal_events` | Keep. Business-critical producers append through the owner boundary in the business transaction; relay creates the canonical event and runs. |
 | `internal_event` | Canonical internal event ledger | event | `platform_foundation.internal_events.service` | Keep. Internal handlers must not execute real external calls directly. |
-| `internal_event_consumer_run` | Internal event consumer queue state | queue | `platform_foundation.internal_events.worker` | Keep. One row per event/consumer execution state. |
-| `internal_event_consumer_attempt` | Internal consumer attempt audit | audit | `platform_foundation.internal_events.worker` | Keep. Append-only execution evidence. |
+| `internal_event_consumer_run` | Internal event consumer queue state | queue | `platform_foundation.internal_events` | Keep. One row per event/consumer execution state. |
+| `internal_event_consumer_attempt` | Internal consumer attempt audit | audit | `platform_foundation.internal_events` | Keep. Append-only execution evidence. |
 | `external_effect_job` | Canonical external side-effect queue | queue | `platform_foundation.external_effects.service` | Keep. Real external calls should enter here. |
 | `external_effect_attempt` | External side-effect attempt audit | audit | `platform_foundation.external_effects.worker` | Keep. Append-only execution evidence. |
 | `domain_event_outbox` | Historical commerce business-event outbox | legacy boundary | no active payment producer | Read-only parity/reconciliation after R08; do not create new `transaction.paid` rows. |

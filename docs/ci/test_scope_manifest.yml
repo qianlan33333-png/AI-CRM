@@ -1794,7 +1794,11 @@
         "tests/test_data_table_lifecycle_guard.py",
         "tests/test_event_effect_table_lineage.py",
         "tests/test_job_run_ledger_owner.py",
-        "tests/test_job_run_ledger_owner_postgres.py"
+        "tests/test_job_run_ledger_owner_postgres.py",
+        "tests/test_internal_event_consumer_run_owner.py",
+        "tests/test_internal_event_consumer_run_owner_postgres.py",
+        "tests/test_internal_event_outbox_runtime_owner.py",
+        "tests/test_internal_event_outbox_runtime_owner_postgres.py"
       ],
       "python_tests": [
         "tests/test_internal_event_outbox.py",
@@ -1807,7 +1811,11 @@
         "tests/test_data_table_lifecycle_guard.py",
         "tests/test_repository_ownership_guard.py",
         "tests/test_job_run_ledger_owner.py",
-        "tests/test_job_run_ledger_owner_postgres.py"
+        "tests/test_job_run_ledger_owner_postgres.py",
+        "tests/test_internal_event_consumer_run_owner.py",
+        "tests/test_internal_event_consumer_run_owner_postgres.py",
+        "tests/test_internal_event_outbox_runtime_owner.py",
+        "tests/test_internal_event_outbox_runtime_owner_postgres.py"
       ],
       "needs_postgres": true,
       "needs_full_ci": true,
@@ -1925,6 +1933,10 @@
         "tests/test_run_execution_runtime.py",
         "tests/test_webhook_inbox_runtime_owner.py",
         "tests/test_webhook_inbox_runtime_owner_postgres.py",
+        "tests/test_internal_event_consumer_run_owner.py",
+        "tests/test_internal_event_consumer_run_owner_postgres.py",
+        "tests/test_internal_event_outbox_runtime_owner.py",
+        "tests/test_internal_event_outbox_runtime_owner_postgres.py",
         "tests/test_rate_scope_cooldown_owner.py",
         "tests/test_rate_scope_cooldown_owner_postgres.py"
       ],
@@ -1949,6 +1961,10 @@
         "tests/test_run_execution_runtime.py",
         "tests/test_webhook_inbox_runtime_owner.py",
         "tests/test_webhook_inbox_runtime_owner_postgres.py",
+        "tests/test_internal_event_consumer_run_owner.py",
+        "tests/test_internal_event_consumer_run_owner_postgres.py",
+        "tests/test_internal_event_outbox_runtime_owner.py",
+        "tests/test_internal_event_outbox_runtime_owner_postgres.py",
         "tests/test_rate_scope_cooldown_owner.py",
         "tests/test_rate_scope_cooldown_owner_postgres.py",
         "tests/test_alembic_revision_chain.py",

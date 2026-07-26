@@ -1792,13 +1792,9 @@ tables:
   internal_event_outbox:
     domain: internal_events
     lifecycle: queue
-    write_owner: aicrm_next.platform_foundation.internal_events.outbox
+    write_owner: aicrm_next.platform_foundation.internal_events
     write_owners:
-      - aicrm_next.commerce.fulfillment_reconciliation
-      - aicrm_next.commerce.admin_transactions
-      - aicrm_next.platform_foundation.execution_runtime.repository
-      - aicrm_next.platform_foundation.internal_events.outbox
-      - aicrm_next.public_product.h5_wechat_pay
+      - aicrm_next.platform_foundation.internal_events
     status_enum:
       column: status
     read_owners:
@@ -1822,15 +1818,17 @@ tables:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_event_effect_table_lineage.py
       - tests/test_internal_event_outbox.py
-    notes: Technical outbox only; payment and refund state share this durability boundary. scripts/run_internal_event_worker.py is the only relay owner; scoped schedulers are consumer-only. Commerce and internal-event repair only ensure idempotent technical continuations and never execute consumers or providers. Revision 0125 makes available_at mandatory and constrains lane to internal_general or internal_financial. Unified timeline reads payload_summary_json only and applies centralized sensitive-data redaction; full payload_json is excluded.
+      - tests/test_internal_event_outbox_runtime_owner.py
+      - tests/test_internal_event_outbox_runtime_owner_postgres.py
+      - tests/test_execution_runtime_postgres.py
+    notes: The platform internal_events capability is the sole writer. Business producers append through transactional owner functions, while queue claim/recovery/heartbeat, operator wake CAS, stale-signal quarantine, relay settlement, and reconciliation use owner repositories without taking over caller commit boundaries. Payment and refund state share this durability boundary. scripts/run_internal_event_worker.py is the only relay owner; scoped schedulers are consumer-only. Commerce and internal-event repair only ensure idempotent technical continuations and never execute consumers or providers. Revision 0125 makes available_at mandatory and constrains lane to internal_general or internal_financial. Unified timeline reads payload_summary_json only and applies centralized sensitive-data redaction; full payload_json is excluded.
 
   internal_event_consumer_run:
     domain: internal_events
     lifecycle: queue
-    write_owner: aicrm_next.platform_foundation.internal_events.worker
+    write_owner: aicrm_next.platform_foundation.internal_events
     write_owners:
-      - aicrm_next.platform_foundation.execution_runtime.repository
-      - aicrm_next.platform_foundation.internal_events.worker
+      - aicrm_next.platform_foundation.internal_events
     status_enum:
       column: status
     read_owners:
@@ -1847,12 +1845,16 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_event_effect_table_lineage.py
-    notes: Tracks consumer execution state for internal_event. Relay creates the exact manifest-declared set atomically; manifest-aware reconciliation may only restore missing declared rows without executing handlers. Each external_effect.completed continuation owns an independent success-only row and retry budget; external_effect.settled independently fans every terminal status to the Identity, Group Ops, Welcome, Broadcast, and External Push parent projections without provider-result access. Predicate misses succeed as no-op, while the former first-match consumer name is a history-only handler alias excluded from new manifests. Revision 0131 holds and classifies all nonterminal work created under the former contract. Automatic due is limited to pending, due failed_retryable, and stale running; failed_terminal/blocked require audited manual action. Revision 0125 makes available_at mandatory and constrains lane to internal_general or internal_financial.
+      - tests/test_internal_event_consumer_run_owner.py
+      - tests/test_internal_event_consumer_run_owner_postgres.py
+      - tests/test_execution_runtime_postgres.py
+      - tests/test_admin_queue_command_api.py
+    notes: The platform internal_events capability is the sole writer for consumer creation, settlement, runtime claim/recovery/heartbeat, audited operator CAS, and dead-signal quarantine. Execution runtime and customer read-model callers retain their existing transaction, policy lock, fairness, wakeup, and audit boundaries through the public owner port. Relay creates the exact manifest-declared set atomically; manifest-aware reconciliation may only restore missing declared rows without executing handlers. Each external_effect.completed continuation owns an independent success-only row and retry budget; external_effect.settled independently fans every terminal status to the Identity, Group Ops, Welcome, Broadcast, and External Push parent projections without provider-result access. Predicate misses succeed as no-op, while the former first-match consumer name is a history-only handler alias excluded from new manifests. Revision 0131 holds and classifies all nonterminal work created under the former contract. Automatic due is limited to pending, due failed_retryable, and stale running; failed_terminal/blocked require audited manual action. Revision 0125 makes available_at mandatory and constrains lane to internal_general or internal_financial.
 
   internal_event_consumer_attempt:
     domain: internal_events
     lifecycle: audit
-    write_owner: aicrm_next.platform_foundation.internal_events.worker
+    write_owner: aicrm_next.platform_foundation.internal_events
     read_owners:
       - aicrm_next.platform_foundation.execution_runtime.read_model
       - internal event admin/reconciliation APIs
@@ -1866,6 +1868,8 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_event_effect_table_lineage.py
+      - tests/test_internal_event_consumer_run_owner.py
+      - tests/test_internal_event_consumer_run_owner_postgres.py
     notes: Attempt audit for internal_event_consumer_run. external_effect.completed sibling attempts are independent, so one failed continuation cannot overwrite provider truth or a sibling result. Unified timeline combines request/response summaries only and applies centralized sensitive-data redaction; restricted provider payload is never copied into these summaries.
 
   queue_history_classification:

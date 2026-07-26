@@ -19,6 +19,12 @@ from aicrm_next.platform_foundation.internal_events.models import (
     InternalEventConsumerRun,
     InternalEventCreateRequest,
 )
+from aicrm_next.platform_foundation.internal_events.consumer_run_write_port import (
+    build_internal_event_consumer_run_write_port,
+)
+from aicrm_next.platform_foundation.internal_events.outbox_runtime_write_port import (
+    build_internal_event_outbox_runtime_write_port,
+)
 from aicrm_next.platform_foundation.internal_events.outbox import (
     enqueue_internal_event_outbox_in_session,
 )
@@ -315,7 +321,21 @@ class QueueRuntimeCommandService:
 
         with self._session_factory() as session:
             with session.begin():
-                if normalized_kind == "webhook_inbox":
+                if normalized_kind == "internal_event":
+                    row = build_internal_event_consumer_run_write_port().make_eligible_now_sqlalchemy(
+                        session,
+                        item_id=int(item_id),
+                        expected_status=normalized_status,
+                        expected_version=normalized_version,
+                    )
+                elif normalized_kind == "internal_outbox":
+                    row = build_internal_event_outbox_runtime_write_port().make_eligible_now_sqlalchemy(
+                        session,
+                        item_id=int(item_id),
+                        expected_status=normalized_status,
+                        expected_version=normalized_version,
+                    )
+                elif normalized_kind == "webhook_inbox":
                     row = build_webhook_inbox_runtime_write_port().make_eligible_now_sqlalchemy(
                         session,
                         item_id=int(item_id),
@@ -459,7 +479,18 @@ class QueueRuntimeCommandService:
 
         with self._session_factory() as session:
             with session.begin():
-                if normalized_kind == "webhook_inbox":
+                if normalized_kind == "internal_event":
+                    row = build_internal_event_consumer_run_write_port().manual_action_sqlalchemy(
+                        session,
+                        action=normalized_action,
+                        item_id=int(item_id),
+                        expected_status=normalized_status,
+                        expected_version=normalized_version,
+                        actor_ref_hash=sha256(normalized_actor.encode("utf-8")).hexdigest(),
+                        reason=normalized_reason,
+                        attempt_id="iea_" + uuid4().hex,
+                    )
+                elif normalized_kind == "webhook_inbox":
                     row = build_webhook_inbox_runtime_write_port().manual_action_sqlalchemy(
                         session,
                         action=normalized_action,
@@ -645,113 +676,6 @@ class QueueRuntimeCommandService:
                   )
                 RETURNING id, execution_id, lane, status, hold_reason,
                           {version_expression} AS version_token
-            """
-        if queue_kind == "internal_event" and action == "retry":
-            return f"""
-                WITH target AS (
-                    SELECT id, consumer_name, status
-                    FROM internal_event_consumer_run
-                    WHERE id = :item_id
-                      AND status = :expected_status
-                      AND {version_predicate}
-                      AND status IN ('failed_retryable', 'failed_terminal', 'blocked')
-                      AND hold_reason = ''
-                      AND (lease_expires_at IS NULL OR lease_expires_at <= CURRENT_TIMESTAMP)
-                    FOR UPDATE
-                ), attempt AS (
-                    INSERT INTO internal_event_consumer_attempt (
-                        attempt_id, consumer_run_id, consumer_name, status,
-                        request_summary_json, response_summary_json,
-                        error_code, error_message, started_at, completed_at
-                    )
-                    SELECT :attempt_id, target.id, target.consumer_name, 'manual_retry',
-                           jsonb_build_object(
-                               'manual_retry', TRUE,
-                               'actor_ref_hash', CAST(:actor_ref_hash AS TEXT),
-                               'actor_type', 'operator',
-                               'reason', CAST(:reason AS TEXT),
-                               'from_status', target.status
-                           ),
-                           '{{"status":"pending"}}'::jsonb,
-                           'manual_retry', :reason,
-                           CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-                    FROM target
-                    RETURNING attempt_id, consumer_run_id
-                )
-                UPDATE internal_event_consumer_run run
-                SET status = 'pending',
-                    next_retry_at = CURRENT_TIMESTAMP,
-                    available_at = CURRENT_TIMESTAMP,
-                    locked_by = '', locked_at = NULL,
-                    lease_token = '', lease_expires_at = NULL,
-                    heartbeat_at = NULL, worker_generation = 0,
-                    max_attempts = GREATEST(max_attempts, attempt_count + 1),
-                    last_attempt_id = attempt.attempt_id,
-                    last_error_code = '', last_error_message = '',
-                    finished_at = NULL,
-                    updated_at = CURRENT_TIMESTAMP
-                FROM target, attempt
-                WHERE run.id = target.id
-                  AND attempt.consumer_run_id = target.id
-                RETURNING run.id, run.execution_id, run.lane, run.status,
-                          run.hold_reason, run.xmin::text AS version_token
-            """
-        if queue_kind == "internal_event" and action == "skip":
-            return f"""
-                WITH target AS (
-                    SELECT id, consumer_name, status
-                    FROM internal_event_consumer_run
-                    WHERE id = :item_id
-                      AND status = :expected_status
-                      AND {version_predicate}
-                      AND status IN (
-                          'pending', 'failed_retryable', 'failed_terminal', 'blocked'
-                      )
-                      AND (lease_expires_at IS NULL OR lease_expires_at <= CURRENT_TIMESTAMP)
-                    FOR UPDATE
-                ), attempt AS (
-                    INSERT INTO internal_event_consumer_attempt (
-                        attempt_id, consumer_run_id, consumer_name, status,
-                        request_summary_json, response_summary_json,
-                        error_code, error_message, started_at, completed_at
-                    )
-                    SELECT :attempt_id, target.id, target.consumer_name, 'skipped',
-                           jsonb_build_object(
-                               'manual_skip', TRUE,
-                               'actor_ref_hash', CAST(:actor_ref_hash AS TEXT),
-                               'actor_type', 'operator',
-                               'reason', CAST(:reason AS TEXT),
-                               'from_status', target.status
-                           ),
-                           jsonb_build_object(
-                               'skipped', TRUE,
-                               'reason', CAST(:reason AS TEXT)
-                           ),
-                           'manual_skip', :reason,
-                           CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-                    FROM target
-                    RETURNING attempt_id, consumer_run_id
-                )
-                UPDATE internal_event_consumer_run run
-                SET status = 'skipped',
-                    next_retry_at = NULL,
-                    locked_by = '', locked_at = NULL,
-                    lease_token = '', lease_expires_at = NULL,
-                    heartbeat_at = NULL, worker_generation = 0,
-                    last_attempt_id = attempt.attempt_id,
-                    last_error_code = 'manual_skip',
-                    last_error_message = :reason,
-                    result_summary_json = jsonb_build_object(
-                        'skipped', TRUE,
-                        'reason', CAST(:reason AS TEXT)
-                    ),
-                    finished_at = CURRENT_TIMESTAMP,
-                    updated_at = CURRENT_TIMESTAMP
-                FROM target, attempt
-                WHERE run.id = target.id
-                  AND attempt.consumer_run_id = target.id
-                RETURNING run.id, run.execution_id, run.lane, run.status,
-                          run.hold_reason, run.xmin::text AS version_token
             """
         raise ValueError(f"unsupported manual queue action: {queue_kind}:{action}")
 

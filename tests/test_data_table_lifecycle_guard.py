@@ -146,6 +146,29 @@ SINGLE_OWNER_RUNTIME_WRITES = {
             "aicrm_next/platform_foundation/webhook_inbox/runtime_write_repository.py",
         },
     ),
+    "internal_event_consumer_run": (
+        "aicrm_next.platform_foundation.internal_events",
+        {
+            "aicrm_next/platform_foundation/internal_events/repository.py",
+            "aicrm_next/platform_foundation/internal_events/consumer_run_write_repository.py",
+        },
+    ),
+    "internal_event_consumer_attempt": (
+        "aicrm_next.platform_foundation.internal_events",
+        {
+            "aicrm_next/platform_foundation/internal_events/repository.py",
+            "aicrm_next/platform_foundation/internal_events/consumer_run_write_repository.py",
+        },
+    ),
+    "internal_event_outbox": (
+        "aicrm_next.platform_foundation.internal_events",
+        {
+            "aicrm_next/platform_foundation/internal_events/outbox.py",
+            "aicrm_next/platform_foundation/internal_events/repository.py",
+            "aicrm_next/platform_foundation/internal_events/outbox_runtime_write_repository.py",
+            "aicrm_next/platform_foundation/internal_events/reconciliation/outbox.py",
+        },
+    ),
     "automation_agent_audit_log": (
         "aicrm_next.automation_engine",
         {"aicrm_next/automation_engine/agent_sqlalchemy_repository.py"},
