@@ -41,6 +41,19 @@ def test_scheduler_execution_policy_keeps_provider_reconciliation_observe_only()
     assert next(spec for spec in JOB_SPECS if spec.job_type == "campaign.plan").handler_ref == (
         "background_jobs.broadcast_queue_worker:delegate_external_effects"
     )
+    assert {
+        spec.job_type
+        for spec in JOB_SPECS
+        if spec.runtime_role == "scheduler" and spec.lifecycle == "active"
+    } == {
+        "external_effect.reconcile",
+        "campaign.plan",
+        "group_ops.plan",
+        "ai_audience.refresh",
+    }
+    assert next(
+        spec for spec in JOB_SPECS if spec.job_type == "payment.reconcile"
+    ).lifecycle == "candidate"
 
 
 def test_enforce_profile_removes_disabled_extension_jobs() -> None:

@@ -15,8 +15,10 @@ def test_ai_audience_production_diagnostics_is_exact_release_read_only() -> None
     assert "DIAGNOSE AI-CRM AI AUDIENCE PRODUCTION READ ONLY" in workflow
     assert "test \"$(git rev-parse HEAD)\" = \"$expected_release_sha\"" in workflow
     assert "test \"$public_sha\" = \"$expected_release_sha\"" in workflow
-    assert "systemctl is-enabled --quiet aicrm-ai-audience-daily-intent.timer" in workflow
-    assert "systemctl is-active --quiet aicrm-ai-audience-daily-intent.timer" in workflow
+    assert "systemctl is-enabled --quiet aicrm-job-catalog-scheduler.timer" in workflow
+    assert "systemctl is-active --quiet aicrm-job-catalog-scheduler.timer" in workflow
+    assert "aicrm-ai-audience-daily-intent.timer" in workflow
+    assert 'test ! -e "/etc/systemd/system/$unit"' in workflow
     assert "systemctl is-active --quiet aicrm-internal-worker.service" in workflow
     assert "runtime_heartbeat_state" in workflow
     assert "package_config_state" in workflow

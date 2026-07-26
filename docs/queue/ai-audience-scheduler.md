@@ -14,19 +14,24 @@ External side effects remain in `external_effect_job` and are executed only by t
 
 ## Production Timer
 
-Install the dedicated timer alongside the existing internal-event and external-effect workers:
+Production uses the consolidated versioned scheduler alongside the internal and external workers:
 
 ```bash
-sudo cp deploy/openclaw-ai-audience-scheduler.service /etc/systemd/system/
-sudo cp deploy/openclaw-ai-audience-scheduler.timer /etc/systemd/system/
+sudo cp deploy/aicrm-job-catalog-scheduler.service /etc/systemd/system/
+sudo cp deploy/aicrm-job-catalog-scheduler.timer /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now openclaw-ai-audience-scheduler.timer
+sudo systemctl enable --now aicrm-job-catalog-scheduler.timer
 ```
 
-The timer writes clock intents once per day:
+The catalog evaluates `ai_audience.refresh` every three minutes while preserving the
+daily 02:00 Asia/Shanghai intent rule inside the handler:
 
 ```text
-OnCalendar=*-*-* 02:00:00 Asia/Shanghai
+schedule="*/3 * * * *"
 ```
 
-`scripts/ops/check_ai_audience_refresh_owner.py` is a fail-closed precondition for the timer unit. The PostgreSQL internal runtime owns `ai_audience.refresh.requested`; provider continuations remain separate external effects. The timer has no relay or consumer ownership.
+`scripts/ops/check_ai_audience_refresh_owner.py` remains a fail-closed code and
+legacy-unit guard. It verifies that the consolidated scheduler is the declared
+successor and that the intermediate dedicated timer is retired. The PostgreSQL
+internal runtime owns `ai_audience.refresh.requested`; provider continuations remain
+separate external effects. The scheduler has no relay, consumer, or provider ownership.

@@ -1,5 +1,5 @@
 [Unit]
-Description=Observe the versioned AI-CRM job catalog every minute
+Description=Execute the versioned AI-CRM job catalog every minute
 
 [Timer]
 OnCalendar=*-*-* *:*:40

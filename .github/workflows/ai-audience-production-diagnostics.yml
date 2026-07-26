@@ -61,11 +61,18 @@ jobs:
             expected_release_sha='${{ inputs.expected_release_sha }}'
             test "$(git rev-parse HEAD)" = "$expected_release_sha"
             test "$(tr -d '\r\n' < .release-sha)" = "$expected_release_sha"
-            sudo systemctl is-enabled --quiet aicrm-ai-audience-daily-intent.timer
-            sudo systemctl is-active --quiet aicrm-ai-audience-daily-intent.timer
-            sudo systemctl show aicrm-ai-audience-daily-intent.timer \
+            sudo systemctl is-enabled --quiet aicrm-job-catalog-scheduler.timer
+            sudo systemctl is-active --quiet aicrm-job-catalog-scheduler.timer
+            sudo systemctl show aicrm-job-catalog-scheduler.timer \
               --property=ActiveState,UnitFileState,LastTriggerUSec,NextElapseUSecRealtime \
               --no-pager
+            for unit in aicrm-ai-audience-daily-intent.timer aicrm-ai-audience-daily-intent.service
+            do
+              test "$(systemctl show "$unit" --property=LoadState --value 2>/dev/null || true)" = "not-found"
+              test "$(systemctl is-enabled "$unit" 2>/dev/null || true)" != "enabled"
+              test "$(systemctl is-active "$unit" 2>/dev/null || true)" != "active"
+              test ! -e "/etc/systemd/system/$unit"
+            done
             sudo systemctl is-enabled --quiet aicrm-internal-worker.service
             sudo systemctl is-active --quiet aicrm-internal-worker.service
             sudo systemctl show aicrm-internal-worker.service \

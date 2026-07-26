@@ -462,8 +462,6 @@ def validate_manifest(manifest: dict[str, Any], *, validate_unit_files: bool = T
         raise ValueError("cutover_managed_legacy must declare at least one old owner")
     if not replacement_inventory or replacement_inventory != cutover_inventory:
         raise ValueError("cutover replacement and legacy owner inventories must match")
-    if not replacement_timers:
-        raise ValueError("cutover_replacement_autostart must declare at least one replacement")
     if successor_inventory != cutover_inventory:
         raise ValueError("cutover successor and legacy owner inventories must match")
     approval = approval_timers(manifest)
@@ -510,8 +508,22 @@ def validate_manifest(manifest: dict[str, Any], *, validate_unit_files: bool = T
     successor_timer_names = [
         owner.successor_unit for owner in successors if owner.successor_kind == "timer"
     ]
-    if set(successor_timer_names) != set(replacement_timer_names):
-        raise ValueError("every replacement timer must own exactly one retired capability")
+    unclassified_successor_timers = sorted(
+        set(successor_timer_names) - (set(replacement_timer_names) | set(active_timer_names))
+    )
+    if unclassified_successor_timers:
+        raise ValueError(
+            "timer successors must be active or cutover replacements: "
+            f"{unclassified_successor_timers}"
+        )
+    replacement_without_owner = sorted(
+        set(replacement_timer_names) - set(successor_timer_names)
+    )
+    if replacement_without_owner:
+        raise ValueError(
+            "every replacement timer must own at least one retired capability: "
+            f"{replacement_without_owner}"
+        )
     successor_service_names = {
         owner.successor_unit
         for owner in successors

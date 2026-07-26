@@ -39,13 +39,17 @@ def test_runtime_units_manifest_classifies_every_deploy_timer() -> None:
     assert "openclaw-external-effect-worker.timer" in cutover
     assert "openclaw-customer-read-model-refresh.timer" in cutover
     assert "openclaw-ai-audience-scheduler.timer" in cutover
-    assert "aicrm-ai-audience-daily-intent.timer" in replacements
-    assert "aicrm-next-broadcast-delegation.timer" in replacements
-    assert "aicrm-next-group-ops-planning.timer" in replacements
+    assert replacements == set()
     assert "aicrm-ai-audience-daily-intent.timer" not in active
     assert "openclaw-wechat-pay-order-reconciliation-worker.timer" in active
     assert "aicrm-data-health-snapshot.timer" in active
     assert "aicrm-job-catalog-scheduler.timer" in active
+    assert "aicrm-ai-audience-daily-intent.timer" in retired_forbidden
+    assert "aicrm-next-broadcast-delegation.timer" in retired_forbidden
+    assert "aicrm-next-group-ops-planning.timer" in retired_forbidden
+    assert "aicrm-ai-audience-daily-intent.timer" not in deploy_timers
+    assert "aicrm-next-broadcast-delegation.timer" not in deploy_timers
+    assert "aicrm-next-group-ops-planning.timer" not in deploy_timers
     assert "openclaw-external-push-worker.timer" in retired_forbidden
     assert "openclaw-external-push-worker.service" in retired_forbidden
     assert "openclaw-external-push-worker.timer" not in deploy_timers
@@ -137,11 +141,7 @@ def test_runtime_units_manifest_maps_every_retired_owner_to_one_successor() -> N
         item["successor_unit"]
         for item in matrix["owners"]
         if item["successor_kind"] == "timer"
-    } == {
-        "aicrm-ai-audience-daily-intent.timer",
-        "aicrm-next-broadcast-delegation.timer",
-        "aicrm-next-group-ops-planning.timer",
-    }
+    } == {"aicrm-job-catalog-scheduler.timer"}
     for item in matrix["owners"]:
         assert item["capability"]
         assert item["successor_kind"] in {"persistent_service", "timer"}
@@ -150,13 +150,13 @@ def test_runtime_units_manifest_maps_every_retired_owner_to_one_successor() -> N
         assert item["backlog_contract"]
 
 
-def test_job_catalog_scheduler_is_observer_only_before_successor_cutover() -> None:
+def test_job_catalog_scheduler_is_the_single_enforced_successor_owner() -> None:
     scheduler = _manifest()["job_catalog_scheduler"]
     service = (ROOT / "deploy" / scheduler["service"]).read_text(encoding="utf-8")
     timer = (ROOT / "deploy" / scheduler["timer"]).read_text(encoding="utf-8")
 
     assert scheduler == {
-        "activation_mode": "observe",
+        "activation_mode": "enforce",
         "timer": "aicrm-job-catalog-scheduler.timer",
         "service": "aicrm-job-catalog-scheduler.service",
         "safe_job_types": [
@@ -172,11 +172,13 @@ def test_job_catalog_scheduler_is_observer_only_before_successor_cutover() -> No
             "ai_audience.refresh": "aicrm-ai-audience-daily-intent.timer",
         },
         "requires_successor_parity": True,
-        "legacy_units_remain_authoritative": True,
+        "legacy_units_remain_authoritative": False,
     }
-    assert "AICRM_JOB_CATALOG_SCHEDULER_EXECUTE=0" in service
-    assert "run_job_catalog_scheduler.py --dry-run" in service
-    assert "--execute" not in service
+    assert "AICRM_JOB_CATALOG_SCHEDULER_EXECUTE=1" in service
+    assert "run_job_catalog_scheduler.py --execute" in service
+    assert "--confirmation EXECUTE_SAFE_JOB_CATALOG_SCHEDULER" in service
+    assert "EnvironmentFile=-/home/ubuntu/.aicrm-queue-runtime-generation.env" in service
+    assert "AICRM_GROUP_OPS_MATERIAL_UPLOAD_MODE=real" not in service
     assert "OnCalendar=*-*-* *:*:40" in timer
     assert "Persistent=true" in timer
 
@@ -186,6 +188,19 @@ def test_runtime_units_manifest_rejects_a_retired_owner_without_successor() -> N
     manifest["cutover_successor_matrix"]["owners"].pop()
 
     with pytest.raises(ValueError, match="exactly one successor"):
+        runtime_units.validate_manifest(manifest, validate_unit_files=False)
+
+
+def test_runtime_units_manifest_rejects_unclassified_consolidated_timer_successor() -> None:
+    manifest = deepcopy(_manifest())
+    owner = next(
+        item
+        for item in manifest["cutover_successor_matrix"]["owners"]
+        if item["capability"] == "broadcast_external_effect_delegation"
+    )
+    owner["successor_unit"] = "unclassified-scheduler.timer"
+
+    with pytest.raises(ValueError, match="timer successors must be active or cutover replacements"):
         runtime_units.validate_manifest(manifest, validate_unit_files=False)
 
 
@@ -412,16 +427,16 @@ def test_runtime_units_install_dry_run_copies_and_enables_only_active_units(caps
     assert "sudo cp deploy/openclaw-wecom-callback-inbox-worker.service /etc/systemd/system/" not in output
     assert "sudo systemctl enable openclaw-wecom-callback-inbox-worker.service" not in output
     assert "sudo systemctl restart openclaw-wecom-callback-inbox-worker.service" in output
-    assert "sudo cp deploy/aicrm-ai-audience-daily-intent.service /etc/systemd/system/" in output
-    assert "sudo cp deploy/aicrm-ai-audience-daily-intent.timer /etc/systemd/system/" in output
+    assert "sudo cp deploy/aicrm-ai-audience-daily-intent.service /etc/systemd/system/" not in output
+    assert "sudo cp deploy/aicrm-ai-audience-daily-intent.timer /etc/systemd/system/" not in output
     assert "sudo systemctl enable aicrm-ai-audience-daily-intent.timer" not in output
     assert "sudo systemctl restart aicrm-ai-audience-daily-intent.timer" not in output
-    assert "sudo systemctl disable --now aicrm-ai-audience-daily-intent.timer" in output
+    assert "sudo systemctl disable --now aicrm-ai-audience-daily-intent.timer" not in output
     assert "cutover_replacement_autostart=pr3 generation=0 action=verified_disabled" in output
     assert "cutover_managed_legacy=pr3 generation=0 action=restarted_installed_units" in output
 
 
-def test_internal_worker_cutover_removes_predecessor_files_before_runtime_install(capsys) -> None:
+def test_owner_cutovers_remove_predecessor_files_before_runtime_install(capsys) -> None:
     assert runtime_units.main(["--phase", "install-primary-web", "--dry-run"]) == 0
     output = capsys.readouterr().out
 
@@ -429,6 +444,12 @@ def test_internal_worker_cutover_removes_predecessor_files_before_runtime_instal
         "aicrm-internal-queue-runtime.service",
         "aicrm-inbox-queue-runtime.service",
         "aicrm-internal-worker-observer.service",
+        "aicrm-ai-audience-daily-intent.timer",
+        "aicrm-ai-audience-daily-intent.service",
+        "aicrm-next-broadcast-delegation.timer",
+        "aicrm-next-broadcast-delegation.service",
+        "aicrm-next-group-ops-planning.timer",
+        "aicrm-next-group-ops-planning.service",
     ):
         assert f"sudo rm -f /etc/systemd/system/{predecessor}" in output
     assert "sudo cp deploy/aicrm-internal-worker.service /etc/systemd/system/" not in output

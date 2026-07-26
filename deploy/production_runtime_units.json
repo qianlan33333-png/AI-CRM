@@ -10,10 +10,7 @@
     "aicrm-queue-soak-snapshot.service": "aicrm-next-cron-queue-soak",
     "aicrm-data-health-snapshot.service": "aicrm-next-cron-data-health",
     "aicrm-job-catalog-scheduler.service": "aicrm-next-cron-job-catalog",
-    "openclaw-wechat-pay-order-reconciliation-worker.service": "aicrm-next-cron-payment-reconcile",
-    "aicrm-ai-audience-daily-intent.service": "aicrm-next-cron-audience-intent",
-    "aicrm-next-broadcast-delegation.service": "aicrm-next-cron-broadcast",
-    "aicrm-next-group-ops-planning.service": "aicrm-next-cron-group-ops"
+    "openclaw-wechat-pay-order-reconciliation-worker.service": "aicrm-next-cron-payment-reconcile"
   },
   "primary_web": {
     "service": "openclaw-wecom-postgres.service"
@@ -58,20 +55,7 @@
   ],
   "cutover_replacement_autostart": {
     "owner_inventory": "pr3",
-    "timers": [
-      {
-        "timer": "aicrm-ai-audience-daily-intent.timer",
-        "service": "aicrm-ai-audience-daily-intent.service"
-      },
-      {
-        "timer": "aicrm-next-broadcast-delegation.timer",
-        "service": "aicrm-next-broadcast-delegation.service"
-      },
-      {
-        "timer": "aicrm-next-group-ops-planning.timer",
-        "service": "aicrm-next-group-ops-planning.service"
-      }
-    ]
+    "timers": []
   },
   "cutover_managed_legacy": {
     "owner_inventory": "pr3",
@@ -134,16 +118,16 @@
         "legacy_owner": "openclaw-broadcast-queue-worker.timer",
         "capability": "broadcast_external_effect_delegation",
         "successor_kind": "timer",
-        "successor_unit": "aicrm-next-broadcast-delegation.timer",
-        "health_contract": "systemd_timer:aicrm-next-broadcast-delegation.timer",
+        "successor_unit": "aicrm-job-catalog-scheduler.timer",
+        "health_contract": "systemd_timer:aicrm-job-catalog-scheduler.timer",
         "backlog_contract": "broadcast_jobs"
       },
       {
         "legacy_owner": "openclaw-ai-audience-scheduler.timer",
         "capability": "ai_audience_refresh_intent_clock",
         "successor_kind": "timer",
-        "successor_unit": "aicrm-ai-audience-daily-intent.timer",
-        "health_contract": "systemd_timer:aicrm-ai-audience-daily-intent.timer",
+        "successor_unit": "aicrm-job-catalog-scheduler.timer",
+        "health_contract": "systemd_timer:aicrm-job-catalog-scheduler.timer",
         "backlog_contract": "ai_audience_refresh_intent+internal_event_outbox"
       },
       {
@@ -166,8 +150,8 @@
         "legacy_owner": "openclaw-automation-ops-scheduler.timer",
         "capability": "group_ops_effect_graph_planning",
         "successor_kind": "timer",
-        "successor_unit": "aicrm-next-group-ops-planning.timer",
-        "health_contract": "systemd_timer:aicrm-next-group-ops-planning.timer",
+        "successor_unit": "aicrm-job-catalog-scheduler.timer",
+        "health_contract": "systemd_timer:aicrm-job-catalog-scheduler.timer",
         "backlog_contract": "automation_group_ops_plan+automation_group_ops_effect_graph"
       },
       {
@@ -207,7 +191,7 @@
     }
   ],
   "job_catalog_scheduler": {
-    "activation_mode": "observe",
+    "activation_mode": "enforce",
     "timer": "aicrm-job-catalog-scheduler.timer",
     "service": "aicrm-job-catalog-scheduler.service",
     "safe_job_types": [
@@ -225,7 +209,7 @@
       "ai_audience.refresh": "aicrm-ai-audience-daily-intent.timer"
     },
     "requires_successor_parity": true,
-    "legacy_units_remain_authoritative": true
+    "legacy_units_remain_authoritative": false
   },
   "internal_worker_consolidation": {
     "activation_mode": "enforce",
@@ -249,6 +233,12 @@
     "aicrm-internal-queue-runtime.service",
     "aicrm-inbox-queue-runtime.service",
     "aicrm-internal-worker-observer.service",
+    "aicrm-ai-audience-daily-intent.timer",
+    "aicrm-ai-audience-daily-intent.service",
+    "aicrm-next-broadcast-delegation.timer",
+    "aicrm-next-broadcast-delegation.service",
+    "aicrm-next-group-ops-planning.timer",
+    "aicrm-next-group-ops-planning.service",
     "aicrm-web.service",
     "openclaw-wecom-callback-inbox-worker.timer",
     "openclaw-external-push-worker.timer",
@@ -268,6 +258,12 @@
     "aicrm-internal-queue-runtime.service",
     "aicrm-inbox-queue-runtime.service",
     "aicrm-internal-worker-observer.service",
+    "aicrm-ai-audience-daily-intent.timer",
+    "aicrm-ai-audience-daily-intent.service",
+    "aicrm-next-broadcast-delegation.timer",
+    "aicrm-next-broadcast-delegation.service",
+    "aicrm-next-group-ops-planning.timer",
+    "aicrm-next-group-ops-planning.service",
     "aicrm-web.service",
     "openclaw-wecom-callback-inbox-worker.timer",
     "openclaw-external-push-worker.timer",

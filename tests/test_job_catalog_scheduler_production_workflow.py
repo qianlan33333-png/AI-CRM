@@ -43,6 +43,7 @@ def test_scheduler_diagnostics_reports_rollback_residue_before_running_release_c
     assert 'scheduler_timer_active' in source
     assert 'if [ "$scheduler_mode" = "absent" ]; then' in source
     assert 'elif [ "$scheduler_mode" = "observe" ]; then' in source
+    assert 'elif [ "$scheduler_mode" = "enforce" ]; then' in source
     assert "aicrm_next/platform_foundation/background_jobs/scheduler_runtime.py" in source
 
 
@@ -65,3 +66,18 @@ def test_scheduler_diagnostics_reports_all_three_predecessor_timers() -> None:
     assert "aicrm-next-broadcast-delegation.timer" in source
     assert "aicrm-next-group-ops-planning.timer" in source
     assert "aicrm-ai-audience-daily-intent.timer" in source
+    assert "aicrm-next-broadcast-delegation.service" in source
+    assert "aicrm-next-group-ops-planning.service" in source
+    assert "aicrm-ai-audience-daily-intent.service" in source
+
+
+def test_scheduler_diagnostics_proves_single_owner_and_keeps_payment_observe_only() -> None:
+    source = WORKFLOW.read_text(encoding="utf-8")
+
+    assert "AICRM_JOB_CATALOG_SCHEDULER_EXECUTE=1" in source
+    assert "EXECUTE_SAFE_JOB_CATALOG_SCHEDULER" in source
+    assert "! grep -Fq 'AICRM_GROUP_OPS_MATERIAL_UPLOAD_MODE=real'" in source
+    assert "scheduler_owner_last_exit_epoch" in source
+    assert "openclaw-wechat-pay-order-reconciliation-worker.timer" in source
+    assert 'test "$load_state" = "not-found"' in source
+    assert 'test ! -e "/etc/systemd/system/$unit"' in source

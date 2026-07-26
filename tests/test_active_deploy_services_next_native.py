@@ -12,10 +12,10 @@ ACTIVE_SCRIPTS = {
     "broadcast_queue_worker": Path("scripts/run_broadcast_queue_worker.py"),
     "external_contact_sync": Path("scripts/run_external_contact_sync.py"),
     "external_effect_queue_worker": Path("scripts/run_external_effect_queue_worker.py"),
+    "job_catalog_scheduler": Path("scripts/run_job_catalog_scheduler.py"),
 }
 SERVICE_COMMANDS = {
-    "deploy/aicrm-next-group-ops-planning.service": "python scripts/run_automation_ops_scheduler.py",
-    "deploy/aicrm-next-broadcast-delegation.service": "python scripts/run_broadcast_queue_worker.py",
+    "deploy/aicrm-job-catalog-scheduler.service": "python scripts/run_job_catalog_scheduler.py --execute",
     "deploy/openclaw-automation-ops-scheduler.service": "python scripts/run_automation_ops_scheduler.py",
     "deploy/openclaw-broadcast-queue-worker.service": "python scripts/run_broadcast_queue_worker.py",
     "deploy/openclaw-external-contact-sync.service": "python scripts/run_external_contact_sync.py",
@@ -58,6 +58,7 @@ def test_active_deploy_cli_dry_run_contracts() -> None:
         ["scripts/run_broadcast_queue_worker.py", "--limit", "10", "--dry-run"],
         ["scripts/run_external_contact_sync.py", "--full", "--dry-run"],
         ["scripts/run_external_effect_queue_worker.py", "--dry-run", "--limit", "10"],
+        ["scripts/run_job_catalog_scheduler.py", "--dry-run", "--limit", "10"],
     ]
     for args in cases:
         payload = _run_cli(args)

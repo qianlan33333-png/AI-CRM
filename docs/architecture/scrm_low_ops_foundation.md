@@ -113,12 +113,13 @@ physical package move, legacy table deletion, or real provider call.
   outbox lanes in one process while preserving the legacy queue-kind arguments.
   Each claimed job executes against one request-scoped runtime-settings
   snapshot so a multi-key configuration release cannot split a single job.
-- The catalog scheduler now has a production observer unit. It evaluates the
-  versioned minute schedules and runs only redacted dry-run handlers while the
-  three predecessor timers remain authoritative. Four commands are statically
-  classified as provider-free (`external_effect.reconcile`, `campaign.plan`,
-  `group_ops.plan`, and `ai_audience.refresh`); payment reconciliation remains
-  `observe_only` until it delegates provider work through External Effect. The
+- The catalog scheduler is the enforced production owner. It evaluates the
+  versioned minute schedules and executes provider-free handlers after three
+  predecessor timers completed independent parity observation and were retired.
+  Four commands are statically classified as provider-free
+  (`external_effect.reconcile`, `campaign.plan`, `group_ops.plan`, and
+  `ai_audience.refresh`); payment reconciliation remains `observe_only` until
+  it delegates provider work through External Effect. The
   execute path additionally requires an environment gate and an exact fixed
   confirmation, and fails if any handler reports a real external call.
 - Architecture gates forbid premature physical moves and legacy table drops
@@ -138,11 +139,14 @@ jobs. HTTP paths, auth rules, event names, effect types, database behavior, and
 extension behavior therefore remain compatible while capability activation is
 now fail-closed and versioned.
 
-The job-catalog scheduler remains an observer. The combined `internal_worker`
-has completed its independent successor-parity cutover and is now the single
+The job-catalog scheduler and combined `internal_worker` have completed their
+independent successor-parity cutovers. The combined worker is now the single
 generation-gated owner for webhook Inbox, internal events, and internal Outbox.
-Its two predecessor services and the claimless observer are retired; profile
-enforcement by itself still does not authorize the scheduler owner switch.
+Its two predecessor services and the claimless observer are retired. The
+scheduler is the single owner for broadcast delegation, Group Ops planning,
+AI Audience clock intents, and record-only reconciliation; its three
+predecessor timer/service pairs are retired. Payment reconciliation remains on
+its separate reviewed timer and stays `observe_only` in the catalog.
 
 ## Deliberately not completed in this release
 
@@ -159,10 +163,6 @@ enforcement by itself still does not authorize the scheduler owner switch.
   the current graph at 116. The target of 120 remains met without introducing a
   broker or runtime plugin system. Physical directory moves remain disabled
   until public ports and unique table-write ownership are proven.
-- Existing task timers remain authoritative. The scheduler observer is active
-  and redacted, while `--execute` stays fail-closed without both its environment
-  gate and exact confirmation. Successor parity is required before any unit
-  retirement.
 - The five canonical SCRM contracts are stable integration seams; existing
   identity, audience, content, campaign, and receipt tables are not bulk-moved
   or dual-written by this change.
@@ -175,11 +175,9 @@ enforcement by itself still does not authorize the scheduler owner switch.
 ## Next safe sequence
 
 1. Keep the predecessor release as the immediate rollback target and verify the
-   enforced `internal_worker` owner with the release-bound read-only diagnostic.
-2. Finish real-handler parity for each scheduler candidate before replacing
-   any predecessor timer; payment reconciliation remains observe-only.
-3. Move physical packages into the seven stable domains only after public-port
+   enforced scheduler owner with the release-bound read-only diagnostic.
+2. Move physical packages into the seven stable domains only after public-port
    imports remain within the dependency baseline.
-4. Run the 1,200 callbacks/minute acceptance test and start the 30-day
+3. Run the 1,200 callbacks/minute acceptance test and start the 30-day
    zero-read/write clock for each legacy table only after its successor owner
    is authoritative.

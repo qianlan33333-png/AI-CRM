@@ -11,24 +11,30 @@ health contract, and backlog contract. Missing, duplicate, legacy, or inactive
 successors make the production runtime manifest invalid.
 
 Broadcast delegation and Group Ops planning remain separate bounded-context
-owners. They use the reviewed Next-native entrypoints through
-`aicrm-next-broadcast-delegation.timer` and
-`aicrm-next-group-ops-planning.timer`. Both produce durable External Effects;
-neither calls WeCom. The PostgreSQL External Effect runtime remains the single
-provider owner.
+handlers, but share the reviewed clock owner
+`aicrm-job-catalog-scheduler.timer`. The versioned job catalog invokes each
+handler independently and also owns the AI Audience clock and record-only
+reconciliation schedule. All produce durable internal facts or External
+Effects; none calls WeCom. The PostgreSQL External Effect runtime remains the
+single provider owner. Payment reconciliation is explicitly `observe_only` and
+retains its separate timer.
 
 ## Safety
 
 - The old `openclaw-*` timers remain retired and disabled.
-- Replacement timers activate only after a committed positive generation.
-- Before cutover they are installed but disabled, so there is no dual owner.
+- The consolidated scheduler activates only after its predecessor timer/service
+  pairs are disabled and removed in the deployment transaction.
+- The execute path requires an environment gate and exact fixed confirmation,
+  so rollback or partial installation fails closed.
 - Existing held/history rows remain held; no migration or automatic replay is
   introduced.
 - Rollback is the previous exact release, never restoration of a legacy timer.
 
 ## Verification
 
-The runtime-unit manager and queue cutover checker both compare the complete
-reviewed successor matrix. Deployment copies, enables, restarts, and verifies
-each replacement timer only when the cutover marker is committed. Runtime
-contract inventory exposes the replacement units for read-only diagnostics.
+The runtime-unit manager and job catalog checker both compare the complete
+reviewed successor matrix. Deployment retires predecessor unit files before it
+installs and restarts the single scheduler timer. Runtime contract inventory
+and the read-only production diagnostic expose the consolidated owner, the
+retired predecessors, the unchanged payment timer, and the last successful
+post-release scheduler exit.

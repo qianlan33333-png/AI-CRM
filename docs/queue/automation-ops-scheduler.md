@@ -1,8 +1,9 @@
 # Automation Ops Scheduler
 
-`scripts/run_automation_ops_scheduler.py` is now the production scheduler entry
-for group_ops only. `aicrm-next-group-ops-planning.timer` is its sole automatic
-owner after cutover. It creates due `external_effect_job` rows with
+`scripts/run_automation_ops_scheduler.py` remains the provider-free group_ops
+handler. `aicrm-job-catalog-scheduler.timer` is its sole automatic clock owner
+after consolidation and invokes it through the versioned `group_ops.plan` job.
+It creates due `external_effect_job` rows with
 `effect_type=wecom.message.group.send`; historical `broadcast_jobs` remain
 read-only compatibility records. Real WeCom group delivery is handled by the
 External Effect worker and the `wecom_group_message` adapter guard.
@@ -97,17 +98,18 @@ Do not use group_ops run-due or direct queue writes to stand in for automatic sc
 
 ## systemd
 
-The deployment manifest installs and enables the reviewed Next successor after
-the generation cutover is committed:
+The deployment manifest installs and enables the single reviewed scheduler
+successor:
 
 ```bash
-sudo cp deploy/aicrm-next-group-ops-planning.service /etc/systemd/system/
-sudo cp deploy/aicrm-next-group-ops-planning.timer /etc/systemd/system/
+sudo cp deploy/aicrm-job-catalog-scheduler.service /etc/systemd/system/
+sudo cp deploy/aicrm-job-catalog-scheduler.timer /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now aicrm-next-group-ops-planning.timer
-sudo systemctl status aicrm-next-group-ops-planning.timer
+sudo systemctl enable --now aicrm-job-catalog-scheduler.timer
+sudo systemctl status aicrm-job-catalog-scheduler.timer
 ```
 
 The timer runs every minute. Idempotency makes this safe even when no tasks are due.
-`openclaw-automation-ops-scheduler.timer` remains disabled as a retired legacy
-owner and is never a rollback path.
+`openclaw-automation-ops-scheduler.timer` and the intermediate
+`aicrm-next-group-ops-planning.timer` remain disabled as retired owners and are
+never rollback paths.

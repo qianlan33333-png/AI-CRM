@@ -1273,16 +1273,17 @@ def test_ai_audience_scheduler_runs_through_internal_event_queue_only():
     assert "OnCalendar=*-*-* *:0/3:00" in timer
 
 
-def test_queue_v2_ai_audience_replacement_preserves_three_minute_refresh_contract():
-    service = (ROOT / "deploy" / "aicrm-ai-audience-daily-intent.service").read_text(encoding="utf-8")
-    timer = (ROOT / "deploy" / "aicrm-ai-audience-daily-intent.timer").read_text(encoding="utf-8")
+def test_job_catalog_scheduler_preserves_three_minute_ai_audience_clock_contract():
+    service = (ROOT / "deploy" / "aicrm-job-catalog-scheduler.service").read_text(encoding="utf-8")
+    timer = (ROOT / "deploy" / "aicrm-job-catalog-scheduler.timer").read_text(encoding="utf-8")
+    catalog = (ROOT / "aicrm_next" / "platform_foundation" / "background_jobs" / "catalog.py").read_text(encoding="utf-8")
 
-    assert "--refresh-intent-clock --daily-at 02:00" in service
-    assert "--run-consumers" not in service
-    assert "--execute" not in service
+    assert "run_job_catalog_scheduler.py --execute" in service
+    assert "--confirmation EXECUTE_SAFE_JOB_CATALOG_SCHEDULER" in service
     assert "run_external_effect_queue_worker.py" not in service
-    assert "OnCalendar=*-*-* *:0/3:00" in timer
-    assert "02:00:00 Asia/Shanghai" not in timer
+    assert "OnCalendar=*-*-* *:*:40" in timer
+    assert '"ai_audience.refresh"' in catalog
+    assert 'schedule="*/3 * * * *"' in catalog
 
 
 def test_production_runtime_declares_exactly_one_internal_event_relay_owner():
@@ -1299,7 +1300,7 @@ def test_production_runtime_declares_exactly_one_internal_event_relay_owner():
     assert "openclaw-ai-audience-scheduler.service" in legacy
     assert "openclaw-internal-event-worker.service" in legacy
     assert successors["internal_event_dispatch"] == "aicrm-internal-worker.service"
-    assert successors["ai_audience_refresh_intent_clock"] == "aicrm-ai-audience-daily-intent.timer"
+    assert successors["ai_audience_refresh_intent_clock"] == "aicrm-job-catalog-scheduler.timer"
 
     owner_sources = [
         path.relative_to(ROOT).as_posix()
