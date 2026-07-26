@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
+import subprocess
+import sys
 from dataclasses import replace
 from pathlib import Path
 
@@ -26,6 +29,30 @@ def test_production_profile_selection_accepts_exact_enforced_full_profile() -> N
     assert result["capability_count"] == 14
     assert result["target_values_redacted"] is True
     assert result["real_external_call_executed"] is False
+
+
+def test_production_profile_preflight_runs_as_direct_script() -> None:
+    environment = os.environ.copy()
+    environment[DEPLOYMENT_PROFILE_PATH_ENV] = str(PROFILE_PATH)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "scripts" / "ops" / "validate_production_deployment_profile.py"),
+            "--expected-profile-path",
+            str(PROFILE_PATH),
+        ],
+        cwd=ROOT,
+        env=environment,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    payload = json.loads(result.stdout)
+    assert payload["ok"] is True
+    assert payload["activation_mode"] == "enforce"
+    assert payload["capability_count"] == 14
 
 
 def test_production_profile_selection_rejects_missing_or_different_path() -> None:

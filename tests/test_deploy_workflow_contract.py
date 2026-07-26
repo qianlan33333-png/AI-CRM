@@ -1434,9 +1434,10 @@ def test_deploy_runs_runtime_environment_as_repository_module():
         in workflow[persistence_index:runtime_start_index]
     )
     profile_preflight_index = workflow.index(
-        "python3 scripts/ops/validate_production_deployment_profile.py",
+        "python3 -m scripts.ops.validate_production_deployment_profile",
         persistence_index,
     )
+    assert "python3 scripts/ops/validate_production_deployment_profile.py" not in workflow
     runtime_mutation_index = workflow.index("runtime_mutation_started=1", persistence_index)
     assert persistence_index < profile_preflight_index < runtime_mutation_index < runtime_start_index
     assert '"${runtime_environment_args[@]}"' in workflow[persistence_index:runtime_start_index]
