@@ -99,6 +99,15 @@ class CustomerReadModelRefreshService:
                 if callable(activity_loader)
                 else {}
             )
+            if owns_source:
+                # Every source result above is fully materialized. Release the
+                # read transaction before CPU-side projection assembly and the
+                # target write transaction so a slow refresh cannot retain
+                # AccessShare locks as an idle-in-transaction backend.
+                try:
+                    _close_repo(source)
+                finally:
+                    owns_source = False
             messages_by_projection_key: dict[str, list[dict[str, Any]]] = {}
             timeline_by_projection_key: dict[str, list[dict[str, Any]]] = {}
             for customer in customers:

@@ -141,6 +141,65 @@ def test_customer_read_model_refresh_replaces_projection_and_records_count_only_
     assert "customer_read_model_refresh_state" in sessions.session.calls[0]["sql"]
 
 
+def test_owned_source_snapshot_is_closed_before_target_projection_work(monkeypatch) -> None:
+    events: list[str] = []
+
+    class OwnedSource(_Source):
+        def snapshot_recent_messages_by_unionid(self, unionids, *, per_customer_limit=100):
+            events.append("source:messages")
+            return super().snapshot_recent_messages_by_unionid(
+                unionids,
+                per_customer_limit=per_customer_limit,
+            )
+
+        def snapshot_customer_activity_by_unionid(self, unionids, *, per_customer_limit=500):
+            assert unionids == ["union_1", "union_2"]
+            assert per_customer_limit == 500
+            events.append("source:activity")
+            return {}
+
+        def close(self) -> None:
+            events.append("source:close")
+
+    class OwnedTarget(_Target):
+        def count_customers(self, filters=None) -> int:
+            events.append("target:count")
+            assert "source:close" in events
+            return super().count_customers(filters)
+
+        def replace_all(self, **kwargs) -> None:
+            events.append("target:replace")
+            assert "source:close" in events
+            super().replace_all(**kwargs)
+
+        def close(self) -> None:
+            events.append("target:close")
+
+    source = OwnedSource(_customers())
+    target = OwnedTarget(count=1)
+    monkeypatch.setattr(
+        "aicrm_next.customer_read_model.refresh.build_customer_live_source_repository",
+        lambda: source,
+    )
+    monkeypatch.setattr(
+        "aicrm_next.customer_read_model.refresh.build_customer_read_model_repository",
+        lambda: target,
+    )
+
+    result = CustomerReadModelRefreshService(session_factory=_SessionFactory()).run(dry_run=False)
+
+    assert result.ok is True
+    assert events == [
+        "source:messages",
+        "source:activity",
+        "source:close",
+        "target:count",
+        "target:replace",
+        "target:count",
+        "target:close",
+    ]
+
+
 def test_customer_read_model_refresh_refuses_duplicate_or_empty_unionid() -> None:
     duplicate = _customers()
     duplicate[1]["unionid"] = "union_1"
