@@ -71,6 +71,18 @@ def test_release_refresh_runs_only_the_exact_internal_projection_consumer(monkey
         else:
             payload = {
                 "ok": True,
+                "outbox_relay": {
+                    "targeted": True,
+                    "event_type": REFRESH_EVENT_TYPE,
+                    "counts": {
+                        "candidate_count": 1,
+                        "relayed_count": 1,
+                        "failed_retryable_count": 0,
+                        "failed_terminal_count": 0,
+                        "lost_lease_count": 0,
+                        "unhandled_failure_count": 0,
+                    },
+                },
                 "counts": {
                     "candidate_count": 1,
                     "processed_count": 1,
@@ -95,6 +107,7 @@ def test_release_refresh_runs_only_the_exact_internal_projection_consumer(monkey
         "status": "idle",
     }
     assert result["consumer_mode"] == "executed"
+    assert result["targeted_relay_mode"] == "relayed"
     assert len(calls) == 3
     worker_call = calls[1]
     assert worker_call["env"]["AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_TYPES"] == REFRESH_EVENT_TYPE
@@ -104,7 +117,14 @@ def test_release_refresh_runs_only_the_exact_internal_projection_consumer(monkey
     assert worker_call["env"]["AICRM_INTERNAL_EVENTS_ALLOWED_CONSUMERS"] == ""
     assert worker_call["env"]["AICRM_INTERNAL_EVENTS_AUTO_EXECUTE"] == "1"
     assert worker_call["env"]["AICRM_INTERNAL_EVENTS_SHADOW_ONLY"] == "0"
-    assert worker_call["command"][-4:] == ["--event-types", REFRESH_EVENT_TYPE, "--consumer-names", REFRESH_CONSUMER]
+    assert worker_call["command"][-6:] == [
+        "--event-types",
+        REFRESH_EVENT_TYPE,
+        "--consumer-names",
+        REFRESH_CONSUMER,
+        "--outbox-idempotency-key",
+        "customer_read_model.refresh.requested:26",
+    ]
 
 
 def test_release_refresh_fails_closed_on_non_exact_consumer_result(monkeypatch) -> None:
@@ -129,6 +149,11 @@ def test_release_refresh_fails_closed_on_non_exact_consumer_result(monkeypatch) 
         else:
             payload = {
                 "ok": True,
+                "outbox_relay": {
+                    "targeted": True,
+                    "event_type": REFRESH_EVENT_TYPE,
+                    "counts": {"candidate_count": 1, "relayed_count": 1},
+                },
                 "counts": {"candidate_count": 1, "processed_count": 0, "succeeded_count": 0},
                 "real_external_call_executed": False,
             }
@@ -228,6 +253,18 @@ def test_release_refresh_waits_for_a_concurrent_consumer_owner(monkeypatch) -> N
         else:
             payload = {
                 "ok": True,
+                "outbox_relay": {
+                    "targeted": True,
+                    "event_type": REFRESH_EVENT_TYPE,
+                    "counts": {
+                        "candidate_count": 0,
+                        "relayed_count": 0,
+                        "failed_retryable_count": 0,
+                        "failed_terminal_count": 0,
+                        "lost_lease_count": 0,
+                        "unhandled_failure_count": 0,
+                    },
+                },
                 "counts": {
                     "candidate_count": 0,
                     "processed_count": 0,
@@ -246,6 +283,7 @@ def test_release_refresh_waits_for_a_concurrent_consumer_owner(monkeypatch) -> N
 
     assert result["ok"] is True
     assert result["consumer_mode"] == "concurrent_handoff"
+    assert result["targeted_relay_mode"] == "already_owned"
     assert result["consumer_counts"] == {
         "candidate_count": 0,
         "processed_count": 0,
@@ -257,6 +295,39 @@ def test_release_refresh_waits_for_a_concurrent_consumer_owner(monkeypatch) -> N
         "unhandled_failure_count": 0,
     }
     assert calls[-1][-2:] == ["--wait-seconds", "300"]
+
+
+def test_release_refresh_fails_closed_when_targeted_relay_advances_a_different_shape(monkeypatch) -> None:
+    monkeypatch.setenv("AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED", "1")
+    call_count = 0
+
+    def runner(command, **kwargs):
+        del kwargs
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            payload = {
+                "ok": True,
+                "accepted": True,
+                "generation": 42,
+                "intent": {"dirty_generation": 42, "completed_generation": 41, "status": "waiting"},
+                "real_external_call_executed": False,
+            }
+        else:
+            payload = {
+                "ok": True,
+                "outbox_relay": {
+                    "targeted": True,
+                    "event_type": REFRESH_EVENT_TYPE,
+                    "counts": {"candidate_count": 1, "relayed_count": 0},
+                },
+                "counts": {},
+                "real_external_call_executed": False,
+            }
+        return CompletedProcess(command, 0, stdout=json.dumps(payload), stderr="")
+
+    with pytest.raises(ReleaseRefreshError, match="release_refresh_targeted_relay_count_mismatch"):
+        run_release_refresh(release_sha="f" * 40, command_runner=runner)
 
 
 def test_release_refresh_is_idempotent_when_the_exact_release_generation_already_completed(monkeypatch) -> None:

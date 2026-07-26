@@ -114,6 +114,23 @@ class InMemoryInternalEventRepository(InternalEventRepository):
                 return _public_event(row)
         return None
 
+    def get_event_by_idempotency_key(
+        self,
+        *,
+        tenant_id: str,
+        idempotency_key: str,
+        event_type: str,
+    ) -> InternalEvent | None:
+        normalized_tenant = _text(tenant_id) or DEFAULT_TENANT_ID
+        for row in self._events:
+            if (
+                _text(row.get("tenant_id")) == normalized_tenant
+                and _text(row.get("idempotency_key")) == _text(idempotency_key)
+                and _text(row.get("event_type")) == _text(event_type)
+            ):
+                return _public_event(row)
+        return None
+
     def list_events(self, filters: dict[str, Any] | None = None, *, limit: int = 50, offset: int = 0) -> tuple[list[InternalEvent], int]:
         rows = list(self._filtered_events(filters or {}))
         rows.sort(key=lambda row: (row.get("occurred_at") or "", int(row.get("id") or 0)), reverse=True)
@@ -648,6 +665,41 @@ class InMemoryInternalEventRepository(InternalEventRepository):
             if current:
                 acquired.append(current)
         return acquired
+
+    def acquire_due_outbox_by_idempotency_key(
+        self,
+        *,
+        tenant_id: str,
+        idempotency_key: str,
+        event_type: str,
+        locked_by: str,
+    ) -> InternalEventOutboxRecord | None:
+        now = utcnow()
+        target = next(
+            (
+                row
+                for row in self._outbox
+                if _text(row.get("tenant_id")) == (_text(tenant_id) or DEFAULT_TENANT_ID)
+                and _text(row.get("idempotency_key")) == _text(idempotency_key)
+                and _text(row.get("event_type")) == _text(event_type)
+                and _run_is_automatically_due(row, now=now)
+            ),
+            None,
+        )
+        if target is None:
+            return None
+        public_now = public_datetime(now)
+        target.update(
+            {
+                "status": "running",
+                "attempt_count": int(target.get("attempt_count") or 0) + 1,
+                "lease_token": "ieol_" + uuid4().hex,
+                "locked_at": public_now,
+                "locked_by": _text(locked_by),
+                "updated_at": public_now,
+            }
+        )
+        return _public_outbox(target)
 
     def relay_outbox(
         self,

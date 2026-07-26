@@ -20,6 +20,7 @@ from .config import (
 from .consumer_registry import InternalEventConsumerRegistry, current_internal_event_consumer_registry
 from .models import (
     AUTOMATIC_RECOVERABLE_STATUSES,
+    DEFAULT_TENANT_ID,
     MANUAL_ONLY_STATUSES,
     InternalEventConsumerResult,
     InternalEventConsumerRun,
@@ -141,6 +142,22 @@ class InternalEventWorker:
         if self._outbox_relay is None:
             return self._disabled_outbox_relay(dry_run=False)
         payload = self._outbox_relay.relay_due(limit=limit)
+        payload["enabled"] = True
+        payload["relay_role"] = self._relay_role
+        return payload
+
+    def _run_targeted_outbox_relay(self, *, idempotency_key: str, event_type: str) -> dict[str, Any]:
+        if self._outbox_relay is None:
+            return {
+                **self._disabled_outbox_relay(dry_run=False),
+                "ok": False,
+                "error": "targeted_outbox_relay_requires_owner",
+                "targeted": True,
+            }
+        payload = self._outbox_relay.relay_targeted(
+            idempotency_key=idempotency_key,
+            event_type=event_type,
+        )
         payload["enabled"] = True
         payload["relay_role"] = self._relay_role
         return payload
@@ -332,8 +349,17 @@ class InternalEventWorker:
         dry_run: bool = True,
         event_types: list[str] | None = None,
         consumer_names: list[str] | None = None,
+        outbox_idempotency_key: str = "",
     ) -> dict[str, Any]:
+        target_outbox_key = str(outbox_idempotency_key or "").strip()
         if dry_run:
+            if target_outbox_key:
+                return self._empty_due_response(
+                    dry_run=True,
+                    event_types=event_types,
+                    consumer_names=consumer_names,
+                    error="targeted_outbox_relay_requires_execute",
+                )
             payload = self.preview_due(batch_size=batch_size, event_types=event_types, consumer_names=consumer_names)
             payload["dry_run"] = True
             return payload
@@ -366,8 +392,31 @@ class InternalEventWorker:
         )
         if gated is not None:
             return gated
+        if target_outbox_key and len(effective_event_types or []) != 1:
+            return self._empty_due_response(
+                dry_run=False,
+                event_types=effective_event_types,
+                consumer_names=effective_consumers,
+                event_consumers=effective_event_consumers,
+                error="targeted_outbox_relay_requires_one_event_type",
+            )
+        target_consumers = self._requested_consumers(consumer_names)
+        if target_outbox_key and len(target_consumers) != 1:
+            return self._empty_due_response(
+                dry_run=False,
+                event_types=effective_event_types,
+                consumer_names=effective_consumers,
+                event_consumers=effective_event_consumers,
+                error="targeted_outbox_relay_requires_one_consumer",
+            )
         try:
-            outbox_relay = self._run_outbox_relay(limit=batch_size)
+            if target_outbox_key:
+                outbox_relay = self._run_targeted_outbox_relay(
+                    idempotency_key=target_outbox_key,
+                    event_type=(effective_event_types or [""])[0],
+                )
+            else:
+                outbox_relay = self._run_outbox_relay(limit=batch_size)
         except Exception as exc:
             outbox_relay = {
                 "ok": False,
@@ -378,13 +427,34 @@ class InternalEventWorker:
                 "real_external_call_executed": False,
             }
         try:
-            runs = self._repo.acquire_due_runs(
-                limit=batch_size,
-                locked_by=self._locked_by,
-                event_types=effective_event_types,
-                consumer_names=effective_consumers,
-                event_consumers=effective_event_consumers,
-            )
+            if target_outbox_key:
+                target_event = (
+                    self._repo.get_event_by_idempotency_key(
+                        tenant_id=DEFAULT_TENANT_ID,
+                        idempotency_key=target_outbox_key,
+                        event_type=(effective_event_types or [""])[0],
+                    )
+                    if outbox_relay.get("ok") is True
+                    else None
+                )
+                target_run = (
+                    self._repo.acquire_consumer_run(
+                        event_id=target_event.event_id,
+                        consumer_name=target_consumers[0],
+                        locked_by=self._locked_by,
+                    )
+                    if target_event is not None
+                    else None
+                )
+                runs = [target_run] if target_run is not None else []
+            else:
+                runs = self._repo.acquire_due_runs(
+                    limit=batch_size,
+                    locked_by=self._locked_by,
+                    event_types=effective_event_types,
+                    consumer_names=effective_consumers,
+                    event_consumers=effective_event_consumers,
+                )
         except Exception as exc:
             counts = _empty_counts()
             counts["unhandled_failure_count"] = 1

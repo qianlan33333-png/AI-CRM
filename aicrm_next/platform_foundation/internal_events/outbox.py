@@ -349,6 +349,72 @@ class InternalEventOutboxRelay:
             "real_external_call_executed": False,
         }
 
+    def relay_targeted(
+        self,
+        *,
+        idempotency_key: str,
+        event_type: str,
+        tenant_id: str = DEFAULT_TENANT_ID,
+    ) -> dict[str, Any]:
+        """Relay at most one exact outbox row without advancing older work."""
+
+        counts = {
+            "candidate_count": 0,
+            "relayed_count": 0,
+            "failed_retryable_count": 0,
+            "failed_terminal_count": 0,
+            "lost_lease_count": 0,
+            "unhandled_failure_count": 0,
+        }
+        try:
+            record = self._repo.acquire_due_outbox_by_idempotency_key(
+                tenant_id=_text(tenant_id) or DEFAULT_TENANT_ID,
+                idempotency_key=_text(idempotency_key),
+                event_type=_text(event_type),
+                locked_by=self._locked_by,
+            )
+        except Exception as exc:
+            counts["unhandled_failure_count"] = 1
+            return {
+                "ok": False,
+                "targeted": True,
+                "event_type": _text(event_type),
+                "error": "targeted_outbox_acquire_failed",
+                "error_class": exc.__class__.__name__,
+                "items": [],
+                "counts": counts,
+                "real_external_call_executed": False,
+            }
+        if record is None:
+            return {
+                "ok": True,
+                "targeted": True,
+                "event_type": _text(event_type),
+                "items": [],
+                "counts": counts,
+                "real_external_call_executed": False,
+            }
+        counts["candidate_count"] = 1
+        relayed = self.relay_claimed(record)
+        if relayed.get("ok") is True:
+            counts["relayed_count"] = 1
+        else:
+            status = _text(relayed.get("status"))
+            if status in {"failed_retryable", "failed_terminal"}:
+                counts[f"{status}_count"] = 1
+            elif status == "lost_lease":
+                counts["lost_lease_count"] = 1
+            else:
+                counts["unhandled_failure_count"] = 1
+        return {
+            "ok": relayed.get("ok") is True,
+            "targeted": True,
+            "event_type": _text(event_type),
+            "items": [relayed],
+            "counts": counts,
+            "real_external_call_executed": False,
+        }
+
     def relay_claimed(self, record) -> dict[str, Any]:
         """Relay exactly one outbox row already leased by the lane runtime."""
 

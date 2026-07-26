@@ -431,6 +431,61 @@ def test_scoped_worker_is_consumer_only_and_cannot_relay_pending_outbox(monkeypa
     assert repo.list_due_outbox(limit=10) == []
 
 
+def test_owner_worker_can_relay_one_exact_outbox_without_advancing_older_work(monkeypatch) -> None:
+    _enable_internal_event_worker(monkeypatch, "projection-a")
+    repo = InMemoryInternalEventRepository()
+    registry = _registry("projection-a")
+    older_event, _ = repo.create_event_with_consumer_runs(
+        _request("transactional-event:older-run"),
+        [InternalEventConsumerSpec(consumer_name="projection-a")],
+    )
+    repo.enqueue_outbox(_request("transactional-event:older"))
+    repo.enqueue_outbox(_request("transactional-event:release-target"))
+
+    result = InternalEventWorker(repo, registry, relay_role="owner").run_due(
+        batch_size=1,
+        dry_run=False,
+        event_types=[EVENT_TYPE],
+        consumer_names=["projection-a"],
+        outbox_idempotency_key="transactional-event:release-target",
+    )
+
+    assert result["ok"] is True
+    assert result["counts"]["succeeded_count"] == 1
+    assert result["outbox_relay"]["targeted"] is True
+    assert result["outbox_relay"]["counts"]["candidate_count"] == 1
+    assert result["outbox_relay"]["counts"]["relayed_count"] == 1
+    assert [item.idempotency_key for item in repo.list_due_outbox(limit=10)] == [
+        "transactional-event:older"
+    ]
+    assert repo.get_consumer_run(older_event.event_id, "projection-a").status == "pending"
+
+
+def test_targeted_worker_retry_dispatches_the_exact_already_relayed_event(monkeypatch) -> None:
+    _enable_internal_event_worker(monkeypatch, "projection-a")
+    repo = InMemoryInternalEventRepository()
+    registry = _registry("projection-a")
+    repo.enqueue_outbox(_request("transactional-event:release-retry"))
+    relay = InternalEventOutboxRelay(repo, registry).relay_targeted(
+        idempotency_key="transactional-event:release-retry",
+        event_type=EVENT_TYPE,
+    )
+    assert relay["counts"]["relayed_count"] == 1
+
+    result = InternalEventWorker(repo, registry, relay_role="owner").run_due(
+        batch_size=1,
+        dry_run=False,
+        event_types=[EVENT_TYPE],
+        consumer_names=["projection-a"],
+        outbox_idempotency_key="transactional-event:release-retry",
+    )
+
+    assert result["ok"] is True
+    assert result["outbox_relay"]["counts"]["candidate_count"] == 0
+    assert result["counts"]["candidate_count"] == 1
+    assert result["counts"]["succeeded_count"] == 1
+
+
 def test_terminal_and_blocked_are_manual_only_and_do_not_gain_attempts(monkeypatch) -> None:
     _enable_internal_event_worker(monkeypatch, "terminal", "blocked")
     repo = InMemoryInternalEventRepository()
@@ -580,6 +635,56 @@ def test_postgres_outbox_obeys_caller_transaction_and_duplicate_relay_is_atomic(
     assert event_count == 1
     assert run_count == 2
     assert relayed_count == 1
+
+
+@pytest.mark.skipif(not _database_url(), reason="PostgreSQL integration database is not configured")
+def test_postgres_targeted_relay_and_retry_do_not_advance_older_work(monkeypatch) -> None:
+    import psycopg
+
+    _enable_internal_event_worker(monkeypatch, "projection-a")
+    database_url = _database_url()
+    repo = SQLAlchemyInternalEventRepository(get_session_factory(database_url))
+    registry = _registry("projection-a")
+    older_event, _ = repo.create_event_with_consumer_runs(
+        _request("postgres-targeted:older-run"),
+        [InternalEventConsumerSpec(consumer_name="projection-a")],
+    )
+    with psycopg.connect(database_url, row_factory=dict_row) as conn:
+        enqueue_transactional_internal_event_outbox(conn, _request("postgres-targeted:older"))
+        enqueue_transactional_internal_event_outbox(conn, _request("postgres-targeted:release"))
+        conn.commit()
+
+    result = InternalEventOutboxRelay(repo, registry).relay_targeted(
+        idempotency_key="postgres-targeted:release",
+        event_type=EVENT_TYPE,
+    )
+
+    with psycopg.connect(database_url, row_factory=dict_row) as conn:
+        rows = conn.execute(
+            "SELECT idempotency_key, status FROM internal_event_outbox "
+            "WHERE idempotency_key IN (%s, %s) ORDER BY idempotency_key",
+            ("postgres-targeted:older", "postgres-targeted:release"),
+        ).fetchall()
+    assert result["ok"] is True
+    assert result["targeted"] is True
+    assert result["counts"]["candidate_count"] == 1
+    assert result["counts"]["relayed_count"] == 1
+    assert [(row["idempotency_key"], row["status"]) for row in rows] == [
+        ("postgres-targeted:older", "pending"),
+        ("postgres-targeted:release", "relayed"),
+    ]
+
+    retried = InternalEventWorker(repo, registry, relay_role="owner").run_due(
+        batch_size=1,
+        dry_run=False,
+        event_types=[EVENT_TYPE],
+        consumer_names=["projection-a"],
+        outbox_idempotency_key="postgres-targeted:release",
+    )
+    assert retried["ok"] is True
+    assert retried["outbox_relay"]["counts"]["candidate_count"] == 0
+    assert retried["counts"]["succeeded_count"] == 1
+    assert repo.get_consumer_run(older_event.event_id, "projection-a").status == "pending"
 
 
 @pytest.mark.skipif(not _database_url(), reason="PostgreSQL integration database is not configured")
