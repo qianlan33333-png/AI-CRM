@@ -70,12 +70,14 @@ def queue_metric_filter_sql(
     filters: dict[str, Any],
     *,
     event_consumer_pair_clause: Callable[[Any, dict[str, Any]], str],
-) -> tuple[str, dict[str, Any]]:
+) -> tuple[str, dict[str, Any], bool]:
     clauses: list[str] = []
     params: dict[str, Any] = {}
+    requires_event_join = False
     if _text(filters.get("event_type")):
         clauses.append("e.event_type = :event_type")
         params["event_type"] = _text(filters.get("event_type"))
+        requires_event_join = True
     event_section = _text(filters.get("event_section"))
     if event_section and not _text(filters.get("event_type")):
         known_types = sorted({event_type for values in EVENT_SECTION_EVENT_TYPES.values() for event_type in values})
@@ -83,9 +85,11 @@ def queue_metric_filter_sql(
         if section_types:
             clauses.append("e.event_type = ANY(:metric_event_section_types)")
             params["metric_event_section_types"] = section_types
+            requires_event_join = True
         elif event_section == "other" and known_types:
             clauses.append("NOT (e.event_type = ANY(:metric_known_event_types))")
             params["metric_known_event_types"] = known_types
+            requires_event_join = True
     for key in (
         "aggregate_type",
         "aggregate_id",
@@ -99,6 +103,7 @@ def queue_metric_filter_sql(
         if value:
             clauses.append(f"e.{key} = :metric_{key}")
             params[f"metric_{key}"] = value
+            requires_event_join = True
     trace_hashes = _trace_hash_candidates(filters)
     if trace_hashes:
         trace_clauses: list[str] = []
@@ -110,11 +115,13 @@ def queue_metric_filter_sql(
             )
             params[param_key] = trace_hash
         clauses.append("(" + " OR ".join(trace_clauses) + ")")
+        requires_event_join = True
     for key, operator in (("created_from", ">="), ("created_to", "<=")):
         value = _text(filters.get(key))
         if value:
             clauses.append(f"e.created_at {operator} CAST(:metric_{key} AS timestamptz)")
             params[f"metric_{key}"] = value
+            requires_event_join = True
     for source_key, column, param_key in (
         ("event_types", "e.event_type", "event_types"),
         ("consumer_names", "r.consumer_name", "consumer_names"),
@@ -123,6 +130,8 @@ def queue_metric_filter_sql(
         if values:
             clauses.append(f"{column} = ANY(:{param_key})")
             params[param_key] = values
+            if column.startswith("e."):
+                requires_event_join = True
     for source_key, column, param_key in (
         ("consumer_name", "r.consumer_name", "consumer_name"),
         ("consumer_status", "r.status", "metric_consumer_status"),
@@ -134,7 +143,28 @@ def queue_metric_filter_sql(
     pair_clause = event_consumer_pair_clause(filters.get("event_consumers"), params)
     if pair_clause:
         clauses.append(pair_clause)
-    return ("WHERE " + " AND ".join(clauses) if clauses else ""), params
+        requires_event_join = True
+    return ("WHERE " + " AND ".join(clauses) if clauses else ""), params, requires_event_join
+
+
+def queue_metric_due_count_breakdowns(
+    grouped_rows: list[dict[str, Any]],
+) -> tuple[dict[str, int], dict[str, int]]:
+    by_event_type = {
+        _text(item.get("event_type")): int(item.get("due_count") or 0)
+        for item in grouped_rows
+        if int(item.get("event_type_grouping") or 0) == 0
+        and int(item.get("consumer_grouping") or 0) == 1
+        and _text(item.get("event_type"))
+    }
+    by_consumer = {
+        _text(item.get("consumer_name")): int(item.get("due_count") or 0)
+        for item in grouped_rows
+        if int(item.get("event_type_grouping") or 0) == 1
+        and int(item.get("consumer_grouping") or 0) == 0
+        and _text(item.get("consumer_name"))
+    }
+    return dict(sorted(by_event_type.items())), dict(sorted(by_consumer.items()))
 
 
 def _run_is_automatically_due(row: dict[str, Any], *, now: datetime) -> bool:

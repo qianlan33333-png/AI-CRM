@@ -42,6 +42,7 @@ from .repository_support import (
     hashlib,
     json,
     public_datetime,
+    queue_metric_due_count_breakdowns,
     queue_metric_filter_sql,
     redact_sensitive_text,
     scrub_summary,
@@ -507,11 +508,12 @@ class SQLAlchemyInternalEventRepository(InternalEventRepository):
 
     def queue_metrics(self, filters: dict[str, Any] | None = None) -> dict[str, Any]:
         filters = dict(filters or {})
-        where, params = queue_metric_filter_sql(
+        where, params, requires_event_join = queue_metric_filter_sql(
             filters,
             event_consumer_pair_clause=self._event_consumer_pair_clause,
         )
         due_predicate = automatic_due_predicate_sql("r")
+        event_join = "JOIN internal_event e ON e.event_id = r.event_id" if requires_event_join else ""
         row = (
             self._one(
                 f"""
@@ -547,37 +549,32 @@ class SQLAlchemyInternalEventRepository(InternalEventRepository):
                     0
                 ) AS oldest_pending_age_seconds
             FROM internal_event_consumer_run r
-            JOIN internal_event e ON e.event_id = r.event_id
+            {event_join}
             {where}
             """,
                 params,
             )
             or {}
         )
-        by_event_type = self._all(
-            f"""
-            SELECT e.event_type, COUNT(*) AS due_count
-            FROM internal_event_consumer_run r
-            JOIN internal_event e ON e.event_id = r.event_id
-            {where}
-            {"AND" if where else "WHERE"} {due_predicate}
-            GROUP BY e.event_type
-            ORDER BY e.event_type ASC
-            """,
-            params,
-        )
-        by_consumer = self._all(
-            f"""
-            SELECT r.consumer_name, COUNT(*) AS due_count
-            FROM internal_event_consumer_run r
-            JOIN internal_event e ON e.event_id = r.event_id
-            {where}
-            {"AND" if where else "WHERE"} {due_predicate}
-            GROUP BY r.consumer_name
-            ORDER BY r.consumer_name ASC
-            """,
-            params,
-        )
+        grouped_due_rows: list[dict[str, Any]] = []
+        if int(row.get("due_count") or 0) > 0:
+            grouped_due_rows = self._all(
+                f"""
+                SELECT
+                    GROUPING(e.event_type) AS event_type_grouping,
+                    GROUPING(r.consumer_name) AS consumer_grouping,
+                    e.event_type,
+                    r.consumer_name,
+                    COUNT(*) AS due_count
+                FROM internal_event_consumer_run r
+                JOIN internal_event e ON e.event_id = r.event_id
+                {where}
+                {"AND" if where else "WHERE"} {due_predicate}
+                GROUP BY GROUPING SETS ((e.event_type), (r.consumer_name))
+                """,
+                params,
+            )
+        due_count_by_event_type, due_count_by_consumer = queue_metric_due_count_breakdowns(grouped_due_rows)
         return {
             "raw_open_count": int(row.get("raw_open_count") or 0),
             "held_count": int(row.get("held_count") or 0),
@@ -592,8 +589,8 @@ class SQLAlchemyInternalEventRepository(InternalEventRepository):
             "failed_retryable_count": int(row.get("failed_retryable_count") or 0),
             "failed_terminal_count": int(row.get("failed_terminal_count") or 0),
             "oldest_pending_age_seconds": int(float(row.get("oldest_pending_age_seconds") or 0)),
-            "due_count_by_event_type": {_text(item.get("event_type")): int(item.get("due_count") or 0) for item in by_event_type},
-            "due_count_by_consumer": {_text(item.get("consumer_name")): int(item.get("due_count") or 0) for item in by_consumer},
+            "due_count_by_event_type": due_count_by_event_type,
+            "due_count_by_consumer": due_count_by_consumer,
         }
 
     def list_due_runs(
