@@ -407,7 +407,7 @@ jobs:
             set -a
             source /home/ubuntu/.openclaw-wecom-pg.env
             set +a
-            python3 scripts/ops/validate_production_deployment_profile.py \
+            python3 -m scripts.ops.validate_production_deployment_profile \
               --expected-profile-path '/home/ubuntu/极简 crm/deploy/deployment_profiles/production-current.json' \
               | tee /tmp/aicrm-deployment-profile-preflight.json
             # Identity preflight must fail before any runtime unit is stopped.

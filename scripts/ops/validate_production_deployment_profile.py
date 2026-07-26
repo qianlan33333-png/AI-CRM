@@ -4,12 +4,18 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from aicrm_next.capability_registry import CAPABILITY_SPECS
-from aicrm_next.deployment_profile import (
+
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from aicrm_next.capability_registry import CAPABILITY_SPECS  # noqa: E402
+from aicrm_next.deployment_profile import (  # noqa: E402
     DEPLOYMENT_PROFILE_PATH_ENV,
     deployment_profile_from_environment,
 )
