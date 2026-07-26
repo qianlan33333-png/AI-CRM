@@ -15,6 +15,7 @@ from aicrm_next.service_period.application import (
     GrantOrRenewEntitlementCommand,
 )
 from aicrm_next.service_period.dto import ServicePeriodProductCreateRequest
+from aicrm_next.service_period.huangyoucan_usage import huangyoucan_usage_match_joins
 from aicrm_next.service_period.member_grid import (
     MemberViewConflictError,
     empty_view_config,
@@ -440,6 +441,77 @@ def test_viewer_can_query_drafts_but_cannot_manage_views_or_edit_remarks(monkeyp
     assert "POST /api/admin/service-period-products/{service_product_id}/member-views" not in grants_text
     assert "PUT /api/admin/service-period-products/{service_product_id}/members/{unionid}/remark" not in grants_text
     assert "PUT /api/admin/service-period-products/{service_product_id}/members/{unionid}/alliance" not in grants_text
+
+
+def test_huangyoucan_usage_match_joins_hit_existing_partial_indexes(next_pg_schema) -> None:
+    import psycopg
+
+    database_url = os.environ["DATABASE_URL"]
+    usage_joins = huangyoucan_usage_match_joins(
+        unionid_sql="identity.unionid",
+        mobile_sql="identity.mobile",
+    )
+    with psycopg.connect(database_url) as connection:
+        connection.execute(
+            """
+            INSERT INTO service_period_huangyoucan_usage_snapshot (
+                huangyoucan_user_id, unionid, mobile_md5, formally_logged_in, has_token_usage,
+                learning_plan_id, open_count_7d, refreshed_at
+            )
+            SELECT
+                'hyc_partial_index_noise_' || series,
+                'union_partial_index_noise_' || series,
+                md5((10000000000 + series)::text),
+                FALSE,
+                FALSE,
+                '',
+                0,
+                CURRENT_TIMESTAMP
+            FROM generate_series(1, 5000) AS series
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO service_period_huangyoucan_usage_snapshot (
+                huangyoucan_user_id, unionid, mobile_md5, formally_logged_in, has_token_usage,
+                learning_plan_id, open_count_7d, refreshed_at
+            ) VALUES (
+                'hyc_partial_index_target',
+                'union_partial_index_target',
+                md5('13800138000'),
+                TRUE,
+                TRUE,
+                '',
+                0,
+                CURRENT_TIMESTAMP
+            )
+            """
+        )
+        connection.execute("ANALYZE service_period_huangyoucan_usage_snapshot")
+        plan_payload = connection.execute(
+            f"""
+            EXPLAIN (COSTS OFF, FORMAT JSON)
+            SELECT
+                huangyoucan_match.match_status,
+                huangyoucan_usage.huangyoucan_user_id
+            FROM (
+                VALUES ('union_partial_index_target'::text, '13800138000'::text)
+            ) AS identity(unionid, mobile)
+            {usage_joins}
+            """
+        ).fetchone()[0][0]
+
+    index_names: set[str] = set()
+
+    def collect_indexes(node: dict) -> None:
+        if node.get("Index Name"):
+            index_names.add(str(node["Index Name"]))
+        for child in node.get("Plans") or []:
+            collect_indexes(child)
+
+    collect_indexes(plan_payload["Plan"])
+    assert "idx_service_period_hyc_usage_unionid" in index_names
+    assert "idx_service_period_hyc_usage_mobile_md5" in index_names
 
 
 def test_postgres_grid_query_and_view_repository_contract(next_pg_schema) -> None:

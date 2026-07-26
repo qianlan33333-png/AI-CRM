@@ -411,10 +411,14 @@ def test_member_list_postgres_uses_existing_identity_and_contact_fallbacks() -> 
     assert repo_source.index("NULLIF(wfu.remark, '')") < repo_source.index("NULLIF(NULLIF(c.customer_name, ''), '问卷提交用户')")
     assert "NULLIF(NULLIF(c.customer_name, ''), '问卷提交用户')" in repo_source
     assert "NULLIF(wim.name, '')" in repo_source
-    assert "service_period_huangyoucan_usage_snapshot" in huangyoucan_usage_match_joins(
+    usage_joins = huangyoucan_usage_match_joins(
         unionid_sql="e.unionid",
         mobile_sql="c.mobile",
     )
+    assert "service_period_huangyoucan_usage_snapshot" in usage_joins
+    assert "snapshot.unionid <> ''" in usage_joins
+    assert "snapshot.mobile_md5 <> ''" in usage_joins
+    assert ")::CHAR(32)" in usage_joins
     assert "public_huangyoucan_usage_fields" in repo_source
 
 

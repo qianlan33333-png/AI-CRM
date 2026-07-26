@@ -51,13 +51,17 @@ def huangyoucan_usage_match_joins(*, unionid_sql: str, mobile_sql: str) -> str:
                 SELECT COUNT(*) AS candidate_count, MIN(snapshot.huangyoucan_user_id) AS candidate_id
                 FROM service_period_huangyoucan_usage_snapshot snapshot
                 WHERE NULLIF({unionid_sql}, '') IS NOT NULL
+                  AND snapshot.unionid <> ''
                   AND snapshot.unionid = {unionid_sql}
             ) union_candidate
             CROSS JOIN LATERAL (
                 SELECT COUNT(*) AS candidate_count, MIN(snapshot.huangyoucan_user_id) AS candidate_id
                 FROM service_period_huangyoucan_usage_snapshot snapshot
                 WHERE NULLIF(regexp_replace(COALESCE({mobile_sql}, ''), '[^0-9]', '', 'g'), '') IS NOT NULL
-                  AND snapshot.mobile_md5 = md5(regexp_replace(COALESCE({mobile_sql}, ''), '[^0-9]', '', 'g'))
+                  AND snapshot.mobile_md5 <> ''
+                  AND snapshot.mobile_md5 = md5(
+                      regexp_replace(COALESCE({mobile_sql}, ''), '[^0-9]', '', 'g')
+                  )::CHAR(32)
             ) mobile_candidate
         ) huangyoucan_match ON TRUE
         LEFT JOIN service_period_huangyoucan_usage_snapshot huangyoucan_usage
