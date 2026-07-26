@@ -46,6 +46,8 @@ class CustomerReadRepository(Protocol):
 
     def count_customers(self, filters: JsonDict | None = None) -> int: ...
 
+    def get_projection_watermark(self) -> JsonDict: ...
+
     def get_customer_detail(self, external_userid: str) -> JsonDict | None: ...
 
     def get_customer(self, external_userid: str) -> JsonDict | None: ...
@@ -321,6 +323,39 @@ class SqlAlchemyCustomerReadModelRepository:
     def count_customers(self, filters: JsonDict | None = None) -> int:
         stmt = select(func.count()).select_from(self._customer_list_stmt(filters or {}).subquery())
         return int(self._session.execute(stmt).scalar_one() or 0)
+
+    def get_projection_watermark(self) -> JsonDict:
+        """Read the singleton refresh watermark without scanning customer rows."""
+
+        if is_sqlite_session(self._session):
+            return {}
+        row = self._session.execute(
+            text(
+                """
+                SELECT state.last_succeeded_at,
+                       state.source_count,
+                       state.target_count,
+                       COALESCE(intent.dirty_generation, 0) AS dirty_generation,
+                       COALESCE(intent.completed_generation, 0) AS completed_generation,
+                       COALESCE(intent.status, 'idle') AS refresh_status
+                FROM customer_read_model_refresh_state state
+                LEFT JOIN customer_read_model_refresh_intent intent
+                  ON intent.singleton_id = state.singleton_id
+                WHERE state.singleton_id = 1
+                LIMIT 1
+                """
+            )
+        ).mappings().first()
+        if not row:
+            return {}
+        return {
+            "last_succeeded_at": _iso(row.get("last_succeeded_at")) or "",
+            "source_count": max(0, int(row.get("source_count") or 0)),
+            "target_count": max(0, int(row.get("target_count") or 0)),
+            "dirty_generation": max(0, int(row.get("dirty_generation") or 0)),
+            "completed_generation": max(0, int(row.get("completed_generation") or 0)),
+            "refresh_status": str(row.get("refresh_status") or "idle"),
+        }
 
     def get_customer(self, external_userid: str) -> JsonDict | None:
         external_userid = str(external_userid or "").strip()

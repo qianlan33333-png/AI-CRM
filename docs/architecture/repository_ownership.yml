@@ -454,6 +454,8 @@ repositories:
       - class_user_status_current
       - contact_tags
       - crm_user_identity
+      - customer_read_model_refresh_intent
+      - customer_read_model_refresh_state
       - owner_role_map
       - questionnaire_submissions
       - wechat_pay_orders
