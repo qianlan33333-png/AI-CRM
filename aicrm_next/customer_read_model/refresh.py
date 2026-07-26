@@ -14,6 +14,7 @@ from .repo import (
     build_customer_live_source_repository,
     build_customer_read_model_repository,
 )
+from .refresh_scope_repository import CustomerReadModelRefreshScopeRepository
 
 
 DEFAULT_MAX_CUSTOMERS = 100_000
@@ -27,6 +28,8 @@ class CustomerReadModelRefreshResult:
     target_count_before: int
     target_count_after: int
     duration_ms: int
+    mode: str = "full"
+    affected_count: int = 0
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -46,12 +49,21 @@ class CustomerReadModelRefreshService:
         source_repo: CustomerReadRepository | None = None,
         target_repo: CustomerReadRepository | None = None,
         session_factory: Callable[[], Any] | None = None,
+        scope_repository: CustomerReadModelRefreshScopeRepository | None = None,
     ) -> None:
         self._source_repo = source_repo
         self._target_repo = target_repo
         self._session_factory = session_factory or get_session_factory()
+        self._scope_repository = scope_repository
 
-    def run(self, *, dry_run: bool = True, max_customers: int | None = None) -> CustomerReadModelRefreshResult:
+    def run(
+        self,
+        *,
+        dry_run: bool = True,
+        max_customers: int | None = None,
+        generation: int | None = None,
+        completed_generation: int | None = None,
+    ) -> CustomerReadModelRefreshResult:
         started = time.monotonic()
         source = self._source_repo or build_customer_live_source_repository()
         target = self._target_repo or build_customer_read_model_repository()
@@ -72,6 +84,35 @@ class CustomerReadModelRefreshService:
             ),
         )
         try:
+            full_mode = "full"
+            target_generation = max(0, int(generation or 0))
+            previous_generation = max(0, int(completed_generation or 0))
+            if not dry_run and target_generation > previous_generation:
+                scope_repository = self._scope_repository or CustomerReadModelRefreshScopeRepository(
+                    self._session_factory
+                )
+                scope = scope_repository.load(
+                    completed_generation=previous_generation,
+                    target_generation=target_generation,
+                )
+                if not scope.requires_full_refresh:
+                    prepared = self._prepare_incremental(source, scope)
+                    if prepared is not None:
+                        requested_unionids, customers, recent_messages_by_unionid = prepared
+                        if owns_source:
+                            try:
+                                _close_repo(source)
+                            finally:
+                                owns_source = False
+                        return self._apply_incremental(
+                            started=started,
+                            target=target,
+                            requested_unionids=requested_unionids,
+                            customers=customers,
+                            recent_messages_by_unionid=recent_messages_by_unionid,
+                        )
+                full_mode = "full_fallback"
+
             source_count_hint = int(source.count_customers() or 0)
             if source_count_hint <= 0:
                 raise RuntimeError("customer_read_model_source_empty")
@@ -142,6 +183,8 @@ class CustomerReadModelRefreshService:
                     target_count_before=target_count_before,
                     target_count_after=target_count_before,
                     duration_ms=int((time.monotonic() - started) * 1000),
+                    mode=full_mode,
+                    affected_count=len(customers),
                 )
 
             replace_all = getattr(target, "replace_all", None)
@@ -169,12 +212,87 @@ class CustomerReadModelRefreshService:
                 target_count_before=target_count_before,
                 target_count_after=target_count_after,
                 duration_ms=duration_ms,
+                mode=full_mode,
+                affected_count=len(customers),
             )
         finally:
             if owns_source:
                 _close_repo(source)
             if owns_target:
                 _close_repo(target)
+
+    def _prepare_incremental(
+        self,
+        source: CustomerReadRepository,
+        scope: Any,
+    ) -> tuple[list[str], list[dict[str, Any]], dict[str, list[dict[str, Any]]]] | None:
+        requested = set(scope.unionids)
+        get_customer = getattr(source, "get_customer", None)
+        for external_userid in scope.external_userids:
+            if not callable(get_customer):
+                return None
+            customer = get_customer(external_userid)
+            unionid = str((customer or {}).get("unionid") or "").strip()
+            if not unionid:
+                return None
+            requested.add(unionid)
+        requested_unionids = sorted(requested)
+        if not requested_unionids:
+            return None
+
+        customer_loader = getattr(source, "list_customers_by_unionids", None)
+        if not callable(customer_loader):
+            return None
+        customers = list(customer_loader(requested_unionids) or [])
+        returned_unionids = [str(item.get("unionid") or "").strip() for item in customers]
+        if any(not unionid or unionid not in requested for unionid in returned_unionids):
+            return None
+        if len(returned_unionids) != len(set(returned_unionids)):
+            return None
+
+        snapshot_loader = getattr(source, "snapshot_recent_messages_by_unionid", None)
+        recent_messages_by_unionid = (
+            snapshot_loader(requested_unionids, per_customer_limit=100)
+            if callable(snapshot_loader)
+            else {}
+        )
+        return requested_unionids, customers, dict(recent_messages_by_unionid or {})
+
+    def _apply_incremental(
+        self,
+        *,
+        started: float,
+        target: CustomerReadRepository,
+        requested_unionids: list[str],
+        customers: list[dict[str, Any]],
+        recent_messages_by_unionid: dict[str, list[dict[str, Any]]],
+    ) -> CustomerReadModelRefreshResult:
+        target_count_before = int(target.count_customers() or 0)
+        upsert = getattr(target, "upsert_customer_snapshots", None)
+        if not callable(upsert):
+            raise RuntimeError("customer_read_model_target_incremental_upsert_missing")
+        upsert(
+            requested_unionids=requested_unionids,
+            customers=customers,
+            messages_by_unionid=recent_messages_by_unionid,
+        )
+        target_count_after = int(target.count_customers() or 0)
+        duration_ms = int((time.monotonic() - started) * 1000)
+        self._record_success(
+            source_count=target_count_after,
+            target_count=target_count_after,
+            duration_ms=duration_ms,
+        )
+        return CustomerReadModelRefreshResult(
+            ok=True,
+            dry_run=False,
+            source_count=target_count_after,
+            target_count_before=target_count_before,
+            target_count_after=target_count_after,
+            duration_ms=duration_ms,
+            mode="incremental",
+            affected_count=len(requested_unionids),
+        )
 
     def _record_success(self, *, source_count: int, target_count: int, duration_ms: int) -> None:
         with self._session_factory.begin() as session:

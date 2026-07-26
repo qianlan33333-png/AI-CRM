@@ -97,6 +97,7 @@ class CustomerReadModelRefreshIntentRepository:
         *,
         source_event_key: str,
         source_event_type: str,
+        source_event_id: str = "",
         execution_id: str = "",
         parent_execution_id: str = "",
         recover_blocked: bool = False,
@@ -107,6 +108,7 @@ class CustomerReadModelRefreshIntentRepository:
                 session,
                 source_event_key=source_event_key,
                 source_event_type=source_event_type,
+                source_event_id=source_event_id,
                 execution_id=execution_id,
                 parent_execution_id=parent_execution_id,
                 recover_blocked=recover_blocked,
@@ -121,6 +123,7 @@ class CustomerReadModelRefreshIntentRepository:
         *,
         source_event_key: str,
         source_event_type: str,
+        source_event_id: str = "",
         execution_id: str = "",
         parent_execution_id: str = "",
         recover_blocked: bool = False,
@@ -142,10 +145,10 @@ class CustomerReadModelRefreshIntentRepository:
             text(
                 """
                 INSERT INTO customer_read_model_refresh_source_receipt (
-                    source_event_key, source_event_type, generation,
+                    source_event_key, source_event_type, source_event_id, generation,
                     execution_id, parent_execution_id, created_at
                 ) VALUES (
-                    :source_event_key, :source_event_type, 1,
+                    :source_event_key, :source_event_type, :source_event_id, 1,
                     :execution_id, :parent_execution_id, CURRENT_TIMESTAMP
                 )
                 ON CONFLICT (source_event_key) DO NOTHING
@@ -155,6 +158,7 @@ class CustomerReadModelRefreshIntentRepository:
             {
                 "source_event_key": event_key,
                 "source_event_type": _text(source_event_type),
+                "source_event_id": _text(source_event_id),
                 "execution_id": _text(execution_id),
                 "parent_execution_id": _text(parent_execution_id),
             },
@@ -515,11 +519,15 @@ class CustomerReadModelRefreshIntentRepository:
                         "source_count": int(result.get("source_count") or 0),
                         "target_count": int(result.get("target_count_after") or 0),
                         "duration_ms": int(result.get("duration_ms") or 0),
+                        "mode": _text(result.get("mode")) or "full",
+                        "affected_count": int(result.get("affected_count") or 0),
                     },
                     payload_summary={
                         "generation": int(generation),
                         "source_count": int(result.get("source_count") or 0),
                         "target_count": int(result.get("target_count_after") or 0),
+                        "mode": _text(result.get("mode")) or "full",
+                        "affected_count": int(result.get("affected_count") or 0),
                     },
                     context=CommandContext(
                         actor_id="customer_read_model_refresh_intent",
@@ -664,6 +672,7 @@ class CustomerReadModelRefreshIntentService:
         *,
         source_event_key: str,
         source_event_type: str,
+        source_event_id: str = "",
         execution_id: str = "",
         parent_execution_id: str = "",
         recover_blocked: bool = False,
@@ -672,6 +681,7 @@ class CustomerReadModelRefreshIntentService:
         return self._repo.mark_dirty(
             source_event_key=source_event_key,
             source_event_type=source_event_type,
+            source_event_id=source_event_id,
             execution_id=execution_id,
             parent_execution_id=parent_execution_id,
             recover_blocked=recover_blocked,
@@ -694,7 +704,11 @@ class CustomerReadModelRefreshIntentService:
             return {**claim, "ok": claim.get("reason") == "already_completed", "real_external_call_executed": False}
         generation = int(claim.get("running_generation") or 0)
         try:
-            raw_result = self._refresh_runner(dry_run=False)
+            raw_result = self._refresh_runner(
+                dry_run=False,
+                generation=generation,
+                completed_generation=int(claim.get("completed_generation") or 0),
+            )
             result = raw_result.to_dict() if hasattr(raw_result, "to_dict") else dict(raw_result or {})
         except Exception as exc:
             safe_error = redact_sensitive_text(str(exc))[:1000]

@@ -447,6 +447,7 @@ tables:
     read_owners:
       - aicrm_next.admin_read_model.repo
       - aicrm_next.customer_read_model.repo
+      - aicrm_next.customer_read_model.refresh_scope_repository
       - aicrm_next.customer_read_model.sidebar_v2
       - aicrm_next.message_archive.repo
     replacement: ""
@@ -603,6 +604,9 @@ tables:
     domain: customer_read_model
     lifecycle: read_model
     write_owner: aicrm_next.customer_read_model
+    write_owners:
+      - aicrm_next.customer_read_model
+      - aicrm_next.owner_migration
     read_owners:
       - aicrm_next.customer_read_model.sidebar_v2
     replacement: ""
@@ -1771,6 +1775,7 @@ tables:
     lifecycle: event
     write_owner: aicrm_next.platform_foundation.internal_events.service
     read_owners:
+      - aicrm_next.customer_read_model.refresh_scope_repository
       - aicrm_next.platform_foundation.execution_runtime.read_model
       - aicrm_next.platform_foundation.internal_events.worker
       - internal event admin/reconciliation APIs
@@ -3341,38 +3346,48 @@ tables:
   customer_detail_snapshot_next:
     domain: customer_read_model
     lifecycle: read_model
-    write_owner: aicrm_next.owner_migration
+    write_owner: aicrm_next.customer_read_model
+    write_owners:
+      - aicrm_next.customer_read_model
+      - aicrm_next.owner_migration
     read_owners:
+      - aicrm_next.customer_read_model
       - aicrm_next.owner_migration
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - existing production runtime
+      - customer read-model full calibration
+      - customer source-event incremental refresh
     migration_source: 0026_customer_read_model_next
     pii_level: internal_contact
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes. Revision 0152 adds the unique unionid key and synchronizes the id sequence before the separately released incremental writer is enabled.
+    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes. Revision 0152 adds the unique unionid key and synchronizes the id sequence; the customer source-event worker then owns bounded unionid upserts while release calibration remains separately observable.
 
   customer_list_index_next:
     domain: customer_read_model
     lifecycle: read_model
-    write_owner: aicrm_next.owner_migration
+    write_owner: aicrm_next.customer_read_model
+    write_owners:
+      - aicrm_next.customer_read_model
+      - aicrm_next.owner_migration
     read_owners:
+      - aicrm_next.customer_read_model
       - aicrm_next.owner_migration
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - existing production runtime
+      - customer read-model full calibration
+      - customer source-event incremental refresh
     migration_source: 0026_customer_read_model_next
     pii_level: internal_contact
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes. Revision 0152 adds the unique unionid key and synchronizes the id sequence before the separately released incremental writer is enabled.
+    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes. Revision 0152 adds the unique unionid key and synchronizes the id sequence; the customer source-event worker then owns bounded unionid upserts while release calibration remains separately observable.
 
   customer_recent_message_next:
     domain: customer_read_model
@@ -3384,13 +3399,14 @@ tables:
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - existing production runtime
+      - customer read-model full calibration
+      - customer source-event incremental refresh
     migration_source: 0026_customer_read_model_next
     pii_level: internal_contact
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes. Revision 0152 synchronizes the id sequence before the separately released incremental writer is enabled.
+    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes. Revision 0152 synchronizes the id sequence; incremental refresh replaces only the bounded unionid message slice and leaves unrelated customers untouched.
 
   customer_timeline_event_next:
     domain: customer_read_model
@@ -4451,6 +4467,7 @@ tables:
     write_owner: aicrm_next.customer_read_model.refresh_intents
     read_owners:
       - aicrm_next.customer_read_model.refresh_intents
+      - aicrm_next.customer_read_model.refresh_scope_repository
     replacement: none; idempotent source-event dirty-mark evidence
     drop_candidate: false
     drop_after: ""
@@ -4462,7 +4479,7 @@ tables:
     guard_tests:
       - tests/test_identity_customer_event_driven_postgres.py
       - tests/test_data_table_lifecycle_guard.py
-    notes: Stores only a SHA-256 opaque source event key, opaque internal source event id, source event type, generation, and execution links. Revision 0152 adds the source-event reference and generation index for bounded coalesced reads. It never stores customer identifiers, messages, questionnaire answers, payment payloads, or provider results.
+    notes: Stores only a SHA-256 opaque source event key, opaque internal source event id, source event type, generation, and execution links. Revision 0152 adds the source-event reference and generation index for bounded coalesced reads; refresh_scope_repository joins the canonical internal event only in the worker and never copies customer identifiers or payloads into this receipt.
 
   admin_sso_states:
     <<: *legacy_production_table_defaults

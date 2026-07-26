@@ -460,6 +460,22 @@ repositories:
       - owner_role_map
       - questionnaire_submissions
       - wechat_pay_orders
+    table_writes:
+      - customer_detail_snapshot_next
+      - customer_list_index_next
+      - customer_recent_message_next
+      - customer_timeline_event_next
+    non_literal_table_writes:
+      - customer_detail_snapshot_next
+      - customer_list_index_next
+      - customer_recent_message_next
+      - customer_timeline_event_next
+  aicrm_next/customer_read_model/refresh_scope_repository.py:
+    capability_owner: aicrm_next.customer_read_model
+    table_reads:
+      - archived_messages
+      - customer_read_model_refresh_source_receipt
+      - internal_event
     table_writes: []
   aicrm_next/customer_read_model/sidebar_profile_repository.py:
     capability_owner: aicrm_next.customer_read_model

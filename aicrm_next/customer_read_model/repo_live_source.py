@@ -82,6 +82,17 @@ class LiveSourceCustomerReadRepository:
         customers = self._decorate_customer_rows(rows)
         return customers[0] if customers else None
 
+    def list_customers_by_unionids(self, unionids: list[str]) -> list[JsonDict]:
+        normalized = sorted({str(value or "").strip() for value in unionids if str(value or "").strip()})
+        if not normalized:
+            return []
+        rows = self._customer_rows(
+            {"unionids": normalized},
+            limit=len(normalized),
+            offset=0,
+        )
+        return self._decorate_customer_rows(rows)
+
     def list_timeline(
         self,
         external_userid: str,
@@ -458,7 +469,8 @@ class LiveSourceCustomerReadRepository:
         """
         effective_limit = _DEFAULT_LIVE_SOURCE_LIST_LIMIT if limit is None else int(limit)
         params.update({"limit": max(1, effective_limit), "offset": max(0, int(offset or 0))})
-        return [dict(row) for row in self._session.execute(text(sql), params).mappings()]
+        statement = _external_userids_statement(self._session, sql) if filters.get("unionids") else text(sql)
+        return [dict(row) for row in self._session.execute(statement, params).mappings()]
 
     def _customer_decorated_sql(self, where_sql: str, select_sql: str) -> str:
         sqlite = is_sqlite_session(self._session)
@@ -574,6 +586,16 @@ class LiveSourceCustomerReadRepository:
         if unionid:
             where.append("decorated.unionid = :unionid")
             params["unionid"] = unionid
+        unionids = sorted(
+            {
+                str(value or "").strip()
+                for value in list(filters.get("unionids") or [])
+                if str(value or "").strip()
+            }
+        )
+        if unionids:
+            where.append("decorated.unionid IN :external_userids")
+            params["external_userids"] = unionids
         external_userid = str(filters.get("external_userid") or "").strip()
         if external_userid:
             where.append("decorated.external_userid = :external_userid")

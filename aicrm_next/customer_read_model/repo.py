@@ -33,6 +33,8 @@ from .sql_dialect import is_sqlite_session, json_text_expression
 _DEFAULT_LIVE_SOURCE_LIST_LIMIT = 200
 # Ten binds per row today; leave wide headroom below PostgreSQL's 65,535 limit.
 _TIMELINE_UPSERT_BATCH_SIZE = 1_000
+_PROJECTION_UPSERT_BATCH_SIZE = 500
+_RECENT_MESSAGE_INSERT_BATCH_SIZE = 1_000
 
 
 class CustomerReadRepository(Protocol):
@@ -45,6 +47,8 @@ class CustomerReadRepository(Protocol):
     ) -> list[JsonDict]: ...
 
     def count_customers(self, filters: JsonDict | None = None) -> int: ...
+
+    def list_customers_by_unionids(self, unionids: list[str]) -> list[JsonDict]: ...
 
     def get_projection_watermark(self) -> JsonDict: ...
 
@@ -151,6 +155,93 @@ class SqlAlchemyCustomerReadModelRepository:
         self.upsert_timeline_events(events, commit=False)
         self._session.commit()
 
+    def upsert_customer_snapshots(
+        self,
+        *,
+        requested_unionids: list[str],
+        customers: list[JsonDict],
+        messages_by_unionid: dict[str, list[JsonDict]] | None = None,
+    ) -> dict[str, int]:
+        requested = sorted(
+            {str(value or "").strip() for value in requested_unionids if str(value or "").strip()}
+        )
+        if not requested:
+            raise ValueError("customer_read_model_incremental_scope_required")
+        requested_set = set(requested)
+        customer_by_unionid: dict[str, JsonDict] = {}
+        for customer in customers:
+            unionid = _customer_unionid(customer)
+            if not unionid or unionid not in requested_set:
+                raise ValueError("customer_read_model_incremental_customer_scope_mismatch")
+            if unionid in customer_by_unionid:
+                raise ValueError("customer_read_model_incremental_duplicate_unionid")
+            customer_by_unionid[unionid] = dict(customer)
+
+        dialect = str(self._session.get_bind().dialect.name)
+        insert_builder = sqlite_insert if dialect == "sqlite" else postgresql_insert
+        list_rows: list[dict[str, Any]] = []
+        detail_rows: list[dict[str, Any]] = []
+        message_rows: list[dict[str, Any]] = []
+        message_events: list[JsonDict] = []
+        messages_by_unionid = messages_by_unionid or {}
+        for unionid, customer in customer_by_unionid.items():
+            list_row, detail_row = _customer_projection_rows(customer)
+            list_rows.append(list_row)
+            detail_rows.append(detail_row)
+            for message in list(messages_by_unionid.get(unionid) or []):
+                message_rows.append(_recent_message_projection_row(customer, message))
+                message_events.append(_message_timeline_event(unionid, message))
+
+        for rows, table in (
+            (list_rows, customer_list_index_next),
+            (detail_rows, customer_detail_snapshot_next),
+        ):
+            for offset in range(0, len(rows), _PROJECTION_UPSERT_BATCH_SIZE):
+                batch = rows[offset : offset + _PROJECTION_UPSERT_BATCH_SIZE]
+                statement = insert_builder(table).values(batch)
+                statement = statement.on_conflict_do_update(
+                    index_elements=[table.c.unionid],
+                    set_={
+                        column.name: getattr(statement.excluded, column.name)
+                        for column in table.columns
+                        if column.name not in {"id", "unionid"}
+                    },
+                )
+                self._session.execute(statement)
+
+        self._session.execute(
+            delete(customer_recent_message_next).where(
+                customer_recent_message_next.c.unionid.in_(requested)
+            )
+        )
+        for offset in range(0, len(message_rows), _RECENT_MESSAGE_INSERT_BATCH_SIZE):
+            self._session.execute(
+                insert(customer_recent_message_next),
+                message_rows[offset : offset + _RECENT_MESSAGE_INSERT_BATCH_SIZE],
+            )
+
+        missing = sorted(requested_set - set(customer_by_unionid))
+        if missing:
+            self._session.execute(
+                delete(customer_detail_snapshot_next).where(
+                    customer_detail_snapshot_next.c.unionid.in_(missing)
+                )
+            )
+            self._session.execute(
+                delete(customer_list_index_next).where(
+                    customer_list_index_next.c.unionid.in_(missing)
+                )
+            )
+        self.upsert_timeline_events(message_events, commit=False)
+        self._session.commit()
+        return {
+            "requested_count": len(requested),
+            "upserted_count": len(customer_by_unionid),
+            "deleted_count": len(missing),
+            "message_count": len(message_rows),
+            "timeline_event_count": len(message_events),
+        }
+
     def upsert_timeline_events(self, events: list[JsonDict], *, commit: bool = True) -> int:
         deduplicated: dict[str, dict[str, Any]] = {}
         for item in events:
@@ -220,52 +311,15 @@ class SqlAlchemyCustomerReadModelRepository:
         message_rows: list[dict] = []
         for index, customer in enumerate(customers, start=1):
             external_userid = str(customer.get("external_userid") or "")
-            identity = dict(customer.get("identity") or {})
-            unionid = str(customer.get("unionid") or identity.get("unionid") or "").strip()
+            unionid = _customer_unionid(customer)
             created_at = _coerce_datetime(customer.get("created_at") or customer.get("updated_at"))
-            updated_at = _coerce_datetime(customer.get("updated_at"))
-            binding = dict(customer.get("binding") or {})
             projection_key = external_userid or unionid
-            list_rows.append(
-                {
-                    "id": index,
-                    "unionid": unionid,
-                    "customer_name": customer.get("customer_name") or "",
-                    "owner_userid": customer.get("owner_userid") or "",
-                    "owner_display_name": customer.get("owner_display_name") or "",
-                    "remark": customer.get("remark") or "",
-                    "description": customer.get("description") or "",
-                    "mobile": customer.get("mobile") or "",
-                    "is_bound": bool(binding.get("is_bound")),
-                    "binding_status": binding.get("binding_status") or customer.get("binding_status") or "unbound",
-                    "tags_json": list(customer.get("tags") or []),
-                    "class_user_status_json": dict(customer.get("class_user_status") or {}),
-                    "last_message_at": _coerce_optional_datetime(customer.get("last_message_at")),
-                    "last_touch_at": _coerce_optional_datetime(customer.get("last_touch_at")),
-                    "updated_at": updated_at,
-                    "created_at": created_at,
-                }
-            )
-            detail_rows.append(
-                {
-                    "id": index,
-                    "unionid": unionid,
-                    "customer_json": dict(customer),
-                    "binding_json": dict(customer.get("binding") or {}),
-                    "identity_json": dict(customer.get("identity") or {}),
-                    "follow_users_json": list(customer.get("follow_users") or []),
-                    "marketing_summary_json": dict(customer.get("marketing_summary") or {}),
-                    "marketing_profile_json": dict(customer.get("marketing_profile") or {}),
-                    "contact_json": dict(customer.get("contact") or {}),
-                    "sidebar_context_json": dict(customer.get("sidebar_context") or {}),
-                    "updated_at": updated_at,
-                    "created_at": created_at,
-                }
-            )
+            list_row, detail_row = _customer_projection_rows(customer)
+            list_rows.append(list_row)
+            detail_rows.append(detail_row)
             for event_index, item in enumerate(timeline_by_external_userid.get(projection_key, []), start=1):
                 timeline_rows.append(
                     {
-                        "id": index * 1000 + event_index,
                         "event_id": item.get("event_id") or f"evt_{index}_{event_index}",
                         "unionid": str(item.get("unionid") or unionid or "").strip(),
                         "event_type": item.get("event_type") or "",
@@ -279,21 +333,9 @@ class SqlAlchemyCustomerReadModelRepository:
                     }
                 )
             for message_index, item in enumerate(messages_by_external_userid.get(projection_key, []), start=1):
-                metadata = {key: value for key, value in item.items() if key not in {"msgid", "external_userid", "msgtype", "content", "send_time", "owner_userid", "chat_type"}}
-                message_rows.append(
-                    {
-                        "id": index * 1000 + message_index,
-                        "msgid": item.get("msgid") or f"msg_{index}_{message_index}",
-                        "unionid": str(item.get("unionid") or unionid or "").strip(),
-                        "msgtype": item.get("msgtype") or "text",
-                        "content": item.get("content") or "",
-                        "send_time": _coerce_datetime(item.get("send_time")),
-                        "owner_userid": item.get("owner_userid") or "",
-                        "chat_type": item.get("chat_type") or "single",
-                        "metadata_json": metadata,
-                        "created_at": created_at,
-                    }
-                )
+                message = dict(item)
+                message.setdefault("msgid", f"msg_{index}_{message_index}")
+                message_rows.append(_recent_message_projection_row(customer, message))
         if list_rows:
             self._session.execute(insert(customer_list_index_next), list_rows)
         if detail_rows:
@@ -580,7 +622,98 @@ class SqlAlchemyCustomerReadModelRepository:
         payload.update(dict(data.get("metadata_json") or {}))
         return payload
 
+def _customer_unionid(customer: JsonDict) -> str:
+    identity = dict(customer.get("identity") or {})
+    return str(customer.get("unionid") or identity.get("unionid") or "").strip()
 
+
+def _customer_projection_rows(customer: JsonDict) -> tuple[dict[str, Any], dict[str, Any]]:
+    unionid = _customer_unionid(customer)
+    if not unionid:
+        raise ValueError("customer_read_model_unionid_required")
+    created_at = _coerce_datetime(customer.get("created_at") or customer.get("updated_at"))
+    updated_at = _coerce_datetime(customer.get("updated_at"))
+    binding = dict(customer.get("binding") or {})
+    return (
+        {
+            "unionid": unionid,
+            "customer_name": customer.get("customer_name") or "",
+            "owner_userid": customer.get("owner_userid") or "",
+            "owner_display_name": customer.get("owner_display_name") or "",
+            "remark": customer.get("remark") or "",
+            "description": customer.get("description") or "",
+            "mobile": customer.get("mobile") or "",
+            "is_bound": bool(binding.get("is_bound")),
+            "binding_status": binding.get("binding_status")
+            or customer.get("binding_status")
+            or "unbound",
+            "tags_json": list(customer.get("tags") or []),
+            "class_user_status_json": dict(customer.get("class_user_status") or {}),
+            "last_message_at": _coerce_optional_datetime(customer.get("last_message_at")),
+            "last_touch_at": _coerce_optional_datetime(customer.get("last_touch_at")),
+            "updated_at": updated_at,
+            "created_at": created_at,
+        },
+        {
+            "unionid": unionid,
+            "customer_json": dict(customer),
+            "binding_json": dict(customer.get("binding") or {}),
+            "identity_json": dict(customer.get("identity") or {}),
+            "follow_users_json": list(customer.get("follow_users") or []),
+            "marketing_summary_json": dict(customer.get("marketing_summary") or {}),
+            "marketing_profile_json": dict(customer.get("marketing_profile") or {}),
+            "contact_json": dict(customer.get("contact") or {}),
+            "sidebar_context_json": dict(customer.get("sidebar_context") or {}),
+            "updated_at": updated_at,
+            "created_at": created_at,
+        },
+    )
+
+
+def _recent_message_projection_row(customer: JsonDict, item: JsonDict) -> dict[str, Any]:
+    unionid = str(item.get("unionid") or _customer_unionid(customer) or "").strip()
+    metadata = {
+        key: value
+        for key, value in item.items()
+        if key
+        not in {
+            "msgid",
+            "external_userid",
+            "unionid",
+            "msgtype",
+            "content",
+            "send_time",
+            "owner_userid",
+            "chat_type",
+        }
+    }
+    return {
+        "msgid": item.get("msgid") or "",
+        "unionid": unionid,
+        "msgtype": item.get("msgtype") or "text",
+        "content": item.get("content") or "",
+        "send_time": _coerce_datetime(item.get("send_time")),
+        "owner_userid": item.get("owner_userid") or "",
+        "chat_type": item.get("chat_type") or "single",
+        "metadata_json": metadata,
+        "created_at": _coerce_datetime(customer.get("created_at") or customer.get("updated_at")),
+    }
+
+
+def _message_timeline_event(unionid: str, item: JsonDict) -> JsonDict:
+    source_id = str(item.get("source_id") or "").strip()
+    msgid = str(item.get("msgid") or "").strip()
+    return {
+        "event_id": f"message:{source_id or msgid}",
+        "unionid": unionid,
+        "event_type": "message",
+        "event_time": item.get("send_time"),
+        "title": f"消息 · {item.get('msgtype') or 'unknown'}",
+        "summary": item.get("content") or "",
+        "source_table": "archived_messages",
+        "source_id": source_id,
+        "metadata": dict(item),
+    }
 
 
 def _apply_customer_filters(rows: list[JsonDict], filters: JsonDict) -> list[JsonDict]:

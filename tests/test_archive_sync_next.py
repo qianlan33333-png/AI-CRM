@@ -197,15 +197,19 @@ def test_archive_insert_and_refresh_event_share_one_transaction(monkeypatch) -> 
     expected_batch_key = hashlib.sha256(b"91").hexdigest()
     assert request.idempotency_key == f"message_archive.batch_ingested:{expected_batch_key}"
     assert request.aggregate_id == expected_batch_key
-    assert request.payload == {"inserted_count": 1, "last_seq": 30654}
+    assert request.payload == {
+        "inserted_count": 1,
+        "last_seq": 30654,
+        "message_row_ids": [91],
+    }
     assert "must-not-enter-event" not in str(request)
 
 
 def test_archive_replay_at_same_last_seq_uses_inserted_rows_for_fresh_dirty_key(monkeypatch) -> None:
-    observed: list[tuple[int, int, str]] = []
+    observed: list[tuple[int, int, str, list[int]]] = []
 
-    def record(_conn, inserted_count: int, last_seq: int, batch_key: str):
-        observed.append((inserted_count, last_seq, batch_key))
+    def record(_conn, inserted_count: int, last_seq: int, batch_key: str, message_row_ids: list[int]):
+        observed.append((inserted_count, last_seq, batch_key, message_row_ids))
         return {"ok": True}
 
     for row_id in (101, 102):
@@ -222,6 +226,7 @@ def test_archive_replay_at_same_last_seq_uses_inserted_rows_for_fresh_dirty_key(
 
     assert [item[:2] for item in observed] == [(1, 30654), (1, 30654)]
     assert observed[0][2] != observed[1][2]
+    assert [item[3] for item in observed] == [[101], [102]]
 
 
 def test_archive_insert_rolls_back_when_refresh_event_cannot_be_persisted(monkeypatch) -> None:

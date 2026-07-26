@@ -37,6 +37,7 @@ def customer_read_model_dirty_consumer(
     result = CustomerReadModelRefreshIntentService().request_refresh(
         source_event_key=event.event_id,
         source_event_type=event.event_type,
+        source_event_id=event.event_id,
         parent_execution_id=event.execution_id,
     )
     return InternalEventConsumerResult(
@@ -156,6 +157,8 @@ def _summary(payload: dict[str, Any]) -> dict[str, Any]:
         "target_count_before",
         "target_count_after",
         "duration_ms",
+        "mode",
+        "affected_count",
         "real_external_call_executed",
     )
     return {key: payload.get(key) for key in keys if key in payload}
