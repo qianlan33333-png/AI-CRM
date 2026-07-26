@@ -6,7 +6,10 @@ import pytest
 
 from aicrm_next.deployment_profile import default_deployment_profile
 from aicrm_next.platform_foundation.background_jobs.catalog import JOB_SPECS, JobCatalog, validate_job_catalog
-from tools.check_job_catalog import validate_runtime_role_catalog
+from tools.check_job_catalog import (
+    validate_internal_worker_consolidation_manifest,
+    validate_runtime_role_catalog,
+)
 
 
 def test_job_catalog_has_one_owner_and_external_worker_boundary() -> None:
@@ -15,6 +18,10 @@ def test_job_catalog_has_one_owner_and_external_worker_boundary() -> None:
     external = [spec for spec in JOB_SPECS if spec.runtime_role == "external_worker"]
     assert [spec.job_type for spec in external] == ["external_effect.dispatch"]
     assert validate_runtime_role_catalog() == []
+
+
+def test_internal_worker_observer_contract_is_claimless_and_preserves_predecessors() -> None:
+    assert validate_internal_worker_consolidation_manifest() == []
 
 
 def test_scheduler_execution_policy_keeps_provider_reconciliation_observe_only() -> None:

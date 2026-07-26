@@ -70,17 +70,27 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=int,
         default=read_int_env("AICRM_QUEUE_WORKER_GENERATION", 0),
     )
-    parser.add_argument(
+    execution_mode = parser.add_mutually_exclusive_group()
+    execution_mode.add_argument(
         "--execute",
+        dest="execute",
         action="store_true",
-        default=_truthy(os.getenv(EXECUTE_ENV, "")),
     )
+    execution_mode.add_argument(
+        "--standby",
+        dest="execute",
+        action="store_false",
+        help="Force claimless standby even when the shared generation environment is armed.",
+    )
+    parser.set_defaults(execute=None)
     parser.add_argument(
         "--test-only",
         action="store_true",
         default=_truthy(os.getenv(TEST_ONLY_ENV, "")),
     )
     args = parser.parse_args(argv)
+    if args.execute is None:
+        args.execute = _truthy(os.getenv(EXECUTE_ENV, ""))
     if args.generation < 0:
         parser.error("--generation must be >= 0")
     if args.execute and args.generation <= 0:
@@ -115,6 +125,14 @@ def _selected_queue_kinds(args: argparse.Namespace) -> tuple[str, ...]:
     if getattr(args, "role", None) == "external_worker":
         return ("external",)
     return (str(args.queue_kind),)
+
+
+def _worker_identity(args: argparse.Namespace, *, queue_kind: str) -> str:
+    hostname = socket.gethostname()
+    role = str(getattr(args, "role", None) or "").strip()
+    if role:
+        return f"{hostname}:role:{role}:{queue_kind}"
+    return f"{hostname}:{queue_kind}"
 
 
 def _install_signal_handlers(stop_event: threading.Event) -> None:
@@ -178,7 +196,7 @@ def _build_queue_services(
     profile: DeploymentProfile,
 ) -> tuple[QueueRuntimeService, ...]:
     claimless = not bool(args.execute)
-    worker_id = f"{socket.gethostname()}:{queue_kind}"
+    worker_id = _worker_identity(args, queue_kind=queue_kind)
     if queue_kind == "external":
         worker = ExternalEffectWorker(
             adapter_registry=build_external_effect_adapter_registry(profile),

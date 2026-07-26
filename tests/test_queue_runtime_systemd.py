@@ -28,6 +28,24 @@ def test_queue_runtime_units_are_registered_as_fail_closed_persistent_services()
         assert " --execute" not in body
 
 
+def test_combined_internal_worker_observer_is_explicitly_claimless() -> None:
+    manifest = json.loads(
+        (ROOT / "deploy" / "production_runtime_units.json").read_text(encoding="utf-8")
+    )
+    contract = manifest["internal_worker_consolidation"]
+    unit = contract["observer_service"]
+    active = {str(item["service"]): item for item in manifest["active_services"]}
+    body = (ROOT / "deploy" / unit).read_text(encoding="utf-8")
+
+    assert contract["activation_mode"] == "observe"
+    assert contract["legacy_units_remain_authoritative"] is True
+    assert contract["real_external_calls_allowed"] is False
+    assert active[unit]["stop_for_migration"] is True
+    assert "run_execution_runtime.py --role internal_worker --standby" in body
+    assert "--execute" not in body
+    assert "Restart=always" in body
+
+
 def test_queue_invariant_timer_is_read_only_and_runs_every_fifteen_minutes() -> None:
     timer = (ROOT / "deploy" / "aicrm-queue-invariant-check.timer").read_text(encoding="utf-8")
     service = (ROOT / "deploy" / "aicrm-queue-invariant-check.service").read_text(encoding="utf-8")

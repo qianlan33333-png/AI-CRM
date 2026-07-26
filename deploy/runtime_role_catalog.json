@@ -17,7 +17,7 @@
     },
     {
       "role": "internal_worker",
-      "command": "python scripts/run_execution_runtime.py --role internal_worker",
+      "command": "python scripts/run_execution_runtime.py --role internal_worker --standby",
       "responsibilities": ["webhook_inbox", "internal_event", "internal_outbox"],
       "may_call_real_provider": false
     },

@@ -27,6 +27,36 @@ def test_internal_worker_role_combines_inbox_and_internal_lanes(monkeypatch) -> 
     assert internal.execute is False
 
 
+def test_explicit_standby_overrides_an_armed_shared_generation(monkeypatch) -> None:
+    monkeypatch.setenv("AICRM_QUEUE_RUNTIME_EXECUTE", "1")
+    monkeypatch.setenv("AICRM_QUEUE_WORKER_GENERATION", "17")
+
+    args = run_execution_runtime._parse_args(
+        ["--role", "internal_worker", "--standby"]
+    )
+
+    assert args.execute is False
+    assert args.generation == 17
+
+
+def test_role_worker_identity_cannot_overwrite_legacy_queue_heartbeats(monkeypatch) -> None:
+    monkeypatch.setattr(run_execution_runtime.socket, "gethostname", lambda: "queue-host")
+    legacy = run_execution_runtime._parse_args(["--queue-kind", "internal"])
+    combined = run_execution_runtime._parse_args(
+        ["--role", "internal_worker", "--standby"]
+    )
+
+    assert run_execution_runtime._worker_identity(
+        legacy, queue_kind="internal"
+    ) == "queue-host:internal"
+    assert run_execution_runtime._worker_identity(
+        combined, queue_kind="internal"
+    ) == "queue-host:role:internal_worker:internal"
+    assert run_execution_runtime._worker_identity(
+        combined, queue_kind="webhook"
+    ) == "queue-host:role:internal_worker:webhook"
+
+
 def test_runtime_can_be_armed_from_numeric_generation_environment(monkeypatch) -> None:
     monkeypatch.setenv("AICRM_QUEUE_RUNTIME_EXECUTE", "1")
     monkeypatch.setenv("AICRM_QUEUE_RUNTIME_TEST_ONLY", "1")

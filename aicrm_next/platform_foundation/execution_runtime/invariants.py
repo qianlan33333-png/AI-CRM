@@ -241,6 +241,7 @@ class QueueRuntimeInvariantChecker:
                 CROSS JOIN control
                 WHERE heartbeat.generation = control.active_generation
                   AND heartbeat.listener_connected = TRUE
+                  AND heartbeat.rollout_mode IN ('canary', 'execute')
                   AND heartbeat.heartbeat_at >= CURRENT_TIMESTAMP - INTERVAL '30 seconds'
             )
             SELECT 'active_generation_conflict' AS code, active.queue_kind,

@@ -7,6 +7,7 @@
     "aicrm-internal-queue-runtime.service": "aicrm-next-queue-internal",
     "aicrm-inbox-queue-runtime.service": "aicrm-next-queue-inbox",
     "aicrm-external-queue-runtime.service": "aicrm-next-queue-external",
+    "aicrm-internal-worker-observer.service": "aicrm-next-internal-worker-observer",
     "aicrm-queue-invariant-check.service": "aicrm-next-cron-queue-invariant",
     "aicrm-queue-soak-snapshot.service": "aicrm-next-cron-queue-soak",
     "aicrm-data-health-snapshot.service": "aicrm-next-cron-data-health",
@@ -34,6 +35,10 @@
     },
     {
       "service": "aicrm-external-queue-runtime.service",
+      "stop_for_migration": true
+    },
+    {
+      "service": "aicrm-internal-worker-observer.service",
       "stop_for_migration": true
     }
   ],
@@ -231,6 +236,24 @@
     },
     "requires_successor_parity": true,
     "legacy_units_remain_authoritative": true
+  },
+  "internal_worker_consolidation": {
+    "activation_mode": "observe",
+    "runtime_role": "internal_worker",
+    "observer_service": "aicrm-internal-worker-observer.service",
+    "predecessor_services": [
+      "aicrm-internal-queue-runtime.service",
+      "aicrm-inbox-queue-runtime.service"
+    ],
+    "heartbeat_service_names": [
+      "aicrm-internal_event-runtime",
+      "aicrm-internal_outbox-runtime",
+      "aicrm-webhook_inbox-runtime"
+    ],
+    "worker_id_namespace": ":role:internal_worker:",
+    "requires_successor_parity": true,
+    "legacy_units_remain_authoritative": true,
+    "real_external_calls_allowed": false
   },
   "retired_forbidden": [
     "aicrm-web.service",
