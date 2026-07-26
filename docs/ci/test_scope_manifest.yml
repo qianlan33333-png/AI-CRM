@@ -1554,6 +1554,7 @@
         "aicrm_next/admin_config/config_releases.py",
         "aicrm_next/capability_registry.py",
         "aicrm_next/deployment_profile.py",
+        "deploy/deployment_profiles/**",
         "aicrm_next/scrm_contracts.py",
         "aicrm_next/platform_foundation/background_jobs/scheduler_runtime.py",
         "migrations/versions/0144_config_release_control_plane.py",

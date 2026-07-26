@@ -128,6 +128,11 @@ physical package move, legacy table deletion, or real provider call.
 ## Compatibility mode
 
 `deploy/deployment_profiles/wecom-core.json` remains in observation mode. The
+separate `deploy/deployment_profiles/production-current.json` profile stages
+all currently deployed core and extension capabilities in observation mode; it
+is not selected by production in this release. This establishes a rollback-safe
+file boundary before the later release that changes the staged profile to
+`enforce` and selects it through the single startup reference. The
 job-catalog observer timer is active, but its execute gate is closed and all
 existing authoritative task timers remain unchanged. HTTP paths, auth rules,
 event names, effect types, database behavior, and extension behavior therefore

@@ -5,7 +5,7 @@ from dataclasses import replace
 
 import pytest
 
-from aicrm_next.capability_registry import default_capability_ids
+from aicrm_next.capability_registry import CAPABILITY_SPECS, default_capability_ids
 from aicrm_next.deployment_profile import (
     DEPLOYMENT_PROFILE_PATH_ENV,
     RUNTIME_ROLES,
@@ -27,6 +27,7 @@ from aicrm_next.platform_foundation.external_effects import (
 )
 from aicrm_next.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry
 from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
+from aicrm_next.platform_foundation.background_jobs.catalog import JobCatalog
 from aicrm_next.router_registry import active_router_specs
 from tools.check_deployment_profiles import DEFAULT_PROFILE_DIR, validate_deployment_profiles
 
@@ -47,6 +48,55 @@ def test_checked_in_profiles_are_valid_and_secret_free() -> None:
 
     assert profile == default_deployment_profile()
     assert all(not capability_id.startswith("extension.") for capability_id in profile.enabled_capabilities)
+
+
+def test_production_profile_stages_every_current_capability_without_enforcing_yet() -> None:
+    profile = load_deployment_profile(DEFAULT_PROFILE_DIR / "production-current.json")
+
+    assert profile.profile_id == "production-current"
+    assert profile.activation_mode == "observe"
+    assert profile.enabled_capabilities == tuple(spec.capability_id for spec in CAPABILITY_SPECS)
+    assert profile.runtime_roles == RUNTIME_ROLES
+
+
+def test_production_profile_is_behavior_equivalent_when_switched_to_enforce() -> None:
+    observed = load_deployment_profile(DEFAULT_PROFILE_DIR / "production-current.json")
+    enforced = replace(observed, activation_mode="enforce")
+
+    assert active_router_specs(enforced) == active_router_specs(observed)
+    assert build_internal_event_consumer_registry(enforced).to_dict() == build_internal_event_consumer_registry(
+        observed
+    ).to_dict()
+    assert build_external_effect_continuation_registry(enforced).names == build_external_effect_continuation_registry(
+        observed
+    ).names
+    assert JobCatalog(profile=enforced).summary()["jobs"] == JobCatalog(profile=observed).summary()["jobs"]
+
+    adapter_names = (
+        "outbound_webhook",
+        "webhook",
+        "wechat_payment",
+        "wecom_private_message",
+        "wecom_group_message",
+        "wecom_welcome_message",
+        "wecom_media_upload",
+        "wecom_tag",
+        "wecom_profile",
+        "wecom_external_contact_detail",
+    )
+    observed_adapters = build_external_effect_adapter_registry(observed)
+    enforced_adapters = build_external_effect_adapter_registry(enforced)
+    assert {
+        name: type(observed_adapters.get(name))
+        for name in adapter_names
+    } == {
+        name: type(enforced_adapters.get(name))
+        for name in adapter_names
+    }
+
+    observed_paths = {str(getattr(route, "path", "")) for route in create_app(deployment_profile=observed).routes}
+    enforced_paths = {str(getattr(route, "path", "")) for route in create_app(deployment_profile=enforced).routes}
+    assert enforced_paths == observed_paths
 
 
 def test_profile_rejects_missing_dependency_and_runtime_role() -> None:
