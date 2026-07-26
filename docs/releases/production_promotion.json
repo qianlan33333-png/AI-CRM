@@ -9,8 +9,8 @@
   },
   "target": {
     "repository": "qianlan333/AI-CRM",
-    "candidate_sha": "516d134ae8b6aff8bd6ef8aacfb74a01ec2094b8",
-    "pull_request": 1883
+    "candidate_sha": "4d6a84aa985e569a8bac94ac7c95f57edfdd681d",
+    "pull_request": 1887
   },
   "allowed_post_candidate_paths": [
     "aicrm_next/admin_config/api.py",
