@@ -224,6 +224,13 @@ jobs:
                 else
                   echo "primary Web remains active while the partial runtime transaction is rolled back"
                 fi
+                if ! python3 "$release_control_manager" \
+                  --manifest "$release_control_manifest" \
+                  --previous-manifest "$previous_control_manifest" \
+                  --phase remove-candidate-only-runtime --execute; then
+                  echo "failed to remove candidate-only runtime units"
+                  cleanup_failed=1
+                fi
                 if git reset --hard "$before_sha"; then
                   printf '%s\n' "$before_sha" > .release-sha
                   if ! git diff --quiet "$before_sha" "$verified_sha" -- requirements.lock; then
@@ -235,13 +242,6 @@ jobs:
                   fi
                 else
                   echo "failed to restore checkout to $before_sha"
-                  cleanup_failed=1
-                fi
-                if ! python3 "$release_control_manager" \
-                  --manifest "$release_control_manifest" \
-                  --previous-manifest "$previous_control_manifest" \
-                  --phase remove-candidate-only-runtime --execute; then
-                  echo "failed to remove candidate-only runtime units"
                   cleanup_failed=1
                 fi
                 restore_control_manager="$previous_control_manager"

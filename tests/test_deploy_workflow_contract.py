@@ -156,8 +156,13 @@ def test_failed_uncommitted_deploy_restores_previous_exact_sha_and_dependencies(
 def test_failed_uncommitted_deploy_removes_candidate_only_units_and_restores_previous_manifest() -> None:
     workflow = PRODUCTION_DEPLOY_WORKFLOW.read_text(encoding="utf-8")
 
-    cleanup_reset_index = workflow.index('git reset --hard "$before_sha"')
-    remove_index = workflow.index("--phase remove-candidate-only-runtime --execute", cleanup_reset_index)
+    remove_index = workflow.index("--phase remove-candidate-only-runtime --execute")
+    candidate_cleanup_index = workflow.rfind(
+        'if ! python3 "$release_control_manager"',
+        0,
+        remove_index,
+    )
+    cleanup_reset_index = workflow.index('git reset --hard "$before_sha"', remove_index)
     restore_manager_index = workflow.index(
         'restore_control_manager="$previous_control_manager"',
         remove_index,
@@ -174,10 +179,10 @@ def test_failed_uncommitted_deploy_removes_candidate_only_units_and_restores_pre
     candidate_archive_index = workflow.index('git archive "$verified_sha"', previous_archive_index)
     candidate_reset_index = workflow.index('git reset --hard "$verified_sha"', candidate_archive_index)
 
-    assert cleanup_reset_index < remove_index < restore_manager_index
+    assert candidate_cleanup_index < remove_index < cleanup_reset_index < restore_manager_index
     assert restore_manager_index < restore_manifest_index < install_index < cleanup_index
     assert trap_index < previous_archive_index < candidate_archive_index < candidate_reset_index
-    remove_block = workflow[cleanup_reset_index:restore_manager_index]
+    remove_block = workflow[candidate_cleanup_index:cleanup_reset_index]
     assert '--previous-manifest "$previous_control_manifest"' in remove_block
     assert '--manifest "$release_control_manifest"' in remove_block
     restore_block = workflow[restore_manifest_index:cleanup_index]
