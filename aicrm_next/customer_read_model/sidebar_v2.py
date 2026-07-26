@@ -9,8 +9,6 @@ from sqlalchemy.engine import Engine
 
 from aicrm_next.identity_contact.dto import IdentityResolution, ResolvePersonIdentityRequest
 from aicrm_next.identity_contact.resolver import SQLAlchemyIdentityResolver, classify_identity_candidates
-from aicrm_next.commerce.application import ListProductsQuery
-from aicrm_next.commerce.repo import build_commerce_repository
 from aicrm_next.customer_read_model.application import GetCustomerContextQuery, _close_repository
 from aicrm_next.customer_read_model.dto import CustomerContextRequest
 from aicrm_next.customer_read_model.errors import CustomerScopeForbiddenError
@@ -19,17 +17,18 @@ from aicrm_next.customer_read_model.sidebar_customer_resolution import (
     customer_text as _customer_text,
     resolve_customer_payload as _resolve_customer_payload,
 )
-from aicrm_next.media_library.application import GetImageThumbnailQuery, ListMediaItemsQuery
-from aicrm_next.service_period.application import ListServicePeriodProductsQuery
-from aicrm_next.service_period.domain import (
-    entitlement_status as service_period_entitlement_status,
-    isoformat as service_period_isoformat,
-    remaining_days as service_period_remaining_days,
-)
-from aicrm_next.service_period.huangyoucan_usage import (
+from aicrm_next.customer_read_model.extension_port import (
+    GetImageThumbnailQuery,
+    ListMediaItemsQuery,
+    ListProductsQuery,
+    ListServicePeriodProductsQuery,
+    build_commerce_repository,
     huangyoucan_usage_match_joins,
     huangyoucan_usage_select_fields,
     public_huangyoucan_usage_fields,
+    service_period_entitlement_status,
+    service_period_isoformat,
+    service_period_remaining_days,
 )
 from aicrm_next.shared.db_session import get_engine
 from aicrm_next.shared.errors import ContractError, NotFoundError

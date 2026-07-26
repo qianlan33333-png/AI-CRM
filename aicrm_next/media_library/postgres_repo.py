@@ -5,10 +5,10 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from aicrm_next.cloud_orchestrator.campaign_step_media_port import build_campaign_step_media_reference_port
 from aicrm_next.shared.errors import ContractError, NotFoundError
 from aicrm_next.shared.safe_logging import safe_log_exception
 
+from .campaign_reference_port import build_campaign_media_reference_port
 from .dto import normalize_group_invite_join_url, normalize_http_url
 from .repo import connect_media_library_db, normalize_tags
 from .variants import (
@@ -1043,7 +1043,7 @@ class PostgresMediaLibraryRepository:
                 if force:
                     cur.execute("UPDATE miniprogram_library SET thumb_image_id = NULL, thumb_media_id = '', thumb_media_id_expires_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE thumb_image_id = %s", (int(item_id),))
                     cleared["miniprograms_cleared"] = int(cur.rowcount or 0)
-                    cleared["campaign_steps_cleared"] = build_campaign_step_media_reference_port().clear_image_references_dbapi(
+                    cleared["campaign_steps_cleared"] = build_campaign_media_reference_port().clear_image_references_dbapi(
                         cur,
                         image_library_id=item_id,
                     )
@@ -1059,20 +1059,10 @@ class PostgresMediaLibraryRepository:
             with conn.cursor() as cur:
                 cur.execute("SELECT id, COALESCE(NULLIF(title, ''), name) AS title FROM miniprogram_library WHERE thumb_image_id = %s ORDER BY id", (int(item_id),))
                 miniprograms = [dict(row) for row in cur.fetchall() or []]
-                cur.execute(
-                    """
-                    SELECT id, campaign_id, campaign_segment_id, step_index
-                    FROM campaign_steps
-                    WHERE EXISTS (
-                        SELECT 1
-                        FROM jsonb_array_elements_text(COALESCE(content_payload_json->'image_library_ids', '[]'::jsonb)) AS iid
-                        WHERE iid = %s
-                    )
-                    ORDER BY id
-                    """,
-                    (str(item_id),),
+                campaign_steps = build_campaign_media_reference_port().list_image_references_dbapi(
+                    cur,
+                    image_library_id=item_id,
                 )
-                campaign_steps = [dict(row) for row in cur.fetchall() or []]
         return {"miniprograms": miniprograms, "campaign_steps": campaign_steps}
 
     def _serialize(self, kind: str, row: dict[str, Any], *, include_data: bool, use_thumbnail_fallback: bool = False) -> dict[str, Any]:

@@ -50,7 +50,8 @@ def check() -> list[str]:
     )
     route_policy = _read("aicrm_next/admin_auth/route_policy.py")
     questionnaire_api = _read("aicrm_next/questionnaire/api.py")
-    result_access = _read("aicrm_next/questionnaire/result_access.py")
+    result_access = _read("aicrm_next/admin_auth/public_result_grant.py")
+    result_access_compat = _read("aicrm_next/questionnaire/result_access.py")
 
     forbidden_read_tokens = (
         "allow_readonly_fallback",
@@ -181,6 +182,13 @@ def check() -> list[str]:
     ):
         if required not in result_access:
             errors.append(f"questionnaire result grant contract missing: {required}")
+    for required in (
+        "aicrm_next.admin_auth.public_result_grant",
+        "issue_questionnaire_result_grant",
+        "questionnaire_result_token_from_grant",
+    ):
+        if required not in result_access_compat:
+            errors.append(f"questionnaire result grant compatibility export missing: {required}")
 
     return errors
 

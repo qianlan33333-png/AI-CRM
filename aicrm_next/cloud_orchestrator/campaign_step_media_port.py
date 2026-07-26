@@ -6,6 +6,13 @@ from typing import Any, Protocol
 class CampaignStepMediaReferencePort(Protocol):
     """Public write port owned by cloud orchestration for campaign-step media references."""
 
+    def list_image_references_dbapi(
+        self,
+        executor: Any,
+        *,
+        image_library_id: int | str,
+    ) -> list[dict[str, Any]]: ...
+
     def clear_image_references_dbapi(
         self,
         executor: Any,

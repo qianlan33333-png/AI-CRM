@@ -6,6 +6,7 @@ from .channel_entry.identity_external_effect import (
     IDENTITY_EXTERNAL_CONTACT_DETAIL_CONTINUATION,
     IDENTITY_EXTERNAL_EFFECT_SETTLEMENT_CONTINUATION,
 )
+from .channel_entry_composition import configure_channel_crm_dependencies
 from .channel_entry.welcome_media_effects_repository import (
     WELCOME_EFFECT_SETTLEMENT_CONTINUATION,
     WELCOME_MEDIA_DEPENDENCY_CONTINUATION,
@@ -72,6 +73,7 @@ EXTERNAL_EFFECT_PROVIDER_RESULT_ACCESS_ALLOWLIST = frozenset(
 
 
 def build_external_effect_continuation_consumers() -> tuple[ExternalEffectContinuationConsumer, ...]:
+    configure_channel_crm_dependencies()
     return (
         ExternalEffectContinuationConsumer(
             IDENTITY_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
@@ -105,6 +107,7 @@ def build_external_effect_continuation_consumers() -> tuple[ExternalEffectContin
 
 
 def build_external_effect_settlement_consumers() -> tuple[ExternalEffectContinuationConsumer, ...]:
+    configure_channel_crm_dependencies()
     return (
         ExternalEffectContinuationConsumer(
             IDENTITY_EXTERNAL_EFFECT_SETTLEMENT_CONSUMER,

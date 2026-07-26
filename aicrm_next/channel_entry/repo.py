@@ -7,13 +7,16 @@ import json
 from typing import Any
 from uuid import UUID
 
-from aicrm_next.customer_tags.projection_port import build_customer_tag_projection_port
-from aicrm_next.identity_contact.dto import ResolvePersonIdentityRequest
-from aicrm_next.identity_contact.event_log_port import build_identity_event_log_port
-from aicrm_next.identity_contact.resolver import resolve_external_userid_with_dbapi, resolve_identity_with_dbapi, resolved_unionid
-from aicrm_next.identity_contact.resolution_queue_port import (
+from .crm_port import (
     EnqueueIdentityResolutionRequest,
+    ResolvePersonIdentityRequest,
+    build_customer_tag_projection_port,
+    build_identity_event_log_port,
     build_identity_resolution_queue_port,
+    enqueue_channel_entry_identity_resolution_in_connection,
+    resolve_external_userid_with_dbapi,
+    resolve_identity_with_dbapi,
+    resolved_unionid,
 )
 from aicrm_next.shared.runtime import raw_database_url
 
@@ -1013,10 +1016,6 @@ def upsert_channel_entry_runtime(
         row = cur.fetchone()
         identity_queue: dict[str, Any] = {}
         if row and enqueue_identity_resolution:
-            from aicrm_next.identity_contact.resolution_effects import (
-                enqueue_channel_entry_identity_resolution_in_connection,
-            )
-
             identity_queue = enqueue_channel_entry_identity_resolution_in_connection(
                 conn,
                 corp_id=corp_id,
@@ -1113,10 +1112,6 @@ def enqueue_channel_entry_identity_resolution(
     parent_execution_id: str = "",
     event_log_id: int | None = None,
 ) -> dict[str, Any]:
-    from aicrm_next.identity_contact.resolution_effects import (
-        enqueue_channel_entry_identity_resolution_in_connection,
-    )
-
     with _connect() as conn:
         planned = enqueue_channel_entry_identity_resolution_in_connection(
             conn,

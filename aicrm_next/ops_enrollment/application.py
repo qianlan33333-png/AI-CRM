@@ -14,7 +14,6 @@ from aicrm_next.integration_ports import (
     build_user_ops_dnd_gateway,
     build_wecom_message_dispatch_adapter,
 )
-from aicrm_next.ai_audience_ops.target_provider import AiAudienceTargetProvider
 from aicrm_next.platform_foundation.audit_ledger import InMemoryAuditLedger
 from aicrm_next.platform_foundation.command_bus import Command, CommandBus, CommandContext, CommandResult
 from aicrm_next.platform_foundation.side_effects import InMemorySideEffectPlanRepository, SideEffectPlan
@@ -25,6 +24,7 @@ from aicrm_next.shared.safe_logging import safe_log_exception
 from aicrm_next.shared.typing import JsonDict
 
 from .dto import BatchSendRequest, BroadcastPreviewRequest, DoNotDisturbRequest, ExportPreviewRequest, UserOpsListRequest
+from .audience_target_port import build_audience_target_query
 from .effect_enqueue import (
     USER_OPS_BATCH_SEND_ROUTE,
     build_user_ops_external_effect_gateway,
@@ -156,7 +156,7 @@ def _batch_rows_for_request(request: BatchSendRequest, repo: UserOpsRepository |
         package_id = int(request.target_source_id or 0)
         if package_id <= 0:
             raise ContractError("target_source_id is required")
-        return AiAudienceTargetProvider().rows_for_package(package_id), repo
+        return build_audience_target_query().rows_for_package(package_id), repo
     active_repo = repo or _default_repo()
     return apply_filters(active_repo.list_rows(), request.filters), active_repo
 

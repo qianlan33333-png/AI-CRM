@@ -77,3 +77,8 @@ def test_capability_dependencies_are_explicit_and_resolvable() -> None:
         for dependency in spec.dependencies:
             assert get_capability_spec(dependency) is not None
             assert dependency != spec.capability_id
+
+
+def test_legacy_contexts_are_assigned_by_business_owner_not_runtime_filename() -> None:
+    assert capability_for_context("background_jobs").capability_id == "core.automation"
+    assert capability_for_context("navigation_target").capability_id == "core.platform"

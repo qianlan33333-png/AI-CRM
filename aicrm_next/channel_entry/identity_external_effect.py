@@ -5,7 +5,7 @@ from uuid import uuid4
 
 from sqlalchemy import text
 
-from aicrm_next.identity_contact.resolution_queue_port import (
+from .crm_port import (
     CompleteIdentityResolutionRequest,
     build_identity_resolution_queue_port,
 )

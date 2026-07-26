@@ -1749,9 +1749,9 @@
     },
     {
       "accessor": "managed_runtime_int",
-      "file": "aicrm_next/questionnaire/result_access.py",
+      "file": "aicrm_next/admin_auth/public_result_grant.py",
       "key": "AICRM_QUESTIONNAIRE_RESULT_GRANT_TTL_SECONDS",
-      "line": 87
+      "line": 86
     },
     {
       "accessor": "declared_runtime_setting_key",

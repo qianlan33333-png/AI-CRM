@@ -4,9 +4,8 @@ from typing import Any, Callable
 
 from psycopg.types.json import Jsonb
 
-from aicrm_next.identity_contact.resolution_queue_port import build_identity_resolution_queue_port
-
 from . import application
+from .crm_port import build_identity_resolution_queue_port
 from .repo import _connect, json_safe, text
 
 
