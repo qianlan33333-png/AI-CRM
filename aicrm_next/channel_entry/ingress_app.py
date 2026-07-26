@@ -5,6 +5,7 @@ from fastapi.routing import APIRoute
 from fastapi.responses import JSONResponse
 
 from aicrm_next.shared.release import current_release_sha
+from aicrm_next.shared.runtime_settings import runtime_settings_request_scope
 
 from .api import callback_router
 from .callback_ingress import CALLBACK_ACK_BOUNDARY, CALLBACK_MAX_BODY_BYTES
@@ -29,7 +30,8 @@ def create_wecom_callback_ingress_app() -> FastAPI:
 
     @app.middleware("http")
     async def write_ingress_headers(request, call_next):
-        response = await call_next(request)
+        with runtime_settings_request_scope():
+            response = await call_next(request)
         response.headers.setdefault("X-AICRM-Route-Owner", "ai_crm_next")
         response.headers.setdefault("X-AICRM-Fallback-Used", "false")
         response.headers.setdefault("X-AICRM-App", "ai_crm_wecom_ingress")
