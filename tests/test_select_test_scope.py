@@ -1667,6 +1667,27 @@ def test_channel_write_owner_changes_select_identity_postgres_scope() -> None:
         assert expected_tests.issubset(result["python_tests"])
 
 
+def test_wechat_pay_order_owner_changes_select_commerce_postgres_scope() -> None:
+    expected_tests = {
+        "tests/test_wechat_pay_order_owner.py",
+        "tests/test_wechat_pay_order_owner_postgres.py",
+    }
+
+    for changed_path in (
+        "aicrm_next/commerce/wechat_pay_order_write_port.py",
+        "aicrm_next/commerce/wechat_pay_order_write_repository.py",
+        "aicrm_next/public_product/h5_wechat_pay.py",
+        *sorted(expected_tests),
+    ):
+        result = _select(changed_path)
+        assert result["unmatched_files"] == []
+        assert "wechat_pay_order_owner" in result["matched_scopes"]
+        assert result["needs_postgres"] is True
+        assert result["needs_full_ci"] is True
+        assert result["architecture_gate"] == "full"
+        assert expected_tests.issubset(result["python_tests"])
+
+
 def test_rate_scope_cooldown_owner_changes_select_platform_postgres_scope() -> None:
     expected_tests = {
         "tests/test_rate_scope_cooldown_owner.py",

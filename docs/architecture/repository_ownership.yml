@@ -431,6 +431,11 @@ repositories:
       - commerce_coupon_product_bindings
       - commerce_coupon_redemptions
       - commerce_coupons
+  aicrm_next/commerce/wechat_pay_order_write_repository.py:
+    capability_owner: aicrm_next.commerce.wechat_pay_service
+    table_reads:
+      - wechat_pay_orders
+    table_writes:
       - wechat_pay_orders
   aicrm_next/customer_read_model/repo.py:
     capability_owner: aicrm_next.customer_read_model

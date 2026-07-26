@@ -26,6 +26,7 @@ from .domain import (
 )
 from .product_options import product_option
 from .target_refs import product_id_from_target_ref, request_key_hash, target_ref_for_product_id
+from ..wechat_pay_order_write_port import build_wechat_pay_order_write_port
 
 
 TENANT_ID = "aicrm"
@@ -230,28 +231,16 @@ class DbApiCouponOrderRepository:
                 now,
             ),
         )
-        updated_order = self._conn.execute(
-            """
-            UPDATE wechat_pay_orders
-            SET subtotal_amount_total = %s,
-                discount_amount_total = %s,
-                amount_total = %s,
-                coupon_claim_id = %s,
-                coupon_snapshot_json = %s,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = %s AND out_trade_no = %s
-            RETURNING *
-            """,
-            (
-                subtotal,
-                discount,
-                payable,
-                int(claim["id"]),
-                _jsonb(snapshot),
-                order_id,
-                out_trade_no,
-            ),
-        ).fetchone()
+        updated_order = build_wechat_pay_order_write_port().apply_coupon_pricing_dbapi(
+            self._conn,
+            order_id=order_id,
+            out_trade_no=out_trade_no,
+            subtotal=subtotal,
+            discount=discount,
+            payable=payable,
+            coupon_claim_id=int(claim["id"]),
+            coupon_snapshot_json=_jsonb(snapshot),
+        )
         if not updated_order:
             raise ContractError("order disappeared during coupon reservation")
         return dict(updated_order)

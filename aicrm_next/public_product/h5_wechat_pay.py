@@ -13,6 +13,10 @@ from fastapi import Request
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 
 from aicrm_next.commerce.domain import completion_redirect_projection, safe_completion_redirect_url
+from aicrm_next.commerce.wechat_pay_order_write_port import (
+    WeChatPayOrderCreate,
+    build_wechat_pay_order_write_port,
+)
 from aicrm_next.navigation_target import (
     completion_action_for_target,
     completion_action_with_lead_qr,
@@ -900,31 +904,20 @@ def _insert_order(
     order_source: str = "h5_checkout",
     client_order_ref: str = "",
 ) -> dict[str, Any]:
-    row = conn.execute(
-        """
-        INSERT INTO wechat_pay_orders (
-            out_trade_no, order_source, product_code, product_name, description,
-            amount_total, currency, unionid, payer_name_snapshot, status, success_url, metadata_json,
-            request_meta_json, expires_at, client_order_ref, created_at, updated_at
-        )
-        VALUES (
-            %s, %s, %s, %s, %s, %s, %s, %s, %s,
-            'created', %s, %s::jsonb, %s::jsonb, %s::timestamptz, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-        )
-        RETURNING *
-        """,
-        (
-            out_trade_no,
-            _normalized_text(order_source) or "h5_checkout",
-            product["product_code"],
-            product["title"],
-            product.get("description") or product["title"],
-            int(product.get("price_cents") or 0),
-            product.get("currency") or "CNY",
-            identity.get("unionid") or "",
-            identity.get("payer_name") or "",
-            _safe_success_url(product.get("completion_redirect_url")),
-            _jsonb(
+    return build_wechat_pay_order_write_port().create_dbapi(
+        conn,
+        WeChatPayOrderCreate(
+            out_trade_no=out_trade_no,
+            order_source=_normalized_text(order_source) or "h5_checkout",
+            product_code=product["product_code"],
+            product_name=product["title"],
+            description=product.get("description") or product["title"],
+            amount_total=int(product.get("price_cents") or 0),
+            currency=product.get("currency") or "CNY",
+            unionid=identity.get("unionid") or "",
+            payer_name_snapshot=identity.get("payer_name") or "",
+            success_url=_safe_success_url(product.get("completion_redirect_url")),
+            metadata_json=_jsonb(
                 {
                     "completion_redirect": product.get("completion_redirect") or {},
                     "payer_identity": {
@@ -936,39 +929,28 @@ def _insert_order(
                     },
                 }
             ),
-            _jsonb(request_meta or {}),
-            _expires_at(),
-            _normalized_text(client_order_ref),
+            request_meta_json=_jsonb(request_meta or {}),
+            expires_at=_expires_at(),
+            client_order_ref=_normalized_text(client_order_ref),
         ),
-    ).fetchone()
-    return dict(row or {})
+    )
 
 
 def _update_payment_request(conn: Any, out_trade_no: str, *, prepay_id: str, request_payload: dict[str, Any], response_payload: dict[str, Any]) -> dict[str, Any]:
-    row = conn.execute(
-        """
-        UPDATE wechat_pay_orders
-        SET prepay_id = %s,
-            status = 'paying',
-            request_payload_json = %s::jsonb,
-            response_payload_json = %s::jsonb,
-            provider_unknown_at = NULL,
-            reconciliation_not_found_count = 0,
-            reconciliation_last_checked_at = NULL,
-            last_error = '',
-            updated_at = CURRENT_TIMESTAMP
-        WHERE out_trade_no = %s
-        RETURNING *
-        """,
-        (prepay_id, _jsonb(request_payload), _jsonb(response_payload), out_trade_no),
-    ).fetchone()
-    return dict(row or {})
+    return build_wechat_pay_order_write_port().update_payment_request_dbapi(
+        conn,
+        out_trade_no=out_trade_no,
+        prepay_id=prepay_id,
+        request_payload_json=_jsonb(request_payload),
+        response_payload_json=_jsonb(response_payload),
+    )
 
 
 def _mark_order_failed(conn: Any, out_trade_no: str, error_message: str) -> None:
-    conn.execute(
-        "UPDATE wechat_pay_orders SET status = 'failed', last_error = %s, updated_at = CURRENT_TIMESTAMP WHERE out_trade_no = %s",
-        (error_message[:500], out_trade_no),
+    build_wechat_pay_order_write_port().mark_failed_dbapi(
+        conn,
+        out_trade_no=out_trade_no,
+        last_error=error_message,
     )
 
 
@@ -981,27 +963,10 @@ def _mark_order_provider_unknown(conn: Any, out_trade_no: str, error_message: st
     queried by out_trade_no.
     """
 
-    conn.execute(
-        """
-        UPDATE wechat_pay_orders
-        SET status = CASE WHEN status = 'paid' THEN status ELSE 'provider_unknown' END,
-            provider_unknown_at = CASE
-                WHEN status = 'provider_unknown' THEN COALESCE(provider_unknown_at, CURRENT_TIMESTAMP)
-                ELSE CURRENT_TIMESTAMP
-            END,
-            reconciliation_not_found_count = CASE
-                WHEN status = 'provider_unknown' THEN reconciliation_not_found_count
-                ELSE 0
-            END,
-            reconciliation_last_checked_at = CASE
-                WHEN status = 'provider_unknown' THEN reconciliation_last_checked_at
-                ELSE NULL
-            END,
-            last_error = %s,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE out_trade_no = %s
-        """,
-        (error_message[:500], out_trade_no),
+    build_wechat_pay_order_write_port().mark_provider_unknown_dbapi(
+        conn,
+        out_trade_no=out_trade_no,
+        last_error=error_message,
     )
 
 
@@ -1052,34 +1017,17 @@ def _apply_transaction(conn: Any, transaction: dict[str, Any], *, source_route: 
     if trade_state == "SUCCESS":
         _assert_transaction_amount(previous_payload, transaction)
     was_paid = _normalized_text((previous or {}).get("status")) == "paid" or _normalized_text((previous or {}).get("trade_state")) == "SUCCESS"
-    order = conn.execute(
-        """
-        UPDATE wechat_pay_orders
-        SET status = %s,
-            trade_state = %s,
-            transaction_id = %s,
-            bank_type = %s,
-            payer_total = %s,
-            paid_at = CASE WHEN %s = 'SUCCESS' THEN NULLIF(%s, '')::timestamptz ELSE paid_at END,
-            notify_payload_json = %s::jsonb,
-            last_error = '',
-            updated_at = CURRENT_TIMESTAMP
-        WHERE out_trade_no = %s
-        RETURNING *
-        """,
-        (
-            status,
-            trade_state,
-            _normalized_text(transaction.get("transaction_id")),
-            _normalized_text(transaction.get("bank_type")),
-            int(amount.get("payer_total") or amount.get("total") or 0),
-            trade_state,
-            _normalized_text(transaction.get("success_time")),
-            _jsonb(transaction),
-            trade_no,
-        ),
-    ).fetchone()
-    order_payload = dict(order or {})
+    order_payload = build_wechat_pay_order_write_port().apply_provider_transaction_dbapi(
+        conn,
+        out_trade_no=trade_no,
+        status=status,
+        trade_state=trade_state,
+        transaction_id=_normalized_text(transaction.get("transaction_id")),
+        bank_type=_normalized_text(transaction.get("bank_type")),
+        payer_total=int(amount.get("payer_total") or amount.get("total") or 0),
+        success_time=_normalized_text(transaction.get("success_time")),
+        notify_payload_json=_jsonb(transaction),
+    )
     is_paid = _normalized_text(order_payload.get("status")) == "paid" or _normalized_text(order_payload.get("trade_state")) == "SUCCESS"
     if is_paid and order_payload.get("coupon_claim_id"):
         from aicrm_next.commerce.coupons.application import consume_coupon_for_paid_order

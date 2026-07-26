@@ -229,6 +229,18 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "cloud_broadcast_plan_recipient_messages",
         "cloud_broadcast_plan_recipients",
     ]
+    assert manifest["tables"]["wechat_pay_orders"]["write_owner"] == (
+        "aicrm_next.commerce.wechat_pay_service"
+    )
+    assert manifest["tables"]["wechat_pay_orders"]["write_owners"] == [
+        "aicrm_next.commerce.wechat_pay_service"
+    ]
+    assert repositories[
+        "aicrm_next/commerce/wechat_pay_order_write_repository.py"
+    ]["table_writes"] == ["wechat_pay_orders"]
+    assert "wechat_pay_orders" not in repositories[
+        "aicrm_next/commerce/coupons/repo.py"
+    ]["table_writes"]
     assert manifest["tables"]["contact_tags"]["write_owners"] == ["aicrm_next.customer_tags"]
     for path in (
         "aicrm_next/ai_audience_ops/repository.py",

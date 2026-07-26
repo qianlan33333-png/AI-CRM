@@ -22,6 +22,7 @@ def _function_source(source: str, name: str) -> str:
 
 def test_h5_wechat_pay_notify_after_unionid_cleanup() -> None:
     source = _read("aicrm_next/public_product/h5_wechat_pay.py")
+    owner_source = _read("aicrm_next/commerce/wechat_pay_order_write_repository.py")
     payment_identity_source = _function_source(source, "_resolve_payment_identity")
     paid_order_source = _function_source(source, "_paid_order_for_product_identity")
     apply_transaction_source = _function_source(source, "_apply_transaction")
@@ -33,7 +34,9 @@ def test_h5_wechat_pay_notify_after_unionid_cleanup() -> None:
     assert "unionid = %s" in paid_order_source
     assert "external_userid = %s" not in paid_order_source
     assert "payer_openid = %s" not in apply_transaction_source
-    assert "notify_payload_json = %s::jsonb" in apply_transaction_source
+    assert "build_wechat_pay_order_write_port().apply_provider_transaction_dbapi" in apply_transaction_source
+    assert "notify_payload_json = %s::jsonb" not in apply_transaction_source
+    assert "notify_payload_json = %s::jsonb" in owner_source
 
 
 def test_questionnaire_admin_reads_after_unionid_cleanup() -> None:

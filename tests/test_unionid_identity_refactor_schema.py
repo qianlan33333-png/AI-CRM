@@ -610,7 +610,10 @@ def test_ai_audience_member_tables_are_unionid_only_business_state() -> None:
 def test_questionnaire_and_wechat_pay_facts_drop_legacy_identity_columns() -> None:
     cleanup_source = _read("migrations/versions/0065_unionid_submission_payment_cleanup.py")
     questionnaire_repo = _read("aicrm_next/questionnaire/repo.py")
-    wechat_pay_source = _read("aicrm_next/public_product/h5_wechat_pay.py")
+    wechat_pay_source = _read(
+        "aicrm_next/commerce/wechat_pay_order_write_repository.py"
+    )
+    wechat_pay_h5_source = _read("aicrm_next/public_product/h5_wechat_pay.py")
 
     assert '["identity_map_id", "respondent_key", "openid", "external_userid", "mobile_snapshot"]' in cleanup_source
     assert '["payer_openid", "respondent_key", "external_userid", "userid_snapshot", "mobile_snapshot"]' in cleanup_source
@@ -624,7 +627,7 @@ def test_questionnaire_and_wechat_pay_facts_drop_legacy_identity_columns() -> No
     wechat_order_insert = wechat_pay_source.split("INSERT INTO wechat_pay_orders", 1)[1].split("RETURNING *", 1)[0]
     for forbidden in ["payer_openid", "respondent_key", "external_userid", "userid_snapshot", "mobile_snapshot"]:
         assert forbidden not in wechat_order_insert
-    assert '"payer_identity"' in wechat_pay_source
+    assert '"payer_identity"' in wechat_pay_h5_source
 
 
 def test_customer_fact_read_sources_drop_legacy_identity_columns() -> None:

@@ -679,6 +679,34 @@
       "architecture_gate": "fast"
     },
     {
+      "name": "wechat_pay_order_owner",
+      "paths": [
+        "aicrm_next/commerce/admin_transactions.py",
+        "aicrm_next/commerce/coupons/repo.py",
+        "aicrm_next/commerce/order_expiration.py",
+        "aicrm_next/commerce/order_reconciliation.py",
+        "aicrm_next/commerce/wechat_pay_order_write_port.py",
+        "aicrm_next/commerce/wechat_pay_order_write_repository.py",
+        "aicrm_next/public_product/h5_wechat_pay.py",
+        "tests/test_wechat_pay_order_owner.py",
+        "tests/test_wechat_pay_order_owner_postgres.py"
+      ],
+      "python_tests": [
+        "tests/test_wechat_pay_order_owner.py",
+        "tests/test_wechat_pay_order_owner_postgres.py",
+        "tests/test_wechat_pay_h5.py",
+        "tests/test_order_reconciliation_worker.py",
+        "tests/test_next_wechat_pay_refunds.py",
+        "tests/test_commerce_coupon_application.py",
+        "tests/test_unionid_identity_refactor_schema.py",
+        "tests/test_repository_ownership_guard.py",
+        "tests/test_select_test_scope.py"
+      ],
+      "needs_postgres": true,
+      "needs_full_ci": true,
+      "architecture_gate": "full"
+    },
+    {
       "name": "commerce_unified_order_query",
       "paths": [
         "aicrm_next/commerce/admin_transaction_detail.py",

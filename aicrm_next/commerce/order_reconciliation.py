@@ -12,6 +12,7 @@ from aicrm_next.integration_ports import (
     wechat_pay_client_config_from_env,
 )
 from aicrm_next.shared.runtime_settings import managed_runtime_setting
+from .wechat_pay_order_write_port import build_wechat_pay_order_write_port
 from .order_expiration import pending_order_ttl_hours
 from .repo import connect_commerce_db
 
@@ -330,16 +331,10 @@ def _select_candidates(
 
 
 def _mark_order_closed(conn: Any, *, out_trade_no: str, reason: str) -> None:
-    conn.execute(
-        """
-        UPDATE wechat_pay_orders
-        SET status = 'closed',
-            trade_state = 'CLOSED',
-            last_error = %s,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE out_trade_no = %s
-        """,
-        (reason, out_trade_no),
+    build_wechat_pay_order_write_port().close_reconcilable_dbapi(
+        conn,
+        out_trade_no=out_trade_no,
+        reason=reason,
     )
 
 
@@ -374,14 +369,10 @@ def _is_provider_order_not_exist(exc: Exception) -> bool:
 
 
 def _mark_order_reconciliation_error(conn: Any, *, out_trade_no: str, error: str) -> None:
-    conn.execute(
-        """
-        UPDATE wechat_pay_orders
-        SET last_error = %s,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE out_trade_no = %s
-        """,
-        (f"wechat_pay_reconciliation_error: {error}"[:500], out_trade_no),
+    build_wechat_pay_order_write_port().mark_reconciliation_error_dbapi(
+        conn,
+        out_trade_no=out_trade_no,
+        last_error=f"wechat_pay_reconciliation_error: {error}",
     )
 
 
@@ -391,16 +382,10 @@ def _record_provider_not_found_confirmation(
     out_trade_no: str,
     checked_at: datetime,
 ) -> None:
-    conn.execute(
-        """
-        UPDATE wechat_pay_orders
-        SET reconciliation_not_found_count = COALESCE(reconciliation_not_found_count, 0) + 1,
-            reconciliation_last_checked_at = %s::timestamptz,
-            last_error = 'wechat_pay_reconciliation_provider_not_found_confirmation_pending',
-            updated_at = CURRENT_TIMESTAMP
-        WHERE out_trade_no = %s
-        """,
-        (checked_at, out_trade_no),
+    build_wechat_pay_order_write_port().record_provider_not_found_dbapi(
+        conn,
+        out_trade_no=out_trade_no,
+        checked_at=checked_at,
     )
 
 

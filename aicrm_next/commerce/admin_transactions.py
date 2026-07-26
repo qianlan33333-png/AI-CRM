@@ -22,6 +22,7 @@ from .application import GetTransactionQuery, ListProductsQuery, ListTransaction
 from .order_expiration import close_expired_wechat_pay_orders
 from .product_code_aliases import canonical_product_code, product_code_filter_values
 from .refund_status import active_wechat_refund_sql
+from .wechat_pay_order_write_port import build_wechat_pay_order_write_port
 from aicrm_next.integration_ports import WeChatPayClient, WeChatPayClientConfig, wechat_pay_client_config_from_env
 
 ADMIN_TZ = ZoneInfo("Asia/Shanghai")
@@ -748,21 +749,11 @@ def apply_wechat_refund_result(refund_payload: dict[str, Any], *, raw_event: dic
             )
             order_refund_status = ""
             if status == "SUCCESS" and previous_status != "SUCCESS":
-                cur.execute(
-                    """
-                    UPDATE wechat_pay_orders
-                    SET refunded_amount_total = LEAST(amount_total, COALESCE(refunded_amount_total, 0) + %s),
-                        refund_status = CASE
-                            WHEN LEAST(amount_total, COALESCE(refunded_amount_total, 0) + %s) >= amount_total THEN 'full_refunded'
-                            ELSE 'partial_refunded'
-                        END,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE id = %s
-                    RETURNING refund_status
-                    """,
-                    (refund_amount, refund_amount, int(refund["order_id"])),
+                order_refund_status = build_wechat_pay_order_write_port().apply_refund_success_dbapi(
+                    cur,
+                    order_id=int(refund["order_id"]),
+                    refund_amount=refund_amount,
                 )
-                order_refund_status = str((cur.fetchone() or {}).get("refund_status") or "")
             cur.execute(
                 "SELECT * FROM wechat_pay_orders WHERE id = %s LIMIT 1",
                 (int(refund["order_id"]),),

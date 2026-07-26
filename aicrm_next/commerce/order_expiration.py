@@ -7,6 +7,7 @@ from aicrm_next.shared.runtime import production_data_ready
 from aicrm_next.shared.runtime_settings import managed_runtime_setting
 
 from .repo import connect_commerce_db
+from .wechat_pay_order_write_port import build_wechat_pay_order_write_port
 
 DEFAULT_PENDING_ORDER_TTL_HOURS = 2
 MAX_EXPIRE_BATCH_SIZE = 500
@@ -51,38 +52,12 @@ def _close_expired_with_conn(
         source_now = source_now.replace(tzinfo=timezone.utc)
     cutoff = source_now.astimezone(timezone.utc) - timedelta(hours=ttl_hours or pending_order_ttl_hours())
     page_size = max(1, min(_int(limit, 200), MAX_EXPIRE_BATCH_SIZE))
-    order_filter = "AND out_trade_no = %s" if out_trade_no else ""
-    params: list[Any] = [cutoff]
-    if out_trade_no:
-        params.append(str(out_trade_no).strip())
-    params.append(page_size)
-    rows = conn.execute(
-        f"""
-        WITH expired AS (
-            SELECT id
-            FROM wechat_pay_orders
-            WHERE COALESCE(status, '') IN ('created', 'paying', 'pending', '')
-              AND COALESCE(trade_state, '') <> 'SUCCESS'
-              AND paid_at IS NULL
-              AND coupon_claim_id IS NULL
-              AND created_at <= %s::timestamptz
-              {order_filter}
-            ORDER BY created_at ASC, id ASC
-            LIMIT %s
-            FOR UPDATE SKIP LOCKED
-        )
-        UPDATE wechat_pay_orders o
-        SET status = 'closed',
-            trade_state = 'CLOSED',
-            last_error = 'order_auto_closed_after_2h',
-            updated_at = CURRENT_TIMESTAMP
-        FROM expired
-        WHERE o.id = expired.id
-        RETURNING o.id, o.out_trade_no, o.status, o.trade_state, o.created_at, o.updated_at
-        """,
-        tuple(params),
-    ).fetchall()
-    return [dict(row) for row in rows]
+    return build_wechat_pay_order_write_port().close_expired_dbapi(
+        conn,
+        cutoff=cutoff,
+        limit=page_size,
+        out_trade_no=out_trade_no,
+    )
 
 
 def close_expired_wechat_pay_orders(
