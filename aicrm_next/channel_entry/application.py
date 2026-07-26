@@ -79,8 +79,8 @@ def _event_key(corp_id: str, event_data: dict[str, Any]) -> str:
 
 
 def decrypt_callback_body(*, query: dict[str, str], body: bytes) -> tuple[dict[str, Any], str]:
-    config = callback_config()
     validate_callback_timestamp(text(query.get("timestamp")))
+    config = callback_config()
     xml_text = body.decode("utf-8")
     envelope = parse_callback_xml(xml_text)
     encrypted = text(envelope.get("Encrypt"))
@@ -90,8 +90,8 @@ def decrypt_callback_body(*, query: dict[str, str], body: bytes) -> tuple[dict[s
 
 
 def verify_callback_echostr(query: dict[str, str]) -> str:
-    config = callback_config()
     validate_callback_timestamp(text(query.get("timestamp")))
+    config = callback_config()
     echostr = text(query.get("echostr"))
     verify_signature(config["token"], text(query.get("timestamp")), text(query.get("nonce")), echostr, text(query.get("msg_signature")))
     return decrypt_message(echostr, config["aes_key"], config["corp_id"])
