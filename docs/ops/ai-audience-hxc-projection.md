@@ -9,12 +9,15 @@
 刷新器支持每日全量校准和三分钟一批的自动增量维护。增量刷新只在当前 active generation
 内原子删除并重算脏 unionid，不创建新 generation；每日全量仍通过 staging generation
 原子切换，负责校准删除、身份键变更和 `daily_only` 来源。在线
-`audience_read.huangxiaocan_member_usage_status_v1` 仍保持原实现，必须由后续独立变更切换。
-刷新过程不补业务数据、不重放事件、不调用外部系统。
+`audience_read.huangxiaocan_member_usage_status_v1` 只读取 control 指向的 active generation，
+再通过身份表已有 `unionid` 索引确定性映射 external_userid，并优先匹配当前 owner；在线请求
+不再重建多源事实。全量构建期间
+继续读取上一 active generation，不产生空窗。刷新过程不补业务数据、不重放事件、不调用
+外部系统。
 
 ## 前置条件
 
-- 数据库 Alembic head 已包含 `0150_crm_identity_updated_cursor_index`。
+- 数据库 Alembic head 已包含 `0151_ai_audience_hxc_projection_view`。
 - 从已发布的精确源码 SHA 运行命令。
 - Web 默认语句超时保持不变；刷新事务局部使用 30 秒语句超时、3 秒锁超时并关闭 JIT。
 
@@ -59,7 +62,7 @@ event/consumer allowlist 作为回滚保护，不是生产刷新 owner。
 - 全量时 `last_full_refreshed_at` 更新；增量时 `last_incremental_watermark_at` 按所有增量源中
   最旧水位推进。
 - 增量结果的 `scanned_change_count` 不超过 5000；`has_more=true` 时由下一次 tick 续扫。
-- 未修改在线视图，未产生业务事件或外部调用。
+- 在线视图只读取 active generation；未产生业务事件或外部调用。
 
 ## 失败与回滚
 
@@ -68,4 +71,7 @@ event/consumer allowlist 作为回滚保护，不是生产刷新 owner。
 - `projection_refresh_failed`：检查服务端受控日志；状态输出不会泄露原始异常或个人信息。
 - `projection_full_refresh_required`：当前没有 ready generation；增量任务安全跳过，等待每日全量
   或经批准手动执行 `--full`，不得创建空在线代次。
-- 代码回滚到上一生产 SHA 即可；不要执行 schema downgrade，不要手工删除 active generation。
+- 刷新代码异常时回滚到上一生产 SHA；不要手工删除 active generation。
+- 若问题仅来自在线视图切换，先停止后续发布并确认上一 generation 完整，再显式将数据库
+  downgrade 到 `0150_crm_identity_updated_cursor_index` 以恢复历史视图。该 downgrade 只替换
+  view，不删除投影表或 generation；恢复后必须重新执行只读查询计划与结果校验。

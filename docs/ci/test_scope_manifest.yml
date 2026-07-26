@@ -897,6 +897,7 @@
         "migrations/versions/0128_ai_audience_refresh_intents.py",
         "migrations/versions/0149_ai_audience_hxc_projection_foundation.py",
         "migrations/versions/0150_crm_identity_updated_cursor_index.py",
+        "migrations/versions/0151_ai_audience_hxc_projection_view.py",
         "docs/ops/ai-audience-hxc-projection.md",
         "scripts/ops/refresh_ai_audience_hxc_projection.py",
         "scripts/ops/check_ai_audience_refresh_owner.py",
@@ -911,6 +912,7 @@
         "tests/test_ai_audience_refresh_intents_postgres.py",
         "tests/test_ai_audience_hxc_projection_refresh.py",
         "tests/test_ai_audience_hxc_projection_cursor_index.py",
+        "tests/test_ai_audience_hxc_projection_view.py",
         "tests/test_ai_audience_runtime_hotfixes.py",
         "tests/test_ai_audience_external_api.py"
       ],

@@ -123,8 +123,11 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     hxc_projection_source = hxc_projection.read_text(encoding="utf-8")
     identity_cursor_index = VERSIONS / "0150_crm_identity_updated_cursor_index.py"
     identity_cursor_index_source = identity_cursor_index.read_text(encoding="utf-8")
+    hxc_projection_view = VERSIONS / "0151_ai_audience_hxc_projection_view.py"
+    hxc_projection_view_source = hxc_projection_view.read_text(encoding="utf-8")
 
-    assert heads == {"0150_crm_identity_updated_cursor_index"}
+    assert heads == {"0151_ai_audience_hxc_projection_view"}
+    assert revisions["0151_ai_audience_hxc_projection_view"]["down_revision"] == "0150_crm_identity_updated_cursor_index"
     assert revisions["0150_crm_identity_updated_cursor_index"]["down_revision"] == "0149_ai_audience_hxc_projection"
     assert revisions["0149_ai_audience_hxc_projection"]["down_revision"] == "0148_order_source_sort_indexes"
     assert revisions["0148_order_source_sort_indexes"]["down_revision"] == "0147_alipay_order_created_index"
@@ -183,6 +186,14 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     assert "idx_crm_user_identity_updated_unionid" in identity_cursor_index_source
     assert "(updated_at, unionid)" in identity_cursor_index_source
     assert "DROP INDEX" not in identity_cursor_index_source
+    assert "CREATE OR REPLACE VIEW audience_read.huangxiaocan_member_usage_status_v1" in hxc_projection_view_source
+    assert "projection.generation = (" in hxc_projection_view_source
+    assert "SELECT control.active_generation" in hxc_projection_view_source
+    assert "JOIN LATERAL" in hxc_projection_view_source
+    assert "wecom_external_contact_identity_map identity_map" in hxc_projection_view_source
+    assert "audience_read.wecom_contacts_v1" not in hxc_projection_view_source.split("def downgrade()", 1)[0]
+    assert "user_ops_hxc_dashboard_snapshot" not in hxc_projection_view_source.split("def downgrade()", 1)[0]
+    assert "DROP TABLE" not in hxc_projection_view_source
     assert "0018_hxc_dashboard_broadcast_tasks" in source
     assert "CREATE TABLE IF NOT EXISTS data_health_snapshot" in data_health_snapshot_source
     assert "CHECK (singleton IS TRUE)" in data_health_snapshot_source
