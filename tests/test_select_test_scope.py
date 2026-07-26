@@ -1143,6 +1143,7 @@ def test_scrm_low_ops_foundation_files_are_all_mapped_to_the_control_plane_scope
     result = _select(
         "aicrm_next/capability_registry.py",
         "aicrm_next/scrm_contracts.py",
+        "deploy/deployment_profiles/production-current.json",
         "scripts/run_job_catalog_scheduler.py",
         "tests/test_capability_registry.py",
         "tests/test_deployment_profile.py",
@@ -1150,7 +1151,7 @@ def test_scrm_low_ops_foundation_files_are_all_mapped_to_the_control_plane_scope
         "tests/test_scrm_contracts.py",
     )
 
-    assert result["matched_scopes"] == ["config_release_control_plane"]
+    assert result["matched_scopes"] == ["config_release_control_plane", "ci_deploy"]
     assert result["unmatched_files"] == []
     assert result["needs_postgres"] is True
     assert result["needs_full_ci"] is True

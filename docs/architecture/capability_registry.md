@@ -22,6 +22,14 @@ routes, event consumers, external effects, provider adapters, static assets,
 and jobs together. Hiding a navigation entry alone is never considered
 capability deactivation.
 
+`deploy/deployment_profiles/production-current.json` is a separately versioned
+production staging profile. It lists every capability currently deployed on the
+baseline instance and initially remains in `observe` mode. This makes the next
+`enforce` release behavior-equivalent: no route, consumer, effect adapter, job,
+or historical extension is removed merely by enabling profile enforcement.
+The production runtime does not select this staged file until a later,
+independently reviewed release.
+
 ## Ownership rules
 
 - Each current context, route group, config section, table domain, internal
