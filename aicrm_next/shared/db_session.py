@@ -23,6 +23,11 @@ from aicrm_next.shared.safe_logging import safe_log_exception
 
 LOGGER = logging.getLogger(__name__)
 _APPLICATION_NAME_FORBIDDEN = re.compile(r"[^A-Za-z0-9_.:-]+")
+_WEB_DATABASE_APPLICATION_NAME = "aicrm-next-web"
+_WEB_DATABASE_OPTIONS = (
+    "-c statement_timeout=30s "
+    "-c idle_in_transaction_session_timeout=60s"
+)
 
 
 @dataclass(frozen=True)
@@ -127,6 +132,13 @@ def get_pool_settings(database_url: str | None = None, settings: Settings | None
     return _pool_settings_from_key(_cache_key(database_url, settings))
 
 
+def _postgres_connect_args(application_name: str) -> dict[str, str]:
+    connect_args = {"application_name": application_name}
+    if application_name == _WEB_DATABASE_APPLICATION_NAME:
+        connect_args["options"] = _WEB_DATABASE_OPTIONS
+    return connect_args
+
+
 def get_engine(database_url: str | None = None, settings: Settings | None = None) -> Engine:
     key = _cache_key(database_url, settings)
     engine = _ENGINE_CACHE.get(key)
@@ -142,7 +154,7 @@ def get_engine(database_url: str | None = None, settings: Settings | None = None
                 "max_overflow": key.max_overflow,
                 "pool_timeout": key.pool_timeout,
                 "pool_recycle": key.pool_recycle,
-                "connect_args": {"application_name": key.application_name},
+                "connect_args": _postgres_connect_args(key.application_name),
             }
         )
     pool_settings = _pool_settings_from_key(key)
