@@ -85,6 +85,14 @@ def test_runtime_contract_inventory_covers_r00_behavior_surfaces() -> None:
         assert runtime_units[unit_name]["kind"] == "service"
         assert runtime_units[unit_name]["state"] == "active"
         assert runtime_units[unit_name]["stop_for_migration"] is True
+    assert runtime_units["aicrm-job-catalog-scheduler.timer"] == {
+        "unit": "aicrm-job-catalog-scheduler.timer",
+        "kind": "timer",
+        "state": "active_autostart",
+        "service": "aicrm-job-catalog-scheduler.service",
+        "kick_after_timer_restart": False,
+        "kick_failure_fatal": False,
+    }
     for unit_name in (
         "openclaw-internal-event-worker.timer",
         "openclaw-external-effect-worker.timer",

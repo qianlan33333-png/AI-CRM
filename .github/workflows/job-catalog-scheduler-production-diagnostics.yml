@@ -1,0 +1,101 @@
+name: Job Catalog Scheduler Production Diagnostics (Read Only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_release_sha:
+        description: Exact release SHA currently exposed by production
+        required: true
+        type: string
+      confirmation:
+        description: Exact read-only diagnostics confirmation
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aicrm-production-job-catalog-scheduler-diagnostics
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Verify public release and confirmation
+        env:
+          EXPECTED_RELEASE_SHA: ${{ inputs.expected_release_sha }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -e
+          test "$CONFIRMATION" = 'DIAGNOSE AI-CRM JOB CATALOG SCHEDULER READ ONLY'
+          printf '%s' "$EXPECTED_RELEASE_SHA" | grep -Eq '^[0-9a-f]{40}$'
+          curl -sSf -D /tmp/aicrm-job-catalog-health.headers \
+            https://www.youcangogogo.com/health \
+            -o /tmp/aicrm-job-catalog-health.json
+          public_sha="$(awk 'tolower($1) == "x-aicrm-release-sha:" {gsub("\\r", "", $2); print $2}' /tmp/aicrm-job-catalog-health.headers)"
+          test "$public_sha" = "$EXPECTED_RELEASE_SHA"
+
+      - name: Read scheduler and predecessor parity evidence
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        env:
+          EXPECTED_RELEASE_SHA: ${{ inputs.expected_release_sha }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          command_timeout: 10m
+          envs: EXPECTED_RELEASE_SHA
+          script: |
+            set -e
+            set -o pipefail
+            cd '/home/ubuntu/极简 crm'
+            test "$(git rev-parse HEAD)" = "$EXPECTED_RELEASE_SHA"
+            test "$(tr -d '\r\n' < .release-sha)" = "$EXPECTED_RELEASE_SHA"
+            set -a
+            source /home/ubuntu/.openclaw-wecom-pg.env
+            set +a
+            source /home/ubuntu/venvs/openclaw/bin/activate
+
+            python3 tools/check_job_catalog.py
+            python3 scripts/run_job_catalog_scheduler.py \
+              --dry-run \
+              --operator github_actions_scheduler_diagnostics \
+              --limit 100 \
+              > /tmp/aicrm-job-catalog-scheduler-report.json
+
+            python3 - <<'PY'
+            import json
+
+            path = "/tmp/aicrm-job-catalog-scheduler-report.json"
+            body = open(path, encoding="utf-8").read()
+            report = json.loads(body)
+            assert report["ok"] is True
+            assert report["dry_run"] is True
+            assert report["real_external_call_executed"] is False
+            assert report["executed_count"] == 0
+            assert "secretref:" not in body.lower()
+            assert "access_token" not in body.lower()
+            assert "client_secret" not in body.lower()
+            print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+            PY
+
+            for unit in \
+              aicrm-job-catalog-scheduler.timer \
+              aicrm-next-broadcast-delegation.timer \
+              aicrm-next-group-ops-planning.timer \
+              aicrm-ai-audience-daily-intent.timer
+            do
+              enabled="$(systemctl is-enabled "$unit" 2>/dev/null || true)"
+              active="$(systemctl is-active "$unit" 2>/dev/null || true)"
+              printf 'runtime_unit=%s enabled=%s active=%s\n' "$unit" "$enabled" "$active"
+            done
+
+            systemctl is-enabled --quiet aicrm-job-catalog-scheduler.timer
+            systemctl is-active --quiet aicrm-job-catalog-scheduler.timer
+            systemctl show aicrm-job-catalog-scheduler.service \
+              --property=Result,ExecMainStatus,InactiveExitTimestamp \
+              --no-pager
+

@@ -9,6 +9,7 @@ from aicrm_next.deployment_profile import DeploymentProfile, RUNTIME_ROLES, depl
 
 JobLifecycle = Literal["active", "candidate", "legacy_successor"]
 JobKind = Literal["queue", "scheduled_command"]
+SchedulerExecution = Literal["not_applicable", "observe_only", "safe_command"]
 
 
 @dataclass(frozen=True)
@@ -24,6 +25,7 @@ class JobSpec:
     idempotency_scope: str = "job_type+business_key"
     legacy_units: tuple[str, ...] = ()
     health_check: str = ""
+    scheduler_execution: SchedulerExecution = "not_applicable"
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -69,10 +71,11 @@ JOB_SPECS: tuple[JobSpec, ...] = (
         "scheduler",
         "scheduled_command",
         "candidate",
-        "external_effects.jobs:complete_record_only",
+        "external_effects.jobs:complete_record_only_jobs",
         schedule="*/5 * * * *",
         legacy_units=("openclaw-external-effect-worker.timer",),
         health_check="external_effect_reconciliation",
+        scheduler_execution="safe_command",
     ),
     JobSpec(
         "campaign.plan",
@@ -80,10 +83,11 @@ JOB_SPECS: tuple[JobSpec, ...] = (
         "scheduler",
         "scheduled_command",
         "candidate",
-        "automation.group_ops:plan_due",
+        "background_jobs.broadcast_queue_worker:delegate_external_effects",
         schedule="* * * * *",
-        legacy_units=("openclaw-automation-ops-scheduler.timer",),
+        legacy_units=("aicrm-next-broadcast-delegation.timer",),
         health_check="automation_plan_backlog",
+        scheduler_execution="safe_command",
     ),
     JobSpec(
         "campaign.dispatch",
@@ -106,6 +110,7 @@ JOB_SPECS: tuple[JobSpec, ...] = (
         schedule="* * * * *",
         legacy_units=("aicrm-next-group-ops-planning.timer",),
         health_check="group_ops_plan_backlog",
+        scheduler_execution="safe_command",
     ),
     JobSpec(
         "ai_audience.refresh",
@@ -117,6 +122,7 @@ JOB_SPECS: tuple[JobSpec, ...] = (
         schedule="*/3 * * * *",
         legacy_units=("aicrm-ai-audience-daily-intent.timer", "openclaw-ai-audience-scheduler.timer"),
         health_check="ai_audience_refresh_intent",
+        scheduler_execution="safe_command",
     ),
     JobSpec(
         "ai_agent.plan",
@@ -138,6 +144,7 @@ JOB_SPECS: tuple[JobSpec, ...] = (
         schedule="*/5 * * * *",
         legacy_units=("openclaw-wechat-pay-order-reconciliation-worker.timer",),
         health_check="payment_reconciliation",
+        scheduler_execution="observe_only",
     ),
     JobSpec(
         "service_period.project",
@@ -237,9 +244,21 @@ def validate_job_catalog(specs: tuple[JobSpec, ...] = JOB_SPECS) -> list[str]:
             errors.append(f"{spec.job_type}: only external_effect.dispatch may use external_worker")
         if spec.kind == "scheduled_command" and not spec.schedule:
             errors.append(f"{spec.job_type}: scheduled command requires schedule")
+        if spec.kind == "scheduled_command" and spec.scheduler_execution == "not_applicable":
+            errors.append(f"{spec.job_type}: scheduled command requires an execution policy")
+        if spec.kind != "scheduled_command" and spec.scheduler_execution != "not_applicable":
+            errors.append(f"{spec.job_type}: queue job cannot declare scheduler execution")
+        if spec.scheduler_execution == "safe_command" and spec.runtime_role != "scheduler":
+            errors.append(f"{spec.job_type}: safe scheduler command must use scheduler role")
         if int(spec.max_concurrency or 0) < 1:
             errors.append(f"{spec.job_type}: max_concurrency must be positive")
     return errors
 
 
-__all__ = ["JOB_SPECS", "JobCatalog", "JobSpec", "validate_job_catalog"]
+__all__ = [
+    "JOB_SPECS",
+    "JobCatalog",
+    "JobSpec",
+    "SchedulerExecution",
+    "validate_job_catalog",
+]

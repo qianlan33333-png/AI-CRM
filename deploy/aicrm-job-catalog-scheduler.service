@@ -1,0 +1,18 @@
+[Unit]
+Description=AI-CRM versioned job catalog scheduler observer
+After=network.target openclaw-wecom-postgres.service
+Requires=openclaw-wecom-postgres.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/极简 crm
+EnvironmentFile=/home/ubuntu/.openclaw-wecom-pg.env
+Environment=DB_APPLICATION_NAME=aicrm-next-cron-job-catalog
+Environment=PGAPPNAME=aicrm-next-cron-job-catalog
+Environment=DB_POOL_SIZE=1
+Environment=DB_MAX_OVERFLOW=0
+Environment=AICRM_JOB_CATALOG_SCHEDULER_EXECUTE=0
+ExecStart=/home/ubuntu/venvs/openclaw/bin/python scripts/run_job_catalog_scheduler.py --dry-run --operator aicrm_job_catalog_scheduler --limit 100
+TimeoutStartSec=180
+

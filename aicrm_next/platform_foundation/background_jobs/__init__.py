@@ -11,6 +11,7 @@ from .contract import (
     webhook_route_contracts,
 )
 from .catalog import JOB_SPECS, JobCatalog, JobSpec, validate_job_catalog
+from .scheduler_runtime import JobCatalogScheduler, schedule_is_due
 
 __all__ = [
     "BackgroundJobContract",
@@ -24,5 +25,7 @@ __all__ = [
     "JOB_SPECS",
     "JobCatalog",
     "JobSpec",
+    "JobCatalogScheduler",
+    "schedule_is_due",
     "validate_job_catalog",
 ]
