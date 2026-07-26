@@ -23,6 +23,39 @@ def test_scheduler_diagnostics_is_exact_release_read_only_and_redacted() -> None
     assert "secretref:" in source
     assert "systemctl is-enabled --quiet aicrm-job-catalog-scheduler.timer" in source
     assert "systemctl is-active --quiet aicrm-job-catalog-scheduler.timer" in source
+    assert 'scheduler_mode="$(python3 - <<\'PY\'' in source
+    assert 'scheduler_runtime_contract=absent_for_release residue=%s' in source
+    assert 'test "$scheduler_residue" = "0"' in source
+
+
+def test_scheduler_diagnostics_reports_rollback_residue_before_running_release_code() -> None:
+    source = WORKFLOW.read_text(encoding="utf-8")
+
+    unit_state_index = source.index('load_state="$(systemctl show "$unit"')
+    mode_index = source.index('scheduler_mode="$(python3')
+    scheduler_run_index = source.index("python3 scripts/run_job_catalog_scheduler.py")
+
+    assert unit_state_index < mode_index < scheduler_run_index
+    assert "aicrm-job-catalog-scheduler.service" in source
+    assert 'scheduler_timer_load' in source
+    assert 'scheduler_service_load' in source
+    assert 'scheduler_timer_enabled' in source
+    assert 'scheduler_timer_active' in source
+    assert 'if [ "$scheduler_mode" = "absent" ]; then' in source
+    assert 'elif [ "$scheduler_mode" = "observe" ]; then' in source
+
+
+def test_scheduler_diagnostics_includes_only_aggregate_release_refresh_state() -> None:
+    source = WORKFLOW.read_text(encoding="utf-8")
+
+    assert "customer_read_model_refresh_intent" in source
+    assert "customer_read_model.refresh.requested" in source
+    assert "customer_read_model_refresh_intent_consumer" in source
+    assert "GROUP BY status, last_error_code" in source
+    assert '"target_values_redacted": True' in source
+    assert '"real_external_call_executed": False' in source
+    assert "payload_json" not in source
+    assert "target_id" not in source
 
 
 def test_scheduler_diagnostics_reports_all_three_predecessor_timers() -> None:
