@@ -231,10 +231,13 @@ class ConfigReleaseService:
 
     def _semantic_value(self, key: str, value: Any) -> str:
         normalized = str(value or "")
-        if not is_secret_reference(normalized):
-            return normalized
-        store = self._secret_store or FileSecretStore.from_environment()
-        return store.read(normalized)
+        if is_secret_reference(normalized):
+            store = self._secret_store or FileSecretStore.from_environment()
+            return store.read(normalized)
+        definition = get_config_definition(key)
+        if definition is not None and not definition.sensitive:
+            return definition.validate(normalized)
+        return normalized
 
     def _normalize_changes(
         self,

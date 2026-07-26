@@ -1,0 +1,196 @@
+name: Runtime Config Production Control
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_release_sha:
+        description: Exact AI-CRM main SHA currently exposed by production
+        required: true
+        type: string
+      action:
+        description: Read, stage, activate, or roll back one atomic Config Release
+        required: true
+        type: choice
+        options:
+          - inventory
+          - stage
+          - activate
+          - rollback
+      keys:
+        description: Optional comma-separated managed keys; activation requires keys or capability_id
+        required: false
+        type: string
+      capability_id:
+        description: Optional capability owner used only for bounded activation preview/execution
+        required: false
+        type: string
+      release_id:
+        description: Published Config Release ID used only for rollback
+        required: false
+        default: "0"
+        type: string
+      max_keys:
+        description: Maximum keys in one activation release (1-25)
+        required: false
+        default: "25"
+        type: string
+      execute:
+        description: Apply the stage, activation, or rollback after exact confirmation
+        required: true
+        default: false
+        type: boolean
+      confirmation:
+        description: Exact confirmation emitted by preview; inventory uses INVENTORY_RUNTIME_CONFIG_<sha>
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aicrm-production-runtime-config
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      EXPECTED_RELEASE_SHA: ${{ inputs.expected_release_sha }}
+      CONFIG_ACTION: ${{ inputs.action }}
+      CONFIG_KEYS: ${{ inputs.keys }}
+      CONFIG_CAPABILITY_ID: ${{ inputs.capability_id }}
+      CONFIG_RELEASE_ID: ${{ inputs.release_id }}
+      CONFIG_MAX_KEYS: ${{ inputs.max_keys }}
+      CONFIG_EXECUTE: ${{ inputs.execute }}
+      CONFIG_CONFIRMATION: ${{ inputs.confirmation }}
+    steps:
+      - name: Checkout exact production release
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0 (Node 24)
+        with:
+          ref: ${{ inputs.expected_release_sha }}
+          fetch-depth: 0
+
+      - name: Verify immutable release and sanitized inputs
+        run: |
+          set -e
+          set -o pipefail
+          printf '%s' "$EXPECTED_RELEASE_SHA" | grep -Eq '^[0-9a-f]{40}$'
+          test "$(git rev-parse HEAD)" = "$EXPECTED_RELEASE_SHA"
+          git fetch --no-tags origin main
+          test "$(git rev-parse FETCH_HEAD)" = "$EXPECTED_RELEASE_SHA"
+          python3 - <<'PY'
+          import os
+          import re
+
+          action = os.environ["CONFIG_ACTION"]
+          keys = os.environ.get("CONFIG_KEYS", "")
+          capability = os.environ.get("CONFIG_CAPABILITY_ID", "")
+          release_id = os.environ.get("CONFIG_RELEASE_ID", "0")
+          max_keys = os.environ.get("CONFIG_MAX_KEYS", "25")
+          execute = os.environ.get("CONFIG_EXECUTE", "false").lower() == "true"
+          confirmation = os.environ.get("CONFIG_CONFIRMATION", "")
+          release_sha = os.environ["EXPECTED_RELEASE_SHA"]
+
+          assert action in {"inventory", "stage", "activate", "rollback"}
+          assert re.fullmatch(r"[A-Z0-9_,\s]*", keys) is not None
+          assert re.fullmatch(r"(?:core|extension)\.[a-z_]+|", capability) is not None
+          assert release_id.isdigit()
+          assert max_keys.isdigit() and 1 <= int(max_keys) <= 25
+          if action == "inventory":
+              assert not execute
+              assert confirmation == f"INVENTORY_RUNTIME_CONFIG_{release_sha}"
+          elif not execute:
+              assert confirmation == f"PREVIEW_RUNTIME_CONFIG_{release_sha}"
+          PY
+          curl -sSf -D /tmp/aicrm-runtime-config-health.headers \
+            https://www.youcangogogo.com/health \
+            -o /tmp/aicrm-runtime-config-health.json
+          public_sha="$(awk 'tolower($1) == "x-aicrm-release-sha:" {gsub("\\r", "", $2); print $2}' /tmp/aicrm-runtime-config-health.headers)"
+          test "$public_sha" = "$EXPECTED_RELEASE_SHA"
+
+  control:
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      EXPECTED_RELEASE_SHA: ${{ inputs.expected_release_sha }}
+      CONFIG_ACTION: ${{ inputs.action }}
+      CONFIG_KEYS: ${{ inputs.keys }}
+      CONFIG_CAPABILITY_ID: ${{ inputs.capability_id }}
+      CONFIG_RELEASE_ID: ${{ inputs.release_id }}
+      CONFIG_MAX_KEYS: ${{ inputs.max_keys }}
+      CONFIG_EXECUTE: ${{ inputs.execute }}
+      CONFIG_CONFIRMATION: ${{ inputs.confirmation }}
+    steps:
+      - name: Run redacted atomic Config Release operation
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        env:
+          EXPECTED_RELEASE_SHA: ${{ env.EXPECTED_RELEASE_SHA }}
+          CONFIG_ACTION: ${{ env.CONFIG_ACTION }}
+          CONFIG_KEYS: ${{ env.CONFIG_KEYS }}
+          CONFIG_CAPABILITY_ID: ${{ env.CONFIG_CAPABILITY_ID }}
+          CONFIG_RELEASE_ID: ${{ env.CONFIG_RELEASE_ID }}
+          CONFIG_MAX_KEYS: ${{ env.CONFIG_MAX_KEYS }}
+          CONFIG_EXECUTE: ${{ env.CONFIG_EXECUTE }}
+          CONFIG_CONFIRMATION: ${{ env.CONFIG_CONFIRMATION }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          command_timeout: 10m
+          envs: EXPECTED_RELEASE_SHA,CONFIG_ACTION,CONFIG_KEYS,CONFIG_CAPABILITY_ID,CONFIG_RELEASE_ID,CONFIG_MAX_KEYS,CONFIG_EXECUTE,CONFIG_CONFIRMATION
+          script: |
+            set -e
+            set -o pipefail
+            cd '/home/ubuntu/极简 crm'
+            test "$(git rev-parse HEAD)" = "$EXPECTED_RELEASE_SHA"
+            test "$(tr -d '\r\n' < .release-sha)" = "$EXPECTED_RELEASE_SHA"
+            set -a
+            source /home/ubuntu/.openclaw-wecom-pg.env
+            set +a
+            source /home/ubuntu/venvs/openclaw/bin/activate
+
+            config_command=(
+              python3 scripts/ops/manage_runtime_config_release.py "$CONFIG_ACTION"
+              --expected-release-sha "$EXPECTED_RELEASE_SHA"
+              --operator github-actions-runtime-config
+              --confirmation "$CONFIG_CONFIRMATION"
+              --max-keys "$CONFIG_MAX_KEYS"
+            )
+            IFS=',' read -r -a requested_keys <<< "$CONFIG_KEYS"
+            for raw_key in "${requested_keys[@]}"; do
+              key="${raw_key//[[:space:]]/}"
+              if [ -n "$key" ]; then
+                config_command+=(--key "$key")
+              fi
+            done
+            if [ -n "$CONFIG_CAPABILITY_ID" ]; then
+              config_command+=(--capability-id "$CONFIG_CAPABILITY_ID")
+            fi
+            if [ "$CONFIG_RELEASE_ID" != "0" ]; then
+              config_command+=(--release-id "$CONFIG_RELEASE_ID")
+            fi
+            if [ "$CONFIG_EXECUTE" = "true" ]; then
+              config_command+=(--execute)
+            fi
+            "${config_command[@]}" | tee /tmp/aicrm-runtime-config-release.json
+
+            python3 - <<'PY'
+            import json
+
+            path = "/tmp/aicrm-runtime-config-release.json"
+            body = open(path, encoding="utf-8").read()
+            report = json.loads(body)
+            assert report["ok"] is True
+            assert report.get("real_external_call_executed") is False
+            assert "secretref:" not in body
+            assert "before" not in report and "after" not in report
+            if report.get("published"):
+                assert report.get("release_id") or report.get("rollback_release_id")
+            PY
+            curl -sSf -D /tmp/aicrm-runtime-config-local-health.headers \
+              http://127.0.0.1:5001/health \
+              -o /tmp/aicrm-runtime-config-local-health.json
+            local_sha="$(awk 'tolower($1) == "x-aicrm-release-sha:" {gsub("\\r", "", $2); print $2}' /tmp/aicrm-runtime-config-local-health.headers)"
+            test "$local_sha" = "$EXPECTED_RELEASE_SHA"

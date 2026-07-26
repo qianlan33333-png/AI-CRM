@@ -47,6 +47,11 @@ physical package move, legacy table deletion, or real provider call.
 - The admin console and API expose capability, deployment profile,
   configuration-definition, release, validation, publish, rollback, and
   redacted shadow-comparison views.
+- `manage_runtime_config_release.py` and the production-environment workflow
+  add a release-SHA-bound operational path for redacted inventory, staging,
+  bounded activation, and rollback. Staging blocks raw secrets, activation is
+  limited to 25 exact keys and a digest-bound confirmation, and every action
+  asserts that no real external provider call occurred.
 - The canonical SCRM interface layer defines `CustomerRelationship`,
   `AudienceSpec`, `ContentBundle`, `CampaignExecution`, and `ProviderReceipt`,
   plus their public ports. It does not introduce an arbitrary object model or
@@ -126,9 +131,9 @@ and historical-data parity evidence.
 
 ## Deliberately not completed in this release
 
-- Managed values remain in observation mode. Per-instance staging, redacted
-  shadow comparison, and cutover activation are operational release steps and
-  are not inferred from repository tests. No
+- Managed values remain in observation mode. The per-instance staging,
+  redacted shadow comparison, and cutover workflow now exists, but production
+  evidence must come from executing it after the observation deployment. No
   `AICRM_RUNTIME_CONFIG_CUTOVER_KEYS` value is activated by this change.
 - The cross-context import baseline is reduced from 162 to 116 by injecting the
   composed FastAPI route registry, keeping the runtime-config projection in

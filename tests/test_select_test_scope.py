@@ -1118,12 +1118,22 @@ def test_operation_member_picker_static_assets_select_admin_config_scope() -> No
 def test_config_release_control_plane_selects_postgres_and_full_architecture_gate() -> None:
     result = _select(
         "aicrm_next/admin_config/config_releases.py",
+        "scripts/ops/manage_runtime_config_release.py",
+        ".github/workflows/runtime-config-production.yml",
         "tests/test_config_releases_postgres.py",
+        "tests/test_manage_runtime_config_release.py",
+        "tests/test_runtime_config_production_workflow.py",
     )
 
-    assert result["matched_scopes"] == ["config_release_control_plane", "admin_config"]
+    assert result["matched_scopes"] == [
+        "config_release_control_plane",
+        "admin_config",
+        "ci_deploy",
+    ]
     assert "tests/test_config_releases.py" in result["python_tests"]
     assert "tests/test_config_releases_postgres.py" in result["python_tests"]
+    assert "tests/test_manage_runtime_config_release.py" in result["python_tests"]
+    assert "tests/test_runtime_config_production_workflow.py" in result["python_tests"]
     assert result["needs_postgres"] is True
     assert result["needs_full_ci"] is True
     assert result["architecture_gate"] == "full"
