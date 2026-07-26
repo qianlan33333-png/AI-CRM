@@ -18,6 +18,7 @@ from .repository_support import (
     InternalEventOutboxRecord,
     InternalEventRepository,
     LEASE_TIMEOUT,
+    SQLAlchemyTargetedOutboxMixin,
     Session,
     _SENSITIVE_PAYLOAD_KEYS,
     _audit_reason,
@@ -82,7 +83,7 @@ def read_wechat_pay_order_for_payment_event(*, lookup: str, aggregate_id: str) -
     return {}
 
 
-class SQLAlchemyInternalEventRepository(InternalEventRepository):
+class SQLAlchemyInternalEventRepository(SQLAlchemyTargetedOutboxMixin, InternalEventRepository):
     def __init__(self, session_factory: Callable[[], Session] | None = None):
         self._session_factory = session_factory or get_session_factory()
 

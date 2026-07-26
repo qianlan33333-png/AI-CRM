@@ -66,6 +66,89 @@ def automatic_due_predicate_sql(alias: str = "r") -> str:
     """
 
 
+def acquire_due_outbox_by_idempotency_key_sql(
+    write_one: Callable[[str, dict[str, Any] | None], dict[str, Any] | None],
+    *,
+    tenant_id: str,
+    idempotency_key: str,
+    event_type: str,
+    locked_by: str,
+) -> InternalEventOutboxRecord | None:
+    """Lease one exact due outbox row without advancing unrelated work."""
+
+    lease_prefix = "ieol_" + uuid4().hex
+    row = write_one(
+        f"""
+        WITH due AS (
+            SELECT id
+            FROM internal_event_outbox o
+            WHERE o.tenant_id = :tenant_id
+              AND o.idempotency_key = :idempotency_key
+              AND o.event_type = :event_type
+              AND {automatic_due_predicate_sql("o")}
+            LIMIT 1
+            FOR UPDATE SKIP LOCKED
+        )
+        UPDATE internal_event_outbox o
+        SET status = 'running', attempt_count = attempt_count + 1,
+            locked_at = CURRENT_TIMESTAMP, locked_by = :locked_by,
+            lease_token = :lease_prefix || '-' || o.id::text,
+            updated_at = CURRENT_TIMESTAMP
+        FROM due
+        WHERE o.id = due.id
+        RETURNING o.*
+        """,
+        {
+            "tenant_id": _text(tenant_id) or DEFAULT_TENANT_ID,
+            "idempotency_key": _text(idempotency_key),
+            "event_type": _text(event_type),
+            "locked_by": _text(locked_by),
+            "lease_prefix": lease_prefix,
+        },
+    )
+    return _public_outbox(row)
+
+
+class SQLAlchemyTargetedOutboxMixin:
+    _one: Callable[[str, dict[str, Any] | None], dict[str, Any] | None]
+    _write_one: Callable[[str, dict[str, Any] | None], dict[str, Any] | None]
+
+    def get_event_by_idempotency_key(
+        self,
+        *,
+        tenant_id: str,
+        idempotency_key: str,
+        event_type: str,
+    ) -> InternalEvent | None:
+        row = self._one(
+            "SELECT * FROM internal_event "
+            "WHERE tenant_id = :tenant_id AND idempotency_key = :idempotency_key "
+            "AND event_type = :event_type LIMIT 1",
+            {
+                "tenant_id": _text(tenant_id) or DEFAULT_TENANT_ID,
+                "idempotency_key": _text(idempotency_key),
+                "event_type": _text(event_type),
+            },
+        )
+        return _public_event(row)
+
+    def acquire_due_outbox_by_idempotency_key(
+        self,
+        *,
+        tenant_id: str,
+        idempotency_key: str,
+        event_type: str,
+        locked_by: str,
+    ) -> InternalEventOutboxRecord | None:
+        return acquire_due_outbox_by_idempotency_key_sql(
+            self._write_one,
+            tenant_id=tenant_id,
+            idempotency_key=idempotency_key,
+            event_type=event_type,
+            locked_by=locked_by,
+        )
+
+
 def queue_metric_filter_sql(
     filters: dict[str, Any],
     *,
@@ -388,6 +471,15 @@ class InternalEventRepository:
     def get_event(self, event_id: str) -> InternalEvent | None:
         raise NotImplementedError
 
+    def get_event_by_idempotency_key(
+        self,
+        *,
+        tenant_id: str,
+        idempotency_key: str,
+        event_type: str,
+    ) -> InternalEvent | None:
+        raise NotImplementedError
+
     def list_events(self, filters: dict[str, Any] | None = None, *, limit: int = 50, offset: int = 0) -> tuple[list[InternalEvent], int]:
         raise NotImplementedError
 
@@ -546,6 +638,18 @@ class InternalEventRepository:
         raise NotImplementedError
 
     def acquire_due_outbox(self, *, limit: int = 50, locked_by: str) -> list[InternalEventOutboxRecord]:
+        raise NotImplementedError
+
+    def acquire_due_outbox_by_idempotency_key(
+        self,
+        *,
+        tenant_id: str,
+        idempotency_key: str,
+        event_type: str,
+        locked_by: str,
+    ) -> InternalEventOutboxRecord | None:
+        """Lease one exact due outbox row without advancing unrelated work."""
+
         raise NotImplementedError
 
     def relay_outbox(

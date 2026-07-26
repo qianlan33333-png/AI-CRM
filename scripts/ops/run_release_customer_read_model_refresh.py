@@ -105,6 +105,7 @@ def run_release_refresh(
     target_generation = int(request.get("generation") or request_intent.get("dirty_generation") or 0)
     if target_generation <= 0:
         raise ReleaseRefreshError("release_refresh_generation_missing")
+    target_outbox_key = f"customer_read_model.refresh.requested:{target_generation}"
     already_completed = (
         bool(request.get("deduplicated"))
         and str(request_intent.get("status") or "") == "idle"
@@ -125,6 +126,8 @@ def run_release_refresh(
     }
     consumer_counts = dict(expected_counts)
     consumer_mode = "already_completed" if already_completed else ""
+    targeted_relay_counts: dict[str, int] = {}
+    targeted_relay_mode = "already_completed" if already_completed else ""
     if not already_completed:
         worker_env = {
             **base_env,
@@ -145,11 +148,44 @@ def run_release_refresh(
                 REFRESH_EVENT_TYPE,
                 "--consumer-names",
                 REFRESH_CONSUMER,
+                "--outbox-idempotency-key",
+                target_outbox_key,
             ),
             env=worker_env,
             label="release_refresh_consumer",
             command_runner=command_runner,
         )
+        relay = dict(consumer.get("outbox_relay") or {})
+        relay_counts = dict(relay.get("counts") or {})
+        targeted_relay_counts = {
+            "candidate_count": int(relay_counts.get("candidate_count") or 0),
+            "relayed_count": int(relay_counts.get("relayed_count") or 0),
+            "failed_retryable_count": int(relay_counts.get("failed_retryable_count") or 0),
+            "failed_terminal_count": int(relay_counts.get("failed_terminal_count") or 0),
+            "lost_lease_count": int(relay_counts.get("lost_lease_count") or 0),
+            "unhandled_failure_count": int(relay_counts.get("unhandled_failure_count") or 0),
+        }
+        relay_pair = (
+            targeted_relay_counts["candidate_count"],
+            targeted_relay_counts["relayed_count"],
+        )
+        relay_failures = sum(
+            targeted_relay_counts[key]
+            for key in (
+                "failed_retryable_count",
+                "failed_terminal_count",
+                "lost_lease_count",
+                "unhandled_failure_count",
+            )
+        )
+        if (
+            relay.get("targeted") is not True
+            or str(relay.get("event_type") or "") != REFRESH_EVENT_TYPE
+            or relay_pair not in {(0, 0), (1, 1)}
+            or relay_failures != 0
+        ):
+            raise ReleaseRefreshError("release_refresh_targeted_relay_count_mismatch")
+        targeted_relay_mode = "relayed" if relay_pair == (1, 1) else "already_owned"
         counts = dict(consumer.get("counts") or {})
         consumer_counts = {key: int(counts.get(key) or 0) for key in expected_counts}
         exact_execution = all(
@@ -214,6 +250,8 @@ def run_release_refresh(
         },
         "consumer_counts": consumer_counts,
         "consumer_mode": consumer_mode,
+        "targeted_relay_counts": targeted_relay_counts,
+        "targeted_relay_mode": targeted_relay_mode,
         "completion": {
             "target_generation": target_generation,
             "completed_generation": int(wait.get("completed_generation") or 0),

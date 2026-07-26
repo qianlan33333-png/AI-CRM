@@ -797,7 +797,7 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/platform_foundation/internal_events/worker.py",
       "key": "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE_MAX_BATCH_SIZE",
-      "line": 248
+      "line": 265
     },
     {
       "accessor": "declared_runtime_setting_key",
