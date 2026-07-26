@@ -35,10 +35,8 @@ def test_deployment_profile_diagnostics_proves_live_process_and_composition_pari
     assert 'sudo cat "/proc/$pid/environ"' in source
     assert "openclaw-wecom-postgres.service" in source
     assert "openclaw-wecom-callback-ingress.service" in source
-    assert "aicrm-internal-queue-runtime.service" in source
-    assert "aicrm-inbox-queue-runtime.service" in source
+    assert "aicrm-internal-worker.service" in source
     assert "aicrm-external-queue-runtime.service" in source
-    assert "aicrm-internal-worker-observer.service" in source
     assert 'profile.activation_mode == "enforce"' in source
     assert "profile.enabled_capabilities == expected_capabilities" in source
     assert "enforced_routes == observed_routes" in source

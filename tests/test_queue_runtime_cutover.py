@@ -167,7 +167,7 @@ def test_cutover_starts_canonical_targets_then_drains_old_owner_before_cas() -> 
     assert result.after.claim_enabled is True
     assert events[:2] == ["gate_closed", "stage:17"]
     start_events = [f"start:{service}" for service in CANONICAL_RUNTIME_SERVICES]
-    assert events[2:5] == start_events
+    assert events[2 : 2 + len(start_events)] == start_events
     assert events.index("stop_triggers:legacy-internal.timer") > events.index("ready:17:2")
     assert events.index("stop_services:legacy-inbox.service") > events.index("stop_triggers:legacy-internal.timer")
     assert events.index("drain:legacy-internal.service,legacy-inbox.service:20") < events.index(

@@ -78,13 +78,18 @@ def test_runtime_contract_inventory_covers_r00_behavior_surfaces() -> None:
     assert any(unit["unit"] == "openclaw-wecom-callback-ingress.service" for unit in inventory["runtime_units"])
     runtime_units = {unit["unit"]: unit for unit in inventory["runtime_units"]}
     for unit_name in (
-        "aicrm-internal-queue-runtime.service",
-        "aicrm-inbox-queue-runtime.service",
+        "aicrm-internal-worker.service",
         "aicrm-external-queue-runtime.service",
     ):
         assert runtime_units[unit_name]["kind"] == "service"
         assert runtime_units[unit_name]["state"] == "active"
         assert runtime_units[unit_name]["stop_for_migration"] is True
+    for unit_name in (
+        "aicrm-internal-queue-runtime.service",
+        "aicrm-inbox-queue-runtime.service",
+        "aicrm-internal-worker-observer.service",
+    ):
+        assert runtime_units[unit_name]["state"] == "retired_forbidden"
     assert runtime_units["aicrm-job-catalog-scheduler.timer"] == {
         "unit": "aicrm-job-catalog-scheduler.timer",
         "kind": "timer",

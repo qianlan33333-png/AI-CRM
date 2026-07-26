@@ -1,7 +1,14 @@
 {
   "schema_version": 1,
   "artifact_policy": "same_commit_same_artifact",
-  "activation_mode": "observe",
+  "activation_mode": "mixed",
+  "role_activation": {
+    "web": "enforce",
+    "callback": "enforce",
+    "internal_worker": "enforce",
+    "external_worker": "enforce",
+    "scheduler": "observe"
+  },
   "roles": [
     {
       "role": "web",
@@ -17,7 +24,7 @@
     },
     {
       "role": "internal_worker",
-      "command": "python scripts/run_execution_runtime.py --role internal_worker --standby",
+      "command": "python scripts/run_execution_runtime.py --role internal_worker",
       "responsibilities": ["webhook_inbox", "internal_event", "internal_outbox"],
       "may_call_real_provider": false
     },
@@ -35,10 +42,12 @@
     }
   ],
   "cutover_policy": {
-    "activate_new_units": false,
-    "observer_unit_active": true,
+    "activate_new_units": true,
+    "observer_unit_active": false,
+    "internal_worker_predecessors_authoritative": false,
+    "scheduler_predecessors_authoritative": true,
     "requires_successor_parity": true,
     "requires_independent_release": true,
-    "legacy_units_remain_authoritative": true
+    "legacy_units_remain_authoritative": false
   }
 }

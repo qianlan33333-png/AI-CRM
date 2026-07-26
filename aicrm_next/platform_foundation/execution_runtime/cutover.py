@@ -23,8 +23,7 @@ from .repository import normalize_runtime_database_url, open_runtime_connection
 
 
 CANONICAL_RUNTIME_SERVICES = (
-    "aicrm-internal-queue-runtime.service",
-    "aicrm-inbox-queue-runtime.service",
+    "aicrm-internal-worker.service",
     "aicrm-external-queue-runtime.service",
 )
 PR3_OWNER_INVENTORY_NAME = "pr3"
@@ -50,7 +49,7 @@ PR3_SUCCESSOR_OWNERS = (
         "openclaw-internal-event-worker.timer",
         "internal_event_dispatch",
         "persistent_service",
-        "aicrm-internal-queue-runtime.service",
+        "aicrm-internal-worker.service",
         "queue_worker_heartbeat:aicrm-internal_event-runtime",
         "internal_event_consumer_run",
     ),
@@ -90,7 +89,7 @@ PR3_SUCCESSOR_OWNERS = (
         "openclaw-customer-read-model-refresh.timer",
         "customer_read_model_refresh",
         "persistent_service",
-        "aicrm-internal-queue-runtime.service",
+        "aicrm-internal-worker.service",
         "queue_worker_heartbeat:aicrm-internal_event-runtime",
         "customer_read_model_refresh_intent+internal_event_consumer_run",
     ),
@@ -106,7 +105,7 @@ PR3_SUCCESSOR_OWNERS = (
         "openclaw-wecom-callback-inbox-worker.service",
         "wecom_callback_inbox_dispatch",
         "persistent_service",
-        "aicrm-inbox-queue-runtime.service",
+        "aicrm-internal-worker.service",
         "queue_worker_heartbeat:aicrm-webhook_inbox-runtime",
         "webhook_inbox",
     ),

@@ -1630,17 +1630,17 @@ def test_data_health_snapshot_changes_force_postgres_full_ci() -> None:
     assert result["architecture_gate"] == "full"
 
 
-def test_internal_worker_observer_diagnostics_uses_execution_runtime_scope() -> None:
+def test_internal_worker_owner_diagnostics_uses_execution_runtime_scope() -> None:
     result = _select(
-        ".github/workflows/internal-worker-observer-production-diagnostics.yml",
-        "deploy/aicrm-internal-worker-observer.service",
-        "tests/test_internal_worker_observer_production_workflow.py",
+        ".github/workflows/internal-worker-production-diagnostics.yml",
+        "deploy/aicrm-internal-worker.service",
+        "tests/test_internal_worker_production_workflow.py",
     )
 
     assert result["unmatched_files"] == []
     assert "postgres_execution_runtime" in result["matched_scopes"]
     assert "ci_deploy" in result["matched_scopes"]
-    assert "tests/test_internal_worker_observer_production_workflow.py" in result[
+    assert "tests/test_internal_worker_production_workflow.py" in result[
         "python_tests"
     ]
     assert result["needs_postgres"] is True

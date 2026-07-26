@@ -65,10 +65,8 @@ jobs:
             for unit in \
               openclaw-wecom-postgres.service \
               openclaw-wecom-callback-ingress.service \
-              aicrm-internal-queue-runtime.service \
-              aicrm-inbox-queue-runtime.service \
-              aicrm-external-queue-runtime.service \
-              aicrm-internal-worker-observer.service
+              aicrm-internal-worker.service \
+              aicrm-external-queue-runtime.service
             do
               systemctl is-active --quiet "$unit"
               pid="$(systemctl show "$unit" --property=MainPID --value)"

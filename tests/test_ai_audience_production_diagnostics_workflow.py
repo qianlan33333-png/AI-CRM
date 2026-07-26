@@ -17,7 +17,7 @@ def test_ai_audience_production_diagnostics_is_exact_release_read_only() -> None
     assert "test \"$public_sha\" = \"$expected_release_sha\"" in workflow
     assert "systemctl is-enabled --quiet aicrm-ai-audience-daily-intent.timer" in workflow
     assert "systemctl is-active --quiet aicrm-ai-audience-daily-intent.timer" in workflow
-    assert "systemctl is-active --quiet aicrm-internal-queue-runtime.service" in workflow
+    assert "systemctl is-active --quiet aicrm-internal-worker.service" in workflow
     assert "runtime_heartbeat_state" in workflow
     assert "package_config_state" in workflow
     assert "incremental_sql_configured" in workflow

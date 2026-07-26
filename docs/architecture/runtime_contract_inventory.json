@@ -47466,25 +47466,26 @@
       "unit": "aicrm-huangyoucan-usage-sync.timer"
     },
     {
-      "health_url": "",
       "kind": "service",
-      "state": "active",
-      "stop_for_migration": true,
+      "state": "retired_forbidden",
       "unit": "aicrm-inbox-queue-runtime.service"
     },
     {
-      "health_url": "",
       "kind": "service",
-      "state": "active",
-      "stop_for_migration": true,
+      "state": "retired_forbidden",
       "unit": "aicrm-internal-queue-runtime.service"
+    },
+    {
+      "kind": "service",
+      "state": "retired_forbidden",
+      "unit": "aicrm-internal-worker-observer.service"
     },
     {
       "health_url": "",
       "kind": "service",
       "state": "active",
       "stop_for_migration": true,
-      "unit": "aicrm-internal-worker-observer.service"
+      "unit": "aicrm-internal-worker.service"
     },
     {
       "kick_after_timer_restart": false,

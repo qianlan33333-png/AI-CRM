@@ -138,9 +138,11 @@ jobs. HTTP paths, auth rules, event names, effect types, database behavior, and
 extension behavior therefore remain compatible while capability activation is
 now fail-closed and versioned.
 
-The job-catalog scheduler remains an observer and the combined
-`internal_worker` remains claimless until their independent successor-parity
-cutovers. Profile enforcement does not authorize either runtime owner switch.
+The job-catalog scheduler remains an observer. The combined `internal_worker`
+has completed its independent successor-parity cutover and is now the single
+generation-gated owner for webhook Inbox, internal events, and internal Outbox.
+Its two predecessor services and the claimless observer are retired; profile
+enforcement by itself still does not authorize the scheduler owner switch.
 
 ## Deliberately not completed in this release
 
@@ -172,16 +174,12 @@ cutovers. Profile enforcement does not authorize either runtime owner switch.
 
 ## Next safe sequence
 
-1. Enable the full production profile on the baseline instance, run the
-   release-bound read-only composition diagnostic, and then upgrade customer
-   instances one at a time.
-2. Use the collected combined `internal_worker` parity evidence to switch that
-   owner in an independent release while the predecessor release remains the
-   immediate rollback target.
-3. Finish real-handler parity for each scheduler candidate before replacing
+1. Keep the predecessor release as the immediate rollback target and verify the
+   enforced `internal_worker` owner with the release-bound read-only diagnostic.
+2. Finish real-handler parity for each scheduler candidate before replacing
    any predecessor timer; payment reconciliation remains observe-only.
-4. Move physical packages into the seven stable domains only after public-port
+3. Move physical packages into the seven stable domains only after public-port
    imports remain within the dependency baseline.
-5. Run the 1,200 callbacks/minute acceptance test and start the 30-day
+4. Run the 1,200 callbacks/minute acceptance test and start the 30-day
    zero-read/write clock for each legacy table only after its successor owner
    is authoritative.
