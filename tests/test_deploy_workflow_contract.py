@@ -144,13 +144,50 @@ def test_failed_uncommitted_deploy_restores_previous_exact_sha_and_dependencies(
     dependency_guard = workflow.index('git diff --quiet "$before_sha" "$verified_sha" -- requirements.lock', release_file_index)
     dependency_restore = workflow.index("--require-hashes -r requirements.lock", dependency_guard)
     exact_health = workflow.index('grep -i "x-aicrm-release-sha: $restore_expected_sha"', dependency_restore)
-    restore_units = workflow.index("--phase install-enable-after-web-health --execute", exact_health)
+    restore_units = workflow.index("restore_runtime_phase install-enable-after-web-health", exact_health)
 
     assert switched_init < committed_init < cleanup_index < transaction_guard < stop_index < rollback_guard
     assert rollback_guard < reset_index < release_file_index
     assert release_file_index < dependency_guard < dependency_restore < exact_health < restore_units
     assert 'restore_expected_sha="$before_sha"' in workflow
     assert "alembic downgrade" not in workflow
+
+
+def test_failed_uncommitted_deploy_removes_candidate_only_units_and_restores_previous_manifest() -> None:
+    workflow = PRODUCTION_DEPLOY_WORKFLOW.read_text(encoding="utf-8")
+
+    cleanup_reset_index = workflow.index('git reset --hard "$before_sha"')
+    remove_index = workflow.index("--phase remove-candidate-only-runtime --execute", cleanup_reset_index)
+    restore_manager_index = workflow.index(
+        'restore_control_manager="$previous_control_manager"',
+        remove_index,
+    )
+    restore_manifest_index = workflow.index(
+        'restore_control_manifest="$previous_control_manifest"',
+        restore_manager_index,
+    )
+    install_index = workflow.index("restore_runtime_phase authorize-web-start", restore_manifest_index)
+    cleanup_index = workflow.index('rm -rf -- "$previous_control_dir"', install_index)
+
+    trap_index = workflow.index("trap cleanup_deploy EXIT")
+    previous_archive_index = workflow.index('git archive "$before_sha"', trap_index)
+    candidate_archive_index = workflow.index('git archive "$verified_sha"', previous_archive_index)
+    candidate_reset_index = workflow.index('git reset --hard "$verified_sha"', candidate_archive_index)
+
+    assert cleanup_reset_index < remove_index < restore_manager_index
+    assert restore_manager_index < restore_manifest_index < install_index < cleanup_index
+    assert trap_index < previous_archive_index < candidate_archive_index < candidate_reset_index
+    remove_block = workflow[cleanup_reset_index:restore_manager_index]
+    assert '--previous-manifest "$previous_control_manifest"' in remove_block
+    assert '--manifest "$release_control_manifest"' in remove_block
+    restore_block = workflow[restore_manifest_index:cleanup_index]
+    assert "restore_runtime_phase authorize-web-start" in restore_block
+    assert "restore_runtime_phase install-enable-after-web-health" in restore_block
+    helper = workflow[
+        workflow.index("restore_runtime_phase() {") : workflow.index("cd '/home/ubuntu/极简 crm'")
+    ]
+    assert 'python3 "$restore_control_manager"' in helper
+    assert '--manifest "$restore_control_manifest"' in helper
 
 
 def test_failed_deploy_drain_restores_timers_without_killing_active_oneshots() -> None:
@@ -166,9 +203,9 @@ def test_failed_deploy_drain_restores_timers_without_killing_active_oneshots() -
     preserve_index = workflow.index("preserving active one-shot workers during rollback", cleanup_index)
     conditional_web_stop = workflow.index('if [ "${runtime_units_stopped:-0}" = "1" ]; then', preserve_index)
     rollback_index = workflow.index('git reset --hard "$before_sha"', conditional_web_stop)
-    restore_index = workflow.index("--phase authorize-runtime-restore --execute", rollback_index)
-    install_index = workflow.index("--phase install-enable-after-web-health --execute", restore_index)
-    release_index = workflow.index("--phase release-runtime-guard --execute", install_index)
+    restore_index = workflow.index("restore_runtime_phase authorize-runtime-restore", rollback_index)
+    install_index = workflow.index("restore_runtime_phase install-enable-after-web-health", restore_index)
+    release_index = workflow.index("restore_runtime_phase release-runtime-guard", install_index)
 
     assert partial_init < mutation_index < partial_start < stop_index < stopped_index < partial_clear
     assert cleanup_index < preserve_index < conditional_web_stop < rollback_index < restore_index < install_index < release_index
@@ -724,7 +761,7 @@ def test_deploy_exit_trap_revokes_smoke_session_and_restores_runtime_units():
 
     cleanup_index = workflow.index("cleanup_deploy() {")
     stop_index = workflow.index("--phase stop-for-migration-recovery --execute", cleanup_index)
-    verify_index = workflow.index("--phase verify-staged-runtime --execute", stop_index)
+    verify_index = workflow.index("restore_runtime_phase verify-staged-runtime", stop_index)
     trap_index = workflow.index("trap cleanup_deploy EXIT", verify_index)
     restored_flag_index = workflow.index("runtime_units_stopped=0", trap_index)
 
@@ -735,8 +772,8 @@ def test_deploy_exit_trap_revokes_smoke_session_and_restores_runtime_units():
     assert 'echo "restoring runtime units for $restore_expected_sha"' in cleanup
     assert 'git reset --hard "$before_sha"' in cleanup
     assert 'grep -i "x-aicrm-release-sha: $restore_expected_sha"' in cleanup
-    assert "--phase install-enable-after-web-health --execute" in cleanup
-    assert "--phase verify-staged-runtime --execute" in cleanup
+    assert "restore_runtime_phase install-enable-after-web-health" in cleanup
+    assert "restore_runtime_phase verify-staged-runtime" in cleanup
     assert "restored_web_ready" in cleanup
 
 

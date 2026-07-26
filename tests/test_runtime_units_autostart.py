@@ -317,6 +317,63 @@ def test_runtime_units_retire_legacy_overlays_is_idempotent_and_verified(capsys)
     assert output.index("sudo rm -f") < output.index("sudo systemctl daemon-reload") < output.index("sudo test '!' -e")
 
 
+def test_runtime_units_rollback_removes_only_candidate_unit_files_and_guards() -> None:
+    previous = {
+        "primary_web": {"service": "openclaw-wecom-postgres.service"},
+        "active_services": [],
+        "active_autostart": [],
+        "cutover_replacement_autostart": {"timers": []},
+        "approval_required": [],
+        "retired_forbidden": [],
+    }
+    candidate = deepcopy(previous)
+    candidate["active_autostart"] = [
+        {
+            "timer": "aicrm-job-catalog-scheduler.timer",
+            "service": "aicrm-job-catalog-scheduler.service",
+        }
+    ]
+    runner = _RecordingRunner(enabled_units=set())
+
+    runtime_units.phase_remove_candidate_only_runtime(candidate, previous, runner)
+
+    for unit in (
+        "aicrm-job-catalog-scheduler.timer",
+        "aicrm-job-catalog-scheduler.service",
+    ):
+        assert ("sudo", "systemctl", "disable", "--now", unit) in runner.commands
+        assert ("sudo", "systemctl", "stop", unit) in runner.commands
+        assert ("sudo", "systemctl", "reset-failed", unit) in runner.commands
+        assert ("sudo", "rm", "-f", f"/etc/systemd/system/{unit}") in runner.commands
+        assert (
+            "sudo",
+            "rm",
+            "-f",
+            f"/etc/systemd/system/{unit}.d/00-aicrm-deploy-transaction-guard.conf",
+        ) in runner.commands
+    assert (
+        "sudo",
+        "systemctl",
+        "disable",
+        "--now",
+        "openclaw-wecom-postgres.service",
+    ) not in runner.commands
+    assert (
+        "sudo",
+        "rm",
+        "-f",
+        "/etc/systemd/system/openclaw-wecom-postgres.service",
+    ) not in runner.commands
+    assert ("sudo", "systemctl", "daemon-reload") in runner.commands
+
+
+def test_runtime_units_candidate_cleanup_cli_requires_previous_manifest(capsys) -> None:
+    with pytest.raises(SystemExit):
+        runtime_units.main(["--phase", "remove-candidate-only-runtime", "--dry-run"])
+
+    assert "--previous-manifest is required" in capsys.readouterr().err
+
+
 def test_runtime_units_install_dry_run_copies_and_enables_only_active_units(capsys) -> None:
     assert runtime_units.main(["--phase", "install-enable-after-web-health", "--dry-run"]) == 0
     output = capsys.readouterr().out

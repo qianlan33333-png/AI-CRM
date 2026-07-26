@@ -30,6 +30,11 @@ CommandRunner = Callable[..., subprocess.CompletedProcess[str]]
 class ReleaseRefreshError(RuntimeError):
     """Raised when the exact deploy-time projection refresh cannot complete."""
 
+    def __init__(self, reason: str, *, diagnostics: dict[str, Any] | None = None) -> None:
+        super().__init__(reason)
+        self.reason = str(reason)
+        self.diagnostics = dict(diagnostics or {})
+
 
 def _payload_from_stdout(stdout: str, *, label: str) -> dict[str, Any]:
     lines = [line.strip() for line in str(stdout or "").splitlines() if line.strip()]
@@ -157,7 +162,17 @@ def run_release_refresh(
             counts.get("skipped_count") or 0
         ) == 0
         if not exact_execution and not concurrent_handoff:
-            raise ReleaseRefreshError("release_refresh_consumer_count_mismatch")
+            raise ReleaseRefreshError(
+                "release_refresh_consumer_count_mismatch",
+                diagnostics={
+                    "consumer_counts": {
+                        **consumer_counts,
+                        "skipped_count": int(counts.get("skipped_count") or 0),
+                    },
+                    "expected_consumer_counts": expected_counts,
+                    "consumer_mode": "rejected",
+                },
+            )
         consumer_mode = "executed" if exact_execution else "concurrent_handoff"
 
     completion = _run_json_command(
@@ -174,7 +189,20 @@ def run_release_refresh(
         or int(wait.get("completed_generation") or 0) < int(wait.get("dirty_generation") or 0)
         or str(wait.get("status") or "") != "idle"
     ):
-        raise ReleaseRefreshError("release_refresh_completion_mismatch")
+        raise ReleaseRefreshError(
+            "release_refresh_completion_mismatch",
+            diagnostics={
+                "completion": {
+                    "ok": bool(wait.get("ok")),
+                    "target_generation": int(wait.get("target_generation") or 0),
+                    "dirty_generation": int(wait.get("dirty_generation") or 0),
+                    "completed_generation": int(wait.get("completed_generation") or 0),
+                    "status": str(wait.get("status") or ""),
+                },
+                "expected_target_generation": target_generation,
+                "consumer_mode": consumer_mode,
+            },
+        )
     return {
         "ok": True,
         "release_sha": release_sha,
@@ -204,14 +232,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         payload = run_release_refresh(release_sha=args.release_sha)
     except ReleaseRefreshError as exc:
-        print_json(
-            {
-                "ok": False,
-                "reason": str(exc),
-                "real_external_call_executed": False,
-                "target_values_redacted": True,
-            }
-        )
+        payload = {
+            "ok": False,
+            "reason": exc.reason,
+            "real_external_call_executed": False,
+            "target_values_redacted": True,
+        }
+        if exc.diagnostics:
+            payload["diagnostics"] = exc.diagnostics
+        print_json(payload)
         return 1
     print_json(payload)
     return 0

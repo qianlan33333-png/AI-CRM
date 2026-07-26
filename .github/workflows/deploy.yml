@@ -133,6 +133,16 @@ jobs:
             release_control_dir=""
             release_control_manager=""
             release_control_manifest=""
+            previous_control_dir=""
+            previous_control_manager=""
+            previous_control_manifest=""
+            restore_control_manager=""
+            restore_control_manifest=""
+            restore_runtime_phase() {
+              python3 "$restore_control_manager" \
+                --manifest "$restore_control_manifest" \
+                --phase "$1" --execute
+            }
             cd '/home/ubuntu/极简 crm'
             deploy_target="${{ env.DEPLOY_TARGET }}"
             deploy_lock_file="/tmp/aicrm-deploy-${deploy_target}.lock"
@@ -227,12 +237,19 @@ jobs:
                   echo "failed to restore checkout to $before_sha"
                   cleanup_failed=1
                 fi
+                if ! python3 "$release_control_manager" \
+                  --manifest "$release_control_manifest" \
+                  --previous-manifest "$previous_control_manifest" \
+                  --phase remove-candidate-only-runtime --execute; then
+                  echo "failed to remove candidate-only runtime units"
+                  cleanup_failed=1
+                fi
+                restore_control_manager="$previous_control_manager"
+                restore_control_manifest="$previous_control_manifest"
               fi
               if [ "${runtime_units_stopped:-0}" = "1" ]; then
                 echo "restoring runtime units for $restore_expected_sha"
-                if ! python3 "$release_control_manager" \
-                  --manifest "$release_control_manifest" \
-                  --phase authorize-web-start --execute; then
+                if ! restore_runtime_phase authorize-web-start; then
                   cleanup_failed=1
                 fi
                 sudo systemctl reset-failed \
@@ -251,24 +268,16 @@ jobs:
                   sleep 1
                 done
                 if [ "$restored_web_ready" = "1" ]; then
-                  if ! python3 "$release_control_manager" \
-                    --manifest "$release_control_manifest" \
-                    --phase authorize-runtime-start --execute; then
+                  if ! restore_runtime_phase authorize-runtime-start; then
                     cleanup_failed=1
                   fi
-                  if ! python3 "$release_control_manager" \
-                    --manifest "$release_control_manifest" \
-                    --phase install-enable-after-web-health --execute; then
+                  if ! restore_runtime_phase install-enable-after-web-health; then
                     cleanup_failed=1
                   fi
-                  if ! python3 "$release_control_manager" \
-                    --manifest "$release_control_manifest" \
-                    --phase verify-staged-runtime --execute; then
+                  if ! restore_runtime_phase verify-staged-runtime; then
                     cleanup_failed=1
                   fi
-                  if ! python3 "$release_control_manager" \
-                    --manifest "$release_control_manifest" \
-                    --phase release-runtime-guard --execute; then
+                  if ! restore_runtime_phase release-runtime-guard; then
                     cleanup_failed=1
                   fi
                 else
@@ -292,24 +301,16 @@ jobs:
                   sleep 1
                 done
                 if [ "$partial_web_ready" = "1" ]; then
-                  if ! python3 "$release_control_manager" \
-                    --manifest "$release_control_manifest" \
-                    --phase authorize-runtime-restore --execute; then
+                  if ! restore_runtime_phase authorize-runtime-restore; then
                     cleanup_failed=1
                   fi
-                  if ! python3 "$release_control_manager" \
-                    --manifest "$release_control_manifest" \
-                    --phase install-enable-after-web-health --execute; then
+                  if ! restore_runtime_phase install-enable-after-web-health; then
                     cleanup_failed=1
                   fi
-                  if ! python3 "$release_control_manager" \
-                    --manifest "$release_control_manifest" \
-                    --phase verify-staged-runtime --execute; then
+                  if ! restore_runtime_phase verify-staged-runtime; then
                     cleanup_failed=1
                   fi
-                  if ! python3 "$release_control_manager" \
-                    --manifest "$release_control_manifest" \
-                    --phase release-runtime-guard --execute; then
+                  if ! restore_runtime_phase release-runtime-guard; then
                     cleanup_failed=1
                   fi
                   runtime_transaction_partial=0
@@ -318,6 +319,7 @@ jobs:
                   cleanup_failed=1
                 fi
               fi
+              rm -rf -- "$previous_control_dir"
               rm -rf -- "$release_control_dir"
               rm -rf -- "$release_bundle_dir"
               if [ "$exit_status" -eq 0 ] && [ "$cleanup_failed" -ne 0 ]; then
@@ -350,6 +352,14 @@ jobs:
               exit 1
             fi
             release_control_dir="$(mktemp -d /tmp/aicrm-release-control.XXXXXX)"
+            previous_control_dir="$(mktemp -d /tmp/aicrm-previous-control.XXXXXX)"
+            git archive "$before_sha" \
+              app.py \
+              scripts \
+              deploy \
+              | tar -x -C "$previous_control_dir"
+            previous_control_manager="$previous_control_dir/scripts/ops/manage_production_runtime_units.py"
+            previous_control_manifest="$previous_control_dir/deploy/production_runtime_units.json"
             git archive "$verified_sha" \
               app.py \
               scripts \
@@ -357,6 +367,8 @@ jobs:
               | tar -x -C "$release_control_dir"
             release_control_manager="$release_control_dir/scripts/ops/manage_production_runtime_units.py"
             release_control_manifest="$release_control_dir/deploy/production_runtime_units.json"
+            restore_control_manager="$release_control_manager"
+            restore_control_manifest="$release_control_manifest"
             git reset --hard "$verified_sha"
             release_switched=1
             after_sha="$(git rev-parse HEAD)"
