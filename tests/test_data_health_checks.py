@@ -512,6 +512,10 @@ def test_external_effect_backlog_probe_accepts_small_retryable_queue(monkeypatch
     assert result.evidence["failed_retryable_count"] == 2
     assert result.evidence["oldest_failed_retryable_age_seconds"] == 120
     assert any("FROM external_effect_job" in sql for sql in calls)
+    assert any(
+        "WHERE job.status IN ('failed_retryable', 'failed_terminal', 'blocked')" in sql
+        for sql in calls
+    )
 
 
 def test_external_effect_backlog_excludes_only_shared_pre_cutover_identity_adoption_predicate(monkeypatch) -> None:
