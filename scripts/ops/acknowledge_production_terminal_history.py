@@ -324,6 +324,125 @@ def _fingerprint(row: Mapping[str, Any], *, acknowledgement_type: str) -> str:
     return _sha256(json.dumps(stable, ensure_ascii=True, separators=(",", ":"), sort_keys=True))
 
 
+def _existing_acknowledged_rows(
+    session,
+    *,
+    authorization: Mapping[str, Any],
+    authorization_base_sha: str,
+    provider_error_class: str,
+) -> list[Mapping[str, Any]]:
+    """Return previously acknowledged rows after revalidating durable linkage.
+
+    An acknowledgement is an append-only historical fact.  A later business
+    outcome may make the original candidate query false (for example because a
+    same-business success now exists), but that must not make every deployment
+    re-authorize the old terminal.  Existing acknowledgements therefore use
+    their immutable fingerprint and exact job/attempt links as the idempotency
+    authority.  Partial, altered, or orphaned acknowledgement sets fail closed.
+    """
+
+    acknowledgement_type = str(authorization["acknowledgement_type"])
+    expected_count = int(authorization["maximum_job_count"])
+    total_count = int(
+        session.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM queue_terminal_acknowledgement
+                WHERE acknowledgement_type = :acknowledgement_type
+                """
+            ),
+            {"acknowledgement_type": acknowledgement_type},
+        ).scalar_one()
+    )
+    if total_count == 0:
+        return []
+    if total_count != expected_count:
+        raise RuntimeError(
+            f"expected exactly {expected_count} existing {acknowledgement_type} "
+            f"acknowledgements; found {total_count}"
+        )
+
+    rows = list(
+        session.execute(
+            text(
+                f"""
+                SELECT {_COMMON_SELECT}, :provider_error_class AS provider_error_class
+                FROM queue_terminal_acknowledgement acknowledgement
+                JOIN external_effect_job job ON job.id = acknowledgement.job_id
+                JOIN external_effect_attempt attempt
+                  ON attempt.job_id = job.id
+                 AND attempt.attempt_id = acknowledgement.attempt_id
+                WHERE acknowledgement.acknowledgement_type = :acknowledgement_type
+                  AND acknowledgement.job_execution_id = COALESCE(job.execution_id, '')
+                  AND acknowledgement.attempt_id = COALESCE(job.last_attempt_id, '')
+                  AND acknowledgement.graph_id IS NULL
+                  AND acknowledgement.authorization_base_sha = :authorization_base_sha
+                  AND acknowledgement.authorization_confirmation_sha256 = :confirmation_hash
+                  AND acknowledgement.status = :acknowledged_status
+                  AND acknowledgement.job_status = 'failed_terminal'
+                  AND acknowledgement.error_code = :error_code
+                  AND acknowledgement.replay_prohibited IS TRUE
+                  AND acknowledgement.provider_success_claimed IS FALSE
+                  AND acknowledgement.release_sha ~ '^[0-9a-f]{{40}}$'
+                  AND acknowledgement.job_fingerprint_sha256 ~ '^[0-9a-f]{{64}}$'
+                  AND LENGTH(BTRIM(acknowledgement.actor)) > 0
+                  AND LENGTH(BTRIM(acknowledgement.reason)) > 0
+                  AND job.effect_type = :effect_type
+                  AND job.adapter_name = :adapter_name
+                  AND job.operation = :operation
+                  AND job.business_type = :business_type
+                  AND job.source_module = :source_module
+                  AND job.source_route = :source_route
+                  AND job.status = 'failed_terminal'
+                  AND job.last_error_code = :error_code
+                  AND job.execution_mode = 'execute'
+                  AND job.attempt_count = 1
+                  AND job.max_attempts = 5
+                  AND job.side_effect_executed IS TRUE
+                  AND job.provider_result_received = :provider_result_received
+                  AND job.worker_generation = :worker_generation
+                  AND job.policy_version = :policy_version
+                  AND 1 = (
+                      SELECT COUNT(*)
+                      FROM external_effect_attempt counted_attempt
+                      WHERE counted_attempt.job_id = job.id
+                  )
+                  AND attempt.adapter_name = :adapter_name
+                  AND attempt.adapter_mode = 'execute'
+                  AND attempt.operation = :operation
+                  AND attempt.status = 'failed_terminal'
+                  AND attempt.completed_at IS NOT NULL
+                ORDER BY job.id
+                FOR UPDATE OF acknowledgement, job
+                """
+            ),
+            {
+                "acknowledgement_type": acknowledgement_type,
+                "authorization_base_sha": authorization_base_sha,
+                "confirmation_hash": _sha256(str(authorization["confirmation"])),
+                "acknowledged_status": ACKNOWLEDGED_STATUS,
+                "error_code": authorization["error_code"],
+                "provider_error_class": provider_error_class,
+                "effect_type": authorization["effect_type"],
+                "adapter_name": authorization["adapter_name"],
+                "operation": authorization["operation"],
+                "business_type": authorization["business_type"],
+                "source_module": authorization["source_module"],
+                "source_route": authorization["source_route"],
+                "provider_result_received": acknowledgement_type == REFUND_TYPE,
+                "worker_generation": authorization["expected_worker_generation"],
+                "policy_version": authorization["expected_policy_version"],
+            },
+        ).mappings()
+    )
+    if len(rows) != expected_count:
+        raise RuntimeError(
+            f"existing {acknowledgement_type} acknowledgements failed durable linkage validation"
+        )
+    return rows
+
+
 def _acknowledge_rows(
     session,
     *,
@@ -368,6 +487,16 @@ def _acknowledge_rows(
             "error_code": authorization["error_code"],
             "replay_prohibited": True,
             "provider_success_claimed": False,
+            "evidence_json": {
+                "attempt_count": 1,
+                "durable_provider_attempt_count": 1,
+                "provider_boundary_recorded": bool(row["provider_boundary_recorded"]),
+                "provider_error_class": str(row["provider_error_class"]),
+                "provider_success_claimed": False,
+                "real_external_call_executed_by_acknowledgement": False,
+                "replay_prohibited": True,
+                "target_values_redacted": True,
+            },
         }
         if existing:
             _full_sha(str(existing.get("release_sha") or ""), name="existing release_sha")
@@ -376,16 +505,7 @@ def _acknowledge_rows(
             continue
         if not apply:
             continue
-        evidence = {
-            "attempt_count": 1,
-            "durable_provider_attempt_count": 1,
-            "provider_boundary_recorded": bool(row["provider_boundary_recorded"]),
-            "provider_error_class": str(row["provider_error_class"]),
-            "provider_success_claimed": False,
-            "real_external_call_executed_by_acknowledgement": False,
-            "replay_prohibited": True,
-            "target_values_redacted": True,
-        }
+        evidence = dict(expected_existing["evidence_json"])
         session.execute(
             text(
                 """
@@ -454,8 +574,18 @@ def acknowledge(
 
     with get_session_factory()() as session:
         try:
-            private_rows = _private_candidates(session, manifest[PRIVATE_KEY])
-            refund_rows = _refund_candidates(session, manifest[REFUND_KEY])
+            private_rows = _existing_acknowledged_rows(
+                session,
+                authorization=manifest[PRIVATE_KEY],
+                authorization_base_sha=authorization_base_sha,
+                provider_error_class="external_contact_relationship_absent",
+            ) or _private_candidates(session, manifest[PRIVATE_KEY])
+            refund_rows = _existing_acknowledged_rows(
+                session,
+                authorization=manifest[REFUND_KEY],
+                authorization_base_sha=authorization_base_sha,
+                provider_error_class="merchant_balance_insufficient",
+            ) or _refund_candidates(session, manifest[REFUND_KEY])
             private_count, private_created = _acknowledge_rows(
                 session,
                 rows=private_rows,

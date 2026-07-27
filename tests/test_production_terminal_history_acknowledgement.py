@@ -222,6 +222,46 @@ def test_exact_production_terminal_histories_require_append_only_no_replay_ackno
     assert repeated["private_message_created_count"] == 0
     assert repeated["refund_created_count"] == 0
 
+    # The acknowledgement is an append-only historical fact.  Later job
+    # bookkeeping must not force every deployment to rediscover the original
+    # authorization-window candidates before it can validate the same records.
+    with psycopg.connect(database_url) as connection:
+        connection.execute(
+            """
+            UPDATE external_effect_job
+            SET updated_at = CURRENT_TIMESTAMP
+            WHERE id = ANY(%s)
+            """,
+            ([job_id for job_id, _ in refund_jobs],),
+        )
+        connection.commit()
+
+    repeated_after_candidate_drift = acknowledge(
+        manifest_path=manifest_path,
+        release_sha="c" * 40,
+        authorization_base_sha="8ab2f80ec8a6808a357a5911ace38128599a3d3d",
+        private_confirmation=PRIVATE_CONFIRMATION,
+        refund_confirmation=REFUND_CONFIRMATION,
+        actor="pytest",
+        reason="idempotent acknowledgement after candidate drift",
+        apply=True,
+    )
+    assert repeated_after_candidate_drift["private_message_acknowledged_count"] == 1
+    assert repeated_after_candidate_drift["private_message_created_count"] == 0
+    assert repeated_after_candidate_drift["refund_acknowledged_count"] == 3
+    assert repeated_after_candidate_drift["refund_created_count"] == 0
+
+    with psycopg.connect(database_url) as connection:
+        connection.execute(
+            """
+            UPDATE external_effect_job
+            SET updated_at = completed_at
+            WHERE id = ANY(%s)
+            """,
+            ([job_id for job_id, _ in refund_jobs],),
+        )
+        connection.commit()
+
     health = checks._external_effect_failed_retryable_backlog()
     assert health.status == "ok"
     assert health.evidence["failed_terminal_count"] == 0
@@ -279,3 +319,15 @@ def test_exact_production_terminal_histories_require_append_only_no_replay_ackno
     after_unexpected_replay = checks._external_effect_failed_retryable_backlog()
     assert after_unexpected_replay.status == "fail"
     assert after_unexpected_replay.evidence["failed_terminal_count"] == 1
+
+    with pytest.raises(RuntimeError, match="failed durable linkage validation"):
+        acknowledge(
+            manifest_path=manifest_path,
+            release_sha="d" * 40,
+            authorization_base_sha="8ab2f80ec8a6808a357a5911ace38128599a3d3d",
+            private_confirmation=PRIVATE_CONFIRMATION,
+            refund_confirmation=REFUND_CONFIRMATION,
+            actor="pytest",
+            reason="unexpected replay must fail acknowledgement validation",
+            apply=True,
+        )
