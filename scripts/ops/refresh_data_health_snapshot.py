@@ -14,7 +14,7 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.data_health.snapshot_service import capture_data_health_snapshot  # noqa: E402
+from aicrm_next.insights.data_health.snapshot_service import capture_data_health_snapshot  # noqa: E402
 
 
 def run(*, expected_release_sha: str | None = None) -> int:

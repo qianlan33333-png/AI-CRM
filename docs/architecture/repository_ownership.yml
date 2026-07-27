@@ -52,8 +52,8 @@ repositories:
       - broadcast_job_hourly_reports
       - broadcast_queue_notification_settings
       - outbound_webhook_deliveries
-  aicrm_next/admin_read_model/repo.py:
-    capability_owner: aicrm_next.admin_read_model
+  aicrm_next/insights/admin_read_model/repo.py:
+    capability_owner: aicrm_next.insights.admin_read_model
     table_reads:
       - admin_operation_logs
       - ai_audience_member_current
@@ -514,14 +514,14 @@ repositories:
     table_reads: []
     table_writes:
       - contact_tags
-  aicrm_next/data_health/snapshot_repository.py:
-    capability_owner: aicrm_next.data_health
+  aicrm_next/insights/data_health/snapshot_repository.py:
+    capability_owner: aicrm_next.insights.data_health
     table_reads:
       - data_health_snapshot
     table_writes:
       - data_health_snapshot
-  aicrm_next/delivery_lineage/repository.py:
-    capability_owner: aicrm_next.delivery_lineage
+  aicrm_next/insights/delivery_lineage/repository.py:
+    capability_owner: aicrm_next.insights.delivery_lineage
     table_reads:
       - broadcast_job_events
       - broadcast_jobs

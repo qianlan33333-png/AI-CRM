@@ -98,6 +98,6 @@ def test_monitoring_frontend_assets_are_physically_deleted() -> None:
 
     assert not list((ROOT / "aicrm_next/growth_orchestration").glob("*.py"))
     assert not list((ROOT / "aicrm_next/app/admin_console/static/admin_console/p1").rglob("*.*"))
-    assert not (ROOT / "aicrm_next/data_health/quality_registry.py").exists()
+    assert not (ROOT / "aicrm_next/insights/data_health/quality_registry.py").exists()
     assert not (ROOT / "aicrm_next/automation/background_jobs/data_quality_snapshot.py").exists()
     assert not (ROOT / "scripts/run_data_quality_snapshot.py").exists()

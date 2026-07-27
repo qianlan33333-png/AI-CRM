@@ -289,7 +289,7 @@ def test_sidebar_v2_reads_orders_and_messages_via_unionid_identity() -> None:
 
 
 def test_admin_read_transactions_projection_does_not_require_legacy_order_identity_columns() -> None:
-    source = _read("aicrm_next/admin_read_model/projections.py")
+    source = _read("aicrm_next/insights/admin_read_model/projections.py")
     section = _function_source(source, "transactions_payload")
 
     assert "LEFT JOIN crm_user_identity identity ON identity.unionid = o.unionid" in section

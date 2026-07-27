@@ -2,15 +2,15 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.delivery_lineage.application import (
+from aicrm_next.insights.delivery_lineage.application import (
     delivery_lineage_daily_metrics,
     get_delivery_lineage,
     list_delivery_lineage,
     list_delivery_lineage_by_trace,
     list_delivery_lineage_by_unionid,
 )
-from aicrm_next.delivery_lineage.dto import DeliveryLineageDailyMetric, DeliveryLineageItem
-from aicrm_next.delivery_lineage.repository import InMemoryDeliveryLineageRepository
+from aicrm_next.insights.delivery_lineage.dto import DeliveryLineageDailyMetric, DeliveryLineageItem
+from aicrm_next.insights.delivery_lineage.repository import InMemoryDeliveryLineageRepository
 from aicrm_next.main import create_app
 
 

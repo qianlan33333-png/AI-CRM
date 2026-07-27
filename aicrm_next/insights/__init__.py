@@ -1,0 +1,1 @@
+"""Stable insights domain package."""

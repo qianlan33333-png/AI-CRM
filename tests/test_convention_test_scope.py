@@ -28,10 +28,10 @@ def _policy() -> dict:
 
 
 def test_context_convention_selects_importing_tests_without_manual_scope_entries(tmp_path: Path) -> None:
-    _write(tmp_path, "tests/test_data_health_api.py", "from aicrm_next.data_health.api import router\n")
+    _write(tmp_path, "tests/test_data_health_api.py", "from aicrm_next.insights.data_health.api import router\n")
     _write(tmp_path, "tests/test_commerce_api.py", "from aicrm_next.extensions.commerce.commerce.api import router\n")
 
-    result = select_convention_scope(_policy(), ["aicrm_next/data_health/api.py"], root=tmp_path)
+    result = select_convention_scope(_policy(), ["aicrm_next/insights/data_health/api.py"], root=tmp_path)
 
     assert result["contexts"] == ["data_health"]
     assert result["python_tests"] == ["tests/test_data_health_api.py"]
@@ -77,10 +77,10 @@ def test_selected_high_risk_marker_keeps_full_regression(tmp_path: Path) -> None
     _write(
         tmp_path,
         "tests/test_data_health_contract.py",
-        "import pytest\nfrom aicrm_next.data_health.api import router\npytestmark = pytest.mark.high_risk\n",
+        "import pytest\nfrom aicrm_next.insights.data_health.api import router\npytestmark = pytest.mark.high_risk\n",
     )
 
-    result = select_convention_scope(_policy(), ["aicrm_next/data_health/api.py"], root=tmp_path)
+    result = select_convention_scope(_policy(), ["aicrm_next/insights/data_health/api.py"], root=tmp_path)
 
     assert "selected_high_risk_or_slow_test" in result["high_risk_reasons"]
     assert result["needs_full_ci"] is True
@@ -165,7 +165,7 @@ def test_runtime_test_override_requires_a_rationale(tmp_path: Path) -> None:
 
 def test_deleted_file_uses_safe_full_regression_fallback(tmp_path: Path) -> None:
     (tmp_path / "tests").mkdir()
-    deleted = "aicrm_next/data_health/retired.py"
+    deleted = "aicrm_next/insights/data_health/retired.py"
 
     result = select_convention_scope(_policy(), [deleted], deleted_files=[deleted], root=tmp_path)
 
@@ -186,7 +186,7 @@ def test_shadow_report_exposes_differences_without_becoming_authoritative() -> N
     }
     candidate = {
         "mode": "shadow",
-        "changed_files": ["aicrm_next/data_health/api.py"],
+        "changed_files": ["aicrm_next/insights/data_health/api.py"],
         "contexts": ["data_health"],
         "python_tests": ["tests/test_data_health.py"],
         "frontend_tests": [],

@@ -31,7 +31,7 @@ from .schema_drift import (
 )
 
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 PROJECTION_FRESHNESS_MAX_MINUTES = managed_runtime_int(
     "AICRM_DATA_HEALTH_PROJECTION_FRESHNESS_MAX_MINUTES",
     60,

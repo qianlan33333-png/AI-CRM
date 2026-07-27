@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from aicrm_next.admin_read_model.application import (
+from aicrm_next.insights.admin_read_model.application import (
     GetAdminAiAssistantPageQuery,
     GetAdminConfigPageQuery,
     GetAdminFunnelPageQuery,

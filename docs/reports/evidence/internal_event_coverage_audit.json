@@ -680,7 +680,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 17,
-      "path": "aicrm_next/admin_read_model/application.py",
+      "path": "aicrm_next/insights/admin_read_model/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -689,7 +689,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 87,
-      "path": "aicrm_next/admin_read_model/application.py",
+      "path": "aicrm_next/insights/admin_read_model/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -698,7 +698,7 @@
       "coverage_status": "event_missing",
       "function": "__call__",
       "line": 91,
-      "path": "aicrm_next/admin_read_model/application.py",
+      "path": "aicrm_next/insights/admin_read_model/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -707,7 +707,7 @@
       "coverage_status": "event_missing",
       "function": "funnel_payload",
       "line": 106,
-      "path": "aicrm_next/admin_read_model/projections.py",
+      "path": "aicrm_next/insights/admin_read_model/projections.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -716,7 +716,7 @@
       "coverage_status": "event_missing",
       "function": "count",
       "line": 66,
-      "path": "aicrm_next/admin_read_model/repo.py",
+      "path": "aicrm_next/insights/admin_read_model/repo.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },

@@ -206,7 +206,7 @@ jobs:
                 json.dump(data, handle, ensure_ascii=False, sort_keys=True)
             PY
             python3 - <<'PY'
-            from aicrm_next.data_health.application import data_health_summary
+            from aicrm_next.insights.data_health.application import data_health_summary
 
             summary = data_health_summary()
             external = next(

@@ -551,7 +551,7 @@ def test_broadcast_queue_hourly_report_run_api_real_no_jobs_duplicate_and_no_web
 
 def test_admin_read_model_count_uses_identifier_not_percent_i(monkeypatch):
     psycopg = pytest.importorskip("psycopg")
-    from aicrm_next.admin_read_model.repo import PostgresAdminReadRepository
+    from aicrm_next.insights.admin_read_model.repo import PostgresAdminReadRepository
 
     executed: list[object] = []
 

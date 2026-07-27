@@ -13,7 +13,7 @@ from tools.check_repository_ownership import (
 ROOT = Path(__file__).resolve().parents[1]
 REGISTRY_PATH = ROOT / "docs" / "architecture" / "repository_ownership.yml"
 MANIFEST_PATH = ROOT / "docs" / "architecture" / "data_table_lifecycle_manifest.yml"
-ADMIN_READ_REPO_PATH = ROOT / "aicrm_next" / "admin_read_model" / "repo.py"
+ADMIN_READ_REPO_PATH = ROOT / "aicrm_next" / "insights" / "admin_read_model" / "repo.py"
 
 
 def test_repository_ownership_current_registry_passes() -> None:
@@ -66,7 +66,7 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "broadcast_queue_notification_settings",
         "outbound_webhook_deliveries",
     ]
-    assert repositories["aicrm_next/admin_read_model/repo.py"]["table_reads"] == [
+    assert repositories["aicrm_next/insights/admin_read_model/repo.py"]["table_reads"] == [
         "admin_operation_logs",
         "ai_audience_member_current",
         "archived_messages",

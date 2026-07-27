@@ -11,7 +11,7 @@ from aicrm_next.platform.shared.runtime import raw_database_url
 from aicrm_next.platform.shared.db_session import get_session_factory
 
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_MANIFEST = ROOT / "docs" / "architecture" / "data_table_lifecycle_manifest.yml"
 
 PHYSICAL_LIFECYCLES = {"canonical", "read_model", "event", "queue", "config", "audit"}
