@@ -3408,6 +3408,63 @@ tables:
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
     notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes. Revision 0152 synchronizes the id sequence; incremental refresh replaces only the bounded unionid message slice and leaves unrelated customers untouched.
 
+  customer_list_index_next_shadow:
+    domain: customer_read_model
+    lifecycle: read_model
+    write_owner: aicrm_next.customer_read_model
+    read_owners:
+      - aicrm_next.customer_read_model
+      - aicrm_next.owner_migration
+    replacement: inactive double-buffer slot for atomic full customer calibration
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - inactive generation slot; no active route until the separately released slot writer
+    migration_source: 0153_customer_read_model_generation_slots
+    pii_level: internal_contact
+    guard_tests:
+      - tests/test_database_bootstrap.py::test_customer_read_model_generation_foundation_adds_inactive_indexed_slots
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Empty, indexed shadow slot created before any query or writer cutover. Revision 0153 keeps active_slot=primary, so this table has no online behavior until a later independently reversible release.
+
+  customer_detail_snapshot_next_shadow:
+    domain: customer_read_model
+    lifecycle: read_model
+    write_owner: aicrm_next.customer_read_model
+    read_owners:
+      - aicrm_next.customer_read_model
+      - aicrm_next.owner_migration
+    replacement: inactive double-buffer slot for atomic full customer calibration
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - inactive generation slot; no active route until the separately released slot writer
+    migration_source: 0153_customer_read_model_generation_slots
+    pii_level: internal_contact
+    guard_tests:
+      - tests/test_database_bootstrap.py::test_customer_read_model_generation_foundation_adds_inactive_indexed_slots
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Empty, indexed shadow slot created before any query or writer cutover. Revision 0153 keeps active_slot=primary, so this table has no online behavior until a later independently reversible release.
+
+  customer_recent_message_next_shadow:
+    domain: customer_read_model
+    lifecycle: read_model
+    write_owner: aicrm_next.customer_read_model
+    read_owners:
+      - aicrm_next.customer_read_model
+      - aicrm_next.owner_migration
+    replacement: inactive double-buffer slot for atomic full customer calibration
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - inactive generation slot; no active route until the separately released slot writer
+    migration_source: 0153_customer_read_model_generation_slots
+    pii_level: internal_contact
+    guard_tests:
+      - tests/test_database_bootstrap.py::test_customer_read_model_generation_foundation_adds_inactive_indexed_slots
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Empty, indexed shadow slot created before any query or writer cutover. Revision 0153 keeps active_slot=primary, so this table has no online behavior until a later independently reversible release.
+
   customer_timeline_event_next:
     domain: customer_read_model
     lifecycle: canonical
@@ -4432,13 +4489,14 @@ tables:
     runtime_entrypoints:
       - openclaw-customer-read-model-refresh.service
       - data health projection freshness probe
-    migration_source: 0108_customer_read_model_refresh
+    migration_source: 0108_customer_read_model_refresh, active slot fields added by 0153_customer_read_model_generation_slots
     pii_level: aggregate_only
     guard_tests:
       - tests/test_customer_read_model_refresh.py
+      - tests/test_database_bootstrap.py::test_customer_read_model_generation_foundation_adds_inactive_indexed_slots
       - tests/test_data_health_checks.py
       - tests/test_data_table_lifecycle_guard.py
-    notes: Count-only refresh evidence. It contains no customer identifiers or payloads.
+    notes: Count-only refresh evidence. Revision 0153 adds active_slot and active_generation with primary/1 defaults while the shadow tables remain inactive; it contains no customer identifiers or payloads.
 
   customer_read_model_refresh_intent:
     domain: customer_read_model

@@ -4713,7 +4713,7 @@
     }
   ],
   "migration_heads": [
-    "0152_customer_read_model_incremental"
+    "0153_customer_read_model_generation_slots"
   ],
   "openapi_components": {
     "schemas": {
@@ -49572,6 +49572,19 @@
       "domain": "customer_read_model",
       "drop_candidate": false,
       "lifecycle": "read_model",
+      "migration_source": "0153_customer_read_model_generation_slots",
+      "pii_level": "internal_contact",
+      "read_owners": [
+        "aicrm_next.customer_read_model",
+        "aicrm_next.owner_migration"
+      ],
+      "table": "customer_detail_snapshot_next_shadow",
+      "write_owner": "aicrm_next.customer_read_model"
+    },
+    {
+      "domain": "customer_read_model",
+      "drop_candidate": false,
+      "lifecycle": "read_model",
       "migration_source": "0026_customer_read_model_next",
       "pii_level": "internal_contact",
       "read_owners": [
@@ -49579,6 +49592,19 @@
         "aicrm_next.owner_migration"
       ],
       "table": "customer_list_index_next",
+      "write_owner": "aicrm_next.customer_read_model"
+    },
+    {
+      "domain": "customer_read_model",
+      "drop_candidate": false,
+      "lifecycle": "read_model",
+      "migration_source": "0153_customer_read_model_generation_slots",
+      "pii_level": "internal_contact",
+      "read_owners": [
+        "aicrm_next.customer_read_model",
+        "aicrm_next.owner_migration"
+      ],
+      "table": "customer_list_index_next_shadow",
       "write_owner": "aicrm_next.customer_read_model"
     },
     {
@@ -49647,7 +49673,7 @@
       "domain": "customer_read_model",
       "drop_candidate": false,
       "lifecycle": "read_model",
-      "migration_source": "0108_customer_read_model_refresh",
+      "migration_source": "0108_customer_read_model_refresh, active slot fields added by 0153_customer_read_model_generation_slots",
       "pii_level": "aggregate_only",
       "read_owners": [
         "aicrm_next.data_health"
@@ -49665,6 +49691,19 @@
         "historical schema drift guard"
       ],
       "table": "customer_recent_message_next",
+      "write_owner": "aicrm_next.customer_read_model"
+    },
+    {
+      "domain": "customer_read_model",
+      "drop_candidate": false,
+      "lifecycle": "read_model",
+      "migration_source": "0153_customer_read_model_generation_slots",
+      "pii_level": "internal_contact",
+      "read_owners": [
+        "aicrm_next.customer_read_model",
+        "aicrm_next.owner_migration"
+      ],
+      "table": "customer_recent_message_next_shadow",
       "write_owner": "aicrm_next.customer_read_model"
     },
     {

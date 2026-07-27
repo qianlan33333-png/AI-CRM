@@ -127,8 +127,11 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     hxc_projection_view_source = hxc_projection_view.read_text(encoding="utf-8")
     customer_incremental = VERSIONS / "0152_customer_read_model_incremental_foundation.py"
     customer_incremental_source = customer_incremental.read_text(encoding="utf-8")
+    customer_generation_slots = VERSIONS / "0153_customer_read_model_generation_slots.py"
+    customer_generation_slots_source = customer_generation_slots.read_text(encoding="utf-8")
 
-    assert heads == {"0152_customer_read_model_incremental"}
+    assert heads == {"0153_customer_read_model_generation_slots"}
+    assert revisions["0153_customer_read_model_generation_slots"]["down_revision"] == "0152_customer_read_model_incremental"
     assert revisions["0152_customer_read_model_incremental"]["down_revision"] == "0151_ai_audience_hxc_projection_view"
     assert revisions["0151_ai_audience_hxc_projection_view"]["down_revision"] == "0150_crm_identity_updated_cursor_index"
     assert revisions["0150_crm_identity_updated_cursor_index"]["down_revision"] == "0149_ai_audience_hxc_projection"
@@ -206,6 +209,15 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     assert "pg_get_serial_sequence" in customer_incremental_source
     assert "DROP INDEX" not in customer_incremental_source
     assert "DROP COLUMN" not in customer_incremental_source
+    assert "CREATE TABLE IF NOT EXISTS customer_list_index_next_shadow" in customer_generation_slots_source
+    assert "CREATE TABLE IF NOT EXISTS customer_detail_snapshot_next_shadow" in customer_generation_slots_source
+    assert "CREATE TABLE IF NOT EXISTS customer_recent_message_next_shadow" in customer_generation_slots_source
+    assert "active_slot TEXT NOT NULL DEFAULT 'primary'" in customer_generation_slots_source
+    assert "active_generation BIGINT NOT NULL DEFAULT 1" in customer_generation_slots_source
+    assert "INDEX CONCURRENTLY IF NOT EXISTS" in customer_generation_slots_source
+    assert "uq_customer_list_index_next_shadow_unionid" in customer_generation_slots_source
+    assert "DROP TABLE" not in customer_generation_slots_source
+    assert "DROP COLUMN" not in customer_generation_slots_source
     assert "0018_hxc_dashboard_broadcast_tasks" in source
     assert "CREATE TABLE IF NOT EXISTS data_health_snapshot" in data_health_snapshot_source
     assert "CHECK (singleton IS TRUE)" in data_health_snapshot_source
