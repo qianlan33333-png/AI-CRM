@@ -516,6 +516,9 @@ def test_external_effect_backlog_probe_accepts_small_retryable_queue(monkeypatch
         "WHERE job.status IN ('failed_retryable', 'failed_terminal', 'blocked')" in sql
         for sql in calls
     )
+    query = "\n".join(calls)
+    assert "aicrm_next.identity_contact.resolution_effects" in query
+    assert "aicrm_next.crm.identity_contact.resolution_effects" in query
 
 
 def test_external_effect_backlog_excludes_only_shared_pre_cutover_identity_adoption_predicate(monkeypatch) -> None:
