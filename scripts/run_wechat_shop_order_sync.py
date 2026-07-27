@@ -11,7 +11,7 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.commerce.wechat_shop_service import (  # noqa: E402
+from aicrm_next.extensions.commerce.commerce.wechat_shop_service import (  # noqa: E402
     sanitize_wechat_shop_error,
     sync_wechat_shop_orders_backfill,
     sync_wechat_shop_orders_incremental,

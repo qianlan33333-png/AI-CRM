@@ -7,6 +7,7 @@ from aicrm_next.capability_registry import (
     capability_for_context,
     capability_for_effect_type,
     capability_for_event_type,
+    capability_for_module,
     capability_for_route_group,
     default_capability_ids,
     get_capability_spec,
@@ -29,6 +30,8 @@ def test_registry_has_seven_stable_core_capabilities_and_opt_in_extensions() -> 
     assert extensions
     assert {spec.capability_id for spec in core} == set(default_capability_ids())
     assert all(not spec.enabled_by_default for spec in extensions)
+    assert all(spec.package_root.startswith("aicrm_next.extensions.") for spec in extensions)
+    assert len({spec.package_root for spec in extensions}) == len(extensions)
     assert registry_summary()["logical_domains"] == [
         "app",
         "automation",
@@ -82,3 +85,9 @@ def test_capability_dependencies_are_explicit_and_resolvable() -> None:
 def test_legacy_contexts_are_assigned_by_business_owner_not_runtime_filename() -> None:
     assert capability_for_context("background_jobs").capability_id == "core.automation"
     assert capability_for_context("navigation_target").capability_id == "core.platform"
+
+
+def test_capability_module_resolution_supports_physical_extension_packages() -> None:
+    assert capability_for_module("aicrm_next.extensions.ai.ai_audience_ops.service").capability_id == "extension.ai"
+    assert capability_for_module("aicrm_next.extensions.forms.questionnaire.api").capability_id == "extension.forms"
+    assert capability_for_module("aicrm_next.admin_auth.service").capability_id == "core.platform"

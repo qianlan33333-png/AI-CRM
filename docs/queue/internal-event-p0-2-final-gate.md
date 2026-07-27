@@ -216,17 +216,17 @@ P0-2. They should remain blocked from real execution until P1/P2 approval.
 
 | Area | Files / functions | Marker key |
 |---|---|---|
-| Payment legacy automation bridge | `aicrm_next/public_product/h5_wechat_pay.py` | `old_payment_direct_automation_bridge` |
-| Questionnaire external push retry logs | `aicrm_next/questionnaire/external_push_logs.py` | `old_questionnaire_sync_external_push` |
+| Payment legacy automation bridge | `aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py` | `old_payment_direct_automation_bridge` |
+| Questionnaire external push retry logs | `aicrm_next/extensions/forms/questionnaire/external_push_logs.py` | `old_questionnaire_sync_external_push` |
 | External push outbox worker | `aicrm_next/external_push/service.py` | `old_external_push_outbox_worker` |
-| External push retry/test | `aicrm_next/external_push/service.py`, `aicrm_next/commerce/external_push_admin.py` | `old_external_push_delivery_retry` |
+| External push retry/test | `aicrm_next/external_push/service.py`, `aicrm_next/extensions/commerce/commerce/external_push_admin.py` | `old_external_push_delivery_retry` |
 | Admin deferred jobs runner | `aicrm_next/admin_jobs/application.py` | `old_admin_jobs_deferred_run` |
 | Admin webhook retry disabled path | `aicrm_next/admin_jobs/routes.py`, `application.py` | `old_customer_webhook_delivery_retry` |
 | Broadcast Feishu report | `aicrm_next/admin_jobs/notification_settings.py` | `old_broadcast_jobs_feishu_hourly_report` |
 | Owner migration legacy execute path | `aicrm_next/owner_migration/application.py` | `old_owner_migration_legacy_execute_path` |
 | Group ops broadcast job queue gateway | retired; group_ops now uses `external_effect_job` | `old_group_ops_queue_gateway_send` |
 | Broadcast approve/cancel control-plane | `aicrm_next/admin_jobs/application.py` | `old_broadcast_jobs_direct_approve_cancel` |
-| Payment refund request | `aicrm_next/commerce/admin_refunds.py` | `old_payment_refund_direct_request` |
+| Payment refund request | `aicrm_next/extensions/commerce/commerce/admin_refunds.py` | `old_payment_refund_direct_request` |
 
 ### Coverage Gaps / Future Event Candidates
 

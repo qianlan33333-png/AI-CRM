@@ -236,7 +236,7 @@ def test_shared_picker_is_a_pure_searchable_list_and_all_surfaces_load_it() -> N
         ROOT / "aicrm_next/automation_engine/templates/admin_console/channel_code_form.html",
         ROOT / "aicrm_next/frontend_compat/templates/admin_console/cloud_campaigns_workspace.html",
         ROOT / "aicrm_next/frontend_compat/templates/admin_console/hxc_dashboard.html",
-        ROOT / "aicrm_next/automation_agents/templates/admin_console/automation_agent_edit.html",
+        ROOT / "aicrm_next/extensions/ai/automation_agents/templates/admin_console/automation_agent_edit.html",
         ROOT / "aicrm_next/automation_engine/group_ops/templates/admin_console/group_ops.html",
     ]
 

@@ -10,9 +10,9 @@ from aicrm_next.main import create_app
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TEMPLATE = ROOT / "aicrm_next/questionnaire/templates/admin_questionnaires.html"
-STYLESHEET = ROOT / "aicrm_next/questionnaire/static/admin_questionnaire_editor.css"
-SCRIPT = ROOT / "aicrm_next/questionnaire/static/admin_questionnaire_editor.js"
+TEMPLATE = ROOT / "aicrm_next/extensions/forms/questionnaire/templates/admin_questionnaires.html"
+STYLESHEET = ROOT / "aicrm_next/extensions/forms/questionnaire/static/admin_questionnaire_editor.css"
+SCRIPT = ROOT / "aicrm_next/extensions/forms/questionnaire/static/admin_questionnaire_editor.js"
 
 
 def test_questionnaire_editor_template_is_thin_and_assets_are_jinja_free() -> None:

@@ -7,9 +7,9 @@ from typing import Any
 
 import psycopg
 
-from aicrm_next.commerce import admin_transaction_detail
-from aicrm_next.commerce.admin_unified_orders import list_orders
-from aicrm_next.commerce.repo import connect_commerce_db
+from aicrm_next.extensions.commerce.commerce import admin_transaction_detail
+from aicrm_next.extensions.commerce.commerce.admin_unified_orders import list_orders
+from aicrm_next.extensions.commerce.commerce.repo import connect_commerce_db
 
 
 def _database_url() -> str:

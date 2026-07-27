@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.cloud_orchestrator.time_helpers import campaign_step_due_iso
+from aicrm_next.extensions.growth.cloud_orchestrator.time_helpers import campaign_step_due_iso
 
 
 def test_campaign_step_due_iso_uses_campaign_timezone() -> None:

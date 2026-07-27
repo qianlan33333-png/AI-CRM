@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CLOUD_ROOT = ROOT / "aicrm_next/cloud_orchestrator"
+CLOUD_ROOT = ROOT / "aicrm_next/extensions/growth/cloud_orchestrator"
 MEDIA_UPLOAD = CLOUD_ROOT / "media_upload.py"
 MEDIA_CLIENT = ROOT / "aicrm_next/integration_gateway/wecom_media_upload_client.py"
 

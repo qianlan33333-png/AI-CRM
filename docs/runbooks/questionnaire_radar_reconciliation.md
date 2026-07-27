@@ -49,4 +49,4 @@ After repair, run count-only mode again and let the canonical Internal Event and
 
 ## Radar retention and identity
 
-`radar_click_events` is append-only under the sole `aicrm_next.radar_links` write owner. Raw identity may enter only from a validated OAuth result or a verified signed viewer session. Events are retained with the owning Radar link and deleted through the foreign-key cascade when that link is deleted. Query parameters and plain cookies are not identity sources.
+`radar_click_events` is append-only under the sole `aicrm_next.extensions.radar.radar_links` write owner. Raw identity may enter only from a validated OAuth result or a verified signed viewer session. Events are retained with the owning Radar link and deleted through the foreign-key cascade when that link is deleted. Query parameters and plain cookies are not identity sources.

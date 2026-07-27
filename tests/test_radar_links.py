@@ -9,8 +9,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.radar_links.domain import sign_viewer_session
-from aicrm_next.radar_links.repo import PostgresRadarLinksRepository, build_radar_links_repository
+from aicrm_next.extensions.radar.radar_links.domain import sign_viewer_session
+from aicrm_next.extensions.radar.radar_links.repo import PostgresRadarLinksRepository, build_radar_links_repository
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -776,7 +776,7 @@ def test_radar_pdf_chunk_upload_supports_out_of_order_and_retries(client):
 
 
 def test_radar_pdf_manifest_page_images_and_range(client, monkeypatch):
-    monkeypatch.setattr("aicrm_next.radar_links.application._render_pdf_preview_assets_with_pymupdf", lambda *args, **kwargs: [])
+    monkeypatch.setattr("aicrm_next.extensions.radar.radar_links.application._render_pdf_preview_assets_with_pymupdf", lambda *args, **kwargs: [])
     upload_response = client.post(
         "/api/admin/radar-links/upload-pdf",
         files={"pdf": ("manifest.pdf", b"%PDF-1.4\n1 0 obj\n<< /Type /Page >>\nendobj\n", "application/pdf")},

@@ -6,7 +6,7 @@ from typing import Iterable, Literal
 
 CapabilityTier = Literal["core", "extension"]
 
-REGISTRY_SCHEMA_VERSION = 1
+REGISTRY_SCHEMA_VERSION = 2
 CORE_VERSION = "0.1.0"
 
 
@@ -27,6 +27,7 @@ class CapabilitySpec:
     core_compat: str
     enabled_by_default: bool
     dependencies: tuple[str, ...] = ()
+    package_root: str = ""
     current_contexts: tuple[str, ...] = ()
     route_groups: tuple[str, ...] = ()
     config_sections: tuple[str, ...] = ()
@@ -48,6 +49,7 @@ def _spec(
     tier: CapabilityTier = "core",
     enabled_by_default: bool = True,
     dependencies: tuple[str, ...] = (),
+    package_root: str = "",
     current_contexts: tuple[str, ...] = (),
     route_groups: tuple[str, ...] = (),
     config_sections: tuple[str, ...] = (),
@@ -66,6 +68,7 @@ def _spec(
         core_compat=">=0.1,<1.0",
         enabled_by_default=enabled_by_default,
         dependencies=dependencies,
+        package_root=package_root or f"aicrm_next.{logical_domain}",
         current_contexts=current_contexts,
         route_groups=route_groups,
         config_sections=config_sections,
@@ -280,6 +283,7 @@ CAPABILITY_SPECS: tuple[CapabilitySpec, ...] = (
         tier="extension",
         enabled_by_default=False,
         dependencies=("core.platform", "core.crm", "core.automation"),
+        package_root="aicrm_next.extensions.ai",
         current_contexts=("ai_assist", "ai_audience_ops", "automation_agents"),
         route_groups=(
             "ai_assist",
@@ -305,6 +309,7 @@ CAPABILITY_SPECS: tuple[CapabilitySpec, ...] = (
         tier="extension",
         enabled_by_default=False,
         dependencies=("core.platform", "core.channels", "core.crm"),
+        package_root="aicrm_next.extensions.commerce",
         current_contexts=("commerce", "public_product", "service_period"),
         route_groups=(
             "commerce",
@@ -336,6 +341,7 @@ CAPABILITY_SPECS: tuple[CapabilitySpec, ...] = (
         tier="extension",
         enabled_by_default=False,
         dependencies=("core.platform", "core.channels", "core.crm", "core.automation"),
+        package_root="aicrm_next.extensions.forms",
         current_contexts=("questionnaire",),
         route_groups=("questionnaire", "questionnaire_admin_pages"),
         config_sections=("wechat_mp",),
@@ -351,6 +357,7 @@ CAPABILITY_SPECS: tuple[CapabilitySpec, ...] = (
         tier="extension",
         enabled_by_default=False,
         dependencies=("core.platform", "core.channels", "core.crm"),
+        package_root="aicrm_next.extensions.archive",
         current_contexts=("message_archive",),
         route_groups=("message_archive",),
         config_sections=("wecom_archive",),
@@ -364,6 +371,7 @@ CAPABILITY_SPECS: tuple[CapabilitySpec, ...] = (
         tier="extension",
         enabled_by_default=False,
         dependencies=("core.platform", "core.crm", "core.engagement"),
+        package_root="aicrm_next.extensions.radar",
         current_contexts=("radar_links",),
         route_groups=("radar_links", "radar_links_admin_pages"),
         table_domains=("radar",),
@@ -377,6 +385,7 @@ CAPABILITY_SPECS: tuple[CapabilitySpec, ...] = (
         tier="extension",
         enabled_by_default=False,
         dependencies=("core.platform", "core.crm", "core.automation"),
+        package_root="aicrm_next.extensions.growth",
         current_contexts=("cloud_orchestrator",),
         route_groups=("cloud_orchestrator",),
         table_domains=("cloud_orchestrator",),
@@ -389,6 +398,7 @@ CAPABILITY_SPECS: tuple[CapabilitySpec, ...] = (
         tier="extension",
         enabled_by_default=False,
         dependencies=("core.platform", "core.crm", "core.automation", "core.insights"),
+        package_root="aicrm_next.extensions.hxc",
         current_contexts=("class_user_management", "hxc_dashboard", "operation_cycles"),
         route_groups=(
             "class_user_management",
@@ -421,9 +431,19 @@ def capability_for_context(context: str) -> CapabilitySpec | None:
 
 
 def capability_for_module(module: str) -> CapabilitySpec | None:
-    parts = str(module or "").strip().split(".")
+    normalized = str(module or "").strip()
+    parts = normalized.split(".")
     if len(parts) < 2 or parts[0] != "aicrm_next":
         return None
+    matches = [
+        (f"{spec.package_root}.{context}", spec)
+        for spec in CAPABILITY_SPECS
+        for context in spec.current_contexts
+        if normalized == f"{spec.package_root}.{context}"
+        or normalized.startswith(f"{spec.package_root}.{context}.")
+    ]
+    if matches:
+        return max(matches, key=lambda item: len(item[0]))[1]
     return capability_for_context(parts[1])
 
 
@@ -487,6 +507,8 @@ def validate_capability_registry(specs: Iterable[CapabilitySpec] = CAPABILITY_SP
     for spec in rows:
         if not spec.capability_id or not spec.logical_domain:
             errors.append("capability id and logical domain are required")
+        if not spec.package_root.startswith("aicrm_next."):
+            errors.append(f"{spec.capability_id}: package_root must be inside aicrm_next")
         if spec.tier not in {"core", "extension"}:
             errors.append(f"{spec.capability_id}: invalid tier {spec.tier}")
         if spec.capability_id in spec.dependencies:

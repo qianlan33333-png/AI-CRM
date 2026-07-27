@@ -6,11 +6,11 @@ from typing import Any
 import pytest
 from sqlalchemy import text
 
-from aicrm_next.ai_audience_ops.refresh_intents import (
+from aicrm_next.extensions.ai.ai_audience_ops.refresh_intents import (
     AudienceRefreshIntentRepository,
     AudienceRefreshIntentService,
 )
-from aicrm_next.ai_audience_ops.repository import build_audience_repository
+from aicrm_next.extensions.ai.ai_audience_ops.repository import build_audience_repository
 from aicrm_next.internal_event_composition import build_internal_event_consumer_registry
 from aicrm_next.platform_foundation.internal_events.outbox import InternalEventOutboxRelay
 from aicrm_next.shared.db_session import get_session_factory

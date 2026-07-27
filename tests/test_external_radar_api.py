@@ -8,9 +8,9 @@ import jwt
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.radar_links.application import CreateRadarLinkCommand
-from aicrm_next.radar_links.dto import RadarLinkCreateRequest
-from aicrm_next.radar_links.repo import PostgresRadarLinksRepository, build_radar_links_repository
+from aicrm_next.extensions.radar.radar_links.application import CreateRadarLinkCommand
+from aicrm_next.extensions.radar.radar_links.dto import RadarLinkCreateRequest
+from aicrm_next.extensions.radar.radar_links.repo import PostgresRadarLinksRepository, build_radar_links_repository
 from tests.admin_auth_test_helpers import TEST_JWT_KEY, access_token_headers, install_access_token
 
 

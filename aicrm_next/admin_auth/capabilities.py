@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Iterable
 
 from aicrm_next.platform_foundation.auth_platform.context import AuthContext
-from aicrm_next.service_period_grid_ports import (
+from aicrm_next.extensions.commerce.service_period_grid_ports import (
     SERVICE_PERIOD_GRID_ACCESS,
     SERVICE_PERIOD_GRID_COLLABORATOR_ROLE,
     SERVICE_PERIOD_GRID_MANAGE_SHARE,

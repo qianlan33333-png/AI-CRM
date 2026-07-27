@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from aicrm_next.service_period_grid_ports import (
+from aicrm_next.extensions.commerce.service_period_grid_ports import (
     CollaboratorAccountDisabledError,
     SERVICE_PERIOD_GRID_COLLABORATOR_ROLE,
 )

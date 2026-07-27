@@ -11,7 +11,7 @@ from zoneinfo import ZoneInfo
 import pytest
 from sqlalchemy import text
 
-from aicrm_next.ai_audience_ops.event_types import (
+from aicrm_next.extensions.ai.ai_audience_ops.event_types import (
     DAILY_REFRESH_CONSUMER,
     DAILY_TICK_EVENT,
     HXC_DAILY_PROJECTION_CONSUMER,
@@ -26,15 +26,15 @@ from aicrm_next.ai_audience_ops.event_types import (
     SOURCE_CHANGED_EVENT,
     SOURCE_POKE_CONSUMER,
 )
-from aicrm_next.ai_audience_ops.outbound_service import AudienceOutboundService
-from aicrm_next.ai_audience_ops.refresh_intents import AudienceRefreshIntentRepository, AudienceRefreshIntentService
-from aicrm_next.ai_audience_ops.repository import build_audience_repository, next_daily_refresh_at
-from aicrm_next.ai_audience_ops.scheduler import ai_audience_event_consumer_pairs, emit_due_ticks
-from aicrm_next.ai_audience_ops.service import AudiencePackageService, _tick_bucket
-from aicrm_next.ai_audience_ops.sql_catalog import ALLOWED_VIEWS, schema_catalog_payload
-from aicrm_next.ai_audience_ops.sql_linter import lint_sql
-from aicrm_next.ai_audience_ops.test_agent_service import AudienceTestAgentService, TEST_AGENT_MESSAGE_TEXT
-from aicrm_next.ai_audience_ops.webhook_service import AudienceInboundWebhookService
+from aicrm_next.extensions.ai.ai_audience_ops.outbound_service import AudienceOutboundService
+from aicrm_next.extensions.ai.ai_audience_ops.refresh_intents import AudienceRefreshIntentRepository, AudienceRefreshIntentService
+from aicrm_next.extensions.ai.ai_audience_ops.repository import build_audience_repository, next_daily_refresh_at
+from aicrm_next.extensions.ai.ai_audience_ops.scheduler import ai_audience_event_consumer_pairs, emit_due_ticks
+from aicrm_next.extensions.ai.ai_audience_ops.service import AudiencePackageService, _tick_bucket
+from aicrm_next.extensions.ai.ai_audience_ops.sql_catalog import ALLOWED_VIEWS, schema_catalog_payload
+from aicrm_next.extensions.ai.ai_audience_ops.sql_linter import lint_sql
+from aicrm_next.extensions.ai.ai_audience_ops.test_agent_service import AudienceTestAgentService, TEST_AGENT_MESSAGE_TEXT
+from aicrm_next.extensions.ai.ai_audience_ops.webhook_service import AudienceInboundWebhookService
 from aicrm_next.platform_foundation.external_effects import ExternalEffectService, WEBHOOK_GENERIC_PUSH, WECOM_MESSAGE_PRIVATE_SEND
 from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
 from aicrm_next.shared.db_session import get_session_factory
@@ -151,7 +151,7 @@ def test_ai_audience_scheduler_emits_incremental_every_run_and_daily_only_in_2am
     inside_window = datetime(2026, 6, 24, 2, 1, tzinfo=ZoneInfo("Asia/Shanghai"))
     outside_window = datetime(2026, 6, 24, 1, 59, tzinfo=ZoneInfo("Asia/Shanghai"))
 
-    from aicrm_next.ai_audience_ops import scheduler as scheduler_module
+    from aicrm_next.extensions.ai.ai_audience_ops import scheduler as scheduler_module
 
     original = scheduler_module.AudiencePackageService
     original_projection_intents = scheduler_module.HxcProjectionRefreshIntentService
@@ -189,7 +189,7 @@ def test_ai_audience_scheduler_catches_up_overdue_daily_refresh_outside_2am_wind
 
     outside_window = datetime(2026, 6, 24, 1, 30, tzinfo=ZoneInfo("Asia/Shanghai"))
 
-    from aicrm_next.ai_audience_ops import scheduler as scheduler_module
+    from aicrm_next.extensions.ai.ai_audience_ops import scheduler as scheduler_module
 
     original = scheduler_module.AudiencePackageService
     original_projection_intents = scheduler_module.HxcProjectionRefreshIntentService
@@ -226,7 +226,7 @@ def test_ai_audience_scheduler_catches_up_hxc_projection_daily_refresh() -> None
             return True
 
     outside_window = datetime(2026, 6, 24, 6, 30, tzinfo=ZoneInfo("Asia/Shanghai"))
-    from aicrm_next.ai_audience_ops import scheduler as scheduler_module
+    from aicrm_next.extensions.ai.ai_audience_ops import scheduler as scheduler_module
 
     original = scheduler_module.AudiencePackageService
     original_projection_intents = scheduler_module.HxcProjectionRefreshIntentService

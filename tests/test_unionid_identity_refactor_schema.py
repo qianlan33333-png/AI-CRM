@@ -241,8 +241,8 @@ def test_runtime_jsonb_membership_avoids_placeholder_collision() -> None:
 
 
 def test_questionnaire_postgres_submit_queues_unresolved_identity_without_fake_canonical() -> None:
-    source = _read("aicrm_next/questionnaire/repo.py")
-    queue_source = _read("aicrm_next/questionnaire/identity_resolution.py")
+    source = _read("aicrm_next/extensions/forms/questionnaire/repo.py")
+    queue_source = _read("aicrm_next/extensions/forms/questionnaire/identity_resolution.py")
     owner_source = _read("aicrm_next/identity_contact/resolution_queue_repository.py")
 
     assert "enqueue_questionnaire_identity_resolution" in source
@@ -420,8 +420,8 @@ def test_user_ops_tables_are_unionid_only_business_models() -> None:
 
 def test_user_ops_legacy_runtime_tables_are_retired() -> None:
     identity_contact_source = _read("aicrm_next/identity_contact/repo.py")
-    external_campaign_source = _read("aicrm_next/ai_assist/external_campaigns.py")
-    external_campaign_repo_source = _read("aicrm_next/ai_assist/external_campaigns_repo.py")
+    external_campaign_source = _read("aicrm_next/extensions/ai/ai_assist/external_campaigns.py")
+    external_campaign_repo_source = _read("aicrm_next/extensions/ai/ai_assist/external_campaigns_repo.py")
     admin_jobs_source = _read("aicrm_next/admin_jobs/repository.py")
     owner_migration_source = _read("aicrm_next/owner_migration/repo.py")
     manifest_source = _read("docs/architecture/data_table_lifecycle_manifest.yml")
@@ -557,7 +557,7 @@ def test_retired_conversion_trace_tables_are_physically_removed() -> None:
 def test_hxc_snapshot_drops_external_field_after_unionid_foundation() -> None:
     source = _read("migrations/versions/0072_hxc_snapshot_unionid_foundation.py")
     cleanup_source = _read("migrations/versions/0073_drop_hxc_snapshot_external_userid.py")
-    repo_source = _read("aicrm_next/hxc_dashboard/postgres_repo.py")
+    repo_source = _read("aicrm_next/extensions/hxc/hxc_dashboard/postgres_repo.py")
 
     assert "ADD COLUMN IF NOT EXISTS unionid TEXT NOT NULL DEFAULT ''" in source
     assert "idx_hxc_snapshot_unionid" in source
@@ -586,8 +586,8 @@ def test_alipay_orders_are_unionid_only_customer_identity() -> None:
 def test_ai_audience_member_tables_are_unionid_only_business_state() -> None:
     source = _read("migrations/versions/0045_ai_audience_ops.py")
     cleanup_source = _read("migrations/versions/0064_unionid_ops_automation_foundation.py")
-    repository_source = _read("aicrm_next/ai_audience_ops/repository.py")
-    refresh_source = _read("aicrm_next/ai_audience_ops/refresh_service.py")
+    repository_source = _read("aicrm_next/extensions/ai/ai_audience_ops/repository.py")
+    refresh_source = _read("aicrm_next/extensions/ai/ai_audience_ops/refresh_service.py")
 
     assert "CREATE TABLE IF NOT EXISTS ai_audience_member_current" in source
     assert "CREATE TABLE IF NOT EXISTS ai_audience_member_event" in source
@@ -609,11 +609,11 @@ def test_ai_audience_member_tables_are_unionid_only_business_state() -> None:
 
 def test_questionnaire_and_wechat_pay_facts_drop_legacy_identity_columns() -> None:
     cleanup_source = _read("migrations/versions/0065_unionid_submission_payment_cleanup.py")
-    questionnaire_repo = _read("aicrm_next/questionnaire/repo.py")
+    questionnaire_repo = _read("aicrm_next/extensions/forms/questionnaire/repo.py")
     wechat_pay_source = _read(
-        "aicrm_next/commerce/wechat_pay_order_write_repository.py"
+        "aicrm_next/extensions/commerce/commerce/wechat_pay_order_write_repository.py"
     )
-    wechat_pay_h5_source = _read("aicrm_next/public_product/h5_wechat_pay.py")
+    wechat_pay_h5_source = _read("aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py")
 
     assert '["identity_map_id", "respondent_key", "openid", "external_userid", "mobile_snapshot"]' in cleanup_source
     assert '["payer_openid", "respondent_key", "external_userid", "userid_snapshot", "mobile_snapshot"]' in cleanup_source
@@ -633,7 +633,7 @@ def test_questionnaire_and_wechat_pay_facts_drop_legacy_identity_columns() -> No
 def test_customer_fact_read_sources_drop_legacy_identity_columns() -> None:
     cleanup_source = _read("migrations/versions/0068_unionid_customer_fact_cleanup.py")
     customer_repo_source = _read("aicrm_next/customer_read_model/repo_live_source.py")
-    message_archive_source = _read("aicrm_next/message_archive/repo.py")
+    message_archive_source = _read("aicrm_next/extensions/archive/message_archive/repo.py")
     channel_entry_repo_source = _read("aicrm_next/channel_entry/repo.py")
     contact_tag_projection_source = _read("aicrm_next/customer_tags/projection_repository.py")
     identity_queue_source = _read("aicrm_next/identity_contact/resolution_queue_repository.py")
@@ -674,8 +674,8 @@ def test_customer_fact_read_sources_drop_legacy_identity_columns() -> None:
 
 def test_wechat_shop_orders_keep_customer_identity_in_unionid_and_raw_payload() -> None:
     cleanup_source = _read("migrations/versions/0068_unionid_customer_fact_cleanup.py")
-    shop_source = _read("aicrm_next/commerce/wechat_shop_service.py")
-    transaction_detail_source = _read("aicrm_next/commerce/admin_transaction_detail.py")
+    shop_source = _read("aicrm_next/extensions/commerce/commerce/wechat_shop_service.py")
+    transaction_detail_source = _read("aicrm_next/extensions/commerce/commerce/admin_transaction_detail.py")
 
     assert '"wechat_shop_orders": ["buyer_mobile", "openid"]' in cleanup_source
     assert "ALTER TABLE IF EXISTS {table_name} DROP COLUMN IF EXISTS {column_name}" in cleanup_source
@@ -699,12 +699,12 @@ def test_broadcast_cloud_and_agent_targets_are_unionid_only() -> None:
     agent_migration = _read("migrations/versions/0054_automation_agent_runtime_config.py")
     cleanup_source = _read("migrations/versions/0066_unionid_broadcast_target_cleanup.py")
     worker_source = _read("aicrm_next/background_jobs/broadcast_queue_worker.py")
-    cloud_repo_source = _read("aicrm_next/cloud_orchestrator/repository.py")
+    cloud_repo_source = _read("aicrm_next/extensions/growth/cloud_orchestrator/repository.py")
     broadcast_owner_source = _read(
         "aicrm_next/platform_foundation/background_jobs/broadcast_job_write_repository.py"
     )
-    agent_repo_source = _read("aicrm_next/automation_agents/repository.py")
-    agent_worker_source = _read("aicrm_next/automation_agents/worker.py")
+    agent_repo_source = _read("aicrm_next/extensions/ai/automation_agents/repository.py")
+    agent_worker_source = _read("aicrm_next/extensions/ai/automation_agents/worker.py")
 
     assert "target_unionids_json JSONB NOT NULL DEFAULT '[]'::jsonb" in broadcast_migration
     assert "target_external_userids JSONB" not in broadcast_migration
@@ -744,12 +744,12 @@ def test_campaign_frequency_and_agent_outputs_are_unionid_only() -> None:
     cloud_orchestrator_migration = _read("migrations/versions/0004_cloud_orchestrator.py")
     campaign_migration = _read("migrations/versions/0005_segments_and_campaigns.py")
     cleanup_source = _read("migrations/versions/0067_unionid_campaign_frequency_cleanup.py")
-    campaign_repo_source = _read("aicrm_next/cloud_orchestrator/repository.py")
-    external_campaign_repo_source = _read("aicrm_next/ai_assist/external_campaigns_repo.py")
+    campaign_repo_source = _read("aicrm_next/extensions/growth/cloud_orchestrator/repository.py")
+    external_campaign_repo_source = _read("aicrm_next/extensions/ai/ai_assist/external_campaigns_repo.py")
     broadcast_owner_source = _read(
         "aicrm_next/platform_foundation/background_jobs/broadcast_job_write_repository.py"
     )
-    agent_copywriting_source = _read("aicrm_next/ai_audience_ops/agent_copywriting.py")
+    agent_copywriting_source = _read("aicrm_next/extensions/ai/ai_audience_ops/agent_copywriting.py")
     admin_projection_source = _read("aicrm_next/admin_read_model/projections.py")
     agent_run_repo_source = _read("aicrm_next/automation_engine/agent_run_sqlalchemy_repository.py")
     agent_run_domain_source = _read("aicrm_next/automation_engine/agent_runs.py")
@@ -802,7 +802,7 @@ def test_final_legacy_identity_cleanup_removes_non_boundary_columns() -> None:
     sidebar_source = _read("aicrm_next/customer_read_model/sidebar_v2.py")
     identity_contact_source = _read("aicrm_next/identity_contact/repo.py")
     admin_projection_source = _read("aicrm_next/admin_read_model/projections.py")
-    external_campaigns_source = _read("aicrm_next/ai_assist/external_campaigns_repo.py")
+    external_campaigns_source = _read("aicrm_next/extensions/ai/ai_assist/external_campaigns_repo.py")
     owner_migration_source = _read("aicrm_next/owner_migration/repo.py")
 
     assert "down_revision = \"0077_id_dev_runtime_baseline\"" in cleanup_source

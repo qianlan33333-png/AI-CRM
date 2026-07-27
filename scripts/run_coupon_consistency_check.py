@@ -10,7 +10,7 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.commerce.coupons.checker import run_coupon_consistency_check
+from aicrm_next.extensions.commerce.commerce.coupons.checker import run_coupon_consistency_check
 
 
 def main() -> int:

@@ -5,9 +5,9 @@ import hashlib
 import pytest
 from fastapi.testclient import TestClient
 
-from aicrm_next.admin_jobs_archive_sync_gateway import record_archive_source_change as _record_archive_source_change
-from aicrm_next.message_archive.repo import PostgresArchiveSyncRepository
-from aicrm_next.message_archive.sync_service import execute_archive_sync
+from aicrm_next.extensions.archive.admin_jobs_archive_sync_gateway import record_archive_source_change as _record_archive_source_change
+from aicrm_next.extensions.archive.message_archive.repo import PostgresArchiveSyncRepository
+from aicrm_next.extensions.archive.message_archive.sync_service import execute_archive_sync
 from tests.admin_auth_test_helpers import access_token_headers, install_access_token
 
 
@@ -306,7 +306,7 @@ def test_archive_sync_route_passes_archive_request_without_reply_queue(monkeypat
             "source_status": "next_archive_sync",
         }
 
-    monkeypatch.setattr("aicrm_next.message_archive.api.execute_archive_sync", fake_execute)
+    monkeypatch.setattr("aicrm_next.extensions.archive.message_archive.api.execute_archive_sync", fake_execute)
     from aicrm_next.main import create_app
 
     client = TestClient(create_app(), raise_server_exceptions=False)

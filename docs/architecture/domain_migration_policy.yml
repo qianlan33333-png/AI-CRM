@@ -1,6 +1,6 @@
 schema_version: 1
 source_of_truth: aicrm_next.capability_registry
-phase: dependency_inversion
+phase: physical_package_migration
 
 stable_core_domains:
   - app
@@ -57,7 +57,17 @@ allowed_domain_dependencies:
     - insights
 
 physical_moves:
-  enabled: false
+  enabled: true
+  completed_domains:
+    - extensions
+  pending_domains:
+    - app
+    - platform
+    - crm
+    - channels
+    - engagement
+    - automation
+    - insights
   enable_after:
     - public command and query ports are in use
     - table write ownership is unique

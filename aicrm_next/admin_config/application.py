@@ -1,7 +1,7 @@
 # ruff: noqa: F401
 from __future__ import annotations
 
-from aicrm_next.service_period_grid_ports import SERVICE_PERIOD_GRID_COLLABORATOR_ROLE
+from aicrm_next.extensions.commerce.service_period_grid_ports import SERVICE_PERIOD_GRID_COLLABORATOR_ROLE
 from aicrm_next.shared.runtime_settings import managed_runtime_setting
 from aicrm_next.shared.wecom_runtime import (
     WECOM_ENABLED_EFFECT_TYPES_KEY,

@@ -146,8 +146,8 @@ def _admin_pages(client: TestClient) -> tuple[dict[str, int], list[str], list[st
 def _static_production_data_contracts_ready() -> tuple[bool, list[str]]:
     blockers: list[str] = []
     checks = {
-        "ai_audience_admin_read_api": ROOT / "aicrm_next" / "ai_audience_ops" / "admin_api.py",
-        "questionnaire_legacy_facade": ROOT / "aicrm_next" / "questionnaire" / "api.py",
+        "ai_audience_admin_read_api": ROOT / "aicrm_next" / "extensions" / "ai" / "ai_audience_ops" / "admin_api.py",
+        "questionnaire_legacy_facade": ROOT / "aicrm_next" / "extensions" / "forms" / "questionnaire" / "api.py",
         "customer_legacy_facade": ROOT / "aicrm_next" / "customer_read_model" / "api.py",
     }
     for name, path in checks.items():

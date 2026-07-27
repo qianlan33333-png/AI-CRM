@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from typing import Any
 
-from aicrm_next.admin_jobs_archive_sync_gateway import execute_archive_sync
+from aicrm_next.extensions.archive.admin_jobs_archive_sync_gateway import execute_archive_sync
 from aicrm_next.shared.runtime_settings import (
     managed_runtime_bool,
     managed_runtime_setting,

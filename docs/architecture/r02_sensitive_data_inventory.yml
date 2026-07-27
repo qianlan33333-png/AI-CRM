@@ -22,8 +22,8 @@ secret_keys:
       - aicrm_next.shared.runtime
       - aicrm_next.admin_auth.service
       - aicrm_next.shared.signed_session
-      - aicrm_next.questionnaire.oauth
-      - aicrm_next.radar_links
+      - aicrm_next.extensions.forms.questionnaire.oauth
+      - aicrm_next.extensions.radar.radar_links
   AICRM_NEXT_ACTION_TOKEN_SECRET:
     <<: *secret_defaults
     runtime_consumers:
@@ -46,15 +46,15 @@ secret_keys:
   AICRM_QUESTIONNAIRE_OAUTH_STATE_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.questionnaire.oauth
+      - aicrm_next.extensions.forms.questionnaire.oauth
   AICRM_AI_AUDIENCE_AGENT_API_KEY:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.ai_audience_ops.agent_gateway
+      - aicrm_next.extensions.ai.ai_audience_ops.agent_gateway
   AICRM_RUNTIME_V2_AGENT_API_KEY:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.ai_audience_ops.agent_gateway
+      - aicrm_next.extensions.ai.ai_audience_ops.agent_gateway
   AICRM_HUANGYOUCAN_DB_PASSWORD:
     <<: *secret_defaults
     runtime_consumers:
@@ -99,7 +99,7 @@ secret_keys:
   DEEPSEEK_API_KEY:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.ai_audience_ops.agent_gateway
+      - aicrm_next.extensions.ai.ai_audience_ops.agent_gateway
   AICRM_SIDEBAR_JSSDK_SECRET:
     <<: *secret_defaults
     runtime_consumers:
@@ -125,7 +125,7 @@ secret_keys:
   WECOM_ARCHIVE_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.message_archive.sync_service
+      - aicrm_next.extensions.archive.message_archive.sync_service
   WECOM_CALLBACK_TOKEN:
     <<: *secret_defaults
     runtime_consumers:
@@ -140,29 +140,29 @@ secret_keys:
     <<: *secret_defaults
     runtime_consumers:
       - aicrm_next.integration_gateway.questionnaire_adapters
-      - aicrm_next.questionnaire.application
-      - aicrm_next.public_product.h5_wechat_pay
+      - aicrm_next.extensions.forms.questionnaire.application
+      - aicrm_next.extensions.commerce.public_product.h5_wechat_pay
   WECHAT_PAY_API_V3_KEY:
     <<: *secret_defaults
     runtime_consumers:
       - aicrm_next.integration_gateway.wechat_pay_client
-      - aicrm_next.public_product.h5_wechat_pay
+      - aicrm_next.extensions.commerce.public_product.h5_wechat_pay
   WECHAT_PAY_CERT_SERIAL_NO:
     <<: *secret_defaults
     runtime_consumers:
       - aicrm_next.integration_gateway.wechat_pay_client
-      - aicrm_next.public_product.h5_wechat_pay
+      - aicrm_next.extensions.commerce.public_product.h5_wechat_pay
   WECHAT_SHOP_APPSECRET:
     <<: *secret_defaults
     runtime_consumers:
       - aicrm_next.integration_gateway.wechat_shop_client
-      - aicrm_next.commerce.wechat_shop_service
+      - aicrm_next.extensions.commerce.commerce.wechat_shop_service
   WECHAT_SHOP_CALLBACK_TOKEN:
     <<: *secret_defaults
     runtime_consumers:
       - aicrm_next.shared.runtime
-      - aicrm_next.commerce.wechat_shop_signature
-      - aicrm_next.commerce.wechat_shop_service
+      - aicrm_next.extensions.commerce.commerce.wechat_shop_signature
+      - aicrm_next.extensions.commerce.commerce.wechat_shop_service
 
 api_client_credential_policy:
   exact_purpose_required: true
@@ -257,12 +257,12 @@ outbound_webhook_callers:
     redirect_policy: deny
     dns_policy: resolve_validate_pin
     real_execution_change: none
-  - source: aicrm_next.commerce.external_push_admin
+  - source: aicrm_next.extensions.commerce.commerce.external_push_admin
     dispatch_owner: aicrm_next.external_push.https_transport
     redirect_policy: deny
     dns_policy: resolve_validate_pin
     real_execution_change: none
-  - source: aicrm_next.questionnaire.external_push
+  - source: aicrm_next.extensions.forms.questionnaire.external_push
     dispatch_owner: aicrm_next.external_push.https_transport
     redirect_policy: deny
     dns_policy: resolve_validate_pin

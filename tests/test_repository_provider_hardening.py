@@ -45,10 +45,10 @@ def test_fixture_repositories_allowed_in_fixture_mode(monkeypatch):
     monkeypatch.delenv("AICRM_NEXT_ENV", raising=False)
     monkeypatch.delenv("AICRM_NEXT_ENABLE_LEGACY_PRODUCTION_FACADE", raising=False)
 
-    from aicrm_next.commerce.repo import build_commerce_repository
+    from aicrm_next.extensions.commerce.commerce.repo import build_commerce_repository
     from aicrm_next.media_library.repo import build_media_library_repository
-    from aicrm_next.questionnaire.repo import build_questionnaire_repository
-    from aicrm_next.radar_links.repo import build_radar_links_repository
+    from aicrm_next.extensions.forms.questionnaire.repo import build_questionnaire_repository
+    from aicrm_next.extensions.radar.radar_links.repo import build_radar_links_repository
     from aicrm_next.automation_engine.repo import build_automation_repository
     from aicrm_next.admin_read_model.repo import build_admin_read_repository
 
@@ -63,10 +63,10 @@ def test_fixture_repositories_allowed_in_fixture_mode(monkeypatch):
 def test_production_data_ready_blocks_fixture_repository_builders(monkeypatch):
     _production_env(monkeypatch)
 
-    from aicrm_next.commerce.repo import build_commerce_repository
+    from aicrm_next.extensions.commerce.commerce.repo import build_commerce_repository
     from aicrm_next.media_library.repo import build_media_library_repository
-    from aicrm_next.questionnaire.repo import build_questionnaire_repository
-    from aicrm_next.radar_links.repo import build_radar_links_repository
+    from aicrm_next.extensions.forms.questionnaire.repo import build_questionnaire_repository
+    from aicrm_next.extensions.radar.radar_links.repo import build_radar_links_repository
     from aicrm_next.automation_engine.repo import build_automation_repository
     from aicrm_next.customer_read_model.repo import build_customer_read_model_repository
 

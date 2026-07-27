@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
-from aicrm_next.cloud_orchestrator.time_helpers import campaign_step_due_iso
+from aicrm_next.extensions.growth.cloud_orchestrator.time_helpers import campaign_step_due_iso
 
 
 def test_campaign_step_due_iso_basic_asia_shanghai() -> None:
@@ -83,7 +83,7 @@ def test_campaign_step_due_iso_invalid_send_time_does_not_raise() -> None:
 
 def test_cloud_repository_imports_next_time_helper() -> None:
     root = Path(__file__).resolve().parents[1]
-    source = (root / "aicrm_next/cloud_orchestrator/repository.py").read_text(encoding="utf-8")
+    source = (root / "aicrm_next/extensions/growth/cloud_orchestrator/repository.py").read_text(encoding="utf-8")
 
     assert "wecom_ability" + "_service.domains.campaigns.time_helpers" not in source
     assert "from .time_helpers import" in source

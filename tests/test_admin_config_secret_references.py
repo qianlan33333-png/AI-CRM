@@ -8,9 +8,9 @@ from sqlalchemy.engine import Engine
 
 from aicrm_next.admin_config.application import AdminConfigReadService, AdminConfigWriteCommand
 from aicrm_next.admin_config.repository import AdminConfigRepository
-from aicrm_next.message_archive import repo as message_archive_repo
-from aicrm_next.message_archive import sync_service as message_archive_sync
-from aicrm_next.questionnaire import repo as questionnaire_repo
+from aicrm_next.extensions.archive.message_archive import repo as message_archive_repo
+from aicrm_next.extensions.archive.message_archive import sync_service as message_archive_sync
+from aicrm_next.extensions.forms.questionnaire import repo as questionnaire_repo
 from aicrm_next.shared import runtime_settings
 from aicrm_next.shared import runtime as shared_runtime
 from aicrm_next.shared.runtime_settings import runtime_setting, runtime_settings_request_scope

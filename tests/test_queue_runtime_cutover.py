@@ -611,12 +611,12 @@ def test_queue_cutover_ownership_checker_passes() -> None:
 
 
 def test_queue_cutover_checker_rejects_canary_scope_in_ordinary_producer(tmp_path) -> None:
-    producer = tmp_path / "aicrm_next" / "cloud_orchestrator" / "producer.py"
+    producer = tmp_path / "aicrm_next" / "extensions" / "growth" / "cloud_orchestrator" / "producer.py"
     producer.parent.mkdir(parents=True)
     producer.write_text('payload["execution_scope"] = "allowlisted_canary"\n')
 
     assert collect_canary_scope_producer_errors(tmp_path) == [
-        "aicrm_next/cloud_orchestrator/producer.py: ordinary producers must use the CAS canary authorization service"
+        "aicrm_next/extensions/growth/cloud_orchestrator/producer.py: ordinary producers must use the CAS canary authorization service"
     ]
 
 

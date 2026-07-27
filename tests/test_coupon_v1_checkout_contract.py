@@ -7,12 +7,12 @@ from typing import Any
 import pytest
 from fastapi import Request
 
-from aicrm_next.commerce import admin_transactions
-from aicrm_next.commerce.coupons import application as coupon_application
-from aicrm_next.commerce.coupons import public_api as coupon_public_api
+from aicrm_next.extensions.commerce.commerce import admin_transactions
+from aicrm_next.extensions.commerce.commerce.coupons import application as coupon_application
+from aicrm_next.extensions.commerce.commerce.coupons import public_api as coupon_public_api
 from aicrm_next.integration_gateway.wechat_pay_client import WeChatPayClientConfig
-from aicrm_next.public_product import h5_wechat_pay
-from aicrm_next.public_product.service import render_pay_landing
+from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
+from aicrm_next.extensions.commerce.public_product.service import render_pay_landing
 
 
 def _public_coupon_state() -> dict[str, Any]:

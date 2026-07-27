@@ -4,7 +4,7 @@ import base64
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.cloud_orchestrator.media_upload import build_upload_command
+from aicrm_next.extensions.growth.cloud_orchestrator.media_upload import build_upload_command
 from aicrm_next.main import create_app
 
 
@@ -28,7 +28,7 @@ def test_cloud_orchestrator_media_upload_returns_real_wecom_media_id(monkeypatch
             return {"errcode": 0, "errmsg": "ok", "media_id": "media-real-cloud-001"}
 
     monkeypatch.setattr(
-        "aicrm_next.cloud_orchestrator.media_upload.build_wecom_media_upload_client",
+        "aicrm_next.extensions.growth.cloud_orchestrator.media_upload.build_wecom_media_upload_client",
         lambda: FakeClient(),
     )
 
@@ -109,7 +109,7 @@ def test_cloud_orchestrator_media_upload_wecom_failure_is_controlled_502(monkeyp
             raise RuntimeError("token expired")
 
     monkeypatch.setattr(
-        "aicrm_next.cloud_orchestrator.media_upload.build_wecom_media_upload_client",
+        "aicrm_next.extensions.growth.cloud_orchestrator.media_upload.build_wecom_media_upload_client",
         lambda: FailingClient(),
     )
 

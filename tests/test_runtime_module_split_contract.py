@@ -7,15 +7,15 @@ from pathlib import Path
 
 from aicrm_next.admin_config import application as admin_application
 from aicrm_next.admin_config import application_support as admin_support
-from aicrm_next.ai_audience_ops import repository as audience_repository
-from aicrm_next.ai_audience_ops import repository_packages as audience_package_repository
+from aicrm_next.extensions.ai.ai_audience_ops import repository as audience_repository
+from aicrm_next.extensions.ai.ai_audience_ops import repository_packages as audience_package_repository
 from aicrm_next.automation_engine.group_ops import postgres_repo as group_ops_repository
 from aicrm_next.automation_engine.group_ops import postgres_repo_mapping as group_ops_mapping_repository
-from aicrm_next.cloud_orchestrator import repository as cloud_repository
-from aicrm_next.cloud_orchestrator import repository_legacy as cloud_legacy_repository
-from aicrm_next.cloud_orchestrator import repository_memory as cloud_memory_repository
-from aicrm_next.commerce import api as commerce_api
-from aicrm_next.commerce import api_support as commerce_api_support
+from aicrm_next.extensions.growth.cloud_orchestrator import repository as cloud_repository
+from aicrm_next.extensions.growth.cloud_orchestrator import repository_legacy as cloud_legacy_repository
+from aicrm_next.extensions.growth.cloud_orchestrator import repository_memory as cloud_memory_repository
+from aicrm_next.extensions.commerce.commerce import api as commerce_api
+from aicrm_next.extensions.commerce.commerce import api_support as commerce_api_support
 from aicrm_next.customer_read_model import application as customer_application
 from aicrm_next.customer_read_model import application_customer360_support as customer_application_support
 from aicrm_next.customer_read_model import repo as customer_repository
@@ -25,8 +25,8 @@ from aicrm_next.platform_foundation.external_effects import repo as effect_repos
 from aicrm_next.platform_foundation.external_effects import repo_memory as effect_memory_repository
 from aicrm_next.platform_foundation.internal_events import repository as event_repository
 from aicrm_next.platform_foundation.internal_events import repository_memory as event_memory
-from aicrm_next.questionnaire import repo as questionnaire_repository
-from aicrm_next.questionnaire import repo_memory as questionnaire_memory
+from aicrm_next.extensions.forms.questionnaire import repo as questionnaire_repository
+from aicrm_next.extensions.forms.questionnaire import repo_memory as questionnaire_memory
 
 
 def test_internal_event_repository_facade_preserves_public_imports() -> None:

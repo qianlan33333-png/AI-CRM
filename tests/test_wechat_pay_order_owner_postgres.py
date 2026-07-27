@@ -8,7 +8,7 @@ import psycopg
 import pytest
 from psycopg.rows import dict_row
 
-from aicrm_next.commerce.wechat_pay_order_write_port import (
+from aicrm_next.extensions.commerce.commerce.wechat_pay_order_write_port import (
     WeChatPayOrderCreate,
     build_wechat_pay_order_write_port,
 )

@@ -7,23 +7,23 @@ import os
 import pytest
 from fastapi.testclient import TestClient
 
-from aicrm_next.commerce.repo import reset_commerce_fixture_state
+from aicrm_next.extensions.commerce.commerce.repo import reset_commerce_fixture_state
 from aicrm_next.main import create_app
-from aicrm_next.service_period.application import (
+from aicrm_next.extensions.commerce.service_period.application import (
     ApplyServicePeriodRefundCommand,
     CreateServicePeriodProductCommand,
     GrantOrRenewEntitlementCommand,
 )
-from aicrm_next.service_period.dto import ServicePeriodProductCreateRequest
-from aicrm_next.service_period.huangyoucan_usage import huangyoucan_usage_match_joins
-from aicrm_next.service_period.member_grid import (
+from aicrm_next.extensions.commerce.service_period.dto import ServicePeriodProductCreateRequest
+from aicrm_next.extensions.commerce.service_period.huangyoucan_usage import huangyoucan_usage_match_joins
+from aicrm_next.extensions.commerce.service_period.member_grid import (
     MemberViewConflictError,
     empty_view_config,
     member_grid_schema,
     normalize_view_config,
     query_in_memory_rows,
 )
-from aicrm_next.service_period.repo import (
+from aicrm_next.extensions.commerce.service_period.repo import (
     PostgresServicePeriodRepository,
     build_service_period_repository,
     reset_service_period_fixture_state,

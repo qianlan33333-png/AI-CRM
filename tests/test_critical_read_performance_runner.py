@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from aicrm_next.questionnaire.repo import PostgresQuestionnaireReadRepository
+from aicrm_next.extensions.forms.questionnaire.repo import PostgresQuestionnaireReadRepository
 from tools import check_critical_read_performance
 
 

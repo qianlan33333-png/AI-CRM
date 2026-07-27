@@ -9,8 +9,8 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from .ai_audience_e2e_composition import build_ai_audience_e2e_runner_factory
-from .ai_audience_ops.target_provider import AiAudienceTargetProvider
+from .extensions.ai.ai_audience_e2e_composition import build_ai_audience_e2e_runner_factory
+from .extensions.ai.ai_audience_ops.target_provider import AiAudienceTargetProvider
 from . import fixture_reset_registry
 from .admin_auth.route_policy import route_policy_required_response
 from .admin_auth.action_token import build_admin_action_token_bundle, validate_action_token_for_request
@@ -21,8 +21,8 @@ from .channel_entry_composition import (
     build_wecom_callback_inbox_worker_factory,
     configure_channel_crm_dependencies,
 )
-from .cloud_orchestrator.campaign_step_media_repository import PostgresCampaignStepMediaReferenceRepository
-from .commerce.repo import reset_commerce_fixture_state
+from .extensions.growth.cloud_orchestrator.campaign_step_media_repository import PostgresCampaignStepMediaReferenceRepository
+from .extensions.commerce.commerce.repo import reset_commerce_fixture_state
 from .customer_read_model.extension_port import configure_sidebar_extension_port
 from .deployment_profile import DeploymentProfile, deployment_profile_from_environment
 from .external_effect_composition import (
@@ -37,11 +37,11 @@ from .mcp_composition import build_mcp_jsonrpc_application
 from .ops_enrollment.application import reset_user_ops_fixture_state
 from .ops_enrollment.audience_target_port import configure_audience_target_query
 from .platform_foundation.internal_events import internal_event_consumer_registry_scope
-from .questionnaire.repo import reset_questionnaire_fixture_state
+from .extensions.forms.questionnaire.repo import reset_questionnaire_fixture_state
 from .read_model_composition import build_sidebar_contact_binding_status_query, get_customer_detail
-from .radar_links.repo import reset_radar_links_fixture_state
-from .service_period_composition import build_service_period_member_grid_access_service
-from .service_period.sidebar_extension_adapter import DefaultSidebarExtensionAdapter
+from .extensions.radar.radar_links.repo import reset_radar_links_fixture_state
+from .extensions.commerce.service_period_composition import build_service_period_member_grid_access_service
+from .extensions.commerce.service_period.sidebar_extension_adapter import DefaultSidebarExtensionAdapter
 from .router_registry import register_routers
 from .shared.errors import ApplicationError
 from .shared.repository_provider import RepositoryProviderError
@@ -65,13 +65,13 @@ __all__ = [
 ]
 
 _FRONTEND_COMPAT_DIR = Path(__file__).resolve().parent / "frontend_compat"
-_OPERATION_CYCLES_DIR = Path(__file__).resolve().parent / "operation_cycles"
+_OPERATION_CYCLES_DIR = Path(__file__).resolve().parent / "extensions" / "hxc" / "operation_cycles"
 _GROUP_OPS_DIR = Path(__file__).resolve().parent / "automation_engine" / "group_ops"
 _AUTOMATION_ENGINE_DIR = Path(__file__).resolve().parent / "automation_engine"
 _CUSTOMER_TAGS_DIR = Path(__file__).resolve().parent / "customer_tags"
-_QUESTIONNAIRE_DIR = Path(__file__).resolve().parent / "questionnaire"
+_QUESTIONNAIRE_DIR = Path(__file__).resolve().parent / "extensions" / "forms" / "questionnaire"
 _NAVIGATION_TARGET_DIR = Path(__file__).resolve().parent / "navigation_target"
-_SERVICE_PERIOD_DIR = Path(__file__).resolve().parent / "service_period"
+_SERVICE_PERIOD_DIR = Path(__file__).resolve().parent / "extensions" / "commerce" / "service_period"
 logger = logging.getLogger(__name__)
 query_telemetry_logger = logging.getLogger("uvicorn.error")
 

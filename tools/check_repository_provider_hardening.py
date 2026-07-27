@@ -30,9 +30,9 @@ PRODUCTION_ENV = {
 }
 
 CAPABILITIES = {
-    "commerce": ("aicrm_next.commerce.repo", "build_commerce_repository"),
+    "commerce": ("aicrm_next.extensions.commerce.commerce.repo", "build_commerce_repository"),
     "media_library": ("aicrm_next.media_library.repo", "build_media_library_repository"),
-    "questionnaire": ("aicrm_next.questionnaire.repo", "build_questionnaire_repository"),
+    "questionnaire": ("aicrm_next.extensions.forms.questionnaire.repo", "build_questionnaire_repository"),
     "automation_engine": ("aicrm_next.automation_engine.repo", "build_automation_repository"),
     "customer_read_model": ("aicrm_next.customer_read_model.repo", "build_customer_read_model_repository"),
     "ops_enrollment": ("aicrm_next.ops_enrollment.repo", "build_user_ops_repository"),

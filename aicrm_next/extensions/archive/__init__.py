@@ -1,0 +1,1 @@
+"""Message archive capability pack."""

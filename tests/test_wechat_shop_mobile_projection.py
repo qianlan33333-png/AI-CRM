@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.commerce import wechat_shop_service
+from aicrm_next.extensions.commerce.commerce import wechat_shop_service
 from aicrm_next.identity_contact.dto import IdentityResolution, IdentityResolveResult
 from aicrm_next.identity_contact import payment_projection
 

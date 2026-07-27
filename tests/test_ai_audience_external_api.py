@@ -6,9 +6,9 @@ from pathlib import Path
 
 from sqlalchemy import text
 
-from aicrm_next.ai_audience_ops.outbound_service import AudienceOutboundService
-from aicrm_next.ai_audience_ops.refresh_service import AudienceRefreshService, _refresh_sql
-from aicrm_next.ai_audience_ops.repository import build_audience_repository
+from aicrm_next.extensions.ai.ai_audience_ops.outbound_service import AudienceOutboundService
+from aicrm_next.extensions.ai.ai_audience_ops.refresh_service import AudienceRefreshService, _refresh_sql
+from aicrm_next.extensions.ai.ai_audience_ops.repository import build_audience_repository
 from aicrm_next.shared.db_session import get_session_factory
 from scripts import ai_audience_apply_package_spec as spec_script
 from tests.admin_auth_test_helpers import access_token_headers, install_access_token

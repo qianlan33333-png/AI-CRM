@@ -6,9 +6,9 @@ from pathlib import Path
 import pytest
 from sqlalchemy import text
 
-from aicrm_next.ai_audience_ops.hxc_projection import HxcMemberUsageProjectionService
-from aicrm_next.ai_audience_ops.simple_sql import validate_simple_sql
-from aicrm_next.ai_audience_ops.sql_catalog import ALLOWED_VIEWS, schema_catalog_payload
+from aicrm_next.extensions.ai.ai_audience_ops.hxc_projection import HxcMemberUsageProjectionService
+from aicrm_next.extensions.ai.ai_audience_ops.simple_sql import validate_simple_sql
+from aicrm_next.extensions.ai.ai_audience_ops.sql_catalog import ALLOWED_VIEWS, schema_catalog_payload
 from aicrm_next.shared.db_session import get_session_factory
 
 

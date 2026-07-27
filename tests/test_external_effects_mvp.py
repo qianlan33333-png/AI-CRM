@@ -48,10 +48,10 @@ from aicrm_next.platform_foundation.external_effects.adapters import (
 from aicrm_next.platform_foundation.internal_events import QUESTIONNAIRE_SUBMITTED_EVENT_TYPE
 from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
 from aicrm_next.integration_gateway.wechat_pay_client import WeChatPayClientError
-from aicrm_next.public_product import h5_wechat_pay
-from aicrm_next.public_product.h5_wechat_pay import _apply_transaction
-from aicrm_next.questionnaire import external_push
-from aicrm_next.questionnaire.repo import build_questionnaire_repository
+from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
+from aicrm_next.extensions.commerce.public_product.h5_wechat_pay import _apply_transaction
+from aicrm_next.extensions.forms.questionnaire import external_push
+from aicrm_next.extensions.forms.questionnaire.repo import build_questionnaire_repository
 from tests.webhook_hmac_test_helpers import install_webhook_hmac_client, outbound_webhook_hmac_signer
 from tests.admin_auth_test_helpers import install_admin_action_tokens
 from tests.wechat_identity_test_support import authorize_wechat_client
@@ -253,7 +253,7 @@ def _install_loopback_http_adapter(monkeypatch, client: TestClient) -> list[dict
 
 
 def _seed_hxc_questionnaire(monkeypatch, external_push_config: dict) -> tuple[dict, str]:
-    from aicrm_next.questionnaire import event_consumers, h5_write
+    from aicrm_next.extensions.forms.questionnaire import event_consumers, h5_write
 
     monkeypatch.setenv("AICRM_INTERNAL_EVENTS_ENABLED", "1")
     monkeypatch.setenv("AICRM_INTERNAL_EVENTS_QUESTIONNAIRE_ENABLED", "1")
@@ -483,12 +483,12 @@ def test_external_effect_migration_contract_contains_required_tables_indexes_and
 
 def test_business_outbound_entrypoints_do_not_directly_call_external_networks() -> None:
     monitored_files = [
-        "aicrm_next/questionnaire/external_push.py",
-        "aicrm_next/questionnaire/external_push_logs.py",
+        "aicrm_next/extensions/forms/questionnaire/external_push.py",
+        "aicrm_next/extensions/forms/questionnaire/external_push_logs.py",
         "aicrm_next/admin_jobs/application.py",
         "aicrm_next/admin_jobs/notification_settings.py",
-        "aicrm_next/commerce/admin_transactions.py",
-        "aicrm_next/commerce/external_push_admin.py",
+        "aicrm_next/extensions/commerce/commerce/admin_transactions.py",
+        "aicrm_next/extensions/commerce/commerce/external_push_admin.py",
         "aicrm_next/customer_tags/live_mutation.py",
         "aicrm_next/automation_engine/group_ops/application.py",
         "aicrm_next/channel_entry/application.py",
@@ -773,7 +773,7 @@ def test_webhook_adapter_enabled_allowlisted_2xx_succeeds_and_records_attempt(mo
 
 
 def test_external_effect_worker_queues_automation_agent_continuation_without_running_it_inline(monkeypatch) -> None:
-    from aicrm_next.automation_agents.worker import AutomationAgentWorker
+    from aicrm_next.extensions.ai.automation_agents.worker import AutomationAgentWorker
 
     seen: dict[str, str] = {}
 
@@ -1857,7 +1857,7 @@ def test_questionnaire_queue_mode_job_creation_failure_is_retryable_after_submis
                 raise AssertionError("planner must not run after lookup failure")
             raise RuntimeError("external effect unavailable")
 
-    from aicrm_next.questionnaire import event_consumers
+    from aicrm_next.extensions.forms.questionnaire import event_consumers
 
     monkeypatch.setattr(event_consumers, "ExternalEffectService", _BrokenExternalEffectService)
 

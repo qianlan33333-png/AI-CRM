@@ -189,7 +189,7 @@ def test_questionnaire_editor_uses_next_native_admin_pages(monkeypatch):
 
 
 def test_questionnaire_external_push_log_routes_use_next_native_handlers(monkeypatch):
-    source = (ROOT / "aicrm_next" / "questionnaire" / "admin_pages.py").read_text(encoding="utf-8")
+    source = (ROOT / "aicrm_next" / "extensions" / "forms" / "questionnaire" / "admin_pages.py").read_text(encoding="utf-8")
 
     assert "forward_to_legacy_flask" not in source
     assert '"/admin/questionnaires/external-push-logs"' in source

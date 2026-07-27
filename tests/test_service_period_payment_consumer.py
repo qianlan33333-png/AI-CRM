@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from aicrm_next.platform_foundation.internal_events.models import InternalEvent, InternalEventConsumerRun
-from aicrm_next.service_period import payment_consumer
+from aicrm_next.extensions.commerce.service_period import payment_consumer
 
 
 def test_missing_unionid_entitlement_consumer_is_retryable_and_never_succeeds(monkeypatch) -> None:

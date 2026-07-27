@@ -22,7 +22,7 @@ def test_cloud_root_redirect_is_owned_by_native_cloud_module() -> None:
 
     assert response.status_code == 302
     assert response.headers["location"] == "/admin/cloud-orchestrator/plans"
-    assert _endpoint_module("/admin/cloud-orchestrator") == "aicrm_next.cloud_orchestrator.api"
+    assert _endpoint_module("/admin/cloud-orchestrator") == "aicrm_next.extensions.growth.cloud_orchestrator.api"
     assert _endpoint_module("/admin/cloud-orchestrator") != "aicrm_next.frontend_compat.legacy_routes"
 
 
@@ -34,7 +34,7 @@ def test_cloud_observability_page_renders_from_native_cloud_module() -> None:
     assert "工单、审计、漏斗与 Tool 调用统计" in response.text
     assert "返回助手" in response.text
     assert "X-AICRM-Compatibility-Facade" not in response.headers
-    assert _endpoint_module("/admin/cloud-orchestrator/observability") == "aicrm_next.cloud_orchestrator.api"
+    assert _endpoint_module("/admin/cloud-orchestrator/observability") == "aicrm_next.extensions.growth.cloud_orchestrator.api"
     assert _endpoint_module("/admin/cloud-orchestrator/observability") != "aicrm_next.frontend_compat.legacy_routes"
 
 

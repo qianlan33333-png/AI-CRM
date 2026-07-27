@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from aicrm_next.commerce.repo import reset_commerce_fixture_state
+from aicrm_next.extensions.commerce.commerce.repo import reset_commerce_fixture_state
 from aicrm_next.main import create_app
 
 
@@ -56,7 +56,7 @@ def test_public_product_frontend_redirects_empty_material_and_keeps_checkout_con
 
 
 def test_payment_identity_accepts_canonical_unionid_before_openid_projection() -> None:
-    from aicrm_next.public_product.h5_wechat_pay import _resolve_payment_identity
+    from aicrm_next.extensions.commerce.public_product.h5_wechat_pay import _resolve_payment_identity
 
     class Cursor:
         def __init__(self, rows):
@@ -106,7 +106,7 @@ def test_payment_identity_accepts_canonical_unionid_before_openid_projection() -
 
 
 def test_payment_identity_blocks_openid_resolved_to_another_unionid() -> None:
-    from aicrm_next.public_product.h5_wechat_pay import _resolve_payment_identity
+    from aicrm_next.extensions.commerce.public_product.h5_wechat_pay import _resolve_payment_identity
 
     class Cursor:
         def __init__(self, rows):
@@ -187,7 +187,7 @@ def test_public_pay_landing_hides_mobile_before_oauth_for_mobile_required_produc
 
 
 def test_public_pay_landing_shows_mobile_after_oauth_for_mobile_required_product(monkeypatch) -> None:
-    from aicrm_next.public_product import h5_wechat_pay
+    from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
 
     monkeypatch.setenv("WECHAT_PAY_ENABLED", "1")
     reset_commerce_fixture_state()
@@ -265,7 +265,7 @@ def test_public_product_frontend_material_page_contains_detail_images_and_cta(mo
 
 
 def test_public_product_frontend_restores_slice_image_layout() -> None:
-    from aicrm_next.public_product.service import render_product_page
+    from aicrm_next.extensions.commerce.public_product.service import render_product_page
 
     html = render_product_page(
         {
@@ -332,7 +332,7 @@ def test_public_product_image_route_serves_only_bound_enabled_product_images(mon
                 },
             }
 
-    monkeypatch.setattr("aicrm_next.public_product.service.GetImageVariantQuery", lambda: FakeGetImageVariantQuery())
+    monkeypatch.setattr("aicrm_next.extensions.commerce.public_product.service.GetImageVariantQuery", lambda: FakeGetImageVariantQuery())
     client = _client(monkeypatch)
     created = client.post(
         "/api/admin/wechat-pay/products",
@@ -390,7 +390,7 @@ def test_public_product_image_route_serves_only_bound_enabled_product_images(mon
 
 
 def test_public_h5_order_payload_adds_lead_qr_only_after_paid() -> None:
-    from aicrm_next.public_product.h5_wechat_pay import _order_payload
+    from aicrm_next.extensions.commerce.public_product.h5_wechat_pay import _order_payload
 
     row = {
         "out_trade_no": "WXP_PAID",
@@ -418,7 +418,7 @@ def test_public_h5_order_payload_adds_lead_qr_only_after_paid() -> None:
 
 
 def test_public_h5_order_payload_hides_lead_qr_before_paid_or_when_redirecting() -> None:
-    from aicrm_next.public_product.h5_wechat_pay import _order_payload
+    from aicrm_next.extensions.commerce.public_product.h5_wechat_pay import _order_payload
 
     base_row = {
         "out_trade_no": "WXP_UNPAID",
@@ -449,7 +449,7 @@ def test_public_h5_order_payload_hides_lead_qr_before_paid_or_when_redirecting()
 
 
 def test_public_lead_qr_resolver_reuses_configured_channel_asset(monkeypatch) -> None:
-    from aicrm_next.public_product import h5_wechat_pay
+    from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
 
     queries: list[tuple[str, tuple]] = []
 
@@ -497,7 +497,7 @@ def test_public_lead_qr_resolver_reuses_configured_channel_asset(monkeypatch) ->
 
 
 def test_public_lead_qr_resolver_skips_redirect_products(monkeypatch) -> None:
-    from aicrm_next.public_product import h5_wechat_pay
+    from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
 
     monkeypatch.setattr(h5_wechat_pay, "production_data_ready", lambda: True)
     monkeypatch.setattr(h5_wechat_pay, "_connect", lambda: (_ for _ in ()).throw(AssertionError("database should not be read")))
@@ -513,7 +513,7 @@ def test_public_lead_qr_resolver_skips_redirect_products(monkeypatch) -> None:
 
 
 def test_public_pay_landing_reopens_existing_paid_order(monkeypatch) -> None:
-    from aicrm_next.public_product import h5_wechat_pay
+    from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
 
     class Cursor:
         def __init__(self, row):
@@ -590,8 +590,8 @@ def test_public_pay_landing_reopens_existing_paid_order(monkeypatch) -> None:
 
 
 def test_public_h5_create_order_returns_existing_paid_order(monkeypatch) -> None:
-    from aicrm_next.public_product import h5_wechat_pay
-    from aicrm_next.commerce.wechat_pay_client import WeChatPayClientConfig
+    from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
+    from aicrm_next.extensions.commerce.commerce.wechat_pay_client import WeChatPayClientConfig
 
     class Cursor:
         def __init__(self, row):
@@ -664,8 +664,8 @@ def test_public_h5_create_order_returns_existing_paid_order(monkeypatch) -> None
 
 
 def test_public_h5_create_order_does_not_reuse_paid_order_from_mismatched_sidebar_context(monkeypatch) -> None:
-    from aicrm_next.public_product import h5_wechat_pay
-    from aicrm_next.commerce.wechat_pay_client import WeChatPayClientConfig
+    from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
+    from aicrm_next.extensions.commerce.commerce.wechat_pay_client import WeChatPayClientConfig
 
     queries: list[tuple[str, tuple]] = []
 
@@ -790,8 +790,8 @@ def test_public_h5_create_order_blocks_unresolved_payment_identity_before_order_
     retryable: bool,
 ) -> None:
     from aicrm_next.identity_contact.dto import IdentityResolveResult
-    from aicrm_next.public_product import h5_wechat_pay
-    from aicrm_next.commerce.wechat_pay_client import WeChatPayClientConfig
+    from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
+    from aicrm_next.extensions.commerce.commerce.wechat_pay_client import WeChatPayClientConfig
 
     class FakeConn:
         def __enter__(self):
@@ -849,7 +849,7 @@ def test_public_h5_create_order_blocks_unresolved_payment_identity_before_order_
 
 
 def test_public_h5_paid_order_lookup_accepts_product_code_alias() -> None:
-    from aicrm_next.public_product.h5_wechat_pay import _paid_order_for_product_identity
+    from aicrm_next.extensions.commerce.public_product.h5_wechat_pay import _paid_order_for_product_identity
 
     captured = {}
 
@@ -883,7 +883,7 @@ def test_public_h5_paid_order_lookup_accepts_product_code_alias() -> None:
 
 
 def test_public_h5_paid_order_lookup_prefers_payment_identity_over_sidebar_external_userid() -> None:
-    from aicrm_next.public_product.h5_wechat_pay import _paid_order_for_product_identity
+    from aicrm_next.extensions.commerce.public_product.h5_wechat_pay import _paid_order_for_product_identity
 
     captured = {}
 

@@ -34,8 +34,8 @@ are forbidden.
 The current historical entries are not a long-term approval:
 
 - `aicrm_next/channel_entry/wecom_adapter.py`
-- `aicrm_next/commerce/wechat_pay_client.py`
-- `aicrm_next/commerce/wechat_shop_client.py`
+- `aicrm_next/extensions/commerce/commerce/wechat_pay_client.py`
+- `aicrm_next/extensions/commerce/commerce/wechat_shop_client.py`
 
 The next migration step is to move these clients behind integration gateway or
 external effects boundaries without changing route behavior in this checker PR.

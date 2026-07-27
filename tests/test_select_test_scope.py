@@ -39,7 +39,7 @@ def _select(
 
 
 def test_media_library_change_runs_small_no_pg_slice() -> None:
-    result = _select("aicrm_next/commerce/templates/wechat_products.html")
+    result = _select("aicrm_next/extensions/commerce/commerce/templates/wechat_products.html")
 
     assert "commerce" in result["matched_scopes"]
     assert "media_library" in result["matched_scopes"]
@@ -100,7 +100,7 @@ def test_runtime_configuration_cutover_has_a_permanent_control_plane_scope() -> 
 
 def test_import_graph_governance_changes_force_mapped_full_ci() -> None:
     result = _select(
-        "aicrm_next/automation_agents/__init__.py",
+        "aicrm_next/extensions/ai/automation_agents/__init__.py",
         "tools/check_import_graph.py",
         "docs/architecture/import_graph_baseline.yml",
         "tests/test_import_graph_guard.py",
@@ -159,7 +159,7 @@ def test_admin_read_model_runtime_files_have_a_permanent_ci_scope() -> None:
 
 def test_operation_cycles_changes_select_full_postgres_scope() -> None:
     result = _select(
-        "aicrm_next/operation_cycles/api.py",
+        "aicrm_next/extensions/hxc/operation_cycles/api.py",
         "aicrm_next/admin_shell/templates/admin_shell/operation_cycles_run.html",
         "fixtures/operation_cycles/hxc_monday_20260713_snapshot.json",
         "migrations/versions/0113_operation_cycles.py",
@@ -302,7 +302,7 @@ def test_public_pay_landing_test_selects_commerce_scope() -> None:
 
 def test_commerce_admin_order_tests_select_commerce_scope() -> None:
     result = _select(
-        "aicrm_next/commerce/templates/admin_orders.html",
+        "aicrm_next/extensions/commerce/commerce/templates/admin_orders.html",
         "tests/test_admin_p0_commerce_api.py",
         "tests/test_commerce_admin_transaction_detail.py",
     )
@@ -317,8 +317,8 @@ def test_commerce_admin_order_tests_select_commerce_scope() -> None:
 
 def test_service_period_change_selects_service_period_slice() -> None:
     result = _select(
-        "aicrm_next/service_period/api.py",
-        "aicrm_next/service_period/templates/service_period_products.html",
+        "aicrm_next/extensions/commerce/service_period/api.py",
+        "aicrm_next/extensions/commerce/service_period/templates/service_period_products.html",
         "tests/test_service_period_frontend_contract.py",
     )
 
@@ -352,11 +352,11 @@ def test_huangyoucan_usage_projection_has_permanent_full_pg_scope() -> None:
 
 def test_questionnaire_mobile_change_selects_questionnaire_and_commerce_slices() -> None:
     result = _select(
-        "aicrm_next/questionnaire/domain.py",
-        "aicrm_next/questionnaire/h5_write.py",
+        "aicrm_next/extensions/forms/questionnaire/domain.py",
+        "aicrm_next/extensions/forms/questionnaire/h5_write.py",
         "aicrm_next/frontend_compat/templates/questionnaire_h5_page.html",
         "aicrm_next/shared/mobile.py",
-        "aicrm_next/commerce/application.py",
+        "aicrm_next/extensions/commerce/commerce/application.py",
         "tests/test_questionnaire_h5_submit_validation.py",
         "tests/test_questionnaire_mobile_normalization.py",
         "tests/test_checkout_api_contract.py",
@@ -439,7 +439,7 @@ def test_r06_internal_event_outbox_files_force_full_postgres_ci() -> None:
     result = _select(
         "aicrm_next/platform_foundation/internal_events/outbox.py",
         "aicrm_next/platform_foundation/internal_events/reconciliation/outbox.py",
-        "aicrm_next/public_product/h5_wechat_pay.py",
+        "aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py",
         "migrations/versions/0099_internal_event_outbox_and_consumer_lease.py",
         "migrations/versions/0122_internal_event_fanout_manifest.py",
         "migrations/versions/0123_required_physical_schema_repair.py",
@@ -510,13 +510,13 @@ def test_r07_external_effect_delivery_files_force_full_postgres_ci() -> None:
 def test_external_effect_continuation_composition_has_a_permanent_full_ci_scope() -> None:
     result = _select(
         "aicrm_next/external_effect_composition.py",
-        "aicrm_next/automation_agents/external_effect_continuation.py",
-        "aicrm_next/automation_agents/internal_webhook_adapter.py",
+        "aicrm_next/extensions/ai/automation_agents/external_effect_continuation.py",
+        "aicrm_next/extensions/ai/automation_agents/internal_webhook_adapter.py",
         "aicrm_next/shared/automation_agent_webhook_contract.py",
         "aicrm_next/channel_entry/identity_external_effect.py",
         "aicrm_next/external_push/external_effect_continuation.py",
         "aicrm_next/internal_event_composition.py",
-        "aicrm_next/questionnaire/external_effect_continuation.py",
+        "aicrm_next/extensions/forms/questionnaire/external_effect_continuation.py",
         "aicrm_next/platform_foundation/external_effects/completion_events.py",
         "aicrm_next/platform_foundation/external_effects/continuations.py",
         "aicrm_next/platform_foundation/external_effects/provider_result_repository.py",
@@ -672,12 +672,12 @@ def test_external_effect_runtime_owner_has_permanent_postgres_scope() -> None:
 
 def test_prod_remediation_security_and_heading_files_have_permanent_scopes() -> None:
     result = _select(
-        "aicrm_next/automation_agents/templates/admin_console/automation_agent_list.html",
+        "aicrm_next/extensions/ai/automation_agents/templates/admin_console/automation_agent_list.html",
         "aicrm_next/customer_tags/templates/admin_console/config_wecom_tags.html",
         "aicrm_next/frontend_compat/templates/admin_console/hxc_send_config.html",
         "aicrm_next/frontend_compat/templates/admin_console/setup_wizard.html",
-        "aicrm_next/message_archive/archive_sdk.py",
-        "aicrm_next/message_archive/sdk_subprocess.py",
+        "aicrm_next/extensions/archive/message_archive/archive_sdk.py",
+        "aicrm_next/extensions/archive/message_archive/sdk_subprocess.py",
         "scripts/ops/ensure_runtime_environment.py",
         "tests/test_admin_heading_deduplication.py",
         "tests/test_archive_sdk_isolation.py",
@@ -695,7 +695,7 @@ def test_prod_remediation_security_and_heading_files_have_permanent_scopes() -> 
 
 def test_ai_audience_e2e_composition_has_a_permanent_full_ci_scope() -> None:
     result = _select(
-        "aicrm_next/ai_audience_e2e_composition.py",
+        "aicrm_next/extensions/ai/ai_audience_e2e_composition.py",
         "aicrm_next/ops_enrollment/ai_audience_e2e_gateway.py",
         "tests/test_ai_audience_e2e_composition.py",
     )
@@ -732,7 +732,7 @@ def test_runtime_module_size_governance_has_a_permanent_full_ci_scope() -> None:
 
 def test_admin_jobs_archive_gateway_has_permanent_full_ci_scope() -> None:
     result = _select(
-        "aicrm_next/admin_jobs_archive_sync_gateway.py",
+        "aicrm_next/extensions/archive/admin_jobs_archive_sync_gateway.py",
         "tests/test_admin_jobs_archive_sync_gateway.py",
     )
 
@@ -849,9 +849,9 @@ def test_group_provider_diagnostics_have_full_postgres_scope() -> None:
 
 def test_questionnaire_editor_asset_split_has_permanent_full_ci_scope() -> None:
     result = _select(
-        "aicrm_next/questionnaire/templates/admin_questionnaires.html",
-        "aicrm_next/questionnaire/static/admin_questionnaire_editor.css",
-        "aicrm_next/questionnaire/static/admin_questionnaire_editor.js",
+        "aicrm_next/extensions/forms/questionnaire/templates/admin_questionnaires.html",
+        "aicrm_next/extensions/forms/questionnaire/static/admin_questionnaire_editor.css",
+        "aicrm_next/extensions/forms/questionnaire/static/admin_questionnaire_editor.js",
         "tests/test_questionnaire_editor_asset_split.py",
         "tests/test_architecture_size_budgets.py",
     )
@@ -883,8 +883,8 @@ def test_runtime_readiness_has_permanent_full_ci_scope() -> None:
 
 def test_cloud_repository_split_modules_keep_permanent_postgres_coverage() -> None:
     result = _select(
-        "aicrm_next/cloud_orchestrator/repository_legacy.py",
-        "aicrm_next/cloud_orchestrator/repository_memory.py",
+        "aicrm_next/extensions/growth/cloud_orchestrator/repository_legacy.py",
+        "aicrm_next/extensions/growth/cloud_orchestrator/repository_memory.py",
     )
 
     assert result["unmatched_files"] == []
@@ -897,10 +897,10 @@ def test_cloud_repository_split_modules_keep_permanent_postgres_coverage() -> No
 
 def test_r08_commerce_fulfillment_files_force_full_postgres_ci() -> None:
     result = _select(
-        "aicrm_next/commerce/fulfillment_reconciliation.py",
+        "aicrm_next/extensions/commerce/commerce/fulfillment_reconciliation.py",
         "aicrm_next/platform_foundation/external_effects/transactional.py",
         "aicrm_next/platform_foundation/internal_events/refund.py",
-        "aicrm_next/service_period/refund_consumer.py",
+        "aicrm_next/extensions/commerce/service_period/refund_consumer.py",
         "migrations/versions/0101_commerce_fulfillment_invariants.py",
         "scripts/run_external_push_worker.py",
         "scripts/ops/reconcile_commerce_fulfillment.py",
@@ -920,11 +920,11 @@ def test_r08_commerce_fulfillment_files_force_full_postgres_ci() -> None:
 
 def test_unionid_identity_cutover_changes_force_pg_full_ci_without_unmapped_files() -> None:
     result = _select(
-        "aicrm_next/automation_agents/repository.py",
+        "aicrm_next/extensions/ai/automation_agents/repository.py",
         "aicrm_next/customer_tags/local_projection.py",
         "aicrm_next/customer_tags/projection_port.py",
         "aicrm_next/customer_tags/projection_repository.py",
-        "aicrm_next/message_archive/application.py",
+        "aicrm_next/extensions/archive/message_archive/application.py",
         "scripts/ops/check_unionid_identity_cutover.py",
         "scripts/run_identity_mobile_bridge_backfill.py",
         "tests/test_external_questionnaire_submissions_api.py",
@@ -980,7 +980,7 @@ def test_signed_session_change_selects_sidebar_shared_runtime_slice() -> None:
 
 
 def test_ai_assist_external_campaign_change_selects_focused_python_slice() -> None:
-    result = _select("aicrm_next/ai_assist/external_campaigns.py")
+    result = _select("aicrm_next/extensions/ai/ai_assist/external_campaigns.py")
 
     assert "ai_assist_external_campaigns" in result["matched_scopes"]
     assert "tests/test_ai_assist_external_campaigns.py" in result["python_tests"]
@@ -1000,8 +1000,8 @@ def test_shared_send_target_change_selects_ai_assist_campaign_slice() -> None:
 
 def test_campaign_step_media_owner_selects_cloud_plan_postgres_scope() -> None:
     result = _select(
-        "aicrm_next/cloud_orchestrator/campaign_step_media_port.py",
-        "aicrm_next/cloud_orchestrator/campaign_step_media_repository.py",
+        "aicrm_next/extensions/growth/cloud_orchestrator/campaign_step_media_port.py",
+        "aicrm_next/extensions/growth/cloud_orchestrator/campaign_step_media_repository.py",
         "tests/test_campaign_step_media_reference_port.py",
         "tests/test_campaign_step_media_reference_port_postgres.py",
     )
@@ -1027,7 +1027,7 @@ def test_user_ops_change_selects_batch_send_contract_slice() -> None:
 
 def test_admin_read_override_selects_focused_slice_without_pg() -> None:
     result = _select(
-        "aicrm_next/ai_audience_ops/admin_api.py",
+        "aicrm_next/extensions/ai/ai_audience_ops/admin_api.py",
         "aicrm_next/automation_engine/group_ops/application.py",
         "aicrm_next/ops_enrollment/api.py",
     )
@@ -1059,7 +1059,7 @@ def test_static_admin_shell_contract_and_contributors_select_admin_read_scope() 
         "aicrm_next/admin_shell_contract.py",
         "aicrm_next/automation_engine/channel_admin_pages.py",
         "aicrm_next/customer_tags/admin_pages.py",
-        "aicrm_next/hxc_dashboard/api.py",
+        "aicrm_next/extensions/hxc/hxc_dashboard/api.py",
         "aicrm_next/owner_migration/api.py",
     )
 
@@ -1397,7 +1397,7 @@ def test_sidebar_workbench_change_selects_progressive_loading_behavior_test() ->
 
 
 def test_questionnaire_change_selects_postgres_contracts_and_full_regression() -> None:
-    result = _select("aicrm_next/questionnaire/h5_write.py")
+    result = _select("aicrm_next/extensions/forms/questionnaire/h5_write.py")
 
     assert "questionnaire" in result["matched_scopes"]
     assert "tests/test_questionnaire_h5_submit_idempotency.py" in result["python_tests"]
@@ -1431,7 +1431,7 @@ def test_callback_change_forces_full_regression() -> None:
 
 
 def test_refund_change_forces_full_regression() -> None:
-    result = _select("aicrm_next/commerce/admin_transactions.py")
+    result = _select("aicrm_next/extensions/commerce/commerce/admin_transactions.py")
 
     assert "commerce" in result["matched_scopes"]
     assert "tests/test_next_wechat_pay_refunds.py" in result["python_tests"]
@@ -1501,11 +1501,11 @@ def test_retired_group_ops_workspace_paths_remain_mapped_to_broadcast_scope() ->
 
 def test_private_auth_cutover_maps_every_runtime_caller_and_regression_file() -> None:
     changed_paths = (
-        "aicrm_next/automation_agents/admin_pages.py",
-        "aicrm_next/automation_agents/api.py",
-        "aicrm_next/automation_agents/templates/admin_console/automation_agent_edit.html",
-        "aicrm_next/automation_agents/worker.py",
-        "aicrm_next/cloud_orchestrator/run_due.py",
+        "aicrm_next/extensions/ai/automation_agents/admin_pages.py",
+        "aicrm_next/extensions/ai/automation_agents/api.py",
+        "aicrm_next/extensions/ai/automation_agents/templates/admin_console/automation_agent_edit.html",
+        "aicrm_next/extensions/ai/automation_agents/worker.py",
+        "aicrm_next/extensions/growth/cloud_orchestrator/run_due.py",
         "aicrm_next/platform_foundation/auth_platform/service.py",
         "scripts/ai_audience_apply_package_spec.py",
         "scripts/diagnose_business_closure_acceptance.py",
@@ -1711,9 +1711,9 @@ def test_wechat_pay_order_owner_changes_select_commerce_postgres_scope() -> None
     }
 
     for changed_path in (
-        "aicrm_next/commerce/wechat_pay_order_write_port.py",
-        "aicrm_next/commerce/wechat_pay_order_write_repository.py",
-        "aicrm_next/public_product/h5_wechat_pay.py",
+        "aicrm_next/extensions/commerce/commerce/wechat_pay_order_write_port.py",
+        "aicrm_next/extensions/commerce/commerce/wechat_pay_order_write_repository.py",
+        "aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py",
         *sorted(expected_tests),
     ):
         result = _select(changed_path)

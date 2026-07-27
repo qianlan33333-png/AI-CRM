@@ -3,8 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from types import SimpleNamespace
 
-import aicrm_next.commerce.coupons.admin_api as coupon_admin_api
-import aicrm_next.commerce.coupons.admin_pages as coupon_admin_pages
+import aicrm_next.extensions.commerce.commerce.coupons.admin_api as coupon_admin_api
+import aicrm_next.extensions.commerce.commerce.coupons.admin_pages as coupon_admin_pages
 from aicrm_next.admin_shell.navigation import ADMIN_NAV_GROUPS, ADMIN_ROUTE_REGISTRY
 
 
@@ -331,13 +331,13 @@ def test_coupon_share_rejects_insecure_production_base_url(next_client, monkeypa
 
 def test_coupon_admin_http_layers_do_not_import_repositories_or_embed_sql() -> None:
     for relative_path in (
-        "aicrm_next/commerce/coupons/admin_api.py",
-        "aicrm_next/commerce/coupons/admin_pages.py",
+        "aicrm_next/extensions/commerce/commerce/coupons/admin_api.py",
+        "aicrm_next/extensions/commerce/commerce/coupons/admin_pages.py",
     ):
         source = (ROOT / relative_path).read_text(encoding="utf-8")
         lowered = source.lower()
         assert "from .repo import" not in lowered
-        assert "from aicrm_next.service_period" not in lowered
+        assert "from aicrm_next.extensions.commerce.service_period" not in lowered
         assert "select " not in lowered
         assert "insert " not in lowered
         assert "update " not in lowered

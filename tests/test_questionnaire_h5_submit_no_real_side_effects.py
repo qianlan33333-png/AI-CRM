@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.questionnaire.h5_write import get_questionnaire_h5_side_effect_plans, reset_questionnaire_h5_write_fixture_state
+from aicrm_next.extensions.forms.questionnaire.h5_write import get_questionnaire_h5_side_effect_plans, reset_questionnaire_h5_write_fixture_state
 from wechat_identity_test_support import authorize_wechat_client
 
 
@@ -47,7 +47,7 @@ def test_h5_submit_reports_only_the_durable_continuation_and_never_checks_provid
 
 
 def test_h5_write_source_only_persists_durable_continuation_without_provider_or_direct_planner() -> None:
-    text = Path("aicrm_next/questionnaire/h5_write.py").read_text(encoding="utf-8")
+    text = Path("aicrm_next/extensions/forms/questionnaire/h5_write.py").read_text(encoding="utf-8")
     assert "ProductionWeComAdapter" not in text
     assert ".mark_external_contact_tags(" not in text
     assert "plan_questionnaire_external_push_effect" not in text
@@ -59,9 +59,9 @@ def test_h5_write_source_only_persists_durable_continuation_without_provider_or_
 
 def test_public_h5_read_source_has_no_legacy_public_identity_helpers() -> None:
     source_paths = [
-        Path("aicrm_next/questionnaire/api.py"),
-        Path("aicrm_next/questionnaire/application.py"),
-        Path("aicrm_next/questionnaire/public_access.py"),
+        Path("aicrm_next/extensions/forms/questionnaire/api.py"),
+        Path("aicrm_next/extensions/forms/questionnaire/application.py"),
+        Path("aicrm_next/extensions/forms/questionnaire/public_access.py"),
     ]
     removed_facade = Path("aicrm_next/integration_gateway/legacy_flask_facade.py")
     assert not removed_facade.exists()

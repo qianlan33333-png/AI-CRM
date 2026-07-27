@@ -6,7 +6,7 @@ pytestmark = pytest.mark.usefixtures("composed_internal_event_registry")
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.ai_audience_ops import register_ai_audience_event_consumers
+from aicrm_next.extensions.ai.ai_audience_ops import register_ai_audience_event_consumers
 from aicrm_next.internal_event_composition import register_payment_succeeded_consumers
 from aicrm_next.platform_foundation.external_effects import WEBHOOK_ORDER_PAID_PUSH, ExternalEffectService, reset_external_effect_fixture_state
 from aicrm_next.platform_foundation.internal_events import InternalEventService, reset_internal_event_fixture_state
@@ -14,8 +14,8 @@ from aicrm_next.platform_foundation.internal_events.outbox import InternalEventO
 from aicrm_next.platform_foundation.internal_events.payment import PAYMENT_SUCCEEDED_EVENT_TYPE
 from aicrm_next.platform_foundation.internal_events.repository import build_internal_event_repository
 from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
-from aicrm_next.public_product import h5_wechat_pay
-from aicrm_next.public_product.h5_wechat_pay import _apply_transaction
+from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
+from aicrm_next.extensions.commerce.public_product.h5_wechat_pay import _apply_transaction
 from tests.admin_auth_test_helpers import install_admin_action_tokens
 
 
@@ -153,7 +153,7 @@ def _enable_shadow_payment_events(monkeypatch) -> None:
     monkeypatch.setenv("AICRM_INTERNAL_EVENTS_PAYMENT_DISABLE_LEGACY_AUTOMATION_DIRECT", "1")
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_WEBHOOK_EXECUTE", "0")
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES", "")
-    monkeypatch.setattr("aicrm_next.commerce.external_push_admin.resolve_and_validate_public_https_url", lambda url: url)
+    monkeypatch.setattr("aicrm_next.extensions.commerce.commerce.external_push_admin.resolve_and_validate_public_https_url", lambda url: url)
     monkeypatch.setattr(
         h5_wechat_pay,
         "enqueue_transactional_internal_event_outbox",

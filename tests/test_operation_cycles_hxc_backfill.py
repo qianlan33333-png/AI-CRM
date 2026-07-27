@@ -10,7 +10,7 @@ from types import ModuleType
 
 import pytest
 
-from aicrm_next.operation_cycles.dto import OperationCycleSnapshotV1
+from aicrm_next.extensions.hxc.operation_cycles.dto import OperationCycleSnapshotV1
 
 
 ROOT = Path(__file__).resolve().parents[1]

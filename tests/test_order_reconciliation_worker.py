@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from aicrm_next.commerce import order_reconciliation
-from aicrm_next.commerce.coupons import application as coupon_application
-from aicrm_next.commerce.order_reconciliation import WeChatPayOrderReconciliationWorker
+from aicrm_next.extensions.commerce.commerce import order_reconciliation
+from aicrm_next.extensions.commerce.commerce.coupons import application as coupon_application
+from aicrm_next.extensions.commerce.commerce.order_reconciliation import WeChatPayOrderReconciliationWorker
 from aicrm_next.integration_gateway.wechat_pay_client import (
     WeChatPayClient,
     WeChatPayClientConfig,

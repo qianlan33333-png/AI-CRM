@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.automation_agents.internal_webhook_adapter import (
+from aicrm_next.extensions.ai.automation_agents.internal_webhook_adapter import (
     AutomationAgentRoutingWebhookAdapter,
     automation_agent_code_from_webhook_url,
 )

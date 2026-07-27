@@ -18,7 +18,7 @@ def _client(monkeypatch) -> TestClient:
 
 
 def test_public_product_module_has_no_legacy_facade_markers() -> None:
-    source = "\n".join(path.read_text(encoding="utf-8") for path in (ROOT / "aicrm_next/public_product").glob("*.py"))
+    source = "\n".join(path.read_text(encoding="utf-8") for path in (ROOT / "aicrm_next/extensions/commerce/public_product").glob("*.py"))
 
     for forbidden in [
         "forward_to_legacy_flask",

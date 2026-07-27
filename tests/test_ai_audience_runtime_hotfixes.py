@@ -2,16 +2,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from aicrm_next.ai_audience_ops.constants import (
+from aicrm_next.extensions.ai.ai_audience_ops.constants import (
     AI_AUDIENCE_REFRESH_DEFAULT_ROW_LIMIT,
     AI_AUDIENCE_REFRESH_MAX_ROW_LIMIT,
 )
-from aicrm_next.ai_audience_ops.refresh_service import (
+from aicrm_next.extensions.ai.ai_audience_ops.refresh_service import (
     AI_AUDIENCE_REFRESH_QUERY_TIMEOUT_SECONDS,
     AudienceRefreshService,
 )
-from aicrm_next.ai_audience_ops.schemas import RefreshRequest
-from aicrm_next.ai_audience_ops.simple_sql import compile_simple_sql
+from aicrm_next.extensions.ai.ai_audience_ops.schemas import RefreshRequest
+from aicrm_next.extensions.ai.ai_audience_ops.simple_sql import compile_simple_sql
 from scripts.ops.ensure_ai_audience_external_api_env import ensure_allowed_prefixes
 
 
@@ -35,7 +35,7 @@ def test_huangxiaocan_member_usage_migration_casts_text_timestamps_before_coales
 
 
 def test_ai_audience_refresh_query_timeout_allows_heavier_catalog_views() -> None:
-    source = (ROOT / "aicrm_next/ai_audience_ops/refresh_service.py").read_text(encoding="utf-8")
+    source = (ROOT / "aicrm_next/extensions/ai/ai_audience_ops/refresh_service.py").read_text(encoding="utf-8")
 
     assert AI_AUDIENCE_REFRESH_QUERY_TIMEOUT_SECONDS == 120
     assert "timeout_seconds=AI_AUDIENCE_REFRESH_QUERY_TIMEOUT_SECONDS" in source
@@ -43,7 +43,7 @@ def test_ai_audience_refresh_query_timeout_allows_heavier_catalog_views() -> Non
 
 
 def test_ai_audience_refresh_defaults_to_full_platform_row_limit() -> None:
-    source = (ROOT / "aicrm_next/ai_audience_ops/refresh_service.py").read_text(encoding="utf-8")
+    source = (ROOT / "aicrm_next/extensions/ai/ai_audience_ops/refresh_service.py").read_text(encoding="utf-8")
 
     assert AI_AUDIENCE_REFRESH_DEFAULT_ROW_LIMIT == 100000
     assert AI_AUDIENCE_REFRESH_MAX_ROW_LIMIT == 100000

@@ -8,8 +8,8 @@ def test_refactor_line_growth_categories_match_slimming_plan() -> None:
     assert categorize_path("tests/test_external_effects_mvp.py") == "tests"
     assert categorize_path("docs/queue/internal-event-questionnaire-submitted.md") == "docs"
     assert categorize_path("tools/check_sql_static_guard.py") == "tools/guards"
-    assert categorize_path("aicrm_next/questionnaire/api.py") == "runtime APIs"
-    assert categorize_path("aicrm_next/questionnaire/templates/admin_console/questionnaires.html") == "templates/pages"
+    assert categorize_path("aicrm_next/extensions/forms/questionnaire/api.py") == "runtime APIs"
+    assert categorize_path("aicrm_next/extensions/forms/questionnaire/templates/admin_console/questionnaires.html") == "templates/pages"
     assert categorize_path("docs/architecture/route_ownership_manifest.yml") == "manifests/yml"
 
 
@@ -19,7 +19,7 @@ def test_refactor_line_growth_numstat_summary() -> None:
             [
                 "20\t5\tmigrations/versions/0084_id_dev_p1_baseline_tables.py",
                 "12\t2\ttests/test_external_effects_mvp.py",
-                "9\t0\taicrm_next/questionnaire/api.py",
+                "9\t0\taicrm_next/extensions/forms/questionnaire/api.py",
                 "-\t-\tassets/binary.png",
             ]
         )
@@ -28,7 +28,7 @@ def test_refactor_line_growth_numstat_summary() -> None:
     assert rows == [
         NumstatRow(added=20, deleted=5, path="migrations/versions/0084_id_dev_p1_baseline_tables.py"),
         NumstatRow(added=12, deleted=2, path="tests/test_external_effects_mvp.py"),
-        NumstatRow(added=9, deleted=0, path="aicrm_next/questionnaire/api.py"),
+        NumstatRow(added=9, deleted=0, path="aicrm_next/extensions/forms/questionnaire/api.py"),
     ]
 
     summary = summarize_rows(rows)

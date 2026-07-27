@@ -24,8 +24,8 @@ SCHEDULER_SERVICE = ROOT / "deploy" / "aicrm-job-catalog-scheduler.service"
 SCHEDULER_TIMER = ROOT / "deploy" / "aicrm-job-catalog-scheduler.timer"
 SCHEDULER_ENTRYPOINT = ROOT / "scripts" / "run_job_catalog_scheduler.py"
 RUNTIME_MANIFEST = ROOT / "deploy" / "production_runtime_units.json"
-EVENTS = ROOT / "aicrm_next" / "ai_audience_ops" / "events.py"
-INTENTS = ROOT / "aicrm_next" / "ai_audience_ops" / "refresh_intents.py"
+EVENTS = ROOT / "aicrm_next" / "extensions" / "ai" / "ai_audience_ops" / "events.py"
+INTENTS = ROOT / "aicrm_next" / "extensions" / "ai" / "ai_audience_ops" / "refresh_intents.py"
 
 
 def _code_checks() -> dict[str, bool]:

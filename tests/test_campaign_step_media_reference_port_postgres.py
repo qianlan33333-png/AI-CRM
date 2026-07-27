@@ -4,7 +4,7 @@ import os
 
 import psycopg
 
-from aicrm_next.cloud_orchestrator.campaign_step_media_port import build_campaign_step_media_reference_port
+from aicrm_next.extensions.growth.cloud_orchestrator.campaign_step_media_port import build_campaign_step_media_reference_port
 
 
 def test_campaign_step_media_cleanup_preserves_payload_and_removes_all_matching_ids(next_pg_schema) -> None:

@@ -17,7 +17,7 @@ AUTOMATION_TEMPLATES = ROOT / "aicrm_next" / "automation_engine" / "templates" /
 AUTOMATION_STATIC = ROOT / "aicrm_next" / "automation_engine" / "static" / "admin_console"
 CUSTOMER_TAGS_TEMPLATES = ROOT / "aicrm_next" / "customer_tags" / "templates" / "admin_console"
 CUSTOMER_TAGS_STATIC = ROOT / "aicrm_next" / "customer_tags" / "static" / "admin_console"
-RADAR_TEMPLATES = ROOT / "aicrm_next" / "radar_links" / "templates" / "admin_console"
+RADAR_TEMPLATES = ROOT / "aicrm_next" / "extensions" / "radar" / "radar_links" / "templates" / "admin_console"
 
 
 def _client(monkeypatch) -> TestClient:
@@ -56,10 +56,10 @@ def test_channel_radar_and_tag_pages_are_served_by_next_native_routers(monkeypat
         "api.admin_channels_page": "aicrm_next.automation_engine.channel_admin_pages",
         "api.admin_channel_new_page": "aicrm_next.automation_engine.channel_admin_pages",
         "api.admin_channel_edit_page": "aicrm_next.automation_engine.channel_admin_pages",
-        "api.admin_radar_links": "aicrm_next.radar_links.admin_pages",
-        "api.admin_radar_link_new": "aicrm_next.radar_links.admin_pages",
-        "api.admin_radar_link_edit": "aicrm_next.radar_links.admin_pages",
-        "api.admin_radar_link_detail": "aicrm_next.radar_links.admin_pages",
+        "api.admin_radar_links": "aicrm_next.extensions.radar.radar_links.admin_pages",
+        "api.admin_radar_link_new": "aicrm_next.extensions.radar.radar_links.admin_pages",
+        "api.admin_radar_link_edit": "aicrm_next.extensions.radar.radar_links.admin_pages",
+        "api.admin_radar_link_detail": "aicrm_next.extensions.radar.radar_links.admin_pages",
         "api.admin_wecom_tags_page": "aicrm_next.customer_tags.admin_pages",
     }
 

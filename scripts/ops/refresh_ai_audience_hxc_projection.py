@@ -4,7 +4,7 @@ import argparse
 import json
 from typing import Sequence
 
-from aicrm_next.ai_audience_ops.hxc_projection import (
+from aicrm_next.extensions.ai.ai_audience_ops.hxc_projection import (
     HxcMemberUsageProjectionService,
 )
 

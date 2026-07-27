@@ -6,8 +6,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.public_product import h5_wechat_pay
-from aicrm_next.questionnaire.oauth import reset_questionnaire_oauth_state
+from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
+from aicrm_next.extensions.forms.questionnaire.oauth import reset_questionnaire_oauth_state
 
 
 WECHAT_UA = "Mozilla/5.0 MicroMessenger/8.0.49"

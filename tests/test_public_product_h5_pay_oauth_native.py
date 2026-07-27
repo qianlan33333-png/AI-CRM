@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 
 from aicrm_next.integration_gateway.wechat_oauth_client import WeChatOAuthClientError
 from aicrm_next.main import create_app
-from aicrm_next.public_product import h5_wechat_pay
+from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
 
 
 def _client(monkeypatch) -> TestClient:
@@ -644,7 +644,7 @@ def test_empty_material_checkout_oauth_round_trip_enters_pay_without_auth_loop(m
 
 
 def test_h5_pay_runtime_has_no_legacy_oauth_helper() -> None:
-    source = Path("aicrm_next/public_product/h5_wechat_pay.py").read_text(encoding="utf-8")
+    source = Path("aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py").read_text(encoding="utf-8")
     forbidden = [
         "wecom_ability" + "_service.infra." + "wechat_oauth",
         "exchange_wechat_" + "oauth_code",

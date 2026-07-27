@@ -89,15 +89,37 @@ def validate_domain_migration_contract(root: Path = ROOT) -> list[str]:
         errors.append("logical domain dependency graph must remain acyclic")
 
     physical = dict(policy.get("physical_moves") or {})
-    if physical.get("enabled") is False:
-        target_packages = set(stable) | {"extensions"}
-        unexpected = sorted(
-            name
-            for name in target_packages
-            if (root / "aicrm_next" / name).is_dir()
-        )
-        if unexpected:
-            errors.append("physical domain packages appeared before inversion gate: " + ", ".join(unexpected))
+    target_domains = [*stable, "extensions"]
+    completed = list(physical.get("completed_domains") or [])
+    pending = list(physical.get("pending_domains") or [])
+    if physical.get("enabled") is not True:
+        errors.append("physical_moves.enabled must be true after the dependency-inversion production gate")
+    if len(completed) != len(set(completed)) or len(pending) != len(set(pending)):
+        errors.append("physical move domain lists must contain unique values")
+    if set(completed) | set(pending) != set(target_domains) or set(completed) & set(pending):
+        errors.append("completed and pending physical domains must partition the approved domains")
+    if [domain for domain in target_domains if domain in completed] != completed:
+        errors.append("completed physical domains must follow the approved domain order")
+    if [domain for domain in target_domains if domain in pending] != pending:
+        errors.append("pending physical domains must follow the approved domain order")
+
+    package_root = root / "aicrm_next"
+    for spec in CAPABILITY_SPECS:
+        domain = spec.logical_domain
+        target_root = root.joinpath(*spec.package_root.split("."))
+        for context in spec.current_contexts:
+            legacy_path = package_root / context
+            target_path = target_root / context
+            if domain in completed:
+                if legacy_path.exists():
+                    errors.append(f"{context}: legacy top-level package remains after {domain} move")
+                if not target_path.is_dir():
+                    errors.append(f"{context}: completed {domain} package is missing at {target_path.relative_to(root)}")
+            elif domain in pending:
+                if not legacy_path.is_dir():
+                    errors.append(f"{context}: pending {domain} context moved without completing its domain")
+                if target_path.exists():
+                    errors.append(f"{context}: pending {domain} target package appeared early")
     return errors
 
 

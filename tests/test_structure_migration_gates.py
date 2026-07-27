@@ -11,8 +11,25 @@ from tools.check_legacy_cleanup_contract import validate_legacy_cleanup_contract
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_domain_migration_contract_preserves_logical_targets_without_premature_move() -> None:
+def test_domain_migration_contract_preserves_logical_targets_during_physical_move() -> None:
     assert validate_domain_migration_contract(ROOT) == []
+
+
+def test_extensions_are_the_only_completed_physical_domain() -> None:
+    policy = yaml.safe_load((ROOT / "docs/architecture/domain_migration_policy.yml").read_text(encoding="utf-8"))
+    physical = policy["physical_moves"]
+
+    assert physical["enabled"] is True
+    assert physical["completed_domains"] == ["extensions"]
+    assert physical["pending_domains"] == [
+        "app",
+        "platform",
+        "crm",
+        "channels",
+        "engagement",
+        "automation",
+        "insights",
+    ]
 
 
 def test_domain_dependency_direction_has_one_explicit_acyclic_policy() -> None:

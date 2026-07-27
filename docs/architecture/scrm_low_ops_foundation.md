@@ -1,8 +1,8 @@
 # AI-CRM low-operations SCRM foundation
 
-This change establishes the control plane for the seven-domain modular
-monolith. It intentionally does not perform a production runtime cutover,
-physical package move, legacy table deletion, or real provider call.
+This document tracks the control plane and staged physical migration for the
+seven-domain modular monolith. Physical movement is isolated by release from
+runtime cutovers, legacy table deletion, and real provider calls.
 
 ## Implemented and active
 
@@ -130,9 +130,15 @@ physical package move, legacy table deletion, or real provider call.
   inject the concrete owners for web, callback, internal-worker,
   external-worker, and identity-backfill entrypoints; missing composition fails
   closed. The ratcheted context graph is 110 edges with zero cycles.
-- Architecture gates forbid premature physical moves and legacy table drops
-  without 30 days of zero-read/write evidence, verified export, rollback
-  rehearsal, successor ownership, and approval.
+- The optional capability contexts have completed their first physical move
+  under `aicrm_next.extensions.<pack>`. The registry publishes each capability's
+  `package_root`, the import scanner preserves the existing 40 logical context
+  IDs across the new layout, and disabled packs still fail closed at router,
+  consumer, effect, adapter, and job composition boundaries. HTTP paths, event
+  names, effect types, table owners, and runtime roles are unchanged.
+- Architecture gates permit only policy-declared physical moves and continue to
+  block legacy table drops without 30 days of zero-read/write evidence,
+  verified export, rollback rehearsal, successor ownership, and approval.
 
 ## Production profile enforcement and compatibility
 
@@ -167,8 +173,9 @@ its separate reviewed timer and stays `observe_only` in the catalog.
   `admin_config`, publishing the management shell as a static app contract, and
   routing provider and owner dependencies through versioned consumer-owned
   ports. The target of 120 is exceeded with margin without introducing a broker
-  or runtime plugin system. Physical directory moves remain a separate release
-  so this dependency-inversion batch can be promoted and observed independently.
+  or runtime plugin system. The `extensions` move is the first independent
+  physical-directory release; the seven core domains remain at their legacy
+  physical paths until their own separately verified batches.
 - The five canonical SCRM contracts are stable integration seams; existing
   identity, audience, content, campaign, and receipt tables are not bulk-moved
   or dual-written by this change.
@@ -182,8 +189,9 @@ its separate reviewed timer and stays `observe_only` in the catalog.
 
 1. Keep the predecessor release as the immediate rollback target and verify the
    enforced scheduler owner with the release-bound read-only diagnostic.
-2. Move physical packages into the seven stable domains only after public-port
-   imports remain within the dependency baseline.
+2. Move the seven core physical domains in separate batches only while public-
+   port imports remain within the dependency baseline; do not combine those
+   releases with table drops or runtime-owner cutovers.
 3. Run the 1,200 callbacks/minute acceptance test and start the 30-day
    zero-read/write clock for each legacy table only after its successor owner
    is authoritative.

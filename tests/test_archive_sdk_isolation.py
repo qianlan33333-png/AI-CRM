@@ -7,11 +7,11 @@ from pathlib import Path
 
 import pytest
 
-from aicrm_next.message_archive import archive_sdk
+from aicrm_next.extensions.archive.message_archive import archive_sdk
 
 
 ROOT = Path(__file__).resolve().parents[1]
-HELPER = ROOT / "aicrm_next" / "message_archive" / "sdk_subprocess.py"
+HELPER = ROOT / "aicrm_next" / "extensions" / "archive" / "message_archive" / "sdk_subprocess.py"
 
 
 def test_fetch_runs_vendor_sdk_in_framed_subprocess(monkeypatch) -> None:

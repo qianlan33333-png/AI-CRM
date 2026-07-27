@@ -25,10 +25,10 @@ def test_shell_owned_pages_do_not_repeat_the_shell_title_as_first_card_heading()
 
 def test_automation_agent_pages_leave_the_single_h1_to_admin_shell() -> None:
     list_template = _read(
-        "aicrm_next/automation_agents/templates/admin_console/automation_agent_list.html"
+        "aicrm_next/extensions/ai/automation_agents/templates/admin_console/automation_agent_list.html"
     )
     edit_template = _read(
-        "aicrm_next/automation_agents/templates/admin_console/automation_agent_edit.html"
+        "aicrm_next/extensions/ai/automation_agents/templates/admin_console/automation_agent_edit.html"
     )
 
     assert "<h1" not in list_template

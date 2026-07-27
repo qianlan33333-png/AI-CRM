@@ -140,7 +140,7 @@ Expected diagnostics:
 
 ### `payment.succeeded`
 
-- 写路径：`aicrm_next/public_product/h5_wechat_pay.py` 的 WeChat Pay notify /
+- 写路径：`aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py` 的 WeChat Pay notify /
   order paid closeout path。
 - event schema：`event_type=payment.succeeded`,
   `aggregate_type=wechat_pay_order`, `aggregate_id=order.id || out_trade_no`,
@@ -156,7 +156,7 @@ Expected diagnostics:
 
 ### `questionnaire.submitted`
 
-- 写路径：`aicrm_next/questionnaire/h5_write.py`，H5 submit 持久化成功后
+- 写路径：`aicrm_next/extensions/forms/questionnaire/h5_write.py`，H5 submit 持久化成功后
   `safe_emit(emit_questionnaire_submitted_shadow_event, ...)`。
 - event schema：`event_type=questionnaire.submitted`,
   `aggregate_type=questionnaire_submission`, `aggregate_id=submission_id`,
@@ -203,7 +203,7 @@ Expected diagnostics:
 
 ### `ai_campaign.created` / `ai_campaign.approved` / `ai_campaign.started`
 
-- 写路径：`aicrm_next/cloud_orchestrator/campaigns_write.py`，
+- 写路径：`aicrm_next/extensions/growth/cloud_orchestrator/campaigns_write.py`，
   create / approve / start command 成功后 emit。
 - event schema：`aggregate_type=ai_campaign`, `aggregate_id=campaign_code`,
   `subject_type=ai_campaign`, `subject_id=campaign_code`,
@@ -218,7 +218,7 @@ Expected diagnostics:
 
 ### `ops_plan.approved`
 
-- 写路径：`aicrm_next/cloud_orchestrator/application.py`，
+- 写路径：`aicrm_next/extensions/growth/cloud_orchestrator/application.py`，
   `ApproveCloudPlanCommand.execute` 审批成功后 emit。
 - event schema：`event_type=ops_plan.approved`,
   `aggregate_type=cloud_orchestrator_plan`, `aggregate_id=plan_id`,
@@ -236,7 +236,7 @@ Expected diagnostics:
 ### `broadcast_task.created`
 
 - 写路径：
-  `aicrm_next/cloud_orchestrator/application.py`,
+  `aicrm_next/extensions/growth/cloud_orchestrator/application.py`,
   `aicrm_next/automation_engine/group_ops/action_dispatcher.py`,
   `aicrm_next/integration_gateway/wecom_group_adapter.py`,
   AI Audience outbound planner / external_effect_job。

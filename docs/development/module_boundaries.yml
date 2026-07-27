@@ -76,14 +76,14 @@ legacy_allowlist:
     reason: Historical audit payload field confirms this adapter does not change retired compatibility runtime.
     matches:
       - '"production_compat_changed": False,'
-  - path: aicrm_next/questionnaire/external_submit_adapter.py
+  - path: aicrm_next/extensions/forms/questionnaire/external_submit_adapter.py
     rule: forbidden_legacy_marker
     marker: production_compat
     owner: questionnaire
     reason: Historical audit payload field confirms this adapter does not change retired compatibility runtime.
     matches:
       - '"production_compat_changed": False,'
-  - path: aicrm_next/questionnaire/external_submit_live_adapter.py
+  - path: aicrm_next/extensions/forms/questionnaire/external_submit_live_adapter.py
     rule: forbidden_legacy_marker
     marker: production_compat
     owner: questionnaire

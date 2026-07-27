@@ -15,7 +15,7 @@ from aicrm_next.background_jobs.broadcast_queue_worker import (
     PostgresBroadcastQueueRepository,
     SafeSkippedBroadcastDispatcher,
 )
-from aicrm_next.cloud_orchestrator.repository import PostgresCloudPlanRepository
+from aicrm_next.extensions.growth.cloud_orchestrator.repository import PostgresCloudPlanRepository
 from aicrm_next.platform_foundation.external_effects.repo import SQLAlchemyExternalEffectRepository
 
 

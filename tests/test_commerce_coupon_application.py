@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 import pytest
 from pydantic import ValidationError
 
-from aicrm_next.commerce.coupons.application import (
+from aicrm_next.extensions.commerce.commerce.coupons.application import (
     CouponAdminApplication,
     CouponPublicApplication,
     assert_product_price_allows_coupons,
@@ -19,9 +19,9 @@ from aicrm_next.commerce.coupons.application import (
     reserve_coupon_for_order,
     target_ref_for_product_id,
 )
-from aicrm_next.commerce.coupons.domain import CouponChoiceMode, CouponClaimStatus
-from aicrm_next.commerce.coupons.dto import CouponUpsertRequest
-from aicrm_next.commerce.coupons.repo import InMemoryCouponRepository, PostgresCouponRepository
+from aicrm_next.extensions.commerce.commerce.coupons.domain import CouponChoiceMode, CouponClaimStatus
+from aicrm_next.extensions.commerce.commerce.coupons.dto import CouponUpsertRequest
+from aicrm_next.extensions.commerce.commerce.coupons.repo import InMemoryCouponRepository, PostgresCouponRepository
 from aicrm_next.shared.errors import ContractError
 
 
@@ -95,7 +95,7 @@ def test_target_ref_is_signed_round_trippable_and_rejects_tampering(monkeypatch)
 
 
 def test_target_ref_fails_closed_without_production_signing_secret(monkeypatch) -> None:
-    from aicrm_next.commerce.coupons import target_refs
+    from aicrm_next.extensions.commerce.commerce.coupons import target_refs
 
     monkeypatch.setattr(target_refs, "runtime_setting", lambda *_args, **_kwargs: "")
     monkeypatch.setattr(target_refs, "production_environment", lambda: True)

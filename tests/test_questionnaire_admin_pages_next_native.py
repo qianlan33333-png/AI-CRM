@@ -80,10 +80,10 @@ def test_questionnaire_admin_pages_are_removed_from_frontend_compat_routes() -> 
 def test_questionnaire_admin_templates_live_in_questionnaire_bundle() -> None:
     root = Path(__file__).resolve().parents[1]
 
-    assert (root / "aicrm_next/questionnaire/templates/admin_console/questionnaires.html").exists()
-    assert (root / "aicrm_next/questionnaire/templates/admin_questionnaires.html").exists()
-    assert (root / "aicrm_next/questionnaire/static/admin_questionnaire_editor.css").exists()
-    assert (root / "aicrm_next/questionnaire/static/admin_questionnaire_editor.js").exists()
+    assert (root / "aicrm_next/extensions/forms/questionnaire/templates/admin_console/questionnaires.html").exists()
+    assert (root / "aicrm_next/extensions/forms/questionnaire/templates/admin_questionnaires.html").exists()
+    assert (root / "aicrm_next/extensions/forms/questionnaire/static/admin_questionnaire_editor.css").exists()
+    assert (root / "aicrm_next/extensions/forms/questionnaire/static/admin_questionnaire_editor.js").exists()
     assert not (root / "aicrm_next/frontend_compat/templates/admin_console/questionnaires.html").exists()
     assert not (root / "aicrm_next/frontend_compat/templates/admin_questionnaires.html").exists()
 
@@ -109,14 +109,14 @@ def test_questionnaire_operations_page_owns_completion_and_external_push_ui() ->
     assert "测试推送" in page.text
     assert "/static/navigation-target/completion_target_config.js" in page.text
 
-    operations_script = (root / "aicrm_next/questionnaire/static/questionnaire_operations.js").read_text(encoding="utf-8")
+    operations_script = (root / "aicrm_next/extensions/forms/questionnaire/static/questionnaire_operations.js").read_text(encoding="utf-8")
     assert 'document.addEventListener("DOMContentLoaded", initialize' in operations_script
     assert 'document.readyState === "loading" || !window.AdminApi' in operations_script
     assert "const api = window.AdminApi;" in operations_script
     assert '$("qo-legacy-appid").textContent' in operations_script
     assert '$("qo-legacy-path").textContent' in operations_script
 
-    editor_script = (root / "aicrm_next/questionnaire/static/admin_questionnaire_editor.js").read_text(encoding="utf-8")
+    editor_script = (root / "aicrm_next/extensions/forms/questionnaire/static/admin_questionnaire_editor.js").read_text(encoding="utf-8")
     assert "completion_target" not in editor_script
     assert "external_push" not in editor_script
     assert "field-external-push" not in editor_script
@@ -124,12 +124,12 @@ def test_questionnaire_operations_page_owns_completion_and_external_push_ui() ->
     assert "editor-external-push-logs-btn" not in editor_script
     assert "/admin/questionnaires/external-push-logs" not in editor_script
 
-    product_template = (root / "aicrm_next/commerce/templates/wechat_products.html").read_text(encoding="utf-8")
+    product_template = (root / "aicrm_next/extensions/commerce/commerce/templates/wechat_products.html").read_text(encoding="utf-8")
     assert "/static/navigation-target/completion_target_config.js" in product_template
     assert "window.AICRMCompletionTargetConfig.mount" in product_template
 
     public_template = (root / "aicrm_next/frontend_compat/templates/questionnaire_h5_page.html").read_text(encoding="utf-8")
-    public_completion_script = (root / "aicrm_next/questionnaire/static/questionnaire_completion_action.js").read_text(encoding="utf-8")
+    public_completion_script = (root / "aicrm_next/extensions/forms/questionnaire/static/questionnaire_completion_action.js").read_text(encoding="utf-8")
     assert "/static/questionnaire/questionnaire_completion_action.js" in public_template
     assert "AICRMQuestionnaireCompletionAction.create" in public_template
     assert 'action.type === "lead_qr"' in public_completion_script

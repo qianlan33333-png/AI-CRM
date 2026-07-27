@@ -97,8 +97,8 @@ repositories:
       - wecom_external_contact_identity_map
     optional_relations:
       - reply_message_batch
-  aicrm_next/ai_assist/external_campaigns_repo.py:
-    capability_owner: aicrm_next.ai_assist
+  aicrm_next/extensions/ai/ai_assist/external_campaigns_repo.py:
+    capability_owner: aicrm_next.extensions.ai.ai_assist
     table_reads:
       - broadcast_jobs
       - campaign_members
@@ -121,8 +121,8 @@ repositories:
     table_writes: []
     non_literal_table_reads:
       - crm_user_identity
-  aicrm_next/ai_audience_ops/repository.py:
-    capability_owner: aicrm_next.ai_audience_ops
+  aicrm_next/extensions/ai/ai_audience_ops/repository.py:
+    capability_owner: aicrm_next.extensions.ai.ai_audience_ops
     non_literal_table_reads:
       - ai_audience_package_version
     non_literal_table_writes:
@@ -152,8 +152,8 @@ repositories:
       - ai_audience_package_run
       - ai_audience_package_sender
       - ai_audience_package_version
-  aicrm_next/automation_agents/repository.py:
-    capability_owner: aicrm_next.automation_agents
+  aicrm_next/extensions/ai/automation_agents/repository.py:
+    capability_owner: aicrm_next.extensions.ai.automation_agents
     table_reads:
       - ai_audience_member_current
       - ai_audience_member_event
@@ -284,7 +284,7 @@ repositories:
     table_writes:
       - broadcast_jobs
   aicrm_next/platform_foundation/background_jobs/cloud_broadcast_projection_write_repository.py:
-    capability_owner: aicrm_next.cloud_orchestrator
+    capability_owner: aicrm_next.extensions.growth.cloud_orchestrator
     table_reads:
       - broadcast_jobs
       - cloud_broadcast_plan_recipient_messages
@@ -368,8 +368,8 @@ repositories:
     table_writes:
       - channel_welcome_effect_dependency
       - channel_welcome_effect_graph
-  aicrm_next/cloud_orchestrator/repository.py:
-    capability_owner: aicrm_next.cloud_orchestrator
+  aicrm_next/extensions/growth/cloud_orchestrator/repository.py:
+    capability_owner: aicrm_next.extensions.growth.cloud_orchestrator
     table_reads:
       - broadcast_jobs
       - campaign_members
@@ -393,14 +393,14 @@ repositories:
       - campaigns
     non_table_relations:
       - customer_read_model_current
-  aicrm_next/cloud_orchestrator/campaign_step_media_repository.py:
-    capability_owner: aicrm_next.cloud_orchestrator
+  aicrm_next/extensions/growth/cloud_orchestrator/campaign_step_media_repository.py:
+    capability_owner: aicrm_next.extensions.growth.cloud_orchestrator
     table_reads:
       - campaign_steps
     table_writes:
       - campaign_steps
-  aicrm_next/commerce/repo.py:
-    capability_owner: aicrm_next.commerce
+  aicrm_next/extensions/commerce/commerce/repo.py:
+    capability_owner: aicrm_next.extensions.commerce.commerce
     table_reads:
       - automation_channel
       - automation_channel_qrcode_asset
@@ -417,8 +417,8 @@ repositories:
       - external_push_config
       - wechat_pay_product_page_slices
       - wechat_pay_products
-  aicrm_next/commerce/coupons/repo.py:
-    capability_owner: aicrm_next.commerce.coupons
+  aicrm_next/extensions/commerce/commerce/coupons/repo.py:
+    capability_owner: aicrm_next.extensions.commerce.commerce.coupons
     table_reads:
       - commerce_coupon_claims
       - commerce_coupon_product_bindings
@@ -432,8 +432,8 @@ repositories:
       - commerce_coupon_product_bindings
       - commerce_coupon_redemptions
       - commerce_coupons
-  aicrm_next/commerce/wechat_pay_order_write_repository.py:
-    capability_owner: aicrm_next.commerce.wechat_pay_service
+  aicrm_next/extensions/commerce/commerce/wechat_pay_order_write_repository.py:
+    capability_owner: aicrm_next.extensions.commerce.commerce.wechat_pay_service
     table_reads:
       - wechat_pay_orders
     table_writes:
@@ -521,8 +521,8 @@ repositories:
     table_writes:
       - domain_event_outbox
       - external_push_delivery
-  aicrm_next/hxc_dashboard/postgres_repo.py:
-    capability_owner: aicrm_next.hxc_dashboard
+  aicrm_next/extensions/hxc/hxc_dashboard/postgres_repo.py:
+    capability_owner: aicrm_next.extensions.hxc.hxc_dashboard
     table_reads:
       - crm_user_identity
       - hxc_dashboard_broadcast_tasks
@@ -533,8 +533,8 @@ repositories:
       - hxc_dashboard_broadcast_tasks
     non_table_relations:
       - snapshot_identity
-  aicrm_next/hxc_dashboard/repo.py:
-    capability_owner: aicrm_next.hxc_dashboard
+  aicrm_next/extensions/hxc/hxc_dashboard/repo.py:
+    capability_owner: aicrm_next.extensions.hxc.hxc_dashboard
     table_reads: []
     table_writes: []
   aicrm_next/identity_contact/oauth_projection_repo.py:
@@ -601,8 +601,8 @@ repositories:
     capability_owner: aicrm_next.media_library
     table_reads: []
     table_writes: []
-  aicrm_next/message_archive/repo.py:
-    capability_owner: aicrm_next.message_archive
+  aicrm_next/extensions/archive/message_archive/repo.py:
+    capability_owner: aicrm_next.extensions.archive.message_archive
     table_reads:
       - app_settings
       - archive_sync_state
@@ -822,12 +822,12 @@ repositories:
       - webhook_inbox
     table_writes:
       - webhook_inbox
-  aicrm_next/public_product/repo.py:
-    capability_owner: aicrm_next.public_product
+  aicrm_next/extensions/commerce/public_product/repo.py:
+    capability_owner: aicrm_next.extensions.commerce.public_product
     table_reads: []
     table_writes: []
-  aicrm_next/questionnaire/repo.py:
-    capability_owner: aicrm_next.questionnaire
+  aicrm_next/extensions/forms/questionnaire/repo.py:
+    capability_owner: aicrm_next.extensions.forms.questionnaire
     table_reads:
       - app_settings
       - crm_user_identity
@@ -847,8 +847,8 @@ repositories:
       - questionnaires
     non_literal_table_reads:
       - app_settings
-  aicrm_next/radar_links/repo.py:
-    capability_owner: aicrm_next.radar_links
+  aicrm_next/extensions/radar/radar_links/repo.py:
+    capability_owner: aicrm_next.extensions.radar.radar_links
     table_reads:
       - crm_user_identity
       - radar_click_events
@@ -872,8 +872,8 @@ repositories:
     capability_owner: aicrm_next.send_content
     table_reads: []
     table_writes: []
-  aicrm_next/service_period/member_grid_repo.py:
-    capability_owner: aicrm_next.service_period
+  aicrm_next/extensions/commerce/service_period/member_grid_repo.py:
+    capability_owner: aicrm_next.extensions.commerce.service_period
     table_reads:
       - crm_user_identity
       - service_period_entitlements
@@ -884,16 +884,16 @@ repositories:
       - wecom_external_contact_identity_map
     table_writes:
       - service_period_member_views
-  aicrm_next/service_period/member_grid_access_repo.py:
-    capability_owner: aicrm_next.service_period
+  aicrm_next/extensions/commerce/service_period/member_grid_access_repo.py:
+    capability_owner: aicrm_next.extensions.commerce.service_period
     table_reads:
       - service_period_member_collaborators
       - service_period_member_shares
     table_writes:
       - service_period_member_collaborators
       - service_period_member_shares
-  aicrm_next/service_period/repo.py:
-    capability_owner: aicrm_next.service_period
+  aicrm_next/extensions/commerce/service_period/repo.py:
+    capability_owner: aicrm_next.extensions.commerce.service_period
     table_reads:
       - crm_user_identity
       - service_period_entitlements
@@ -919,8 +919,8 @@ repositories:
     table_writes: []
     non_literal_table_reads:
       - crm_user_identity
-  aicrm_next/operation_cycles/repository.py:
-    capability_owner: aicrm_next.operation_cycles
+  aicrm_next/extensions/hxc/operation_cycles/repository.py:
+    capability_owner: aicrm_next.extensions.hxc.operation_cycles
     table_reads:
       - operation_cycle_references
       - operation_cycle_runs

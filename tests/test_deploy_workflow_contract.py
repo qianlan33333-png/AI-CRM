@@ -1223,7 +1223,7 @@ def test_due_runner_scripts_share_int_env_reader():
     external_push_worker = (ROOT / "scripts" / "run_external_push_worker.py").read_text(encoding="utf-8")
     internal_event_worker = (ROOT / "scripts" / "run_internal_event_worker.py").read_text(encoding="utf-8")
     ai_audience_scheduler = (ROOT / "scripts" / "run_ai_audience_scheduler.py").read_text(encoding="utf-8")
-    ai_audience_scheduler_runtime = (ROOT / "aicrm_next" / "ai_audience_ops" / "scheduler.py").read_text(encoding="utf-8")
+    ai_audience_scheduler_runtime = (ROOT / "aicrm_next" / "extensions" / "ai" / "ai_audience_ops" / "scheduler.py").read_text(encoding="utf-8")
 
     assert not (ROOT / "scripts" / "run_automation_sop.py").exists()
     assert 'read_int_env("EXTERNAL_PUSH_WORKER_BATCH_SIZE", DEFAULT_BATCH_SIZE)' in external_push_worker

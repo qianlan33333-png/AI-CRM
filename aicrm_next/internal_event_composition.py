@@ -3,9 +3,9 @@ from __future__ import annotations
 from functools import partial
 
 from .capability_registry import capability_for_event_type
-from .commerce.external_push_admin import plan_order_paid_external_push_effect
-from .commerce.repo import execute_commerce_transaction
-from .commerce.payment_tagging import (
+from .extensions.commerce.commerce.external_push_admin import plan_order_paid_external_push_effect
+from .extensions.commerce.commerce.repo import execute_commerce_transaction
+from .extensions.commerce.commerce.payment_tagging import (
     product_paid_wecom_tag_consumer,
     resolve_payment_tag_identity,
 )
@@ -18,18 +18,18 @@ from .external_effect_composition import (
     build_external_effect_continuation_registry,
     build_external_effect_settlement_consumers,
 )
-from .ai_audience_ops import register_ai_audience_event_consumers
+from .extensions.ai.ai_audience_ops import register_ai_audience_event_consumers
 from .customer_read_model.events import register_customer_read_model_event_consumers
-from .cloud_orchestrator.repository import build_cloud_plan_repository
-from .questionnaire.event_consumers import (
+from .extensions.growth.cloud_orchestrator.repository import build_cloud_plan_repository
+from .extensions.forms.questionnaire.event_consumers import (
     automation_questionnaire_consumer,
     customer_summary_consumer,
     questionnaire_projection_consumer,
     questionnaire_tag_consumer,
     questionnaire_webhook_consumer,
 )
-from .service_period.payment_consumer import service_period_entitlement_consumer
-from .service_period.refund_consumer import service_period_refund_consumer
+from .extensions.commerce.service_period.payment_consumer import service_period_entitlement_consumer
+from .extensions.commerce.service_period.refund_consumer import service_period_refund_consumer
 from .platform_foundation.internal_events.shadow import broadcast_task_planner_consumer
 from .platform_foundation.internal_events.payment import webhook_order_paid_consumer
 from .platform_foundation.external_effects.completion_events import (

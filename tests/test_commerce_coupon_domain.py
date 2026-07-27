@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 import pytest
 from pydantic import ValidationError
 
-from aicrm_next.commerce.coupons import (
+from aicrm_next.extensions.commerce.commerce.coupons import (
     CouponChoice,
     CouponClaimStatus,
     CouponDisplayState,
