@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from aicrm_next.cloud_orchestrator.campaign_step_media_port import build_campaign_step_media_reference_port
+from aicrm_next.extensions.growth.cloud_orchestrator.campaign_step_media_port import build_campaign_step_media_reference_port
 
 
 class _Executor:

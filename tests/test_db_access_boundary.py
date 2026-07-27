@@ -258,21 +258,21 @@ def test_db_access_boundary_no_longer_allowlists_commerce_admin_db_helpers() -> 
 
     allowlisted_paths = {entry["path"] for entry in config["temporary_allowlist"]}
 
-    assert "aicrm_next/commerce/admin_refunds.py" not in allowlisted_paths
-    assert "aicrm_next/commerce/admin_transaction_detail.py" not in allowlisted_paths
-    assert "aicrm_next/commerce/admin_transactions.py" not in allowlisted_paths
-    assert "aicrm_next/commerce/admin_webhooks.py" not in allowlisted_paths
-    assert "aicrm_next/commerce/external_push_admin.py" not in allowlisted_paths
-    assert "aicrm_next/commerce/wechat_shop_service.py" not in allowlisted_paths
+    assert "aicrm_next/extensions/commerce/commerce/admin_refunds.py" not in allowlisted_paths
+    assert "aicrm_next/extensions/commerce/commerce/admin_transaction_detail.py" not in allowlisted_paths
+    assert "aicrm_next/extensions/commerce/commerce/admin_transactions.py" not in allowlisted_paths
+    assert "aicrm_next/extensions/commerce/commerce/admin_webhooks.py" not in allowlisted_paths
+    assert "aicrm_next/extensions/commerce/commerce/external_push_admin.py" not in allowlisted_paths
+    assert "aicrm_next/extensions/commerce/commerce/wechat_shop_service.py" not in allowlisted_paths
 
 
 def test_db_access_boundary_no_longer_allowlists_public_product_h5_wechat_pay() -> None:
     config = load_config(Path("docs/architecture/db_access_boundary.yml"))
 
     allowlisted_paths = {entry["path"] for entry in config["temporary_allowlist"]}
-    source = Path("aicrm_next/public_product/h5_wechat_pay.py").read_text(encoding="utf-8")
+    source = Path("aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py").read_text(encoding="utf-8")
 
-    assert "aicrm_next/public_product/h5_wechat_pay.py" not in allowlisted_paths
+    assert "aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py" not in allowlisted_paths
     assert "psycopg.connect" not in source
 
 
@@ -294,11 +294,11 @@ def test_db_access_boundary_no_longer_allowlists_channel_archive_or_operation_me
 
     allowlisted_paths = {entry["path"] for entry in config["temporary_allowlist"]}
     channels_source = Path("aicrm_next/automation_engine/channels_api.py").read_text(encoding="utf-8")
-    archive_source = Path("aicrm_next/message_archive/sync_service.py").read_text(encoding="utf-8")
+    archive_source = Path("aicrm_next/extensions/archive/message_archive/sync_service.py").read_text(encoding="utf-8")
     operation_members_source = Path("aicrm_next/common_operation_members.py").read_text(encoding="utf-8")
 
     assert "aicrm_next/automation_engine/channels_api.py" not in allowlisted_paths
-    assert "aicrm_next/message_archive/sync_service.py" not in allowlisted_paths
+    assert "aicrm_next/extensions/archive/message_archive/sync_service.py" not in allowlisted_paths
     assert "aicrm_next/common_operation_members.py" not in allowlisted_paths
     assert "psycopg.connect" not in channels_source
     assert "psycopg.connect" not in archive_source
@@ -310,8 +310,8 @@ def test_db_access_boundary_temporary_allowlist_is_empty() -> None:
 
     assert config["temporary_allowlist"] == []
     for path in (
-        "aicrm_next/cloud_orchestrator/campaigns_read.py",
-        "aicrm_next/hxc_dashboard/postgres_repo.py",
+        "aicrm_next/extensions/growth/cloud_orchestrator/campaigns_read.py",
+        "aicrm_next/extensions/hxc/hxc_dashboard/postgres_repo.py",
         "aicrm_next/media_library/postgres_repo.py",
         "aicrm_next/shared/postgres_connection.py",
     ):

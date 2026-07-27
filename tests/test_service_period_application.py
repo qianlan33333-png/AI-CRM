@@ -5,11 +5,11 @@ from datetime import datetime, timezone
 
 import pytest
 
-from aicrm_next.commerce.repo import PostgresCommerceRepository, reset_commerce_fixture_state
+from aicrm_next.extensions.commerce.commerce.repo import PostgresCommerceRepository, reset_commerce_fixture_state
 from aicrm_next.identity_contact.dto import IdentityResolution, IdentityResolveResult
-from aicrm_next.service_period import repo as service_period_repo
-from aicrm_next.service_period.huangyoucan_usage import huangyoucan_usage_match_joins
-from aicrm_next.service_period.application import (
+from aicrm_next.extensions.commerce.service_period import repo as service_period_repo
+from aicrm_next.extensions.commerce.service_period.huangyoucan_usage import huangyoucan_usage_match_joins
+from aicrm_next.extensions.commerce.service_period.application import (
     ApplyServicePeriodRefundCommand,
     CreateServicePeriodProductCommand,
     ExpireDueEntitlementsCommand,
@@ -18,8 +18,8 @@ from aicrm_next.service_period.application import (
     UpdateServicePeriodMemberAllianceCommand,
     UpdateServicePeriodMemberRemarkCommand,
 )
-from aicrm_next.service_period.dto import ServicePeriodProductCreateRequest
-from aicrm_next.service_period.repo import PostgresServicePeriodRepository, build_service_period_repository, reset_service_period_fixture_state
+from aicrm_next.extensions.commerce.service_period.dto import ServicePeriodProductCreateRequest
+from aicrm_next.extensions.commerce.service_period.repo import PostgresServicePeriodRepository, build_service_period_repository, reset_service_period_fixture_state
 from wechat_identity_test_support import authorize_wechat_client
 
 

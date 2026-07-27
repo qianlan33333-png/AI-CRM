@@ -15,7 +15,7 @@ from aicrm_next.admin_auth.route_policy import (
 )
 from aicrm_next.admin_auth.service import CSRF_COOKIE, SESSION_COOKIE
 from aicrm_next.main import create_app
-from aicrm_next.public_product import h5_wechat_pay
+from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
 from aicrm_next.shared.route_policy import RoutePolicy
 from aicrm_next.shared.wechat_h5_session import WECHAT_PAYMENT_IDENTITY_COOKIE
 from tests.admin_auth_test_helpers import access_token_headers, install_access_token, install_admin_session

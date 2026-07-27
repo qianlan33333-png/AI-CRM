@@ -33,7 +33,7 @@ from aicrm_next.platform_foundation.performance_contracts import (
     percentile,
 )
 from aicrm_next.platform_foundation.push_center.sql_read_model import SQLPushCenterReadModel
-from aicrm_next.questionnaire.repo import PostgresQuestionnaireReadRepository
+from aicrm_next.extensions.forms.questionnaire.repo import PostgresQuestionnaireReadRepository
 from aicrm_next.shared.db_session import get_db, get_engine, get_sqlalchemy_database_url
 from aicrm_next.shared.signed_context import (
     SIDEBAR_VIEWER_SESSION_COOKIE,

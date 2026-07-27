@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from aicrm_next.automation_agents import worker as worker_module
-from aicrm_next.automation_agents.worker import AutomationAgentWorker
+from aicrm_next.extensions.ai.automation_agents import worker as worker_module
+from aicrm_next.extensions.ai.automation_agents.worker import AutomationAgentWorker
 
 
 class FakeAgentRepository:

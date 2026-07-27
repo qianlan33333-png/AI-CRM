@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.hxc_dashboard.safe_mode import reset_hxc_safe_mode_fixture_state
+from aicrm_next.extensions.hxc.hxc_dashboard.safe_mode import reset_hxc_safe_mode_fixture_state
 from aicrm_next.main import create_app
 
 

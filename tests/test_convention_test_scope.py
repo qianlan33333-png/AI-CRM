@@ -29,7 +29,7 @@ def _policy() -> dict:
 
 def test_context_convention_selects_importing_tests_without_manual_scope_entries(tmp_path: Path) -> None:
     _write(tmp_path, "tests/test_data_health_api.py", "from aicrm_next.data_health.api import router\n")
-    _write(tmp_path, "tests/test_commerce_api.py", "from aicrm_next.commerce.api import router\n")
+    _write(tmp_path, "tests/test_commerce_api.py", "from aicrm_next.extensions.commerce.commerce.api import router\n")
 
     result = select_convention_scope(_policy(), ["aicrm_next/data_health/api.py"], root=tmp_path)
 
@@ -44,7 +44,7 @@ def test_context_convention_selects_importing_tests_without_manual_scope_entries
     ("changed_path", "expected_reason"),
     [
         ("aicrm_next/admin_auth/api.py", "authentication"),
-        ("aicrm_next/public_product/h5_wechat_pay.py", "payment_refund_and_entitlement"),
+        ("aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py", "payment_refund_and_entitlement"),
         ("aicrm_next/channel_entry/api.py", "callbacks_and_external_effects"),
         ("migrations/versions/9999_demo.py", "schema_and_deploy"),
         ("scripts/ops/check_id_validation_release_readiness.py", "schema_and_deploy"),

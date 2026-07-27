@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.questionnaire.repo import build_questionnaire_repository, reset_questionnaire_fixture_state
+from aicrm_next.extensions.forms.questionnaire.repo import build_questionnaire_repository, reset_questionnaire_fixture_state
 from tests.admin_auth_test_helpers import access_token_headers, install_access_token
 from tests.wechat_identity_test_support import authorize_wechat_client
 

@@ -6,8 +6,8 @@ pytestmark = pytest.mark.usefixtures("composed_internal_event_registry")
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.cloud_orchestrator.campaigns_read import reset_campaign_read_fixture_state
-from aicrm_next.cloud_orchestrator.campaigns_write import (
+from aicrm_next.extensions.growth.cloud_orchestrator.campaigns_read import reset_campaign_read_fixture_state
+from aicrm_next.extensions.growth.cloud_orchestrator.campaigns_write import (
     ApproveCloudCampaignCommand,
     CreateCloudCampaignCommand,
     StartCloudCampaignCommand,
@@ -18,8 +18,8 @@ from aicrm_next.customer_tags.live_mutation import execute_wecom_tag_mutation, r
 from aicrm_next.customer_tags.mutation_commands import PlanWeComTagMarkCommand, PlanWeComTagUnmarkCommand
 from aicrm_next.main import create_app
 from aicrm_next.platform_foundation.internal_events import InternalEventService, reset_internal_event_fixture_state
-from aicrm_next.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
-from aicrm_next.questionnaire.repo import reset_questionnaire_fixture_state
+from aicrm_next.extensions.forms.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
+from aicrm_next.extensions.forms.questionnaire.repo import reset_questionnaire_fixture_state
 from tests.wechat_identity_test_support import authorize_wechat_client
 
 

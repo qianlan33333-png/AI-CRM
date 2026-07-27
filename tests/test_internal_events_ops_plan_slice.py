@@ -6,8 +6,8 @@ pytestmark = pytest.mark.usefixtures("composed_internal_event_registry")
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.cloud_orchestrator.application import ApproveCloudPlanCommand
-from aicrm_next.cloud_orchestrator.repository import reset_cloud_plan_fixture_state
+from aicrm_next.extensions.growth.cloud_orchestrator.application import ApproveCloudPlanCommand
+from aicrm_next.extensions.growth.cloud_orchestrator.repository import reset_cloud_plan_fixture_state
 from aicrm_next.main import create_app
 from aicrm_next.platform_foundation.command_bus import CommandContext
 from aicrm_next.platform_foundation.external_effects import ExternalEffectService, reset_external_effect_fixture_state

@@ -45,8 +45,8 @@ DIRECT_ENVIRONMENT_ACCESS_BOUNDARIES = frozenset(
 )
 DYNAMIC_RUNTIME_ACCESS_BOUNDARIES = frozenset(
     {
-        "aicrm_next/message_archive/repo.py",
-        "aicrm_next/questionnaire/repo.py",
+        "aicrm_next/extensions/archive/message_archive/repo.py",
+        "aicrm_next/extensions/forms/questionnaire/repo.py",
         "aicrm_next/shared/runtime.py",
         "aicrm_next/shared/runtime_settings.py",
     }

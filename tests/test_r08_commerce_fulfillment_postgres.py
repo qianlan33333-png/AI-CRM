@@ -12,12 +12,12 @@ import psycopg
 import pytest
 from psycopg.rows import dict_row
 
-from aicrm_next.commerce import admin_transactions, external_push_admin
-from aicrm_next.commerce.fulfillment_reconciliation import CommerceFulfillmentReconciliationService
+from aicrm_next.extensions.commerce.commerce import admin_transactions, external_push_admin
+from aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation import CommerceFulfillmentReconciliationService
 from aicrm_next.identity_contact.payment_projection import project_payment_order_mobile, project_wechat_shop_order_mobile
 from aicrm_next.platform_foundation.internal_events.models import InternalEvent, InternalEventConsumerRun
-from aicrm_next.public_product import h5_wechat_pay
-from aicrm_next.service_period import payment_consumer, refund_consumer
+from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
+from aicrm_next.extensions.commerce.service_period import payment_consumer, refund_consumer
 
 
 def _database_url() -> str:

@@ -5,7 +5,7 @@ from typing import Any, Mapping
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.public_product import h5_wechat_pay
+from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
 
 
 _FIXTURE_UNIONIDS = {

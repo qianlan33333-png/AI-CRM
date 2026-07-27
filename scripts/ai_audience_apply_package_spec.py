@@ -14,15 +14,15 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from aicrm_next.ai_audience_ops.package_spec import (  # noqa: E402
+from aicrm_next.extensions.ai.ai_audience_ops.package_spec import (  # noqa: E402
     PackageSpec,
     package_payload_from_spec,
     parse_markdown_spec,
     redact_report,
     validate_spec,
 )
-from aicrm_next.ai_audience_ops.repository import build_audience_repository  # noqa: E402
-from aicrm_next.ai_audience_ops.service import AudiencePackageService  # noqa: E402
+from aicrm_next.extensions.ai.ai_audience_ops.repository import build_audience_repository  # noqa: E402
+from aicrm_next.extensions.ai.ai_audience_ops.service import AudiencePackageService  # noqa: E402
 
 
 def apply_spec(

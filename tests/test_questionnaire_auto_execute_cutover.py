@@ -14,7 +14,7 @@ MIGRATION = ROOT / "migrations/versions/0109_questionnaire_continuation_auto_exe
 
 def test_questionnaire_auto_execute_cutover_is_shared_by_runtime_health_and_reconciliation() -> None:
     from aicrm_next.data_health.checks import QUESTIONNAIRE_CONTINUATION_CUTOVER_SQL
-    from aicrm_next.questionnaire.reconciliation import _QUESTIONNAIRE_R09_PRODUCTION_CUTOVER_SQL
+    from aicrm_next.extensions.forms.questionnaire.reconciliation import _QUESTIONNAIRE_R09_PRODUCTION_CUTOVER_SQL
 
     assert QUESTIONNAIRE_AUTO_EXECUTE_CUTOVER_AT == "2026-07-13T16:20:00Z"
     assert QUESTIONNAIRE_AUTO_EXECUTE_CUTOVER_SQL == "TIMESTAMPTZ '2026-07-13 16:20:00+00'"

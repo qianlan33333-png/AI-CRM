@@ -6,13 +6,13 @@ import json
 
 import pytest
 
-from aicrm_next.commerce.admin_transaction_detail import (
+from aicrm_next.extensions.commerce.commerce.admin_transaction_detail import (
     UnifiedOrderPageCursor,
     decode_unified_order_cursor,
     encode_unified_order_cursor,
     unified_order_cursor_scope,
 )
-from aicrm_next.commerce.admin_unified_orders import list_orders
+from aicrm_next.extensions.commerce.commerce.admin_unified_orders import list_orders
 
 
 def _legacy_cursor(offset: int) -> str:

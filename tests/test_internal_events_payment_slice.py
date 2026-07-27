@@ -11,8 +11,8 @@ from aicrm_next.platform_foundation.internal_events.outbox import InternalEventO
 from aicrm_next.platform_foundation.internal_events.payment import PAYMENT_SUCCEEDED_EVENT_TYPE
 from aicrm_next.platform_foundation.internal_events.repository import build_internal_event_repository
 from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
-from aicrm_next.public_product import h5_wechat_pay
-from aicrm_next.public_product.h5_wechat_pay import _apply_transaction
+from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
+from aicrm_next.extensions.commerce.public_product.h5_wechat_pay import _apply_transaction
 
 
 PAYMENT_CONSUMERS = frozenset({
@@ -148,7 +148,7 @@ def _enable_payment_events(monkeypatch) -> None:
     monkeypatch.setenv("AICRM_INTERNAL_EVENTS_PAYMENT_ENABLED", "1")
     monkeypatch.setenv("AICRM_INTERNAL_EVENTS_SHADOW_ONLY", "0")
     monkeypatch.setenv("AICRM_INTERNAL_EVENTS_PAYMENT_DISABLE_LEGACY_AUTOMATION_DIRECT", "1")
-    monkeypatch.setattr("aicrm_next.commerce.external_push_admin.resolve_and_validate_public_https_url", lambda url: url)
+    monkeypatch.setattr("aicrm_next.extensions.commerce.commerce.external_push_admin.resolve_and_validate_public_https_url", lambda url: url)
     monkeypatch.setattr(
         h5_wechat_pay,
         "enqueue_transactional_internal_event_outbox",

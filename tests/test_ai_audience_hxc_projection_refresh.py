@@ -6,28 +6,28 @@ import re
 import pytest
 from sqlalchemy import text
 
-from aicrm_next.ai_audience_ops import hxc_projection as projection_module
-from aicrm_next.ai_audience_ops import hxc_projection_incremental as incremental_module
-from aicrm_next.ai_audience_ops import events as audience_events
-from aicrm_next.ai_audience_ops.hxc_projection import (
+from aicrm_next.extensions.ai.ai_audience_ops import hxc_projection as projection_module
+from aicrm_next.extensions.ai.ai_audience_ops import hxc_projection_incremental as incremental_module
+from aicrm_next.extensions.ai.ai_audience_ops import events as audience_events
+from aicrm_next.extensions.ai.ai_audience_ops.hxc_projection import (
     HXC_PROJECTION_ADVISORY_LOCK_KEY,
     HxcMemberUsageProjectionService,
 )
-from aicrm_next.ai_audience_ops.hxc_projection_sql import (
+from aicrm_next.extensions.ai.ai_audience_ops.hxc_projection_sql import (
     HXC_FULL_PROJECTION_INSERT_SQL,
     HXC_FULL_PROJECTION_SELECT_SQL,
     HXC_OPTIONAL_SOURCE_REQUIRED_COLUMNS,
     build_hxc_scoped_projection_insert_sql,
     build_hxc_full_projection_select_sql,
 )
-from aicrm_next.ai_audience_ops.hxc_projection_incremental import (
+from aicrm_next.extensions.ai.ai_audience_ops.hxc_projection_incremental import (
     initial_source_watermarks,
     public_source_watermarks,
 )
-from aicrm_next.ai_audience_ops.hxc_projection_intents import (
+from aicrm_next.extensions.ai.ai_audience_ops.hxc_projection_intents import (
     HxcProjectionRefreshIntentService,
 )
-from aicrm_next.ai_audience_ops.event_types import (
+from aicrm_next.extensions.ai.ai_audience_ops.event_types import (
     HXC_INCREMENTAL_PROJECTION_CONSUMER,
     HXC_INCREMENTAL_PROJECTION_REQUESTED_EVENT,
 )

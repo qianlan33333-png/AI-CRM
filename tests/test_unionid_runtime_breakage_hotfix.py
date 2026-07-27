@@ -21,8 +21,8 @@ def _function_source(source: str, name: str) -> str:
 
 
 def test_h5_wechat_pay_notify_after_unionid_cleanup() -> None:
-    source = _read("aicrm_next/public_product/h5_wechat_pay.py")
-    owner_source = _read("aicrm_next/commerce/wechat_pay_order_write_repository.py")
+    source = _read("aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py")
+    owner_source = _read("aicrm_next/extensions/commerce/commerce/wechat_pay_order_write_repository.py")
     payment_identity_source = _function_source(source, "_resolve_payment_identity")
     paid_order_source = _function_source(source, "_paid_order_for_product_identity")
     apply_transaction_source = _function_source(source, "_apply_transaction")
@@ -40,7 +40,7 @@ def test_h5_wechat_pay_notify_after_unionid_cleanup() -> None:
 
 
 def test_questionnaire_admin_reads_after_unionid_cleanup() -> None:
-    source = _read("aicrm_next/questionnaire/repo.py")
+    source = _read("aicrm_next/extensions/forms/questionnaire/repo.py")
     for name in ["list_submissions", "list_external_submissions", "find_submission_for_identity"]:
         section = _function_source(source, name)
         assert "LEFT JOIN crm_user_identity identity ON identity.unionid = qs.unionid" in section
@@ -51,7 +51,7 @@ def test_questionnaire_admin_reads_after_unionid_cleanup() -> None:
 
 
 def test_alipay_admin_transactions_after_unionid_cleanup() -> None:
-    source = _read("aicrm_next/commerce/admin_transaction_detail.py")
+    source = _read("aicrm_next/extensions/commerce/commerce/admin_transaction_detail.py")
     filter_source = _function_source(source, "_postgres_filter_clause")
     select_source = _function_source(source, "_postgres_order_select")
 
@@ -78,7 +78,7 @@ def test_group_ops_dispatcher_plans_one_external_effect_with_unionid_link() -> N
 
 
 def test_cloud_broadcast_plan_dispatch_uses_unionid() -> None:
-    source = _read("aicrm_next/cloud_orchestrator/repository.py")
+    source = _read("aicrm_next/extensions/growth/cloud_orchestrator/repository.py")
     owner_source = _read(
         "aicrm_next/platform_foundation/background_jobs/broadcast_job_write_repository.py"
     )
@@ -119,7 +119,7 @@ def test_customer_external_userid_lookup_exact_jsonb_membership() -> None:
 
 
 def test_automation_agent_webhook_item_upsert_matches_partial_index() -> None:
-    source = _read("aicrm_next/automation_agents/repository.py")
+    source = _read("aicrm_next/extensions/ai/automation_agents/repository.py")
     assert "ON CONFLICT (batch_id, unionid) WHERE unionid <> '' DO UPDATE" in source
 
 
@@ -132,11 +132,11 @@ def test_cloud_plan_recipient_upsert_matches_partial_index() -> None:
 
 
 def test_unionid_runtime_sql_guard_blocks_removed_identity_columns() -> None:
-    h5_source = _read("aicrm_next/public_product/h5_wechat_pay.py")
-    questionnaire_source = _read("aicrm_next/questionnaire/repo.py")
-    commerce_source = _read("aicrm_next/commerce/admin_transaction_detail.py")
+    h5_source = _read("aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py")
+    questionnaire_source = _read("aicrm_next/extensions/forms/questionnaire/repo.py")
+    commerce_source = _read("aicrm_next/extensions/commerce/commerce/admin_transaction_detail.py")
     group_ops_source = _read("aicrm_next/automation_engine/group_ops/action_dispatcher.py")
-    cloud_source = _read("aicrm_next/cloud_orchestrator/repository.py")
+    cloud_source = _read("aicrm_next/extensions/growth/cloud_orchestrator/repository.py")
     channel_source = _read("aicrm_next/channel_entry/repo.py")
     scoped_sources = {
         "h5_wechat_pay_runtime": (
@@ -200,7 +200,7 @@ def test_unionid_runtime_sql_guard_blocks_removed_identity_columns() -> None:
             ],
         ),
         "automation_agent_webhook_item_upsert": (
-            _read("aicrm_next/automation_agents/repository.py"),
+            _read("aicrm_next/extensions/ai/automation_agents/repository.py"),
             [
             "ON CONFLICT (batch_id, unionid) DO UPDATE",
             ],
@@ -244,7 +244,7 @@ def test_identity_contact_resolve_reads_current_owner_column() -> None:
 
 
 def test_wechat_admin_order_list_projects_identity_from_unionid() -> None:
-    source = _read("aicrm_next/commerce/admin_transactions.py")
+    source = _read("aicrm_next/extensions/commerce/commerce/admin_transactions.py")
     select_source = _function_source(source, "_postgres_order_select")
     orders_source = _function_source(source, "_postgres_orders")
 

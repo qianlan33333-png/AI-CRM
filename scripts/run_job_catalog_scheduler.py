@@ -92,7 +92,7 @@ def _ai_audience_refresh(*, dry_run, operator, limit, now):
             "would_check_daily_tick": True,
             "real_external_call_executed": False,
         }
-    from aicrm_next.ai_audience_ops.scheduler import emit_due_ticks
+    from aicrm_next.extensions.ai.ai_audience_ops.scheduler import emit_due_ticks
 
     return emit_due_ticks(
         include_incremental=True,

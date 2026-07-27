@@ -11,15 +11,15 @@ from aicrm_next.integration_gateway.huangyoucan_usage_client import (
     HuangYouCanReadonlyDatabaseConfig,
     PyMySQLHuangYouCanUsageSource,
 )
-from aicrm_next.service_period.huangyoucan_usage import (
+from aicrm_next.extensions.commerce.service_period.huangyoucan_usage import (
     normalized_mobile_md5,
     resolve_huangyoucan_usage_for_identity,
 )
-from aicrm_next.service_period.huangyoucan_usage_sync import (
+from aicrm_next.extensions.commerce.service_period.huangyoucan_usage_sync import (
     PostgresHuangYouCanUsageProjectionRepository,
     sync_huangyoucan_usage,
 )
-from aicrm_next.service_period.repo import PostgresServicePeriodRepository
+from aicrm_next.extensions.commerce.service_period.repo import PostgresServicePeriodRepository
 from aicrm_next.shared import runtime_settings
 
 

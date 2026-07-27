@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE_SHA = "a" * 40
 AI_AUDIENCE_RECOVERY_PATHS = {
     ".github/workflows/ai-audience-production-diagnostics.yml",
-    "aicrm_next/ai_audience_ops/refresh_intents.py",
+    "aicrm_next/extensions/ai/ai_audience_ops/refresh_intents.py",
     "tests/test_ai_audience_production_diagnostics_workflow.py",
     "tests/test_ai_audience_refresh_intents_postgres.py",
 }

@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.questionnaire.h5_write import get_questionnaire_h5_write_audit_events
+from aicrm_next.extensions.forms.questionnaire.h5_write import get_questionnaire_h5_write_audit_events
 from wechat_identity_test_support import authorize_wechat_client
 
 
@@ -117,7 +117,7 @@ def test_h5_submit_fails_closed_when_identity_resolution_is_unavailable(client: 
         def __call__(self, query):
             raise RuntimeError("column b.id does not exist")
 
-    monkeypatch.setattr("aicrm_next.questionnaire.h5_write.ResolvePersonIdentityQuery", lambda: FailingIdentityQuery())
+    monkeypatch.setattr("aicrm_next.extensions.forms.questionnaire.h5_write.ResolvePersonIdentityQuery", lambda: FailingIdentityQuery())
 
     response = client.post(
         "/api/h5/questionnaires/hxc-activation-v1/submit",
@@ -156,7 +156,7 @@ def test_h5_submit_syncs_mobile_binding_without_external_webhook_switch(
             }
 
     monkeypatch.setattr(
-        "aicrm_next.questionnaire.h5_write.BindMobileToExternalContactCommand",
+        "aicrm_next.extensions.forms.questionnaire.h5_write.BindMobileToExternalContactCommand",
         lambda: FakeBindMobileCommand(),
     )
 

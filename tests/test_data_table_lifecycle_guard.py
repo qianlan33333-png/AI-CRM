@@ -191,12 +191,12 @@ SINGLE_OWNER_RUNTIME_WRITES = {
         {"aicrm_next/platform_foundation/external_effects/repo.py"},
     ),
     "external_push_config": (
-        "aicrm_next.commerce",
-        {"aicrm_next/commerce/repo.py"},
+        "aicrm_next.extensions.commerce.commerce",
+        {"aicrm_next/extensions/commerce/commerce/repo.py"},
     ),
     "hxc_dashboard_broadcast_tasks": (
-        "aicrm_next.hxc_dashboard",
-        {"aicrm_next/hxc_dashboard/postgres_repo.py"},
+        "aicrm_next.extensions.hxc.hxc_dashboard",
+        {"aicrm_next/extensions/hxc/hxc_dashboard/postgres_repo.py"},
     ),
     "outbound_tasks": (
         "aicrm_next.background_jobs.broadcast_queue_worker",
@@ -318,7 +318,7 @@ def test_automation_agent_audit_tables_are_additive_versioned_evidence() -> None
         entry = tables[table_name]
         assert entry["domain"] == "ai_audience_ops"
         assert entry["lifecycle"] == "audit"
-        assert entry["write_owner"] == "aicrm_next.ai_audience_ops"
+        assert entry["write_owner"] == "aicrm_next.extensions.ai.ai_audience_ops"
         assert entry["drop_candidate"] is False
         assert entry["migration_source"] == (
             "migrations/versions/0124_automation_agent_audit_tables.py"

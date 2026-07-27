@@ -133,6 +133,26 @@ def test_business_context_import_of_package_root_composition_is_not_a_context_ed
     assert _edge_pairs(report) == set()
 
 
+def test_scanner_preserves_context_ids_after_physical_domain_move(tmp_path: Path) -> None:
+    _write_module(
+        tmp_path,
+        "extensions/ai/ai_assist/service.py",
+        "from aicrm_next.platform.admin_auth.service import AuthService\n",
+    )
+    _write_module(tmp_path, "platform/admin_auth/service.py")
+    _write_module(
+        tmp_path,
+        "extensions/ai/composition.py",
+        "from aicrm_next.extensions.ai.ai_assist.service import Assistant\n",
+    )
+    _write_module(tmp_path, "app/main.py", "from aicrm_next.extensions.ai.ai_assist.service import Assistant\n")
+
+    report = scan_import_graph(tmp_path)
+
+    assert report.contexts == ("admin_auth", "ai_assist")
+    assert _edge_pairs(report) == {("ai_assist", "admin_auth")}
+
+
 def test_existing_registered_scc_is_allowed(tmp_path: Path) -> None:
     _write_module(tmp_path, "alpha/service.py", "from aicrm_next.beta.service import Beta\n")
     _write_module(tmp_path, "beta/service.py", "from aicrm_next.alpha.service import Alpha\n")

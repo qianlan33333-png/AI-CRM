@@ -4,13 +4,13 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.cloud_orchestrator.campaigns_read import reset_campaign_read_fixture_state
-from aicrm_next.cloud_orchestrator.campaigns_write import get_campaign_write_side_effect_plans, reset_campaign_write_fixture_state
+from aicrm_next.extensions.growth.cloud_orchestrator.campaigns_read import reset_campaign_read_fixture_state
+from aicrm_next.extensions.growth.cloud_orchestrator.campaigns_write import get_campaign_write_side_effect_plans, reset_campaign_write_fixture_state
 from aicrm_next.main import create_app
 
 
 ROOT = Path(__file__).resolve().parents[1]
-WRITE_MODEL = ROOT / "aicrm_next/cloud_orchestrator/campaigns_write.py"
+WRITE_MODEL = ROOT / "aicrm_next/extensions/growth/cloud_orchestrator/campaigns_write.py"
 
 
 def test_campaign_write_model_has_no_real_send_runtime_or_http_clients():

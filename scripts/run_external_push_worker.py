@@ -10,7 +10,7 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.commerce.fulfillment_reconciliation import CommerceFulfillmentReconciliationService
+from aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation import CommerceFulfillmentReconciliationService
 
 DEFAULT_BATCH_SIZE = 50
 

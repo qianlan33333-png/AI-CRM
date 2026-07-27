@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from .deployment_profile import DeploymentProfile
-from .commerce.admin_transactions import apply_wechat_refund_result, mark_wechat_refund_request_failed
+from .extensions.commerce.commerce.admin_transactions import apply_wechat_refund_result, mark_wechat_refund_request_failed
 from .channel_entry.identity_external_effect import (
     IDENTITY_EXTERNAL_CONTACT_DETAIL_CONTINUATION,
     IDENTITY_EXTERNAL_EFFECT_SETTLEMENT_CONTINUATION,
@@ -11,7 +11,7 @@ from .channel_entry.welcome_media_effects_repository import (
     WELCOME_EFFECT_SETTLEMENT_CONTINUATION,
     WELCOME_MEDIA_DEPENDENCY_CONTINUATION,
 )
-from .automation_agents.external_effect_continuation import AUTOMATION_AGENT_AUDIENCE_WEBHOOK_CONTINUATION
+from .extensions.ai.automation_agents.external_effect_continuation import AUTOMATION_AGENT_AUDIENCE_WEBHOOK_CONTINUATION
 from .automation_engine.group_ops.external_effect_continuation import (
     GROUP_OPS_EFFECT_SETTLEMENT_CONTINUATION,
     GROUP_OPS_MEDIA_DEPENDENCY_CONTINUATION,
@@ -20,7 +20,7 @@ from .background_jobs.broadcast_effect_repository import (
     BROADCAST_EXTERNAL_EFFECT_READ_MODEL_CONTINUATION,
     BROADCAST_EXTERNAL_EFFECT_SETTLEMENT_CONTINUATION,
 )
-from .automation_agents.internal_webhook_adapter import AutomationAgentRoutingWebhookAdapter
+from .extensions.ai.automation_agents.internal_webhook_adapter import AutomationAgentRoutingWebhookAdapter
 from .external_push.external_effect_continuation import (
     EXTERNAL_PUSH_DELIVERY_CONTINUATION,
     EXTERNAL_PUSH_DELIVERY_SETTLEMENT_CONTINUATION,
@@ -48,7 +48,7 @@ from .platform_foundation.external_effects.continuations import (
     ExternalEffectContinuationRegistry,
     run_external_effect_continuation,
 )
-from .questionnaire.external_effect_continuation import QUESTIONNAIRE_CONTACT_TAGS_CONTINUATION
+from .extensions.forms.questionnaire.external_effect_continuation import QUESTIONNAIRE_CONTACT_TAGS_CONTINUATION
 
 IDENTITY_EXTERNAL_EFFECT_CONTINUATION_CONSUMER = "external_effect_identity_continuation_consumer"
 GROUP_OPS_EXTERNAL_EFFECT_CONTINUATION_CONSUMER = "external_effect_group_ops_continuation_consumer"

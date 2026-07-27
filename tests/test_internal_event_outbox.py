@@ -643,7 +643,7 @@ def test_manual_retry_requires_actor_reason_and_records_audit_without_execution_
 
 def test_safe_emit_is_documented_as_shadow_only_and_payment_uses_transactional_outbox() -> None:
     shadow_source = (ROOT / "aicrm_next/platform_foundation/internal_events/shadow.py").read_text(encoding="utf-8")
-    payment_source = (ROOT / "aicrm_next/public_product/h5_wechat_pay.py").read_text(encoding="utf-8")
+    payment_source = (ROOT / "aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py").read_text(encoding="utf-8")
     tree = ast.parse(payment_source)
     called = {node.func.id for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)}
 

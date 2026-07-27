@@ -54,7 +54,7 @@ def test_global_unhandled_error_handler_logs_and_hides_internal_details(monkeypa
 
 
 def test_commerce_unknown_exception_maps_to_safe_500() -> None:
-    from aicrm_next.commerce.api import _raise_http
+    from aicrm_next.extensions.commerce.commerce.api import _raise_http
 
     with pytest.raises(HTTPException) as raised:
         _raise_http(RuntimeError("SELECT mobile FROM crm_user_identity"))
@@ -67,7 +67,7 @@ def test_commerce_unknown_exception_maps_to_safe_500() -> None:
 
 
 def test_wechat_shop_notify_does_not_return_success_from_generic_exception_handler() -> None:
-    source = (ROOT / "aicrm_next" / "commerce" / "api.py").read_text(encoding="utf-8")
+    source = (ROOT / "aicrm_next" / "extensions" / "commerce" / "commerce" / "api.py").read_text(encoding="utf-8")
     marker = 'safe_log_exception(logger, "wechat shop notify failed before durable event handling", exc)'
     assert marker in source
     handler = source.split(marker, 1)[1]

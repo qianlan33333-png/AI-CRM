@@ -4,7 +4,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.hxc_dashboard.safe_mode import reset_hxc_safe_mode_fixture_state
+from aicrm_next.extensions.hxc.hxc_dashboard.safe_mode import reset_hxc_safe_mode_fixture_state
 from aicrm_next.main import create_app
 
 
@@ -43,7 +43,7 @@ def test_all_hxc_side_effect_routes_expose_false_execution_flags(monkeypatch) ->
 
 
 def test_hxc_next_module_has_no_direct_legacy_or_external_call_markers() -> None:
-    source = "\n".join(path.read_text(encoding="utf-8") for path in (ROOT / "aicrm_next/hxc_dashboard").glob("*.py"))
+    source = "\n".join(path.read_text(encoding="utf-8") for path in (ROOT / "aicrm_next/extensions/hxc/hxc_dashboard").glob("*.py"))
     forbidden_parts = [
         "forward_to_" + "legacy_flask",
         "wecom_" + "ability_service",

@@ -8,7 +8,7 @@ from aicrm_next.platform_foundation.internal_events.refund import (
     REFUND_SUCCEEDED_EVENT_TYPE,
     build_refund_succeeded_event_request,
 )
-from aicrm_next.service_period import refund_consumer
+from aicrm_next.extensions.commerce.service_period import refund_consumer
 
 
 def _request():

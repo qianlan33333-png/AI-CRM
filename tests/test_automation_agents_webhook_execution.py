@@ -5,9 +5,9 @@ from urllib.parse import urlparse
 
 from sqlalchemy import text
 
-from aicrm_next.automation_agents.context_builder import referenced_context_keys
-from aicrm_next.automation_agents.worker import AutomationAgentWorker
-from aicrm_next.ai_audience_ops.event_types import INBOUND_RECEIVED_EVENT
+from aicrm_next.extensions.ai.automation_agents.context_builder import referenced_context_keys
+from aicrm_next.extensions.ai.automation_agents.worker import AutomationAgentWorker
+from aicrm_next.extensions.ai.ai_audience_ops.event_types import INBOUND_RECEIVED_EVENT
 from aicrm_next.external_effect_composition import (
     AUTOMATION_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
     build_external_effect_continuation_consumers,
@@ -263,7 +263,7 @@ def test_prompt_context_key_detection_uses_chinese_placeholders() -> None:
 
 
 def test_context_builder_hydrates_questionnaire_from_bound_audience_payload(monkeypatch) -> None:
-    from aicrm_next.automation_agents import context_builder
+    from aicrm_next.extensions.ai.automation_agents import context_builder
 
     class FakeBoundRepository:
         def get_bound_audience_context_for_item(self, **kwargs):
@@ -347,7 +347,7 @@ def test_worker_fake_mode_generates_package_and_enqueues_send_plan(next_client, 
     )
     batch_id = accepted.json()["batch_id"]
 
-    from aicrm_next.automation_agents import worker as worker_module
+    from aicrm_next.extensions.ai.automation_agents import worker as worker_module
 
     seen_keys = {}
 
@@ -405,7 +405,7 @@ def test_worker_rejects_prompt_like_llm_output_before_callback(next_client, next
     )
     batch_id = accepted.json()["batch_id"]
 
-    from aicrm_next.automation_agents import worker as worker_module
+    from aicrm_next.extensions.ai.automation_agents import worker as worker_module
 
     monkeypatch.setattr(
         worker_module,
@@ -451,7 +451,7 @@ def test_worker_human_review_gate_blocks_auto_send(next_client, next_pg_schema, 
     )
     batch_id = accepted.json()["batch_id"]
 
-    from aicrm_next.automation_agents import worker as worker_module
+    from aicrm_next.extensions.ai.automation_agents import worker as worker_module
 
     monkeypatch.setattr(
         worker_module,
@@ -486,7 +486,7 @@ def test_external_effect_agent_webhook_continuation_enqueues_broadcast_job(next_
         _insert_identities(session, "wm_001")
         session.commit()
 
-    from aicrm_next.automation_agents import worker as worker_module
+    from aicrm_next.extensions.ai.automation_agents import worker as worker_module
 
     monkeypatch.setattr(
         worker_module,
@@ -612,7 +612,7 @@ def test_worker_fixed_script_uses_configured_text_without_agent_generation(next_
     )
     batch_id = accepted.json()["batch_id"]
 
-    from aicrm_next.automation_agents import worker as worker_module
+    from aicrm_next.extensions.ai.automation_agents import worker as worker_module
 
     seen_keys = {}
 
@@ -663,7 +663,7 @@ def test_worker_fixed_script_fails_when_content_text_missing(next_client, next_p
     )
     batch_id = accepted.json()["batch_id"]
 
-    from aicrm_next.automation_agents import worker as worker_module
+    from aicrm_next.extensions.ai.automation_agents import worker as worker_module
 
     monkeypatch.setattr(
         worker_module,

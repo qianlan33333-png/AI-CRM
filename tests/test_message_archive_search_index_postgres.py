@@ -5,7 +5,7 @@ import os
 
 import psycopg
 
-from aicrm_next.message_archive.repo import PostgresMessageArchiveReadRepository
+from aicrm_next.extensions.archive.message_archive.repo import PostgresMessageArchiveReadRepository
 
 
 INDEX_NAME = "ix_archived_messages_content_trgm"

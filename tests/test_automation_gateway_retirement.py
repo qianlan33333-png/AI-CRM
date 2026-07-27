@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 
-from aicrm_next.ai_audience_ops import agent_gateway
+from aicrm_next.extensions.ai.ai_audience_ops import agent_gateway
 
 
 def test_retired_automation_gateway_modules_are_removed() -> None:

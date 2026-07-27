@@ -5,8 +5,8 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 from starlette.routing import Match
 
-from aicrm_next.commerce.admin_transaction_detail import PaymentProviderStatusMapper, _present
-from aicrm_next.commerce.repo import reset_commerce_fixture_state
+from aicrm_next.extensions.commerce.commerce.admin_transaction_detail import PaymentProviderStatusMapper, _present
+from aicrm_next.extensions.commerce.commerce.repo import reset_commerce_fixture_state
 from aicrm_next.main import create_app
 
 
@@ -40,13 +40,13 @@ def test_admin_transaction_pages_resolve_to_commerce_not_frontend_compat(monkeyp
         "/admin/alipay/transactions",
     ]:
         route = _first_match(app, method="GET", path=path)
-        assert route.endpoint.__module__ == "aicrm_next.commerce.api"
+        assert route.endpoint.__module__ == "aicrm_next.extensions.commerce.commerce.api"
 
 
 def test_unified_orders_page_exposes_payment_channel_dimension(monkeypatch) -> None:
     response = _client(monkeypatch).get("/admin/orders")
     html = response.text
-    template = Path("aicrm_next/commerce/templates/admin_orders.html").read_text(encoding="utf-8")
+    template = Path("aicrm_next/extensions/commerce/commerce/templates/admin_orders.html").read_text(encoding="utf-8")
 
     assert response.status_code == 200
     assert "交易管理" in html
@@ -97,7 +97,7 @@ def test_wechat_shop_transaction_page_and_detail_are_next_routes(monkeypatch) ->
 
     for path in ["/admin/wechat-shop/transactions", "/admin/wechat-shop/transactions/shop_fixture_paid_001"]:
         route = _first_match(app, method="GET", path=path)
-        assert route.endpoint.__module__ == "aicrm_next.commerce.api"
+        assert route.endpoint.__module__ == "aicrm_next.extensions.commerce.commerce.api"
 
 
 def test_admin_transaction_apis_return_unified_readonly_fields(monkeypatch) -> None:

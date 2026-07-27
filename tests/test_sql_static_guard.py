@@ -111,7 +111,7 @@ def test_sql_static_guard_blocks_service_period_mobile_snapshot(tmp_path: Path) 
   service_period_entitlements:
     domain: service_period
     lifecycle: canonical
-    write_owner: aicrm_next.service_period
+    write_owner: aicrm_next.extensions.commerce.service_period
     replacement: none
     drop_candidate: false
 """,
@@ -142,7 +142,7 @@ def test_radar_identity_event_snapshots_are_an_exact_migration_only_boundary(tmp
   radar_click_events:
     domain: radar
     lifecycle: event
-    write_owner: aicrm_next.radar_links
+    write_owner: aicrm_next.extensions.radar.radar_links
     replacement: none
     drop_candidate: false
 """,

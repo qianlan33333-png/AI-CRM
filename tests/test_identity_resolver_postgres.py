@@ -9,7 +9,7 @@ from psycopg.rows import dict_row
 
 from aicrm_next.identity_contact.dto import ResolvePersonIdentityRequest
 from aicrm_next.identity_contact.repo import PostgresIdentityBindingRepository, PostgresIdentityRepository
-from aicrm_next.questionnaire.repo import PostgresQuestionnaireReadRepository
+from aicrm_next.extensions.forms.questionnaire.repo import PostgresQuestionnaireReadRepository
 from scripts.ops.check_unionid_identity_cutover import _register_duplicate_alias_conflicts, collect
 
 

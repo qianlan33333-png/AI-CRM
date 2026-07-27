@@ -12,8 +12,8 @@ ROOT = Path(__file__).resolve().parents[1]
 CALLER_PATHS = (
     "aicrm_next/admin_jobs/application.py",
     "aicrm_next/admin_jobs/notification_settings.py",
-    "aicrm_next/commerce/admin_refunds.py",
-    "aicrm_next/commerce/external_push_admin.py",
+    "aicrm_next/extensions/commerce/commerce/admin_refunds.py",
+    "aicrm_next/extensions/commerce/commerce/external_push_admin.py",
     "aicrm_next/external_push/service.py",
     "aicrm_next/owner_migration/application.py",
 )

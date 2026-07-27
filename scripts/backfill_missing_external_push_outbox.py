@@ -10,7 +10,7 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.commerce.external_push_outbox import (  # noqa: E402
+from aicrm_next.extensions.commerce.commerce.external_push_outbox import (  # noqa: E402
     DEFAULT_TENANT_ID,
     EVENT_TRANSACTION_PAID,
     AGGREGATE_TYPE_WECHAT_PAY_ORDER,

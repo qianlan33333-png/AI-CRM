@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.questionnaire.application import GetQuestionnairePreflightQuery
+from aicrm_next.extensions.forms.questionnaire.application import GetQuestionnairePreflightQuery
 
 
 def test_next_questionnaire_preflight_reads_runtime_env(monkeypatch):
@@ -26,7 +26,7 @@ def test_next_questionnaire_preflight_uses_next_query_when_production_ready(monk
     testclient = pytest.importorskip("fastapi.testclient")
 
     from aicrm_next.main import create_app
-    import aicrm_next.questionnaire.api as questionnaire_api
+    import aicrm_next.extensions.forms.questionnaire.api as questionnaire_api
 
     monkeypatch.setenv("SECRET_KEY", "questionnaire-preflight-forwarding-test")
     monkeypatch.setenv("WECHAT_MP_APP_ID", "wx-runtime-app")

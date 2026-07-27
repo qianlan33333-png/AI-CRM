@@ -6,8 +6,8 @@ from urllib.parse import urlparse
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.cloud_orchestrator.campaigns_read import reset_campaign_read_fixture_state
-from aicrm_next.cloud_orchestrator.run_due import (
+from aicrm_next.extensions.growth.cloud_orchestrator.campaigns_read import reset_campaign_read_fixture_state
+from aicrm_next.extensions.growth.cloud_orchestrator.run_due import (
     PlanCloudCampaignRunDueCommand,
     PreviewCloudCampaignRunDueCommand,
     execute_cloud_campaign_run_due_command,

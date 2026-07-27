@@ -49,9 +49,9 @@ def check() -> list[str]:
         "aicrm_next/frontend_compat/static/sidebar_workbench/sidebar_workbench.js"
     )
     route_policy = _read("aicrm_next/admin_auth/route_policy.py")
-    questionnaire_api = _read("aicrm_next/questionnaire/api.py")
+    questionnaire_api = _read("aicrm_next/extensions/forms/questionnaire/api.py")
     result_access = _read("aicrm_next/admin_auth/public_result_grant.py")
-    result_access_compat = _read("aicrm_next/questionnaire/result_access.py")
+    result_access_compat = _read("aicrm_next/extensions/forms/questionnaire/result_access.py")
 
     forbidden_read_tokens = (
         "allow_readonly_fallback",
@@ -153,7 +153,7 @@ def check() -> list[str]:
         if required not in sidebar_owner_query_source:
             errors.append(f"sidebar read current-owner filter missing: {required}")
 
-    result_source = _function_source("aicrm_next/questionnaire/api.py", "public_submission_result")
+    result_source = _function_source("aicrm_next/extensions/forms/questionnaire/api.py", "public_submission_result")
     validator_position = result_source.find("questionnaire_result_access_token")
     read_position = result_source.find("GetSubmissionResultQuery")
     if validator_position < 0 or read_position < 0 or validator_position > read_position:

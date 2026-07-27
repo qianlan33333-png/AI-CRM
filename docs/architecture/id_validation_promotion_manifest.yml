@@ -80,7 +80,7 @@ mixed_review_required:
     - aicrm_next/automation_engine/group_ops/domain.py
     - aicrm_next/automation_engine/group_ops/durable_effects_repository.py
     - aicrm_next/automation_engine/group_ops/scheduler.py
-    - aicrm_next/service_period/domain.py
+    - aicrm_next/extensions/commerce/service_period/domain.py
     - aicrm_next/admin_config/application.py
     - aicrm_next/admin_config/application_support.py
     - aicrm_next/admin_config/category_registry.py

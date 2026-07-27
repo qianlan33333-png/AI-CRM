@@ -4,13 +4,13 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.cloud_orchestrator.campaigns_read import reset_campaign_read_fixture_state
+from aicrm_next.extensions.growth.cloud_orchestrator.campaigns_read import reset_campaign_read_fixture_state
 from aicrm_next.main import create_app
 
 
 ROOT = Path(__file__).resolve().parents[1]
-READ_MODEL = ROOT / "aicrm_next/cloud_orchestrator/campaigns_read.py"
-API = ROOT / "aicrm_next/cloud_orchestrator/api.py"
+READ_MODEL = ROOT / "aicrm_next/extensions/growth/cloud_orchestrator/campaigns_read.py"
+API = ROOT / "aicrm_next/extensions/growth/cloud_orchestrator/api.py"
 
 
 def test_campaign_read_model_has_no_real_send_or_http_clients():

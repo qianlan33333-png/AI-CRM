@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from aicrm_next import admin_jobs_archive_sync_gateway as archive_gateway
+from aicrm_next.extensions.archive import admin_jobs_archive_sync_gateway as archive_gateway
 from aicrm_next.admin_jobs import application
 from aicrm_next.admin_jobs.repository import FixtureAdminJobsRepository
 
@@ -57,4 +57,4 @@ def test_archive_sync_gateway_preserves_production_data_guard(monkeypatch) -> No
 
 
 def test_admin_jobs_application_has_no_message_archive_context_import() -> None:
-    assert application.execute_archive_sync.__module__ == "aicrm_next.admin_jobs_archive_sync_gateway"
+    assert application.execute_archive_sync.__module__ == "aicrm_next.extensions.archive.admin_jobs_archive_sync_gateway"

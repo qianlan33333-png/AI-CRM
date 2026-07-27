@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import json
 
-import aicrm_next.commerce.api as commerce_api
-from aicrm_next.commerce.repo import reset_commerce_fixture_state
+import aicrm_next.extensions.commerce.commerce.api as commerce_api
+from aicrm_next.extensions.commerce.commerce.repo import reset_commerce_fixture_state
 
 
 def _product_payload(**overrides) -> dict:

@@ -4,7 +4,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.commerce.repo import reset_commerce_fixture_state
+from aicrm_next.extensions.commerce.commerce.repo import reset_commerce_fixture_state
 from aicrm_next.main import create_app
 
 
@@ -46,8 +46,8 @@ def test_checkout_responses_never_mark_real_payment_executed(monkeypatch) -> Non
 def test_checkout_source_does_not_enable_real_payment_by_default() -> None:
     source = "\n".join(
         [
-            (ROOT / "aicrm_next/commerce/api.py").read_text(encoding="utf-8"),
-            (ROOT / "aicrm_next/commerce/application.py").read_text(encoding="utf-8"),
+            (ROOT / "aicrm_next/extensions/commerce/commerce/api.py").read_text(encoding="utf-8"),
+            (ROOT / "aicrm_next/extensions/commerce/commerce/application.py").read_text(encoding="utf-8"),
         ]
     )
 

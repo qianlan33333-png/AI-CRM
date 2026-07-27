@@ -380,7 +380,7 @@ tables:
     lifecycle: canonical
     write_owner: aicrm_next.ops_enrollment.repo
     read_owners:
-      - aicrm_next.ai_assist.external_campaigns_repo
+      - aicrm_next.extensions.ai.ai_assist.external_campaigns_repo
       - aicrm_next.send_targets.repo
       - aicrm_next.ops_enrollment.repo
     replacement: ""
@@ -443,13 +443,13 @@ tables:
   archived_messages:
     domain: messaging
     lifecycle: read_model
-    write_owner: aicrm_next.message_archive.repo
+    write_owner: aicrm_next.extensions.archive.message_archive.repo
     read_owners:
       - aicrm_next.admin_read_model.repo
       - aicrm_next.customer_read_model.repo
       - aicrm_next.customer_read_model.refresh_scope_repository
       - aicrm_next.customer_read_model.sidebar_v2
-      - aicrm_next.message_archive.repo
+      - aicrm_next.extensions.archive.message_archive.repo
     replacement: ""
     drop_candidate: false
     runtime_entrypoints:
@@ -466,9 +466,9 @@ tables:
   archive_sync_state:
     domain: messaging
     lifecycle: config
-    write_owner: aicrm_next.message_archive.repo
+    write_owner: aicrm_next.extensions.archive.message_archive.repo
     read_owners:
-      - aicrm_next.message_archive.repo
+      - aicrm_next.extensions.archive.message_archive.repo
     replacement: ""
     drop_candidate: false
     runtime_entrypoints:
@@ -518,9 +518,9 @@ tables:
     write_owner: aicrm_next.admin_config.repository
     read_owners:
       - aicrm_next.admin_config.repository
-      - aicrm_next.message_archive.repo
+      - aicrm_next.extensions.archive.message_archive.repo
       - aicrm_next.platform_foundation.push_center.capability_repository
-      - aicrm_next.questionnaire.repo
+      - aicrm_next.extensions.forms.questionnaire.repo
       - aicrm_next.shared.runtime_settings
     replacement: ""
     drop_candidate: false
@@ -678,10 +678,10 @@ tables:
   wechat_shop_orders:
     domain: commerce
     lifecycle: canonical
-    write_owner: aicrm_next.commerce.wechat_shop_service
+    write_owner: aicrm_next.extensions.commerce.commerce.wechat_shop_service
     read_owners:
-      - aicrm_next.commerce.admin_transaction_detail
-      - aicrm_next.commerce.wechat_shop_service
+      - aicrm_next.extensions.commerce.commerce.admin_transaction_detail
+      - aicrm_next.extensions.commerce.commerce.wechat_shop_service
       - aicrm_next.customer_read_model.sidebar_v2
     replacement: ""
     drop_candidate: false
@@ -700,10 +700,10 @@ tables:
   wechat_shop_order_events:
     domain: commerce
     lifecycle: event
-    write_owner: aicrm_next.commerce.wechat_shop_service
+    write_owner: aicrm_next.extensions.commerce.commerce.wechat_shop_service
     read_owners:
-      - aicrm_next.commerce.admin_transaction_detail
-      - aicrm_next.commerce.wechat_shop_service
+      - aicrm_next.extensions.commerce.commerce.admin_transaction_detail
+      - aicrm_next.extensions.commerce.commerce.wechat_shop_service
     replacement: ""
     drop_candidate: false
     runtime_entrypoints:
@@ -720,10 +720,10 @@ tables:
   segments:
     domain: campaign
     lifecycle: canonical
-    write_owner: aicrm_next.cloud_orchestrator
+    write_owner: aicrm_next.extensions.growth.cloud_orchestrator
     read_owners:
-      - aicrm_next.ai_assist.external_campaigns_repo
-      - aicrm_next.cloud_orchestrator.repository
+      - aicrm_next.extensions.ai.ai_assist.external_campaigns_repo
+      - aicrm_next.extensions.growth.cloud_orchestrator.repository
     replacement: ai_audience_package or future audience rule read model after campaign convergence
     drop_candidate: true
     drop_after: "after campaign segment sourcing is reconciled with ai_audience and group-ops audience rules"
@@ -762,9 +762,9 @@ tables:
     read_owners:
       - aicrm_next.admin_jobs.repository
       - aicrm_next.admin_read_model.repo
-      - aicrm_next.ai_assist.external_campaigns_repo
+      - aicrm_next.extensions.ai.ai_assist.external_campaigns_repo
       - aicrm_next.background_jobs.broadcast_queue_worker
-      - aicrm_next.cloud_orchestrator.repository
+      - aicrm_next.extensions.growth.cloud_orchestrator.repository
     replacement: none; this is the canonical private-broadcast command and delivery ledger
     drop_candidate: false
     drop_after: ""
@@ -786,13 +786,13 @@ tables:
   campaigns:
     domain: campaign
     lifecycle: canonical
-    write_owner: aicrm_next.cloud_orchestrator.repository
+    write_owner: aicrm_next.extensions.growth.cloud_orchestrator.repository
     write_owners:
-      - aicrm_next.cloud_orchestrator.repository
+      - aicrm_next.extensions.growth.cloud_orchestrator.repository
     read_owners:
-      - aicrm_next.cloud_orchestrator.campaigns_read
-      - aicrm_next.cloud_orchestrator.repository
-      - aicrm_next.ai_assist.external_campaigns_repo
+      - aicrm_next.extensions.growth.cloud_orchestrator.campaigns_read
+      - aicrm_next.extensions.growth.cloud_orchestrator.repository
+      - aicrm_next.extensions.ai.ai_assist.external_campaigns_repo
     replacement: external_effect_job, broadcast_jobs, or future campaign command model after convergence
     drop_candidate: false
     drop_after: ""
@@ -810,10 +810,10 @@ tables:
   campaign_segments:
     domain: campaign
     lifecycle: canonical
-    write_owner: aicrm_next.cloud_orchestrator.repository
+    write_owner: aicrm_next.extensions.growth.cloud_orchestrator.repository
     read_owners:
-      - aicrm_next.cloud_orchestrator.repository
-      - aicrm_next.cloud_orchestrator.campaigns_read
+      - aicrm_next.extensions.growth.cloud_orchestrator.repository
+      - aicrm_next.extensions.growth.cloud_orchestrator.campaigns_read
     replacement: future campaign command model after segment assignment convergence
     drop_candidate: false
     drop_after: ""
@@ -829,10 +829,10 @@ tables:
   campaign_steps:
     domain: campaign
     lifecycle: canonical
-    write_owner: aicrm_next.cloud_orchestrator.repository
+    write_owner: aicrm_next.extensions.growth.cloud_orchestrator.repository
     read_owners:
-      - aicrm_next.cloud_orchestrator.repository
-      - aicrm_next.cloud_orchestrator.campaigns_read
+      - aicrm_next.extensions.growth.cloud_orchestrator.repository
+      - aicrm_next.extensions.growth.cloud_orchestrator.campaigns_read
       - aicrm_next.media_library
     replacement: future campaign command model plus broadcast_jobs scheduling projection
     drop_candidate: false
@@ -850,15 +850,15 @@ tables:
   campaign_members:
     domain: campaign
     lifecycle: queue
-    write_owner: aicrm_next.cloud_orchestrator.repository
+    write_owner: aicrm_next.extensions.growth.cloud_orchestrator.repository
     write_owners:
-      - aicrm_next.cloud_orchestrator.repository
+      - aicrm_next.extensions.growth.cloud_orchestrator.repository
     status_enum:
       column: status
     read_owners:
-      - aicrm_next.cloud_orchestrator.campaigns_read
-      - aicrm_next.cloud_orchestrator.repository
-      - aicrm_next.ai_assist.external_campaigns_repo
+      - aicrm_next.extensions.growth.cloud_orchestrator.campaigns_read
+      - aicrm_next.extensions.growth.cloud_orchestrator.repository
+      - aicrm_next.extensions.ai.ai_assist.external_campaigns_repo
     replacement: broadcast_jobs, outbound_tasks, external_effect_job after run-due convergence
     drop_candidate: false
     drop_after: ""
@@ -1411,7 +1411,7 @@ tables:
       - aicrm_next.admin_read_model.projections
       - aicrm_next.automation_engine.group_ops.material_resolver
       - aicrm_next.channel_entry.application
-      - aicrm_next.commerce.repo
+      - aicrm_next.extensions.commerce.commerce.repo
     replacement: none; canonical reusable image material table
     drop_candidate: false
     drop_after: ""
@@ -1549,11 +1549,11 @@ tables:
   questionnaires:
     domain: questionnaire
     lifecycle: canonical
-    write_owner: aicrm_next.questionnaire.repo
+    write_owner: aicrm_next.extensions.forms.questionnaire.repo
     read_owners:
-      - aicrm_next.questionnaire.repo
-      - aicrm_next.questionnaire.api
-      - aicrm_next.questionnaire.operations
+      - aicrm_next.extensions.forms.questionnaire.repo
+      - aicrm_next.extensions.forms.questionnaire.api
+      - aicrm_next.extensions.forms.questionnaire.operations
     replacement: none; canonical questionnaire definition table
     drop_candidate: false
     drop_after: ""
@@ -1571,9 +1571,9 @@ tables:
   questionnaire_questions:
     domain: questionnaire
     lifecycle: canonical
-    write_owner: aicrm_next.questionnaire.repo
+    write_owner: aicrm_next.extensions.forms.questionnaire.repo
     read_owners:
-      - aicrm_next.questionnaire.repo
+      - aicrm_next.extensions.forms.questionnaire.repo
     replacement: none; canonical questionnaire question table
     drop_candidate: false
     drop_after: ""
@@ -1589,9 +1589,9 @@ tables:
   questionnaire_options:
     domain: questionnaire
     lifecycle: canonical
-    write_owner: aicrm_next.questionnaire.repo
+    write_owner: aicrm_next.extensions.forms.questionnaire.repo
     read_owners:
-      - aicrm_next.questionnaire.repo
+      - aicrm_next.extensions.forms.questionnaire.repo
     replacement: none; canonical questionnaire option table
     drop_candidate: false
     drop_after: ""
@@ -1607,9 +1607,9 @@ tables:
   questionnaire_score_rules:
     domain: questionnaire
     lifecycle: canonical
-    write_owner: aicrm_next.questionnaire.repo
+    write_owner: aicrm_next.extensions.forms.questionnaire.repo
     read_owners:
-      - aicrm_next.questionnaire.repo
+      - aicrm_next.extensions.forms.questionnaire.repo
     replacement: none; canonical questionnaire scoring rule table
     drop_candidate: false
     drop_after: ""
@@ -1625,10 +1625,10 @@ tables:
   questionnaire_submissions:
     domain: questionnaire
     lifecycle: event
-    write_owner: aicrm_next.questionnaire.repo
+    write_owner: aicrm_next.extensions.forms.questionnaire.repo
     read_owners:
-      - aicrm_next.questionnaire.repo
-      - aicrm_next.automation_agents.repository
+      - aicrm_next.extensions.forms.questionnaire.repo
+      - aicrm_next.extensions.ai.automation_agents.repository
       - audience_read.questionnaire_submissions_v1
     replacement: none; canonical questionnaire submission fact table
     drop_candidate: false
@@ -1648,10 +1648,10 @@ tables:
   questionnaire_submission_answers:
     domain: questionnaire
     lifecycle: event
-    write_owner: aicrm_next.questionnaire.repo
+    write_owner: aicrm_next.extensions.forms.questionnaire.repo
     read_owners:
-      - aicrm_next.questionnaire.repo
-      - aicrm_next.automation_agents.repository
+      - aicrm_next.extensions.forms.questionnaire.repo
+      - aicrm_next.extensions.ai.automation_agents.repository
     replacement: none; canonical questionnaire answer snapshot table
     drop_candidate: false
     drop_after: ""
@@ -1671,9 +1671,9 @@ tables:
     lifecycle: audit
     write_owner: ""
     read_owners:
-      - aicrm_next.questionnaire.repo
+      - aicrm_next.extensions.forms.questionnaire.repo
       - questionnaire external push admin pages
-      - aicrm_next.questionnaire.reconciliation
+      - aicrm_next.extensions.forms.questionnaire.reconciliation
     replacement: internal_event, internal_event_consumer_run, external_effect_job, external_effect_attempt
     drop_candidate: true
     drop_after: "after historical rows are exported or their retention window expires"
@@ -1695,7 +1695,7 @@ tables:
     write_owners:
       - aicrm_next.external_push
     read_owners:
-      - aicrm_next.commerce.external_push_admin
+      - aicrm_next.extensions.commerce.commerce.external_push_admin
       - aicrm_next.external_push.repo
     replacement: internal_event or external_effect_job after event/outbox convergence is designed
     drop_candidate: true
@@ -1717,7 +1717,7 @@ tables:
     write_owners:
       - aicrm_next.external_push
     read_owners:
-      - aicrm_next.commerce.external_push_admin
+      - aicrm_next.extensions.commerce.commerce.external_push_admin
       - aicrm_next.external_push.repo
       - external_effect compatibility diagnostics
     replacement: external_effect_job, external_effect_attempt
@@ -1805,7 +1805,7 @@ tables:
       - aicrm_next.platform_foundation.execution_runtime.read_model
       - aicrm_next.platform_foundation.internal_events.worker
       - aicrm_next.platform_foundation.internal_events.reconciliation
-      - aicrm_next.commerce.fulfillment_reconciliation
+      - aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation
     replacement: none; transactional durability boundary for existing internal business events
     drop_candidate: false
     drop_after: ""
@@ -2376,7 +2376,7 @@ tables:
   ai_audience_inbound_webhook_event:
     domain: ai_audience_ops
     lifecycle: audit
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2394,9 +2394,9 @@ tables:
   ai_audience_hxc_member_usage_projection:
     domain: ai_audience_ops
     lifecycle: read_model
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
-      - aicrm_next.ai_audience_ops
+      - aicrm_next.extensions.ai.ai_audience_ops
     replacement: none; generation-based maintained projection replaces the dynamic multi-source audience join after a separately verified cutover
     drop_candidate: false
     drop_after: ""
@@ -2413,9 +2413,9 @@ tables:
   ai_audience_hxc_member_usage_projection_control:
     domain: ai_audience_ops
     lifecycle: canonical
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
-      - aicrm_next.ai_audience_ops
+      - aicrm_next.extensions.ai.ai_audience_ops
     replacement: none; singleton active-generation and freshness watermark control
     drop_candidate: false
     drop_after: ""
@@ -2432,9 +2432,9 @@ tables:
   ai_audience_refresh_intent:
     domain: ai_audience_ops
     lifecycle: canonical
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
-      - aicrm_next.ai_audience_ops
+      - aicrm_next.extensions.ai.ai_audience_ops
       - aicrm_next.platform_foundation.execution_runtime
     replacement: none; one coalescing durable refresh intent per package
     drop_candidate: false
@@ -2453,9 +2453,9 @@ tables:
   ai_audience_refresh_source_receipt:
     domain: ai_audience_ops
     lifecycle: audit
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
-      - aicrm_next.ai_audience_ops
+      - aicrm_next.extensions.ai.ai_audience_ops
     replacement: none; idempotent source-event to package-generation evidence
     drop_candidate: false
     drop_after: ""
@@ -2472,10 +2472,10 @@ tables:
   ai_audience_member_current:
     domain: ai_audience_ops
     lifecycle: read_model
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
       - aicrm_next.admin_read_model
-      - aicrm_next.ai_audience_ops
+      - aicrm_next.extensions.ai.ai_audience_ops
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2491,9 +2491,9 @@ tables:
   ai_audience_member_event:
     domain: ai_audience_ops
     lifecycle: audit
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
-      - aicrm_next.ai_audience_ops
+      - aicrm_next.extensions.ai.ai_audience_ops
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2509,9 +2509,9 @@ tables:
   ai_audience_outbound_subscription:
     domain: ai_audience_ops
     lifecycle: canonical
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
-      - aicrm_next.ai_audience_ops
+      - aicrm_next.extensions.ai.ai_audience_ops
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2527,9 +2527,9 @@ tables:
   ai_audience_package:
     domain: ai_audience_ops
     lifecycle: canonical
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
-      - aicrm_next.ai_audience_ops
+      - aicrm_next.extensions.ai.ai_audience_ops
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2545,9 +2545,9 @@ tables:
   ai_audience_package_dependency:
     domain: ai_audience_ops
     lifecycle: canonical
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
-      - aicrm_next.ai_audience_ops
+      - aicrm_next.extensions.ai.ai_audience_ops
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2563,9 +2563,9 @@ tables:
   ai_audience_package_run:
     domain: ai_audience_ops
     lifecycle: canonical
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
-      - aicrm_next.ai_audience_ops
+      - aicrm_next.extensions.ai.ai_audience_ops
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2581,9 +2581,9 @@ tables:
   ai_audience_package_sender:
     domain: ai_audience_ops
     lifecycle: canonical
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
-      - aicrm_next.ai_audience_ops
+      - aicrm_next.extensions.ai.ai_audience_ops
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2599,9 +2599,9 @@ tables:
   ai_audience_package_version:
     domain: ai_audience_ops
     lifecycle: canonical
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
-      - aicrm_next.ai_audience_ops
+      - aicrm_next.extensions.ai.ai_audience_ops
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2635,7 +2635,7 @@ tables:
   alipay_pay_order_events:
     domain: commerce
     lifecycle: audit
-    write_owner: aicrm_next.commerce.alipay_service
+    write_owner: aicrm_next.extensions.commerce.commerce.alipay_service
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2653,7 +2653,7 @@ tables:
   alipay_pay_orders:
     domain: commerce
     lifecycle: canonical
-    write_owner: aicrm_next.commerce.alipay_service
+    write_owner: aicrm_next.extensions.commerce.commerce.alipay_service
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2689,7 +2689,7 @@ tables:
   automation_agent_config:
     domain: automation_agents
     lifecycle: config
-    write_owner: aicrm_next.automation_agents
+    write_owner: aicrm_next.extensions.ai.automation_agents
     read_owners:
       - aicrm_next.admin_read_model
     replacement: none; active production schema table registered during schema drift closeout
@@ -2725,7 +2725,7 @@ tables:
   automation_agent_llm_call_log:
     domain: ai_audience_ops
     lifecycle: audit
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
       - aicrm_next.admin_read_model
     replacement: none; canonical AI agent provider-call audit log
@@ -2743,7 +2743,7 @@ tables:
   automation_agent_output:
     domain: ai_audience_ops
     lifecycle: audit
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
       - aicrm_next.admin_read_model
     replacement: none; canonical AI agent output and adoption evidence
@@ -2761,7 +2761,7 @@ tables:
   automation_agent_run:
     domain: automation_agents
     lifecycle: canonical
-    write_owner: aicrm_next.automation_agents
+    write_owner: aicrm_next.extensions.ai.automation_agents
     read_owners:
       - aicrm_next.admin_read_model
     replacement: none; active production schema table registered during schema drift closeout
@@ -2779,7 +2779,7 @@ tables:
   automation_agent_runtime_config:
     domain: automation_agents
     lifecycle: config
-    write_owner: aicrm_next.automation_agents
+    write_owner: aicrm_next.extensions.ai.automation_agents
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2797,7 +2797,7 @@ tables:
   automation_agent_webhook_batch:
     domain: automation_agents
     lifecycle: audit
-    write_owner: aicrm_next.automation_agents
+    write_owner: aicrm_next.extensions.ai.automation_agents
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2815,7 +2815,7 @@ tables:
   automation_agent_webhook_item:
     domain: automation_agents
     lifecycle: audit
-    write_owner: aicrm_next.automation_agents
+    write_owner: aicrm_next.extensions.ai.automation_agents
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3122,7 +3122,7 @@ tables:
   cloud_agent_audit_log:
     domain: cloud_orchestrator
     lifecycle: audit
-    write_owner: aicrm_next.cloud_orchestrator
+    write_owner: aicrm_next.extensions.growth.cloud_orchestrator
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3140,7 +3140,7 @@ tables:
   cloud_approval_tokens:
     domain: cloud_orchestrator
     lifecycle: config
-    write_owner: aicrm_next.cloud_orchestrator
+    write_owner: aicrm_next.extensions.growth.cloud_orchestrator
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3158,12 +3158,12 @@ tables:
   cloud_broadcast_plan_recipient_messages:
     domain: cloud_orchestrator
     lifecycle: canonical
-    write_owner: aicrm_next.cloud_orchestrator
+    write_owner: aicrm_next.extensions.growth.cloud_orchestrator
     write_owners:
-      - aicrm_next.cloud_orchestrator
+      - aicrm_next.extensions.growth.cloud_orchestrator
     read_owners:
       - aicrm_next.background_jobs
-      - aicrm_next.cloud_orchestrator
+      - aicrm_next.extensions.growth.cloud_orchestrator
       - aicrm_next.send_content
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
@@ -3182,12 +3182,12 @@ tables:
   cloud_broadcast_plan_recipients:
     domain: cloud_orchestrator
     lifecycle: canonical
-    write_owner: aicrm_next.cloud_orchestrator
+    write_owner: aicrm_next.extensions.growth.cloud_orchestrator
     write_owners:
-      - aicrm_next.cloud_orchestrator
+      - aicrm_next.extensions.growth.cloud_orchestrator
     read_owners:
       - aicrm_next.background_jobs
-      - aicrm_next.cloud_orchestrator
+      - aicrm_next.extensions.growth.cloud_orchestrator
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -3205,9 +3205,9 @@ tables:
   cloud_broadcast_plans:
     domain: cloud_orchestrator
     lifecycle: canonical
-    write_owner: aicrm_next.cloud_orchestrator
+    write_owner: aicrm_next.extensions.growth.cloud_orchestrator
     read_owners:
-      - aicrm_next.cloud_orchestrator
+      - aicrm_next.extensions.growth.cloud_orchestrator
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -3243,16 +3243,16 @@ tables:
     lifecycle: canonical
     write_owner: aicrm_next.identity_contact
     read_owners:
-      - aicrm_next.ai_assist
-      - aicrm_next.ai_audience_ops
+      - aicrm_next.extensions.ai.ai_assist
+      - aicrm_next.extensions.ai.ai_audience_ops
       - aicrm_next.background_jobs
       - aicrm_next.channel_entry
-      - aicrm_next.cloud_orchestrator
+      - aicrm_next.extensions.growth.cloud_orchestrator
       - aicrm_next.customer_read_model
       - aicrm_next.identity_contact
-      - aicrm_next.message_archive
-      - aicrm_next.questionnaire
-      - aicrm_next.radar_links
+      - aicrm_next.extensions.archive.message_archive
+      - aicrm_next.extensions.forms.questionnaire
+      - aicrm_next.extensions.radar.radar_links
       - aicrm_next.sidebar_write
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
@@ -3468,7 +3468,7 @@ tables:
   external_push_config:
     domain: external
     lifecycle: config
-    write_owner: aicrm_next.commerce
+    write_owner: aicrm_next.extensions.commerce.commerce
     read_owners:
       - aicrm_next.external_push
     replacement: none; active production schema table registered during schema drift closeout
@@ -3637,7 +3637,7 @@ tables:
   hxc_dashboard_broadcast_tasks:
     domain: user_ops
     lifecycle: canonical
-    write_owner: aicrm_next.hxc_dashboard
+    write_owner: aicrm_next.extensions.hxc.hxc_dashboard
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3707,7 +3707,7 @@ tables:
   radar_click_events:
     domain: radar
     lifecycle: event
-    write_owner: aicrm_next.radar_links
+    write_owner: aicrm_next.extensions.radar.radar_links
     read_owners:
       - radar admin event list, export, and aggregate statistics
       - external radar logical-click read model
@@ -3728,7 +3728,7 @@ tables:
   radar_links:
     domain: radar
     lifecycle: canonical
-    write_owner: aicrm_next.radar_links
+    write_owner: aicrm_next.extensions.radar.radar_links
     read_owners:
       - aicrm_next.send_content
     replacement: none; active production schema table registered during schema drift closeout
@@ -3746,7 +3746,7 @@ tables:
   radar_pdf_preview_assets:
     domain: radar
     lifecycle: read_model
-    write_owner: aicrm_next.radar_links
+    write_owner: aicrm_next.extensions.radar.radar_links
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3869,16 +3869,16 @@ tables:
   commerce_coupons:
     domain: commerce
     lifecycle: canonical
-    write_owner: aicrm_next.commerce.coupons
+    write_owner: aicrm_next.extensions.commerce.commerce.coupons
     read_owners:
-      - aicrm_next.commerce.coupons
-      - aicrm_next.commerce.coupons.checker
+      - aicrm_next.extensions.commerce.commerce.coupons
+      - aicrm_next.extensions.commerce.commerce.coupons.checker
     replacement: none; canonical fixed-amount coupon campaign definition
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - aicrm_next.commerce.coupons.admin_api
-      - aicrm_next.commerce.coupons.public_api
+      - aicrm_next.extensions.commerce.commerce.coupons.admin_api
+      - aicrm_next.extensions.commerce.commerce.coupons.public_api
     migration_source: 0114_commerce_coupons
     pii_level: internal
     guard_tests:
@@ -3889,18 +3889,18 @@ tables:
   commerce_coupon_product_bindings:
     domain: commerce
     lifecycle: canonical
-    write_owner: aicrm_next.commerce.coupons
+    write_owner: aicrm_next.extensions.commerce.commerce.coupons
     read_owners:
-      - aicrm_next.commerce.coupons
-      - aicrm_next.commerce.coupons.checker
+      - aicrm_next.extensions.commerce.commerce.coupons
+      - aicrm_next.extensions.commerce.commerce.coupons.checker
     replacement: none; canonical coupon to unified trade product binding
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - aicrm_next.commerce.coupons.admin_api
-      - aicrm_next.commerce.coupons.public_api
-      - aicrm_next.public_product.h5_wechat_pay
-      - aicrm_next.service_period.api
+      - aicrm_next.extensions.commerce.commerce.coupons.admin_api
+      - aicrm_next.extensions.commerce.commerce.coupons.public_api
+      - aicrm_next.extensions.commerce.public_product.h5_wechat_pay
+      - aicrm_next.extensions.commerce.service_period.api
     migration_source: 0114_commerce_coupons
     pii_level: none
     guard_tests:
@@ -3911,18 +3911,18 @@ tables:
   commerce_coupon_claims:
     domain: commerce
     lifecycle: canonical
-    write_owner: aicrm_next.commerce.coupons
+    write_owner: aicrm_next.extensions.commerce.commerce.coupons
     read_owners:
-      - aicrm_next.commerce.coupons
-      - aicrm_next.commerce.coupons.checker
+      - aicrm_next.extensions.commerce.commerce.coupons
+      - aicrm_next.extensions.commerce.commerce.coupons.checker
     replacement: none; canonical user coupon instance with immutable amount and validity snapshots
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - aicrm_next.commerce.coupons.public_api
-      - aicrm_next.public_product.h5_wechat_pay
-      - aicrm_next.service_period.api
-      - aicrm_next.commerce.coupons.checker
+      - aicrm_next.extensions.commerce.commerce.coupons.public_api
+      - aicrm_next.extensions.commerce.public_product.h5_wechat_pay
+      - aicrm_next.extensions.commerce.service_period.api
+      - aicrm_next.extensions.commerce.commerce.coupons.checker
     migration_source: 0114_commerce_coupons
     pii_level: direct_contact
     guard_tests:
@@ -3933,18 +3933,18 @@ tables:
   commerce_coupon_redemptions:
     domain: commerce
     lifecycle: canonical
-    write_owner: aicrm_next.commerce.coupons
+    write_owner: aicrm_next.extensions.commerce.commerce.coupons
     read_owners:
-      - aicrm_next.commerce.coupons
-      - aicrm_next.commerce.coupons.checker
-      - aicrm_next.commerce.fulfillment_reconciliation
+      - aicrm_next.extensions.commerce.commerce.coupons
+      - aicrm_next.extensions.commerce.commerce.coupons.checker
+      - aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation
     replacement: none; canonical coupon reservation consumption and release ledger
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - aicrm_next.public_product.h5_wechat_pay
-      - aicrm_next.commerce.order_reconciliation
-      - aicrm_next.commerce.coupons.checker
+      - aicrm_next.extensions.commerce.public_product.h5_wechat_pay
+      - aicrm_next.extensions.commerce.commerce.order_reconciliation
+      - aicrm_next.extensions.commerce.commerce.coupons.checker
     migration_source: 0114_commerce_coupons
     pii_level: financial
     guard_tests:
@@ -3955,7 +3955,7 @@ tables:
   wechat_pay_order_events:
     domain: commerce
     lifecycle: audit
-    write_owner: aicrm_next.commerce.wechat_pay_service
+    write_owner: aicrm_next.extensions.commerce.commerce.wechat_pay_service
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3989,19 +3989,19 @@ tables:
   service_period_products:
     domain: service_period
     lifecycle: canonical
-    write_owner: aicrm_next.service_period
+    write_owner: aicrm_next.extensions.commerce.service_period
     read_owners:
-      - aicrm_next.service_period
-      - aicrm_next.commerce
+      - aicrm_next.extensions.commerce.service_period
+      - aicrm_next.extensions.commerce.commerce
       - aicrm_next.customer_read_model.sidebar_v2
-      - aicrm_next.commerce.fulfillment_reconciliation
+      - aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation
     replacement: none; service period semantic binding over wechat_pay_products
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - aicrm_next.service_period.api
-      - aicrm_next.service_period.application
-      - aicrm_next.service_period.payment_consumer
+      - aicrm_next.extensions.commerce.service_period.api
+      - aicrm_next.extensions.commerce.service_period.application
+      - aicrm_next.extensions.commerce.service_period.payment_consumer
       - aicrm_next.customer_read_model.sidebar_v2
     migration_source: 0095_service_period_products
     pii_level: internal_contact
@@ -4013,15 +4013,15 @@ tables:
   service_period_member_views:
     domain: service_period
     lifecycle: canonical
-    write_owner: aicrm_next.service_period
+    write_owner: aicrm_next.extensions.commerce.service_period
     read_owners:
-      - aicrm_next.service_period
+      - aicrm_next.extensions.commerce.service_period
     replacement: none; shared saved member-grid views for each service period product
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - aicrm_next.service_period.api
-      - aicrm_next.service_period.application
+      - aicrm_next.extensions.commerce.service_period.api
+      - aicrm_next.extensions.commerce.service_period.application
     migration_source: 0120_service_period_member_views
     pii_level: internal_contact
     guard_tests:
@@ -4033,15 +4033,15 @@ tables:
   service_period_member_collaborators:
     domain: service_period
     lifecycle: canonical
-    write_owner: aicrm_next.service_period
+    write_owner: aicrm_next.extensions.commerce.service_period
     read_owners:
-      - aicrm_next.service_period
+      - aicrm_next.extensions.commerce.service_period
     replacement: none; resource ACL for service-period member-grid workspaces
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - aicrm_next.service_period.api
-      - aicrm_next.service_period.member_grid_sharing
+      - aicrm_next.extensions.commerce.service_period.api
+      - aicrm_next.extensions.commerce.service_period.member_grid_sharing
     migration_source: 0121_service_period_member_grid_sharing
     pii_level: internal_contact
     guard_tests:
@@ -4053,15 +4053,15 @@ tables:
   service_period_member_shares:
     domain: service_period
     lifecycle: canonical
-    write_owner: aicrm_next.service_period
+    write_owner: aicrm_next.extensions.commerce.service_period
     read_owners:
-      - aicrm_next.service_period
+      - aicrm_next.extensions.commerce.service_period
     replacement: none; revocable signed public share state for member-grid workspaces
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - aicrm_next.service_period.api
-      - aicrm_next.service_period.member_grid_sharing
+      - aicrm_next.extensions.commerce.service_period.api
+      - aicrm_next.extensions.commerce.service_period.member_grid_sharing
     migration_source: 0121_service_period_member_grid_sharing
     pii_level: internal_contact
     guard_tests:
@@ -4073,19 +4073,19 @@ tables:
   service_period_entitlements:
     domain: service_period
     lifecycle: canonical
-    write_owner: aicrm_next.service_period
+    write_owner: aicrm_next.extensions.commerce.service_period
     read_owners:
-      - aicrm_next.service_period
+      - aicrm_next.extensions.commerce.service_period
       - aicrm_next.customer_read_model.sidebar_v2
-      - aicrm_next.commerce.fulfillment_reconciliation
+      - aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation
     replacement: none; current entitlement state for service period products
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - aicrm_next.service_period.api
-      - aicrm_next.service_period.application
-      - aicrm_next.service_period.payment_consumer
-      - aicrm_next.service_period.refund_consumer
+      - aicrm_next.extensions.commerce.service_period.api
+      - aicrm_next.extensions.commerce.service_period.application
+      - aicrm_next.extensions.commerce.service_period.payment_consumer
+      - aicrm_next.extensions.commerce.service_period.refund_consumer
       - aicrm_next.customer_read_model.sidebar_v2
     migration_source: 0097_service_period_unionid_cleanup
     pii_level: direct_contact
@@ -4097,18 +4097,18 @@ tables:
   service_period_events:
     domain: service_period
     lifecycle: canonical
-    write_owner: aicrm_next.service_period
+    write_owner: aicrm_next.extensions.commerce.service_period
     read_owners:
-      - aicrm_next.service_period
-      - aicrm_next.commerce.fulfillment_reconciliation
+      - aicrm_next.extensions.commerce.service_period
+      - aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation
     replacement: none; immutable-ish service period event ledger
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - aicrm_next.service_period.api
-      - aicrm_next.service_period.application
-      - aicrm_next.service_period.payment_consumer
-      - aicrm_next.service_period.refund_consumer
+      - aicrm_next.extensions.commerce.service_period.api
+      - aicrm_next.extensions.commerce.service_period.application
+      - aicrm_next.extensions.commerce.service_period.payment_consumer
+      - aicrm_next.extensions.commerce.service_period.refund_consumer
     migration_source: 0095_service_period_products
     pii_level: direct_contact
     guard_tests:
@@ -4119,16 +4119,16 @@ tables:
   service_period_huangyoucan_usage_snapshot:
     domain: service_period
     lifecycle: projection
-    write_owner: aicrm_next.service_period
+    write_owner: aicrm_next.extensions.commerce.service_period
     read_owners:
-      - aicrm_next.service_period
+      - aicrm_next.extensions.commerce.service_period
       - aicrm_next.customer_read_model
     replacement: none; local readonly HuangYouCan usage projection for service period views
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
       - scripts.run_huangyoucan_usage_sync
-      - aicrm_next.service_period.api
+      - aicrm_next.extensions.commerce.service_period.api
       - aicrm_next.customer_read_model.sidebar_v2
     migration_source: 0107_hyc_usage_snapshot
     pii_level: internal_contact
@@ -4141,9 +4141,9 @@ tables:
   service_period_huangyoucan_usage_sync_runs:
     domain: service_period
     lifecycle: event
-    write_owner: aicrm_next.service_period
+    write_owner: aicrm_next.extensions.commerce.service_period
     read_owners:
-      - aicrm_next.service_period
+      - aicrm_next.extensions.commerce.service_period
     replacement: none; HuangYouCan usage projection sync audit trail
     drop_candidate: false
     drop_after: ""
@@ -4160,17 +4160,17 @@ tables:
   wechat_pay_orders:
     domain: commerce
     lifecycle: canonical
-    write_owner: aicrm_next.commerce.wechat_pay_service
+    write_owner: aicrm_next.extensions.commerce.commerce.wechat_pay_service
     write_owners:
-      - aicrm_next.commerce.wechat_pay_service
+      - aicrm_next.extensions.commerce.commerce.wechat_pay_service
     read_owners:
       - aicrm_next.admin_read_model
-      - aicrm_next.commerce.coupons.checker
+      - aicrm_next.extensions.commerce.commerce.coupons.checker
       - aicrm_next.customer_read_model
       - aicrm_next.external_push
       - aicrm_next.platform_foundation.internal_events
-      - aicrm_next.service_period
-      - aicrm_next.commerce.fulfillment_reconciliation
+      - aicrm_next.extensions.commerce.service_period
+      - aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -4188,7 +4188,7 @@ tables:
   wechat_pay_product_page_slices:
     domain: commerce
     lifecycle: read_model
-    write_owner: aicrm_next.commerce.wechat_pay_service
+    write_owner: aicrm_next.extensions.commerce.commerce.wechat_pay_service
     read_owners:
       - aicrm_next.send_content
     replacement: none; active production schema table registered during schema drift closeout
@@ -4206,11 +4206,11 @@ tables:
   wechat_pay_products:
     domain: commerce
     lifecycle: canonical
-    write_owner: aicrm_next.commerce.wechat_pay_service
+    write_owner: aicrm_next.extensions.commerce.commerce.wechat_pay_service
     read_owners:
-      - aicrm_next.commerce.coupons
+      - aicrm_next.extensions.commerce.commerce.coupons
       - aicrm_next.external_push
-      - aicrm_next.service_period
+      - aicrm_next.extensions.commerce.service_period
       - aicrm_next.customer_read_model.sidebar_v2
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
@@ -4228,10 +4228,10 @@ tables:
   wechat_pay_refunds:
     domain: commerce
     lifecycle: canonical
-    write_owner: aicrm_next.commerce.wechat_pay_service
+    write_owner: aicrm_next.extensions.commerce.commerce.wechat_pay_service
     read_owners:
       - historical schema drift guard
-      - aicrm_next.commerce.fulfillment_reconciliation
+      - aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -4247,7 +4247,7 @@ tables:
   wechat_shop_refunds:
     domain: commerce
     lifecycle: canonical
-    write_owner: aicrm_next.commerce.wechat_shop_service
+    write_owner: aicrm_next.extensions.commerce.commerce.wechat_shop_service
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -4265,7 +4265,7 @@ tables:
   wechat_shop_sync_runs:
     domain: commerce
     lifecycle: canonical
-    write_owner: aicrm_next.commerce.wechat_shop_service
+    write_owner: aicrm_next.extensions.commerce.commerce.wechat_shop_service
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -4345,8 +4345,8 @@ tables:
     write_owner: aicrm_next.owner_migration
     read_owners:
       - aicrm_next.admin_read_model
-      - aicrm_next.ai_assist
-      - aicrm_next.ai_audience_ops
+      - aicrm_next.extensions.ai.ai_assist
+      - aicrm_next.extensions.ai.ai_audience_ops
       - aicrm_next.owner_migration
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
@@ -4366,8 +4366,8 @@ tables:
     write_owner: aicrm_next.owner_migration
     read_owners:
       - aicrm_next.admin_read_model
-      - aicrm_next.ai_assist
-      - aicrm_next.ai_audience_ops
+      - aicrm_next.extensions.ai.ai_assist
+      - aicrm_next.extensions.ai.ai_audience_ops
       - aicrm_next.owner_migration
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
@@ -4708,7 +4708,7 @@ tables:
   operation_cycle_attempts:
     domain: operation_cycles
     lifecycle: canonical
-    write_owner: aicrm_next.operation_cycles
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
     read_owners:
       - operation cycle report projection
       - operation cycle admin read model
@@ -4727,7 +4727,7 @@ tables:
   operation_cycle_metrics:
     domain: operation_cycles
     lifecycle: read_model
-    write_owner: aicrm_next.operation_cycles
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
     read_owners:
       - operation cycle admin read model
     replacement: none; canonical aggregate observation metrics
@@ -4745,7 +4745,7 @@ tables:
   operation_cycle_references:
     domain: operation_cycles
     lifecycle: read_model
-    write_owner: aicrm_next.operation_cycles
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
     read_owners:
       - operation cycle admin evidence links
     replacement: none; canonical hashed evidence references without attachments
@@ -4763,7 +4763,7 @@ tables:
   operation_cycle_runs:
     domain: operation_cycles
     lifecycle: canonical
-    write_owner: aicrm_next.operation_cycles
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
     read_owners:
       - operation cycle admin read model
     replacement: none; canonical latest run projection with independent status axes
@@ -4781,7 +4781,7 @@ tables:
   operation_cycle_snapshots:
     domain: operation_cycles
     lifecycle: event
-    write_owner: aicrm_next.operation_cycles
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
     read_owners:
       - operation cycle projection rebuild
       - operation cycle audit
@@ -4801,7 +4801,7 @@ tables:
   operation_cycle_stages:
     domain: operation_cycles
     lifecycle: canonical
-    write_owner: aicrm_next.operation_cycles
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
     read_owners:
       - operation cycle admin read model
     replacement: none; canonical per-attempt stage projection
@@ -4819,7 +4819,7 @@ tables:
   operation_cycle_strategies:
     domain: operation_cycles
     lifecycle: canonical
-    write_owner: aicrm_next.operation_cycles
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
     read_owners:
       - operation cycle admin read model
     replacement: none; canonical operation strategy registry
@@ -4837,7 +4837,7 @@ tables:
   operation_cycle_strategy_versions:
     domain: operation_cycles
     lifecycle: canonical
-    write_owner: aicrm_next.operation_cycles
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
     read_owners:
       - operation cycle admin read model
     replacement: none; canonical versioned strategy definition

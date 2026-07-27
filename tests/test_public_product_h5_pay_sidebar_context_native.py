@@ -5,7 +5,7 @@ from urllib.parse import parse_qs, urlparse
 
 from starlette.requests import Request
 
-from aicrm_next.public_product import h5_wechat_pay
+from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
 from aicrm_next.shared.signed_context import SIDEBAR_PRODUCT_CONTEXT_COOKIE, build_sidebar_product_context_token
 
 
@@ -52,7 +52,7 @@ def test_checkout_page_state_reads_http_only_context_cookie_without_url_credenti
 
 
 def test_h5_pay_runtime_uses_native_sidebar_context_imports() -> None:
-    source = Path("aicrm_next/public_product/h5_wechat_pay.py").read_text(encoding="utf-8")
+    source = Path("aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py").read_text(encoding="utf-8")
     forbidden = [
         "wecom_ability" + "_service.infra." + "signed_context",
         "wecom_ability" + "_service.domains.wechat_pay." + "sidebar_context",

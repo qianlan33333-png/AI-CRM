@@ -338,7 +338,7 @@ Agent 必须在 `references` 中写入精确计划引用：
 python - <<'PY'
 import json
 from pathlib import Path
-from aicrm_next.operation_cycles.dto import OperationCycleSnapshotV1
+from aicrm_next.extensions.hxc.operation_cycles.dto import OperationCycleSnapshotV1
 
 payload = json.loads(Path("operation-cycle-snapshot.json").read_text(encoding="utf-8"))
 validated = OperationCycleSnapshotV1.model_validate(payload)

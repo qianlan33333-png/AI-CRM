@@ -4,9 +4,9 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.commerce.repo import reset_commerce_fixture_state
-from aicrm_next.commerce.wechat_shop_client import WeChatShopClient, WeChatShopClientConfig, WeChatShopClientError
-from aicrm_next.commerce.wechat_shop_service import (
+from aicrm_next.extensions.commerce.commerce.repo import reset_commerce_fixture_state
+from aicrm_next.extensions.commerce.commerce.wechat_shop_client import WeChatShopClient, WeChatShopClientConfig, WeChatShopClientError
+from aicrm_next.extensions.commerce.commerce.wechat_shop_service import (
     fixture_wechat_shop_order,
     fixture_wechat_shop_refunds,
     sync_wechat_shop_orders_backfill,
@@ -14,7 +14,7 @@ from aicrm_next.commerce.wechat_shop_service import (
     sync_wechat_shop_orders_window,
 )
 from aicrm_next.main import create_app
-from aicrm_next.commerce.wechat_shop_signature import verify_signature
+from aicrm_next.extensions.commerce.commerce.wechat_shop_signature import verify_signature
 
 
 def _client(monkeypatch) -> TestClient:
@@ -84,7 +84,7 @@ def _mock_order(
 
 
 def test_commerce_wechat_shop_client_facade_has_no_direct_http_call() -> None:
-    source = Path("aicrm_next/commerce/wechat_shop_client.py").read_text(encoding="utf-8")
+    source = Path("aicrm_next/extensions/commerce/commerce/wechat_shop_client.py").read_text(encoding="utf-8")
 
     assert "requests.post" not in source
     assert "import requests" not in source
@@ -170,7 +170,7 @@ def test_wechat_shop_notify_rejects_bad_signature_in_production(monkeypatch) -> 
 def test_wechat_shop_notify_insert_failure_returns_retryable_status(monkeypatch) -> None:
     client = _client(monkeypatch)
     monkeypatch.setenv("WECHAT_SHOP_CALLBACK_TOKEN", "wechat-shop-token")
-    monkeypatch.setattr("aicrm_next.commerce.wechat_shop_service._insert_event", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("db down")))
+    monkeypatch.setattr("aicrm_next.extensions.commerce.commerce.wechat_shop_service._insert_event", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("db down")))
 
     timestamp = "1777777777"
     nonce = "nonce"

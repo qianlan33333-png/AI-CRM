@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
-from aicrm_next.commerce.wechat_pay_order_write_port import (
+from aicrm_next.extensions.commerce.commerce.wechat_pay_order_write_port import (
     WeChatPayOrderCreate,
     build_wechat_pay_order_write_port,
 )
@@ -140,7 +140,7 @@ def test_wechat_pay_order_owner_covers_refund_coupon_and_expiration() -> None:
 
 
 def test_wechat_pay_order_write_sql_is_confined_to_owner_repository() -> None:
-    owner = "aicrm_next/commerce/wechat_pay_order_write_repository.py"
+    owner = "aicrm_next/extensions/commerce/commerce/wechat_pay_order_write_repository.py"
     markers = (
         "INSERT INTO wechat_pay_orders",
         "UPDATE wechat_pay_orders",

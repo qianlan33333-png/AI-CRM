@@ -3,8 +3,8 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from aicrm_next.questionnaire import repo as questionnaire_repo
-from aicrm_next.questionnaire.repo import PostgresQuestionnaireReadRepository
+from aicrm_next.extensions.forms.questionnaire import repo as questionnaire_repo
+from aicrm_next.extensions.forms.questionnaire.repo import PostgresQuestionnaireReadRepository
 
 
 class _Result:

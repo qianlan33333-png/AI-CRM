@@ -8,8 +8,8 @@ from aicrm_next.platform_foundation.external_effects import ExternalEffectServic
 from aicrm_next.platform_foundation.external_effects.repo import reset_external_effect_fixture_state
 from aicrm_next.platform_foundation.internal_events import QUESTIONNAIRE_SUBMITTED_EVENT_TYPE
 from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
-from aicrm_next.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
-from aicrm_next.questionnaire.repo import build_questionnaire_repository
+from aicrm_next.extensions.forms.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
+from aicrm_next.extensions.forms.questionnaire.repo import build_questionnaire_repository
 from wechat_identity_test_support import authorize_wechat_client
 
 

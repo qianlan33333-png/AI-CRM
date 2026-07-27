@@ -6,9 +6,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from aicrm_next.commerce import external_push_admin
+from aicrm_next.extensions.commerce.commerce import external_push_admin
 from aicrm_next.external_push import security, service
-from aicrm_next.commerce.repo import reset_commerce_fixture_state
+from aicrm_next.extensions.commerce.commerce.repo import reset_commerce_fixture_state
 from aicrm_next.platform_foundation.external_effects import ExternalEffectService, WEBHOOK_ORDER_PAID_PUSH, reset_external_effect_fixture_state
 
 
@@ -77,7 +77,7 @@ def test_webhook_url_security_rejects_private_targets(monkeypatch):
 
 
 def test_external_push_admin_reuses_next_native_security_and_payload_helpers():
-    source = Path("aicrm_next/commerce/external_push_admin.py").read_text(encoding="utf-8")
+    source = Path("aicrm_next/extensions/commerce/commerce/external_push_admin.py").read_text(encoding="utf-8")
 
     assert "def _validate_webhook_url" not in source
     assert "def _resolve_and_validate_public_https_url" not in source

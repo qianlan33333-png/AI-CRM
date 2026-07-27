@@ -41,10 +41,10 @@ from aicrm_next.platform_foundation.internal_events.models import (
     InternalEvent,
     InternalEventConsumerRun,
 )
-from aicrm_next.questionnaire import h5_write
-from aicrm_next.questionnaire.external_effect_continuation import QUESTIONNAIRE_CONTACT_TAGS_CONTINUATION
-from aicrm_next.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
-from aicrm_next.questionnaire.repo import reset_questionnaire_fixture_state
+from aicrm_next.extensions.forms.questionnaire import h5_write
+from aicrm_next.extensions.forms.questionnaire.external_effect_continuation import QUESTIONNAIRE_CONTACT_TAGS_CONTINUATION
+from aicrm_next.extensions.forms.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
+from aicrm_next.extensions.forms.questionnaire.repo import reset_questionnaire_fixture_state
 from wechat_identity_test_support import authorize_wechat_client
 
 
@@ -227,7 +227,7 @@ def test_tag_consumer_plans_one_job_and_reuses_the_same_lineage(monkeypatch: pyt
     first = _run_tag_consumer(client)
     events, _ = InternalEventService().list_events({"event_type": QUESTIONNAIRE_SUBMITTED_EVENT_TYPE})
     runs, _ = InternalEventService().list_consumer_runs({"event_id": events[0].event_id, "consumer_name": "questionnaire_tag_consumer"})
-    from aicrm_next.questionnaire.event_consumers import questionnaire_tag_consumer
+    from aicrm_next.extensions.forms.questionnaire.event_consumers import questionnaire_tag_consumer
 
     replay = questionnaire_tag_consumer(events[0], runs[0])
     jobs, total = ExternalEffectService().list_jobs({"effect_type": WECOM_CONTACT_TAG_MARK})

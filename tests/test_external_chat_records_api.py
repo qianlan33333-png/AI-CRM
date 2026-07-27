@@ -4,8 +4,8 @@ from fastapi.testclient import TestClient
 
 from aicrm_next.identity_contact.resolver import IdentityConflictError
 from aicrm_next.main import create_app
-from aicrm_next.message_archive.application import ListExternalChatRecordsQuery
-from aicrm_next.message_archive.repo import FixtureMessageArchiveRepository
+from aicrm_next.extensions.archive.message_archive.application import ListExternalChatRecordsQuery
+from aicrm_next.extensions.archive.message_archive.repo import FixtureMessageArchiveRepository
 from tests.admin_auth_test_helpers import access_token_headers, install_access_token
 
 

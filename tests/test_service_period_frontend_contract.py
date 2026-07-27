@@ -3,10 +3,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from aicrm_next.commerce.repo import reset_commerce_fixture_state
-from aicrm_next.public_product import h5_wechat_pay
-from aicrm_next.service_period.application import GrantOrRenewEntitlementCommand
-from aicrm_next.service_period.repo import reset_service_period_fixture_state
+from aicrm_next.extensions.commerce.commerce.repo import reset_commerce_fixture_state
+from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
+from aicrm_next.extensions.commerce.service_period.application import GrantOrRenewEntitlementCommand
+from aicrm_next.extensions.commerce.service_period.repo import reset_service_period_fixture_state
 
 
 def _reset() -> None:
@@ -219,7 +219,7 @@ def test_service_period_data_page_has_only_data_contract(next_client) -> None:
 
     script = (
         Path(__file__).resolve().parents[1]
-        / "aicrm_next/service_period/static/admin_console/member_grid.js"
+        / "aicrm_next/extensions/commerce/service_period/static/admin_console/member_grid.js"
     ).read_text(encoding="utf-8")
     assert "/member-grid/query" in script
     assert "/member-views" in script
@@ -240,7 +240,7 @@ def test_service_period_data_page_has_only_data_contract(next_client) -> None:
 
     stylesheet = (
         Path(__file__).resolve().parents[1]
-        / "aicrm_next/service_period/static/admin_console/member_grid.css"
+        / "aicrm_next/extensions/commerce/service_period/static/admin_console/member_grid.css"
     ).read_text(encoding="utf-8")
     assert "max-height: 780px" not in stylesheet
     assert "height: calc(100vh - 286px)" in stylesheet

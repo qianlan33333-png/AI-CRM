@@ -6,10 +6,10 @@ import test from "node:test";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "../..");
-const share = readFileSync(resolve(root, "aicrm_next/service_period/static/admin_console/member_grid_share.js"), "utf8");
-const grid = readFileSync(resolve(root, "aicrm_next/service_period/static/admin_console/member_grid.js"), "utf8");
-const internalTemplate = readFileSync(resolve(root, "aicrm_next/service_period/templates/service_period_member_grid.html"), "utf8");
-const publicTemplate = readFileSync(resolve(root, "aicrm_next/service_period/templates/service_period_member_grid_public.html"), "utf8");
+const share = readFileSync(resolve(root, "aicrm_next/extensions/commerce/service_period/static/admin_console/member_grid_share.js"), "utf8");
+const grid = readFileSync(resolve(root, "aicrm_next/extensions/commerce/service_period/static/admin_console/member_grid.js"), "utf8");
+const internalTemplate = readFileSync(resolve(root, "aicrm_next/extensions/commerce/service_period/templates/service_period_member_grid.html"), "utf8");
+const publicTemplate = readFileSync(resolve(root, "aicrm_next/extensions/commerce/service_period/templates/service_period_member_grid_public.html"), "utf8");
 
 test("share dialog is super-admin gated and uses the cached WeCom directory", () => {
   assert.match(share, /access\.can_manage_share/);

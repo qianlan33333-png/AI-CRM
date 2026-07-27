@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from aicrm_next.automation_agents import external_effect_continuation as automation_continuation
+from aicrm_next.extensions.ai.automation_agents import external_effect_continuation as automation_continuation
 from aicrm_next.external_effect_composition import (
     EXTERNAL_EFFECT_PROVIDER_RESULT_ACCESS_ALLOWLIST,
     build_external_effect_continuation_consumers,

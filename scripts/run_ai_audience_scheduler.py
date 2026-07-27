@@ -11,8 +11,8 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.ai_audience_ops import register_ai_audience_event_consumers
-from aicrm_next.ai_audience_ops.scheduler import (
+from aicrm_next.extensions.ai.ai_audience_ops import register_ai_audience_event_consumers
+from aicrm_next.extensions.ai.ai_audience_ops.scheduler import (
     DEFAULT_DAILY_REFRESH_TIME,
     DEFAULT_DAILY_TICK_WINDOW_MINUTES,
     emit_due_ticks,

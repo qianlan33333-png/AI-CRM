@@ -73,6 +73,6 @@ def test_coupon_tables_have_canonical_lifecycle_and_no_drop_candidate() -> None:
     assert names <= set(tables)
     for name in names:
         assert tables[name]["lifecycle"] == "canonical"
-        assert tables[name]["write_owner"] == "aicrm_next.commerce.coupons"
+        assert tables[name]["write_owner"] == "aicrm_next.extensions.commerce.commerce.coupons"
         assert tables[name]["drop_candidate"] is False
         assert tables[name]["migration_source"] == "0114_commerce_coupons"

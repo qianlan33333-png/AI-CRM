@@ -5,10 +5,10 @@ from fastapi.testclient import TestClient
 
 from aicrm_next.identity_contact.wechat_unionid_guard import evaluate_wechat_unionid_access
 from aicrm_next.main import create_app
-from aicrm_next.public_product import h5_wechat_pay
-from aicrm_next.questionnaire.result_access import RESULT_GRANT_COOKIE_NAME, result_grant_cookie_path
-from aicrm_next.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
-from aicrm_next.questionnaire.repo import reset_questionnaire_fixture_state
+from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
+from aicrm_next.extensions.forms.questionnaire.result_access import RESULT_GRANT_COOKIE_NAME, result_grant_cookie_path
+from aicrm_next.extensions.forms.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
+from aicrm_next.extensions.forms.questionnaire.repo import reset_questionnaire_fixture_state
 
 
 WECHAT_UA = "Mozilla/5.0 MicroMessenger/8.0"

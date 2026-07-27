@@ -557,7 +557,7 @@ def test_push_center_counts_cover_records_beyond_page_limit(monkeypatch) -> None
 
 
 def test_questionnaire_default_external_push_is_queue_first(client: TestClient, monkeypatch) -> None:
-    from aicrm_next.questionnaire.repo import build_questionnaire_repository
+    from aicrm_next.extensions.forms.questionnaire.repo import build_questionnaire_repository
 
     authorize_wechat_client(client, {"external_userid": "wx_ext_001"})
     monkeypatch.delenv("AICRM_QUESTIONNAIRE_EXTERNAL_PUSH_MODE", raising=False)

@@ -10,7 +10,7 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.service_period.huangyoucan_usage_sync import (  # noqa: E402
+from aicrm_next.extensions.commerce.service_period.huangyoucan_usage_sync import (  # noqa: E402
     sanitize_huangyoucan_usage_error,
     sync_huangyoucan_usage,
 )

@@ -12,8 +12,8 @@ from aicrm_next.main import create_app
 
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE_DIR = ROOT / "aicrm_next" / "admin_shell" / "templates" / "admin_shell"
-STYLESHEET = ROOT / "aicrm_next" / "operation_cycles" / "static" / "operation_cycles.css"
-DETAIL_SCRIPT = ROOT / "aicrm_next" / "operation_cycles" / "static" / "operation_cycles_detail.js"
+STYLESHEET = ROOT / "aicrm_next" / "extensions" / "hxc" / "operation_cycles" / "static" / "operation_cycles.css"
+DETAIL_SCRIPT = ROOT / "aicrm_next" / "extensions" / "hxc" / "operation_cycles" / "static" / "operation_cycles_detail.js"
 AGENT_GUIDE = ROOT / "docs" / "operation_cycles" / "agent_usage_guide.md"
 AGENT_ENTRY = ROOT / "AGENTS.md"
 
@@ -90,7 +90,7 @@ def _run() -> dict:
 
 
 def _client(monkeypatch) -> TestClient:
-    from aicrm_next.operation_cycles import admin_pages
+    from aicrm_next.extensions.hxc.operation_cycles import admin_pages
 
     strategy = _strategy()
     run = _run()
@@ -406,7 +406,7 @@ def test_operation_cycle_pages_render_dense_readonly_evidence(monkeypatch) -> No
 
 
 def test_operation_cycle_weekly_progress_resets_outside_current_week() -> None:
-    from aicrm_next.operation_cycles.admin_pages import _strategy_summaries
+    from aicrm_next.extensions.hxc.operation_cycles.admin_pages import _strategy_summaries
 
     payload = {"items": [_strategy()]}
     current_week = _strategy_summaries(
@@ -430,7 +430,7 @@ def test_operation_cycle_weekly_progress_resets_outside_current_week() -> None:
 
 
 def test_operation_cycle_empty_state_never_presents_missing_as_zero(monkeypatch) -> None:
-    from aicrm_next.operation_cycles import admin_pages
+    from aicrm_next.extensions.hxc.operation_cycles import admin_pages
 
     client = _client(monkeypatch)
     monkeypatch.setattr(

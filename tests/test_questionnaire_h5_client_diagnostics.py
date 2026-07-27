@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.questionnaire.h5_write import (
+from aicrm_next.extensions.forms.questionnaire.h5_write import (
     get_questionnaire_h5_client_diagnostics,
     get_questionnaire_h5_write_audit_events,
 )

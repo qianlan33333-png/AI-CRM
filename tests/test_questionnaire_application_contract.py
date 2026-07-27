@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from aicrm_next.questionnaire.application import (
+from aicrm_next.extensions.forms.questionnaire.application import (
     GetQuestionnaireDetailQuery,
     ListQuestionnairesQuery,
     SubmitQuestionnaireCommand,
     build_questionnaire_share_payload,
 )
-from aicrm_next.questionnaire.dto import QuestionnaireSubmitRequest
-from aicrm_next.questionnaire.repo import InMemoryQuestionnaireRepository, reset_questionnaire_fixture_state
+from aicrm_next.extensions.forms.questionnaire.dto import QuestionnaireSubmitRequest
+from aicrm_next.extensions.forms.questionnaire.repo import InMemoryQuestionnaireRepository, reset_questionnaire_fixture_state
 
 
 class _NullIdentityQuery:

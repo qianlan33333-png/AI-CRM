@@ -11,7 +11,7 @@ from aicrm_next.platform_foundation.external_effects import (
     ExternalEffectService,
     reset_external_effect_fixture_state,
 )
-from aicrm_next.questionnaire.repo import (
+from aicrm_next.extensions.forms.questionnaire.repo import (
     build_questionnaire_repository,
     reset_questionnaire_fixture_state,
 )
@@ -86,8 +86,8 @@ def test_legacy_external_push_retry_routes_are_removed(client: TestClient, path:
 
 
 def test_retired_external_push_source_contains_no_retry_planner_or_status_writer() -> None:
-    service_source = Path("aicrm_next/questionnaire/external_push_logs.py").read_text(encoding="utf-8")
-    route_source = Path("aicrm_next/questionnaire/admin_pages.py").read_text(encoding="utf-8")
+    service_source = Path("aicrm_next/extensions/forms/questionnaire/external_push_logs.py").read_text(encoding="utf-8")
+    route_source = Path("aicrm_next/extensions/forms/questionnaire/admin_pages.py").read_text(encoding="utf-8")
 
     for marker in (
         "QuestionnaireExternalPushRetryService",
@@ -98,7 +98,7 @@ def test_retired_external_push_source_contains_no_retry_planner_or_status_writer
         "questionnaire.external_push.retry",
     ):
         assert marker not in service_source
-    repository_source = Path("aicrm_next/questionnaire/repo.py").read_text(encoding="utf-8")
+    repository_source = Path("aicrm_next/extensions/forms/questionnaire/repo.py").read_text(encoding="utf-8")
     assert "INSERT INTO questionnaire_external_push_logs" not in repository_source
     assert "def create_external_push_log" not in repository_source
     assert "external-push-logs/retry-batch" not in route_source

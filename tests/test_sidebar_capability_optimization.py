@@ -6,13 +6,13 @@ import pytest
 from fastapi.testclient import TestClient
 from starlette.requests import Request
 
-from aicrm_next.commerce.coupons.application import CouponSidebarApplication
+from aicrm_next.extensions.commerce.commerce.coupons.application import CouponSidebarApplication
 from aicrm_next.customer_read_model.sidebar_timeline import (
     ResolvedSidebarCustomerContext,
     SidebarCustomerTimelineQuery,
 )
 from aicrm_next.main import create_app
-from aicrm_next.radar_links.application import ListSidebarRadarLinksQuery
+from aicrm_next.extensions.radar.radar_links.application import ListSidebarRadarLinksQuery
 from aicrm_next.shared.errors import ContractError
 from aicrm_next.shared.public_url import canonical_public_base_url
 from tests.sidebar_auth_test_helpers import install_sidebar_auth
@@ -365,8 +365,8 @@ def test_sidebar_read_failures_return_503_without_fixture_fallback(monkeypatch) 
     def fail_radar(*_args, **_kwargs):
         raise RuntimeError("radar database unavailable")
 
-    monkeypatch.setattr("aicrm_next.commerce.coupons.sidebar_api.CouponSidebarApplication.list_claimable", fail_coupons)
-    monkeypatch.setattr("aicrm_next.radar_links.api.ListSidebarRadarLinksQuery.execute", fail_radar)
+    monkeypatch.setattr("aicrm_next.extensions.commerce.commerce.coupons.sidebar_api.CouponSidebarApplication.list_claimable", fail_coupons)
+    monkeypatch.setattr("aicrm_next.extensions.radar.radar_links.api.ListSidebarRadarLinksQuery.execute", fail_radar)
 
     coupon = client.get("/api/sidebar/v2/coupons")
     radar = client.get("/api/sidebar/v2/radar-links")

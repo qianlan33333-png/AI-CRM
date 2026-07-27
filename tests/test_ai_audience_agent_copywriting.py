@@ -5,7 +5,7 @@ import json
 import pytest
 from sqlalchemy import text
 
-from aicrm_next.ai_audience_ops.agent_copywriting import generate_member_event_copywriting, render_template_text
+from aicrm_next.extensions.ai.ai_audience_ops.agent_copywriting import generate_member_event_copywriting, render_template_text
 from aicrm_next.shared.db_session import get_session_factory
 
 

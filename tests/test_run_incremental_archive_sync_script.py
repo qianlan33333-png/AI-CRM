@@ -86,8 +86,8 @@ def test_run_incremental_archive_sync_defaults_to_direct_process(monkeypatch, ca
     monkeypatch.setenv("WECOM_ARCHIVE_SYNC_LIMIT", "100")
     monkeypatch.setenv("WECOM_ARCHIVE_SYNC_MAX_PAGES", "3")
     monkeypatch.delenv("WECOM_ARCHIVE_SYNC_MODE", raising=False)
-    monkeypatch.setattr("aicrm_next.admin_jobs_archive_sync_gateway._execute_archive_sync", fake_execute)
-    monkeypatch.setattr("aicrm_next.admin_jobs_archive_sync_gateway._build_archive_sync_repository", lambda: repository)
+    monkeypatch.setattr("aicrm_next.extensions.archive.admin_jobs_archive_sync_gateway._execute_archive_sync", fake_execute)
+    monkeypatch.setattr("aicrm_next.extensions.archive.admin_jobs_archive_sync_gateway._build_archive_sync_repository", lambda: repository)
 
     body = module.run()
 

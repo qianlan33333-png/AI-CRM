@@ -4,7 +4,7 @@ from pathlib import Path
 
 from sqlalchemy import text
 
-from aicrm_next.commerce import wechat_shop_service
+from aicrm_next.extensions.commerce.commerce import wechat_shop_service
 from aicrm_next.customer_read_model.repo import (
     LiveSourceCustomerReadRepository,
     SqlAlchemyCustomerReadModelRepository,
@@ -15,11 +15,11 @@ from aicrm_next.customer_read_model.timeline_projection import (
     timeline_projection_from_internal_event,
 )
 from aicrm_next.platform_foundation.internal_events.models import InternalEvent, InternalEventConsumerRun
-from aicrm_next.radar_links.application import ResolveRadarLandingQuery
-from aicrm_next.radar_links.domain import sign_viewer_session
-from aicrm_next.radar_links import repo as radar_repo
-from aicrm_next.radar_links.repo import InMemoryRadarLinksRepository
-from aicrm_next.service_period import repo as service_period_repo
+from aicrm_next.extensions.radar.radar_links.application import ResolveRadarLandingQuery
+from aicrm_next.extensions.radar.radar_links.domain import sign_viewer_session
+from aicrm_next.extensions.radar.radar_links import repo as radar_repo
+from aicrm_next.extensions.radar.radar_links.repo import InMemoryRadarLinksRepository
+from aicrm_next.extensions.commerce.service_period import repo as service_period_repo
 from aicrm_next.shared.db_session import get_session_factory
 
 

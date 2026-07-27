@@ -6,8 +6,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_IDENTITY_QUERY_FILES = (
     "aicrm_next/identity_contact/repo.py",
-    "aicrm_next/questionnaire/repo.py",
-    "aicrm_next/automation_agents/repository.py",
+    "aicrm_next/extensions/forms/questionnaire/repo.py",
+    "aicrm_next/extensions/ai/automation_agents/repository.py",
 )
 
 
@@ -24,9 +24,9 @@ def test_runtime_identity_alias_queries_use_gin_indexable_containment() -> None:
     assert "external_userids_json @> jsonb_build_array" in combined
     assert "jsonb_build_object('external_userid'" in combined
 
-    questionnaire_source = (ROOT / "aicrm_next/questionnaire/repo.py").read_text(encoding="utf-8")
+    questionnaire_source = (ROOT / "aicrm_next/extensions/forms/questionnaire/repo.py").read_text(encoding="utf-8")
     assert "clauses.append(\"qs.unionid = %s AND qs.unionid <> ''\")" in questionnaire_source
     assert "resolved_unionid" in questionnaire_source
 
-    automation_source = (ROOT / "aicrm_next/automation_agents/repository.py").read_text(encoding="utf-8")
+    automation_source = (ROOT / "aicrm_next/extensions/ai/automation_agents/repository.py").read_text(encoding="utf-8")
     assert "identity_clause = \"AND s.unionid = :unionid AND s.unionid <> ''\"" in automation_source

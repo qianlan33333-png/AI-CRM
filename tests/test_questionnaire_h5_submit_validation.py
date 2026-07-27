@@ -4,11 +4,11 @@ import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.questionnaire.h5_write import (
+from aicrm_next.extensions.forms.questionnaire.h5_write import (
     get_questionnaire_h5_side_effect_plans,
     reset_questionnaire_h5_write_fixture_state,
 )
-from aicrm_next.questionnaire.repo import build_questionnaire_repository, reset_questionnaire_fixture_state
+from aicrm_next.extensions.forms.questionnaire.repo import build_questionnaire_repository, reset_questionnaire_fixture_state
 from wechat_identity_test_support import authorize_wechat_client
 
 

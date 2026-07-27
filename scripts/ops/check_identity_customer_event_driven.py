@@ -87,9 +87,9 @@ def _code_checks() -> dict[str, bool]:
             and "has_continuation = dirty > int(generation)" in customer_intents
         ),
         "archive_source_change_uses_transactional_outbox": (
-            "archive_source_change_recorder_required" in _read("aicrm_next/message_archive/repo.py")
-            and "message_archive.batch_ingested" in _read("aicrm_next/admin_jobs_archive_sync_gateway.py")
-            and "enqueue_transactional_internal_event_outbox(" in _read("aicrm_next/admin_jobs_archive_sync_gateway.py")
+            "archive_source_change_recorder_required" in _read("aicrm_next/extensions/archive/message_archive/repo.py")
+            and "message_archive.batch_ingested" in _read("aicrm_next/extensions/archive/admin_jobs_archive_sync_gateway.py")
+            and "enqueue_transactional_internal_event_outbox(" in _read("aicrm_next/extensions/archive/admin_jobs_archive_sync_gateway.py")
             and "admin_jobs_archive_sync_gateway import execute_archive_sync" in _read("scripts/run_incremental_archive_sync.py")
         ),
         "deploy_preflight_waits_on_durable_customer_intent": (

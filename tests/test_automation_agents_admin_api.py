@@ -159,7 +159,7 @@ def test_fixed_content_normalizes_and_rejects_non_pdf_attachment(next_client, ne
         def get_materials_by_ids(self, material_type, ids):
             return [{"library_id": ids[0], "metadata": {"mime_type": "text/plain"}}]
 
-    from aicrm_next.automation_agents import application as app_module
+    from aicrm_next.extensions.ai.automation_agents import application as app_module
 
     monkeypatch.setattr(app_module, "build_send_content_repository", lambda: FakeRepo())
     non_pdf = next_client.put(

@@ -100,8 +100,8 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
     ]
     assert "aicrm_next.external_push.repo" in manifest["tables"]["domain_event_outbox"]["read_owners"]
     assert "aicrm_next.external_push.repo" in manifest["tables"]["external_push_delivery"]["read_owners"]
-    assert repositories["aicrm_next/ai_assist/external_campaigns_repo.py"]["table_writes"] == []
-    assert repositories["aicrm_next/ai_assist/external_campaigns_repo.py"]["table_reads"] == [
+    assert repositories["aicrm_next/extensions/ai/ai_assist/external_campaigns_repo.py"]["table_writes"] == []
+    assert repositories["aicrm_next/extensions/ai/ai_assist/external_campaigns_repo.py"]["table_reads"] == [
         "broadcast_jobs",
         "campaign_members",
         "campaign_segments",
@@ -206,21 +206,21 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "aicrm_next/platform_foundation/background_jobs/broadcast_job_write_repository.py"
     ]["table_writes"] == ["broadcast_jobs"]
     assert "broadcast_jobs" not in repositories[
-        "aicrm_next/cloud_orchestrator/repository.py"
+        "aicrm_next/extensions/growth/cloud_orchestrator/repository.py"
     ]["table_writes"]
     for table in (
         "cloud_broadcast_plan_recipient_messages",
         "cloud_broadcast_plan_recipients",
     ):
-        assert manifest["tables"][table]["write_owner"] == "aicrm_next.cloud_orchestrator"
+        assert manifest["tables"][table]["write_owner"] == "aicrm_next.extensions.growth.cloud_orchestrator"
         assert manifest["tables"][table]["write_owners"] == [
-            "aicrm_next.cloud_orchestrator"
+            "aicrm_next.extensions.growth.cloud_orchestrator"
         ]
         assert table not in repositories[
             "aicrm_next/background_jobs/broadcast_effect_repository.py"
         ]["table_writes"]
         assert table not in repositories[
-            "aicrm_next/cloud_orchestrator/repository.py"
+            "aicrm_next/extensions/growth/cloud_orchestrator/repository.py"
         ]["table_writes"]
     assert repositories[
         "aicrm_next/platform_foundation/background_jobs/"
@@ -230,23 +230,23 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "cloud_broadcast_plan_recipients",
     ]
     assert manifest["tables"]["wechat_pay_orders"]["write_owner"] == (
-        "aicrm_next.commerce.wechat_pay_service"
+        "aicrm_next.extensions.commerce.commerce.wechat_pay_service"
     )
     assert manifest["tables"]["wechat_pay_orders"]["write_owners"] == [
-        "aicrm_next.commerce.wechat_pay_service"
+        "aicrm_next.extensions.commerce.commerce.wechat_pay_service"
     ]
     assert repositories[
-        "aicrm_next/commerce/wechat_pay_order_write_repository.py"
+        "aicrm_next/extensions/commerce/commerce/wechat_pay_order_write_repository.py"
     ]["table_writes"] == ["wechat_pay_orders"]
     assert "wechat_pay_orders" not in repositories[
-        "aicrm_next/commerce/coupons/repo.py"
+        "aicrm_next/extensions/commerce/commerce/coupons/repo.py"
     ]["table_writes"]
     assert manifest["tables"]["contact_tags"]["write_owners"] == ["aicrm_next.customer_tags"]
     for path in (
-        "aicrm_next/ai_audience_ops/repository.py",
+        "aicrm_next/extensions/ai/ai_audience_ops/repository.py",
         "aicrm_next/channel_entry/repo.py",
-        "aicrm_next/message_archive/repo.py",
-        "aicrm_next/questionnaire/repo.py",
+        "aicrm_next/extensions/archive/message_archive/repo.py",
+        "aicrm_next/extensions/forms/questionnaire/repo.py",
     ):
         assert "crm_user_identity_resolution_queue" not in repositories[path]["table_writes"]
 

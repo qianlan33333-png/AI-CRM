@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from time import time
 
-from aicrm_next.questionnaire.result_access import (
+from aicrm_next.extensions.forms.questionnaire.result_access import (
     RESULT_GRANT_COOKIE_NAME,
     issue_questionnaire_result_grant,
     questionnaire_result_token_from_grant,

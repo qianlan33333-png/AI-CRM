@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.commerce.payment_tagging import (
+from aicrm_next.extensions.commerce.commerce.payment_tagging import (
     OWNER_USERID,
     PRODUCT_CODE,
     PRODUCT_CODES,

@@ -81,7 +81,7 @@ questionnaire submit path.
 
 ## Compatibility
 
-The existing H5 submit path in `aicrm_next/questionnaire/h5_write.py` remains in
+The existing H5 submit path in `aicrm_next/extensions/forms/questionnaire/h5_write.py` remains in
 place:
 
 - existing questionnaire external push planning is not removed;

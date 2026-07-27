@@ -10,7 +10,7 @@ from aicrm_next.integration_gateway import wecom_channel_entry_client
 from aicrm_next.main import create_app
 from aicrm_next.platform_foundation.external_effects import ExternalEffectService, reset_external_effect_fixture_state
 from aicrm_next.platform_foundation.internal_events import reset_internal_event_fixture_state
-from aicrm_next.questionnaire import h5_write
+from aicrm_next.extensions.forms.questionnaire import h5_write
 from tests.sidebar_auth_test_helpers import install_sidebar_auth
 from tests.wechat_identity_test_support import authorize_wechat_client
 

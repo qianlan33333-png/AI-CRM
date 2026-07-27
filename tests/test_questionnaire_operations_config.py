@@ -11,9 +11,9 @@ from aicrm_next.platform_foundation.external_effects import (
 )
 from aicrm_next.platform_foundation.external_effects.repo import reset_external_effect_fixture_state
 from aicrm_next.platform_foundation.push_center.capability_status import PushCapabilityStatusReadService
-from aicrm_next.questionnaire.admin_write import reset_questionnaire_admin_write_fixture_state
-from aicrm_next.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
-from aicrm_next.questionnaire.repo import reset_questionnaire_fixture_state
+from aicrm_next.extensions.forms.questionnaire.admin_write import reset_questionnaire_admin_write_fixture_state
+from aicrm_next.extensions.forms.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
+from aicrm_next.extensions.forms.questionnaire.repo import reset_questionnaire_fixture_state
 from wechat_identity_test_support import authorize_wechat_client
 
 
@@ -228,7 +228,7 @@ def test_unavailable_push_capability_returns_503_without_blocking_dimension_save
             raise RuntimeError("push capability source unavailable")
 
     monkeypatch.setattr(
-        "aicrm_next.questionnaire.operations.build_push_capability_reader",
+        "aicrm_next.extensions.forms.questionnaire.operations.build_push_capability_reader",
         lambda: UnavailableCapabilityReader(),
     )
 
@@ -364,7 +364,7 @@ def test_external_push_test_only_queues_synthetic_effect(client: TestClient, mon
             }
 
     monkeypatch.setattr(
-        "aicrm_next.questionnaire.operations.build_push_capability_reader",
+        "aicrm_next.extensions.forms.questionnaire.operations.build_push_capability_reader",
         lambda: EnabledCapabilityReader(),
     )
     queued = client.post(f"/api/admin/questionnaires/{questionnaire_id}/operations/external-push/test")

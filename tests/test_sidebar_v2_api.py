@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import event
 from sqlalchemy import create_engine, text
 
-from aicrm_next.commerce.repo import PostgresCommerceRepository
+from aicrm_next.extensions.commerce.commerce.repo import PostgresCommerceRepository
 from aicrm_next.customer_read_model import api as customer_read_model_api
 from aicrm_next.customer_read_model import sidebar_v2
 from aicrm_next.customer_read_model.application import GetCustomerContextQuery

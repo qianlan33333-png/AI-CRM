@@ -6,8 +6,8 @@ pytestmark = pytest.mark.usefixtures("composed_internal_event_registry")
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.cloud_orchestrator.campaigns_read import reset_campaign_read_fixture_state
-from aicrm_next.cloud_orchestrator.campaigns_write import reset_campaign_write_fixture_state
+from aicrm_next.extensions.growth.cloud_orchestrator.campaigns_read import reset_campaign_read_fixture_state
+from aicrm_next.extensions.growth.cloud_orchestrator.campaigns_write import reset_campaign_write_fixture_state
 from aicrm_next.main import create_app
 from aicrm_next.platform_foundation.external_effects import ExternalEffectService, reset_external_effect_fixture_state
 from aicrm_next.platform_foundation.internal_events import InternalEventService, reset_internal_event_fixture_state
