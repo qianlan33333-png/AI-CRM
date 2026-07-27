@@ -555,6 +555,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                        )}
                    ) AS pre_cutover_deferred_identity
             FROM external_effect_job job
+            WHERE job.status IN ('failed_retryable', 'failed_terminal', 'blocked')
         )
         SELECT
             COUNT(*) FILTER (
