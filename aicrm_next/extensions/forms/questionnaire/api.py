@@ -73,7 +73,7 @@ from .operations import (
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
-_TEMPLATES_DIR = Path(__file__).resolve().parents[3] / "frontend_compat" / "templates"
+_TEMPLATES_DIR = Path(__file__).resolve().parents[3] / "app" / "admin_console" / "templates"
 templates = Jinja2Templates(directory=_TEMPLATES_DIR)
 _EXTERNAL_SOURCE_STATUS = "external_questionnaire_submissions"
 

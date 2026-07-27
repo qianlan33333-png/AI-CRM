@@ -67,7 +67,7 @@ def test_api_docs_view_model_import_path_is_native() -> None:
     from aicrm_next.admin_config.api_docs_view_model import build_api_docs_view_model
 
     assert callable(build_api_docs_view_model)
-    assert not (ROOT / "aicrm_next/frontend_compat/api_docs_view_model.py").exists()
+    assert not (ROOT / "aicrm_next/app/admin_console/api_docs_view_model.py").exists()
 
 
 def test_api_docs_view_model_has_no_business_router_imports() -> None:

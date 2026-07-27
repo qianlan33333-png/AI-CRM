@@ -65,7 +65,7 @@ from .run_due import (
 from .review_plans import create_ai_assist_review_plan
 
 router = APIRouter()
-_TEMPLATES_DIR = Path(__file__).resolve().parents[3] / "frontend_compat" / "templates"
+_TEMPLATES_DIR = Path(__file__).resolve().parents[3] / "app" / "admin_console" / "templates"
 templates = Jinja2Templates(directory=_TEMPLATES_DIR)
 
 _MEDIA_UPLOAD_HEADERS = {

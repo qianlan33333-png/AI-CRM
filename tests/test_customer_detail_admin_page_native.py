@@ -169,8 +169,8 @@ def test_customer_detail_page_url_contract_is_preserved(monkeypatch) -> None:
 
 
 def test_customer_detail_live_tags_frontend_accepts_string_tags() -> None:
-    source = _read_frontend("aicrm_next/frontend_compat/static/admin_console/customer_profile_sections.js")
-    css = _read_frontend("aicrm_next/frontend_compat/static/admin_console/admin_console.css")
+    source = _read_frontend("aicrm_next/app/admin_console/static/admin_console/customer_profile_sections.js")
+    css = _read_frontend("aicrm_next/app/admin_console/static/admin_console/admin_console.css")
 
     assert "function liveTagName(tag)" in source
     assert "tag.tag_name || tag.name || tag.label || tag.value || tag.text || tag.tag_id || tag.id" in source

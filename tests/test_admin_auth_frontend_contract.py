@@ -8,7 +8,7 @@ from aicrm_next.main import create_app
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TEMPLATE = ROOT / "aicrm_next/frontend_compat/templates/admin_console/login.html"
+TEMPLATE = ROOT / "aicrm_next/app/admin_console/templates/admin_console/login.html"
 
 
 def test_login_template_exposes_only_wecom_links() -> None:

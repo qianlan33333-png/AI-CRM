@@ -165,7 +165,7 @@ def test_customer_page_uses_native_read_model_when_data_is_available(monkeypatch
 
 
 def test_questionnaire_page_uses_next_native_admin_pages(monkeypatch):
-    assert not (ROOT / "aicrm_next/frontend_compat/legacy_routes.py").exists()
+    assert not (ROOT / "aicrm_next/app/admin_console/legacy_routes.py").exists()
 
     response = _client(monkeypatch).get("/admin/questionnaires")
 
@@ -196,7 +196,7 @@ def test_questionnaire_external_push_log_routes_use_next_native_handlers(monkeyp
     assert "QuestionnaireExternalPushLogReadService" in source
     assert "QuestionnaireExternalPushRetryService" not in source
     assert "external-push-logs/retry-batch" not in source
-    assert not (ROOT / "aicrm_next/frontend_compat/legacy_routes.py").exists()
+    assert not (ROOT / "aicrm_next/app/admin_console/legacy_routes.py").exists()
 
 
 def test_wechat_pay_transactions_page_does_not_use_frontend_compat_router(monkeypatch):
@@ -214,7 +214,7 @@ def test_wechat_pay_transaction_detail_does_not_use_frontend_compat_router(monke
 
 
 def test_questionnaire_page_no_longer_depends_on_frontend_compat_legacy_items(monkeypatch):
-    assert not (ROOT / "aicrm_next/frontend_compat/legacy_routes.py").exists()
+    assert not (ROOT / "aicrm_next/app/admin_console/legacy_routes.py").exists()
 
     response = _client(monkeypatch).get("/admin/questionnaires")
 

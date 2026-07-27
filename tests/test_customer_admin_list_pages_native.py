@@ -41,7 +41,7 @@ def test_customer_list_admin_page_renders_from_native_shell() -> None:
 
 
 def test_customer_pages_and_user_ops_removed_from_frontend_compat_inventory() -> None:
-    assert not (ROOT / "aicrm_next/frontend_compat/legacy_routes.py").exists()
+    assert not (ROOT / "aicrm_next/app/admin_console/legacy_routes.py").exists()
     assert _endpoint_module("/admin/customers") == "aicrm_next.crm.customer_read_model.admin_pages"
     assert _endpoint_module("/admin/customers/{unionid}") == "aicrm_next.crm.customer_read_model.admin_pages"
     assert _endpoint_module("/admin/customer-360/{unionid}") == "aicrm_next.crm.customer_read_model.admin_pages"

@@ -8,7 +8,7 @@ from fastapi.templating import Jinja2Templates
 from aicrm_next.admin_shell_contract import shell_context
 
 router = APIRouter()
-_TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "frontend_compat" / "templates"
+_TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "app" / "admin_console" / "templates"
 templates = Jinja2Templates(directory=_TEMPLATES_DIR)
 
 

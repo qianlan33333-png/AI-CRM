@@ -17,7 +17,7 @@ from .markdown_renderer import render_markdown
 
 
 router = APIRouter()
-_TEMPLATES_DIR = Path(__file__).resolve().parents[3] / "admin_shell" / "templates"
+_TEMPLATES_DIR = Path(__file__).resolve().parents[3] / "app" / "admin_console" / "templates"
 templates = Jinja2Templates(directory=_TEMPLATES_DIR)
 
 _WEEKLY_PROGRESS_STEPS = (

@@ -12,7 +12,7 @@ from .application import GetAdminCustomerProfileQuery, GetCustomer360ProfileQuer
 from .dto import ListCustomersRequest
 
 router = APIRouter()
-_TEMPLATES_DIR = Path(__file__).resolve().parents[2] / "frontend_compat" / "templates"
+_TEMPLATES_DIR = Path(__file__).resolve().parents[2] / "app" / "admin_console" / "templates"
 templates = Jinja2Templates(directory=_TEMPLATES_DIR)
 
 ADMIN_CUSTOMERS_UNAVAILABLE_MESSAGE = "客户列表暂不可用：生产客户读源正在同步或数据库连接繁忙，请稍后刷新。"

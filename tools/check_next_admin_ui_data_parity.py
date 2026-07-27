@@ -16,7 +16,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from tools import check_admin_pages_real_data_binding as real_data_checker
-from aicrm_next.admin_shell.navigation import nav_items
+from aicrm_next.app.admin_console.navigation import nav_items
 
 try:
     from fastapi.testclient import TestClient
@@ -158,7 +158,7 @@ def _static_production_data_contracts_ready() -> tuple[bool, list[str]]:
             continue
         if "production_data_ready()" not in source:
             blockers.append(f"{name}:missing_production_data_ready_guard")
-    frontend_compat_facade = ROOT / "aicrm_next" / "frontend_compat" / "legacy_routes.py"
+    frontend_compat_facade = ROOT / "aicrm_next" / "app" / "admin_console" / "legacy_routes.py"
     if frontend_compat_facade.exists():
         blockers.append("frontend_compat_legacy_routes:should_be_removed")
     for facade in (

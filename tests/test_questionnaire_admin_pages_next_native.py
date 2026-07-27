@@ -74,7 +74,7 @@ def test_questionnaire_admin_detail_page_uses_next_read_model_editor_payload() -
 def test_questionnaire_admin_pages_are_removed_from_frontend_compat_routes() -> None:
     root = Path(__file__).resolve().parents[1]
 
-    assert not (root / "aicrm_next/frontend_compat/legacy_routes.py").exists()
+    assert not (root / "aicrm_next/app/admin_console/legacy_routes.py").exists()
 
 
 def test_questionnaire_admin_templates_live_in_questionnaire_bundle() -> None:
@@ -84,8 +84,8 @@ def test_questionnaire_admin_templates_live_in_questionnaire_bundle() -> None:
     assert (root / "aicrm_next/extensions/forms/questionnaire/templates/admin_questionnaires.html").exists()
     assert (root / "aicrm_next/extensions/forms/questionnaire/static/admin_questionnaire_editor.css").exists()
     assert (root / "aicrm_next/extensions/forms/questionnaire/static/admin_questionnaire_editor.js").exists()
-    assert not (root / "aicrm_next/frontend_compat/templates/admin_console/questionnaires.html").exists()
-    assert not (root / "aicrm_next/frontend_compat/templates/admin_questionnaires.html").exists()
+    assert not (root / "aicrm_next/app/admin_console/templates/admin_console/questionnaires.html").exists()
+    assert not (root / "aicrm_next/app/admin_console/templates/admin_questionnaires.html").exists()
 
 
 def test_questionnaire_operations_page_owns_completion_and_external_push_ui() -> None:
@@ -128,7 +128,7 @@ def test_questionnaire_operations_page_owns_completion_and_external_push_ui() ->
     assert "/static/navigation-target/completion_target_config.js" in product_template
     assert "window.AICRMCompletionTargetConfig.mount" in product_template
 
-    public_template = (root / "aicrm_next/frontend_compat/templates/questionnaire_h5_page.html").read_text(encoding="utf-8")
+    public_template = (root / "aicrm_next/app/admin_console/templates/questionnaire_h5_page.html").read_text(encoding="utf-8")
     public_completion_script = (root / "aicrm_next/extensions/forms/questionnaire/static/questionnaire_completion_action.js").read_text(encoding="utf-8")
     assert "/static/questionnaire/questionnaire_completion_action.js" in public_template
     assert "AICRMQuestionnaireCompletionAction.create" in public_template

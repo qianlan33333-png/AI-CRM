@@ -38,6 +38,6 @@ def test_media_library_admin_pages_render_from_native_shell() -> None:
 
 
 def test_media_library_admin_pages_removed_from_frontend_compat_inventory() -> None:
-    assert not (ROOT / "aicrm_next/frontend_compat/legacy_routes.py").exists()
+    assert not (ROOT / "aicrm_next/app/admin_console/legacy_routes.py").exists()
     for path, _title in MEDIA_LIBRARY_PAGES:
         assert _endpoint_module(path) == "aicrm_next.media_library.admin_pages"

@@ -128,7 +128,7 @@ def categorize_path(path: str) -> str:
         return "tools/other"
     if normalized.startswith("docs/"):
         return "docs"
-    if normalized.startswith("aicrm_next/frontend_compat/static/") or "/static/" in normalized:
+    if normalized.startswith("aicrm_next/app/admin_console/static/") or "/static/" in normalized:
         return "frontend/static"
     if normalized.startswith("aicrm_next/") and suffix == ".py":
         if any(token in normalized for token in ("/api.py", "/admin_api.py", "/routes.py", "/admin_pages.py", "/pages.py")):

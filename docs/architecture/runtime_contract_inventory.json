@@ -7757,7 +7757,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_shell.routes.admin_dashboard",
+      "endpoint": "aicrm_next.app.admin_console.routes.admin_dashboard",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.app",
@@ -9435,7 +9435,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_shell.routes.admin_logout_compat",
+      "endpoint": "aicrm_next.app.admin_console.routes.admin_logout_compat",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.app",

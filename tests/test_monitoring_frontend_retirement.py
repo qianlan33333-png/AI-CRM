@@ -59,19 +59,19 @@ PRESERVED_CANONICAL_API_ROUTES = {
 }
 
 RETIRED_ASSETS = {
-    "aicrm_next/frontend_compat/static/admin_console/admin_execution_ui.css",
-    "aicrm_next/frontend_compat/static/admin_console/admin_execution_ui.js",
-    "aicrm_next/frontend_compat/templates/admin_console/group_invite_library.html",
+    "aicrm_next/app/admin_console/static/admin_console/admin_execution_ui.css",
+    "aicrm_next/app/admin_console/static/admin_console/admin_execution_ui.js",
+    "aicrm_next/app/admin_console/templates/admin_console/group_invite_library.html",
     "aicrm_next/admin_jobs/templates/admin_console/jobs.html",
     "aicrm_next/platform_foundation/push_center/templates/admin_console/push_center.html",
     "aicrm_next/platform_foundation/internal_events/templates/admin_console/internal_events.html",
     "aicrm_next/platform_foundation/webhook_inbox/templates/admin_console/webhook_inbox.html",
-    "aicrm_next/admin_shell/templates/admin_shell/data_health.html",
-    "aicrm_next/admin_shell/templates/admin_shell/data_quality.html",
-    "aicrm_next/admin_shell/templates/admin_shell/delivery_lineage.html",
-    "aicrm_next/admin_shell/templates/admin_shell/growth_orchestration.html",
-    "aicrm_next/admin_shell/view_model.py",
-    "aicrm_next/frontend_compat/templates/admin_console/dashboard.html",
+    "aicrm_next/app/admin_console/templates/admin_shell/data_health.html",
+    "aicrm_next/app/admin_console/templates/admin_shell/data_quality.html",
+    "aicrm_next/app/admin_console/templates/admin_shell/delivery_lineage.html",
+    "aicrm_next/app/admin_console/templates/admin_shell/growth_orchestration.html",
+    "aicrm_next/app/admin_console/view_model.py",
+    "aicrm_next/app/admin_console/templates/admin_console/dashboard.html",
 }
 
 
@@ -97,7 +97,7 @@ def test_monitoring_frontend_assets_are_physically_deleted() -> None:
         assert not (ROOT / relative_path).exists(), relative_path
 
     assert not list((ROOT / "aicrm_next/growth_orchestration").glob("*.py"))
-    assert not list((ROOT / "aicrm_next/frontend_compat/static/admin_console/p1").rglob("*.*"))
+    assert not list((ROOT / "aicrm_next/app/admin_console/static/admin_console/p1").rglob("*.*"))
     assert not (ROOT / "aicrm_next/data_health/quality_registry.py").exists()
     assert not (ROOT / "aicrm_next/background_jobs/data_quality_snapshot.py").exists()
     assert not (ROOT / "scripts/run_data_quality_snapshot.py").exists()

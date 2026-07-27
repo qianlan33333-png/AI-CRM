@@ -7,8 +7,8 @@ from fastapi.testclient import TestClient
 from aicrm_next.main import create_app
 
 
-TEMPLATE = Path("aicrm_next/frontend_compat/templates/sidebar_customer_workbench.html")
-SCRIPT = Path("aicrm_next/frontend_compat/static/sidebar_workbench/sidebar_workbench.js")
+TEMPLATE = Path("aicrm_next/app/admin_console/templates/sidebar_customer_workbench.html")
+SCRIPT = Path("aicrm_next/app/admin_console/static/sidebar_workbench/sidebar_workbench.js")
 
 
 def test_frontend_declares_and_consumes_jssdk_config_contract() -> None:

@@ -17,7 +17,7 @@ from .service import (
 
 
 router = APIRouter()
-_TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "frontend_compat" / "templates"
+_TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "app" / "admin_console" / "templates"
 templates = Jinja2Templates(directory=_TEMPLATES_DIR)
 
 

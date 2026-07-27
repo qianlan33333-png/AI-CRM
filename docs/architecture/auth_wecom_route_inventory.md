@@ -9,7 +9,7 @@ grep -R "/api/h5/wechat/oauth\|/auth/wecom" -n \
   aicrm_next docs tests scripts static templates frontend 2>/dev/null
 ```
 
-Missing search directories: `static`, `templates`, and `frontend` do not exist at repository root; package-local templates under `aicrm_next/frontend_compat/templates` and `wecom_ability_service/templates` were included by the recursive search through `aicrm_next`.
+Missing search directories: `static`, `templates`, and `frontend` do not exist at repository root; package-local templates under `aicrm_next/app/admin_console/templates` and `wecom_ability_service/templates` were included by the recursive search through `aicrm_next`.
 
 | route | method | caller | current owner | expected owner | auth step | external side effect risk | replacement decision | delete decision | test coverage |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |

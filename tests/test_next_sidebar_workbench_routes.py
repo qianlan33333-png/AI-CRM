@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from aicrm_next.main import create_app
 
 
-NEXT_SIDEBAR_WORKBENCH_CSS = Path("aicrm_next/frontend_compat/static/sidebar_workbench/sidebar_workbench.css")
+NEXT_SIDEBAR_WORKBENCH_CSS = Path("aicrm_next/app/admin_console/static/sidebar_workbench/sidebar_workbench.css")
 
 
 def _production_client(monkeypatch) -> TestClient:

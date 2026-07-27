@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from aicrm_next.main import create_app
 
 
-STATIC_ROOT = Path(__file__).resolve().parents[1] / "aicrm_next" / "frontend_compat" / "static" / "admin_console"
+STATIC_ROOT = Path(__file__).resolve().parents[1] / "aicrm_next" / "app" / "admin_console" / "static" / "admin_console"
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 

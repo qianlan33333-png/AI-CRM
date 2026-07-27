@@ -114,14 +114,14 @@ _P1_TABLES = (
 )
 
 _P1_RUNTIME_PATHS = (
-    "aicrm_next/admin_shell/templates/admin_shell/p1_group_ops_workspace.html",
+    "aicrm_next/app/admin_console/templates/admin_shell/p1_group_ops_workspace.html",
     "aicrm_next/automation_engine/group_ops/draft_api.py",
     "aicrm_next/automation_engine/group_ops/draft_repository.py",
     "aicrm_next/automation_engine/group_ops/draft_service.py",
     "aicrm_next/automation_engine/group_ops/governance_api.py",
     "aicrm_next/automation_engine/group_ops/governance_repository.py",
     "aicrm_next/automation_engine/group_ops/governance_service.py",
-    "aicrm_next/frontend_compat/static/admin_console/p1/p1_group_ops_workspace",
+    "aicrm_next/app/admin_console/static/admin_console/p1/p1_group_ops_workspace",
     "scripts/diagnose_p1_group_ops_workspace_bridge_acceptance.py",
 )
 

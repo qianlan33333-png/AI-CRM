@@ -11,8 +11,8 @@ from tests.admin_auth_test_helpers import admin_session_cookies
 ROOT = Path(__file__).resolve().parents[1]
 AUTOMATION_TEMPLATES = ROOT / "aicrm_next" / "automation_engine" / "templates" / "admin_console"
 AUTOMATION_STATIC = ROOT / "aicrm_next" / "automation_engine" / "static" / "admin_console"
-FRONTEND_TEMPLATES = ROOT / "aicrm_next" / "frontend_compat" / "templates" / "admin_console"
-FRONTEND_STATIC = ROOT / "aicrm_next" / "frontend_compat" / "static" / "admin_console"
+FRONTEND_TEMPLATES = ROOT / "aicrm_next" / "app" / "admin_console" / "templates" / "admin_console"
+FRONTEND_STATIC = ROOT / "aicrm_next" / "app" / "admin_console" / "static" / "admin_console"
 
 
 def _client(monkeypatch) -> TestClient:
@@ -83,7 +83,7 @@ def test_ai_audience_admin_pages_require_admin_session(monkeypatch) -> None:
 
 
 def test_automation_project_routes_are_removed_from_frontend_compat_inventory() -> None:
-    assert not (ROOT / "aicrm_next/frontend_compat/legacy_routes.py").exists()
+    assert not (ROOT / "aicrm_next/app/admin_console/legacy_routes.py").exists()
 
 
 def test_retired_automation_project_templates_and_static_are_removed() -> None:

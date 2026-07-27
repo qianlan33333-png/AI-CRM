@@ -3,10 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 
 
-WORKBENCH_TEMPLATE = Path("aicrm_next/frontend_compat/templates/sidebar_customer_workbench.html")
-WORKBENCH_JS = Path("aicrm_next/frontend_compat/static/sidebar_workbench/sidebar_workbench.js")
-WORKBENCH_CSS = Path("aicrm_next/frontend_compat/static/sidebar_workbench/sidebar_workbench.css")
-WORKBENCH_PRODUCT_CARD_COVER = Path("aicrm_next/frontend_compat/static/sidebar_workbench/product-card-cover.png")
+WORKBENCH_TEMPLATE = Path("aicrm_next/app/admin_console/templates/sidebar_customer_workbench.html")
+WORKBENCH_JS = Path("aicrm_next/app/admin_console/static/sidebar_workbench/sidebar_workbench.js")
+WORKBENCH_CSS = Path("aicrm_next/app/admin_console/static/sidebar_workbench/sidebar_workbench.css")
+WORKBENCH_PRODUCT_CARD_COVER = Path("aicrm_next/app/admin_console/static/sidebar_workbench/product-card-cover.png")
 
 
 def test_sidebar_workbench_v2_page_is_next_owned(client):

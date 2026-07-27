@@ -59,11 +59,11 @@ allowed_domain_dependencies:
 physical_moves:
   enabled: true
   completed_domains:
+    - app
     - crm
     - channels
     - extensions
   pending_domains:
-    - app
     - platform
     - engagement
     - automation

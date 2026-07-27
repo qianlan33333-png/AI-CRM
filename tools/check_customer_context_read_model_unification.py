@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 APPLICATION = ROOT / "aicrm_next/crm/customer_read_model/application.py"
 API = ROOT / "aicrm_next/crm/customer_read_model/api.py"
 DISPATCH = ROOT / "aicrm_next/channels/integration_gateway/dispatch.py"
-FRONTEND_COMPAT = ROOT / "aicrm_next/frontend_compat/legacy_routes.py"
+FRONTEND_COMPAT = ROOT / "aicrm_next/app/admin_console/legacy_routes.py"
 
 CONTEXT_QUERY = "GetCustomerContextQuery"
 LEGACY_CONTEXT_QUERY = "GetCustomerChatContextQuery"

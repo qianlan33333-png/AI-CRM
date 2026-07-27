@@ -5,8 +5,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-HXC_TEMPLATE = ROOT / "aicrm_next/frontend_compat/templates/admin_console/hxc_dashboard.html"
-SEND_CONFIG_TEMPLATE = ROOT / "aicrm_next/frontend_compat/templates/admin_console/hxc_send_config.html"
+HXC_TEMPLATE = ROOT / "aicrm_next/app/admin_console/templates/admin_console/hxc_dashboard.html"
+SEND_CONFIG_TEMPLATE = ROOT / "aicrm_next/app/admin_console/templates/admin_console/hxc_send_config.html"
 
 
 def test_dashboard_frontend_calls_next_safe_mode_routes() -> None:

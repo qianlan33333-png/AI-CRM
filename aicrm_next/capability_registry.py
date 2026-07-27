@@ -272,7 +272,7 @@ CAPABILITY_SPECS: tuple[CapabilitySpec, ...] = (
             "core.automation",
             "core.insights",
         ),
-        current_contexts=("admin_shell", "frontend_compat"),
+        current_contexts=("admin_console",),
         route_groups=("admin_shell",),
         permissions=("admin.shell.access",),
         health_checks=("router_registry", "capability_registry"),

@@ -31,7 +31,7 @@ def _config(*, allowlist: list[dict] | None = None) -> dict:
             "aicrm_next/*/admin_pages.py",
             "aicrm_next/*/application.py",
             "aicrm_next/*/service.py",
-            "aicrm_next/frontend_compat/**",
+            "aicrm_next/app/admin_console/**",
             "aicrm_next/*/frontend_compat/**",
         ],
         "temporary_allowlist": allowlist or [],
@@ -98,12 +98,12 @@ def test_db_access_boundary_blocks_forbidden_layer_direct_db_access(
 
 def test_db_access_boundary_blocks_frontend_compat_raw_sql_execute(tmp_path: Path) -> None:
     _write_config(tmp_path / "db_access_boundary.yml")
-    _write(tmp_path / "aicrm_next" / "frontend_compat" / "foo.py", "def run(conn):\n    conn.execute('SELECT 1')\n")
+    _write(tmp_path / "aicrm_next" / "app" / "admin_console" / "foo.py", "def run(conn):\n    conn.execute('SELECT 1')\n")
 
     violations = check_db_access_boundary(root=tmp_path, config_path=tmp_path / "db_access_boundary.yml")
 
     assert len(violations) == 1
-    assert violations[0].path.as_posix().endswith("aicrm_next/frontend_compat/foo.py")
+    assert violations[0].path.as_posix().endswith("aicrm_next/app/admin_console/foo.py")
     assert violations[0].line == 2
     assert violations[0].rule == "db_access_boundary_violation"
     assert violations[0].detected_primitive == "db.execute"
@@ -112,7 +112,7 @@ def test_db_access_boundary_blocks_frontend_compat_raw_sql_execute(tmp_path: Pat
 def test_db_access_boundary_blocks_sqlalchemy_text_in_frontend_compat(tmp_path: Path) -> None:
     _write_config(tmp_path / "db_access_boundary.yml")
     _write(
-        tmp_path / "aicrm_next" / "frontend_compat" / "foo.py",
+        tmp_path / "aicrm_next" / "app" / "admin_console" / "foo.py",
         "from sqlalchemy import text\nquery = text('SELECT 1')\n",
     )
 

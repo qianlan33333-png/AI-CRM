@@ -4,21 +4,21 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PICKER_JS = ROOT / "aicrm_next/frontend_compat/static/admin_console/operation_member_picker.js"
-PICKER_CSS = ROOT / "aicrm_next/frontend_compat/static/admin_console/admin_console.css"
-BASE_TEMPLATE = ROOT / "aicrm_next/frontend_compat/templates/admin_console/base.html"
+PICKER_JS = ROOT / "aicrm_next/app/admin_console/static/admin_console/operation_member_picker.js"
+PICKER_CSS = ROOT / "aicrm_next/app/admin_console/static/admin_console/admin_console.css"
+BASE_TEMPLATE = ROOT / "aicrm_next/app/admin_console/templates/admin_console/base.html"
 GROUP_OPS_JS = ROOT / "aicrm_next/automation_engine/group_ops/static/admin_console/group_ops.js"
 CHANNEL_FORM = ROOT / "aicrm_next/automation_engine/templates/admin_console/channel_code_form.html"
 CHANNEL_JS = ROOT / "aicrm_next/automation_engine/static/admin_console/channel_admission_pages.js"
 CHANNEL_CENTER_JS = ROOT / "aicrm_next/automation_engine/static/admin_console/channel_code_center_next.js"
 CHANNEL_CENTER_TEMPLATE = ROOT / "aicrm_next/automation_engine/templates/admin_console/channel_code_center.html"
-OPERATIONS_TEMPLATE = ROOT / "aicrm_next/frontend_compat/templates/admin_console/operations.html"
-CONFIG_CENTER_JS = ROOT / "aicrm_next/frontend_compat/static/admin_console/config_center.js"
-ADMIN_ACCESS_TEMPLATE = ROOT / "aicrm_next/frontend_compat/templates/admin_console/config_admin_access_detail.html"
+OPERATIONS_TEMPLATE = ROOT / "aicrm_next/app/admin_console/templates/admin_console/operations.html"
+CONFIG_CENTER_JS = ROOT / "aicrm_next/app/admin_console/static/admin_console/config_center.js"
+ADMIN_ACCESS_TEMPLATE = ROOT / "aicrm_next/app/admin_console/templates/admin_console/config_admin_access_detail.html"
 AI_ASSISTANT_SOURCES = [
-    ROOT / "aicrm_next/frontend_compat/static/admin_console/automation_agent_config.js",
-    ROOT / "aicrm_next/frontend_compat/static/admin_console/automation_agent_config_channel_model.js",
-    ROOT / "aicrm_next/frontend_compat/templates/admin_console/automation_agent_config.html",
+    ROOT / "aicrm_next/app/admin_console/static/admin_console/automation_agent_config.js",
+    ROOT / "aicrm_next/app/admin_console/static/admin_console/automation_agent_config_channel_model.js",
+    ROOT / "aicrm_next/app/admin_console/templates/admin_console/automation_agent_config.html",
 ]
 
 

@@ -12,7 +12,7 @@ CHANNEL_BASE = ROOT / "aicrm_next/automation_engine/templates/admin_console/base
 CHANNEL_JS = ROOT / "aicrm_next/automation_engine/static/admin_console/channel_admission_pages.js"
 CHANNEL_CENTER_JS = ROOT / "aicrm_next/automation_engine/static/admin_console/channel_code_center_next.js"
 CHANNEL_CSS = ROOT / "aicrm_next/automation_engine/static/admin_console/channel_admission_pages.css"
-PICKER_JS = ROOT / "aicrm_next/frontend_compat/static/admin_console/operation_member_picker.js"
+PICKER_JS = ROOT / "aicrm_next/app/admin_console/static/admin_console/operation_member_picker.js"
 
 
 def _read(path: Path) -> str:

@@ -8,14 +8,14 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 REMOVED_FILES = [
-    ROOT / "aicrm_next/admin_shell/business_closure.py",
-    ROOT / "aicrm_next/admin_shell/templates/admin_shell/business_closure.html",
+    ROOT / "aicrm_next/app/admin_console/business_closure.py",
+    ROOT / "aicrm_next/app/admin_console/templates/admin_shell/business_closure.html",
     ROOT / "frontend/admin/business_closure/status_model.ts",
     ROOT / "frontend/admin/business_closure/business_closure_overview.ts",
-    ROOT / "aicrm_next/frontend_compat/static/admin_console/p1/business_closure/status_model.js",
-    ROOT / "aicrm_next/frontend_compat/static/admin_console/p1/business_closure/status_model.d.ts",
-    ROOT / "aicrm_next/frontend_compat/static/admin_console/p1/business_closure/business_closure_overview.js",
-    ROOT / "aicrm_next/frontend_compat/static/admin_console/p1/business_closure/business_closure_overview.d.ts",
+    ROOT / "aicrm_next/app/admin_console/static/admin_console/p1/business_closure/status_model.js",
+    ROOT / "aicrm_next/app/admin_console/static/admin_console/p1/business_closure/status_model.d.ts",
+    ROOT / "aicrm_next/app/admin_console/static/admin_console/p1/business_closure/business_closure_overview.js",
+    ROOT / "aicrm_next/app/admin_console/static/admin_console/p1/business_closure/business_closure_overview.d.ts",
     ROOT / "tests/frontend/p1_business_closure_status.test.mjs",
 ]
 
@@ -55,8 +55,8 @@ def test_p1_diagnostics_files_are_physically_removed() -> None:
 
 def test_p1_diagnostics_route_manifest_entry_is_removed() -> None:
     manifest = (ROOT / "docs/architecture/route_ownership_manifest.yml").read_text(encoding="utf-8")
-    routes = (ROOT / "aicrm_next/admin_shell/routes.py").read_text(encoding="utf-8")
-    navigation = (ROOT / "aicrm_next/admin_shell/navigation.py").read_text(encoding="utf-8")
+    routes = (ROOT / "aicrm_next/app/admin_console/routes.py").read_text(encoding="utf-8")
+    navigation = (ROOT / "aicrm_next/app/admin_console/navigation.py").read_text(encoding="utf-8")
 
     assert "/admin/business-closure" not in manifest
     assert "admin_business_closure_page" not in routes
