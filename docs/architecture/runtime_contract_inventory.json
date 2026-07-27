@@ -575,7 +575,7 @@
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/external_effects/adapters.py",
       "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES",
-      "line": 72
+      "line": 73
     },
     {
       "accessor": "declared_runtime_environment_key",
@@ -593,7 +593,7 @@
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/external_effects/adapters.py",
       "key": "AICRM_EXTERNAL_EFFECT_PAYMENT_EXECUTE",
-      "line": 72
+      "line": 73
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -629,13 +629,13 @@
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform_foundation/external_effects/adapters.py",
       "key": "AICRM_EXTERNAL_EFFECT_WEBHOOK_EXECUTE",
-      "line": 72
+      "line": 73
     },
     {
       "accessor": "runtime_setting",
       "file": "aicrm_next/platform_foundation/external_effects/adapters.py",
       "key": "AICRM_EXTERNAL_EFFECT_WEBHOOK_TIMEOUT_SECONDS",
-      "line": 358
+      "line": 359
     },
     {
       "accessor": "declared_runtime_setting_key",

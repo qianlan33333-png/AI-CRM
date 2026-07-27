@@ -771,6 +771,130 @@ def test_external_effect_backlog_still_fails_for_ordinary_terminal_effect(monkey
 
 
 @pytest.mark.postgres
+def test_refund_not_enough_is_completed_business_outcome_not_system_failure(
+    next_pg_schema,
+) -> None:
+    import psycopg
+
+    from aicrm_next.data_health import checks
+
+    database_url = os.environ["DATABASE_URL"]
+    target_id = "WXR_DATA_HEALTH_NOT_ENOUGH"
+    attempt_id = "eea_data_health_not_enough"
+    with psycopg.connect(database_url) as connection:
+        job_id = int(
+            connection.execute(
+                """
+                INSERT INTO external_effect_job (
+                    effect_type, adapter_name, operation, target_type, target_id,
+                    business_type, business_id, source_module, source_route,
+                    idempotency_key,
+                    execution_mode, status, attempt_count, max_attempts,
+                    last_error_code, side_effect_executed, provider_result_received,
+                    provider_call_started_at, reconciliation_required,
+                    worker_generation, policy_version, completed_at
+                ) VALUES (
+                    'payment.wechat.refund.request', 'wechat_payment',
+                    'refund_request', 'wechat_pay_refund', %s,
+                    'commerce_order', 'order_data_health_not_enough',
+                    'commerce.admin_transactions',
+                    'commerce.admin_transactions.create_wechat_refund_request',
+                    'data-health-refund-not-enough',
+                    'execute', 'failed_terminal', 1, 5,
+                    'http_403', TRUE, TRUE, CURRENT_TIMESTAMP, FALSE,
+                    1, 'queue-v2-production-all-g1', CURRENT_TIMESTAMP
+                )
+                RETURNING id
+                """,
+                (target_id,),
+            ).fetchone()[0]
+        )
+        connection.execute(
+            """
+            INSERT INTO external_effect_attempt (
+                attempt_id, job_id, adapter_name, adapter_mode, operation,
+                status, response_summary_json, error_code,
+                provider_call_started_at, worker_generation,
+                started_at, completed_at
+            ) VALUES (
+                %s, %s, 'wechat_payment', 'execute', 'refund_request',
+                'failed_terminal', %s::jsonb, 'http_403',
+                CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            )
+            """,
+            (
+                attempt_id,
+                job_id,
+                json.dumps(
+                    {
+                        "status_code": 403,
+                        "provider_payload_present": True,
+                        "provider_result_received": True,
+                        "real_external_call_executed": True,
+                        "wechat_refund_executed": False,
+                        "refund_failure_synced": True,
+                    }
+                ),
+            ),
+        )
+        connection.execute(
+            "UPDATE external_effect_job SET last_attempt_id = %s WHERE id = %s",
+            (attempt_id, job_id),
+        )
+        connection.execute(
+            """
+            INSERT INTO wechat_pay_refunds (
+                out_refund_no, refund_id, status, response_payload_json
+            ) VALUES (
+                %s, '', 'failed',
+                '{"provider_payload":{"code":"NOT_ENOUGH"},"real_external_call_executed":true}'::jsonb
+            )
+            """,
+            (target_id,),
+        )
+        connection.commit()
+
+    result = checks._external_effect_failed_retryable_backlog()
+
+    assert result.status == "ok"
+    assert result.evidence["failed_terminal_count"] == 0
+    business_outcome = result.evidence["wechat_refund_not_enough_business_outcome"]
+    assert business_outcome == {
+        "completed_count": 1,
+        "process_outcome": "completed",
+        "business_outcome": "rejected",
+        "business_reason_code": "insufficient_refund_balance",
+        "excluded_from_system_health_failures": True,
+        "refund_executed": False,
+        "provider_success_claimed": False,
+        "replay_prohibited": True,
+        "strict_provenance_required": True,
+    }
+
+    with psycopg.connect(database_url) as connection:
+        connection.execute(
+            """
+            UPDATE external_effect_attempt
+            SET response_summary_json = jsonb_set(
+                response_summary_json,
+                '{refund_failure_synced}',
+                'false'::jsonb
+            )
+            WHERE job_id = %s
+            """,
+            (job_id,),
+        )
+        connection.commit()
+
+    incomplete_process = checks._external_effect_failed_retryable_backlog()
+    assert incomplete_process.status == "fail"
+    assert incomplete_process.evidence["failed_terminal_count"] == 1
+    assert incomplete_process.evidence["wechat_refund_not_enough_business_outcome"][
+        "completed_count"
+    ] == 0
+
+
+@pytest.mark.postgres
 def test_mirrored_welcome_validation_failure_is_excluded_only_with_append_only_proof(
     next_pg_schema,
 ) -> None:

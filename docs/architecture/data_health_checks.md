@@ -73,6 +73,13 @@ declared physical tables, unregistered live tables, retired physical tables,
 missing canonical owners, missing PII levels, or missing queue status enum
 metadata.
 
+`external_effect_failed_retryable_backlog` separates delivery failures from
+deterministic business outcomes.  A WeChat refund `NOT_ENOUGH` result is reported
+as a completed business rejection, not a system failure, only when strict
+cross-table evidence proves one provider call, a received provider result, no
+refund execution, a synchronized local refund record, and no replay.  Missing
+or contradictory evidence remains fail-closed.
+
 Relations imported from the pre-convergence production database use the
 explicit `legacy` lifecycle. They are registered so they cannot appear as
 unmanaged drift, but unlike Next-owned physical lifecycles their absence is not

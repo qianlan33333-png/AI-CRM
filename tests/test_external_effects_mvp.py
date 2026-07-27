@@ -2234,6 +2234,82 @@ def test_wechat_payment_adapter_terminal_provider_failure_marks_refund_failed(mo
     assert failure_sync_calls[0]["response_payload"]["real_external_call_executed"] is True
 
 
+def test_wechat_payment_not_enough_is_completed_business_rejection(monkeypatch) -> None:
+    failure_sync_calls: list[dict] = []
+
+    class FakeWeChatPayClient:
+        def create_refund(self, payload):
+            raise WeChatPayClientError(
+                "provider rejected refund",
+                status_code=403,
+                payload={"code": "NOT_ENOUGH"},
+            )
+
+    def sync_failure(out_refund_no, *, error_code, error_message, response_payload):
+        failure_sync_calls.append(
+            {
+                "out_refund_no": out_refund_no,
+                "error_code": error_code,
+                "error_message": error_message,
+                "response_payload": response_payload,
+            }
+        )
+        return {"ok": True}
+
+    monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_PAYMENT_EXECUTE", "1")
+    monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES", PAYMENT_WECHAT_REFUND_REQUEST)
+    repo = InMemoryExternalEffectRepository()
+    job = _service(repo).plan_effect(
+        effect_type=PAYMENT_WECHAT_REFUND_REQUEST,
+        adapter_name="wechat_payment",
+        operation="refund_request",
+        target_type="wechat_pay_refund",
+        target_id="WXRTESTPAYNOTENOUGH",
+        business_type="commerce_order",
+        business_id="WXPTESTPAYNOTENOUGH",
+        payload={
+            "transaction_id": "420000TESTPAYNOTENOUGH",
+            "out_refund_no": "WXRTESTPAYNOTENOUGH",
+            "request_payload": {
+                "transaction_id": "420000TESTPAYNOTENOUGH",
+                "out_refund_no": "WXRTESTPAYNOTENOUGH",
+                "amount": {"refund": 9900, "total": 9900, "currency": "CNY"},
+            },
+        },
+        context=_sample_context("trace-wechat-refund-not-enough"),
+        idempotency_key="wechat-refund-not-enough",
+    )
+    registry = ExternalEffectAdapterRegistry()
+    registry._adapters["wechat_payment"] = WeChatPaymentAdapter(  # type: ignore[attr-defined]
+        client_factory=lambda: FakeWeChatPayClient(),
+        refund_failure_sync=sync_failure,
+    )
+
+    result = ExternalEffectWorker(repo, registry).run_due(
+        batch_size=1,
+        dry_run=False,
+        effect_types=[PAYMENT_WECHAT_REFUND_REQUEST],
+    )
+    attempts = ExternalEffectService(repo).list_attempts(job["id"])
+
+    assert result["counts"]["failed_count"] == 1
+    assert result["items"][0]["job"]["status"] == "failed_terminal"
+    assert result["real_external_call_executed"] is True
+    assert len(attempts) == 1
+    response_summary = attempts[0].response_summary_json
+    assert response_summary["process_outcome"] == "completed"
+    assert response_summary["business_outcome"] == "rejected"
+    assert response_summary["business_reason_code"] == "insufficient_refund_balance"
+    assert response_summary["system_health_impact"] is False
+    assert response_summary["wechat_refund_executed"] is False
+    assert response_summary["refund_failure_synced"] is True
+    assert response_summary["provider_result_received"] is True
+    assert response_summary["replay_prohibited"] is True
+    assert response_summary["provider_success_claimed"] is False
+    assert failure_sync_calls[0]["response_payload"]["business_outcome"] == "rejected"
+    assert failure_sync_calls[0]["response_payload"]["system_health_impact"] is False
+
+
 def test_wecom_tag_mark_and_unmark_create_shadow_jobs() -> None:
     reset_external_effect_fixture_state()
     reset_wecom_tag_live_mutation_fixture_state()

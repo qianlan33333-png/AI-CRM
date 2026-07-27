@@ -300,6 +300,103 @@ def acknowledged_private_message_84061_failure_sql(alias: str) -> str:
     """
 
 
+def refund_not_enough_business_rejection_sql(alias: str) -> str:
+    """Return proven refund flows completed with an insufficient-balance result.
+
+    The refund did not execute, so the delivery ledger remains terminal and is
+    never rewritten as provider success.  It is not a system-health failure
+    when the provider response, single durable attempt, and local refund mirror
+    all prove the deterministic NOT_ENOUGH business result.
+    """
+
+    return f"""
+        COALESCE({alias}.effect_type, '') = 'payment.wechat.refund.request'
+        AND COALESCE({alias}.adapter_name, '') = 'wechat_payment'
+        AND COALESCE({alias}.operation, '') = 'refund_request'
+        AND COALESCE({alias}.business_type, '') = 'commerce_order'
+        AND COALESCE({alias}.source_module, '') = 'commerce.admin_transactions'
+        AND COALESCE({alias}.source_route, '') =
+            'commerce.admin_transactions.create_wechat_refund_request'
+        AND COALESCE({alias}.status, '') = 'failed_terminal'
+        AND COALESCE({alias}.last_error_code, '') IN (
+            'http_403', 'provider_business_rejected'
+        )
+        AND COALESCE({alias}.execution_mode, '') = 'execute'
+        AND {alias}.attempt_count = 1
+        AND {alias}.side_effect_executed IS TRUE
+        AND {alias}.provider_result_received IS TRUE
+        AND {alias}.provider_call_started_at IS NOT NULL
+        AND {alias}.reconciliation_required IS FALSE
+        AND EXISTS (
+            SELECT 1
+            FROM wechat_pay_refunds business_rejected_refund
+            WHERE business_rejected_refund.out_refund_no = {alias}.target_id
+              AND COALESCE(business_rejected_refund.status, '') IN ('failed', 'rejected')
+              AND COALESCE(business_rejected_refund.refund_id, '') = ''
+              AND UPPER(COALESCE(jsonb_extract_path_text(
+                    business_rejected_refund.response_payload_json,
+                    'provider_payload', 'code'
+                  ), '')) = 'NOT_ENOUGH'
+              AND LOWER(COALESCE(
+                    business_rejected_refund.response_payload_json
+                        ->> 'real_external_call_executed',
+                    ''
+                  )) = 'true'
+        )
+        AND 1 = (
+            SELECT COUNT(*)
+            FROM external_effect_attempt business_rejected_attempt_count
+            WHERE business_rejected_attempt_count.job_id = {alias}.id
+        )
+        AND EXISTS (
+            SELECT 1
+            FROM external_effect_attempt business_rejected_attempt
+            WHERE business_rejected_attempt.job_id = {alias}.id
+              AND business_rejected_attempt.attempt_id =
+                    COALESCE({alias}.last_attempt_id, '')
+              AND business_rejected_attempt.adapter_name = 'wechat_payment'
+              AND business_rejected_attempt.adapter_mode = 'execute'
+              AND business_rejected_attempt.operation = 'refund_request'
+              AND business_rejected_attempt.status = 'failed_terminal'
+              AND COALESCE(business_rejected_attempt.error_code, '') IN (
+                    'http_403', 'provider_business_rejected'
+                  )
+              AND business_rejected_attempt.provider_call_started_at IS NOT NULL
+              AND business_rejected_attempt.completed_at IS NOT NULL
+              AND business_rejected_attempt.worker_generation = {alias}.worker_generation
+              AND COALESCE(
+                    business_rejected_attempt.response_summary_json ->> 'status_code',
+                    ''
+                  ) = '403'
+              AND LOWER(COALESCE(
+                    business_rejected_attempt.response_summary_json
+                        ->> 'real_external_call_executed',
+                    ''
+                  )) = 'true'
+              AND LOWER(COALESCE(
+                    business_rejected_attempt.response_summary_json
+                        ->> 'wechat_refund_executed',
+                    ''
+                  )) = 'false'
+              AND LOWER(COALESCE(
+                    business_rejected_attempt.response_summary_json
+                        ->> 'refund_failure_synced',
+                    ''
+                  )) = 'true'
+              AND LOWER(COALESCE(
+                    business_rejected_attempt.response_summary_json
+                        ->> 'provider_result_received',
+                    ''
+                  )) = 'true'
+              AND LOWER(COALESCE(
+                    business_rejected_attempt.response_summary_json
+                        ->> 'provider_payload_present',
+                    ''
+                  )) = 'true'
+        )
+    """
+
+
 def acknowledged_refund_not_enough_failure_sql(alias: str) -> str:
     """Return the three operator-authorized refund NOT_ENOUGH histories."""
 
@@ -538,6 +635,8 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                        AS acknowledged_private_message_84061,
                    ({acknowledged_refund_not_enough_failure_sql("job")})
                        AS acknowledged_refund_not_enough,
+                   ({refund_not_enough_business_rejection_sql("job")})
+                       AS refund_not_enough_business_rejection,
                    ({external_contact_relationship_absent_terminal_sql(job_alias="job")})
                        AS expected_contact_absence,
                    EXISTS (
@@ -564,6 +663,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                   AND NOT acknowledged_production_welcome_41050
                   AND NOT acknowledged_private_message_84061
                   AND NOT acknowledged_refund_not_enough
+                  AND NOT refund_not_enough_business_rejection
                   AND status = 'failed_retryable'
             ) AS failed_retryable_count,
             COUNT(*) FILTER (
@@ -572,6 +672,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                   AND NOT acknowledged_production_welcome_41050
                   AND NOT acknowledged_private_message_84061
                   AND NOT acknowledged_refund_not_enough
+                  AND NOT refund_not_enough_business_rejection
                   AND NOT expected_contact_absence
                   AND status = 'failed_terminal'
                   AND updated_at >= CURRENT_TIMESTAMP - make_interval(hours => {lookback_hours})
@@ -582,6 +683,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                   AND NOT acknowledged_production_welcome_41050
                   AND NOT acknowledged_private_message_84061
                   AND NOT acknowledged_refund_not_enough
+                  AND NOT refund_not_enough_business_rejection
                   AND NOT post_cutover_recoverable_identity
                   AND NOT pre_cutover_deferred_identity
                   AND status = 'blocked'
@@ -593,6 +695,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                   AND NOT acknowledged_production_welcome_41050
                   AND NOT acknowledged_private_message_84061
                   AND NOT acknowledged_refund_not_enough
+                  AND NOT refund_not_enough_business_rejection
                   AND status = 'failed_terminal'
             ) AS historical_failed_terminal_count,
             COUNT(*) FILTER (
@@ -601,6 +704,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                   AND NOT acknowledged_production_welcome_41050
                   AND NOT acknowledged_private_message_84061
                   AND NOT acknowledged_refund_not_enough
+                  AND NOT refund_not_enough_business_rejection
                   AND NOT post_cutover_recoverable_identity
                   AND NOT pre_cutover_deferred_identity
                   AND status = 'blocked'
@@ -611,6 +715,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                   AND NOT acknowledged_production_welcome_41050
                   AND NOT acknowledged_private_message_84061
                   AND NOT acknowledged_refund_not_enough
+                  AND NOT refund_not_enough_business_rejection
                   AND status = 'failed_retryable'
                   AND (next_retry_at IS NULL OR next_retry_at <= CURRENT_TIMESTAMP)
             ) AS due_retryable_count,
@@ -621,6 +726,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                       AND NOT acknowledged_production_welcome_41050
                       AND NOT acknowledged_private_message_84061
                       AND NOT acknowledged_refund_not_enough
+                      AND NOT refund_not_enough_business_rejection
                       AND status = 'failed_retryable'
                 )
             )) AS oldest_failed_retryable_age_seconds,
@@ -653,6 +759,10 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                 WHERE acknowledged_refund_not_enough
                   AND status = 'failed_terminal'
             ) AS acknowledged_refund_not_enough_count,
+            COUNT(*) FILTER (
+                WHERE refund_not_enough_business_rejection
+                  AND status = 'failed_terminal'
+            ) AS refund_not_enough_business_rejection_count,
             COUNT(*) FILTER (WHERE expected_contact_absence) AS expected_contact_absence_count,
             COUNT(*) FILTER (
                 WHERE post_cutover_recoverable_identity AND status = 'blocked'

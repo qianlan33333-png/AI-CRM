@@ -43,6 +43,7 @@ from .models import (
     ExternalEffectJob,
 )
 from .retry_policy import http_error_code
+from .refund_outcomes import classify_refund_business_rejection
 from .wecom_canary_policy import (
     WECOM_PROVIDER_TARGET_POLICY_KEY,
     wecom_canary_job_gate_error,
@@ -1373,16 +1374,10 @@ class WeChatPaymentAdapter:
             "out_trade_no": str(payload.get("out_trade_no") or request_payload.get("out_trade_no") or ""),
             "out_refund_no": str(request_payload.get("out_refund_no") or payload.get("out_refund_no") or ""),
             "transaction_id_present": bool(str(payload.get("transaction_id") or request_payload.get("transaction_id") or "").strip()),
-            "refund_amount_total": self._int_value(amount.get("refund")),
-            "order_amount_total": self._int_value(amount.get("total")),
+            "refund_amount_total": _safe_int(amount.get("refund")),
+            "order_amount_total": _safe_int(amount.get("total")),
             "notify_url_present": bool(str(request_payload.get("notify_url") or "").strip()),
         }
-
-    def _int_value(self, value: Any) -> int:
-        try:
-            return int(value or 0)
-        except (TypeError, ValueError):
-            return 0
 
     def _execution_gate_error(self, job: ExternalEffectJob, payload: dict[str, Any], request_payload: dict[str, Any]) -> str:
         if job.execution_mode in {"disabled", "shadow", "plan_only", "execute_dryrun"}:
@@ -1440,6 +1435,7 @@ class WeChatPaymentAdapter:
     def _failure_result(self, exc: Exception, *, request_summary: dict[str, Any], out_refund_no: str) -> ExternalEffectDispatchResult:
         status_code = getattr(exc, "status_code", None)
         provider_payload = dict(getattr(exc, "payload", {}) or {})
+        business_rejection = classify_refund_business_rejection(provider_payload)
         error_message = _safe_error_message(exc)
         if status_code is None and ("required" in error_message or "failed to load WeChat Pay" in error_message):
             error_code = "config_missing"
@@ -1447,6 +1443,7 @@ class WeChatPaymentAdapter:
         else:
             error_code = http_error_code(status_code)
             real_external_call_executed = True
+        provider_result_received = status_code is not None or bool(provider_payload)
         retryable = error_code in {"network_error", "timeout", "http_408", "http_429", "http_5xx"}
         sync_result: dict[str, Any] = {}
         if not retryable:
@@ -1457,6 +1454,7 @@ class WeChatPaymentAdapter:
                 response_payload={
                     "provider_payload": provider_payload,
                     "real_external_call_executed": real_external_call_executed,
+                    **business_rejection,
                 },
             )
         return ExternalEffectDispatchResult(
@@ -1469,10 +1467,13 @@ class WeChatPaymentAdapter:
                 "real_external_call_executed": real_external_call_executed,
                 "wechat_refund_executed": False,
                 "refund_failure_synced": bool(sync_result.get("ok")) if sync_result else False,
+                "provider_result_received": provider_result_received,
+                **business_rejection,
             },
             error_code=error_code,
             error_message=error_message,
             real_external_call_executed=real_external_call_executed,
+            provider_result_received=provider_result_received,
         )
 
 

@@ -664,7 +664,7 @@ def _broadcast_job_blocked_backlog() -> DataHealthCheckResult:
 
 def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
     check_id = "external_effect_failed_retryable_backlog"
-    title = "External effect failed retryable backlog"
+    title = "External effect delivery health"
     source_tables = [
         "external_effect_job",
         "external_effect_attempt",
@@ -716,6 +716,9 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
     )
     acknowledged_private_message_84061_count = int(row.get("acknowledged_private_message_84061_count") or 0)
     acknowledged_refund_not_enough_count = int(row.get("acknowledged_refund_not_enough_count") or 0)
+    refund_not_enough_business_rejection_count = int(
+        row.get("refund_not_enough_business_rejection_count") or 0
+    )
     expected_contact_absence_count = int(row.get("expected_contact_absence_count") or 0)
     pre_cutover_deferred_identity_count, post_cutover_recoverable_identity_count = int(row.get("pre_cutover_deferred_identity_count") or 0), int(row.get("post_cutover_recoverable_identity_count") or 0)
     violations = []
@@ -775,6 +778,17 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
             "replay_prohibited": True,
             "strict_provenance_required": True,
         },
+        "wechat_refund_not_enough_business_outcome": {
+            "completed_count": refund_not_enough_business_rejection_count,
+            "process_outcome": "completed",
+            "business_outcome": "rejected",
+            "business_reason_code": "insufficient_refund_balance",
+            "excluded_from_system_health_failures": True,
+            "refund_executed": False,
+            "provider_success_claimed": False,
+            "replay_prohibited": True,
+            "strict_provenance_required": True,
+        },
         "external_contact_relationship_absent": {"count": expected_contact_absence_count, "excluded_from_business_health": True, "provider_boundary_crossed": True, "provider_success_claimed": False, "replay_prohibited": True, "strict_provenance_required": True},
         "pre_cutover_deferred_identity_adoption": {
             "eligible_count": pre_cutover_deferred_identity_count, "excluded_from_business_health": True,
@@ -802,7 +816,10 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
         title=title,
         status="ok",
         severity="green",
-        summary="External effect retryable backlog is within threshold.",
+        summary=(
+            "External effect delivery health is within threshold; deterministic "
+            "business rejections are reported separately."
+        ),
         evidence=evidence,
         remediation="",
     )

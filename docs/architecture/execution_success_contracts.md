@@ -27,6 +27,24 @@ but it is not the same thing as external execution success.
 | Payment refund | The provider refund request succeeds and the local order/refund mirror is updated from that response. | Missing provider transaction data is terminal until corrected. |
 | Media upload | A real media/upload adapter must return remote success. Fixture or staging storage success is not production media success. |
 
+### Refund business outcomes
+
+A provider response can complete the request-processing flow without completing
+the refund.  In particular, WeChat Pay `NOT_ENOUGH` means the provider received
+and decided the request, the refund did not execute, and automatic replay is
+prohibited.  The delivery ledger therefore remains `failed_terminal` so it does
+not claim refund success, while the response summary records:
+
+- `process_outcome=completed`
+- `business_outcome=rejected`
+- `business_reason_code=insufficient_refund_balance`
+- `system_health_impact=false`
+
+Data health excludes this outcome only when one durable provider attempt, the
+provider result, `wechat_refund_executed=false`, and the synchronized local
+refund mirror all agree.  An ordinary HTTP 403 or incomplete local sync remains
+a system-health failure.
+
 ## Approval Contract
 
 Jobs created with `requires_approval=true` start as `planned`. Approval moves the
