@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.automation_engine import channels_api
+from aicrm_next.automation.automation_engine import channels_api
 from aicrm_next.main import create_app
 
 

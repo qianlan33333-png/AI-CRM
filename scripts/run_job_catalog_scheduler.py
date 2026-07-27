@@ -38,7 +38,7 @@ def _external_effect_reconcile(*, dry_run, operator, limit, now):
 
 def _campaign_plan(*, dry_run, operator, limit, now):
     del operator
-    from aicrm_next.background_jobs.broadcast_queue_worker import (
+    from aicrm_next.automation.background_jobs.broadcast_queue_worker import (
         run_broadcast_queue_worker,
     )
 
@@ -51,10 +51,10 @@ def _campaign_plan(*, dry_run, operator, limit, now):
 
 def _group_ops_plan(*, dry_run, operator, limit, now):
     del limit
-    from aicrm_next.automation_engine.group_ops.scheduler import (
+    from aicrm_next.automation.automation_engine.group_ops.scheduler import (
         run_group_ops_due_scheduler,
     )
-    from aicrm_next.background_jobs.automation_ops_scheduler import (
+    from aicrm_next.automation.background_jobs.automation_ops_scheduler import (
         run_automation_ops_scheduler,
     )
 

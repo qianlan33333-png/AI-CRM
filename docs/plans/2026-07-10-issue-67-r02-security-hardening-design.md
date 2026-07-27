@@ -114,7 +114,7 @@ R02 uses an expand/migrate/contract sequence in one work package. The expand rel
 - Create: `tests/test_pii_audit_contract.py`
 - Modify: `aicrm_next/main.py`
 - Modify: `aicrm_next/platform/admin_auth/route_policy.py`
-- Modify: existing export endpoints in `aicrm_next/questionnaire/api.py`, `aicrm_next/radar_links/api.py`, `aicrm_next/commerce/api.py`, `aicrm_next/class_user_management/api.py`, and `aicrm_next/ops_enrollment/api.py`
+- Modify: existing export endpoints in `aicrm_next/questionnaire/api.py`, `aicrm_next/radar_links/api.py`, `aicrm_next/commerce/api.py`, `aicrm_next/class_user_management/api.py`, and `aicrm_next/automation/ops_enrollment/api.py`
 
 **Steps:**
 

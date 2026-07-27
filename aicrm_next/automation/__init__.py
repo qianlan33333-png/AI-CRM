@@ -1,0 +1,1 @@
+"""Stable automation domain package."""

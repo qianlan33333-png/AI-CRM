@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.ops_enrollment.send_record_projection import build_send_record_external_effect_projection
+from aicrm_next.automation.ops_enrollment.send_record_projection import build_send_record_external_effect_projection
 from aicrm_next.platform.platform_foundation.external_effects import (
     ExternalEffectService,
     InMemoryExternalEffectRepository,

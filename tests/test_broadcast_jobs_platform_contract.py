@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.background_jobs.broadcast_queue_worker import SafeSkippedBroadcastDispatcher
+from aicrm_next.automation.background_jobs.broadcast_queue_worker import SafeSkippedBroadcastDispatcher
 
 
 def test_default_broadcast_dispatcher_skips_unknown_source_type() -> None:

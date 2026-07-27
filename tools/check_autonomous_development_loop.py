@@ -104,7 +104,7 @@ PROTECTED_PREFIXES = (
 )
 RUNTIME_FALLBACK_ALLOWED_EXACT = {
     "aicrm_next/crm/customer_read_model/api.py",
-    "aicrm_next/automation_engine/api.py",
+    "aicrm_next/automation/automation_engine/api.py",
 }
 GOVERNANCE_ALLOWED_PREFIXES = (
     "docs/",
@@ -114,7 +114,7 @@ GOVERNANCE_ALLOWED_PREFIXES = (
 GOVERNANCE_ALLOWED_EXACT = {
     "README.md",
     ".github/workflows/ci.yml",
-    "aicrm_next/automation_engine/channels_api.py",
+    "aicrm_next/automation/automation_engine/channels_api.py",
     "aicrm_next/extensions/ai/ai_audience_ops/agent_copywriting.py",
     "aicrm_next/extensions/ai/ai_audience_ops/agent_gateway.py",
     "scripts/codex_autopilot_tick.sh",

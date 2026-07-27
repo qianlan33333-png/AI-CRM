@@ -6,14 +6,14 @@ from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from aicrm_next.ops_enrollment.dto import BatchSendRequest, UserOpsFilters
-from aicrm_next.ops_enrollment.models import (
+from aicrm_next.automation.ops_enrollment.dto import BatchSendRequest, UserOpsFilters
+from aicrm_next.automation.ops_enrollment.models import (
     user_ops_do_not_disturb_next,
     user_ops_pool_current_next,
     user_ops_send_records_next,
 )
-from aicrm_next.ops_enrollment.repo import InMemoryUserOpsRepository, SqlAlchemyUserOpsRepository
-from aicrm_next.ops_enrollment.user_ops import apply_filters, build_overview_cards, resolve_batch_targets
+from aicrm_next.automation.ops_enrollment.repo import InMemoryUserOpsRepository, SqlAlchemyUserOpsRepository
+from aicrm_next.automation.ops_enrollment.user_ops import apply_filters, build_overview_cards, resolve_batch_targets
 from aicrm_next.platform.shared.database import Base
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -165,8 +165,8 @@ def test_sql_repo_send_record_create_list_detail() -> None:
 
 def test_sql_repo_source_does_not_import_old_backend_packages() -> None:
     for path in [
-        REPO_ROOT / "aicrm_next" / "ops_enrollment" / "repo.py",
-        REPO_ROOT / "aicrm_next" / "ops_enrollment" / "models.py",
+        REPO_ROOT / "aicrm_next" / "automation" / "ops_enrollment" / "repo.py",
+        REPO_ROOT / "aicrm_next" / "automation" / "ops_enrollment" / "models.py",
     ]:
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):

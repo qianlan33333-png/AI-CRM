@@ -3,9 +3,9 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from aicrm_next.background_jobs.automation_ops_scheduler import run_automation_ops_scheduler
-from aicrm_next.background_jobs.broadcast_queue_worker import run_broadcast_queue_worker
-from aicrm_next.background_jobs.external_contact_sync import run_external_contact_sync
+from aicrm_next.automation.background_jobs.automation_ops_scheduler import run_automation_ops_scheduler
+from aicrm_next.automation.background_jobs.broadcast_queue_worker import run_broadcast_queue_worker
+from aicrm_next.automation.background_jobs.external_contact_sync import run_external_contact_sync
 
 
 class FakeBroadcastRepo:

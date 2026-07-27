@@ -6,8 +6,8 @@ from aicrm_next.extensions.ai.ai_audience_e2e_composition import build_ai_audien
 from aicrm_next.extensions.ai.ai_audience_ops import external_api
 from aicrm_next.extensions.ai.ai_audience_ops.e2e_runner import AudienceRealE2ERunner
 from aicrm_next.main import create_app
-from aicrm_next.ops_enrollment.ai_audience_e2e_gateway import OpsEnrollmentAudienceE2EGateway
-from aicrm_next.ops_enrollment.dto import BatchSendRequest
+from aicrm_next.automation.ops_enrollment.ai_audience_e2e_gateway import OpsEnrollmentAudienceE2EGateway
+from aicrm_next.automation.ops_enrollment.dto import BatchSendRequest
 
 
 class _RecordingCommand:

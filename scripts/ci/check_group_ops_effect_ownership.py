@@ -5,12 +5,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 FORBIDDEN = {
-    "aicrm_next/automation_engine/group_ops/broadcast.py": (
+    "aicrm_next/automation/automation_engine/group_ops/broadcast.py": (
         "dispatch_one(",
         "build_upload_command",
     ),
-    "aicrm_next/automation_engine/group_ops/action_dispatcher.py": ("INSERT INTO broadcast_jobs",),
-    "aicrm_next/background_jobs/broadcast_queue_worker.py": (
+    "aicrm_next/automation/automation_engine/group_ops/action_dispatcher.py": ("INSERT INTO broadcast_jobs",),
+    "aicrm_next/automation/background_jobs/broadcast_queue_worker.py": (
         "build_wecom_private_message_adapter",
         "build_wecom_group_message_adapter",
         ".create_private_message_task(",

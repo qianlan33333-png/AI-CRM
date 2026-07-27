@@ -40,7 +40,7 @@ def test_retired_runtime_v2_package_is_removed() -> None:
 
 
 def test_retired_operation_task_publish_contract_is_removed() -> None:
-    assert not (PROJECT_ROOT / "aicrm_next" / "automation_engine" / "operation_task_contract.py").exists()
+    assert not (PROJECT_ROOT / "aicrm_next" / "automation" / "automation_engine" / "operation_task_contract.py").exists()
 
 
 def test_retired_runtime_v2_routes_are_not_registered() -> None:
@@ -77,7 +77,7 @@ def test_retired_member_action_and_timer_routes_are_not_registered() -> None:
 
 
 def test_retired_runtime_v2_realtest_guard_is_removed_from_broadcast_worker() -> None:
-    source = (PROJECT_ROOT / "aicrm_next" / "background_jobs" / "broadcast_queue_worker.py").read_text(encoding="utf-8")
+    source = (PROJECT_ROOT / "aicrm_next" / "automation" / "background_jobs" / "broadcast_queue_worker.py").read_text(encoding="utf-8")
 
     assert "RuntimeV2真实链路测试" not in source
     assert "runtime_v2_realtest_" not in source
@@ -95,10 +95,10 @@ def test_internal_event_audit_no_longer_treats_runtime_v2_event_store_as_queue()
 def test_internal_event_audit_artifacts_do_not_reference_removed_runtime_modules() -> None:
     removed_markers = [
         "aicrm_next/automation_runtime_v2/",
-        "aicrm_next/automation_engine/automation_program_admission.py",
-        "aicrm_next/automation_engine/timers.py",
-        "aicrm_next/automation_engine/workspace_runtime.py",
-        "aicrm_next/automation_engine/member_actions.py",
+        "aicrm_next/automation/automation_engine/automation_program_admission.py",
+        "aicrm_next/automation/automation_engine/timers.py",
+        "aicrm_next/automation/automation_engine/workspace_runtime.py",
+        "aicrm_next/automation/automation_engine/member_actions.py",
     ]
     audit_artifact = (PROJECT_ROOT / "docs" / "reports" / "evidence" / "internal_event_coverage_audit.json").read_text(encoding="utf-8")
     audit_docs = (PROJECT_ROOT / "docs" / "queue" / "internal-event-coverage-audit.md").read_text(encoding="utf-8")

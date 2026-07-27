@@ -43,7 +43,7 @@ def main() -> int:
     if "unresolved_material_dependency" not in adapter_source:
         violations.append("WeComWelcomeMessageAdapter must fail closed on unresolved media dependencies")
 
-    scheduler_source = (ROOT / "aicrm_next/background_jobs/automation_ops_scheduler.py").read_text(encoding="utf-8")
+    scheduler_source = (ROOT / "aicrm_next/automation/background_jobs/automation_ops_scheduler.py").read_text(encoding="utf-8")
     if "enqueue_due_media_refreshes" in scheduler_source or "_run_media_refresh" in scheduler_source:
         violations.append("automation_ops_scheduler still owns periodic media refresh planning")
     if "retired_manual_repair_only" not in scheduler_source:

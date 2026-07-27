@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from aicrm_next.ops_enrollment.dto import BroadcastPreviewRequest, UserOpsListRequest
+from aicrm_next.automation.ops_enrollment.dto import BroadcastPreviewRequest, UserOpsListRequest
 
 
 def _row() -> dict:
@@ -59,7 +59,7 @@ class FakeSession:
 
 @pytest.fixture(autouse=True)
 def reset_user_ops_repo(monkeypatch):
-    from aicrm_next.ops_enrollment import application
+    from aicrm_next.automation.ops_enrollment import application
 
     application._REPO = None
     monkeypatch.delenv("USER_OPS_REPO_BACKEND", raising=False)
@@ -68,7 +68,7 @@ def reset_user_ops_repo(monkeypatch):
 
 
 def test_default_repo_does_not_cache_sql_repository(monkeypatch) -> None:
-    from aicrm_next.ops_enrollment import application
+    from aicrm_next.automation.ops_enrollment import application
 
     monkeypatch.setenv("USER_OPS_REPO_BACKEND", "sqlalchemy")
     created: list[FakeUserOpsRepository] = []
@@ -90,7 +90,7 @@ def test_default_repo_does_not_cache_sql_repository(monkeypatch) -> None:
 
 
 def test_fixture_reset_does_not_cache_sql_repository(monkeypatch) -> None:
-    from aicrm_next.ops_enrollment import application
+    from aicrm_next.automation.ops_enrollment import application
 
     monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.setenv("USER_OPS_REPO_BACKEND", "sqlalchemy")
@@ -106,7 +106,7 @@ def test_fixture_reset_does_not_cache_sql_repository(monkeypatch) -> None:
 
 
 def test_overview_query_closes_internally_created_repo_after_success(monkeypatch) -> None:
-    from aicrm_next.ops_enrollment import application
+    from aicrm_next.automation.ops_enrollment import application
 
     monkeypatch.setenv("USER_OPS_REPO_BACKEND", "sqlalchemy")
     repo = FakeUserOpsRepository()
@@ -119,7 +119,7 @@ def test_overview_query_closes_internally_created_repo_after_success(monkeypatch
 
 
 def test_overview_query_closes_internal_repo_after_exception_without_masking(monkeypatch) -> None:
-    from aicrm_next.ops_enrollment import application
+    from aicrm_next.automation.ops_enrollment import application
 
     monkeypatch.setenv("USER_OPS_REPO_BACKEND", "sqlalchemy")
     repo = FakeUserOpsRepository(fail_list=True, fail_close=True)
@@ -132,7 +132,7 @@ def test_overview_query_closes_internal_repo_after_exception_without_masking(mon
 
 
 def test_overview_query_does_not_close_injected_repo(monkeypatch) -> None:
-    from aicrm_next.ops_enrollment import application
+    from aicrm_next.automation.ops_enrollment import application
 
     monkeypatch.setenv("USER_OPS_REPO_BACKEND", "sqlalchemy")
     repo = FakeUserOpsRepository()
@@ -144,7 +144,7 @@ def test_overview_query_does_not_close_injected_repo(monkeypatch) -> None:
 
 
 def test_broadcast_preview_handler_closes_internally_created_repo(monkeypatch) -> None:
-    from aicrm_next.ops_enrollment import application
+    from aicrm_next.automation.ops_enrollment import application
     from aicrm_next.platform.platform_foundation.command_bus import Command, CommandContext
 
     monkeypatch.setenv("USER_OPS_REPO_BACKEND", "sqlalchemy")
@@ -164,7 +164,7 @@ def test_broadcast_preview_handler_closes_internally_created_repo(monkeypatch) -
 
 
 def test_build_user_ops_repository_uses_injected_session(monkeypatch) -> None:
-    from aicrm_next.ops_enrollment import repo as repo_module
+    from aicrm_next.automation.ops_enrollment import repo as repo_module
 
     monkeypatch.setenv("USER_OPS_REPO_BACKEND", "sqlalchemy")
     injected_session = FakeSession()
@@ -180,7 +180,7 @@ def test_build_user_ops_repository_uses_injected_session(monkeypatch) -> None:
 
 
 def test_build_user_ops_repository_uses_shared_session_factory(monkeypatch) -> None:
-    from aicrm_next.ops_enrollment import repo as repo_module
+    from aicrm_next.automation.ops_enrollment import repo as repo_module
 
     monkeypatch.setenv("USER_OPS_REPO_BACKEND", "sqlalchemy")
     session = FakeSession()
@@ -199,7 +199,7 @@ def test_build_user_ops_repository_uses_shared_session_factory(monkeypatch) -> N
 
 
 def test_sqlalchemy_user_ops_repository_close_rolls_back_and_closes_session() -> None:
-    from aicrm_next.ops_enrollment.repo import SqlAlchemyUserOpsRepository
+    from aicrm_next.automation.ops_enrollment.repo import SqlAlchemyUserOpsRepository
 
     session = FakeSession()
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
-from aicrm_next.automation_engine.group_ops.durable_effects_repository import (
+from aicrm_next.automation.automation_engine.group_ops.durable_effects_repository import (
     GroupOpsEffectGraphRequest,
     GroupOpsEffectMaterial,
     InMemoryGroupOpsEffectGraphRepository,

@@ -15,7 +15,7 @@ def test_domain_migration_contract_preserves_logical_targets_during_physical_mov
     assert validate_domain_migration_contract(ROOT) == []
 
 
-def test_app_platform_crm_channels_engagement_and_extensions_are_completed_physical_domains() -> None:
+def test_app_platform_crm_channels_engagement_automation_and_extensions_are_completed_physical_domains() -> None:
     policy = yaml.safe_load((ROOT / "docs/architecture/domain_migration_policy.yml").read_text(encoding="utf-8"))
     physical = policy["physical_moves"]
 
@@ -26,10 +26,10 @@ def test_app_platform_crm_channels_engagement_and_extensions_are_completed_physi
         "crm",
         "channels",
         "engagement",
+        "automation",
         "extensions",
     ]
     assert physical["pending_domains"] == [
-        "automation",
         "insights",
     ]
 

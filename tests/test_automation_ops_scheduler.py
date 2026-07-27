@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from aicrm_next.background_jobs.automation_ops_scheduler import run_automation_ops_scheduler
+from aicrm_next.automation.background_jobs.automation_ops_scheduler import run_automation_ops_scheduler
 
 
 def test_automation_ops_scheduler_reports_group_ops_and_media_refresh_components() -> None:

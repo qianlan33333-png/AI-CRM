@@ -361,9 +361,9 @@ tables:
   user_ops_pool_current_next:
     domain: user_ops
     lifecycle: read_model
-    write_owner: aicrm_next.ops_enrollment.repo
+    write_owner: aicrm_next.automation.ops_enrollment.repo
     read_owners:
-      - aicrm_next.ops_enrollment.repo
+      - aicrm_next.automation.ops_enrollment.repo
     replacement: ""
     drop_candidate: false
     runtime_entrypoints:
@@ -378,11 +378,11 @@ tables:
   user_ops_do_not_disturb_next:
     domain: user_ops
     lifecycle: canonical
-    write_owner: aicrm_next.ops_enrollment.repo
+    write_owner: aicrm_next.automation.ops_enrollment.repo
     read_owners:
       - aicrm_next.extensions.ai.ai_assist.external_campaigns_repo
       - aicrm_next.engagement.send_targets.repo
-      - aicrm_next.ops_enrollment.repo
+      - aicrm_next.automation.ops_enrollment.repo
     replacement: ""
     drop_candidate: false
     runtime_entrypoints:
@@ -397,9 +397,9 @@ tables:
   user_ops_send_records_next:
     domain: user_ops
     lifecycle: event
-    write_owner: aicrm_next.ops_enrollment.repo
+    write_owner: aicrm_next.automation.ops_enrollment.repo
     read_owners:
-      - aicrm_next.ops_enrollment.repo
+      - aicrm_next.automation.ops_enrollment.repo
     replacement: ""
     drop_candidate: false
     runtime_entrypoints:
@@ -623,9 +623,9 @@ tables:
   wecom_customer_acquisition_links:
     domain: channel_entry
     lifecycle: read_model
-    write_owner: aicrm_next.automation_engine.channels_api
+    write_owner: aicrm_next.automation.automation_engine.channels_api
     read_owners:
-      - aicrm_next.automation_engine.channels_api
+      - aicrm_next.automation.automation_engine.channels_api
       - aicrm_next.crm.customer_read_model.sidebar_v2
     replacement: ""
     drop_candidate: false
@@ -756,14 +756,14 @@ tables:
   broadcast_jobs:
     domain: broadcast
     lifecycle: queue
-    write_owner: aicrm_next.background_jobs
+    write_owner: aicrm_next.automation.background_jobs
     write_owners:
-      - aicrm_next.background_jobs
+      - aicrm_next.automation.background_jobs
     read_owners:
       - aicrm_next.platform.admin_jobs.repository
       - aicrm_next.admin_read_model.repo
       - aicrm_next.extensions.ai.ai_assist.external_campaigns_repo
-      - aicrm_next.background_jobs.broadcast_queue_worker
+      - aicrm_next.automation.background_jobs.broadcast_queue_worker
       - aicrm_next.extensions.growth.cloud_orchestrator.repository
     replacement: none; this is the canonical private-broadcast command and delivery ledger
     drop_candidate: false
@@ -875,9 +875,9 @@ tables:
   automation_group_ops_plans:
     domain: automation_group_ops
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine.group_ops.postgres_repo
+    write_owner: aicrm_next.automation.automation_engine.group_ops.postgres_repo
     read_owners:
-      - aicrm_next.automation_engine.group_ops.postgres_repo
+      - aicrm_next.automation.automation_engine.group_ops.postgres_repo
       - aicrm_next.platform.admin_jobs.application
       - broadcast jobs projection
     replacement: none; canonical group-ops plan model
@@ -897,9 +897,9 @@ tables:
   automation_group_ops_plan_groups:
     domain: automation_group_ops
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine.group_ops.postgres_repo
+    write_owner: aicrm_next.automation.automation_engine.group_ops.postgres_repo
     read_owners:
-      - aicrm_next.automation_engine.group_ops.postgres_repo
+      - aicrm_next.automation.automation_engine.group_ops.postgres_repo
     replacement: none; canonical group binding model
     drop_candidate: false
     drop_after: ""
@@ -915,9 +915,9 @@ tables:
   automation_group_ops_plan_nodes:
     domain: automation_group_ops
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine.group_ops.postgres_repo
+    write_owner: aicrm_next.automation.automation_engine.group_ops.postgres_repo
     read_owners:
-      - aicrm_next.automation_engine.group_ops.postgres_repo
+      - aicrm_next.automation.automation_engine.group_ops.postgres_repo
     replacement: none; canonical group-ops content/action node model
     drop_candidate: false
     drop_after: ""
@@ -933,9 +933,9 @@ tables:
   automation_group_ops_webhook_events:
     domain: automation_group_ops
     lifecycle: event
-    write_owner: aicrm_next.automation_engine.group_ops.postgres_repo
+    write_owner: aicrm_next.automation.automation_engine.group_ops.postgres_repo
     read_owners:
-      - aicrm_next.automation_engine.group_ops.postgres_repo
+      - aicrm_next.automation.automation_engine.group_ops.postgres_repo
     replacement: internal_event or external_effect_job after webhook event convergence
     drop_candidate: false
     drop_after: ""
@@ -951,9 +951,9 @@ tables:
   automation_group_ops_plan_scope:
     domain: automation_group_ops
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine.group_ops.postgres_repo
+    write_owner: aicrm_next.automation.automation_engine.group_ops.postgres_repo
     read_owners:
-      - aicrm_next.automation_engine.group_ops.postgres_repo
+      - aicrm_next.automation.automation_engine.group_ops.postgres_repo
     replacement: none; canonical group-ops scope model
     drop_candidate: false
     drop_after: ""
@@ -967,9 +967,9 @@ tables:
   automation_group_ops_plan_member:
     domain: automation_group_ops
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine.group_ops.postgres_repo
+    write_owner: aicrm_next.automation.automation_engine.group_ops.postgres_repo
     read_owners:
-      - aicrm_next.automation_engine.group_ops.postgres_repo
+      - aicrm_next.automation.automation_engine.group_ops.postgres_repo
     replacement: audience_rule_result or future group-ops member projection after member model convergence
     drop_candidate: false
     drop_after: ""
@@ -985,9 +985,9 @@ tables:
   audience_rule:
     domain: automation_group_ops
     lifecycle: config
-    write_owner: aicrm_next.automation_engine.group_ops.postgres_repo
+    write_owner: aicrm_next.automation.automation_engine.group_ops.postgres_repo
     read_owners:
-      - aicrm_next.automation_engine.group_ops.postgres_repo
+      - aicrm_next.automation.automation_engine.group_ops.postgres_repo
     replacement: none; canonical audience rule catalog for group-ops
     drop_candidate: false
     drop_after: ""
@@ -1001,9 +1001,9 @@ tables:
   audience_rule_version:
     domain: automation_group_ops
     lifecycle: config
-    write_owner: aicrm_next.automation_engine.group_ops.postgres_repo
+    write_owner: aicrm_next.automation.automation_engine.group_ops.postgres_repo
     read_owners:
-      - aicrm_next.automation_engine.group_ops.postgres_repo
+      - aicrm_next.automation.automation_engine.group_ops.postgres_repo
     replacement: none; canonical audience rule version catalog for group-ops
     drop_candidate: false
     drop_after: ""
@@ -1017,9 +1017,9 @@ tables:
   audience_rule_result:
     domain: automation_group_ops
     lifecycle: read_model
-    write_owner: aicrm_next.automation_engine.group_ops.postgres_repo
+    write_owner: aicrm_next.automation.automation_engine.group_ops.postgres_repo
     read_owners:
-      - aicrm_next.automation_engine.group_ops.postgres_repo
+      - aicrm_next.automation.automation_engine.group_ops.postgres_repo
     replacement: none; canonical group-ops audience result read model
     drop_candidate: false
     drop_after: ""
@@ -1034,9 +1034,9 @@ tables:
   automation_group_ops_plan_segmentation:
     domain: automation_group_ops
     lifecycle: config
-    write_owner: aicrm_next.automation_engine.group_ops.postgres_repo
+    write_owner: aicrm_next.automation.automation_engine.group_ops.postgres_repo
     read_owners:
-      - aicrm_next.automation_engine.group_ops.postgres_repo
+      - aicrm_next.automation.automation_engine.group_ops.postgres_repo
     replacement: none; canonical group-ops segmentation config
     drop_candidate: false
     drop_after: ""
@@ -1050,9 +1050,9 @@ tables:
   automation_group_ops_trigger_event:
     domain: automation_group_ops
     lifecycle: event
-    write_owner: aicrm_next.automation_engine.group_ops.postgres_repo
+    write_owner: aicrm_next.automation.automation_engine.group_ops.postgres_repo
     read_owners:
-      - aicrm_next.automation_engine.group_ops.postgres_repo
+      - aicrm_next.automation.automation_engine.group_ops.postgres_repo
     replacement: internal_event after trigger-event convergence
     drop_candidate: false
     drop_after: ""
@@ -1068,9 +1068,9 @@ tables:
   automation_group_ops_execution_log:
     domain: automation_group_ops
     lifecycle: audit
-    write_owner: aicrm_next.automation_engine.group_ops.postgres_repo
+    write_owner: aicrm_next.automation.automation_engine.group_ops.postgres_repo
     read_owners:
-      - aicrm_next.automation_engine.group_ops.postgres_repo
+      - aicrm_next.automation.automation_engine.group_ops.postgres_repo
     replacement: external_effect_attempt after execution-attempt convergence
     drop_candidate: false
     drop_after: ""
@@ -1409,7 +1409,7 @@ tables:
       - aicrm_next.engagement.media_library.postgres_repo
       - aicrm_next.engagement.send_content.postgres_repo
       - aicrm_next.admin_read_model.projections
-      - aicrm_next.automation_engine.group_ops.material_resolver
+      - aicrm_next.automation.automation_engine.group_ops.material_resolver
       - aicrm_next.channels.channel_entry.application
       - aicrm_next.extensions.commerce.commerce.repo
     replacement: none; canonical reusable image material table
@@ -1455,7 +1455,7 @@ tables:
       - aicrm_next.engagement.media_library.postgres_repo
       - aicrm_next.engagement.send_content.postgres_repo
       - aicrm_next.admin_read_model.projections
-      - aicrm_next.automation_engine.group_ops.material_resolver
+      - aicrm_next.automation.automation_engine.group_ops.material_resolver
       - aicrm_next.channels.channel_entry.application
       - campaign/group-ops SendContentPackage consumers
     replacement: none; canonical reusable mini-program material table
@@ -1481,7 +1481,7 @@ tables:
       - aicrm_next.engagement.media_library.postgres_repo
       - aicrm_next.engagement.send_content.postgres_repo
       - aicrm_next.admin_read_model.projections
-      - aicrm_next.automation_engine.group_ops.material_resolver
+      - aicrm_next.automation.automation_engine.group_ops.material_resolver
       - aicrm_next.channels.channel_entry.application
       - campaign/group-ops SendContentPackage consumers
     replacement: none; canonical reusable attachment material table
@@ -1506,7 +1506,7 @@ tables:
     read_owners:
       - aicrm_next.engagement.media_library.postgres_repo
       - aicrm_next.engagement.send_content.postgres_repo
-      - aicrm_next.automation_engine.group_ops.material_resolver
+      - aicrm_next.automation.automation_engine.group_ops.material_resolver
       - aicrm_next.channels.channel_entry.application
       - campaign/group-ops SendContentPackage consumers
     replacement: none; canonical reusable WeCom group invite link card table
@@ -1531,7 +1531,7 @@ tables:
     write_owner: aicrm_next.engagement.media_library.wecom_lease
     read_owners:
       - aicrm_next.engagement.media_library.wecom_lease
-      - aicrm_next.automation_engine.group_ops.material_resolver
+      - aicrm_next.automation.automation_engine.group_ops.material_resolver
       - aicrm_next.data_health.checks
     replacement: none; canonical lifecycle state for temporary WeCom media ids
     drop_candidate: false
@@ -2671,7 +2671,7 @@ tables:
   automation_agent_audit_log:
     domain: automation_agents
     lifecycle: audit
-    write_owner: aicrm_next.automation_engine
+    write_owner: aicrm_next.automation.automation_engine
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2707,7 +2707,7 @@ tables:
   automation_agent_idempotency:
     domain: automation_agents
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine
+    write_owner: aicrm_next.automation.automation_engine
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2833,7 +2833,7 @@ tables:
   automation_agents:
     domain: automation_agents
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine
+    write_owner: aicrm_next.automation.automation_engine
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2851,7 +2851,7 @@ tables:
   automation_ai_push_log:
     domain: automation_engine
     lifecycle: audit
-    write_owner: aicrm_next.automation_engine
+    write_owner: aicrm_next.automation.automation_engine
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2874,7 +2874,7 @@ tables:
       - aicrm_next.channels.channel_entry
     read_owners:
       - historical schema drift guard
-      - aicrm_next.automation_engine.channel_completion
+      - aicrm_next.automation.automation_engine.channel_completion
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2957,7 +2957,7 @@ tables:
       - aicrm_next.channels.channel_entry
     read_owners:
       - historical schema drift guard
-      - aicrm_next.automation_engine.channel_completion
+      - aicrm_next.automation.automation_engine.channel_completion
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2994,7 +2994,7 @@ tables:
   automation_frequency_budget:
     domain: automation_engine
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine
+    write_owner: aicrm_next.automation.automation_engine
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3012,7 +3012,7 @@ tables:
   automation_frequency_consumption:
     domain: automation_engine
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine
+    write_owner: aicrm_next.automation.automation_engine
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3030,7 +3030,7 @@ tables:
   automation_sop_template:
     domain: automation_engine
     lifecycle: config
-    write_owner: aicrm_next.automation_engine
+    write_owner: aicrm_next.automation.automation_engine
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3048,7 +3048,7 @@ tables:
   automation_touch_delivery_log:
     domain: automation_engine
     lifecycle: audit
-    write_owner: aicrm_next.automation_engine
+    write_owner: aicrm_next.automation.automation_engine
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3066,10 +3066,10 @@ tables:
   broadcast_job_events:
     domain: broadcast_jobs
     lifecycle: audit
-    write_owner: aicrm_next.background_jobs.broadcast_queue_worker
+    write_owner: aicrm_next.automation.background_jobs.broadcast_queue_worker
     read_owners:
       - aicrm_next.platform.admin_jobs
-      - aicrm_next.background_jobs
+      - aicrm_next.automation.background_jobs
       - aicrm_next.delivery_lineage
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
@@ -3162,7 +3162,7 @@ tables:
     write_owners:
       - aicrm_next.extensions.growth.cloud_orchestrator
     read_owners:
-      - aicrm_next.background_jobs
+      - aicrm_next.automation.background_jobs
       - aicrm_next.extensions.growth.cloud_orchestrator
       - aicrm_next.engagement.send_content
     replacement: none; active production schema table registered during schema drift closeout
@@ -3186,7 +3186,7 @@ tables:
     write_owners:
       - aicrm_next.extensions.growth.cloud_orchestrator
     read_owners:
-      - aicrm_next.background_jobs
+      - aicrm_next.automation.background_jobs
       - aicrm_next.extensions.growth.cloud_orchestrator
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
@@ -3245,7 +3245,7 @@ tables:
     read_owners:
       - aicrm_next.extensions.ai.ai_assist
       - aicrm_next.extensions.ai.ai_audience_ops
-      - aicrm_next.background_jobs
+      - aicrm_next.automation.background_jobs
       - aicrm_next.channels.channel_entry
       - aicrm_next.extensions.growth.cloud_orchestrator
       - aicrm_next.crm.customer_read_model
@@ -3543,7 +3543,7 @@ tables:
   group_chats:
     domain: group_ops
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine.group_ops
+    write_owner: aicrm_next.automation.automation_engine.group_ops
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3744,11 +3744,11 @@ tables:
   outbound_tasks:
     domain: admin_jobs
     lifecycle: canonical
-    write_owner: aicrm_next.background_jobs.broadcast_queue_worker
+    write_owner: aicrm_next.automation.background_jobs.broadcast_queue_worker
     read_owners:
       - aicrm_next.platform.admin_jobs
       - aicrm_next.admin_read_model
-      - aicrm_next.background_jobs
+      - aicrm_next.automation.background_jobs
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -4441,9 +4441,9 @@ tables:
   wecom_group_chat_snapshots:
     domain: group_ops
     lifecycle: read_model
-    write_owner: aicrm_next.automation_engine.group_ops
+    write_owner: aicrm_next.automation.automation_engine.group_ops
     read_owners:
-      - aicrm_next.automation_engine.group_ops
+      - aicrm_next.automation.automation_engine.group_ops
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -4913,7 +4913,7 @@ tables:
   automation_group_ops_effect_graph:
     domain: automation_engine_group_ops
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine.group_ops.durable_effects_repository
+    write_owner: aicrm_next.automation.automation_engine.group_ops.durable_effects_repository
     read_owners:
       - Group Ops execution status API
       - unified execution timeline
@@ -4936,7 +4936,7 @@ tables:
   automation_group_ops_effect_material:
     domain: automation_engine_group_ops
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine.group_ops.durable_effects_repository
+    write_owner: aicrm_next.automation.automation_engine.group_ops.durable_effects_repository
     read_owners:
       - Group Ops media completion continuation
       - Group Ops execution detail
@@ -4957,7 +4957,7 @@ tables:
   automation_group_ops_effect_dependency:
     domain: automation_engine_group_ops
     lifecycle: queue
-    write_owner: aicrm_next.automation_engine.group_ops.durable_effects_repository
+    write_owner: aicrm_next.automation.automation_engine.group_ops.durable_effects_repository
     read_owners:
       - Group Ops media completion continuation
       - execution runtime consistency audit

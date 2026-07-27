@@ -12,7 +12,7 @@ from alembic.runtime.migration import MigrationContext
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATION_PATH = ROOT / "migrations" / "versions" / "0049_group_ops_workspace_governance.py"
 ROUTE_MANIFEST = ROOT / "docs" / "architecture" / "route_ownership_manifest.yml"
-GROUP_OPS_PACKAGE = ROOT / "aicrm_next" / "automation_engine" / "group_ops"
+GROUP_OPS_PACKAGE = ROOT / "aicrm_next" / "automation" / "automation_engine" / "group_ops"
 
 
 def _migration_source() -> str:

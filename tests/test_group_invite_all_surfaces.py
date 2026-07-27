@@ -3,10 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 
 from aicrm_next.extensions.ai.ai_assist.external_campaigns import _content_package_from_sources
-from aicrm_next.background_jobs.broadcast_queue_worker import _extract_private_content_package
+from aicrm_next.automation.background_jobs.broadcast_queue_worker import _extract_private_content_package
 from aicrm_next.extensions.growth.cloud_orchestrator.repository import _content_payload_for_package
-from aicrm_next.ops_enrollment.application import _media_refs_from_batch_request
-from aicrm_next.ops_enrollment.dto import BatchSendRequest
+from aicrm_next.automation.ops_enrollment.application import _media_refs_from_batch_request
+from aicrm_next.automation.ops_enrollment.dto import BatchSendRequest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -43,8 +43,8 @@ def test_all_requested_frontend_surfaces_expose_group_invite_selection() -> None
         "群发与私信群发": "aicrm_next/app/admin_console/static/admin_console/send_content_composer.js",
         "User Ops 私信群发": "aicrm_next/app/admin_console/static/admin_console/user_ops_batch_send_modal.js",
         "AI 助手": "aicrm_next/extensions/ai/automation_agents/templates/admin_console/automation_agent_edit.html",
-        "自动化运营": "aicrm_next/automation_engine/group_ops/static/admin_console/group_ops.js",
-        "欢迎语": "aicrm_next/automation_engine/static/admin_console/channel_admission_pages.js",
+        "自动化运营": "aicrm_next/automation/automation_engine/group_ops/static/admin_console/group_ops.js",
+        "欢迎语": "aicrm_next/automation/automation_engine/static/admin_console/channel_admission_pages.js",
         "云 Campaign": "aicrm_next/app/admin_console/templates/admin_console/cloud_campaigns_workspace.html",
     }
 

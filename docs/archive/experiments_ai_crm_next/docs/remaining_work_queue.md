@@ -218,7 +218,7 @@ Each task is scoped for a future Codex execution turn. Keep old production servi
 ## 10. OpenClaw Real Webhook Adapter
 
 - objective: Replace fake push preview with a gated real OpenClaw webhook adapter.
-- files likely involved: `aicrm_next/automation_engine/application.py`, `aicrm_next/channels/integration_gateway/ports.py`, `aicrm_next/channels/integration_gateway/fake_adapters.py`.
+- files likely involved: `aicrm_next/automation/automation_engine/application.py`, `aicrm_next/channels/integration_gateway/ports.py`, `aicrm_next/channels/integration_gateway/fake_adapters.py`.
 - acceptance criteria: payload compatibility, auth, retry, failure audit, fake default tests.
 - must not do: send real webhook without explicit config and sandbox.
 - suggested validation command: `.venv/bin/python -m pytest historical removed reference (test_automation_conversion_contract.py) -q`.
@@ -226,7 +226,7 @@ Each task is scoped for a future Codex execution turn. Keep old production servi
 ## 11. Automation Workflow Runtime Phase 2
 
 - objective: Add workflow scheduling/runtime semantics on top of the six-pool state machine.
-- files likely involved: `historical removed reference (workflow.py)`, `aicrm_next/automation_engine/application.py`, `historical removed reference (test_automation_conversion_contract.py)`.
+- files likely involved: `historical removed reference (workflow.py)`, `aicrm_next/automation/automation_engine/application.py`, `historical removed reference (test_automation_conversion_contract.py)`.
 - acceptance criteria: runtime is idempotent, records execution, respects silent/converted/exited pools.
 - must not do: call real WeCom/OpenClaw.
 - suggested validation command: `.venv/bin/python -m pytest historical removed reference (test_automation_conversion_contract.py) -q`.

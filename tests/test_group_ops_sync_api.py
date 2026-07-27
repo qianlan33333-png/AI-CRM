@@ -4,7 +4,7 @@ from tests.group_ops_test_helpers import group_ops_api_client
 
 
 def test_unsynced_groups_leave_new_plan_group_choices_empty(group_ops_api_client):
-    from aicrm_next.automation_engine.group_ops.repo import reset_group_ops_fixture_state
+    from aicrm_next.automation.automation_engine.group_ops.repo import reset_group_ops_fixture_state
 
     reset_group_ops_fixture_state(seed_groups=False)
     created = group_ops_api_client.post(
@@ -24,7 +24,7 @@ def test_unsynced_groups_leave_new_plan_group_choices_empty(group_ops_api_client
 
 
 def test_group_sync_preview_does_not_write_snapshots(group_ops_api_client, monkeypatch):
-    from aicrm_next.automation_engine.group_ops.repo import reset_group_ops_fixture_state
+    from aicrm_next.automation.automation_engine.group_ops.repo import reset_group_ops_fixture_state
 
     reset_group_ops_fixture_state(seed_groups=False)
     monkeypatch.setenv("AICRM_WECOM_GROUP_ADAPTER_MODE", "fake")
@@ -46,7 +46,7 @@ def test_group_sync_preview_does_not_write_snapshots(group_ops_api_client, monke
 
 
 def test_group_sync_writes_snapshots_and_reports_create_update(group_ops_api_client, monkeypatch):
-    from aicrm_next.automation_engine.group_ops.repo import reset_group_ops_fixture_state
+    from aicrm_next.automation.automation_engine.group_ops.repo import reset_group_ops_fixture_state
 
     reset_group_ops_fixture_state(seed_groups=False)
     monkeypatch.setenv("AICRM_WECOM_GROUP_ADAPTER_MODE", "fake")
@@ -73,7 +73,7 @@ def test_group_sync_writes_snapshots_and_reports_create_update(group_ops_api_cli
 
 
 def test_group_sync_owner_filter_keeps_owners_separate(group_ops_api_client, monkeypatch):
-    from aicrm_next.automation_engine.group_ops.repo import reset_group_ops_fixture_state
+    from aicrm_next.automation.automation_engine.group_ops.repo import reset_group_ops_fixture_state
 
     reset_group_ops_fixture_state(seed_groups=False)
     monkeypatch.setenv("AICRM_WECOM_GROUP_ADAPTER_MODE", "fake")
@@ -99,9 +99,9 @@ def test_group_sync_owner_filter_keeps_owners_separate(group_ops_api_client, mon
 
 
 def test_group_sync_refreshes_stale_admin_candidate_details():
-    from aicrm_next.automation_engine.group_ops.application import SyncGroupOpsGroupsCommand
-    from aicrm_next.automation_engine.group_ops.dto import GroupOpsGroupSyncRequest
-    from aicrm_next.automation_engine.group_ops.repo import InMemoryGroupOpsRepository
+    from aicrm_next.automation.automation_engine.group_ops.application import SyncGroupOpsGroupsCommand
+    from aicrm_next.automation.automation_engine.group_ops.dto import GroupOpsGroupSyncRequest
+    from aicrm_next.automation.automation_engine.group_ops.repo import InMemoryGroupOpsRepository
 
     class RefreshingAdapter:
         def __init__(self):
@@ -166,9 +166,9 @@ def test_group_sync_refreshes_stale_admin_candidate_details():
 
 
 def test_group_sync_recovers_owned_group_when_legacy_candidate_owner_is_stale():
-    from aicrm_next.automation_engine.group_ops.application import SyncGroupOpsGroupsCommand
-    from aicrm_next.automation_engine.group_ops.dto import GroupOpsGroupSyncRequest
-    from aicrm_next.automation_engine.group_ops.repo import InMemoryGroupOpsRepository
+    from aicrm_next.automation.automation_engine.group_ops.application import SyncGroupOpsGroupsCommand
+    from aicrm_next.automation.automation_engine.group_ops.dto import GroupOpsGroupSyncRequest
+    from aicrm_next.automation.automation_engine.group_ops.repo import InMemoryGroupOpsRepository
 
     class CurrentOwnerAdapter:
         def list_group_chats(self, *, owner_userid: str, limit: int = 100, cursor: str = ""):
@@ -215,9 +215,9 @@ def test_group_sync_recovers_owned_group_when_legacy_candidate_owner_is_stale():
 
 
 def test_group_sync_prefers_current_wecom_group_over_stale_admin_cache():
-    from aicrm_next.automation_engine.group_ops.application import SyncGroupOpsGroupsCommand
-    from aicrm_next.automation_engine.group_ops.dto import GroupOpsGroupSyncRequest
-    from aicrm_next.automation_engine.group_ops.repo import InMemoryGroupOpsRepository
+    from aicrm_next.automation.automation_engine.group_ops.application import SyncGroupOpsGroupsCommand
+    from aicrm_next.automation.automation_engine.group_ops.dto import GroupOpsGroupSyncRequest
+    from aicrm_next.automation.automation_engine.group_ops.repo import InMemoryGroupOpsRepository
 
     chat_id = "wrbNXyCwAAm0Vx7_OVQ_-PkT6Exeg8pg"
 
@@ -272,7 +272,7 @@ def test_group_sync_prefers_current_wecom_group_over_stale_admin_cache():
 
 
 def test_group_sync_binding_does_not_prevalidate_cached_owner(group_ops_api_client, monkeypatch):
-    from aicrm_next.automation_engine.group_ops.repo import reset_group_ops_fixture_state
+    from aicrm_next.automation.automation_engine.group_ops.repo import reset_group_ops_fixture_state
 
     reset_group_ops_fixture_state(seed_groups=False)
     monkeypatch.setenv("AICRM_WECOM_GROUP_ADAPTER_MODE", "fake")

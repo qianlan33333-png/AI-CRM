@@ -171,20 +171,20 @@ SINGLE_OWNER_RUNTIME_WRITES = {
         },
     ),
     "automation_agent_audit_log": (
-        "aicrm_next.automation_engine",
-        {"aicrm_next/automation_engine/agent_sqlalchemy_repository.py"},
+        "aicrm_next.automation.automation_engine",
+        {"aicrm_next/automation/automation_engine/agent_sqlalchemy_repository.py"},
     ),
     "automation_agent_idempotency": (
-        "aicrm_next.automation_engine",
-        {"aicrm_next/automation_engine/agent_sqlalchemy_repository.py"},
+        "aicrm_next.automation.automation_engine",
+        {"aicrm_next/automation/automation_engine/agent_sqlalchemy_repository.py"},
     ),
     "automation_agents": (
-        "aicrm_next.automation_engine",
-        {"aicrm_next/automation_engine/agent_sqlalchemy_repository.py"},
+        "aicrm_next.automation.automation_engine",
+        {"aicrm_next/automation/automation_engine/agent_sqlalchemy_repository.py"},
     ),
     "broadcast_job_events": (
-        "aicrm_next.background_jobs.broadcast_queue_worker",
-        {"aicrm_next/background_jobs/broadcast_queue_worker.py"},
+        "aicrm_next.automation.background_jobs.broadcast_queue_worker",
+        {"aicrm_next/automation/background_jobs/broadcast_queue_worker.py"},
     ),
     "external_effect_test_receipt": (
         "aicrm_next.platform.platform_foundation.external_effects",
@@ -199,8 +199,8 @@ SINGLE_OWNER_RUNTIME_WRITES = {
         {"aicrm_next/extensions/hxc/hxc_dashboard/postgres_repo.py"},
     ),
     "outbound_tasks": (
-        "aicrm_next.background_jobs.broadcast_queue_worker",
-        {"aicrm_next/background_jobs/broadcast_queue_worker.py"},
+        "aicrm_next.automation.background_jobs.broadcast_queue_worker",
+        {"aicrm_next/automation/background_jobs/broadcast_queue_worker.py"},
     ),
 }
 

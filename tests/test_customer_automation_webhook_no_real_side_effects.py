@@ -38,7 +38,7 @@ def test_customer_webhook_routes_return_retired_no_side_effect_flags(monkeypatch
 
 
 def test_customer_webhook_http_handlers_do_not_call_retired_commands_or_read_models():
-    api_source = (ROOT / "aicrm_next/automation_engine/api.py").read_text(encoding="utf-8")
+    api_source = (ROOT / "aicrm_next/automation/automation_engine/api.py").read_text(encoding="utf-8")
     tree = ast.parse(api_source)
     handler_sources = []
     for node in ast.walk(tree):
@@ -69,4 +69,4 @@ def test_customer_webhook_http_handlers_do_not_call_retired_commands_or_read_mod
 
 
 def test_signup_conversion_read_model_module_is_removed() -> None:
-    assert not (ROOT / "aicrm_next/automation_engine/signup_conversion_read_model.py").exists()
+    assert not (ROOT / "aicrm_next/automation/automation_engine/signup_conversion_read_model.py").exists()

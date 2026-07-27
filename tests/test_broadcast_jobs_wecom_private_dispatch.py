@@ -8,8 +8,8 @@ from typing import Any
 import pytest
 from sqlalchemy import text
 
-import aicrm_next.background_jobs.broadcast_queue_worker as worker
-from aicrm_next.background_jobs.broadcast_queue_worker import PostgresBroadcastQueueRepository, SafeSkippedBroadcastDispatcher, run_broadcast_queue_worker
+import aicrm_next.automation.background_jobs.broadcast_queue_worker as worker
+from aicrm_next.automation.background_jobs.broadcast_queue_worker import PostgresBroadcastQueueRepository, SafeSkippedBroadcastDispatcher, run_broadcast_queue_worker
 from aicrm_next.platform.shared.db_session import get_session_factory
 
 

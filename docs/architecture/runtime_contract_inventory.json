@@ -543,7 +543,7 @@
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/background_jobs/broadcast_queue_worker.py",
+      "file": "aicrm_next/automation/background_jobs/broadcast_queue_worker.py",
       "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS",
       "line": 699
     },
@@ -657,19 +657,19 @@
     },
     {
       "accessor": "managed_runtime_int",
-      "file": "aicrm_next/automation_engine/group_ops/broadcast.py",
+      "file": "aicrm_next/automation/automation_engine/group_ops/broadcast.py",
       "key": "AICRM_GROUP_OPS_BROADCAST_PLAN_ID",
       "line": 270
     },
     {
       "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/automation_engine/group_ops/broadcast.py",
+      "file": "aicrm_next/automation/automation_engine/group_ops/broadcast.py",
       "key": "AICRM_GROUP_OPS_MINIPROGRAM_APPID",
       "line": 283
     },
     {
       "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/automation_engine/group_ops/scheduler.py",
+      "file": "aicrm_next/automation/automation_engine/group_ops/scheduler.py",
       "key": "AICRM_GROUP_OPS_TIMEZONE",
       "line": 31
     },
@@ -1581,7 +1581,7 @@
     },
     {
       "accessor": "declared_runtime_environment_key",
-      "file": "aicrm_next/automation_engine/group_ops/application.py",
+      "file": "aicrm_next/automation/automation_engine/group_ops/application.py",
       "key": "AICRM_PUBLIC_BASE_URL",
       "line": 60
     },
@@ -1875,25 +1875,25 @@
     },
     {
       "accessor": "runtime_bool",
-      "file": "aicrm_next/ops_enrollment/effect_enqueue.py",
+      "file": "aicrm_next/automation/ops_enrollment/effect_enqueue.py",
       "key": "AICRM_USER_OPS_SEND_DISABLE_EXECUTE",
       "line": 27
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/ops_enrollment/effect_enqueue.py",
+      "file": "aicrm_next/automation/ops_enrollment/effect_enqueue.py",
       "key": "AICRM_USER_OPS_SEND_EXECUTION_MODE",
       "line": 39
     },
     {
       "accessor": "runtime_bool",
-      "file": "aicrm_next/ops_enrollment/effect_enqueue.py",
+      "file": "aicrm_next/automation/ops_enrollment/effect_enqueue.py",
       "key": "AICRM_USER_OPS_SEND_REQUIRES_APPROVAL",
       "line": 31
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/ops_enrollment/effect_enqueue.py",
+      "file": "aicrm_next/automation/ops_enrollment/effect_enqueue.py",
       "key": "AICRM_USER_OPS_SEND_RISK_LEVEL",
       "line": 35
     },
@@ -2271,19 +2271,19 @@
     },
     {
       "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/background_jobs/automation_ops_scheduler.py",
+      "file": "aicrm_next/automation/background_jobs/automation_ops_scheduler.py",
       "key": "AUTOMATION_OPS_SCHEDULER_OPERATOR",
       "line": 41
     },
     {
       "accessor": "managed_runtime_int",
-      "file": "aicrm_next/background_jobs/broadcast_queue_worker.py",
+      "file": "aicrm_next/automation/background_jobs/broadcast_queue_worker.py",
       "key": "BROADCAST_QUEUE_LEASE_SECONDS",
       "line": 1061
     },
     {
       "accessor": "managed_runtime_int",
-      "file": "aicrm_next/background_jobs/broadcast_queue_worker.py",
+      "file": "aicrm_next/automation/background_jobs/broadcast_queue_worker.py",
       "key": "BROADCAST_QUEUE_RETRY_DELAY_SECONDS",
       "line": 328
     },
@@ -2511,7 +2511,7 @@
     },
     {
       "accessor": "declared_runtime_environment_key",
-      "file": "aicrm_next/automation_engine/group_ops/application.py",
+      "file": "aicrm_next/automation/automation_engine/group_ops/application.py",
       "key": "EXTERNAL_BASE_URL",
       "line": 60
     },
@@ -2595,7 +2595,7 @@
     },
     {
       "accessor": "declared_runtime_environment_key",
-      "file": "aicrm_next/automation_engine/group_ops/application.py",
+      "file": "aicrm_next/automation/automation_engine/group_ops/application.py",
       "key": "PUBLIC_BASE_URL",
       "line": 60
     },
@@ -3243,7 +3243,7 @@
     },
     {
       "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/background_jobs/external_contact_sync.py",
+      "file": "aicrm_next/automation/background_jobs/external_contact_sync.py",
       "key": "WECOM_CORP_ID",
       "line": 159
     },
@@ -3381,7 +3381,7 @@
     },
     {
       "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/automation_engine/group_ops/picker_application.py",
+      "file": "aicrm_next/automation/automation_engine/group_ops/picker_application.py",
       "key": "WECOM_DEFAULT_OWNER_USERID",
       "line": 17
     },
@@ -7977,7 +7977,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.admin_pages.admin_group_ops_groups_ui",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.admin_pages.admin_group_ops_groups_ui",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.engagement",
@@ -7996,7 +7996,7 @@
         "request_body": null,
         "responses": {}
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.admin_pages.admin_group_ops_plan_detail",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.admin_pages.admin_group_ops_plan_detail",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.engagement",
@@ -8024,7 +8024,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.admin_pages.admin_group_ops_ui",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.admin_pages.admin_group_ops_ui",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.engagement",
@@ -8119,7 +8119,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.channel_admin_pages.admin_channels_page",
+      "endpoint": "aicrm_next.automation.automation_engine.channel_admin_pages.admin_channels_page",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.engagement",
@@ -8147,7 +8147,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.channel_admin_pages.admin_channel_new_page",
+      "endpoint": "aicrm_next.automation.automation_engine.channel_admin_pages.admin_channel_new_page",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.engagement",
@@ -8166,7 +8166,7 @@
         "request_body": null,
         "responses": {}
       },
-      "endpoint": "aicrm_next.automation_engine.channel_admin_pages.admin_channel_edit_page",
+      "endpoint": "aicrm_next.automation.automation_engine.channel_admin_pages.admin_channel_edit_page",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.engagement",
@@ -10169,7 +10169,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.ops_enrollment.admin_pages.admin_user_ops_page",
+      "endpoint": "aicrm_next.automation.ops_enrollment.admin_pages.admin_user_ops_page",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.automation",
@@ -10197,7 +10197,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.ops_enrollment.admin_pages.admin_user_ops_ui",
+      "endpoint": "aicrm_next.automation.ops_enrollment.admin_pages.admin_user_ops_ui",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.automation",
@@ -12769,7 +12769,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.api.list_agent_outputs",
+      "endpoint": "aicrm_next.automation.automation_engine.api.list_agent_outputs",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -12827,7 +12827,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.api.get_agent_output_detail",
+      "endpoint": "aicrm_next.automation.automation_engine.api.get_agent_output_detail",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -13002,7 +13002,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.api.list_agent_runs",
+      "endpoint": "aicrm_next.automation.automation_engine.api.list_agent_runs",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -13060,7 +13060,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.api.get_agent_run_detail",
+      "endpoint": "aicrm_next.automation.automation_engine.api.get_agent_run_detail",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -13149,7 +13149,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.api.list_agents",
+      "endpoint": "aicrm_next.automation.automation_engine.api.list_agents",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -13196,7 +13196,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.api.create_agent",
+      "endpoint": "aicrm_next.automation.automation_engine.api.create_agent",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -13285,7 +13285,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.api.agent_options",
+      "endpoint": "aicrm_next.automation.automation_engine.api.agent_options",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -13313,7 +13313,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.list_audience_rules",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.list_audience_rules",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -13360,7 +13360,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.create_audience_rule",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.create_audience_rule",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -13417,7 +13417,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.preview_audience_rule",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.preview_audience_rule",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -13474,7 +13474,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.refresh_audience_rule",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.refresh_audience_rule",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -13566,7 +13566,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.get_audience_rule_results",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.get_audience_rule_results",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -13623,7 +13623,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.create_audience_rule_version",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.create_audience_rule_version",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -13692,7 +13692,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.list_group_chat_picker",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.list_group_chat_picker",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -13739,7 +13739,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.sync_group_chat_picker",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.sync_group_chat_picker",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -13844,7 +13844,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.list_group_ops_groups",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.list_group_ops_groups",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -13891,7 +13891,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.sync_group_ops_groups",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.sync_group_ops_groups",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -13938,7 +13938,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.preview_group_ops_groups_sync",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.preview_group_ops_groups_sync",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -13966,7 +13966,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.list_group_ops_owners",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.list_group_ops_owners",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -14105,7 +14105,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.list_group_ops_plans",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.list_group_ops_plans",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -14152,7 +14152,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.create_group_ops_plan",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.create_group_ops_plan",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -14207,7 +14207,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.archive_group_ops_plan",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.archive_group_ops_plan",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -14262,7 +14262,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.get_group_ops_plan",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.get_group_ops_plan",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -14326,7 +14326,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.update_group_ops_plan",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.update_group_ops_plan",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -14381,7 +14381,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.disable_group_ops_plan",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.disable_group_ops_plan",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -14436,7 +14436,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.enable_group_ops_plan",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.enable_group_ops_plan",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -14651,7 +14651,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.list_group_ops_executions",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.list_group_ops_executions",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -14699,7 +14699,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.list_group_ops_plan_groups",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.list_group_ops_plan_groups",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -14756,7 +14756,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.add_group_ops_plan_group",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.add_group_ops_plan_group",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -14813,7 +14813,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.remove_group_ops_plan_group",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.remove_group_ops_plan_group",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -14958,7 +14958,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.list_group_ops_members",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.list_group_ops_members",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -15022,7 +15022,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.import_group_ops_members",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.import_group_ops_members",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -15077,7 +15077,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.refresh_group_ops_members_from_groups",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.refresh_group_ops_members_from_groups",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -15125,7 +15125,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.list_group_ops_nodes",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.list_group_ops_nodes",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -15182,7 +15182,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.create_group_ops_node",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.create_group_ops_node",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -15239,7 +15239,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.delete_group_ops_node",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.delete_group_ops_node",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -15305,7 +15305,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.update_group_ops_node",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.update_group_ops_node",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -15362,7 +15362,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.run_group_ops_plan_due",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.run_group_ops_plan_due",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -15419,7 +15419,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.preview_group_ops_plan_run_due",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.preview_group_ops_plan_run_due",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -15483,7 +15483,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.save_group_ops_segmentation",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.save_group_ops_segmentation",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -15538,7 +15538,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.preview_group_ops_segmentation",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.preview_group_ops_segmentation",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -15593,7 +15593,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.get_group_ops_webhook_config",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.get_group_ops_webhook_config",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -15950,7 +15950,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.channels_api.list_channel_welcome_materials",
+      "endpoint": "aicrm_next.automation.automation_engine.channels_api.list_channel_welcome_materials",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -16023,7 +16023,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.channels_api.list_channels",
+      "endpoint": "aicrm_next.automation.automation_engine.channels_api.list_channels",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -16076,7 +16076,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.channels_api.create_channel",
+      "endpoint": "aicrm_next.automation.automation_engine.channels_api.create_channel",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -16250,7 +16250,7 @@
         "request_body": null,
         "responses": {}
       },
-      "endpoint": "aicrm_next.automation_engine.channels_api.get_channel",
+      "endpoint": "aicrm_next.automation.automation_engine.channels_api.get_channel",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -16269,7 +16269,7 @@
         "request_body": null,
         "responses": {}
       },
-      "endpoint": "aicrm_next.automation_engine.channels_api.update_channel",
+      "endpoint": "aicrm_next.automation.automation_engine.channels_api.update_channel",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -16288,7 +16288,7 @@
         "request_body": null,
         "responses": {}
       },
-      "endpoint": "aicrm_next.automation_engine.channels_api.get_channel_assignees",
+      "endpoint": "aicrm_next.automation.automation_engine.channels_api.get_channel_assignees",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -16307,7 +16307,7 @@
         "request_body": null,
         "responses": {}
       },
-      "endpoint": "aicrm_next.automation_engine.channels_api.put_channel_assignees",
+      "endpoint": "aicrm_next.automation.automation_engine.channels_api.put_channel_assignees",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -16326,7 +16326,7 @@
         "request_body": null,
         "responses": {}
       },
-      "endpoint": "aicrm_next.automation_engine.channels_api.get_channel_assignment_events",
+      "endpoint": "aicrm_next.automation.automation_engine.channels_api.get_channel_assignment_events",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -16345,7 +16345,7 @@
         "request_body": null,
         "responses": {}
       },
-      "endpoint": "aicrm_next.automation_engine.channels_api.preview_channel_assignment",
+      "endpoint": "aicrm_next.automation.automation_engine.channels_api.preview_channel_assignment",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -16364,7 +16364,7 @@
         "request_body": null,
         "responses": {}
       },
-      "endpoint": "aicrm_next.automation_engine.channels_api.list_channel_contacts",
+      "endpoint": "aicrm_next.automation.automation_engine.channels_api.list_channel_contacts",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -16383,7 +16383,7 @@
         "request_body": null,
         "responses": {}
       },
-      "endpoint": "aicrm_next.automation_engine.channels_api.download_channel_qrcode",
+      "endpoint": "aicrm_next.automation.automation_engine.channels_api.download_channel_qrcode",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -16421,7 +16421,7 @@
         "request_body": null,
         "responses": {}
       },
-      "endpoint": "aicrm_next.automation_engine.channels_api.get_channel_qrcode_status",
+      "endpoint": "aicrm_next.automation.automation_engine.channels_api.get_channel_qrcode_status",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -16459,7 +16459,7 @@
         "request_body": null,
         "responses": {}
       },
-      "endpoint": "aicrm_next.automation_engine.channels_api.get_channel_share_link",
+      "endpoint": "aicrm_next.automation.automation_engine.channels_api.get_channel_share_link",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -31774,7 +31774,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.ops_enrollment.api.user_ops_batch_send_execute",
+      "endpoint": "aicrm_next.automation.ops_enrollment.api.user_ops_batch_send_execute",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -31825,7 +31825,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.ops_enrollment.api.user_ops_batch_send_preview",
+      "endpoint": "aicrm_next.automation.ops_enrollment.api.user_ops_batch_send_preview",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -31887,7 +31887,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.ops_enrollment.api.user_ops_broadcast_preview",
+      "endpoint": "aicrm_next.automation.ops_enrollment.api.user_ops_broadcast_preview",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -32010,7 +32010,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.ops_enrollment.api.user_ops_cards",
+      "endpoint": "aicrm_next.automation.ops_enrollment.api.user_ops_cards",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -32153,7 +32153,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.ops_enrollment.api.user_ops_customers",
+      "endpoint": "aicrm_next.automation.ops_enrollment.api.user_ops_customers",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -32205,7 +32205,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.ops_enrollment.api.user_ops_customer_detail",
+      "endpoint": "aicrm_next.automation.ops_enrollment.api.user_ops_customer_detail",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -32277,7 +32277,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.ops_enrollment.api.user_ops_customer_timeline",
+      "endpoint": "aicrm_next.automation.ops_enrollment.api.user_ops_customer_timeline",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -32328,7 +32328,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.ops_enrollment.api.user_ops_do_not_disturb",
+      "endpoint": "aicrm_next.automation.ops_enrollment.api.user_ops_do_not_disturb",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -32360,7 +32360,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.ops_enrollment.api.user_ops_export_stub",
+      "endpoint": "aicrm_next.automation.ops_enrollment.api.user_ops_export_stub",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -32422,7 +32422,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.ops_enrollment.api.user_ops_export_preview",
+      "endpoint": "aicrm_next.automation.ops_enrollment.api.user_ops_export_preview",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -32454,7 +32454,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.ops_enrollment.api.user_ops_filters",
+      "endpoint": "aicrm_next.automation.ops_enrollment.api.user_ops_filters",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -32597,7 +32597,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.ops_enrollment.api.user_ops_list",
+      "endpoint": "aicrm_next.automation.ops_enrollment.api.user_ops_list",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -32720,7 +32720,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.ops_enrollment.api.user_ops_overview",
+      "endpoint": "aicrm_next.automation.ops_enrollment.api.user_ops_overview",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -32783,7 +32783,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.ops_enrollment.api.user_ops_send_records",
+      "endpoint": "aicrm_next.automation.ops_enrollment.api.user_ops_send_records",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -32835,7 +32835,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.ops_enrollment.api.user_ops_send_record_detail",
+      "endpoint": "aicrm_next.automation.ops_enrollment.api.user_ops_send_record_detail",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -32887,7 +32887,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.ops_enrollment.api.user_ops_send_record_refresh",
+      "endpoint": "aicrm_next.automation.ops_enrollment.api.user_ops_send_record_refresh",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -35295,7 +35295,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.channels_api.wecom_customer_acquisition_links",
+      "endpoint": "aicrm_next.automation.automation_engine.channels_api.wecom_customer_acquisition_links",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -35323,7 +35323,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.channels_api.wecom_customer_acquisition_links",
+      "endpoint": "aicrm_next.automation.automation_engine.channels_api.wecom_customer_acquisition_links",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -35371,7 +35371,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.channels_api.wecom_customer_acquisition_link_detail",
+      "endpoint": "aicrm_next.automation.automation_engine.channels_api.wecom_customer_acquisition_link_detail",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -35419,7 +35419,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.channels_api.wecom_customer_acquisition_link_detail",
+      "endpoint": "aicrm_next.automation.automation_engine.channels_api.wecom_customer_acquisition_link_detail",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -35467,7 +35467,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.channels_api.wecom_customer_acquisition_link_detail",
+      "endpoint": "aicrm_next.automation.automation_engine.channels_api.wecom_customer_acquisition_link_detail",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -35524,7 +35524,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.channels_api.wecom_customer_acquisition_link_action",
+      "endpoint": "aicrm_next.automation.automation_engine.channels_api.wecom_customer_acquisition_link_action",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -37676,7 +37676,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.execute_group_ops_token_broadcast",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.execute_group_ops_token_broadcast",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -37749,7 +37749,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.group_ops.api.receive_group_ops_webhook",
+      "endpoint": "aicrm_next.automation.automation_engine.group_ops.api.receive_group_ops_webhook",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "unregistered",
@@ -37966,7 +37966,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.api.activation_webhook",
+      "endpoint": "aicrm_next.automation.automation_engine.api.activation_webhook",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -38153,7 +38153,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.api.api_customer_automation_activation_webhook",
+      "endpoint": "aicrm_next.automation.automation_engine.api.api_customer_automation_activation_webhook",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -38212,7 +38212,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.api.signup_conversion_batches",
+      "endpoint": "aicrm_next.automation.automation_engine.api.signup_conversion_batches",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -38260,7 +38260,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.api.signup_conversion_batch",
+      "endpoint": "aicrm_next.automation.automation_engine.api.signup_conversion_batch",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -38329,7 +38329,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.api.customer_automation_webhook_deliveries",
+      "endpoint": "aicrm_next.automation.automation_engine.api.customer_automation_webhook_deliveries",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -38357,7 +38357,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.automation_engine.api.api_plan_customer_automation_webhook_delivery_retry_due",
+      "endpoint": "aicrm_next.automation.automation_engine.api.api_plan_customer_automation_webhook_delivery_retry_due",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -38376,7 +38376,7 @@
         "request_body": null,
         "responses": {}
       },
-      "endpoint": "aicrm_next.automation_engine.api.api_plan_customer_automation_webhook_delivery_retry",
+      "endpoint": "aicrm_next.automation.automation_engine.api.api_plan_customer_automation_webhook_delivery_retry",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.automation",
@@ -48007,7 +48007,7 @@
       "pii_level": "",
       "read_owners": [
         "aicrm_next.admin_read_model.projections",
-        "aicrm_next.automation_engine.group_ops.material_resolver",
+        "aicrm_next.automation.automation_engine.group_ops.material_resolver",
         "aicrm_next.channels.channel_entry.application",
         "aicrm_next.engagement.media_library.postgres_repo",
         "aicrm_next.engagement.send_content.postgres_repo",
@@ -48023,10 +48023,10 @@
       "migration_source": "0023_group_ops_webhook_rules",
       "pii_level": "",
       "read_owners": [
-        "aicrm_next.automation_engine.group_ops.postgres_repo"
+        "aicrm_next.automation.automation_engine.group_ops.postgres_repo"
       ],
       "table": "audience_rule",
-      "write_owner": "aicrm_next.automation_engine.group_ops.postgres_repo"
+      "write_owner": "aicrm_next.automation.automation_engine.group_ops.postgres_repo"
     },
     {
       "domain": "automation_group_ops",
@@ -48035,10 +48035,10 @@
       "migration_source": "0023_group_ops_webhook_rules",
       "pii_level": "",
       "read_owners": [
-        "aicrm_next.automation_engine.group_ops.postgres_repo"
+        "aicrm_next.automation.automation_engine.group_ops.postgres_repo"
       ],
       "table": "audience_rule_result",
-      "write_owner": "aicrm_next.automation_engine.group_ops.postgres_repo"
+      "write_owner": "aicrm_next.automation.automation_engine.group_ops.postgres_repo"
     },
     {
       "domain": "automation_group_ops",
@@ -48047,10 +48047,10 @@
       "migration_source": "0023_group_ops_webhook_rules",
       "pii_level": "",
       "read_owners": [
-        "aicrm_next.automation_engine.group_ops.postgres_repo"
+        "aicrm_next.automation.automation_engine.group_ops.postgres_repo"
       ],
       "table": "audience_rule_version",
-      "write_owner": "aicrm_next.automation_engine.group_ops.postgres_repo"
+      "write_owner": "aicrm_next.automation.automation_engine.group_ops.postgres_repo"
     },
     {
       "domain": "auth_platform",
@@ -48124,7 +48124,7 @@
         "historical schema drift guard"
       ],
       "table": "automation_agent_audit_log",
-      "write_owner": "aicrm_next.automation_engine"
+      "write_owner": "aicrm_next.automation.automation_engine"
     },
     {
       "domain": "automation_agents",
@@ -48148,7 +48148,7 @@
         "historical schema drift guard"
       ],
       "table": "automation_agent_idempotency",
-      "write_owner": "aicrm_next.automation_engine"
+      "write_owner": "aicrm_next.automation.automation_engine"
     },
     {
       "domain": "ai_audience_ops",
@@ -48292,7 +48292,7 @@
         "historical schema drift guard"
       ],
       "table": "automation_agents",
-      "write_owner": "aicrm_next.automation_engine"
+      "write_owner": "aicrm_next.automation.automation_engine"
     },
     {
       "domain": "automation_engine",
@@ -48304,7 +48304,7 @@
         "historical schema drift guard"
       ],
       "table": "automation_ai_push_log",
-      "write_owner": "aicrm_next.automation_engine"
+      "write_owner": "aicrm_next.automation.automation_engine"
     },
     {
       "domain": "channel_entry",
@@ -48313,7 +48313,7 @@
       "migration_source": "migrations/baselines/0001_post_legacy.sql",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.automation_engine.channel_completion",
+        "aicrm_next.automation.automation_engine.channel_completion",
         "historical schema drift guard"
       ],
       "table": "automation_channel",
@@ -48386,7 +48386,7 @@
       "migration_source": "migrations/baselines/0001_post_legacy.sql",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.automation_engine.channel_completion",
+        "aicrm_next.automation.automation_engine.channel_completion",
         "historical schema drift guard"
       ],
       "table": "automation_channel_qrcode_asset",
@@ -48468,7 +48468,7 @@
         "historical schema drift guard"
       ],
       "table": "automation_frequency_budget",
-      "write_owner": "aicrm_next.automation_engine"
+      "write_owner": "aicrm_next.automation.automation_engine"
     },
     {
       "domain": "automation_engine",
@@ -48480,7 +48480,7 @@
         "historical schema drift guard"
       ],
       "table": "automation_frequency_consumption",
-      "write_owner": "aicrm_next.automation_engine"
+      "write_owner": "aicrm_next.automation.automation_engine"
     },
     {
       "domain": "automation_engine_group_ops",
@@ -48493,7 +48493,7 @@
         "execution runtime consistency audit"
       ],
       "table": "automation_group_ops_effect_dependency",
-      "write_owner": "aicrm_next.automation_engine.group_ops.durable_effects_repository"
+      "write_owner": "aicrm_next.automation.automation_engine.group_ops.durable_effects_repository"
     },
     {
       "domain": "automation_engine_group_ops",
@@ -48506,7 +48506,7 @@
         "unified execution timeline"
       ],
       "table": "automation_group_ops_effect_graph",
-      "write_owner": "aicrm_next.automation_engine.group_ops.durable_effects_repository"
+      "write_owner": "aicrm_next.automation.automation_engine.group_ops.durable_effects_repository"
     },
     {
       "domain": "automation_engine_group_ops",
@@ -48519,7 +48519,7 @@
         "Group Ops media completion continuation"
       ],
       "table": "automation_group_ops_effect_material",
-      "write_owner": "aicrm_next.automation_engine.group_ops.durable_effects_repository"
+      "write_owner": "aicrm_next.automation.automation_engine.group_ops.durable_effects_repository"
     },
     {
       "domain": "automation_group_ops",
@@ -48528,10 +48528,10 @@
       "migration_source": "0023_group_ops_webhook_rules",
       "pii_level": "",
       "read_owners": [
-        "aicrm_next.automation_engine.group_ops.postgres_repo"
+        "aicrm_next.automation.automation_engine.group_ops.postgres_repo"
       ],
       "table": "automation_group_ops_execution_log",
-      "write_owner": "aicrm_next.automation_engine.group_ops.postgres_repo"
+      "write_owner": "aicrm_next.automation.automation_engine.group_ops.postgres_repo"
     },
     {
       "domain": "automation_group_ops",
@@ -48540,10 +48540,10 @@
       "migration_source": "0015_group_ops_plans",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.automation_engine.group_ops.postgres_repo"
+        "aicrm_next.automation.automation_engine.group_ops.postgres_repo"
       ],
       "table": "automation_group_ops_plan_groups",
-      "write_owner": "aicrm_next.automation_engine.group_ops.postgres_repo"
+      "write_owner": "aicrm_next.automation.automation_engine.group_ops.postgres_repo"
     },
     {
       "domain": "automation_group_ops",
@@ -48552,10 +48552,10 @@
       "migration_source": "0023_group_ops_webhook_rules",
       "pii_level": "",
       "read_owners": [
-        "aicrm_next.automation_engine.group_ops.postgres_repo"
+        "aicrm_next.automation.automation_engine.group_ops.postgres_repo"
       ],
       "table": "automation_group_ops_plan_member",
-      "write_owner": "aicrm_next.automation_engine.group_ops.postgres_repo"
+      "write_owner": "aicrm_next.automation.automation_engine.group_ops.postgres_repo"
     },
     {
       "domain": "automation_group_ops",
@@ -48564,10 +48564,10 @@
       "migration_source": "0015_group_ops_plans",
       "pii_level": "",
       "read_owners": [
-        "aicrm_next.automation_engine.group_ops.postgres_repo"
+        "aicrm_next.automation.automation_engine.group_ops.postgres_repo"
       ],
       "table": "automation_group_ops_plan_nodes",
-      "write_owner": "aicrm_next.automation_engine.group_ops.postgres_repo"
+      "write_owner": "aicrm_next.automation.automation_engine.group_ops.postgres_repo"
     },
     {
       "domain": "automation_group_ops",
@@ -48576,10 +48576,10 @@
       "migration_source": "0023_group_ops_webhook_rules",
       "pii_level": "",
       "read_owners": [
-        "aicrm_next.automation_engine.group_ops.postgres_repo"
+        "aicrm_next.automation.automation_engine.group_ops.postgres_repo"
       ],
       "table": "automation_group_ops_plan_scope",
-      "write_owner": "aicrm_next.automation_engine.group_ops.postgres_repo"
+      "write_owner": "aicrm_next.automation.automation_engine.group_ops.postgres_repo"
     },
     {
       "domain": "automation_group_ops",
@@ -48588,10 +48588,10 @@
       "migration_source": "0023_group_ops_webhook_rules",
       "pii_level": "",
       "read_owners": [
-        "aicrm_next.automation_engine.group_ops.postgres_repo"
+        "aicrm_next.automation.automation_engine.group_ops.postgres_repo"
       ],
       "table": "automation_group_ops_plan_segmentation",
-      "write_owner": "aicrm_next.automation_engine.group_ops.postgres_repo"
+      "write_owner": "aicrm_next.automation.automation_engine.group_ops.postgres_repo"
     },
     {
       "domain": "automation_group_ops",
@@ -48600,12 +48600,12 @@
       "migration_source": "0015_group_ops_plans",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.automation_engine.group_ops.postgres_repo",
+        "aicrm_next.automation.automation_engine.group_ops.postgres_repo",
         "aicrm_next.platform.admin_jobs.application",
         "broadcast jobs projection"
       ],
       "table": "automation_group_ops_plans",
-      "write_owner": "aicrm_next.automation_engine.group_ops.postgres_repo"
+      "write_owner": "aicrm_next.automation.automation_engine.group_ops.postgres_repo"
     },
     {
       "domain": "automation_group_ops",
@@ -48614,10 +48614,10 @@
       "migration_source": "0023_group_ops_webhook_rules",
       "pii_level": "",
       "read_owners": [
-        "aicrm_next.automation_engine.group_ops.postgres_repo"
+        "aicrm_next.automation.automation_engine.group_ops.postgres_repo"
       ],
       "table": "automation_group_ops_trigger_event",
-      "write_owner": "aicrm_next.automation_engine.group_ops.postgres_repo"
+      "write_owner": "aicrm_next.automation.automation_engine.group_ops.postgres_repo"
     },
     {
       "domain": "automation_group_ops",
@@ -48626,10 +48626,10 @@
       "migration_source": "0015_group_ops_plans",
       "pii_level": "",
       "read_owners": [
-        "aicrm_next.automation_engine.group_ops.postgres_repo"
+        "aicrm_next.automation.automation_engine.group_ops.postgres_repo"
       ],
       "table": "automation_group_ops_webhook_events",
-      "write_owner": "aicrm_next.automation_engine.group_ops.postgres_repo"
+      "write_owner": "aicrm_next.automation.automation_engine.group_ops.postgres_repo"
     },
     {
       "domain": "legacy_automation",
@@ -48981,7 +48981,7 @@
         "historical schema drift guard"
       ],
       "table": "automation_sop_template",
-      "write_owner": "aicrm_next.automation_engine"
+      "write_owner": "aicrm_next.automation.automation_engine"
     },
     {
       "domain": "automation_legacy",
@@ -49013,7 +49013,7 @@
         "historical schema drift guard"
       ],
       "table": "automation_touch_delivery_log",
-      "write_owner": "aicrm_next.automation_engine"
+      "write_owner": "aicrm_next.automation.automation_engine"
     },
     {
       "domain": "automation_legacy",
@@ -49126,12 +49126,12 @@
       "migration_source": "0021_broadcast_queue_platform_hardening",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.background_jobs",
+        "aicrm_next.automation.background_jobs",
         "aicrm_next.delivery_lineage",
         "aicrm_next.platform.admin_jobs"
       ],
       "table": "broadcast_job_events",
-      "write_owner": "aicrm_next.background_jobs.broadcast_queue_worker"
+      "write_owner": "aicrm_next.automation.background_jobs.broadcast_queue_worker"
     },
     {
       "domain": "broadcast_jobs",
@@ -49153,13 +49153,13 @@
       "pii_level": "internal_contact",
       "read_owners": [
         "aicrm_next.admin_read_model.repo",
-        "aicrm_next.background_jobs.broadcast_queue_worker",
+        "aicrm_next.automation.background_jobs.broadcast_queue_worker",
         "aicrm_next.extensions.ai.ai_assist.external_campaigns_repo",
         "aicrm_next.extensions.growth.cloud_orchestrator.repository",
         "aicrm_next.platform.admin_jobs.repository"
       ],
       "table": "broadcast_jobs",
-      "write_owner": "aicrm_next.background_jobs"
+      "write_owner": "aicrm_next.automation.background_jobs"
     },
     {
       "domain": "broadcast_jobs",
@@ -49338,7 +49338,7 @@
       "migration_source": "0024_cloud_plan_recipient_approval",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.background_jobs",
+        "aicrm_next.automation.background_jobs",
         "aicrm_next.engagement.send_content",
         "aicrm_next.extensions.growth.cloud_orchestrator"
       ],
@@ -49352,7 +49352,7 @@
       "migration_source": "0024_cloud_plan_recipient_approval",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.background_jobs",
+        "aicrm_next.automation.background_jobs",
         "aicrm_next.extensions.growth.cloud_orchestrator"
       ],
       "table": "cloud_broadcast_plan_recipients",
@@ -49504,7 +49504,7 @@
       "migration_source": "migrations/baselines/0001_post_legacy.sql",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.background_jobs",
+        "aicrm_next.automation.background_jobs",
         "aicrm_next.channels.channel_entry",
         "aicrm_next.crm.customer_read_model",
         "aicrm_next.crm.identity_contact",
@@ -49872,7 +49872,7 @@
         "historical schema drift guard"
       ],
       "table": "group_chats",
-      "write_owner": "aicrm_next.automation_engine.group_ops"
+      "write_owner": "aicrm_next.automation.automation_engine.group_ops"
     },
     {
       "domain": "media_library",
@@ -49881,7 +49881,7 @@
       "migration_source": "0117_group_invite_cards, 0119_group_invite_bindings",
       "pii_level": "",
       "read_owners": [
-        "aicrm_next.automation_engine.group_ops.material_resolver",
+        "aicrm_next.automation.automation_engine.group_ops.material_resolver",
         "aicrm_next.channels.channel_entry.application",
         "aicrm_next.engagement.media_library.postgres_repo",
         "aicrm_next.engagement.send_content.postgres_repo",
@@ -50007,7 +50007,7 @@
       "pii_level": "",
       "read_owners": [
         "aicrm_next.admin_read_model.projections",
-        "aicrm_next.automation_engine.group_ops.material_resolver",
+        "aicrm_next.automation.automation_engine.group_ops.material_resolver",
         "aicrm_next.channels.channel_entry.application",
         "aicrm_next.engagement.media_library.postgres_repo",
         "aicrm_next.engagement.send_content.postgres_repo",
@@ -50195,7 +50195,7 @@
       "pii_level": "",
       "read_owners": [
         "aicrm_next.admin_read_model.projections",
-        "aicrm_next.automation_engine.group_ops.material_resolver",
+        "aicrm_next.automation.automation_engine.group_ops.material_resolver",
         "aicrm_next.channels.channel_entry.application",
         "aicrm_next.engagement.media_library.postgres_repo",
         "aicrm_next.engagement.send_content.postgres_repo",
@@ -50320,11 +50320,11 @@
       "pii_level": "internal_contact",
       "read_owners": [
         "aicrm_next.admin_read_model",
-        "aicrm_next.background_jobs",
+        "aicrm_next.automation.background_jobs",
         "aicrm_next.platform.admin_jobs"
       ],
       "table": "outbound_tasks",
-      "write_owner": "aicrm_next.background_jobs.broadcast_queue_worker"
+      "write_owner": "aicrm_next.automation.background_jobs.broadcast_queue_worker"
     },
     {
       "domain": "outbound_webhook",
@@ -50990,12 +50990,12 @@
       "migration_source": "0029_user_ops_prod_tables",
       "pii_level": "internal_contact",
       "read_owners": [
+        "aicrm_next.automation.ops_enrollment.repo",
         "aicrm_next.engagement.send_targets.repo",
-        "aicrm_next.extensions.ai.ai_assist.external_campaigns_repo",
-        "aicrm_next.ops_enrollment.repo"
+        "aicrm_next.extensions.ai.ai_assist.external_campaigns_repo"
       ],
       "table": "user_ops_do_not_disturb_next",
-      "write_owner": "aicrm_next.ops_enrollment.repo"
+      "write_owner": "aicrm_next.automation.ops_enrollment.repo"
     },
     {
       "domain": "legacy_user_ops",
@@ -51106,10 +51106,10 @@
       "migration_source": "0029_user_ops_prod_tables, hardened by 0077_id_dev_runtime_baseline",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.ops_enrollment.repo"
+        "aicrm_next.automation.ops_enrollment.repo"
       ],
       "table": "user_ops_pool_current_next",
-      "write_owner": "aicrm_next.ops_enrollment.repo"
+      "write_owner": "aicrm_next.automation.ops_enrollment.repo"
     },
     {
       "domain": "user_ops",
@@ -51138,10 +51138,10 @@
       "migration_source": "0029_user_ops_prod_tables",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.ops_enrollment.repo"
+        "aicrm_next.automation.ops_enrollment.repo"
       ],
       "table": "user_ops_send_records_next",
-      "write_owner": "aicrm_next.ops_enrollment.repo"
+      "write_owner": "aicrm_next.automation.ops_enrollment.repo"
     },
     {
       "domain": "webhook_ingress",
@@ -51344,11 +51344,11 @@
       "migration_source": "0077_id_dev_runtime_baseline",
       "pii_level": "",
       "read_owners": [
-        "aicrm_next.automation_engine.channels_api",
+        "aicrm_next.automation.automation_engine.channels_api",
         "aicrm_next.crm.customer_read_model.sidebar_v2"
       ],
       "table": "wecom_customer_acquisition_links",
-      "write_owner": "aicrm_next.automation_engine.channels_api"
+      "write_owner": "aicrm_next.automation.automation_engine.channels_api"
     },
     {
       "domain": "identity_contact",
@@ -51401,10 +51401,10 @@
       "migration_source": "0015_group_ops_plans",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.automation_engine.group_ops"
+        "aicrm_next.automation.automation_engine.group_ops"
       ],
       "table": "wecom_group_chat_snapshots",
-      "write_owner": "aicrm_next.automation_engine.group_ops"
+      "write_owner": "aicrm_next.automation.automation_engine.group_ops"
     },
     {
       "domain": "media_library",
@@ -51413,7 +51413,7 @@
       "migration_source": "0115_wecom_media_leases",
       "pii_level": "",
       "read_owners": [
-        "aicrm_next.automation_engine.group_ops.material_resolver",
+        "aicrm_next.automation.automation_engine.group_ops.material_resolver",
         "aicrm_next.data_health.checks",
         "aicrm_next.engagement.media_library.wecom_lease"
       ],

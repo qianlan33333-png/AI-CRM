@@ -64,7 +64,7 @@ def test_alipay_admin_transactions_after_unionid_cleanup() -> None:
 
 
 def test_group_ops_dispatcher_plans_one_external_effect_with_unionid_link() -> None:
-    source = _read("aicrm_next/automation_engine/group_ops/action_dispatcher.py")
+    source = _read("aicrm_next/automation/automation_engine/group_ops/action_dispatcher.py")
     enqueue_source = _function_source(source, "enqueue_private_message")
 
     assert "_insert_broadcast_job" not in source
@@ -135,7 +135,7 @@ def test_unionid_runtime_sql_guard_blocks_removed_identity_columns() -> None:
     h5_source = _read("aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py")
     questionnaire_source = _read("aicrm_next/extensions/forms/questionnaire/repo.py")
     commerce_source = _read("aicrm_next/extensions/commerce/commerce/admin_transaction_detail.py")
-    group_ops_source = _read("aicrm_next/automation_engine/group_ops/action_dispatcher.py")
+    group_ops_source = _read("aicrm_next/automation/automation_engine/group_ops/action_dispatcher.py")
     cloud_source = _read("aicrm_next/extensions/growth/cloud_orchestrator/repository.py")
     channel_source = _read("aicrm_next/channels/channel_entry/repo.py")
     scoped_sources = {

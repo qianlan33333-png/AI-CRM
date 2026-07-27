@@ -29,7 +29,7 @@ def test_sql_repository_close_does_not_dispose_global_engine() -> None:
     checked_files = [
         Path("aicrm_next/crm/customer_read_model/repo.py"),
         Path("aicrm_next/crm/customer_read_model/repo_live_source.py"),
-        Path("aicrm_next/ops_enrollment/repo.py"),
+        Path("aicrm_next/automation/ops_enrollment/repo.py"),
         Path("aicrm_next/crm/customer_read_model/sidebar_v2.py"),
     ]
 

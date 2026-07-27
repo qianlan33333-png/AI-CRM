@@ -8,7 +8,7 @@ from typing import Any
 import psycopg
 from psycopg.rows import dict_row
 
-from aicrm_next.automation_engine.group_ops import scheduler
+from aicrm_next.automation.automation_engine.group_ops import scheduler
 
 
 class _ConcurrentDueRepo:

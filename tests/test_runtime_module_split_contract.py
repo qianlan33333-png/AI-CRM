@@ -9,8 +9,8 @@ from aicrm_next.platform.admin_config import application as admin_application
 from aicrm_next.platform.admin_config import application_support as admin_support
 from aicrm_next.extensions.ai.ai_audience_ops import repository as audience_repository
 from aicrm_next.extensions.ai.ai_audience_ops import repository_packages as audience_package_repository
-from aicrm_next.automation_engine.group_ops import postgres_repo as group_ops_repository
-from aicrm_next.automation_engine.group_ops import postgres_repo_mapping as group_ops_mapping_repository
+from aicrm_next.automation.automation_engine.group_ops import postgres_repo as group_ops_repository
+from aicrm_next.automation.automation_engine.group_ops import postgres_repo_mapping as group_ops_mapping_repository
 from aicrm_next.extensions.growth.cloud_orchestrator import repository as cloud_repository
 from aicrm_next.extensions.growth.cloud_orchestrator import repository_legacy as cloud_legacy_repository
 from aicrm_next.extensions.growth.cloud_orchestrator import repository_memory as cloud_memory_repository

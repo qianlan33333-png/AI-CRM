@@ -895,9 +895,9 @@ def build_group_ops_repository() -> GroupOpsRepository:
 
         return assert_repository_allowed(
             PostgresGroupOpsRepository(get_engine(database_url)),
-            capability_owner="aicrm_next.automation_engine.group_ops",
+            capability_owner="aicrm_next.automation.automation_engine.group_ops",
         )
-    return assert_repository_allowed(_fixture_repo, capability_owner="aicrm_next.automation_engine.group_ops")
+    return assert_repository_allowed(_fixture_repo, capability_owner="aicrm_next.automation.automation_engine.group_ops")
 
 
 def _sqlalchemy_database_url(url: str) -> str:

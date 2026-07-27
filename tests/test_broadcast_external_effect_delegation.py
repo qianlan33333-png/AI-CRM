@@ -4,9 +4,9 @@ from datetime import datetime, timezone
 
 import pytest
 
-import aicrm_next.background_jobs.broadcast_queue_worker as worker
+import aicrm_next.automation.background_jobs.broadcast_queue_worker as worker
 
-from aicrm_next.background_jobs.broadcast_queue_worker import (
+from aicrm_next.automation.background_jobs.broadcast_queue_worker import (
     SafeSkippedBroadcastDispatcher,
     run_broadcast_queue_worker,
 )

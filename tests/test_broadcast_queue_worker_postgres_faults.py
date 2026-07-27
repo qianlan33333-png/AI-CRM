@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from aicrm_next.background_jobs.broadcast_queue_worker import (
+from aicrm_next.automation.background_jobs.broadcast_queue_worker import (
     PostgresBroadcastQueueRepository,
     run_broadcast_queue_worker,
 )

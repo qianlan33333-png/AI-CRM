@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.ops_enrollment import audience_target_port
+from aicrm_next.automation.ops_enrollment import audience_target_port
 
 
 def test_audience_target_query_is_supplied_by_composition_root(monkeypatch) -> None:

@@ -5,8 +5,8 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.ops_enrollment import application, repo as repo_module
-from aicrm_next.ops_enrollment.repo import InMemoryUserOpsRepository, SqlAlchemyUserOpsRepository
+from aicrm_next.automation.ops_enrollment import application, repo as repo_module
+from aicrm_next.automation.ops_enrollment.repo import InMemoryUserOpsRepository, SqlAlchemyUserOpsRepository
 from aicrm_next.platform.shared.repository_provider import evaluate_repository
 
 ROOT = Path(__file__).resolve().parents[1]

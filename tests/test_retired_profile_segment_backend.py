@@ -12,10 +12,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_retired_profile_segment_sql_repository_is_removed() -> None:
-    module_path = ROOT / "aicrm_next" / "automation_engine" / "profile_segment_repository.py"
+    module_path = ROOT / "aicrm_next" / "automation" / "automation_engine" / "profile_segment_repository.py"
 
     assert not module_path.exists()
-    assert importlib.util.find_spec("aicrm_next.automation_engine.profile_segment_repository") is None
+    assert importlib.util.find_spec("aicrm_next.automation.automation_engine.profile_segment_repository") is None
 
 
 def test_profile_segment_template_routes_are_not_registered() -> None:

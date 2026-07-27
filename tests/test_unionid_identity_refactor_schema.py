@@ -400,7 +400,7 @@ def test_external_effect_wecom_adapters_accept_unionid_business_target() -> None
 
 
 def test_user_ops_tables_are_unionid_only_business_models() -> None:
-    model_source = _read("aicrm_next/ops_enrollment/models.py")
+    model_source = _read("aicrm_next/automation/ops_enrollment/models.py")
     migration_source = _read("migrations/versions/0029_user_ops_prod_tables.py")
 
     assert 'Column("unionid"' in model_source
@@ -708,7 +708,7 @@ def test_broadcast_cloud_and_agent_targets_are_unionid_only() -> None:
     cloud_migration = _read("migrations/versions/0024_cloud_plan_recipient_approval.py")
     agent_migration = _read("migrations/versions/0054_automation_agent_runtime_config.py")
     cleanup_source = _read("migrations/versions/0066_unionid_broadcast_target_cleanup.py")
-    worker_source = _read("aicrm_next/background_jobs/broadcast_queue_worker.py")
+    worker_source = _read("aicrm_next/automation/background_jobs/broadcast_queue_worker.py")
     cloud_repo_source = _read("aicrm_next/extensions/growth/cloud_orchestrator/repository.py")
     broadcast_owner_source = _read(
         "aicrm_next/platform/platform_foundation/background_jobs/broadcast_job_write_repository.py"
@@ -761,10 +761,10 @@ def test_campaign_frequency_and_agent_outputs_are_unionid_only() -> None:
     )
     agent_copywriting_source = _read("aicrm_next/extensions/ai/ai_audience_ops/agent_copywriting.py")
     admin_projection_source = _read("aicrm_next/admin_read_model/projections.py")
-    agent_run_repo_source = _read("aicrm_next/automation_engine/agent_run_sqlalchemy_repository.py")
-    agent_run_domain_source = _read("aicrm_next/automation_engine/agent_runs.py")
-    agent_output_repo_source = _read("aicrm_next/automation_engine/agent_output_sqlalchemy_repository.py")
-    agent_output_domain_source = _read("aicrm_next/automation_engine/agent_outputs.py")
+    agent_run_repo_source = _read("aicrm_next/automation/automation_engine/agent_run_sqlalchemy_repository.py")
+    agent_run_domain_source = _read("aicrm_next/automation/automation_engine/agent_runs.py")
+    agent_output_repo_source = _read("aicrm_next/automation/automation_engine/agent_output_sqlalchemy_repository.py")
+    agent_output_domain_source = _read("aicrm_next/automation/automation_engine/agent_outputs.py")
 
     assert "unionid TEXT NOT NULL DEFAULT ''" in campaign_migration
     assert "external_contact_id TEXT NOT NULL DEFAULT ''" not in campaign_migration
@@ -808,7 +808,7 @@ def test_final_legacy_identity_cleanup_removes_non_boundary_columns() -> None:
     target_cleanup_source = _read("migrations/versions/0079_final_target_schema_cleanup.py")
     channel_repo_source = _read("aicrm_next/channels/channel_entry/repo.py")
     channel_app_source = _read("aicrm_next/channels/channel_entry/application.py")
-    contact_sync_source = _read("aicrm_next/background_jobs/external_contact_sync.py")
+    contact_sync_source = _read("aicrm_next/automation/background_jobs/external_contact_sync.py")
     sidebar_source = _read("aicrm_next/crm/customer_read_model/sidebar_v2.py")
     identity_contact_source = _read("aicrm_next/crm/identity_contact/repo.py")
     admin_projection_source = _read("aicrm_next/admin_read_model/projections.py")

@@ -6,7 +6,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from aicrm_next.customer_read_model import models as customer_read_model_models  # noqa: F401
-from aicrm_next.ops_enrollment import models as user_ops_models  # noqa: F401
+from aicrm_next.automation.ops_enrollment import models as user_ops_models  # noqa: F401
 from aicrm_next.platform.shared.database import Base
 
 config = context.config

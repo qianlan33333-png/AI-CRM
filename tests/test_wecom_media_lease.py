@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from aicrm_next.automation_engine.group_ops.material_resolver import PostgresGroupOpsMaterialResolver
+from aicrm_next.automation.automation_engine.group_ops.material_resolver import PostgresGroupOpsMaterialResolver
 from aicrm_next.channels.integration_gateway.wecom_media_upload_client import WeComMediaUploadClientError
 from aicrm_next.engagement.media_library.wecom_lease import (
     InMemoryWeComMediaLeaseRepository,

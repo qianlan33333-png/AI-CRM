@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from aicrm_next.ops_enrollment.dto import UserOpsFilters
-from aicrm_next.ops_enrollment.user_ops import normalize_filters
+from aicrm_next.automation.ops_enrollment.dto import UserOpsFilters
+from aicrm_next.automation.ops_enrollment.user_ops import normalize_filters
 
 
 def test_user_ops_next_filter_normalizer_accepts_current_status_filters():

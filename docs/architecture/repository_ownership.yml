@@ -170,24 +170,24 @@ repositories:
       - automation_agent_runtime_config
       - automation_agent_webhook_batch
       - automation_agent_webhook_item
-  aicrm_next/automation_engine/agent_output_sqlalchemy_repository.py:
-    capability_owner: aicrm_next.automation_engine
+  aicrm_next/automation/automation_engine/agent_output_sqlalchemy_repository.py:
+    capability_owner: aicrm_next.automation.automation_engine
     access_scope: test_staging
     table_reads:
       - automation_agent_outputs
     table_writes: []
-  aicrm_next/automation_engine/agent_postgres_repository.py:
-    capability_owner: aicrm_next.automation_engine
+  aicrm_next/automation/automation_engine/agent_postgres_repository.py:
+    capability_owner: aicrm_next.automation.automation_engine
     table_reads: []
     table_writes: []
-  aicrm_next/automation_engine/agent_run_sqlalchemy_repository.py:
-    capability_owner: aicrm_next.automation_engine
+  aicrm_next/automation/automation_engine/agent_run_sqlalchemy_repository.py:
+    capability_owner: aicrm_next.automation.automation_engine
     access_scope: test_staging
     table_reads:
       - automation_agent_runs
     table_writes: []
-  aicrm_next/automation_engine/agent_sqlalchemy_repository.py:
-    capability_owner: aicrm_next.automation_engine
+  aicrm_next/automation/automation_engine/agent_sqlalchemy_repository.py:
+    capability_owner: aicrm_next.automation.automation_engine
     table_reads:
       - automation_agent_audit_log
       - automation_agent_idempotency
@@ -196,8 +196,8 @@ repositories:
       - automation_agent_audit_log
       - automation_agent_idempotency
       - automation_agents
-  aicrm_next/automation_engine/channels_repo.py:
-    capability_owner: aicrm_next.automation_engine.channels_api
+  aicrm_next/automation/automation_engine/channels_repo.py:
+    capability_owner: aicrm_next.automation.automation_engine.channels_api
     table_reads:
       - attachment_library
       - automation_channel
@@ -217,8 +217,8 @@ repositories:
       - automation_channel_assignment_event
       - automation_channel_entry_effect_log
       - wecom_external_contact_event_logs
-  aicrm_next/automation_engine/group_ops/postgres_repo.py:
-    capability_owner: aicrm_next.automation_engine.group_ops
+  aicrm_next/automation/automation_engine/group_ops/postgres_repo.py:
+    capability_owner: aicrm_next.automation.automation_engine.group_ops
     table_reads:
       - audience_rule
       - audience_rule_result
@@ -248,8 +248,8 @@ repositories:
       - automation_group_ops_trigger_event
       - automation_group_ops_webhook_events
       - wecom_group_chat_snapshots
-  aicrm_next/automation_engine/group_ops/durable_effects_repository.py:
-    capability_owner: aicrm_next.automation_engine.group_ops
+  aicrm_next/automation/automation_engine/group_ops/durable_effects_repository.py:
+    capability_owner: aicrm_next.automation.automation_engine.group_ops
     table_reads:
       - attachment_library
       - automation_group_ops_effect_dependency
@@ -262,8 +262,8 @@ repositories:
       - automation_group_ops_effect_dependency
       - automation_group_ops_effect_graph
       - automation_group_ops_effect_material
-  aicrm_next/automation_engine/group_ops/effect_graph_lifecycle_repository.py:
-    capability_owner: aicrm_next.automation_engine.group_ops
+  aicrm_next/automation/automation_engine/group_ops/effect_graph_lifecycle_repository.py:
+    capability_owner: aicrm_next.automation.automation_engine.group_ops
     table_reads:
       - automation_group_ops_effect_dependency
       - automation_group_ops_effect_graph
@@ -272,13 +272,13 @@ repositories:
     table_writes:
       - automation_group_ops_effect_dependency
       - automation_group_ops_effect_graph
-  aicrm_next/background_jobs/broadcast_effect_repository.py:
-    capability_owner: aicrm_next.background_jobs.broadcast_queue_worker
+  aicrm_next/automation/background_jobs/broadcast_effect_repository.py:
+    capability_owner: aicrm_next.automation.background_jobs.broadcast_queue_worker
     table_reads:
       - external_effect_job
     table_writes: []
   aicrm_next/platform/platform_foundation/background_jobs/broadcast_job_write_repository.py:
-    capability_owner: aicrm_next.background_jobs
+    capability_owner: aicrm_next.automation.background_jobs
     table_reads:
       - broadcast_jobs
     table_writes:
@@ -292,16 +292,16 @@ repositories:
     table_writes:
       - cloud_broadcast_plan_recipient_messages
       - cloud_broadcast_plan_recipients
-  aicrm_next/automation_engine/group_ops/repo.py:
-    capability_owner: aicrm_next.automation_engine.group_ops
+  aicrm_next/automation/automation_engine/group_ops/repo.py:
+    capability_owner: aicrm_next.automation.automation_engine.group_ops
     table_reads: []
     table_writes: []
-  aicrm_next/automation_engine/repo.py:
-    capability_owner: aicrm_next.automation_engine
+  aicrm_next/automation/automation_engine/repo.py:
+    capability_owner: aicrm_next.automation.automation_engine
     table_reads: []
     table_writes: []
-  aicrm_next/background_jobs/repository.py:
-    capability_owner: aicrm_next.background_jobs
+  aicrm_next/automation/background_jobs/repository.py:
+    capability_owner: aicrm_next.automation.background_jobs
     table_reads:
       - broadcast_job_events
       - broadcast_jobs
@@ -632,8 +632,8 @@ repositories:
       - archived_messages
     non_literal_table_reads:
       - app_settings
-  aicrm_next/ops_enrollment/repo.py:
-    capability_owner: aicrm_next.ops_enrollment
+  aicrm_next/automation/ops_enrollment/repo.py:
+    capability_owner: aicrm_next.automation.ops_enrollment
     table_reads:
       - user_ops_do_not_disturb_next
       - user_ops_pool_current_next

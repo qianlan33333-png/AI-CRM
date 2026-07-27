@@ -97,7 +97,7 @@ def test_plan_list_returns_plan_fields_without_next_action(group_ops_api_client)
 
 
 def test_plan_detail_tolerates_missing_optional_webhook_rule_tables():
-    from aicrm_next.automation_engine.group_ops.application import GetGroupOpsPlanQuery
+    from aicrm_next.automation.automation_engine.group_ops.application import GetGroupOpsPlanQuery
 
     payload = GetGroupOpsPlanQuery(repo=DetailRepoWithMissingOptionalTables())(7)
 

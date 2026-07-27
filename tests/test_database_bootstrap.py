@@ -689,7 +689,7 @@ def test_execution_runtime_correctness_freezes_and_classifies_pre_cutover_queue_
         from sqlalchemy import create_engine
         from sqlalchemy.orm import sessionmaker
 
-        from aicrm_next.background_jobs.broadcast_queue_worker import PostgresBroadcastQueueRepository
+        from aicrm_next.automation.background_jobs.broadcast_queue_worker import PostgresBroadcastQueueRepository
         from aicrm_next.platform.platform_foundation.external_effects.repo import SQLAlchemyExternalEffectRepository
         from aicrm_next.platform.platform_foundation.internal_events.repository import SQLAlchemyInternalEventRepository
         from aicrm_next.platform.platform_foundation.webhook_inbox.repository import PostgresWebhookInboxRepository

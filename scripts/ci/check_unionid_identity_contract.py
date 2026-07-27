@@ -23,7 +23,7 @@ HIGH_RISK_ALIAS_CONSUMERS = (
     Path("aicrm_next/extensions/ai/ai_assist/external_campaigns_repo.py"),
     Path("aicrm_next/extensions/ai/ai_audience_ops/repository.py"),
     Path("aicrm_next/extensions/ai/automation_agents/repository.py"),
-    Path("aicrm_next/automation_engine/group_ops/action_dispatcher.py"),
+    Path("aicrm_next/automation/automation_engine/group_ops/action_dispatcher.py"),
     Path("aicrm_next/channels/channel_entry/identity_bridge_repo.py"),
     Path("aicrm_next/channels/channel_entry/repo.py"),
     Path("aicrm_next/extensions/growth/cloud_orchestrator/repository.py"),

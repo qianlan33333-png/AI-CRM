@@ -30,7 +30,7 @@ disabled and must not be restored as fallbacks.
 - [ ] Choose the `target_kind`.
 - [ ] Define a stable `idempotency_key`.
 - [ ] Define the `content_payload` schema.
-- [ ] Route supported delegation through the Next broadcast queue worker in `aicrm_next/background_jobs/broadcast_queue_worker.py`.
+- [ ] Route supported delegation through the Next broadcast queue worker in `aicrm_next/automation/background_jobs/broadcast_queue_worker.py`.
 - [ ] Keep unsupported `source_type` values safely skipped until a Next-native dispatcher path is reviewed.
 - [ ] Ensure the dispatcher path is safe around external side effects and resume cases.
 - [ ] Use `enqueue_broadcast_job(...)` or pass the standard metadata through `enqueue_job(...)`.

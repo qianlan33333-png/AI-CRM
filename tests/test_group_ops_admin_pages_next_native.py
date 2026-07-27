@@ -8,7 +8,7 @@ from aicrm_next.main import create_app
 
 ROOT = Path(__file__).resolve().parents[1]
 FRONTEND_COMPAT = ROOT / "aicrm_next" / "app" / "admin_console"
-GROUP_OPS_BUNDLE = ROOT / "aicrm_next" / "automation_engine" / "group_ops"
+GROUP_OPS_BUNDLE = ROOT / "aicrm_next" / "automation" / "automation_engine" / "group_ops"
 
 
 def test_group_ops_admin_pages_render_from_next_native_bundle(monkeypatch) -> None:

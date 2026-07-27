@@ -241,7 +241,7 @@ def user_ops_send_records(limit: int = 20, offset: int = 0) -> dict:
         return ListUserOpsSendRecordsQuery()(limit=limit, offset=offset)
     except Exception as exc:
         return admin_read_unavailable_payload(
-            capability_owner="aicrm_next/ops_enrollment",
+            capability_owner="aicrm_next/automation/ops_enrollment",
             page_error="发送记录读模型暂不可用，请稍后重试。",
             exc=exc,
             items_keys=("items", "records"),

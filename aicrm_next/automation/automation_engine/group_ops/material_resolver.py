@@ -5,7 +5,7 @@ import hashlib
 from datetime import datetime, timedelta, timezone
 from typing import Any, Protocol
 
-from aicrm_next.automation_engine.group_ops.message_content import normalize_miniprogram_attachment_payload
+from aicrm_next.automation.automation_engine.group_ops.message_content import normalize_miniprogram_attachment_payload
 from aicrm_next.integration_ports import build_wecom_media_upload_client
 from aicrm_next.engagement.media_library.postgres_repo import PostgresMediaLibraryRepository
 from aicrm_next.engagement.media_library.dto import normalize_group_invite_join_url, normalize_http_url

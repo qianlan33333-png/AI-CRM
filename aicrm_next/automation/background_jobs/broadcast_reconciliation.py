@@ -115,12 +115,12 @@ _P1_TABLES = (
 
 _P1_RUNTIME_PATHS = (
     "aicrm_next/app/admin_console/templates/admin_shell/p1_group_ops_workspace.html",
-    "aicrm_next/automation_engine/group_ops/draft_api.py",
-    "aicrm_next/automation_engine/group_ops/draft_repository.py",
-    "aicrm_next/automation_engine/group_ops/draft_service.py",
-    "aicrm_next/automation_engine/group_ops/governance_api.py",
-    "aicrm_next/automation_engine/group_ops/governance_repository.py",
-    "aicrm_next/automation_engine/group_ops/governance_service.py",
+    "aicrm_next/automation/automation_engine/group_ops/draft_api.py",
+    "aicrm_next/automation/automation_engine/group_ops/draft_repository.py",
+    "aicrm_next/automation/automation_engine/group_ops/draft_service.py",
+    "aicrm_next/automation/automation_engine/group_ops/governance_api.py",
+    "aicrm_next/automation/automation_engine/group_ops/governance_repository.py",
+    "aicrm_next/automation/automation_engine/group_ops/governance_service.py",
     "aicrm_next/app/admin_console/static/admin_console/p1/p1_group_ops_workspace",
     "scripts/diagnose_p1_group_ops_workspace_bridge_acceptance.py",
 )
@@ -135,7 +135,7 @@ class GroupOpsBroadcastReconciliationService:
 
     def __init__(self, *, database_url: str = "", repo_root: Path | None = None) -> None:
         self._database_url = _text(database_url) or raw_database_url()
-        self._repo_root = (repo_root or Path(__file__).resolve().parents[2]).resolve()
+        self._repo_root = (repo_root or Path(__file__).resolve().parents[3]).resolve()
 
     def diagnose(self) -> dict[str, Any]:
         if not self._database_url:

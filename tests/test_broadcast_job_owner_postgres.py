@@ -13,7 +13,7 @@ from aicrm_next.platform.platform_foundation.background_jobs.broadcast_job_write
     BroadcastJobCreate,
     build_broadcast_job_write_port,
 )
-from aicrm_next.background_jobs.broadcast_queue_worker import (
+from aicrm_next.automation.background_jobs.broadcast_queue_worker import (
     PostgresBroadcastQueueRepository,
 )
 

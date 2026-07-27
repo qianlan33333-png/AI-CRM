@@ -8,7 +8,7 @@ from aicrm_next.main import create_app
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CHANNEL_TEMPLATE = ROOT / "aicrm_next" / "automation_engine" / "templates" / "admin_console" / "channel_code_center.html"
+CHANNEL_TEMPLATE = ROOT / "aicrm_next" / "automation" / "automation_engine" / "templates" / "admin_console" / "channel_code_center.html"
 WECOM_STATUS = ROOT / "frontend" / "admin" / "wecom" / "wecom_status.ts"
 WECOM_OVERVIEW = ROOT / "frontend" / "admin" / "wecom" / "wecom_overview.ts"
 

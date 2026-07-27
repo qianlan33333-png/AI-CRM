@@ -11,7 +11,7 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.background_jobs.broadcast_queue_worker import run_broadcast_queue_worker
+from aicrm_next.automation.background_jobs.broadcast_queue_worker import run_broadcast_queue_worker
 
 
 def run(*, batch_size: int | None = None, limit: int | None = None, dry_run: bool = False) -> dict:

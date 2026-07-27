@@ -4,10 +4,10 @@ from pathlib import Path
 
 import pytest
 
-from aicrm_next.automation_engine.group_ops.picker_application import ListGroupChatPickerQuery, SyncGroupChatPickerCommand
-from aicrm_next.automation_engine.group_ops.dto import GroupChatPickerSyncRequest
-from aicrm_next.automation_engine.group_ops.material_resolver import GroupOpsMaterialResolveError, InMemoryGroupOpsMaterialResolver
-from aicrm_next.automation_engine.group_ops.repo import InMemoryGroupOpsRepository
+from aicrm_next.automation.automation_engine.group_ops.picker_application import ListGroupChatPickerQuery, SyncGroupChatPickerCommand
+from aicrm_next.automation.automation_engine.group_ops.dto import GroupChatPickerSyncRequest
+from aicrm_next.automation.automation_engine.group_ops.material_resolver import GroupOpsMaterialResolveError, InMemoryGroupOpsMaterialResolver
+from aicrm_next.automation.automation_engine.group_ops.repo import InMemoryGroupOpsRepository
 from aicrm_next.engagement.media_library.application import EnsureGroupInviteBindingCommand
 from aicrm_next.engagement.media_library.dto import GroupInviteBindingEnsureRequest
 from aicrm_next.engagement.media_library.repo import InMemoryMediaLibraryRepository, reset_media_library_fixture_state
@@ -233,11 +233,11 @@ def test_shared_picker_is_a_pure_searchable_list_and_all_surfaces_load_it() -> N
     picker = (ROOT / "aicrm_next/app/admin_console/static/admin_console/group_chat_picker.js").read_text(encoding="utf-8")
     material_picker = (ROOT / "aicrm_next/app/admin_console/static/admin_console/material_picker.js").read_text(encoding="utf-8")
     templates = [
-        ROOT / "aicrm_next/automation_engine/templates/admin_console/channel_code_form.html",
+        ROOT / "aicrm_next/automation/automation_engine/templates/admin_console/channel_code_form.html",
         ROOT / "aicrm_next/app/admin_console/templates/admin_console/cloud_campaigns_workspace.html",
         ROOT / "aicrm_next/app/admin_console/templates/admin_console/hxc_dashboard.html",
         ROOT / "aicrm_next/extensions/ai/automation_agents/templates/admin_console/automation_agent_edit.html",
-        ROOT / "aicrm_next/automation_engine/group_ops/templates/admin_console/group_ops.html",
+        ROOT / "aicrm_next/automation/automation_engine/group_ops/templates/admin_console/group_ops.html",
     ]
 
     assert "AICRMGroupChatPicker" in material_picker
