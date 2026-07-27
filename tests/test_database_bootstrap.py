@@ -27,7 +27,7 @@ from scripts.ops.bootstrap_database import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ALEMBIC_HEAD_REVISION = "0152_customer_read_model_incremental"
+ALEMBIC_HEAD_REVISION = "0153_customer_read_model_generation_slots"
 CREATE_TABLE_PATTERN = re.compile(
     r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?([a-zA-Z_][a-zA-Z0-9_]*)",
     re.IGNORECASE,
@@ -1708,6 +1708,83 @@ def test_customer_read_model_incremental_foundation_repairs_sequences_and_instal
             ("uq_customer_detail_snapshot_next_unionid", True, True, True),
             ("uq_customer_list_index_next_unionid", True, True, True),
         ]
+
+
+def test_customer_read_model_generation_foundation_adds_inactive_indexed_slots() -> None:
+    with _isolated_database("customer_generation_foundation") as database_url:
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            connection.execute(BASELINE_PATH.read_text(encoding="utf-8"))
+        _upgrade_database_to(database_url, "head")
+
+        with psycopg.connect(database_url) as connection:
+            state = connection.execute(
+                """
+                INSERT INTO customer_read_model_refresh_state (
+                    singleton_id, last_succeeded_at, source_count, target_count, duration_ms
+                ) VALUES (1, CURRENT_TIMESTAMP, 0, 0, 0)
+                ON CONFLICT (singleton_id) DO UPDATE
+                SET updated_at = CURRENT_TIMESTAMP
+                RETURNING active_slot, active_generation
+                """
+            ).fetchone()
+            shadow_ids = (
+                connection.execute(
+                    """
+                    INSERT INTO customer_list_index_next_shadow (unionid)
+                    VALUES ('unionid-generation-shadow')
+                    RETURNING id
+                    """
+                ).fetchone()[0],
+                connection.execute(
+                    """
+                    INSERT INTO customer_detail_snapshot_next_shadow (unionid)
+                    VALUES ('unionid-generation-shadow')
+                    RETURNING id
+                    """
+                ).fetchone()[0],
+                connection.execute(
+                    """
+                    INSERT INTO customer_recent_message_next_shadow (msgid, unionid)
+                    VALUES ('message-generation-shadow', 'unionid-generation-shadow')
+                    RETURNING id
+                    """
+                ).fetchone()[0],
+            )
+            indexes = connection.execute(
+                """
+                SELECT index_relation.relname,
+                       index_state.indisunique,
+                       index_state.indisvalid,
+                       index_state.indisready
+                FROM pg_index index_state
+                JOIN pg_class index_relation ON index_relation.oid = index_state.indexrelid
+                WHERE index_relation.relname IN (
+                    'uq_customer_list_index_next_shadow_unionid',
+                    'uq_customer_detail_snapshot_next_shadow_unionid',
+                    'ix_customer_recent_message_next_shadow_unionid_time_id'
+                )
+                ORDER BY index_relation.relname
+                """
+            ).fetchall()
+            connection.commit()
+
+        assert state == ("primary", 1)
+        assert shadow_ids == (1, 1, 1)
+        assert indexes == [
+            ("ix_customer_recent_message_next_shadow_unionid_time_id", False, True, True),
+            ("uq_customer_detail_snapshot_next_shadow_unionid", True, True, True),
+            ("uq_customer_list_index_next_shadow_unionid", True, True, True),
+        ]
+
+        _downgrade_database_to(database_url, "0152_customer_read_model_incremental")
+        _upgrade_database_to(database_url, "head")
+        with psycopg.connect(database_url) as connection:
+            assert connection.execute(
+                "SELECT active_slot, active_generation FROM customer_read_model_refresh_state WHERE singleton_id=1"
+            ).fetchone() == ("primary", 1)
+            assert connection.execute(
+                "SELECT count(*) FROM customer_list_index_next_shadow"
+            ).fetchone() == (1,)
 
 
 def _upgrade_database_to(database_url: str, revision: str) -> None:

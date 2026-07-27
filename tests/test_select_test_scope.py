@@ -784,6 +784,7 @@ def test_customer_read_model_refresh_has_permanent_full_postgres_scope() -> None
         "deploy/openclaw-customer-read-model-refresh.service",
         "deploy/openclaw-customer-read-model-refresh.timer",
         "migrations/versions/0108_customer_read_model_refresh_and_retired_workspace_drop.py",
+        "migrations/versions/0153_customer_read_model_generation_slots.py",
         "tests/test_customer_live_source_repository.py",
         "tests/test_customer_read_model_refresh.py",
         "tests/test_customer_read_model_incremental_writer.py",

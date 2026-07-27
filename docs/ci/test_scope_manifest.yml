@@ -1020,10 +1020,12 @@
         "migrations/versions/0129_identity_customer_event_driven.py",
         "migrations/versions/0133_sidebar_customer_timeline.py",
         "migrations/versions/0152_customer_read_model_incremental_foundation.py",
+        "migrations/versions/0153_customer_read_model_generation_slots.py",
         "tests/test_customer_live_source_repository.py",
         "tests/test_customer_read_model_refresh.py",
         "tests/test_customer_read_model_incremental_foundation.py",
         "tests/test_customer_read_model_incremental_writer.py",
+        "tests/test_database_bootstrap.py",
         "tests/test_customer_timeline_projection.py",
         "tests/test_identity_customer_event_driven_postgres.py",
         "tests/test_release_customer_read_model_refresh.py"
