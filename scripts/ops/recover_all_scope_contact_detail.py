@@ -174,7 +174,10 @@ def _completed_rows(connection: Any) -> list[int]:
               AND job.operation = 'get_external_contact_detail'
               AND job.target_type = 'external_user'
               AND job.business_type = 'identity_resolution_queue'
-              AND job.source_module = 'aicrm_next.crm.identity_contact.resolution_effects'
+              AND job.source_module IN (
+                  'aicrm_next.identity_contact.resolution_effects',
+                  'aicrm_next.crm.identity_contact.resolution_effects'
+              )
               AND job.source_route IN (
                   'channel_entry.identity_resolution.enqueue',
                   'message_archive.identity_resolution.enqueue'

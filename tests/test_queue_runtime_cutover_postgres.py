@@ -51,6 +51,7 @@ def _insert_deferred_identity_effect(
     suffix: str,
     *,
     source_route: str = "channel_entry.identity_resolution.enqueue",
+    source_module: str = "aicrm_next.crm.identity_contact.resolution_effects",
     adapter_name: str = "wecom_external_contact_detail",
     provider_boundary_crossed: bool = False,
     extra_attempt: bool = False,
@@ -70,8 +71,7 @@ def _insert_deferred_identity_effect(
             rate_scope_key, completed_at
         ) VALUES (
             'wecom.external_contact.detail.fetch', %s, 'get_external_contact_detail',
-            'external_user', %s, 'identity_resolution_queue', '',
-            'aicrm_next.crm.identity_contact.resolution_effects', %s,
+            'external_user', %s, 'identity_resolution_queue', '', %s, %s,
             %s, 'execute', 'blocked', 1, 5,
             'effect_type_not_allowed', 'blocked by generation-0 test policy',
             %s, %s,
@@ -85,6 +85,7 @@ def _insert_deferred_identity_effect(
         (
             adapter_name,
             f"external-{suffix}",
+            source_module,
             source_route,
             f"deferred-identity-{suffix}",
             provider_boundary_crossed,
@@ -1607,13 +1608,24 @@ def test_data_health_excludes_only_exact_post_cutover_recovery_candidate() -> No
     assert unsafe_health.evidence["post_cutover_identity_recovery"]["eligible_count"] == 1
 
 
-def test_data_health_excludes_only_strict_provider_confirmed_contact_absence() -> None:
+@pytest.mark.parametrize(
+    "source_module",
+    [
+        "aicrm_next.identity_contact.resolution_effects",
+        "aicrm_next.crm.identity_contact.resolution_effects",
+    ],
+    ids=["legacy-package", "crm-package"],
+)
+def test_data_health_excludes_only_strict_provider_confirmed_contact_absence(
+    source_module: str,
+) -> None:
     target_policy = "queue-v2-production-all-g1"
     with _connect() as connection:
         job_id, queue_id = _insert_deferred_identity_effect(
             connection,
             "provider-confirmed-contact-absence",
             source_route="message_archive.identity_resolution.enqueue",
+            source_module=source_module,
             with_runtime=True,
         )
         connection.execute(
