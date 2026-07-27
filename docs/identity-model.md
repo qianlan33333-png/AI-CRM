@@ -4,7 +4,7 @@
 
 `crm_user_identity.unionid` 是系统唯一的业务主身份。`external_userid`、`openid` 和规范化手机号只是 alias、查询入口或企微执行 handle，不能单独成为业务事实源。
 
-所有运行时身份查询必须通过 `aicrm_next.identity_contact.resolver.IdentityResolver`：
+所有运行时身份查询必须通过 `aicrm_next.crm.identity_contact.resolver.IdentityResolver`：
 
 - `resolved`：请求内每个非空标识都唯一指向同一条 active `unionid`。
 - `not_found`：没有 canonical 候选，且没有对应待处理 resolution queue。

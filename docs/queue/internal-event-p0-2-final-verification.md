@@ -172,7 +172,7 @@ Expected diagnostics:
 
 ### `customer.tagged` / `customer.untagged`
 
-- 写路径：`aicrm_next/customer_tags/live_mutation.py`，tag mark/unmark
+- 写路径：`aicrm_next/crm/customer_tags/live_mutation.py`，tag mark/unmark
   side-effect plan 之后 `safe_emit(emit_customer_tag_shadow_event, ...)`。
 - event schema：`event_type=customer.tagged|customer.untagged`,
   `aggregate_type=customer`, `subject_type=customer`,
@@ -187,7 +187,7 @@ Expected diagnostics:
 
 ### `customer.phone_bound`
 
-- 写路径：`aicrm_next/identity_contact/application.py`，
+- 写路径：`aicrm_next/crm/identity_contact/application.py`，
   `BindMobileToExternalContactCommand` 成功绑定后 emit。
 - event schema：`event_type=customer.phone_bound`,
   `aggregate_type=customer`, `aggregate_id=person_id || external_userid || mobile_hash`,
@@ -254,7 +254,7 @@ Expected diagnostics:
 
 ### `owner_migration.executed`
 
-- 写路径：`aicrm_next/owner_migration/application.py`,
+- 写路径：`aicrm_next/crm/owner_migration/application.py`,
   `OwnerMigrationService.execute_scoped`, legacy `_run_legacy` execute path。
 - event schema：`event_type=owner_migration.executed`,
   `aggregate_type=owner_migration`, `aggregate_id=migration_id_or_batch_id`,

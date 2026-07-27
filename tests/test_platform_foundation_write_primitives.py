@@ -122,7 +122,7 @@ def test_reconciliation_run_records_counts_and_sample_diffs() -> None:
     repo = InMemoryReconciliationRunRepository()
 
     run = repo.record_run(
-        capability_owner="aicrm_next.customer_read_model",
+        capability_owner="aicrm_next.crm.customer_read_model",
         source_name="legacy",
         target_name="next",
         source_count=10,

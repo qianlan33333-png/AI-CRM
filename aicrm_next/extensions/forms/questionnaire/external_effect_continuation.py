@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from aicrm_next.customer_tags.local_projection import project_questionnaire_tags
+from aicrm_next.crm.customer_tags.local_projection import project_questionnaire_tags
 from aicrm_next.platform_foundation.external_effects.continuations import ExternalEffectContinuation
 from aicrm_next.platform_foundation.external_effects.models import (
     WECOM_CONTACT_TAG_MARK,

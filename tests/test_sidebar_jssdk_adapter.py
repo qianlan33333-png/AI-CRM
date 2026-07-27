@@ -13,7 +13,7 @@ from aicrm_next.integration_gateway.wecom_jssdk_adapter import (
     normalize_jssdk_url,
     reset_sidebar_jssdk_attempts,
 )
-from aicrm_next.identity_contact.sidebar_jssdk import SIDEBAR_VIEWER_COOKIE
+from aicrm_next.crm.identity_contact.sidebar_jssdk import SIDEBAR_VIEWER_COOKIE
 from aicrm_next.main import create_app
 from aicrm_next.shared.signed_context import load_sidebar_owner_context_token
 from tests.sidebar_auth_test_helpers import install_sidebar_viewer_session
@@ -279,7 +279,7 @@ def test_sidebar_oauth_callback_sets_viewer_cookie_and_unblocks_owner_token(monk
             return {"errcode": 0, "UserId": "HuangYouCan"}
 
     monkeypatch.setattr(
-        "aicrm_next.identity_contact.sidebar_jssdk.build_wecom_admin_auth_client",
+        "aicrm_next.crm.identity_contact.sidebar_jssdk.build_wecom_admin_auth_client",
         lambda: FakeWeComAuthClient(),
     )
     client = TestClient(create_app(), raise_server_exceptions=False, base_url="https://www.youcangogogo.com")
@@ -320,7 +320,7 @@ def test_sidebar_oauth_callback_trusts_oauth_viewer_without_relationship_lookup(
     monkeypatch.setenv("WECOM_SECRET", "secret")
     monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.setattr(
-        "aicrm_next.identity_contact.application.ListExternalContactOwnerCandidatesQuery.execute",
+        "aicrm_next.crm.identity_contact.application.ListExternalContactOwnerCandidatesQuery.execute",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("relationship lookup must not run")),
     )
 
@@ -332,7 +332,7 @@ def test_sidebar_oauth_callback_trusts_oauth_viewer_without_relationship_lookup(
             return {"errcode": 0, "UserId": "OtherOwner"}
 
     monkeypatch.setattr(
-        "aicrm_next.identity_contact.sidebar_jssdk.build_wecom_admin_auth_client",
+        "aicrm_next.crm.identity_contact.sidebar_jssdk.build_wecom_admin_auth_client",
         lambda: FakeWeComAuthClient(),
     )
     client = TestClient(create_app(), raise_server_exceptions=False)
@@ -360,7 +360,7 @@ def test_jssdk_api_issues_token_without_relationship_lookup(monkeypatch) -> None
     monkeypatch.setenv("SECRET_KEY", "sidebar-owner-token-viewer-rejected")
     monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.setattr(
-        "aicrm_next.identity_contact.application.ListExternalContactOwnerCandidatesQuery.execute",
+        "aicrm_next.crm.identity_contact.application.ListExternalContactOwnerCandidatesQuery.execute",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("relationship lookup must not run")),
     )
     client = TestClient(create_app(), raise_server_exceptions=False)

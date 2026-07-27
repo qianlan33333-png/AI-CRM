@@ -118,7 +118,7 @@ Diagnostics exposes:
 
 The emit path is the owner migration execution flow:
 
-- `aicrm_next/owner_migration/application.py`
+- `aicrm_next/crm/owner_migration/application.py`
 - `OwnerMigrationService.execute_scoped`
 - legacy `OwnerMigrationService._run_legacy` execute path
 

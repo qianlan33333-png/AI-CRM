@@ -8,8 +8,8 @@ from typing import Any, Callable, Protocol
 
 from aicrm_next.platform_foundation.job_runs import FinishJobRunRequest, StartJobRunRequest, build_job_run_ledger_port
 
-from aicrm_next.identity_contact.resolver import resolve_external_userid_with_dbapi
-from aicrm_next.identity_contact.resolution_queue_port import (
+from aicrm_next.crm.identity_contact.resolver import resolve_external_userid_with_dbapi
+from aicrm_next.crm.identity_contact.resolution_queue_port import (
     EnqueueIdentityResolutionRequest,
     build_identity_resolution_queue_port,
 )

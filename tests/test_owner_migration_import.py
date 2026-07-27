@@ -6,7 +6,7 @@ from io import BytesIO
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.owner_migration.application import (
+from aicrm_next.crm.owner_migration.application import (
     DEFAULT_TRANSFER_WELCOME_MSG,
     OwnerMigrationCommand,
     OwnerMigrationService,

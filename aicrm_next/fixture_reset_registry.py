@@ -13,8 +13,8 @@ from .extensions.growth.cloud_orchestrator.campaigns_write import reset_campaign
 from .extensions.growth.cloud_orchestrator.repository import reset_cloud_plan_fixture_state
 from .extensions.commerce.commerce.coupons.repo import reset_coupon_fixture_state
 from .extensions.commerce.commerce.repo import reset_commerce_fixture_state
-from .customer_tags.admin_write import reset_wecom_tag_write_fixture_state
-from .customer_tags.live_mutation import reset_wecom_tag_live_mutation_fixture_state
+from .crm.customer_tags.admin_write import reset_wecom_tag_write_fixture_state
+from .crm.customer_tags.live_mutation import reset_wecom_tag_live_mutation_fixture_state
 from .extensions.hxc.hxc_dashboard.repo import reset_hxc_dashboard_fixture_state
 from .extensions.hxc.hxc_dashboard.safe_mode import reset_hxc_safe_mode_fixture_state
 from .integration_gateway.wecom_jssdk_adapter import reset_sidebar_jssdk_attempts
@@ -27,7 +27,7 @@ from .extensions.forms.questionnaire.h5_write import reset_questionnaire_h5_writ
 from .extensions.forms.questionnaire.repo import reset_questionnaire_fixture_state
 from .extensions.radar.radar_links.repo import reset_radar_links_fixture_state
 from .extensions.commerce.service_period import reset_service_period_fixture_state
-from .sidebar_write import reset_sidebar_write_fixture_state
+from .crm.sidebar_write import reset_sidebar_write_fixture_state
 
 
 @dataclass(frozen=True)

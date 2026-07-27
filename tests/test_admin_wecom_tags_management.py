@@ -4,8 +4,8 @@ from copy import deepcopy
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.customer_tags.admin_write import reset_wecom_tag_write_fixture_state
-from aicrm_next.customer_tags.sync_service import execute_wecom_tag_catalog_sync
+from aicrm_next.crm.customer_tags.admin_write import reset_wecom_tag_write_fixture_state
+from aicrm_next.crm.customer_tags.sync_service import execute_wecom_tag_catalog_sync
 from aicrm_next.main import create_app
 
 

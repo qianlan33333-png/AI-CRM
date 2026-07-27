@@ -5,7 +5,7 @@ import os
 
 import psycopg
 
-from aicrm_next.customer_read_model.sidebar_v2 import SidebarV2SqlRepository
+from aicrm_next.crm.customer_read_model.sidebar_v2 import SidebarV2SqlRepository
 from aicrm_next.shared.db_session import get_engine
 
 

@@ -5,7 +5,7 @@ import os
 import psycopg
 from psycopg.rows import dict_row
 
-from aicrm_next.customer_read_model.sidebar_profile_port import (
+from aicrm_next.crm.customer_read_model.sidebar_profile_port import (
     SaveSidebarProfileFieldsRequest,
     build_sidebar_customer_profile_projection_port,
 )

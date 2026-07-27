@@ -5,7 +5,7 @@ import os
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
-from aicrm_next.customer_read_model.repo import (
+from aicrm_next.crm.customer_read_model.repo import (
     _DEFAULT_LIVE_SOURCE_LIST_LIMIT,
     LiveSourceCustomerReadRepository,
     build_customer_live_source_repository,

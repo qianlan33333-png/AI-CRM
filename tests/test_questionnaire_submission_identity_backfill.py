@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.identity_contact.dto import IdentityResolution
+from aicrm_next.crm.identity_contact.dto import IdentityResolution
 from aicrm_next.extensions.forms.questionnaire.application import ListQuestionnaireSubmissionsQuery
 from aicrm_next.extensions.forms.questionnaire.h5_write import QuestionnaireH5SubmitCommand, execute_questionnaire_h5_submit
 from aicrm_next.extensions.forms.questionnaire.repo import reset_questionnaire_fixture_state

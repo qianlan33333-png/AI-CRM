@@ -18,7 +18,7 @@ from aicrm_next.shared.errors import ContractError, NotFoundError
 from aicrm_next.shared.safe_logging import safe_log_exception, safe_log_fields
 from aicrm_next.shared.share_qr import svg_qr_data_url
 from aicrm_next.shared.sync_request import read_request_json
-from aicrm_next.identity_contact.wechat_unionid_guard import evaluate_wechat_unionid_access
+from aicrm_next.crm.identity_contact.wechat_unionid_guard import evaluate_wechat_unionid_access
 
 from .application import (
     CopyServicePeriodProductCommand,

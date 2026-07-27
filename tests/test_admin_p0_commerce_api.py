@@ -8,7 +8,7 @@ from aicrm_next.admin_config.api_docs_view_model import build_api_docs_view_mode
 from aicrm_next.extensions.commerce.commerce.admin_exports import reset_export_jobs_for_tests
 from aicrm_next.extensions.commerce.commerce.admin_unified_orders import list_orders
 from aicrm_next.extensions.commerce.commerce.repo import reset_commerce_fixture_state
-from aicrm_next.customer_read_model import admin_business_profile, api as customer_api
+from aicrm_next.crm.customer_read_model import admin_business_profile, api as customer_api
 from aicrm_next.main import create_app
 
 

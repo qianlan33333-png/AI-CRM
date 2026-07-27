@@ -42,7 +42,7 @@ write_router = APIRouter()
 
 def _production_unavailable(exc: Exception) -> JSONResponse:
     payload = admin_read_unavailable_payload(
-        capability_owner="aicrm_next/customer_tags",
+        capability_owner="aicrm_next/crm/customer_tags",
         page_error="当前未获取到企微标签，可手工填写 tag_id",
         exc=exc,
         items_keys=("groups", "tags", "items"),

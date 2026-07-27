@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.customer_read_model.dto import (
+from aicrm_next.crm.customer_read_model.dto import (
     CustomerContextRequest,
     CustomerDetailRequest,
     CustomerTimelineRequest,
@@ -255,19 +255,19 @@ def _production_env(monkeypatch):
 
 
 def _patch_next_repo(monkeypatch, repo):
-    from aicrm_next.customer_read_model import application
+    from aicrm_next.crm.customer_read_model import application
 
     monkeypatch.setattr(application, "build_customer_read_model_repository", lambda *args, **kwargs: repo)
 
 
 def _patch_live_source_repo(monkeypatch, repo):
-    from aicrm_next.customer_read_model import application
+    from aicrm_next.crm.customer_read_model import application
 
     monkeypatch.setattr(application, "build_customer_live_source_repository", lambda *args, **kwargs: repo)
 
 
 def test_next_primary_list_detail_timeline_and_recent_messages_do_not_call_legacy(monkeypatch):
-    from aicrm_next.customer_read_model.application import (
+    from aicrm_next.crm.customer_read_model.application import (
         GetCustomerDetailQuery,
         GetCustomerTimelineQuery,
         ListCustomersQuery,
@@ -296,7 +296,7 @@ def test_next_primary_list_detail_timeline_and_recent_messages_do_not_call_legac
 
 
 def test_close_repository_rolls_back_and_closes_session_without_repo_close():
-    from aicrm_next.customer_read_model.application import _close_repository
+    from aicrm_next.crm.customer_read_model.application import _close_repository
 
     repo = SessionBackedRepository()
 
@@ -307,7 +307,7 @@ def test_close_repository_rolls_back_and_closes_session_without_repo_close():
 
 
 def test_sqlalchemy_repositories_close_session_without_disposing_engine():
-    from aicrm_next.customer_read_model.repo import LiveSourceCustomerReadRepository, SqlAlchemyCustomerReadModelRepository
+    from aicrm_next.crm.customer_read_model.repo import LiveSourceCustomerReadRepository, SqlAlchemyCustomerReadModelRepository
 
     read_model_session = FakeSession()
     live_source_session = FakeSession()
@@ -322,7 +322,7 @@ def test_sqlalchemy_repositories_close_session_without_disposing_engine():
 
 
 def test_customer_list_closes_internal_repository_after_success(monkeypatch):
-    from aicrm_next.customer_read_model.application import ListCustomersQuery
+    from aicrm_next.crm.customer_read_model.application import ListCustomersQuery
 
     _production_env(monkeypatch)
     repo = ClosableNextCustomerReadRepository()
@@ -337,7 +337,7 @@ def test_customer_list_closes_internal_repository_after_success(monkeypatch):
 
 def test_customer_detail_closes_internal_repository_when_query_raises(monkeypatch):
     from aicrm_next.shared.errors import NotFoundError
-    from aicrm_next.customer_read_model.application import GetCustomerDetailQuery
+    from aicrm_next.crm.customer_read_model.application import GetCustomerDetailQuery
 
     _production_env(monkeypatch)
     repo = MissingClosableCustomerReadRepository()
@@ -354,7 +354,7 @@ def test_customer_detail_closes_internal_repository_when_query_raises(monkeypatc
 
 
 def test_customer_list_does_not_close_injected_repository(monkeypatch):
-    from aicrm_next.customer_read_model.application import ListCustomersQuery
+    from aicrm_next.crm.customer_read_model.application import ListCustomersQuery
 
     _production_env(monkeypatch)
     repo = ClosableNextCustomerReadRepository()
@@ -366,7 +366,7 @@ def test_customer_list_does_not_close_injected_repository(monkeypatch):
 
 
 def test_customer_list_query_passes_limit_offset_and_uses_count(monkeypatch):
-    from aicrm_next.customer_read_model.application import ListCustomersQuery
+    from aicrm_next.crm.customer_read_model.application import ListCustomersQuery
 
     _production_env(monkeypatch)
     repo = ClosableNextCustomerReadRepository()
@@ -384,7 +384,7 @@ def test_customer_list_query_passes_limit_offset_and_uses_count(monkeypatch):
 
 
 def test_unfiltered_customer_list_uses_refresh_watermark_without_exact_count(monkeypatch):
-    from aicrm_next.customer_read_model.application import ListCustomersQuery
+    from aicrm_next.crm.customer_read_model.application import ListCustomersQuery
 
     _production_env(monkeypatch)
     repo = WatermarkedNextCustomerReadRepository()
@@ -408,8 +408,8 @@ def test_unfiltered_customer_list_uses_refresh_watermark_without_exact_count(mon
 
 
 def test_next_repository_unavailable_does_not_fallback_to_legacy(monkeypatch):
-    from aicrm_next.customer_read_model import application
-    from aicrm_next.customer_read_model.application import ListCustomersQuery
+    from aicrm_next.crm.customer_read_model import application
+    from aicrm_next.crm.customer_read_model.application import ListCustomersQuery
 
     _production_env(monkeypatch)
     monkeypatch.setattr(application, "build_customer_read_model_repository", lambda: (_ for _ in ()).throw(RuntimeError("next repo offline")))
@@ -425,8 +425,8 @@ def test_next_repository_unavailable_does_not_fallback_to_legacy(monkeypatch):
 
 
 def test_next_repository_unavailable_without_rollback_returns_production_unavailable(monkeypatch):
-    from aicrm_next.customer_read_model import application
-    from aicrm_next.customer_read_model.application import ListCustomersQuery
+    from aicrm_next.crm.customer_read_model import application
+    from aicrm_next.crm.customer_read_model.application import ListCustomersQuery
 
     _production_env(monkeypatch)
     monkeypatch.setenv("CUSTOMER_READ_MODEL_LIVE_SOURCE_FALLBACK_ENABLED", "0")
@@ -442,8 +442,8 @@ def test_next_repository_unavailable_without_rollback_returns_production_unavail
 
 
 def test_next_repository_unavailable_uses_live_source_fallback(monkeypatch):
-    from aicrm_next.customer_read_model import application
-    from aicrm_next.customer_read_model.application import (
+    from aicrm_next.crm.customer_read_model import application
+    from aicrm_next.crm.customer_read_model.application import (
         GetCustomerDetailQuery,
         GetCustomerTimelineQuery,
         ListCustomersQuery,
@@ -476,7 +476,7 @@ def test_next_repository_unavailable_uses_live_source_fallback(monkeypatch):
 
 
 def test_empty_primary_customer_list_does_not_run_online_live_source_freshness_count(monkeypatch):
-    from aicrm_next.customer_read_model.application import ListCustomersQuery
+    from aicrm_next.crm.customer_read_model.application import ListCustomersQuery
 
     _production_env(monkeypatch)
     primary_repo = EmptyClosableNextCustomerReadRepository()
@@ -500,7 +500,7 @@ def test_empty_primary_customer_list_does_not_run_online_live_source_freshness_c
 
 
 def test_partial_primary_customer_list_does_not_compare_live_source_online(monkeypatch):
-    from aicrm_next.customer_read_model.application import ListCustomersQuery
+    from aicrm_next.crm.customer_read_model.application import ListCustomersQuery
 
     _production_env(monkeypatch)
     primary_repo = ClosableNextCustomerReadRepository()
@@ -523,7 +523,7 @@ def test_partial_primary_customer_list_does_not_compare_live_source_online(monke
 
 
 def test_customer_context_uses_live_source_fallback_when_primary_detail_is_missing(monkeypatch):
-    from aicrm_next.customer_read_model.application import GetCustomerContextQuery
+    from aicrm_next.crm.customer_read_model.application import GetCustomerContextQuery
 
     _production_env(monkeypatch)
     primary_repo = MissingClosableCustomerReadRepository()
@@ -543,7 +543,7 @@ def test_customer_context_uses_live_source_fallback_when_primary_detail_is_missi
 
 
 def test_empty_primary_customer_list_stays_empty_when_live_source_has_no_match(monkeypatch):
-    from aicrm_next.customer_read_model.application import ListCustomersQuery
+    from aicrm_next.crm.customer_read_model.application import ListCustomersQuery
 
     _production_env(monkeypatch)
     primary_repo = EmptyClosableNextCustomerReadRepository()
@@ -566,8 +566,8 @@ def test_empty_primary_customer_list_stays_empty_when_live_source_has_no_match(m
 
 
 def test_customer_list_live_source_fallback_uses_limit_offset_and_count(monkeypatch):
-    from aicrm_next.customer_read_model import application
-    from aicrm_next.customer_read_model.application import ListCustomersQuery
+    from aicrm_next.crm.customer_read_model import application
+    from aicrm_next.crm.customer_read_model.application import ListCustomersQuery
 
     _production_env(monkeypatch)
     live_source_repo = ClosableLiveSourceCustomerReadRepository()
@@ -584,8 +584,8 @@ def test_customer_list_live_source_fallback_uses_limit_offset_and_count(monkeypa
 
 
 def test_customer_list_closes_primary_and_live_source_repositories(monkeypatch):
-    from aicrm_next.customer_read_model import application
-    from aicrm_next.customer_read_model.application import ListCustomersQuery
+    from aicrm_next.crm.customer_read_model import application
+    from aicrm_next.crm.customer_read_model.application import ListCustomersQuery
 
     _production_env(monkeypatch)
     primary_repo = FailingClosableCustomerReadRepository()
@@ -602,8 +602,8 @@ def test_customer_list_closes_primary_and_live_source_repositories(monkeypatch):
 
 
 def test_customer_detail_primary_query_failure_closes_before_live_source_fallback(monkeypatch):
-    from aicrm_next.customer_read_model import application
-    from aicrm_next.customer_read_model.application import GetCustomerDetailQuery
+    from aicrm_next.crm.customer_read_model import application
+    from aicrm_next.crm.customer_read_model.application import GetCustomerDetailQuery
 
     _production_env(monkeypatch)
     primary_repo = FailingDetailClosableCustomerReadRepository()
@@ -621,9 +621,9 @@ def test_customer_detail_primary_query_failure_closes_before_live_source_fallbac
 
 
 def test_customer_context_closes_internally_created_repositories(monkeypatch):
-    from aicrm_next.customer_read_model import application
-    from aicrm_next.customer_read_model.application import GetCustomerContextQuery
-    from aicrm_next.customer_read_model.dto import CustomerContextRequest
+    from aicrm_next.crm.customer_read_model import application
+    from aicrm_next.crm.customer_read_model.application import GetCustomerContextQuery
+    from aicrm_next.crm.customer_read_model.dto import CustomerContextRequest
 
     _production_env(monkeypatch)
     created_repositories: list[ClosableNextCustomerReadRepository] = []

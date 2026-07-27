@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.customer_tags.admin_write import (
+from aicrm_next.crm.customer_tags.admin_write import (
     get_wecom_tag_write_audit_events,
     get_wecom_tag_write_projection_events,
     get_wecom_tag_write_side_effect_plans,

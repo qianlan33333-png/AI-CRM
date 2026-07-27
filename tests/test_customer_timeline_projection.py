@@ -5,11 +5,11 @@ from pathlib import Path
 from sqlalchemy import text
 
 from aicrm_next.extensions.commerce.commerce import wechat_shop_service
-from aicrm_next.customer_read_model.repo import (
+from aicrm_next.crm.customer_read_model.repo import (
     LiveSourceCustomerReadRepository,
     SqlAlchemyCustomerReadModelRepository,
 )
-from aicrm_next.customer_read_model.timeline_projection import (
+from aicrm_next.crm.customer_read_model.timeline_projection import (
     CustomerTimelineProjectionRepository,
     customer_timeline_projection_consumer,
     timeline_projection_from_internal_event,

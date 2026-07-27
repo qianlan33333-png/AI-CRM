@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 import inspect
 from typing import Any
 
-from aicrm_next.customer_read_model.sidebar_v2 import (
+from aicrm_next.crm.customer_read_model.sidebar_v2 import (
     SidebarOtherStaffMessagesReadModel,
     SidebarV2SqlRepository,
 )

@@ -6,14 +6,14 @@ pytestmark = pytest.mark.usefixtures("composed_internal_event_registry")
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.identity_contact.application import BindMobileToExternalContactCommand
-from aicrm_next.identity_contact.dto import BindMobileToExternalContactRequest
+from aicrm_next.crm.identity_contact.application import BindMobileToExternalContactCommand
+from aicrm_next.crm.identity_contact.dto import BindMobileToExternalContactRequest
 from aicrm_next.main import create_app
 from aicrm_next.platform_foundation.external_effects import ExternalEffectService, reset_external_effect_fixture_state
 from aicrm_next.platform_foundation.internal_events import InternalEventService, reset_internal_event_fixture_state
 from aicrm_next.platform_foundation.internal_events.customer_identity import CUSTOMER_PHONE_BOUND_EVENT_TYPE
 from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
-from aicrm_next.sidebar_write.application import reset_sidebar_write_fixture_state
+from aicrm_next.crm.sidebar_write.application import reset_sidebar_write_fixture_state
 from tests.sidebar_auth_test_helpers import install_sidebar_auth
 
 PHONE_BOUND_CONSUMERS = frozenset({

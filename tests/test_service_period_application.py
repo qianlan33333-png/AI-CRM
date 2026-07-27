@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 import pytest
 
 from aicrm_next.extensions.commerce.commerce.repo import PostgresCommerceRepository, reset_commerce_fixture_state
-from aicrm_next.identity_contact.dto import IdentityResolution, IdentityResolveResult
+from aicrm_next.crm.identity_contact.dto import IdentityResolution, IdentityResolveResult
 from aicrm_next.extensions.commerce.service_period import repo as service_period_repo
 from aicrm_next.extensions.commerce.service_period.huangyoucan_usage import huangyoucan_usage_match_joins
 from aicrm_next.extensions.commerce.service_period.application import (

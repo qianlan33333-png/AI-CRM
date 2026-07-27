@@ -7,17 +7,17 @@ from typing import Any
 from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
 
-from aicrm_next.identity_contact.dto import IdentityResolution, ResolvePersonIdentityRequest
-from aicrm_next.identity_contact.resolver import SQLAlchemyIdentityResolver, classify_identity_candidates
-from aicrm_next.customer_read_model.application import GetCustomerContextQuery, _close_repository
-from aicrm_next.customer_read_model.dto import CustomerContextRequest
-from aicrm_next.customer_read_model.errors import CustomerScopeForbiddenError
-from aicrm_next.customer_read_model.repo import CustomerReadRepository, build_customer_live_source_repository
-from aicrm_next.customer_read_model.sidebar_customer_resolution import (
+from aicrm_next.crm.identity_contact.dto import IdentityResolution, ResolvePersonIdentityRequest
+from aicrm_next.crm.identity_contact.resolver import SQLAlchemyIdentityResolver, classify_identity_candidates
+from aicrm_next.crm.customer_read_model.application import GetCustomerContextQuery, _close_repository
+from aicrm_next.crm.customer_read_model.dto import CustomerContextRequest
+from aicrm_next.crm.customer_read_model.errors import CustomerScopeForbiddenError
+from aicrm_next.crm.customer_read_model.repo import CustomerReadRepository, build_customer_live_source_repository
+from aicrm_next.crm.customer_read_model.sidebar_customer_resolution import (
     customer_text as _customer_text,
     resolve_customer_payload as _resolve_customer_payload,
 )
-from aicrm_next.customer_read_model.extension_port import (
+from aicrm_next.crm.customer_read_model.extension_port import (
     GetImageThumbnailQuery,
     ListMediaItemsQuery,
     ListProductsQuery,

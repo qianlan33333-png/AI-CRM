@@ -20,8 +20,8 @@ def test_questionnaire_and_adjacent_selectors_read_unified_tag_catalog_source() 
     questionnaire = _read("aicrm_next/extensions/forms/questionnaire/templates/admin_questionnaires.html") + _read(
         "aicrm_next/extensions/forms/questionnaire/static/admin_questionnaire_editor.js"
     )
-    tag_management_template = _read("aicrm_next/customer_tags/templates/admin_console/config_wecom_tags.html")
-    tag_management = _read("aicrm_next/customer_tags/static/admin_console/wecom_tag_management.js")
+    tag_management_template = _read("aicrm_next/crm/customer_tags/templates/admin_console/config_wecom_tags.html")
+    tag_management = _read("aicrm_next/crm/customer_tags/static/admin_console/wecom_tag_management.js")
     automation_picker = _read("aicrm_next/frontend_compat/static/admin_console/automation_agent_config_tag_picker.js")
     automation_channel_model = _read("aicrm_next/frontend_compat/static/admin_console/automation_agent_config_channel_model.js")
     channel_pages = _read("aicrm_next/automation_engine/static/admin_console/channel_admission_pages.js")

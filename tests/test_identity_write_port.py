@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import json
 
-from aicrm_next.identity_contact import resolution_effects
-from aicrm_next.identity_contact.write_repository import PostgresIdentityWriteRepository
+from aicrm_next.crm.identity_contact import resolution_effects
+from aicrm_next.crm.identity_contact.write_repository import PostgresIdentityWriteRepository
 
 
 class _Result:

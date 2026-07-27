@@ -39,7 +39,7 @@ def _profile_result(
 
 
 def _patch_profile_query(monkeypatch, result: dict) -> None:
-    from aicrm_next.customer_read_model import admin_pages
+    from aicrm_next.crm.customer_read_model import admin_pages
 
     class FakeGetAdminCustomerProfileQuery:
         def __call__(self, *, unionid=None, external_userid=None, mobile=None, user_id=None):
@@ -49,7 +49,7 @@ def _patch_profile_query(monkeypatch, result: dict) -> None:
 
 
 def test_customer_list_profile_link_uses_detail_route_unionid(monkeypatch) -> None:
-    from aicrm_next.customer_read_model import admin_pages
+    from aicrm_next.crm.customer_read_model import admin_pages
 
     class FakeListCustomersQuery:
         def __call__(self, query):
@@ -82,7 +82,7 @@ def test_customer_list_profile_link_uses_detail_route_unionid(monkeypatch) -> No
 
 
 def test_customer_list_projection_preserves_unionid() -> None:
-    from aicrm_next.customer_read_model.projections import list_item_projection
+    from aicrm_next.crm.customer_read_model.projections import list_item_projection
 
     item = list_item_projection(
         {
@@ -193,7 +193,7 @@ def test_customer_detail_live_tag_assets_are_cache_busted(monkeypatch) -> None:
 
 
 def test_customer_detail_live_tag_payload_normalizes_object_tags() -> None:
-    from aicrm_next.customer_read_model.application import _normalized_admin_profile_tags
+    from aicrm_next.crm.customer_read_model.application import _normalized_admin_profile_tags
 
     assert _normalized_admin_profile_tags(
         [
@@ -248,7 +248,7 @@ def test_customer_detail_page_normalizes_fallback_profile_fields(monkeypatch) ->
 
 
 def test_customer_360_page_renders_from_native_shell(monkeypatch) -> None:
-    from aicrm_next.customer_read_model import admin_pages
+    from aicrm_next.crm.customer_read_model import admin_pages
 
     class FakeCustomer360Query:
         def __call__(self, unionid):
@@ -295,7 +295,7 @@ def test_customer_360_page_renders_from_native_shell(monkeypatch) -> None:
 
 
 def test_customer_360_page_not_found_state(monkeypatch) -> None:
-    from aicrm_next.customer_read_model import admin_pages
+    from aicrm_next.crm.customer_read_model import admin_pages
 
     class MissingCustomer360Query:
         def __call__(self, unionid):

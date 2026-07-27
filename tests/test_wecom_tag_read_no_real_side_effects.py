@@ -4,8 +4,8 @@ import inspect
 
 from fastapi.testclient import TestClient
 
-import aicrm_next.customer_tags.api as api
-import aicrm_next.customer_tags.read_model as read_model
+import aicrm_next.crm.customer_tags.api as api
+import aicrm_next.crm.customer_tags.read_model as read_model
 from aicrm_next.main import create_app
 
 

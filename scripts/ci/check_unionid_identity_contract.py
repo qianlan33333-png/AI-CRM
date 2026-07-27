@@ -15,7 +15,7 @@ from aicrm_next.shared.sensitive_data import redact_sensitive_data, redact_sensi
 
 
 SOURCE_ROOT = ROOT / "aicrm_next"
-RESOLVER = Path("aicrm_next/identity_contact/resolver.py")
+RESOLVER = Path("aicrm_next/crm/identity_contact/resolver.py")
 CHANNEL_CRM_PORT = Path("aicrm_next/channel_entry/crm_port.py")
 CHANNEL_CRM_COMPOSITION = Path("aicrm_next/channel_entry_composition.py")
 
@@ -27,15 +27,15 @@ HIGH_RISK_ALIAS_CONSUMERS = (
     Path("aicrm_next/channel_entry/identity_bridge_repo.py"),
     Path("aicrm_next/channel_entry/repo.py"),
     Path("aicrm_next/extensions/growth/cloud_orchestrator/repository.py"),
-    Path("aicrm_next/customer_read_model/repo.py"),
-    Path("aicrm_next/customer_read_model/sidebar_v2.py"),
-    Path("aicrm_next/customer_tags/local_projection.py"),
+    Path("aicrm_next/crm/customer_read_model/repo.py"),
+    Path("aicrm_next/crm/customer_read_model/sidebar_v2.py"),
+    Path("aicrm_next/crm/customer_tags/local_projection.py"),
     Path("aicrm_next/extensions/hxc/hxc_dashboard/postgres_repo.py"),
     Path("aicrm_next/extensions/archive/message_archive/repo.py"),
     Path("aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py"),
     Path("aicrm_next/send_targets/repo.py"),
     Path("aicrm_next/extensions/commerce/service_period/repo.py"),
-    Path("aicrm_next/sidebar_write/repo.py"),
+    Path("aicrm_next/crm/sidebar_write/repo.py"),
 )
 
 CHANNEL_CRM_PORT_CONSUMERS = {
@@ -45,10 +45,10 @@ CHANNEL_CRM_PORT_CONSUMERS = {
 
 CANONICAL_WRITE_OWNERS = {
     Path("aicrm_next/channel_entry/identity_bridge_repo.py"),
-    Path("aicrm_next/identity_contact/oauth_projection_repo.py"),
-    Path("aicrm_next/identity_contact/payment_projection.py"),
-    Path("aicrm_next/identity_contact/repo.py"),
-    Path("aicrm_next/identity_contact/write_repository.py"),
+    Path("aicrm_next/crm/identity_contact/oauth_projection_repo.py"),
+    Path("aicrm_next/crm/identity_contact/payment_projection.py"),
+    Path("aicrm_next/crm/identity_contact/repo.py"),
+    Path("aicrm_next/crm/identity_contact/write_repository.py"),
 }
 
 RAW_ALIAS_SQL = (
@@ -147,7 +147,7 @@ def check() -> list[str]:
     if unexpected_writers:
         errors.append("unexpected crm_user_identity write owners: " + ", ".join(map(str, unexpected_writers)))
 
-    postgres_binding_source = _read(Path("aicrm_next/identity_contact/repo.py")).split("class PostgresIdentityBindingRepository:", 1)[1]
+    postgres_binding_source = _read(Path("aicrm_next/crm/identity_contact/repo.py")).split("class PostgresIdentityBindingRepository:", 1)[1]
     for forbidden in ("INSERT INTO people", "UPDATE people", "INSERT INTO external_contact_bindings", "UPDATE external_contact_bindings"):
         if forbidden in postgres_binding_source:
             errors.append(f"production identity binding still writes legacy canonical path: {forbidden}")

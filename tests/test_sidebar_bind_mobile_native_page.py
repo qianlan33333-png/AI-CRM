@@ -61,7 +61,7 @@ def test_sidebar_bind_mobile_page_renders_from_native_shell(monkeypatch) -> None
 
 
 def test_sidebar_bind_mobile_page_route_owner_is_native() -> None:
-    assert _endpoint_module("/sidebar/bind-mobile") == "aicrm_next.identity_contact.admin_pages"
+    assert _endpoint_module("/sidebar/bind-mobile") == "aicrm_next.crm.identity_contact.admin_pages"
     assert _endpoint_module("/sidebar/bind-mobile") != "aicrm_next.frontend_compat.legacy_routes"
 
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from aicrm_next.customer_read_model.refresh_intents import (
+from aicrm_next.crm.customer_read_model.refresh_intents import (
     CUSTOMER_REFRESH_COMPLETED_CONSUMER,
     CUSTOMER_REFRESH_COMPLETED_EVENT,
 )

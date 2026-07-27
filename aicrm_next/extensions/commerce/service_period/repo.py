@@ -7,8 +7,8 @@ import logging
 from typing import Any, Protocol
 
 from aicrm_next.extensions.commerce.commerce.repo import build_commerce_repository
-from aicrm_next.identity_contact.dto import ResolvePersonIdentityRequest
-from aicrm_next.identity_contact.resolver import resolve_identity_with_dbapi, resolved_unionid
+from aicrm_next.crm.identity_contact.dto import ResolvePersonIdentityRequest
+from aicrm_next.crm.identity_contact.resolver import resolve_identity_with_dbapi, resolved_unionid
 from aicrm_next.platform_foundation.command_bus.models import CommandContext
 from aicrm_next.platform_foundation.internal_events.models import InternalEventCreateRequest
 from aicrm_next.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox

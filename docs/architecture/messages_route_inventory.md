@@ -6,7 +6,7 @@ Scope: `/api/messages*` only. The broad production_compat wildcard has been remo
 
 | Path | Method | Caller | Current owner | Expected owner | Read/write | External side effect risk | Replacement decision | Delete decision | Test coverage |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `/api/messages/{external_userid}/recent` | GET | `aicrm_next/customer_read_model/parity_spec.py`, `tests/test_customer_read_model_next_primary.py`, `tests/test_messages_exact_routes.py`, `docs/mcp_usage.md` | `aicrm_next.customer_read_model` | `aicrm_next.customer_read_model` | read | none | Already exact Next route; customer read model owns it and production errors return `production_unavailable` | customer read legacy deleted; no legacy fallback allowed | `tests/test_customer_read_model_next_primary.py`, `historical removed reference (test_messages_registry_lifecycle.py)` |
+| `/api/messages/{external_userid}/recent` | GET | `aicrm_next/crm/customer_read_model/parity_spec.py`, `tests/test_customer_read_model_next_primary.py`, `tests/test_messages_exact_routes.py`, `docs/mcp_usage.md` | `aicrm_next.crm.customer_read_model` | `aicrm_next.crm.customer_read_model` | read | none | Already exact Next route; customer read model owns it and production errors return `production_unavailable` | customer read legacy deleted; no legacy fallback allowed | `tests/test_customer_read_model_next_primary.py`, `historical removed reference (test_messages_registry_lifecycle.py)` |
 | `/api/messages/{external_userid}` | GET | `docs/crm_sensitive_routes.md`, `tests/test_messages_exact_routes.py` | deleted production_compat wildcard | `aicrm_next.extensions.archive.message_archive` | read | none | Exact Next message archive list route owns this surface | broad wildcard deleted; no legacy forward | `tests/test_messages_exact_routes.py` |
 | `/api/messages/search` | GET | `docs/crm_sensitive_routes.md`, `tests/test_messages_exact_routes.py` | deleted production_compat wildcard | `aicrm_next.extensions.archive.message_archive` | read | none | Exact Next message archive search route owns this surface | broad wildcard deleted; no legacy forward | `tests/test_messages_exact_routes.py` |
 | `/api/messages/archive` | GET | no active caller found; historical archive naming surface | deleted production_compat wildcard | `aicrm_next.extensions.archive.message_archive` | read | none | Explicit deprecated response with replacement route | locked deleted; no legacy forward | `tests/test_messages_exact_routes.py` |
@@ -19,7 +19,7 @@ Scope: `/api/messages*` only. The broad production_compat wildcard has been remo
 
 Search evidence:
 
-- `aicrm_next/customer_read_model/api.py` owns `GET /api/messages/{external_userid}/recent`.
+- `aicrm_next/crm/customer_read_model/api.py` owns `GET /api/messages/{external_userid}/recent`.
 - `historical retired production_compat module` no longer contains `@wildcard_router.api_route("/api/messages/{path:path}")`.
 - `aicrm_next/extensions/archive/message_archive/api.py` owns the new exact archive list/search routes plus explicit deprecated/blocked routes listed above.
 - `aicrm_next/admin_config/api_docs_view_model.py` only groups `/api/messages/` paths for API docs display.

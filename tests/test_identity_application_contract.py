@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import pytest
 
-from aicrm_next.identity_contact.application import (
+from aicrm_next.crm.identity_contact.application import (
     GetSidebarContactBindingStatusQuery,
     ListExternalContactOwnerCandidatesQuery,
     ResolvePersonIdentityQuery,
     UpsertIdentityMappingCommand,
 )
 from aicrm_next.shared.errors import ContractError
-from aicrm_next.identity_contact.dto import IdentityResolution, ResolvePersonIdentityRequest
+from aicrm_next.crm.identity_contact.dto import IdentityResolution, ResolvePersonIdentityRequest
 
 
 def test_identity_resolution_query_uses_next_fixture_repository():
@@ -42,7 +42,7 @@ def test_identity_resolution_query_uses_postgres_repository_when_production_read
                 matched_by="unionid",
             )
 
-    monkeypatch.setattr("aicrm_next.identity_contact.application.production_data_ready", lambda: True)
+    monkeypatch.setattr("aicrm_next.crm.identity_contact.application.production_data_ready", lambda: True)
 
     result = ResolvePersonIdentityQuery(
         repo=FakeFixtureRepository(),
@@ -72,7 +72,7 @@ def test_external_contact_owner_candidates_use_postgres_repository_when_producti
             assert external_userid == "wx_ext_live"
             return {"owner-a", "owner-b"}
 
-    monkeypatch.setattr("aicrm_next.identity_contact.application.production_data_ready", lambda: True)
+    monkeypatch.setattr("aicrm_next.crm.identity_contact.application.production_data_ready", lambda: True)
 
     owners = ListExternalContactOwnerCandidatesQuery(
         repo=FakeFixtureRepository(),

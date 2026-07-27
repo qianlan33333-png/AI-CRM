@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from aicrm_next.identity_contact.resolution_queue_port import (
+from aicrm_next.crm.identity_contact.resolution_queue_port import (
     EnqueueIdentityResolutionRequest,
     build_identity_resolution_queue_port,
 )

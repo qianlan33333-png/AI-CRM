@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Callable
 
-from aicrm_next.identity_contact.dto import IdentityResolveResult, ResolvePersonIdentityRequest
-from aicrm_next.identity_contact.resolver import classify_identity_candidates, resolve_identity_with_dbapi, resolved_unionid
+from aicrm_next.crm.identity_contact.dto import IdentityResolveResult, ResolvePersonIdentityRequest
+from aicrm_next.crm.identity_contact.resolver import classify_identity_candidates, resolve_identity_with_dbapi, resolved_unionid
 from aicrm_next.platform_foundation.command_bus.models import CommandContext
 from aicrm_next.platform_foundation.external_effects import WECOM_MESSAGE_PRIVATE_SEND
 from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService

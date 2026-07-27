@@ -4,14 +4,14 @@ from copy import deepcopy
 import re
 from typing import Any
 
-from aicrm_next.customer_read_model.repo import FixtureCustomerReadRepository
-from aicrm_next.customer_read_model.sidebar_profile_port import (
+from aicrm_next.crm.customer_read_model.repo import FixtureCustomerReadRepository
+from aicrm_next.crm.customer_read_model.sidebar_profile_port import (
     SaveSidebarProfileFieldsRequest,
     build_sidebar_customer_profile_projection_port,
 )
-from aicrm_next.identity_contact.dto import ResolvePersonIdentityRequest
-from aicrm_next.identity_contact.resolver import resolve_identity_with_dbapi, resolved_unionid
-from aicrm_next.identity_contact.write_port import IdentityWritePort
+from aicrm_next.crm.identity_contact.dto import ResolvePersonIdentityRequest
+from aicrm_next.crm.identity_contact.resolver import resolve_identity_with_dbapi, resolved_unionid
+from aicrm_next.crm.identity_contact.write_port import IdentityWritePort
 from aicrm_next.platform_foundation.command_bus.models import utcnow_iso
 from aicrm_next.shared.repository_provider import RepositoryProviderError
 from aicrm_next.shared.runtime import raw_database_url

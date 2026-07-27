@@ -68,7 +68,7 @@ def test_production_data_ready_blocks_fixture_repository_builders(monkeypatch):
     from aicrm_next.extensions.forms.questionnaire.repo import build_questionnaire_repository
     from aicrm_next.extensions.radar.radar_links.repo import build_radar_links_repository
     from aicrm_next.automation_engine.repo import build_automation_repository
-    from aicrm_next.customer_read_model.repo import build_customer_read_model_repository
+    from aicrm_next.crm.customer_read_model.repo import build_customer_read_model_repository
 
     for builder in [
         build_commerce_repository,

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.customer_tags.read_model import TagCatalog, TagCatalogRepository
+from aicrm_next.crm.customer_tags.read_model import TagCatalog, TagCatalogRepository
 from aicrm_next.main import create_app
 
 

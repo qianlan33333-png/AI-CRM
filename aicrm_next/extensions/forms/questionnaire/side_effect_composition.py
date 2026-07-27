@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from aicrm_next.customer_tags.live_mutation import execute_wecom_tag_mutation
-from aicrm_next.customer_tags.local_projection import project_questionnaire_tags
-from aicrm_next.customer_tags.mutation_commands import PlanQuestionnaireTagSideEffectCommand
-from aicrm_next.identity_contact.application import BindMobileToExternalContactCommand
-from aicrm_next.identity_contact.dto import BindMobileToExternalContactRequest
+from aicrm_next.crm.customer_tags.live_mutation import execute_wecom_tag_mutation
+from aicrm_next.crm.customer_tags.local_projection import project_questionnaire_tags
+from aicrm_next.crm.customer_tags.mutation_commands import PlanQuestionnaireTagSideEffectCommand
+from aicrm_next.crm.identity_contact.application import BindMobileToExternalContactCommand
+from aicrm_next.crm.identity_contact.dto import BindMobileToExternalContactRequest
 from aicrm_next.integration_ports import make_idempotency_key
 from aicrm_next.integration_ports import QuestionnaireSubmitSideEffectGateway
 

@@ -12,9 +12,9 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from aicrm_next.identity_contact.dto import ResolvePersonIdentityRequest
-from aicrm_next.identity_contact.resolver import SQLAlchemyIdentityResolver, resolved_unionid
-from aicrm_next.identity_contact.resolution_queue_port import (
+from aicrm_next.crm.identity_contact.dto import ResolvePersonIdentityRequest
+from aicrm_next.crm.identity_contact.resolver import SQLAlchemyIdentityResolver, resolved_unionid
+from aicrm_next.crm.identity_contact.resolution_queue_port import (
     EnqueueIdentityResolutionRequest,
     build_identity_resolution_queue_port,
 )

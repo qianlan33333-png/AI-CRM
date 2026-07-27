@@ -5,9 +5,9 @@ from dataclasses import dataclass, field
 from typing import Any
 from uuid import uuid4
 
-from aicrm_next.identity_contact.application import BindMobileToExternalContactCommand, ResolvePersonIdentityQuery
-from aicrm_next.identity_contact.dto import BindMobileToExternalContactRequest, IdentityResolveResult, ResolvePersonIdentityRequest
-from aicrm_next.customer_tags.local_projection import (
+from aicrm_next.crm.identity_contact.application import BindMobileToExternalContactCommand, ResolvePersonIdentityQuery
+from aicrm_next.crm.identity_contact.dto import BindMobileToExternalContactRequest, IdentityResolveResult, ResolvePersonIdentityRequest
+from aicrm_next.crm.customer_tags.local_projection import (
     reset_customer_tag_local_projection_fixture_state,
 )
 from aicrm_next.platform_foundation.audit_ledger import InMemoryAuditLedger

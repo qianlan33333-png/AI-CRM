@@ -14,13 +14,13 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from aicrm_next.customer_read_model.backfill import (  # noqa: E402
+from aicrm_next.crm.customer_read_model.backfill import (  # noqa: E402
     CustomerReadModelBackfillService,
     FixtureCustomerReadModelSource,
     JsonFileCustomerReadModelSource,
 )
-from aicrm_next.customer_read_model.models import metadata as customer_read_model_metadata  # noqa: E402
-from aicrm_next.customer_read_model.repo import SqlAlchemyCustomerReadModelRepository  # noqa: E402
+from aicrm_next.crm.customer_read_model.models import metadata as customer_read_model_metadata  # noqa: E402
+from aicrm_next.crm.customer_read_model.repo import SqlAlchemyCustomerReadModelRepository  # noqa: E402
 
 
 def _normalize_sqlalchemy_url(database_url: str) -> str:

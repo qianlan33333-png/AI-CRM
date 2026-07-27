@@ -13,8 +13,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.external_effect_composition import build_external_effect_continuation_registry
-from aicrm_next.customer_tags.live_mutation import execute_wecom_tag_mutation, reset_wecom_tag_live_mutation_fixture_state
-from aicrm_next.customer_tags.mutation_commands import PlanWeComTagMarkCommand, PlanWeComTagUnmarkCommand
+from aicrm_next.crm.customer_tags.live_mutation import execute_wecom_tag_mutation, reset_wecom_tag_live_mutation_fixture_state
+from aicrm_next.crm.customer_tags.mutation_commands import PlanWeComTagMarkCommand, PlanWeComTagUnmarkCommand
 from aicrm_next.platform_foundation.command_bus import CommandContext
 from aicrm_next.platform_foundation.auth_platform.webhook_hmac import WebhookHmacSigner
 from aicrm_next.platform_foundation.external_effects import (
@@ -489,7 +489,7 @@ def test_business_outbound_entrypoints_do_not_directly_call_external_networks() 
         "aicrm_next/admin_jobs/notification_settings.py",
         "aicrm_next/extensions/commerce/commerce/admin_transactions.py",
         "aicrm_next/extensions/commerce/commerce/external_push_admin.py",
-        "aicrm_next/customer_tags/live_mutation.py",
+        "aicrm_next/crm/customer_tags/live_mutation.py",
         "aicrm_next/automation_engine/group_ops/application.py",
         "aicrm_next/channel_entry/application.py",
     ]

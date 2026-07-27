@@ -3,9 +3,9 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from aicrm_next.customer_read_model.admin_business_profile import get_customer_business_profile
-from aicrm_next.customer_read_model.application import GetCustomerContextQuery
-from aicrm_next.customer_read_model.dto import CustomerContextRequest
+from aicrm_next.crm.customer_read_model.admin_business_profile import get_customer_business_profile
+from aicrm_next.crm.customer_read_model.application import GetCustomerContextQuery
+from aicrm_next.crm.customer_read_model.dto import CustomerContextRequest
 
 
 PLACEHOLDERS = {

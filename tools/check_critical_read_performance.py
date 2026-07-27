@@ -21,9 +21,9 @@ from fastapi.testclient import TestClient
 
 from aicrm_next.admin_jobs.application import build_jobs_payload
 from aicrm_next.admin_jobs.repository import PostgresAdminJobsRepository
-from aicrm_next.customer_read_model.application import ListRecentMessagesQuery
-from aicrm_next.customer_read_model.dto import RecentMessagesRequest
-from aicrm_next.customer_read_model.repo import SqlAlchemyCustomerReadModelRepository
+from aicrm_next.crm.customer_read_model.application import ListRecentMessagesQuery
+from aicrm_next.crm.customer_read_model.dto import RecentMessagesRequest
+from aicrm_next.crm.customer_read_model.repo import SqlAlchemyCustomerReadModelRepository
 from aicrm_next.main import create_app
 from aicrm_next.platform_foundation.performance_contracts import (
     ReadPathBaseline,

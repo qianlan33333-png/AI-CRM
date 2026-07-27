@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from starlette.requests import Request
 
 from aicrm_next.extensions.commerce.commerce.coupons.application import CouponSidebarApplication
-from aicrm_next.customer_read_model.sidebar_timeline import (
+from aicrm_next.crm.customer_read_model.sidebar_timeline import (
     ResolvedSidebarCustomerContext,
     SidebarCustomerTimelineQuery,
 )
@@ -327,11 +327,11 @@ def test_timeline_api_uses_grant_customer_and_ignores_query_identity(monkeypatch
 
     repo = Repository()
     monkeypatch.setattr(
-        "aicrm_next.customer_read_model.api._request_scoped_customer_repositories",
+        "aicrm_next.crm.customer_read_model.api._request_scoped_customer_repositories",
         lambda _db: (repo, repo),
     )
     monkeypatch.setattr(
-        "aicrm_next.customer_read_model.api._verify_sidebar_owner_scope",
+        "aicrm_next.crm.customer_read_model.api._verify_sidebar_owner_scope",
         lambda *_args, **_kwargs: ResolvedSidebarCustomerContext(
             external_userid="wm-signed",
             unionid="union-signed",

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from aicrm_next.customer_tags.local_projection import validate_questionnaire_tag_ids
+from aicrm_next.crm.customer_tags.local_projection import validate_questionnaire_tag_ids
 from aicrm_next.platform_foundation.command_bus import CommandContext
 from aicrm_next.platform_foundation.external_effects import (
     WEBHOOK_QUESTIONNAIRE_SUBMISSION_PUSH,

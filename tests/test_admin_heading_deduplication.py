@@ -12,7 +12,7 @@ def _read(path: str) -> str:
 
 def test_shell_owned_pages_do_not_repeat_the_shell_title_as_first_card_heading() -> None:
     assert "<h2>企微标签管理</h2>" not in _read(
-        "aicrm_next/customer_tags/templates/admin_console/config_wecom_tags.html"
+        "aicrm_next/crm/customer_tags/templates/admin_console/config_wecom_tags.html"
     )
     assert "<h2>系统配置向导</h2>" not in _read(
         "aicrm_next/frontend_compat/templates/admin_console/setup_wizard.html"

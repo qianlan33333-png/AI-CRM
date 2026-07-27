@@ -119,7 +119,7 @@ secret_keys:
     <<: *secret_defaults
     runtime_consumers:
       - aicrm_next.auth_wecom.service
-      - aicrm_next.identity_contact.sidebar_jssdk
+      - aicrm_next.crm.identity_contact.sidebar_jssdk
       - aicrm_next.integration_gateway.wecom_jssdk_adapter
       - aicrm_next.integration_gateway.wecom_channel_entry_client
   WECOM_ARCHIVE_SECRET:

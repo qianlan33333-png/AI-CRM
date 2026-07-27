@@ -15,7 +15,7 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.customer_read_model.refresh_intents import (  # noqa: E402
+from aicrm_next.crm.customer_read_model.refresh_intents import (  # noqa: E402
     CustomerReadModelRefreshIntentRepository,
     CustomerReadModelRefreshIntentService,
 )

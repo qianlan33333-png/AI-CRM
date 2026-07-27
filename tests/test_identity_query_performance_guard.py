@@ -5,7 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_IDENTITY_QUERY_FILES = (
-    "aicrm_next/identity_contact/repo.py",
+    "aicrm_next/crm/identity_contact/repo.py",
     "aicrm_next/extensions/forms/questionnaire/repo.py",
     "aicrm_next/extensions/ai/automation_agents/repository.py",
 )

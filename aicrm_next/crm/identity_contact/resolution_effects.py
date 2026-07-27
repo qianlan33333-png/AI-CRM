@@ -121,7 +121,7 @@ def plan_identity_resolution_effect(
         ),
         business_type="identity_resolution_queue",
         business_id=str(queue_id),
-        source_module="aicrm_next.identity_contact.resolution_effects",
+        source_module="aicrm_next.crm.identity_contact.resolution_effects",
         source_event_id=str(event_log_id or ""),
         idempotency_key=f"identity-resolution:queue:{queue_id}:provider-detail:v1",
         execution_id=effect_execution_id,

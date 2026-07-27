@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.identity_contact.event_log_port import build_identity_event_log_port
+from aicrm_next.crm.identity_contact.event_log_port import build_identity_event_log_port
 
 
 class _Cursor:

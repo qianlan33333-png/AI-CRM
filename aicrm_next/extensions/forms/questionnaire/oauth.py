@@ -354,8 +354,8 @@ class QuestionnaireOAuthAdapter:
                     target_id=str(state_payload.get("slug") or ""),
                     status_code=200,
                 )
-            from aicrm_next.identity_contact.application import ResolvePersonIdentityQuery
-            from aicrm_next.identity_contact.wechat_unionid_guard import resolve_oauth_unionid
+            from aicrm_next.crm.identity_contact.application import ResolvePersonIdentityQuery
+            from aicrm_next.crm.identity_contact.wechat_unionid_guard import resolve_oauth_unionid
 
             canonical_unionid = resolve_oauth_unionid(
                 identity,

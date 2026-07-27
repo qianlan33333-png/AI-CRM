@@ -17,7 +17,7 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.identity_contact.resolution_queue_port import (  # noqa: E402
+from aicrm_next.crm.identity_contact.resolution_queue_port import (  # noqa: E402
     build_identity_resolution_queue_port,
 )
 from aicrm_next.platform_foundation.execution_runtime.cutover import (  # noqa: E402

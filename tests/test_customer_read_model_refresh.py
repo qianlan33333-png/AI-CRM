@@ -3,9 +3,9 @@ from __future__ import annotations
 import json
 from datetime import timedelta
 
-from aicrm_next.customer_read_model.refresh_intents import CUSTOMER_SOURCE_EVENTS
-from aicrm_next.customer_read_model.repo import _coerce_datetime
-from aicrm_next.customer_read_model.refresh import CustomerReadModelRefreshService
+from aicrm_next.crm.customer_read_model.refresh_intents import CUSTOMER_SOURCE_EVENTS
+from aicrm_next.crm.customer_read_model.repo import _coerce_datetime
+from aicrm_next.crm.customer_read_model.refresh import CustomerReadModelRefreshService
 from scripts import run_customer_read_model_refresh as refresh_cli
 from scripts.run_customer_read_model_refresh import wait_for_refresh_completion
 
@@ -178,11 +178,11 @@ def test_owned_source_snapshot_is_closed_before_target_projection_work(monkeypat
     source = OwnedSource(_customers())
     target = OwnedTarget(count=1)
     monkeypatch.setattr(
-        "aicrm_next.customer_read_model.refresh.build_customer_live_source_repository",
+        "aicrm_next.crm.customer_read_model.refresh.build_customer_live_source_repository",
         lambda: source,
     )
     monkeypatch.setattr(
-        "aicrm_next.customer_read_model.refresh.build_customer_read_model_repository",
+        "aicrm_next.crm.customer_read_model.refresh.build_customer_read_model_repository",
         lambda: target,
     )
 

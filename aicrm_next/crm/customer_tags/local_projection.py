@@ -6,8 +6,8 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
-from aicrm_next.identity_contact.dto import ResolvePersonIdentityRequest
-from aicrm_next.identity_contact.resolver import SQLAlchemyIdentityResolver, resolved_unionid
+from aicrm_next.crm.identity_contact.dto import ResolvePersonIdentityRequest
+from aicrm_next.crm.identity_contact.resolver import SQLAlchemyIdentityResolver, resolved_unionid
 from aicrm_next.shared.db_session import get_engine
 from aicrm_next.shared.runtime import database_mode
 
