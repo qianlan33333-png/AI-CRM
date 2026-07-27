@@ -4,8 +4,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TEMPLATE = ROOT / "aicrm_next" / "customer_tags" / "templates" / "admin_console" / "config_wecom_tags.html"
-SCRIPT = ROOT / "aicrm_next" / "customer_tags" / "static" / "admin_console" / "wecom_tag_management.js"
+TEMPLATE = ROOT / "aicrm_next" / "crm" / "customer_tags" / "templates" / "admin_console" / "config_wecom_tags.html"
+SCRIPT = ROOT / "aicrm_next" / "crm" / "customer_tags" / "static" / "admin_console" / "wecom_tag_management.js"
 
 
 def test_wecom_tag_write_frontend_declares_next_write_apis() -> None:

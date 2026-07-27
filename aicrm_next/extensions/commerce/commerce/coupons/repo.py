@@ -7,8 +7,8 @@ from threading import RLock
 from typing import Any, Mapping, Protocol
 
 from aicrm_next.extensions.commerce.commerce.repo import build_commerce_repository, connect_commerce_db
-from aicrm_next.identity_contact.dto import IdentityResolveResult, ResolvePersonIdentityRequest
-from aicrm_next.identity_contact.resolver import resolve_identity_with_dbapi, resolved_unionid
+from aicrm_next.crm.identity_contact.dto import IdentityResolveResult, ResolvePersonIdentityRequest
+from aicrm_next.crm.identity_contact.resolver import resolve_identity_with_dbapi, resolved_unionid
 from aicrm_next.shared.errors import ContractError, NotFoundError
 from aicrm_next.shared.repository_provider import assert_repository_allowed
 from aicrm_next.shared.runtime import production_data_ready, raw_database_url

@@ -3,8 +3,8 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.owner_migration.application import OwnerMigrationCommand, OwnerMigrationService
-from aicrm_next.owner_migration.repo import PostgresOwnerMigrationRepository
+from aicrm_next.crm.owner_migration.application import OwnerMigrationCommand, OwnerMigrationService
+from aicrm_next.crm.owner_migration.repo import PostgresOwnerMigrationRepository
 
 
 class FakeOwnerMigrationRepository:
@@ -116,7 +116,7 @@ def test_owner_migration_service_rejects_same_owner():
 def test_owner_migration_api_preview_uses_service(monkeypatch):
     repo = FakeOwnerMigrationRepository()
     service = OwnerMigrationService(repo)
-    monkeypatch.setattr("aicrm_next.owner_migration.api.build_owner_migration_service", lambda: service)
+    monkeypatch.setattr("aicrm_next.crm.owner_migration.api.build_owner_migration_service", lambda: service)
 
     response = TestClient(create_app()).post(
         "/api/admin/owner-migration/preview",
@@ -133,7 +133,7 @@ def test_owner_migration_api_preview_uses_service(monkeypatch):
 
 def test_owner_migration_api_execute_requires_confirm(monkeypatch):
     service = OwnerMigrationService(FakeOwnerMigrationRepository())
-    monkeypatch.setattr("aicrm_next.owner_migration.api.build_owner_migration_service", lambda: service)
+    monkeypatch.setattr("aicrm_next.crm.owner_migration.api.build_owner_migration_service", lambda: service)
 
     response = TestClient(create_app()).post(
         "/api/admin/owner-migration/execute",
@@ -147,7 +147,7 @@ def test_owner_migration_api_execute_requires_confirm(monkeypatch):
 def test_owner_migration_api_execute_with_confirm(monkeypatch):
     repo = FakeOwnerMigrationRepository()
     service = OwnerMigrationService(repo)
-    monkeypatch.setattr("aicrm_next.owner_migration.api.build_owner_migration_service", lambda: service)
+    monkeypatch.setattr("aicrm_next.crm.owner_migration.api.build_owner_migration_service", lambda: service)
 
     response = TestClient(create_app()).post(
         "/api/admin/owner-migration/execute",
@@ -196,8 +196,8 @@ def test_owner_migration_service_executes_wecom_transfer_before_local_update(mon
             captured["external_userids"] = kwargs.get("external_userids")
             return super().execute_owner_migration(**kwargs)
 
-    monkeypatch.setattr("aicrm_next.owner_migration.application.missing_wecom_config", lambda: [])
-    monkeypatch.setattr("aicrm_next.owner_migration.application.ProductionWeComAdapter", lambda: TransferAdapter())
+    monkeypatch.setattr("aicrm_next.crm.owner_migration.application.missing_wecom_config", lambda: [])
+    monkeypatch.setattr("aicrm_next.crm.owner_migration.application.ProductionWeComAdapter", lambda: TransferAdapter())
 
     result = OwnerMigrationService(ScopedRepo()).run(
         OwnerMigrationCommand(

@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import Any
 
 from aicrm_next.identity_composition import build_identity_write_port
-from aicrm_next.identity_contact.application import ListExternalContactOwnerCandidatesQuery
-from aicrm_next.identity_contact.dto import BindMobileToExternalContactRequest
+from aicrm_next.crm.identity_contact.application import ListExternalContactOwnerCandidatesQuery
+from aicrm_next.crm.identity_contact.dto import BindMobileToExternalContactRequest
 from aicrm_next.platform_foundation.audit_ledger import InMemoryAuditLedger
 from aicrm_next.platform_foundation.command_bus import Command, CommandBus, CommandContext, CommandResult
 from aicrm_next.platform_foundation.internal_events.customer_identity import emit_customer_phone_bound_event

@@ -13,8 +13,8 @@ from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
-from aicrm_next.identity_contact.dto import ResolvePersonIdentityRequest
-from aicrm_next.identity_contact.resolver import SQLAlchemyIdentityResolver, resolved_identity_or_none
+from aicrm_next.crm.identity_contact.dto import ResolvePersonIdentityRequest
+from aicrm_next.crm.identity_contact.resolver import SQLAlchemyIdentityResolver, resolved_identity_or_none
 from aicrm_next.shared.config import Settings, get_settings
 from aicrm_next.shared.db_session import get_session_factory
 from aicrm_next.shared.repository_provider import assert_repository_allowed

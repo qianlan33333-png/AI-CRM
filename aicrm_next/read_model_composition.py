@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from .customer_read_model.application import GetCustomerDetailQuery
-from .customer_read_model.dto import CustomerDetailRequest
-from .identity_contact.application import GetSidebarContactBindingStatusQuery
+from .crm.customer_read_model.application import GetCustomerDetailQuery
+from .crm.customer_read_model.dto import CustomerDetailRequest
+from .crm.identity_contact.application import GetSidebarContactBindingStatusQuery
 
 
 def build_sidebar_contact_binding_status_query() -> GetSidebarContactBindingStatusQuery:

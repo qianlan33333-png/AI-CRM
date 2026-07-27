@@ -7,18 +7,18 @@ import os
 from sqlalchemy import create_engine, insert, select, text
 from sqlalchemy.orm import Session, sessionmaker
 
-from aicrm_next.customer_read_model.models import (
+from aicrm_next.crm.customer_read_model.models import (
     customer_detail_snapshot_next,
     customer_list_index_next,
     customer_recent_message_next,
     customer_timeline_event_next,
 )
-from aicrm_next.customer_read_model.refresh import CustomerReadModelRefreshService
-from aicrm_next.customer_read_model.refresh_scope_repository import (
+from aicrm_next.crm.customer_read_model.refresh import CustomerReadModelRefreshService
+from aicrm_next.crm.customer_read_model.refresh_scope_repository import (
     CustomerReadModelIncrementalScope,
     CustomerReadModelRefreshScopeRepository,
 )
-from aicrm_next.customer_read_model.repo import SqlAlchemyCustomerReadModelRepository
+from aicrm_next.crm.customer_read_model.repo import SqlAlchemyCustomerReadModelRepository
 
 
 def _customer(unionid: str, *, name: str) -> dict:

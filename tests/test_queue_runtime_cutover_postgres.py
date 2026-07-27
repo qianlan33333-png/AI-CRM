@@ -10,7 +10,7 @@ import pytest
 from psycopg.rows import dict_row
 
 from aicrm_next.data_health import checks as data_health_checks
-from aicrm_next.identity_contact.resolution_queue_port import build_identity_resolution_queue_port
+from aicrm_next.crm.identity_contact.resolution_queue_port import build_identity_resolution_queue_port
 from aicrm_next.platform_foundation.execution_runtime.commands import (
     QUEUE_RUNTIME_COMMAND_APPLIED,
     QueueCommandConflict,
@@ -71,7 +71,7 @@ def _insert_deferred_identity_effect(
         ) VALUES (
             'wecom.external_contact.detail.fetch', %s, 'get_external_contact_detail',
             'external_user', %s, 'identity_resolution_queue', '',
-            'aicrm_next.identity_contact.resolution_effects', %s,
+            'aicrm_next.crm.identity_contact.resolution_effects', %s,
             %s, 'execute', 'blocked', 1, 5,
             'effect_type_not_allowed', 'blocked by generation-0 test policy',
             %s, %s,

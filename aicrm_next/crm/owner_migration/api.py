@@ -20,7 +20,7 @@ from .application import (
 )
 
 router = APIRouter()
-_TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "frontend_compat" / "templates"
+_TEMPLATES_DIR = Path(__file__).resolve().parents[2] / "frontend_compat" / "templates"
 templates = Jinja2Templates(directory=_TEMPLATES_DIR)
 
 

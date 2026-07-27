@@ -375,7 +375,7 @@ def test_questionnaire_mobile_change_selects_questionnaire_and_commerce_slices()
 
 
 def test_identity_contact_change_selects_access_pg_and_full_architecture_gate() -> None:
-    result = _select("aicrm_next/identity_contact/application.py")
+    result = _select("aicrm_next/crm/identity_contact/application.py")
 
     assert "identity_contact" in result["matched_scopes"]
     assert "sidebar_questionnaire_access" in result["matched_scopes"]
@@ -673,7 +673,7 @@ def test_external_effect_runtime_owner_has_permanent_postgres_scope() -> None:
 def test_prod_remediation_security_and_heading_files_have_permanent_scopes() -> None:
     result = _select(
         "aicrm_next/extensions/ai/automation_agents/templates/admin_console/automation_agent_list.html",
-        "aicrm_next/customer_tags/templates/admin_console/config_wecom_tags.html",
+        "aicrm_next/crm/customer_tags/templates/admin_console/config_wecom_tags.html",
         "aicrm_next/frontend_compat/templates/admin_console/hxc_send_config.html",
         "aicrm_next/frontend_compat/templates/admin_console/setup_wizard.html",
         "aicrm_next/extensions/archive/message_archive/archive_sdk.py",
@@ -777,9 +777,9 @@ def test_send_content_media_gateway_has_permanent_full_ci_scope() -> None:
 
 def test_customer_read_model_refresh_has_permanent_full_postgres_scope() -> None:
     result = _select(
-        "aicrm_next/customer_read_model/refresh.py",
-        "aicrm_next/customer_read_model/refresh_scope_repository.py",
-        "aicrm_next/customer_read_model/repo.py",
+        "aicrm_next/crm/customer_read_model/refresh.py",
+        "aicrm_next/crm/customer_read_model/refresh_scope_repository.py",
+        "aicrm_next/crm/customer_read_model/repo.py",
         "scripts/run_customer_read_model_refresh.py",
         "deploy/openclaw-customer-read-model-refresh.service",
         "deploy/openclaw-customer-read-model-refresh.timer",
@@ -922,9 +922,9 @@ def test_r08_commerce_fulfillment_files_force_full_postgres_ci() -> None:
 def test_unionid_identity_cutover_changes_force_pg_full_ci_without_unmapped_files() -> None:
     result = _select(
         "aicrm_next/extensions/ai/automation_agents/repository.py",
-        "aicrm_next/customer_tags/local_projection.py",
-        "aicrm_next/customer_tags/projection_port.py",
-        "aicrm_next/customer_tags/projection_repository.py",
+        "aicrm_next/crm/customer_tags/local_projection.py",
+        "aicrm_next/crm/customer_tags/projection_port.py",
+        "aicrm_next/crm/customer_tags/projection_repository.py",
         "aicrm_next/extensions/archive/message_archive/application.py",
         "scripts/ops/check_unionid_identity_cutover.py",
         "scripts/run_identity_mobile_bridge_backfill.py",
@@ -948,7 +948,7 @@ def test_unionid_identity_cutover_changes_force_pg_full_ci_without_unmapped_file
 
 
 def test_sidebar_write_change_selects_write_command_regression() -> None:
-    result = _select("aicrm_next/sidebar_write/repo.py")
+    result = _select("aicrm_next/crm/sidebar_write/repo.py")
 
     assert "customer_read_model_sidebar" in result["matched_scopes"]
     assert "sidebar_questionnaire_access" in result["matched_scopes"]
@@ -1059,9 +1059,9 @@ def test_static_admin_shell_contract_and_contributors_select_admin_read_scope() 
         "aicrm_next/admin_shell/__init__.py",
         "aicrm_next/admin_shell_contract.py",
         "aicrm_next/automation_engine/channel_admin_pages.py",
-        "aicrm_next/customer_tags/admin_pages.py",
+        "aicrm_next/crm/customer_tags/admin_pages.py",
         "aicrm_next/extensions/hxc/hxc_dashboard/api.py",
-        "aicrm_next/owner_migration/api.py",
+        "aicrm_next/crm/owner_migration/api.py",
     )
 
     assert "admin_read_pages" in result["matched_scopes"]
@@ -1170,8 +1170,8 @@ def test_scrm_low_ops_foundation_files_are_all_mapped_to_the_control_plane_scope
 def test_operation_member_wecom_sync_change_selects_admin_config_and_db_scope() -> None:
     result = _select(
         "aicrm_next/common_operation_members.py",
-        "aicrm_next/operation_members/application.py",
-        "aicrm_next/operation_members/repository.py",
+        "aicrm_next/crm/operation_members/application.py",
+        "aicrm_next/crm/operation_members/repository.py",
         "aicrm_next/integration_gateway/wecom_operation_members_client.py",
         "aicrm_next/frontend_compat/static/admin_console/operation_member_picker.js",
         "aicrm_next/frontend_compat/templates/admin_console/base.html",
@@ -1195,7 +1195,7 @@ def test_operation_member_wecom_sync_change_selects_admin_config_and_db_scope() 
 
 def test_wecom_tag_catalog_write_change_selects_real_tag_crud_slice() -> None:
     result = _select(
-        "aicrm_next/customer_tags/admin_write.py",
+        "aicrm_next/crm/customer_tags/admin_write.py",
         "aicrm_next/integration_gateway/wecom_tag_live_gateway.py",
         "docs/architecture/wecom_tag_read_route_inventory.md",
         "docs/architecture/wecom_tag_write_route_inventory.md",

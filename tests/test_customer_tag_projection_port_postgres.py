@@ -4,7 +4,7 @@ import os
 
 import psycopg
 
-from aicrm_next.customer_tags.projection_port import build_customer_tag_projection_port
+from aicrm_next.crm.customer_tags.projection_port import build_customer_tag_projection_port
 
 
 def test_channel_snapshot_upsert_is_single_owner_and_idempotent(next_pg_schema) -> None:

@@ -15,7 +15,7 @@ CALLER_PATHS = (
     "aicrm_next/extensions/commerce/commerce/admin_refunds.py",
     "aicrm_next/extensions/commerce/commerce/external_push_admin.py",
     "aicrm_next/external_push/service.py",
-    "aicrm_next/owner_migration/application.py",
+    "aicrm_next/crm/owner_migration/application.py",
 )
 
 

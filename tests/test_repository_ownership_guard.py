@@ -123,19 +123,19 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "external_push_delivery",
     ]
     assert repositories["aicrm_next/channel_entry/identity_bridge_repo.py"]["capability_owner"] == (
-        "aicrm_next.identity_contact"
+        "aicrm_next.crm.identity_contact"
     )
-    assert repositories["aicrm_next/identity_contact/write_repository.py"]["table_writes"] == [
+    assert repositories["aicrm_next/crm/identity_contact/write_repository.py"]["table_writes"] == [
         "crm_user_identity",
         "crm_user_identity_resolution_queue",
     ]
-    assert repositories["aicrm_next/identity_contact/event_log_repository.py"] == {
-        "capability_owner": "aicrm_next.identity_contact",
+    assert repositories["aicrm_next/crm/identity_contact/event_log_repository.py"] == {
+        "capability_owner": "aicrm_next.crm.identity_contact",
         "table_reads": ["wecom_external_contact_event_logs"],
         "table_writes": ["wecom_external_contact_event_logs"],
     }
-    assert repositories["aicrm_next/customer_tags/projection_repository.py"] == {
-        "capability_owner": "aicrm_next.customer_tags",
+    assert repositories["aicrm_next/crm/customer_tags/projection_repository.py"] == {
+        "capability_owner": "aicrm_next.crm.customer_tags",
         "table_reads": [],
         "table_writes": ["contact_tags"],
     }
@@ -146,35 +146,35 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "table_writes"
     ]
     assert "contact_tags" not in repositories["aicrm_next/channel_entry/repo.py"]["table_writes"]
-    assert repositories["aicrm_next/identity_contact/resolution_queue_repository.py"]["table_reads"] == [
+    assert repositories["aicrm_next/crm/identity_contact/resolution_queue_repository.py"]["table_reads"] == [
         "crm_user_identity_resolution_queue",
         "identity_resolution_completion_receipt",
     ]
-    assert repositories["aicrm_next/identity_contact/resolution_queue_repository.py"]["table_writes"] == [
+    assert repositories["aicrm_next/crm/identity_contact/resolution_queue_repository.py"]["table_writes"] == [
         "crm_user_identity_resolution_queue",
         "identity_resolution_completion_receipt",
     ]
-    assert repositories["aicrm_next/customer_read_model/sidebar_profile_repository.py"] == {
-        "capability_owner": "aicrm_next.customer_read_model",
+    assert repositories["aicrm_next/crm/customer_read_model/sidebar_profile_repository.py"] == {
+        "capability_owner": "aicrm_next.crm.customer_read_model",
         "table_reads": [],
         "table_writes": ["sidebar_customer_profile_fields"],
     }
-    assert repositories["aicrm_next/sidebar_write/repo.py"]["table_writes"] == []
+    assert repositories["aicrm_next/crm/sidebar_write/repo.py"]["table_writes"] == []
     assert "write_owners" not in manifest["tables"]["crm_user_identity"]
     assert "write_owners" not in manifest["tables"]["crm_user_identity_conflicts"]
-    assert "aicrm_next.sidebar_write" not in manifest["tables"]["crm_user_identity_resolution_queue"][
+    assert "aicrm_next.crm.sidebar_write" not in manifest["tables"]["crm_user_identity_resolution_queue"][
         "write_owners"
     ]
     assert manifest["tables"]["crm_user_identity_resolution_queue"]["write_owners"] == [
-        "aicrm_next.identity_contact",
+        "aicrm_next.crm.identity_contact",
     ]
     assert manifest["tables"]["identity_resolution_completion_receipt"]["write_owner"] == (
-        "aicrm_next.identity_contact"
+        "aicrm_next.crm.identity_contact"
     )
     assert manifest["tables"]["wecom_external_contact_event_logs"]["write_owners"] == [
-        "aicrm_next.identity_contact"
+        "aicrm_next.crm.identity_contact"
     ]
-    assert manifest["tables"]["contact_tags"]["write_owner"] == "aicrm_next.customer_tags"
+    assert manifest["tables"]["contact_tags"]["write_owner"] == "aicrm_next.crm.customer_tags"
     assert manifest["tables"]["external_effect_job"]["write_owner"] == (
         "aicrm_next.platform_foundation.external_effects"
     )
@@ -241,7 +241,7 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
     assert "wechat_pay_orders" not in repositories[
         "aicrm_next/extensions/commerce/commerce/coupons/repo.py"
     ]["table_writes"]
-    assert manifest["tables"]["contact_tags"]["write_owners"] == ["aicrm_next.customer_tags"]
+    assert manifest["tables"]["contact_tags"]["write_owners"] == ["aicrm_next.crm.customer_tags"]
     for path in (
         "aicrm_next/extensions/ai/ai_audience_ops/repository.py",
         "aicrm_next/channel_entry/repo.py",
@@ -259,7 +259,7 @@ def test_identity_resolution_queue_write_sql_is_confined_to_logical_owner() -> N
         if "crm_user_identity_resolution_queue" not in access.table_writes:
             continue
         relative_path = path.relative_to(ROOT).as_posix()
-        if relative_path.startswith("aicrm_next/identity_contact/"):
+        if relative_path.startswith("aicrm_next/crm/identity_contact/"):
             continue
         if relative_path == "aicrm_next/channel_entry/identity_bridge_repo.py":
             continue
@@ -278,10 +278,10 @@ def test_canonical_identity_table_sql_writes_resolve_to_identity_contact_owner()
         if not canonical_tables.intersection(access.table_writes):
             continue
         relative_path = path.relative_to(ROOT).as_posix()
-        if relative_path.startswith("aicrm_next/identity_contact/"):
+        if relative_path.startswith("aicrm_next/crm/identity_contact/"):
             continue
         owner = str((registry.get(relative_path) or {}).get("capability_owner") or "")
-        if owner != "aicrm_next.identity_contact":
+        if owner != "aicrm_next.crm.identity_contact":
             offenders.append(f"{relative_path}:{owner or 'undeclared'}")
 
     assert offenders == []
@@ -295,7 +295,7 @@ def test_external_contact_event_log_write_sql_is_confined_to_identity_contact() 
         if "wecom_external_contact_event_logs" not in access.table_writes:
             continue
         relative_path = path.relative_to(ROOT).as_posix()
-        if not relative_path.startswith("aicrm_next/identity_contact/"):
+        if not relative_path.startswith("aicrm_next/crm/identity_contact/"):
             offenders.append(relative_path)
 
     assert offenders == []
@@ -309,7 +309,7 @@ def test_contact_tag_write_sql_is_confined_to_customer_tags() -> None:
         if "contact_tags" not in access.table_writes:
             continue
         relative_path = path.relative_to(ROOT).as_posix()
-        if not relative_path.startswith("aicrm_next/customer_tags/"):
+        if not relative_path.startswith("aicrm_next/crm/customer_tags/"):
             offenders.append(relative_path)
 
     assert offenders == []

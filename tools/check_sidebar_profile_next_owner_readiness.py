@@ -30,7 +30,7 @@ ROUTE_MATRIX: list[dict[str, Any]] = [
         "access": "readonly_page",
         "write_guard": "n/a",
         "expected_facade": "",
-        "expected_endpoint_module": "aicrm_next.identity_contact.admin_pages",
+        "expected_endpoint_module": "aicrm_next.crm.identity_contact.admin_pages",
         "next_exact_owner_status": "next exact readonly",
     },
     {
@@ -43,7 +43,7 @@ ROUTE_MATRIX: list[dict[str, Any]] = [
         "access": "read_identity_binding",
         "write_guard": "n/a",
         "expected_facade": "",
-        "expected_endpoint_module": "aicrm_next.identity_contact.api",
+        "expected_endpoint_module": "aicrm_next.crm.identity_contact.api",
         "next_exact_owner_status": "next exact readonly",
     },
     {
@@ -56,7 +56,7 @@ ROUTE_MATRIX: list[dict[str, Any]] = [
         "access": "readonly_customer_context",
         "write_guard": "n/a",
         "expected_facade": "",
-        "expected_endpoint_module": "aicrm_next.customer_read_model.api",
+        "expected_endpoint_module": "aicrm_next.crm.customer_read_model.api",
         "next_exact_owner_status": "next exact readonly",
     },
     {
@@ -70,7 +70,7 @@ ROUTE_MATRIX: list[dict[str, Any]] = [
         "access": "write_identity_mobile_binding",
         "write_guard": "guarded_invalid_payload_probe_only",
         "expected_facade": "",
-        "expected_endpoint_module": "aicrm_next.sidebar_write.api",
+        "expected_endpoint_module": "aicrm_next.crm.sidebar_write.api",
         "next_exact_owner_status": "next command",
     },
     {
@@ -83,7 +83,7 @@ ROUTE_MATRIX: list[dict[str, Any]] = [
         "access": "readonly_lead_pool_status",
         "write_guard": "n/a",
         "expected_facade": "",
-        "expected_endpoint_module": "aicrm_next.customer_read_model.api",
+        "expected_endpoint_module": "aicrm_next.crm.customer_read_model.api",
         "next_exact_owner_status": "next exact readonly",
     },
     {
@@ -96,7 +96,7 @@ ROUTE_MATRIX: list[dict[str, Any]] = [
         "access": "readonly_signup_tag_status",
         "write_guard": "n/a",
         "expected_facade": "",
-        "expected_endpoint_module": "aicrm_next.customer_read_model.api",
+        "expected_endpoint_module": "aicrm_next.crm.customer_read_model.api",
         "next_exact_owner_status": "next exact readonly",
     },
     {
@@ -109,7 +109,7 @@ ROUTE_MATRIX: list[dict[str, Any]] = [
         "access": "readonly_marketing_status",
         "write_guard": "n/a",
         "expected_facade": "",
-        "expected_endpoint_module": "aicrm_next.customer_read_model.api",
+        "expected_endpoint_module": "aicrm_next.crm.customer_read_model.api",
         "next_exact_owner_status": "next exact readonly",
     },
     {
@@ -122,7 +122,7 @@ ROUTE_MATRIX: list[dict[str, Any]] = [
         "access": "readonly_customer_profile",
         "write_guard": "n/a",
         "expected_facade": "",
-        "expected_endpoint_module": "aicrm_next.customer_read_model.api",
+        "expected_endpoint_module": "aicrm_next.crm.customer_read_model.api",
         "next_exact_owner_status": "next exact readonly",
     },
     {
@@ -135,7 +135,7 @@ ROUTE_MATRIX: list[dict[str, Any]] = [
         "access": "readonly_profile_sections",
         "write_guard": "n/a",
         "expected_facade": "",
-        "expected_endpoint_module": "aicrm_next.customer_read_model.api",
+        "expected_endpoint_module": "aicrm_next.crm.customer_read_model.api",
         "next_exact_owner_status": "next exact readonly",
     },
 ]

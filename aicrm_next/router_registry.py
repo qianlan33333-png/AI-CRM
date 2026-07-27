@@ -41,18 +41,18 @@ from .extensions.commerce.commerce.coupons.admin_pages import router as coupons_
 from .extensions.commerce.commerce.coupons.public_api import router as coupons_public_router
 from .extensions.commerce.commerce.coupons.sidebar_api import router as coupons_sidebar_router
 from .common_operation_members import router as common_operation_members_router
-from .customer_read_model.admin_pages import router as customer_admin_pages_router
-from .customer_read_model.api import router as customer_router
-from .customer_tags.admin_pages import router as customer_tags_admin_pages_router
-from .customer_tags.api import read_router as customer_tags_read_router
-from .customer_tags.api import router as customer_tags_router
-from .customer_tags.api import write_router as customer_tags_write_router
+from .crm.customer_read_model.admin_pages import router as customer_admin_pages_router
+from .crm.customer_read_model.api import router as customer_router
+from .crm.customer_tags.admin_pages import router as customer_tags_admin_pages_router
+from .crm.customer_tags.api import read_router as customer_tags_read_router
+from .crm.customer_tags.api import router as customer_tags_router
+from .crm.customer_tags.api import write_router as customer_tags_write_router
 from .data_health.api import router as data_health_router
 from .delivery_lineage.api import router as delivery_lineage_router
 from .extensions.hxc.hxc_dashboard.api import router as hxc_dashboard_router
-from .identity_contact.admin_pages import router as identity_admin_pages_router
-from .identity_contact.api import router as identity_router
-from .identity_contact.sidebar_jssdk import router as sidebar_jssdk_router
+from .crm.identity_contact.admin_pages import router as identity_admin_pages_router
+from .crm.identity_contact.api import router as identity_router
+from .crm.identity_contact.sidebar_jssdk import router as sidebar_jssdk_router
 from .integration_gateway.api import router as mcp_router
 from .media_library.admin_pages import router as media_library_admin_pages_router
 from .media_library.api import router as media_library_router
@@ -61,7 +61,7 @@ from .ops_enrollment.admin_pages import router as user_ops_admin_pages_router
 from .ops_enrollment.api import router as user_ops_router
 from .extensions.hxc.operation_cycles.admin_pages import router as operation_cycles_admin_pages_router
 from .extensions.hxc.operation_cycles.api import router as operation_cycles_router
-from .owner_migration.api import router as owner_migration_router
+from .crm.owner_migration.api import router as owner_migration_router
 from .platform_foundation.api import router as platform_router
 from .platform_foundation.auth_platform.api import router as auth_platform_router
 from .platform_foundation.external_effects.api import router as external_effects_router
@@ -77,7 +77,7 @@ from .extensions.radar.radar_links.admin_pages import router as radar_links_admi
 from .extensions.radar.radar_links.api import router as radar_links_router
 from .send_content.api import router as send_content_router
 from .extensions.commerce.service_period.api import router as service_period_router
-from .sidebar_write.api import router as sidebar_write_router
+from .crm.sidebar_write.api import router as sidebar_write_router
 
 
 @dataclass(frozen=True)

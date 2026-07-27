@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-from aicrm_next.identity_contact import resolution_effects
-from aicrm_next.identity_contact.resolution_queue_port import (
+from aicrm_next.crm.identity_contact import resolution_effects
+from aicrm_next.crm.identity_contact.resolution_queue_port import (
     CompleteIdentityResolutionRequest,
     EnqueueIdentityResolutionRequest,
     build_identity_resolution_queue_port,

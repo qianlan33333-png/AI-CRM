@@ -234,7 +234,7 @@ jobs:
                               AND job.adapter_name = 'wecom_external_contact_detail'
                               AND job.operation = 'get_external_contact_detail'
                               AND job.business_type = 'identity_resolution_queue'
-                              AND job.source_module = 'aicrm_next.identity_contact.resolution_effects'
+                              AND job.source_module = 'aicrm_next.crm.identity_contact.resolution_effects'
                               AND job.last_error_code = 'effect_type_not_allowed'
                               AND job.worker_generation = 0
                               AND job.policy_version = 'queue-v2-test-loopback'
@@ -310,7 +310,7 @@ jobs:
                               AND job.adapter_name = 'wecom_external_contact_detail'
                               AND job.operation = 'get_external_contact_detail'
                               AND job.business_type = 'identity_resolution_queue'
-                              AND job.source_module = 'aicrm_next.identity_contact.resolution_effects'
+                              AND job.source_module = 'aicrm_next.crm.identity_contact.resolution_effects'
                               AND job.source_route IN (
                                   'channel_entry.identity_resolution.enqueue',
                                   'message_archive.identity_resolution.enqueue'
@@ -372,7 +372,7 @@ jobs:
                               AND job.adapter_name = 'wecom_external_contact_detail'
                               AND job.operation = 'get_external_contact_detail'
                               AND job.business_type = 'identity_resolution_queue'
-                              AND job.source_module = 'aicrm_next.identity_contact.resolution_effects'
+                              AND job.source_module = 'aicrm_next.crm.identity_contact.resolution_effects'
                               AND job.last_error_code IN (
                                   'external_contact_relationship_absent',
                                   'wecom_error_84061',

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from aicrm_next.customer_read_model.application import ListCustomersQuery
-from aicrm_next.customer_read_model.dto import ListCustomersRequest
+from aicrm_next.crm.customer_read_model.application import ListCustomersQuery
+from aicrm_next.crm.customer_read_model.dto import ListCustomersRequest
 
 
 def test_production_mode_does_not_return_fixture_customer_success(monkeypatch):
@@ -24,7 +24,7 @@ def test_production_mode_does_not_return_fixture_customer_success(monkeypatch):
 
 
 def test_production_repo_uses_runtime_database_url(monkeypatch):
-    from aicrm_next.customer_read_model import repo as repo_module
+    from aicrm_next.crm.customer_read_model import repo as repo_module
 
     monkeypatch.setenv("AICRM_NEXT_ENV", "production")
     monkeypatch.setenv("DATABASE_URL", "postgres://prod_user:prod_pass@db.internal:5432/prod_crm")

@@ -1845,7 +1845,7 @@
     },
     {
       "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/identity_contact/sidebar_jssdk.py",
+      "file": "aicrm_next/crm/identity_contact/sidebar_jssdk.py",
       "key": "AICRM_SIDEBAR_JSSDK_ALLOWED_HOSTS",
       "line": 472
     },
@@ -2151,7 +2151,7 @@
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/customer_tags/wecom_tag_live_adapter.py",
+      "file": "aicrm_next/crm/customer_tags/wecom_tag_live_adapter.py",
       "key": "AICRM_WECOM_TAG_AGENT_SECRET",
       "line": 26
     },
@@ -2169,13 +2169,13 @@
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/customer_tags/wecom_tag_live_adapter.py",
+      "file": "aicrm_next/crm/customer_tags/wecom_tag_live_adapter.py",
       "key": "AICRM_WECOM_TAG_CONFIG_REVIEWED",
       "line": 26
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/customer_tags/wecom_tag_live_adapter.py",
+      "file": "aicrm_next/crm/customer_tags/wecom_tag_live_adapter.py",
       "key": "AICRM_WECOM_TAG_CORP_ID",
       "line": 26
     },
@@ -2187,13 +2187,13 @@
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/customer_tags/wecom_tag_live_adapter.py",
+      "file": "aicrm_next/crm/customer_tags/wecom_tag_live_adapter.py",
       "key": "AICRM_WECOM_TAG_LIVE_ADAPTER_ENABLED",
       "line": 26
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/customer_tags/wecom_tag_live_adapter.py",
+      "file": "aicrm_next/crm/customer_tags/wecom_tag_live_adapter.py",
       "key": "AICRM_WECOM_TAG_LIVE_CALL_APPROVED",
       "line": 26
     },
@@ -2289,31 +2289,31 @@
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/customer_read_model/application.py",
+      "file": "aicrm_next/crm/customer_read_model/application.py",
       "key": "CUSTOMER_READ_MODEL_LIVE_SOURCE_FALLBACK_ENABLED",
       "line": 31
     },
     {
       "accessor": "_env_flag",
-      "file": "aicrm_next/customer_read_model/application.py",
+      "file": "aicrm_next/crm/customer_read_model/application.py",
       "key": "CUSTOMER_READ_MODEL_LIVE_SOURCE_FALLBACK_ENABLED",
       "line": 48
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/customer_read_model/application.py",
+      "file": "aicrm_next/crm/customer_read_model/application.py",
       "key": "CUSTOMER_READ_MODEL_NEXT_PRIMARY",
       "line": 31
     },
     {
       "accessor": "_env_flag",
-      "file": "aicrm_next/customer_read_model/application.py",
+      "file": "aicrm_next/crm/customer_read_model/application.py",
       "key": "CUSTOMER_READ_MODEL_NEXT_PRIMARY",
       "line": 44
     },
     {
       "accessor": "managed_runtime_int",
-      "file": "aicrm_next/customer_read_model/refresh.py",
+      "file": "aicrm_next/crm/customer_read_model/refresh.py",
       "key": "CUSTOMER_READ_MODEL_REFRESH_MAX_CUSTOMERS",
       "line": 77
     },
@@ -3278,6 +3278,30 @@
       "line": 18
     },
     {
+      "accessor": "managed_runtime_setting",
+      "file": "aicrm_next/crm/identity_contact/api.py",
+      "key": "WECOM_CORP_ID",
+      "line": 246
+    },
+    {
+      "accessor": "managed_runtime_setting",
+      "file": "aicrm_next/crm/identity_contact/domain.py",
+      "key": "WECOM_CORP_ID",
+      "line": 12
+    },
+    {
+      "accessor": "managed_runtime_setting",
+      "file": "aicrm_next/crm/identity_contact/sidebar_jssdk.py",
+      "key": "WECOM_CORP_ID",
+      "line": 356
+    },
+    {
+      "accessor": "managed_runtime_setting",
+      "file": "aicrm_next/crm/sidebar_write/api.py",
+      "key": "WECOM_CORP_ID",
+      "line": 142
+    },
+    {
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/extensions/archive/message_archive/sync_service.py",
       "key": "WECOM_CORP_ID",
@@ -3294,24 +3318,6 @@
       "file": "aicrm_next/extensions/forms/questionnaire/application.py",
       "key": "WECOM_CORP_ID",
       "line": 308
-    },
-    {
-      "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/identity_contact/api.py",
-      "key": "WECOM_CORP_ID",
-      "line": 246
-    },
-    {
-      "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/identity_contact/domain.py",
-      "key": "WECOM_CORP_ID",
-      "line": 12
-    },
-    {
-      "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/identity_contact/sidebar_jssdk.py",
-      "key": "WECOM_CORP_ID",
-      "line": 356
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -3368,12 +3374,6 @@
       "line": 19
     },
     {
-      "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/sidebar_write/api.py",
-      "key": "WECOM_CORP_ID",
-      "line": 142
-    },
-    {
       "accessor": "os.getenv",
       "file": "scripts/ops/generate_wecom_callback_sample.py",
       "key": "WECOM_CORP_ID",
@@ -3423,15 +3423,15 @@
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/extensions/forms/questionnaire/application.py",
+      "file": "aicrm_next/crm/identity_contact/sidebar_jssdk.py",
       "key": "WECOM_SECRET",
-      "line": 309
+      "line": 357
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/identity_contact/sidebar_jssdk.py",
+      "file": "aicrm_next/extensions/forms/questionnaire/application.py",
       "key": "WECOM_SECRET",
-      "line": 357
+      "line": 309
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -9176,7 +9176,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.admin_pages.admin_customer_360_page",
+      "endpoint": "aicrm_next.crm.customer_read_model.admin_pages.admin_customer_360_page",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.crm",
@@ -9265,7 +9265,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.admin_pages.admin_customers",
+      "endpoint": "aicrm_next.crm.customer_read_model.admin_pages.admin_customers",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.crm",
@@ -9323,7 +9323,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.admin_pages.admin_customer_detail_page",
+      "endpoint": "aicrm_next.crm.customer_read_model.admin_pages.admin_customer_detail_page",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.crm",
@@ -9660,7 +9660,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.owner_migration.api.admin_owner_migration_page",
+      "endpoint": "aicrm_next.crm.owner_migration.api.admin_owner_migration_page",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.crm",
@@ -9688,7 +9688,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.owner_migration.api.admin_owner_migration_action",
+      "endpoint": "aicrm_next.crm.owner_migration.api.admin_owner_migration_action",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -10495,7 +10495,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_tags.admin_pages.admin_wecom_tags",
+      "endpoint": "aicrm_next.crm.customer_tags.admin_pages.admin_wecom_tags",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.crm",
@@ -20021,7 +20021,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_admin_customer_360_profile",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_admin_customer_360_profile",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -20124,7 +20124,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_admin_customer_profile",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_admin_customer_profile",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -20259,7 +20259,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_admin_customer_profile_messages",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_admin_customer_profile_messages",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -20362,7 +20362,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_admin_customer_profile_questionnaire_answers",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_admin_customer_profile_questionnaire_answers",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -20449,7 +20449,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_admin_customer_profile_tags",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_admin_customer_profile_tags",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -20721,7 +20721,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_admin_customer_business_profile",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_admin_customer_business_profile",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -23219,7 +23219,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.identity_contact.api.admin_identity_links",
+      "endpoint": "aicrm_next.crm.identity_contact.api.admin_identity_links",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -23384,7 +23384,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.identity_contact.api.admin_resolve_identity",
+      "endpoint": "aicrm_next.crm.identity_contact.api.admin_resolve_identity",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -26456,7 +26456,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.owner_migration.api.execute_owner_migration",
+      "endpoint": "aicrm_next.crm.owner_migration.api.execute_owner_migration",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -26503,7 +26503,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.owner_migration.api.import_owner_migration",
+      "endpoint": "aicrm_next.crm.owner_migration.api.import_owner_migration",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -26531,7 +26531,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.owner_migration.api.preview_owner_migration",
+      "endpoint": "aicrm_next.crm.owner_migration.api.preview_owner_migration",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -26579,7 +26579,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.owner_migration.api.owner_migration_result_file",
+      "endpoint": "aicrm_next.crm.owner_migration.api.owner_migration_result_file",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -26627,7 +26627,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.owner_migration.api.owner_migration_session_errors",
+      "endpoint": "aicrm_next.crm.owner_migration.api.owner_migration_session_errors",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -26655,7 +26655,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.owner_migration.api.owner_migration_template",
+      "endpoint": "aicrm_next.crm.owner_migration.api.owner_migration_template",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -26683,7 +26683,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.owner_migration.api.owner_migration_transfer_result",
+      "endpoint": "aicrm_next.crm.owner_migration.api.owner_migration_transfer_result",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -35663,7 +35663,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_tags.api.list_admin_wecom_tag_groups_read_model",
+      "endpoint": "aicrm_next.crm.customer_tags.api.list_admin_wecom_tag_groups_read_model",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -35691,7 +35691,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_tags.api.create_admin_wecom_tag_group_command",
+      "endpoint": "aicrm_next.crm.customer_tags.api.create_admin_wecom_tag_group_command",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -35739,7 +35739,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_tags.api.mutate_admin_wecom_tag_group_command",
+      "endpoint": "aicrm_next.crm.customer_tags.api.mutate_admin_wecom_tag_group_command",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -35787,7 +35787,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_tags.api.get_admin_wecom_tag_group_read_model",
+      "endpoint": "aicrm_next.crm.customer_tags.api.get_admin_wecom_tag_group_read_model",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -35835,7 +35835,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_tags.api.mutate_admin_wecom_tag_group_command",
+      "endpoint": "aicrm_next.crm.customer_tags.api.mutate_admin_wecom_tag_group_command",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -35883,7 +35883,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_tags.api.mutate_admin_wecom_tag_group_command",
+      "endpoint": "aicrm_next.crm.customer_tags.api.mutate_admin_wecom_tag_group_command",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -35911,7 +35911,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_tags.api.list_admin_wecom_tags_read_model",
+      "endpoint": "aicrm_next.crm.customer_tags.api.list_admin_wecom_tags_read_model",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -35939,7 +35939,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_tags.api.create_admin_wecom_tag_command",
+      "endpoint": "aicrm_next.crm.customer_tags.api.create_admin_wecom_tag_command",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -35971,7 +35971,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_tags.api.list_wecom_tags_live_gate",
+      "endpoint": "aicrm_next.crm.customer_tags.api.list_wecom_tags_live_gate",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -35999,7 +35999,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_tags.api.mark_tags_live",
+      "endpoint": "aicrm_next.crm.customer_tags.api.mark_tags_live",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -36027,7 +36027,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_tags.api.unmark_tags_live",
+      "endpoint": "aicrm_next.crm.customer_tags.api.unmark_tags_live",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -36055,7 +36055,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_tags.api.sync_admin_wecom_tags_command",
+      "endpoint": "aicrm_next.crm.customer_tags.api.sync_admin_wecom_tags_command",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -36083,7 +36083,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_tags.api.sync_admin_wecom_tags_command",
+      "endpoint": "aicrm_next.crm.customer_tags.api.sync_admin_wecom_tags_command",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -36131,7 +36131,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_tags.api.mutate_admin_wecom_tag_command",
+      "endpoint": "aicrm_next.crm.customer_tags.api.mutate_admin_wecom_tag_command",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -36179,7 +36179,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_tags.api.get_admin_wecom_tag_read_model",
+      "endpoint": "aicrm_next.crm.customer_tags.api.get_admin_wecom_tag_read_model",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -36227,7 +36227,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_tags.api.mutate_admin_wecom_tag_command",
+      "endpoint": "aicrm_next.crm.customer_tags.api.mutate_admin_wecom_tag_command",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -36275,7 +36275,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_tags.api.mutate_admin_wecom_tag_command",
+      "endpoint": "aicrm_next.crm.customer_tags.api.mutate_admin_wecom_tag_command",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -38125,7 +38125,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.list_customers",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.list_customers",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -38428,7 +38428,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_customer",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_customer",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -38516,7 +38516,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_customer_timeline",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_customer_timeline",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -42269,7 +42269,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.identity_contact.api.resolve_identity",
+      "endpoint": "aicrm_next.crm.identity_contact.api.resolve_identity",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -42842,7 +42842,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_recent_messages",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_recent_messages",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -44267,7 +44267,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.sidebar_write.api.bind_mobile",
+      "endpoint": "aicrm_next.crm.sidebar_write.api.bind_mobile",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -44338,7 +44338,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.identity_contact.api.sidebar_binding_status",
+      "endpoint": "aicrm_next.crm.identity_contact.api.sidebar_binding_status",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -44409,7 +44409,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.identity_contact.api.sidebar_contact_binding_status",
+      "endpoint": "aicrm_next.crm.identity_contact.api.sidebar_contact_binding_status",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -44496,7 +44496,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_sidebar_customer_context",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_sidebar_customer_context",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -44524,7 +44524,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.identity_contact.sidebar_jssdk.sidebar_jssdk_config",
+      "endpoint": "aicrm_next.crm.identity_contact.sidebar_jssdk.sidebar_jssdk_config",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.channels",
@@ -44595,7 +44595,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_sidebar_lead_pool_status",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_sidebar_lead_pool_status",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -44623,7 +44623,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.sidebar_write.api.upsert_lead_pool_class_term",
+      "endpoint": "aicrm_next.crm.sidebar_write.api.upsert_lead_pool_class_term",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -44694,7 +44694,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_sidebar_marketing_status",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_sidebar_marketing_status",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -44722,7 +44722,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.sidebar_write.api.mark_enrolled",
+      "endpoint": "aicrm_next.crm.sidebar_write.api.mark_enrolled",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -44750,7 +44750,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.sidebar_write.api.set_followup_segment",
+      "endpoint": "aicrm_next.crm.sidebar_write.api.set_followup_segment",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -44778,7 +44778,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.sidebar_write.api.unmark_enrolled",
+      "endpoint": "aicrm_next.crm.sidebar_write.api.unmark_enrolled",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -44806,7 +44806,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.identity_contact.sidebar_jssdk.sidebar_oauth_callback",
+      "endpoint": "aicrm_next.crm.identity_contact.sidebar_jssdk.sidebar_oauth_callback",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.channels",
@@ -44834,7 +44834,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.identity_contact.sidebar_jssdk.sidebar_oauth_start",
+      "endpoint": "aicrm_next.crm.identity_contact.sidebar_jssdk.sidebar_oauth_start",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.channels",
@@ -44921,7 +44921,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_sidebar_profile",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_sidebar_profile",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -44949,7 +44949,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.sidebar_write.api.mark_signup_tag",
+      "endpoint": "aicrm_next.crm.sidebar_write.api.mark_signup_tag",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -45020,7 +45020,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_sidebar_signup_tag_status",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_sidebar_signup_tag_status",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -45107,7 +45107,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_sidebar_tags",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_sidebar_tags",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -45194,7 +45194,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_sidebar_v2_materials",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_sidebar_v2_materials",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -45242,7 +45242,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_sidebar_v2_image_thumbnail",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_sidebar_v2_image_thumbnail",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -45270,7 +45270,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.sidebar_write.api.plan_material_send",
+      "endpoint": "aicrm_next.crm.sidebar_write.api.plan_material_send",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -45341,7 +45341,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_sidebar_v2_orders",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_sidebar_v2_orders",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -45438,7 +45438,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_sidebar_v2_other_staff_messages",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_sidebar_v2_other_staff_messages",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -45509,7 +45509,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_sidebar_v2_periodic_orders",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_sidebar_v2_periodic_orders",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -45589,7 +45589,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.update_sidebar_v2_periodic_order_remark",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.update_sidebar_v2_periodic_order_remark",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -45676,7 +45676,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_sidebar_v2_products",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_sidebar_v2_products",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -45704,7 +45704,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.sidebar_write.api.update_sidebar_v2_profile",
+      "endpoint": "aicrm_next.crm.sidebar_write.api.update_sidebar_v2_profile",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -45775,7 +45775,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_sidebar_v2_questionnaires",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_sidebar_v2_questionnaires",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -45865,7 +45865,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_sidebar_v2_timeline",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_sidebar_v2_timeline",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -45936,7 +45936,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_sidebar_v2_workbench",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_sidebar_v2_workbench",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -46052,7 +46052,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_user_by_unionid",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_user_by_unionid",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -46114,7 +46114,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_user_recent_messages_by_unionid",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_user_recent_messages_by_unionid",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -46202,7 +46202,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.customer_read_model.api.get_user_timeline_by_unionid",
+      "endpoint": "aicrm_next.crm.customer_read_model.api.get_user_timeline_by_unionid",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.crm",
@@ -47293,7 +47293,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.identity_contact.admin_pages.sidebar_bind_mobile_page",
+      "endpoint": "aicrm_next.crm.identity_contact.admin_pages.sidebar_bind_mobile_page",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.crm",
@@ -47759,7 +47759,7 @@
         "common operation members"
       ],
       "table": "admin_wecom_directory_members",
-      "write_owner": "aicrm_next.operation_members.SyncOperationMembersFromWeComCommand"
+      "write_owner": "aicrm_next.crm.operation_members.SyncOperationMembersFromWeComCommand"
     },
     {
       "domain": "ai_audience_ops",
@@ -47991,9 +47991,9 @@
       "pii_level": "internal_contact",
       "read_owners": [
         "aicrm_next.admin_read_model.repo",
-        "aicrm_next.customer_read_model.refresh_scope_repository",
-        "aicrm_next.customer_read_model.repo",
-        "aicrm_next.customer_read_model.sidebar_v2",
+        "aicrm_next.crm.customer_read_model.refresh_scope_repository",
+        "aicrm_next.crm.customer_read_model.repo",
+        "aicrm_next.crm.customer_read_model.sidebar_v2",
         "aicrm_next.extensions.archive.message_archive.repo"
       ],
       "table": "archived_messages",
@@ -49461,7 +49461,7 @@
         "questionnaire H5 tag apply diagnostics"
       ],
       "table": "contact_tags",
-      "write_owner": "aicrm_next.customer_tags"
+      "write_owner": "aicrm_next.crm.customer_tags"
     },
     {
       "domain": "contacts",
@@ -49506,18 +49506,18 @@
       "read_owners": [
         "aicrm_next.background_jobs",
         "aicrm_next.channel_entry",
-        "aicrm_next.customer_read_model",
+        "aicrm_next.crm.customer_read_model",
+        "aicrm_next.crm.identity_contact",
+        "aicrm_next.crm.sidebar_write",
         "aicrm_next.extensions.ai.ai_assist",
         "aicrm_next.extensions.ai.ai_audience_ops",
         "aicrm_next.extensions.archive.message_archive",
         "aicrm_next.extensions.forms.questionnaire",
         "aicrm_next.extensions.growth.cloud_orchestrator",
-        "aicrm_next.extensions.radar.radar_links",
-        "aicrm_next.identity_contact",
-        "aicrm_next.sidebar_write"
+        "aicrm_next.extensions.radar.radar_links"
       ],
       "table": "crm_user_identity",
-      "write_owner": "aicrm_next.identity_contact"
+      "write_owner": "aicrm_next.crm.identity_contact"
     },
     {
       "domain": "identity_contact",
@@ -49529,7 +49529,7 @@
         "historical schema drift guard"
       ],
       "table": "crm_user_identity_conflicts",
-      "write_owner": "aicrm_next.identity_contact"
+      "write_owner": "aicrm_next.crm.identity_contact"
     },
     {
       "domain": "identity_contact",
@@ -49541,7 +49541,7 @@
         "historical schema drift guard"
       ],
       "table": "crm_user_identity_merge_audit",
-      "write_owner": "aicrm_next.identity_contact"
+      "write_owner": "aicrm_next.crm.identity_contact"
     },
     {
       "domain": "identity_contact",
@@ -49553,7 +49553,7 @@
         "aicrm_next.channel_entry"
       ],
       "table": "crm_user_identity_resolution_queue",
-      "write_owner": "aicrm_next.identity_contact"
+      "write_owner": "aicrm_next.crm.identity_contact"
     },
     {
       "domain": "customer_read_model",
@@ -49562,11 +49562,11 @@
       "migration_source": "0026_customer_read_model_next",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.customer_read_model",
-        "aicrm_next.owner_migration"
+        "aicrm_next.crm.customer_read_model",
+        "aicrm_next.crm.owner_migration"
       ],
       "table": "customer_detail_snapshot_next",
-      "write_owner": "aicrm_next.customer_read_model"
+      "write_owner": "aicrm_next.crm.customer_read_model"
     },
     {
       "domain": "customer_read_model",
@@ -49575,11 +49575,11 @@
       "migration_source": "0153_customer_read_model_generation_slots",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.customer_read_model",
-        "aicrm_next.owner_migration"
+        "aicrm_next.crm.customer_read_model",
+        "aicrm_next.crm.owner_migration"
       ],
       "table": "customer_detail_snapshot_next_shadow",
-      "write_owner": "aicrm_next.customer_read_model"
+      "write_owner": "aicrm_next.crm.customer_read_model"
     },
     {
       "domain": "customer_read_model",
@@ -49588,11 +49588,11 @@
       "migration_source": "0026_customer_read_model_next",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.customer_read_model",
-        "aicrm_next.owner_migration"
+        "aicrm_next.crm.customer_read_model",
+        "aicrm_next.crm.owner_migration"
       ],
       "table": "customer_list_index_next",
-      "write_owner": "aicrm_next.customer_read_model"
+      "write_owner": "aicrm_next.crm.customer_read_model"
     },
     {
       "domain": "customer_read_model",
@@ -49601,11 +49601,11 @@
       "migration_source": "0153_customer_read_model_generation_slots",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.customer_read_model",
-        "aicrm_next.owner_migration"
+        "aicrm_next.crm.customer_read_model",
+        "aicrm_next.crm.owner_migration"
       ],
       "table": "customer_list_index_next_shadow",
-      "write_owner": "aicrm_next.customer_read_model"
+      "write_owner": "aicrm_next.crm.customer_read_model"
     },
     {
       "domain": "legacy_customer_projection",
@@ -49650,11 +49650,11 @@
       "migration_source": "0129_identity_customer_event_driven",
       "pii_level": "aggregate_only",
       "read_owners": [
-        "aicrm_next.customer_read_model.events",
+        "aicrm_next.crm.customer_read_model.events",
         "aicrm_next.data_health"
       ],
       "table": "customer_read_model_refresh_intent",
-      "write_owner": "aicrm_next.customer_read_model.refresh_intents"
+      "write_owner": "aicrm_next.crm.customer_read_model.refresh_intents"
     },
     {
       "domain": "customer_read_model",
@@ -49663,11 +49663,11 @@
       "migration_source": "0129_identity_customer_event_driven",
       "pii_level": "none",
       "read_owners": [
-        "aicrm_next.customer_read_model.refresh_intents",
-        "aicrm_next.customer_read_model.refresh_scope_repository"
+        "aicrm_next.crm.customer_read_model.refresh_intents",
+        "aicrm_next.crm.customer_read_model.refresh_scope_repository"
       ],
       "table": "customer_read_model_refresh_source_receipt",
-      "write_owner": "aicrm_next.customer_read_model.refresh_intents"
+      "write_owner": "aicrm_next.crm.customer_read_model.refresh_intents"
     },
     {
       "domain": "customer_read_model",
@@ -49679,7 +49679,7 @@
         "aicrm_next.data_health"
       ],
       "table": "customer_read_model_refresh_state",
-      "write_owner": "aicrm_next.customer_read_model.refresh"
+      "write_owner": "aicrm_next.crm.customer_read_model.refresh"
     },
     {
       "domain": "customer_read_model",
@@ -49691,7 +49691,7 @@
         "historical schema drift guard"
       ],
       "table": "customer_recent_message_next",
-      "write_owner": "aicrm_next.customer_read_model"
+      "write_owner": "aicrm_next.crm.customer_read_model"
     },
     {
       "domain": "customer_read_model",
@@ -49700,11 +49700,11 @@
       "migration_source": "0153_customer_read_model_generation_slots",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.customer_read_model",
-        "aicrm_next.owner_migration"
+        "aicrm_next.crm.customer_read_model",
+        "aicrm_next.crm.owner_migration"
       ],
       "table": "customer_recent_message_next_shadow",
-      "write_owner": "aicrm_next.customer_read_model"
+      "write_owner": "aicrm_next.crm.customer_read_model"
     },
     {
       "domain": "customer_read_model",
@@ -49716,7 +49716,7 @@
         "historical schema drift guard"
       ],
       "table": "customer_timeline_event_next",
-      "write_owner": "aicrm_next.customer_read_model"
+      "write_owner": "aicrm_next.crm.customer_read_model"
     },
     {
       "domain": "legacy_customer_projection",
@@ -49788,11 +49788,11 @@
       "migration_source": "migrations/baselines/0001_post_legacy.sql",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.identity_contact",
-        "aicrm_next.owner_migration"
+        "aicrm_next.crm.identity_contact",
+        "aicrm_next.crm.owner_migration"
       ],
       "table": "external_contact_bindings",
-      "write_owner": "aicrm_next.owner_migration"
+      "write_owner": "aicrm_next.crm.owner_migration"
     },
     {
       "domain": "external_effects",
@@ -49993,11 +49993,11 @@
       "migration_source": "0129_identity_customer_event_driven",
       "pii_level": "aggregate_only",
       "read_owners": [
-        "aicrm_next.identity_contact",
+        "aicrm_next.crm.identity_contact",
         "identity resolution reconciliation"
       ],
       "table": "identity_resolution_completion_receipt",
-      "write_owner": "aicrm_next.identity_contact"
+      "write_owner": "aicrm_next.crm.identity_contact"
     },
     {
       "domain": "media_library",
@@ -50036,7 +50036,7 @@
       "migration_source": "0043_internal_event_queue, fan-out manifest added by 0122_internal_event_fanout_manifest",
       "pii_level": "",
       "read_owners": [
-        "aicrm_next.customer_read_model.refresh_scope_repository",
+        "aicrm_next.crm.customer_read_model.refresh_scope_repository",
         "aicrm_next.platform_foundation.execution_runtime.read_model",
         "aicrm_next.platform_foundation.internal_events.worker",
         "internal event admin/reconciliation APIs"
@@ -50348,7 +50348,7 @@
         "owner migration import/preview APIs"
       ],
       "table": "owner_migration_import_sessions",
-      "write_owner": "aicrm_next.owner_migration.repo"
+      "write_owner": "aicrm_next.crm.owner_migration.repo"
     },
     {
       "domain": "owner_migration",
@@ -50361,7 +50361,7 @@
         "owner migration preview APIs"
       ],
       "table": "owner_migration_previews",
-      "write_owner": "aicrm_next.owner_migration.repo"
+      "write_owner": "aicrm_next.crm.owner_migration.repo"
     },
     {
       "domain": "owner_migration",
@@ -50374,7 +50374,7 @@
         "owner migration result APIs"
       ],
       "table": "owner_migration_results",
-      "write_owner": "aicrm_next.owner_migration.repo"
+      "write_owner": "aicrm_next.crm.owner_migration.repo"
     },
     {
       "domain": "admin_identity",
@@ -50816,7 +50816,7 @@
       "migration_source": "0097_service_period_unionid_cleanup",
       "pii_level": "direct_contact",
       "read_owners": [
-        "aicrm_next.customer_read_model.sidebar_v2",
+        "aicrm_next.crm.customer_read_model.sidebar_v2",
         "aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation",
         "aicrm_next.extensions.commerce.service_period"
       ],
@@ -50843,7 +50843,7 @@
       "migration_source": "0107_hyc_usage_snapshot",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.customer_read_model",
+        "aicrm_next.crm.customer_read_model",
         "aicrm_next.extensions.commerce.service_period"
       ],
       "table": "service_period_huangyoucan_usage_snapshot",
@@ -50904,7 +50904,7 @@
       "migration_source": "0095_service_period_products",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.customer_read_model.sidebar_v2",
+        "aicrm_next.crm.customer_read_model.sidebar_v2",
         "aicrm_next.extensions.commerce.commerce",
         "aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation",
         "aicrm_next.extensions.commerce.service_period"
@@ -50919,10 +50919,10 @@
       "migration_source": "0077_id_dev_runtime_baseline",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.customer_read_model.sidebar_v2"
+        "aicrm_next.crm.customer_read_model.sidebar_v2"
       ],
       "table": "sidebar_customer_profile_fields",
-      "write_owner": "aicrm_next.customer_read_model"
+      "write_owner": "aicrm_next.crm.customer_read_model"
     },
     {
       "domain": "legacy_customer_tags",
@@ -51200,7 +51200,7 @@
       "pii_level": "internal_contact",
       "read_owners": [
         "aicrm_next.admin_read_model",
-        "aicrm_next.customer_read_model",
+        "aicrm_next.crm.customer_read_model",
         "aicrm_next.extensions.commerce.commerce.coupons.checker",
         "aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation",
         "aicrm_next.extensions.commerce.service_period",
@@ -51229,7 +51229,7 @@
       "migration_source": "migrations/baselines/0001_post_legacy.sql",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.customer_read_model.sidebar_v2",
+        "aicrm_next.crm.customer_read_model.sidebar_v2",
         "aicrm_next.extensions.commerce.commerce.coupons",
         "aicrm_next.extensions.commerce.service_period",
         "aicrm_next.external_push"
@@ -51270,7 +51270,7 @@
       "migration_source": "0077_id_dev_runtime_baseline",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.customer_read_model.sidebar_v2",
+        "aicrm_next.crm.customer_read_model.sidebar_v2",
         "aicrm_next.extensions.commerce.commerce.admin_transaction_detail",
         "aicrm_next.extensions.commerce.commerce.wechat_shop_service"
       ],
@@ -51323,7 +51323,7 @@
         "historical schema drift guard"
       ],
       "table": "wecom_corp_tag_groups",
-      "write_owner": "aicrm_next.customer_tags.local_projection"
+      "write_owner": "aicrm_next.crm.customer_tags.local_projection"
     },
     {
       "domain": "customer_tags",
@@ -51335,7 +51335,7 @@
         "historical schema drift guard"
       ],
       "table": "wecom_corp_tags",
-      "write_owner": "aicrm_next.customer_tags.local_projection"
+      "write_owner": "aicrm_next.crm.customer_tags.local_projection"
     },
     {
       "domain": "channel_entry",
@@ -51345,7 +51345,7 @@
       "pii_level": "",
       "read_owners": [
         "aicrm_next.automation_engine.channels_api",
-        "aicrm_next.customer_read_model.sidebar_v2"
+        "aicrm_next.crm.customer_read_model.sidebar_v2"
       ],
       "table": "wecom_customer_acquisition_links",
       "write_owner": "aicrm_next.automation_engine.channels_api"
@@ -51359,10 +51359,10 @@
       "read_owners": [
         "aicrm_next.admin_jobs",
         "aicrm_next.admin_read_model",
-        "aicrm_next.identity_contact"
+        "aicrm_next.crm.identity_contact"
       ],
       "table": "wecom_external_contact_event_logs",
-      "write_owner": "aicrm_next.identity_contact"
+      "write_owner": "aicrm_next.crm.identity_contact"
     },
     {
       "domain": "identity_contact",
@@ -51372,12 +51372,12 @@
       "pii_level": "internal_contact",
       "read_owners": [
         "aicrm_next.admin_read_model",
+        "aicrm_next.crm.owner_migration",
         "aicrm_next.extensions.ai.ai_assist",
-        "aicrm_next.extensions.ai.ai_audience_ops",
-        "aicrm_next.owner_migration"
+        "aicrm_next.extensions.ai.ai_audience_ops"
       ],
       "table": "wecom_external_contact_follow_users",
-      "write_owner": "aicrm_next.owner_migration"
+      "write_owner": "aicrm_next.crm.owner_migration"
     },
     {
       "domain": "identity_contact",
@@ -51387,12 +51387,12 @@
       "pii_level": "internal_contact",
       "read_owners": [
         "aicrm_next.admin_read_model",
+        "aicrm_next.crm.owner_migration",
         "aicrm_next.extensions.ai.ai_assist",
-        "aicrm_next.extensions.ai.ai_audience_ops",
-        "aicrm_next.owner_migration"
+        "aicrm_next.extensions.ai.ai_audience_ops"
       ],
       "table": "wecom_external_contact_identity_map",
-      "write_owner": "aicrm_next.owner_migration"
+      "write_owner": "aicrm_next.crm.owner_migration"
     },
     {
       "domain": "group_ops",

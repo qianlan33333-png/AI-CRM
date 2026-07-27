@@ -94,7 +94,7 @@ The event detail API may keep raw identifiers inside `payload_json` for backend 
 
 ## Compatibility With Live Mutation
 
-The current write path is `aicrm_next/customer_tags/live_mutation.py`.
+The current write path is `aicrm_next/crm/customer_tags/live_mutation.py`.
 
 That path creates a queued side-effect plan and a queued `external_effect_job` for WeCom tag mark/unmark. The internal event is emitted after those planning steps through `safe_emit`, so emit failures do not break the customer tag mutation path.
 

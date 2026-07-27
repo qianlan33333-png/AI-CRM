@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from aicrm_next.identity_contact.wechat_unionid_guard import evaluate_wechat_unionid_access
+from aicrm_next.crm.identity_contact.wechat_unionid_guard import evaluate_wechat_unionid_access
 from aicrm_next.main import create_app
 from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
 from aicrm_next.extensions.forms.questionnaire.result_access import RESULT_GRANT_COOKIE_NAME, result_grant_cookie_path

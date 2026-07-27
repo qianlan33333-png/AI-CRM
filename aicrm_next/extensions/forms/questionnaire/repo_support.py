@@ -8,8 +8,8 @@ import re
 from typing import Any, Callable, Protocol
 from uuid import uuid4
 
-from aicrm_next.identity_contact.dto import ResolvePersonIdentityRequest
-from aicrm_next.identity_contact.resolver import resolve_identity_with_dbapi, resolved_unionid
+from aicrm_next.crm.identity_contact.dto import ResolvePersonIdentityRequest
+from aicrm_next.crm.identity_contact.resolver import resolve_identity_with_dbapi, resolved_unionid
 from aicrm_next.navigation_target.service import normalize_completion_target_for_storage
 from aicrm_next.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
 from aicrm_next.shared.errors import ContractError

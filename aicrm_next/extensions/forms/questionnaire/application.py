@@ -3,8 +3,8 @@ from __future__ import annotations
 import secrets
 from typing import Any
 
-from aicrm_next.identity_contact.application import ResolvePersonIdentityQuery
-from aicrm_next.identity_contact.dto import ResolvePersonIdentityRequest
+from aicrm_next.crm.identity_contact.application import ResolvePersonIdentityQuery
+from aicrm_next.crm.identity_contact.dto import ResolvePersonIdentityRequest
 from aicrm_next.shared.repository_provider import RepositoryProviderError, blocked_production_payload
 from aicrm_next.shared.runtime import production_data_ready
 from aicrm_next.shared.runtime_settings import managed_runtime_setting, runtime_setting

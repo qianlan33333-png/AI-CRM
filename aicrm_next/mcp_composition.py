@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-from .customer_read_model.application import (
+from .crm.customer_read_model.application import (
     GetCustomerContextQuery,
     GetCustomerDetailQuery,
     ListRecentMessagesQuery,
 )
-from .customer_read_model.dto import (
+from .crm.customer_read_model.dto import (
     CustomerContextRequest,
     CustomerDetailRequest,
     RecentMessagesRequest,
 )
-from .identity_contact.application import ResolvePersonIdentityQuery
-from .identity_contact.dto import ResolvePersonIdentityRequest
+from .crm.identity_contact.application import ResolvePersonIdentityQuery
+from .crm.identity_contact.dto import ResolvePersonIdentityRequest
 from .integration_gateway.dispatch import McpToolDispatcher
 from .integration_gateway.mcp import McpJsonRpcApplication
 

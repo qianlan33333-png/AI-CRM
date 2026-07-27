@@ -9,7 +9,7 @@ pytestmark = pytest.mark.usefixtures("composed_internal_event_registry")
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.owner_migration.application import OwnerMigrationCommand, OwnerMigrationService
+from aicrm_next.crm.owner_migration.application import OwnerMigrationCommand, OwnerMigrationService
 from aicrm_next.platform_foundation.external_effects import ExternalEffectService, reset_external_effect_fixture_state
 from aicrm_next.platform_foundation.internal_events import InternalEventService, reset_internal_event_fixture_state
 from aicrm_next.platform_foundation.internal_events.repository import build_internal_event_repository

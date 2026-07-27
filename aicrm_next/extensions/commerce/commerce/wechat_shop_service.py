@@ -11,7 +11,7 @@ from aicrm_next.integration_ports import (
     WeChatShopClientConfig,
     WeChatShopClientError,
 )
-from aicrm_next.identity_contact.payment_projection import project_wechat_shop_order_mobile
+from aicrm_next.crm.identity_contact.payment_projection import project_wechat_shop_order_mobile
 from aicrm_next.platform_foundation.command_bus.models import CommandContext
 from aicrm_next.platform_foundation.internal_events.models import InternalEventCreateRequest
 from aicrm_next.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox

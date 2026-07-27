@@ -789,7 +789,7 @@ def test_public_h5_create_order_blocks_unresolved_payment_identity_before_order_
     expected_error: str,
     retryable: bool,
 ) -> None:
-    from aicrm_next.identity_contact.dto import IdentityResolveResult
+    from aicrm_next.crm.identity_contact.dto import IdentityResolveResult
     from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
     from aicrm_next.extensions.commerce.commerce.wechat_pay_client import WeChatPayClientConfig
 

@@ -198,7 +198,7 @@ def test_promotion_rejects_id_sha_that_is_not_publicly_active(tmp_path: Path) ->
 def test_promotion_rejects_unapproved_post_candidate_application_change(tmp_path: Path) -> None:
     root, candidate_sha, release_sha, changed_paths = _repository(
         tmp_path,
-        unexpected_path="aicrm_next/customer_read_model/api.py",
+        unexpected_path="aicrm_next/crm/customer_read_model/api.py",
     )
 
     with pytest.raises(PromotionValidationError, match="unapproved post-candidate paths"):

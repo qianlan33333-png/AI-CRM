@@ -4,8 +4,8 @@ from __future__ import annotations
 from sqlalchemy import bindparam, text
 from sqlalchemy.orm import Session
 
-from aicrm_next.identity_contact.dto import ResolvePersonIdentityRequest
-from aicrm_next.identity_contact.resolver import SQLAlchemyIdentityResolver, classify_identity_candidates
+from aicrm_next.crm.identity_contact.dto import ResolvePersonIdentityRequest
+from aicrm_next.crm.identity_contact.resolver import SQLAlchemyIdentityResolver, classify_identity_candidates
 from aicrm_next.shared.typing import JsonDict
 
 from .sql_dialect import is_sqlite_session, json_text_expression

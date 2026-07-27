@@ -85,7 +85,7 @@ def test_huangyoucan_usage_projection_schema_and_lifecycle_contract() -> None:
 
     assert "mobile_md5 CHAR(32)" in migration
     assert "mobile TEXT" not in migration
-    assert "aicrm_next.customer_read_model" in manifest["service_period_huangyoucan_usage_snapshot"]["read_owners"]
+    assert "aicrm_next.crm.customer_read_model" in manifest["service_period_huangyoucan_usage_snapshot"]["read_owners"]
     tables = conftest._TABLES_TO_TRUNCATE
     assert tables.index("service_period_huangyoucan_usage_sync_runs") < tables.index(
         "service_period_huangyoucan_usage_snapshot"

@@ -231,7 +231,7 @@ def test_wecom_identity_bridge_writes_new_identity_tables_not_legacy_maps() -> N
 
 
 def test_runtime_jsonb_membership_avoids_placeholder_collision() -> None:
-    source = _read("aicrm_next/identity_contact/resolver.py")
+    source = _read("aicrm_next/crm/identity_contact/resolver.py")
 
     assert "external_userids_json ? ?" not in source
     assert "identity.external_userids_json ? input.external_userid" not in source
@@ -243,7 +243,7 @@ def test_runtime_jsonb_membership_avoids_placeholder_collision() -> None:
 def test_questionnaire_postgres_submit_queues_unresolved_identity_without_fake_canonical() -> None:
     source = _read("aicrm_next/extensions/forms/questionnaire/repo.py")
     queue_source = _read("aicrm_next/extensions/forms/questionnaire/identity_resolution.py")
-    owner_source = _read("aicrm_next/identity_contact/resolution_queue_repository.py")
+    owner_source = _read("aicrm_next/crm/identity_contact/resolution_queue_repository.py")
 
     assert "enqueue_questionnaire_identity_resolution" in source
     assert "build_identity_resolution_queue_port().enqueue_dbapi" in queue_source
@@ -254,12 +254,12 @@ def test_questionnaire_postgres_submit_queues_unresolved_identity_without_fake_c
 
 
 def test_customer_detail_query_supports_unionid_native_lookup(monkeypatch) -> None:
-    from aicrm_next.customer_read_model.application import (
+    from aicrm_next.crm.customer_read_model.application import (
         GetCustomerDetailQuery,
         GetCustomerTimelineQuery,
         ListRecentMessagesQuery,
     )
-    from aicrm_next.customer_read_model.dto import CustomerDetailRequest, CustomerTimelineRequest, RecentMessagesRequest
+    from aicrm_next.crm.customer_read_model.dto import CustomerDetailRequest, CustomerTimelineRequest, RecentMessagesRequest
 
     class Repo:
         def get_customer_by_unionid(self, unionid: str):
@@ -298,7 +298,7 @@ def test_customer_detail_query_supports_unionid_native_lookup(monkeypatch) -> No
         def list_recent_messages_by_unionid(self, unionid: str, *, limit=None):
             return [{"msgid": "msg_union_001", "unionid": unionid}]
 
-    monkeypatch.setattr("aicrm_next.customer_read_model.application._production_customer_data_required", lambda: True)
+    monkeypatch.setattr("aicrm_next.crm.customer_read_model.application._production_customer_data_required", lambda: True)
 
     repo = Repo()
     result = GetCustomerDetailQuery(repo=repo)(CustomerDetailRequest(unionid="union_customer_001"))
@@ -315,8 +315,8 @@ def test_customer_detail_query_supports_unionid_native_lookup(monkeypatch) -> No
 
 
 def test_customer_api_exposes_unionid_user_route() -> None:
-    source = _read("aicrm_next/customer_read_model/api.py")
-    admin_pages = _read("aicrm_next/customer_read_model/admin_pages.py")
+    source = _read("aicrm_next/crm/customer_read_model/api.py")
+    admin_pages = _read("aicrm_next/crm/customer_read_model/admin_pages.py")
 
     assert '@router.get("/api/users/{unionid}")' in source
     assert "CustomerDetailRequest(unionid=unionid)" in source
@@ -333,7 +333,7 @@ def test_customer_api_exposes_unionid_user_route() -> None:
 def test_channel_entry_business_write_requires_and_persists_unionid() -> None:
     application = _read("aicrm_next/channel_entry/application.py")
     repo = _read("aicrm_next/channel_entry/repo.py")
-    identity_queue_owner = _read("aicrm_next/identity_contact/resolution_queue_repository.py")
+    identity_queue_owner = _read("aicrm_next/crm/identity_contact/resolution_queue_repository.py")
     cleanup = _read("migrations/versions/0069_unionid_channel_contact_cleanup.py")
 
     assert 'subject_type="unionid"' in application
@@ -367,8 +367,8 @@ def test_channel_entry_business_write_requires_and_persists_unionid() -> None:
 
 
 def test_sidebar_bind_mobile_writes_user_identity_not_legacy_binding_tables() -> None:
-    source = _read("aicrm_next/sidebar_write/repo.py")
-    identity_write_source = _read("aicrm_next/identity_contact/write_repository.py")
+    source = _read("aicrm_next/crm/sidebar_write/repo.py")
+    identity_write_source = _read("aicrm_next/crm/identity_contact/write_repository.py")
     event_source = _read("aicrm_next/platform_foundation/internal_events/customer_identity.py")
 
     postgres_section = source.split("class PostgresSidebarWriteRepository:", 1)[1]
@@ -419,11 +419,11 @@ def test_user_ops_tables_are_unionid_only_business_models() -> None:
 
 
 def test_user_ops_legacy_runtime_tables_are_retired() -> None:
-    identity_contact_source = _read("aicrm_next/identity_contact/repo.py")
+    identity_contact_source = _read("aicrm_next/crm/identity_contact/repo.py")
     external_campaign_source = _read("aicrm_next/extensions/ai/ai_assist/external_campaigns.py")
     external_campaign_repo_source = _read("aicrm_next/extensions/ai/ai_assist/external_campaigns_repo.py")
     admin_jobs_source = _read("aicrm_next/admin_jobs/repository.py")
-    owner_migration_source = _read("aicrm_next/owner_migration/repo.py")
+    owner_migration_source = _read("aicrm_next/crm/owner_migration/repo.py")
     manifest_source = _read("docs/architecture/data_table_lifecycle_manifest.yml")
 
     runtime_sources = {
@@ -482,7 +482,7 @@ def test_message_batch_legacy_runtime_tables_are_retired() -> None:
 
 
 def test_customer_read_model_tables_are_unionid_only() -> None:
-    model_source = _read("aicrm_next/customer_read_model/models.py")
+    model_source = _read("aicrm_next/crm/customer_read_model/models.py")
     migration_source = _read("migrations/versions/0026_customer_read_model_next.py")
 
     for table_name in [
@@ -528,7 +528,7 @@ def test_automation_runtime_v2_tables_are_unionid_only() -> None:
 
 def test_retired_automation_member_table_is_physically_removed() -> None:
     source = _read("migrations/versions/0070_retire_automation_member_table.py")
-    sidebar_source = _read("aicrm_next/customer_read_model/sidebar_v2.py")
+    sidebar_source = _read("aicrm_next/crm/customer_read_model/sidebar_v2.py")
 
     assert '"automation_member"' in source
     assert '"automation_member_interaction_stats"' in source
@@ -632,11 +632,11 @@ def test_questionnaire_and_wechat_pay_facts_drop_legacy_identity_columns() -> No
 
 def test_customer_fact_read_sources_drop_legacy_identity_columns() -> None:
     cleanup_source = _read("migrations/versions/0068_unionid_customer_fact_cleanup.py")
-    customer_repo_source = _read("aicrm_next/customer_read_model/repo_live_source.py")
+    customer_repo_source = _read("aicrm_next/crm/customer_read_model/repo_live_source.py")
     message_archive_source = _read("aicrm_next/extensions/archive/message_archive/repo.py")
     channel_entry_repo_source = _read("aicrm_next/channel_entry/repo.py")
-    contact_tag_projection_source = _read("aicrm_next/customer_tags/projection_repository.py")
-    identity_queue_source = _read("aicrm_next/identity_contact/resolution_queue_repository.py")
+    contact_tag_projection_source = _read("aicrm_next/crm/customer_tags/projection_repository.py")
+    identity_queue_source = _read("aicrm_next/crm/identity_contact/resolution_queue_repository.py")
 
     for table_name in ["contact_tags", "archived_messages", "class_user_status_current", "class_user_status_history"]:
         assert table_name in cleanup_source
@@ -799,11 +799,11 @@ def test_final_legacy_identity_cleanup_removes_non_boundary_columns() -> None:
     channel_repo_source = _read("aicrm_next/channel_entry/repo.py")
     channel_app_source = _read("aicrm_next/channel_entry/application.py")
     contact_sync_source = _read("aicrm_next/background_jobs/external_contact_sync.py")
-    sidebar_source = _read("aicrm_next/customer_read_model/sidebar_v2.py")
-    identity_contact_source = _read("aicrm_next/identity_contact/repo.py")
+    sidebar_source = _read("aicrm_next/crm/customer_read_model/sidebar_v2.py")
+    identity_contact_source = _read("aicrm_next/crm/identity_contact/repo.py")
     admin_projection_source = _read("aicrm_next/admin_read_model/projections.py")
     external_campaigns_source = _read("aicrm_next/extensions/ai/ai_assist/external_campaigns_repo.py")
-    owner_migration_source = _read("aicrm_next/owner_migration/repo.py")
+    owner_migration_source = _read("aicrm_next/crm/owner_migration/repo.py")
 
     assert "down_revision = \"0077_id_dev_runtime_baseline\"" in cleanup_source
     assert "ADD COLUMN IF NOT EXISTS unionid TEXT NOT NULL DEFAULT ''" in cleanup_source

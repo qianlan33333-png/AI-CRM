@@ -12,8 +12,8 @@ RUNTIME_FILE_LINE_BUDGETS = {
     "aicrm_next/automation_engine/group_ops/postgres_repo.py": 1726,
     "aicrm_next/extensions/commerce/commerce/api.py": 1549,
     "aicrm_next/automation_engine/group_ops/application.py": 1545,
-    "aicrm_next/customer_read_model/repo.py": 1543,
-    "aicrm_next/customer_read_model/application.py": 1506,
+    "aicrm_next/crm/customer_read_model/repo.py": 1543,
+    "aicrm_next/crm/customer_read_model/application.py": 1506,
 }
 
 INLINE_SCRIPT_LINE_BUDGETS = {

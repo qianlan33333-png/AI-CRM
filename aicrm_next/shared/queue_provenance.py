@@ -45,7 +45,7 @@ def pre_provider_identity_adoption_predicate_sql(
               AND {job_alias}.adapter_name = 'wecom_external_contact_detail'
               AND {job_alias}.operation = 'get_external_contact_detail'
               AND {job_alias}.business_type = 'identity_resolution_queue'
-              AND {job_alias}.source_module = 'aicrm_next.identity_contact.resolution_effects'
+              AND {job_alias}.source_module = 'aicrm_next.crm.identity_contact.resolution_effects'
               AND {job_alias}.source_route IN (
                   'channel_entry.identity_resolution.enqueue',
                   'message_archive.identity_resolution.enqueue'
@@ -133,7 +133,7 @@ def post_cutover_identity_recovery_predicate_sql(
               AND {job_alias}.operation = 'get_external_contact_detail'
               AND {job_alias}.target_type = 'external_user'
               AND {job_alias}.business_type = 'identity_resolution_queue'
-              AND {job_alias}.source_module = 'aicrm_next.identity_contact.resolution_effects'
+              AND {job_alias}.source_module = 'aicrm_next.crm.identity_contact.resolution_effects'
               AND {job_alias}.source_route IN (
                   'channel_entry.identity_resolution.enqueue',
                   'message_archive.identity_resolution.enqueue'
@@ -218,7 +218,7 @@ def external_contact_relationship_absent_terminal_sql(*, job_alias: str) -> str:
               AND {job_alias}.operation = 'get_external_contact_detail'
               AND {job_alias}.target_type = 'external_user'
               AND {job_alias}.business_type = 'identity_resolution_queue'
-              AND {job_alias}.source_module = 'aicrm_next.identity_contact.resolution_effects'
+              AND {job_alias}.source_module = 'aicrm_next.crm.identity_contact.resolution_effects'
               AND {job_alias}.source_route IN (
                   'channel_entry.identity_resolution.enqueue',
                   'message_archive.identity_resolution.enqueue'

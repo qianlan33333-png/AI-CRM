@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from aicrm_next.customer_read_model.models import (
+from aicrm_next.crm.customer_read_model.models import (
     customer_detail_snapshot_next,
     customer_list_index_next,
 )

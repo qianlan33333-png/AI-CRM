@@ -37,18 +37,18 @@ def test_customer_list_admin_page_renders_from_native_shell() -> None:
     assert "客户查找" in response.text
     assert "客户列表" in response.text
     assert 'name="keyword"' in response.text
-    assert _endpoint_module("/admin/customers") == "aicrm_next.customer_read_model.admin_pages"
+    assert _endpoint_module("/admin/customers") == "aicrm_next.crm.customer_read_model.admin_pages"
 
 
 def test_customer_pages_and_user_ops_removed_from_frontend_compat_inventory() -> None:
     assert not (ROOT / "aicrm_next/frontend_compat/legacy_routes.py").exists()
-    assert _endpoint_module("/admin/customers") == "aicrm_next.customer_read_model.admin_pages"
-    assert _endpoint_module("/admin/customers/{unionid}") == "aicrm_next.customer_read_model.admin_pages"
-    assert _endpoint_module("/admin/customer-360/{unionid}") == "aicrm_next.customer_read_model.admin_pages"
+    assert _endpoint_module("/admin/customers") == "aicrm_next.crm.customer_read_model.admin_pages"
+    assert _endpoint_module("/admin/customers/{unionid}") == "aicrm_next.crm.customer_read_model.admin_pages"
+    assert _endpoint_module("/admin/customer-360/{unionid}") == "aicrm_next.crm.customer_read_model.admin_pages"
 
 
 def test_customer_list_page_degrades_when_read_model_unavailable(monkeypatch) -> None:
-    from aicrm_next.customer_read_model import admin_pages
+    from aicrm_next.crm.customer_read_model import admin_pages
 
     class FakeListCustomersQuery:
         def __call__(self, request):

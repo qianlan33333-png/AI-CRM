@@ -108,7 +108,7 @@ def test_wecom_tags_page_uses_full_management_workspace(monkeypatch):
 
 
 def test_customer_page_does_not_render_sample_fixture_names(monkeypatch):
-    import aicrm_next.customer_read_model.admin_pages as customer_admin_pages
+    import aicrm_next.crm.customer_read_model.admin_pages as customer_admin_pages
 
     class FakeListCustomersQuery:
         def __call__(self, query):
@@ -136,7 +136,7 @@ def test_customer_page_does_not_render_sample_fixture_names(monkeypatch):
 
 
 def test_customer_page_uses_native_read_model_when_data_is_available(monkeypatch):
-    import aicrm_next.customer_read_model.admin_pages as customer_admin_pages
+    import aicrm_next.crm.customer_read_model.admin_pages as customer_admin_pages
 
     class FakeListCustomersQuery:
         def __call__(self, query):

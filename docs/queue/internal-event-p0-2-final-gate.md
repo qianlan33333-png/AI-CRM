@@ -223,7 +223,7 @@ P0-2. They should remain blocked from real execution until P1/P2 approval.
 | Admin deferred jobs runner | `aicrm_next/admin_jobs/application.py` | `old_admin_jobs_deferred_run` |
 | Admin webhook retry disabled path | `aicrm_next/admin_jobs/routes.py`, `application.py` | `old_customer_webhook_delivery_retry` |
 | Broadcast Feishu report | `aicrm_next/admin_jobs/notification_settings.py` | `old_broadcast_jobs_feishu_hourly_report` |
-| Owner migration legacy execute path | `aicrm_next/owner_migration/application.py` | `old_owner_migration_legacy_execute_path` |
+| Owner migration legacy execute path | `aicrm_next/crm/owner_migration/application.py` | `old_owner_migration_legacy_execute_path` |
 | Group ops broadcast job queue gateway | retired; group_ops now uses `external_effect_job` | `old_group_ops_queue_gateway_send` |
 | Broadcast approve/cancel control-plane | `aicrm_next/admin_jobs/application.py` | `old_broadcast_jobs_direct_approve_cancel` |
 | Payment refund request | `aicrm_next/extensions/commerce/commerce/admin_refunds.py` | `old_payment_refund_direct_request` |

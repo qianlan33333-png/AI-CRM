@@ -32,7 +32,7 @@ def _code_checks() -> dict[str, bool]:
     public_attempt_model = models.split("class ExternalEffectAttempt:", 1)[1].split("class ExternalEffectTestReceipt:", 1)[0]
     identity_adapter = adapter.split("class WeComExternalContactDetailAdapter", 1)[1].split("class WeChatPaymentAdapter", 1)[0]
     channel_repo = _read("aicrm_next/channel_entry/repo.py")
-    customer_intents = _read("aicrm_next/customer_read_model/refresh_intents.py")
+    customer_intents = _read("aicrm_next/crm/customer_read_model/refresh_intents.py")
     migration = _read("migrations/versions/0129_identity_customer_event_driven.py")
     return {
         "callback_has_no_inline_identity_provider": (
@@ -66,7 +66,7 @@ def _code_checks() -> dict[str, bool]:
         "identity_effect_is_lane_owned": (
             'WECOM_EXTERNAL_CONTACT_DETAIL_FETCH = "wecom.external_contact.detail.fetch"'
             in _read("aicrm_next/platform_foundation/external_effects/models.py")
-            and 'lane="wecom_interactive"' in _read("aicrm_next/identity_contact/resolution_effects.py")
+            and 'lane="wecom_interactive"' in _read("aicrm_next/crm/identity_contact/resolution_effects.py")
         ),
         "customer_generation_consumer_registered": (
             "register_customer_read_model_event_consumers(registry)"

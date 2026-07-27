@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from aicrm_next.customer_tags.projection_port import build_customer_tag_projection_port
+from aicrm_next.crm.customer_tags.projection_port import build_customer_tag_projection_port
 
 
 class _Executor:

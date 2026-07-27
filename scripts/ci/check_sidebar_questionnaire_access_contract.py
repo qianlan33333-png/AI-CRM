@@ -41,10 +41,10 @@ def _method_source(relative: str, class_name: str, method_name: str) -> str:
 
 def check() -> list[str]:
     errors: list[str] = []
-    customer_api = _read("aicrm_next/customer_read_model/api.py")
-    sidebar_read_model = _read("aicrm_next/customer_read_model/sidebar_v2.py")
-    sidebar_write_api = _read("aicrm_next/sidebar_write/api.py")
-    sidebar_jssdk = _read("aicrm_next/identity_contact/sidebar_jssdk.py")
+    customer_api = _read("aicrm_next/crm/customer_read_model/api.py")
+    sidebar_read_model = _read("aicrm_next/crm/customer_read_model/sidebar_v2.py")
+    sidebar_write_api = _read("aicrm_next/crm/sidebar_write/api.py")
+    sidebar_jssdk = _read("aicrm_next/crm/identity_contact/sidebar_jssdk.py")
     sidebar_frontend = _read(
         "aicrm_next/frontend_compat/static/sidebar_workbench/sidebar_workbench.js"
     )
@@ -65,7 +65,7 @@ def check() -> list[str]:
             errors.append(f"unsafe sidebar readonly fallback remains: {token}")
 
     owner_scope_source = _function_source(
-        "aicrm_next/sidebar_write/application.py",
+        "aicrm_next/crm/sidebar_write/application.py",
         "_validate_owner_scope",
     )
     for required in (
@@ -78,7 +78,7 @@ def check() -> list[str]:
     if "production_data_ready" in owner_scope_source:
         errors.append("sidebar write owner validation still has a production bypass")
 
-    write_execute_source = _function_source("aicrm_next/sidebar_write/api.py", "_execute")
+    write_execute_source = _function_source("aicrm_next/crm/sidebar_write/api.py", "_execute")
     for required in (
         "actor_id=trusted_owner_userid",
         'actor_type="sidebar_owner"',
@@ -120,7 +120,7 @@ def check() -> list[str]:
             errors.append(f"sidebar frontend still promotes query authority: {forbidden}")
 
     owner_query_source = _method_source(
-        "aicrm_next/identity_contact/repo.py",
+        "aicrm_next/crm/identity_contact/repo.py",
         "PostgresIdentityRepository",
         "list_external_contact_owner_userids",
     )
@@ -142,7 +142,7 @@ def check() -> list[str]:
         if forbidden in owner_query_source:
             errors.append(f"legacy owner source still authorizes sidebar access: {forbidden}")
     sidebar_owner_query_source = _method_source(
-        "aicrm_next/customer_read_model/sidebar_v2.py",
+        "aicrm_next/crm/customer_read_model/sidebar_v2.py",
         "SidebarV2SqlRepository",
         "get_contact_owner_userids",
     )

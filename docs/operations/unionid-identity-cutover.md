@@ -6,7 +6,7 @@
 
 ## Runtime inventory
 
-唯一 resolver owner：`aicrm_next.identity_contact.resolver`。
+唯一 resolver owner：`aicrm_next.crm.identity_contact.resolver`。
 
 | Consumer class | Adapter |
 | --- | --- |
@@ -19,9 +19,9 @@
 
 Canonical write owners：
 
-- `aicrm_next.identity_contact`：mobile bind 和 conflict/queue owner。
+- `aicrm_next.crm.identity_contact`：mobile bind 和 conflict/queue owner。
 - `aicrm_next.channel_entry`：受信任企微 detail ingress；写前锁定所有 alias 并验证归属。
-- `aicrm_next.sidebar_write`：已有 sidebar mobile/profile command，先 resolver、后 unionid lock。
+- `aicrm_next.crm.sidebar_write`：已有 sidebar mobile/profile command，先 resolver、后 unionid lock。
 - `aicrm_next.extensions.commerce.public_product`：已有支付手机号投影，先验证 order identity 和 mobile alias。
 
 `people` 和 `external_contact_bindings` 不再有 identity canonical 新写。owner migration 对 binding 表的 owner metadata 更新属于历史投影维护，不建立或改写 person binding。

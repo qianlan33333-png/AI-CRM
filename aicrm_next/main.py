@@ -23,7 +23,7 @@ from .channel_entry_composition import (
 )
 from .extensions.growth.cloud_orchestrator.campaign_step_media_repository import PostgresCampaignStepMediaReferenceRepository
 from .extensions.commerce.commerce.repo import reset_commerce_fixture_state
-from .customer_read_model.extension_port import configure_sidebar_extension_port
+from .crm.customer_read_model.extension_port import configure_sidebar_extension_port
 from .deployment_profile import DeploymentProfile, deployment_profile_from_environment
 from .external_effect_composition import (
     build_external_effect_adapter_registry,
@@ -68,7 +68,7 @@ _FRONTEND_COMPAT_DIR = Path(__file__).resolve().parent / "frontend_compat"
 _OPERATION_CYCLES_DIR = Path(__file__).resolve().parent / "extensions" / "hxc" / "operation_cycles"
 _GROUP_OPS_DIR = Path(__file__).resolve().parent / "automation_engine" / "group_ops"
 _AUTOMATION_ENGINE_DIR = Path(__file__).resolve().parent / "automation_engine"
-_CUSTOMER_TAGS_DIR = Path(__file__).resolve().parent / "customer_tags"
+_CUSTOMER_TAGS_DIR = Path(__file__).resolve().parent / "crm" / "customer_tags"
 _QUESTIONNAIRE_DIR = Path(__file__).resolve().parent / "extensions" / "forms" / "questionnaire"
 _NAVIGATION_TARGET_DIR = Path(__file__).resolve().parent / "navigation_target"
 _SERVICE_PERIOD_DIR = Path(__file__).resolve().parent / "extensions" / "commerce" / "service_period"

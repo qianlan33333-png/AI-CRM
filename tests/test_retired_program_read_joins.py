@@ -11,7 +11,7 @@ def _read(path: str) -> str:
 
 
 def test_customer_sidebar_no_longer_reads_automation_program_for_workflow_title() -> None:
-    source = _read("aicrm_next/customer_read_model/sidebar_v2.py")
+    source = _read("aicrm_next/crm/customer_read_model/sidebar_v2.py")
 
     assert "JOIN automation_program" not in source
     assert "p.program_name" not in source

@@ -9,7 +9,7 @@ from .extensions.commerce.commerce.payment_tagging import (
     product_paid_wecom_tag_consumer,
     resolve_payment_tag_identity,
 )
-from .identity_contact.payment_projection import project_payment_order_mobile
+from .crm.identity_contact.payment_projection import project_payment_order_mobile
 from .external_effect_composition import (
     AUTOMATION_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
     EXTERNAL_EFFECT_PROVIDER_RESULT_ACCESS_ALLOWLIST,
@@ -19,7 +19,7 @@ from .external_effect_composition import (
     build_external_effect_settlement_consumers,
 )
 from .extensions.ai.ai_audience_ops import register_ai_audience_event_consumers
-from .customer_read_model.events import register_customer_read_model_event_consumers
+from .crm.customer_read_model.events import register_customer_read_model_event_consumers
 from .extensions.growth.cloud_orchestrator.repository import build_cloud_plan_repository
 from .extensions.forms.questionnaire.event_consumers import (
     automation_questionnaire_consumer,

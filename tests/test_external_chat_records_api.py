@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.identity_contact.resolver import IdentityConflictError
+from aicrm_next.crm.identity_contact.resolver import IdentityConflictError
 from aicrm_next.main import create_app
 from aicrm_next.extensions.archive.message_archive.application import ListExternalChatRecordsQuery
 from aicrm_next.extensions.archive.message_archive.repo import FixtureMessageArchiveRepository

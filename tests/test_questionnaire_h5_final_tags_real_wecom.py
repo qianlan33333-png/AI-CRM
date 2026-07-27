@@ -5,7 +5,7 @@ import pytest
 pytestmark = pytest.mark.usefixtures("composed_internal_event_registry")
 from fastapi.testclient import TestClient
 
-from aicrm_next.customer_tags.local_projection import (
+from aicrm_next.crm.customer_tags.local_projection import (
     get_customer_tag_local_projection_fixture_rows,
     reset_customer_tag_local_projection_fixture_state,
 )
@@ -13,7 +13,7 @@ from aicrm_next.external_effect_composition import (
     QUESTIONNAIRE_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
     build_external_effect_continuation_registry,
 )
-from aicrm_next.identity_contact.dto import IdentityResolution, IdentityResolveResult
+from aicrm_next.crm.identity_contact.dto import IdentityResolution, IdentityResolveResult
 from aicrm_next.integration_gateway import wecom_channel_entry_client
 from aicrm_next.integration_gateway.wecom_channel_entry_client import WeComApiError
 from aicrm_next.main import create_app

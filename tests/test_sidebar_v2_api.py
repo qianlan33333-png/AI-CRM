@@ -9,11 +9,11 @@ from sqlalchemy import event
 from sqlalchemy import create_engine, text
 
 from aicrm_next.extensions.commerce.commerce.repo import PostgresCommerceRepository
-from aicrm_next.customer_read_model import api as customer_read_model_api
-from aicrm_next.customer_read_model import sidebar_v2
-from aicrm_next.customer_read_model.application import GetCustomerContextQuery
-from aicrm_next.customer_read_model.dto import CustomerContextRequest
-from aicrm_next.customer_read_model.sidebar_v2 import (
+from aicrm_next.crm.customer_read_model import api as customer_read_model_api
+from aicrm_next.crm.customer_read_model import sidebar_v2
+from aicrm_next.crm.customer_read_model.application import GetCustomerContextQuery
+from aicrm_next.crm.customer_read_model.dto import CustomerContextRequest
+from aicrm_next.crm.customer_read_model.sidebar_v2 import (
     SidebarCommerceReadModel,
     SidebarQuestionnaireReadModel,
     SidebarV2SqlRepository,
@@ -248,8 +248,8 @@ def test_sidebar_v2_workbench_rejects_missing_viewer_without_returning_customer(
         def get_bindable_wechat_pay_order_mobile(self, external_userid: str) -> dict | None:
             return None
 
-    monkeypatch.setattr("aicrm_next.customer_read_model.api.SidebarV2SqlRepository", FakeSidebarRepo)
-    monkeypatch.setattr("aicrm_next.customer_read_model.sidebar_v2.SidebarV2SqlRepository", FakeSidebarRepo)
+    monkeypatch.setattr("aicrm_next.crm.customer_read_model.api.SidebarV2SqlRepository", FakeSidebarRepo)
+    monkeypatch.setattr("aicrm_next.crm.customer_read_model.sidebar_v2.SidebarV2SqlRepository", FakeSidebarRepo)
     client = _unauthenticated_client(monkeypatch)
 
     response = client.get("/api/sidebar/v2/workbench?external_userid=wx_ext_001")
@@ -307,9 +307,9 @@ def test_sidebar_v2_empty_owner_scope_rejects_all_panels_without_pii(monkeypatch
                 ]
             }
 
-    monkeypatch.setattr("aicrm_next.customer_read_model.api.SidebarV2SqlRepository", EmptySidebarRepo)
-    monkeypatch.setattr("aicrm_next.customer_read_model.sidebar_v2.SidebarV2SqlRepository", EmptySidebarRepo)
-    monkeypatch.setattr("aicrm_next.customer_read_model.sidebar_v2.build_commerce_repository", lambda: FakeCommerceRepo())
+    monkeypatch.setattr("aicrm_next.crm.customer_read_model.api.SidebarV2SqlRepository", EmptySidebarRepo)
+    monkeypatch.setattr("aicrm_next.crm.customer_read_model.sidebar_v2.SidebarV2SqlRepository", EmptySidebarRepo)
+    monkeypatch.setattr("aicrm_next.crm.customer_read_model.sidebar_v2.build_commerce_repository", lambda: FakeCommerceRepo())
     client = _unauthenticated_client(monkeypatch)
 
     workbench = client.get("/api/sidebar/v2/workbench?external_userid=wx_ext_missing")
@@ -872,10 +872,10 @@ def test_sidebar_periodic_order_remark_route_writes_service_period_member_remark
             calls.append(("remark", service_product_id, unionid, remark))
             return {"ok": True, "member": {"remark": remark}}
 
-    monkeypatch.setattr("aicrm_next.customer_read_model.api.SidebarCommerceReadModel", FakeCommerceReadModel)
-    monkeypatch.setattr("aicrm_next.customer_read_model.api.UpdateServicePeriodMemberRemarkCommand", lambda: FakeRemarkCommand())
-    monkeypatch.setattr("aicrm_next.customer_read_model.api._verify_sidebar_owner_scope", lambda *args, **kwargs: None)
-    monkeypatch.setattr("aicrm_next.customer_read_model.api._request_scoped_customer_context_query", lambda _db: (object(), None))
+    monkeypatch.setattr("aicrm_next.crm.customer_read_model.api.SidebarCommerceReadModel", FakeCommerceReadModel)
+    monkeypatch.setattr("aicrm_next.crm.customer_read_model.api.UpdateServicePeriodMemberRemarkCommand", lambda: FakeRemarkCommand())
+    monkeypatch.setattr("aicrm_next.crm.customer_read_model.api._verify_sidebar_owner_scope", lambda *args, **kwargs: None)
+    monkeypatch.setattr("aicrm_next.crm.customer_read_model.api._request_scoped_customer_context_query", lambda _db: (object(), None))
     client = _client(
         monkeypatch,
         external_userid="wx_periodic",

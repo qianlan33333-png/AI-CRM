@@ -24,12 +24,12 @@ from aicrm_next.navigation_target import (
 )
 from aicrm_next.extensions.commerce.commerce.order_expiration import close_expired_wechat_pay_orders, pending_order_expires_at_text
 from aicrm_next.shared.product_code_aliases import product_code_filter_values
-from aicrm_next.identity_contact.dto import IdentityResolveResult, ResolvePersonIdentityRequest
-from aicrm_next.identity_contact.application import ResolvePersonIdentityQuery
-from aicrm_next.identity_contact.payment_projection import project_payment_order_mobile
-from aicrm_next.identity_contact.oauth_projection_repo import project_wechat_oauth_identity
-from aicrm_next.identity_contact.resolver import resolve_identity_with_dbapi, resolved_unionid
-from aicrm_next.identity_contact.wechat_unionid_guard import (
+from aicrm_next.crm.identity_contact.dto import IdentityResolveResult, ResolvePersonIdentityRequest
+from aicrm_next.crm.identity_contact.application import ResolvePersonIdentityQuery
+from aicrm_next.crm.identity_contact.payment_projection import project_payment_order_mobile
+from aicrm_next.crm.identity_contact.oauth_projection_repo import project_wechat_oauth_identity
+from aicrm_next.crm.identity_contact.resolver import resolve_identity_with_dbapi, resolved_unionid
+from aicrm_next.crm.identity_contact.wechat_unionid_guard import (
     evaluate_wechat_unionid_access,
     resolve_oauth_unionid,
 )

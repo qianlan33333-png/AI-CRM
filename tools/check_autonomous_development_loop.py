@@ -103,7 +103,7 @@ PROTECTED_PREFIXES = (
     "nginx/",
 )
 RUNTIME_FALLBACK_ALLOWED_EXACT = {
-    "aicrm_next/customer_read_model/api.py",
+    "aicrm_next/crm/customer_read_model/api.py",
     "aicrm_next/automation_engine/api.py",
 }
 GOVERNANCE_ALLOWED_PREFIXES = (

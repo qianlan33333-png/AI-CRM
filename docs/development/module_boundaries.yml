@@ -20,7 +20,7 @@ forbidden_legacy_markers:
   - production_compat
 
 legacy_allowlist:
-  - path: aicrm_next/customer_tags/wecom_tag_live_adapter.py
+  - path: aicrm_next/crm/customer_tags/wecom_tag_live_adapter.py
     rule: forbidden_legacy_marker
     marker: production_compat
     owner: customer_tags

@@ -5,14 +5,14 @@ from functools import partial
 from .channel_entry.application import process_wecom_external_contact_event
 from .channel_entry.crm_port import ChannelCrmDependencies, configure_channel_crm_port
 from .channel_entry.inbox import WeComCallbackInboxWorker
-from .customer_tags.projection_port import build_customer_tag_projection_port
-from .identity_contact.event_log_port import build_identity_event_log_port
-from .identity_contact.resolution_effects import (
+from .crm.customer_tags.projection_port import build_customer_tag_projection_port
+from .crm.identity_contact.event_log_port import build_identity_event_log_port
+from .crm.identity_contact.resolution_effects import (
     enqueue_channel_entry_identity_resolution_in_connection,
     plan_identity_resolution_effect,
 )
-from .identity_contact.resolution_queue_port import build_identity_resolution_queue_port
-from .identity_contact.resolver import resolve_external_userid_with_dbapi, resolve_identity_with_dbapi
+from .crm.identity_contact.resolution_queue_port import build_identity_resolution_queue_port
+from .crm.identity_contact.resolver import resolve_external_userid_with_dbapi, resolve_identity_with_dbapi
 from .platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry
 
 

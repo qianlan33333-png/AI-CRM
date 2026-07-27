@@ -13,8 +13,8 @@ from aicrm_next.integration_gateway.wecom_operation_members_client import (
     WeComOperationMembersClientError,
 )
 from aicrm_next.main import create_app
-from aicrm_next.operation_members.application import SyncOperationMembersFromWeComCommand
-from aicrm_next.operation_members.repository import OperationMemberDirectoryRepository
+from aicrm_next.crm.operation_members.application import SyncOperationMembersFromWeComCommand
+from aicrm_next.crm.operation_members.repository import OperationMemberDirectoryRepository
 from aicrm_next.shared.db_session import reset_engine_cache_for_tests
 
 

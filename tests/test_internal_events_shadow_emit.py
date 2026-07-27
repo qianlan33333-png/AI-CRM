@@ -14,8 +14,8 @@ from aicrm_next.extensions.growth.cloud_orchestrator.campaigns_write import (
     execute_cloud_campaign_command,
     reset_campaign_write_fixture_state,
 )
-from aicrm_next.customer_tags.live_mutation import execute_wecom_tag_mutation, reset_wecom_tag_live_mutation_fixture_state
-from aicrm_next.customer_tags.mutation_commands import PlanWeComTagMarkCommand, PlanWeComTagUnmarkCommand
+from aicrm_next.crm.customer_tags.live_mutation import execute_wecom_tag_mutation, reset_wecom_tag_live_mutation_fixture_state
+from aicrm_next.crm.customer_tags.mutation_commands import PlanWeComTagMarkCommand, PlanWeComTagUnmarkCommand
 from aicrm_next.main import create_app
 from aicrm_next.platform_foundation.internal_events import InternalEventService, reset_internal_event_fixture_state
 from aicrm_next.extensions.forms.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state

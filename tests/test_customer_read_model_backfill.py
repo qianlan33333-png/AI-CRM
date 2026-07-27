@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from aicrm_next.customer_read_model.backfill import CustomerReadModelBackfillService, FixtureCustomerReadModelSource
-from aicrm_next.customer_read_model.repo import FixtureCustomerReadRepository
+from aicrm_next.crm.customer_read_model.backfill import CustomerReadModelBackfillService, FixtureCustomerReadModelSource
+from aicrm_next.crm.customer_read_model.repo import FixtureCustomerReadRepository
 
 
 class ClosableFixtureCustomerReadRepository(FixtureCustomerReadRepository):
@@ -50,7 +50,7 @@ def test_customer_read_model_backfill_execute_writes_read_model() -> None:
 
 
 def test_customer_read_model_backfill_closes_internally_created_target_repo(monkeypatch) -> None:
-    from aicrm_next.customer_read_model import backfill
+    from aicrm_next.crm.customer_read_model import backfill
 
     target = ClosableFixtureCustomerReadRepository()
     monkeypatch.setattr(backfill, "build_customer_read_model_repository", lambda: target)

@@ -105,9 +105,9 @@ def test_channel_assignment_event_writes_unionid() -> None:
 
 
 def test_customer_external_userid_lookup_exact_jsonb_membership() -> None:
-    source = _read("aicrm_next/customer_read_model/repo_live_source.py")
+    source = _read("aicrm_next/crm/customer_read_model/repo_live_source.py")
     section = _function_source(source, "_identity_by_external_userid")
-    resolver = _read("aicrm_next/identity_contact/resolver.py")
+    resolver = _read("aicrm_next/crm/identity_contact/resolver.py")
 
     assert "SQLAlchemyIdentityResolver" in section
     assert "identity.external_userids_json ? input.external_userid" not in resolver
@@ -194,7 +194,7 @@ def test_unionid_runtime_sql_guard_blocks_removed_identity_columns() -> None:
             ],
         ),
         "customer_exact_external_lookup": (
-            _function_source(_read("aicrm_next/customer_read_model/repo_live_source.py"), "_identity_by_external_userid"),
+            _function_source(_read("aicrm_next/crm/customer_read_model/repo_live_source.py"), "_identity_by_external_userid"),
             [
             "CAST(external_userids_json AS TEXT) LIKE",
             ],
@@ -232,8 +232,8 @@ def test_id_dev_runtime_baseline_migration_covers_exposed_missing_tables() -> No
 
 
 def test_identity_contact_resolve_reads_current_owner_column() -> None:
-    source = _read("aicrm_next/identity_contact/resolver.py")
-    application_source = _read("aicrm_next/identity_contact/application.py")
+    source = _read("aicrm_next/crm/identity_contact/resolver.py")
+    application_source = _read("aicrm_next/crm/identity_contact/application.py")
     binding_section = application_source.split("class GetSidebarContactBindingStatusQuery:", 1)[1].split("class BindMobileToExternalContactCommand:", 1)[0]
 
     assert "identity.primary_owner_userid AS owner_userid" in source
@@ -258,7 +258,7 @@ def test_wechat_admin_order_list_projects_identity_from_unionid() -> None:
 
 
 def test_sidebar_v2_reads_orders_and_messages_via_unionid_identity() -> None:
-    source = _read("aicrm_next/customer_read_model/sidebar_v2.py")
+    source = _read("aicrm_next/crm/customer_read_model/sidebar_v2.py")
     binding_source = _function_source(source, "get_contact_binding_status")
     bindable_source = _function_source(source, "get_bindable_wechat_pay_order_mobile")
     orders_source = _function_source(source, "list_customer_wechat_pay_orders")

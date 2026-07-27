@@ -36,15 +36,15 @@ Lifecycle for exact write routes is `delete_status=deletion_locked` and `replace
 
 ## Backend Boundary
 
-`aicrm_next/customer_tags/api.py` exposes `write_router` and registers exact write routes before `production compatibility router` in `aicrm_next/main.py`.
+`aicrm_next/crm/customer_tags/api.py` exposes `write_router` and registers exact write routes before `production compatibility router` in `aicrm_next/main.py`.
 
 `historical retired production_compat module` no longer registers WeCom tag read/write/sync exact or family fallback routes.
 
-`aicrm_next/customer_tags/commands.py` defines the write command shapes. `aicrm_next/customer_tags/admin_write.py` owns CommandBus dispatch, validation, idempotency, audit recording, live write orchestration, catalog-sync orchestration, and response shape. `aicrm_next/customer_tags/write_repo.py` owns `WeComTagWriteRepository` for local fixture mode and `PostgresWeComTagWriteRepository` for production tag catalog projection reads around update/delete responses.
+`aicrm_next/crm/customer_tags/commands.py` defines the write command shapes. `aicrm_next/crm/customer_tags/admin_write.py` owns CommandBus dispatch, validation, idempotency, audit recording, live write orchestration, catalog-sync orchestration, and response shape. `aicrm_next/crm/customer_tags/write_repo.py` owns `WeComTagWriteRepository` for local fixture mode and `PostgresWeComTagWriteRepository` for production tag catalog projection reads around update/delete responses.
 
 Local/fixture successful command responses include `route_owner=ai_crm_next`, `source_status=next_command`, `fallback_used=false`, `real_external_call_executed=false`, `local_only=true`, and a `SideEffectPlan` exposed as `side_effect_plan` with `adapter_mode=real_blocked`. Production data mode successful command responses include `real_external_call_executed=true`, `sync_executed=true`, `local_only=false`, `write_model_status=live_wecom_synced`, and a `SideEffectPlan` exposed as `side_effect_plan` with `adapter_mode=live_wecom_tag_write`.
 
-`aicrm_next/customer_tags/sync_service.py` owns the sync route. It calls the Next `WeComTagLiveGateway`, normalizes remote `tag_group`/`tag` payloads, and refreshes only `wecom_corp_tag_groups` and `wecom_corp_tags` projection rows. A live success returns `route_owner=ai_crm_next`, `source_status=next_live_remote_synced`, `fallback_used=false`, `real_external_call_executed=true`, `sync_executed=true`, and `adapter_mode=live_catalog_sync`. Fixture/local contract mode returns `source_status=local_contract_refreshed`, `real_external_call_executed=false`, and `sync_executed=false`.
+`aicrm_next/crm/customer_tags/sync_service.py` owns the sync route. It calls the Next `WeComTagLiveGateway`, normalizes remote `tag_group`/`tag` payloads, and refreshes only `wecom_corp_tag_groups` and `wecom_corp_tags` projection rows. A live success returns `route_owner=ai_crm_next`, `source_status=next_live_remote_synced`, `fallback_used=false`, `real_external_call_executed=true`, `sync_executed=true`, and `adapter_mode=live_catalog_sync`. Fixture/local contract mode returns `source_status=local_contract_refreshed`, `real_external_call_executed=false`, and `sync_executed=false`.
 
 ## Guardrails
 

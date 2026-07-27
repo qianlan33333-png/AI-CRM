@@ -6,24 +6,24 @@ from types import SimpleNamespace
 from sqlalchemy import create_engine, event, insert
 from sqlalchemy.orm import sessionmaker
 
-from aicrm_next.customer_read_model.application import (
+from aicrm_next.crm.customer_read_model.application import (
     GetCustomerTimelineQuery,
     ListCustomersQuery,
     ListRecentMessagesQuery,
 )
-from aicrm_next.customer_read_model.dto import (
+from aicrm_next.crm.customer_read_model.dto import (
     CustomerTimelineRequest,
     ListCustomersRequest,
     RecentMessagesRequest,
 )
-from aicrm_next.customer_read_model.models import (
+from aicrm_next.crm.customer_read_model.models import (
     customer_detail_snapshot_next,
     customer_list_index_next,
     customer_recent_message_next,
     customer_timeline_event_next,
 )
-from aicrm_next.customer_read_model.repo import SqlAlchemyCustomerReadModelRepository
-from aicrm_next.identity_contact.dto import IdentityResolution, IdentityResolveResult
+from aicrm_next.crm.customer_read_model.repo import SqlAlchemyCustomerReadModelRepository
+from aicrm_next.crm.identity_contact.dto import IdentityResolution, IdentityResolveResult
 
 
 def _row(row_id: int, *, unionid: str = "", external_userid: str = "", owner_userid: str = "owner-a", mobile: str = "") -> dict:
@@ -190,9 +190,9 @@ def test_postgres_customer_lookup_resolves_alias_then_reads_one_unionid_snapshot
     def record_statement(conn, cursor, statement, parameters, context, executemany):  # noqa: ANN001
         statements.append(statement)
 
-    monkeypatch.setattr("aicrm_next.customer_read_model.repo.is_sqlite_session", lambda _session: False)
+    monkeypatch.setattr("aicrm_next.crm.customer_read_model.repo.is_sqlite_session", lambda _session: False)
     monkeypatch.setattr(
-        "aicrm_next.customer_read_model.repo.SQLAlchemyIdentityResolver.resolve",
+        "aicrm_next.crm.customer_read_model.repo.SQLAlchemyIdentityResolver.resolve",
         lambda _resolver, _request: IdentityResolveResult(
             status="resolved",
             identity=IdentityResolution(
@@ -279,11 +279,11 @@ def test_timeline_and_recent_messages_apply_bounds_in_sql() -> None:
 
 def test_activity_queries_reuse_one_resolved_customer_and_unionid(monkeypatch) -> None:
     monkeypatch.setattr(
-        "aicrm_next.customer_read_model.application._production_customer_data_required",
+        "aicrm_next.crm.customer_read_model.application._production_customer_data_required",
         lambda: True,
     )
     monkeypatch.setattr(
-        "aicrm_next.customer_read_model.application._customer_read_model_next_primary_enabled",
+        "aicrm_next.crm.customer_read_model.application._customer_read_model_next_primary_enabled",
         lambda: True,
     )
 

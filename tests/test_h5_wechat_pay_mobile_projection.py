@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from aicrm_next.identity_contact.dto import IdentityResolution, IdentityResolveResult
-from aicrm_next.identity_contact import payment_projection
+from aicrm_next.crm.identity_contact.dto import IdentityResolution, IdentityResolveResult
+from aicrm_next.crm.identity_contact import payment_projection
 from aicrm_next.platform_foundation.internal_events.models import InternalEvent, InternalEventConsumerRun
 from aicrm_next.platform_foundation.internal_events.payment import order_projection_consumer
 from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
@@ -266,7 +266,7 @@ def test_payment_order_projection_consumer_records_successful_mobile_retry(monke
 
 
 def test_order_read_models_fallback_to_metadata_mobile_for_historical_orders() -> None:
-    sidebar_source = (ROOT / "aicrm_next/customer_read_model/sidebar_v2.py").read_text(encoding="utf-8")
+    sidebar_source = (ROOT / "aicrm_next/crm/customer_read_model/sidebar_v2.py").read_text(encoding="utf-8")
     transactions_source = (ROOT / "aicrm_next/extensions/commerce/commerce/admin_transactions.py").read_text(encoding="utf-8")
     detail_source = (ROOT / "aicrm_next/extensions/commerce/commerce/admin_transaction_detail.py").read_text(encoding="utf-8")
 

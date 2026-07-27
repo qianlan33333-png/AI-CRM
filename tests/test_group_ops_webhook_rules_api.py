@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.identity_contact.dto import IdentityResolution, IdentityResolveResult
+from aicrm_next.crm.identity_contact.dto import IdentityResolution, IdentityResolveResult
 from tests.group_ops_test_helpers import group_ops_api_client  # noqa: F401
 
 

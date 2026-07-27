@@ -57,16 +57,16 @@ runtime cutovers, legacy table deletion, and real provider calls.
   plus their public ports. It does not introduce an arbitrary object model or
   executable audience DSL.
 - `crm_user_identity` and `crm_user_identity_conflicts` now have one logical
-  writer, `aicrm_next.identity_contact`. Channel-entry identity ingestion is
+  writer, `aicrm_next.crm.identity_contact`. Channel-entry identity ingestion is
   classified under that owner, and sidebar mobile/profile/material mutations
   use the injected `IdentityWritePort` with the caller's existing transaction.
   The ownership guard scans all runtime Python SQL for those canonical tables,
   so a new cross-capability direct writer fails CI.
 - `wecom_external_contact_event_logs` now has one storage owner,
-  `aicrm_next.identity_contact`. Channel callback processing keeps its existing
+  `aicrm_next.crm.identity_contact`. Channel callback processing keeps its existing
   transaction and compatibility functions but reaches audit and identity-sync
   state only through the versioned `IdentityEventLogPort`.
-- `contact_tags` now has one logical writer, `aicrm_next.customer_tags`.
+- `contact_tags` now has one logical writer, `aicrm_next.crm.customer_tags`.
   Channel-entry snapshots resolve canonical unionid and then use the public
   `CustomerTagProjectionPort` in the existing transaction; unresolved aliases
   continue into identity recovery without creating tag rows.

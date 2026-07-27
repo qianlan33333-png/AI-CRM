@@ -17,7 +17,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.templating import Jinja2Templates
 
 from aicrm_next.navigation_target import safe_completion_url
-from aicrm_next.identity_contact.wechat_unionid_guard import evaluate_wechat_unionid_access
+from aicrm_next.crm.identity_contact.wechat_unionid_guard import evaluate_wechat_unionid_access
 from aicrm_next.shared.errors import ContractError, NotFoundError
 from aicrm_next.shared.pii_audit import infer_pii_result_count, set_pii_audit_result_count
 from aicrm_next.shared.runtime import production_data_ready

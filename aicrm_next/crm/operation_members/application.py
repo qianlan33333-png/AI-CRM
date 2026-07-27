@@ -6,7 +6,7 @@ from aicrm_next.integration_ports import (
     WeComOperationMembersClient,
     build_wecom_operation_members_client,
 )
-from aicrm_next.operation_members.repository import OperationMemberDirectoryRepository
+from aicrm_next.crm.operation_members.repository import OperationMemberDirectoryRepository
 
 
 class SyncOperationMembersFromWeComCommand:
