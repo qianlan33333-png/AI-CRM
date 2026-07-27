@@ -33,7 +33,7 @@ def test_context_convention_selects_importing_tests_without_manual_scope_entries
 
     result = select_convention_scope(_policy(), ["aicrm_next/insights/data_health/api.py"], root=tmp_path)
 
-    assert result["contexts"] == ["data_health"]
+    assert result["contexts"] == ["insights"]
     assert result["python_tests"] == ["tests/test_data_health_api.py"]
     assert result["needs_postgres"] is False
     assert result["needs_full_ci"] is False
