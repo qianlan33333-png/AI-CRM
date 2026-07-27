@@ -372,7 +372,7 @@ class PostgresArchiveSyncRepository:
         self,
         database_url: str | None = None,
         *,
-        source_change_recorder: Callable[[Any, int, int, str], dict[str, Any]] | None = None,
+        source_change_recorder: Callable[[Any, int, int, str, list[int]], dict[str, Any]] | None = None,
     ) -> None:
         self._database_url = _psycopg_url(str(database_url or raw_database_url()).strip())
         self._source_change_recorder = source_change_recorder
@@ -486,6 +486,7 @@ class PostgresArchiveSyncRepository:
                         int(inserted),
                         int(last_seq),
                         _archive_source_batch_key(inserted_row_ids),
+                        inserted_row_ids,
                     )
                 conn.commit()
             except Exception:
@@ -502,7 +503,7 @@ def build_message_archive_repository() -> MessageArchiveRepository:
 
 def build_archive_sync_repository(
     *,
-    source_change_recorder: Callable[[Any, int, int, str], dict[str, Any]] | None = None,
+    source_change_recorder: Callable[[Any, int, int, str, list[int]], dict[str, Any]] | None = None,
 ) -> ArchiveSyncRepository:
     if not production_data_ready():
         raise RuntimeError("archive sync requires PostgreSQL production data mode")

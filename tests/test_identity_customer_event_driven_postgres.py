@@ -31,7 +31,6 @@ from aicrm_next.platform_foundation.external_effects.adapters import WeComExtern
 from aicrm_next.platform_foundation.external_effects.completion_events import EXTERNAL_EFFECT_COMPLETED_EVENT_TYPE
 from aicrm_next.platform_foundation.external_effects.settlement_events import EXTERNAL_EFFECT_SETTLED_EVENT_TYPE
 from aicrm_next.platform_foundation.external_effects.repo import SQLAlchemyExternalEffectRepository
-from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
 from aicrm_next.platform_foundation.internal_events import InternalEventService
 from aicrm_next.platform_foundation.internal_events.outbox import InternalEventOutboxRelay
 from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
@@ -519,6 +518,7 @@ def test_customer_refresh_coalesces_sources_and_preserves_dirty_during_run() -> 
                 lambda key: repository.mark_dirty(
                     source_event_key=key,
                     source_event_type="identity.resolved",
+                    source_event_id=key,
                     parent_execution_id=f"exe_source_{key[-1]}",
                 ),
                 ("evt-customer-source-1", "evt-customer-source-2"),
@@ -535,10 +535,21 @@ def test_customer_refresh_coalesces_sources_and_preserves_dirty_during_run() -> 
             "SELECT COUNT(*) AS count FROM internal_event_outbox WHERE event_type = %s",
             (CUSTOMER_REFRESH_REQUESTED_EVENT,),
         ).fetchone()["count"]
+        source_event_ids = connection.execute(
+            """
+            SELECT source_event_id
+            FROM customer_read_model_refresh_source_receipt
+            ORDER BY generation, id
+            """
+        ).fetchall()
     assert initial["dirty_generation"] == 2
     assert initial["signal_generation"] in {1, 2}
     assert initial["status"] == "waiting"
     assert initial_signals == 1
+    assert {row["source_event_id"] for row in source_event_ids} == {
+        "evt-customer-source-1",
+        "evt-customer-source-2",
+    }
 
     claimed = repository.claim_latest(
         signal_generation=int(initial["signal_generation"]),
@@ -550,6 +561,7 @@ def test_customer_refresh_coalesces_sources_and_preserves_dirty_during_run() -> 
     dirty_while_running = repository.mark_dirty(
         source_event_key="evt-customer-source-3",
         source_event_type="questionnaire.submitted",
+        source_event_id="evt-customer-source-3",
         parent_execution_id="exe_source_3",
     )
     assert dirty_while_running["generation"] == 3
@@ -783,9 +795,11 @@ def test_customer_refresh_keeps_final_attempt_with_a_live_lease_as_the_single_ow
 
 
 def test_customer_refresh_request_is_intent_only_until_internal_consumer() -> None:
-    refresh_calls: list[bool] = []
+    refresh_calls: list[tuple[bool, int, int]] = []
     service = CustomerReadModelRefreshIntentService(
-        refresh_runner=lambda *, dry_run: refresh_calls.append(dry_run)
+        refresh_runner=lambda *, dry_run, generation, completed_generation: refresh_calls.append(
+            (dry_run, generation, completed_generation)
+        )
         or {
             "ok": True,
             "source_count": 4,
@@ -810,7 +824,7 @@ def test_customer_refresh_request_is_intent_only_until_internal_consumer() -> No
     )
     assert processed["ok"] is True
     assert processed["completion"]["completed"] is True
-    assert refresh_calls == [False]
+    assert refresh_calls == [(False, int(requested["generation"]), 0)]
 
     internal_registry = build_internal_event_consumer_registry()
     relayed = InternalEventOutboxRelay(consumer_registry=internal_registry).relay_due(limit=10)

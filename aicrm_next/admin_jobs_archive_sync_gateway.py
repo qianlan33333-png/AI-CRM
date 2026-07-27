@@ -12,6 +12,7 @@ def record_archive_source_change(
     inserted_count: int,
     last_seq: int,
     batch_key: str,
+    message_row_ids: list[int],
 ) -> dict[str, object]:
     """Persist one PII-free source event in the archive write transaction."""
 
@@ -22,13 +23,20 @@ def record_archive_source_change(
     normalized_batch_key = str(batch_key or "").strip()
     if re.fullmatch(r"[0-9a-f]{64}", normalized_batch_key) is None:
         raise ValueError("archive source batch key must be one opaque SHA-256 value")
+    normalized_row_ids = sorted({int(row_id) for row_id in message_row_ids if int(row_id) > 0})
+    if not normalized_row_ids or len(normalized_row_ids) != int(inserted_count):
+        raise ValueError("archive source message row ids must match inserted count")
     return enqueue_transactional_internal_event_outbox(
         conn,
         InternalEventCreateRequest(
             event_type="message_archive.batch_ingested",
             aggregate_type="message_archive_sync_batch",
             aggregate_id=normalized_batch_key,
-            payload={"inserted_count": int(inserted_count), "last_seq": int(last_seq)},
+            payload={
+                "inserted_count": int(inserted_count),
+                "last_seq": int(last_seq),
+                "message_row_ids": normalized_row_ids,
+            },
             payload_summary={"inserted_count": int(inserted_count), "last_seq": int(last_seq)},
             context=CommandContext(
                 actor_id="archive_sync",

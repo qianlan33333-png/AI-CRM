@@ -778,18 +778,22 @@ def test_send_content_media_gateway_has_permanent_full_ci_scope() -> None:
 def test_customer_read_model_refresh_has_permanent_full_postgres_scope() -> None:
     result = _select(
         "aicrm_next/customer_read_model/refresh.py",
+        "aicrm_next/customer_read_model/refresh_scope_repository.py",
+        "aicrm_next/customer_read_model/repo.py",
         "scripts/run_customer_read_model_refresh.py",
         "deploy/openclaw-customer-read-model-refresh.service",
         "deploy/openclaw-customer-read-model-refresh.timer",
         "migrations/versions/0108_customer_read_model_refresh_and_retired_workspace_drop.py",
         "tests/test_customer_live_source_repository.py",
         "tests/test_customer_read_model_refresh.py",
+        "tests/test_customer_read_model_incremental_writer.py",
     )
 
     assert result["unmatched_files"] == []
     assert "customer_read_model_refresh" in result["matched_scopes"]
     assert "tests/test_customer_live_source_repository.py" in result["python_tests"]
     assert "tests/test_customer_read_model_refresh.py" in result["python_tests"]
+    assert "tests/test_customer_read_model_incremental_writer.py" in result["python_tests"]
     assert "tests/test_database_bootstrap.py" in result["python_tests"]
     assert result["needs_postgres"] is True
     assert result["needs_full_ci"] is True

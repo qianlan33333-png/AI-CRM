@@ -2315,7 +2315,7 @@
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/customer_read_model/refresh.py",
       "key": "CUSTOMER_READ_MODEL_REFRESH_MAX_CUSTOMERS",
-      "line": 65
+      "line": 77
     },
     {
       "accessor": "os.getenv",
@@ -47991,6 +47991,7 @@
       "pii_level": "internal_contact",
       "read_owners": [
         "aicrm_next.admin_read_model.repo",
+        "aicrm_next.customer_read_model.refresh_scope_repository",
         "aicrm_next.customer_read_model.repo",
         "aicrm_next.customer_read_model.sidebar_v2",
         "aicrm_next.message_archive.repo"
@@ -49561,10 +49562,11 @@
       "migration_source": "0026_customer_read_model_next",
       "pii_level": "internal_contact",
       "read_owners": [
+        "aicrm_next.customer_read_model",
         "aicrm_next.owner_migration"
       ],
       "table": "customer_detail_snapshot_next",
-      "write_owner": "aicrm_next.owner_migration"
+      "write_owner": "aicrm_next.customer_read_model"
     },
     {
       "domain": "customer_read_model",
@@ -49573,10 +49575,11 @@
       "migration_source": "0026_customer_read_model_next",
       "pii_level": "internal_contact",
       "read_owners": [
+        "aicrm_next.customer_read_model",
         "aicrm_next.owner_migration"
       ],
       "table": "customer_list_index_next",
-      "write_owner": "aicrm_next.owner_migration"
+      "write_owner": "aicrm_next.customer_read_model"
     },
     {
       "domain": "legacy_customer_projection",
@@ -49634,7 +49637,8 @@
       "migration_source": "0129_identity_customer_event_driven",
       "pii_level": "none",
       "read_owners": [
-        "aicrm_next.customer_read_model.refresh_intents"
+        "aicrm_next.customer_read_model.refresh_intents",
+        "aicrm_next.customer_read_model.refresh_scope_repository"
       ],
       "table": "customer_read_model_refresh_source_receipt",
       "write_owner": "aicrm_next.customer_read_model.refresh_intents"
@@ -49993,6 +49997,7 @@
       "migration_source": "0043_internal_event_queue, fan-out manifest added by 0122_internal_event_fanout_manifest",
       "pii_level": "",
       "read_owners": [
+        "aicrm_next.customer_read_model.refresh_scope_repository",
         "aicrm_next.platform_foundation.execution_runtime.read_model",
         "aicrm_next.platform_foundation.internal_events.worker",
         "internal event admin/reconciliation APIs"
