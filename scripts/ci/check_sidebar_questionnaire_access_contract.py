@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from aicrm_next.shared.sensitive_data import redact_sensitive_data, redact_sensitive_text  # noqa: E402
+from aicrm_next.platform.shared.sensitive_data import redact_sensitive_data, redact_sensitive_text  # noqa: E402
 
 
 def _read(relative: str) -> str:
@@ -48,9 +48,9 @@ def check() -> list[str]:
     sidebar_frontend = _read(
         "aicrm_next/app/admin_console/static/sidebar_workbench/sidebar_workbench.js"
     )
-    route_policy = _read("aicrm_next/admin_auth/route_policy.py")
+    route_policy = _read("aicrm_next/platform/admin_auth/route_policy.py")
     questionnaire_api = _read("aicrm_next/extensions/forms/questionnaire/api.py")
-    result_access = _read("aicrm_next/admin_auth/public_result_grant.py")
+    result_access = _read("aicrm_next/platform/admin_auth/public_result_grant.py")
     result_access_compat = _read("aicrm_next/extensions/forms/questionnaire/result_access.py")
 
     forbidden_read_tokens = (
@@ -158,7 +158,7 @@ def check() -> list[str]:
     read_position = result_source.find("GetSubmissionResultQuery")
     if validator_position < 0 or read_position < 0 or validator_position > read_position:
         errors.append("questionnaire result must consume the middleware-validated session grant before reading the submission")
-    middleware_source = _function_source("aicrm_next/admin_auth/route_policy.py", "_enforce_public_result_grant")
+    middleware_source = _function_source("aicrm_next/platform/admin_auth/route_policy.py", "_enforce_public_result_grant")
     if (
         middleware_source.find("questionnaire_result_token_from_grant") < 0
         or middleware_source.find("request.state.questionnaire_result_access_token")
@@ -183,7 +183,7 @@ def check() -> list[str]:
         if required not in result_access:
             errors.append(f"questionnaire result grant contract missing: {required}")
     for required in (
-        "aicrm_next.admin_auth.public_result_grant",
+        "aicrm_next.platform.admin_auth.public_result_grant",
         "issue_questionnaire_result_grant",
         "questionnaire_result_token_from_grant",
     ):

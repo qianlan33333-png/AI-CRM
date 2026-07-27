@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from aicrm_next.platform_foundation.webhook_inbox import WebhookInboxRepository
+from aicrm_next.platform.platform_foundation.webhook_inbox import WebhookInboxRepository
 
 from .application import decrypt_callback_body
 from .inbox import ingest_wecom_callback

@@ -8,7 +8,7 @@ from aicrm_next.extensions.commerce.commerce.application import DeleteProductCom
 from aicrm_next.extensions.commerce.commerce.dto import ProductUpsertRequest
 from aicrm_next.extensions.commerce.commerce.repo import build_commerce_repository
 from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
-from aicrm_next.shared.errors import ContractError, NotFoundError
+from aicrm_next.platform.shared.errors import ContractError, NotFoundError
 
 from .domain import BUY_BUTTON_TEXT, cta_text_for_status, entitlement_status, remaining_days, text, validate_duration_days
 from .dto import ServicePeriodProductCreateRequest, ServicePeriodProductUpdateRequest

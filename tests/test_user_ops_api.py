@@ -5,8 +5,8 @@ from sqlalchemy import text
 
 from aicrm_next.main import create_app
 from aicrm_next.ops_enrollment.application import reset_user_ops_fixture_state
-from aicrm_next.platform_foundation.external_effects import ExternalEffectService, WECOM_MESSAGE_PRIVATE_SEND, reset_external_effect_fixture_state
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.platform.platform_foundation.external_effects import ExternalEffectService, WECOM_MESSAGE_PRIVATE_SEND, reset_external_effect_fixture_state
+from aicrm_next.platform.shared.db_session import get_session_factory
 
 
 def _client(monkeypatch) -> TestClient:

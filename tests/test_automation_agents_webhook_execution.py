@@ -14,19 +14,19 @@ from aicrm_next.external_effect_composition import (
     build_external_effect_continuation_registry,
 )
 from aicrm_next.internal_event_composition import build_internal_event_consumer_registry
-from aicrm_next.platform_foundation.command_bus.models import CommandContext
-from aicrm_next.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry, WebhookAdapter
-from aicrm_next.platform_foundation.external_effects.models import WEBHOOK_GENERIC_PUSH
-from aicrm_next.platform_foundation.external_effects.completion_events import (
+from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry, WebhookAdapter
+from aicrm_next.platform.platform_foundation.external_effects.models import WEBHOOK_GENERIC_PUSH
+from aicrm_next.platform.platform_foundation.external_effects.completion_events import (
     EXTERNAL_EFFECT_COMPLETED_EVENT_TYPE,
 )
-from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
-from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
-from aicrm_next.platform_foundation.internal_events import InternalEventService
-from aicrm_next.platform_foundation.internal_events.outbox import InternalEventOutboxRelay
-from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
-from aicrm_next.platform_foundation.auth_platform.webhook_hmac import WebhookHmacSigner
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.platform.platform_foundation.external_effects.service import ExternalEffectService
+from aicrm_next.platform.platform_foundation.external_effects.worker import ExternalEffectWorker
+from aicrm_next.platform.platform_foundation.internal_events import InternalEventService
+from aicrm_next.platform.platform_foundation.internal_events.outbox import InternalEventOutboxRelay
+from aicrm_next.platform.platform_foundation.internal_events.worker import InternalEventWorker
+from aicrm_next.platform.platform_foundation.auth_platform.webhook_hmac import WebhookHmacSigner
+from aicrm_next.platform.shared.db_session import get_session_factory
 from tests.webhook_hmac_test_helpers import (
     install_webhook_hmac_client,
     outbound_webhook_hmac_signer,

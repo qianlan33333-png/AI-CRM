@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import pytest
 
-from aicrm_next.platform_foundation.internal_events.repository import InMemoryInternalEventRepository
-from aicrm_next.platform_foundation.internal_events.consumer_registry import InternalEventConsumerRegistry
-from aicrm_next.platform_foundation.internal_events.models import InternalEventConsumerResult, InternalEventCreateRequest
-from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
+from aicrm_next.platform.platform_foundation.internal_events.repository import InMemoryInternalEventRepository
+from aicrm_next.platform.platform_foundation.internal_events.consumer_registry import InternalEventConsumerRegistry
+from aicrm_next.platform.platform_foundation.internal_events.models import InternalEventConsumerResult, InternalEventCreateRequest
+from aicrm_next.platform.platform_foundation.internal_events.worker import InternalEventWorker
 from scripts import run_internal_event_worker
 
 

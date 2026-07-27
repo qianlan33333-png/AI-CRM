@@ -21,13 +21,13 @@ from aicrm_next.external_effect_composition import (
 )
 from aicrm_next.internal_event_composition import build_internal_event_consumer_registry
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.external_effects import (
     ExternalEffectService,
     InMemoryExternalEffectRepository,
 )
-from aicrm_next.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry
-from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
-from aicrm_next.platform_foundation.background_jobs.catalog import JobCatalog
+from aicrm_next.platform.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry
+from aicrm_next.platform.platform_foundation.external_effects.worker import ExternalEffectWorker
+from aicrm_next.platform.platform_foundation.background_jobs.catalog import JobCatalog
 from aicrm_next.router_registry import active_router_specs
 from tools.check_deployment_profiles import DEFAULT_PROFILE_DIR, validate_deployment_profiles
 

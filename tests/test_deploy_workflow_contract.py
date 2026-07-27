@@ -1308,7 +1308,7 @@ def test_ai_audience_scheduler_runs_through_internal_event_queue_only():
 def test_job_catalog_scheduler_preserves_three_minute_ai_audience_clock_contract():
     service = (ROOT / "deploy" / "aicrm-job-catalog-scheduler.service").read_text(encoding="utf-8")
     timer = (ROOT / "deploy" / "aicrm-job-catalog-scheduler.timer").read_text(encoding="utf-8")
-    catalog = (ROOT / "aicrm_next" / "platform_foundation" / "background_jobs" / "catalog.py").read_text(encoding="utf-8")
+    catalog = (ROOT / "aicrm_next" / "platform" / "platform_foundation" / "background_jobs" / "catalog.py").read_text(encoding="utf-8")
 
     assert "run_job_catalog_scheduler.py --execute" in service
     assert "--confirmation EXECUTE_SAFE_JOB_CATALOG_SCHEDULER" in service

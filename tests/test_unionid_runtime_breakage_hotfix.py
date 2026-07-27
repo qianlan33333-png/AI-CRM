@@ -80,7 +80,7 @@ def test_group_ops_dispatcher_plans_one_external_effect_with_unionid_link() -> N
 def test_cloud_broadcast_plan_dispatch_uses_unionid() -> None:
     source = _read("aicrm_next/extensions/growth/cloud_orchestrator/repository.py")
     owner_source = _read(
-        "aicrm_next/platform_foundation/background_jobs/broadcast_job_write_repository.py"
+        "aicrm_next/platform/platform_foundation/background_jobs/broadcast_job_write_repository.py"
     )
     section = source.split("def create_or_reuse_recipient_broadcast_jobs", 1)[1].split("def create_or_reuse_plan_broadcast_job", 1)[0]
 
@@ -125,7 +125,7 @@ def test_automation_agent_webhook_item_upsert_matches_partial_index() -> None:
 
 def test_cloud_plan_recipient_upsert_matches_partial_index() -> None:
     source = _read(
-        "aicrm_next/platform_foundation/background_jobs/"
+        "aicrm_next/platform/platform_foundation/background_jobs/"
         "cloud_broadcast_projection_write_repository.py"
     )
     assert "ON CONFLICT (plan_id, unionid) WHERE unionid <> '' DO UPDATE" in source

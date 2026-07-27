@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Protocol
 
-from aicrm_next.shared.errors import ContractError
+from aicrm_next.platform.shared.errors import ContractError
 
 
 SERVICE_PERIOD_GRID_ACCESS = "service_period_grid_access"

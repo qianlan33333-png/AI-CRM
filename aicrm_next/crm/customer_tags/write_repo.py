@@ -8,9 +8,9 @@ from uuid import uuid4
 from sqlalchemy import text
 from sqlalchemy.engine import Connection, Engine
 
-from aicrm_next.platform_foundation.command_bus.models import utcnow_iso
-from aicrm_next.shared.db_session import get_engine
-from aicrm_next.shared.typing import JsonDict
+from aicrm_next.platform.platform_foundation.command_bus.models import utcnow_iso
+from aicrm_next.platform.shared.db_session import get_engine
+from aicrm_next.platform.shared.typing import JsonDict
 
 from .read_model import _fixture_rows
 

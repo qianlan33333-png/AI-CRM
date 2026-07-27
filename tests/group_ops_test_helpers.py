@@ -17,7 +17,7 @@ def group_ops_api_client(monkeypatch):
     monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.setenv("AICRM_NEXT_ENABLE_LEGACY_PRODUCTION_FACADE", "0")
     from aicrm_next.automation_engine.group_ops.repo import reset_group_ops_fixture_state
-    from aicrm_next.platform_foundation.external_effects import reset_external_effect_fixture_state
+    from aicrm_next.platform.platform_foundation.external_effects import reset_external_effect_fixture_state
 
     reset_group_ops_fixture_state()
     reset_external_effect_fixture_state()

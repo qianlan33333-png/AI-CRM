@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from aicrm_next.shared.errors import ContractError, NotFoundError
-from aicrm_next.shared.typing import JsonDict
+from aicrm_next.platform.shared.errors import ContractError, NotFoundError
+from aicrm_next.platform.shared.typing import JsonDict
 
 from .mcp_openclaw_adapters import (
     build_customer_context_tool_adapter,

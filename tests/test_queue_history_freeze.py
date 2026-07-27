@@ -7,18 +7,18 @@ import os
 import psycopg
 from psycopg.rows import dict_row
 
-from aicrm_next.platform_foundation.external_effects.models import ExternalEffectCreateRequest
-from aicrm_next.platform_foundation.external_effects.repo import SQLAlchemyExternalEffectRepository
-from aicrm_next.platform_foundation.external_effects.repo_memory import InMemoryExternalEffectRepository
-from aicrm_next.platform_foundation.internal_events.models import InternalEventCreateRequest
-from aicrm_next.platform_foundation.internal_events.repository_memory import InMemoryInternalEventRepository
-from aicrm_next.platform_foundation.internal_events.repository import SQLAlchemyInternalEventRepository
-from aicrm_next.platform_foundation.internal_events.repository_support import (
+from aicrm_next.platform.platform_foundation.external_effects.models import ExternalEffectCreateRequest
+from aicrm_next.platform.platform_foundation.external_effects.repo import SQLAlchemyExternalEffectRepository
+from aicrm_next.platform.platform_foundation.external_effects.repo_memory import InMemoryExternalEffectRepository
+from aicrm_next.platform.platform_foundation.internal_events.models import InternalEventCreateRequest
+from aicrm_next.platform.platform_foundation.internal_events.repository_memory import InMemoryInternalEventRepository
+from aicrm_next.platform.platform_foundation.internal_events.repository import SQLAlchemyInternalEventRepository
+from aicrm_next.platform.platform_foundation.internal_events.repository_support import (
     automatic_due_predicate_sql,
     queue_metric_filter_sql,
 )
-from aicrm_next.shared.query_telemetry import request_query_telemetry_scope
-from aicrm_next.platform_foundation.webhook_inbox.repository import (
+from aicrm_next.platform.shared.query_telemetry import request_query_telemetry_scope
+from aicrm_next.platform.platform_foundation.webhook_inbox.repository import (
     InMemoryWebhookInboxRepository,
     PostgresWebhookInboxRepository,
 )

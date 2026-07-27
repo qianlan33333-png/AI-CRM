@@ -4,9 +4,9 @@ import copy
 import json
 from typing import Any, Protocol
 
-from aicrm_next.shared import runtime
-from aicrm_next.shared.repository_provider import RepositoryProviderError
-from aicrm_next.shared.runtime import raw_database_url
+from aicrm_next.platform.shared import runtime
+from aicrm_next.platform.shared.repository_provider import RepositoryProviderError
+from aicrm_next.platform.shared.runtime import raw_database_url
 from .repository import connect_cloud_campaign_read_db
 
 SOURCE_STATUS = "next_cloud_orchestrator_campaign_read"

@@ -8,19 +8,19 @@ from uuid import uuid4
 
 import pytest
 
-from aicrm_next.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry
-from aicrm_next.platform_foundation.external_effects.models import (
+from aicrm_next.platform.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry
+from aicrm_next.platform.platform_foundation.external_effects.models import (
     WEBHOOK_GENERIC_PUSH,
     ExternalEffectDispatchResult,
     utcnow,
 )
-from aicrm_next.platform_foundation.external_effects.repo import (
+from aicrm_next.platform.platform_foundation.external_effects.repo import (
     InMemoryExternalEffectRepository,
     SQLAlchemyExternalEffectRepository,
 )
-from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
-from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.platform.platform_foundation.external_effects.service import ExternalEffectService
+from aicrm_next.platform.platform_foundation.external_effects.worker import ExternalEffectWorker
+from aicrm_next.platform.shared.db_session import get_session_factory
 
 
 def _database_url() -> str:

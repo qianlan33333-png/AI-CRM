@@ -15,10 +15,10 @@ from aicrm_next.external_effect_composition import build_external_effect_adapter
 from aicrm_next.wecom_media_jobs import enqueue_due_media_refreshes
 from aicrm_next.media_library.wecom_lease import build_wecom_media_lease_manager
 from aicrm_next.media_library.postgres_repo import PostgresMediaLibraryRepository
-from aicrm_next.platform_foundation.external_effects import WECOM_MEDIA_UPLOAD
-from aicrm_next.platform_foundation.external_effects.repo import build_external_effect_repository
-from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
-from aicrm_next.shared.runtime import raw_database_url
+from aicrm_next.platform.platform_foundation.external_effects import WECOM_MEDIA_UPLOAD
+from aicrm_next.platform.platform_foundation.external_effects.repo import build_external_effect_repository
+from aicrm_next.platform.platform_foundation.external_effects.worker import ExternalEffectWorker
+from aicrm_next.platform.shared.runtime import raw_database_url
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:

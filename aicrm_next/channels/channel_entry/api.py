@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, Response
 
-from aicrm_next.shared.sync_request import read_request_body
+from aicrm_next.platform.shared.sync_request import read_request_body
 
 from .application import (
     callback_config,

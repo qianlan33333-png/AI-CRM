@@ -18,9 +18,9 @@ ensure_repo_root_on_path()
 
 REQUIRED_ASSETS = {
     "webhook_inbox_migration": "migrations/versions/0054_webhook_inbox.py",
-    "webhook_inbox_models": "aicrm_next/platform_foundation/webhook_inbox/models.py",
-    "webhook_inbox_repository": "aicrm_next/platform_foundation/webhook_inbox/repository.py",
-    "webhook_inbox_service": "aicrm_next/platform_foundation/webhook_inbox/service.py",
+    "webhook_inbox_models": "aicrm_next/platform/platform_foundation/webhook_inbox/models.py",
+    "webhook_inbox_repository": "aicrm_next/platform/platform_foundation/webhook_inbox/repository.py",
+    "webhook_inbox_service": "aicrm_next/platform/platform_foundation/webhook_inbox/service.py",
     "callback_fast_ack_route": "aicrm_next/channels/channel_entry/api.py",
     "callback_ingress_module": "aicrm_next/channels/channel_entry/callback_ingress.py",
     "callback_inbox_worker": "aicrm_next/channels/channel_entry/inbox.py",

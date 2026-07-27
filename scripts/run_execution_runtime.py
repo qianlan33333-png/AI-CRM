@@ -24,20 +24,20 @@ from aicrm_next.external_effect_composition import (
     run_welcome_realtime_post_commit,
 )
 from aicrm_next.internal_event_composition import build_internal_event_consumer_registry
-from aicrm_next.platform_foundation.execution_runtime.handlers import (
+from aicrm_next.platform.platform_foundation.execution_runtime.handlers import (
     external_effect_handler,
     internal_event_handler,
     internal_outbox_handler,
     webhook_inbox_handler,
 )
-from aicrm_next.platform_foundation.execution_runtime.lanes import (
+from aicrm_next.platform.platform_foundation.execution_runtime.lanes import (
     DEFAULT_LANE_CAPACITY,
     QueueLane,
 )
-from aicrm_next.platform_foundation.execution_runtime.service import QueueRuntimeService
-from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
-from aicrm_next.platform_foundation.internal_events.outbox import InternalEventOutboxRelay
-from aicrm_next.platform_foundation.internal_events.worker import (
+from aicrm_next.platform.platform_foundation.execution_runtime.service import QueueRuntimeService
+from aicrm_next.platform.platform_foundation.external_effects.worker import ExternalEffectWorker
+from aicrm_next.platform.platform_foundation.internal_events.outbox import InternalEventOutboxRelay
+from aicrm_next.platform.platform_foundation.internal_events.worker import (
     RELAY_ROLE_CONSUMER_ONLY,
     InternalEventWorker,
 )

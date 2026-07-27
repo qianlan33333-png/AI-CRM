@@ -17,13 +17,13 @@ from aicrm_next.extensions.commerce.commerce.wechat_pay_order_write_port import 
     WeChatPayOrderCreate,
     build_wechat_pay_order_write_port,
 )
-from aicrm_next.navigation_target import (
+from aicrm_next.platform.navigation_target import (
     completion_action_for_target,
     completion_action_with_lead_qr,
     completion_target_projection,
 )
 from aicrm_next.extensions.commerce.commerce.order_expiration import close_expired_wechat_pay_orders, pending_order_expires_at_text
-from aicrm_next.shared.product_code_aliases import product_code_filter_values
+from aicrm_next.platform.shared.product_code_aliases import product_code_filter_values
 from aicrm_next.crm.identity_contact.dto import IdentityResolveResult, ResolvePersonIdentityRequest
 from aicrm_next.crm.identity_contact.application import ResolvePersonIdentityQuery
 from aicrm_next.crm.identity_contact.payment_projection import project_payment_order_mobile
@@ -35,19 +35,19 @@ from aicrm_next.crm.identity_contact.wechat_unionid_guard import (
 )
 from aicrm_next.integration_ports import WeChatPayClient, WeChatPayClientConfig, WeChatPayClientError
 from aicrm_next.integration_ports import WeChatOAuthClientError, build_wechat_oauth_client
-from aicrm_next.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
-from aicrm_next.platform_foundation.internal_events.payment import PAYMENT_SUCCEEDED_EVENT_TYPE, build_payment_succeeded_event_request
-from aicrm_next.shared.errors import ContractError
-from aicrm_next.shared.runtime import (
+from aicrm_next.platform.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
+from aicrm_next.platform.platform_foundation.internal_events.payment import PAYMENT_SUCCEEDED_EVENT_TYPE, build_payment_succeeded_event_request
+from aicrm_next.platform.shared.errors import ContractError
+from aicrm_next.platform.shared.runtime import (
     production_data_ready,
     production_environment,
     runtime_setting,
     secure_cookie_environment,
 )
-from aicrm_next.shared.runtime_settings import managed_runtime_setting
-from aicrm_next.shared.safe_logging import safe_log_exception, safe_log_fields
-from aicrm_next.shared.wechat_identity_page import wechat_identity_failure_response
-from aicrm_next.shared.wechat_h5_session import (
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting
+from aicrm_next.platform.shared.safe_logging import safe_log_exception, safe_log_fields
+from aicrm_next.platform.shared.wechat_identity_page import wechat_identity_failure_response
+from aicrm_next.platform.shared.wechat_h5_session import (
     WECHAT_PAYMENT_IDENTITY_COOKIE,
     WECHAT_PAYMENT_IDENTITY_TTL_SECONDS,
     WECHAT_PAYMENT_OAUTH_STATE_COOKIE,
@@ -64,7 +64,7 @@ from aicrm_next.shared.wechat_h5_session import (
 )
 
 from .repo import connect_h5_wechat_pay_db as _connect
-from aicrm_next.shared.signed_context import SIDEBAR_PRODUCT_CONTEXT_COOKIE, load_sidebar_product_context_token
+from aicrm_next.platform.shared.signed_context import SIDEBAR_PRODUCT_CONTEXT_COOKIE, load_sidebar_product_context_token
 from .sidebar_order_context import resolve_sidebar_order_context
 from .service import format_price, get_public_product, product_not_found_payload, route_headers
 

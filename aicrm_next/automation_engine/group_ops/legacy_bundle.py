@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from aicrm_next.shared.errors import ApplicationError, ContractError
+from aicrm_next.platform.shared.errors import ApplicationError, ContractError
 
 from .domain import clean_text, normalize_message_content
 from .dto import GroupOpsWebhookReceiveRequest

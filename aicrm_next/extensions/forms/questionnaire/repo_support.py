@@ -10,12 +10,12 @@ from uuid import uuid4
 
 from aicrm_next.crm.identity_contact.dto import ResolvePersonIdentityRequest
 from aicrm_next.crm.identity_contact.resolver import resolve_identity_with_dbapi, resolved_unionid
-from aicrm_next.navigation_target.service import normalize_completion_target_for_storage
-from aicrm_next.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
-from aicrm_next.shared.errors import ContractError
-from aicrm_next.shared.repository_provider import RepositoryProviderError, assert_repository_allowed
-from aicrm_next.shared.runtime import production_data_ready, raw_database_url
-from aicrm_next.shared.runtime_settings import runtime_setting
+from aicrm_next.platform.navigation_target.service import normalize_completion_target_for_storage
+from aicrm_next.platform.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
+from aicrm_next.platform.shared.errors import ContractError
+from aicrm_next.platform.shared.repository_provider import RepositoryProviderError, assert_repository_allowed
+from aicrm_next.platform.shared.runtime import production_data_ready, raw_database_url
+from aicrm_next.platform.shared.runtime_settings import runtime_setting
 from .domain import CHOICE_QUESTION_TYPES, selected_choice_options
 from .identity_resolution import enqueue_questionnaire_identity_resolution
 

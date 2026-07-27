@@ -3,7 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
-from aicrm_next.shared.wecom_payload_contract import normalize_miniprogram_attachment_payload
+from aicrm_next.platform.shared.wecom_payload_contract import normalize_miniprogram_attachment_payload
 from aicrm_next.media_library.dto import normalize_group_invite_join_url, normalize_http_url
 
 

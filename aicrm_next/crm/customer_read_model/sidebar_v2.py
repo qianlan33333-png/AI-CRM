@@ -30,10 +30,10 @@ from aicrm_next.crm.customer_read_model.extension_port import (
     service_period_isoformat,
     service_period_remaining_days,
 )
-from aicrm_next.shared.db_session import get_engine
-from aicrm_next.shared.errors import ContractError, NotFoundError
-from aicrm_next.shared.runtime import raw_database_url
-from aicrm_next.shared.signed_context import append_ctx_fragment, build_sidebar_product_context_token
+from aicrm_next.platform.shared.db_session import get_engine
+from aicrm_next.platform.shared.errors import ContractError, NotFoundError
+from aicrm_next.platform.shared.runtime import raw_database_url
+from aicrm_next.platform.shared.signed_context import append_ctx_fragment, build_sidebar_product_context_token
 
 MODULES = ["profile", "questionnaires", "products", "orders", "periodic_orders", "materials", "other_staff_messages"]
 ORDER_STATUS_LABELS = {
@@ -832,7 +832,7 @@ class SidebarWorkbenchReadModel:
             )
         except NotFoundError:
             if self._repo is None:
-                from aicrm_next.shared.runtime import production_data_ready
+                from aicrm_next.platform.shared.runtime import production_data_ready
 
                 if not production_data_ready():
                     raise

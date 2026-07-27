@@ -4,8 +4,8 @@ import logging
 from collections.abc import Callable
 from datetime import datetime, timezone
 
-from aicrm_next.shared.runtime import production_repository_required
-from aicrm_next.shared.safe_logging import safe_log_exception
+from aicrm_next.platform.shared.runtime import production_repository_required
+from aicrm_next.platform.shared.safe_logging import safe_log_exception
 
 from .checks import run_all_checks
 from .dto import DataHealthCheckResult, DataHealthSummary

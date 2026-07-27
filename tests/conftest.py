@@ -597,7 +597,7 @@ def next_pg_schema(monkeypatch):
 def composed_internal_event_registry():
     """Bind one isolated, fully composed consumer registry for a whole test."""
     from aicrm_next.internal_event_composition import build_internal_event_consumer_registry
-    from aicrm_next.platform_foundation.internal_events import internal_event_consumer_registry_scope
+    from aicrm_next.platform.platform_foundation.internal_events import internal_event_consumer_registry_scope
 
     registry = build_internal_event_consumer_registry()
     with internal_event_consumer_registry_scope(registry):

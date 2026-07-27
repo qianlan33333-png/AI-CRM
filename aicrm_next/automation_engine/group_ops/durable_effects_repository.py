@@ -15,30 +15,30 @@ from aicrm_next.media_library.effect_material_port import (
     EphemeralImageMaterialRequest,
     build_image_library_effect_material_port,
 )
-from aicrm_next.platform_foundation.command_bus.models import CommandContext
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import (
     GROUP_OPS_MESSAGE_LOOPBACK,
     WECOM_MEDIA_UPLOAD,
     WECOM_MESSAGE_GROUP_SEND,
 )
-from aicrm_next.platform_foundation.external_effects.models import public_datetime
-from aicrm_next.platform_foundation.external_effects.repo import (
+from aicrm_next.platform.platform_foundation.external_effects.models import public_datetime
+from aicrm_next.platform.platform_foundation.external_effects.repo import (
     ExternalEffectRepository,
     build_external_effect_repository,
 )
-from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
-from aicrm_next.platform_foundation.external_effects.settlement_events import (
+from aicrm_next.platform.platform_foundation.external_effects.service import ExternalEffectService
+from aicrm_next.platform.platform_foundation.external_effects.settlement_events import (
     enqueue_external_effect_settled_rows_in_session,
 )
-from aicrm_next.platform_foundation.external_effects.runtime_write_port import (
+from aicrm_next.platform.platform_foundation.external_effects.runtime_write_port import (
     build_external_effect_runtime_write_port,
 )
-from aicrm_next.platform_foundation.external_effects.test_receiver import (
+from aicrm_next.platform.platform_foundation.external_effects.test_receiver import (
     TEST_RECEIVER_PATH_PREFIX,
     canonical_payload_hash,
 )
-from aicrm_next.shared.db_session import get_session_factory
-from aicrm_next.shared.runtime import fixture_mode
+from aicrm_next.platform.shared.db_session import get_session_factory
+from aicrm_next.platform.shared.runtime import fixture_mode
 
 from .domain import clean_text, mask_sensitive_payload
 from .effect_graph_lifecycle_repository import (

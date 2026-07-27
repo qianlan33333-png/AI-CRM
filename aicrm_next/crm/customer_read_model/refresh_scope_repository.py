@@ -7,7 +7,7 @@ from typing import Any, Callable
 from sqlalchemy import bindparam, text
 from sqlalchemy.orm import Session
 
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.platform.shared.db_session import get_session_factory
 
 
 MAX_INCREMENTAL_SOURCE_EVENTS = 5_000

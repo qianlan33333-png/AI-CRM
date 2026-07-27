@@ -8,12 +8,12 @@ from collections.abc import Callable
 from typing import Any
 
 try:
-    from aicrm_next.shared.sensitive_data import redact_sensitive_text
+    from aicrm_next.platform.shared.sensitive_data import redact_sensitive_text
 except ModuleNotFoundError:  # pragma: no cover - direct script execution
     from script_runtime import ensure_repo_root_on_path
 
     ensure_repo_root_on_path()
-    from aicrm_next.shared.sensitive_data import redact_sensitive_text
+    from aicrm_next.platform.shared.sensitive_data import redact_sensitive_text
 
 
 UrlOpen = Callable[[urllib.request.Request, int], Any]

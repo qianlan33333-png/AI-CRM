@@ -3,7 +3,7 @@ from __future__ import annotations
 from sqlalchemy import Boolean, Column, DateTime, Index, Integer, MetaData, String, Table, Text
 from sqlalchemy.types import JSON
 
-from aicrm_next.shared.database import Base
+from aicrm_next.platform.shared.database import Base
 
 metadata: MetaData = Base.metadata
 

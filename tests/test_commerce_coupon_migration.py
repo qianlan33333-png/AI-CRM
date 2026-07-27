@@ -7,7 +7,7 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.platform.shared.db_session import get_session_factory
 
 
 ROOT = Path(__file__).resolve().parents[1]

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from aicrm_next.external_push.domain_event_outbox_port import build_domain_event_outbox_port
+from aicrm_next.platform.external_push.domain_event_outbox_port import build_domain_event_outbox_port
 
 from .product_code_aliases import canonical_product_code, product_code_filter_values
 

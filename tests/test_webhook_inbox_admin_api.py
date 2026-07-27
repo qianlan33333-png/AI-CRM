@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.webhook_inbox import InMemoryWebhookInboxRepository
+from aicrm_next.platform.platform_foundation.webhook_inbox import InMemoryWebhookInboxRepository
 from tests.admin_auth_test_helpers import install_admin_action_tokens
 
 
@@ -34,7 +34,7 @@ def _seed(repo: InMemoryWebhookInboxRepository, key: str = "event-1") -> dict:
 def test_webhook_inbox_admin_metrics_and_items(monkeypatch):
     repo = InMemoryWebhookInboxRepository()
     _seed(repo)
-    monkeypatch.setattr("aicrm_next.platform_foundation.webhook_inbox.api._repo", lambda: repo)
+    monkeypatch.setattr("aicrm_next.platform.platform_foundation.webhook_inbox.api._repo", lambda: repo)
     client = TestClient(create_app(), raise_server_exceptions=False)
 
     metrics = client.get("/api/admin/webhook-inbox/metrics?provider=wecom")
@@ -65,7 +65,7 @@ def test_webhook_inbox_admin_filters_incident_window_pending_failed_rows(monkeyp
     repo.mark_failed_retryable(failed["id"], error_code="RuntimeError", error_message="retry")
     repo.mark_succeeded(succeeded["id"])
     repo.mark_failed_retryable(outside["id"], error_code="RuntimeError", error_message="outside")
-    monkeypatch.setattr("aicrm_next.platform_foundation.webhook_inbox.api._repo", lambda: repo)
+    monkeypatch.setattr("aicrm_next.platform.platform_foundation.webhook_inbox.api._repo", lambda: repo)
     client = TestClient(create_app(), raise_server_exceptions=False)
 
     query = "provider=wecom&status=pending_failed&received_from=2026-06-27T11:00&received_to=2026-06-27T11:20"
@@ -119,9 +119,9 @@ def test_webhook_inbox_admin_detail_returns_processing_chain(monkeypatch):
         def list_attempts(self, job_id: int):
             return [FakeInternalEvent({"id": 9, "attempt_id": "eea_9", "job_id": int(job_id), "status": "blocked"})]
 
-    monkeypatch.setattr("aicrm_next.platform_foundation.webhook_inbox.api._repo", lambda: repo)
-    monkeypatch.setattr("aicrm_next.platform_foundation.webhook_inbox.api.InternalEventService", FakeInternalEventService)
-    monkeypatch.setattr("aicrm_next.platform_foundation.webhook_inbox.api.ExternalEffectService", FakeExternalEffectService)
+    monkeypatch.setattr("aicrm_next.platform.platform_foundation.webhook_inbox.api._repo", lambda: repo)
+    monkeypatch.setattr("aicrm_next.platform.platform_foundation.webhook_inbox.api.InternalEventService", FakeInternalEventService)
+    monkeypatch.setattr("aicrm_next.platform.platform_foundation.webhook_inbox.api.ExternalEffectService", FakeExternalEffectService)
     client = TestClient(create_app(), raise_server_exceptions=False)
 
     response = client.get(f"/api/admin/webhook-inbox/{row['id']}")
@@ -139,7 +139,7 @@ def test_webhook_inbox_admin_retry_and_skip_require_token(monkeypatch):
     repo = InMemoryWebhookInboxRepository()
     row = _seed(repo)
     repo.mark_dead_letter(row["id"], error_code="RuntimeError", error_message="boom")
-    monkeypatch.setattr("aicrm_next.platform_foundation.webhook_inbox.api._repo", lambda: repo)
+    monkeypatch.setattr("aicrm_next.platform.platform_foundation.webhook_inbox.api._repo", lambda: repo)
     client = TestClient(create_app(), raise_server_exceptions=False)
     tokens = install_admin_action_tokens(
         client,
@@ -180,7 +180,7 @@ def test_webhook_inbox_admin_dispatch_one_requires_token_and_versioned_command(m
             calls.append({"inbox_id": int(inbox_id), "dry_run": bool(dry_run), "reason": reason})
             return {"ok": True, "id": int(inbox_id), "status": "succeeded", "dry_run": bool(dry_run)}
 
-    monkeypatch.setattr("aicrm_next.platform_foundation.webhook_inbox.api._repo", lambda: repo)
+    monkeypatch.setattr("aicrm_next.platform.platform_foundation.webhook_inbox.api._repo", lambda: repo)
     client = TestClient(create_app(), raise_server_exceptions=False)
     client.app.state.wecom_callback_inbox_worker_factory = FakeWorker
     token = install_admin_action_tokens(
@@ -212,7 +212,7 @@ def test_webhook_inbox_admin_dispatch_one_requires_token_and_versioned_command(m
 def test_webhook_inbox_admin_run_due_defaults_to_dry_run(monkeypatch):
     repo = InMemoryWebhookInboxRepository()
     _seed(repo)
-    monkeypatch.setattr("aicrm_next.platform_foundation.webhook_inbox.api._repo", lambda: repo)
+    monkeypatch.setattr("aicrm_next.platform.platform_foundation.webhook_inbox.api._repo", lambda: repo)
     client = TestClient(create_app(), raise_server_exceptions=False)
     token = install_admin_action_tokens(
         client,
@@ -234,7 +234,7 @@ def test_webhook_inbox_admin_run_due_defaults_to_dry_run(monkeypatch):
 def test_webhook_inbox_admin_run_due_accepts_admin_action_token(monkeypatch):
     repo = InMemoryWebhookInboxRepository()
     _seed(repo)
-    monkeypatch.setattr("aicrm_next.platform_foundation.webhook_inbox.api._repo", lambda: repo)
+    monkeypatch.setattr("aicrm_next.platform.platform_foundation.webhook_inbox.api._repo", lambda: repo)
     client = TestClient(create_app(), raise_server_exceptions=False)
     token = install_admin_action_tokens(
         client,

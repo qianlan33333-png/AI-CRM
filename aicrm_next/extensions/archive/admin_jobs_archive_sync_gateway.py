@@ -16,9 +16,9 @@ def record_archive_source_change(
 ) -> dict[str, object]:
     """Persist one PII-free source event in the archive write transaction."""
 
-    from aicrm_next.platform_foundation.command_bus.models import CommandContext
-    from aicrm_next.platform_foundation.internal_events.models import InternalEventCreateRequest
-    from aicrm_next.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
+    from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
+    from aicrm_next.platform.platform_foundation.internal_events.models import InternalEventCreateRequest
+    from aicrm_next.platform.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
 
     normalized_batch_key = str(batch_key or "").strip()
     if re.fullmatch(r"[0-9a-f]{64}", normalized_batch_key) is None:

@@ -4,10 +4,10 @@ from dataclasses import replace
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.platform_foundation.auth_platform.credentials import hash_client_secret, issue_client_secret
-from aicrm_next.platform_foundation.auth_platform.models import ApiClientRecord
-from aicrm_next.platform_foundation.auth_platform.profiles import API_CLIENT_PROFILE_BY_PURPOSE
-from aicrm_next.platform_foundation.auth_platform.service import ApiClientService, AuthServiceConfig
+from aicrm_next.platform.platform_foundation.auth_platform.credentials import hash_client_secret, issue_client_secret
+from aicrm_next.platform.platform_foundation.auth_platform.models import ApiClientRecord
+from aicrm_next.platform.platform_foundation.auth_platform.profiles import API_CLIENT_PROFILE_BY_PURPOSE
+from aicrm_next.platform.platform_foundation.auth_platform.service import ApiClientService, AuthServiceConfig
 
 
 PROBE_ISSUER = "https://probe.invalid/oauth"

@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.external_effects import (
     WEBHOOK_QUESTIONNAIRE_SUBMISSION_PUSH,
     ExternalEffectService,
     reset_external_effect_fixture_state,

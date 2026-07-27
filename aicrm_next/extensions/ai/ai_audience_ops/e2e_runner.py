@@ -5,9 +5,9 @@ import secrets
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-from aicrm_next.platform_foundation.external_effects import ExternalEffectService, WEBHOOK_GENERIC_PUSH, WECOM_MESSAGE_PRIVATE_SEND
-from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
-from aicrm_next.shared.runtime_settings import runtime_bool, startup_environment_setting
+from aicrm_next.platform.platform_foundation.external_effects import ExternalEffectService, WEBHOOK_GENERIC_PUSH, WECOM_MESSAGE_PRIVATE_SEND
+from aicrm_next.platform.platform_foundation.external_effects.worker import ExternalEffectWorker
+from aicrm_next.platform.shared.runtime_settings import runtime_bool, startup_environment_setting
 
 from .outbound_service import AudienceOutboundService
 from .package_spec import package_payload_from_spec, parse_markdown_spec_text, validate_spec

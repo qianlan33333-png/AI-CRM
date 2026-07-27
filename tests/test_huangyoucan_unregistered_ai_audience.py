@@ -8,7 +8,7 @@ from sqlalchemy import text
 
 from aicrm_next.extensions.ai.ai_audience_ops.refresh_intents import AudienceRefreshIntentRepository, AudienceRefreshIntentService
 from aicrm_next.extensions.ai.ai_audience_ops.sql_linter import lint_sql
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.platform.shared.db_session import get_session_factory
 
 
 TOKEN = "huangyoucan-unregistered-test-token"

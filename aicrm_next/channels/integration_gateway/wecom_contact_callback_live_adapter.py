@@ -7,8 +7,8 @@ import hashlib
 import json
 from typing import Any
 
-from aicrm_next.shared.runtime import production_environment
-from aicrm_next.shared.runtime_settings import runtime_bool, runtime_setting
+from aicrm_next.platform.shared.runtime import production_environment
+from aicrm_next.platform.shared.runtime_settings import runtime_bool, runtime_setting
 
 from .wecom_contact_callback_adapter import FakeStubWeComContactCallbackAdapter
 from .wecom_contact_callback_live_gateway import (

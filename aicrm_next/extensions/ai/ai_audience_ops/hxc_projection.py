@@ -9,7 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
 
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.platform.shared.db_session import get_session_factory
 
 from .hxc_projection_sql import (
     HXC_OPTIONAL_SOURCE_REQUIRED_COLUMNS,

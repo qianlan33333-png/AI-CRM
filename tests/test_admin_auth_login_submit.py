@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.admin_auth.service import CSRF_COOKIE, SESSION_COOKIE
+from aicrm_next.platform.admin_auth.service import CSRF_COOKIE, SESSION_COOKIE
 from aicrm_next.main import create_app
 
 

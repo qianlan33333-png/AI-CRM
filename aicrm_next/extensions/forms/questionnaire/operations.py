@@ -9,20 +9,20 @@ from aicrm_next.integration_ports import (
     ChannelCompletionClient,
     ChannelCompletionReadPort,
 )
-from aicrm_next.navigation_target import (
+from aicrm_next.platform.navigation_target import (
     DEFAULT_COMPLETION_TARGET,
     completion_action_with_lead_qr,
     normalize_completion_target,
 )
-from aicrm_next.navigation_target.domain import h5_url_for_legacy_fields
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.navigation_target.domain import h5_url_for_legacy_fields
+from aicrm_next.platform.platform_foundation.external_effects import (
     ExternalEffectService,
     WEBHOOK_QUESTIONNAIRE_SUBMISSION_PUSH,
 )
-from aicrm_next.platform_foundation.push_center.capability_status import PushCapabilityStatusReadService
+from aicrm_next.platform.platform_foundation.push_center.capability_status import PushCapabilityStatusReadService
 from aicrm_next.extensions.forms.questionnaire.external_push import build_questionnaire_external_effect_payload
-from aicrm_next.shared.errors import ContractError
-from aicrm_next.shared.outbound_https import WebhookUrlValidationError, validate_webhook_url
+from aicrm_next.platform.shared.errors import ContractError
+from aicrm_next.platform.shared.outbound_https import WebhookUrlValidationError, validate_webhook_url
 from .admin_write import QuestionnaireAdminWriteInputError, normalize_external_push_config
 from .domain import normalize_questionnaire
 from .repo import QuestionnaireRepository, build_questionnaire_repository

@@ -12,7 +12,7 @@ from aicrm_next.extensions.commerce.public_product.service import (
     render_pay_landing,
     route_headers,
 )
-from aicrm_next.shared.signed_context import product_context_fragment_bootstrap_script
+from aicrm_next.platform.shared.signed_context import product_context_fragment_bootstrap_script
 
 
 def _price_yuan(product: dict[str, Any]) -> str:

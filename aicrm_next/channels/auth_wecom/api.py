@@ -6,7 +6,7 @@ from fastapi import APIRouter, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, RedirectResponse
 
-from aicrm_next.admin_auth.browser_sessions import issue_browser_session, set_browser_session_cookies
+from aicrm_next.platform.admin_auth.browser_sessions import issue_browser_session, set_browser_session_cookies
 
 from .service import (
     auth_route_headers,

@@ -6,13 +6,13 @@ from uuid import uuid4
 import psycopg
 from psycopg.rows import dict_row
 
-from aicrm_next.platform_foundation.execution_runtime.commands import (
+from aicrm_next.platform.platform_foundation.execution_runtime.commands import (
     QueueRuntimeCommandService,
 )
-from aicrm_next.platform_foundation.execution_runtime.repository import (
+from aicrm_next.platform.platform_foundation.execution_runtime.repository import (
     ExecutionRuntimeRepository,
 )
-from aicrm_next.platform_foundation.webhook_inbox.repository import (
+from aicrm_next.platform.platform_foundation.webhook_inbox.repository import (
     PostgresWebhookInboxRepository,
 )
 

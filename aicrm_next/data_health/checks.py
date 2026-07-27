@@ -6,13 +6,13 @@ from typing import Callable
 
 from sqlalchemy import text
 
-from aicrm_next.shared.release_cutovers import (
+from aicrm_next.platform.shared.release_cutovers import (
     QUESTIONNAIRE_AUTO_EXECUTE_CUTOVER_AT,
     QUESTIONNAIRE_AUTO_EXECUTE_CUTOVER_SQL,
 )
-from aicrm_next.shared.db_session import get_session_factory
-from aicrm_next.shared.runtime_settings import environment_contains, managed_runtime_int
-from aicrm_next.shared.queue_provenance import (
+from aicrm_next.platform.shared.db_session import get_session_factory
+from aicrm_next.platform.shared.runtime_settings import environment_contains, managed_runtime_int
+from aicrm_next.platform.shared.queue_provenance import (
     POST_CUTOVER_IDENTITY_RECOVERY_PREDICATE_VERSION,
     PRE_PROVIDER_IDENTITY_ADOPTION_PREDICATE_VERSION,
 )

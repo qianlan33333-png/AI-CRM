@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from aicrm_next.send_content_media_repository_gateway import build_send_content_media_repository
-from aicrm_next.shared.repository_provider import RepositoryProviderError
+from aicrm_next.platform.shared.repository_provider import RepositoryProviderError
 
 from .repo import SendContentRepository, _assert_material_type, _clamp_limit
 

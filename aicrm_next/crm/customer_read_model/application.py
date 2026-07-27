@@ -4,10 +4,10 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 
-from aicrm_next.shared.errors import NotFoundError
-from aicrm_next.shared.safe_logging import safe_log_exception
-from aicrm_next.shared.runtime_settings import managed_runtime_bool
-from aicrm_next.shared.typing import JsonDict
+from aicrm_next.platform.shared.errors import NotFoundError
+from aicrm_next.platform.shared.safe_logging import safe_log_exception
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_bool
+from aicrm_next.platform.shared.typing import JsonDict
 from aicrm_next.integration_ports import (
     build_archive_sync_adapter,
     build_contacts_sync_adapter,
@@ -49,7 +49,7 @@ def _customer_read_model_live_source_fallback_enabled() -> bool:
 
 
 def _production_customer_data_required() -> bool:
-    from aicrm_next.shared.runtime import production_data_ready
+    from aicrm_next.platform.shared.runtime import production_data_ready
 
     return production_data_ready()
 
@@ -1200,7 +1200,7 @@ class GetCustomerContextQuery:
         return str(rows[0]["external_userid"])
 
     def execute(self, query: CustomerContextRequest) -> JsonDict:
-        from aicrm_next.shared.runtime import production_data_ready
+        from aicrm_next.platform.shared.runtime import production_data_ready
 
         if production_data_ready():
             repo: CustomerReadRepository | None = None

@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from aicrm_next.platform_foundation.external_effects.claim_policy import (
+from aicrm_next.platform.platform_foundation.external_effects.claim_policy import (
     external_claim_scope_predicate,
 )
-from aicrm_next.platform_foundation.external_effects.runtime_write_port import (
+from aicrm_next.platform.platform_foundation.external_effects.runtime_write_port import (
     build_external_effect_runtime_write_port,
 )
 
@@ -181,7 +181,7 @@ def test_external_effect_write_sql_is_confined_to_owner_package() -> None:
         if not any(marker in source for marker in markers):
             continue
         relative = path.relative_to(ROOT).as_posix()
-        if not relative.startswith("aicrm_next/platform_foundation/external_effects/"):
+        if not relative.startswith("aicrm_next/platform/platform_foundation/external_effects/"):
             offenders.append(relative)
 
     assert offenders == []

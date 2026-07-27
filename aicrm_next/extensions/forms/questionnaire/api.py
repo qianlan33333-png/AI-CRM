@@ -16,15 +16,15 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
-from aicrm_next.navigation_target import safe_completion_url
+from aicrm_next.platform.navigation_target import safe_completion_url
 from aicrm_next.crm.identity_contact.wechat_unionid_guard import evaluate_wechat_unionid_access
-from aicrm_next.shared.errors import ContractError, NotFoundError
-from aicrm_next.shared.pii_audit import infer_pii_result_count, set_pii_audit_result_count
-from aicrm_next.shared.runtime import production_data_ready
-from aicrm_next.shared.safe_logging import safe_log_fields
-from aicrm_next.shared.signed_session import session_cookie_secure
-from aicrm_next.shared.wechat_h5_session import payment_identity_from_request, payment_oauth_start_url
-from aicrm_next.shared.wechat_identity_page import wechat_identity_failure_response
+from aicrm_next.platform.shared.errors import ContractError, NotFoundError
+from aicrm_next.platform.shared.pii_audit import infer_pii_result_count, set_pii_audit_result_count
+from aicrm_next.platform.shared.runtime import production_data_ready
+from aicrm_next.platform.shared.safe_logging import safe_log_fields
+from aicrm_next.platform.shared.signed_session import session_cookie_secure
+from aicrm_next.platform.shared.wechat_h5_session import payment_identity_from_request, payment_oauth_start_url
+from aicrm_next.platform.shared.wechat_identity_page import wechat_identity_failure_response
 
 from .admin_write import (
     QuestionnaireAdminWriteCommand,

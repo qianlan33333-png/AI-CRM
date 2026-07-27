@@ -8,7 +8,7 @@ from aicrm_next.automation_engine.group_ops.durable_effects_repository import (
     GroupOpsEffectMaterial,
     InMemoryGroupOpsEffectGraphRepository,
 )
-from aicrm_next.platform_foundation.external_effects.repo_memory import InMemoryExternalEffectRepository
+from aicrm_next.platform.platform_foundation.external_effects.repo_memory import InMemoryExternalEffectRepository
 
 
 PNG = b"\x89PNG\r\n\x1a\n" + b"group-ops-durable-effect"

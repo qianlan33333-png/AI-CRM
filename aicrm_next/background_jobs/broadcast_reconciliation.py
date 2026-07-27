@@ -5,8 +5,8 @@ from typing import Any
 
 import yaml
 
-from aicrm_next.shared.db_session import connect_raw_postgres
-from aicrm_next.shared.runtime import raw_database_url
+from aicrm_next.platform.shared.db_session import connect_raw_postgres
+from aicrm_next.platform.shared.runtime import raw_database_url
 
 
 _R10_PRODUCTION_CUTOVER_SQL = "TIMESTAMPTZ '2026-07-13 05:42:30+00'"

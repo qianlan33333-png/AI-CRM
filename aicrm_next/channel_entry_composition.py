@@ -13,7 +13,7 @@ from .crm.identity_contact.resolution_effects import (
 )
 from .crm.identity_contact.resolution_queue_port import build_identity_resolution_queue_port
 from .crm.identity_contact.resolver import resolve_external_userid_with_dbapi, resolve_identity_with_dbapi
-from .platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry
+from .platform.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry
 
 
 def configure_channel_crm_dependencies() -> None:

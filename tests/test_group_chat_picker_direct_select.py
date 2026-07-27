@@ -13,7 +13,7 @@ from aicrm_next.media_library.dto import GroupInviteBindingEnsureRequest
 from aicrm_next.media_library.repo import InMemoryMediaLibraryRepository, reset_media_library_fixture_state
 from aicrm_next.send_content.application import assert_group_invite_bindings_ready, normalize_send_content_package
 from aicrm_next.send_content.repo import InMemorySendContentRepository
-from aicrm_next.shared.errors import ContractError
+from aicrm_next.platform.shared.errors import ContractError
 
 
 ROOT = Path(__file__).resolve().parents[1]

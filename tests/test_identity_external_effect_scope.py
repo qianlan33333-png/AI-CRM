@@ -4,9 +4,9 @@ from aicrm_next.channels.channel_entry.identity_external_effect import (
     IDENTITY_EXTERNAL_CONTACT_DETAIL_CONTINUATION,
     IDENTITY_RESOLUTION_BUSINESS_TYPE,
 )
-from aicrm_next.platform_foundation.external_effects import WECOM_EXTERNAL_CONTACT_DETAIL_FETCH
-from aicrm_next.platform_foundation.external_effects.continuations import run_external_effect_continuation
-from aicrm_next.platform_foundation.external_effects.models import (
+from aicrm_next.platform.platform_foundation.external_effects import WECOM_EXTERNAL_CONTACT_DETAIL_FETCH
+from aicrm_next.platform.platform_foundation.external_effects.continuations import run_external_effect_continuation
+from aicrm_next.platform.platform_foundation.external_effects.models import (
     ExternalEffectDispatchResult,
     ExternalEffectJob,
 )

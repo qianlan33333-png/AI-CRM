@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from aicrm_next.platform_foundation.internal_events.consumer_run_write_port import (
+from aicrm_next.platform.platform_foundation.internal_events.consumer_run_write_port import (
     build_internal_event_consumer_run_write_port,
 )
 
@@ -157,7 +157,7 @@ def test_internal_event_consumer_run_write_sql_is_confined_to_owner_package() ->
         ):
             continue
         relative = path.relative_to(ROOT).as_posix()
-        if not relative.startswith("aicrm_next/platform_foundation/internal_events/"):
+        if not relative.startswith("aicrm_next/platform/platform_foundation/internal_events/"):
             offenders.append(relative)
 
     assert offenders == []

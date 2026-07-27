@@ -7,7 +7,7 @@ import jwt
 
 from aicrm_next.extensions.ai.ai_assist import api as ai_assist_api
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.auth_platform.context import PrincipalType
+from aicrm_next.platform.platform_foundation.auth_platform.context import PrincipalType
 from tests.admin_auth_test_helpers import TEST_JWT_KEY, install_admin_auth_service
 
 

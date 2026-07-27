@@ -5,7 +5,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 227,
-      "path": "aicrm_next/admin_config/api.py",
+      "path": "aicrm_next/platform/admin_config/api.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -14,7 +14,7 @@
       "coverage_status": "event_missing",
       "function": "admin_config_wecom_tags",
       "line": 228,
-      "path": "aicrm_next/admin_config/api.py",
+      "path": "aicrm_next/platform/admin_config/api.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -23,7 +23,7 @@
       "coverage_status": "event_missing",
       "function": "admin_config_wecom_tags",
       "line": 229,
-      "path": "aicrm_next/admin_config/api.py",
+      "path": "aicrm_next/platform/admin_config/api.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -32,7 +32,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 529,
-      "path": "aicrm_next/admin_config/api.py",
+      "path": "aicrm_next/platform/admin_config/api.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -41,7 +41,7 @@
       "coverage_status": "event_missing",
       "function": "api_admin_config_signup_tags",
       "line": 530,
-      "path": "aicrm_next/admin_config/api.py",
+      "path": "aicrm_next/platform/admin_config/api.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -50,7 +50,7 @@
       "coverage_status": "event_missing",
       "function": "api_admin_config_signup_tags",
       "line": 531,
-      "path": "aicrm_next/admin_config/api.py",
+      "path": "aicrm_next/platform/admin_config/api.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -59,7 +59,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 534,
-      "path": "aicrm_next/admin_config/api.py",
+      "path": "aicrm_next/platform/admin_config/api.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -68,7 +68,7 @@
       "coverage_status": "event_missing",
       "function": "api_admin_config_save_signup_tag",
       "line": 535,
-      "path": "aicrm_next/admin_config/api.py",
+      "path": "aicrm_next/platform/admin_config/api.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -77,7 +77,7 @@
       "coverage_status": "event_missing",
       "function": "api_admin_config_save_signup_tag",
       "line": 536,
-      "path": "aicrm_next/admin_config/api.py",
+      "path": "aicrm_next/platform/admin_config/api.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -86,7 +86,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 539,
-      "path": "aicrm_next/admin_config/api.py",
+      "path": "aicrm_next/platform/admin_config/api.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -95,7 +95,7 @@
       "coverage_status": "event_missing",
       "function": "api_admin_config_class_term_tags",
       "line": 540,
-      "path": "aicrm_next/admin_config/api.py",
+      "path": "aicrm_next/platform/admin_config/api.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -104,7 +104,7 @@
       "coverage_status": "event_missing",
       "function": "api_admin_config_class_term_tags",
       "line": 541,
-      "path": "aicrm_next/admin_config/api.py",
+      "path": "aicrm_next/platform/admin_config/api.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -113,7 +113,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 544,
-      "path": "aicrm_next/admin_config/api.py",
+      "path": "aicrm_next/platform/admin_config/api.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -122,7 +122,7 @@
       "coverage_status": "event_missing",
       "function": "api_admin_config_save_class_term_tag",
       "line": 545,
-      "path": "aicrm_next/admin_config/api.py",
+      "path": "aicrm_next/platform/admin_config/api.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -131,7 +131,7 @@
       "coverage_status": "event_missing",
       "function": "api_admin_config_save_class_term_tag",
       "line": 546,
-      "path": "aicrm_next/admin_config/api.py",
+      "path": "aicrm_next/platform/admin_config/api.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -140,7 +140,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 36,
-      "path": "aicrm_next/admin_config/api_docs_view_model.py",
+      "path": "aicrm_next/platform/admin_config/api_docs_view_model.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -149,7 +149,7 @@
       "coverage_status": "legacy_direct_only",
       "function": "_auth_for",
       "line": 476,
-      "path": "aicrm_next/admin_config/api_docs_view_model.py",
+      "path": "aicrm_next/platform/admin_config/api_docs_view_model.py",
       "reason": "External side-effect wording without visible ExternalEffectService or legacy marker in the same file.",
       "suggested_severity": "P1"
     },
@@ -158,7 +158,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 147,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -167,7 +167,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 235,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -176,7 +176,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 244,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -185,7 +185,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 252,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -194,7 +194,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 272,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -203,7 +203,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 273,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -212,7 +212,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 278,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -221,7 +221,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 286,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -230,7 +230,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 302,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -239,7 +239,7 @@
       "coverage_status": "event_missing",
       "function": "_validate_known_setting",
       "line": 389,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -248,7 +248,7 @@
       "coverage_status": "event_missing",
       "function": "_validate_known_setting",
       "line": 410,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -257,7 +257,7 @@
       "coverage_status": "event_missing",
       "function": "_validate_known_setting",
       "line": 418,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -266,7 +266,7 @@
       "coverage_status": "event_missing",
       "function": "_validate_known_setting",
       "line": 420,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -275,7 +275,7 @@
       "coverage_status": "event_missing",
       "function": "_validate_known_setting",
       "line": 421,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -284,7 +284,7 @@
       "coverage_status": "event_missing",
       "function": "_capability_queue_counts",
       "line": 653,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -293,7 +293,7 @@
       "coverage_status": "event_missing",
       "function": "_capability_queue_counts",
       "line": 656,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -302,7 +302,7 @@
       "coverage_status": "event_missing",
       "function": "_derived_gate_payload",
       "line": 704,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -311,7 +311,7 @@
       "coverage_status": "legacy_direct_only",
       "function": "_derived_gate_payload",
       "line": 705,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "External side-effect wording without visible ExternalEffectService or legacy marker in the same file.",
       "suggested_severity": "P1"
     },
@@ -320,7 +320,7 @@
       "coverage_status": "event_missing",
       "function": "_derived_gate_payload",
       "line": 713,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -329,7 +329,7 @@
       "coverage_status": "event_missing",
       "function": "_capability_gate_consistent",
       "line": 972,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -338,7 +338,7 @@
       "coverage_status": "event_missing",
       "function": "_capability_gate_consistent",
       "line": 973,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -347,7 +347,7 @@
       "coverage_status": "legacy_direct_only",
       "function": "_capability_gate_consistent",
       "line": 974,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "External side-effect wording without visible ExternalEffectService or legacy marker in the same file.",
       "suggested_severity": "P1"
     },
@@ -356,7 +356,7 @@
       "coverage_status": "event_missing",
       "function": "_serialize_push_capability",
       "line": 998,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -365,7 +365,7 @@
       "coverage_status": "event_missing",
       "function": "_serialize_push_capability",
       "line": 1015,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -374,7 +374,7 @@
       "coverage_status": "event_missing",
       "function": "_write_derived_push_gates",
       "line": 1493,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -383,7 +383,7 @@
       "coverage_status": "event_missing",
       "function": "_write_derived_push_gates",
       "line": 1494,
-      "path": "aicrm_next/admin_config/application.py",
+      "path": "aicrm_next/platform/admin_config/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -392,7 +392,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 162,
-      "path": "aicrm_next/admin_config/category_registry.py",
+      "path": "aicrm_next/platform/admin_config/category_registry.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -401,7 +401,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 163,
-      "path": "aicrm_next/admin_config/category_registry.py",
+      "path": "aicrm_next/platform/admin_config/category_registry.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -410,7 +410,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 422,
-      "path": "aicrm_next/admin_config/schema.py",
+      "path": "aicrm_next/platform/admin_config/schema.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -419,7 +419,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 425,
-      "path": "aicrm_next/admin_config/schema.py",
+      "path": "aicrm_next/platform/admin_config/schema.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -428,7 +428,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 431,
-      "path": "aicrm_next/admin_config/schema.py",
+      "path": "aicrm_next/platform/admin_config/schema.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -437,7 +437,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 434,
-      "path": "aicrm_next/admin_config/schema.py",
+      "path": "aicrm_next/platform/admin_config/schema.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -446,7 +446,7 @@
       "coverage_status": "event_missing",
       "function": "_broadcast_job_view",
       "line": 431,
-      "path": "aicrm_next/admin_jobs/application.py",
+      "path": "aicrm_next/platform/admin_jobs/application.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -455,7 +455,7 @@
       "coverage_status": "event_missing",
       "function": "approve_broadcast_job",
       "line": 435,
-      "path": "aicrm_next/admin_jobs/application.py",
+      "path": "aicrm_next/platform/admin_jobs/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -464,7 +464,7 @@
       "coverage_status": "event_missing",
       "function": "approve_broadcast_job",
       "line": 438,
-      "path": "aicrm_next/admin_jobs/application.py",
+      "path": "aicrm_next/platform/admin_jobs/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -473,7 +473,7 @@
       "coverage_status": "event_missing",
       "function": "approve_broadcast_job",
       "line": 439,
-      "path": "aicrm_next/admin_jobs/application.py",
+      "path": "aicrm_next/platform/admin_jobs/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -482,7 +482,7 @@
       "coverage_status": "event_missing",
       "function": "approve_broadcast_job",
       "line": 442,
-      "path": "aicrm_next/admin_jobs/application.py",
+      "path": "aicrm_next/platform/admin_jobs/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -491,7 +491,7 @@
       "coverage_status": "event_missing",
       "function": "approve_broadcast_job",
       "line": 443,
-      "path": "aicrm_next/admin_jobs/application.py",
+      "path": "aicrm_next/platform/admin_jobs/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -500,7 +500,7 @@
       "coverage_status": "event_missing",
       "function": "cancel_broadcast_job",
       "line": 450,
-      "path": "aicrm_next/admin_jobs/application.py",
+      "path": "aicrm_next/platform/admin_jobs/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -509,7 +509,7 @@
       "coverage_status": "event_missing",
       "function": "cancel_broadcast_job",
       "line": 453,
-      "path": "aicrm_next/admin_jobs/application.py",
+      "path": "aicrm_next/platform/admin_jobs/application.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -518,7 +518,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 12,
-      "path": "aicrm_next/admin_jobs/domain.py",
+      "path": "aicrm_next/platform/admin_jobs/domain.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -527,7 +527,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 17,
-      "path": "aicrm_next/admin_jobs/domain.py",
+      "path": "aicrm_next/platform/admin_jobs/domain.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -536,7 +536,7 @@
       "coverage_status": "event_missing",
       "function": "status_tone",
       "line": 89,
-      "path": "aicrm_next/admin_jobs/domain.py",
+      "path": "aicrm_next/platform/admin_jobs/domain.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -545,7 +545,7 @@
       "coverage_status": "event_missing",
       "function": "status_label",
       "line": 115,
-      "path": "aicrm_next/admin_jobs/domain.py",
+      "path": "aicrm_next/platform/admin_jobs/domain.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -554,7 +554,7 @@
       "coverage_status": "event_missing",
       "function": "broadcast_hourly_summary",
       "line": 395,
-      "path": "aicrm_next/admin_jobs/repository.py",
+      "path": "aicrm_next/platform/admin_jobs/repository.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -563,7 +563,7 @@
       "coverage_status": "event_missing",
       "function": "approve_broadcast_job",
       "line": 412,
-      "path": "aicrm_next/admin_jobs/repository.py",
+      "path": "aicrm_next/platform/admin_jobs/repository.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -572,7 +572,7 @@
       "coverage_status": "event_missing",
       "function": "cancel_broadcast_job",
       "line": 425,
-      "path": "aicrm_next/admin_jobs/repository.py",
+      "path": "aicrm_next/platform/admin_jobs/repository.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -581,7 +581,7 @@
       "coverage_status": "event_missing",
       "function": "get_broadcast_notification_setting",
       "line": 436,
-      "path": "aicrm_next/admin_jobs/repository.py",
+      "path": "aicrm_next/platform/admin_jobs/repository.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -590,7 +590,7 @@
       "coverage_status": "event_missing",
       "function": "upsert_broadcast_notification_setting",
       "line": 495,
-      "path": "aicrm_next/admin_jobs/repository.py",
+      "path": "aicrm_next/platform/admin_jobs/repository.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -599,7 +599,7 @@
       "coverage_status": "event_missing",
       "function": "reset",
       "line": 575,
-      "path": "aicrm_next/admin_jobs/repository.py",
+      "path": "aicrm_next/platform/admin_jobs/repository.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -608,7 +608,7 @@
       "coverage_status": "event_missing",
       "function": "broadcast_hourly_summary",
       "line": 680,
-      "path": "aicrm_next/admin_jobs/repository.py",
+      "path": "aicrm_next/platform/admin_jobs/repository.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -617,7 +617,7 @@
       "coverage_status": "event_missing",
       "function": "approve_broadcast_job",
       "line": 690,
-      "path": "aicrm_next/admin_jobs/repository.py",
+      "path": "aicrm_next/platform/admin_jobs/repository.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -626,7 +626,7 @@
       "coverage_status": "event_missing",
       "function": "cancel_broadcast_job",
       "line": 696,
-      "path": "aicrm_next/admin_jobs/repository.py",
+      "path": "aicrm_next/platform/admin_jobs/repository.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -635,7 +635,7 @@
       "coverage_status": "event_missing",
       "function": "_simple_counts",
       "line": 778,
-      "path": "aicrm_next/admin_jobs/repository.py",
+      "path": "aicrm_next/platform/admin_jobs/repository.py",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -644,7 +644,7 @@
       "coverage_status": "legacy_direct_only",
       "function": "",
       "line": 35,
-      "path": "aicrm_next/admin_jobs/routes.py",
+      "path": "aicrm_next/platform/admin_jobs/routes.py",
       "reason": "External side-effect wording without visible ExternalEffectService or legacy marker in the same file.",
       "suggested_severity": "P1"
     },
@@ -653,7 +653,7 @@
       "coverage_status": "legacy_direct_only",
       "function": "api_admin_broadcast_jobs_feishu_hourly_report_run",
       "line": 382,
-      "path": "aicrm_next/admin_jobs/routes.py",
+      "path": "aicrm_next/platform/admin_jobs/routes.py",
       "reason": "External side-effect wording without visible ExternalEffectService or legacy marker in the same file.",
       "suggested_severity": "P1"
     },
@@ -662,7 +662,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 12,
-      "path": "aicrm_next/admin_jobs/templates/admin_console/broadcast_jobs.html",
+      "path": "aicrm_next/platform/admin_jobs/templates/admin_console/broadcast_jobs.html",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -671,7 +671,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 81,
-      "path": "aicrm_next/admin_jobs/templates/admin_console/broadcast_jobs.html",
+      "path": "aicrm_next/platform/admin_jobs/templates/admin_console/broadcast_jobs.html",
       "reason": "Queue/outbox wording found without safe_emit or ExternalEffectService in the same file.",
       "suggested_severity": "P2"
     },
@@ -4506,199 +4506,199 @@
       "consumer_name": "customer_identity_projection_consumer",
       "event_expr": "CUSTOMER_PHONE_BOUND_EVENT_TYPE",
       "line": 142,
-      "path": "aicrm_next/platform_foundation/internal_events/customer_identity.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/customer_identity.py"
     },
     {
       "consumer_name": "customer_summary_consumer",
       "event_expr": "CUSTOMER_PHONE_BOUND_EVENT_TYPE",
       "line": 148,
-      "path": "aicrm_next/platform_foundation/internal_events/customer_identity.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/customer_identity.py"
     },
     {
       "consumer_name": "automation_phone_bound_consumer",
       "event_expr": "CUSTOMER_PHONE_BOUND_EVENT_TYPE",
       "line": 154,
-      "path": "aicrm_next/platform_foundation/internal_events/customer_identity.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/customer_identity.py"
     },
     {
       "consumer_name": "customer_identity_ai_assist_notify_consumer",
       "event_expr": "CUSTOMER_PHONE_BOUND_EVENT_TYPE",
       "line": 160,
-      "path": "aicrm_next/platform_foundation/internal_events/customer_identity.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/customer_identity.py"
     },
     {
       "consumer_name": "order_projection_consumer",
       "event_expr": "event_type",
       "line": 198,
-      "path": "aicrm_next/platform_foundation/internal_events/payment.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/payment.py"
     },
     {
       "consumer_name": "webhook_order_paid_consumer",
       "event_expr": "event_type",
       "line": 199,
-      "path": "aicrm_next/platform_foundation/internal_events/payment.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/payment.py"
     },
     {
       "consumer_name": "customer_business_summary_consumer",
       "event_expr": "event_type",
       "line": 200,
-      "path": "aicrm_next/platform_foundation/internal_events/payment.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/payment.py"
     },
     {
       "consumer_name": "dnd_policy_consumer",
       "event_expr": "event_type",
       "line": 201,
-      "path": "aicrm_next/platform_foundation/internal_events/payment.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/payment.py"
     },
     {
       "consumer_name": "ai_assist_notify_consumer",
       "event_expr": "event_type",
       "line": 202,
-      "path": "aicrm_next/platform_foundation/internal_events/payment.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/payment.py"
     },
     {
       "consumer_name": "questionnaire_projection_consumer",
       "event_expr": "QUESTIONNAIRE_SUBMITTED_EVENT_TYPE",
       "line": 318,
-      "path": "aicrm_next/platform_foundation/internal_events/questionnaire.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/questionnaire.py"
     },
     {
       "consumer_name": "questionnaire_webhook_consumer",
       "event_expr": "QUESTIONNAIRE_SUBMITTED_EVENT_TYPE",
       "line": 319,
-      "path": "aicrm_next/platform_foundation/internal_events/questionnaire.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/questionnaire.py"
     },
     {
       "consumer_name": "questionnaire_tag_consumer",
       "event_expr": "QUESTIONNAIRE_SUBMITTED_EVENT_TYPE",
       "line": 320,
-      "path": "aicrm_next/platform_foundation/internal_events/questionnaire.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/questionnaire.py"
     },
     {
       "consumer_name": "automation_questionnaire_consumer",
       "event_expr": "QUESTIONNAIRE_SUBMITTED_EVENT_TYPE",
       "line": 321,
-      "path": "aicrm_next/platform_foundation/internal_events/questionnaire.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/questionnaire.py"
     },
     {
       "consumer_name": "customer_summary_consumer",
       "event_expr": "QUESTIONNAIRE_SUBMITTED_EVENT_TYPE",
       "line": 322,
-      "path": "aicrm_next/platform_foundation/internal_events/questionnaire.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/questionnaire.py"
     },
     {
       "consumer_name": "tag_external_effect_shadow_consumer",
       "event_expr": "event_type",
       "line": 644,
-      "path": "aicrm_next/platform_foundation/internal_events/shadow.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/shadow.py"
     },
     {
       "consumer_name": "tag_summary_consumer",
       "event_expr": "event_type",
       "line": 645,
-      "path": "aicrm_next/platform_foundation/internal_events/shadow.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/shadow.py"
     },
     {
       "consumer_name": "ai_assist_notify_consumer",
       "event_expr": "event_type",
       "line": 646,
-      "path": "aicrm_next/platform_foundation/internal_events/shadow.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/shadow.py"
     },
     {
       "consumer_name": "ai_campaign_ai_assist_notify_consumer",
       "event_expr": "event_type",
       "line": 649,
-      "path": "aicrm_next/platform_foundation/internal_events/shadow.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/shadow.py"
     },
     {
       "consumer_name": "campaign_summary_consumer",
       "event_expr": "event_type",
       "line": 650,
-      "path": "aicrm_next/platform_foundation/internal_events/shadow.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/shadow.py"
     },
     {
       "consumer_name": "broadcast_task_planner_consumer",
       "event_expr": "event_type",
       "line": 651,
-      "path": "aicrm_next/platform_foundation/internal_events/shadow.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/shadow.py"
     },
     {
       "consumer_name": "audit_projection_consumer",
       "event_expr": "event_type",
       "line": 652,
-      "path": "aicrm_next/platform_foundation/internal_events/shadow.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/shadow.py"
     },
     {
       "consumer_name": "broadcast_queue_projection_consumer",
       "event_expr": "BROADCAST_TASK_CREATED_EVENT_TYPE",
       "line": 654,
-      "path": "aicrm_next/platform_foundation/internal_events/shadow.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/shadow.py"
     },
     {
       "consumer_name": "push_center_link_consumer",
       "event_expr": "BROADCAST_TASK_CREATED_EVENT_TYPE",
       "line": 655,
-      "path": "aicrm_next/platform_foundation/internal_events/shadow.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/shadow.py"
     },
     {
       "consumer_name": "broadcast_task_ai_assist_notify_consumer",
       "event_expr": "BROADCAST_TASK_CREATED_EVENT_TYPE",
       "line": 656,
-      "path": "aicrm_next/platform_foundation/internal_events/shadow.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/shadow.py"
     },
     {
       "consumer_name": "audit_projection_consumer",
       "event_expr": "BROADCAST_TASK_CREATED_EVENT_TYPE",
       "line": 657,
-      "path": "aicrm_next/platform_foundation/internal_events/shadow.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/shadow.py"
     },
     {
       "consumer_name": "automation_schedule_refresh_consumer",
       "event_expr": "OPS_PLAN_APPROVED_EVENT_TYPE",
       "line": 660,
-      "path": "aicrm_next/platform_foundation/internal_events/shadow.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/shadow.py"
     },
     {
       "consumer_name": "ops_plan_ai_assist_notify_consumer",
       "event_expr": "OPS_PLAN_APPROVED_EVENT_TYPE",
       "line": 661,
-      "path": "aicrm_next/platform_foundation/internal_events/shadow.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/shadow.py"
     },
     {
       "consumer_name": "audit_projection_consumer",
       "event_expr": "OPS_PLAN_APPROVED_EVENT_TYPE",
       "line": 662,
-      "path": "aicrm_next/platform_foundation/internal_events/shadow.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/shadow.py"
     },
     {
       "consumer_name": "broadcast_task_planner_consumer",
       "event_expr": "OPS_PLAN_APPROVED_EVENT_TYPE",
       "line": 663,
-      "path": "aicrm_next/platform_foundation/internal_events/shadow.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/shadow.py"
     },
     {
       "consumer_name": "customer_owner_projection_consumer",
       "event_expr": "OWNER_MIGRATION_EXECUTED_EVENT_TYPE",
       "line": 666,
-      "path": "aicrm_next/platform_foundation/internal_events/shadow.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/shadow.py"
     },
     {
       "consumer_name": "customer_summary_mark_dirty_consumer",
       "event_expr": "OWNER_MIGRATION_EXECUTED_EVENT_TYPE",
       "line": 667,
-      "path": "aicrm_next/platform_foundation/internal_events/shadow.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/shadow.py"
     },
     {
       "consumer_name": "owner_migration_ai_assist_notify_consumer",
       "event_expr": "OWNER_MIGRATION_EXECUTED_EVENT_TYPE",
       "line": 668,
-      "path": "aicrm_next/platform_foundation/internal_events/shadow.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/shadow.py"
     },
     {
       "consumer_name": "webhook_owner_migration_consumer",
       "event_expr": "OWNER_MIGRATION_EXECUTED_EVENT_TYPE",
       "line": 669,
-      "path": "aicrm_next/platform_foundation/internal_events/shadow.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/shadow.py"
     },
     {
       "consumer_name": "project_customer_state",
@@ -4852,13 +4852,13 @@
       "call": "plan_effect",
       "function": "send_feishu_webhook_message",
       "line": 202,
-      "path": "aicrm_next/admin_jobs/notification_settings.py"
+      "path": "aicrm_next/platform/admin_jobs/notification_settings.py"
     },
     {
       "call": "ExternalEffectService",
       "function": "send_feishu_webhook_message",
       "line": 202,
-      "path": "aicrm_next/admin_jobs/notification_settings.py"
+      "path": "aicrm_next/platform/admin_jobs/notification_settings.py"
     },
     {
       "call": "ExternalEffectService",
@@ -4978,109 +4978,109 @@
       "call": "plan_effect",
       "function": "_attempt_delivery",
       "line": 315,
-      "path": "aicrm_next/external_push/service.py"
+      "path": "aicrm_next/platform/external_push/service.py"
     },
     {
       "call": "ExternalEffectService",
       "function": "_attempt_delivery",
       "line": 315,
-      "path": "aicrm_next/external_push/service.py"
+      "path": "aicrm_next/platform/external_push/service.py"
     },
     {
       "call": "ExternalEffectService",
       "function": "_service",
       "line": 93,
-      "path": "aicrm_next/platform_foundation/external_effects/api.py"
+      "path": "aicrm_next/platform/platform_foundation/external_effects/api.py"
     },
     {
       "call": "ExternalEffectService",
       "function": "complete_record_only_jobs",
       "line": 113,
-      "path": "aicrm_next/platform_foundation/external_effects/jobs.py"
+      "path": "aicrm_next/platform/platform_foundation/external_effects/jobs.py"
     },
     {
       "call": "ExternalEffectService",
       "function": "default_external_effect_service",
       "line": 177,
-      "path": "aicrm_next/platform_foundation/external_effects/service.py"
+      "path": "aicrm_next/platform/platform_foundation/external_effects/service.py"
     },
     {
       "call": "service.plan_effect",
       "function": "create_loopback_job",
       "line": 188,
-      "path": "aicrm_next/platform_foundation/external_effects/test_receiver.py"
+      "path": "aicrm_next/platform/platform_foundation/external_effects/test_receiver.py"
     },
     {
       "call": "ExternalEffectService",
       "function": "build_external_effect_jobs_payload",
       "line": 261,
-      "path": "aicrm_next/platform_foundation/external_effects/view_model.py"
+      "path": "aicrm_next/platform/platform_foundation/external_effects/view_model.py"
     },
     {
       "call": "ExternalEffectService",
       "function": "build_external_effect_diagnostics_payload",
       "line": 306,
-      "path": "aicrm_next/platform_foundation/external_effects/view_model.py"
+      "path": "aicrm_next/platform/platform_foundation/external_effects/view_model.py"
     },
     {
       "call": "ExternalEffectService",
       "function": "build_troubleshooting_summary_payload",
       "line": 396,
-      "path": "aicrm_next/platform_foundation/external_effects/view_model.py"
+      "path": "aicrm_next/platform/platform_foundation/external_effects/view_model.py"
     },
     {
       "call": "ExternalEffectService",
       "function": "build_troubleshooting_jobs_payload",
       "line": 424,
-      "path": "aicrm_next/platform_foundation/external_effects/view_model.py"
+      "path": "aicrm_next/platform/platform_foundation/external_effects/view_model.py"
     },
     {
       "call": "ExternalEffectService",
       "function": "build_troubleshooting_job_detail_payload",
       "line": 454,
-      "path": "aicrm_next/platform_foundation/external_effects/view_model.py"
+      "path": "aicrm_next/platform/platform_foundation/external_effects/view_model.py"
     },
     {
       "call": "ExternalEffectService",
       "function": "webhook_order_paid_consumer",
       "line": 118,
-      "path": "aicrm_next/platform_foundation/internal_events/payment.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/payment.py"
     },
     {
       "call": "ExternalEffectService",
       "function": "questionnaire_webhook_consumer",
       "line": 168,
-      "path": "aicrm_next/platform_foundation/internal_events/questionnaire.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/questionnaire.py"
     },
     {
       "call": "external_effects.plan_effect",
       "function": "questionnaire_webhook_consumer",
       "line": 212,
-      "path": "aicrm_next/platform_foundation/internal_events/questionnaire.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/questionnaire.py"
     },
     {
       "call": "ExternalEffectService",
       "function": "__init__",
       "line": 46,
-      "path": "aicrm_next/platform_foundation/internal_events/reconciliation/service.py"
+      "path": "aicrm_next/platform/platform_foundation/internal_events/reconciliation/service.py"
     },
     {
       "call": "ExternalEffectService",
       "function": "push_center_retry_job",
       "line": 210,
-      "path": "aicrm_next/platform_foundation/push_center/api.py"
+      "path": "aicrm_next/platform/platform_foundation/push_center/api.py"
     },
     {
       "call": "ExternalEffectService",
       "function": "push_center_cancel_job",
       "line": 223,
-      "path": "aicrm_next/platform_foundation/push_center/api.py"
+      "path": "aicrm_next/platform/platform_foundation/push_center/api.py"
     },
     {
       "call": "ExternalEffectService",
       "function": "__init__",
       "line": 301,
-      "path": "aicrm_next/platform_foundation/push_center/projection.py"
+      "path": "aicrm_next/platform/platform_foundation/push_center/projection.py"
     },
     {
       "call": "plan_effect",
@@ -5827,14 +5827,14 @@
       "function": "_record_legacy_marker",
       "legacy_key": "legacy_key",
       "line": 35,
-      "path": "aicrm_next/admin_jobs/application.py"
+      "path": "aicrm_next/platform/admin_jobs/application.py"
     },
     {
       "call": "record_runtime_marker",
       "function": "_record_legacy_marker",
       "legacy_key": "legacy_key",
       "line": 36,
-      "path": "aicrm_next/admin_jobs/notification_settings.py"
+      "path": "aicrm_next/platform/admin_jobs/notification_settings.py"
     },
     {
       "call": "record_runtime_marker",
@@ -5855,7 +5855,7 @@
       "function": "_record_legacy_marker",
       "legacy_key": "legacy_key",
       "line": 38,
-      "path": "aicrm_next/external_push/service.py"
+      "path": "aicrm_next/platform/external_push/service.py"
     },
     {
       "call": "record_runtime_marker",
@@ -5869,7 +5869,7 @@
       "function": "disabled_payload",
       "legacy_key": "legacy_key",
       "line": 378,
-      "path": "aicrm_next/platform_foundation/legacy_cleanup/service.py"
+      "path": "aicrm_next/platform/platform_foundation/legacy_cleanup/service.py"
     },
     {
       "call": "record_runtime_marker",

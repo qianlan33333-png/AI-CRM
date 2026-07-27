@@ -85,7 +85,7 @@ def test_webhook_inbox_migration_has_due_claim_and_lookup_indexes() -> None:
 
 
 def test_webhook_inbox_repository_reclaims_stale_processing_rows() -> None:
-    source = (ROOT / "aicrm_next" / "platform_foundation" / "webhook_inbox" / "repository.py").read_text(encoding="utf-8")
+    source = (ROOT / "aicrm_next" / "platform" / "platform_foundation" / "webhook_inbox" / "repository.py").read_text(encoding="utf-8")
 
     assert "status = 'processing'" in source
     assert "FOR UPDATE SKIP LOCKED" in source

@@ -7,37 +7,37 @@ from aicrm_next.external_effect_composition import (
     EXTERNAL_EFFECT_PROVIDER_RESULT_ACCESS_ALLOWLIST,
     build_external_effect_continuation_consumers,
 )
-from aicrm_next.external_push import external_effect_continuation as external_push_continuation
-from aicrm_next.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry
-from aicrm_next.platform_foundation.external_effects.completion_events import (
+from aicrm_next.platform.external_push import external_effect_continuation as external_push_continuation
+from aicrm_next.platform.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry
+from aicrm_next.platform.platform_foundation.external_effects.completion_events import (
     EXTERNAL_EFFECT_COMPLETED_EVENT_TYPE,
     LEGACY_EXTERNAL_EFFECT_COMPLETION_CONSUMER,
     external_effect_continuation_consumer,
     register_external_effect_completed_consumers,
 )
-from aicrm_next.platform_foundation.external_effects.continuations import (
+from aicrm_next.platform.platform_foundation.external_effects.continuations import (
     ExternalEffectContinuation,
     ExternalEffectContinuationConsumer,
     ExternalEffectContinuationRegistry,
 )
-from aicrm_next.platform_foundation.external_effects.models import (
+from aicrm_next.platform.platform_foundation.external_effects.models import (
     WEBHOOK_GENERIC_PUSH,
     ExternalEffectDispatchResult,
 )
-from aicrm_next.platform_foundation.external_effects.repo import InMemoryExternalEffectRepository
-from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
-from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
-from aicrm_next.platform_foundation.internal_events import (
+from aicrm_next.platform.platform_foundation.external_effects.repo import InMemoryExternalEffectRepository
+from aicrm_next.platform.platform_foundation.external_effects.service import ExternalEffectService
+from aicrm_next.platform.platform_foundation.external_effects.worker import ExternalEffectWorker
+from aicrm_next.platform.platform_foundation.internal_events import (
     InMemoryInternalEventRepository,
     InternalEventConsumerRegistry,
     InternalEventService,
 )
-from aicrm_next.platform_foundation.internal_events.models import (
+from aicrm_next.platform.platform_foundation.internal_events.models import (
     InternalEvent,
     InternalEventConsumerRun,
     InternalEventCreateRequest,
 )
-from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
+from aicrm_next.platform.platform_foundation.internal_events.worker import InternalEventWorker
 
 
 class _SuccessAdapter:

@@ -89,7 +89,7 @@ jobs:
             )
             from aicrm_next.internal_event_composition import build_internal_event_consumer_registry
             from aicrm_next.main import create_app
-            from aicrm_next.platform_foundation.background_jobs.catalog import JobCatalog
+            from aicrm_next.platform.platform_foundation.background_jobs.catalog import JobCatalog
             from aicrm_next.router_registry import active_router_specs
 
 

@@ -10,7 +10,7 @@ from aicrm_next.crm.customer_read_model.repo import (
     LiveSourceCustomerReadRepository,
     build_customer_live_source_repository,
 )
-from aicrm_next.shared.database import get_sqlalchemy_database_url
+from aicrm_next.platform.shared.database import get_sqlalchemy_database_url
 
 
 def _execute_all(session, statements: list[str]) -> None:

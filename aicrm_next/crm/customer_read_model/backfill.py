@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import Protocol
 from uuid import uuid4
 
-from aicrm_next.shared.typing import JsonDict
-from aicrm_next.shared.safe_logging import safe_log_exception
+from aicrm_next.platform.shared.typing import JsonDict
+from aicrm_next.platform.shared.safe_logging import safe_log_exception
 
 from .repo import CustomerReadRepository, FixtureCustomerReadRepository, build_customer_read_model_repository
 from .reconciliation import CustomerReadModelReconciliationRun, reconcile_customer_read_model

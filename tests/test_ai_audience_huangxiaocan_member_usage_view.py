@@ -9,7 +9,7 @@ from sqlalchemy import text
 from aicrm_next.extensions.ai.ai_audience_ops.hxc_projection import HxcMemberUsageProjectionService
 from aicrm_next.extensions.ai.ai_audience_ops.simple_sql import validate_simple_sql
 from aicrm_next.extensions.ai.ai_audience_ops.sql_catalog import ALLOWED_VIEWS, schema_catalog_payload
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.platform.shared.db_session import get_session_factory
 
 
 MIGRATION = importlib.import_module("migrations.versions.0151_ai_audience_hxc_projection_view")

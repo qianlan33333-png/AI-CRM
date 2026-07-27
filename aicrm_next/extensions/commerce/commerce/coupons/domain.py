@@ -6,7 +6,7 @@ from enum import Enum
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from aicrm_next.shared.errors import ContractError
+from aicrm_next.platform.shared.errors import ContractError
 
 
 UTC = timezone.utc

@@ -4,9 +4,9 @@ from datetime import datetime, timezone
 import re
 from typing import Any
 
-from aicrm_next.navigation_target import completion_action_for_target, completion_target_projection, normalize_completion_target, safe_completion_url
-from aicrm_next.navigation_target.domain import h5_url_for_legacy_fields
-from aicrm_next.shared.errors import ContractError
+from aicrm_next.platform.navigation_target import completion_action_for_target, completion_target_projection, normalize_completion_target, safe_completion_url
+from aicrm_next.platform.navigation_target.domain import h5_url_for_legacy_fields
+from aicrm_next.platform.shared.errors import ContractError
 
 PRODUCT_CODE_PATTERN = re.compile(r"^[A-Za-z0-9_-]{3,80}$")
 

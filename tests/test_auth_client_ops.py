@@ -5,11 +5,11 @@ import json
 import os
 from pathlib import Path
 
-from aicrm_next.platform_foundation.auth_platform.context import PrincipalType
-from aicrm_next.platform_foundation.auth_platform.credentials import hash_client_secret, verify_client_secret
-from aicrm_next.platform_foundation.auth_platform.models import ApiClientRecord
-from aicrm_next.platform_foundation.auth_platform.profiles import API_CLIENT_PROFILE_BY_PURPOSE
-from aicrm_next.shared.secret_store import FileSecretStore, is_secret_reference
+from aicrm_next.platform.platform_foundation.auth_platform.context import PrincipalType
+from aicrm_next.platform.platform_foundation.auth_platform.credentials import hash_client_secret, verify_client_secret
+from aicrm_next.platform.platform_foundation.auth_platform.models import ApiClientRecord
+from aicrm_next.platform.platform_foundation.auth_platform.profiles import API_CLIENT_PROFILE_BY_PURPOSE
+from aicrm_next.platform.shared.secret_store import FileSecretStore, is_secret_reference
 from scripts.ops.bootstrap_auth_clients import _read_environment_file
 from scripts.ops.manage_auth_clients import client_status, rotate_client_secret, set_client_enabled
 

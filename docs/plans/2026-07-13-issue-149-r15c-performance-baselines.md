@@ -14,7 +14,7 @@
 
 **Files:**
 - Create: `docs/performance/critical_read_path_baselines.json`
-- Create: `aicrm_next/platform_foundation/performance_contracts.py`
+- Create: `aicrm_next/platform/platform_foundation/performance_contracts.py`
 - Create: `tests/test_critical_read_performance_contracts.py`
 
 **Steps:** Add four route-owned profiles with fixed dataset sizes, sample counts, maximum query counts, page limits, reviewed p95 values, 1.10 regression factor, and prohibited large sequential scans. Validate duplicate/missing profiles, invalid budgets, and explicit baseline updates; prove an injected query-count, pagination, plan, or p95 regression fails.
@@ -33,7 +33,7 @@
 - Modify: `aicrm_next/customer_read_model/repo.py`
 - Modify: `aicrm_next/customer_read_model/sidebar_v2.py`
 - Modify: `aicrm_next/questionnaire/repo.py`
-- Modify: `aicrm_next/admin_jobs/repository.py`
+- Modify: `aicrm_next/platform/admin_jobs/repository.py`
 - Create: `migrations/versions/0106_critical_read_path_indexes.py`
 - Modify: lifecycle/schema/index tests as required
 

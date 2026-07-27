@@ -5,8 +5,8 @@ from datetime import datetime, timezone
 from typing import Any, Protocol
 from uuid import uuid4
 
-from aicrm_next.shared.repository_provider import RepositoryProviderError, assert_repository_allowed
-from aicrm_next.shared.runtime import production_data_ready, production_environment, raw_database_url
+from aicrm_next.platform.shared.repository_provider import RepositoryProviderError, assert_repository_allowed
+from aicrm_next.platform.shared.runtime import production_data_ready, production_environment, raw_database_url
 
 
 HXC_BROADCAST_SOURCE_TYPE = "hxc_dashboard_broadcast"

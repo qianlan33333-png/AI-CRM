@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from aicrm_next.platform_foundation.execution_runtime.cutover import (
+from aicrm_next.platform.platform_foundation.execution_runtime.cutover import (
     CANONICAL_RUNTIME_SERVICES,
     PR3_LEGACY_PERSISTENT_SERVICES,
     PR3_LEGACY_TIMER_OWNERS,
@@ -621,7 +621,7 @@ def test_queue_cutover_checker_rejects_canary_scope_in_ordinary_producer(tmp_pat
 
 
 def test_queue_cutover_checker_rejects_default_policy_queue_insert(tmp_path) -> None:
-    relative = "aicrm_next/platform_foundation/external_effects/repo.py"
+    relative = "aicrm_next/platform/platform_foundation/external_effects/repo.py"
     producer = tmp_path / relative
     producer.parent.mkdir(parents=True)
     producer.write_text(

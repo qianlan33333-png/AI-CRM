@@ -17,7 +17,7 @@ from aicrm_next.extensions.growth.cloud_orchestrator.campaigns_write import (
 from aicrm_next.crm.customer_tags.live_mutation import execute_wecom_tag_mutation, reset_wecom_tag_live_mutation_fixture_state
 from aicrm_next.crm.customer_tags.mutation_commands import PlanWeComTagMarkCommand, PlanWeComTagUnmarkCommand
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.internal_events import InternalEventService, reset_internal_event_fixture_state
+from aicrm_next.platform.platform_foundation.internal_events import InternalEventService, reset_internal_event_fixture_state
 from aicrm_next.extensions.forms.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
 from aicrm_next.extensions.forms.questionnaire.repo import reset_questionnaire_fixture_state
 from tests.wechat_identity_test_support import authorize_wechat_client
@@ -212,7 +212,7 @@ def test_shadow_emit_failure_does_not_break_original_tag_write(monkeypatch) -> N
         def emit_event(self, **_kwargs):
             raise RuntimeError("internal event unavailable")
 
-    monkeypatch.setattr("aicrm_next.platform_foundation.internal_events.shadow.InternalEventService", BrokenInternalEventService)
+    monkeypatch.setattr("aicrm_next.platform.platform_foundation.internal_events.shadow.InternalEventService", BrokenInternalEventService)
 
     result = execute_wecom_tag_mutation(
         PlanWeComTagMarkCommand(

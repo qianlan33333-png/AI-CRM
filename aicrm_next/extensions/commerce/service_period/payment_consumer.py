@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from aicrm_next.platform_foundation.internal_events.models import InternalEvent, InternalEventConsumerResult, InternalEventConsumerRun
-from aicrm_next.platform_foundation.internal_events.repository import read_wechat_pay_order_for_payment_event
+from aicrm_next.platform.platform_foundation.internal_events.models import InternalEvent, InternalEventConsumerResult, InternalEventConsumerRun
+from aicrm_next.platform.platform_foundation.internal_events.repository import read_wechat_pay_order_for_payment_event
 
 from .application import GrantOrRenewEntitlementCommand
 

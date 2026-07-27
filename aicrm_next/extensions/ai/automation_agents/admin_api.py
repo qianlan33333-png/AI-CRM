@@ -6,8 +6,8 @@ from fastapi import APIRouter, Body, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
-from aicrm_next.admin_auth.guards import admin_api_auth_error
-from aicrm_next.shared.admin_read_fallback import admin_read_unavailable_payload
+from aicrm_next.platform.admin_auth.guards import admin_api_auth_error
+from aicrm_next.platform.shared.admin_read_fallback import admin_read_unavailable_payload
 
 from .application import AutomationAgentAdminService
 

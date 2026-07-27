@@ -4,13 +4,13 @@ from fastapi import APIRouter, Header, HTTPException, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
-from aicrm_next.platform_foundation.auth_platform.context import AuthContext
+from aicrm_next.platform.platform_foundation.auth_platform.context import AuthContext
 from pydantic import ValidationError
 from starlette.datastructures import UploadFile as StarletteUploadFile
 
-from aicrm_next.shared.errors import ApplicationError, ContractError, NotFoundError
+from aicrm_next.platform.shared.errors import ApplicationError, ContractError, NotFoundError
 from aicrm_next.common_operation_members import search_operation_members
-from aicrm_next.platform_foundation.external_effects.test_receiver import safe_current_base_url
+from aicrm_next.platform.platform_foundation.external_effects.test_receiver import safe_current_base_url
 
 from .application import (
     AddGroupOpsPlanGroupCommand,

@@ -13,16 +13,16 @@ from aicrm_next.extensions.growth.cloud_orchestrator.run_due import (
     execute_cloud_campaign_run_due_command,
     reset_run_due_fixture_state,
 )
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.external_effects import (
     AI_ASSIST_CAMPAIGN_MESSAGE_LOOPBACK,
     WEBHOOK_ORDER_PAID_PUSH,
     WECOM_MESSAGE_PRIVATE_SEND,
     ExternalEffectService,
     reset_external_effect_fixture_state,
 )
-from aicrm_next.platform_foundation.external_effects.adapters import DEFAULT_ADAPTER_REGISTRY, WebhookAdapter
-from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
-from aicrm_next.platform_foundation.auth_platform.webhook_hmac import WebhookHmacSigner
+from aicrm_next.platform.platform_foundation.external_effects.adapters import DEFAULT_ADAPTER_REGISTRY, WebhookAdapter
+from aicrm_next.platform.platform_foundation.external_effects.worker import ExternalEffectWorker
+from aicrm_next.platform.platform_foundation.auth_platform.webhook_hmac import WebhookHmacSigner
 from tests.webhook_hmac_test_helpers import install_webhook_hmac_client
 
 

@@ -6,7 +6,7 @@ import psycopg
 from psycopg.rows import dict_row
 from sqlalchemy import create_engine, text
 
-from aicrm_next.platform_foundation.job_runs import (
+from aicrm_next.platform.platform_foundation.job_runs import (
     FinishJobRunRequest,
     StartJobRunRequest,
     build_job_run_ledger_port,

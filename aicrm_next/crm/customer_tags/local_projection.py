@@ -8,8 +8,8 @@ from sqlalchemy.engine import Engine
 
 from aicrm_next.crm.identity_contact.dto import ResolvePersonIdentityRequest
 from aicrm_next.crm.identity_contact.resolver import SQLAlchemyIdentityResolver, resolved_unionid
-from aicrm_next.shared.db_session import get_engine
-from aicrm_next.shared.runtime import database_mode
+from aicrm_next.platform.shared.db_session import get_engine
+from aicrm_next.platform.shared.runtime import database_mode
 
 from .read_model import TagCatalogUnavailable, build_tag_catalog_repository
 

@@ -12,7 +12,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from aicrm_next.deployment_profile import RUNTIME_ROLES
-from aicrm_next.platform_foundation.background_jobs.catalog import JOB_SPECS, validate_job_catalog
+from aicrm_next.platform.platform_foundation.background_jobs.catalog import JOB_SPECS, validate_job_catalog
 
 
 DEFAULT_ROLE_CATALOG = ROOT / "deploy" / "runtime_role_catalog.json"

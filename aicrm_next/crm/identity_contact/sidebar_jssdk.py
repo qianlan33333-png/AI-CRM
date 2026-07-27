@@ -19,14 +19,14 @@ from aicrm_next.integration_ports import (
     WeComAdminAuthClientError,
     build_wecom_admin_auth_client,
 )
-from aicrm_next.shared.runtime import production_environment
-from aicrm_next.shared.runtime_settings import managed_runtime_setting, runtime_setting
-from aicrm_next.shared.signed_context import (
+from aicrm_next.platform.shared.runtime import production_environment
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting, runtime_setting
+from aicrm_next.platform.shared.signed_context import (
     SIDEBAR_VIEWER_SESSION_COOKIE,
     build_sidebar_owner_context_token,
     sidebar_owner_context_ttl_seconds,
 )
-from aicrm_next.shared.signed_session import (
+from aicrm_next.platform.shared.signed_session import (
     DEFAULT_SESSION_MAX_AGE_SECONDS,
     session_cookie_secure,
     sign_session_payload,

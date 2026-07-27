@@ -19,17 +19,17 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.admin_config.application import AdminConfigWriteCommand  # noqa: E402
-from aicrm_next.admin_config.repository import AdminConfigRepository  # noqa: E402
-from aicrm_next.shared.db_session import get_engine  # noqa: E402
-from aicrm_next.shared.queue_provenance import (  # noqa: E402
+from aicrm_next.platform.admin_config.application import AdminConfigWriteCommand  # noqa: E402
+from aicrm_next.platform.admin_config.repository import AdminConfigRepository  # noqa: E402
+from aicrm_next.platform.shared.db_session import get_engine  # noqa: E402
+from aicrm_next.platform.shared.queue_provenance import (  # noqa: E402
     POST_CUTOVER_IDENTITY_RECOVERY_POLICY,
     POST_CUTOVER_IDENTITY_RECOVERY_PREDICATE_VERSION,
     external_contact_relationship_absent_terminal_sql,
     post_cutover_identity_recovery_predicate_sql,
 )
-from aicrm_next.shared.sensitive_data import redact_sensitive_data  # noqa: E402
-from aicrm_next.shared.wecom_runtime import (  # noqa: E402
+from aicrm_next.platform.shared.sensitive_data import redact_sensitive_data  # noqa: E402
+from aicrm_next.platform.shared.wecom_runtime import (  # noqa: E402
     WECOM_ENABLED_EFFECT_TYPES_KEY,
     load_wecom_execution_config,
 )

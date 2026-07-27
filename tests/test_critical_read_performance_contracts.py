@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from aicrm_next.platform_foundation.performance_contracts import (
+from aicrm_next.platform.platform_foundation.performance_contracts import (
     REQUIRED_PROFILES,
     evaluate_read_path_report,
     load_read_path_baselines,

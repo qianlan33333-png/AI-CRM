@@ -7,9 +7,9 @@ from typing import Any
 from fastapi import APIRouter, File, Form, Header, HTTPException, Query, UploadFile
 from fastapi.responses import JSONResponse, Response
 
-from aicrm_next.shared.errors import ContractError, NotFoundError
-from aicrm_next.shared.runtime_settings import runtime_setting
-from aicrm_next.shared.safe_logging import safe_log_exception
+from aicrm_next.platform.shared.errors import ContractError, NotFoundError
+from aicrm_next.platform.shared.runtime_settings import runtime_setting
+from aicrm_next.platform.shared.safe_logging import safe_log_exception
 
 from .application import (
     DeleteMediaItemCommand,

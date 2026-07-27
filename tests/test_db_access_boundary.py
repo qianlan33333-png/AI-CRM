@@ -15,7 +15,7 @@ def _write(path: Path, content: str) -> None:
 
 def _config(*, allowlist: list[dict] | None = None) -> dict:
     return {
-        "allowed_paths": ["aicrm_next/shared/db_session.py"],
+        "allowed_paths": ["aicrm_next/platform/shared/db_session.py"],
         "allowed_globs": [
             "aicrm_next/**/repo.py",
             "aicrm_next/**/repository.py",
@@ -47,7 +47,7 @@ def test_db_access_boundary_allows_approved_boundary_paths(tmp_path: Path) -> No
     _write_config(tmp_path / "db_access_boundary.yml")
     _write(tmp_path / "aicrm_next" / "demo_context" / "repo.py", "def run(session):\n    session.execute('select 1')\n")
     _write(
-        tmp_path / "aicrm_next" / "shared" / "db_session.py",
+        tmp_path / "aicrm_next" / "platform" / "shared" / "db_session.py",
         "from sqlalchemy import create_engine\nfrom sqlalchemy.orm import sessionmaker\nengine = create_engine('sqlite://')\nfactory = sessionmaker(bind=engine)\n",
     )
     _write(tmp_path / "migrations" / "versions" / "demo.py", "def upgrade(op):\n    op.execute('select 1')\n")
@@ -93,7 +93,7 @@ def test_db_access_boundary_blocks_forbidden_layer_direct_db_access(
     assert violation.rule == "db_access_boundary_violation"
     assert violation.detected_primitive == detected
     assert "repo.py/repository.py" in violation.suggestion
-    assert "aicrm_next.shared.db_session" in violation.suggestion
+    assert "aicrm_next.platform.shared.db_session" in violation.suggestion
 
 
 def test_db_access_boundary_blocks_frontend_compat_raw_sql_execute(tmp_path: Path) -> None:
@@ -281,10 +281,10 @@ def test_db_access_boundary_no_longer_allowlists_background_jobs_or_payment_even
 
     allowlisted_paths = {entry["path"] for entry in config["temporary_allowlist"]}
     background_db_source = Path("aicrm_next/background_jobs/db.py").read_text(encoding="utf-8")
-    payment_source = Path("aicrm_next/platform_foundation/internal_events/payment.py").read_text(encoding="utf-8")
+    payment_source = Path("aicrm_next/platform/platform_foundation/internal_events/payment.py").read_text(encoding="utf-8")
 
     assert "aicrm_next/background_jobs/db.py" not in allowlisted_paths
-    assert "aicrm_next/platform_foundation/internal_events/payment.py" not in allowlisted_paths
+    assert "aicrm_next/platform/platform_foundation/internal_events/payment.py" not in allowlisted_paths
     assert "psycopg.connect" not in background_db_source
     assert "psycopg.connect" not in payment_source
 
@@ -313,7 +313,7 @@ def test_db_access_boundary_temporary_allowlist_is_empty() -> None:
         "aicrm_next/extensions/growth/cloud_orchestrator/campaigns_read.py",
         "aicrm_next/extensions/hxc/hxc_dashboard/postgres_repo.py",
         "aicrm_next/media_library/postgres_repo.py",
-        "aicrm_next/shared/postgres_connection.py",
+        "aicrm_next/platform/shared/postgres_connection.py",
     ):
         source = Path(path).read_text(encoding="utf-8")
         assert "psycopg.connect" not in source

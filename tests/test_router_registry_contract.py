@@ -7,7 +7,7 @@ from starlette.routing import Mount
 
 from aicrm_next.main import create_app
 from aicrm_next.router_registry import ROUTER_SPECS, router_registry_summary
-from aicrm_next.shared.route_ownership import collect_route_inventory
+from aicrm_next.platform.shared.route_ownership import collect_route_inventory
 
 
 def test_router_registry_specs_have_capability_owner_and_route_group() -> None:

@@ -4,8 +4,8 @@ from sqlalchemy import create_engine, text
 
 import pytest
 
-from aicrm_next.admin_config.config_release_repository import ConfigReleaseRepository
-from aicrm_next.admin_config.config_releases import ConfigReleaseService
+from aicrm_next.platform.admin_config.config_release_repository import ConfigReleaseRepository
+from aicrm_next.platform.admin_config.config_releases import ConfigReleaseService
 from aicrm_next.runtime_configuration import RUNTIME_CONFIG_CUTOVER_KEYS_KEY
 from scripts.ops.manage_runtime_config_release import (
     RuntimeConfigOperationError,

@@ -3,19 +3,19 @@ from __future__ import annotations
 import json
 from urllib.parse import urlparse
 
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import (
     GROUP_OPS_MESSAGE_LOOPBACK,
     WECOM_MESSAGE_GROUP_SEND,
     ExternalEffectService,
 )
-from aicrm_next.platform_foundation.external_effects.adapters import (
+from aicrm_next.platform.platform_foundation.external_effects.adapters import (
     DEFAULT_ADAPTER_REGISTRY,
     WeComGroupMessageExternalEffectAdapter,
     WebhookAdapter,
 )
-from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
-from aicrm_next.platform_foundation.auth_platform.webhook_hmac import WebhookHmacSigner
+from aicrm_next.platform.platform_foundation.external_effects.worker import ExternalEffectWorker
+from aicrm_next.platform.platform_foundation.auth_platform.webhook_hmac import WebhookHmacSigner
 from tests.webhook_hmac_test_helpers import install_webhook_hmac_client, signed_headers
 
 pytest_plugins = ("tests.group_ops_test_helpers",)

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from aicrm_next.shared import postgres_connection, runtime, signed_context, signed_session
+from aicrm_next.platform.shared import postgres_connection, runtime, signed_context, signed_session
 
 
 class _FakeConnection:
@@ -35,7 +35,7 @@ def test_shared_signed_context_has_no_flask_config_imports(monkeypatch) -> None:
     owner_result = signed_context.load_sidebar_owner_context_token(owner_token)
     assert owner_result["ok"] is True
     assert owner_result["context"]["viewer_userid"] == "viewer_001"
-    source = Path("aicrm_next/shared/signed_context.py").read_text(encoding="utf-8")
+    source = Path("aicrm_next/platform/shared/signed_context.py").read_text(encoding="utf-8")
     assert "current_app" not in source
     assert "flask" not in source
 
@@ -48,7 +48,7 @@ def test_shared_signed_session_has_no_flask_config_imports(monkeypatch) -> None:
 
     assert result is not None
     assert result["wecom_userid"] == "viewer_001"
-    source = Path("aicrm_next/shared/signed_session.py").read_text(encoding="utf-8")
+    source = Path("aicrm_next/platform/shared/signed_session.py").read_text(encoding="utf-8")
     assert "current_app" not in source
     assert "flask" not in source
 
@@ -78,7 +78,7 @@ def test_postgres_db_session_reuses_contextvar_connection(monkeypatch) -> None:
 
 
 def test_postgres_connection_has_no_flask_imports() -> None:
-    source = Path("aicrm_next/shared/postgres_connection.py").read_text(encoding="utf-8")
+    source = Path("aicrm_next/platform/shared/postgres_connection.py").read_text(encoding="utf-8")
     assert "current_app" not in source
     assert "has_app_context" not in source
     assert "from flask" not in source

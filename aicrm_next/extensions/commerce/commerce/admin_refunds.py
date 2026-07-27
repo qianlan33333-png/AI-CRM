@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from aicrm_next.shared.runtime import database_mode
+from aicrm_next.platform.shared.runtime import database_mode
 
 from .admin_transactions import create_wechat_refund_request
 from .admin_unified_orders import ROUTE_OWNER, normalize_limit, normalize_offset, normalize_provider

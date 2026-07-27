@@ -7,13 +7,13 @@ import psycopg
 import pytest
 from psycopg.rows import dict_row
 
-from aicrm_next.platform_foundation.execution_runtime.commands import (
+from aicrm_next.platform.platform_foundation.execution_runtime.commands import (
     QueueRuntimeCommandService,
 )
-from aicrm_next.platform_foundation.execution_runtime.repository import (
+from aicrm_next.platform.platform_foundation.execution_runtime.repository import (
     ExecutionRuntimeRepository,
 )
-from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
+from aicrm_next.platform.platform_foundation.external_effects.service import ExternalEffectService
 
 
 pytestmark = pytest.mark.usefixtures("next_pg_schema")

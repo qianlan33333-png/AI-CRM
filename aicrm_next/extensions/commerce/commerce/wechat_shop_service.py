@@ -12,11 +12,11 @@ from aicrm_next.integration_ports import (
     WeChatShopClientError,
 )
 from aicrm_next.crm.identity_contact.payment_projection import project_wechat_shop_order_mobile
-from aicrm_next.platform_foundation.command_bus.models import CommandContext
-from aicrm_next.platform_foundation.internal_events.models import InternalEventCreateRequest
-from aicrm_next.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
-from aicrm_next.shared.runtime import database_mode
-from aicrm_next.shared.runtime_settings import managed_runtime_setting, runtime_setting
+from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform.platform_foundation.internal_events.models import InternalEventCreateRequest
+from aicrm_next.platform.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
+from aicrm_next.platform.shared.runtime import database_mode
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting, runtime_setting
 
 from .product_code_aliases import canonical_product_code, canonical_product_name
 from .repo import connect_commerce_db

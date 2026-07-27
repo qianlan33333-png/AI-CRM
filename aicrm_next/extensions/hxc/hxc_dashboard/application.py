@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import Any
 
 from aicrm_next.send_content.application import NormalizeSendContentPackageCommand
-from aicrm_next.shared.errors import ContractError
-from aicrm_next.shared.repository_provider import RepositoryProviderError
+from aicrm_next.platform.shared.errors import ContractError
+from aicrm_next.platform.shared.repository_provider import RepositoryProviderError
 
 from .dto import HxcBroadcastTaskRequest
 from .repo import HXC_BROADCAST_SOURCE_TYPE, HxcDashboardBroadcastRepository, build_hxc_dashboard_broadcast_repository

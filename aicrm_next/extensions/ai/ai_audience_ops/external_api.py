@@ -6,7 +6,7 @@ from fastapi import APIRouter, Body, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
-from aicrm_next.shared.runtime_settings import managed_runtime_setting
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting
 
 from .package_spec import package_payload_from_spec, parse_markdown_spec_text, validate_spec
 from .repository import build_audience_repository, _text

@@ -8,7 +8,7 @@ import json
 from typing import Any
 
 from aicrm_next.integration_ports import WeComTagLiveGateway, build_wecom_tag_live_gateway
-from aicrm_next.shared.runtime_settings import (
+from aicrm_next.platform.shared.runtime_settings import (
     managed_runtime_bool,
     managed_runtime_setting,
     startup_environment_setting,

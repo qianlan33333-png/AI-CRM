@@ -865,7 +865,7 @@ def _safe_next_native_target(conn: Any) -> dict[str, Any]:
 
 def _collect_run_due_gate_config() -> dict[str, Any]:
     try:
-        from aicrm_next.platform_foundation.internal_events.config import (
+        from aicrm_next.platform.platform_foundation.internal_events.config import (
             allowed_consumers,
             allowed_event_consumers,
             allowed_event_types,

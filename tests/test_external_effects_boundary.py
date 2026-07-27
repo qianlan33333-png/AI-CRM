@@ -46,7 +46,7 @@ def test_external_effects_boundary_allows_approved_boundary_paths(tmp_path: Path
         "import requests\nrequests.post('https://example.test')\n",
     )
     _write(
-        tmp_path / "aicrm_next" / "platform_foundation" / "external_effects" / "foo.py",
+        tmp_path / "aicrm_next" / "platform" / "platform_foundation" / "external_effects" / "foo.py",
         "import httpx\nhttpx.Client()\n",
     )
 

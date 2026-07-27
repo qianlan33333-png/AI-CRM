@@ -4,7 +4,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from aicrm_next.shared.typing import JsonDict
+from aicrm_next.platform.shared.typing import JsonDict
 
 from .repo import CustomerReadRepository
 

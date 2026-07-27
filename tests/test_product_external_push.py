@@ -7,9 +7,9 @@ from types import SimpleNamespace
 import pytest
 
 from aicrm_next.extensions.commerce.commerce import external_push_admin
-from aicrm_next.external_push import security, service
+from aicrm_next.platform.external_push import security, service
 from aicrm_next.extensions.commerce.commerce.repo import reset_commerce_fixture_state
-from aicrm_next.platform_foundation.external_effects import ExternalEffectService, WEBHOOK_ORDER_PAID_PUSH, reset_external_effect_fixture_state
+from aicrm_next.platform.platform_foundation.external_effects import ExternalEffectService, WEBHOOK_ORDER_PAID_PUSH, reset_external_effect_fixture_state
 
 
 def _public_dns(monkeypatch, ip: str = "93.184.216.34") -> None:

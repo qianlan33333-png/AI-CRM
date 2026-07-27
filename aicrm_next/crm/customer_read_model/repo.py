@@ -15,12 +15,12 @@ from sqlalchemy.orm import Session
 
 from aicrm_next.crm.identity_contact.dto import ResolvePersonIdentityRequest
 from aicrm_next.crm.identity_contact.resolver import SQLAlchemyIdentityResolver, resolved_identity_or_none
-from aicrm_next.shared.config import Settings, get_settings
-from aicrm_next.shared.db_session import get_session_factory
-from aicrm_next.shared.repository_provider import assert_repository_allowed
-from aicrm_next.shared.runtime import database_mode
-from aicrm_next.shared.runtime_settings import startup_environment_setting
-from aicrm_next.shared.typing import JsonDict
+from aicrm_next.platform.shared.config import Settings, get_settings
+from aicrm_next.platform.shared.db_session import get_session_factory
+from aicrm_next.platform.shared.repository_provider import assert_repository_allowed
+from aicrm_next.platform.shared.runtime import database_mode
+from aicrm_next.platform.shared.runtime_settings import startup_environment_setting
+from aicrm_next.platform.shared.typing import JsonDict
 
 from .models import (
     customer_detail_snapshot_next,

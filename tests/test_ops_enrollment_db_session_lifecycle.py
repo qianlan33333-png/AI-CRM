@@ -145,7 +145,7 @@ def test_overview_query_does_not_close_injected_repo(monkeypatch) -> None:
 
 def test_broadcast_preview_handler_closes_internally_created_repo(monkeypatch) -> None:
     from aicrm_next.ops_enrollment import application
-    from aicrm_next.platform_foundation.command_bus import Command, CommandContext
+    from aicrm_next.platform.platform_foundation.command_bus import Command, CommandContext
 
     monkeypatch.setenv("USER_OPS_REPO_BACKEND", "sqlalchemy")
     repo = FakeUserOpsRepository()

@@ -5,8 +5,8 @@ from pathlib import Path
 from fastapi.routing import APIRoute
 
 from aicrm_next.main import create_app
-from aicrm_next.shared.route_ownership import FASTAPI_BUILTIN_ROUTE_PATHS, collect_route_inventory, load_route_manifest
-from aicrm_next.shared.route_policy import RoutePolicyIndex
+from aicrm_next.platform.shared.route_ownership import FASTAPI_BUILTIN_ROUTE_PATHS, collect_route_inventory, load_route_manifest
+from aicrm_next.platform.shared.route_policy import RoutePolicyIndex
 
 
 ROOT = Path(__file__).resolve().parents[1]

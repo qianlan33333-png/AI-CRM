@@ -20,7 +20,7 @@ from aicrm_next.extensions.commerce.service_period.huangyoucan_usage_sync import
     sync_huangyoucan_usage,
 )
 from aicrm_next.extensions.commerce.service_period.repo import PostgresServicePeriodRepository
-from aicrm_next.shared import runtime_settings
+from aicrm_next.platform.shared import runtime_settings
 
 
 ROOT = Path(__file__).resolve().parents[1]

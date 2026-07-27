@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from aicrm_next.platform_foundation.external_effects.models import ExternalEffectAttempt, ExternalEffectJob
-from aicrm_next.platform_foundation.external_effects.provider_receipts import provider_receipt_from_external_effect
+from aicrm_next.platform.platform_foundation.external_effects.models import ExternalEffectAttempt, ExternalEffectJob
+from aicrm_next.platform.platform_foundation.external_effects.provider_receipts import provider_receipt_from_external_effect
 from aicrm_next.scrm_contracts import (
     AudienceFilter,
     AudienceSpec,

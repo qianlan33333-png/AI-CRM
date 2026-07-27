@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Protocol
 
-from aicrm_next.shared.errors import NotFoundError
+from aicrm_next.platform.shared.errors import NotFoundError
 
 from .domain import TENANT_ID, isoformat, text, utcnow
 from .member_grid_access import (

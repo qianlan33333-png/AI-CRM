@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 
-from aicrm_next.shared.errors import ApplicationError
+from aicrm_next.platform.shared.errors import ApplicationError
 
 from .domain import clean_text
 

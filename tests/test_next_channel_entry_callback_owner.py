@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.shared.runtime import runtime_route_map_state
+from aicrm_next.platform.shared.runtime import runtime_route_map_state
 
 
 def test_callback_routes_are_next_owner_not_legacy_facade(monkeypatch):

@@ -3,8 +3,8 @@ from __future__ import annotations
 import pytest
 
 from aicrm_next.extensions.archive import admin_jobs_archive_sync_gateway as archive_gateway
-from aicrm_next.admin_jobs import application
-from aicrm_next.admin_jobs.repository import FixtureAdminJobsRepository
+from aicrm_next.platform.admin_jobs import application
+from aicrm_next.platform.admin_jobs.repository import FixtureAdminJobsRepository
 
 
 def test_admin_jobs_archive_sync_uses_package_root_gateway(monkeypatch) -> None:

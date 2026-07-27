@@ -92,8 +92,8 @@ MATERIAL_LIBRARY_TABLES = {
 
 SINGLE_OWNER_RUNTIME_WRITES = {
     "admin_operation_logs": (
-        "aicrm_next.platform_foundation.admin_audit",
-        {"aicrm_next/platform_foundation/admin_audit/repository.py"},
+        "aicrm_next.platform.platform_foundation.admin_audit",
+        {"aicrm_next/platform/platform_foundation/admin_audit/repository.py"},
     ),
     "automation_channel": (
         "aicrm_next.channels.channel_entry",
@@ -120,54 +120,54 @@ SINGLE_OWNER_RUNTIME_WRITES = {
         {"aicrm_next/channels/channel_entry/repo.py"},
     ),
     "domain_event_outbox": (
-        "aicrm_next.external_push",
-        {"aicrm_next/external_push/repo.py"},
+        "aicrm_next.platform.external_push",
+        {"aicrm_next/platform/external_push/repo.py"},
     ),
     "external_push_delivery": (
-        "aicrm_next.external_push",
-        {"aicrm_next/external_push/repo.py"},
+        "aicrm_next.platform.external_push",
+        {"aicrm_next/platform/external_push/repo.py"},
     ),
     "outbound_webhook_deliveries": (
-        "aicrm_next.admin_jobs",
-        {"aicrm_next/admin_jobs/repository.py"},
+        "aicrm_next.platform.admin_jobs",
+        {"aicrm_next/platform/admin_jobs/repository.py"},
     ),
     "queue_rate_scope_cooldown": (
-        "aicrm_next.platform_foundation.rate_scope_cooldown",
-        {"aicrm_next/platform_foundation/rate_scope_cooldown/repository.py"},
+        "aicrm_next.platform.platform_foundation.rate_scope_cooldown",
+        {"aicrm_next/platform/platform_foundation/rate_scope_cooldown/repository.py"},
     ),
     "sync_runs": (
-        "aicrm_next.platform_foundation.job_runs",
-        {"aicrm_next/platform_foundation/job_runs/repository.py"},
+        "aicrm_next.platform.platform_foundation.job_runs",
+        {"aicrm_next/platform/platform_foundation/job_runs/repository.py"},
     ),
     "webhook_inbox": (
-        "aicrm_next.platform_foundation.webhook_inbox",
+        "aicrm_next.platform.platform_foundation.webhook_inbox",
         {
-            "aicrm_next/platform_foundation/webhook_inbox/repository.py",
-            "aicrm_next/platform_foundation/webhook_inbox/runtime_write_repository.py",
+            "aicrm_next/platform/platform_foundation/webhook_inbox/repository.py",
+            "aicrm_next/platform/platform_foundation/webhook_inbox/runtime_write_repository.py",
         },
     ),
     "internal_event_consumer_run": (
-        "aicrm_next.platform_foundation.internal_events",
+        "aicrm_next.platform.platform_foundation.internal_events",
         {
-            "aicrm_next/platform_foundation/internal_events/repository.py",
-            "aicrm_next/platform_foundation/internal_events/consumer_run_write_repository.py",
+            "aicrm_next/platform/platform_foundation/internal_events/repository.py",
+            "aicrm_next/platform/platform_foundation/internal_events/consumer_run_write_repository.py",
         },
     ),
     "internal_event_consumer_attempt": (
-        "aicrm_next.platform_foundation.internal_events",
+        "aicrm_next.platform.platform_foundation.internal_events",
         {
-            "aicrm_next/platform_foundation/internal_events/repository.py",
-            "aicrm_next/platform_foundation/internal_events/consumer_run_write_repository.py",
+            "aicrm_next/platform/platform_foundation/internal_events/repository.py",
+            "aicrm_next/platform/platform_foundation/internal_events/consumer_run_write_repository.py",
         },
     ),
     "internal_event_outbox": (
-        "aicrm_next.platform_foundation.internal_events",
+        "aicrm_next.platform.platform_foundation.internal_events",
         {
-            "aicrm_next/platform_foundation/internal_events/outbox.py",
-            "aicrm_next/platform_foundation/internal_events/repository.py",
-            "aicrm_next/platform_foundation/internal_events/repository_support.py",
-            "aicrm_next/platform_foundation/internal_events/outbox_runtime_write_repository.py",
-            "aicrm_next/platform_foundation/internal_events/reconciliation/outbox.py",
+            "aicrm_next/platform/platform_foundation/internal_events/outbox.py",
+            "aicrm_next/platform/platform_foundation/internal_events/repository.py",
+            "aicrm_next/platform/platform_foundation/internal_events/repository_support.py",
+            "aicrm_next/platform/platform_foundation/internal_events/outbox_runtime_write_repository.py",
+            "aicrm_next/platform/platform_foundation/internal_events/reconciliation/outbox.py",
         },
     ),
     "automation_agent_audit_log": (
@@ -187,8 +187,8 @@ SINGLE_OWNER_RUNTIME_WRITES = {
         {"aicrm_next/background_jobs/broadcast_queue_worker.py"},
     ),
     "external_effect_test_receipt": (
-        "aicrm_next.platform_foundation.external_effects",
-        {"aicrm_next/platform_foundation/external_effects/repo.py"},
+        "aicrm_next.platform.platform_foundation.external_effects",
+        {"aicrm_next/platform/platform_foundation/external_effects/repo.py"},
     ),
     "external_push_config": (
         "aicrm_next.extensions.commerce.commerce",

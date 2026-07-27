@@ -5,7 +5,7 @@ import re
 import hashlib
 from typing import Any, Protocol
 
-from aicrm_next.shared.postgres_connection import get_db
+from aicrm_next.platform.shared.postgres_connection import get_db
 
 from .crm_port import (
     IdentityResolveResult,

@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Literal
 
 from .capability_registry import CAPABILITY_SPECS, CORE_VERSION, default_capability_ids, get_capability_spec
-from .shared.runtime_settings import startup_environment_setting
+from .platform.shared.runtime_settings import startup_environment_setting
 
 
 ActivationMode = Literal["observe", "enforce"]

@@ -15,7 +15,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-from aicrm_next.shared.runtime_settings import managed_runtime_setting
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting
 
 
 HttpRequest = Callable[..., Any]

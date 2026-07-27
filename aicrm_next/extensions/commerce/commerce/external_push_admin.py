@@ -5,16 +5,16 @@ import socket  # noqa: F401 -- compatibility export for legacy monkeypatch calle
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from aicrm_next.external_push.delivery_projection_port import build_external_push_delivery_projection_port
-from aicrm_next.external_push.security import WebhookUrlValidationError, resolve_and_validate_public_https_url  # noqa: F401
-from aicrm_next.external_push.service import (
+from aicrm_next.platform.external_push.delivery_projection_port import build_external_push_delivery_projection_port
+from aicrm_next.platform.external_push.security import WebhookUrlValidationError, resolve_and_validate_public_https_url  # noqa: F401
+from aicrm_next.platform.external_push.service import (
     build_external_push_payload as _build_external_push_payload,
     redact_sensitive_fields as _redact_sensitive_fields,
     sign_webhook_payload as _sign_webhook_payload,
 )
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.external_effects import ExternalEffectService, WEBHOOK_GENERIC_PUSH, WEBHOOK_ORDER_PAID_PUSH
-from aicrm_next.shared.runtime import production_data_ready
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import ExternalEffectService, WEBHOOK_GENERIC_PUSH, WEBHOOK_ORDER_PAID_PUSH
+from aicrm_next.platform.shared.runtime import production_data_ready
 
 from .external_push_outbox import DEFAULT_TENANT_ID, EVENT_TRANSACTION_PAID, resolve_product_for_order as _resolve_product_for_order
 from .repo import connect_commerce_db

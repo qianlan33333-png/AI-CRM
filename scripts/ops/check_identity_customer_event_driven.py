@@ -26,9 +26,9 @@ def _code_checks() -> dict[str, bool]:
     callback_body = application.split("def process_wecom_external_contact_event(", 1)[1].split("def diagnose_channel_runtime", 1)[0]
     identity_worker = _read("aicrm_next/channels/channel_entry/identity_resolution_worker.py")
     customer_script = _read("scripts/run_customer_read_model_refresh.py")
-    adapter = _read("aicrm_next/platform_foundation/external_effects/adapters.py")
-    completion = _read("aicrm_next/platform_foundation/external_effects/completion_events.py")
-    models = _read("aicrm_next/platform_foundation/external_effects/models.py")
+    adapter = _read("aicrm_next/platform/platform_foundation/external_effects/adapters.py")
+    completion = _read("aicrm_next/platform/platform_foundation/external_effects/completion_events.py")
+    models = _read("aicrm_next/platform/platform_foundation/external_effects/models.py")
     public_attempt_model = models.split("class ExternalEffectAttempt:", 1)[1].split("class ExternalEffectTestReceipt:", 1)[0]
     identity_adapter = adapter.split("class WeComExternalContactDetailAdapter", 1)[1].split("class WeChatPaymentAdapter", 1)[0]
     channel_repo = _read("aicrm_next/channels/channel_entry/repo.py")
@@ -65,7 +65,7 @@ def _code_checks() -> dict[str, bool]:
         ),
         "identity_effect_is_lane_owned": (
             'WECOM_EXTERNAL_CONTACT_DETAIL_FETCH = "wecom.external_contact.detail.fetch"'
-            in _read("aicrm_next/platform_foundation/external_effects/models.py")
+            in _read("aicrm_next/platform/platform_foundation/external_effects/models.py")
             and 'lane="wecom_interactive"' in _read("aicrm_next/crm/identity_contact/resolution_effects.py")
         ),
         "customer_generation_consumer_registered": (

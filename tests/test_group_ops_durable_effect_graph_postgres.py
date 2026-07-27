@@ -14,8 +14,8 @@ from aicrm_next.automation_engine.group_ops.durable_effects_repository import (
     GroupOpsEffectMaterial,
     SQLAlchemyGroupOpsEffectGraphRepository,
 )
-from aicrm_next.platform_foundation.external_effects.repo import SQLAlchemyExternalEffectRepository
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.platform.platform_foundation.external_effects.repo import SQLAlchemyExternalEffectRepository
+from aicrm_next.platform.shared.db_session import get_session_factory
 
 
 pytestmark = pytest.mark.usefixtures("next_pg_schema")

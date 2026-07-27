@@ -5,14 +5,14 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import uuid4
 
-from aicrm_next.platform_foundation.audit_ledger import InMemoryAuditLedger
-from aicrm_next.platform_foundation.command_bus import Command, CommandBus, CommandContext, CommandResult
-from aicrm_next.platform_foundation.external_calls import InMemoryExternalCallAttemptRepository
-from aicrm_next.platform_foundation.external_effects import AI_ASSIST_CAMPAIGN_MESSAGE_LOOPBACK, WECOM_MESSAGE_PRIVATE_SEND, ExternalEffectService
-from aicrm_next.platform_foundation.external_effects.models import public_datetime, utcnow
-from aicrm_next.platform_foundation.external_effects.test_receiver import TEST_RECEIVER_PATH_PREFIX, canonical_payload_hash
-from aicrm_next.platform_foundation.side_effects import InMemorySideEffectPlanRepository, SideEffectPlan
-from aicrm_next.shared.runtime_settings import managed_runtime_bool, managed_runtime_setting
+from aicrm_next.platform.platform_foundation.audit_ledger import InMemoryAuditLedger
+from aicrm_next.platform.platform_foundation.command_bus import Command, CommandBus, CommandContext, CommandResult
+from aicrm_next.platform.platform_foundation.external_calls import InMemoryExternalCallAttemptRepository
+from aicrm_next.platform.platform_foundation.external_effects import AI_ASSIST_CAMPAIGN_MESSAGE_LOOPBACK, WECOM_MESSAGE_PRIVATE_SEND, ExternalEffectService
+from aicrm_next.platform.platform_foundation.external_effects.models import public_datetime, utcnow
+from aicrm_next.platform.platform_foundation.external_effects.test_receiver import TEST_RECEIVER_PATH_PREFIX, canonical_payload_hash
+from aicrm_next.platform.platform_foundation.side_effects import InMemorySideEffectPlanRepository, SideEffectPlan
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_bool, managed_runtime_setting
 
 from .campaigns_read import build_campaign_read_repository
 

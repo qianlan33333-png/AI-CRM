@@ -12,8 +12,8 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.platform_foundation.internal_events.config import DEFAULT_WORKER_BATCH_SIZE
-from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
+from aicrm_next.platform.platform_foundation.internal_events.config import DEFAULT_WORKER_BATCH_SIZE
+from aicrm_next.platform.platform_foundation.internal_events.worker import InternalEventWorker
 from aicrm_next.internal_event_composition import build_internal_event_consumer_registry
 
 

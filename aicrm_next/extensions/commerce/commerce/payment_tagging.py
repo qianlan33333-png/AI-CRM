@@ -3,12 +3,12 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import (
     ExternalEffectService,
     WECOM_CONTACT_TAG_MARK,
 )
-from aicrm_next.platform_foundation.internal_events.models import (
+from aicrm_next.platform.platform_foundation.internal_events.models import (
     InternalEvent,
     InternalEventConsumerResult,
     InternalEventConsumerRun,

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.shared.typing import JsonDict
+from aicrm_next.platform.shared.typing import JsonDict
 
 
 def _customer_360_identity(context: JsonDict, profile: JsonDict, unionid: str) -> JsonDict:

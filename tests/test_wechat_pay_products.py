@@ -15,7 +15,7 @@ from aicrm_next.extensions.commerce.commerce.application import (
 )
 from aicrm_next.extensions.commerce.commerce.dto import CheckoutRequest, PaymentNotifyRequest, ProductUpsertRequest
 from aicrm_next.extensions.commerce.commerce.repo import InMemoryCommerceRepository, reset_commerce_fixture_state
-from aicrm_next.shared.errors import ContractError
+from aicrm_next.platform.shared.errors import ContractError
 
 
 def _product_payload(**overrides) -> dict:

@@ -4,10 +4,10 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
-from aicrm_next.shared.errors import ContractError
-from aicrm_next.shared.public_url import canonical_public_base_url
-from aicrm_next.shared.repository_provider import RepositoryProviderError
-from aicrm_next.shared.sidebar_access import sidebar_owner_context_from_request
+from aicrm_next.platform.shared.errors import ContractError
+from aicrm_next.platform.shared.public_url import canonical_public_base_url
+from aicrm_next.platform.shared.repository_provider import RepositoryProviderError
+from aicrm_next.platform.shared.sidebar_access import sidebar_owner_context_from_request
 
 from .application import CouponSidebarApplication
 

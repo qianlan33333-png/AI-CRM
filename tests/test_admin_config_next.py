@@ -8,10 +8,10 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.external_effects.adapters import webhook_execution_settings, wecom_execution_settings
-from aicrm_next.platform_foundation.external_effects.realtime import realtime_wakeup_state
-from aicrm_next.shared.db_session import reset_engine_cache_for_tests
-from aicrm_next.shared.secret_store import FileSecretStore, is_secret_reference
+from aicrm_next.platform.platform_foundation.external_effects.adapters import webhook_execution_settings, wecom_execution_settings
+from aicrm_next.platform.platform_foundation.external_effects.realtime import realtime_wakeup_state
+from aicrm_next.platform.shared.db_session import reset_engine_cache_for_tests
+from aicrm_next.platform.shared.secret_store import FileSecretStore, is_secret_reference
 from tests.admin_auth_test_helpers import install_admin_session
 
 
@@ -1058,7 +1058,7 @@ def test_signup_conversion_config_alias_is_next_owned_and_audited(monkeypatch, t
 
 def test_admin_config_routes_no_longer_forward_to_legacy_facade() -> None:
     assert not (ROOT / "aicrm_next/app/admin_console/legacy_routes.py").exists()
-    admin_config_source = "\n".join(path.read_text(encoding="utf-8") for path in (ROOT / "aicrm_next/admin_config").glob("*.py"))
+    admin_config_source = "\n".join(path.read_text(encoding="utf-8") for path in (ROOT / "aicrm_next/platform/admin_config").glob("*.py"))
     assert "legacy_flask_facade" not in admin_config_source
     assert "forward_to_legacy_flask" not in admin_config_source
     assert "wecom_ability" + "_service" not in admin_config_source

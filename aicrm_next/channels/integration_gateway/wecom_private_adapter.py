@@ -3,10 +3,10 @@ from __future__ import annotations
 import hashlib
 from typing import Any, Callable
 
-from aicrm_next.platform_foundation.external_effects.execution_gates import explicit_wecom_execution_disabled
-from aicrm_next.shared.runtime_settings import managed_runtime_bool, managed_runtime_setting
-from aicrm_next.shared.wecom_payload_contract import normalize_miniprogram_attachment_payload
-from aicrm_next.shared.wecom_runtime import classify_wecom_provider_error
+from aicrm_next.platform.platform_foundation.external_effects.execution_gates import explicit_wecom_execution_disabled
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_bool, managed_runtime_setting
+from aicrm_next.platform.shared.wecom_payload_contract import normalize_miniprogram_attachment_payload
+from aicrm_next.platform.shared.wecom_runtime import classify_wecom_provider_error
 
 from .audit import record_audit_event
 from .wecom_customer_group_client import WeComCustomerGroupClient, WeComCustomerGroupClientError

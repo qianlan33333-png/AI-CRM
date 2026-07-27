@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from aicrm_next.extensions.commerce.commerce.repo import connect_commerce_db
-from aicrm_next.shared.runtime import production_data_ready, raw_database_url
+from aicrm_next.platform.shared.runtime import production_data_ready, raw_database_url
 
 from .application import coupon_consistency_counts
 

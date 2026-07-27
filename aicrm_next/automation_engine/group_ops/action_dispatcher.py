@@ -8,12 +8,12 @@ from typing import Any, Callable
 
 from aicrm_next.crm.identity_contact.dto import IdentityResolveResult, ResolvePersonIdentityRequest
 from aicrm_next.crm.identity_contact.resolver import classify_identity_candidates, resolve_identity_with_dbapi, resolved_unionid
-from aicrm_next.platform_foundation.command_bus.models import CommandContext
-from aicrm_next.platform_foundation.external_effects import WECOM_MESSAGE_PRIVATE_SEND
-from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
-from aicrm_next.shared.errors import ContractError
-from aicrm_next.shared.postgres_connection import get_db
-from aicrm_next.shared.runtime import database_mode
+from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import WECOM_MESSAGE_PRIVATE_SEND
+from aicrm_next.platform.platform_foundation.external_effects.service import ExternalEffectService
+from aicrm_next.platform.shared.errors import ContractError
+from aicrm_next.platform.shared.postgres_connection import get_db
+from aicrm_next.platform.shared.runtime import database_mode
 
 from .domain import clean_text, normalize_action_payload
 

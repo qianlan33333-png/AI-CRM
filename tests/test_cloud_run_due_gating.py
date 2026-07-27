@@ -3,9 +3,9 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from aicrm_next.extensions.growth.cloud_orchestrator import run_due
-from aicrm_next.platform_foundation.command_bus import Command, CommandContext
-from aicrm_next.platform_foundation.external_effects import AI_ASSIST_CAMPAIGN_MESSAGE_LOOPBACK, WECOM_MESSAGE_PRIVATE_SEND
-from aicrm_next.platform_foundation.external_effects.repo import reset_external_effect_fixture_state
+from aicrm_next.platform.platform_foundation.command_bus import Command, CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import AI_ASSIST_CAMPAIGN_MESSAGE_LOOPBACK, WECOM_MESSAGE_PRIVATE_SEND
+from aicrm_next.platform.platform_foundation.external_effects.repo import reset_external_effect_fixture_state
 
 
 class FakeCampaignReadRepository:

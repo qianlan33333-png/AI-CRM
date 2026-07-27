@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from collections import Counter
 
-from aicrm_next.platform_foundation.external_effects import ExternalEffectJob, ExternalEffectService
-from aicrm_next.shared.typing import JsonDict
+from aicrm_next.platform.platform_foundation.external_effects import ExternalEffectJob, ExternalEffectService
+from aicrm_next.platform.shared.typing import JsonDict
 
 from .effect_enqueue import USER_OPS_BATCH_SEND_BUSINESS_TYPE
 

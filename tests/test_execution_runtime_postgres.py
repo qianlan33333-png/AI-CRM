@@ -11,46 +11,46 @@ import psycopg
 import pytest
 from psycopg.rows import dict_row
 
-from aicrm_next.platform_foundation.command_bus.models import CommandContext
-from aicrm_next.platform_foundation.execution_runtime.listener import (
+from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform.platform_foundation.execution_runtime.listener import (
     PostgresQueueWakeListener,
 )
-from aicrm_next.platform_foundation.execution_runtime.read_model import (
+from aicrm_next.platform.platform_foundation.execution_runtime.read_model import (
     ExecutionRuntimeReadModel,
 )
-from aicrm_next.platform_foundation.execution_runtime.repository import (
+from aicrm_next.platform.platform_foundation.execution_runtime.repository import (
     ExecutionRuntimeRepository,
 )
-from aicrm_next.platform_foundation.execution_runtime.metrics import lost_lease_count
-from aicrm_next.platform_foundation.repository import RuntimeReadinessRepository
-from aicrm_next.platform_foundation.external_effects.models import (
+from aicrm_next.platform.platform_foundation.execution_runtime.metrics import lost_lease_count
+from aicrm_next.platform.platform_foundation.repository import RuntimeReadinessRepository
+from aicrm_next.platform.platform_foundation.external_effects.models import (
     WECOM_CONTACT_TAG_MARK,
     WECOM_EXTERNAL_CONTACT_DETAIL_FETCH,
     ExternalEffectCreateRequest,
     ExternalEffectDispatchResult,
 )
-from aicrm_next.platform_foundation.external_effects.repo import (
+from aicrm_next.platform.platform_foundation.external_effects.repo import (
     SQLAlchemyExternalEffectRepository,
 )
-from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
-from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
-from aicrm_next.platform_foundation.external_effects.transactional import (
+from aicrm_next.platform.platform_foundation.external_effects.service import ExternalEffectService
+from aicrm_next.platform.platform_foundation.external_effects.worker import ExternalEffectWorker
+from aicrm_next.platform.platform_foundation.external_effects.transactional import (
     enqueue_transactional_external_effect_job,
 )
-from aicrm_next.platform_foundation.internal_events.models import (
+from aicrm_next.platform.platform_foundation.internal_events.models import (
     InternalEventConsumerSpec,
     InternalEventCreateRequest,
     InternalEventOutboxRecord,
 )
-from aicrm_next.platform_foundation.internal_events.outbox import (
+from aicrm_next.platform.platform_foundation.internal_events.outbox import (
     enqueue_internal_event_outbox_in_session,
     enqueue_transactional_internal_event_outbox,
 )
-from aicrm_next.platform_foundation.internal_events.repository import (
+from aicrm_next.platform.platform_foundation.internal_events.repository import (
     SQLAlchemyInternalEventRepository,
 )
-from aicrm_next.shared.db_session import get_session_factory
-from aicrm_next.platform_foundation.webhook_inbox.repository import PostgresWebhookInboxRepository
+from aicrm_next.platform.shared.db_session import get_session_factory
+from aicrm_next.platform.platform_foundation.webhook_inbox.repository import PostgresWebhookInboxRepository
 from scripts.ops.manage_queue_runtime_soak import _evidence_types
 
 

@@ -39,7 +39,7 @@ Root cause:
 
 ## Release Sha Fix
 
-The release sha source is now centralized through `aicrm_next.shared.release`.
+The release sha source is now centralized through `aicrm_next.platform.shared.release`.
 Resolution order:
 
 1. `.release-sha` deploy marker

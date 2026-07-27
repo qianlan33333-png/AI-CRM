@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 
 from aicrm_next.external_effect_composition import build_external_effect_continuation_registry
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import (
     WEBHOOK_ORDER_PAID_PUSH,
     WEBHOOK_QUESTIONNAIRE_SUBMISSION_PUSH,
     WECOM_CONTACT_TAG_MARK,
@@ -12,14 +12,14 @@ from aicrm_next.platform_foundation.external_effects import (
     ExternalEffectService,
     reset_external_effect_fixture_state,
 )
-from aicrm_next.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry
-from aicrm_next.platform_foundation.external_effects.jobs import (
+from aicrm_next.platform.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry
+from aicrm_next.platform.platform_foundation.external_effects.jobs import (
     SCHEDULER_ENABLED_KEY,
     TEST_EXECUTION_ONLY_KEY,
     run_scheduled_external_effects,
 )
-from aicrm_next.platform_foundation.external_effects.repo import build_external_effect_repository
-from aicrm_next.platform_foundation.external_effects.test_receiver import (
+from aicrm_next.platform.platform_foundation.external_effects.repo import build_external_effect_repository
+from aicrm_next.platform.platform_foundation.external_effects.test_receiver import (
     TEST_RECEIVER_PATH_PREFIX,
     canonical_payload_hash,
 )

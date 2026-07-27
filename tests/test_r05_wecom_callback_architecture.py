@@ -24,8 +24,8 @@ from aicrm_next.channels.integration_gateway.wecom_runtime import (
     SingleFlightAccessTokenProvider,
     load_wecom_execution_config,
 )
-from aicrm_next.platform_foundation.webhook_inbox import InMemoryWebhookInboxRepository
-from aicrm_next.platform_foundation.webhook_inbox.repository import PostgresWebhookInboxRepository
+from aicrm_next.platform.platform_foundation.webhook_inbox import InMemoryWebhookInboxRepository
+from aicrm_next.platform.platform_foundation.webhook_inbox.repository import PostgresWebhookInboxRepository
 from scripts import run_wecom_callback_inbox_worker as worker_entrypoint
 from scripts.ops import reconcile_wecom_callback_runtime as reconciliation
 
@@ -207,7 +207,7 @@ def test_callback_worker_does_not_retry_typed_terminal_provider_error() -> None:
 
 def test_runtime_has_no_callback_inline_or_process_local_executor_boundary() -> None:
     callback_source = (ROOT / "aicrm_next/channels/channel_entry/inbox.py").read_text(encoding="utf-8")
-    realtime_source = (ROOT / "aicrm_next/platform_foundation/external_effects/realtime.py").read_text(encoding="utf-8")
+    realtime_source = (ROOT / "aicrm_next/platform/platform_foundation/external_effects/realtime.py").read_text(encoding="utf-8")
     service = (ROOT / "deploy/openclaw-wecom-callback-inbox-worker.service").read_text(encoding="utf-8")
 
     assert "process_time_sensitive" not in callback_source

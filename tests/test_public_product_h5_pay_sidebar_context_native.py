@@ -6,7 +6,7 @@ from urllib.parse import parse_qs, urlparse
 from starlette.requests import Request
 
 from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
-from aicrm_next.shared.signed_context import SIDEBAR_PRODUCT_CONTEXT_COOKIE, build_sidebar_product_context_token
+from aicrm_next.platform.shared.signed_context import SIDEBAR_PRODUCT_CONTEXT_COOKIE, build_sidebar_product_context_token
 
 
 def _request(path: str, *, context_token: str = "", query: str = "") -> Request:
@@ -60,5 +60,5 @@ def test_h5_pay_runtime_uses_native_sidebar_context_imports() -> None:
 
     for marker in forbidden:
         assert marker not in source
-    assert "from aicrm_next.shared.signed_context import" in source
+    assert "from aicrm_next.platform.shared.signed_context import" in source
     assert "from .sidebar_order_context import" in source

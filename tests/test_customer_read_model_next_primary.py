@@ -336,7 +336,7 @@ def test_customer_list_closes_internal_repository_after_success(monkeypatch):
 
 
 def test_customer_detail_closes_internal_repository_when_query_raises(monkeypatch):
-    from aicrm_next.shared.errors import NotFoundError
+    from aicrm_next.platform.shared.errors import NotFoundError
     from aicrm_next.crm.customer_read_model.application import GetCustomerDetailQuery
 
     _production_env(monkeypatch)

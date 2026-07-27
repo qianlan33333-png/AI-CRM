@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from aicrm_next.platform_foundation.audit_ledger import InMemoryAuditLedger
-from aicrm_next.platform_foundation.command_bus import Command, CommandBus, CommandContext, CommandResult
-from aicrm_next.platform_foundation.external_effects import ExternalEffectService, WECOM_CONTACT_TAG_MARK, WECOM_CONTACT_TAG_UNMARK
-from aicrm_next.platform_foundation.internal_events.legacy_path_markers import mark_legacy_path_invoked
-from aicrm_next.platform_foundation.internal_events.shadow import emit_customer_tag_shadow_event, safe_emit
-from aicrm_next.platform_foundation.side_effects import InMemorySideEffectPlanRepository, SideEffectPlan
+from aicrm_next.platform.platform_foundation.audit_ledger import InMemoryAuditLedger
+from aicrm_next.platform.platform_foundation.command_bus import Command, CommandBus, CommandContext, CommandResult
+from aicrm_next.platform.platform_foundation.external_effects import ExternalEffectService, WECOM_CONTACT_TAG_MARK, WECOM_CONTACT_TAG_UNMARK
+from aicrm_next.platform.platform_foundation.internal_events.legacy_path_markers import mark_legacy_path_invoked
+from aicrm_next.platform.platform_foundation.internal_events.shadow import emit_customer_tag_shadow_event, safe_emit
+from aicrm_next.platform.platform_foundation.side_effects import InMemorySideEffectPlanRepository, SideEffectPlan
 
 from .mutation_commands import (
     PlanCustomerTagAssignmentCommand,

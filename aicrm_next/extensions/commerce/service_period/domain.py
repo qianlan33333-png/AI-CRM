@@ -5,7 +5,7 @@ import math
 import re
 from typing import Any
 
-from aicrm_next.shared.errors import ContractError
+from aicrm_next.platform.shared.errors import ContractError
 
 
 TENANT_ID = "aicrm"

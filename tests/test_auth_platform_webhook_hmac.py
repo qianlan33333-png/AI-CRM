@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from aicrm_next.platform_foundation.auth_platform.models import WebhookClientRecord
-from aicrm_next.platform_foundation.auth_platform.webhook_hmac import WebhookHmacSigner, WebhookHmacVerifier
+from aicrm_next.platform.platform_foundation.auth_platform.models import WebhookClientRecord
+from aicrm_next.platform.platform_foundation.auth_platform.webhook_hmac import WebhookHmacSigner, WebhookHmacVerifier
 from tests.webhook_hmac_test_helpers import InMemoryWebhookRepository
 
 

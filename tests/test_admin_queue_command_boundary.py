@@ -21,7 +21,7 @@ async def {name}(request):
             "\n".join(safe_body.format(name=name) for name in route_names),
             encoding="utf-8",
         )
-    unsafe_path = tmp_path / "aicrm_next/platform_foundation/external_effects/api.py"
+    unsafe_path = tmp_path / "aicrm_next/platform/platform_foundation/external_effects/api.py"
     unsafe_path.write_text(
         """
 async def run_external_effect_due(request):

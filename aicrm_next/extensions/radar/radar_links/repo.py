@@ -6,11 +6,11 @@ import json
 import secrets
 from typing import Any, Protocol
 
-from aicrm_next.platform_foundation.command_bus.models import CommandContext
-from aicrm_next.platform_foundation.internal_events.models import InternalEventCreateRequest
-from aicrm_next.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
-from aicrm_next.shared.repository_provider import RepositoryProviderError, assert_repository_allowed
-from aicrm_next.shared.runtime import production_data_ready, raw_database_url
+from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform.platform_foundation.internal_events.models import InternalEventCreateRequest
+from aicrm_next.platform.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
+from aicrm_next.platform.shared.repository_provider import RepositoryProviderError, assert_repository_allowed
+from aicrm_next.platform.shared.runtime import production_data_ready, raw_database_url
 
 
 def _psycopg_url(url: str) -> str:

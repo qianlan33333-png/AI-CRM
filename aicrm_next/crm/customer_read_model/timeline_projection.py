@@ -8,12 +8,12 @@ from sqlalchemy.dialects.postgresql import insert as postgresql_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
 
-from aicrm_next.platform_foundation.internal_events import (
+from aicrm_next.platform.platform_foundation.internal_events import (
     InternalEvent,
     InternalEventConsumerResult,
     InternalEventConsumerRun,
 )
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.platform.shared.db_session import get_session_factory
 
 from .models import customer_timeline_event_next
 

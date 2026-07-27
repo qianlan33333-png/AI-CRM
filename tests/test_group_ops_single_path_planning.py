@@ -18,7 +18,7 @@ from aicrm_next.automation_engine.group_ops.external_effects import (
 from aicrm_next.automation_engine.group_ops.scheduler import run_group_ops_due_scheduler
 from aicrm_next.background_jobs.automation_ops_scheduler import run_automation_ops_scheduler
 from aicrm_next.crm.identity_contact.dto import IdentityResolution, IdentityResolveResult
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.external_effects import (
     GROUP_OPS_WEBHOOK_ACTION_LOOPBACK,
     WECOM_MESSAGE_GROUP_SEND,
 )

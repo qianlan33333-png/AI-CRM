@@ -10,19 +10,19 @@ from time import time
 from typing import Any
 from urllib.parse import urlencode
 
-from aicrm_next.admin_auth.service import (
+from aicrm_next.platform.admin_auth.service import (
     normalize_text,
     route_headers,
     safe_next_path,
 )
-from aicrm_next.admin_config.repository import AdminConfigRepository
+from aicrm_next.platform.admin_config.repository import AdminConfigRepository
 from aicrm_next.integration_ports import (
     WeComAdminAuthClient,
     WeComAdminAuthClientError,
     build_wecom_admin_auth_client,
 )
-from aicrm_next.shared.runtime import require_signing_secret
-from aicrm_next.shared.runtime_settings import managed_runtime_bool, managed_runtime_setting
+from aicrm_next.platform.shared.runtime import require_signing_secret
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_bool, managed_runtime_setting
 
 
 REAL_AUTH_ENV = "AICRM_WECOM_ADMIN_AUTH_ENABLE_REAL"

@@ -9,8 +9,8 @@ from sqlalchemy import text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
-from aicrm_next.shared.errors import ContractError
-from aicrm_next.shared.repository_provider import RepositoryProviderError
+from aicrm_next.platform.shared.errors import ContractError
+from aicrm_next.platform.shared.repository_provider import RepositoryProviderError
 
 from .repo import InMemoryAutomationRepository
 from .agents import utc_now_iso

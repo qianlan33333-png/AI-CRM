@@ -5,7 +5,7 @@ import os
 import psycopg
 from psycopg.rows import dict_row
 
-from aicrm_next.external_push.domain_event_outbox_port import build_domain_event_outbox_port
+from aicrm_next.platform.external_push.domain_event_outbox_port import build_domain_event_outbox_port
 
 
 def test_domain_event_outbox_owner_is_idempotent_in_caller_transaction(next_pg_schema) -> None:

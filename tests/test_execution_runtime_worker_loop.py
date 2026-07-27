@@ -4,7 +4,7 @@ import threading
 import time
 from datetime import datetime, timedelta, timezone
 
-from aicrm_next.platform_foundation.execution_runtime.worker_loop import (
+from aicrm_next.platform.platform_foundation.execution_runtime.worker_loop import (
     CapacityBoundWorkerLoop,
     WorkAttempt,
 )

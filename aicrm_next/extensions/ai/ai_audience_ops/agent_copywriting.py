@@ -6,7 +6,7 @@ import re
 from typing import Any
 from uuid import uuid4
 
-from aicrm_next.shared.llm_output_guard import looks_like_prompt_output
+from aicrm_next.platform.shared.llm_output_guard import looks_like_prompt_output
 
 from . import agent_gateway
 from .repository import AudienceRepository, build_audience_repository, _json_dumps, _json_obj, _text

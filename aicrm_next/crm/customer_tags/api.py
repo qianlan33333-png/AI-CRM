@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, Response
 
-from aicrm_next.shared.admin_read_fallback import admin_read_unavailable_payload
+from aicrm_next.platform.shared.admin_read_fallback import admin_read_unavailable_payload
 
 from .admin_write import (
     WeComTagWriteInputError,

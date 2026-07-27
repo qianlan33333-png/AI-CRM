@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from aicrm_next.shared.errors import NotFoundError
-from aicrm_next.shared.runtime import production_data_ready
+from aicrm_next.platform.shared.errors import NotFoundError
+from aicrm_next.platform.shared.runtime import production_data_ready
 
 from .domain import binding_stats, clean_text, normalize_node_payload
 from .dto import GroupOpsBindGroupRequest, GroupOpsNodeRequest, GroupOpsPlanUpdateRequest

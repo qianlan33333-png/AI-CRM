@@ -6,7 +6,7 @@ import aicrm_next.crm.customer_tags.api as api
 from aicrm_next.crm.customer_tags.sync_service import execute_wecom_tag_catalog_sync
 from aicrm_next.channels.integration_gateway.wecom_tag_live_gateway import WeComTagLiveGateway
 from aicrm_next.main import create_app
-from aicrm_next.shared.database import get_sqlalchemy_database_url
+from aicrm_next.platform.shared.database import get_sqlalchemy_database_url
 
 
 class FakeSyncRepository:

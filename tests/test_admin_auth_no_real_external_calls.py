@@ -25,7 +25,7 @@ def test_admin_auth_routes_do_not_execute_real_external_calls(monkeypatch) -> No
 
 
 def test_admin_auth_next_module_has_no_legacy_or_http_token_exchange_markers() -> None:
-    source = "\n".join(path.read_text(encoding="utf-8") for path in (ROOT / "aicrm_next/admin_auth").glob("*.py"))
+    source = "\n".join(path.read_text(encoding="utf-8") for path in (ROOT / "aicrm_next/platform/admin_auth").glob("*.py"))
     forbidden = [
         "forward_to_" + "legacy_flask",
         "legacy_" + "flask_facade",

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Protocol
 
-from aicrm_next.shared.repository_provider import RepositoryProviderError
+from aicrm_next.platform.shared.repository_provider import RepositoryProviderError
 
 
 class ChannelCompletionReadPort(Protocol):

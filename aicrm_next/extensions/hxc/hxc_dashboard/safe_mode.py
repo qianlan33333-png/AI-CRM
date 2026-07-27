@@ -5,10 +5,10 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
-from aicrm_next.platform_foundation.audit_ledger import InMemoryAuditLedger
-from aicrm_next.platform_foundation.command_bus import Command, CommandBus, CommandContext, CommandResult
-from aicrm_next.platform_foundation.external_calls import InMemoryExternalCallAttemptRepository
-from aicrm_next.platform_foundation.side_effects import InMemorySideEffectPlanRepository, SideEffectPlan
+from aicrm_next.platform.platform_foundation.audit_ledger import InMemoryAuditLedger
+from aicrm_next.platform.platform_foundation.command_bus import Command, CommandBus, CommandContext, CommandResult
+from aicrm_next.platform.platform_foundation.external_calls import InMemoryExternalCallAttemptRepository
+from aicrm_next.platform.platform_foundation.side_effects import InMemorySideEffectPlanRepository, SideEffectPlan
 
 ROUTE_OWNER = "ai_crm_next"
 ADAPTER_MODE = "real_blocked"

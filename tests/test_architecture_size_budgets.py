@@ -6,7 +6,7 @@ from pathlib import Path
 
 RUNTIME_FILE_LINE_BUDGETS = {
     "aicrm_next/extensions/growth/cloud_orchestrator/repository.py": 2469,
-    "aicrm_next/admin_config/application.py": 2062,
+    "aicrm_next/platform/admin_config/application.py": 2062,
     "aicrm_next/extensions/forms/questionnaire/repo.py": 1882,
     "aicrm_next/extensions/ai/ai_audience_ops/repository.py": 1859,
     "aicrm_next/automation_engine/group_ops/postgres_repo.py": 1726,

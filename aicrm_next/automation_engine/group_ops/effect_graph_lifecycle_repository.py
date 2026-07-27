@@ -5,10 +5,10 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from aicrm_next.platform_foundation.external_effects.settlement_events import (
+from aicrm_next.platform.platform_foundation.external_effects.settlement_events import (
     enqueue_external_effect_settled_rows_in_session,
 )
-from aicrm_next.platform_foundation.external_effects.runtime_write_port import (
+from aicrm_next.platform.platform_foundation.external_effects.runtime_write_port import (
     build_external_effect_runtime_write_port,
 )
 

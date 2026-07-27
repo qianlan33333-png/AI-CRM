@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from aicrm_next.extensions.commerce.public_product.sidebar_order_context import resolve_sidebar_order_context
-from aicrm_next.shared.signed_context import build_sidebar_product_context_token
+from aicrm_next.platform.shared.signed_context import build_sidebar_product_context_token
 
 
 def _token(monkeypatch) -> str:

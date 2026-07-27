@@ -3,7 +3,7 @@ from __future__ import annotations
 from aicrm_next.channels.channel_entry.application import process_channel_entry
 from aicrm_next.channels.channel_entry.schemas import ProcessChannelEntryCommand
 from aicrm_next.channels.channel_entry.wecom_adapter import get_wecom_adapter, set_wecom_adapter
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.external_effects import (
     ExternalEffectService,
     WECOM_CONTACT_TAG_MARK,
     WECOM_WELCOME_MESSAGE_SEND,

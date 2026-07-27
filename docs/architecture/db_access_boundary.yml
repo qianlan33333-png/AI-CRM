@@ -1,5 +1,5 @@
 allowed_paths:
-  - aicrm_next/shared/db_session.py
+  - aicrm_next/platform/shared/db_session.py
 
 allowed_globs:
   - aicrm_next/**/repo.py

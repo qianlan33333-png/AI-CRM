@@ -15,7 +15,7 @@ from aicrm_next.channels.integration_gateway.wecom_jssdk_adapter import (
 )
 from aicrm_next.crm.identity_contact.sidebar_jssdk import SIDEBAR_VIEWER_COOKIE
 from aicrm_next.main import create_app
-from aicrm_next.shared.signed_context import load_sidebar_owner_context_token
+from aicrm_next.platform.shared.signed_context import load_sidebar_owner_context_token
 from tests.sidebar_auth_test_helpers import install_sidebar_viewer_session
 
 

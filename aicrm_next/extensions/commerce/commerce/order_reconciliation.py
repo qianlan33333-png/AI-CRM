@@ -11,7 +11,7 @@ from aicrm_next.integration_ports import (
     WeChatPayClientError,
     wechat_pay_client_config_from_env,
 )
-from aicrm_next.shared.runtime_settings import managed_runtime_setting
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting
 from .wechat_pay_order_write_port import build_wechat_pay_order_write_port
 from .order_expiration import pending_order_ttl_hours
 from .repo import connect_commerce_db

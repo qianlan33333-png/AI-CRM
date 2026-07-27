@@ -7,13 +7,13 @@ import secrets
 from datetime import datetime, timezone
 from typing import Any
 
-from aicrm_next.shared.release import current_release_sha
-from aicrm_next.shared.runtime_settings import (
+from aicrm_next.platform.shared.release import current_release_sha
+from aicrm_next.platform.shared.runtime_settings import (
     managed_runtime_setting,
     runtime_setting,
     startup_environment_setting,
 )
-from aicrm_next.shared.safe_logging import safe_log_exception
+from aicrm_next.platform.shared.safe_logging import safe_log_exception
 
 from . import repo
 from .domain import (
@@ -38,15 +38,15 @@ from .schemas import (
 from .realtime_contract import utc_datetime, welcome_provider_deadline
 from .wecom_adapter import WeComAdapterBlocked, WeComApiError, get_wecom_adapter, wecom_adapter_diagnostics
 from .wecom_crypto import build_encrypted_reply, decrypt_message, parse_callback_xml, validate_callback_timestamp, verify_signature
-from aicrm_next.platform_foundation.command_bus.models import CommandContext
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import (
     ExternalEffectService,
     WECOM_CONTACT_TAG_MARK,
     WECOM_WELCOME_MESSAGE_SEND,
 )
-from aicrm_next.platform_foundation.internal_events import InternalEventService
-from aicrm_next.platform_foundation.external_effects.realtime import wake_external_effect_job
-from aicrm_next.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry
+from aicrm_next.platform.platform_foundation.internal_events import InternalEventService
+from aicrm_next.platform.platform_foundation.external_effects.realtime import wake_external_effect_job
+from aicrm_next.platform.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry
 from aicrm_next.channels.channel_entry.welcome_media_effects_repository import (
     WelcomeEffectGraphRequest,
     build_welcome_effect_graph_repository,

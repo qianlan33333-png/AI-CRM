@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from aicrm_next.navigation_target import completion_target_projection
-from aicrm_next.shared.errors import ContractError
-from aicrm_next.shared.mobile import MOBILE_VALIDATION_MESSAGE, normalize_mainland_mobile
+from aicrm_next.platform.navigation_target import completion_target_projection
+from aicrm_next.platform.shared.errors import ContractError
+from aicrm_next.platform.shared.mobile import MOBILE_VALIDATION_MESSAGE, normalize_mainland_mobile
 
 CHOICE_QUESTION_TYPES = {"single_choice", "multi_choice"}
 

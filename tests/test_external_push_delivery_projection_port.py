@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from aicrm_next.external_push.delivery_projection_port import build_external_push_delivery_projection_port
+from aicrm_next.platform.external_push.delivery_projection_port import build_external_push_delivery_projection_port
 
 
 class _Cursor:

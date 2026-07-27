@@ -6,25 +6,25 @@ import json
 from datetime import datetime, timedelta, timezone
 from typing import Any, Protocol
 
-from aicrm_next.platform_foundation.command_bus.models import CommandContext
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import (
     WECOM_MESSAGE_GROUP_SEND,
     WECOM_MESSAGE_PRIVATE_SEND,
 )
-from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
-from aicrm_next.platform_foundation.background_jobs.broadcast_job_write_port import (
+from aicrm_next.platform.platform_foundation.external_effects.service import ExternalEffectService
+from aicrm_next.platform.platform_foundation.background_jobs.broadcast_job_write_port import (
     build_broadcast_job_write_port,
 )
-from aicrm_next.platform_foundation.background_jobs.cloud_broadcast_projection_write_port import (
+from aicrm_next.platform.platform_foundation.background_jobs.cloud_broadcast_projection_write_port import (
     build_cloud_broadcast_projection_write_port,
 )
 
-from aicrm_next.platform_foundation.external_effects.execution_gates import (
+from aicrm_next.platform.platform_foundation.external_effects.execution_gates import (
     WECOM_EXECUTION_DISABLED_CODE,
     explicit_wecom_execution_disabled,
     wecom_execution_disabled_message,
 )
-from aicrm_next.shared.runtime_settings import managed_runtime_int, runtime_setting
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_int, runtime_setting
 
 from .db import connect, has_database_url, int_value, json_list, utcnow
 

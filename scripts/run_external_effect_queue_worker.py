@@ -15,7 +15,7 @@ from aicrm_next.external_effect_composition import (
     build_external_effect_adapter_registry,
     build_external_effect_continuation_registry,
 )
-from aicrm_next.platform_foundation.external_effects.jobs import run_scheduled_external_effects
+from aicrm_next.platform.platform_foundation.external_effects.jobs import run_scheduled_external_effects
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:

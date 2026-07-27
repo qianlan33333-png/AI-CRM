@@ -9,13 +9,13 @@ from importlib.util import find_spec
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.external_effects import ExternalEffectService, PAYMENT_WECHAT_REFUND_REQUEST
-from aicrm_next.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
-from aicrm_next.platform_foundation.internal_events.refund import build_refund_succeeded_event_request
-from aicrm_next.shared.runtime import database_mode, raw_database_url
-from aicrm_next.shared.runtime_settings import managed_runtime_setting
-from aicrm_next.shared.text_encoding import repair_utf8_mojibake
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import ExternalEffectService, PAYMENT_WECHAT_REFUND_REQUEST
+from aicrm_next.platform.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
+from aicrm_next.platform.platform_foundation.internal_events.refund import build_refund_succeeded_event_request
+from aicrm_next.platform.shared.runtime import database_mode, raw_database_url
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting
+from aicrm_next.platform.shared.text_encoding import repair_utf8_mojibake
 
 from .repo import build_commerce_repository, connect_commerce_db
 from .application import GetTransactionQuery, ListProductsQuery, ListTransactionsQuery

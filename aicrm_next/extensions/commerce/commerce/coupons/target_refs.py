@@ -8,8 +8,8 @@ from typing import Any
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers.aead import AESSIV
 
-from aicrm_next.shared.errors import ContractError
-from aicrm_next.shared.runtime import production_environment, runtime_setting
+from aicrm_next.platform.shared.errors import ContractError
+from aicrm_next.platform.shared.runtime import production_environment, runtime_setting
 
 
 TARGET_REF_PREFIX = "cpt_"

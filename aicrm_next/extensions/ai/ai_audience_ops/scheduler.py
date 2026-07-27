@@ -4,8 +4,8 @@ from datetime import datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from aicrm_next.platform_foundation.internal_events import PAYMENT_SUCCEEDED_EVENT_TYPES, QUESTIONNAIRE_SUBMITTED_EVENT_TYPE
-from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
+from aicrm_next.platform.platform_foundation.internal_events import PAYMENT_SUCCEEDED_EVENT_TYPES, QUESTIONNAIRE_SUBMITTED_EVENT_TYPE
+from aicrm_next.platform.platform_foundation.internal_events.worker import InternalEventWorker
 
 from .event_types import (
     DAILY_REFRESH_CONSUMER,

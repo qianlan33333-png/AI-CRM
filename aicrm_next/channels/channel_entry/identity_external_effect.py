@@ -9,12 +9,12 @@ from .crm_port import (
     CompleteIdentityResolutionRequest,
     build_identity_resolution_queue_port,
 )
-from aicrm_next.platform_foundation.command_bus.models import CommandContext
-from aicrm_next.platform_foundation.external_effects import WECOM_EXTERNAL_CONTACT_DETAIL_FETCH
-from aicrm_next.platform_foundation.external_effects.continuations import ExternalEffectContinuation
-from aicrm_next.platform_foundation.external_effects.repo import build_external_effect_repository
-from aicrm_next.platform_foundation.internal_events import InternalEventService
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import WECOM_EXTERNAL_CONTACT_DETAIL_FETCH
+from aicrm_next.platform.platform_foundation.external_effects.continuations import ExternalEffectContinuation
+from aicrm_next.platform.platform_foundation.external_effects.repo import build_external_effect_repository
+from aicrm_next.platform.platform_foundation.internal_events import InternalEventService
+from aicrm_next.platform.shared.db_session import get_session_factory
 
 from .identity_bridge_service import build_identity_bridge_service
 

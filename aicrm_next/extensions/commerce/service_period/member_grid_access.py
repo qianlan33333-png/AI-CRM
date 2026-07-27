@@ -4,8 +4,8 @@ import secrets
 from dataclasses import dataclass
 from typing import Any
 
-from aicrm_next.platform_foundation.auth_platform.context import AuthContext
-from aicrm_next.shared.errors import ContractError
+from aicrm_next.platform.platform_foundation.auth_platform.context import AuthContext
+from aicrm_next.platform.shared.errors import ContractError
 from aicrm_next.extensions.commerce.service_period_grid_ports import (
     SERVICE_PERIOD_GRID_ACCESS,
     SERVICE_PERIOD_GRID_MANAGE_SHARE,

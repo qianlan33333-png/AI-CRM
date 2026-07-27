@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from aicrm_next.shared.sensitive_data import redact_sensitive_data
+from aicrm_next.platform.shared.sensitive_data import redact_sensitive_data
 
 from .sql_linter import extract_params, lint_sql
 

@@ -11,25 +11,25 @@ from psycopg.rows import dict_row
 
 from aicrm_next.data_health import checks as data_health_checks
 from aicrm_next.crm.identity_contact.resolution_queue_port import build_identity_resolution_queue_port
-from aicrm_next.platform_foundation.execution_runtime.commands import (
+from aicrm_next.platform.platform_foundation.execution_runtime.commands import (
     QUEUE_RUNTIME_COMMAND_APPLIED,
     QueueCommandConflict,
     QueueRuntimeCommandService,
 )
-from aicrm_next.platform_foundation.execution_runtime.cutover import (
+from aicrm_next.platform.platform_foundation.execution_runtime.cutover import (
     GenerationCASConflict,
     RuntimeGenerationRepository,
 )
-from aicrm_next.platform_foundation.execution_runtime.invariants import (
+from aicrm_next.platform.platform_foundation.execution_runtime.invariants import (
     QueueRuntimeInvariantChecker,
 )
-from aicrm_next.platform_foundation.execution_runtime.repository import (
+from aicrm_next.platform.platform_foundation.execution_runtime.repository import (
     ExecutionRuntimeRepository,
 )
-from aicrm_next.platform_foundation.execution_runtime.listener import (
+from aicrm_next.platform.platform_foundation.execution_runtime.listener import (
     PostgresQueueWakeListener,
 )
-from aicrm_next.platform_foundation.external_effects.service import (
+from aicrm_next.platform.platform_foundation.external_effects.service import (
     ExternalEffectService,
 )
 from scripts.ops import recover_all_scope_contact_detail

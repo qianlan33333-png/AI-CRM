@@ -61,7 +61,7 @@ BROAD_MATCHES = {
     "text(",
 }
 ALLOWED_MIGRATION_TARGETS = (
-    "aicrm_next/shared/db_session.py",
+    "aicrm_next/platform/shared/db_session.py",
     "aicrm_next/**/repo.py",
     "aicrm_next/**/repository.py",
     "aicrm_next/**/repositories.py",
@@ -148,7 +148,7 @@ def check_db_access_boundary(root: Path = ROOT, config_path: Path = DEFAULT_CONF
                     owner=_owner_for_path(rel),
                     reason=f"{rel} uses direct DB/session primitives outside repository or shared DB session boundaries.",
                     suggestion=(
-                        "Move DB access into this context's repo.py/repository.py or aicrm_next.shared.db_session; "
+                        "Move DB access into this context's repo.py/repository.py or aicrm_next.platform.shared.db_session; "
                         "if this is historical debt, add only a precise temporary allowlist entry with path, rule, "
                         "owner, reason, migration_target, and exact match."
                     ),

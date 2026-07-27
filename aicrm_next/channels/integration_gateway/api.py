@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Request
 
-from aicrm_next.shared.typing import JsonDict
+from aicrm_next.platform.shared.typing import JsonDict
 
 from .mcp import McpJsonRpcApplication
 

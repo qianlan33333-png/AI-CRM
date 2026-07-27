@@ -1,1 +1,1 @@
-from aicrm_next.shared.product_code_aliases import *  # noqa: F403
+from aicrm_next.platform.shared.product_code_aliases import *  # noqa: F403

@@ -11,7 +11,7 @@ from aicrm_next.channels.channel_entry.inbox import WeComCallbackInboxWorker, in
 from aicrm_next.channels.channel_entry.schemas import ProcessWeComExternalContactEventCommand
 from aicrm_next.channels.channel_entry import application as channel_application
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.webhook_inbox import InMemoryWebhookInboxRepository
+from aicrm_next.platform.platform_foundation.webhook_inbox import InMemoryWebhookInboxRepository
 from scripts import run_wecom_callback_inbox_worker as callback_worker_entrypoint
 
 

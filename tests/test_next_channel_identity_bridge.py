@@ -8,7 +8,7 @@ from aicrm_next.channels.channel_entry.identity_bridge import ensure_external_co
 from aicrm_next.channels.channel_entry.application import process_wecom_external_contact_event
 from aicrm_next.channels.channel_entry.schemas import ProcessWeComExternalContactEventCommand
 from aicrm_next.channels.channel_entry.wecom_adapter import get_wecom_adapter, set_wecom_adapter
-from aicrm_next.shared.postgres_connection import get_db
+from aicrm_next.platform.shared.postgres_connection import get_db
 from scripts.run_identity_mobile_bridge_backfill import run_backfill
 
 

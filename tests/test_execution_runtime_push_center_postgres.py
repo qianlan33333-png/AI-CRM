@@ -10,11 +10,11 @@ import psycopg
 import pytest
 from psycopg.rows import dict_row
 
-from aicrm_next.platform_foundation.execution_runtime.repository import (
+from aicrm_next.platform.platform_foundation.execution_runtime.repository import (
     ExecutionRuntimeRepository,
 )
-from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
-from aicrm_next.platform_foundation.push_center.sql_read_model import SQLPushCenterReadModel
+from aicrm_next.platform.platform_foundation.external_effects.service import ExternalEffectService
+from aicrm_next.platform.platform_foundation.push_center.sql_read_model import SQLPushCenterReadModel
 
 
 pytestmark = pytest.mark.usefixtures("next_pg_schema")

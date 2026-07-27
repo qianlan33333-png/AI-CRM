@@ -18,7 +18,7 @@ def _class_node(path: Path, name: str) -> ast.ClassDef:
 
 def main() -> int:
     violations: list[str] = []
-    adapter_path = ROOT / "aicrm_next/platform_foundation/external_effects/adapters.py"
+    adapter_path = ROOT / "aicrm_next/platform/platform_foundation/external_effects/adapters.py"
     adapter = _class_node(adapter_path, "WeComWelcomeMessageAdapter")
     calls = [node for node in ast.walk(adapter) if isinstance(node, ast.Call)]
     send_calls = [
@@ -74,13 +74,13 @@ def main() -> int:
         if token not in runtime_source:
             violations.append(f"queue runtime is missing welcome realtime ownership token: {token}")
 
-    worker_source = (ROOT / "aicrm_next/platform_foundation/external_effects/worker.py").read_text(encoding="utf-8")
+    worker_source = (ROOT / "aicrm_next/platform/platform_foundation/external_effects/worker.py").read_text(encoding="utf-8")
     if "expire_provider_deadline" not in worker_source:
         violations.append("external effect worker does not fail closed on elapsed provider deadlines")
     if worker_source.find("complete_dispatch(") > worker_source.find("_run_post_success_continuations(updated"):
         violations.append("critical welcome continuation must run only after dispatch completion is durable")
 
-    claim_source = (ROOT / "aicrm_next/platform_foundation/execution_runtime/repository.py").read_text(encoding="utf-8")
+    claim_source = (ROOT / "aicrm_next/platform/platform_foundation/execution_runtime/repository.py").read_text(encoding="utf-8")
     for token in ("WECOM_WELCOME_RESERVED_LANES", "ordinary_capacity", "_active_reserved_capacity"):
         if token not in claim_source:
             violations.append(f"queue admission does not reserve welcome capacity: {token}")

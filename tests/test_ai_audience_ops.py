@@ -35,9 +35,9 @@ from aicrm_next.extensions.ai.ai_audience_ops.sql_catalog import ALLOWED_VIEWS, 
 from aicrm_next.extensions.ai.ai_audience_ops.sql_linter import lint_sql
 from aicrm_next.extensions.ai.ai_audience_ops.test_agent_service import AudienceTestAgentService, TEST_AGENT_MESSAGE_TEXT
 from aicrm_next.extensions.ai.ai_audience_ops.webhook_service import AudienceInboundWebhookService
-from aicrm_next.platform_foundation.external_effects import ExternalEffectService, WEBHOOK_GENERIC_PUSH, WECOM_MESSAGE_PRIVATE_SEND
-from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.platform.platform_foundation.external_effects import ExternalEffectService, WEBHOOK_GENERIC_PUSH, WECOM_MESSAGE_PRIVATE_SEND
+from aicrm_next.platform.platform_foundation.internal_events.worker import InternalEventWorker
+from aicrm_next.platform.shared.db_session import get_session_factory
 
 
 TOKEN = "ai-audience-test-token"
@@ -1114,7 +1114,7 @@ def test_package_refresh_uses_internal_event_and_external_effect_queue(next_clie
     assert body["entered_count"] == 2
     assert body["member_event_count"] == 2
     completion_outbox = body["completion"]["completion_event"]
-    from aicrm_next.platform_foundation.internal_events.outbox import InternalEventOutboxRelay
+    from aicrm_next.platform.platform_foundation.internal_events.outbox import InternalEventOutboxRelay
 
     relay = InternalEventOutboxRelay(
         consumer_registry=next_client.app.state.internal_event_consumer_registry,

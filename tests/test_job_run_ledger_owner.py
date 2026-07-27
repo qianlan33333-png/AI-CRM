@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from aicrm_next.platform_foundation.job_runs import (
+from aicrm_next.platform.platform_foundation.job_runs import (
     FinishJobRunRequest,
     StartJobRunRequest,
     build_job_run_ledger_port,

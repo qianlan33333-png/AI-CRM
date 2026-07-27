@@ -10,8 +10,8 @@ from psycopg import sql
 from sqlalchemy import text
 
 from aicrm_next.main import _log_request_query_summary, create_app, query_telemetry_logger
-from aicrm_next.shared import db_session
-from aicrm_next.shared.query_telemetry import (
+from aicrm_next.platform.shared import db_session
+from aicrm_next.platform.shared.query_telemetry import (
     InstrumentedDbApiCursor,
     begin_query,
     finish_query,

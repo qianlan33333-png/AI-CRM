@@ -10,12 +10,12 @@ from aicrm_next.background_jobs.broadcast_queue_worker import (
     SafeSkippedBroadcastDispatcher,
     run_broadcast_queue_worker,
 )
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.external_effects import (
     WECOM_MESSAGE_GROUP_SEND,
     WECOM_MESSAGE_PRIVATE_SEND,
 )
-from aicrm_next.platform_foundation.external_effects.repo_memory import InMemoryExternalEffectRepository
-from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
+from aicrm_next.platform.platform_foundation.external_effects.repo_memory import InMemoryExternalEffectRepository
+from aicrm_next.platform.platform_foundation.external_effects.service import ExternalEffectService
 from tests.test_broadcast_jobs_wecom_private_dispatch import FakeRepo, _job
 
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 
 
-from aicrm_next.shared.typing import JsonDict
+from aicrm_next.platform.shared.typing import JsonDict
 
 
 from .repo import _apply_customer_filters, _apply_page

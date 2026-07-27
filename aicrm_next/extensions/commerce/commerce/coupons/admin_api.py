@@ -7,11 +7,11 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
-from aicrm_next.shared.errors import ContractError, NotFoundError
-from aicrm_next.shared.admin_action_runtime import validate_admin_action_token
-from aicrm_next.shared.public_url import canonical_public_base_url
-from aicrm_next.shared.runtime import pytest_environment
-from aicrm_next.shared.runtime_settings import managed_runtime_setting
+from aicrm_next.platform.shared.errors import ContractError, NotFoundError
+from aicrm_next.platform.shared.admin_action_runtime import validate_admin_action_token
+from aicrm_next.platform.shared.public_url import canonical_public_base_url
+from aicrm_next.platform.shared.runtime import pytest_environment
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting
 
 from .application import CouponAdminApplication
 from .dto import CouponUpsertRequest

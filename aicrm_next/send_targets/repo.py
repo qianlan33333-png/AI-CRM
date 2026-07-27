@@ -4,7 +4,7 @@ from typing import Any
 
 from aicrm_next.crm.identity_contact.dto import ResolvePersonIdentityRequest
 from aicrm_next.crm.identity_contact.resolver import resolve_identity_with_dbapi
-from aicrm_next.shared.postgres_connection import get_db
+from aicrm_next.platform.shared.postgres_connection import get_db
 
 JsonDict = dict[str, Any]
 

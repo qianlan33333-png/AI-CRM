@@ -8,7 +8,7 @@ import psycopg
 from aicrm_next.extensions.ai.automation_agents.repository import AutomationAgentRepository
 from aicrm_next.crm.identity_contact.repo import PostgresIdentityRepository
 from aicrm_next.extensions.forms.questionnaire.repo import PostgresQuestionnaireReadRepository
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.platform.shared.db_session import get_session_factory
 
 
 EXTERNAL_ALIAS = "external-performance-alias"

@@ -5,11 +5,11 @@ from datetime import datetime, timezone
 import secrets
 from typing import Any, Callable, Protocol, TypeVar
 
-from aicrm_next.navigation_target import completion_action_for_target
-from aicrm_next.shared.db_session import connect_pooled_postgres
-from aicrm_next.shared.errors import ContractError, NotFoundError
-from aicrm_next.shared.repository_provider import assert_repository_allowed
-from aicrm_next.shared.runtime import production_data_ready, raw_database_url
+from aicrm_next.platform.navigation_target import completion_action_for_target
+from aicrm_next.platform.shared.db_session import connect_pooled_postgres
+from aicrm_next.platform.shared.errors import ContractError, NotFoundError
+from aicrm_next.platform.shared.repository_provider import assert_repository_allowed
+from aicrm_next.platform.shared.runtime import production_data_ready, raw_database_url
 
 from .domain import completion_redirect_projection, normalize_product_completion_target, normalize_status, now_iso, validate_price_cents
 from .domain import validate_product_code

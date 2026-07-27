@@ -6,11 +6,11 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from aicrm_next.admin_config.repository import AdminConfigRepository
-from aicrm_next.admin_config.application import AdminConfigReadService
-from aicrm_next.admin_config.application_support import _validate_known_setting
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.admin_config.repository import AdminConfigRepository
+from aicrm_next.platform.admin_config.application import AdminConfigReadService
+from aicrm_next.platform.admin_config.application_support import _validate_known_setting
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import (
     FEISHU_WEBHOOK_NOTIFY,
     MEDIA_STORAGE_UPLOAD,
     OPENCLAW_CONTEXT_PUSH,
@@ -23,13 +23,13 @@ from aicrm_next.platform_foundation.external_effects import (
     ExternalEffectService,
     reset_external_effect_fixture_state,
 )
-from aicrm_next.platform_foundation.external_effects.jobs import SCHEDULER_BATCH_SIZE_KEY, SCHEDULER_ENABLED_KEY, SCHEDULER_INTERVAL_SECONDS_KEY
-from aicrm_next.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry
-from aicrm_next.platform_foundation.external_effects.adapters import WECOM_EFFECT_TYPES
-from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
-from aicrm_next.platform_foundation.push_center.capability_registry import PUSH_CAPABILITIES
-from aicrm_next.platform_foundation.push_center.section_mapper import all_sections, effect_types_for_section, label_for_section
-from aicrm_next.shared.wecom_runtime import WECOM_ENABLED_EFFECT_TYPES_KEY, WECOM_EXECUTION_MODE_KEY
+from aicrm_next.platform.platform_foundation.external_effects.jobs import SCHEDULER_BATCH_SIZE_KEY, SCHEDULER_ENABLED_KEY, SCHEDULER_INTERVAL_SECONDS_KEY
+from aicrm_next.platform.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry
+from aicrm_next.platform.platform_foundation.external_effects.adapters import WECOM_EFFECT_TYPES
+from aicrm_next.platform.platform_foundation.external_effects.worker import ExternalEffectWorker
+from aicrm_next.platform.platform_foundation.push_center.capability_registry import PUSH_CAPABILITIES
+from aicrm_next.platform.platform_foundation.push_center.section_mapper import all_sections, effect_types_for_section, label_for_section
+from aicrm_next.platform.shared.wecom_runtime import WECOM_ENABLED_EFFECT_TYPES_KEY, WECOM_EXECUTION_MODE_KEY
 from tests.admin_auth_test_helpers import install_admin_action_tokens
 
 

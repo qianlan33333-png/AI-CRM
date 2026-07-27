@@ -5,12 +5,12 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from aicrm_next.platform_foundation.admin_audit import (
+from aicrm_next.platform.platform_foundation.admin_audit import (
     AdminAuditRecord,
     build_admin_audit_port,
 )
-from aicrm_next.shared.runtime import raw_database_url
-from aicrm_next.shared.runtime_settings import startup_environment_setting
+from aicrm_next.platform.shared.runtime import raw_database_url
+from aicrm_next.platform.shared.runtime_settings import startup_environment_setting
 
 
 def _table_exists(conn, table_name: str) -> bool:
@@ -456,7 +456,7 @@ class PostgresOwnerMigrationRepository:
 
     def resolve_operation_members(self, userids: list[str]) -> dict[str, dict[str, Any]]:
         from aicrm_next.common_operation_members import list_operation_member_rows
-        from aicrm_next.shared.operation_members import candidate_from_row
+        from aicrm_next.platform.shared.operation_members import candidate_from_row
 
         wanted = {str(userid or "").strip() for userid in userids if str(userid or "").strip()}
         resolved: dict[str, dict[str, Any]] = {}

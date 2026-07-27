@@ -14,8 +14,8 @@ from aicrm_next.integration_ports import (
     build_product_write_gateway,
     build_wechat_pay_adapter,
 )
-from aicrm_next.shared.errors import ContractError, NotFoundError
-from aicrm_next.shared.mobile import MOBILE_VALIDATION_MESSAGE, normalize_mainland_mobile
+from aicrm_next.platform.shared.errors import ContractError, NotFoundError
+from aicrm_next.platform.shared.mobile import MOBILE_VALIDATION_MESSAGE, normalize_mainland_mobile
 
 from .domain import completion_redirect_projection, normalize_product_completion_target, preview_product, validate_quantity
 from .dto import CheckoutRequest, PaymentNotifyRequest, ProductUpsertRequest

@@ -6,7 +6,7 @@ from sqlalchemy import text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
 
-from aicrm_next.shared.repository_provider import RepositoryProviderError
+from aicrm_next.platform.shared.repository_provider import RepositoryProviderError
 
 from .agent_outputs import agent_output_projection, normalize_agent_output_filters
 from .repo import InMemoryAutomationRepository

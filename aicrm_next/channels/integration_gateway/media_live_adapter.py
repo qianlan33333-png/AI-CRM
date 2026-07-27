@@ -7,7 +7,7 @@ import hashlib
 import json
 from typing import Any
 
-from aicrm_next.shared.runtime_settings import runtime_bool, runtime_setting
+from aicrm_next.platform.shared.runtime_settings import runtime_bool, runtime_setting
 
 from .media_live_gateway import MediaUploadLiveGateway, build_media_upload_live_gateway
 

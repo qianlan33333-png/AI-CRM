@@ -5,8 +5,8 @@ import logging
 from datetime import datetime
 from typing import Any
 
-from aicrm_next.shared.errors import ContractError, NotFoundError
-from aicrm_next.shared.safe_logging import safe_log_exception
+from aicrm_next.platform.shared.errors import ContractError, NotFoundError
+from aicrm_next.platform.shared.safe_logging import safe_log_exception
 
 from .campaign_reference_port import build_campaign_media_reference_port
 from .dto import normalize_group_invite_join_url, normalize_http_url

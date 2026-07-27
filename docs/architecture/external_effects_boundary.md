@@ -13,7 +13,7 @@ configuration, and explicit business approval.
 
 Direct HTTP client usage is allowed only in:
 
-- `aicrm_next/platform_foundation/external_effects/**`
+- `aicrm_next/platform/platform_foundation/external_effects/**`
 - `aicrm_next/channels/integration_gateway/**`
 - `historical removed reference (http_client.py)`, if present
 - `tests/**`, `tools/**`, and `scripts/**`
@@ -21,7 +21,7 @@ Direct HTTP client usage is allowed only in:
 Business context files such as `api.py`, `application.py`, `service.py`,
 `admin_pages.py`, `routes.py`, `repo.py`, and other context modules must move
 external effects behind `aicrm_next.channels.integration_gateway` or
-`aicrm_next.platform_foundation.external_effects`.
+`aicrm_next.platform.platform_foundation.external_effects`.
 
 ## Temporary Allowlist
 

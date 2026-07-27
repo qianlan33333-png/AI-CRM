@@ -3,13 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from aicrm_next.platform_foundation.auth_platform.context import AuthContext
-from aicrm_next.platform_foundation.auth_platform.service_period_grid_share import (
+from aicrm_next.platform.platform_foundation.auth_platform.context import AuthContext
+from aicrm_next.platform.platform_foundation.auth_platform.service_period_grid_share import (
     ServicePeriodGridShareClaims,
     issue_service_period_grid_share_token,
     verify_service_period_grid_share_token,
 )
-from aicrm_next.shared.errors import NotFoundError
+from aicrm_next.platform.shared.errors import NotFoundError
 
 from .domain import text
 from .member_grid import member_grid_schema

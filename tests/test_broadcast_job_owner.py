@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
-from aicrm_next.platform_foundation.background_jobs.broadcast_job_write_port import (
+from aicrm_next.platform.platform_foundation.background_jobs.broadcast_job_write_port import (
     BroadcastJobCreate,
     build_broadcast_job_write_port,
 )
@@ -146,7 +146,7 @@ def test_broadcast_job_write_sql_is_confined_to_owner_repository() -> None:
         "UPDATE broadcast_jobs",
         "DELETE FROM broadcast_jobs",
     )
-    owner = "aicrm_next/platform_foundation/background_jobs/broadcast_job_write_repository.py"
+    owner = "aicrm_next/platform/platform_foundation/background_jobs/broadcast_job_write_repository.py"
     for path in sorted((ROOT / "aicrm_next").rglob("*.py")):
         source = path.read_text(encoding="utf-8")
         if not any(marker in source for marker in markers):

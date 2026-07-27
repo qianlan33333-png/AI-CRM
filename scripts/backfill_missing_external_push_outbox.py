@@ -18,7 +18,7 @@ from aicrm_next.extensions.commerce.commerce.external_push_outbox import (  # no
     enqueue_transaction_paid_outbox,
     resolve_product_for_order,
 )
-from aicrm_next.shared.runtime import raw_database_url  # noqa: E402
+from aicrm_next.platform.shared.runtime import raw_database_url  # noqa: E402
 
 
 def _connect():

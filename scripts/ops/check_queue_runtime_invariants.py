@@ -11,7 +11,7 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.platform_foundation.execution_runtime.invariants import (
+from aicrm_next.platform.platform_foundation.execution_runtime.invariants import (
     QueueRuntimeInvariantChecker,
 )
 

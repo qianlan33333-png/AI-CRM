@@ -14,7 +14,7 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.platform_foundation.background_jobs.scheduler_runtime import (
+from aicrm_next.platform.platform_foundation.background_jobs.scheduler_runtime import (
     JobCatalogScheduler,
 )
 
@@ -25,7 +25,7 @@ EXECUTE_CONFIRMATION = "EXECUTE_SAFE_JOB_CATALOG_SCHEDULER"
 
 def _external_effect_reconcile(*, dry_run, operator, limit, now):
     del now
-    from aicrm_next.platform_foundation.external_effects.jobs import (
+    from aicrm_next.platform.platform_foundation.external_effects.jobs import (
         complete_record_only_jobs,
     )
 

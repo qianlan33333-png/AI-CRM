@@ -9,7 +9,7 @@ from aicrm_next.channels.integration_gateway.wecom_channel_entry_client import G
 from aicrm_next.channels.integration_gateway.wecom_group_invite_adapter import WeComGroupInviteAdapter
 from aicrm_next.media_library.application import EnsureGroupInviteBindingCommand, EnsureGroupInviteBindingReadyCommand
 from aicrm_next.media_library.repo import InMemoryMediaLibraryRepository, build_media_library_repository, reset_media_library_fixture_state
-from aicrm_next.shared.errors import ContractError
+from aicrm_next.platform.shared.errors import ContractError
 
 
 CHAT_ID = "wrbNXyCwAA_auto_join_way"

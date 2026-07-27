@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 from typing import Any
 
-from aicrm_next.shared.runtime_settings import managed_runtime_bool, managed_runtime_setting
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_bool, managed_runtime_setting
 
 from .audit import record_audit_event
 from .idempotency import get_or_create, make_idempotency_key

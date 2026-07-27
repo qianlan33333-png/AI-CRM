@@ -22,7 +22,7 @@ Search evidence:
 - `aicrm_next/crm/customer_read_model/api.py` owns `GET /api/messages/{external_userid}/recent`.
 - `historical retired production_compat module` no longer contains `@wildcard_router.api_route("/api/messages/{path:path}")`.
 - `aicrm_next/extensions/archive/message_archive/api.py` owns the new exact archive list/search routes plus explicit deprecated/blocked routes listed above.
-- `aicrm_next/admin_config/api_docs_view_model.py` only groups `/api/messages/` paths for API docs display.
+- `aicrm_next/platform/admin_config/api_docs_view_model.py` only groups `/api/messages/` paths for API docs display.
 - `tests/test_customer_read_model_next_primary.py` and `tests/test_messages_exact_routes.py` reference `GET /api/messages/{external_userid}`, `GET /api/messages/{external_userid}/recent`, and `GET /api/messages/search`.
 - `tests/test_messages_*.py` are validation coverage for message archive business behavior.
 - Docs references are limited to `docs/crm_sensitive_routes.md` and `docs/mcp_usage.md`.

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 
-from aicrm_next.shared.typing import JsonDict
+from aicrm_next.platform.shared.typing import JsonDict
 
 from .dto import BatchSendRequest, UserOpsFilters
 

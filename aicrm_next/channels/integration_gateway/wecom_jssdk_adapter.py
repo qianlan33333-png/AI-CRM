@@ -10,9 +10,9 @@ from urllib.error import URLError
 from urllib.parse import urlencode, urlparse
 from urllib.request import urlopen
 
-from aicrm_next.platform_foundation.audit_ledger import InMemoryAuditLedger
-from aicrm_next.shared.runtime import production_environment
-from aicrm_next.shared.runtime_settings import managed_runtime_bool, managed_runtime_setting
+from aicrm_next.platform.platform_foundation.audit_ledger import InMemoryAuditLedger
+from aicrm_next.platform.shared.runtime import production_environment
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_bool, managed_runtime_setting
 
 
 DEFAULT_JS_API_LIST = ("getContext", "getCurExternalContact", "sendChatMessage")

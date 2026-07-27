@@ -4,8 +4,8 @@ import hashlib
 from typing import Any, Callable
 from urllib.parse import quote, urlencode, urlparse
 
-from aicrm_next.shared.runtime import production_environment
-from aicrm_next.shared.runtime_settings import (
+from aicrm_next.platform.shared.runtime import production_environment
+from aicrm_next.platform.shared.runtime_settings import (
     environment_fallback,
     managed_runtime_setting,
     runtime_bool,

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from aicrm_next.mcp_tool_catalog import MCP_TOOLS
-from aicrm_next.shared.errors import ApplicationError
-from aicrm_next.shared.typing import JsonDict
+from aicrm_next.platform.shared.errors import ApplicationError
+from aicrm_next.platform.shared.typing import JsonDict
 
 from .dispatch import McpToolDispatcher
 from .mcp_openclaw_adapters import build_mcp_tool_gateway

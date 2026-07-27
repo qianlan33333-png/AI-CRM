@@ -63,7 +63,7 @@ AI-CRM 自有 Webhook 必须发送：
 - `X-AICRM-Event-Id`
 - `X-AICRM-Signature`
 
-签名消息为 `timestamp + "\n" + event_id + "\n" + raw_body`，算法为 HMAC-SHA256。服务端强制时间窗、CIDR（配置时）与 `event_id` 持久化防重放。签名实现以 `aicrm_next/platform_foundation/auth_platform/webhook_hmac.py` 为准。
+签名消息为 `timestamp + "\n" + event_id + "\n" + raw_body`，算法为 HMAC-SHA256。服务端强制时间窗、CIDR（配置时）与 `event_id` 持久化防重放。签名实现以 `aicrm_next/platform/platform_foundation/auth_platform/webhook_hmac.py` 为准。
 
 ## 生产 bootstrap 与 readiness
 

@@ -20,7 +20,7 @@ def test_shell_owned_pages_do_not_repeat_the_shell_title_as_first_card_heading()
     assert "<h2>群发发送人管理</h2>" not in _read(
         "aicrm_next/app/admin_console/templates/admin_console/hxc_send_config.html"
     )
-    assert 'title="运行状态快照"' in _read("aicrm_next/admin_config/api.py")
+    assert 'title="运行状态快照"' in _read("aicrm_next/platform/admin_config/api.py")
 
 
 def test_automation_agent_pages_leave_the_single_h1_to_admin_shell() -> None:

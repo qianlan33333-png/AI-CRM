@@ -10,8 +10,8 @@ from hashlib import sha256
 from typing import Any
 from urllib.parse import urlparse
 
-from aicrm_next.shared.errors import ContractError
-from aicrm_next.shared.runtime import production_environment
+from aicrm_next.platform.shared.errors import ContractError
+from aicrm_next.platform.shared.runtime import production_environment
 
 
 RADAR_LINK_OWNER = "radar_links"

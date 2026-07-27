@@ -7,8 +7,8 @@ from typing import Any
 from urllib import request
 from urllib.error import HTTPError, URLError
 
-from aicrm_next.shared.runtime import pytest_environment
-from aicrm_next.shared.runtime_settings import runtime_setting
+from aicrm_next.platform.shared.runtime import pytest_environment
+from aicrm_next.platform.shared.runtime_settings import runtime_setting
 
 from .repository import _text
 

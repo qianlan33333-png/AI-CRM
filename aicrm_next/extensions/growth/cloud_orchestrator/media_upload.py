@@ -11,8 +11,8 @@ from aicrm_next.integration_ports import (
     WeComMediaUploadClientError,
     build_wecom_media_upload_client,
 )
-from aicrm_next.shared import runtime
-from aicrm_next.shared.runtime_settings import managed_runtime_setting
+from aicrm_next.platform.shared import runtime
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting
 
 SOURCE_STATUS = "next_cloud_orchestrator_media_upload"
 ROUTE_OWNER = "ai_crm_next"

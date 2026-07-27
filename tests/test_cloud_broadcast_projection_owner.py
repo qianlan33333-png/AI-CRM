@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from aicrm_next.platform_foundation.background_jobs.cloud_broadcast_projection_write_port import (
+from aicrm_next.platform.platform_foundation.background_jobs.cloud_broadcast_projection_write_port import (
     build_cloud_broadcast_projection_write_port,
 )
 
@@ -116,7 +116,7 @@ def test_cloud_broadcast_projection_owner_covers_planning_and_review() -> None:
 
 def test_cloud_broadcast_projection_write_sql_is_confined_to_owner_repository() -> None:
     owner = (
-        "aicrm_next/platform_foundation/background_jobs/"
+        "aicrm_next/platform/platform_foundation/background_jobs/"
         "cloud_broadcast_projection_write_repository.py"
     )
     markers = (

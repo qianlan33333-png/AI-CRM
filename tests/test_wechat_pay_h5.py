@@ -10,7 +10,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.x509.oid import NameOID
 
-from aicrm_next.admin_config.settings import mask_value
+from aicrm_next.platform.admin_config.settings import mask_value
 from aicrm_next.extensions.commerce.commerce.order_expiration import close_expired_wechat_pay_orders
 from aicrm_next.extensions.commerce.commerce.repo import reset_commerce_fixture_state
 from aicrm_next.extensions.commerce.commerce.wechat_pay_client import WeChatPayClient, WeChatPayClientConfig

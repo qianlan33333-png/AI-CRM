@@ -10,13 +10,13 @@ from aicrm_next.integration_ports import (
     LessonCardCoverClientError,
     build_lesson_card_cover_client,
 )
-from aicrm_next.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry
-from aicrm_next.platform_foundation.external_effects.models import utcnow
-from aicrm_next.platform_foundation.external_effects.repo import (
+from aicrm_next.platform.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry
+from aicrm_next.platform.platform_foundation.external_effects.models import utcnow
+from aicrm_next.platform.platform_foundation.external_effects.repo import (
     ExternalEffectRepository,
     build_external_effect_repository,
 )
-from aicrm_next.shared.runtime_settings import managed_runtime_int, managed_runtime_setting
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_int, managed_runtime_setting
 
 from .durable_effects_repository import (
     GroupOpsEffectGraphRepository,

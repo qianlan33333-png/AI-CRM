@@ -5,7 +5,7 @@ from typing import Any
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-from aicrm_next.shared.runtime_settings import managed_runtime_setting
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting
 
 
 Json = dict[str, Any]

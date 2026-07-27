@@ -7,8 +7,8 @@ from uuid import uuid4
 from sqlalchemy import text as sql_text
 from sqlalchemy.orm import Session
 
-from aicrm_next.platform_foundation.command_bus.models import CommandContext
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import (
     ExternalEffectService,
     WECOM_EXTERNAL_CONTACT_DETAIL_FETCH,
 )

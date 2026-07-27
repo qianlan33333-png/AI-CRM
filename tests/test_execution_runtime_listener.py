@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from aicrm_next.platform_foundation.execution_runtime.listener import (
+from aicrm_next.platform.platform_foundation.execution_runtime.listener import (
     QUEUE_WAKE_CHANNEL,
     PostgresQueueWakeListener,
     QueueWakeHint,

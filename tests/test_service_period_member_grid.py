@@ -28,7 +28,7 @@ from aicrm_next.extensions.commerce.service_period.repo import (
     build_service_period_repository,
     reset_service_period_fixture_state,
 )
-from aicrm_next.shared.errors import ContractError
+from aicrm_next.platform.shared.errors import ContractError
 from tests.admin_auth_test_helpers import install_admin_action_tokens
 
 

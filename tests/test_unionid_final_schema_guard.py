@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from sqlalchemy import text
 
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.platform.shared.db_session import get_session_factory
 
 
 LEGACY_IDENTITY_COLUMN_NAMES = (

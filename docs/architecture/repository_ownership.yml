@@ -1,8 +1,8 @@
 version: 1
 
 repositories:
-  aicrm_next/admin_config/repository.py:
-    capability_owner: aicrm_next.admin_config
+  aicrm_next/platform/admin_config/repository.py:
+    capability_owner: aicrm_next.platform.admin_config
     table_reads:
       - admin_login_audit
       - admin_operation_logs
@@ -24,8 +24,8 @@ repositories:
       - marketing_automation_configs
       - marketing_automation_question_rules
       - mcp_tool_settings
-  aicrm_next/admin_config/config_release_repository.py:
-    capability_owner: aicrm_next.admin_config
+  aicrm_next/platform/admin_config/config_release_repository.py:
+    capability_owner: aicrm_next.platform.admin_config
     table_reads:
       - app_settings
       - config_releases
@@ -34,12 +34,12 @@ repositories:
       - app_settings
       - config_releases
       - deployment_profile_state
-  aicrm_next/admin_config/pii_audit_repository.py:
-    capability_owner: aicrm_next.admin_config
+  aicrm_next/platform/admin_config/pii_audit_repository.py:
+    capability_owner: aicrm_next.platform.admin_config
     table_reads: []
     table_writes: []
-  aicrm_next/admin_jobs/repository.py:
-    capability_owner: aicrm_next.admin_jobs
+  aicrm_next/platform/admin_jobs/repository.py:
+    capability_owner: aicrm_next.platform.admin_jobs
     table_reads:
       - broadcast_job_events
       - broadcast_jobs
@@ -277,13 +277,13 @@ repositories:
     table_reads:
       - external_effect_job
     table_writes: []
-  aicrm_next/platform_foundation/background_jobs/broadcast_job_write_repository.py:
+  aicrm_next/platform/platform_foundation/background_jobs/broadcast_job_write_repository.py:
     capability_owner: aicrm_next.background_jobs
     table_reads:
       - broadcast_jobs
     table_writes:
       - broadcast_jobs
-  aicrm_next/platform_foundation/background_jobs/cloud_broadcast_projection_write_repository.py:
+  aicrm_next/platform/platform_foundation/background_jobs/cloud_broadcast_projection_write_repository.py:
     capability_owner: aicrm_next.extensions.growth.cloud_orchestrator
     table_reads:
       - broadcast_jobs
@@ -528,8 +528,8 @@ repositories:
       - external_effect_job
       - internal_event
     table_writes: []
-  aicrm_next/external_push/repo.py:
-    capability_owner: aicrm_next.external_push
+  aicrm_next/platform/external_push/repo.py:
+    capability_owner: aicrm_next.platform.external_push
     table_reads:
       - crm_user_identity
       - domain_event_outbox
@@ -680,13 +680,13 @@ repositories:
       - admin_wecom_directory_members
     non_literal_table_reads:
       - admin_wecom_directory_members
-  aicrm_next/platform_foundation/admin_audit/repository.py:
-    capability_owner: aicrm_next.platform_foundation.admin_audit
+  aicrm_next/platform/platform_foundation/admin_audit/repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.admin_audit
     table_reads: []
     table_writes:
       - admin_operation_logs
-  aicrm_next/platform_foundation/auth_platform/repository.py:
-    capability_owner: aicrm_next.platform_foundation.auth_platform
+  aicrm_next/platform/platform_foundation/auth_platform/repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.auth_platform
     table_reads:
       - admin_users
       - auth_api_clients
@@ -698,8 +698,8 @@ repositories:
       - auth_sessions
       - auth_webhook_clients
       - auth_webhook_replay
-  aicrm_next/platform_foundation/execution_runtime/repository.py:
-    capability_owner: aicrm_next.platform_foundation.execution_runtime
+  aicrm_next/platform/platform_foundation/execution_runtime/repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.execution_runtime
     table_reads:
       - external_effect_attempt
       - external_effect_job
@@ -713,33 +713,33 @@ repositories:
       - queue_fairness_cursor
       - queue_runtime_lease_recovery_event
       - queue_worker_heartbeat
-  aicrm_next/platform_foundation/external_effects/canary_repository.py:
-    capability_owner: aicrm_next.platform_foundation.external_effects
+  aicrm_next/platform/platform_foundation/external_effects/canary_repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.external_effects
     table_reads: []
     table_writes:
       - external_effect_job
-  aicrm_next/platform_foundation/external_effects/direct_claim_repository.py:
-    capability_owner: aicrm_next.platform_foundation.external_effects
+  aicrm_next/platform/platform_foundation/external_effects/direct_claim_repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.external_effects
     table_reads:
       - external_effect_job
       - queue_runtime_control
     table_writes:
       - external_effect_job
-  aicrm_next/platform_foundation/external_effects/provider_result_repository.py:
-    capability_owner: aicrm_next.platform_foundation.external_effects
+  aicrm_next/platform/platform_foundation/external_effects/provider_result_repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.external_effects
     table_reads:
       - external_effect_attempt
     table_writes:
       - external_effect_attempt
-  aicrm_next/platform_foundation/external_effects/provider_attempt/repository.py:
-    capability_owner: aicrm_next.platform_foundation.external_effects
+  aicrm_next/platform/platform_foundation/external_effects/provider_attempt/repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.external_effects
     table_reads:
       - external_effect_job
     table_writes:
       - external_effect_attempt
       - external_effect_job
-  aicrm_next/platform_foundation/external_effects/repo.py:
-    capability_owner: aicrm_next.platform_foundation.external_effects
+  aicrm_next/platform/platform_foundation/external_effects/repo.py:
+    capability_owner: aicrm_next.platform.platform_foundation.external_effects
     table_reads:
       - external_effect_attempt
       - external_effect_job
@@ -749,8 +749,8 @@ repositories:
       - external_effect_attempt
       - external_effect_job
       - external_effect_test_receipt
-  aicrm_next/platform_foundation/external_effects/runtime_write_repository.py:
-    capability_owner: aicrm_next.platform_foundation.external_effects
+  aicrm_next/platform/platform_foundation/external_effects/runtime_write_repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.external_effects
     table_reads:
       - external_effect_attempt
       - external_effect_job
@@ -761,8 +761,8 @@ repositories:
     table_writes:
       - external_effect_attempt
       - external_effect_job
-  aicrm_next/platform_foundation/internal_events/consumer_run_write_repository.py:
-    capability_owner: aicrm_next.platform_foundation.internal_events
+  aicrm_next/platform/platform_foundation/internal_events/consumer_run_write_repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.internal_events
     table_reads:
       - internal_event
       - internal_event_consumer_run
@@ -771,16 +771,16 @@ repositories:
     table_writes:
       - internal_event_consumer_attempt
       - internal_event_consumer_run
-  aicrm_next/platform_foundation/internal_events/outbox_runtime_write_repository.py:
-    capability_owner: aicrm_next.platform_foundation.internal_events
+  aicrm_next/platform/platform_foundation/internal_events/outbox_runtime_write_repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.internal_events
     table_reads:
       - internal_event_outbox
       - queue_fairness_cursor
       - queue_runtime_control
     table_writes:
       - internal_event_outbox
-  aicrm_next/platform_foundation/internal_events/repository.py:
-    capability_owner: aicrm_next.platform_foundation.internal_events
+  aicrm_next/platform/platform_foundation/internal_events/repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.internal_events
     table_reads:
       - internal_event
       - internal_event_consumer_attempt
@@ -793,27 +793,27 @@ repositories:
       - internal_event_consumer_attempt
       - internal_event_consumer_run
       - internal_event_outbox
-  aicrm_next/platform_foundation/job_runs/repository.py:
-    capability_owner: aicrm_next.platform_foundation.job_runs
+  aicrm_next/platform/platform_foundation/job_runs/repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.job_runs
     table_reads: []
     table_writes:
       - sync_runs
-  aicrm_next/platform_foundation/rate_scope_cooldown/repository.py:
-    capability_owner: aicrm_next.platform_foundation.rate_scope_cooldown
+  aicrm_next/platform/platform_foundation/rate_scope_cooldown/repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.rate_scope_cooldown
     table_reads: []
     table_writes:
       - queue_rate_scope_cooldown
-  aicrm_next/platform_foundation/push_center/capability_repository.py:
-    capability_owner: aicrm_next.platform_foundation.push_center
+  aicrm_next/platform/platform_foundation/push_center/capability_repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.push_center
     table_reads:
       - app_settings
     table_writes: []
-  aicrm_next/platform_foundation/push_center/repository.py:
-    capability_owner: aicrm_next.platform_foundation.push_center
+  aicrm_next/platform/platform_foundation/push_center/repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.push_center
     table_reads: []
     table_writes: []
-  aicrm_next/platform_foundation/repository.py:
-    capability_owner: aicrm_next.platform_foundation
+  aicrm_next/platform/platform_foundation/repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation
     table_reads:
       - alembic_version
       - broadcast_jobs
@@ -826,15 +826,15 @@ repositories:
       - queue_runtime_control
       - webhook_inbox
     table_writes: []
-  aicrm_next/platform_foundation/webhook_inbox/repository.py:
-    capability_owner: aicrm_next.platform_foundation.webhook_inbox
+  aicrm_next/platform/platform_foundation/webhook_inbox/repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.webhook_inbox
     table_reads:
       - queue_runtime_control
       - webhook_inbox
     table_writes:
       - webhook_inbox
-  aicrm_next/platform_foundation/webhook_inbox/runtime_write_repository.py:
-    capability_owner: aicrm_next.platform_foundation.webhook_inbox
+  aicrm_next/platform/platform_foundation/webhook_inbox/runtime_write_repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.webhook_inbox
     table_reads:
       - queue_fairness_cursor
       - queue_runtime_control

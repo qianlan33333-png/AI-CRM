@@ -7,8 +7,8 @@ from datetime import datetime, time, timezone, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from aicrm_next.shared.errors import ContractError
-from aicrm_next.shared.runtime_settings import managed_runtime_setting
+from aicrm_next.platform.shared.errors import ContractError
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting
 
 from .domain import build_node_group_message_content, clean_text, derive_node_scheduled_time
 from .durable_effects_repository import (
@@ -20,7 +20,7 @@ from .durable_effects_repository import (
 )
 from .integration_gateway import resolve_group_ops_content_package_materials
 from .repo import GroupOpsRepository, build_group_ops_repository
-from aicrm_next.shared.runtime import production_data_ready, raw_database_url
+from aicrm_next.platform.shared.runtime import production_data_ready, raw_database_url
 
 
 DEFAULT_GROUP_OPS_TIMEZONE = "Asia/Shanghai"

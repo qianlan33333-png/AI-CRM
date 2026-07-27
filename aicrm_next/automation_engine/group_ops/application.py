@@ -3,10 +3,10 @@ from __future__ import annotations
 from typing import Any
 
 from aicrm_next.integration_ports import WeComGroupAssetAdapterContract
-from aicrm_next.shared.admin_read_fallback import admin_read_unavailable_payload
-from aicrm_next.shared.errors import ContractError, NotFoundError
-from aicrm_next.shared.repository_provider import RepositoryProviderError, blocked_production_payload
-from aicrm_next.shared.runtime_settings import startup_environment_setting
+from aicrm_next.platform.shared.admin_read_fallback import admin_read_unavailable_payload
+from aicrm_next.platform.shared.errors import ContractError, NotFoundError
+from aicrm_next.platform.shared.repository_provider import RepositoryProviderError, blocked_production_payload
+from aicrm_next.platform.shared.runtime_settings import startup_environment_setting
 
 from . import CAPABILITY_OWNER
 from .domain import (

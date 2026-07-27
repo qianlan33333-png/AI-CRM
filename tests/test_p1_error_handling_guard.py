@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def test_global_application_error_handler_returns_status_specific_json(monkeypatch) -> None:
     from aicrm_next.main import create_app
-    from aicrm_next.shared.errors import ContractError
+    from aicrm_next.platform.shared.errors import ContractError
 
     monkeypatch.setenv("AICRM_NEXT_ENV", "test")
     app = create_app()

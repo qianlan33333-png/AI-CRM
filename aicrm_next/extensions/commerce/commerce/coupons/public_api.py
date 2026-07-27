@@ -10,8 +10,8 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from aicrm_next.crm.identity_contact.wechat_unionid_guard import evaluate_wechat_unionid_access
-from aicrm_next.shared.errors import ContractError, NotFoundError
-from aicrm_next.shared.wechat_h5_session import (
+from aicrm_next.platform.shared.errors import ContractError, NotFoundError
+from aicrm_next.platform.shared.wechat_h5_session import (
     is_wechat_browser,
     payment_identity_from_request,
     payment_oauth_start_url,

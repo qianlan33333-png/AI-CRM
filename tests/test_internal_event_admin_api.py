@@ -2,15 +2,15 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.execution_runtime.commands import QueueRuntimeCommandService
-from aicrm_next.platform_foundation.internal_events import (
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.execution_runtime.commands import QueueRuntimeCommandService
+from aicrm_next.platform.platform_foundation.internal_events import (
     InternalEventConsumerRegistry,
     InternalEventConsumerResult,
     InternalEventService,
     reset_internal_event_fixture_state,
 )
-from aicrm_next.platform_foundation.internal_events.repository import build_internal_event_repository
+from aicrm_next.platform.platform_foundation.internal_events.repository import build_internal_event_repository
 from tests.admin_auth_test_helpers import install_admin_action_tokens
 
 

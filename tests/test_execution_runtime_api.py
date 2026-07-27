@@ -5,8 +5,8 @@ import json
 import pytest
 from fastapi import HTTPException
 
-from aicrm_next.platform_foundation.execution_runtime import api
-from aicrm_next.platform_foundation.execution_runtime.read_model import ExecutionRuntimeReadModel
+from aicrm_next.platform.platform_foundation.execution_runtime import api
+from aicrm_next.platform.platform_foundation.execution_runtime.read_model import ExecutionRuntimeReadModel
 
 
 def _body(response) -> dict:
@@ -32,7 +32,7 @@ def test_runtime_endpoint_returns_lane_and_release_snapshot(monkeypatch) -> None
     body = _body(response)
 
     assert response.status_code == 200
-    assert body["route_owner"] == "aicrm_next.platform_foundation"
+    assert body["route_owner"] == "aicrm_next.platform.platform_foundation"
     assert body["control"]["claim_enabled"] is False
     assert body["lanes"][0]["held"] == 2450
     assert body["pii_in_output"] is False

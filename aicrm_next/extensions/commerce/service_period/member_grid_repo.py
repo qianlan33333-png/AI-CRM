@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any, Protocol
 
-from aicrm_next.shared.errors import ContractError, NotFoundError
+from aicrm_next.platform.shared.errors import ContractError, NotFoundError
 
 from .domain import TENANT_ID, isoformat, text, utcnow
 from .huangyoucan_usage import huangyoucan_usage_match_joins, huangyoucan_usage_select_fields

@@ -3,8 +3,8 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from aicrm_next.shared.errors import NotFoundError
-from aicrm_next.shared.runtime import database_mode
+from aicrm_next.platform.shared.errors import NotFoundError
+from aicrm_next.platform.shared.runtime import database_mode
 
 from .admin_transaction_detail import (
     CommerceAdminTransactionDetailReadModel,

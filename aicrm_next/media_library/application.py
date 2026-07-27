@@ -7,9 +7,9 @@ from typing import Any
 
 from aicrm_next.integration_ports import build_cloud_storage_adapter, build_wecom_media_adapter, extract_base64_payload
 from aicrm_next.integration_ports import build_wecom_group_invite_adapter
-from aicrm_next.shared.errors import ContractError
-from aicrm_next.shared import runtime
-from aicrm_next.shared.runtime_settings import runtime_setting
+from aicrm_next.platform.shared.errors import ContractError
+from aicrm_next.platform.shared import runtime
+from aicrm_next.platform.shared.runtime_settings import runtime_setting
 
 from .dto import AttachmentUpsertRequest, GroupInviteBindingEnsureRequest, GroupInviteBindingUpdateRequest, GroupInviteUpsertRequest, ImageFromBase64Request, ImageFromUrlRequest, ImageUpsertRequest, MiniprogramUpsertRequest, normalize_group_invite_join_url
 from .repo import MediaLibraryRepository, build_media_library_repository, normalize_tags
@@ -123,7 +123,7 @@ class GetMediaItemQuery:
     def __call__(self, item_id: str, *, include_data: bool = True) -> dict[str, Any]:
         item = self._repo.get_item(self._kind, item_id, include_data=include_data)
         if not item:
-            from aicrm_next.shared.errors import NotFoundError
+            from aicrm_next.platform.shared.errors import NotFoundError
 
             raise NotFoundError(f"{self._kind} item not found")
         return {"ok": True, "item": item}
@@ -165,7 +165,7 @@ class EnsureGroupInviteBindingReadyCommand:
     def __call__(self, item_id: str, *, item: dict[str, Any] | None = None) -> dict[str, Any]:
         current = item or self._repo.get_item("group_invite", item_id)
         if not current:
-            from aicrm_next.shared.errors import NotFoundError
+            from aicrm_next.platform.shared.errors import NotFoundError
 
             raise NotFoundError("group_invite item not found")
         if str(current.get("binding_status") or "") == "invalid":
@@ -295,7 +295,7 @@ class GetImageVariantQuery:
     def __call__(self, image_id: str, variant_key: str) -> dict[str, Any]:
         variant = self._repo.get_image_variant(image_id, variant_key)
         if not variant:
-            from aicrm_next.shared.errors import NotFoundError
+            from aicrm_next.platform.shared.errors import NotFoundError
 
             raise NotFoundError("image variant not found")
         return {"ok": True, "variant": variant}
@@ -308,7 +308,7 @@ class GetImageThumbnailQuery:
     def __call__(self, image_id: str, size: int) -> dict[str, Any]:
         thumbnail = self._repo.get_image_thumbnail(image_id, size)
         if not thumbnail:
-            from aicrm_next.shared.errors import NotFoundError
+            from aicrm_next.platform.shared.errors import NotFoundError
 
             raise NotFoundError("image item not found")
         return {"ok": True, "thumbnail": thumbnail}
@@ -567,7 +567,7 @@ class TestResolveMiniprogramThumbCommand:
     def __call__(self, item_id: str) -> dict[str, Any]:
         item = self._repo.get_item("miniprogram", item_id)
         if not item:
-            from aicrm_next.shared.errors import NotFoundError
+            from aicrm_next.platform.shared.errors import NotFoundError
 
             raise NotFoundError("miniprogram item not found")
         thumb_media_id = str(item.get("thumb_media_id") or "")

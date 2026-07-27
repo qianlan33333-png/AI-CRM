@@ -5,8 +5,8 @@ import hmac
 import logging
 from typing import Any
 
-from aicrm_next.shared.runtime import production_environment
-from aicrm_next.shared.runtime_settings import runtime_setting, startup_environment_setting
+from aicrm_next.platform.shared.runtime import production_environment
+from aicrm_next.platform.shared.runtime_settings import runtime_setting, startup_environment_setting
 
 logger = logging.getLogger(__name__)
 

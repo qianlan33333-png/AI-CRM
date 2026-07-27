@@ -8,9 +8,9 @@ import json
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from aicrm_next.shared.errors import NotFoundError
-from aicrm_next.shared.runtime import database_mode
-from aicrm_next.shared.text_encoding import repair_utf8_mojibake
+from aicrm_next.platform.shared.errors import NotFoundError
+from aicrm_next.platform.shared.runtime import database_mode
+from aicrm_next.platform.shared.text_encoding import repair_utf8_mojibake
 
 from .application import GetTransactionQuery, ListTransactionsQuery
 from .order_expiration import close_expired_wechat_pay_orders

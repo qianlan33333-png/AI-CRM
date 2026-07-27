@@ -4,15 +4,15 @@ import json
 
 from sqlalchemy import text
 
-from aicrm_next.platform_foundation.external_effects.continuations import ExternalEffectContinuation
-from aicrm_next.platform_foundation.background_jobs.broadcast_job_write_port import (
+from aicrm_next.platform.platform_foundation.external_effects.continuations import ExternalEffectContinuation
+from aicrm_next.platform.platform_foundation.background_jobs.broadcast_job_write_port import (
     build_broadcast_job_write_port,
 )
-from aicrm_next.platform_foundation.background_jobs.cloud_broadcast_projection_write_port import (
+from aicrm_next.platform.platform_foundation.background_jobs.cloud_broadcast_projection_write_port import (
     build_cloud_broadcast_projection_write_port,
 )
-from aicrm_next.shared.db_session import get_session_factory
-from aicrm_next.shared.runtime import fixture_mode
+from aicrm_next.platform.shared.db_session import get_session_factory
+from aicrm_next.platform.shared.runtime import fixture_mode
 
 
 def _matches(job, _dispatch_result) -> bool:

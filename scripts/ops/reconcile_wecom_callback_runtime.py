@@ -18,8 +18,8 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 ensure_repo_root_on_path()
 
 from aicrm_next.channels.integration_gateway.wecom_runtime import load_wecom_execution_config
-from aicrm_next.shared.release import current_release_sha
-from aicrm_next.shared.runtime import raw_database_url
+from aicrm_next.platform.shared.release import current_release_sha
+from aicrm_next.platform.shared.runtime import raw_database_url
 
 
 def _psycopg_url(url: str) -> str:
@@ -68,7 +68,7 @@ def read_count_only_inbox_state(database_url: str = "") -> dict[str, Any]:
 def static_boundary_state(root: Path = REPO_ROOT) -> dict[str, int]:
     callback_source = (root / "aicrm_next/channels/channel_entry/inbox.py").read_text(encoding="utf-8")
     ingress_source = (root / "aicrm_next/channels/channel_entry/callback_ingress.py").read_text(encoding="utf-8")
-    realtime_source = (root / "aicrm_next/platform_foundation/external_effects/realtime.py").read_text(encoding="utf-8")
+    realtime_source = (root / "aicrm_next/platform/platform_foundation/external_effects/realtime.py").read_text(encoding="utf-8")
     application_source = (root / "aicrm_next/channels/channel_entry/application.py").read_text(encoding="utf-8")
     manifest = json.loads((root / "deploy/production_runtime_units.json").read_text(encoding="utf-8"))
     retired = set(manifest.get("retired_forbidden") or [])

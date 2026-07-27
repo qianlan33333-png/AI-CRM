@@ -35,10 +35,10 @@ id_only_overlay:
     - .github/workflows/deploy.yml
     - .github/workflows/id-validation-queue-operations.yml
     - .github/workflows/refresh-pytest-duration-baseline.yml
-    - aicrm_next/platform_foundation/execution_runtime/validation.py
-    - aicrm_next/platform_foundation/external_effects/canary_repository.py
-    - aicrm_next/platform_foundation/external_effects/test_receiver.py
-    - aicrm_next/platform_foundation/external_effects/wecom_canary_policy.py
+    - aicrm_next/platform/platform_foundation/execution_runtime/validation.py
+    - aicrm_next/platform/platform_foundation/external_effects/canary_repository.py
+    - aicrm_next/platform/platform_foundation/external_effects/test_receiver.py
+    - aicrm_next/platform/platform_foundation/external_effects/wecom_canary_policy.py
     - deploy/aicrm-queue-soak-snapshot.service
     - deploy/aicrm-queue-soak-snapshot.timer
     - docs/adr/2026-07-17-id-validation-deployment-ownership.md
@@ -81,20 +81,20 @@ mixed_review_required:
     - aicrm_next/automation_engine/group_ops/durable_effects_repository.py
     - aicrm_next/automation_engine/group_ops/scheduler.py
     - aicrm_next/extensions/commerce/service_period/domain.py
-    - aicrm_next/admin_config/application.py
-    - aicrm_next/admin_config/application_support.py
-    - aicrm_next/admin_config/category_registry.py
-    - aicrm_next/platform_foundation/auth_platform/webhook_hmac.py
-    - aicrm_next/platform_foundation/execution_runtime/cutover.py
-    - aicrm_next/platform_foundation/external_effects/adapters.py
-    - aicrm_next/platform_foundation/external_effects/direct_claim_repository.py
-    - aicrm_next/platform_foundation/external_effects/models.py
-    - aicrm_next/platform_foundation/external_effects/repo.py
-    - aicrm_next/platform_foundation/external_effects/repo_contract.py
-    - aicrm_next/platform_foundation/external_effects/repo_memory.py
-    - aicrm_next/platform_foundation/external_effects/service.py
-    - aicrm_next/platform_foundation/push_center/api.py
-    - aicrm_next/shared/wecom_runtime.py
+    - aicrm_next/platform/admin_config/application.py
+    - aicrm_next/platform/admin_config/application_support.py
+    - aicrm_next/platform/admin_config/category_registry.py
+    - aicrm_next/platform/platform_foundation/auth_platform/webhook_hmac.py
+    - aicrm_next/platform/platform_foundation/execution_runtime/cutover.py
+    - aicrm_next/platform/platform_foundation/external_effects/adapters.py
+    - aicrm_next/platform/platform_foundation/external_effects/direct_claim_repository.py
+    - aicrm_next/platform/platform_foundation/external_effects/models.py
+    - aicrm_next/platform/platform_foundation/external_effects/repo.py
+    - aicrm_next/platform/platform_foundation/external_effects/repo_contract.py
+    - aicrm_next/platform/platform_foundation/external_effects/repo_memory.py
+    - aicrm_next/platform/platform_foundation/external_effects/service.py
+    - aicrm_next/platform/platform_foundation/push_center/api.py
+    - aicrm_next/platform/shared/wecom_runtime.py
     - aicrm_next/wecom_media_jobs.py
     - deploy/production_runtime_units.json
     - docs/architecture/data_table_lifecycle_manifest.yml

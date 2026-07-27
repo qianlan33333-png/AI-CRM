@@ -3,11 +3,11 @@ import os
 
 from sqlalchemy import text
 
-from aicrm_next.platform_foundation.auth_platform.credentials import CredentialHasher
-from aicrm_next.platform_foundation.auth_platform.models import SessionSubject
-from aicrm_next.platform_foundation.auth_platform.repository import PostgresAuthRepository
-from aicrm_next.platform_foundation.auth_platform.sessions import AuthSessionService
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.platform.platform_foundation.auth_platform.credentials import CredentialHasher
+from aicrm_next.platform.platform_foundation.auth_platform.models import SessionSubject
+from aicrm_next.platform.platform_foundation.auth_platform.repository import PostgresAuthRepository
+from aicrm_next.platform.platform_foundation.auth_platform.sessions import AuthSessionService
+from aicrm_next.platform.shared.db_session import get_session_factory
 
 
 def test_postgres_session_is_invalidated_by_admin_session_version(next_pg_schema) -> None:

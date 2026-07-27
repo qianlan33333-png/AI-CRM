@@ -19,27 +19,27 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 from fastapi.testclient import TestClient
 
-from aicrm_next.admin_jobs.application import build_jobs_payload
-from aicrm_next.admin_jobs.repository import PostgresAdminJobsRepository
+from aicrm_next.platform.admin_jobs.application import build_jobs_payload
+from aicrm_next.platform.admin_jobs.repository import PostgresAdminJobsRepository
 from aicrm_next.crm.customer_read_model.application import ListRecentMessagesQuery
 from aicrm_next.crm.customer_read_model.dto import RecentMessagesRequest
 from aicrm_next.crm.customer_read_model.repo import SqlAlchemyCustomerReadModelRepository
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.performance_contracts import (
+from aicrm_next.platform.platform_foundation.performance_contracts import (
     ReadPathBaseline,
     collect_plan_evidence,
     evaluate_read_path_report,
     load_read_path_baselines,
     percentile,
 )
-from aicrm_next.platform_foundation.push_center.sql_read_model import SQLPushCenterReadModel
+from aicrm_next.platform.platform_foundation.push_center.sql_read_model import SQLPushCenterReadModel
 from aicrm_next.extensions.forms.questionnaire.repo import PostgresQuestionnaireReadRepository
-from aicrm_next.shared.db_session import get_db, get_engine, get_sqlalchemy_database_url
-from aicrm_next.shared.signed_context import (
+from aicrm_next.platform.shared.db_session import get_db, get_engine, get_sqlalchemy_database_url
+from aicrm_next.platform.shared.signed_context import (
     SIDEBAR_VIEWER_SESSION_COOKIE,
     build_sidebar_owner_context_token,
 )
-from aicrm_next.shared.signed_session import sign_session_payload
+from aicrm_next.platform.shared.signed_session import sign_session_payload
 
 
 LOCK_KEY = 4_249_015_149

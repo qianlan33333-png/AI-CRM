@@ -16,7 +16,7 @@ from aicrm_next.background_jobs.broadcast_queue_worker import (
     SafeSkippedBroadcastDispatcher,
 )
 from aicrm_next.extensions.growth.cloud_orchestrator.repository import PostgresCloudPlanRepository
-from aicrm_next.platform_foundation.external_effects.repo import SQLAlchemyExternalEffectRepository
+from aicrm_next.platform.platform_foundation.external_effects.repo import SQLAlchemyExternalEffectRepository
 
 
 def _seed_cloud_job(*, status: str = "queued", claim_token: str = "") -> dict[str, int | str]:

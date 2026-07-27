@@ -5,7 +5,7 @@ import json
 from datetime import datetime, timedelta
 from typing import Any
 
-from aicrm_next.platform_foundation.external_effects.models import public_datetime, utcnow
+from aicrm_next.platform.platform_foundation.external_effects.models import public_datetime, utcnow
 
 QUESTIONNAIRE_EXTERNAL_PUSH_MODE = "queue"
 

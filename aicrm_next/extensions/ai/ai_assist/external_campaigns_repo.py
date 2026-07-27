@@ -6,11 +6,11 @@ from typing import Any, Protocol
 
 from aicrm_next.crm.identity_contact.dto import ResolvePersonIdentityRequest
 from aicrm_next.crm.identity_contact.resolver import resolve_identity_with_dbapi
-from aicrm_next.platform_foundation.background_jobs.broadcast_job_write_port import (
+from aicrm_next.platform.platform_foundation.background_jobs.broadcast_job_write_port import (
     BroadcastJobCreate,
     build_broadcast_job_write_port,
 )
-from aicrm_next.shared.postgres_connection import get_db
+from aicrm_next.platform.shared.postgres_connection import get_db
 
 JsonDict = dict[str, Any]
 

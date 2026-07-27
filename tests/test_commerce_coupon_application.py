@@ -22,7 +22,7 @@ from aicrm_next.extensions.commerce.commerce.coupons.application import (
 from aicrm_next.extensions.commerce.commerce.coupons.domain import CouponChoiceMode, CouponClaimStatus
 from aicrm_next.extensions.commerce.commerce.coupons.dto import CouponUpsertRequest
 from aicrm_next.extensions.commerce.commerce.coupons.repo import InMemoryCouponRepository, PostgresCouponRepository
-from aicrm_next.shared.errors import ContractError
+from aicrm_next.platform.shared.errors import ContractError
 
 
 UTC = timezone.utc

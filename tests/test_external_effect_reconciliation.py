@@ -6,17 +6,17 @@ from pathlib import Path
 import subprocess
 import sys
 
-from aicrm_next.platform_foundation.external_effects.models import (
+from aicrm_next.platform.platform_foundation.external_effects.models import (
     WEBHOOK_GENERIC_PUSH,
     ExternalEffectDispatchResult,
 )
-from aicrm_next.platform_foundation.external_effects.reconciliation import (
+from aicrm_next.platform.platform_foundation.external_effects.reconciliation import (
     DELIVERY_EVIDENCE_CUTOVER_AT,
     ExternalEffectDispatchReconciliationService,
 )
-from aicrm_next.platform_foundation.external_effects.repo import InMemoryExternalEffectRepository
-from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
-from aicrm_next.platform_foundation.push_center.status_mapper import standard_attempt_status, standard_push_status
+from aicrm_next.platform.platform_foundation.external_effects.repo import InMemoryExternalEffectRepository
+from aicrm_next.platform.platform_foundation.external_effects.service import ExternalEffectService
+from aicrm_next.platform.platform_foundation.push_center.status_mapper import standard_attempt_status, standard_push_status
 
 ROOT = Path(__file__).resolve().parents[1]
 

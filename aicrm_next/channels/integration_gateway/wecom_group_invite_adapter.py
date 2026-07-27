@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 from typing import Any
 
-from aicrm_next.shared.wecom_runtime import classify_wecom_provider_error
+from aicrm_next.platform.shared.wecom_runtime import classify_wecom_provider_error
 
 from .audit import record_audit_event
 from .wecom_channel_entry_client import (

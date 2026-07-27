@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from aicrm_next.main import create_app
-from aicrm_next.shared.runtime import assert_required_runtime_secrets, require_signing_secret, runtime_health_state
+from aicrm_next.platform.shared.runtime import assert_required_runtime_secrets, require_signing_secret, runtime_health_state
 
 
 def test_create_app_requires_secret_key_in_production(monkeypatch) -> None:

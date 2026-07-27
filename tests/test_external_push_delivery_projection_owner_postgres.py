@@ -5,7 +5,7 @@ import os
 import psycopg
 from psycopg.rows import dict_row
 
-from aicrm_next.external_push.delivery_projection_port import build_external_push_delivery_projection_port
+from aicrm_next.platform.external_push.delivery_projection_port import build_external_push_delivery_projection_port
 
 
 def test_delivery_projection_owner_is_atomic_and_idempotent_in_real_postgres(next_pg_schema) -> None:

@@ -3,8 +3,8 @@ from __future__ import annotations
 import pytest
 from sqlalchemy import text
 
-from aicrm_next.admin_config.config_releases import ConfigReleaseService
-from aicrm_next.shared.db_session import get_engine
+from aicrm_next.platform.admin_config.config_releases import ConfigReleaseService
+from aicrm_next.platform.shared.db_session import get_engine
 
 
 pytestmark = pytest.mark.usefixtures("next_pg_schema")

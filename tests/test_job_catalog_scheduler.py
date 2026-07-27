@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from aicrm_next.platform_foundation.background_jobs.scheduler_runtime import (
+from aicrm_next.platform.platform_foundation.background_jobs.scheduler_runtime import (
     JobCatalogScheduler,
     schedule_is_due,
 )

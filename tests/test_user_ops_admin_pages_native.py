@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.external_effects import reset_external_effect_fixture_state
+from aicrm_next.platform.platform_foundation.external_effects import reset_external_effect_fixture_state
 
 
 def _client() -> TestClient:

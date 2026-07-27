@@ -4,8 +4,8 @@ import hashlib
 from typing import Any
 from uuid import uuid4
 
-from aicrm_next.platform_foundation.command_bus.models import CommandContext
-from aicrm_next.platform_foundation.external_effects import ExternalEffectService, WEBHOOK_GENERIC_PUSH
+from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import ExternalEffectService, WEBHOOK_GENERIC_PUSH
 
 from .repository import AudienceRepository, build_audience_repository, _text
 

@@ -5,12 +5,12 @@ from fastapi.testclient import TestClient
 
 from aicrm_next.automation_engine import channels_api
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.external_effects import (
     ExternalEffectService,
     WEBHOOK_QUESTIONNAIRE_SUBMISSION_PUSH,
 )
-from aicrm_next.platform_foundation.external_effects.repo import reset_external_effect_fixture_state
-from aicrm_next.platform_foundation.push_center.capability_status import PushCapabilityStatusReadService
+from aicrm_next.platform.platform_foundation.external_effects.repo import reset_external_effect_fixture_state
+from aicrm_next.platform.platform_foundation.push_center.capability_status import PushCapabilityStatusReadService
 from aicrm_next.extensions.forms.questionnaire.admin_write import reset_questionnaire_admin_write_fixture_state
 from aicrm_next.extensions.forms.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
 from aicrm_next.extensions.forms.questionnaire.repo import reset_questionnaire_fixture_state

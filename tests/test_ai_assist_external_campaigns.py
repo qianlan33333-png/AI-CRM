@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 
 from aicrm_next.extensions.ai.ai_assist import external_campaigns as service
 from aicrm_next.extensions.ai.ai_assist.external_campaigns_repo import PostgresExternalCampaignRepository
-from aicrm_next.platform_foundation.external_effects import AI_ASSIST_CAMPAIGN_MESSAGE_LOOPBACK, ExternalEffectService, reset_external_effect_fixture_state
+from aicrm_next.platform.platform_foundation.external_effects import AI_ASSIST_CAMPAIGN_MESSAGE_LOOPBACK, ExternalEffectService, reset_external_effect_fixture_state
 
 
 def _json_response_payload(response: Any) -> dict[str, Any]:

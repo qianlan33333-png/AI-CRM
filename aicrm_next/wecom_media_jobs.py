@@ -4,21 +4,21 @@ from datetime import datetime, timezone
 from typing import Any
 
 from aicrm_next.media_library.wecom_lease import build_wecom_media_lease_manager
-from aicrm_next.platform_foundation.command_bus.models import CommandContext
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import (
     WECOM_MEDIA_UPLOAD,
     ExternalEffectDispatchResult,
     ExternalEffectJob,
 )
-from aicrm_next.platform_foundation.external_effects.repo import build_external_effect_repository
-from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
-from aicrm_next.platform_foundation.external_effects.wecom_canary_policy import (
+from aicrm_next.platform.platform_foundation.external_effects.repo import build_external_effect_repository
+from aicrm_next.platform.platform_foundation.external_effects.service import ExternalEffectService
+from aicrm_next.platform.platform_foundation.external_effects.wecom_canary_policy import (
     WECOM_PROVIDER_TARGET_POLICY_KEY,
     wecom_canary_job_gate_error,
 )
-from aicrm_next.shared.runtime import production_data_ready, production_environment
-from aicrm_next.shared.runtime_settings import runtime_setting
-from aicrm_next.shared.sensitive_data import redact_sensitive_text
+from aicrm_next.platform.shared.runtime import production_data_ready, production_environment
+from aicrm_next.platform.shared.runtime_settings import runtime_setting
+from aicrm_next.platform.shared.sensitive_data import redact_sensitive_text
 
 
 ADAPTER_NAME = "wecom_media_upload"

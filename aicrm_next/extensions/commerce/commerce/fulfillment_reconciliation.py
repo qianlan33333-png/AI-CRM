@@ -5,13 +5,13 @@ import json
 from dataclasses import replace
 from typing import Any
 
-from aicrm_next.external_push.delivery_projection_port import build_external_push_delivery_projection_port
-from aicrm_next.platform_foundation.command_bus.models import CommandContext
-from aicrm_next.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
-from aicrm_next.platform_foundation.internal_events.payment import build_payment_succeeded_event_request
-from aicrm_next.platform_foundation.internal_events.refund import build_refund_succeeded_event_request
-from aicrm_next.shared.db_session import connect_raw_postgres
-from aicrm_next.shared.runtime import raw_database_url
+from aicrm_next.platform.external_push.delivery_projection_port import build_external_push_delivery_projection_port
+from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
+from aicrm_next.platform.platform_foundation.internal_events.payment import build_payment_succeeded_event_request
+from aicrm_next.platform.platform_foundation.internal_events.refund import build_refund_succeeded_event_request
+from aicrm_next.platform.shared.db_session import connect_raw_postgres
+from aicrm_next.platform.shared.runtime import raw_database_url
 
 
 _OPEN_CONTINUATION_STATUSES = "'pending', 'running', 'failed_retryable'"

@@ -8,14 +8,14 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from aicrm_next.platform_foundation.command_bus.models import CommandContext
-from aicrm_next.platform_foundation.internal_events.models import (
+from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform.platform_foundation.internal_events.models import (
     InternalEventCreateRequest,
 )
-from aicrm_next.platform_foundation.internal_events.outbox import (
+from aicrm_next.platform.platform_foundation.internal_events.outbox import (
     enqueue_internal_event_outbox_in_session,
 )
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.platform.shared.db_session import get_session_factory
 
 from .event_types import (
     HXC_DAILY_PROJECTION_REQUESTED_EVENT,
