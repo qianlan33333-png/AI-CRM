@@ -5,7 +5,7 @@ import os
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
-from aicrm_next.media_library.effect_material_port import (
+from aicrm_next.engagement.media_library.effect_material_port import (
     EphemeralImageMaterialRequest,
     build_image_library_effect_material_port,
 )

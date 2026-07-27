@@ -659,7 +659,7 @@ def _material_asset_item(material_type: str, item: dict[str, Any]) -> dict[str, 
 
 def send_content_production_unavailable_payload(detail: str | None = None) -> dict[str, Any]:
     payload = blocked_production_payload(
-        capability_owner="aicrm_next.send_content",
+        capability_owner="aicrm_next.engagement.send_content",
         detail=detail or "send content production repository is unavailable.",
     )
     payload.update({"status_code": 503, "error_code": "production_unavailable", "route_owner": "ai_crm_next"})

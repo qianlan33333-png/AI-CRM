@@ -34,10 +34,10 @@ def test_media_library_admin_pages_render_from_native_shell() -> None:
         assert response.headers["X-AICRM-Route-Owner"] == "ai_crm_next"
         assert "X-AICRM-Compatibility-Facade" not in response.headers
         assert title in response.text
-        assert _endpoint_module(path) == "aicrm_next.media_library.admin_pages"
+        assert _endpoint_module(path) == "aicrm_next.engagement.media_library.admin_pages"
 
 
 def test_media_library_admin_pages_removed_from_frontend_compat_inventory() -> None:
     assert not (ROOT / "aicrm_next/app/admin_console/legacy_routes.py").exists()
     for path, _title in MEDIA_LIBRARY_PAGES:
-        assert _endpoint_module(path) == "aicrm_next.media_library.admin_pages"
+        assert _endpoint_module(path) == "aicrm_next.engagement.media_library.admin_pages"

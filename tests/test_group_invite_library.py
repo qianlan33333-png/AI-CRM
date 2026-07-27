@@ -6,8 +6,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.media_library.dto import GroupInviteUpsertRequest
-from aicrm_next.media_library.repo import InMemoryMediaLibraryRepository
+from aicrm_next.engagement.media_library.dto import GroupInviteUpsertRequest
+from aicrm_next.engagement.media_library.repo import InMemoryMediaLibraryRepository
 
 
 VALID_JOIN_URL = "https://work.weixin.qq.com/gm/0123456789abcdef0123456789abcdef"
@@ -118,7 +118,7 @@ def test_group_invite_admin_api_remains_without_standalone_page() -> None:
 def test_group_invite_binding_ensure_auto_provisions_and_keeps_update_alias(monkeypatch) -> None:
     adapter = FakeGroupInviteAdapter()
     monkeypatch.setattr(
-        "aicrm_next.media_library.application.build_wecom_group_invite_adapter",
+        "aicrm_next.engagement.media_library.application.build_wecom_group_invite_adapter",
         lambda: adapter,
     )
     client = TestClient(create_app())

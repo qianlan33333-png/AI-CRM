@@ -113,11 +113,11 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "wecom_external_contact_follow_users",
         "wecom_external_contact_identity_map",
     ]
-    assert repositories["aicrm_next/send_targets/repo.py"]["table_reads"] == [
+    assert repositories["aicrm_next/engagement/send_targets/repo.py"]["table_reads"] == [
         "crm_user_identity",
         "user_ops_do_not_disturb_next",
     ]
-    assert repositories["aicrm_next/send_targets/repo.py"]["table_writes"] == []
+    assert repositories["aicrm_next/engagement/send_targets/repo.py"]["table_writes"] == []
     assert repositories["aicrm_next/platform/external_push/repo.py"]["table_writes"] == [
         "domain_event_outbox",
         "external_push_delivery",

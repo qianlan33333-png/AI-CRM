@@ -63,9 +63,9 @@ physical_moves:
     - platform
     - crm
     - channels
+    - engagement
     - extensions
   pending_domains:
-    - engagement
     - automation
     - insights
   enable_after:

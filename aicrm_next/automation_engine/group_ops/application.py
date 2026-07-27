@@ -722,7 +722,7 @@ class SyncGroupOpsOwnerGroupsCommand(PreviewGroupOpsOwnerGroupsSyncCommand):
                 clean_text(preview.get("owner_userid") or request.owner_userid),
                 [clean_text(group.get("chat_id")) for group in groups],
             )
-            from aicrm_next.media_library.repo import build_media_library_repository
+            from aicrm_next.engagement.media_library.repo import build_media_library_repository
 
             build_media_library_repository().reconcile_group_invite_bindings(
                 [clean_text(group.get("chat_id")) for group in groups],

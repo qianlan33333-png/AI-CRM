@@ -7,7 +7,7 @@ from urllib.parse import quote
 
 from aicrm_next.extensions.commerce.commerce.domain import preview_product
 from aicrm_next.extensions.commerce.commerce.repo import build_commerce_repository
-from aicrm_next.media_library.application import GetImageVariantQuery
+from aicrm_next.engagement.media_library.application import GetImageVariantQuery
 from aicrm_next.platform.shared.errors import ContractError, NotFoundError
 from aicrm_next.platform.shared.signed_context import product_context_fragment_bootstrap_script
 

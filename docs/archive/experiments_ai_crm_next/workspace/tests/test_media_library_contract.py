@@ -5,7 +5,7 @@ from io import BytesIO
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.media_library.postgres_repo import PostgresMediaLibraryRepository
+from aicrm_next.engagement.media_library.postgres_repo import PostgresMediaLibraryRepository
 
 
 TINY_PNG = (

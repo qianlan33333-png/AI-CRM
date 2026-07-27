@@ -7,9 +7,9 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
-from aicrm_next.send_content.application import PreviewSendContentPackageQuery, assert_group_invite_bindings_ready, normalize_send_content_package
-from aicrm_next.send_content.dto import SendContentPackage, SendContentPreviewRequest
-from aicrm_next.send_content.repo import build_send_content_repository
+from aicrm_next.engagement.send_content.application import PreviewSendContentPackageQuery, assert_group_invite_bindings_ready, normalize_send_content_package
+from aicrm_next.engagement.send_content.dto import SendContentPackage, SendContentPreviewRequest
+from aicrm_next.engagement.send_content.repo import build_send_content_repository
 from aicrm_next.platform.shared.errors import ContractError
 
 from .dto import AutomationAgentCreateRequest, AutomationAgentUpdateRequest

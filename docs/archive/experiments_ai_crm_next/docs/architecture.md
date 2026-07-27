@@ -124,6 +124,6 @@ This slice remains `partial`, not a production payment implementation.
 - Repository layer stores fixture data only.
 - from-url/from-base64 image import returns fake imported records; it does not fetch remote content or upload to cloud storage.
 - Mini-program thumbnail references are plain ids in this slice; no WeCom media upload or resolver is called.
-- `aicrm_next/media_library/parity_spec.py` and `retired experiment wrapper; see docs/archive/experiments_ai_crm_next/retired_tools.md` lock image/attachment/miniprogram list shapes.
+- `aicrm_next/engagement/media_library/parity_spec.py` and `retired experiment wrapper; see docs/archive/experiments_ai_crm_next/retired_tools.md` lock image/attachment/miniprogram list shapes.
 
 This slice remains `partial`, not a production material-storage implementation.

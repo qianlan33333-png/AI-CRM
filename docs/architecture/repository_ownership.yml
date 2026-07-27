@@ -113,8 +113,8 @@ repositories:
     table_writes: []
     non_literal_table_reads:
       - crm_user_identity
-  aicrm_next/send_targets/repo.py:
-    capability_owner: aicrm_next.send_targets
+  aicrm_next/engagement/send_targets/repo.py:
+    capability_owner: aicrm_next.engagement.send_targets
     table_reads:
       - crm_user_identity
       - user_ops_do_not_disturb_next
@@ -596,13 +596,13 @@ repositories:
     table_writes:
       - crm_user_identity
       - crm_user_identity_resolution_queue
-  aicrm_next/media_library/effect_material_repository.py:
-    capability_owner: aicrm_next.media_library
+  aicrm_next/engagement/media_library/effect_material_repository.py:
+    capability_owner: aicrm_next.engagement.media_library
     table_reads: []
     table_writes:
       - image_library
-  aicrm_next/media_library/postgres_repo.py:
-    capability_owner: aicrm_next.media_library
+  aicrm_next/engagement/media_library/postgres_repo.py:
+    capability_owner: aicrm_next.engagement.media_library
     table_reads:
       - group_invite_library
       - image_library
@@ -616,8 +616,8 @@ repositories:
       - miniprogram_library
     non_literal_table_reads:
       - group_invite_library
-  aicrm_next/media_library/repo.py:
-    capability_owner: aicrm_next.media_library
+  aicrm_next/engagement/media_library/repo.py:
+    capability_owner: aicrm_next.engagement.media_library
     table_reads: []
     table_writes: []
   aicrm_next/extensions/archive/message_archive/repo.py:
@@ -877,8 +877,8 @@ repositories:
       - radar_click_events
       - radar_links
       - radar_pdf_preview_assets
-  aicrm_next/send_content/postgres_repo.py:
-    capability_owner: aicrm_next.send_content
+  aicrm_next/engagement/send_content/postgres_repo.py:
+    capability_owner: aicrm_next.engagement.send_content
     table_reads:
       - automation_agents
       - automation_channel
@@ -887,8 +887,8 @@ repositories:
       - radar_links
       - wechat_pay_product_page_slices
     table_writes: []
-  aicrm_next/send_content/repo.py:
-    capability_owner: aicrm_next.send_content
+  aicrm_next/engagement/send_content/repo.py:
+    capability_owner: aicrm_next.engagement.send_content
     table_reads: []
     table_writes: []
   aicrm_next/extensions/commerce/service_period/member_grid_repo.py:

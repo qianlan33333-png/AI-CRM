@@ -8,8 +8,8 @@ from zoneinfo import ZoneInfo
 
 from fastapi.responses import JSONResponse
 
-from aicrm_next.send_targets.dto import SendTargetRequest
-from aicrm_next.send_targets.resolver import SendTargetError, SendTargetResolver
+from aicrm_next.engagement.send_targets.dto import SendTargetRequest
+from aicrm_next.engagement.send_targets.resolver import SendTargetError, SendTargetResolver
 
 from .external_campaigns_repo import ExternalCampaignRepository
 from .external_campaigns_repo import build_external_campaign_repository

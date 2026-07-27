@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from aicrm_next.send_content.dto import (
+from aicrm_next.engagement.send_content.dto import (
     SendContentPackage,
     SendContentPreviewRequest,
     SendContentValidateRequest,

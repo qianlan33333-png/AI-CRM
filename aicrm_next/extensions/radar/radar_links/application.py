@@ -11,7 +11,7 @@ from typing import Any
 from aicrm_next.integration_ports import WeChatOAuthAdapter, build_wechat_oauth_adapter
 from aicrm_next.crm.identity_contact.application import ResolvePersonIdentityQuery
 from aicrm_next.crm.identity_contact.wechat_unionid_guard import resolve_oauth_unionid
-from aicrm_next.media_library.application import GetImageVariantQuery, GetMediaItemQuery, UploadAttachmentCommand
+from aicrm_next.engagement.media_library.application import GetImageVariantQuery, GetMediaItemQuery, UploadAttachmentCommand
 from aicrm_next.platform.shared.errors import ContractError, NotFoundError
 from aicrm_next.platform.shared.runtime import fixture_mode
 from aicrm_next.platform.shared.runtime_settings import runtime_setting

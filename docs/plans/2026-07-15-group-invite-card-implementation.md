@@ -14,9 +14,9 @@
 
 **Files:**
 - Create: `migrations/versions/0117_group_invite_cards.py`
-- Modify: `aicrm_next/media_library/dto.py`
-- Modify: `aicrm_next/media_library/repo.py`
-- Modify: `aicrm_next/media_library/postgres_repo.py`
+- Modify: `aicrm_next/engagement/media_library/dto.py`
+- Modify: `aicrm_next/engagement/media_library/repo.py`
+- Modify: `aicrm_next/engagement/media_library/postgres_repo.py`
 - Test: `tests/test_group_invite_library.py`
 
 **Steps:**
@@ -29,8 +29,8 @@
 ### Task 2: Admin API and reusable management page
 
 **Files:**
-- Modify: `aicrm_next/media_library/api.py`
-- Modify: `aicrm_next/media_library/admin_pages.py`
+- Modify: `aicrm_next/engagement/media_library/api.py`
+- Modify: `aicrm_next/engagement/media_library/admin_pages.py`
 - Modify: `aicrm_next/admin_shell/navigation.py`
 - Create: `aicrm_next/frontend_compat/templates/admin_console/group_invite_library.html`
 - Test: `tests/test_group_invite_library.py`
@@ -45,10 +45,10 @@
 ### Task 3: Standard send-content package and shared picker
 
 **Files:**
-- Modify: `aicrm_next/send_content/dto.py`
-- Modify: `aicrm_next/send_content/application.py`
-- Modify: `aicrm_next/send_content/repo.py`
-- Modify: `aicrm_next/send_content/postgres_repo.py`
+- Modify: `aicrm_next/engagement/send_content/dto.py`
+- Modify: `aicrm_next/engagement/send_content/application.py`
+- Modify: `aicrm_next/engagement/send_content/repo.py`
+- Modify: `aicrm_next/engagement/send_content/postgres_repo.py`
 - Modify: `aicrm_next/frontend_compat/static/admin_console/material_picker.js`
 - Modify: `aicrm_next/frontend_compat/static/admin_console/send_content_composer.js`
 - Modify: `aicrm_next/frontend_compat/static/admin_console/send_content_composer.css`

@@ -4,7 +4,7 @@ from typing import Any
 
 from aicrm_next.extensions.commerce.commerce.application import ListProductsQuery
 from aicrm_next.extensions.commerce.commerce.repo import build_commerce_repository
-from aicrm_next.media_library.application import GetImageThumbnailQuery, ListMediaItemsQuery
+from aicrm_next.engagement.media_library.application import GetImageThumbnailQuery, ListMediaItemsQuery
 
 from .application import ListServicePeriodProductsQuery, UpdateServicePeriodMemberRemarkCommand
 from .domain import entitlement_status, isoformat, remaining_days

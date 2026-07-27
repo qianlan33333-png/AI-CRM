@@ -18,7 +18,7 @@ def _picker_owner(owner_userid: str = "") -> str:
 
 
 def _picker_binding_map() -> dict[str, dict[str, Any]]:
-    from aicrm_next.media_library.application import ListMediaItemsQuery
+    from aicrm_next.engagement.media_library.application import ListMediaItemsQuery
 
     payload = ListMediaItemsQuery("group_invite")(
         limit=500,
