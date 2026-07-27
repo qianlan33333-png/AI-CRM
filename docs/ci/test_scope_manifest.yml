@@ -2347,6 +2347,7 @@
     {
       "name": "physical_platform_package_migration",
       "paths": [
+        "aicrm_next/platform/__init__.py",
         "aicrm_next/admin_auth/**",
         "aicrm_next/admin_config/**",
         "aicrm_next/admin_jobs/**",
