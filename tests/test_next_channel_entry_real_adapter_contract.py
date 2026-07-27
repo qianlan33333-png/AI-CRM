@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from aicrm_next.channel_entry.application import process_channel_entry
-from aicrm_next.channel_entry.schemas import ProcessChannelEntryCommand
-from aicrm_next.channel_entry.wecom_adapter import set_wecom_adapter
+from aicrm_next.channels.channel_entry.application import process_channel_entry
+from aicrm_next.channels.channel_entry.schemas import ProcessChannelEntryCommand
+from aicrm_next.channels.channel_entry.wecom_adapter import set_wecom_adapter
 
 
 def test_channel_entry_logs_real_call_disabled_without_fake_success(monkeypatch):
@@ -25,12 +25,12 @@ def test_channel_entry_logs_real_call_disabled_without_fake_success(monkeypatch)
     monkeypatch.setenv("WECOM_CORP_ID", "ww-test")
     monkeypatch.setenv("WECOM_CONTACT_SECRET", "secret")
     set_wecom_adapter(None)
-    monkeypatch.setattr("aicrm_next.channel_entry.application.resolve_channel_for_scene", lambda **kwargs: (channel, {"match_type": "current_scene", "matched_scene": "scene-a", "channel_id": 10}))
-    monkeypatch.setattr("aicrm_next.channel_entry.repo.upsert_channel_contact", lambda **kwargs: contacts.append(kwargs) or {"id": 1, **kwargs})
-    monkeypatch.setattr("aicrm_next.channel_entry.repo.get_channel_entry_effect_log", lambda *args: None)
-    monkeypatch.setattr("aicrm_next.channel_entry.repo.upsert_channel_entry_effect_log", lambda **kwargs: effects.append(kwargs) or kwargs)
-    monkeypatch.setattr("aicrm_next.channel_entry.repo.save_tag_snapshot", lambda *args, **kwargs: None)
-    monkeypatch.setattr("aicrm_next.channel_entry.application.wake_external_effect_job", lambda job_id, **kwargs: wakeups.append(int(job_id)) or True)
+    monkeypatch.setattr("aicrm_next.channels.channel_entry.application.resolve_channel_for_scene", lambda **kwargs: (channel, {"match_type": "current_scene", "matched_scene": "scene-a", "channel_id": 10}))
+    monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.upsert_channel_contact", lambda **kwargs: contacts.append(kwargs) or {"id": 1, **kwargs})
+    monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.get_channel_entry_effect_log", lambda *args: None)
+    monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.upsert_channel_entry_effect_log", lambda **kwargs: effects.append(kwargs) or kwargs)
+    monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.save_tag_snapshot", lambda *args, **kwargs: None)
+    monkeypatch.setattr("aicrm_next.channels.channel_entry.application.wake_external_effect_job", lambda job_id, **kwargs: wakeups.append(int(job_id)) or True)
 
     result = process_channel_entry(
         ProcessChannelEntryCommand(

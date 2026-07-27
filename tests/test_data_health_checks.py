@@ -948,7 +948,7 @@ def test_mirrored_welcome_validation_failure_is_excluded_only_with_append_only_p
                 ) VALUES (
                     'wecom.welcome_message.send', 'wecom_welcome_message', 'send_welcome',
                     'external_user', 'redacted', 'channel_entry', 'redacted',
-                    'aicrm_next.channel_entry', '/wecom/external-contact/callback',
+                    'aicrm_next.channels.channel_entry', '/wecom/external-contact/callback',
                     'redacted', 'redacted', 'redacted', 'channel_entry',
                     'system', 'system', 'high', 'execute',
                     %s, '{"execution_scope":"allowlisted_canary"}'::jsonb,

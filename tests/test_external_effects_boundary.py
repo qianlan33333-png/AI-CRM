@@ -25,7 +25,7 @@ def _config(*, allowlist: list[dict] | None = None, effects: list[dict] | None =
                 "boundary": "existing_direct_client_allowlisted",
                 "allowed_runtime": "real_requires_approval",
                 "adapter_module": "aicrm_next/demo_context/api.py",
-                "migration_target": "aicrm_next/integration_gateway/demo_client.py",
+                "migration_target": "aicrm_next/channels/integration_gateway/demo_client.py",
                 "idempotency_required": True,
                 "audit_required": True,
             }
@@ -41,7 +41,10 @@ def _write_config(path: Path, *, allowlist: list[dict] | None = None, effects: l
 
 def test_external_effects_boundary_allows_approved_boundary_paths(tmp_path: Path) -> None:
     _write_config(tmp_path / "external_effects_registry.yml")
-    _write(tmp_path / "aicrm_next" / "integration_gateway" / "foo.py", "import requests\nrequests.post('https://example.test')\n")
+    _write(
+        tmp_path / "aicrm_next" / "channels" / "integration_gateway" / "foo.py",
+        "import requests\nrequests.post('https://example.test')\n",
+    )
     _write(
         tmp_path / "aicrm_next" / "platform_foundation" / "external_effects" / "foo.py",
         "import httpx\nhttpx.Client()\n",
@@ -64,7 +67,7 @@ def test_external_effects_boundary_blocks_business_direct_call_with_details(tmp_
     assert violation.line == 2
     assert violation.rule == "direct_external_effect_call"
     assert violation.detected_callable == "requests.post"
-    assert "aicrm_next.integration_gateway" in violation.suggestion
+    assert "aicrm_next.channels.integration_gateway" in violation.suggestion
     assert "platform_foundation.external_effects" in violation.suggestion
 
 
@@ -96,7 +99,7 @@ def test_external_effects_boundary_allows_precise_temporary_allowlist(tmp_path: 
             "owner": "demo_context",
             "effect_key": "demo.effect",
             "reason": "Existing direct client predates checker.",
-            "migration_target": "aicrm_next/integration_gateway/demo_client.py",
+            "migration_target": "aicrm_next/channels/integration_gateway/demo_client.py",
             "matches": ["response = requests.post("],
         }
     ]
@@ -119,7 +122,7 @@ def test_external_effects_boundary_allows_precise_temporary_allowlist(tmp_path: 
             "rule": "direct_external_effect_call",
             "effect_key": "demo.effect",
             "reason": "Existing direct client predates checker.",
-            "migration_target": "aicrm_next/integration_gateway/demo_client.py",
+            "migration_target": "aicrm_next/channels/integration_gateway/demo_client.py",
             "matches": ["response = requests.post("],
         },
         {
@@ -128,7 +131,7 @@ def test_external_effects_boundary_allows_precise_temporary_allowlist(tmp_path: 
             "owner": "demo_context",
             "effect_key": "demo.effect",
             "reason": "",
-            "migration_target": "aicrm_next/integration_gateway/demo_client.py",
+            "migration_target": "aicrm_next/channels/integration_gateway/demo_client.py",
             "matches": ["response = requests.post("],
         },
         {
@@ -145,7 +148,7 @@ def test_external_effects_boundary_allows_precise_temporary_allowlist(tmp_path: 
             "owner": "demo_context",
             "effect_key": "missing.effect",
             "reason": "Existing direct client predates checker.",
-            "migration_target": "aicrm_next/integration_gateway/demo_client.py",
+            "migration_target": "aicrm_next/channels/integration_gateway/demo_client.py",
             "matches": ["response = requests.post("],
         },
         {
@@ -154,7 +157,7 @@ def test_external_effects_boundary_allows_precise_temporary_allowlist(tmp_path: 
             "owner": "demo_context",
             "effect_key": "demo.effect",
             "reason": "Existing direct client predates checker.",
-            "migration_target": "aicrm_next/integration_gateway/demo_client.py",
+            "migration_target": "aicrm_next/channels/integration_gateway/demo_client.py",
             "matches": ["response = requests.post("],
         },
         {
@@ -163,7 +166,7 @@ def test_external_effects_boundary_allows_precise_temporary_allowlist(tmp_path: 
             "owner": "demo_context",
             "effect_key": "demo.effect",
             "reason": "Existing direct client predates checker.",
-            "migration_target": "aicrm_next/integration_gateway/demo_client.py",
+            "migration_target": "aicrm_next/channels/integration_gateway/demo_client.py",
             "matches": ["requests"],
         },
     ],
@@ -183,7 +186,7 @@ def test_external_effects_boundary_blocks_unmatched_call_in_allowlisted_file(tmp
             "owner": "demo_context",
             "effect_key": "demo.effect",
             "reason": "Existing direct client predates checker.",
-            "migration_target": "aicrm_next/integration_gateway/demo_client.py",
+            "migration_target": "aicrm_next/channels/integration_gateway/demo_client.py",
             "matches": ["response = requests.post("],
         }
     ]
@@ -211,10 +214,10 @@ def test_external_effects_registry_no_longer_allowlists_channel_entry_wecom_adap
     allowlisted_paths = {entry["path"] for entry in config["temporary_allowlist"]}
     wecom_effect = next(effect for effect in config["effects"] if effect["effect_key"] == "wecom.channel_entry.api")
 
-    assert "aicrm_next/channel_entry/wecom_adapter.py" not in allowlisted_paths
+    assert "aicrm_next/channels/channel_entry/wecom_adapter.py" not in allowlisted_paths
     assert wecom_effect["boundary"] == "integration_gateway"
-    assert wecom_effect["adapter_module"] == "aicrm_next/integration_gateway/wecom_channel_entry_client.py"
-    assert wecom_effect["migration_target"] == "aicrm_next/integration_gateway/wecom_channel_entry_client.py"
+    assert wecom_effect["adapter_module"] == "aicrm_next/channels/integration_gateway/wecom_channel_entry_client.py"
+    assert wecom_effect["migration_target"] == "aicrm_next/channels/integration_gateway/wecom_channel_entry_client.py"
 
 
 def test_external_effects_registry_no_longer_allowlists_commerce_wechat_pay_client() -> None:
@@ -225,8 +228,8 @@ def test_external_effects_registry_no_longer_allowlists_commerce_wechat_pay_clie
 
     assert "aicrm_next/extensions/commerce/commerce/wechat_pay_client.py" not in allowlisted_paths
     assert pay_effect["boundary"] == "integration_gateway"
-    assert pay_effect["adapter_module"] == "aicrm_next/integration_gateway/wechat_pay_client.py"
-    assert pay_effect["migration_target"] == "aicrm_next/integration_gateway/wechat_pay_client.py"
+    assert pay_effect["adapter_module"] == "aicrm_next/channels/integration_gateway/wechat_pay_client.py"
+    assert pay_effect["migration_target"] == "aicrm_next/channels/integration_gateway/wechat_pay_client.py"
 
 
 def test_external_effects_registry_no_longer_has_temporary_allowlist() -> None:
@@ -236,5 +239,5 @@ def test_external_effects_registry_no_longer_has_temporary_allowlist() -> None:
 
     assert config["temporary_allowlist"] == []
     assert shop_effect["boundary"] == "integration_gateway"
-    assert shop_effect["adapter_module"] == "aicrm_next/integration_gateway/wechat_shop_client.py"
-    assert shop_effect["migration_target"] == "aicrm_next/integration_gateway/wechat_shop_client.py"
+    assert shop_effect["adapter_module"] == "aicrm_next/channels/integration_gateway/wechat_shop_client.py"
+    assert shop_effect["migration_target"] == "aicrm_next/channels/integration_gateway/wechat_shop_client.py"

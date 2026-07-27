@@ -4,12 +4,12 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.channel_entry.callback_ingress import ingest_wecom_external_contact_callback
-from aicrm_next.channel_entry.callback_processor import process_wecom_callback_payload
-from aicrm_next.channel_entry.callback_worker import WeComCallbackWorker
-from aicrm_next.channel_entry.inbox import WeComCallbackInboxWorker, ingest_wecom_callback
-from aicrm_next.channel_entry.schemas import ProcessWeComExternalContactEventCommand
-from aicrm_next.channel_entry import application as channel_application
+from aicrm_next.channels.channel_entry.callback_ingress import ingest_wecom_external_contact_callback
+from aicrm_next.channels.channel_entry.callback_processor import process_wecom_callback_payload
+from aicrm_next.channels.channel_entry.callback_worker import WeComCallbackWorker
+from aicrm_next.channels.channel_entry.inbox import WeComCallbackInboxWorker, ingest_wecom_callback
+from aicrm_next.channels.channel_entry.schemas import ProcessWeComExternalContactEventCommand
+from aicrm_next.channels.channel_entry import application as channel_application
 from aicrm_next.main import create_app
 from aicrm_next.platform_foundation.webhook_inbox import InMemoryWebhookInboxRepository
 from scripts import run_wecom_callback_inbox_worker as callback_worker_entrypoint
@@ -32,8 +32,8 @@ def test_callback_post_enqueues_and_acks_without_processing(monkeypatch):
     calls: list[dict] = []
     client = TestClient(create_app(), raise_server_exceptions=False)
 
-    monkeypatch.setattr("aicrm_next.channel_entry.api.encrypted_success_reply", lambda query: "success")
-    monkeypatch.setattr("aicrm_next.channel_entry.api.ingest_wecom_external_contact_callback", lambda **kwargs: calls.append(kwargs) or {"ok": True, "id": 1})
+    monkeypatch.setattr("aicrm_next.channels.channel_entry.api.encrypted_success_reply", lambda query: "success")
+    monkeypatch.setattr("aicrm_next.channels.channel_entry.api.ingest_wecom_external_contact_callback", lambda **kwargs: calls.append(kwargs) or {"ok": True, "id": 1})
     monkeypatch.setattr(
         channel_application,
         "process_wecom_external_contact_event",
@@ -56,7 +56,7 @@ def test_callback_post_enqueues_and_acks_without_processing(monkeypatch):
 def test_callback_post_returns_400_when_verification_or_decrypt_fails(monkeypatch):
     client = TestClient(create_app(), raise_server_exceptions=False)
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.api.ingest_wecom_external_contact_callback",
+        "aicrm_next.channels.channel_entry.api.ingest_wecom_external_contact_callback",
         lambda **kwargs: (_ for _ in ()).throw(ValueError("bad signature")),
     )
 
@@ -70,7 +70,7 @@ def test_callback_post_returns_503_when_inbox_write_fails(monkeypatch):
     client = TestClient(create_app(), raise_server_exceptions=False)
 
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.api.ingest_wecom_external_contact_callback",
+        "aicrm_next.channels.channel_entry.api.ingest_wecom_external_contact_callback",
         lambda **kwargs: (_ for _ in ()).throw(RuntimeError("db down")),
     )
 
@@ -85,7 +85,7 @@ def test_callback_ingress_decrypts_and_ingests_webhook_inbox(monkeypatch):
     calls: list[dict] = []
 
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.callback_ingress.decrypt_callback_body",
+        "aicrm_next.channels.channel_entry.callback_ingress.decrypt_callback_body",
         lambda *, query, body: calls.append({"query": query, "body": body}) or (_event(), "<xml>plain</xml>"),
     )
 
@@ -108,11 +108,11 @@ def test_callback_ingress_uses_durable_only_ack_boundary(monkeypatch):
     calls: list[dict] = []
 
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.callback_ingress.decrypt_callback_body",
+        "aicrm_next.channels.channel_entry.callback_ingress.decrypt_callback_body",
         lambda *, query, body: (_event(), "<xml>plain</xml>"),
     )
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.callback_ingress.ingest_wecom_callback",
+        "aicrm_next.channels.channel_entry.callback_ingress.ingest_wecom_callback",
         lambda **kwargs: calls.append(kwargs) or {"ok": True, "id": 1, "ack_boundary": "durable_inbox_only"},
     )
 
@@ -132,7 +132,7 @@ def test_callback_ingress_validation_error_is_returned_as_400(monkeypatch):
     client = TestClient(create_app(), raise_server_exceptions=False)
 
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.callback_ingress.decrypt_callback_body",
+        "aicrm_next.channels.channel_entry.callback_ingress.decrypt_callback_body",
         lambda **kwargs: (_ for _ in ()).throw(RuntimeError("decrypt failed")),
     )
 
@@ -177,7 +177,7 @@ def test_ingest_time_sensitive_welcome_callback_stays_durable_until_worker_claim
     processed: list[ProcessWeComExternalContactEventCommand] = []
 
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.inbox.process_wecom_external_contact_event",
+        "aicrm_next.channels.channel_entry.inbox.process_wecom_external_contact_event",
         lambda command: processed.append(command) or (_ for _ in ()).throw(AssertionError("ingress must not process callback")),
     )
 
@@ -204,7 +204,7 @@ def test_ingest_non_welcome_callback_stays_durable(monkeypatch):
     repo = InMemoryWebhookInboxRepository()
 
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.inbox.process_wecom_external_contact_event",
+        "aicrm_next.channels.channel_entry.inbox.process_wecom_external_contact_event",
         lambda command: (_ for _ in ()).throw(AssertionError("non-welcome callback must remain async")),
     )
 
@@ -346,7 +346,7 @@ def test_wecom_callback_worker_alias_and_processor_boundary(monkeypatch):
             "entry_result": {"mode": "channel_baseline_only", "baseline_effects": {}},
         }
 
-    monkeypatch.setattr("aicrm_next.channel_entry.callback_processor.process_wecom_external_contact_event", processor)
+    monkeypatch.setattr("aicrm_next.channels.channel_entry.callback_processor.process_wecom_external_contact_event", processor)
 
     preview = WeComCallbackWorker(repo).preview_due(limit=10)
     processor_result = process_wecom_callback_payload(repo.rows[0])

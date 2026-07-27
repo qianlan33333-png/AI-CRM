@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.integration_gateway.mcp import MCP_TOOLS
+from aicrm_next.channels.integration_gateway.mcp import MCP_TOOLS
 from aicrm_next.main import create_app
 
 

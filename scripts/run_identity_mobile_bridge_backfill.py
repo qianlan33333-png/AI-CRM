@@ -11,8 +11,8 @@ except ModuleNotFoundError:
 
 ensure_repo_root_on_path()
 
-from aicrm_next.channel_entry.identity_bridge_repo import build_identity_bridge_repository
-from aicrm_next.channel_entry.identity_bridge_service import build_identity_bridge_service
+from aicrm_next.channels.channel_entry.identity_bridge_repo import build_identity_bridge_repository
+from aicrm_next.channels.channel_entry.identity_bridge_service import build_identity_bridge_service
 from aicrm_next.channel_entry_composition import configure_channel_crm_dependencies
 from aicrm_next.shared.runtime import raw_database_url
 

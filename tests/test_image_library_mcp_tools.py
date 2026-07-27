@@ -4,7 +4,7 @@ from io import BytesIO
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.integration_gateway.mcp import MCP_TOOLS
+from aicrm_next.channels.integration_gateway.mcp import MCP_TOOLS
 from aicrm_next.main import create_app
 from aicrm_next.media_library.repo import reset_media_library_fixture_state
 

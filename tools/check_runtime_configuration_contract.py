@@ -54,7 +54,7 @@ DYNAMIC_RUNTIME_ACCESS_BOUNDARIES = frozenset(
 ENVIRONMENT_FALLBACK_BOUNDARIES = frozenset(
     {
         "aicrm_next/admin_config/secret_settings.py",
-        "aicrm_next/integration_gateway/questionnaire_adapters.py",
+        "aicrm_next/channels/integration_gateway/questionnaire_adapters.py",
         "aicrm_next/platform_foundation/execution_runtime/listener.py",
         "aicrm_next/platform_foundation/push_center/capability_repository.py",
         "aicrm_next/platform_foundation/verification_files.py",

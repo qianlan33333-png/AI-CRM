@@ -6,8 +6,8 @@ from urllib.parse import parse_qs, urlparse
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.auth_wecom.service import sign_auth_state
-from aicrm_next.integration_gateway.wecom_jssdk_adapter import (
+from aicrm_next.channels.auth_wecom.service import sign_auth_state
+from aicrm_next.channels.integration_gateway.wecom_jssdk_adapter import (
     build_sidebar_jssdk_config,
     list_sidebar_jssdk_attempts,
     normalize_jssdk_url,

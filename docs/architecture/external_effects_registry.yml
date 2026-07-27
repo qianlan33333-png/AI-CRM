@@ -4,8 +4,8 @@ effects:
     owner: channel_entry
     boundary: integration_gateway
     allowed_runtime: real_requires_approval
-    adapter_module: aicrm_next/integration_gateway/wecom_channel_entry_client.py
-    migration_target: aicrm_next/integration_gateway/wecom_channel_entry_client.py
+    adapter_module: aicrm_next/channels/integration_gateway/wecom_channel_entry_client.py
+    migration_target: aicrm_next/channels/integration_gateway/wecom_channel_entry_client.py
     idempotency_required: true
     audit_required: true
   - effect_key: wecom.external_contact.detail.fetch
@@ -22,8 +22,8 @@ effects:
     owner: commerce
     boundary: integration_gateway
     allowed_runtime: real_requires_approval
-    adapter_module: aicrm_next/integration_gateway/wechat_pay_client.py
-    migration_target: aicrm_next/integration_gateway/wechat_pay_client.py
+    adapter_module: aicrm_next/channels/integration_gateway/wechat_pay_client.py
+    migration_target: aicrm_next/channels/integration_gateway/wechat_pay_client.py
     idempotency_required: true
     audit_required: true
   - effect_key: wechat_shop.commerce.order_read
@@ -31,8 +31,8 @@ effects:
     owner: commerce
     boundary: integration_gateway
     allowed_runtime: real_requires_approval
-    adapter_module: aicrm_next/integration_gateway/wechat_shop_client.py
-    migration_target: aicrm_next/integration_gateway/wechat_shop_client.py
+    adapter_module: aicrm_next/channels/integration_gateway/wechat_shop_client.py
+    migration_target: aicrm_next/channels/integration_gateway/wechat_shop_client.py
     idempotency_required: true
     audit_required: true
 

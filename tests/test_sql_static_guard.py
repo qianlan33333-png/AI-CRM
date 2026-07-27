@@ -385,7 +385,7 @@ def test_sql_static_guard_allows_channel_entry_runtime_identity_boundary(tmp_pat
   automation_channel_entry_runtime:
     domain: channel_entry
     lifecycle: queue
-    write_owner: aicrm_next.channel_entry.repo
+    write_owner: aicrm_next.channels.channel_entry.repo
     replacement: none
     drop_candidate: false
 """,

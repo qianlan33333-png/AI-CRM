@@ -228,7 +228,7 @@ def _emit_identity_resolved(
         subject_type="unionid",
         subject_id=unionid,
         idempotency_key=f"identity.resolved:queue:{queue_id}:effect:{int(job.id)}",
-        source_module="aicrm_next.channel_entry.identity_external_effect",
+        source_module="aicrm_next.channels.channel_entry.identity_external_effect",
         source_command_id=str(int(job.id)),
         payload={
             "queue_id": queue_id,

@@ -45,7 +45,7 @@ def test_context_convention_selects_importing_tests_without_manual_scope_entries
     [
         ("aicrm_next/admin_auth/api.py", "authentication"),
         ("aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py", "payment_refund_and_entitlement"),
-        ("aicrm_next/channel_entry/api.py", "callbacks_and_external_effects"),
+        ("aicrm_next/channels/channel_entry/api.py", "callbacks_and_external_effects"),
         ("migrations/versions/9999_demo.py", "schema_and_deploy"),
         ("scripts/ops/check_id_validation_release_readiness.py", "schema_and_deploy"),
         ("docs/ci/test_scope_manifest.yml", "ci_and_dependency_runtime"),

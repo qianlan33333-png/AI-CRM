@@ -131,7 +131,7 @@ def test_group_ops_broadcast_accepts_multipart_images(group_ops_api_client):
 
 def test_group_ops_broadcast_accepts_card_and_combined_content(group_ops_api_client, monkeypatch):
     from aicrm_next.automation_engine.group_ops import broadcast
-    from aicrm_next.integration_gateway.lesson_card_cover_client import LessonCardCover
+    from aicrm_next.channels.integration_gateway.lesson_card_cover_client import LessonCardCover
 
     calls: list[str] = []
 

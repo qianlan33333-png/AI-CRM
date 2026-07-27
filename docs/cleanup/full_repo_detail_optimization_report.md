@@ -139,7 +139,7 @@ The manual review was batched by directory and risk:
 ### Runtime
 
 - Removed an unused normalized `corp_id` local in
-  `aicrm_next/channel_entry/identity_bridge_repo.py`.
+  `aicrm_next/channels/channel_entry/identity_bridge_repo.py`.
 - Made the fixture-reset names exported from `aicrm_next/main.py` via `__all__`
   so the production-hardening checker contract remains explicit while lint no
   longer treats them as accidental unused imports. Runtime reset orchestration

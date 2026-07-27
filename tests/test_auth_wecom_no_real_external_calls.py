@@ -26,7 +26,7 @@ def test_auth_wecom_exact_routes_do_not_execute_real_oauth_or_wecom(monkeypatch)
 
 
 def test_auth_wecom_next_module_has_no_external_call_clients_or_token_leak_markers() -> None:
-    source = Path("aicrm_next/auth_wecom/api.py").read_text(encoding="utf-8")
+    source = Path("aicrm_next/channels/auth_wecom/api.py").read_text(encoding="utf-8")
 
     forbidden = [
         "forward_to_legacy_flask",

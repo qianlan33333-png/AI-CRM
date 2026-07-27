@@ -96,28 +96,28 @@ SINGLE_OWNER_RUNTIME_WRITES = {
         {"aicrm_next/platform_foundation/admin_audit/repository.py"},
     ),
     "automation_channel": (
-        "aicrm_next.channel_entry",
-        {"aicrm_next/channel_entry/channel_write_repository.py"},
+        "aicrm_next.channels.channel_entry",
+        {"aicrm_next/channels/channel_entry/channel_write_repository.py"},
     ),
     "automation_channel_contact": (
-        "aicrm_next.channel_entry",
-        {"aicrm_next/channel_entry/repo.py"},
+        "aicrm_next.channels.channel_entry",
+        {"aicrm_next/channels/channel_entry/repo.py"},
     ),
     "automation_channel_scene_alias": (
-        "aicrm_next.channel_entry",
-        {"aicrm_next/channel_entry/repo.py"},
+        "aicrm_next.channels.channel_entry",
+        {"aicrm_next/channels/channel_entry/repo.py"},
     ),
     "automation_channel_assignee": (
-        "aicrm_next.channel_entry",
-        {"aicrm_next/channel_entry/repo.py"},
+        "aicrm_next.channels.channel_entry",
+        {"aicrm_next/channels/channel_entry/repo.py"},
     ),
     "automation_channel_assignment_event": (
-        "aicrm_next.channel_entry",
-        {"aicrm_next/channel_entry/repo.py"},
+        "aicrm_next.channels.channel_entry",
+        {"aicrm_next/channels/channel_entry/repo.py"},
     ),
     "automation_channel_qrcode_asset": (
-        "aicrm_next.channel_entry",
-        {"aicrm_next/channel_entry/repo.py"},
+        "aicrm_next.channels.channel_entry",
+        {"aicrm_next/channels/channel_entry/repo.py"},
     ),
     "domain_event_outbox": (
         "aicrm_next.external_push",

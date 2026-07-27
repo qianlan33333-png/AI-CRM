@@ -47,7 +47,7 @@ from aicrm_next.platform_foundation.external_effects import (
 from aicrm_next.platform_foundation.internal_events import InternalEventService
 from aicrm_next.platform_foundation.external_effects.realtime import wake_external_effect_job
 from aicrm_next.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry
-from aicrm_next.channel_entry.welcome_media_effects_repository import (
+from aicrm_next.channels.channel_entry.welcome_media_effects_repository import (
     WelcomeEffectGraphRequest,
     build_welcome_effect_graph_repository,
 )
@@ -1073,7 +1073,7 @@ def diagnose_channel_runtime(query: DiagnoseChannelRuntimeQuery) -> dict[str, An
         "can_create_contact_way": adapter["can_create_contact_way"],
         "missing_config": adapter["missing_config"],
         "runtime_route_map": runtime_route_map_payload(),
-        "callback_route_owner": "aicrm_next.channel_entry",
+        "callback_route_owner": "aicrm_next.channels.channel_entry",
         "web_release_sha": current_release_sha(),
         "worker_release_sha": text(startup_environment_setting("WORKER_RELEASE_SHA"))
         or "unknown",
@@ -1170,7 +1170,7 @@ def generate_channel_qrcode(command: GenerateChannelQrCodeCommand) -> dict[str, 
             "scene_value": scene_value,
             "request_payload": payload,
             **failure,
-            "source": "aicrm_next.channel_entry",
+            "source": "aicrm_next.channels.channel_entry",
             "route_owner": "ai_crm_next",
         }
     config_id = text((wecom_result or {}).get("config_id"))
@@ -1195,7 +1195,7 @@ def generate_channel_qrcode(command: GenerateChannelQrCodeCommand) -> dict[str, 
             "channel_id": int(command.channel_id),
             "scene_value": scene_value,
             "wecom_result": response["wecom_result"],
-            "source": "aicrm_next.channel_entry",
+            "source": "aicrm_next.channels.channel_entry",
             "route_owner": "ai_crm_next",
         }
     asset = repo.insert_qrcode_asset(
@@ -1227,7 +1227,7 @@ def generate_channel_qrcode(command: GenerateChannelQrCodeCommand) -> dict[str, 
             "reason": text(asset.get("reason")) or "qrcode_asset_scene_channel_conflict",
             "channel_id": int(command.channel_id),
             "scene_value": scene_value,
-            "source": "aicrm_next.channel_entry",
+            "source": "aicrm_next.channels.channel_entry",
             "route_owner": "ai_crm_next",
         }
     if previous_scene and previous_scene != scene_value:
@@ -1274,7 +1274,7 @@ def generate_channel_qrcode(command: GenerateChannelQrCodeCommand) -> dict[str, 
         "qrcode_asset_id": int(asset.get("id") or 0),
         "provider_payload_user_count": len(payload_user_ids),
         "channel": channel_payload(updated or {**channel, "scene_value": scene_value, "qr_url": qr_url, "qr_ticket": config_id}),
-        "source": "aicrm_next.channel_entry",
+        "source": "aicrm_next.channels.channel_entry",
         "route_owner": "ai_crm_next",
         "wecom_result": dict(wecom_result or {}),
     }
@@ -1284,9 +1284,9 @@ def runtime_route_map_payload() -> dict[str, Any]:
     return {
         "route_owner": "ai_crm_next",
         "wecom_callback_routes": {
-            "/wecom/external-contact/callback": "aicrm_next.channel_entry.api",
-            "/api/wecom/events": "aicrm_next.channel_entry.api",
-            "/api/admin/channels/{channel_id}/qrcode/generate": "aicrm_next.channel_entry.api",
+            "/wecom/external-contact/callback": "aicrm_next.channels.channel_entry.api",
+            "/api/wecom/events": "aicrm_next.channels.channel_entry.api",
+            "/api/admin/channels/{channel_id}/qrcode/generate": "aicrm_next.channels.channel_entry.api",
             "/api/admin/channels/{channel_id}/qrcode/status": "aicrm_next.automation_engine.channels_api",
             "/api/admin/channels/{channel_id}/qrcode/download": "aicrm_next.automation_engine.channels_api",
         },

@@ -5,13 +5,13 @@ import os
 import psycopg
 from psycopg.rows import dict_row
 
-from aicrm_next.channel_entry.channel_write_port import (
+from aicrm_next.channels.channel_entry.channel_write_port import (
     SaveChannelRequest,
     UpdateChannelAssignmentRequest,
     UpdateChannelQRCodeRequest,
     build_channel_write_port,
 )
-from aicrm_next.channel_entry.channel_write_repository import CHANNEL_COLUMNS
+from aicrm_next.channels.channel_entry.channel_write_repository import CHANNEL_COLUMNS
 
 
 def _channel_data(*, name: str = "owner test") -> dict:

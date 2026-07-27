@@ -88,8 +88,8 @@
 **Files:**
 - Modify: `aicrm_next/automation_engine/channels_repo.py`
 - Modify: `aicrm_next/automation_engine/channels_api.py`
-- Modify: `aicrm_next/channel_entry/repo.py`
-- Modify: `aicrm_next/channel_entry/application.py`
+- Modify: `aicrm_next/channels/channel_entry/repo.py`
+- Modify: `aicrm_next/channels/channel_entry/application.py`
 - Modify: `aicrm_next/external_effect_composition.py`
 - Modify: `aicrm_next/automation_engine/templates/admin_console/channel_code_form.html`
 - Modify: `aicrm_next/automation_engine/static/admin_console/channel_admission_pages.js`

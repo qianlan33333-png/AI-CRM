@@ -6,15 +6,17 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CALLBACK_MODULES = [
-    ROOT / "aicrm_next" / "channel_entry" / "api.py",
-    ROOT / "aicrm_next" / "channel_entry" / "callback_ingress.py",
-    ROOT / "aicrm_next" / "channel_entry" / "callback_processor.py",
-    ROOT / "aicrm_next" / "channel_entry" / "callback_worker.py",
-    ROOT / "aicrm_next" / "channel_entry" / "inbox.py",
-    ROOT / "aicrm_next" / "channel_entry" / "ingress_app.py",
+    ROOT / "aicrm_next" / "channels" / "channel_entry" / "api.py",
+    ROOT / "aicrm_next" / "channels" / "channel_entry" / "callback_ingress.py",
+    ROOT / "aicrm_next" / "channels" / "channel_entry" / "callback_processor.py",
+    ROOT / "aicrm_next" / "channels" / "channel_entry" / "callback_worker.py",
+    ROOT / "aicrm_next" / "channels" / "channel_entry" / "inbox.py",
+    ROOT / "aicrm_next" / "channels" / "channel_entry" / "ingress_app.py",
 ]
-APPLICATION = ROOT / "aicrm_next" / "channel_entry" / "application.py"
-WELCOME_EFFECT_REPOSITORY = ROOT / "aicrm_next" / "channel_entry" / "welcome_media_effects_repository.py"
+APPLICATION = ROOT / "aicrm_next" / "channels" / "channel_entry" / "application.py"
+WELCOME_EFFECT_REPOSITORY = (
+    ROOT / "aicrm_next" / "channels" / "channel_entry" / "welcome_media_effects_repository.py"
+)
 REALTIME = ROOT / "aicrm_next" / "platform_foundation" / "external_effects" / "realtime.py"
 
 
@@ -52,17 +54,20 @@ def test_callback_ingress_modules_do_not_import_real_external_adapters_or_networ
         "urllib",
         "urllib.request",
         ".wecom_adapter",
-        "aicrm_next.integration_gateway",
+        "aicrm_next.channels.integration_gateway",
         "aicrm_next.platform_foundation.external_effects.adapters",
     }
     for module_path in CALLBACK_MODULES:
         imports = _imports(module_path)
         assert not (imports & forbidden_exact), f"{module_path} imports forbidden callback-path dependency: {imports & forbidden_exact}"
-        assert not any(item.startswith("aicrm_next.integration_gateway.") for item in imports)
+        assert not any(item.startswith("aicrm_next.channels.integration_gateway.") for item in imports)
 
 
 def test_callback_http_handler_only_ingests_and_never_runs_business_processor_inline() -> None:
-    calls = _function_calls(ROOT / "aicrm_next" / "channel_entry" / "api.py", "_handle_callback")
+    calls = _function_calls(
+        ROOT / "aicrm_next" / "channels" / "channel_entry" / "api.py",
+        "_handle_callback",
+    )
 
     assert "ingest_wecom_external_contact_callback" in calls
     assert "process_wecom_external_contact_event" not in calls

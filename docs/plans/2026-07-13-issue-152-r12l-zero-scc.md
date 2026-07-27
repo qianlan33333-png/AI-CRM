@@ -35,8 +35,8 @@
 ### Task 3: Invert integration-gateway business dependencies
 
 **Files:**
-- Modify: `aicrm_next/integration_gateway/dispatch.py`
-- Modify: `aicrm_next/integration_gateway/questionnaire_adapters.py`
+- Modify: `aicrm_next/channels/integration_gateway/dispatch.py`
+- Modify: `aicrm_next/channels/integration_gateway/questionnaire_adapters.py`
 - Create/modify top-level customer/identity/questionnaire composition modules
 - Modify relevant contract tests
 

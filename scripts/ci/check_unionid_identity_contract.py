@@ -16,7 +16,7 @@ from aicrm_next.shared.sensitive_data import redact_sensitive_data, redact_sensi
 
 SOURCE_ROOT = ROOT / "aicrm_next"
 RESOLVER = Path("aicrm_next/crm/identity_contact/resolver.py")
-CHANNEL_CRM_PORT = Path("aicrm_next/channel_entry/crm_port.py")
+CHANNEL_CRM_PORT = Path("aicrm_next/channels/channel_entry/crm_port.py")
 CHANNEL_CRM_COMPOSITION = Path("aicrm_next/channel_entry_composition.py")
 
 HIGH_RISK_ALIAS_CONSUMERS = (
@@ -24,8 +24,8 @@ HIGH_RISK_ALIAS_CONSUMERS = (
     Path("aicrm_next/extensions/ai/ai_audience_ops/repository.py"),
     Path("aicrm_next/extensions/ai/automation_agents/repository.py"),
     Path("aicrm_next/automation_engine/group_ops/action_dispatcher.py"),
-    Path("aicrm_next/channel_entry/identity_bridge_repo.py"),
-    Path("aicrm_next/channel_entry/repo.py"),
+    Path("aicrm_next/channels/channel_entry/identity_bridge_repo.py"),
+    Path("aicrm_next/channels/channel_entry/repo.py"),
     Path("aicrm_next/extensions/growth/cloud_orchestrator/repository.py"),
     Path("aicrm_next/crm/customer_read_model/repo.py"),
     Path("aicrm_next/crm/customer_read_model/sidebar_v2.py"),
@@ -39,12 +39,12 @@ HIGH_RISK_ALIAS_CONSUMERS = (
 )
 
 CHANNEL_CRM_PORT_CONSUMERS = {
-    Path("aicrm_next/channel_entry/identity_bridge_repo.py"),
-    Path("aicrm_next/channel_entry/repo.py"),
+    Path("aicrm_next/channels/channel_entry/identity_bridge_repo.py"),
+    Path("aicrm_next/channels/channel_entry/repo.py"),
 }
 
 CANONICAL_WRITE_OWNERS = {
-    Path("aicrm_next/channel_entry/identity_bridge_repo.py"),
+    Path("aicrm_next/channels/channel_entry/identity_bridge_repo.py"),
     Path("aicrm_next/crm/identity_contact/oauth_projection_repo.py"),
     Path("aicrm_next/crm/identity_contact/payment_projection.py"),
     Path("aicrm_next/crm/identity_contact/repo.py"),
@@ -202,7 +202,7 @@ def check() -> list[str]:
             "payment identity resolution must happen before order insert, and the local order must exist before WeChat Pay call"
         )
 
-    bridge_service = _read(Path("aicrm_next/channel_entry/identity_bridge_service.py"))
+    bridge_service = _read(Path("aicrm_next/channels/channel_entry/identity_bridge_service.py"))
     if "corp_id_mismatch" not in bridge_service or "_single_corp_id" not in bridge_service:
         errors.append("identity bridge must reject request corp overrides before side effects")
     return errors

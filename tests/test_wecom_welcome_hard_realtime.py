@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from aicrm_next.channel_entry.realtime_contract import (
+from aicrm_next.channels.channel_entry.realtime_contract import (
     WECOM_WELCOME_EFFECT_LANE,
     WECOM_WELCOME_INGRESS_LANE,
     welcome_provider_deadline,
 )
-from aicrm_next.channel_entry.inbox import ingest_wecom_callback
-from aicrm_next.channel_entry.application import _welcome_callback_received_at
-from aicrm_next.channel_entry.schemas import ProcessChannelEntryCommand
+from aicrm_next.channels.channel_entry.inbox import ingest_wecom_callback
+from aicrm_next.channels.channel_entry.application import _welcome_callback_received_at
+from aicrm_next.channels.channel_entry.schemas import ProcessChannelEntryCommand
 from aicrm_next.platform_foundation.external_effects.adapters import (
     ExternalEffectAdapterRegistry,
     WeComWelcomeMessageAdapter,

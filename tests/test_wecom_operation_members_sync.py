@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 
 from aicrm_next import common_operation_members
-from aicrm_next.integration_gateway.wecom_operation_members_client import (
+from aicrm_next.channels.integration_gateway.wecom_operation_members_client import (
     WeComOperationMembersClient,
     WeComOperationMembersClientError,
 )

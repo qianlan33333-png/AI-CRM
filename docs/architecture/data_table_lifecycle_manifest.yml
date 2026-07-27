@@ -642,9 +642,9 @@ tables:
   automation_channel_entry_effect_log:
     domain: channel_entry
     lifecycle: event
-    write_owner: aicrm_next.channel_entry.repo
+    write_owner: aicrm_next.channels.channel_entry.repo
     read_owners:
-      - aicrm_next.channel_entry.repo
+      - aicrm_next.channels.channel_entry.repo
     replacement: ""
     drop_candidate: false
     runtime_entrypoints:
@@ -660,9 +660,9 @@ tables:
   automation_channel_entry_runtime:
     domain: channel_entry
     lifecycle: queue
-    write_owner: aicrm_next.channel_entry.repo
+    write_owner: aicrm_next.channels.channel_entry.repo
     read_owners:
-      - aicrm_next.channel_entry.repo
+      - aicrm_next.channels.channel_entry.repo
     replacement: ""
     drop_candidate: false
     runtime_entrypoints:
@@ -1410,7 +1410,7 @@ tables:
       - aicrm_next.send_content.postgres_repo
       - aicrm_next.admin_read_model.projections
       - aicrm_next.automation_engine.group_ops.material_resolver
-      - aicrm_next.channel_entry.application
+      - aicrm_next.channels.channel_entry.application
       - aicrm_next.extensions.commerce.commerce.repo
     replacement: none; canonical reusable image material table
     drop_candidate: false
@@ -1456,7 +1456,7 @@ tables:
       - aicrm_next.send_content.postgres_repo
       - aicrm_next.admin_read_model.projections
       - aicrm_next.automation_engine.group_ops.material_resolver
-      - aicrm_next.channel_entry.application
+      - aicrm_next.channels.channel_entry.application
       - campaign/group-ops SendContentPackage consumers
     replacement: none; canonical reusable mini-program material table
     drop_candidate: false
@@ -1482,7 +1482,7 @@ tables:
       - aicrm_next.send_content.postgres_repo
       - aicrm_next.admin_read_model.projections
       - aicrm_next.automation_engine.group_ops.material_resolver
-      - aicrm_next.channel_entry.application
+      - aicrm_next.channels.channel_entry.application
       - campaign/group-ops SendContentPackage consumers
     replacement: none; canonical reusable attachment material table
     drop_candidate: false
@@ -1507,7 +1507,7 @@ tables:
       - aicrm_next.media_library.postgres_repo
       - aicrm_next.send_content.postgres_repo
       - aicrm_next.automation_engine.group_ops.material_resolver
-      - aicrm_next.channel_entry.application
+      - aicrm_next.channels.channel_entry.application
       - campaign/group-ops SendContentPackage consumers
     replacement: none; canonical reusable WeCom group invite link card table
     drop_candidate: false
@@ -2869,9 +2869,9 @@ tables:
   automation_channel:
     domain: channel_entry
     lifecycle: canonical
-    write_owner: aicrm_next.channel_entry
+    write_owner: aicrm_next.channels.channel_entry
     write_owners:
-      - aicrm_next.channel_entry
+      - aicrm_next.channels.channel_entry
     read_owners:
       - historical schema drift guard
       - aicrm_next.automation_engine.channel_completion
@@ -2892,9 +2892,9 @@ tables:
   automation_channel_assignee:
     domain: channel_entry
     lifecycle: canonical
-    write_owner: aicrm_next.channel_entry
+    write_owner: aicrm_next.channels.channel_entry
     write_owners:
-      - aicrm_next.channel_entry
+      - aicrm_next.channels.channel_entry
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2912,9 +2912,9 @@ tables:
   automation_channel_assignment_event:
     domain: channel_entry
     lifecycle: audit
-    write_owner: aicrm_next.channel_entry
+    write_owner: aicrm_next.channels.channel_entry
     write_owners:
-      - aicrm_next.channel_entry
+      - aicrm_next.channels.channel_entry
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2932,9 +2932,9 @@ tables:
   automation_channel_contact:
     domain: channel_entry
     lifecycle: canonical
-    write_owner: aicrm_next.channel_entry
+    write_owner: aicrm_next.channels.channel_entry
     write_owners:
-      - aicrm_next.channel_entry
+      - aicrm_next.channels.channel_entry
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2952,9 +2952,9 @@ tables:
   automation_channel_qrcode_asset:
     domain: channel_entry
     lifecycle: canonical
-    write_owner: aicrm_next.channel_entry
+    write_owner: aicrm_next.channels.channel_entry
     write_owners:
-      - aicrm_next.channel_entry
+      - aicrm_next.channels.channel_entry
     read_owners:
       - historical schema drift guard
       - aicrm_next.automation_engine.channel_completion
@@ -2974,9 +2974,9 @@ tables:
   automation_channel_scene_alias:
     domain: channel_entry
     lifecycle: canonical
-    write_owner: aicrm_next.channel_entry
+    write_owner: aicrm_next.channels.channel_entry
     write_owners:
-      - aicrm_next.channel_entry
+      - aicrm_next.channels.channel_entry
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3246,7 +3246,7 @@ tables:
       - aicrm_next.extensions.ai.ai_assist
       - aicrm_next.extensions.ai.ai_audience_ops
       - aicrm_next.background_jobs
-      - aicrm_next.channel_entry
+      - aicrm_next.channels.channel_entry
       - aicrm_next.extensions.growth.cloud_orchestrator
       - aicrm_next.crm.customer_read_model
       - aicrm_next.crm.identity_contact
@@ -3309,7 +3309,7 @@ tables:
     write_owners:
       - aicrm_next.crm.identity_contact
     read_owners:
-      - aicrm_next.channel_entry
+      - aicrm_next.channels.channel_entry
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -4982,7 +4982,7 @@ tables:
   channel_welcome_effect_graph:
     domain: channel_entry
     lifecycle: canonical
-    write_owner: aicrm_next.channel_entry.welcome_media_effects_repository
+    write_owner: aicrm_next.channels.channel_entry.welcome_media_effects_repository
     read_owners:
       - channel welcome completion continuation
       - unified execution timeline
@@ -5005,7 +5005,7 @@ tables:
   channel_welcome_effect_dependency:
     domain: channel_entry
     lifecycle: queue
-    write_owner: aicrm_next.channel_entry.welcome_media_effects_repository
+    write_owner: aicrm_next.channels.channel_entry.welcome_media_effects_repository
     read_owners:
       - channel welcome completion continuation
       - unified execution timeline

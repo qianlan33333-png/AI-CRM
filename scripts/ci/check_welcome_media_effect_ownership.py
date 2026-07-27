@@ -53,19 +53,19 @@ def main() -> int:
     if "repair_authorized" not in repair_source or "manual_repair:wecom_media_lease_backfill" not in repair_source:
         violations.append("due-media scanner is not guarded as an explicit manual repair path")
 
-    application_source = (ROOT / "aicrm_next/channel_entry/application.py").read_text(encoding="utf-8")
+    application_source = (ROOT / "aicrm_next/channels/channel_entry/application.py").read_text(encoding="utf-8")
     if "WelcomeEffectGraphRequest" not in application_source:
         violations.append("channel-entry welcome callback does not plan a durable media dependency graph")
     for token in ("callback_received_at", "provider_deadline_at", "welcome_provider_deadline"):
         if token not in application_source:
             violations.append(f"channel-entry welcome callback is missing hard deadline token: {token}")
 
-    graph_source = (ROOT / "aicrm_next/channel_entry/welcome_media_effects_repository.py").read_text(encoding="utf-8")
+    graph_source = (ROOT / "aicrm_next/channels/channel_entry/welcome_media_effects_repository.py").read_text(encoding="utf-8")
     for token in ("WECOM_WELCOME_EFFECT_LANE", "max_attempts=1", "PROVIDER_DEADLINE_FIELD"):
         if token not in graph_source:
             violations.append(f"welcome effect graph is missing realtime execution token: {token}")
 
-    inbox_source = (ROOT / "aicrm_next/channel_entry/inbox.py").read_text(encoding="utf-8")
+    inbox_source = (ROOT / "aicrm_next/channels/channel_entry/inbox.py").read_text(encoding="utf-8")
     if "welcome_ingress_lane" not in inbox_source:
         violations.append("welcome callback ingress does not select the reserved lane")
 

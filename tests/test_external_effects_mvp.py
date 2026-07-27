@@ -47,7 +47,7 @@ from aicrm_next.platform_foundation.external_effects.adapters import (
 )
 from aicrm_next.platform_foundation.internal_events import QUESTIONNAIRE_SUBMITTED_EVENT_TYPE
 from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
-from aicrm_next.integration_gateway.wechat_pay_client import WeChatPayClientError
+from aicrm_next.channels.integration_gateway.wechat_pay_client import WeChatPayClientError
 from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
 from aicrm_next.extensions.commerce.public_product.h5_wechat_pay import _apply_transaction
 from aicrm_next.extensions.forms.questionnaire import external_push
@@ -491,7 +491,7 @@ def test_business_outbound_entrypoints_do_not_directly_call_external_networks() 
         "aicrm_next/extensions/commerce/commerce/external_push_admin.py",
         "aicrm_next/crm/customer_tags/live_mutation.py",
         "aicrm_next/automation_engine/group_ops/application.py",
-        "aicrm_next/channel_entry/application.py",
+        "aicrm_next/channels/channel_entry/application.py",
     ]
     forbidden_fragments = [
         "requests.post(",

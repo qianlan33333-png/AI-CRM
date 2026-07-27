@@ -303,7 +303,7 @@ def test_wecom_private_external_effect_default_is_blocked_without_typed_gate(mon
                 "wecom_msgid": "msg-default-direct-send",
             }
 
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: _Adapter())
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: _Adapter())
     plan = execute_cloud_campaign_run_due_command(
         PlanCloudCampaignRunDueCommand(
             batch_size=1,
@@ -351,7 +351,7 @@ def test_wecom_private_external_effect_allowlisted_execute_succeeds(monkeypatch)
                 "error_message": "",
             }
 
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: _Adapter())
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: _Adapter())
     plan = execute_cloud_campaign_run_due_command(
         PlanCloudCampaignRunDueCommand(
             batch_size=1,
@@ -414,7 +414,7 @@ def test_wecom_private_external_effect_cannot_self_authorize_allowlist_miss(monk
                 "wecom_msgid": "msg-target-allowlist-independent",
             }
 
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: _Adapter())
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: _Adapter())
     plan = execute_cloud_campaign_run_due_command(
         PlanCloudCampaignRunDueCommand(
             batch_size=1,

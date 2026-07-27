@@ -60,11 +60,11 @@ physical_moves:
   enabled: true
   completed_domains:
     - crm
+    - channels
     - extensions
   pending_domains:
     - app
     - platform
-    - channels
     - engagement
     - automation
     - insights

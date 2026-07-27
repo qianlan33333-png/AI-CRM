@@ -10,7 +10,7 @@ from fastapi import Request
 from aicrm_next.extensions.commerce.commerce import admin_transactions
 from aicrm_next.extensions.commerce.commerce.coupons import application as coupon_application
 from aicrm_next.extensions.commerce.commerce.coupons import public_api as coupon_public_api
-from aicrm_next.integration_gateway.wechat_pay_client import WeChatPayClientConfig
+from aicrm_next.channels.integration_gateway.wechat_pay_client import WeChatPayClientConfig
 from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
 from aicrm_next.extensions.commerce.public_product.service import render_pay_landing
 

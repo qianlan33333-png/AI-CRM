@@ -311,7 +311,7 @@ def test_group_sync_default_disabled_blocks_without_real_wecom(group_ops_api_cli
 
 
 def test_group_sync_fake_adapter_data_is_stable():
-    from aicrm_next.integration_gateway.wecom_group_adapter import WeComGroupAssetAdapter
+    from aicrm_next.channels.integration_gateway.wecom_group_adapter import WeComGroupAssetAdapter
 
     owner_001 = WeComGroupAssetAdapter(mode="fake").list_group_chats(owner_userid="owner_001", limit=100)
     owner_002 = WeComGroupAssetAdapter(mode="fake").list_group_chats(owner_userid="owner_002", limit=100)

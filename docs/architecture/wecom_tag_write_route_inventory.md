@@ -48,7 +48,7 @@ Local/fixture successful command responses include `route_owner=ai_crm_next`, `s
 
 ## Guardrails
 
-Real WeCom create/update/delete is executed only in production data mode through `aicrm_next.integration_gateway.wecom_tag_live_gateway.WeComTagLiveGateway` using WeCom corp-tag APIs. After every successful live write, the catalog sync refreshes `wecom_corp_tag_groups` / `wecom_corp_tags`, so tag ids returned to users are WeCom tag ids that can be used by `mark_tag`. A production environment without PostgreSQL still returns `production_unavailable` instead of fixture writes.
+Real WeCom create/update/delete is executed only in production data mode through `aicrm_next.channels.integration_gateway.wecom_tag_live_gateway.WeComTagLiveGateway` using WeCom corp-tag APIs. After every successful live write, the catalog sync refreshes `wecom_corp_tag_groups` / `wecom_corp_tags`, so tag ids returned to users are WeCom tag ids that can be used by `mark_tag`. A production environment without PostgreSQL still returns `production_unavailable` instead of fixture writes.
 
 Sync may execute the read-only WeCom tag catalog API and must not create/update/delete WeCom tags, tag groups, customer tags, questionnaire tags, payment records, storage assets, OpenClaw tasks, or automation runtime jobs. Sync writes are limited to the Next tag catalog projection tables and sync run evidence. CRUD routes are the only approved tag-catalog mutation routes in this inventory.
 

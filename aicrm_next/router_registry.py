@@ -31,8 +31,8 @@ from .automation_engine.api import router as automation_router
 from .automation_engine.channel_admin_pages import router as channel_admin_pages_router
 from .automation_engine.channels_api import router as automation_channels_router
 from .automation_engine.group_ops.admin_pages import router as group_ops_admin_pages_router
-from .auth_wecom.api import router as auth_wecom_router
-from .channel_entry.api import router as channel_entry_router
+from .channels.auth_wecom.api import router as auth_wecom_router
+from .channels.channel_entry.api import router as channel_entry_router
 from .extensions.hxc.class_user_management.api import router as class_user_management_router
 from .extensions.growth.cloud_orchestrator.api import router as cloud_orchestrator_router
 from .extensions.commerce.commerce.api import router as commerce_router
@@ -53,7 +53,7 @@ from .extensions.hxc.hxc_dashboard.api import router as hxc_dashboard_router
 from .crm.identity_contact.admin_pages import router as identity_admin_pages_router
 from .crm.identity_contact.api import router as identity_router
 from .crm.identity_contact.sidebar_jssdk import router as sidebar_jssdk_router
-from .integration_gateway.api import router as mcp_router
+from .channels.integration_gateway.api import router as mcp_router
 from .media_library.admin_pages import router as media_library_admin_pages_router
 from .media_library.api import router as media_library_router
 from .extensions.archive.message_archive.api import router as message_archive_router

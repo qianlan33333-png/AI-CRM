@@ -4,10 +4,10 @@ from contextlib import nullcontext
 
 import pytest
 
-from aicrm_next.channel_entry.identity_bridge import ensure_external_contact_identity_for_sidebar
-from aicrm_next.channel_entry.application import process_wecom_external_contact_event
-from aicrm_next.channel_entry.schemas import ProcessWeComExternalContactEventCommand
-from aicrm_next.channel_entry.wecom_adapter import get_wecom_adapter, set_wecom_adapter
+from aicrm_next.channels.channel_entry.identity_bridge import ensure_external_contact_identity_for_sidebar
+from aicrm_next.channels.channel_entry.application import process_wecom_external_contact_event
+from aicrm_next.channels.channel_entry.schemas import ProcessWeComExternalContactEventCommand
+from aicrm_next.channels.channel_entry.wecom_adapter import get_wecom_adapter, set_wecom_adapter
 from aicrm_next.shared.postgres_connection import get_db
 from scripts.run_identity_mobile_bridge_backfill import run_backfill
 
@@ -79,19 +79,19 @@ def _seed_identity_mobile_candidate(db, *, unionid: str, external_userid: str, m
 def test_next_external_contact_callback_only_plans_identity_provider_work(monkeypatch):
     provider_calls: list[str] = []
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.application.process_channel_entry",
+        "aicrm_next.channels.channel_entry.application.process_channel_entry",
         lambda command, **kwargs: {"handled": False, "reason": "channel_entry_not_under_test"},
     )
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.application.repo.log_external_contact_event",
+        "aicrm_next.channels.channel_entry.application.repo.log_external_contact_event",
         lambda **kwargs: {"id": 501, **kwargs},
     )
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.application.repo.mark_event_status",
+        "aicrm_next.channels.channel_entry.application.repo.mark_event_status",
         lambda *args, **kwargs: None,
     )
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.application.repo.enqueue_channel_entry_identity_resolution",
+        "aicrm_next.channels.channel_entry.application.repo.enqueue_channel_entry_identity_resolution",
         lambda **kwargs: {
             "ok": True,
             "external_effect_job_id": 7001,
@@ -101,7 +101,7 @@ def test_next_external_contact_callback_only_plans_identity_provider_work(monkey
         },
     )
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.application.sync_external_contact_identity_for_event",
+        "aicrm_next.channels.channel_entry.application.sync_external_contact_identity_for_event",
         lambda *args, **kwargs: provider_calls.append("provider") or {},
     )
 
@@ -130,21 +130,21 @@ def test_next_external_contact_callback_keeps_entry_success_when_identity_plan_f
     calls = []
     status_updates = []
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.application.repo.log_external_contact_event",
+        "aicrm_next.channels.channel_entry.application.repo.log_external_contact_event",
         lambda **kwargs: {"id": 321, **kwargs},
     )
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.application.repo.enqueue_channel_entry_identity_resolution",
+        "aicrm_next.channels.channel_entry.application.repo.enqueue_channel_entry_identity_resolution",
         lambda **kwargs: (_ for _ in ()).throw(RuntimeError("queue unavailable")),
     )
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.application.repo.mark_event_status",
+        "aicrm_next.channels.channel_entry.application.repo.mark_event_status",
         lambda event_id, status, error_message="": status_updates.append(
             {"event_id": event_id, "status": status, "error_message": error_message}
         ),
     )
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.application.process_channel_entry",
+        "aicrm_next.channels.channel_entry.application.process_channel_entry",
         lambda command, **kwargs: calls.append("channel_entry") or {"handled": True, "reason": "channel_entry_baseline_recorded"},
     )
 
@@ -187,15 +187,15 @@ def test_next_external_contact_callback_reuses_atomic_runtime_identity_plan(monk
     runtime_updates = []
     effect_logs = []
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.application.repo.log_external_contact_event",
+        "aicrm_next.channels.channel_entry.application.repo.log_external_contact_event",
         lambda **kwargs: {"id": 432, **kwargs},
     )
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.application.sync_external_contact_identity_for_event",
+        "aicrm_next.channels.channel_entry.application.sync_external_contact_identity_for_event",
         lambda event, corp_id: calls.append("identity_sync") or {"status": "success", "unionid": "union_bridge_success"},
     )
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.application.process_channel_entry",
+        "aicrm_next.channels.channel_entry.application.process_channel_entry",
         lambda command, **kwargs: calls.append("runtime_entry")
         or {
             "handled": True,
@@ -212,34 +212,34 @@ def test_next_external_contact_callback_reuses_atomic_runtime_identity_plan(monk
         },
     )
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.application.repo.enqueue_channel_entry_identity_resolution",
+        "aicrm_next.channels.channel_entry.application.repo.enqueue_channel_entry_identity_resolution",
         lambda **kwargs: pytest.fail("callback must reuse the runtime transaction's identity effect"),
     )
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.application.resolve_channel_for_scene",
+        "aicrm_next.channels.channel_entry.application.resolve_channel_for_scene",
         lambda **kwargs: (
             {"id": 10, "channel_code": "c", "channel_name": "C", "scene_value": "scene-a", "status": "active", "owner_staff_id": "owner_bridge"},
             {"match_type": "current_scene", "matched_scene": "scene-a", "channel_id": 10},
         ),
     )
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.application.repo.upsert_channel_contact",
+        "aicrm_next.channels.channel_entry.application.repo.upsert_channel_contact",
         lambda **kwargs: contacts.append(kwargs) or {"id": 88, **kwargs},
     )
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.application.repo.upsert_channel_entry_effect_log",
+        "aicrm_next.channels.channel_entry.application.repo.upsert_channel_entry_effect_log",
         lambda **kwargs: effect_logs.append(kwargs) or kwargs,
     )
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.application.repo.record_identity_sync_result",
+        "aicrm_next.channels.channel_entry.application.repo.record_identity_sync_result",
         lambda *args, **kwargs: None,
     )
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.application.repo.mark_channel_entry_runtime_identity",
+        "aicrm_next.channels.channel_entry.application.repo.mark_channel_entry_runtime_identity",
         lambda **kwargs: runtime_updates.append(kwargs) or {"status": "success", "updated_count": 1},
     )
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.application.repo.mark_event_status",
+        "aicrm_next.channels.channel_entry.application.repo.mark_event_status",
         lambda event_id, status, error_message="": status_updates.append(
             {"event_id": event_id, "status": status, "error_message": error_message}
         ),
@@ -250,7 +250,7 @@ def test_next_external_contact_callback_reuses_atomic_runtime_identity_plan(monk
             internal_events.append(kwargs)
             return {"event": {"event_id": "evt-channel-entry"}, "consumer_runs": [{}]}
 
-    monkeypatch.setattr("aicrm_next.channel_entry.application.InternalEventService", FakeInternalEventService)
+    monkeypatch.setattr("aicrm_next.channels.channel_entry.application.InternalEventService", FakeInternalEventService)
 
     result = process_wecom_external_contact_event(
         ProcessWeComExternalContactEventCommand(
@@ -286,15 +286,15 @@ def test_next_external_contact_callback_plans_identity_when_entry_result_has_no_
     status_updates = []
     runtime_updates = []
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.application.repo.log_external_contact_event",
+        "aicrm_next.channels.channel_entry.application.repo.log_external_contact_event",
         lambda **kwargs: {"id": 654, **kwargs},
     )
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.application.sync_external_contact_identity_for_event",
+        "aicrm_next.channels.channel_entry.application.sync_external_contact_identity_for_event",
         lambda event, corp_id: calls.append("identity_sync") or {"status": "pending_identity", "reason": "missing_unionid"},
     )
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.application.repo.enqueue_channel_entry_identity_resolution",
+        "aicrm_next.channels.channel_entry.application.repo.enqueue_channel_entry_identity_resolution",
         lambda **kwargs: {
             "ok": True,
             "external_effect_job_id": 7401,
@@ -302,17 +302,17 @@ def test_next_external_contact_callback_plans_identity_when_entry_result_has_no_
         },
     )
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.application.repo.mark_event_status",
+        "aicrm_next.channels.channel_entry.application.repo.mark_event_status",
         lambda event_id, status, error_message="": status_updates.append(
             {"event_id": event_id, "status": status, "error_message": error_message}
         ),
     )
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.application.process_channel_entry",
+        "aicrm_next.channels.channel_entry.application.process_channel_entry",
         lambda command, **kwargs: calls.append("channel_entry") or {"handled": True, "mode": "channel_runtime_only", "reason": "channel_entry_runtime_recorded"},
     )
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.application.repo.mark_channel_entry_runtime_identity",
+        "aicrm_next.channels.channel_entry.application.repo.mark_channel_entry_runtime_identity",
         lambda **kwargs: runtime_updates.append(kwargs) or {"status": "success", "updated_count": 1},
     )
 

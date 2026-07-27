@@ -238,7 +238,7 @@ Expected diagnostics:
 - 写路径：
   `aicrm_next/extensions/growth/cloud_orchestrator/application.py`,
   `aicrm_next/automation_engine/group_ops/action_dispatcher.py`,
-  `aicrm_next/integration_gateway/wecom_group_adapter.py`,
+  `aicrm_next/channels/integration_gateway/wecom_group_adapter.py`,
   AI Audience outbound planner / external_effect_job。
 - event schema：`event_type=broadcast_task.created`,
   `aggregate_type=broadcast_task`, `aggregate_id=task_id_or_code`,

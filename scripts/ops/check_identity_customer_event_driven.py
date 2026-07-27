@@ -22,16 +22,16 @@ def _read(path: str) -> str:
 
 
 def _code_checks() -> dict[str, bool]:
-    application = _read("aicrm_next/channel_entry/application.py")
+    application = _read("aicrm_next/channels/channel_entry/application.py")
     callback_body = application.split("def process_wecom_external_contact_event(", 1)[1].split("def diagnose_channel_runtime", 1)[0]
-    identity_worker = _read("aicrm_next/channel_entry/identity_resolution_worker.py")
+    identity_worker = _read("aicrm_next/channels/channel_entry/identity_resolution_worker.py")
     customer_script = _read("scripts/run_customer_read_model_refresh.py")
     adapter = _read("aicrm_next/platform_foundation/external_effects/adapters.py")
     completion = _read("aicrm_next/platform_foundation/external_effects/completion_events.py")
     models = _read("aicrm_next/platform_foundation/external_effects/models.py")
     public_attempt_model = models.split("class ExternalEffectAttempt:", 1)[1].split("class ExternalEffectTestReceipt:", 1)[0]
     identity_adapter = adapter.split("class WeComExternalContactDetailAdapter", 1)[1].split("class WeChatPaymentAdapter", 1)[0]
-    channel_repo = _read("aicrm_next/channel_entry/repo.py")
+    channel_repo = _read("aicrm_next/channels/channel_entry/repo.py")
     customer_intents = _read("aicrm_next/crm/customer_read_model/refresh_intents.py")
     migration = _read("migrations/versions/0129_identity_customer_event_driven.py")
     return {

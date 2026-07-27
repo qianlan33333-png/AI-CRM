@@ -27,49 +27,49 @@ legacy_allowlist:
     reason: Historical audit payload field confirms this adapter does not change retired compatibility runtime.
     matches:
       - '"production_compat_changed": False,'
-  - path: aicrm_next/integration_gateway/media_live_adapter.py
+  - path: aicrm_next/channels/integration_gateway/media_live_adapter.py
     rule: forbidden_legacy_marker
     marker: production_compat
     owner: integration_gateway
     reason: Historical audit payload field confirms this adapter does not change retired compatibility runtime.
     matches:
       - '"production_compat_changed": False,'
-  - path: aicrm_next/integration_gateway/oauth_identity_adapter.py
+  - path: aicrm_next/channels/integration_gateway/oauth_identity_adapter.py
     rule: forbidden_legacy_marker
     marker: production_compat
     owner: integration_gateway
     reason: Historical audit payload field confirms this adapter does not change retired compatibility runtime.
     matches:
       - '"production_compat_changed": False,'
-  - path: aicrm_next/integration_gateway/oauth_identity_live_adapter.py
+  - path: aicrm_next/channels/integration_gateway/oauth_identity_live_adapter.py
     rule: forbidden_legacy_marker
     marker: production_compat
     owner: integration_gateway
     reason: Historical audit payload field confirms this adapter does not change retired compatibility runtime.
     matches:
       - '"production_compat_changed": False,'
-  - path: aicrm_next/integration_gateway/openclaw_mcp_ai_assist_live_adapter.py
+  - path: aicrm_next/channels/integration_gateway/openclaw_mcp_ai_assist_live_adapter.py
     rule: forbidden_legacy_marker
     marker: production_compat
     owner: integration_gateway
     reason: Historical audit payload field confirms this adapter does not change retired compatibility runtime.
     matches:
       - '"production_compat_changed": False,'
-  - path: aicrm_next/integration_gateway/payment_commerce_live_adapter.py
+  - path: aicrm_next/channels/integration_gateway/payment_commerce_live_adapter.py
     rule: forbidden_legacy_marker
     marker: production_compat
     owner: integration_gateway
     reason: Historical audit payload field confirms this adapter does not change retired compatibility runtime.
     matches:
       - '"production_compat_changed": False,'
-  - path: aicrm_next/integration_gateway/wecom_contact_callback_adapter.py
+  - path: aicrm_next/channels/integration_gateway/wecom_contact_callback_adapter.py
     rule: forbidden_legacy_marker
     marker: production_compat
     owner: integration_gateway
     reason: Historical audit payload field confirms this adapter does not change retired compatibility runtime.
     matches:
       - '"production_compat_changed": False,'
-  - path: aicrm_next/integration_gateway/wecom_contact_callback_live_adapter.py
+  - path: aicrm_next/channels/integration_gateway/wecom_contact_callback_live_adapter.py
     rule: forbidden_legacy_marker
     marker: production_compat
     owner: integration_gateway

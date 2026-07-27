@@ -243,7 +243,7 @@ requests and time out.
 
 1. Callback handling is synchronous in the HTTP request path.
 
-   `aicrm_next/channel_entry/api.py` defines the callback route as async, but it
+   `aicrm_next/channels/channel_entry/api.py` defines the callback route as async, but it
    directly calls synchronous application work:
 
    - decrypt callback body
@@ -285,7 +285,7 @@ requests and time out.
 6. The observable route contract is misleading.
 
    The nginx comments still said the callback path was a temporary fallback, but
-   the route is currently owned by `aicrm_next.channel_entry` in the Next
+   the route is currently owned by `aicrm_next.channels.channel_entry` in the Next
    architecture.
 
 ## Business Impact
@@ -352,11 +352,11 @@ Implementation status in local worktree:
   - `aicrm_next/platform_foundation/webhook_inbox/service.py`
   - `aicrm_next/platform_foundation/webhook_inbox/models.py`
 - Added WeCom-specific ingress and worker:
-  - `aicrm_next/channel_entry/inbox.py`
+  - `aicrm_next/channels/channel_entry/inbox.py`
   - Worker API covers `preview_due(...)`, `run_due(...)`, and
     `dispatch_one(inbox_id)` for targeted operator replay.
 - Added isolated callback ingress runtime:
-  - `aicrm_next/channel_entry/ingress_app.py`
+  - `aicrm_next/channels/channel_entry/ingress_app.py`
   - `scripts/run_wecom_callback_ingress.py`
   - `deploy/openclaw-wecom-callback-ingress.service`
   - `deploy/nginx-wecom-callback-ingress.conf.example`
@@ -367,7 +367,7 @@ Implementation status in local worktree:
     and `/api/wecom/events`, so callback traffic can be routed to `127.0.0.1:5002`
     without sharing the admin/sidebar web process on `127.0.0.1:5001`.
 - Changed callback POST path:
-  - `aicrm_next/channel_entry/api.py`
+  - `aicrm_next/channels/channel_entry/api.py`
   - POST now verifies/decrypts, writes inbox, and ACKs.
   - POST no longer calls `process_wecom_external_contact_event(...)` inline.
   - ingress DB failure returns 503 instead of fake ACK.
@@ -468,7 +468,7 @@ pages.
 
 Implemented locally:
 
-- `aicrm_next.channel_entry.ingress_app:app` is a callback-only FastAPI app.
+- `aicrm_next.channels.channel_entry.ingress_app:app` is a callback-only FastAPI app.
 - `scripts/run_wecom_callback_ingress.py` runs that app on `APP_PORT`, defaulting
   to 5002.
 - `deploy/openclaw-wecom-callback-ingress.service` runs it as an independent
@@ -660,7 +660,7 @@ curl -sS http://127.0.0.1:5001/health
   - `/sidebar/bind-mobile`
   - `/admin/automation-conversion`
 - Current owner:
-  - callback routes: `aicrm_next.channel_entry`
+  - callback routes: `aicrm_next.channels.channel_entry`
   - user pages: AI-CRM Next web app
 - Production data: yes, production logs and read-only database diagnostics were
   used.

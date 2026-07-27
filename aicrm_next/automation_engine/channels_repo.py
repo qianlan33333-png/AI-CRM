@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from aicrm_next.channel_entry import repo as channel_entry_repo
-from aicrm_next.channel_entry.channel_write_port import SaveChannelRequest, build_channel_write_port
+from aicrm_next.channels.channel_entry import repo as channel_entry_repo
+from aicrm_next.channels.channel_entry.channel_write_port import SaveChannelRequest, build_channel_write_port
 
 from .repo import channel_admin_uses_postgres, connect_channel_admin_db
 

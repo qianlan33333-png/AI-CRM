@@ -431,7 +431,7 @@ The target architecture is:
 
 Local deploy assets prepared for the isolated runtime:
 
-- `aicrm_next.channel_entry.ingress_app:app`
+- `aicrm_next.channels.channel_entry.ingress_app:app`
 - `scripts/run_wecom_callback_ingress.py`
 - `deploy/openclaw-wecom-callback-ingress.service`
 - `deploy/nginx-wecom-callback-ingress.conf.example`

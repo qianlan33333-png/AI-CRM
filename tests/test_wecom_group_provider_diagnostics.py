@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import json
 
-from aicrm_next.integration_gateway.wecom_group_adapter import WeComGroupMessageAdapter
-from aicrm_next.integration_gateway.wecom_channel_entry_client import WeComApiError
+from aicrm_next.channels.integration_gateway.wecom_group_adapter import WeComGroupMessageAdapter
+from aicrm_next.channels.integration_gateway.wecom_channel_entry_client import WeComApiError
 from aicrm_next.platform_foundation.external_effects import adapters as effect_adapters
 from aicrm_next.platform_foundation.external_effects.models import (
     ExternalEffectJob,

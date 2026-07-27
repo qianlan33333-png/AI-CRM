@@ -15,7 +15,7 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.channel_entry.callback_worker import WeComCallbackWorker
+from aicrm_next.channels.channel_entry.callback_worker import WeComCallbackWorker
 from aicrm_next.channel_entry_composition import build_wecom_callback_inbox_worker_factory
 from aicrm_next.external_effect_composition import build_external_effect_adapter_registry
 

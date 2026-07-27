@@ -12,8 +12,8 @@ def test_callback_routes_are_next_owner_not_legacy_facade(monkeypatch):
 
     paths = {route.path: route.endpoint.__module__ for route in client.app.routes if getattr(route, "path", "") in {"/wecom/external-contact/callback", "/api/wecom/events"}}
 
-    assert paths["/wecom/external-contact/callback"] == "aicrm_next.channel_entry.api"
-    assert paths["/api/wecom/events"] == "aicrm_next.channel_entry.api"
+    assert paths["/wecom/external-contact/callback"] == "aicrm_next.channels.channel_entry.api"
+    assert paths["/api/wecom/events"] == "aicrm_next.channels.channel_entry.api"
 
 
 def test_runtime_route_map_shows_next_callback_owner(monkeypatch):
@@ -25,5 +25,5 @@ def test_runtime_route_map_shows_next_callback_owner(monkeypatch):
     assert state["next_live_callback_gateway_enabled"] is True
     assert state["callback_async_enabled"] == "next_task_queue"
     assert state["legacy_callback_fallback_enabled"] is False
-    assert state["wecom_callback_routes"]["/wecom/external-contact/callback"] == "aicrm_next.channel_entry.api"
+    assert state["wecom_callback_routes"]["/wecom/external-contact/callback"] == "aicrm_next.channels.channel_entry.api"
 

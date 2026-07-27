@@ -2975,7 +2975,7 @@
       "coverage_status": "event_missing",
       "function": "",
       "line": 38,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -2984,7 +2984,7 @@
       "coverage_status": "event_missing",
       "function": "_apply_tag",
       "line": 420,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -2993,7 +2993,7 @@
       "coverage_status": "event_missing",
       "function": "_apply_tag",
       "line": 422,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -3002,7 +3002,7 @@
       "coverage_status": "event_missing",
       "function": "_apply_tag",
       "line": 423,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -3011,7 +3011,7 @@
       "coverage_status": "event_missing",
       "function": "_apply_tag",
       "line": 424,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -3020,7 +3020,7 @@
       "coverage_status": "event_missing",
       "function": "_apply_tag",
       "line": 425,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -3029,7 +3029,7 @@
       "coverage_status": "event_missing",
       "function": "_apply_tag",
       "line": 426,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -3038,7 +3038,7 @@
       "coverage_status": "event_missing",
       "function": "_apply_tag",
       "line": 428,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -3047,7 +3047,7 @@
       "coverage_status": "event_missing",
       "function": "_apply_tag",
       "line": 429,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -3056,7 +3056,7 @@
       "coverage_status": "event_missing",
       "function": "_apply_tag",
       "line": 430,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -3065,7 +3065,7 @@
       "coverage_status": "event_missing",
       "function": "_apply_tag",
       "line": 436,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -3074,7 +3074,7 @@
       "coverage_status": "event_missing",
       "function": "_apply_tag",
       "line": 437,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -3083,7 +3083,7 @@
       "coverage_status": "event_missing",
       "function": "_apply_tag",
       "line": 453,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -3092,7 +3092,7 @@
       "coverage_status": "event_missing",
       "function": "_apply_tag",
       "line": 458,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -3101,7 +3101,7 @@
       "coverage_status": "event_missing",
       "function": "_apply_tag",
       "line": 459,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -3110,7 +3110,7 @@
       "coverage_status": "event_missing",
       "function": "_apply_tag",
       "line": 466,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -3119,7 +3119,7 @@
       "coverage_status": "event_missing",
       "function": "_apply_tag",
       "line": 470,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -3128,7 +3128,7 @@
       "coverage_status": "event_missing",
       "function": "process_channel_entry",
       "line": 565,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -3137,7 +3137,7 @@
       "coverage_status": "event_missing",
       "function": "process_channel_entry",
       "line": 586,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -3146,7 +3146,7 @@
       "coverage_status": "event_missing",
       "function": "process_channel_entry",
       "line": 600,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -3155,7 +3155,7 @@
       "coverage_status": "event_missing",
       "function": "process_channel_entry",
       "line": 608,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -3164,7 +3164,7 @@
       "coverage_status": "event_missing",
       "function": "process_channel_entry",
       "line": 611,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -3173,7 +3173,7 @@
       "coverage_status": "event_missing",
       "function": "diagnose_channel_runtime",
       "line": 679,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -3182,7 +3182,7 @@
       "coverage_status": "event_missing",
       "function": "diagnose_channel_runtime",
       "line": 682,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -3191,7 +3191,7 @@
       "coverage_status": "event_missing",
       "function": "diagnose_channel_runtime",
       "line": 686,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -3200,7 +3200,7 @@
       "coverage_status": "event_missing",
       "function": "dry_run_channel_entry",
       "line": 703,
-      "path": "aicrm_next/channel_entry/application.py",
+      "path": "aicrm_next/channels/channel_entry/application.py",
       "reason": "Application/API write-like wording found without safe_emit in the same file.",
       "suggested_severity": "P2"
     },
@@ -4808,43 +4808,43 @@
       "call": "requests.request",
       "function": "_default_http_request",
       "line": 45,
-      "path": "aicrm_next/integration_gateway/wechat_pay_client.py"
+      "path": "aicrm_next/channels/integration_gateway/wechat_pay_client.py"
     },
     {
       "call": "requests.post",
       "function": "_default_http_post",
       "line": 28,
-      "path": "aicrm_next/integration_gateway/wechat_shop_client.py"
+      "path": "aicrm_next/channels/integration_gateway/wechat_shop_client.py"
     },
     {
       "call": "requests.request",
       "function": "_default_http_request",
       "line": 18,
-      "path": "aicrm_next/integration_gateway/wecom_channel_entry_client.py"
+      "path": "aicrm_next/channels/integration_gateway/wecom_channel_entry_client.py"
     },
     {
       "call": "requests.get",
       "function": "_default_http_get",
       "line": 47,
-      "path": "aicrm_next/integration_gateway/wecom_customer_group_client.py"
+      "path": "aicrm_next/channels/integration_gateway/wecom_customer_group_client.py"
     },
     {
       "call": "requests.post",
       "function": "_default_http_post",
       "line": 53,
-      "path": "aicrm_next/integration_gateway/wecom_customer_group_client.py"
+      "path": "aicrm_next/channels/integration_gateway/wecom_customer_group_client.py"
     },
     {
       "call": "requests.get",
       "function": "_requests_get",
       "line": 74,
-      "path": "aicrm_next/integration_gateway/wecom_media_upload_client.py"
+      "path": "aicrm_next/channels/integration_gateway/wecom_media_upload_client.py"
     },
     {
       "call": "requests.post",
       "function": "_requests_post",
       "line": 80,
-      "path": "aicrm_next/integration_gateway/wecom_media_upload_client.py"
+      "path": "aicrm_next/channels/integration_gateway/wecom_media_upload_client.py"
     }
   ],
   "external_effect_calls": [
@@ -4918,13 +4918,13 @@
       "call": "plan_effect",
       "function": "_plan_channel_entry_effect",
       "line": 169,
-      "path": "aicrm_next/channel_entry/application.py"
+      "path": "aicrm_next/channels/channel_entry/application.py"
     },
     {
       "call": "ExternalEffectService",
       "function": "_plan_channel_entry_effect",
       "line": 169,
-      "path": "aicrm_next/channel_entry/application.py"
+      "path": "aicrm_next/channels/channel_entry/application.py"
     },
     {
       "call": "ExternalEffectService",
