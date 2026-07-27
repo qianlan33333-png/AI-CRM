@@ -23,7 +23,7 @@ from .extensions.ai.ai_audience_ops.external_api import router as ai_audience_ex
 from .admin_auth.api import router as admin_auth_router
 from .admin_config.api import router as admin_config_router
 from .admin_jobs.routes import router as admin_jobs_router
-from .admin_shell.routes import router as admin_shell_router
+from .app.admin_console.routes import router as admin_shell_router
 from .extensions.ai.automation_agents.admin_api import router as automation_agents_admin_router
 from .extensions.ai.automation_agents.admin_pages import router as automation_agents_admin_pages_router
 from .extensions.ai.automation_agents.api import router as automation_agents_router

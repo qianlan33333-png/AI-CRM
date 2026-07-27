@@ -37,8 +37,8 @@ def _route_owner(client: TestClient, path: str, method: str = "GET") -> str:
 def test_admin_shell_family_routes_resolve_to_native_module(monkeypatch) -> None:
     client = _client(monkeypatch)
 
-    assert _route_owner(client, "/admin") == "aicrm_next.admin_shell.routes"
-    assert _route_owner(client, "/admin/logout") == "aicrm_next.admin_shell.routes"
+    assert _route_owner(client, "/admin") == "aicrm_next.app.admin_console.routes"
+    assert _route_owner(client, "/admin/logout") == "aicrm_next.app.admin_console.routes"
 
 
 def test_admin_dashboard_page_uses_native_shell_template(monkeypatch) -> None:
@@ -101,10 +101,10 @@ def test_business_contexts_depend_on_static_admin_shell_contract() -> None:
 
     for path in package_root.rglob("*.py"):
         relative = path.relative_to(package_root)
-        if relative.parts[0] == "admin_shell":
+        if relative.parts[:2] == ("app", "admin_console"):
             continue
         source = path.read_text(encoding="utf-8")
-        if "from aicrm_next.admin_shell import" in source or "from aicrm_next.admin_shell.navigation import" in source:
+        if "from aicrm_next.admin_shell import" in source or "from aicrm_next.app.admin_console.navigation import" in source:
             offenders.append(relative.as_posix())
 
     assert offenders == []

@@ -64,7 +64,7 @@ __all__ = [
     "reset_user_ops_fixture_state",
 ]
 
-_FRONTEND_COMPAT_DIR = Path(__file__).resolve().parent / "frontend_compat"
+_ADMIN_CONSOLE_DIR = Path(__file__).resolve().parent / "app" / "admin_console"
 _OPERATION_CYCLES_DIR = Path(__file__).resolve().parent / "extensions" / "hxc" / "operation_cycles"
 _GROUP_OPS_DIR = Path(__file__).resolve().parent / "automation_engine" / "group_ops"
 _AUTOMATION_ENGINE_DIR = Path(__file__).resolve().parent / "automation_engine"
@@ -234,7 +234,7 @@ def create_app(
         )
     app.mount(
         "/static",
-        StaticFiles(directory=_FRONTEND_COMPAT_DIR / "static"),
+        StaticFiles(directory=_ADMIN_CONSOLE_DIR / "static"),
         name="static",
     )
     register_routers(app, profile=profile)

@@ -118,7 +118,7 @@ def collect_route_inventory(app: Any, *, include_static: bool = False) -> list[R
                     route_name=route_name,
                     order=order,
                     layer="static",
-                    capability_owner="frontend_compat",
+                    capability_owner="admin_console",
                     is_static=True,
                 )
             )
@@ -194,7 +194,7 @@ def infer_capability_owner(module: str, path: str) -> str:
     if path.startswith(("/docs", "/redoc", "/openapi.json", "/health")):
         return "platform_foundation"
     if path.startswith("/static"):
-        return "frontend_compat"
+        return "admin_console"
     return "platform_foundation"
 
 

@@ -11,7 +11,7 @@ from aicrm_next.main import create_app
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TEMPLATE_DIR = ROOT / "aicrm_next" / "admin_shell" / "templates" / "admin_shell"
+TEMPLATE_DIR = ROOT / "aicrm_next" / "app" / "admin_console" / "templates" / "admin_shell"
 STYLESHEET = ROOT / "aicrm_next" / "extensions" / "hxc" / "operation_cycles" / "static" / "operation_cycles.css"
 DETAIL_SCRIPT = ROOT / "aicrm_next" / "extensions" / "hxc" / "operation_cycles" / "static" / "operation_cycles_detail.js"
 AGENT_GUIDE = ROOT / "docs" / "operation_cycles" / "agent_usage_guide.md"

@@ -146,7 +146,7 @@ def test_zero_scc_runtime_composition_files_force_full_postgres_ci() -> None:
 def test_admin_read_model_runtime_files_have_a_permanent_ci_scope() -> None:
     result = _select(
         "aicrm_next/admin_read_model/application.py",
-        "aicrm_next/frontend_compat/admin_real_data.py",
+        "aicrm_next/app/admin_console/admin_real_data.py",
     )
 
     assert "admin_read_model" in result["matched_scopes"]
@@ -160,7 +160,7 @@ def test_admin_read_model_runtime_files_have_a_permanent_ci_scope() -> None:
 def test_operation_cycles_changes_select_full_postgres_scope() -> None:
     result = _select(
         "aicrm_next/extensions/hxc/operation_cycles/api.py",
-        "aicrm_next/admin_shell/templates/admin_shell/operation_cycles_run.html",
+        "aicrm_next/app/admin_console/templates/admin_shell/operation_cycles_run.html",
         "fixtures/operation_cycles/hxc_monday_20260713_snapshot.json",
         "migrations/versions/0113_operation_cycles.py",
         "scripts/build_hxc_monday_operation_cycle_snapshot.py",
@@ -354,7 +354,7 @@ def test_questionnaire_mobile_change_selects_questionnaire_and_commerce_slices()
     result = _select(
         "aicrm_next/extensions/forms/questionnaire/domain.py",
         "aicrm_next/extensions/forms/questionnaire/h5_write.py",
-        "aicrm_next/frontend_compat/templates/questionnaire_h5_page.html",
+        "aicrm_next/app/admin_console/templates/questionnaire_h5_page.html",
         "aicrm_next/shared/mobile.py",
         "aicrm_next/extensions/commerce/commerce/application.py",
         "tests/test_questionnaire_h5_submit_validation.py",
@@ -674,8 +674,8 @@ def test_prod_remediation_security_and_heading_files_have_permanent_scopes() -> 
     result = _select(
         "aicrm_next/extensions/ai/automation_agents/templates/admin_console/automation_agent_list.html",
         "aicrm_next/crm/customer_tags/templates/admin_console/config_wecom_tags.html",
-        "aicrm_next/frontend_compat/templates/admin_console/hxc_send_config.html",
-        "aicrm_next/frontend_compat/templates/admin_console/setup_wizard.html",
+        "aicrm_next/app/admin_console/templates/admin_console/hxc_send_config.html",
+        "aicrm_next/app/admin_console/templates/admin_console/setup_wizard.html",
         "aicrm_next/extensions/archive/message_archive/archive_sdk.py",
         "aicrm_next/extensions/archive/message_archive/sdk_subprocess.py",
         "scripts/ops/ensure_runtime_environment.py",
@@ -1056,7 +1056,7 @@ def test_admin_read_smoke_test_file_selects_admin_read_scope() -> None:
 
 def test_static_admin_shell_contract_and_contributors_select_admin_read_scope() -> None:
     result = _select(
-        "aicrm_next/admin_shell/__init__.py",
+        "aicrm_next/app/admin_console/__init__.py",
         "aicrm_next/admin_shell_contract.py",
         "aicrm_next/automation_engine/channel_admin_pages.py",
         "aicrm_next/crm/customer_tags/admin_pages.py",
@@ -1074,8 +1074,8 @@ def test_admin_config_page_change_selects_config_scope() -> None:
     result = _select(
         "aicrm_next/mcp_tool_catalog.py",
         "aicrm_next/admin_config/api.py",
-        "aicrm_next/frontend_compat/static/admin_console/config_center.js",
-        "aicrm_next/frontend_compat/templates/admin_console/config_admin_access_detail.html",
+        "aicrm_next/app/admin_console/static/admin_console/config_center.js",
+        "aicrm_next/app/admin_console/templates/admin_console/config_admin_access_detail.html",
         "tests/test_admin_config_next.py",
         "tests/test_support_admin_pages_native.py",
     )
@@ -1108,8 +1108,8 @@ def test_admin_audit_owner_change_selects_postgres_and_full_ci() -> None:
 
 def test_operation_member_picker_static_assets_select_admin_config_scope() -> None:
     result = _select(
-        "aicrm_next/frontend_compat/static/admin_console/admin_console.css",
-        "aicrm_next/frontend_compat/static/admin_console/operation_member_picker.js",
+        "aicrm_next/app/admin_console/static/admin_console/admin_console.css",
+        "aicrm_next/app/admin_console/static/admin_console/operation_member_picker.js",
         "tests/test_operation_member_picker_frontend.py",
     )
 
@@ -1173,8 +1173,8 @@ def test_operation_member_wecom_sync_change_selects_admin_config_and_db_scope() 
         "aicrm_next/crm/operation_members/application.py",
         "aicrm_next/crm/operation_members/repository.py",
         "aicrm_next/channels/integration_gateway/wecom_operation_members_client.py",
-        "aicrm_next/frontend_compat/static/admin_console/operation_member_picker.js",
-        "aicrm_next/frontend_compat/templates/admin_console/base.html",
+        "aicrm_next/app/admin_console/static/admin_console/operation_member_picker.js",
+        "aicrm_next/app/admin_console/templates/admin_console/base.html",
         "migrations/versions/0096_admin_wecom_directory_members.py",
         "docs/architecture/route_ownership_manifest.yml",
         "docs/ci/test_scope_manifest.yml",
@@ -1385,7 +1385,7 @@ def test_frontend_typescript_change_runs_frontend_tests_and_build() -> None:
 
 def test_sidebar_workbench_change_selects_progressive_loading_behavior_test() -> None:
     for changed_file, expected_gate, expected_full_ci in (
-        ("aicrm_next/frontend_compat/static/sidebar_workbench/sidebar_workbench.js", "full", True),
+        ("aicrm_next/app/admin_console/static/sidebar_workbench/sidebar_workbench.js", "full", True),
         ("tests/frontend/sidebar_progressive_loading.test.mjs", "fast", False),
     ):
         result = _select(changed_file)
@@ -1488,9 +1488,9 @@ def test_cloud_broadcast_projection_owner_has_permanent_postgres_scope() -> None
 
 def test_retired_group_ops_workspace_paths_remain_mapped_to_broadcast_scope() -> None:
     changed_paths = (
-        "aicrm_next/admin_shell/routes.py",
-        "aicrm_next/admin_shell/templates/admin_shell/p1_group_ops_workspace.html",
-        "aicrm_next/frontend_compat/static/admin_console/p1/p1_group_ops_workspace/workspace_api.js",
+        "aicrm_next/app/admin_console/routes.py",
+        "aicrm_next/app/admin_console/templates/admin_shell/p1_group_ops_workspace.html",
+        "aicrm_next/app/admin_console/static/admin_console/p1/p1_group_ops_workspace/workspace_api.js",
         "tests/test_p1_group_ops_workspace_final_closeout.py",
     )
 

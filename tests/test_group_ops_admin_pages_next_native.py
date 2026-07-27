@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from aicrm_next.main import create_app
 
 ROOT = Path(__file__).resolve().parents[1]
-FRONTEND_COMPAT = ROOT / "aicrm_next" / "frontend_compat"
+FRONTEND_COMPAT = ROOT / "aicrm_next" / "app" / "admin_console"
 GROUP_OPS_BUNDLE = ROOT / "aicrm_next" / "automation_engine" / "group_ops"
 
 

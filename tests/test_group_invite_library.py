@@ -153,11 +153,11 @@ def test_group_invite_binding_ensure_auto_provisions_and_keeps_update_alias(monk
 def test_group_chat_material_picker_delegates_to_direct_group_picker() -> None:
     material_source = (
         Path(__file__).resolve().parents[1]
-        / "aicrm_next/frontend_compat/static/admin_console/material_picker.js"
+        / "aicrm_next/app/admin_console/static/admin_console/material_picker.js"
     ).read_text(encoding="utf-8")
     group_source = (
         Path(__file__).resolve().parents[1]
-        / "aicrm_next/frontend_compat/static/admin_console/group_chat_picker.js"
+        / "aicrm_next/app/admin_console/static/admin_console/group_chat_picker.js"
     ).read_text(encoding="utf-8")
 
     assert "window.AICRMGroupChatPicker.open(options)" in material_source

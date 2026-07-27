@@ -19,7 +19,9 @@ from .application import CouponAdminApplication
 router = APIRouter()
 LOGGER = logging.getLogger(__name__)
 _TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
-_ADMIN_SHELL_TEMPLATES_DIR = Path(__file__).resolve().parents[4] / "admin_shell" / "templates"
+_ADMIN_SHELL_TEMPLATES_DIR = (
+    Path(__file__).resolve().parents[4] / "app" / "admin_console" / "templates"
+)
 templates = Jinja2Templates(directory=[_TEMPLATES_DIR, _ADMIN_SHELL_TEMPLATES_DIR])
 
 _HEADERS = {

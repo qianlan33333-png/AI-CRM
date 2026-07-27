@@ -17,18 +17,18 @@ RUNTIME_FILE_LINE_BUDGETS = {
 }
 
 INLINE_SCRIPT_LINE_BUDGETS = {
-    "aicrm_next/frontend_compat/templates/admin_user_ops.html": 926,
-    "aicrm_next/frontend_compat/templates/questionnaire_h5_page.html": 798,
-    "aicrm_next/frontend_compat/templates/admin_console/cloud_campaigns_workspace.html": 682,
+    "aicrm_next/app/admin_console/templates/admin_user_ops.html": 926,
+    "aicrm_next/app/admin_console/templates/questionnaire_h5_page.html": 798,
+    "aicrm_next/app/admin_console/templates/admin_console/cloud_campaigns_workspace.html": 682,
     "aicrm_next/extensions/commerce/commerce/templates/wechat_products.html": 636,
-    "aicrm_next/frontend_compat/templates/admin_console/owner_migration.html": 555,
-    "aicrm_next/frontend_compat/templates/admin_console/image_library.html": 473,
+    "aicrm_next/app/admin_console/templates/admin_console/owner_migration.html": 555,
+    "aicrm_next/app/admin_console/templates/admin_console/image_library.html": 473,
     "aicrm_next/extensions/ai/ai_audience_ops/templates/admin_console/ai_audience_package_detail.html": 447,
     "aicrm_next/extensions/ai/automation_agents/templates/admin_console/automation_agent_edit.html": 390,
-    "aicrm_next/frontend_compat/templates/admin_console/miniprogram_library.html": 379,
+    "aicrm_next/app/admin_console/templates/admin_console/miniprogram_library.html": 379,
     "aicrm_next/extensions/forms/questionnaire/templates/admin_console/questionnaires.html": 371,
-    "aicrm_next/frontend_compat/templates/admin_console/hxc_dashboard.html": 359,
-    "aicrm_next/frontend_compat/templates/admin_console/config_push_capabilities.html": 306,
+    "aicrm_next/app/admin_console/templates/admin_console/hxc_dashboard.html": 359,
+    "aicrm_next/app/admin_console/templates/admin_console/config_push_capabilities.html": 306,
 }
 
 TEMPLATE_TOTAL_LINE_LIMIT = 3000

@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-FRONTEND = ROOT / "aicrm_next" / "frontend_compat"
+FRONTEND = ROOT / "aicrm_next" / "app" / "admin_console"
 AUTOMATION = ROOT / "aicrm_next" / "automation_engine"
 STATIC = FRONTEND / "static" / "admin_console"
 TEMPLATES = FRONTEND / "templates" / "admin_console"

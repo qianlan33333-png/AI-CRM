@@ -2,7 +2,7 @@
 
 ## SendContentComposer
 
-Frontend asset: `aicrm_next/frontend_compat/static/admin_console/send_content_composer.js`
+Frontend asset: `aicrm_next/app/admin_console/static/admin_console/send_content_composer.js`
 
 Global API:
 
@@ -25,7 +25,7 @@ When `textEnabled=false`, the composer hides the manual copy textarea and the cu
 
 ## MaterialPicker
 
-Frontend asset: `aicrm_next/frontend_compat/static/admin_console/material_picker.js`
+Frontend asset: `aicrm_next/app/admin_console/static/admin_console/material_picker.js`
 
 Global API:
 

@@ -33,7 +33,7 @@ def test_retired_operation_task_label_is_not_special_cased_in_admin_jobs() -> No
 def test_retired_admin_jobs_deferred_runner_is_removed() -> None:
     repository_source = (PROJECT_ROOT / "aicrm_next" / "admin_jobs" / "repository.py").read_text(encoding="utf-8")
     admin_jobs_template = PROJECT_ROOT / "aicrm_next" / "admin_jobs" / "templates" / "admin_console" / "jobs.html"
-    frontend_jobs_template = PROJECT_ROOT / "aicrm_next" / "frontend_compat" / "templates" / "admin_console" / "jobs.html"
+    frontend_jobs_template = PROJECT_ROOT / "aicrm_next" / "app" / "admin_console" / "templates" / "admin_console" / "jobs.html"
 
     assert "def run_due_deferred_jobs" not in repository_source
     assert "UPDATE user_ops_deferred_jobs" not in repository_source

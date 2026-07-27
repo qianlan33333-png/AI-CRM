@@ -16,7 +16,7 @@ def test_channel_list_does_not_expose_retired_program_availability_filter() -> N
 def test_wecom_customer_acquisition_links_do_not_expose_retired_program_fields() -> None:
     api_source = (PROJECT_ROOT / "aicrm_next" / "automation_engine" / "channels_api.py").read_text(encoding="utf-8")
     template_source = (
-        PROJECT_ROOT / "aicrm_next" / "frontend_compat" / "templates" / "admin_console" / "wecom_customer_acquisition_links.html"
+        PROJECT_ROOT / "aicrm_next" / "app" / "admin_console" / "templates" / "admin_console" / "wecom_customer_acquisition_links.html"
     ).read_text(encoding="utf-8")
 
     for retired in ("program_id", "workflow_id", "initial_audience_code", "初始人群", "不再入池"):

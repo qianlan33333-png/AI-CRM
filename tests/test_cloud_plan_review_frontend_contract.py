@@ -7,8 +7,8 @@ from fastapi.testclient import TestClient
 from aicrm_next.main import create_app
 
 ROOT = Path(__file__).resolve().parents[1]
-TEMPLATE = ROOT / "aicrm_next" / "frontend_compat" / "templates" / "admin_console" / "cloud_plan_review.html"
-SCRIPT = ROOT / "aicrm_next" / "frontend_compat" / "static" / "admin_console" / "cloud_plan_review.js"
+TEMPLATE = ROOT / "aicrm_next" / "app" / "admin_console" / "templates" / "admin_console" / "cloud_plan_review.html"
+SCRIPT = ROOT / "aicrm_next" / "app" / "admin_console" / "static" / "admin_console" / "cloud_plan_review.js"
 OPS_PLAN_OVERVIEW_TS = ROOT / "frontend" / "admin" / "ops_plan" / "ops_plan_overview.ts"
 
 

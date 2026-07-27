@@ -83,7 +83,9 @@ from .wechat_shop_service import (
 router = APIRouter()
 router.include_router(external_orders_router)
 _COMMERCE_TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
-_FRONTEND_COMPAT_TEMPLATES_DIR = Path(__file__).resolve().parents[3] / "frontend_compat" / "templates"
+_FRONTEND_COMPAT_TEMPLATES_DIR = (
+    Path(__file__).resolve().parents[3] / "app" / "admin_console" / "templates"
+)
 templates = Jinja2Templates(directory=[_COMMERCE_TEMPLATES_DIR, _FRONTEND_COMPAT_TEMPLATES_DIR])
 _EXTERNAL_PUSH_CALL_EXECUTED = bool(1)
 logger = logging.getLogger(__name__)

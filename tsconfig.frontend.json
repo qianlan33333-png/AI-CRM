@@ -7,7 +7,7 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "rootDir": "frontend/admin",
-    "outDir": "aicrm_next/frontend_compat/static/admin_console/p1",
+    "outDir": "aicrm_next/app/admin_console/static/admin_console/p1",
     "declaration": true,
     "sourceMap": false
   },

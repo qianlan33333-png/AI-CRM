@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import aicrm_next.extensions.commerce.commerce.coupons.admin_api as coupon_admin_api
 import aicrm_next.extensions.commerce.commerce.coupons.admin_pages as coupon_admin_pages
-from aicrm_next.admin_shell.navigation import ADMIN_NAV_GROUPS, ADMIN_ROUTE_REGISTRY
+from aicrm_next.app.admin_console.navigation import ADMIN_NAV_GROUPS, ADMIN_ROUTE_REGISTRY
 
 
 ROOT = Path(__file__).resolve().parents[1]

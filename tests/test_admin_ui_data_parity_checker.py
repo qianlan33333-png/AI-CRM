@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_admin_ui_data_parity_checker_does_not_require_removed_frontend_compat_facade() -> None:
     source = (ROOT / "tools/check_next_admin_ui_data_parity.py").read_text(encoding="utf-8")
 
-    assert not (ROOT / "aicrm_next/frontend_compat/legacy_routes.py").exists()
+    assert not (ROOT / "aicrm_next/app/admin_console/legacy_routes.py").exists()
     assert '"automation_program_legacy_facade"' not in source
     assert "frontend_compat_legacy_routes:should_be_removed" in source
 

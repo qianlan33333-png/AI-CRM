@@ -38,7 +38,7 @@ class FailingProductionRepo:
 
 
 def test_frontend_compat_admin_real_data_has_no_psycopg_or_sql_boundary():
-    source = (ROOT / "aicrm_next" / "frontend_compat" / "admin_real_data.py").read_text(encoding="utf-8")
+    source = (ROOT / "aicrm_next" / "app" / "admin_console" / "admin_real_data.py").read_text(encoding="utf-8")
 
     assert "psycopg" not in source
     assert "SELECT " not in source

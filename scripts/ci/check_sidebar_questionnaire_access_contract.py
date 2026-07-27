@@ -46,7 +46,7 @@ def check() -> list[str]:
     sidebar_write_api = _read("aicrm_next/crm/sidebar_write/api.py")
     sidebar_jssdk = _read("aicrm_next/crm/identity_contact/sidebar_jssdk.py")
     sidebar_frontend = _read(
-        "aicrm_next/frontend_compat/static/sidebar_workbench/sidebar_workbench.js"
+        "aicrm_next/app/admin_console/static/sidebar_workbench/sidebar_workbench.js"
     )
     route_policy = _read("aicrm_next/admin_auth/route_policy.py")
     questionnaire_api = _read("aicrm_next/extensions/forms/questionnaire/api.py")

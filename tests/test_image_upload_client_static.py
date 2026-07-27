@@ -4,9 +4,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-UPLOAD_CLIENT = ROOT / "aicrm_next" / "frontend_compat" / "static" / "admin_console" / "image_upload_client.js"
-IMAGE_PICKER = ROOT / "aicrm_next" / "frontend_compat" / "static" / "admin_console" / "image_picker.js"
-MINIPROGRAM_TEMPLATE = ROOT / "aicrm_next" / "frontend_compat" / "templates" / "admin_console" / "miniprogram_library.html"
+UPLOAD_CLIENT = ROOT / "aicrm_next" / "app" / "admin_console" / "static" / "admin_console" / "image_upload_client.js"
+IMAGE_PICKER = ROOT / "aicrm_next" / "app" / "admin_console" / "static" / "admin_console" / "image_picker.js"
+MINIPROGRAM_TEMPLATE = ROOT / "aicrm_next" / "app" / "admin_console" / "templates" / "admin_console" / "miniprogram_library.html"
 
 
 def test_image_upload_client_handles_non_json_413():

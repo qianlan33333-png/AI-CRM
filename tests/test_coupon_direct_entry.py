@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from aicrm_next.admin_shell.navigation import nav_items
+from aicrm_next.app.admin_console.navigation import nav_items
 from aicrm_next.extensions.commerce.commerce.coupons import application as coupon_application
 from aicrm_next.extensions.commerce.commerce.coupons.application import CouponPublicApplication
 

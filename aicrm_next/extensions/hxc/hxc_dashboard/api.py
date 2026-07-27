@@ -35,7 +35,7 @@ from .safe_mode import (
 
 
 router = APIRouter()
-_TEMPLATES_DIR = Path(__file__).resolve().parents[3] / "frontend_compat" / "templates"
+_TEMPLATES_DIR = Path(__file__).resolve().parents[3] / "app" / "admin_console" / "templates"
 templates = Jinja2Templates(directory=_TEMPLATES_DIR)
 _HXC_HEADERS = {
     "X-AICRM-Route-Owner": "ai_crm_next",

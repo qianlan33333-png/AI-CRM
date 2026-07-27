@@ -4,9 +4,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-NEXT_PLAN_TEMPLATE = ROOT / "aicrm_next/frontend_compat/templates/admin_console/cloud_plan_review.html"
-NEXT_PLAN_JS = ROOT / "aicrm_next/frontend_compat/static/admin_console/cloud_plan_review.js"
-NEXT_CAMPAIGN_TEMPLATE = ROOT / "aicrm_next/frontend_compat/templates/admin_console/cloud_campaigns_workspace.html"
+NEXT_PLAN_TEMPLATE = ROOT / "aicrm_next/app/admin_console/templates/admin_console/cloud_plan_review.html"
+NEXT_PLAN_JS = ROOT / "aicrm_next/app/admin_console/static/admin_console/cloud_plan_review.js"
+NEXT_CAMPAIGN_TEMPLATE = ROOT / "aicrm_next/app/admin_console/templates/admin_console/cloud_campaigns_workspace.html"
 INVENTORY = ROOT / "docs/archive/route_inventory/cloud_orchestrator_media_upload_route_inventory.md"
 
 

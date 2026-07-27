@@ -1057,7 +1057,7 @@ def test_signup_conversion_config_alias_is_next_owned_and_audited(monkeypatch, t
 
 
 def test_admin_config_routes_no_longer_forward_to_legacy_facade() -> None:
-    assert not (ROOT / "aicrm_next/frontend_compat/legacy_routes.py").exists()
+    assert not (ROOT / "aicrm_next/app/admin_console/legacy_routes.py").exists()
     admin_config_source = "\n".join(path.read_text(encoding="utf-8") for path in (ROOT / "aicrm_next/admin_config").glob("*.py"))
     assert "legacy_flask_facade" not in admin_config_source
     assert "forward_to_legacy_flask" not in admin_config_source
@@ -1065,7 +1065,7 @@ def test_admin_config_routes_no_longer_forward_to_legacy_facade() -> None:
 
 
 def test_marketing_automation_config_page_points_to_ai_audience_not_legacy_programs() -> None:
-    template = (ROOT / "aicrm_next/frontend_compat/templates/admin_console/config_marketing_automation.html").read_text(encoding="utf-8")
+    template = (ROOT / "aicrm_next/app/admin_console/templates/admin_console/config_marketing_automation.html").read_text(encoding="utf-8")
 
     assert "AI 自动化运营入口" in template
     assert "进入 AI 自动化运营" in template

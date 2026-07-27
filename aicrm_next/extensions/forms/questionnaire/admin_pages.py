@@ -19,7 +19,7 @@ from .operations import (
 
 router = APIRouter()
 _TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
-_ADMIN_SHELL_TEMPLATES_DIR = Path(__file__).resolve().parents[3] / "admin_shell" / "templates"
+_ADMIN_SHELL_TEMPLATES_DIR = Path(__file__).resolve().parents[3] / "app" / "admin_console" / "templates"
 templates = Jinja2Templates(directory=[_TEMPLATES_DIR, _ADMIN_SHELL_TEMPLATES_DIR])
 
 

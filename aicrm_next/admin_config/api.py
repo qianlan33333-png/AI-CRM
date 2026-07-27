@@ -29,7 +29,7 @@ from .application import (
 )
 
 router = APIRouter()
-_TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "frontend_compat" / "templates"
+_TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "app" / "admin_console" / "templates"
 templates = Jinja2Templates(directory=_TEMPLATES_DIR)
 ADMIN_ACCESS_DETAIL_PATH = "/admin/config/detail/admin_access"
 CONFIG_RELEASE_ROWS = 8

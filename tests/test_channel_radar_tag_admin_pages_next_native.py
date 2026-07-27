@@ -11,8 +11,8 @@ from aicrm_next.main import create_app
 
 
 ROOT = Path(__file__).resolve().parents[1]
-FRONTEND_TEMPLATES = ROOT / "aicrm_next" / "frontend_compat" / "templates" / "admin_console"
-FRONTEND_STATIC = ROOT / "aicrm_next" / "frontend_compat" / "static" / "admin_console"
+FRONTEND_TEMPLATES = ROOT / "aicrm_next" / "app" / "admin_console" / "templates" / "admin_console"
+FRONTEND_STATIC = ROOT / "aicrm_next" / "app" / "admin_console" / "static" / "admin_console"
 AUTOMATION_TEMPLATES = ROOT / "aicrm_next" / "automation_engine" / "templates" / "admin_console"
 AUTOMATION_STATIC = ROOT / "aicrm_next" / "automation_engine" / "static" / "admin_console"
 CUSTOMER_TAGS_TEMPLATES = ROOT / "aicrm_next" / "crm" / "customer_tags" / "templates" / "admin_console"
@@ -250,7 +250,7 @@ def test_channel_duplicate_code_error_does_not_expose_database_detail(monkeypatc
 
 
 def test_channel_radar_and_tag_pages_are_removed_from_frontend_compat_inventory() -> None:
-    assert not (ROOT / "aicrm_next/frontend_compat/legacy_routes.py").exists()
+    assert not (ROOT / "aicrm_next/app/admin_console/legacy_routes.py").exists()
 
 
 def test_channel_radar_and_tag_templates_and_static_are_native_owned() -> None:
