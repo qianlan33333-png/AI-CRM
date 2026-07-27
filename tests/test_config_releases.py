@@ -4,14 +4,14 @@ from sqlalchemy import create_engine, text
 
 import pytest
 
-from aicrm_next.admin_config.application_support import APP_SETTING_DEFINITIONS, EXTRA_SETTING_DEFINITIONS
-from aicrm_next.admin_config.config_definitions import CONFIG_DEFINITIONS, get_config_definition
-from aicrm_next.admin_config.config_release_repository import ConfigReleaseRepository
-from aicrm_next.admin_config.config_releases import ConfigReleaseService
-from aicrm_next.admin_config.repository import AdminConfigRepository
-from aicrm_next.admin_config.schema import CONFIG_SCHEMA
+from aicrm_next.platform.admin_config.application_support import APP_SETTING_DEFINITIONS, EXTRA_SETTING_DEFINITIONS
+from aicrm_next.platform.admin_config.config_definitions import CONFIG_DEFINITIONS, get_config_definition
+from aicrm_next.platform.admin_config.config_release_repository import ConfigReleaseRepository
+from aicrm_next.platform.admin_config.config_releases import ConfigReleaseService
+from aicrm_next.platform.admin_config.repository import AdminConfigRepository
+from aicrm_next.platform.admin_config.schema import CONFIG_SCHEMA
 from aicrm_next.runtime_configuration import RUNTIME_CONFIG_CUTOVER_KEYS_KEY
-from aicrm_next.shared.sensitive_data import SECRET_MASK
+from aicrm_next.platform.shared.sensitive_data import SECRET_MASK
 
 
 WECOM_SECRET_REFERENCE = (

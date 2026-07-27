@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from aicrm_next.navigation_target import resolver
+from aicrm_next.platform.navigation_target import resolver
 
 
 class _FakeResponse:

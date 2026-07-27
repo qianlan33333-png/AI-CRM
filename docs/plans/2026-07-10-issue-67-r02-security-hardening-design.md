@@ -50,11 +50,11 @@ R02 uses an expand/migrate/contract sequence in one work package. The expand rel
 ### Task 2: Add defensive redaction and fixed masking
 
 **Files:**
-- Create: `aicrm_next/shared/sensitive_data.py`
+- Create: `aicrm_next/platform/shared/sensitive_data.py`
 - Create: `tests/test_sensitive_data_redaction.py`
-- Modify: `aicrm_next/admin_config/settings.py`
-- Modify: `aicrm_next/admin_config/repository.py`
-- Modify: `aicrm_next/external_push/service.py`
+- Modify: `aicrm_next/platform/admin_config/settings.py`
+- Modify: `aicrm_next/platform/admin_config/repository.py`
+- Modify: `aicrm_next/platform/external_push/service.py`
 
 **Steps:**
 
@@ -68,11 +68,11 @@ R02 uses an expand/migrate/contract sequence in one work package. The expand rel
 ### Task 3: Implement the versioned file secret provider
 
 **Files:**
-- Create: `aicrm_next/shared/secret_store.py`
+- Create: `aicrm_next/platform/shared/secret_store.py`
 - Create: `tests/test_secret_store.py`
-- Modify: `aicrm_next/shared/runtime_settings.py`
-- Modify: `aicrm_next/admin_config/application.py`
-- Modify: `aicrm_next/admin_config/settings.py`
+- Modify: `aicrm_next/platform/shared/runtime_settings.py`
+- Modify: `aicrm_next/platform/admin_config/application.py`
+- Modify: `aicrm_next/platform/admin_config/settings.py`
 - Modify: `aicrm_next/message_archive/repo.py`
 - Modify: `aicrm_next/questionnaire/repo.py`
 
@@ -109,11 +109,11 @@ R02 uses an expand/migrate/contract sequence in one work package. The expand rel
 ### Task 5: Add PII access auditing without response-body capture
 
 **Files:**
-- Create: `aicrm_next/shared/pii_audit.py`
-- Create: `aicrm_next/admin_config/pii_audit_repository.py`
+- Create: `aicrm_next/platform/shared/pii_audit.py`
+- Create: `aicrm_next/platform/admin_config/pii_audit_repository.py`
 - Create: `tests/test_pii_audit_contract.py`
 - Modify: `aicrm_next/main.py`
-- Modify: `aicrm_next/admin_auth/route_policy.py`
+- Modify: `aicrm_next/platform/admin_auth/route_policy.py`
 - Modify: existing export endpoints in `aicrm_next/questionnaire/api.py`, `aicrm_next/radar_links/api.py`, `aicrm_next/commerce/api.py`, `aicrm_next/class_user_management/api.py`, and `aicrm_next/ops_enrollment/api.py`
 
 **Steps:**
@@ -128,9 +128,9 @@ R02 uses an expand/migrate/contract sequence in one work package. The expand rel
 ### Task 6: Pin DNS and disable webhook redirects
 
 **Files:**
-- Modify: `aicrm_next/external_push/security.py`
-- Create: `aicrm_next/external_push/https_transport.py`
-- Modify: `aicrm_next/platform_foundation/external_effects/adapters.py`
+- Modify: `aicrm_next/platform/external_push/security.py`
+- Create: `aicrm_next/platform/external_push/https_transport.py`
+- Modify: `aicrm_next/platform/platform_foundation/external_effects/adapters.py`
 - Create: `tests/test_external_push_ssrf_transport.py`
 - Modify: `tests/test_external_effects_mvp.py`
 
@@ -162,7 +162,7 @@ R02 uses an expand/migrate/contract sequence in one work package. The expand rel
 ### Task 8: Split internal credentials by purpose
 
 **Files:**
-- Modify: `aicrm_next/admin_auth/route_policy.py`
+- Modify: `aicrm_next/platform/admin_auth/route_policy.py`
 - Modify: relevant worker/checker callers and deployment env inventory
 - Create: `tests/test_internal_service_token_purpose.py`
 - Modify: `docs/architecture/r02_sensitive_data_inventory.yml`

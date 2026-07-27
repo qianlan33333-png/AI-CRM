@@ -16,7 +16,7 @@ if str(ROOT) not in sys.path:
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.shared.repository_provider import (
+from aicrm_next.platform.shared.repository_provider import (
     RepositoryProviderError,
     allow_fixture_repo_in_prod,
     evaluate_repository,

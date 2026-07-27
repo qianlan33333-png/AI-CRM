@@ -6,8 +6,8 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
-from aicrm_next.shared.errors import ContractError
-from aicrm_next.shared.repository_provider import RepositoryProviderError
+from aicrm_next.platform.shared.errors import ContractError
+from aicrm_next.platform.shared.repository_provider import RepositoryProviderError
 
 from .application import (
     GetMaterialAssetUsageQuery,

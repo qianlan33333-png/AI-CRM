@@ -4,7 +4,7 @@ from typing import Any, Callable
 
 import requests
 
-from aicrm_next.shared.runtime_settings import managed_runtime_setting
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting
 
 
 JsonDict = dict[str, Any]

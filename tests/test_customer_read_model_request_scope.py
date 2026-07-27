@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
 from aicrm_next.crm.customer_read_model.errors import CustomerScopeForbiddenError
-from aicrm_next.shared.db_session import get_db
+from aicrm_next.platform.shared.db_session import get_db
 from tests.sidebar_auth_test_helpers import install_sidebar_auth
 
 

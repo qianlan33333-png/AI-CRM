@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.shared.repository_provider import RepositoryProviderError
+from aicrm_next.platform.shared.repository_provider import RepositoryProviderError
 from tests.group_ops_test_helpers import group_ops_api_client
 
 

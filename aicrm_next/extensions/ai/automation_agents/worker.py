@@ -7,8 +7,8 @@ from urllib.parse import unquote, urlparse
 from aicrm_next.extensions.ai.ai_audience_ops.agent_gateway import generate_agent_reply
 from aicrm_next.extensions.ai.ai_audience_ops.webhook_service import AudienceInboundWebhookService
 from aicrm_next.send_content.application import normalize_send_content_package
-from aicrm_next.shared.errors import ContractError
-from aicrm_next.shared.llm_output_guard import looks_like_prompt_output
+from aicrm_next.platform.shared.errors import ContractError
+from aicrm_next.platform.shared.llm_output_guard import looks_like_prompt_output
 
 from .context_builder import build_agent_context, referenced_context_keys, render_chinese_placeholders
 from .repository import AutomationAgentRepository, build_automation_agent_repository, _text

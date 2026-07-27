@@ -4,8 +4,8 @@ from contextlib import nullcontext
 from datetime import datetime, timezone
 from typing import Any, Callable, ContextManager
 
-from aicrm_next.shared.postgres_connection import db_session
-from aicrm_next.shared.runtime_settings import managed_runtime_setting
+from aicrm_next.platform.shared.postgres_connection import db_session
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting
 
 from .domain import ENTRY_CHANGE_TYPES, text
 from .identity_bridge_repo import IdentityBridgeRepository, PostgresIdentityBridgeRepository, build_identity_bridge_repository

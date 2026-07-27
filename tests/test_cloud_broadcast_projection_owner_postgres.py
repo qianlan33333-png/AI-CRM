@@ -7,7 +7,7 @@ import psycopg
 import pytest
 from psycopg.rows import dict_row
 
-from aicrm_next.platform_foundation.background_jobs.cloud_broadcast_projection_write_port import (
+from aicrm_next.platform.platform_foundation.background_jobs.cloud_broadcast_projection_write_port import (
     build_cloud_broadcast_projection_write_port,
 )
 

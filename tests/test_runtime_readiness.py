@@ -3,8 +3,8 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation import api as platform_api
-from aicrm_next.platform_foundation.readiness import runtime_readiness_payload
+from aicrm_next.platform.platform_foundation import api as platform_api
+from aicrm_next.platform.platform_foundation.readiness import runtime_readiness_payload
 
 
 WECOM_OK = {

@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from starlette.routing import Route
 
 from aicrm_next.main import app
-from aicrm_next.shared.route_ownership import collect_route_inventory, normalize_methods, validate_route_manifest
+from aicrm_next.platform.shared.route_ownership import collect_route_inventory, normalize_methods, validate_route_manifest
 
 
 def _write_manifest(path, routes):

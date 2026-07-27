@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Protocol
 
 from aicrm_next.channels.channel_entry.wecom_adapter import get_wecom_adapter, wecom_adapter_diagnostics
-from aicrm_next.shared.runtime_settings import managed_runtime_setting
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting
 
 from .db import connect, has_database_url
 

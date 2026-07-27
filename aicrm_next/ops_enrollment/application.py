@@ -14,14 +14,14 @@ from aicrm_next.integration_ports import (
     build_user_ops_dnd_gateway,
     build_wecom_message_dispatch_adapter,
 )
-from aicrm_next.platform_foundation.audit_ledger import InMemoryAuditLedger
-from aicrm_next.platform_foundation.command_bus import Command, CommandBus, CommandContext, CommandResult
-from aicrm_next.platform_foundation.side_effects import InMemorySideEffectPlanRepository, SideEffectPlan
-from aicrm_next.shared.config import get_settings
-from aicrm_next.shared.errors import ContractError, NotFoundError
-from aicrm_next.shared.runtime import fixture_mode
-from aicrm_next.shared.safe_logging import safe_log_exception
-from aicrm_next.shared.typing import JsonDict
+from aicrm_next.platform.platform_foundation.audit_ledger import InMemoryAuditLedger
+from aicrm_next.platform.platform_foundation.command_bus import Command, CommandBus, CommandContext, CommandResult
+from aicrm_next.platform.platform_foundation.side_effects import InMemorySideEffectPlanRepository, SideEffectPlan
+from aicrm_next.platform.shared.config import get_settings
+from aicrm_next.platform.shared.errors import ContractError, NotFoundError
+from aicrm_next.platform.shared.runtime import fixture_mode
+from aicrm_next.platform.shared.safe_logging import safe_log_exception
+from aicrm_next.platform.shared.typing import JsonDict
 
 from .dto import BatchSendRequest, BroadcastPreviewRequest, DoNotDisturbRequest, ExportPreviewRequest, UserOpsListRequest
 from .audience_target_port import build_audience_target_query

@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from aicrm_next.shared.sensitive_data import redact_sensitive_text  # noqa: E402
+from aicrm_next.platform.shared.sensitive_data import redact_sensitive_text  # noqa: E402
 
 
 DEFAULT_MANIFEST = ROOT / "docs/architecture/id_validation_promotion_manifest.yml"
@@ -37,9 +37,9 @@ _REQUIRED_ID_ONLY = frozenset(
     {
         ".github/workflows/deploy.yml",
         ".github/workflows/id-validation-queue-operations.yml",
-        "aicrm_next/platform_foundation/execution_runtime/validation.py",
-        "aicrm_next/platform_foundation/external_effects/canary_repository.py",
-        "aicrm_next/platform_foundation/external_effects/wecom_canary_policy.py",
+        "aicrm_next/platform/platform_foundation/execution_runtime/validation.py",
+        "aicrm_next/platform/platform_foundation/external_effects/canary_repository.py",
+        "aicrm_next/platform/platform_foundation/external_effects/wecom_canary_policy.py",
         "deploy/aicrm-queue-soak-snapshot.service",
         "deploy/aicrm-queue-soak-snapshot.timer",
         "migrations/versions/0135_queue_scope_transition_audit.py",
@@ -49,10 +49,10 @@ _REQUIRED_ID_ONLY = frozenset(
 )
 _REQUIRED_MIXED_REVIEW = frozenset(
     {
-        "aicrm_next/admin_config/application.py",
-        "aicrm_next/platform_foundation/execution_runtime/cutover.py",
-        "aicrm_next/platform_foundation/external_effects/adapters.py",
-        "aicrm_next/platform_foundation/external_effects/service.py",
+        "aicrm_next/platform/admin_config/application.py",
+        "aicrm_next/platform/platform_foundation/execution_runtime/cutover.py",
+        "aicrm_next/platform/platform_foundation/external_effects/adapters.py",
+        "aicrm_next/platform/platform_foundation/external_effects/service.py",
         "deploy/production_runtime_units.json",
         "migrations/versions/0136_queue_runtime_validation_soak.py",
     }

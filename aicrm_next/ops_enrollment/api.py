@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Header, HTTPException, Request
 
-from aicrm_next.shared.admin_read_fallback import admin_read_unavailable_payload
-from aicrm_next.shared.errors import ContractError, NotFoundError
-from aicrm_next.shared.pii_audit import infer_pii_result_count, set_pii_audit_result_count
+from aicrm_next.platform.shared.admin_read_fallback import admin_read_unavailable_payload
+from aicrm_next.platform.shared.errors import ContractError, NotFoundError
+from aicrm_next.platform.shared.pii_audit import infer_pii_result_count, set_pii_audit_result_count
 
 from .application import (
     ExecuteUserOpsBatchSendCommand,

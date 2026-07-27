@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from aicrm_next.main import create_app
-from aicrm_next.shared.runtime import runtime_route_map_state
+from aicrm_next.platform.shared.runtime import runtime_route_map_state
 
 
 CHANNEL_ENTRY_ROUTES = {

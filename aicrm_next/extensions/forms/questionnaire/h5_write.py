@@ -10,16 +10,16 @@ from aicrm_next.crm.identity_contact.dto import BindMobileToExternalContactReque
 from aicrm_next.crm.customer_tags.local_projection import (
     reset_customer_tag_local_projection_fixture_state,
 )
-from aicrm_next.platform_foundation.audit_ledger import InMemoryAuditLedger
-from aicrm_next.platform_foundation.command_bus import Command, CommandBus, CommandContext, CommandResult
-from aicrm_next.platform_foundation.command_bus.models import utcnow_iso
-from aicrm_next.platform_foundation.internal_events.questionnaire import (
+from aicrm_next.platform.platform_foundation.audit_ledger import InMemoryAuditLedger
+from aicrm_next.platform.platform_foundation.command_bus import Command, CommandBus, CommandContext, CommandResult
+from aicrm_next.platform.platform_foundation.command_bus.models import utcnow_iso
+from aicrm_next.platform.platform_foundation.internal_events.questionnaire import (
     build_questionnaire_submitted_event_request,
 )
-from aicrm_next.platform_foundation.side_effects import InMemorySideEffectPlanRepository, SideEffectPlan
-from aicrm_next.shared.errors import ContractError, NotFoundError
-from aicrm_next.shared.repository_provider import RepositoryProviderError
-from aicrm_next.shared.runtime import production_data_ready
+from aicrm_next.platform.platform_foundation.side_effects import InMemorySideEffectPlanRepository, SideEffectPlan
+from aicrm_next.platform.shared.errors import ContractError, NotFoundError
+from aicrm_next.platform.shared.repository_provider import RepositoryProviderError
+from aicrm_next.platform.shared.runtime import production_data_ready
 
 from .domain import normalize_mobile_answer, normalize_questionnaire, score_and_tags, validate_required_answers
 from .operations import resolve_questionnaire_completion_action

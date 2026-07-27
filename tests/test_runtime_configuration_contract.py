@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from aicrm_next.admin_config.config_definitions import CONFIG_DEFINITIONS_BY_KEY
+from aicrm_next.platform.admin_config.config_definitions import CONFIG_DEFINITIONS_BY_KEY
 from aicrm_next.runtime_configuration import (
     BUSINESS_RUNTIME_SETTING_KEYS,
     DOMAIN_RUNTIME_SETTING_KEYS,
@@ -121,7 +121,7 @@ def test_runtime_setting_requires_config_definition(tmp_path: Path) -> None:
     path = tmp_path / "aicrm_next" / "example.py"
     path.parent.mkdir(parents=True)
     path.write_text(
-        'from aicrm_next.shared.runtime_settings import runtime_setting\nVALUE = runtime_setting("AICRM_UNKNOWN")\n',
+        'from aicrm_next.platform.shared.runtime_settings import runtime_setting\nVALUE = runtime_setting("AICRM_UNKNOWN")\n',
         encoding="utf-8",
     )
 
@@ -140,7 +140,7 @@ def test_startup_environment_setting_rejects_publishable_business_key(
     path = tmp_path / "aicrm_next" / "example.py"
     path.parent.mkdir(parents=True)
     path.write_text(
-        "from aicrm_next.shared.runtime_settings import startup_environment_setting\n"
+        "from aicrm_next.platform.shared.runtime_settings import startup_environment_setting\n"
         'VALUE = startup_environment_setting("AICRM_BUSINESS_RULE")\n',
         encoding="utf-8",
     )
@@ -158,7 +158,7 @@ def test_dynamic_runtime_setting_requires_declared_key_catalog(tmp_path: Path) -
     path = tmp_path / "aicrm_next" / "example.py"
     path.parent.mkdir(parents=True)
     path.write_text(
-        "from aicrm_next.shared.runtime_settings import runtime_bool\n"
+        "from aicrm_next.platform.shared.runtime_settings import runtime_bool\n"
         "def enabled(key: str) -> bool:\n"
         "    return runtime_bool(key)\n",
         encoding="utf-8",
@@ -177,7 +177,7 @@ def test_managed_runtime_setting_requires_cutover_registration(tmp_path: Path) -
     path = tmp_path / "aicrm_next" / "example.py"
     path.parent.mkdir(parents=True)
     path.write_text(
-        "from aicrm_next.shared.runtime_settings import managed_runtime_setting\n"
+        "from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting\n"
         'VALUE = managed_runtime_setting("AICRM_UNREGISTERED")\n',
         encoding="utf-8",
     )

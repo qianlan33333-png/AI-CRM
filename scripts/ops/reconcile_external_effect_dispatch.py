@@ -12,7 +12,7 @@ from scripts.script_runtime import ensure_repo_root_on_path, print_json
 
 ensure_repo_root_on_path()
 
-from aicrm_next.platform_foundation.external_effects.reconciliation import (
+from aicrm_next.platform.platform_foundation.external_effects.reconciliation import (
     ExternalEffectDispatchReconciliationService,
 )
 

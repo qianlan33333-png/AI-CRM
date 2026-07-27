@@ -5,7 +5,7 @@ import types
 
 import pytest
 
-from aicrm_next.shared import db_session
+from aicrm_next.platform.shared import db_session
 
 
 @pytest.fixture(autouse=True)

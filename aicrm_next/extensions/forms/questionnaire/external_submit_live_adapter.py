@@ -7,7 +7,7 @@ import hashlib
 import json
 from typing import Any
 
-from aicrm_next.shared.runtime_settings import managed_runtime_bool
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_bool
 
 from .external_submit_live_gateway import QuestionnaireExternalSubmitLiveGateway, build_questionnaire_external_submit_live_gateway
 

@@ -7,11 +7,11 @@ from fastapi import APIRouter, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, Response
 
-from aicrm_next.shared.signed_context import (
+from aicrm_next.platform.shared.signed_context import (
     SIDEBAR_VIEWER_SESSION_COOKIE,
     validate_sidebar_owner_context,
 )
-from aicrm_next.shared.runtime_settings import managed_runtime_setting
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting
 
 from .application import (
     SidebarWriteConflictError,

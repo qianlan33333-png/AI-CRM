@@ -20,8 +20,8 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from aicrm_next.shared.db_session import get_engine  # noqa: E402
-from aicrm_next.shared.secret_store import (  # noqa: E402
+from aicrm_next.platform.shared.db_session import get_engine  # noqa: E402
+from aicrm_next.platform.shared.secret_store import (  # noqa: E402
     SECRET_REFERENCE_CUTOVER_KEY,
     SECRET_STORE_DIR_KEY,
     SENSITIVE_SETTING_KEYS,

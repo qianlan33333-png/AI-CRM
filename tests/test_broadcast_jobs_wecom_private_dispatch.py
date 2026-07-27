@@ -10,7 +10,7 @@ from sqlalchemy import text
 
 import aicrm_next.background_jobs.broadcast_queue_worker as worker
 from aicrm_next.background_jobs.broadcast_queue_worker import PostgresBroadcastQueueRepository, SafeSkippedBroadcastDispatcher, run_broadcast_queue_worker
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.platform.shared.db_session import get_session_factory
 
 
 class FakeRepo:

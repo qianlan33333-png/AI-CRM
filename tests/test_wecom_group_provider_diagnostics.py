@@ -4,13 +4,13 @@ import json
 
 from aicrm_next.channels.integration_gateway.wecom_group_adapter import WeComGroupMessageAdapter
 from aicrm_next.channels.integration_gateway.wecom_channel_entry_client import WeComApiError
-from aicrm_next.platform_foundation.external_effects import adapters as effect_adapters
-from aicrm_next.platform_foundation.external_effects.models import (
+from aicrm_next.platform.platform_foundation.external_effects import adapters as effect_adapters
+from aicrm_next.platform.platform_foundation.external_effects.models import (
     ExternalEffectJob,
     WECOM_EXTERNAL_CONTACT_DETAIL_FETCH,
     WECOM_MESSAGE_GROUP_SEND,
 )
-from aicrm_next.shared.wecom_runtime import classify_wecom_provider_error
+from aicrm_next.platform.shared.wecom_runtime import classify_wecom_provider_error
 
 
 def _adapter_payload() -> dict:

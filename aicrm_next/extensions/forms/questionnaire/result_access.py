@@ -1,6 +1,6 @@
 """Questionnaire compatibility exports for the platform-owned public grant."""
 
-from aicrm_next.admin_auth.public_result_grant import (
+from aicrm_next.platform.admin_auth.public_result_grant import (
     DEFAULT_RESULT_GRANT_TTL_SECONDS,
     MAX_RESULT_GRANT_TTL_SECONDS,
     QuestionnaireResultGrant,

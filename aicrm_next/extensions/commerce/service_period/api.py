@@ -14,10 +14,10 @@ from fastapi.templating import Jinja2Templates
 from aicrm_next.extensions.commerce.service_period_grid_auth import admin_auth_enforcement_enabled, current_auth_context
 from aicrm_next.admin_shell_contract import shell_context
 from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
-from aicrm_next.shared.errors import ContractError, NotFoundError
-from aicrm_next.shared.safe_logging import safe_log_exception, safe_log_fields
-from aicrm_next.shared.share_qr import svg_qr_data_url
-from aicrm_next.shared.sync_request import read_request_json
+from aicrm_next.platform.shared.errors import ContractError, NotFoundError
+from aicrm_next.platform.shared.safe_logging import safe_log_exception, safe_log_fields
+from aicrm_next.platform.shared.share_qr import svg_qr_data_url
+from aicrm_next.platform.shared.sync_request import read_request_json
 from aicrm_next.crm.identity_contact.wechat_unionid_guard import evaluate_wechat_unionid_access
 
 from .application import (

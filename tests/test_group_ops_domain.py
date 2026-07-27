@@ -66,7 +66,7 @@ def test_disable_plan_invalidates_pre_materialized_effects_before_state_change(g
 def test_failed_plan_update_does_not_invalidate_live_effects(group_ops_repo, monkeypatch):  # noqa: F811
     from aicrm_next.automation_engine.group_ops.application import UpdateGroupOpsPlanCommand
     from aicrm_next.automation_engine.group_ops.dto import GroupOpsPlanUpdateRequest
-    from aicrm_next.shared.errors import ContractError
+    from aicrm_next.platform.shared.errors import ContractError
 
     cancelled_plan_ids: list[int] = []
 
@@ -94,7 +94,7 @@ def test_failed_plan_update_does_not_invalidate_live_effects(group_ops_repo, mon
 
 def test_domain_reuses_unified_attachment_validation():
     from aicrm_next.automation_engine.group_ops.domain import normalize_message_content
-    from aicrm_next.shared.errors import ContractError
+    from aicrm_next.platform.shared.errors import ContractError
 
     normalized = normalize_message_content(
         text="课程入口",
@@ -181,7 +181,7 @@ def test_group_ops_native_message_content_miniprogram_aliases():
 
 def test_group_ops_native_message_content_missing_miniprogram_fields():
     from aicrm_next.automation_engine.group_ops.domain import normalize_message_content
-    from aicrm_next.shared.errors import ContractError
+    from aicrm_next.platform.shared.errors import ContractError
 
     base = {"appid": "wx123", "page": "/pages/course/today", "title": "课程入口", "pic_media_id": "pic-media-001"}
     for field, expected in (
@@ -210,7 +210,7 @@ def test_group_ops_native_message_content_image_media_ids():
 
 def test_group_ops_native_message_content_rejects_too_many_images():
     from aicrm_next.automation_engine.group_ops.domain import normalize_message_content
-    from aicrm_next.shared.errors import ContractError
+    from aicrm_next.platform.shared.errors import ContractError
 
     with pytest.raises(ContractError, match="at most 3 images"):
         normalize_message_content(text="", image_media_ids=["img1", "img2", "img3", "img4"])
@@ -218,7 +218,7 @@ def test_group_ops_native_message_content_rejects_too_many_images():
 
 def test_group_ops_native_message_content_rejects_too_many_total_attachments():
     from aicrm_next.automation_engine.group_ops.domain import normalize_message_content
-    from aicrm_next.shared.errors import ContractError
+    from aicrm_next.platform.shared.errors import ContractError
 
     attachments = [{"msgtype": "file", "file": {"media_id": f"file-{index}"}} for index in range(9)]
 
@@ -228,7 +228,7 @@ def test_group_ops_native_message_content_rejects_too_many_total_attachments():
 
 def test_group_ops_native_message_content_rejects_unsupported_attachment_msgtype():
     from aicrm_next.automation_engine.group_ops.domain import normalize_message_content
-    from aicrm_next.shared.errors import ContractError
+    from aicrm_next.platform.shared.errors import ContractError
 
     with pytest.raises(ContractError, match="attachments msgtype is not supported"):
         normalize_message_content(text="", attachments=[{"msgtype": "video", "video": {"media_id": "video-1"}}])
@@ -273,7 +273,7 @@ def test_group_ops_node_payload_draft_allows_empty_content():
 
 def test_group_ops_node_payload_active_empty_content_fails():
     from aicrm_next.automation_engine.group_ops.domain import normalize_node_payload
-    from aicrm_next.shared.errors import ContractError
+    from aicrm_next.platform.shared.errors import ContractError
 
     with pytest.raises(ContractError, match="content"):
         normalize_node_payload(

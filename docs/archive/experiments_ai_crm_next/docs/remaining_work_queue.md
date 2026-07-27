@@ -250,7 +250,7 @@ Each task is scoped for a future Codex execution turn. Keep old production servi
 ## 14. Observability / Audit / Idempotency Hardening
 
 - objective: Make writes traceable and replay-safe before shadow-write or production use.
-- files likely involved: `aicrm_next/platform_foundation/audit.py`, `aicrm_next/platform_foundation/idempotency.py`, API modules.
+- files likely involved: `aicrm_next/platform/platform_foundation/audit.py`, `aicrm_next/platform/platform_foundation/idempotency.py`, API modules.
 - acceptance criteria: correlation IDs, audit records, idempotency keys, and failure logs are tested.
 - must not do: introduce cross-module hidden writes.
 - suggested validation command: `.venv/bin/python -m pytest tests/test_*contract.py -q`.

@@ -7,16 +7,16 @@ from fastapi import APIRouter, File, Header, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from aicrm_next.admin_jobs.routes import (
+from aicrm_next.platform.admin_jobs.routes import (
     _action_token_error,
     _operator_from_request,
     _request_payload,
 )
 from aicrm_next.admin_shell_contract import admin_path_for, shell_context
-from aicrm_next.shared.admin_action_runtime import ensure_admin_action_token
-from aicrm_next.platform_foundation.internal_run_due_guard import maybe_guard_internal_run_due_request
-from aicrm_next.platform_foundation.external_effects.test_receiver import safe_current_base_url
-from aicrm_next.shared.runtime_settings import managed_runtime_bool
+from aicrm_next.platform.shared.admin_action_runtime import ensure_admin_action_token
+from aicrm_next.platform.platform_foundation.internal_run_due_guard import maybe_guard_internal_run_due_request
+from aicrm_next.platform.platform_foundation.external_effects.test_receiver import safe_current_base_url
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_bool
 
 from .application import (
     ApproveCloudPlanCommand,

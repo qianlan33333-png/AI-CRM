@@ -7,8 +7,8 @@ from .ai_audience_ops.e2e_runner import AudienceRealE2ERunner
 from .ai_audience_ops.repository import AudienceRepository
 from aicrm_next.external_effect_composition import build_external_effect_adapter_registry
 from aicrm_next.ops_enrollment.ai_audience_e2e_gateway import OpsEnrollmentAudienceE2EGateway
-from aicrm_next.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry
-from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
+from aicrm_next.platform.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry
+from aicrm_next.platform.platform_foundation.external_effects.worker import ExternalEffectWorker
 
 
 @dataclass(frozen=True)

@@ -8,7 +8,7 @@ from aicrm_next.crm.identity_contact.application import (
     ResolvePersonIdentityQuery,
     UpsertIdentityMappingCommand,
 )
-from aicrm_next.shared.errors import ContractError
+from aicrm_next.platform.shared.errors import ContractError
 from aicrm_next.crm.identity_contact.dto import IdentityResolution, ResolvePersonIdentityRequest
 
 

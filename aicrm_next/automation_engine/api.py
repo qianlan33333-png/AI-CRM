@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 
-from aicrm_next.shared.errors import ContractError, NotFoundError
+from aicrm_next.platform.shared.errors import ContractError, NotFoundError
 
 from .application import (
     CreateAgentCommand,

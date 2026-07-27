@@ -5,7 +5,7 @@ import importlib
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.shared.repository_provider import RepositoryProviderError
+from aicrm_next.platform.shared.repository_provider import RepositoryProviderError
 from tools import check_repository_provider_hardening as checker
 
 

@@ -9,10 +9,10 @@ from aicrm_next.integration_ports import (
     HuangYouCanUsageSource,
     build_huangyoucan_usage_source,
 )
-from aicrm_next.shared.db_session import connect_pooled_postgres
-from aicrm_next.shared.runtime import raw_database_url
-from aicrm_next.shared.safe_logging import safe_log_exception
-from aicrm_next.shared.sensitive_data import redact_sensitive_text
+from aicrm_next.platform.shared.db_session import connect_pooled_postgres
+from aicrm_next.platform.shared.runtime import raw_database_url
+from aicrm_next.platform.shared.safe_logging import safe_log_exception
+from aicrm_next.platform.shared.sensitive_data import redact_sensitive_text
 
 
 LOGGER = logging.getLogger(__name__)

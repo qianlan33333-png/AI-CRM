@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from aicrm_next.shared.errors import NotFoundError
-from aicrm_next.shared.typing import JsonDict
+from aicrm_next.platform.shared.errors import NotFoundError
+from aicrm_next.platform.shared.typing import JsonDict
 
 from .dto import CustomerDetailRequest
 from .repo import CustomerReadRepository

@@ -3,8 +3,8 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from aicrm_next.shared.release import current_release_sha
-from aicrm_next.shared.runtime_settings import managed_runtime_setting, runtime_setting
+from aicrm_next.platform.shared.release import current_release_sha
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting, runtime_setting
 
 from .repo import AdminReadRepository
 

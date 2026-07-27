@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.admin_config.api_docs_view_model import build_api_docs_view_model
+from aicrm_next.platform.admin_config.api_docs_view_model import build_api_docs_view_model
 from aicrm_next.main import create_app
 
 

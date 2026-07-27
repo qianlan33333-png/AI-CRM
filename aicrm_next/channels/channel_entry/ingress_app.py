@@ -4,8 +4,8 @@ from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from fastapi.responses import JSONResponse
 
-from aicrm_next.shared.release import current_release_sha
-from aicrm_next.shared.runtime_settings import runtime_settings_request_scope
+from aicrm_next.platform.shared.release import current_release_sha
+from aicrm_next.platform.shared.runtime_settings import runtime_settings_request_scope
 
 from .api import callback_router
 from .callback_ingress import CALLBACK_ACK_BOUNDARY, CALLBACK_MAX_BODY_BYTES

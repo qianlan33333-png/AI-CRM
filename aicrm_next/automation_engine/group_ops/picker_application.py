@@ -4,8 +4,8 @@ from datetime import datetime, timezone
 from typing import Any
 
 from aicrm_next.integration_ports import WeComGroupAssetAdapterContract
-from aicrm_next.shared.errors import ContractError
-from aicrm_next.shared.runtime_settings import managed_runtime_setting
+from aicrm_next.platform.shared.errors import ContractError
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting
 
 from .application import ListGroupOpsGroupsQuery, SyncGroupOpsOwnerGroupsCommand
 from .domain import clamp_limit, clean_text

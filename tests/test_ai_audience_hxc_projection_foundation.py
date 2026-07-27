@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from sqlalchemy import text
 
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.platform.shared.db_session import get_session_factory
 
 
 MIGRATION = importlib.import_module("migrations.versions.0149_ai_audience_hxc_projection_foundation")

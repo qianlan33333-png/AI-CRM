@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from aicrm_next.shared.runtime import raw_database_url
+from aicrm_next.platform.shared.runtime import raw_database_url
 
 
 def connect_h5_wechat_pay_db() -> Any:

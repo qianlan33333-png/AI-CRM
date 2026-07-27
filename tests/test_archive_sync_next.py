@@ -160,7 +160,7 @@ def test_archive_insert_and_refresh_event_share_one_transaction(monkeypatch) -> 
         return {"id": 44}
 
     monkeypatch.setattr(
-        "aicrm_next.platform_foundation.internal_events.outbox.enqueue_transactional_internal_event_outbox",
+        "aicrm_next.platform.platform_foundation.internal_events.outbox.enqueue_transactional_internal_event_outbox",
         fake_enqueue,
     )
     repository = PostgresArchiveSyncRepository(
@@ -236,7 +236,7 @@ def test_archive_insert_rolls_back_when_refresh_event_cannot_be_persisted(monkey
         raise RuntimeError("outbox_unavailable")
 
     monkeypatch.setattr(
-        "aicrm_next.platform_foundation.internal_events.outbox.enqueue_transactional_internal_event_outbox",
+        "aicrm_next.platform.platform_foundation.internal_events.outbox.enqueue_transactional_internal_event_outbox",
         fail_enqueue,
     )
     repository = PostgresArchiveSyncRepository(

@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from aicrm_next.platform_foundation.external_effects.deadlines import PROVIDER_DEADLINE_FIELD
+from aicrm_next.platform.platform_foundation.external_effects.deadlines import PROVIDER_DEADLINE_FIELD
 
 
 WECOM_WELCOME_PROVIDER_WINDOW_SECONDS = 20

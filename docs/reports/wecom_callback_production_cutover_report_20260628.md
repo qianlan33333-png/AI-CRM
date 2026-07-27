@@ -38,8 +38,8 @@
    - `/etc/nginx/sites-enabled/youcangogogo.conf` 两个 callback location 改为 proxy `127.0.0.1:5002`
    - 移除 quick ACK `return 200 "success"`
 7. 冷启动修复：
-   - 补齐 `aicrm_next/platform_foundation/webhook_inbox/*`
-   - 补齐 `aicrm_next/platform_foundation/webhook_inbox/templates/admin_console/webhook_inbox.html`
+   - 补齐 `aicrm_next/platform/platform_foundation/webhook_inbox/*`
+   - 补齐 `aicrm_next/platform/platform_foundation/webhook_inbox/templates/admin_console/webhook_inbox.html`
    - 补齐 `aicrm_next/channels/channel_entry/inbox.py`、`callback_ingress.py`、`callback_worker.py`、`callback_processor.py`、`ingress_app.py`
    - 重补 `router_registry.py` 与后台导航的 `webhook_inbox` 注册点
    - 重启 `openclaw-wecom-postgres.service` 后 `/health`、`/sidebar/bind-mobile`、`/admin/webhook-inbox` 通过

@@ -5,9 +5,9 @@ from typing import Any
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
-from aicrm_next.platform_foundation.external_effects import ExternalEffectService
-from aicrm_next.platform_foundation.internal_events import InternalEventService
-from aicrm_next.shared.runtime_settings import startup_environment_setting
+from aicrm_next.platform.platform_foundation.external_effects import ExternalEffectService
+from aicrm_next.platform.platform_foundation.internal_events import InternalEventService
+from aicrm_next.platform.shared.runtime_settings import startup_environment_setting
 
 from .repository import AudienceRepository, build_audience_repository, default_refresh_started_at, previous_watermark, _text
 from .schemas import PackageCreateRequest, PackageVersionCreateRequest, PreviewRequest

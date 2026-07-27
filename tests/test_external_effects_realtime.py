@@ -2,17 +2,17 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import (
     ExternalEffectService,
     WECOM_WELCOME_MESSAGE_SEND,
 )
-from aicrm_next.platform_foundation.external_effects.realtime import (
+from aicrm_next.platform.platform_foundation.external_effects.realtime import (
     CHANNEL_ENTRY_REALTIME_EFFECT_TYPES,
     realtime_wakeup_state,
     wake_external_effect_job,
 )
-from aicrm_next.platform_foundation.external_effects.repo import InMemoryExternalEffectRepository
+from aicrm_next.platform.platform_foundation.external_effects.repo import InMemoryExternalEffectRepository
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -115,6 +115,7 @@ def test_realtime_module_has_no_inline_claim_or_provider_worker() -> None:
     source = (
         ROOT
         / "aicrm_next"
+        / "platform"
         / "platform_foundation"
         / "external_effects"
         / "realtime.py"

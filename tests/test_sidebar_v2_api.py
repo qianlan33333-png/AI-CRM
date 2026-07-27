@@ -21,7 +21,7 @@ from aicrm_next.crm.customer_read_model.sidebar_v2 import (
 )
 from aicrm_next.main import create_app
 from aicrm_next.media_library.postgres_repo import PostgresMediaLibraryRepository
-from aicrm_next.shared.errors import NotFoundError
+from aicrm_next.platform.shared.errors import NotFoundError
 from tests.sidebar_auth_test_helpers import install_sidebar_auth
 
 
@@ -540,7 +540,7 @@ def test_sidebar_orders_expose_wechat_shop_channel_fields() -> None:
 
 
 def test_sidebar_context_query_can_skip_unused_activity_reads(monkeypatch) -> None:
-    monkeypatch.setattr("aicrm_next.shared.runtime.production_data_ready", lambda: False)
+    monkeypatch.setattr("aicrm_next.platform.shared.runtime.production_data_ready", lambda: False)
 
     class ActivityTrackingRepo:
         def __init__(self) -> None:
@@ -583,7 +583,7 @@ def test_sidebar_context_query_can_skip_unused_activity_reads(monkeypatch) -> No
 
 
 def test_sidebar_context_query_skips_unused_activity_reads_in_production(monkeypatch) -> None:
-    monkeypatch.setattr("aicrm_next.shared.runtime.production_data_ready", lambda: True)
+    monkeypatch.setattr("aicrm_next.platform.shared.runtime.production_data_ready", lambda: True)
 
     class ProductionActivityTrackingRepo:
         def __init__(self) -> None:

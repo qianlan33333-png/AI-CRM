@@ -23,7 +23,7 @@ def _endpoint_module(path: str) -> str:
 
 
 def test_runtime_config_page_renders_from_native_admin_config(monkeypatch) -> None:
-    from aicrm_next.admin_config import api
+    from aicrm_next.platform.admin_config import api
 
     class FakeAdminConfigPageQuery:
         def __call__(self) -> dict:
@@ -43,7 +43,7 @@ def test_runtime_config_page_renders_from_native_admin_config(monkeypatch) -> No
     assert "查看 Next 运行时、发布和外部回调预检状态" in response.text
     assert "test_runtime_config" in response.text
     assert "X-AICRM-Compatibility-Facade" not in response.headers
-    assert _endpoint_module("/admin/runtime-config") == "aicrm_next.admin_config.api"
+    assert _endpoint_module("/admin/runtime-config") == "aicrm_next.platform.admin_config.api"
 
 
 def test_api_docs_page_renders_from_native_admin_config() -> None:
@@ -54,7 +54,7 @@ def test_api_docs_page_renders_from_native_admin_config() -> None:
     assert "AI-CRM" in response.text
     assert "接口" in response.text
     assert "X-AICRM-Compatibility-Facade" not in response.headers
-    assert _endpoint_module("/admin/api-docs") == "aicrm_next.admin_config.api"
+    assert _endpoint_module("/admin/api-docs") == "aicrm_next.platform.admin_config.api"
 
 
 def test_support_pages_removed_from_frontend_inventory() -> None:
@@ -64,14 +64,14 @@ def test_support_pages_removed_from_frontend_inventory() -> None:
 
 
 def test_api_docs_view_model_import_path_is_native() -> None:
-    from aicrm_next.admin_config.api_docs_view_model import build_api_docs_view_model
+    from aicrm_next.platform.admin_config.api_docs_view_model import build_api_docs_view_model
 
     assert callable(build_api_docs_view_model)
     assert not (ROOT / "aicrm_next/app/admin_console/api_docs_view_model.py").exists()
 
 
 def test_api_docs_view_model_has_no_business_router_imports() -> None:
-    source = (ROOT / "aicrm_next/admin_config/api_docs_view_model.py").read_text(encoding="utf-8")
+    source = (ROOT / "aicrm_next/platform/admin_config/api_docs_view_model.py").read_text(encoding="utf-8")
 
     assert "def _router_sources" not in source
     assert "from aicrm_next." not in source
@@ -79,14 +79,14 @@ def test_api_docs_view_model_has_no_business_router_imports() -> None:
 
 
 def test_admin_config_api_has_no_admin_read_model_reverse_dependency() -> None:
-    source = (ROOT / "aicrm_next/admin_config/api.py").read_text(encoding="utf-8")
+    source = (ROOT / "aicrm_next/platform/admin_config/api.py").read_text(encoding="utf-8")
 
     assert "aicrm_next.admin_read_model" not in source
     assert "from .runtime_view_model import GetAdminConfigPageQuery" in source
 
 
 def test_admin_config_mcp_defaults_use_static_composition_catalog() -> None:
-    source = (ROOT / "aicrm_next/admin_config/application_support.py").read_text(encoding="utf-8")
+    source = (ROOT / "aicrm_next/platform/admin_config/application_support.py").read_text(encoding="utf-8")
 
     assert "aicrm_next.channels.integration_gateway.mcp" not in source
     assert "from aicrm_next.mcp_tool_catalog import MCP_TOOLS" in source

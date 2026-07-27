@@ -342,15 +342,15 @@ Implementation status in local worktree:
     `0050_channel_entry_effect_status_queued` and
     `0053_automation_agent_runtime_config`.
 - Added generic inbox repository:
-  - `aicrm_next/platform_foundation/webhook_inbox/repository.py`
+  - `aicrm_next/platform/platform_foundation/webhook_inbox/repository.py`
   - Supports duplicate collapse, due-row acquisition with
     `FOR UPDATE SKIP LOCKED`, explicit retry/terminal/dead-letter states, and
     queue metrics.
   - Persists `processing_summary_json` after worker success so a single inbox
     row can be traced to downstream processing records.
 - Added generic inbox service and typed row/metric models:
-  - `aicrm_next/platform_foundation/webhook_inbox/service.py`
-  - `aicrm_next/platform_foundation/webhook_inbox/models.py`
+  - `aicrm_next/platform/platform_foundation/webhook_inbox/service.py`
+  - `aicrm_next/platform/platform_foundation/webhook_inbox/models.py`
 - Added WeCom-specific ingress and worker:
   - `aicrm_next/channels/channel_entry/inbox.py`
   - Worker API covers `preview_due(...)`, `run_due(...)`, and
@@ -386,7 +386,7 @@ Implementation status in local worktree:
   - `GET /api/admin/wecom/callback/reconciliation`
 - Added admin operations page:
   - `GET /admin/webhook-inbox`
-  - `aicrm_next/platform_foundation/webhook_inbox/templates/admin_console/webhook_inbox.html`
+  - `aicrm_next/platform/platform_foundation/webhook_inbox/templates/admin_console/webhook_inbox.html`
   - The page shows queue metrics, filters, recent inbox rows, item detail,
     manual dispatch/replay, manual retry, manual skip, dry-run worker
     consumption, and WeCom callback reconciliation.
@@ -394,7 +394,7 @@ Implementation status in local worktree:
     `webhook_inbox -> internal_event -> internal_event_consumer_run ->
     external_effect_job -> external_effect_attempt`.
 - Added unified External Effect realtime wakeup:
-  - `aicrm_next/platform_foundation/external_effects/realtime.py`
+  - `aicrm_next/platform/platform_foundation/external_effects/realtime.py`
   - Replaces the channel-entry private welcome-message wakeup path.
   - Requires `AICRM_EXTERNAL_EFFECT_REALTIME_ENABLED=1`,
     `AICRM_EXTERNAL_EFFECT_REALTIME_ALLOWED_TYPES`, the normal

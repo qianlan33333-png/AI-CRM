@@ -15,7 +15,7 @@ from aicrm_next.channels.integration_gateway.wecom_operation_members_client impo
 from aicrm_next.main import create_app
 from aicrm_next.crm.operation_members.application import SyncOperationMembersFromWeComCommand
 from aicrm_next.crm.operation_members.repository import OperationMemberDirectoryRepository
-from aicrm_next.shared.db_session import reset_engine_cache_for_tests
+from aicrm_next.platform.shared.db_session import reset_engine_cache_for_tests
 
 
 ROOT = Path(__file__).resolve().parents[1]

@@ -20,16 +20,16 @@ ensure_repo_root_on_path()
 from aicrm_next.crm.identity_contact.resolution_queue_port import (  # noqa: E402
     build_identity_resolution_queue_port,
 )
-from aicrm_next.platform_foundation.execution_runtime.cutover import (  # noqa: E402
+from aicrm_next.platform.platform_foundation.execution_runtime.cutover import (  # noqa: E402
     GenerationCASConflict,
     RuntimeGenerationRepository,
 )
-from aicrm_next.platform_foundation.external_effects.wecom_canary_policy import (  # noqa: E402
+from aicrm_next.platform.platform_foundation.external_effects.wecom_canary_policy import (  # noqa: E402
     wecom_canary_policy_snapshot,
 )
-from aicrm_next.shared.wecom_runtime import load_wecom_execution_config  # noqa: E402
-from aicrm_next.shared.runtime_settings import runtime_setting  # noqa: E402
-from aicrm_next.platform_foundation.external_effects.wecom_canary_policy import (  # noqa: E402
+from aicrm_next.platform.shared.wecom_runtime import load_wecom_execution_config  # noqa: E402
+from aicrm_next.platform.shared.runtime_settings import runtime_setting  # noqa: E402
+from aicrm_next.platform.platform_foundation.external_effects.wecom_canary_policy import (  # noqa: E402
     WECOM_PROVIDER_TARGET_POLICY_KEY,
 )
 from scripts.ops.cutover_queue_runtime_generation import (  # noqa: E402

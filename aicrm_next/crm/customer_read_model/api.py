@@ -7,12 +7,12 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
 
-from aicrm_next.shared.config import get_settings
-from aicrm_next.shared.db_session import get_db
-from aicrm_next.shared.errors import NotFoundError
-from aicrm_next.shared.runtime import database_mode, production_data_ready
-from aicrm_next.shared.runtime_settings import startup_environment_setting
-from aicrm_next.shared.sidebar_access import sidebar_owner_context_from_request as _sidebar_owner_context_from_request
+from aicrm_next.platform.shared.config import get_settings
+from aicrm_next.platform.shared.db_session import get_db
+from aicrm_next.platform.shared.errors import NotFoundError
+from aicrm_next.platform.shared.runtime import database_mode, production_data_ready
+from aicrm_next.platform.shared.runtime_settings import startup_environment_setting
+from aicrm_next.platform.shared.sidebar_access import sidebar_owner_context_from_request as _sidebar_owner_context_from_request
 from . import application as customer_application
 from .extension_port import UpdateServicePeriodMemberRemarkCommand
 from .application import (

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from aicrm_next.platform_foundation.external_effects import WECOM_MEDIA_UPLOAD
-from aicrm_next.platform_foundation.external_effects.continuations import ExternalEffectContinuation
+from aicrm_next.platform.platform_foundation.external_effects import WECOM_MEDIA_UPLOAD
+from aicrm_next.platform.platform_foundation.external_effects.continuations import ExternalEffectContinuation
 
 from .durable_effects_repository import (
     GROUP_OPS_EFFECT_BUSINESS_TYPE,

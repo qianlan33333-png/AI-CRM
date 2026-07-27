@@ -167,12 +167,12 @@ def main(argv: Sequence[str] | None = None) -> None:
         return
     if command == "legacy-webhook-cleanup":
         if getattr(args, "legacy_cleanup_command", "") == "mark-deprecated":
-            from aicrm_next.platform_foundation.legacy_cleanup.jobs import print_mark_deprecated_result
+            from aicrm_next.platform.platform_foundation.legacy_cleanup.jobs import print_mark_deprecated_result
 
             print_mark_deprecated_result(operator=getattr(args, "operator", "cli"))
             return
         if getattr(args, "legacy_cleanup_command", "") == "run-due":
-            from aicrm_next.platform_foundation.legacy_cleanup.jobs import print_run_due_result
+            from aicrm_next.platform.platform_foundation.legacy_cleanup.jobs import print_run_due_result
 
             dry_run = not bool(getattr(args, "execute", False))
             if getattr(args, "dry_run", False):
@@ -180,7 +180,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             print_run_due_result(dry_run=dry_run, limit=getattr(args, "limit", 50), operator=getattr(args, "operator", "cli"))
             return
         if getattr(args, "legacy_cleanup_command", "") == "retire-now":
-            from aicrm_next.platform_foundation.legacy_cleanup.jobs import print_retire_now_result
+            from aicrm_next.platform.platform_foundation.legacy_cleanup.jobs import print_retire_now_result
 
             dry_run = not bool(getattr(args, "execute", False))
             if getattr(args, "dry_run", False):
@@ -191,7 +191,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         return
     if command == "external-effects":
         if getattr(args, "external_effects_command", "") == "run-due":
-            from aicrm_next.platform_foundation.external_effects.jobs import print_run_due_result
+            from aicrm_next.platform.platform_foundation.external_effects.jobs import print_run_due_result
 
             dry_run = not bool(getattr(args, "execute", False))
             if getattr(args, "dry_run", False):
@@ -200,7 +200,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             print_run_due_result(dry_run=dry_run, limit=limit, operator=getattr(args, "operator", "cli"))
             return
         if getattr(args, "external_effects_command", "") == "complete-record-only":
-            from aicrm_next.platform_foundation.external_effects.jobs import print_complete_record_only_result
+            from aicrm_next.platform.platform_foundation.external_effects.jobs import print_complete_record_only_result
 
             dry_run = not bool(getattr(args, "execute", False))
             if getattr(args, "dry_run", False):

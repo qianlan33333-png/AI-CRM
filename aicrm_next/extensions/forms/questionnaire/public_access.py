@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Mapping
 from uuid import uuid4
 
-from aicrm_next.shared.errors import NotFoundError
+from aicrm_next.platform.shared.errors import NotFoundError
 
 from .domain import normalize_questionnaire, public_projection
 from .oauth import (

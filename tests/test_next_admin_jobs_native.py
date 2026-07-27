@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 import pytest
 from fastapi.testclient import TestClient
 
-from aicrm_next.admin_jobs.notification_settings import (
+from aicrm_next.platform.admin_jobs.notification_settings import (
     FeishuWebhookValidationError,
     build_broadcast_job_hourly_report_message,
     build_hourly_report_key,
@@ -16,7 +16,7 @@ from aicrm_next.admin_jobs.notification_settings import (
     send_broadcast_job_hourly_feishu_report,
     validate_feishu_webhook_url,
 )
-from aicrm_next.admin_jobs.repository import build_admin_jobs_repository
+from aicrm_next.platform.admin_jobs.repository import build_admin_jobs_repository
 from aicrm_next.main import create_app
 from tests.admin_auth_test_helpers import install_admin_action_tokens, install_admin_session
 
@@ -250,7 +250,7 @@ def test_broadcast_queue_feishu_settings_api_masks_saves_and_validates(monkeypat
         captured["text"] = text
         return {"ok": True}
 
-    monkeypatch.setattr("aicrm_next.admin_jobs.notification_settings.send_feishu_webhook_message", fake_send)
+    monkeypatch.setattr("aicrm_next.platform.admin_jobs.notification_settings.send_feishu_webhook_message", fake_send)
     validated = client.post(
         "/api/admin/broadcast-jobs/notification-settings/feishu/validate",
         headers={"X-Admin-Action-Token": validate_token},
@@ -281,7 +281,7 @@ def test_broadcast_queue_feishu_validate_failure_does_not_leak_webhook(monkeypat
     webhook = "https://open.larksuite.com/open-apis/bot/v2/hook/top-secret-7890"
 
     monkeypatch.setattr(
-        "aicrm_next.admin_jobs.notification_settings.send_feishu_webhook_message",
+        "aicrm_next.platform.admin_jobs.notification_settings.send_feishu_webhook_message",
         lambda url, text: {"ok": False, "raw": {"url": url, "body": "large external body"}},
     )
     response = client.post(
@@ -489,7 +489,7 @@ def test_broadcast_queue_hourly_report_run_api_requires_route_bound_action_grant
     assert denied.status_code == 401
 
     monkeypatch.setattr(
-        "aicrm_next.admin_jobs.routes.send_broadcast_job_hourly_feishu_report",
+        "aicrm_next.platform.admin_jobs.routes.send_broadcast_job_hourly_feishu_report",
         lambda: {"status": "sent", "summary": {"totalJobs": 1, "successJobs": 1, "failedJobs": 0}},
     )
     token = _jobs_action_token(client, "POST", "/api/admin/broadcast-jobs/feishu-hourly-report/run")
@@ -529,7 +529,7 @@ def test_broadcast_queue_hourly_report_run_api_real_no_jobs_duplicate_and_no_web
     repo.broadcast_jobs = [{"id": 301, "scheduled_for": now_window["windowStart"], "status": "sent"}]
     calls: list[str] = []
     monkeypatch.setattr(
-        "aicrm_next.admin_jobs.notification_settings.send_feishu_webhook_message",
+        "aicrm_next.platform.admin_jobs.notification_settings.send_feishu_webhook_message",
         lambda url, text: calls.append(url) or {"ok": True},
     )
     sent = client.post(

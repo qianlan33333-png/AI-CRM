@@ -7,7 +7,7 @@ from fastapi import APIRouter, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
-from aicrm_next.shared.sync_request import read_request_body
+from aicrm_next.platform.shared.sync_request import read_request_body
 
 from .refresh_intents import AudienceRefreshIntentService
 from .schemas import (

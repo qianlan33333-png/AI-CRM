@@ -3,8 +3,8 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from aicrm_next.shared.runtime import production_data_ready
-from aicrm_next.shared.runtime_settings import managed_runtime_setting
+from aicrm_next.platform.shared.runtime import production_data_ready
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting
 
 from .repo import connect_commerce_db
 from .wechat_pay_order_write_port import build_wechat_pay_order_write_port

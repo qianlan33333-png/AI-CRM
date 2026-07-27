@@ -4,7 +4,7 @@ import pytest
 
 from aicrm_next.send_content.application import NormalizeSendContentPackageCommand
 from aicrm_next.send_content.dto import SendContentPackage
-from aicrm_next.shared.errors import ContractError
+from aicrm_next.platform.shared.errors import ContractError
 
 
 def _normalize(raw: dict, *, text_enabled: bool = True, require_body: bool = False) -> dict:

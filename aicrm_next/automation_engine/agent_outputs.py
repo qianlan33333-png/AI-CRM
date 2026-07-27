@@ -3,7 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
-from aicrm_next.shared.errors import ContractError
+from aicrm_next.platform.shared.errors import ContractError
 
 
 AGENT_OUTPUT_ROUTE_FAMILY = "/api/admin/automation-conversion/agent-outputs*"

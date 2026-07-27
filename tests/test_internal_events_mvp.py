@@ -4,16 +4,16 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.execution_runtime.commands import QueueRuntimeCommandService
-from aicrm_next.platform_foundation.internal_events import (
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.execution_runtime.commands import QueueRuntimeCommandService
+from aicrm_next.platform.platform_foundation.internal_events import (
     InMemoryInternalEventRepository,
     InternalEventConsumerRegistry,
     InternalEventConsumerResult,
     InternalEventService,
 )
-from aicrm_next.platform_foundation.internal_events.models import InternalEvent, InternalEventConsumerRun
-from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
+from aicrm_next.platform.platform_foundation.internal_events.models import InternalEvent, InternalEventConsumerRun
+from aicrm_next.platform.platform_foundation.internal_events.worker import InternalEventWorker
 from tests.admin_auth_test_helpers import install_admin_action_tokens
 
 

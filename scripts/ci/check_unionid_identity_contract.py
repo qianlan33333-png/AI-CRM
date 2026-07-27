@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from aicrm_next.shared.sensitive_data import redact_sensitive_data, redact_sensitive_text  # noqa: E402
+from aicrm_next.platform.shared.sensitive_data import redact_sensitive_data, redact_sensitive_text  # noqa: E402
 
 
 SOURCE_ROOT = ROOT / "aicrm_next"

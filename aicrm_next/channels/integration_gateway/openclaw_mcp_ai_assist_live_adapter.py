@@ -8,7 +8,7 @@ import json
 import re
 from typing import Any
 
-from aicrm_next.shared.runtime_settings import runtime_bool
+from aicrm_next.platform.shared.runtime_settings import runtime_bool
 
 from .openclaw_mcp_ai_assist_live_gateway import OpenClawMcpAiAssistLiveGateway, build_openclaw_mcp_ai_assist_live_gateway
 

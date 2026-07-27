@@ -11,7 +11,7 @@ from aicrm_next.background_jobs import broadcast_reconciliation
 from aicrm_next.background_jobs.broadcast_reconciliation import (
     GroupOpsBroadcastReconciliationService,
 )
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.platform.shared.db_session import get_session_factory
 
 
 EXPECTED_COUNTS = {

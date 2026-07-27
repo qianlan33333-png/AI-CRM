@@ -44,7 +44,7 @@ def test_scheduler_diagnostics_reports_rollback_residue_before_running_release_c
     assert 'if [ "$scheduler_mode" = "absent" ]; then' in source
     assert 'elif [ "$scheduler_mode" = "observe" ]; then' in source
     assert 'elif [ "$scheduler_mode" = "enforce" ]; then' in source
-    assert "aicrm_next/platform_foundation/background_jobs/scheduler_runtime.py" in source
+    assert "aicrm_next/platform/platform_foundation/background_jobs/scheduler_runtime.py" in source
 
 
 def test_scheduler_diagnostics_includes_only_aggregate_release_refresh_state() -> None:

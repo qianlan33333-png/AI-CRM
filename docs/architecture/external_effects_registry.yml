@@ -13,8 +13,8 @@ effects:
     owner: identity_contact
     boundary: platform_foundation.external_effects
     allowed_runtime: real_requires_approval
-    adapter_module: aicrm_next/platform_foundation/external_effects/adapters.py
-    migration_target: aicrm_next/platform_foundation/external_effects/adapters.py
+    adapter_module: aicrm_next/platform/platform_foundation/external_effects/adapters.py
+    migration_target: aicrm_next/platform/platform_foundation/external_effects/adapters.py
     idempotency_required: true
     audit_required: true
   - effect_key: wechat_pay.commerce.api

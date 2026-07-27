@@ -9,7 +9,7 @@ from typing import Any, cast
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.platform.shared.db_session import get_session_factory
 
 from .dto import DataHealthCheckResult, HealthStatus
 

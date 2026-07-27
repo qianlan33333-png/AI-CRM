@@ -128,7 +128,7 @@ def production_probe_env():
 
 def _client() -> TestClient:
     module = importlib.import_module("aicrm_next.main")
-    session_module = importlib.import_module("aicrm_next.shared.wechat_h5_session")
+    session_module = importlib.import_module("aicrm_next.platform.shared.wechat_h5_session")
     client = TestClient(module.create_app())
     client.cookies.set(
         session_module.WECHAT_PAYMENT_IDENTITY_COOKIE,

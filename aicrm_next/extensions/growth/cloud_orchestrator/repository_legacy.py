@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from aicrm_next.platform_foundation.background_jobs.broadcast_job_write_port import (
+from aicrm_next.platform.platform_foundation.background_jobs.broadcast_job_write_port import (
     BroadcastJobCreate,
     build_broadcast_job_write_port,
 )

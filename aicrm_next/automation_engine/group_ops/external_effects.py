@@ -4,19 +4,19 @@ import json
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import (
     GROUP_OPS_MESSAGE_LOOPBACK,
     GROUP_OPS_WEBHOOK_ACTION_LOOPBACK,
     WECOM_MESSAGE_GROUP_SEND,
 )
-from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
-from aicrm_next.platform_foundation.external_effects.test_receiver import (
+from aicrm_next.platform.platform_foundation.external_effects.service import ExternalEffectService
+from aicrm_next.platform.platform_foundation.external_effects.test_receiver import (
     TEST_RECEIVER_PATH_PREFIX,
     canonical_payload_hash,
 )
-from aicrm_next.platform_foundation.external_effects.models import public_datetime, utcnow
-from aicrm_next.shared.errors import ContractError
+from aicrm_next.platform.platform_foundation.external_effects.models import public_datetime, utcnow
+from aicrm_next.platform.shared.errors import ContractError
 
 from .domain import clean_text, mask_sensitive_payload
 

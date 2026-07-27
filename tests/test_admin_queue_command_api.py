@@ -10,11 +10,11 @@ import psycopg
 import pytest
 from psycopg.rows import dict_row
 
-from aicrm_next.platform_foundation.execution_runtime.commands import (
+from aicrm_next.platform.platform_foundation.execution_runtime.commands import (
     QueueCommandConflict,
     QueueRuntimeCommandService,
 )
-from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
+from aicrm_next.platform.platform_foundation.external_effects.service import ExternalEffectService
 from tests.admin_auth_test_helpers import install_admin_action_tokens
 
 
@@ -155,7 +155,7 @@ def test_internal_run_due_execute_accepts_one_durable_command_without_handler(
         ("POST", "/api/admin/internal-events/run-due"),
     )[("POST", "/api/admin/internal-events/run-due")]
     monkeypatch.setattr(
-        "aicrm_next.platform_foundation.internal_events.worker.InternalEventWorker.run_due",
+        "aicrm_next.platform.platform_foundation.internal_events.worker.InternalEventWorker.run_due",
         lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("handler worker is forbidden")),
     )
 
@@ -303,7 +303,7 @@ def test_external_effect_run_due_execute_never_dispatches_provider(next_client, 
         ("POST", "/api/admin/external-effects/run-due"),
     )[("POST", "/api/admin/external-effects/run-due")]
     monkeypatch.setattr(
-        "aicrm_next.platform_foundation.external_effects.worker.ExternalEffectWorker.run_due",
+        "aicrm_next.platform.platform_foundation.external_effects.worker.ExternalEffectWorker.run_due",
         lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("provider worker is forbidden")),
     )
 

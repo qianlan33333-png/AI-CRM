@@ -6,7 +6,7 @@ import psycopg
 from psycopg.rows import dict_row
 from sqlalchemy import create_engine, text
 
-from aicrm_next.platform_foundation.admin_audit import (
+from aicrm_next.platform.platform_foundation.admin_audit import (
     AdminAuditRecord,
     build_admin_audit_port,
 )

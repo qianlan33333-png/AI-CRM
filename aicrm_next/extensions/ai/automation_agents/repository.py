@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from aicrm_next.crm.identity_contact.dto import ResolvePersonIdentityRequest
 from aicrm_next.crm.identity_contact.resolver import SQLAlchemyIdentityResolver, resolved_unionids_for_external_userids_with_sqlalchemy
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.platform.shared.db_session import get_session_factory
 
 
 def _text(value: Any) -> str:

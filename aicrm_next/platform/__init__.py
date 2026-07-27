@@ -1,0 +1,1 @@
+"""Stable platform domain package."""

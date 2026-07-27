@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from aicrm_next.internal_event_composition import register_refund_succeeded_consumers
-from aicrm_next.platform_foundation.internal_events.consumer_registry import InternalEventConsumerRegistry
-from aicrm_next.platform_foundation.internal_events.models import InternalEvent, InternalEventConsumerRun
-from aicrm_next.platform_foundation.internal_events.refund import (
+from aicrm_next.platform.platform_foundation.internal_events.consumer_registry import InternalEventConsumerRegistry
+from aicrm_next.platform.platform_foundation.internal_events.models import InternalEvent, InternalEventConsumerRun
+from aicrm_next.platform.platform_foundation.internal_events.refund import (
     REFUND_SUCCEEDED_CONSUMER,
     REFUND_SUCCEEDED_EVENT_TYPE,
     build_refund_succeeded_event_request,

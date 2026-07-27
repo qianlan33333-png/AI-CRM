@@ -9,21 +9,21 @@
     },
     {
       "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/admin_auth/guards.py",
+      "file": "aicrm_next/extensions/commerce/commerce/coupons/admin_api.py",
+      "key": "AICRM_ADMIN_AUTH_ENFORCED",
+      "line": 67
+    },
+    {
+      "accessor": "managed_runtime_setting",
+      "file": "aicrm_next/platform/admin_auth/guards.py",
       "key": "AICRM_ADMIN_AUTH_ENFORCED",
       "line": 72
     },
     {
       "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/admin_auth/route_policy.py",
+      "file": "aicrm_next/platform/admin_auth/route_policy.py",
       "key": "AICRM_ADMIN_AUTH_ENFORCED",
       "line": 77
-    },
-    {
-      "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/extensions/commerce/commerce/coupons/admin_api.py",
-      "key": "AICRM_ADMIN_AUTH_ENFORCED",
-      "line": 67
     },
     {
       "accessor": "os.getenv",
@@ -33,13 +33,13 @@
     },
     {
       "accessor": "managed_runtime_bool",
-      "file": "aicrm_next/admin_auth/service.py",
+      "file": "aicrm_next/platform/admin_auth/service.py",
       "key": "AICRM_ADMIN_SESSION_COOKIE_SECURE",
       "line": 124
     },
     {
       "accessor": "managed_runtime_bool",
-      "file": "aicrm_next/shared/signed_session.py",
+      "file": "aicrm_next/platform/shared/signed_session.py",
       "key": "AICRM_ADMIN_SESSION_COOKIE_SECURE",
       "line": 48
     },
@@ -159,19 +159,19 @@
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_ARCHIVE_WORKER_CLIENT_ID",
       "line": 33
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_ARCHIVE_WORKER_CLIENT_SECRET_REF",
       "line": 33
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_AUTOMATION_WORKER_CLIENT_ID",
       "line": 33
     },
@@ -201,31 +201,31 @@
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_AUTOMATION_WORKER_CLIENT_SECRET_REF",
       "line": 33
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_CALLBACK_WORKER_CLIENT_ID",
       "line": 33
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_CALLBACK_WORKER_CLIENT_SECRET_REF",
       "line": 33
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_CAMPAIGN_AGENT_CLIENT_ID",
       "line": 33
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_CAMPAIGN_AGENT_CLIENT_SECRET_REF",
       "line": 33
     },
@@ -237,55 +237,55 @@
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_EXTERNAL_AGENT_CLIENT_ID",
       "line": 33
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_EXTERNAL_AGENT_CLIENT_SECRET_REF",
       "line": 33
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_GROUP_BROADCAST_CLIENT_ID",
       "line": 33
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_GROUP_BROADCAST_CLIENT_SECRET_REF",
       "line": 33
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_IDENTITY_CLIENT_ID",
       "line": 33
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_IDENTITY_CLIENT_SECRET_REF",
       "line": 33
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_ISSUER",
       "line": 33
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/platform_foundation/auth_platform/api.py",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/api.py",
       "key": "AICRM_AUTH_ISSUER",
       "line": 27
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/shared/automation_agent_webhook_contract.py",
+      "file": "aicrm_next/platform/shared/automation_agent_webhook_contract.py",
       "key": "AICRM_AUTH_ISSUER",
       "line": 17
     },
@@ -303,49 +303,49 @@
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/platform_foundation/auth_platform/api.py",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/api.py",
       "key": "AICRM_AUTH_JWT_SIGNING_KEY",
       "line": 28
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/admin_jobs/application.py",
+      "file": "aicrm_next/platform/admin_jobs/application.py",
       "key": "AICRM_AUTH_MCP_CLIENT_ID",
       "line": 259
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_MCP_CLIENT_ID",
       "line": 33
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_MCP_CLIENT_SECRET_REF",
       "line": 33
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_OPS_REPORTER_CLIENT_ID",
       "line": 33
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/auth_platform/access_client.py",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_OPS_REPORTER_CLIENT_SECRET_REF",
       "line": 33
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/platform_foundation/auth_platform/webhook_hmac.py",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/webhook_hmac.py",
       "key": "AICRM_AUTH_OUTBOUND_WEBHOOK_CLIENT_ID",
       "line": 151
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/platform_foundation/auth_platform/api.py",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/api.py",
       "key": "AICRM_AUTH_SESSION_HASH_PEPPER",
       "line": 41
     },
@@ -357,49 +357,49 @@
     },
     {
       "accessor": "runtime_csv",
-      "file": "aicrm_next/platform_foundation/auth_platform/api.py",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/api.py",
       "key": "AICRM_AUTH_TRUSTED_PROXY_ADDRESSES",
       "line": 69
     },
     {
       "accessor": "runtime_csv",
-      "file": "aicrm_next/platform_foundation/auth_platform/api.py",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/api.py",
       "key": "AICRM_AUTH_TRUSTED_PROXY_ADDRESSES",
       "line": 103
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/navigation_target/resolver.py",
+      "file": "aicrm_next/platform/navigation_target/resolver.py",
       "key": "AICRM_COMPLETION_URL_LINK_API_ALLOWLIST",
       "line": 20
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/navigation_target/resolver.py",
+      "file": "aicrm_next/platform/navigation_target/resolver.py",
       "key": "AICRM_COMPLETION_URL_LINK_API_PATH_PREFIXES",
       "line": 20
     },
     {
       "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/navigation_target/resolver.py",
+      "file": "aicrm_next/platform/navigation_target/resolver.py",
       "key": "AICRM_COMPLETION_URL_LINK_API_PATH_PREFIXES",
       "line": 50
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/navigation_target/resolver.py",
+      "file": "aicrm_next/platform/navigation_target/resolver.py",
       "key": "AICRM_COMPLETION_URL_LINK_TARGET_ALLOWLIST",
       "line": 20
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/navigation_target/resolver.py",
+      "file": "aicrm_next/platform/navigation_target/resolver.py",
       "key": "AICRM_COMPLETION_URL_LINK_TIMEOUT_SECONDS",
       "line": 20
     },
     {
       "accessor": "managed_runtime_int",
-      "file": "aicrm_next/navigation_target/resolver.py",
+      "file": "aicrm_next/platform/navigation_target/resolver.py",
       "key": "AICRM_COMPLETION_URL_LINK_TIMEOUT_SECONDS",
       "line": 37
     },
@@ -453,15 +453,15 @@
     },
     {
       "accessor": "managed_runtime_bool",
-      "file": "aicrm_next/admin_jobs/application.py",
-      "key": "AICRM_ENABLE_IN_PROCESS_ARCHIVE_SYNC",
-      "line": 374
-    },
-    {
-      "accessor": "managed_runtime_bool",
       "file": "aicrm_next/extensions/archive/message_archive/api.py",
       "key": "AICRM_ENABLE_IN_PROCESS_ARCHIVE_SYNC",
       "line": 148
+    },
+    {
+      "accessor": "managed_runtime_bool",
+      "file": "aicrm_next/platform/admin_jobs/application.py",
+      "key": "AICRM_ENABLE_IN_PROCESS_ARCHIVE_SYNC",
+      "line": 374
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -477,7 +477,7 @@
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "file": "aicrm_next/platform/platform_foundation/execution_runtime/validation.py",
       "key": "AICRM_ENABLE_REAL_WECOM_GROUP_MESSAGE",
       "line": 19
     },
@@ -495,7 +495,7 @@
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "file": "aicrm_next/platform/platform_foundation/execution_runtime/validation.py",
       "key": "AICRM_ENABLE_REAL_WECOM_PRIVATE_MESSAGE",
       "line": 19
     },
@@ -507,37 +507,37 @@
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/external_effects/test_receiver.py",
+      "file": "aicrm_next/platform/platform_foundation/external_effects/test_receiver.py",
       "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_BASE_HOSTS",
       "line": 33
     },
     {
       "accessor": "runtime_csv",
-      "file": "aicrm_next/platform_foundation/external_effects/test_receiver.py",
+      "file": "aicrm_next/platform/platform_foundation/external_effects/test_receiver.py",
       "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_BASE_HOSTS",
       "line": 114
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "file": "aicrm_next/platform/platform_foundation/execution_runtime/validation.py",
       "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_GROUP_CHAT_IDS",
       "line": 19
     },
     {
       "accessor": "declared_runtime_environment_key",
-      "file": "aicrm_next/shared/wecom_runtime.py",
+      "file": "aicrm_next/platform/shared/wecom_runtime.py",
       "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_GROUP_CHAT_IDS",
       "line": 19
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "file": "aicrm_next/platform/platform_foundation/execution_runtime/validation.py",
       "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_GROUP_OPS_WEBHOOK_KEYS",
       "line": 19
     },
     {
       "accessor": "declared_runtime_environment_key",
-      "file": "aicrm_next/shared/wecom_runtime.py",
+      "file": "aicrm_next/platform/shared/wecom_runtime.py",
       "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_GROUP_OPS_WEBHOOK_KEYS",
       "line": 19
     },
@@ -549,103 +549,103 @@
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "file": "aicrm_next/platform/platform_foundation/execution_runtime/validation.py",
       "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS",
       "line": 19
     },
     {
       "accessor": "declared_runtime_environment_key",
-      "file": "aicrm_next/shared/wecom_runtime.py",
+      "file": "aicrm_next/platform/shared/wecom_runtime.py",
       "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS",
       "line": 19
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "file": "aicrm_next/platform/platform_foundation/execution_runtime/validation.py",
       "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_TARGET_EXTERNAL_USERIDS",
       "line": 19
     },
     {
       "accessor": "declared_runtime_environment_key",
-      "file": "aicrm_next/shared/wecom_runtime.py",
+      "file": "aicrm_next/platform/shared/wecom_runtime.py",
       "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_TARGET_EXTERNAL_USERIDS",
       "line": 19
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/external_effects/adapters.py",
+      "file": "aicrm_next/platform/platform_foundation/external_effects/adapters.py",
       "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES",
       "line": 73
     },
     {
       "accessor": "declared_runtime_environment_key",
-      "file": "aicrm_next/shared/wecom_runtime.py",
+      "file": "aicrm_next/platform/shared/wecom_runtime.py",
       "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES",
       "line": 19
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "file": "aicrm_next/platform/platform_foundation/execution_runtime/validation.py",
       "key": "AICRM_EXTERNAL_EFFECT_MEDIA_UPLOAD_EXECUTE",
       "line": 19
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/external_effects/adapters.py",
+      "file": "aicrm_next/platform/platform_foundation/external_effects/adapters.py",
       "key": "AICRM_EXTERNAL_EFFECT_PAYMENT_EXECUTE",
       "line": 73
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "file": "aicrm_next/platform/platform_foundation/execution_runtime/validation.py",
       "key": "AICRM_EXTERNAL_EFFECT_TEST_EXECUTION_ONLY",
       "line": 19
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/external_effects/test_receiver.py",
+      "file": "aicrm_next/platform/platform_foundation/external_effects/test_receiver.py",
       "key": "AICRM_EXTERNAL_EFFECT_TEST_EXECUTION_ONLY",
       "line": 33
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/external_effects/worker.py",
+      "file": "aicrm_next/platform/platform_foundation/external_effects/worker.py",
       "key": "AICRM_EXTERNAL_EFFECT_TEST_EXECUTION_ONLY",
       "line": 38
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "file": "aicrm_next/platform/platform_foundation/execution_runtime/validation.py",
       "key": "AICRM_EXTERNAL_EFFECT_TEST_RECEIVER_ENABLED",
       "line": 19
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/external_effects/test_receiver.py",
+      "file": "aicrm_next/platform/platform_foundation/external_effects/test_receiver.py",
       "key": "AICRM_EXTERNAL_EFFECT_TEST_RECEIVER_ENABLED",
       "line": 33
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/external_effects/adapters.py",
+      "file": "aicrm_next/platform/platform_foundation/external_effects/adapters.py",
       "key": "AICRM_EXTERNAL_EFFECT_WEBHOOK_EXECUTE",
       "line": 73
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/platform_foundation/external_effects/adapters.py",
+      "file": "aicrm_next/platform/platform_foundation/external_effects/adapters.py",
       "key": "AICRM_EXTERNAL_EFFECT_WEBHOOK_TIMEOUT_SECONDS",
       "line": 359
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "file": "aicrm_next/platform/platform_foundation/execution_runtime/validation.py",
       "key": "AICRM_EXTERNAL_EFFECT_WECOM_EXECUTE",
       "line": 19
     },
     {
       "accessor": "declared_runtime_environment_key",
-      "file": "aicrm_next/shared/wecom_runtime.py",
+      "file": "aicrm_next/platform/shared/wecom_runtime.py",
       "key": "AICRM_EXTERNAL_EFFECT_WECOM_EXECUTE",
       "line": 19
     },
@@ -723,247 +723,247 @@
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_AI_CAMPAIGN_ENABLED",
       "line": 16
     },
     {
       "accessor": "env_bool",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_AI_CAMPAIGN_ENABLED",
       "line": 82
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_ALLOWED_CONSUMERS",
       "line": 16
     },
     {
       "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_ALLOWED_CONSUMERS",
       "line": 124
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_CONSUMERS",
       "line": 16
     },
     {
       "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_CONSUMERS",
       "line": 129
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_TYPES",
       "line": 16
     },
     {
       "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_TYPES",
       "line": 119
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE",
       "line": 16
     },
     {
       "accessor": "env_bool",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE",
       "line": 115
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE_MAX_BATCH_SIZE",
       "line": 16
     },
     {
       "accessor": "managed_runtime_int",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE_MAX_BATCH_SIZE",
       "line": 227
     },
     {
       "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/platform_foundation/internal_events/worker.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/worker.py",
       "key": "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE_MAX_BATCH_SIZE",
       "line": 265
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_BROADCAST_TASK_ENABLED",
       "line": 16
     },
     {
       "accessor": "env_bool",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_BROADCAST_TASK_ENABLED",
       "line": 90
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_CUSTOMER_IDENTITY_ENABLED",
       "line": 16
     },
     {
       "accessor": "env_bool",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_CUSTOMER_IDENTITY_ENABLED",
       "line": 78
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_CUSTOMER_TAGS_ENABLED",
       "line": 16
     },
     {
       "accessor": "env_bool",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_CUSTOMER_TAGS_ENABLED",
       "line": 74
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_ENABLED",
       "line": 16
     },
     {
       "accessor": "env_bool",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_ENABLED",
       "line": 62
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_LEGACY_PATH_MARKERS_ENABLED",
       "line": 16
     },
     {
       "accessor": "env_bool",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_LEGACY_PATH_MARKERS_ENABLED",
       "line": 98
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_LEGACY_PATH_RETIRE_AFTER_DAYS",
       "line": 16
     },
     {
       "accessor": "managed_runtime_int",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_LEGACY_PATH_RETIRE_AFTER_DAYS",
       "line": 102
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_OPS_PLAN_ENABLED",
       "line": 16
     },
     {
       "accessor": "env_bool",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_OPS_PLAN_ENABLED",
       "line": 86
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_OWNER_MIGRATION_ENABLED",
       "line": 16
     },
     {
       "accessor": "env_bool",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_OWNER_MIGRATION_ENABLED",
       "line": 94
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_PAYMENT_ENABLED",
       "line": 16
     },
     {
       "accessor": "env_bool",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_PAYMENT_ENABLED",
       "line": 66
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_QUESTIONNAIRE_ENABLED",
       "line": 16
     },
     {
       "accessor": "env_bool",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_QUESTIONNAIRE_ENABLED",
       "line": 70
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_SHADOW_ONLY",
       "line": 16
     },
     {
       "accessor": "env_bool",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_SHADOW_ONLY",
       "line": 111
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_WORKER_BATCH_SIZE",
       "line": 16
     },
     {
       "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_WORKER_BATCH_SIZE",
       "line": 210
     },
     {
       "accessor": "managed_runtime_int",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENTS_WORKER_BATCH_SIZE",
       "line": 212
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENT_WORKER_BATCH_SIZE",
       "line": 16
     },
     {
       "accessor": "managed_runtime_int",
-      "file": "aicrm_next/platform_foundation/internal_events/config.py",
+      "file": "aicrm_next/platform/platform_foundation/internal_events/config.py",
       "key": "AICRM_INTERNAL_EVENT_WORKER_BATCH_SIZE",
       "line": 218
     },
     {
       "accessor": "environment_fallback",
-      "file": "aicrm_next/platform_foundation/execution_runtime/listener.py",
+      "file": "aicrm_next/platform/platform_foundation/execution_runtime/listener.py",
       "key": "AICRM_LISTENER_DATABASE_URL",
       "line": 35
     },
@@ -1017,21 +1017,15 @@
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/shared/signed_context.py",
+      "file": "aicrm_next/platform/shared/signed_context.py",
       "key": "AICRM_NEXT_ACTION_TOKEN_SECRET",
       "line": 23
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/shared/wechat_h5_session.py",
+      "file": "aicrm_next/platform/shared/wechat_h5_session.py",
       "key": "AICRM_NEXT_ACTION_TOKEN_SECRET",
       "line": 30
-    },
-    {
-      "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/admin_config/application.py",
-      "key": "AICRM_NEXT_ALIPAY_MODE",
-      "line": 967
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -1044,6 +1038,12 @@
       "file": "aicrm_next/channels/integration_gateway/payment_adapters.py",
       "key": "AICRM_NEXT_ALIPAY_MODE",
       "line": 486
+    },
+    {
+      "accessor": "managed_runtime_setting",
+      "file": "aicrm_next/platform/admin_config/application.py",
+      "key": "AICRM_NEXT_ALIPAY_MODE",
+      "line": 967
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -1203,13 +1203,13 @@
     },
     {
       "accessor": "os.getenv",
-      "file": "aicrm_next/shared/runtime.py",
+      "file": "aicrm_next/platform/shared/runtime.py",
       "key": "AICRM_NEXT_ENV",
       "line": 41
     },
     {
       "accessor": "os.getenv",
-      "file": "aicrm_next/shared/runtime.py",
+      "file": "aicrm_next/platform/shared/runtime.py",
       "key": "AICRM_NEXT_ENV",
       "line": 53
     },
@@ -1311,13 +1311,13 @@
     },
     {
       "accessor": "os.getenv",
-      "file": "aicrm_next/shared/release.py",
+      "file": "aicrm_next/platform/shared/release.py",
       "key": "AICRM_NEXT_RELEASE_SHA",
       "line": 62
     },
     {
       "accessor": "os.getenv",
-      "file": "aicrm_next/shared/release.py",
+      "file": "aicrm_next/platform/shared/release.py",
       "key": "AICRM_NEXT_RELEASE_SHA_FILE",
       "line": 23
     },
@@ -1382,12 +1382,6 @@
       "line": 92
     },
     {
-      "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/admin_config/application.py",
-      "key": "AICRM_NEXT_WECHAT_PAY_MODE",
-      "line": 961
-    },
-    {
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/channels/integration_gateway/payment_adapters.py",
       "key": "AICRM_NEXT_WECHAT_PAY_MODE",
@@ -1398,6 +1392,12 @@
       "file": "aicrm_next/channels/integration_gateway/payment_adapters.py",
       "key": "AICRM_NEXT_WECHAT_PAY_MODE",
       "line": 481
+    },
+    {
+      "accessor": "managed_runtime_setting",
+      "file": "aicrm_next/platform/admin_config/application.py",
+      "key": "AICRM_NEXT_WECHAT_PAY_MODE",
+      "line": 961
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -1431,7 +1431,7 @@
     },
     {
       "accessor": "declared_runtime_environment_key",
-      "file": "aicrm_next/shared/wecom_runtime.py",
+      "file": "aicrm_next/platform/shared/wecom_runtime.py",
       "key": "AICRM_NEXT_WECOM_REAL_CALLS_ENABLED",
       "line": 19
     },
@@ -1575,7 +1575,7 @@
     },
     {
       "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/shared/pii_audit.py",
+      "file": "aicrm_next/platform/shared/pii_audit.py",
       "key": "AICRM_PII_AUDIT_ENABLED",
       "line": 92
     },
@@ -1599,79 +1599,79 @@
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/shared/automation_agent_webhook_contract.py",
+      "file": "aicrm_next/platform/shared/automation_agent_webhook_contract.py",
       "key": "AICRM_PUBLIC_BASE_URL",
       "line": 17
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/shared/public_url.py",
+      "file": "aicrm_next/platform/shared/public_url.py",
       "key": "AICRM_PUBLIC_BASE_URL",
       "line": 15
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/external_effects/worker.py",
+      "file": "aicrm_next/platform/platform_foundation/external_effects/worker.py",
       "key": "AICRM_PUSH_CAPABILITY_AI_ASSIST_PUSH_ENABLED",
       "line": 38
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/external_effects/worker.py",
+      "file": "aicrm_next/platform/platform_foundation/external_effects/worker.py",
       "key": "AICRM_PUSH_CAPABILITY_CUSTOMER_WEBHOOK_ENABLED",
       "line": 38
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/external_effects/worker.py",
+      "file": "aicrm_next/platform/platform_foundation/external_effects/worker.py",
       "key": "AICRM_PUSH_CAPABILITY_GROUP_BROADCAST_ENABLED",
       "line": 38
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/external_effects/worker.py",
+      "file": "aicrm_next/platform/platform_foundation/external_effects/worker.py",
       "key": "AICRM_PUSH_CAPABILITY_GROUP_OPS_PUSH_ENABLED",
       "line": 38
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/external_effects/worker.py",
+      "file": "aicrm_next/platform/platform_foundation/external_effects/worker.py",
       "key": "AICRM_PUSH_CAPABILITY_INTEGRATIONS_ENABLED",
       "line": 38
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/external_effects/worker.py",
+      "file": "aicrm_next/platform/platform_foundation/external_effects/worker.py",
       "key": "AICRM_PUSH_CAPABILITY_ORDER_PAID_PUSH_ENABLED",
       "line": 38
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/external_effects/worker.py",
+      "file": "aicrm_next/platform/platform_foundation/external_effects/worker.py",
       "key": "AICRM_PUSH_CAPABILITY_PAYMENT_QUERY_ENABLED",
       "line": 38
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/external_effects/worker.py",
+      "file": "aicrm_next/platform/platform_foundation/external_effects/worker.py",
       "key": "AICRM_PUSH_CAPABILITY_PRIVATE_BROADCAST_ENABLED",
       "line": 38
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/external_effects/worker.py",
+      "file": "aicrm_next/platform/platform_foundation/external_effects/worker.py",
       "key": "AICRM_PUSH_CAPABILITY_QUESTIONNAIRE_EXTERNAL_PUSH_ENABLED",
       "line": 38
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/external_effects/worker.py",
+      "file": "aicrm_next/platform/platform_foundation/external_effects/worker.py",
       "key": "AICRM_PUSH_CAPABILITY_TAGS_ENABLED",
       "line": 38
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/external_effects/worker.py",
+      "file": "aicrm_next/platform/platform_foundation/external_effects/worker.py",
       "key": "AICRM_PUSH_CAPABILITY_WELCOME_MESSAGE_ENABLED",
       "line": 38
     },
@@ -1749,33 +1749,33 @@
     },
     {
       "accessor": "managed_runtime_int",
-      "file": "aicrm_next/admin_auth/public_result_grant.py",
+      "file": "aicrm_next/platform/admin_auth/public_result_grant.py",
       "key": "AICRM_QUESTIONNAIRE_RESULT_GRANT_TTL_SECONDS",
       "line": 86
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/readiness.py",
+      "file": "aicrm_next/platform/platform_foundation/readiness.py",
       "key": "AICRM_READINESS_MAX_QUEUE_AGE_SECONDS",
       "line": 21
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/readiness.py",
+      "file": "aicrm_next/platform/platform_foundation/readiness.py",
       "key": "AICRM_READINESS_MAX_TERMINAL_COUNT",
       "line": 21
-    },
-    {
-      "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/admin_auth/route_policy.py",
-      "key": "AICRM_ROUTE_POLICY_ENFORCED",
-      "line": 75
     },
     {
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/extensions/commerce/commerce/coupons/admin_api.py",
       "key": "AICRM_ROUTE_POLICY_ENFORCED",
       "line": 66
+    },
+    {
+      "accessor": "managed_runtime_setting",
+      "file": "aicrm_next/platform/admin_auth/route_policy.py",
+      "key": "AICRM_ROUTE_POLICY_ENFORCED",
+      "line": 75
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -1905,19 +1905,19 @@
     },
     {
       "accessor": "declared_runtime_environment_key",
-      "file": "aicrm_next/shared/wecom_runtime.py",
+      "file": "aicrm_next/platform/shared/wecom_runtime.py",
       "key": "AICRM_WECOM_API_BASE",
       "line": 19
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "file": "aicrm_next/platform/platform_foundation/execution_runtime/validation.py",
       "key": "AICRM_WECOM_CANARY_ALLOWED_MEDIA_TARGETS",
       "line": 19
     },
     {
       "accessor": "declared_runtime_environment_key",
-      "file": "aicrm_next/shared/wecom_runtime.py",
+      "file": "aicrm_next/platform/shared/wecom_runtime.py",
       "key": "AICRM_WECOM_CANARY_ALLOWED_MEDIA_TARGETS",
       "line": 19
     },
@@ -1959,25 +1959,25 @@
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "file": "aicrm_next/platform/platform_foundation/execution_runtime/validation.py",
       "key": "AICRM_WECOM_DEFAULT_SENDER_USERID",
       "line": 19
     },
     {
       "accessor": "declared_runtime_environment_key",
-      "file": "aicrm_next/shared/wecom_runtime.py",
+      "file": "aicrm_next/platform/shared/wecom_runtime.py",
       "key": "AICRM_WECOM_DEFAULT_SENDER_USERID",
       "line": 19
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "file": "aicrm_next/platform/platform_foundation/execution_runtime/validation.py",
       "key": "AICRM_WECOM_ENABLED_EFFECT_TYPES",
       "line": 19
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "file": "aicrm_next/platform/platform_foundation/execution_runtime/validation.py",
       "key": "AICRM_WECOM_EXECUTION_MODE",
       "line": 19
     },
@@ -2007,7 +2007,7 @@
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "file": "aicrm_next/platform/platform_foundation/execution_runtime/validation.py",
       "key": "AICRM_WECOM_GROUP_ADAPTER_MODE",
       "line": 19
     },
@@ -2127,19 +2127,19 @@
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "file": "aicrm_next/platform/platform_foundation/execution_runtime/validation.py",
       "key": "AICRM_WECOM_PRIVATE_ADAPTER_MODE",
       "line": 19
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/platform_foundation/execution_runtime/validation.py",
+      "file": "aicrm_next/platform/platform_foundation/execution_runtime/validation.py",
       "key": "AICRM_WECOM_PROVIDER_TARGET_POLICY",
       "line": 19
     },
     {
       "accessor": "declared_runtime_environment_key",
-      "file": "aicrm_next/shared/wecom_runtime.py",
+      "file": "aicrm_next/platform/shared/wecom_runtime.py",
       "key": "AICRM_WECOM_PROVIDER_TARGET_POLICY",
       "line": 19
     },
@@ -2229,19 +2229,19 @@
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/shared/public_url.py",
+      "file": "aicrm_next/platform/shared/public_url.py",
       "key": "APP_BASE_URL",
       "line": 17
     },
     {
       "accessor": "os.getenv",
-      "file": "aicrm_next/shared/runtime.py",
+      "file": "aicrm_next/platform/shared/runtime.py",
       "key": "APP_ENV",
       "line": 43
     },
     {
       "accessor": "os.getenv",
-      "file": "aicrm_next/shared/runtime.py",
+      "file": "aicrm_next/platform/shared/runtime.py",
       "key": "APP_ENV",
       "line": 55
     },
@@ -2319,13 +2319,13 @@
     },
     {
       "accessor": "os.getenv",
-      "file": "aicrm_next/shared/database.py",
+      "file": "aicrm_next/platform/shared/database.py",
       "key": "DATABASE_URL",
       "line": 24
     },
     {
       "accessor": "os.getenv",
-      "file": "aicrm_next/shared/runtime.py",
+      "file": "aicrm_next/platform/shared/runtime.py",
       "key": "DATABASE_URL",
       "line": 19
     },
@@ -2469,7 +2469,7 @@
     },
     {
       "accessor": "os.getenv",
-      "file": "aicrm_next/shared/db_session.py",
+      "file": "aicrm_next/platform/shared/db_session.py",
       "key": "DB_APPLICATION_NAME",
       "line": 80
     },
@@ -2499,13 +2499,13 @@
     },
     {
       "accessor": "os.getenv",
-      "file": "aicrm_next/shared/runtime.py",
+      "file": "aicrm_next/platform/shared/runtime.py",
       "key": "ENVIRONMENT",
       "line": 42
     },
     {
       "accessor": "os.getenv",
-      "file": "aicrm_next/shared/runtime.py",
+      "file": "aicrm_next/platform/shared/runtime.py",
       "key": "ENVIRONMENT",
       "line": 54
     },
@@ -2523,19 +2523,19 @@
     },
     {
       "accessor": "managed_runtime_int",
-      "file": "aicrm_next/external_push/service.py",
+      "file": "aicrm_next/platform/external_push/service.py",
       "key": "EXTERNAL_PUSH_WEBHOOK_TIMEOUT_SECONDS",
       "line": 280
     },
     {
       "accessor": "os.getenv",
-      "file": "aicrm_next/shared/runtime.py",
+      "file": "aicrm_next/platform/shared/runtime.py",
       "key": "FLASK_ENV",
       "line": 44
     },
     {
       "accessor": "os.getenv",
-      "file": "aicrm_next/shared/runtime.py",
+      "file": "aicrm_next/platform/shared/runtime.py",
       "key": "FLASK_ENV",
       "line": 56
     },
@@ -2565,7 +2565,7 @@
     },
     {
       "accessor": "os.getenv",
-      "file": "aicrm_next/shared/release.py",
+      "file": "aicrm_next/platform/shared/release.py",
       "key": "GIT_SHA",
       "line": 64
     },
@@ -2583,7 +2583,7 @@
     },
     {
       "accessor": "os.getenv",
-      "file": "aicrm_next/shared/db_session.py",
+      "file": "aicrm_next/platform/shared/db_session.py",
       "key": "PGAPPNAME",
       "line": 81
     },
@@ -2613,25 +2613,25 @@
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/shared/public_url.py",
+      "file": "aicrm_next/platform/shared/public_url.py",
       "key": "PUBLIC_BASE_URL",
       "line": 16
     },
     {
       "accessor": "os.getenv",
-      "file": "aicrm_next/shared/runtime.py",
+      "file": "aicrm_next/platform/shared/runtime.py",
       "key": "PYTEST_CURRENT_TEST",
       "line": 62
     },
     {
       "accessor": "os.getenv",
-      "file": "aicrm_next/shared/runtime.py",
+      "file": "aicrm_next/platform/shared/runtime.py",
       "key": "REDIS_URL",
       "line": 163
     },
     {
       "accessor": "os.getenv",
-      "file": "aicrm_next/shared/release.py",
+      "file": "aicrm_next/platform/shared/release.py",
       "key": "RELEASE_SHA",
       "line": 63
     },
@@ -2673,51 +2673,51 @@
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/shared/runtime.py",
+      "file": "aicrm_next/platform/shared/runtime.py",
       "key": "SECRET_KEY",
       "line": 135
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/shared/signed_context.py",
+      "file": "aicrm_next/platform/shared/signed_context.py",
       "key": "SECRET_KEY",
       "line": 23
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/shared/wechat_h5_session.py",
+      "file": "aicrm_next/platform/shared/wechat_h5_session.py",
       "key": "SECRET_KEY",
       "line": 31
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/shared/signed_context.py",
+      "file": "aicrm_next/platform/shared/signed_context.py",
       "key": "SIDEBAR_CONTEXT_TOKEN_TTL_SECONDS",
       "line": 23
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/shared/signed_context.py",
+      "file": "aicrm_next/platform/shared/signed_context.py",
       "key": "SIDEBAR_OWNER_CONTEXT_TOKEN_TTL_SECONDS",
       "line": 23
     },
     {
       "accessor": "declared_runtime_setting_key",
-      "file": "aicrm_next/shared/signed_context.py",
+      "file": "aicrm_next/platform/shared/signed_context.py",
       "key": "SIDEBAR_PRODUCT_CONTEXT_TOKEN_TTL_SECONDS",
       "line": 23
-    },
-    {
-      "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/admin_config/runtime_view_model.py",
-      "key": "WECHAT_MP_APPID",
-      "line": 28
     },
     {
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/admin_read_model/projections.py",
       "key": "WECHAT_MP_APPID",
       "line": 280
+    },
+    {
+      "accessor": "managed_runtime_setting",
+      "file": "aicrm_next/platform/admin_config/runtime_view_model.py",
+      "key": "WECHAT_MP_APPID",
+      "line": 28
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -2787,15 +2787,15 @@
     },
     {
       "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/admin_config/runtime_view_model.py",
-      "key": "WECHAT_OAUTH_APPID",
-      "line": 28
-    },
-    {
-      "accessor": "managed_runtime_setting",
       "file": "aicrm_next/admin_read_model/projections.py",
       "key": "WECHAT_OAUTH_APPID",
       "line": 279
+    },
+    {
+      "accessor": "managed_runtime_setting",
+      "file": "aicrm_next/platform/admin_config/runtime_view_model.py",
+      "key": "WECHAT_OAUTH_APPID",
+      "line": 28
     },
     {
       "accessor": "managed_runtime_setting",
@@ -2859,12 +2859,6 @@
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/admin_config/runtime_view_model.py",
-      "key": "WECHAT_PAY_MCH_ID",
-      "line": 24
-    },
-    {
-      "accessor": "runtime_setting",
       "file": "aicrm_next/admin_read_model/projections.py",
       "key": "WECHAT_PAY_MCH_ID",
       "line": 275
@@ -2880,6 +2874,12 @@
       "file": "aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py",
       "key": "WECHAT_PAY_MCH_ID",
       "line": 80
+    },
+    {
+      "accessor": "runtime_setting",
+      "file": "aicrm_next/platform/admin_config/runtime_view_model.py",
+      "key": "WECHAT_PAY_MCH_ID",
+      "line": 24
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -3021,7 +3021,7 @@
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/shared/runtime.py",
+      "file": "aicrm_next/platform/shared/runtime.py",
       "key": "WECHAT_SHOP_CALLBACK_TOKEN",
       "line": 136
     },
@@ -3030,12 +3030,6 @@
       "file": "aicrm_next/extensions/commerce/commerce/wechat_shop_service.py",
       "key": "WECHAT_SHOP_HTTP_TIMEOUT_SECONDS",
       "line": 109
-    },
-    {
-      "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/admin_auth/service.py",
-      "key": "WECOM_AGENT_ID",
-      "line": 83
     },
     {
       "accessor": "managed_runtime_setting",
@@ -3051,13 +3045,19 @@
     },
     {
       "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/platform_foundation/external_effects/rate_limit.py",
+      "file": "aicrm_next/platform/admin_auth/service.py",
+      "key": "WECOM_AGENT_ID",
+      "line": 83
+    },
+    {
+      "accessor": "managed_runtime_setting",
+      "file": "aicrm_next/platform/platform_foundation/external_effects/rate_limit.py",
       "key": "WECOM_AGENT_ID",
       "line": 62
     },
     {
       "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/platform_foundation/external_effects/repo_contract.py",
+      "file": "aicrm_next/platform/platform_foundation/external_effects/repo_contract.py",
       "key": "WECOM_AGENT_ID",
       "line": 200
     },
@@ -3099,7 +3099,7 @@
     },
     {
       "accessor": "declared_runtime_environment_key",
-      "file": "aicrm_next/shared/wecom_runtime.py",
+      "file": "aicrm_next/platform/shared/wecom_runtime.py",
       "key": "WECOM_API_BASE",
       "line": 19
     },
@@ -3183,12 +3183,6 @@
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/admin_config/runtime_view_model.py",
-      "key": "WECOM_CALLBACK_TOKEN",
-      "line": 23
-    },
-    {
-      "accessor": "runtime_setting",
       "file": "aicrm_next/admin_read_model/projections.py",
       "key": "WECOM_CALLBACK_TOKEN",
       "line": 274
@@ -3198,6 +3192,12 @@
       "file": "aicrm_next/channels/channel_entry/application.py",
       "key": "WECOM_CALLBACK_TOKEN",
       "line": 62
+    },
+    {
+      "accessor": "runtime_setting",
+      "file": "aicrm_next/platform/admin_config/runtime_view_model.py",
+      "key": "WECOM_CALLBACK_TOKEN",
+      "line": 23
     },
     {
       "accessor": "os.getenv",
@@ -3237,21 +3237,9 @@
     },
     {
       "accessor": "declared_runtime_environment_key",
-      "file": "aicrm_next/shared/wecom_runtime.py",
+      "file": "aicrm_next/platform/shared/wecom_runtime.py",
       "key": "WECOM_CONTACT_SECRET",
       "line": 19
-    },
-    {
-      "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/admin_auth/route_policy.py",
-      "key": "WECOM_CORP_ID",
-      "line": 251
-    },
-    {
-      "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/admin_auth/service.py",
-      "key": "WECOM_CORP_ID",
-      "line": 82
     },
     {
       "accessor": "managed_runtime_setting",
@@ -3351,25 +3339,37 @@
     },
     {
       "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/platform_foundation/external_effects/rate_limit.py",
+      "file": "aicrm_next/platform/admin_auth/route_policy.py",
+      "key": "WECOM_CORP_ID",
+      "line": 251
+    },
+    {
+      "accessor": "managed_runtime_setting",
+      "file": "aicrm_next/platform/admin_auth/service.py",
+      "key": "WECOM_CORP_ID",
+      "line": 82
+    },
+    {
+      "accessor": "managed_runtime_setting",
+      "file": "aicrm_next/platform/platform_foundation/external_effects/rate_limit.py",
       "key": "WECOM_CORP_ID",
       "line": 54
     },
     {
       "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/platform_foundation/external_effects/repo_contract.py",
+      "file": "aicrm_next/platform/platform_foundation/external_effects/repo_contract.py",
       "key": "WECOM_CORP_ID",
       "line": 186
     },
     {
       "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/shared/sidebar_access.py",
+      "file": "aicrm_next/platform/shared/sidebar_access.py",
       "key": "WECOM_CORP_ID",
       "line": 34
     },
     {
       "accessor": "declared_runtime_environment_key",
-      "file": "aicrm_next/shared/wecom_runtime.py",
+      "file": "aicrm_next/platform/shared/wecom_runtime.py",
       "key": "WECOM_CORP_ID",
       "line": 19
     },
@@ -3378,12 +3378,6 @@
       "file": "scripts/ops/generate_wecom_callback_sample.py",
       "key": "WECOM_CORP_ID",
       "line": 50
-    },
-    {
-      "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/admin_jobs/application.py",
-      "key": "WECOM_DEFAULT_OWNER_USERID",
-      "line": 66
     },
     {
       "accessor": "managed_runtime_setting",
@@ -3396,6 +3390,12 @@
       "file": "aicrm_next/extensions/archive/message_archive/sync_service.py",
       "key": "WECOM_DEFAULT_OWNER_USERID",
       "line": 25
+    },
+    {
+      "accessor": "managed_runtime_setting",
+      "file": "aicrm_next/platform/admin_jobs/application.py",
+      "key": "WECOM_DEFAULT_OWNER_USERID",
+      "line": 66
     },
     {
       "accessor": "os.getenv",
@@ -3465,19 +3465,19 @@
     },
     {
       "accessor": "declared_runtime_environment_key",
-      "file": "aicrm_next/shared/wecom_runtime.py",
+      "file": "aicrm_next/platform/shared/wecom_runtime.py",
       "key": "WECOM_SECRET",
       "line": 19
     },
     {
       "accessor": "declared_runtime_environment_key",
-      "file": "aicrm_next/shared/wecom_runtime.py",
+      "file": "aicrm_next/platform/shared/wecom_runtime.py",
       "key": "WECOM_TIMEOUT_SECONDS",
       "line": 19
     },
     {
       "accessor": "os.getenv",
-      "file": "aicrm_next/shared/runtime.py",
+      "file": "aicrm_next/platform/shared/runtime.py",
       "key": "WORKER_RELEASE_SHA",
       "line": 157
     }
@@ -3857,13 +3857,13 @@
       "provider": "wecom"
     },
     {
-      "adapter_module": "aicrm_next/platform_foundation/external_effects/adapters.py",
+      "adapter_module": "aicrm_next/platform/platform_foundation/external_effects/adapters.py",
       "allowed_runtime": "real_requires_approval",
       "audit_required": true,
       "boundary": "platform_foundation.external_effects",
       "effect_key": "wecom.external_contact.detail.fetch",
       "idempotency_required": true,
-      "migration_target": "aicrm_next/platform_foundation/external_effects/adapters.py",
+      "migration_target": "aicrm_next/platform/platform_foundation/external_effects/adapters.py",
       "owner": "identity_contact",
       "provider": "wecom"
     }
@@ -7817,7 +7817,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.admin_api_docs",
+      "endpoint": "aicrm_next.platform.admin_config.api.admin_api_docs",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.platform",
@@ -8364,7 +8364,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.admin_config_home",
+      "endpoint": "aicrm_next.platform.admin_config.api.admin_config_home",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.platform",
@@ -8394,7 +8394,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.admin_config_app_settings",
+      "endpoint": "aicrm_next.platform.admin_config.api.admin_config_app_settings",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.platform",
@@ -8424,7 +8424,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.admin_config_save_app_settings",
+      "endpoint": "aicrm_next.platform.admin_config.api.admin_config_save_app_settings",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -8454,7 +8454,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.admin_config_checklist",
+      "endpoint": "aicrm_next.platform.admin_config.api.admin_config_checklist",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.platform",
@@ -8502,7 +8502,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.admin_config_category_detail",
+      "endpoint": "aicrm_next.platform.admin_config.api.admin_config_category_detail",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.platform",
@@ -8532,7 +8532,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.admin_config_login_access",
+      "endpoint": "aicrm_next.platform.admin_config.api.admin_config_login_access",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.platform",
@@ -8560,7 +8560,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.admin_config_refresh_login_access_directory",
+      "endpoint": "aicrm_next.platform.admin_config.api.admin_config_refresh_login_access_directory",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -8588,7 +8588,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.admin_config_save_login_access",
+      "endpoint": "aicrm_next.platform.admin_config.api.admin_config_save_login_access",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -8618,7 +8618,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.admin_config_mcp_tools",
+      "endpoint": "aicrm_next.platform.admin_config.api.admin_config_mcp_tools",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.platform",
@@ -8648,7 +8648,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.admin_config_save_mcp_tool",
+      "endpoint": "aicrm_next.platform.admin_config.api.admin_config_save_mcp_tool",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -8678,7 +8678,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.admin_config_releases",
+      "endpoint": "aicrm_next.platform.admin_config.api.admin_config_releases",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.platform",
@@ -8708,7 +8708,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.admin_config_release_create",
+      "endpoint": "aicrm_next.platform.admin_config.api.admin_config_release_create",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -8738,7 +8738,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.admin_config_release_new",
+      "endpoint": "aicrm_next.platform.admin_config.api.admin_config_release_new",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.platform",
@@ -8788,7 +8788,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.admin_config_release_detail",
+      "endpoint": "aicrm_next.platform.admin_config.api.admin_config_release_detail",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.platform",
@@ -8838,7 +8838,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.admin_config_release_publish",
+      "endpoint": "aicrm_next.platform.admin_config.api.admin_config_release_publish",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -8888,7 +8888,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.admin_config_release_rollback",
+      "endpoint": "aicrm_next.platform.admin_config.api.admin_config_release_rollback",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -8938,7 +8938,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.admin_config_release_validate",
+      "endpoint": "aicrm_next.platform.admin_config.api.admin_config_release_validate",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -8968,7 +8968,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.admin_config_wecom_tags",
+      "endpoint": "aicrm_next.platform.admin_config.api.admin_config_wecom_tags",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.platform",
@@ -9981,7 +9981,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.admin_runtime_config",
+      "endpoint": "aicrm_next.platform.admin_config.api.admin_runtime_config",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.platform",
@@ -15621,7 +15621,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_jobs.routes.api_admin_broadcast_jobs",
+      "endpoint": "aicrm_next.platform.admin_jobs.routes.api_admin_broadcast_jobs",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -15649,7 +15649,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_jobs.routes.api_admin_broadcast_jobs_feishu_hourly_report_run",
+      "endpoint": "aicrm_next.platform.admin_jobs.routes.api_admin_broadcast_jobs_feishu_hourly_report_run",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -15677,7 +15677,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_jobs.routes.api_admin_broadcast_jobs_feishu_notification_settings",
+      "endpoint": "aicrm_next.platform.admin_jobs.routes.api_admin_broadcast_jobs_feishu_notification_settings",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -15705,7 +15705,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_jobs.routes.api_admin_broadcast_jobs_save_feishu_notification_settings",
+      "endpoint": "aicrm_next.platform.admin_jobs.routes.api_admin_broadcast_jobs_save_feishu_notification_settings",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -15733,7 +15733,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_jobs.routes.api_admin_broadcast_jobs_validate_feishu_notification_settings",
+      "endpoint": "aicrm_next.platform.admin_jobs.routes.api_admin_broadcast_jobs_validate_feishu_notification_settings",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -15781,7 +15781,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_jobs.routes.api_admin_broadcast_job_detail",
+      "endpoint": "aicrm_next.platform.admin_jobs.routes.api_admin_broadcast_job_detail",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -15829,7 +15829,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_jobs.routes.api_admin_broadcast_jobs_approve",
+      "endpoint": "aicrm_next.platform.admin_jobs.routes.api_admin_broadcast_jobs_approve",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -15877,7 +15877,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_jobs.routes.api_admin_broadcast_jobs_cancel",
+      "endpoint": "aicrm_next.platform.admin_jobs.routes.api_admin_broadcast_jobs_cancel",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -18169,7 +18169,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_app_settings",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_app_settings",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -18197,7 +18197,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_save_app_settings",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_save_app_settings",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -18229,7 +18229,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_capabilities",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_capabilities",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -18261,7 +18261,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_categories",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_categories",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -18309,7 +18309,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_category",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_category",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -18357,7 +18357,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_category_check",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_category_check",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -18405,7 +18405,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_category_enabled",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_category_enabled",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -18453,7 +18453,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_category_settings",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_category_settings",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -18481,7 +18481,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_class_term_tags",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_class_term_tags",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -18509,7 +18509,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_save_class_term_tag",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_save_class_term_tag",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -18541,7 +18541,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_definitions",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_definitions",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -18573,7 +18573,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_deployment_profile",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_deployment_profile",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -18605,7 +18605,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_signup_conversion",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_signup_conversion",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -18633,7 +18633,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_save_signup_conversion",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_save_signup_conversion",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -18665,7 +18665,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_mcp_tools",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_mcp_tools",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -18693,7 +18693,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_save_mcp_tool",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_save_mcp_tool",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -18725,7 +18725,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_overview",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_overview",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -18757,7 +18757,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_push_capabilities",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_push_capabilities",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -18785,7 +18785,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_patch_push_scheduler",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_patch_push_scheduler",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -18833,7 +18833,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_patch_push_capability",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_patch_push_capability",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -18886,7 +18886,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_releases_resource",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_releases_resource",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -18914,7 +18914,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_release_create_resource",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_release_create_resource",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -18962,7 +18962,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_release_resource",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_release_resource",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -19010,7 +19010,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_release_publish_resource",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_release_publish_resource",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -19058,7 +19058,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_release_rollback_resource",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_release_rollback_resource",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -19106,7 +19106,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_release_shadow_compare",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_release_shadow_compare",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -19154,7 +19154,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_release_validate_resource",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_release_validate_resource",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -19182,7 +19182,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_routing",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_routing",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -19210,7 +19210,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_save_owner_role",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_save_owner_role",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -19238,7 +19238,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_save_routing_rule",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_save_routing_rule",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -19266,7 +19266,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_signup_tags",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_signup_tags",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -19294,7 +19294,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.api_admin_config_save_signup_tag",
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_save_signup_tag",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -21173,7 +21173,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.execution_runtime.api.get_execution_runtime",
+      "endpoint": "aicrm_next.platform.platform_foundation.execution_runtime.api.get_execution_runtime",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -21221,7 +21221,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.execution_runtime.api.get_execution_timeline",
+      "endpoint": "aicrm_next.platform.platform_foundation.execution_runtime.api.get_execution_timeline",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -21434,7 +21434,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.external_effects.api.external_effect_diagnostics",
+      "endpoint": "aicrm_next.platform.platform_foundation.external_effects.api.external_effect_diagnostics",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -21577,7 +21577,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.external_effects.api.list_external_effect_jobs",
+      "endpoint": "aicrm_next.platform.platform_foundation.external_effects.api.list_external_effect_jobs",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -21625,7 +21625,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.external_effects.api.get_external_effect_job",
+      "endpoint": "aicrm_next.platform.platform_foundation.external_effects.api.get_external_effect_job",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -21673,7 +21673,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.external_effects.api.cancel_external_effect_job",
+      "endpoint": "aicrm_next.platform.platform_foundation.external_effects.api.cancel_external_effect_job",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -21721,7 +21721,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.external_effects.api.retry_external_effect_job",
+      "endpoint": "aicrm_next.platform.platform_foundation.external_effects.api.retry_external_effect_job",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -21749,7 +21749,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.external_effects.api.run_external_effect_due",
+      "endpoint": "aicrm_next.platform.platform_foundation.external_effects.api.run_external_effect_due",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -21777,7 +21777,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.external_effects.api.preview_external_effect_run_due",
+      "endpoint": "aicrm_next.platform.platform_foundation.external_effects.api.preview_external_effect_run_due",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -21805,7 +21805,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.external_effects.api.create_external_effect_test_loopback_job",
+      "endpoint": "aicrm_next.platform.platform_foundation.external_effects.api.create_external_effect_test_loopback_job",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -21928,7 +21928,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.external_effects.api.list_external_effect_test_receipts",
+      "endpoint": "aicrm_next.platform.platform_foundation.external_effects.api.list_external_effect_test_receipts",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -21976,7 +21976,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.external_effects.api.get_external_effect_test_receipt",
+      "endpoint": "aicrm_next.platform.platform_foundation.external_effects.api.get_external_effect_test_receipt",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -22139,7 +22139,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.external_effects.api.list_external_effect_troubleshooting_jobs",
+      "endpoint": "aicrm_next.platform.platform_foundation.external_effects.api.list_external_effect_troubleshooting_jobs",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -22187,7 +22187,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.external_effects.api.get_external_effect_troubleshooting_job",
+      "endpoint": "aicrm_next.platform.platform_foundation.external_effects.api.get_external_effect_troubleshooting_job",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -22330,7 +22330,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.external_effects.api.external_effect_troubleshooting_summary",
+      "endpoint": "aicrm_next.platform.platform_foundation.external_effects.api.external_effect_troubleshooting_summary",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -24335,7 +24335,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.internal_events.api.list_internal_events",
+      "endpoint": "aicrm_next.platform.platform_foundation.internal_events.api.list_internal_events",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -24438,7 +24438,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.internal_events.api.internal_events_diagnostics",
+      "endpoint": "aicrm_next.platform.platform_foundation.internal_events.api.internal_events_diagnostics",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -24466,7 +24466,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.internal_events.api.run_internal_event_due",
+      "endpoint": "aicrm_next.platform.platform_foundation.internal_events.api.run_internal_event_due",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -24494,7 +24494,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.internal_events.api.preview_internal_event_run_due",
+      "endpoint": "aicrm_next.platform.platform_foundation.internal_events.api.preview_internal_event_run_due",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -24542,7 +24542,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.internal_events.api.get_internal_event",
+      "endpoint": "aicrm_next.platform.platform_foundation.internal_events.api.get_internal_event",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -24599,7 +24599,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.internal_events.api.retry_internal_event_consumer",
+      "endpoint": "aicrm_next.platform.platform_foundation.internal_events.api.retry_internal_event_consumer",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -24656,7 +24656,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.internal_events.api.run_internal_event_consumer",
+      "endpoint": "aicrm_next.platform.platform_foundation.internal_events.api.run_internal_event_consumer",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -24713,7 +24713,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.internal_events.api.skip_internal_event_consumer",
+      "endpoint": "aicrm_next.platform.platform_foundation.internal_events.api.skip_internal_event_consumer",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -24761,7 +24761,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.internal_events.api.get_internal_event_reconciliation",
+      "endpoint": "aicrm_next.platform.platform_foundation.internal_events.api.get_internal_event_reconciliation",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -24789,7 +24789,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_jobs.routes.api_admin_jobs_archive_sync",
+      "endpoint": "aicrm_next.platform.admin_jobs.routes.api_admin_jobs_archive_sync",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -24817,7 +24817,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_jobs.routes.api_admin_jobs_archive_sync_run",
+      "endpoint": "aicrm_next.platform.admin_jobs.routes.api_admin_jobs_archive_sync_run",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -24845,7 +24845,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_jobs.routes.api_admin_jobs_callbacks",
+      "endpoint": "aicrm_next.platform.admin_jobs.routes.api_admin_jobs_callbacks",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -24873,7 +24873,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_jobs.routes.api_admin_jobs_deferred_jobs",
+      "endpoint": "aicrm_next.platform.admin_jobs.routes.api_admin_jobs_deferred_jobs",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -24901,7 +24901,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_jobs.routes.api_admin_jobs_message_batches",
+      "endpoint": "aicrm_next.platform.admin_jobs.routes.api_admin_jobs_message_batches",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -24949,7 +24949,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_jobs.routes.api_admin_jobs_message_batch_detail",
+      "endpoint": "aicrm_next.platform.admin_jobs.routes.api_admin_jobs_message_batch_detail",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -24997,7 +24997,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_jobs.routes.api_admin_jobs_message_batch_ack",
+      "endpoint": "aicrm_next.platform.admin_jobs.routes.api_admin_jobs_message_batch_ack",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -25025,7 +25025,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_jobs.routes.api_admin_jobs_order_identity_repair_run",
+      "endpoint": "aicrm_next.platform.admin_jobs.routes.api_admin_jobs_order_identity_repair_run",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -25053,7 +25053,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_jobs.routes.api_admin_jobs_summary",
+      "endpoint": "aicrm_next.platform.admin_jobs.routes.api_admin_jobs_summary",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -25081,7 +25081,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_jobs.routes.api_admin_jobs_webhook_deliveries",
+      "endpoint": "aicrm_next.platform.admin_jobs.routes.api_admin_jobs_webhook_deliveries",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -27251,7 +27251,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.push_center.api.push_center_jobs",
+      "endpoint": "aicrm_next.platform.platform_foundation.push_center.api.push_center_jobs",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -27299,7 +27299,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.push_center.api.push_center_job_detail",
+      "endpoint": "aicrm_next.platform.platform_foundation.push_center.api.push_center_job_detail",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -27347,7 +27347,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.push_center.api.push_center_cancel_job",
+      "endpoint": "aicrm_next.platform.platform_foundation.push_center.api.push_center_cancel_job",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -27395,7 +27395,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.push_center.api.push_center_job_reconciliation",
+      "endpoint": "aicrm_next.platform.platform_foundation.push_center.api.push_center_job_reconciliation",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -27443,7 +27443,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.push_center.api.push_center_retry_job",
+      "endpoint": "aicrm_next.platform.platform_foundation.push_center.api.push_center_retry_job",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -27636,7 +27636,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.push_center.api.push_center_sections",
+      "endpoint": "aicrm_next.platform.platform_foundation.push_center.api.push_center_sections",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -27829,7 +27829,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.push_center.api.push_center_stats",
+      "endpoint": "aicrm_next.platform.platform_foundation.push_center.api.push_center_stats",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -33036,7 +33036,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.webhook_inbox.api.list_webhook_inbox_items",
+      "endpoint": "aicrm_next.platform.platform_foundation.webhook_inbox.api.list_webhook_inbox_items",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -33145,7 +33145,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.webhook_inbox.api.webhook_inbox_metrics",
+      "endpoint": "aicrm_next.platform.platform_foundation.webhook_inbox.api.webhook_inbox_metrics",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -33173,7 +33173,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.webhook_inbox.api.run_webhook_inbox_due",
+      "endpoint": "aicrm_next.platform.platform_foundation.webhook_inbox.api.run_webhook_inbox_due",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -33221,7 +33221,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.webhook_inbox.api.get_webhook_inbox_item",
+      "endpoint": "aicrm_next.platform.platform_foundation.webhook_inbox.api.get_webhook_inbox_item",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -33269,7 +33269,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.webhook_inbox.api.dispatch_webhook_inbox_item",
+      "endpoint": "aicrm_next.platform.platform_foundation.webhook_inbox.api.dispatch_webhook_inbox_item",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -33317,7 +33317,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.webhook_inbox.api.retry_webhook_inbox_item",
+      "endpoint": "aicrm_next.platform.platform_foundation.webhook_inbox.api.retry_webhook_inbox_item",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -33365,7 +33365,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.webhook_inbox.api.skip_webhook_inbox_item",
+      "endpoint": "aicrm_next.platform.platform_foundation.webhook_inbox.api.skip_webhook_inbox_item",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -35603,7 +35603,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.webhook_inbox.api.wecom_callback_reconciliation",
+      "endpoint": "aicrm_next.platform.platform_foundation.webhook_inbox.api.wecom_callback_reconciliation",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -35635,7 +35635,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.external_effects.api.wecom_execution_diagnostics",
+      "endpoint": "aicrm_next.platform.platform_foundation.external_effects.api.wecom_execution_diagnostics",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -38544,7 +38544,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.external_effects.api.external_effect_test_receiver",
+      "endpoint": "aicrm_next.platform.platform_foundation.external_effects.api.external_effect_test_receiver",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -45968,7 +45968,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.api.system_health",
+      "endpoint": "aicrm_next.platform.platform_foundation.api.system_health",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -46000,7 +46000,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.api.runtime_route_map",
+      "endpoint": "aicrm_next.platform.platform_foundation.api.runtime_route_map",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -46622,7 +46622,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.api.health",
+      "endpoint": "aicrm_next.platform.platform_foundation.api.health",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -46650,7 +46650,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_auth.api.admin_login_page",
+      "endpoint": "aicrm_next.platform.admin_auth.api.admin_login_page",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.platform",
@@ -46678,7 +46678,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_auth.api.admin_logout",
+      "endpoint": "aicrm_next.platform.admin_auth.api.admin_logout",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -46791,7 +46791,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.auth_platform.api.token_endpoint",
+      "endpoint": "aicrm_next.platform.platform_foundation.auth_platform.api.token_endpoint",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -47205,7 +47205,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.setup_wizard",
+      "endpoint": "aicrm_next.platform.admin_config.api.setup_wizard",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.platform",
@@ -47235,7 +47235,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.admin_config.api.setup_wizard_save",
+      "endpoint": "aicrm_next.platform.admin_config.api.setup_wizard_save",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.platform",
@@ -47397,7 +47397,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.platform_foundation.verification_files.wechat_domain_verification_file",
+      "endpoint": "aicrm_next.platform.platform_foundation.verification_files.wechat_domain_verification_file",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.channels",
@@ -47694,10 +47694,10 @@
       "migration_source": "0085_admin_config_audit_baseline",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.admin_config"
+        "aicrm_next.platform.admin_config"
       ],
       "table": "admin_login_audit",
-      "write_owner": "aicrm_next.admin_config"
+      "write_owner": "aicrm_next.platform.admin_config"
     },
     {
       "domain": "platform_foundation",
@@ -47706,11 +47706,11 @@
       "migration_source": "0085_admin_config_audit_baseline",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.admin_config",
-        "aicrm_next.admin_read_model"
+        "aicrm_next.admin_read_model",
+        "aicrm_next.platform.admin_config"
       ],
       "table": "admin_operation_logs",
-      "write_owner": "aicrm_next.platform_foundation.admin_audit"
+      "write_owner": "aicrm_next.platform.platform_foundation.admin_audit"
     },
     {
       "domain": "legacy_auth",
@@ -47731,10 +47731,10 @@
       "migration_source": "0085_admin_config_audit_baseline",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.admin_config"
+        "aicrm_next.platform.admin_config"
       ],
       "table": "admin_user_roles",
-      "write_owner": "aicrm_next.admin_config"
+      "write_owner": "aicrm_next.platform.admin_config"
     },
     {
       "domain": "admin_config",
@@ -47743,10 +47743,10 @@
       "migration_source": "0085_admin_config_audit_baseline",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.admin_config"
+        "aicrm_next.platform.admin_config"
       ],
       "table": "admin_users",
-      "write_owner": "aicrm_next.admin_config"
+      "write_owner": "aicrm_next.platform.admin_config"
     },
     {
       "domain": "admin_identity",
@@ -47902,7 +47902,7 @@
       "pii_level": "restricted_business_payload",
       "read_owners": [
         "aicrm_next.extensions.ai.ai_audience_ops",
-        "aicrm_next.platform_foundation.execution_runtime"
+        "aicrm_next.platform.platform_foundation.execution_runtime"
       ],
       "table": "ai_audience_refresh_intent",
       "write_owner": "aicrm_next.extensions.ai.ai_audience_ops"
@@ -47962,14 +47962,14 @@
       "migration_source": "0084_id_dev_p1_baseline_tables",
       "pii_level": "config_secret",
       "read_owners": [
-        "aicrm_next.admin_config.repository",
         "aicrm_next.extensions.archive.message_archive.repo",
         "aicrm_next.extensions.forms.questionnaire.repo",
-        "aicrm_next.platform_foundation.push_center.capability_repository",
-        "aicrm_next.shared.runtime_settings"
+        "aicrm_next.platform.admin_config.repository",
+        "aicrm_next.platform.platform_foundation.push_center.capability_repository",
+        "aicrm_next.platform.shared.runtime_settings"
       ],
       "table": "app_settings",
-      "write_owner": "aicrm_next.admin_config.repository"
+      "write_owner": "aicrm_next.platform.admin_config.repository"
     },
     {
       "domain": "messaging",
@@ -48063,7 +48063,7 @@
         "centralized route authentication"
       ],
       "table": "auth_api_clients",
-      "write_owner": "aicrm_next.platform_foundation.auth_platform"
+      "write_owner": "aicrm_next.platform.platform_foundation.auth_platform"
     },
     {
       "domain": "auth_platform",
@@ -48075,7 +48075,7 @@
         "security operations"
       ],
       "table": "auth_security_events",
-      "write_owner": "aicrm_next.platform_foundation.auth_platform"
+      "write_owner": "aicrm_next.platform.platform_foundation.auth_platform"
     },
     {
       "domain": "auth_platform",
@@ -48087,7 +48087,7 @@
         "centralized human session authentication"
       ],
       "table": "auth_sessions",
-      "write_owner": "aicrm_next.platform_foundation.auth_platform"
+      "write_owner": "aicrm_next.platform.platform_foundation.auth_platform"
     },
     {
       "domain": "auth_platform",
@@ -48100,7 +48100,7 @@
         "centralized webhook HMAC verification"
       ],
       "table": "auth_webhook_clients",
-      "write_owner": "aicrm_next.platform_foundation.auth_platform"
+      "write_owner": "aicrm_next.platform.platform_foundation.auth_platform"
     },
     {
       "domain": "auth_platform",
@@ -48112,7 +48112,7 @@
         "centralized webhook HMAC verification"
       ],
       "table": "auth_webhook_replay",
-      "write_owner": "aicrm_next.platform_foundation.auth_platform"
+      "write_owner": "aicrm_next.platform.platform_foundation.auth_platform"
     },
     {
       "domain": "automation_agents",
@@ -48600,8 +48600,8 @@
       "migration_source": "0015_group_ops_plans",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.admin_jobs.application",
         "aicrm_next.automation_engine.group_ops.postgres_repo",
+        "aicrm_next.platform.admin_jobs.application",
         "broadcast jobs projection"
       ],
       "table": "automation_group_ops_plans",
@@ -49126,9 +49126,9 @@
       "migration_source": "0021_broadcast_queue_platform_hardening",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.admin_jobs",
         "aicrm_next.background_jobs",
-        "aicrm_next.delivery_lineage"
+        "aicrm_next.delivery_lineage",
+        "aicrm_next.platform.admin_jobs"
       ],
       "table": "broadcast_job_events",
       "write_owner": "aicrm_next.background_jobs.broadcast_queue_worker"
@@ -49143,7 +49143,7 @@
         "historical schema drift guard"
       ],
       "table": "broadcast_job_hourly_reports",
-      "write_owner": "aicrm_next.admin_jobs"
+      "write_owner": "aicrm_next.platform.admin_jobs"
     },
     {
       "domain": "broadcast",
@@ -49152,11 +49152,11 @@
       "migration_source": "0008_broadcast_jobs, hardened by 0021/0066/0089/0100 and crash-safe finalization by 0103",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.admin_jobs.repository",
         "aicrm_next.admin_read_model.repo",
         "aicrm_next.background_jobs.broadcast_queue_worker",
         "aicrm_next.extensions.ai.ai_assist.external_campaigns_repo",
-        "aicrm_next.extensions.growth.cloud_orchestrator.repository"
+        "aicrm_next.extensions.growth.cloud_orchestrator.repository",
+        "aicrm_next.platform.admin_jobs.repository"
       ],
       "table": "broadcast_jobs",
       "write_owner": "aicrm_next.background_jobs"
@@ -49168,10 +49168,10 @@
       "migration_source": "0019_broadcast_queue_notification_settings",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.admin_jobs"
+        "aicrm_next.platform.admin_jobs"
       ],
       "table": "broadcast_queue_notification_settings",
-      "write_owner": "aicrm_next.admin_jobs"
+      "write_owner": "aicrm_next.platform.admin_jobs"
     },
     {
       "domain": "legacy_callback",
@@ -49442,12 +49442,12 @@
       "migration_source": "0144_config_release_control_plane",
       "pii_level": "config_secret",
       "read_owners": [
-        "aicrm_next.admin_config.api",
-        "aicrm_next.admin_config.config_release_repository",
-        "aicrm_next.admin_config.config_releases"
+        "aicrm_next.platform.admin_config.api",
+        "aicrm_next.platform.admin_config.config_release_repository",
+        "aicrm_next.platform.admin_config.config_releases"
       ],
       "table": "config_releases",
-      "write_owner": "aicrm_next.admin_config.config_release_repository"
+      "write_owner": "aicrm_next.platform.admin_config.config_release_repository"
     },
     {
       "domain": "customer_tags",
@@ -49761,12 +49761,12 @@
       "migration_source": "0144_config_release_control_plane",
       "pii_level": "internal",
       "read_owners": [
-        "aicrm_next.admin_config.api",
-        "aicrm_next.admin_config.config_release_repository",
-        "aicrm_next.admin_config.config_releases"
+        "aicrm_next.platform.admin_config.api",
+        "aicrm_next.platform.admin_config.config_release_repository",
+        "aicrm_next.platform.admin_config.config_releases"
       ],
       "table": "deployment_profile_state",
-      "write_owner": "aicrm_next.admin_config.config_release_repository"
+      "write_owner": "aicrm_next.platform.admin_config.config_release_repository"
     },
     {
       "domain": "commerce_events",
@@ -49776,10 +49776,10 @@
       "pii_level": "",
       "read_owners": [
         "aicrm_next.extensions.commerce.commerce.external_push_admin",
-        "aicrm_next.external_push.repo"
+        "aicrm_next.platform.external_push.repo"
       ],
       "table": "domain_event_outbox",
-      "write_owner": "aicrm_next.external_push"
+      "write_owner": "aicrm_next.platform.external_push"
     },
     {
       "domain": "identity_contact",
@@ -49802,11 +49802,11 @@
       "pii_level": "",
       "read_owners": [
         "admin external effect APIs",
-        "aicrm_next.platform_foundation.execution_runtime.read_model",
+        "aicrm_next.platform.platform_foundation.execution_runtime.read_model",
         "push center projection"
       ],
       "table": "external_effect_attempt",
-      "write_owner": "aicrm_next.platform_foundation.external_effects"
+      "write_owner": "aicrm_next.platform.platform_foundation.external_effects"
     },
     {
       "domain": "external_effects",
@@ -49816,13 +49816,13 @@
       "pii_level": "internal_contact",
       "read_owners": [
         "admin external effect APIs",
-        "aicrm_next.platform_foundation.execution_runtime.read_model",
-        "aicrm_next.platform_foundation.external_effects.reconciliation",
-        "aicrm_next.platform_foundation.external_effects.worker",
+        "aicrm_next.platform.platform_foundation.execution_runtime.read_model",
+        "aicrm_next.platform.platform_foundation.external_effects.reconciliation",
+        "aicrm_next.platform.platform_foundation.external_effects.worker",
         "push center projection"
       ],
       "table": "external_effect_job",
-      "write_owner": "aicrm_next.platform_foundation.external_effects"
+      "write_owner": "aicrm_next.platform.platform_foundation.external_effects"
     },
     {
       "domain": "external",
@@ -49834,7 +49834,7 @@
         "historical schema drift guard"
       ],
       "table": "external_effect_test_receipt",
-      "write_owner": "aicrm_next.platform_foundation.external_effects"
+      "write_owner": "aicrm_next.platform.platform_foundation.external_effects"
     },
     {
       "domain": "external",
@@ -49843,7 +49843,7 @@
       "migration_source": "0023_product_external_push",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.external_push"
+        "aicrm_next.platform.external_push"
       ],
       "table": "external_push_config",
       "write_owner": "aicrm_next.extensions.commerce.commerce"
@@ -49856,11 +49856,11 @@
       "pii_level": "",
       "read_owners": [
         "aicrm_next.extensions.commerce.commerce.external_push_admin",
-        "aicrm_next.external_push.repo",
+        "aicrm_next.platform.external_push.repo",
         "external_effect compatibility diagnostics"
       ],
       "table": "external_push_delivery",
-      "write_owner": "aicrm_next.external_push"
+      "write_owner": "aicrm_next.platform.external_push"
     },
     {
       "domain": "group_ops",
@@ -50037,12 +50037,12 @@
       "pii_level": "",
       "read_owners": [
         "aicrm_next.crm.customer_read_model.refresh_scope_repository",
-        "aicrm_next.platform_foundation.execution_runtime.read_model",
-        "aicrm_next.platform_foundation.internal_events.worker",
+        "aicrm_next.platform.platform_foundation.execution_runtime.read_model",
+        "aicrm_next.platform.platform_foundation.internal_events.worker",
         "internal event admin/reconciliation APIs"
       ],
       "table": "internal_event",
-      "write_owner": "aicrm_next.platform_foundation.internal_events.service"
+      "write_owner": "aicrm_next.platform.platform_foundation.internal_events.service"
     },
     {
       "domain": "internal_events",
@@ -50051,11 +50051,11 @@
       "migration_source": "0043_internal_event_queue, manual retry audit hardened by 0099_internal_event_outbox_and_consumer_lease",
       "pii_level": "",
       "read_owners": [
-        "aicrm_next.platform_foundation.execution_runtime.read_model",
+        "aicrm_next.platform.platform_foundation.execution_runtime.read_model",
         "internal event admin/reconciliation APIs"
       ],
       "table": "internal_event_consumer_attempt",
-      "write_owner": "aicrm_next.platform_foundation.internal_events"
+      "write_owner": "aicrm_next.platform.platform_foundation.internal_events"
     },
     {
       "domain": "internal_events",
@@ -50064,11 +50064,11 @@
       "migration_source": "0043_internal_event_queue, lease CAS hardened by 0099_internal_event_outbox_and_consumer_lease",
       "pii_level": "",
       "read_owners": [
-        "aicrm_next.platform_foundation.execution_runtime.read_model",
+        "aicrm_next.platform.platform_foundation.execution_runtime.read_model",
         "internal event admin/reconciliation APIs"
       ],
       "table": "internal_event_consumer_run",
-      "write_owner": "aicrm_next.platform_foundation.internal_events"
+      "write_owner": "aicrm_next.platform.platform_foundation.internal_events"
     },
     {
       "domain": "internal_events",
@@ -50078,12 +50078,12 @@
       "pii_level": "restricted_business_payload",
       "read_owners": [
         "aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation",
-        "aicrm_next.platform_foundation.execution_runtime.read_model",
-        "aicrm_next.platform_foundation.internal_events.reconciliation",
-        "aicrm_next.platform_foundation.internal_events.worker"
+        "aicrm_next.platform.platform_foundation.execution_runtime.read_model",
+        "aicrm_next.platform.platform_foundation.internal_events.reconciliation",
+        "aicrm_next.platform.platform_foundation.internal_events.worker"
       ],
       "table": "internal_event_outbox",
-      "write_owner": "aicrm_next.platform_foundation.internal_events"
+      "write_owner": "aicrm_next.platform.platform_foundation.internal_events"
     },
     {
       "domain": "legacy_webhook_cleanup",
@@ -50112,11 +50112,11 @@
       "migration_source": "0083_create_marketing_automation_config_tables",
       "pii_level": "",
       "read_owners": [
-        "aicrm_next.admin_config.application",
-        "aicrm_next.admin_config.repository"
+        "aicrm_next.platform.admin_config.application",
+        "aicrm_next.platform.admin_config.repository"
       ],
       "table": "marketing_automation_configs",
-      "write_owner": "aicrm_next.admin_config.repository"
+      "write_owner": "aicrm_next.platform.admin_config.repository"
     },
     {
       "domain": "admin_config",
@@ -50125,11 +50125,11 @@
       "migration_source": "0083_create_marketing_automation_config_tables",
       "pii_level": "",
       "read_owners": [
-        "aicrm_next.admin_config.application",
-        "aicrm_next.admin_config.repository"
+        "aicrm_next.platform.admin_config.application",
+        "aicrm_next.platform.admin_config.repository"
       ],
       "table": "marketing_automation_question_rules",
-      "write_owner": "aicrm_next.admin_config.repository"
+      "write_owner": "aicrm_next.platform.admin_config.repository"
     },
     {
       "domain": "legacy_customer_projection",
@@ -50162,10 +50162,10 @@
       "migration_source": "0084_id_dev_p1_baseline_tables",
       "pii_level": "config_secret",
       "read_owners": [
-        "aicrm_next.admin_config.repository"
+        "aicrm_next.platform.admin_config.repository"
       ],
       "table": "mcp_tool_settings",
-      "write_owner": "aicrm_next.admin_config.repository"
+      "write_owner": "aicrm_next.platform.admin_config.repository"
     },
     {
       "domain": "messaging",
@@ -50319,9 +50319,9 @@
       "migration_source": "migrations/baselines/0001_post_legacy.sql",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.admin_jobs",
         "aicrm_next.admin_read_model",
-        "aicrm_next.background_jobs"
+        "aicrm_next.background_jobs",
+        "aicrm_next.platform.admin_jobs"
       ],
       "table": "outbound_tasks",
       "write_owner": "aicrm_next.background_jobs.broadcast_queue_worker"
@@ -50333,10 +50333,10 @@
       "migration_source": "0076_create_missing_baseline_runtime_tables",
       "pii_level": "",
       "read_owners": [
-        "aicrm_next.admin_jobs.repository"
+        "aicrm_next.platform.admin_jobs.repository"
       ],
       "table": "outbound_webhook_deliveries",
-      "write_owner": "aicrm_next.admin_jobs"
+      "write_owner": "aicrm_next.platform.admin_jobs"
     },
     {
       "domain": "owner_migration",
@@ -50552,7 +50552,7 @@
         "execution runtime admin read model"
       ],
       "table": "queue_fairness_cursor",
-      "write_owner": "aicrm_next.platform_foundation.execution_runtime.repository"
+      "write_owner": "aicrm_next.platform.platform_foundation.execution_runtime.repository"
     },
     {
       "domain": "platform_foundation",
@@ -50578,7 +50578,7 @@
         "execution runtime admin read model"
       ],
       "table": "queue_lane_policy",
-      "write_owner": "aicrm_next.platform_foundation.execution_runtime"
+      "write_owner": "aicrm_next.platform.platform_foundation.execution_runtime"
     },
     {
       "domain": "platform_foundation",
@@ -50591,7 +50591,7 @@
         "execution runtime admin read model"
       ],
       "table": "queue_policy_snapshot",
-      "write_owner": "aicrm_next.platform_foundation.execution_runtime"
+      "write_owner": "aicrm_next.platform.platform_foundation.execution_runtime"
     },
     {
       "domain": "platform_foundation",
@@ -50604,7 +50604,7 @@
         "execution runtime admin read model"
       ],
       "table": "queue_rate_scope_cooldown",
-      "write_owner": "aicrm_next.platform_foundation.rate_scope_cooldown"
+      "write_owner": "aicrm_next.platform.platform_foundation.rate_scope_cooldown"
     },
     {
       "domain": "platform_foundation",
@@ -50630,7 +50630,7 @@
         "execution runtime admin read model"
       ],
       "table": "queue_runtime_control",
-      "write_owner": "aicrm_next.platform_foundation.execution_runtime"
+      "write_owner": "aicrm_next.platform.platform_foundation.execution_runtime"
     },
     {
       "domain": "platform_foundation",
@@ -50643,7 +50643,7 @@
         "execution runtime consistency audit"
       ],
       "table": "queue_runtime_lease_recovery_event",
-      "write_owner": "aicrm_next.platform_foundation.execution_runtime.repository"
+      "write_owner": "aicrm_next.platform.platform_foundation.execution_runtime.repository"
     },
     {
       "domain": "platform_foundation",
@@ -50656,7 +50656,7 @@
         "execution runtime consistency audit"
       ],
       "table": "queue_runtime_scope_transition_audit",
-      "write_owner": "aicrm_next.platform_foundation.execution_runtime.cutover"
+      "write_owner": "aicrm_next.platform.platform_foundation.execution_runtime.cutover"
     },
     {
       "domain": "platform_foundation",
@@ -50695,7 +50695,7 @@
         "execution runtime consistency audit"
       ],
       "table": "queue_runtime_validation_evidence",
-      "write_owner": "aicrm_next.platform_foundation.execution_runtime.validation"
+      "write_owner": "aicrm_next.platform.platform_foundation.execution_runtime.validation"
     },
     {
       "domain": "platform_foundation",
@@ -50721,7 +50721,7 @@
         "execution runtime consistency audit"
       ],
       "table": "queue_worker_heartbeat",
-      "write_owner": "aicrm_next.platform_foundation.execution_runtime"
+      "write_owner": "aicrm_next.platform.platform_foundation.execution_runtime"
     },
     {
       "domain": "radar",
@@ -50943,11 +50943,11 @@
       "migration_source": "migrations/baselines/0001_post_legacy.sql",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.admin_jobs",
-        "aicrm_next.admin_read_model"
+        "aicrm_next.admin_read_model",
+        "aicrm_next.platform.admin_jobs"
       ],
       "table": "sync_runs",
-      "write_owner": "aicrm_next.platform_foundation.job_runs"
+      "write_owner": "aicrm_next.platform.platform_foundation.job_runs"
     },
     {
       "domain": "legacy_user_ops",
@@ -51150,13 +51150,13 @@
       "migration_source": "0054_webhook_inbox",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.platform_foundation.execution_runtime",
-        "aicrm_next.platform_foundation.execution_runtime.read_model",
-        "aicrm_next.platform_foundation.webhook_inbox",
+        "aicrm_next.platform.platform_foundation.execution_runtime",
+        "aicrm_next.platform.platform_foundation.execution_runtime.read_model",
+        "aicrm_next.platform.platform_foundation.webhook_inbox",
         "historical schema drift guard"
       ],
       "table": "webhook_inbox",
-      "write_owner": "aicrm_next.platform_foundation.webhook_inbox"
+      "write_owner": "aicrm_next.platform.platform_foundation.webhook_inbox"
     },
     {
       "domain": "commerce",
@@ -51204,8 +51204,8 @@
         "aicrm_next.extensions.commerce.commerce.coupons.checker",
         "aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation",
         "aicrm_next.extensions.commerce.service_period",
-        "aicrm_next.external_push",
-        "aicrm_next.platform_foundation.internal_events"
+        "aicrm_next.platform.external_push",
+        "aicrm_next.platform.platform_foundation.internal_events"
       ],
       "table": "wechat_pay_orders",
       "write_owner": "aicrm_next.extensions.commerce.commerce.wechat_pay_service"
@@ -51232,7 +51232,7 @@
         "aicrm_next.crm.customer_read_model.sidebar_v2",
         "aicrm_next.extensions.commerce.commerce.coupons",
         "aicrm_next.extensions.commerce.service_period",
-        "aicrm_next.external_push"
+        "aicrm_next.platform.external_push"
       ],
       "table": "wechat_pay_products",
       "write_owner": "aicrm_next.extensions.commerce.commerce.wechat_pay_service"
@@ -51357,9 +51357,9 @@
       "migration_source": "migrations/baselines/0001_post_legacy.sql",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.admin_jobs",
         "aicrm_next.admin_read_model",
-        "aicrm_next.crm.identity_contact"
+        "aicrm_next.crm.identity_contact",
+        "aicrm_next.platform.admin_jobs"
       ],
       "table": "wecom_external_contact_event_logs",
       "write_owner": "aicrm_next.crm.identity_contact"

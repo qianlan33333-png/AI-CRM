@@ -3,10 +3,10 @@ from dataclasses import replace
 import jwt
 import pytest
 
-from aicrm_next.platform_foundation.auth_platform.context import PrincipalType
-from aicrm_next.platform_foundation.auth_platform.credentials import hash_client_secret, issue_client_secret
-from aicrm_next.platform_foundation.auth_platform.models import ApiClientRecord
-from aicrm_next.platform_foundation.auth_platform.service import ApiClientService, AuthError, AuthServiceConfig
+from aicrm_next.platform.platform_foundation.auth_platform.context import PrincipalType
+from aicrm_next.platform.platform_foundation.auth_platform.credentials import hash_client_secret, issue_client_secret
+from aicrm_next.platform.platform_foundation.auth_platform.models import ApiClientRecord
+from aicrm_next.platform.platform_foundation.auth_platform.service import ApiClientService, AuthError, AuthServiceConfig
 
 
 SIGNING_KEY = "unit-test-jwt-signing-key-material-at-least-32-bytes"

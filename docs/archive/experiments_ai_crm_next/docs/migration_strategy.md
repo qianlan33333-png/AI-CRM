@@ -98,7 +98,7 @@ AICRM_NEXT_TEST_DATABASE_URL=postgresql+psycopg://user:pass@127.0.0.1:5432/aicrm
   docs/archive/experiments_ai_crm_next/workspace/scripts/run_postgres_integration_tests.sh
 ```
 
-Safety is enforced by `aicrm_next/shared/postgres_test_guard.py`: the database URL must be local and must contain a test marker in the database name. Ordinary `.venv/bin/python -m pytest -q` skips these tests when no `AICRM_NEXT_TEST_DATABASE_URL` is provided.
+Safety is enforced by `aicrm_next/platform/shared/postgres_test_guard.py`: the database URL must be local and must contain a test marker in the database name. Ordinary `.venv/bin/python -m pytest -q` skips these tests when no `AICRM_NEXT_TEST_DATABASE_URL` is provided.
 
 These tests validate migration upgrade/downgrade and SQL repository behavior only. They do not connect to production PostgreSQL, do not import production data, and do not call real WeCom.
 

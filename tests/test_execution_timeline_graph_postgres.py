@@ -12,26 +12,26 @@ from aicrm_next.external_effect_composition import (
     build_external_effect_continuation_registry,
     build_external_effect_settlement_consumers,
 )
-from aicrm_next.platform_foundation.execution_runtime.read_model import (
+from aicrm_next.platform.platform_foundation.execution_runtime.read_model import (
     TIMELINE_MAX_EXECUTION_NODES,
     ExecutionRuntimeReadModel,
 )
-from aicrm_next.platform_foundation.external_effects.completion_events import (
+from aicrm_next.platform.platform_foundation.external_effects.completion_events import (
     EXTERNAL_EFFECT_COMPLETED_EVENT_TYPE,
     register_external_effect_completed_consumers,
 )
-from aicrm_next.platform_foundation.external_effects.models import ExternalEffectDispatchResult
-from aicrm_next.platform_foundation.external_effects.repo import SQLAlchemyExternalEffectRepository
-from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
-from aicrm_next.platform_foundation.external_effects.settlement_events import (
+from aicrm_next.platform.platform_foundation.external_effects.models import ExternalEffectDispatchResult
+from aicrm_next.platform.platform_foundation.external_effects.repo import SQLAlchemyExternalEffectRepository
+from aicrm_next.platform.platform_foundation.external_effects.service import ExternalEffectService
+from aicrm_next.platform.platform_foundation.external_effects.settlement_events import (
     EXTERNAL_EFFECT_SETTLED_EVENT_TYPE,
     register_external_effect_settled_consumers,
 )
-from aicrm_next.platform_foundation.internal_events.consumer_registry import (
+from aicrm_next.platform.platform_foundation.internal_events.consumer_registry import (
     InternalEventConsumerRegistry,
 )
-from aicrm_next.platform_foundation.internal_events.outbox import InternalEventOutboxRelay
-from aicrm_next.platform_foundation.internal_events.repository import (
+from aicrm_next.platform.platform_foundation.internal_events.outbox import InternalEventOutboxRelay
+from aicrm_next.platform.platform_foundation.internal_events.repository import (
     SQLAlchemyInternalEventRepository,
 )
 

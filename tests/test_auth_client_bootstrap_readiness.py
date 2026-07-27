@@ -6,9 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from aicrm_next.platform_foundation.auth_platform.profiles import API_CLIENT_PROFILES, WEBHOOK_CLIENT_PROFILES
-from aicrm_next.platform_foundation.auth_platform.repository import PostgresAuthRepository
-from aicrm_next.shared.secret_store import FileSecretStore, is_secret_reference
+from aicrm_next.platform.platform_foundation.auth_platform.profiles import API_CLIENT_PROFILES, WEBHOOK_CLIENT_PROFILES
+from aicrm_next.platform.platform_foundation.auth_platform.repository import PostgresAuthRepository
+from aicrm_next.platform.shared.secret_store import FileSecretStore, is_secret_reference
 from scripts.ops.bootstrap_auth_clients import bootstrap_auth_clients
 from scripts.ops.check_auth_readiness import check_auth_readiness
 

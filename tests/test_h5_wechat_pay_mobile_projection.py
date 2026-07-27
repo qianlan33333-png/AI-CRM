@@ -4,8 +4,8 @@ from pathlib import Path
 
 from aicrm_next.crm.identity_contact.dto import IdentityResolution, IdentityResolveResult
 from aicrm_next.crm.identity_contact import payment_projection
-from aicrm_next.platform_foundation.internal_events.models import InternalEvent, InternalEventConsumerRun
-from aicrm_next.platform_foundation.internal_events.payment import order_projection_consumer
+from aicrm_next.platform.platform_foundation.internal_events.models import InternalEvent, InternalEventConsumerRun
+from aicrm_next.platform.platform_foundation.internal_events.payment import order_projection_consumer
 from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -198,7 +198,7 @@ def test_apply_transaction_runs_mobile_projection_before_canonical_internal_even
 
 def test_payment_order_projection_consumer_retries_transient_identity_write_failure(monkeypatch) -> None:
     monkeypatch.setattr(
-        "aicrm_next.platform_foundation.internal_events.payment._read_order_from_db",
+        "aicrm_next.platform.platform_foundation.internal_events.payment._read_order_from_db",
         lambda _event: {},
     )
     event = InternalEvent(
@@ -232,7 +232,7 @@ def test_payment_order_projection_consumer_retries_transient_identity_write_fail
 
 def test_payment_order_projection_consumer_records_successful_mobile_retry(monkeypatch) -> None:
     monkeypatch.setattr(
-        "aicrm_next.platform_foundation.internal_events.payment._read_order_from_db",
+        "aicrm_next.platform.platform_foundation.internal_events.payment._read_order_from_db",
         lambda _event: {},
     )
     event = InternalEvent(

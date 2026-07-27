@@ -18,13 +18,13 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.admin_config.config_definitions import (  # noqa: E402
+from aicrm_next.platform.admin_config.config_definitions import (  # noqa: E402
     CONFIG_DEFINITIONS_BY_KEY,
 )
-from aicrm_next.admin_config.config_release_repository import (  # noqa: E402
+from aicrm_next.platform.admin_config.config_release_repository import (  # noqa: E402
     ConfigReleaseRepository,
 )
-from aicrm_next.admin_config.config_releases import ConfigReleaseService  # noqa: E402
+from aicrm_next.platform.admin_config.config_releases import ConfigReleaseService  # noqa: E402
 from aicrm_next.deployment_profile import (  # noqa: E402
     DeploymentProfile,
     deployment_profile_from_environment,
@@ -34,8 +34,8 @@ from aicrm_next.runtime_configuration import (  # noqa: E402
     RUNTIME_CONFIG_CUTOVER_KEYS_KEY,
     parse_runtime_config_cutover_keys,
 )
-from aicrm_next.shared.db_session import get_engine  # noqa: E402
-from aicrm_next.shared.secret_store import is_secret_reference  # noqa: E402
+from aicrm_next.platform.shared.db_session import get_engine  # noqa: E402
+from aicrm_next.platform.shared.secret_store import is_secret_reference  # noqa: E402
 
 
 _FULL_SHA = re.compile(r"^[0-9a-f]{40}$")

@@ -17,7 +17,7 @@
 ## Architecture preflight decisions
 
 - Capability owner: `aicrm_next.automation_engine.group_ops` owns Group Ops plans, triggers, and internal action planning.
-- Delivery owners: `aicrm_next.background_jobs` owns final `broadcast_jobs` dispatch state; `aicrm_next.platform_foundation.external_effects` owns group-message and webhook effects.
+- Delivery owners: `aicrm_next.background_jobs` owns final `broadcast_jobs` dispatch state; `aicrm_next.platform.platform_foundation.external_effects` owns group-message and webhook effects.
 - Formal management routes live under `/api/admin/automation-conversion/group-ops/*` and use admin session/capability policy.
 - Purpose-bound integration routes remain `/api/automation/group-ops/webhooks/{webhook_key}` and `/api/automation/group-ops/broadcast`; all other compatibility management aliases are removed and must return 404.
 - The unlinked `/admin/p1/group-ops-workspace` page and its draft/governance APIs are retired. Its historical tables are preserved as read-only audit data and marked `retired`/`drop_candidate`; R10 performs no table drop or row mutation.

@@ -5,7 +5,7 @@ from pathlib import Path
 
 from itsdangerous import URLSafeSerializer
 
-from aicrm_next.shared import signed_context
+from aicrm_next.platform.shared import signed_context
 
 
 def test_sidebar_product_context_token_roundtrip(monkeypatch) -> None:
@@ -95,7 +95,7 @@ def test_append_ctx_fragment_keeps_credential_out_of_http_request_target() -> No
 
 
 def test_signed_context_has_no_legacy_imports() -> None:
-    source = Path("aicrm_next/shared/signed_context.py").read_text(encoding="utf-8")
+    source = Path("aicrm_next/platform/shared/signed_context.py").read_text(encoding="utf-8")
     forbidden = ["wecom_" + "ability_service", "current_" + "app", "fl" + "ask"]
 
     for marker in forbidden:

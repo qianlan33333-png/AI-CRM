@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 from typing import Any, Protocol
 
-from aicrm_next.shared.runtime import database_mode, raw_database_url
+from aicrm_next.platform.shared.runtime import database_mode, raw_database_url
 
 from .domain import normalize_identity_request
 from .dto import ContactPoint, IdentityResolution, IdentityResolveResult, ResolvePersonIdentityRequest

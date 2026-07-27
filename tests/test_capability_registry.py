@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.admin_config.schema import CONFIG_SCHEMA
+from aicrm_next.platform.admin_config.schema import CONFIG_SCHEMA
 from aicrm_next.capability_registry import (
     CAPABILITY_SPECS,
     capability_for_config_section,
@@ -15,7 +15,7 @@ from aicrm_next.capability_registry import (
     validate_capability_registry,
 )
 from aicrm_next.internal_event_composition import build_internal_event_consumer_registry
-from aicrm_next.platform_foundation.external_effects import models as external_effect_models
+from aicrm_next.platform.platform_foundation.external_effects import models as external_effect_models
 from aicrm_next.router_registry import ROUTER_SPECS
 from tools.check_capability_registry import EFFECT_PREFIXES, validate_capability_ownership
 from tools.check_import_graph import scan_import_graph
@@ -90,4 +90,4 @@ def test_legacy_contexts_are_assigned_by_business_owner_not_runtime_filename() -
 def test_capability_module_resolution_supports_physical_extension_packages() -> None:
     assert capability_for_module("aicrm_next.extensions.ai.ai_audience_ops.service").capability_id == "extension.ai"
     assert capability_for_module("aicrm_next.extensions.forms.questionnaire.api").capability_id == "extension.forms"
-    assert capability_for_module("aicrm_next.admin_auth.service").capability_id == "core.platform"
+    assert capability_for_module("aicrm_next.platform.admin_auth.service").capability_id == "core.platform"

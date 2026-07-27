@@ -6,17 +6,17 @@ from copy import deepcopy
 from datetime import datetime, timezone
 from typing import Any, Callable, Protocol
 
-from aicrm_next.platform_foundation.job_runs import FinishJobRunRequest, StartJobRunRequest, build_job_run_ledger_port
+from aicrm_next.platform.platform_foundation.job_runs import FinishJobRunRequest, StartJobRunRequest, build_job_run_ledger_port
 
 from aicrm_next.crm.identity_contact.resolver import resolve_external_userid_with_dbapi
 from aicrm_next.crm.identity_contact.resolution_queue_port import (
     EnqueueIdentityResolutionRequest,
     build_identity_resolution_queue_port,
 )
-from aicrm_next.shared.repository_provider import assert_repository_allowed
-from aicrm_next.shared.runtime import production_data_ready, raw_database_url
-from aicrm_next.shared.runtime_settings import runtime_setting
-from aicrm_next.shared.typing import JsonDict
+from aicrm_next.platform.shared.repository_provider import assert_repository_allowed
+from aicrm_next.platform.shared.runtime import production_data_ready, raw_database_url
+from aicrm_next.platform.shared.runtime_settings import runtime_setting
+from aicrm_next.platform.shared.typing import JsonDict
 
 
 class MessageArchiveRepository(Protocol):

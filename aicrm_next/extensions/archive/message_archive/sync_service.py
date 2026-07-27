@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from typing import Any, Protocol
 
-from aicrm_next.shared.runtime_settings import runtime_setting
+from aicrm_next.platform.shared.runtime_settings import runtime_setting
 
 from .archive_sdk import (
     WeComArchiveError,

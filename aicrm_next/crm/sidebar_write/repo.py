@@ -12,10 +12,10 @@ from aicrm_next.crm.customer_read_model.sidebar_profile_port import (
 from aicrm_next.crm.identity_contact.dto import ResolvePersonIdentityRequest
 from aicrm_next.crm.identity_contact.resolver import resolve_identity_with_dbapi, resolved_unionid
 from aicrm_next.crm.identity_contact.write_port import IdentityWritePort
-from aicrm_next.platform_foundation.command_bus.models import utcnow_iso
-from aicrm_next.shared.repository_provider import RepositoryProviderError
-from aicrm_next.shared.runtime import raw_database_url
-from aicrm_next.shared.typing import JsonDict
+from aicrm_next.platform.platform_foundation.command_bus.models import utcnow_iso
+from aicrm_next.platform.shared.repository_provider import RepositoryProviderError
+from aicrm_next.platform.shared.runtime import raw_database_url
+from aicrm_next.platform.shared.typing import JsonDict
 
 from .models import SidebarWriteProjection
 

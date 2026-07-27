@@ -18,12 +18,12 @@ from aicrm_next.crm.identity_contact.resolution_queue_port import (
     EnqueueIdentityResolutionRequest,
     build_identity_resolution_queue_port,
 )
-from aicrm_next.platform_foundation.admin_audit import (
+from aicrm_next.platform.platform_foundation.admin_audit import (
     AdminAuditRecord,
     build_admin_audit_port,
 )
-from aicrm_next.shared.db_session import get_session_factory
-from aicrm_next.shared.runtime_settings import startup_environment_setting
+from aicrm_next.platform.shared.db_session import get_session_factory
+from aicrm_next.platform.shared.runtime_settings import startup_environment_setting
 
 
 def _text(value: Any) -> str:

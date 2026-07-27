@@ -10,19 +10,19 @@ from aicrm_next.channels.channel_entry.realtime_contract import (
 from aicrm_next.channels.channel_entry.inbox import ingest_wecom_callback
 from aicrm_next.channels.channel_entry.application import _welcome_callback_received_at
 from aicrm_next.channels.channel_entry.schemas import ProcessChannelEntryCommand
-from aicrm_next.platform_foundation.external_effects.adapters import (
+from aicrm_next.platform.platform_foundation.external_effects.adapters import (
     ExternalEffectAdapterRegistry,
     WeComWelcomeMessageAdapter,
 )
-from aicrm_next.platform_foundation.external_effects.models import (
+from aicrm_next.platform.platform_foundation.external_effects.models import (
     ExternalEffectDispatchResult,
     ExternalEffectJob,
     WECOM_WELCOME_MESSAGE_SEND,
 )
-from aicrm_next.platform_foundation.external_effects.repo import InMemoryExternalEffectRepository
-from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
-from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
-from aicrm_next.platform_foundation.webhook_inbox.repository import InMemoryWebhookInboxRepository
+from aicrm_next.platform.platform_foundation.external_effects.repo import InMemoryExternalEffectRepository
+from aicrm_next.platform.platform_foundation.external_effects.service import ExternalEffectService
+from aicrm_next.platform.platform_foundation.external_effects.worker import ExternalEffectWorker
+from aicrm_next.platform.platform_foundation.webhook_inbox.repository import InMemoryWebhookInboxRepository
 
 
 class _RecordingAdapter:

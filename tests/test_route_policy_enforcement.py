@@ -7,17 +7,17 @@ import pytest
 from fastapi.testclient import TestClient
 from starlette.requests import Request
 
-from aicrm_next.admin_auth import route_policy as route_policy_module
-from aicrm_next.admin_auth.route_policy import (
+from aicrm_next.platform.admin_auth import route_policy as route_policy_module
+from aicrm_next.platform.admin_auth.route_policy import (
     RouteRateLimiter,
     _csrf_error,
     _enforce_payment_identity_session,
 )
-from aicrm_next.admin_auth.service import CSRF_COOKIE, SESSION_COOKIE
+from aicrm_next.platform.admin_auth.service import CSRF_COOKIE, SESSION_COOKIE
 from aicrm_next.main import create_app
 from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
-from aicrm_next.shared.route_policy import RoutePolicy
-from aicrm_next.shared.wechat_h5_session import WECHAT_PAYMENT_IDENTITY_COOKIE
+from aicrm_next.platform.shared.route_policy import RoutePolicy
+from aicrm_next.platform.shared.wechat_h5_session import WECHAT_PAYMENT_IDENTITY_COOKIE
 from tests.admin_auth_test_helpers import access_token_headers, install_access_token, install_admin_session
 from tests.sidebar_auth_test_helpers import install_sidebar_auth, install_sidebar_viewer_session
 

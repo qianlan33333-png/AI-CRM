@@ -4,16 +4,16 @@ from dataclasses import dataclass, field
 from typing import Any
 from uuid import uuid4
 
-from aicrm_next.platform_foundation.audit_ledger import InMemoryAuditLedger
-from aicrm_next.platform_foundation.command_bus import Command, CommandBus, CommandContext, CommandResult
-from aicrm_next.platform_foundation.internal_events.shadow import (
+from aicrm_next.platform.platform_foundation.audit_ledger import InMemoryAuditLedger
+from aicrm_next.platform.platform_foundation.command_bus import Command, CommandBus, CommandContext, CommandResult
+from aicrm_next.platform.platform_foundation.internal_events.shadow import (
     AI_CAMPAIGN_APPROVED_EVENT_TYPE,
     AI_CAMPAIGN_CREATED_EVENT_TYPE,
     AI_CAMPAIGN_STARTED_EVENT_TYPE,
     emit_ai_campaign_shadow_event,
     safe_emit,
 )
-from aicrm_next.platform_foundation.side_effects import InMemorySideEffectPlanRepository, SideEffectPlan
+from aicrm_next.platform.platform_foundation.side_effects import InMemorySideEffectPlanRepository, SideEffectPlan
 
 from .campaigns_read import build_campaign_read_repository
 

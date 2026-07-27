@@ -4,8 +4,8 @@ from collections import Counter
 from datetime import datetime
 from typing import Any
 
-from aicrm_next.platform_foundation.command_bus.models import CommandContext
-from aicrm_next.platform_foundation.internal_events import InternalEventService
+from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform.platform_foundation.internal_events import InternalEventService
 
 from .constants import AI_AUDIENCE_REFRESH_DEFAULT_ROW_LIMIT
 from .diff_service import identity_key, member_event_idempotency_key, normalize_audience_row

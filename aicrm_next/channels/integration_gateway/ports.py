@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from aicrm_next.shared.typing import JsonDict
+from aicrm_next.platform.shared.typing import JsonDict
 
 
 class McpToolPort(Protocol):

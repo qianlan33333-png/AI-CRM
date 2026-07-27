@@ -7,22 +7,22 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 ROUTES = {
-    "aicrm_next/platform_foundation/internal_events/api.py": (
+    "aicrm_next/platform/platform_foundation/internal_events/api.py": (
         "run_internal_event_due",
         "run_internal_event_consumer",
         "retry_internal_event_consumer",
         "skip_internal_event_consumer",
     ),
-    "aicrm_next/platform_foundation/external_effects/api.py": (
+    "aicrm_next/platform/platform_foundation/external_effects/api.py": (
         "run_external_effect_due",
         "retry_external_effect_job",
         "cancel_external_effect_job",
     ),
-    "aicrm_next/platform_foundation/push_center/api.py": (
+    "aicrm_next/platform/platform_foundation/push_center/api.py": (
         "push_center_retry_job",
         "push_center_cancel_job",
     ),
-    "aicrm_next/platform_foundation/webhook_inbox/api.py": (
+    "aicrm_next/platform/platform_foundation/webhook_inbox/api.py": (
         "retry_webhook_inbox_item",
         "skip_webhook_inbox_item",
         "dispatch_webhook_inbox_item",

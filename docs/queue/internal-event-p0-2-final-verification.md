@@ -502,7 +502,7 @@ Expected for non-payment event families while pair allowlist is payment-only:
 
 ## Architecture Boundary
 
-- Capability owner: `aicrm_next/platform_foundation/internal_events` plus the
+- Capability owner: `aicrm_next/platform/platform_foundation/internal_events` plus the
   owning write path for each event family.
 - Routes involved: `/health`, `/api/admin/internal-events/*`,
   `/api/admin/external-effects/diagnostics`, and the event-family write routes.

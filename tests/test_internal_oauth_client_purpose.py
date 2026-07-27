@@ -4,13 +4,13 @@ import base64
 import json
 from urllib.parse import parse_qs
 
-from aicrm_next.platform_foundation.auth_platform import access_client
-from aicrm_next.platform_foundation.auth_platform.access_client import (
+from aicrm_next.platform.platform_foundation.auth_platform import access_client
+from aicrm_next.platform.platform_foundation.auth_platform.access_client import (
     INTERNAL_CLIENT_ID_KEYS,
     INTERNAL_CLIENT_SECRET_REFERENCE_KEYS,
     fetch_internal_access_token,
 )
-from aicrm_next.shared.route_ownership import load_route_manifest
+from aicrm_next.platform.shared.route_ownership import load_route_manifest
 
 
 class _Response:

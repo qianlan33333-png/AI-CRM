@@ -4,7 +4,7 @@ import json
 from collections.abc import Callable, Iterable, Mapping
 from typing import Any, Protocol
 
-from aicrm_next.shared.errors import ApplicationError
+from aicrm_next.platform.shared.errors import ApplicationError
 
 from .domain import normalize_identity_request
 from .dto import (

@@ -4,8 +4,8 @@ from datetime import datetime, timedelta, timezone
 import logging
 from typing import Any, Callable
 
-from aicrm_next.platform_foundation.webhook_inbox import WebhookInboxRepository, WebhookInboxService, build_webhook_inbox_repository
-from aicrm_next.shared.safe_logging import safe_log_exception
+from aicrm_next.platform.platform_foundation.webhook_inbox import WebhookInboxRepository, WebhookInboxService, build_webhook_inbox_repository
+from aicrm_next.platform.shared.safe_logging import safe_log_exception
 
 from .application import process_wecom_external_contact_event
 from .domain import text

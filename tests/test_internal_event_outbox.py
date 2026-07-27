@@ -9,30 +9,30 @@ import sys
 import pytest
 from psycopg.rows import dict_row
 
-from aicrm_next.platform_foundation.command_bus.models import CommandContext
-from aicrm_next.platform_foundation.internal_events.consumer_registry import InternalEventConsumerRegistry
-from aicrm_next.platform_foundation.internal_events.models import (
+from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform.platform_foundation.internal_events.consumer_registry import InternalEventConsumerRegistry
+from aicrm_next.platform.platform_foundation.internal_events.models import (
     InternalEventConsumerResult,
     InternalEventConsumerSpec,
     InternalEventCreateRequest,
 )
-from aicrm_next.platform_foundation.internal_events.outbox import (
+from aicrm_next.platform.platform_foundation.internal_events.outbox import (
     InternalEventOutboxRelay,
     enqueue_transactional_internal_event_outbox,
 )
-from aicrm_next.platform_foundation.internal_events.payment import (
+from aicrm_next.platform.platform_foundation.internal_events.payment import (
     PAYMENT_SUCCEEDED_CORE_CONSUMERS,
     PAYMENT_SUCCEEDED_EVENT_TYPE,
 )
-from aicrm_next.platform_foundation.internal_events.reconciliation import InternalEventOutboxReconciliationService
-from aicrm_next.platform_foundation.internal_events.reconciliation import outbox as outbox_reconciliation
-from aicrm_next.platform_foundation.internal_events.repository import (
+from aicrm_next.platform.platform_foundation.internal_events.reconciliation import InternalEventOutboxReconciliationService
+from aicrm_next.platform.platform_foundation.internal_events.reconciliation import outbox as outbox_reconciliation
+from aicrm_next.platform.platform_foundation.internal_events.repository import (
     InMemoryInternalEventRepository,
     SQLAlchemyInternalEventRepository,
 )
-from aicrm_next.platform_foundation.internal_events.service import InternalEventService
-from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
-from aicrm_next.shared.db_session import get_session_factory, reset_engine_cache_for_tests
+from aicrm_next.platform.platform_foundation.internal_events.service import InternalEventService
+from aicrm_next.platform.platform_foundation.internal_events.worker import InternalEventWorker
+from aicrm_next.platform.shared.db_session import get_session_factory, reset_engine_cache_for_tests
 from scripts.ops import reconcile_internal_event_outbox
 
 
@@ -642,7 +642,7 @@ def test_manual_retry_requires_actor_reason_and_records_audit_without_execution_
 
 
 def test_safe_emit_is_documented_as_shadow_only_and_payment_uses_transactional_outbox() -> None:
-    shadow_source = (ROOT / "aicrm_next/platform_foundation/internal_events/shadow.py").read_text(encoding="utf-8")
+    shadow_source = (ROOT / "aicrm_next/platform/platform_foundation/internal_events/shadow.py").read_text(encoding="utf-8")
     payment_source = (ROOT / "aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py").read_text(encoding="utf-8")
     tree = ast.parse(payment_source)
     called = {node.func.id for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)}

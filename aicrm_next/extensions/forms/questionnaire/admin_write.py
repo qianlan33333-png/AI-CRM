@@ -5,11 +5,11 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import uuid4
 
-from aicrm_next.platform_foundation.audit_ledger import InMemoryAuditLedger
-from aicrm_next.platform_foundation.command_bus import Command, CommandBus, CommandContext, CommandResult
-from aicrm_next.platform_foundation.side_effects import InMemorySideEffectPlanRepository, SideEffectPlan
-from aicrm_next.navigation_target.service import normalize_completion_target_for_storage
-from aicrm_next.shared.errors import ContractError, NotFoundError
+from aicrm_next.platform.platform_foundation.audit_ledger import InMemoryAuditLedger
+from aicrm_next.platform.platform_foundation.command_bus import Command, CommandBus, CommandContext, CommandResult
+from aicrm_next.platform.platform_foundation.side_effects import InMemorySideEffectPlanRepository, SideEffectPlan
+from aicrm_next.platform.navigation_target.service import normalize_completion_target_for_storage
+from aicrm_next.platform.shared.errors import ContractError, NotFoundError
 
 from .domain import admin_detail_projection, summary_projection
 from .repo import QuestionnaireRepository, build_questionnaire_repository

@@ -8,7 +8,7 @@ import pytest
 
 from scripts.ops.validate_queue_all_scope_cutover import validate
 from scripts.ops import recover_all_scope_contact_detail
-from aicrm_next.platform_foundation.execution_runtime.validation import evaluate_soak_snapshot
+from aicrm_next.platform.platform_foundation.execution_runtime.validation import evaluate_soak_snapshot
 
 
 ROOT = Path(__file__).resolve().parents[1]

@@ -6,7 +6,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import PlainTextResponse
 from fastapi.templating import Jinja2Templates
 
-from aicrm_next.admin_auth.guards import admin_page_auth_redirect
+from aicrm_next.platform.admin_auth.guards import admin_page_auth_redirect
 from aicrm_next.admin_shell_contract import shell_context
 
 router = APIRouter()

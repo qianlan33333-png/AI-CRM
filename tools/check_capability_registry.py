@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from aicrm_next.admin_config.schema import CONFIG_SCHEMA
+from aicrm_next.platform.admin_config.schema import CONFIG_SCHEMA
 from aicrm_next.capability_registry import (
     CAPABILITY_SPECS,
     capability_for_config_section,
@@ -28,7 +28,7 @@ from aicrm_next.capability_registry import (
     validate_capability_registry,
 )
 from aicrm_next.internal_event_composition import build_internal_event_consumer_registry
-from aicrm_next.platform_foundation.external_effects import models as external_effect_models
+from aicrm_next.platform.platform_foundation.external_effects import models as external_effect_models
 from aicrm_next.router_registry import ROUTER_SPECS
 from tools.check_import_graph import scan_import_graph
 

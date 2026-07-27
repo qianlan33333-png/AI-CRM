@@ -30,19 +30,19 @@ from .extensions.forms.questionnaire.event_consumers import (
 )
 from .extensions.commerce.service_period.payment_consumer import service_period_entitlement_consumer
 from .extensions.commerce.service_period.refund_consumer import service_period_refund_consumer
-from .platform_foundation.internal_events.shadow import broadcast_task_planner_consumer
-from .platform_foundation.internal_events.payment import webhook_order_paid_consumer
-from .platform_foundation.external_effects.completion_events import (
+from .platform.platform_foundation.internal_events.shadow import broadcast_task_planner_consumer
+from .platform.platform_foundation.internal_events.payment import webhook_order_paid_consumer
+from .platform.platform_foundation.external_effects.completion_events import (
     register_external_effect_completed_consumers,
 )
-from .platform_foundation.external_effects.settlement_events import (
+from .platform.platform_foundation.external_effects.settlement_events import (
     register_external_effect_settled_consumers,
 )
-from .platform_foundation.external_effects.repo import build_external_effect_repository
-from .platform_foundation.execution_runtime.commands import (
+from .platform.platform_foundation.external_effects.repo import build_external_effect_repository
+from .platform.platform_foundation.execution_runtime.commands import (
     register_queue_runtime_command_consumer,
 )
-from .shared.runtime import production_data_ready
+from .platform.shared.runtime import production_data_ready
 from .deployment_profile import DeploymentProfile
 
 
@@ -81,7 +81,7 @@ def _resolve_payment_tag_identity_from_db(order: dict, owner_userid: str) -> dic
     return execute_commerce_transaction(lambda conn: resolve_payment_tag_identity(conn, order, owner_userid))
 
 
-from .platform_foundation.internal_events import (
+from .platform.platform_foundation.internal_events import (
     InternalEventConsumerRegistry,
     current_internal_event_consumer_registry,
     register_payment_succeeded_consumers as _register_payment_succeeded_consumers,

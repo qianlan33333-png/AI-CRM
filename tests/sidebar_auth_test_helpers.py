@@ -5,11 +5,11 @@ from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.shared.signed_context import (
+from aicrm_next.platform.shared.signed_context import (
     SIDEBAR_VIEWER_SESSION_COOKIE,
     build_sidebar_owner_context_token,
 )
-from aicrm_next.shared.signed_session import sign_session_payload
+from aicrm_next.platform.shared.signed_session import sign_session_payload
 
 
 def install_sidebar_auth(

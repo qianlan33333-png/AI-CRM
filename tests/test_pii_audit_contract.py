@@ -9,16 +9,16 @@ from fastapi.responses import Response
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 
-from aicrm_next.admin_config.pii_audit_repository import AdminConfigPiiAuditRepository
+from aicrm_next.platform.admin_config.pii_audit_repository import AdminConfigPiiAuditRepository
 from aicrm_next.main import create_app
-from aicrm_next.shared.pii_audit import (
+from aicrm_next.platform.shared.pii_audit import (
     PiiAuditEvent,
     apply_pii_audit,
     pii_audit_rule,
     pii_audit_enabled,
     set_pii_audit_result_count,
 )
-from aicrm_next.shared.route_policy import RoutePolicy
+from aicrm_next.platform.shared.route_policy import RoutePolicy
 from tests.admin_auth_test_helpers import install_admin_session
 
 

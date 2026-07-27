@@ -3,13 +3,13 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from aicrm_next.platform_foundation.external_effects.continuations import ExternalEffectContinuation
-from aicrm_next.platform_foundation.external_effects.models import (
+from aicrm_next.platform.platform_foundation.external_effects.continuations import ExternalEffectContinuation
+from aicrm_next.platform.platform_foundation.external_effects.models import (
     WEBHOOK_GENERIC_PUSH,
     ExternalEffectDispatchResult,
     ExternalEffectJob,
 )
-from aicrm_next.shared.safe_logging import safe_log_exception
+from aicrm_next.platform.shared.safe_logging import safe_log_exception
 
 from .worker import AutomationAgentWorker
 from .internal_webhook_adapter import automation_agent_code_from_webhook_url

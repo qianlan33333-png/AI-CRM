@@ -206,7 +206,7 @@ def _tables(root: Path) -> list[dict[str, Any]]:
 
 
 def _external_effects(root: Path) -> tuple[list[dict[str, str]], list[dict[str, Any]]]:
-    from aicrm_next.platform_foundation.external_effects import models
+    from aicrm_next.platform.platform_foundation.external_effects import models
 
     runtime_effects = [
         {"constant": name, "effect_type": value}

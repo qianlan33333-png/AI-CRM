@@ -5,7 +5,7 @@ from pathlib import Path
 
 from sqlalchemy import create_engine, text
 
-from aicrm_next.platform_foundation.admin_audit import (
+from aicrm_next.platform.platform_foundation.admin_audit import (
     AdminAuditRecord,
     build_admin_audit_port,
 )
@@ -98,4 +98,4 @@ def test_admin_operation_log_sql_has_one_module_owner() -> None:
         if "INSERT INTO admin_operation_logs" in path.read_text(encoding="utf-8"):
             writers.append(path.relative_to(ROOT).as_posix())
 
-    assert writers == ["aicrm_next/platform_foundation/admin_audit/repository.py"]
+    assert writers == ["aicrm_next/platform/platform_foundation/admin_audit/repository.py"]

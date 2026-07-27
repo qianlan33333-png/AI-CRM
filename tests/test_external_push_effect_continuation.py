@@ -4,8 +4,8 @@ from aicrm_next.external_effect_composition import (
     build_external_effect_continuation_registry,
     build_external_effect_settlement_consumers,
 )
-from aicrm_next.external_push import external_effect_continuation
-from aicrm_next.platform_foundation.external_effects.models import (
+from aicrm_next.platform.external_push import external_effect_continuation
+from aicrm_next.platform.platform_foundation.external_effects.models import (
     WEBHOOK_ORDER_PAID_PUSH,
     ExternalEffectDispatchResult,
     ExternalEffectJob,

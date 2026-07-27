@@ -124,7 +124,7 @@ def test_retired_action_template_modules_are_removed() -> None:
         assert not module.exists()
 
     dto_source = (ROOT / "aicrm_next" / "automation_engine" / "dto.py").read_text(encoding="utf-8")
-    api_docs_source = (ROOT / "aicrm_next" / "admin_config" / "api_docs_view_model.py").read_text(encoding="utf-8")
+    api_docs_source = (ROOT / "aicrm_next" / "platform" / "admin_config" / "api_docs_view_model.py").read_text(encoding="utf-8")
 
     assert "ActionTemplateListRequest" not in dto_source
     assert "ActionTemplateCreateRequest" not in dto_source

@@ -17,13 +17,13 @@ RULE_DIRECT_EXTERNAL_EFFECT_CALL = "direct_external_effect_call"
 REQUESTS_CALLEES = {"request", "get", "post", "put", "patch", "delete", "Session"}
 HTTPX_CALLEES = {"request", "get", "post", "put", "patch", "delete", "Client", "AsyncClient"}
 ALLOWED_PREFIXES = (
-    "aicrm_next/platform_foundation/external_effects/",
+    "aicrm_next/platform/platform_foundation/external_effects/",
     "aicrm_next/channels/integration_gateway/",
     "tests/",
     "tools/",
     "scripts/",
 )
-ALLOWED_FILES = {"aicrm_next/shared/http_client.py"}
+ALLOWED_FILES = {"aicrm_next/platform/shared/http_client.py"}
 REQUIRED_EFFECT_FIELDS = {
     "effect_key",
     "provider",

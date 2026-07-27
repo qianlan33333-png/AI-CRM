@@ -12,16 +12,16 @@ from aicrm_next.channels.channel_entry.welcome_media_effects_repository import (
     SQLAlchemyWelcomeEffectGraphRepository,
     WelcomeEffectGraphRequest,
 )
-from aicrm_next.platform_foundation.external_effects import WECOM_WELCOME_MESSAGE_SEND
-from aicrm_next.platform_foundation.external_effects.models import ExternalEffectDispatchResult
-from aicrm_next.platform_foundation.external_effects.adapters import (
+from aicrm_next.platform.platform_foundation.external_effects import WECOM_WELCOME_MESSAGE_SEND
+from aicrm_next.platform.platform_foundation.external_effects.models import ExternalEffectDispatchResult
+from aicrm_next.platform.platform_foundation.external_effects.adapters import (
     ExternalEffectAdapterRegistry,
     WeComWelcomeMessageAdapter,
 )
-from aicrm_next.platform_foundation.external_effects.repo import SQLAlchemyExternalEffectRepository
-from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
-from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.platform.platform_foundation.external_effects.repo import SQLAlchemyExternalEffectRepository
+from aicrm_next.platform.platform_foundation.external_effects.service import ExternalEffectService
+from aicrm_next.platform.platform_foundation.external_effects.worker import ExternalEffectWorker
+from aicrm_next.platform.shared.db_session import get_session_factory
 from aicrm_next.external_effect_composition import run_welcome_realtime_post_commit
 
 
@@ -43,7 +43,7 @@ def _wecom_execution_contract(monkeypatch):
     )
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS", "owner-postgres")
     monkeypatch.setattr(
-        "aicrm_next.platform_foundation.external_effects.worker._capability_gate_error",
+        "aicrm_next.platform.platform_foundation.external_effects.worker._capability_gate_error",
         lambda job: "",
     )
 

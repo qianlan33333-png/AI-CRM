@@ -3,13 +3,13 @@ from __future__ import annotations
 import json
 from typing import Callable
 
-from aicrm_next.platform_foundation.external_effects.adapters import ExternalEffectAdapter, WebhookAdapter
-from aicrm_next.platform_foundation.external_effects.models import (
+from aicrm_next.platform.platform_foundation.external_effects.adapters import ExternalEffectAdapter, WebhookAdapter
+from aicrm_next.platform.platform_foundation.external_effects.models import (
     WEBHOOK_GENERIC_PUSH,
     ExternalEffectDispatchResult,
     ExternalEffectJob,
 )
-from aicrm_next.shared.automation_agent_webhook_contract import automation_agent_code_from_webhook_url
+from aicrm_next.platform.shared.automation_agent_webhook_contract import automation_agent_code_from_webhook_url
 
 from .application import AutomationAgentWebhookService
 

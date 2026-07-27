@@ -11,7 +11,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 
 from aicrm_next.main import create_app
-from aicrm_next.shared.postgres_test_guard import validate_postgres_test_database_url
+from aicrm_next.platform.shared.postgres_test_guard import validate_postgres_test_database_url
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 

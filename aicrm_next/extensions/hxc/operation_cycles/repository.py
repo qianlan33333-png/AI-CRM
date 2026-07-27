@@ -8,8 +8,8 @@ from typing import Any, Protocol, cast
 
 from sqlalchemy import text
 
-from aicrm_next.shared.db_session import get_session_factory
-from aicrm_next.shared.runtime import raw_database_url
+from aicrm_next.platform.shared.db_session import get_session_factory
+from aicrm_next.platform.shared.runtime import raw_database_url
 
 from .domain import (
     OperationCycleConflictError,

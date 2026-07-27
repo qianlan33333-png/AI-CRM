@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import (
     ExternalEffectService,
     WEBHOOK_QUESTIONNAIRE_SUBMISSION_PUSH,
     reset_external_effect_fixture_state,
 )
-from aicrm_next.platform_foundation.external_effects.repo import build_external_effect_repository
+from aicrm_next.platform.platform_foundation.external_effects.repo import build_external_effect_repository
 from tests.admin_auth_test_helpers import install_admin_action_tokens
 
 

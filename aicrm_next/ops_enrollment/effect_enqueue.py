@@ -4,10 +4,10 @@ import hashlib
 import json
 from dataclasses import dataclass, field
 
-from aicrm_next.platform_foundation.command_bus.models import CommandContext
-from aicrm_next.platform_foundation.external_effects import ExternalEffectService, WECOM_MESSAGE_PRIVATE_SEND
-from aicrm_next.shared.runtime_settings import runtime_bool, runtime_setting
-from aicrm_next.shared.typing import JsonDict
+from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import ExternalEffectService, WECOM_MESSAGE_PRIVATE_SEND
+from aicrm_next.platform.shared.runtime_settings import runtime_bool, runtime_setting
+from aicrm_next.platform.shared.typing import JsonDict
 
 
 USER_OPS_BATCH_SEND_ROUTE = "/api/admin/user-ops/batch-send/execute"

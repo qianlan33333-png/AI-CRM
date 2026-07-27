@@ -9,19 +9,19 @@ from typing import Any, Protocol
 
 from aicrm_next.crm.identity_contact.dto import ResolvePersonIdentityRequest
 from aicrm_next.crm.identity_contact.resolver import resolve_external_userid_with_dbapi, resolve_identity_with_dbapi, resolved_unionid
-from aicrm_next.platform_foundation.background_jobs.broadcast_job_write_port import (
+from aicrm_next.platform.platform_foundation.background_jobs.broadcast_job_write_port import (
     BroadcastJobCreate,
     build_broadcast_job_write_port,
 )
-from aicrm_next.platform_foundation.background_jobs.cloud_broadcast_projection_write_port import (
+from aicrm_next.platform.platform_foundation.background_jobs.cloud_broadcast_projection_write_port import (
     build_cloud_broadcast_projection_write_port,
 )
-from aicrm_next.platform_foundation.admin_audit import (
+from aicrm_next.platform.platform_foundation.admin_audit import (
     AdminAuditRecord,
     build_admin_audit_port,
 )
-from aicrm_next.shared.repository_provider import RepositoryProviderError
-from aicrm_next.shared.runtime import production_data_ready, raw_database_url
+from aicrm_next.platform.shared.repository_provider import RepositoryProviderError
+from aicrm_next.platform.shared.runtime import production_data_ready, raw_database_url
 
 from .time_helpers import DEFAULT_SEND_TIME as _DEFAULT_CAMPAIGN_SEND_TIME
 from .time_helpers import DEFAULT_TIMEZONE as _DEFAULT_CAMPAIGN_TIMEZONE

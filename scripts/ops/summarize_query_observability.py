@@ -22,7 +22,7 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.shared.route_ownership import load_route_manifest  # noqa: E402
+from aicrm_next.platform.shared.route_ownership import load_route_manifest  # noqa: E402
 
 
 _EVENT = "aicrm_request_query_summary"

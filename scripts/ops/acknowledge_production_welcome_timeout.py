@@ -20,7 +20,7 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.shared.db_session import get_session_factory  # noqa: E402
+from aicrm_next.platform.shared.db_session import get_session_factory  # noqa: E402
 
 
 AUTHORIZATION_ENV = "AICRM_QUEUE_TERMINAL_ACK_AUTHORIZED"

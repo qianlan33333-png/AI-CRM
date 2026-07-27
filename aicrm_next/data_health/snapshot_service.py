@@ -6,7 +6,7 @@ from collections.abc import Callable, Sequence
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
-from aicrm_next.shared.release import current_release_sha
+from aicrm_next.platform.shared.release import current_release_sha
 
 from .checks import run_all_checks
 from .dto import DataHealthCheckResult, HealthStatus

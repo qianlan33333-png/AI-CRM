@@ -10,8 +10,8 @@ from aicrm_next.integration_ports import build_wecom_media_upload_client
 from aicrm_next.media_library.postgres_repo import PostgresMediaLibraryRepository
 from aicrm_next.media_library.dto import normalize_group_invite_join_url, normalize_http_url
 from aicrm_next.send_content.repo import InMemorySendContentRepository
-from aicrm_next.shared.errors import ContractError
-from aicrm_next.shared.runtime import production_data_ready, production_environment, raw_database_url
+from aicrm_next.platform.shared.errors import ContractError
+from aicrm_next.platform.shared.runtime import production_data_ready, production_environment, raw_database_url
 
 
 JsonDict = dict[str, Any]

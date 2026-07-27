@@ -15,8 +15,8 @@ from aicrm_next.integration_ports import (
     WeComMediaUploadClientError,
     build_wecom_media_upload_client,
 )
-from aicrm_next.shared.db_session import get_session_factory
-from aicrm_next.shared.wecom_runtime import classify_wecom_provider_error, load_wecom_execution_config
+from aicrm_next.platform.shared.db_session import get_session_factory
+from aicrm_next.platform.shared.wecom_runtime import classify_wecom_provider_error, load_wecom_execution_config
 
 from .postgres_repo import PostgresMediaLibraryRepository
 
@@ -712,7 +712,7 @@ class WeComMediaLeaseManager:
 
 
 def build_wecom_media_lease_manager(*, uploader: Any = None, now: datetime | None = None) -> WeComMediaLeaseManager:
-    from aicrm_next.shared.runtime import raw_database_url
+    from aicrm_next.platform.shared.runtime import raw_database_url
 
     return WeComMediaLeaseManager(
         PostgresMediaLibraryRepository(raw_database_url()),

@@ -5,9 +5,9 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from aicrm_next.platform_foundation.execution_runtime.lanes import QueueLane
-from aicrm_next.platform_foundation.execution_runtime.repository import RuntimeClaim, RuntimeControl
-from aicrm_next.platform_foundation.execution_runtime.service import QueueRuntimeService
+from aicrm_next.platform.platform_foundation.execution_runtime.lanes import QueueLane
+from aicrm_next.platform.platform_foundation.execution_runtime.repository import RuntimeClaim, RuntimeControl
+from aicrm_next.platform.platform_foundation.execution_runtime.service import QueueRuntimeService
 
 
 class FakeListener:

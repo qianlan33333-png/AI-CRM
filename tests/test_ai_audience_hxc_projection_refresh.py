@@ -32,12 +32,12 @@ from aicrm_next.extensions.ai.ai_audience_ops.event_types import (
     HXC_INCREMENTAL_PROJECTION_REQUESTED_EVENT,
 )
 from aicrm_next.internal_event_composition import build_internal_event_consumer_registry
-from aicrm_next.shared.db_session import get_session_factory
-from aicrm_next.platform_foundation.internal_events import (
+from aicrm_next.platform.shared.db_session import get_session_factory
+from aicrm_next.platform.platform_foundation.internal_events import (
     InternalEvent,
     InternalEventConsumerRun,
 )
-from aicrm_next.platform_foundation.internal_events.outbox import (
+from aicrm_next.platform.platform_foundation.internal_events.outbox import (
     InternalEventOutboxRelay,
 )
 from scripts.ops import refresh_ai_audience_hxc_projection

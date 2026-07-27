@@ -12,10 +12,10 @@ from aicrm_next.integration_ports import WeChatOAuthAdapter, build_wechat_oauth_
 from aicrm_next.crm.identity_contact.application import ResolvePersonIdentityQuery
 from aicrm_next.crm.identity_contact.wechat_unionid_guard import resolve_oauth_unionid
 from aicrm_next.media_library.application import GetImageVariantQuery, GetMediaItemQuery, UploadAttachmentCommand
-from aicrm_next.shared.errors import ContractError, NotFoundError
-from aicrm_next.shared.runtime import fixture_mode
-from aicrm_next.shared.runtime_settings import runtime_setting
-from aicrm_next.shared.share_qr import safe_qr_download_filename, svg_qr_data_url
+from aicrm_next.platform.shared.errors import ContractError, NotFoundError
+from aicrm_next.platform.shared.runtime import fixture_mode
+from aicrm_next.platform.shared.runtime_settings import runtime_setting
+from aicrm_next.platform.shared.share_qr import safe_qr_download_filename, svg_qr_data_url
 
 from .domain import (
     hash_ip,

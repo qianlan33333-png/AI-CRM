@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from aicrm_next.shared.repository_provider import RepositoryProviderError
+from aicrm_next.platform.shared.repository_provider import RepositoryProviderError
 
 from .repo import HxcDashboardBroadcastRepository, _build_audience_preview, connect_hxc_dashboard_broadcast_db, new_task_id
 

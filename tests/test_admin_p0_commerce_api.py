@@ -4,7 +4,7 @@ import base64
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.admin_config.api_docs_view_model import build_api_docs_view_model
+from aicrm_next.platform.admin_config.api_docs_view_model import build_api_docs_view_model
 from aicrm_next.extensions.commerce.commerce.admin_exports import reset_export_jobs_for_tests
 from aicrm_next.extensions.commerce.commerce.admin_unified_orders import list_orders
 from aicrm_next.extensions.commerce.commerce.repo import reset_commerce_fixture_state

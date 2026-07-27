@@ -185,7 +185,7 @@ def test_id_dev_p1_baseline_tables_exist_in_fresh_schema() -> None:
 def test_admin_config_audit_baseline_tables_exist_in_fresh_schema() -> None:
     source = _read("migrations/versions/0085_admin_config_audit_baseline.py")
     manifest = _read("docs/architecture/data_table_lifecycle_manifest.yml")
-    admin_audit_owner_source = _read("aicrm_next/platform_foundation/admin_audit/repository.py")
+    admin_audit_owner_source = _read("aicrm_next/platform/platform_foundation/admin_audit/repository.py")
 
     for table_name in ["admin_operation_logs", "admin_users", "admin_user_roles", "admin_login_audit"]:
         assert f"CREATE TABLE IF NOT EXISTS {table_name}" in source
@@ -369,7 +369,7 @@ def test_channel_entry_business_write_requires_and_persists_unionid() -> None:
 def test_sidebar_bind_mobile_writes_user_identity_not_legacy_binding_tables() -> None:
     source = _read("aicrm_next/crm/sidebar_write/repo.py")
     identity_write_source = _read("aicrm_next/crm/identity_contact/write_repository.py")
-    event_source = _read("aicrm_next/platform_foundation/internal_events/customer_identity.py")
+    event_source = _read("aicrm_next/platform/platform_foundation/internal_events/customer_identity.py")
 
     postgres_section = source.split("class PostgresSidebarWriteRepository:", 1)[1]
     assert "UPDATE crm_user_identity" not in postgres_section
@@ -391,7 +391,7 @@ def test_sidebar_bind_mobile_writes_user_identity_not_legacy_binding_tables() ->
 
 
 def test_external_effect_wecom_adapters_accept_unionid_business_target() -> None:
-    source = _read("aicrm_next/platform_foundation/external_effects/adapters.py")
+    source = _read("aicrm_next/platform/platform_foundation/external_effects/adapters.py")
 
     assert "def _target_unionid" in source
     assert "def _wecom_target_mismatch" in source
@@ -422,7 +422,7 @@ def test_user_ops_legacy_runtime_tables_are_retired() -> None:
     identity_contact_source = _read("aicrm_next/crm/identity_contact/repo.py")
     external_campaign_source = _read("aicrm_next/extensions/ai/ai_assist/external_campaigns.py")
     external_campaign_repo_source = _read("aicrm_next/extensions/ai/ai_assist/external_campaigns_repo.py")
-    admin_jobs_source = _read("aicrm_next/admin_jobs/repository.py")
+    admin_jobs_source = _read("aicrm_next/platform/admin_jobs/repository.py")
     owner_migration_source = _read("aicrm_next/crm/owner_migration/repo.py")
     manifest_source = _read("docs/architecture/data_table_lifecycle_manifest.yml")
 
@@ -461,7 +461,7 @@ def test_user_ops_legacy_runtime_tables_are_retired() -> None:
 
 
 def test_message_batch_legacy_runtime_tables_are_retired() -> None:
-    admin_jobs_source = _read("aicrm_next/admin_jobs/repository.py")
+    admin_jobs_source = _read("aicrm_next/platform/admin_jobs/repository.py")
     manifest_source = _read("docs/architecture/data_table_lifecycle_manifest.yml")
 
     forbidden_sql_patterns = [
@@ -711,7 +711,7 @@ def test_broadcast_cloud_and_agent_targets_are_unionid_only() -> None:
     worker_source = _read("aicrm_next/background_jobs/broadcast_queue_worker.py")
     cloud_repo_source = _read("aicrm_next/extensions/growth/cloud_orchestrator/repository.py")
     broadcast_owner_source = _read(
-        "aicrm_next/platform_foundation/background_jobs/broadcast_job_write_repository.py"
+        "aicrm_next/platform/platform_foundation/background_jobs/broadcast_job_write_repository.py"
     )
     agent_repo_source = _read("aicrm_next/extensions/ai/automation_agents/repository.py")
     agent_worker_source = _read("aicrm_next/extensions/ai/automation_agents/worker.py")
@@ -757,7 +757,7 @@ def test_campaign_frequency_and_agent_outputs_are_unionid_only() -> None:
     campaign_repo_source = _read("aicrm_next/extensions/growth/cloud_orchestrator/repository.py")
     external_campaign_repo_source = _read("aicrm_next/extensions/ai/ai_assist/external_campaigns_repo.py")
     broadcast_owner_source = _read(
-        "aicrm_next/platform_foundation/background_jobs/broadcast_job_write_repository.py"
+        "aicrm_next/platform/platform_foundation/background_jobs/broadcast_job_write_repository.py"
     )
     agent_copywriting_source = _read("aicrm_next/extensions/ai/ai_audience_ops/agent_copywriting.py")
     admin_projection_source = _read("aicrm_next/admin_read_model/projections.py")

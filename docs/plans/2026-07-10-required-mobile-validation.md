@@ -13,7 +13,7 @@
 ### Task 1: Shared mobile rule and questionnaire backend validation
 
 **Files:**
-- Create: `aicrm_next/shared/mobile.py`
+- Create: `aicrm_next/platform/shared/mobile.py`
 - Modify: `aicrm_next/questionnaire/domain.py`
 - Modify: `aicrm_next/questionnaire/h5_write.py`
 - Test: `tests/test_questionnaire_h5_submit_validation.py`
@@ -96,7 +96,7 @@ Run the questionnaire and order test bundles above.
 
 **Step 2: Run static checks**
 
-Run: `.venv/bin/ruff check aicrm_next/shared/mobile.py aicrm_next/questionnaire/domain.py aicrm_next/questionnaire/h5_write.py aicrm_next/public_product/sidebar_order_context.py aicrm_next/public_product/h5_wechat_pay.py aicrm_next/commerce/application.py tests/test_questionnaire_h5_submit_validation.py tests/test_questionnaire_mobile_normalization.py tests/test_public_product_sidebar_order_context.py tests/test_service_period_h5_payment.py tests/test_checkout_api_contract.py`
+Run: `.venv/bin/ruff check aicrm_next/platform/shared/mobile.py aicrm_next/questionnaire/domain.py aicrm_next/questionnaire/h5_write.py aicrm_next/public_product/sidebar_order_context.py aicrm_next/public_product/h5_wechat_pay.py aicrm_next/commerce/application.py tests/test_questionnaire_h5_submit_validation.py tests/test_questionnaire_mobile_normalization.py tests/test_public_product_sidebar_order_context.py tests/test_service_period_h5_payment.py tests/test_checkout_api_contract.py`
 
 Run: `git diff --check`
 

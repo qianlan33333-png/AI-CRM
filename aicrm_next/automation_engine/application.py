@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from aicrm_next.shared.errors import ContractError, NotFoundError
-from aicrm_next.shared.repository_provider import RepositoryProviderError, blocked_production_payload
-from aicrm_next.shared.runtime import production_data_ready, production_environment
+from aicrm_next.platform.shared.errors import ContractError, NotFoundError
+from aicrm_next.platform.shared.repository_provider import RepositoryProviderError, blocked_production_payload
+from aicrm_next.platform.shared.runtime import production_data_ready, production_environment
 
 from .agent_outputs import agent_output_run_projection, agent_output_side_effect_safety
 from .agent_runs import agent_run_side_effect_safety

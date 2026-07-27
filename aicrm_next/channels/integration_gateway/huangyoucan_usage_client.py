@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, Protocol
 from zoneinfo import ZoneInfo
 
-from aicrm_next.shared.runtime_settings import managed_runtime_setting
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting
 
 
 HUANGYOUCAN_USAGE_SQL = """

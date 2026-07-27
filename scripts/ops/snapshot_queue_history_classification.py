@@ -14,8 +14,8 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from aicrm_next.shared.runtime import raw_database_url  # noqa: E402
-from aicrm_next.shared.sensitive_data import redact_sensitive_data  # noqa: E402
+from aicrm_next.platform.shared.runtime import raw_database_url  # noqa: E402
+from aicrm_next.platform.shared.sensitive_data import redact_sensitive_data  # noqa: E402
 
 
 FREEZE_REVISION = "0125_execution_runtime_correctness"

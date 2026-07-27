@@ -17,7 +17,7 @@ from aicrm_next.extensions.commerce.commerce.coupons.repo import (
     target_ref_for_product_id,
 )
 from aicrm_next.extensions.commerce.commerce.repo import PostgresCommerceRepository
-from aicrm_next.shared.errors import ContractError
+from aicrm_next.platform.shared.errors import ContractError
 
 
 TENANT_ID = "aicrm"

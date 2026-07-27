@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from aicrm_next.main import create_app
-from aicrm_next.shared.route_ownership import collect_route_inventory
+from aicrm_next.platform.shared.route_ownership import collect_route_inventory
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -62,10 +62,10 @@ RETIRED_ASSETS = {
     "aicrm_next/app/admin_console/static/admin_console/admin_execution_ui.css",
     "aicrm_next/app/admin_console/static/admin_console/admin_execution_ui.js",
     "aicrm_next/app/admin_console/templates/admin_console/group_invite_library.html",
-    "aicrm_next/admin_jobs/templates/admin_console/jobs.html",
-    "aicrm_next/platform_foundation/push_center/templates/admin_console/push_center.html",
-    "aicrm_next/platform_foundation/internal_events/templates/admin_console/internal_events.html",
-    "aicrm_next/platform_foundation/webhook_inbox/templates/admin_console/webhook_inbox.html",
+    "aicrm_next/platform/admin_jobs/templates/admin_console/jobs.html",
+    "aicrm_next/platform/platform_foundation/push_center/templates/admin_console/push_center.html",
+    "aicrm_next/platform/platform_foundation/internal_events/templates/admin_console/internal_events.html",
+    "aicrm_next/platform/platform_foundation/webhook_inbox/templates/admin_console/webhook_inbox.html",
     "aicrm_next/app/admin_console/templates/admin_shell/data_health.html",
     "aicrm_next/app/admin_console/templates/admin_shell/data_quality.html",
     "aicrm_next/app/admin_console/templates/admin_shell/delivery_lineage.html",

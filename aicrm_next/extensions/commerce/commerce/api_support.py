@@ -8,11 +8,11 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
 from aicrm_next.admin_shell_contract import shell_context
-from aicrm_next.shared.runtime_settings import (
+from aicrm_next.platform.shared.runtime_settings import (
     managed_runtime_setting,
     startup_environment_setting,
 )
-from aicrm_next.shared.share_qr import svg_qr_data_url
+from aicrm_next.platform.shared.share_qr import svg_qr_data_url
 
 from .admin_transactions import (
     default_filters,

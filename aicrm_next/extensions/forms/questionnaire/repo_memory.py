@@ -251,7 +251,7 @@ class InMemoryQuestionnaireRepository:
             request = internal_event_factory(deepcopy(submission))
             if request is None:
                 raise RepositoryProviderError("questionnaire.submitted event identity is incomplete")
-            from aicrm_next.platform_foundation.internal_events.service import InternalEventService
+            from aicrm_next.platform.platform_foundation.internal_events.service import InternalEventService
 
             emitted = InternalEventService().emit_event(
                 event_type=request.event_type,

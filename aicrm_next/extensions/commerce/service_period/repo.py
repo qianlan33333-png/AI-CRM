@@ -9,14 +9,14 @@ from typing import Any, Protocol
 from aicrm_next.extensions.commerce.commerce.repo import build_commerce_repository
 from aicrm_next.crm.identity_contact.dto import ResolvePersonIdentityRequest
 from aicrm_next.crm.identity_contact.resolver import resolve_identity_with_dbapi, resolved_unionid
-from aicrm_next.platform_foundation.command_bus.models import CommandContext
-from aicrm_next.platform_foundation.internal_events.models import InternalEventCreateRequest
-from aicrm_next.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
-from aicrm_next.shared.db_session import connect_pooled_postgres
-from aicrm_next.shared.errors import ContractError, NotFoundError
-from aicrm_next.shared.repository_provider import assert_repository_allowed
-from aicrm_next.shared.runtime import production_data_ready, raw_database_url
-from aicrm_next.shared.safe_logging import safe_log_fields
+from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform.platform_foundation.internal_events.models import InternalEventCreateRequest
+from aicrm_next.platform.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
+from aicrm_next.platform.shared.db_session import connect_pooled_postgres
+from aicrm_next.platform.shared.errors import ContractError, NotFoundError
+from aicrm_next.platform.shared.repository_provider import assert_repository_allowed
+from aicrm_next.platform.shared.runtime import production_data_ready, raw_database_url
+from aicrm_next.platform.shared.safe_logging import safe_log_fields
 
 from .domain import (
     TENANT_ID,

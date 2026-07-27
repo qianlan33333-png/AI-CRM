@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.shared.queue_provenance import (
+from aicrm_next.platform.shared.queue_provenance import (
     external_contact_relationship_absent_terminal_sql,
     post_cutover_identity_recovery_predicate_sql,
     pre_provider_identity_adoption_predicate_sql,

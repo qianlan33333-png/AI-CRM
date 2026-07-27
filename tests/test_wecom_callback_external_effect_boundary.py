@@ -17,7 +17,7 @@ APPLICATION = ROOT / "aicrm_next" / "channels" / "channel_entry" / "application.
 WELCOME_EFFECT_REPOSITORY = (
     ROOT / "aicrm_next" / "channels" / "channel_entry" / "welcome_media_effects_repository.py"
 )
-REALTIME = ROOT / "aicrm_next" / "platform_foundation" / "external_effects" / "realtime.py"
+REALTIME = ROOT / "aicrm_next" / "platform" / "platform_foundation" / "external_effects" / "realtime.py"
 
 
 def _imports(path: Path) -> set[str]:
@@ -55,7 +55,7 @@ def test_callback_ingress_modules_do_not_import_real_external_adapters_or_networ
         "urllib.request",
         ".wecom_adapter",
         "aicrm_next.channels.integration_gateway",
-        "aicrm_next.platform_foundation.external_effects.adapters",
+        "aicrm_next.platform.platform_foundation.external_effects.adapters",
     }
     for module_path in CALLBACK_MODULES:
         imports = _imports(module_path)

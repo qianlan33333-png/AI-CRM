@@ -313,7 +313,7 @@ def test_public_product_frontend_restores_slice_image_layout() -> None:
 
 
 def test_public_product_image_route_serves_only_bound_enabled_product_images(monkeypatch) -> None:
-    from aicrm_next.shared.errors import NotFoundError
+    from aicrm_next.platform.shared.errors import NotFoundError
 
     reset_commerce_fixture_state()
     calls: list[tuple[str, str]] = []

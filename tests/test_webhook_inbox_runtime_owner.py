@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from aicrm_next.platform_foundation.webhook_inbox.runtime_write_port import (
+from aicrm_next.platform.platform_foundation.webhook_inbox.runtime_write_port import (
     build_webhook_inbox_runtime_write_port,
 )
 
@@ -139,7 +139,7 @@ def test_webhook_inbox_write_sql_is_confined_to_owner_package() -> None:
         ):
             continue
         relative = path.relative_to(ROOT).as_posix()
-        if not relative.startswith("aicrm_next/platform_foundation/webhook_inbox/"):
+        if not relative.startswith("aicrm_next/platform/platform_foundation/webhook_inbox/"):
             offenders.append(relative)
 
     assert offenders == []

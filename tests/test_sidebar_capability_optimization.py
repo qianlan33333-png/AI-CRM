@@ -13,8 +13,8 @@ from aicrm_next.crm.customer_read_model.sidebar_timeline import (
 )
 from aicrm_next.main import create_app
 from aicrm_next.extensions.radar.radar_links.application import ListSidebarRadarLinksQuery
-from aicrm_next.shared.errors import ContractError
-from aicrm_next.shared.public_url import canonical_public_base_url
+from aicrm_next.platform.shared.errors import ContractError
+from aicrm_next.platform.shared.public_url import canonical_public_base_url
 from tests.sidebar_auth_test_helpers import install_sidebar_auth
 
 

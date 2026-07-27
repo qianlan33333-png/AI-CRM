@@ -121,11 +121,11 @@ def test_zero_scc_runtime_composition_files_force_full_postgres_ci() -> None:
         "aicrm_next/integration_ports.py",
         "aicrm_next/mcp_composition.py",
         "aicrm_next/read_model_composition.py",
-        "aicrm_next/shared/admin_action_runtime.py",
-        "aicrm_next/shared/outbound_https/security.py",
-        "aicrm_next/shared/outbound_https/transport.py",
-        "aicrm_next/shared/product_code_aliases.py",
-        "aicrm_next/shared/wecom_runtime.py",
+        "aicrm_next/platform/shared/admin_action_runtime.py",
+        "aicrm_next/platform/shared/outbound_https/security.py",
+        "aicrm_next/platform/shared/outbound_https/transport.py",
+        "aicrm_next/platform/shared/product_code_aliases.py",
+        "aicrm_next/platform/shared/wecom_runtime.py",
         "scripts/run_wechat_pay_order_reconciliation_worker.py",
         "tests/test_order_reconciliation_worker.py",
         "tests/test_internal_events_ops_shadow.py",
@@ -355,7 +355,7 @@ def test_questionnaire_mobile_change_selects_questionnaire_and_commerce_slices()
         "aicrm_next/extensions/forms/questionnaire/domain.py",
         "aicrm_next/extensions/forms/questionnaire/h5_write.py",
         "aicrm_next/app/admin_console/templates/questionnaire_h5_page.html",
-        "aicrm_next/shared/mobile.py",
+        "aicrm_next/platform/shared/mobile.py",
         "aicrm_next/extensions/commerce/commerce/application.py",
         "tests/test_questionnaire_h5_submit_validation.py",
         "tests/test_questionnaire_mobile_normalization.py",
@@ -437,8 +437,8 @@ def test_r05_callback_runtime_files_are_mapped_to_full_pg_ci() -> None:
 
 def test_r06_internal_event_outbox_files_force_full_postgres_ci() -> None:
     result = _select(
-        "aicrm_next/platform_foundation/internal_events/outbox.py",
-        "aicrm_next/platform_foundation/internal_events/reconciliation/outbox.py",
+        "aicrm_next/platform/platform_foundation/internal_events/outbox.py",
+        "aicrm_next/platform/platform_foundation/internal_events/reconciliation/outbox.py",
         "aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py",
         "migrations/versions/0099_internal_event_outbox_and_consumer_lease.py",
         "migrations/versions/0122_internal_event_fanout_manifest.py",
@@ -478,10 +478,10 @@ def test_automation_agent_audit_schema_repair_routes_to_full_postgres_contracts(
 
 def test_r07_external_effect_delivery_files_force_full_postgres_ci() -> None:
     result = _select(
-        "aicrm_next/platform_foundation/external_effects/worker.py",
-        "aicrm_next/platform_foundation/external_effects/reconciliation.py",
+        "aicrm_next/platform/platform_foundation/external_effects/worker.py",
+        "aicrm_next/platform/platform_foundation/external_effects/reconciliation.py",
         "aicrm_next/background_jobs/broadcast_queue_worker.py",
-        "aicrm_next/external_push/service.py",
+        "aicrm_next/platform/external_push/service.py",
         "aicrm_next/delivery_lineage/application.py",
         "aicrm_next/channels/integration_gateway/wecom_private_adapter.py",
         "migrations/versions/0100_external_effect_delivery_lease.py",
@@ -512,16 +512,16 @@ def test_external_effect_continuation_composition_has_a_permanent_full_ci_scope(
         "aicrm_next/external_effect_composition.py",
         "aicrm_next/extensions/ai/automation_agents/external_effect_continuation.py",
         "aicrm_next/extensions/ai/automation_agents/internal_webhook_adapter.py",
-        "aicrm_next/shared/automation_agent_webhook_contract.py",
+        "aicrm_next/platform/shared/automation_agent_webhook_contract.py",
         "aicrm_next/channels/channel_entry/identity_external_effect.py",
-        "aicrm_next/external_push/external_effect_continuation.py",
+        "aicrm_next/platform/external_push/external_effect_continuation.py",
         "aicrm_next/internal_event_composition.py",
         "aicrm_next/extensions/forms/questionnaire/external_effect_continuation.py",
-        "aicrm_next/platform_foundation/external_effects/completion_events.py",
-        "aicrm_next/platform_foundation/external_effects/continuations.py",
-        "aicrm_next/platform_foundation/external_effects/provider_result_repository.py",
-        "aicrm_next/platform_foundation/external_effects/repo_contract.py",
-        "aicrm_next/platform_foundation/external_effects/repo_memory.py",
+        "aicrm_next/platform/platform_foundation/external_effects/completion_events.py",
+        "aicrm_next/platform/platform_foundation/external_effects/continuations.py",
+        "aicrm_next/platform/platform_foundation/external_effects/provider_result_repository.py",
+        "aicrm_next/platform/platform_foundation/external_effects/repo_contract.py",
+        "aicrm_next/platform/platform_foundation/external_effects/repo_memory.py",
         "deploy/openclaw-internal-event-worker.service",
         "migrations/versions/0131_external_effect_continuation_fanout.py",
         "tests/test_external_effect_completion_event.py",
@@ -601,8 +601,8 @@ def test_admin_queue_commands_have_a_permanent_postgres_runtime_scope() -> None:
 
 def test_webhook_inbox_runtime_owner_has_permanent_postgres_scope() -> None:
     result = _select(
-        "aicrm_next/platform_foundation/webhook_inbox/runtime_write_port.py",
-        "aicrm_next/platform_foundation/webhook_inbox/runtime_write_repository.py",
+        "aicrm_next/platform/platform_foundation/webhook_inbox/runtime_write_port.py",
+        "aicrm_next/platform/platform_foundation/webhook_inbox/runtime_write_repository.py",
         "tests/test_webhook_inbox_runtime_owner_postgres.py",
     )
 
@@ -618,8 +618,8 @@ def test_webhook_inbox_runtime_owner_has_permanent_postgres_scope() -> None:
 
 def test_internal_event_consumer_run_owner_has_permanent_postgres_scope() -> None:
     result = _select(
-        "aicrm_next/platform_foundation/internal_events/consumer_run_write_port.py",
-        "aicrm_next/platform_foundation/internal_events/consumer_run_write_repository.py",
+        "aicrm_next/platform/platform_foundation/internal_events/consumer_run_write_port.py",
+        "aicrm_next/platform/platform_foundation/internal_events/consumer_run_write_repository.py",
         "tests/test_internal_event_consumer_run_owner_postgres.py",
     )
 
@@ -636,8 +636,8 @@ def test_internal_event_consumer_run_owner_has_permanent_postgres_scope() -> Non
 
 def test_internal_event_outbox_runtime_owner_has_permanent_postgres_scope() -> None:
     result = _select(
-        "aicrm_next/platform_foundation/internal_events/outbox_runtime_write_port.py",
-        "aicrm_next/platform_foundation/internal_events/outbox_runtime_write_repository.py",
+        "aicrm_next/platform/platform_foundation/internal_events/outbox_runtime_write_port.py",
+        "aicrm_next/platform/platform_foundation/internal_events/outbox_runtime_write_repository.py",
         "tests/test_internal_event_outbox_runtime_owner_postgres.py",
     )
 
@@ -654,9 +654,9 @@ def test_internal_event_outbox_runtime_owner_has_permanent_postgres_scope() -> N
 
 def test_external_effect_runtime_owner_has_permanent_postgres_scope() -> None:
     result = _select(
-        "aicrm_next/platform_foundation/external_effects/claim_policy.py",
-        "aicrm_next/platform_foundation/external_effects/runtime_write_port.py",
-        "aicrm_next/platform_foundation/external_effects/runtime_write_repository.py",
+        "aicrm_next/platform/platform_foundation/external_effects/claim_policy.py",
+        "aicrm_next/platform/platform_foundation/external_effects/runtime_write_port.py",
+        "aicrm_next/platform/platform_foundation/external_effects/runtime_write_repository.py",
         "tests/test_external_effect_runtime_owner_postgres.py",
     )
 
@@ -747,7 +747,7 @@ def test_admin_jobs_archive_gateway_has_permanent_full_ci_scope() -> None:
 
 def test_wecom_payload_contract_has_permanent_full_ci_scope() -> None:
     result = _select(
-        "aicrm_next/shared/wecom_payload_contract.py",
+        "aicrm_next/platform/shared/wecom_payload_contract.py",
         "tests/test_wecom_payload_contract.py",
     )
 
@@ -803,7 +803,7 @@ def test_customer_read_model_refresh_has_permanent_full_postgres_scope() -> None
 
 def test_questionnaire_auto_execute_cutover_has_permanent_full_postgres_scope() -> None:
     result = _select(
-        "aicrm_next/shared/release_cutovers.py",
+        "aicrm_next/platform/shared/release_cutovers.py",
         "migrations/versions/0109_questionnaire_continuation_auto_execute.py",
         "deploy/openclaw-internal-event-worker.service",
         "tests/test_questionnaire_auto_execute_cutover.py",
@@ -822,7 +822,7 @@ def test_questionnaire_auto_execute_cutover_has_permanent_full_postgres_scope() 
 def test_internal_event_registry_composition_has_permanent_full_ci_scope() -> None:
     result = _select(
         "aicrm_next/internal_event_composition.py",
-        "aicrm_next/platform_foundation/internal_events/consumer_registry.py",
+        "aicrm_next/platform/platform_foundation/internal_events/consumer_registry.py",
         "scripts/ci/runtime_contract_inventory.py",
         "tests/test_internal_event_registry_composition.py",
     )
@@ -869,7 +869,7 @@ def test_questionnaire_editor_asset_split_has_permanent_full_ci_scope() -> None:
 
 def test_runtime_readiness_has_permanent_full_ci_scope() -> None:
     result = _select(
-        "aicrm_next/platform_foundation/readiness.py",
+        "aicrm_next/platform/platform_foundation/readiness.py",
         "tests/test_runtime_readiness.py",
     )
 
@@ -899,8 +899,8 @@ def test_cloud_repository_split_modules_keep_permanent_postgres_coverage() -> No
 def test_r08_commerce_fulfillment_files_force_full_postgres_ci() -> None:
     result = _select(
         "aicrm_next/extensions/commerce/commerce/fulfillment_reconciliation.py",
-        "aicrm_next/platform_foundation/external_effects/transactional.py",
-        "aicrm_next/platform_foundation/internal_events/refund.py",
+        "aicrm_next/platform/platform_foundation/external_effects/transactional.py",
+        "aicrm_next/platform/platform_foundation/internal_events/refund.py",
         "aicrm_next/extensions/commerce/service_period/refund_consumer.py",
         "migrations/versions/0101_commerce_fulfillment_invariants.py",
         "scripts/run_external_push_worker.py",
@@ -967,7 +967,7 @@ def test_db_session_runtime_audit_keeps_customer_repository_scope() -> None:
 
 
 def test_signed_session_change_selects_sidebar_shared_runtime_slice() -> None:
-    result = _select("aicrm_next/shared/signed_session.py")
+    result = _select("aicrm_next/platform/shared/signed_session.py")
 
     assert result["matched_scopes"] == [
         "sidebar_questionnaire_access",
@@ -1073,7 +1073,7 @@ def test_static_admin_shell_contract_and_contributors_select_admin_read_scope() 
 def test_admin_config_page_change_selects_config_scope() -> None:
     result = _select(
         "aicrm_next/mcp_tool_catalog.py",
-        "aicrm_next/admin_config/api.py",
+        "aicrm_next/platform/admin_config/api.py",
         "aicrm_next/app/admin_console/static/admin_console/config_center.js",
         "aicrm_next/app/admin_console/templates/admin_console/config_admin_access_detail.html",
         "tests/test_admin_config_next.py",
@@ -1092,8 +1092,8 @@ def test_admin_config_page_change_selects_config_scope() -> None:
 
 def test_admin_audit_owner_change_selects_postgres_and_full_ci() -> None:
     result = _select(
-        "aicrm_next/platform_foundation/admin_audit/port.py",
-        "aicrm_next/platform_foundation/admin_audit/repository.py",
+        "aicrm_next/platform/platform_foundation/admin_audit/port.py",
+        "aicrm_next/platform/platform_foundation/admin_audit/repository.py",
         "tests/test_admin_audit_owner_postgres.py",
     )
 
@@ -1122,7 +1122,7 @@ def test_operation_member_picker_static_assets_select_admin_config_scope() -> No
 
 def test_config_release_control_plane_selects_postgres_and_full_architecture_gate() -> None:
     result = _select(
-        "aicrm_next/admin_config/config_releases.py",
+        "aicrm_next/platform/admin_config/config_releases.py",
         "scripts/ops/manage_runtime_config_release.py",
         ".github/workflows/runtime-config-production.yml",
         "tests/test_config_releases_postgres.py",
@@ -1452,8 +1452,8 @@ def test_group_ops_change_selects_broadcast_contracts_and_full_regression() -> N
 
 def test_broadcast_job_owner_has_permanent_postgres_scope() -> None:
     result = _select(
-        "aicrm_next/platform_foundation/background_jobs/broadcast_job_write_port.py",
-        "aicrm_next/platform_foundation/background_jobs/broadcast_job_write_repository.py",
+        "aicrm_next/platform/platform_foundation/background_jobs/broadcast_job_write_port.py",
+        "aicrm_next/platform/platform_foundation/background_jobs/broadcast_job_write_repository.py",
         "scripts/run_automation_ops_scheduler.py",
         "tests/test_automation_facade_guards.py",
         "tests/test_broadcast_job_owner_postgres.py",
@@ -1471,8 +1471,8 @@ def test_broadcast_job_owner_has_permanent_postgres_scope() -> None:
 
 def test_cloud_broadcast_projection_owner_has_permanent_postgres_scope() -> None:
     result = _select(
-        "aicrm_next/platform_foundation/background_jobs/cloud_broadcast_projection_write_port.py",
-        "aicrm_next/platform_foundation/background_jobs/cloud_broadcast_projection_write_repository.py",
+        "aicrm_next/platform/platform_foundation/background_jobs/cloud_broadcast_projection_write_port.py",
+        "aicrm_next/platform/platform_foundation/background_jobs/cloud_broadcast_projection_write_repository.py",
         "tests/test_cloud_broadcast_projection_owner_postgres.py",
     )
 
@@ -1507,7 +1507,7 @@ def test_private_auth_cutover_maps_every_runtime_caller_and_regression_file() ->
         "aicrm_next/extensions/ai/automation_agents/templates/admin_console/automation_agent_edit.html",
         "aicrm_next/extensions/ai/automation_agents/worker.py",
         "aicrm_next/extensions/growth/cloud_orchestrator/run_due.py",
-        "aicrm_next/platform_foundation/auth_platform/service.py",
+        "aicrm_next/platform/platform_foundation/auth_platform/service.py",
         "scripts/ai_audience_apply_package_spec.py",
         "scripts/diagnose_business_closure_acceptance.py",
         "scripts/diagnose_ops_plan_broadcast_blocker.py",
@@ -1555,8 +1555,8 @@ def test_private_auth_cutover_maps_every_runtime_caller_and_regression_file() ->
 
 def test_retired_runtime_physical_cleanup_has_permanent_full_ci_scope() -> None:
     result = _select(
-        "aicrm_next/platform_foundation/legacy_cleanup/service.py",
-        "aicrm_next/shared/retired_contracts.py",
+        "aicrm_next/platform/platform_foundation/legacy_cleanup/service.py",
+        "aicrm_next/platform/shared/retired_contracts.py",
         "migrations/versions/0105_drop_legacy_cleanup_tables.py",
         "docs/architecture/retired_runtime_registry.yml",
         "tools/check_retired_runtime_references.py",
@@ -1576,7 +1576,7 @@ def test_retired_runtime_physical_cleanup_has_permanent_full_ci_scope() -> None:
 
 def test_critical_read_performance_changes_force_postgres_full_ci() -> None:
     result = _select(
-        "aicrm_next/platform_foundation/performance_contracts.py",
+        "aicrm_next/platform/platform_foundation/performance_contracts.py",
         "docs/performance/critical_read_path_baselines.json",
         "tools/check_critical_read_performance.py",
         "migrations/versions/0106_critical_read_path_indexes.py",
@@ -1595,9 +1595,9 @@ def test_critical_read_performance_changes_force_postgres_full_ci() -> None:
 def test_query_observability_changes_force_postgres_full_ci() -> None:
     result = _select(
         "aicrm_next/main.py",
-        "aicrm_next/shared/db_session.py",
-        "aicrm_next/shared/postgres_connection.py",
-        "aicrm_next/shared/query_telemetry.py",
+        "aicrm_next/platform/shared/db_session.py",
+        "aicrm_next/platform/shared/postgres_connection.py",
+        "aicrm_next/platform/shared/query_telemetry.py",
         "docs/architecture/runtime_contract_inventory.json",
         "docs/ops/query-observability.md",
         "scripts/ops/summarize_query_observability.py",
@@ -1677,7 +1677,7 @@ def test_job_run_ledger_owner_changes_select_platform_postgres_scope() -> None:
     }
 
     for changed_path in (
-        "aicrm_next/platform_foundation/job_runs/repository.py",
+        "aicrm_next/platform/platform_foundation/job_runs/repository.py",
         *sorted(expected_tests),
     ):
         result = _select(changed_path)
@@ -1733,7 +1733,7 @@ def test_rate_scope_cooldown_owner_changes_select_platform_postgres_scope() -> N
     }
 
     for changed_path in (
-        "aicrm_next/platform_foundation/rate_scope_cooldown/repository.py",
+        "aicrm_next/platform/platform_foundation/rate_scope_cooldown/repository.py",
         *sorted(expected_tests),
     ):
         result = _select(changed_path)

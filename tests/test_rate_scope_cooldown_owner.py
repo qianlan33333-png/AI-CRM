@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from aicrm_next.platform_foundation.rate_scope_cooldown import (
+from aicrm_next.platform.platform_foundation.rate_scope_cooldown import (
     RateScopeCooldownRequest,
     build_rate_scope_cooldown_port,
 )
@@ -69,11 +69,11 @@ def test_rate_scope_cooldown_port_rejects_empty_scope(method_name: str) -> None:
 
 def test_rate_scope_cooldown_sql_has_one_module_owner() -> None:
     owner_source = (
-        ROOT / "aicrm_next/platform_foundation/rate_scope_cooldown/repository.py"
+        ROOT / "aicrm_next/platform/platform_foundation/rate_scope_cooldown/repository.py"
     ).read_text(encoding="utf-8")
     caller_sources = [
-        ROOT / "aicrm_next/platform_foundation/execution_runtime/repository.py",
-        ROOT / "aicrm_next/platform_foundation/external_effects/rate_limit.py",
+        ROOT / "aicrm_next/platform/platform_foundation/execution_runtime/repository.py",
+        ROOT / "aicrm_next/platform/platform_foundation/external_effects/rate_limit.py",
     ]
 
     assert owner_source.count("INSERT INTO queue_rate_scope_cooldown") == 2

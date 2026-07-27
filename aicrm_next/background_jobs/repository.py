@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.shared.runtime import raw_database_url
+from aicrm_next.platform.shared.runtime import raw_database_url
 from contextlib import contextmanager
 from typing import Any, Iterator
 

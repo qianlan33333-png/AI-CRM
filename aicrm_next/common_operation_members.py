@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 
 from aicrm_next.channels.integration_gateway.wecom_operation_members_client import WeComOperationMembersClientError
 from aicrm_next.crm.operation_members.application import SyncOperationMembersFromWeComCommand
-from aicrm_next.shared.operation_members import (
+from aicrm_next.platform.shared.operation_members import (
     bool_from_query,
     clamp_page,
     clamp_page_size,
@@ -15,7 +15,7 @@ from aicrm_next.shared.operation_members import (
     normalize_scope,
     operation_members_payload,
 )
-from aicrm_next.platform_foundation.repository import connect_operation_members_db as _connect
+from aicrm_next.platform.platform_foundation.repository import connect_operation_members_db as _connect
 
 router = APIRouter()
 

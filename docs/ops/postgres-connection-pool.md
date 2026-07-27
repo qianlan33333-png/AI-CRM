@@ -8,7 +8,7 @@ This failure mode is an application connection lifecycle and pool governance iss
 
 ## Current Application Mechanism
 
-`aicrm_next/shared/db_session.py` is the single SQLAlchemy Engine and SessionFactory owner for `aicrm_next` runtime code.
+`aicrm_next/platform/shared/db_session.py` is the single SQLAlchemy Engine and SessionFactory owner for `aicrm_next` runtime code.
 
 - `get_engine()` returns a process-level shared Engine.
 - `get_session_factory()` reuses the shared Engine.

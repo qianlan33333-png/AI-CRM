@@ -6,7 +6,7 @@ from typing import Any
 from sqlalchemy import bindparam, text
 from sqlalchemy.engine import Engine
 
-from aicrm_next.shared.db_session import get_engine
+from aicrm_next.platform.shared.db_session import get_engine
 
 
 JsonDict = dict[str, Any]

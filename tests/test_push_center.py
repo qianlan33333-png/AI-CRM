@@ -3,8 +3,8 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import (
     AI_ASSIST_CAMPAIGN_MESSAGE_LOOPBACK,
     GROUP_OPS_MESSAGE_LOOPBACK,
     WECOM_MESSAGE_GROUP_SEND,
@@ -13,18 +13,18 @@ from aicrm_next.platform_foundation.external_effects import (
     ExternalEffectService,
     reset_external_effect_fixture_state,
 )
-from aicrm_next.platform_foundation.external_effects.repo import build_external_effect_repository
-from aicrm_next.platform_foundation.push_center.projection import BroadcastJobAdapter, PushCenterProjectionService
-from aicrm_next.platform_foundation.push_center.repository import PushCenterRepository
-from aicrm_next.platform_foundation.push_center.section_mapper import effect_types_for_section, label_for_section, section_for_job
-from aicrm_next.platform_foundation.push_center.sql_read_model import (
+from aicrm_next.platform.platform_foundation.external_effects.repo import build_external_effect_repository
+from aicrm_next.platform.platform_foundation.push_center.projection import BroadcastJobAdapter, PushCenterProjectionService
+from aicrm_next.platform.platform_foundation.push_center.repository import PushCenterRepository
+from aicrm_next.platform.platform_foundation.push_center.section_mapper import effect_types_for_section, label_for_section, section_for_job
+from aicrm_next.platform.platform_foundation.push_center.sql_read_model import (
     InvalidPushCenterCursor,
     _FAST_PAGE_SQL,
     _public_item,
     decode_push_center_cursor,
     encode_push_center_cursor,
 )
-from aicrm_next.platform_foundation.push_center.view_model import (
+from aicrm_next.platform.platform_foundation.push_center.view_model import (
     build_job_detail_payload,
     build_job_reconciliation_payload,
     build_jobs_payload,

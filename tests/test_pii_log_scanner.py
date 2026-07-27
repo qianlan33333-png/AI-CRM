@@ -5,7 +5,7 @@ import json
 import logging
 from pathlib import Path
 
-from aicrm_next.shared.safe_logging import safe_log_exception
+from aicrm_next.platform.shared.safe_logging import safe_log_exception
 from scripts.ci.check_pii_logging import apply_allowlist, scan_file, scan_paths, validate_allowlist
 
 

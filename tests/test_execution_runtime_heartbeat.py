@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 
-from aicrm_next.platform_foundation.execution_runtime.heartbeat import LeaseHeartbeat
+from aicrm_next.platform.platform_foundation.execution_runtime.heartbeat import LeaseHeartbeat
 
 
 def test_heartbeat_renews_until_owner_is_lost() -> None:

@@ -5,7 +5,7 @@ from typing import Any
 
 import pytest
 
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.external_effects import (
     ExternalEffectService,
     WECOM_MEDIA_UPLOAD,
     WECOM_MESSAGE_GROUP_SEND,

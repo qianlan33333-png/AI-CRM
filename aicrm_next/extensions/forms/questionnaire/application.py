@@ -5,10 +5,10 @@ from typing import Any
 
 from aicrm_next.crm.identity_contact.application import ResolvePersonIdentityQuery
 from aicrm_next.crm.identity_contact.dto import ResolvePersonIdentityRequest
-from aicrm_next.shared.repository_provider import RepositoryProviderError, blocked_production_payload
-from aicrm_next.shared.runtime import production_data_ready
-from aicrm_next.shared.runtime_settings import managed_runtime_setting, runtime_setting
-from aicrm_next.shared.errors import ContractError, NotFoundError
+from aicrm_next.platform.shared.repository_provider import RepositoryProviderError, blocked_production_payload
+from aicrm_next.platform.shared.runtime import production_data_ready
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting, runtime_setting
+from aicrm_next.platform.shared.errors import ContractError, NotFoundError
 
 from .domain import admin_detail_projection, extract_submission_mobile, normalize_questionnaire, score_and_tags, summary_projection, validate_required_answers
 from .dto import OAuthCallbackRequest, OAuthStartRequest, QuestionnaireSubmitRequest, QuestionnaireUpsertRequest
@@ -258,7 +258,7 @@ def _normalized_share_url(value: str) -> str:
 
 
 def _questionnaire_share_qr_data_url(share_url: str) -> str:
-    from aicrm_next.shared.share_qr import svg_qr_data_url
+    from aicrm_next.platform.shared.share_qr import svg_qr_data_url
 
     return svg_qr_data_url(_normalized_share_url(share_url), encoding="url")
 

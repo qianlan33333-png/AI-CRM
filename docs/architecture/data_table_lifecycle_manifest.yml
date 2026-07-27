@@ -27,7 +27,7 @@ tables:
   auth_api_clients:
     domain: auth_platform
     lifecycle: config
-    write_owner: aicrm_next.platform_foundation.auth_platform
+    write_owner: aicrm_next.platform.platform_foundation.auth_platform
     read_owners:
       - centralized route authentication
       - auth bootstrap and readiness
@@ -46,7 +46,7 @@ tables:
   auth_security_events:
     domain: auth_platform
     lifecycle: audit
-    write_owner: aicrm_next.platform_foundation.auth_platform
+    write_owner: aicrm_next.platform.platform_foundation.auth_platform
     read_owners:
       - security operations
     replacement: none; append-only authentication security evidence
@@ -63,7 +63,7 @@ tables:
   auth_sessions:
     domain: auth_platform
     lifecycle: canonical
-    write_owner: aicrm_next.platform_foundation.auth_platform
+    write_owner: aicrm_next.platform.platform_foundation.auth_platform
     read_owners:
       - centralized human session authentication
     replacement: none; server-side opaque browser session state
@@ -80,7 +80,7 @@ tables:
   auth_webhook_clients:
     domain: auth_platform
     lifecycle: config
-    write_owner: aicrm_next.platform_foundation.auth_platform
+    write_owner: aicrm_next.platform.platform_foundation.auth_platform
     read_owners:
       - centralized webhook HMAC verification
       - auth bootstrap and readiness
@@ -98,7 +98,7 @@ tables:
   auth_webhook_replay:
     domain: auth_platform
     lifecycle: audit
-    write_owner: aicrm_next.platform_foundation.auth_platform
+    write_owner: aicrm_next.platform.platform_foundation.auth_platform
     read_owners:
       - centralized webhook HMAC verification
     replacement: none; persistent webhook replay prevention window
@@ -481,10 +481,10 @@ tables:
   marketing_automation_question_rules:
     domain: admin_config
     lifecycle: config
-    write_owner: aicrm_next.admin_config.repository
+    write_owner: aicrm_next.platform.admin_config.repository
     read_owners:
-      - aicrm_next.admin_config.repository
-      - aicrm_next.admin_config.application
+      - aicrm_next.platform.admin_config.repository
+      - aicrm_next.platform.admin_config.application
     replacement: automation workflow config or questionnaire rule package to be selected in PR #14
     drop_candidate: true
     drop_after: "after marketing automation config is reconciled with automation_program/workflow"
@@ -498,10 +498,10 @@ tables:
   marketing_automation_configs:
     domain: admin_config
     lifecycle: config
-    write_owner: aicrm_next.admin_config.repository
+    write_owner: aicrm_next.platform.admin_config.repository
     read_owners:
-      - aicrm_next.admin_config.repository
-      - aicrm_next.admin_config.application
+      - aicrm_next.platform.admin_config.repository
+      - aicrm_next.platform.admin_config.application
     replacement: automation_program, automation_workflow, or package config to be selected in PR #14
     drop_candidate: true
     drop_after: "after marketing automation config is reconciled with automation_program/workflow"
@@ -515,13 +515,13 @@ tables:
   app_settings:
     domain: admin_config
     lifecycle: config
-    write_owner: aicrm_next.admin_config.repository
+    write_owner: aicrm_next.platform.admin_config.repository
     read_owners:
-      - aicrm_next.admin_config.repository
+      - aicrm_next.platform.admin_config.repository
       - aicrm_next.extensions.archive.message_archive.repo
-      - aicrm_next.platform_foundation.push_center.capability_repository
+      - aicrm_next.platform.platform_foundation.push_center.capability_repository
       - aicrm_next.extensions.forms.questionnaire.repo
-      - aicrm_next.shared.runtime_settings
+      - aicrm_next.platform.shared.runtime_settings
     replacement: ""
     drop_candidate: false
     runtime_entrypoints:
@@ -540,11 +540,11 @@ tables:
   config_releases:
     domain: admin_config
     lifecycle: config
-    write_owner: aicrm_next.admin_config.config_release_repository
+    write_owner: aicrm_next.platform.admin_config.config_release_repository
     read_owners:
-      - aicrm_next.admin_config.config_release_repository
-      - aicrm_next.admin_config.config_releases
-      - aicrm_next.admin_config.api
+      - aicrm_next.platform.admin_config.config_release_repository
+      - aicrm_next.platform.admin_config.config_releases
+      - aicrm_next.platform.admin_config.api
     replacement: ""
     drop_candidate: false
     runtime_entrypoints:
@@ -562,11 +562,11 @@ tables:
   deployment_profile_state:
     domain: admin_config
     lifecycle: config
-    write_owner: aicrm_next.admin_config.config_release_repository
+    write_owner: aicrm_next.platform.admin_config.config_release_repository
     read_owners:
-      - aicrm_next.admin_config.config_release_repository
-      - aicrm_next.admin_config.config_releases
-      - aicrm_next.admin_config.api
+      - aicrm_next.platform.admin_config.config_release_repository
+      - aicrm_next.platform.admin_config.config_releases
+      - aicrm_next.platform.admin_config.api
     replacement: ""
     drop_candidate: false
     runtime_entrypoints:
@@ -584,9 +584,9 @@ tables:
   mcp_tool_settings:
     domain: admin_config
     lifecycle: config
-    write_owner: aicrm_next.admin_config.repository
+    write_owner: aicrm_next.platform.admin_config.repository
     read_owners:
-      - aicrm_next.admin_config.repository
+      - aicrm_next.platform.admin_config.repository
     replacement: ""
     drop_candidate: false
     runtime_entrypoints:
@@ -760,7 +760,7 @@ tables:
     write_owners:
       - aicrm_next.background_jobs
     read_owners:
-      - aicrm_next.admin_jobs.repository
+      - aicrm_next.platform.admin_jobs.repository
       - aicrm_next.admin_read_model.repo
       - aicrm_next.extensions.ai.ai_assist.external_campaigns_repo
       - aicrm_next.background_jobs.broadcast_queue_worker
@@ -878,7 +878,7 @@ tables:
     write_owner: aicrm_next.automation_engine.group_ops.postgres_repo
     read_owners:
       - aicrm_next.automation_engine.group_ops.postgres_repo
-      - aicrm_next.admin_jobs.application
+      - aicrm_next.platform.admin_jobs.application
       - broadcast jobs projection
     replacement: none; canonical group-ops plan model
     drop_candidate: false
@@ -1691,12 +1691,12 @@ tables:
   domain_event_outbox:
     domain: commerce_events
     lifecycle: event
-    write_owner: aicrm_next.external_push
+    write_owner: aicrm_next.platform.external_push
     write_owners:
-      - aicrm_next.external_push
+      - aicrm_next.platform.external_push
     read_owners:
       - aicrm_next.extensions.commerce.commerce.external_push_admin
-      - aicrm_next.external_push.repo
+      - aicrm_next.platform.external_push.repo
     replacement: internal_event or external_effect_job after event/outbox convergence is designed
     drop_candidate: true
     drop_after: "after PR #13 lineage proves commerce outbox is fully represented by internal_event/external_effect"
@@ -1713,12 +1713,12 @@ tables:
   external_push_delivery:
     domain: commerce_events
     lifecycle: legacy_boundary
-    write_owner: aicrm_next.external_push
+    write_owner: aicrm_next.platform.external_push
     write_owners:
-      - aicrm_next.external_push
+      - aicrm_next.platform.external_push
     read_owners:
       - aicrm_next.extensions.commerce.commerce.external_push_admin
-      - aicrm_next.external_push.repo
+      - aicrm_next.platform.external_push.repo
       - external_effect compatibility diagnostics
     replacement: external_effect_job, external_effect_attempt
     drop_candidate: true
@@ -1736,13 +1736,13 @@ tables:
   outbound_webhook_deliveries:
     domain: outbound_webhook
     lifecycle: queue
-    write_owner: aicrm_next.admin_jobs
+    write_owner: aicrm_next.platform.admin_jobs
     write_owners:
-      - aicrm_next.admin_jobs
+      - aicrm_next.platform.admin_jobs
     status_enum:
       column: status
     read_owners:
-      - aicrm_next.admin_jobs.repository
+      - aicrm_next.platform.admin_jobs.repository
     replacement: external_effect_job, external_effect_attempt
     drop_candidate: true
     drop_after: "after webhook deliveries are represented as external_effect jobs"
@@ -1773,11 +1773,11 @@ tables:
   internal_event:
     domain: internal_events
     lifecycle: event
-    write_owner: aicrm_next.platform_foundation.internal_events.service
+    write_owner: aicrm_next.platform.platform_foundation.internal_events.service
     read_owners:
       - aicrm_next.crm.customer_read_model.refresh_scope_repository
-      - aicrm_next.platform_foundation.execution_runtime.read_model
-      - aicrm_next.platform_foundation.internal_events.worker
+      - aicrm_next.platform.platform_foundation.execution_runtime.read_model
+      - aicrm_next.platform.platform_foundation.internal_events.worker
       - internal event admin/reconciliation APIs
     replacement: none; canonical internal event bus
     drop_candidate: false
@@ -1796,15 +1796,15 @@ tables:
   internal_event_outbox:
     domain: internal_events
     lifecycle: queue
-    write_owner: aicrm_next.platform_foundation.internal_events
+    write_owner: aicrm_next.platform.platform_foundation.internal_events
     write_owners:
-      - aicrm_next.platform_foundation.internal_events
+      - aicrm_next.platform.platform_foundation.internal_events
     status_enum:
       column: status
     read_owners:
-      - aicrm_next.platform_foundation.execution_runtime.read_model
-      - aicrm_next.platform_foundation.internal_events.worker
-      - aicrm_next.platform_foundation.internal_events.reconciliation
+      - aicrm_next.platform.platform_foundation.execution_runtime.read_model
+      - aicrm_next.platform.platform_foundation.internal_events.worker
+      - aicrm_next.platform.platform_foundation.internal_events.reconciliation
       - aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation
     replacement: none; transactional durability boundary for existing internal business events
     drop_candidate: false
@@ -1830,13 +1830,13 @@ tables:
   internal_event_consumer_run:
     domain: internal_events
     lifecycle: queue
-    write_owner: aicrm_next.platform_foundation.internal_events
+    write_owner: aicrm_next.platform.platform_foundation.internal_events
     write_owners:
-      - aicrm_next.platform_foundation.internal_events
+      - aicrm_next.platform.platform_foundation.internal_events
     status_enum:
       column: status
     read_owners:
-      - aicrm_next.platform_foundation.execution_runtime.read_model
+      - aicrm_next.platform.platform_foundation.execution_runtime.read_model
       - internal event admin/reconciliation APIs
     replacement: none; canonical internal consumer queue
     drop_candidate: false
@@ -1858,9 +1858,9 @@ tables:
   internal_event_consumer_attempt:
     domain: internal_events
     lifecycle: audit
-    write_owner: aicrm_next.platform_foundation.internal_events
+    write_owner: aicrm_next.platform.platform_foundation.internal_events
     read_owners:
-      - aicrm_next.platform_foundation.execution_runtime.read_model
+      - aicrm_next.platform.platform_foundation.execution_runtime.read_model
       - internal event admin/reconciliation APIs
     replacement: none; canonical internal consumer attempt audit
     drop_candidate: false
@@ -1899,7 +1899,7 @@ tables:
   queue_runtime_control:
     domain: platform_foundation
     lifecycle: config
-    write_owner: aicrm_next.platform_foundation.execution_runtime
+    write_owner: aicrm_next.platform.platform_foundation.execution_runtime
     read_owners:
       - PostgreSQL execution runtime generation gate
       - execution runtime admin read model
@@ -1921,7 +1921,7 @@ tables:
   queue_lane_policy:
     domain: platform_foundation
     lifecycle: config
-    write_owner: aicrm_next.platform_foundation.execution_runtime
+    write_owner: aicrm_next.platform.platform_foundation.execution_runtime
     read_owners:
       - PostgreSQL execution runtime lane capacity gate
       - execution runtime admin read model
@@ -1943,7 +1943,7 @@ tables:
   queue_policy_snapshot:
     domain: platform_foundation
     lifecycle: config
-    write_owner: aicrm_next.platform_foundation.execution_runtime
+    write_owner: aicrm_next.platform.platform_foundation.execution_runtime
     read_owners:
       - PostgreSQL execution runtime policy resolver
       - execution runtime admin read model
@@ -1964,7 +1964,7 @@ tables:
   queue_fairness_cursor:
     domain: platform_foundation
     lifecycle: read_model
-    write_owner: aicrm_next.platform_foundation.execution_runtime.repository
+    write_owner: aicrm_next.platform.platform_foundation.execution_runtime.repository
     read_owners:
       - PostgreSQL execution runtime fair claim selector
       - execution runtime admin read model
@@ -1985,9 +1985,9 @@ tables:
   queue_rate_scope_cooldown:
     domain: platform_foundation
     lifecycle: queue
-    write_owner: aicrm_next.platform_foundation.rate_scope_cooldown
+    write_owner: aicrm_next.platform.platform_foundation.rate_scope_cooldown
     write_owners:
-      - aicrm_next.platform_foundation.rate_scope_cooldown
+      - aicrm_next.platform.platform_foundation.rate_scope_cooldown
     read_owners:
       - PostgreSQL execution runtime external-effect claim selector
       - execution runtime admin read model
@@ -2010,7 +2010,7 @@ tables:
   queue_worker_heartbeat:
     domain: platform_foundation
     lifecycle: read_model
-    write_owner: aicrm_next.platform_foundation.execution_runtime
+    write_owner: aicrm_next.platform.platform_foundation.execution_runtime
     read_owners:
       - execution runtime admin read model
       - execution runtime consistency audit
@@ -2032,7 +2032,7 @@ tables:
   queue_runtime_scope_transition_audit:
     domain: platform_foundation
     lifecycle: audit
-    write_owner: aicrm_next.platform_foundation.execution_runtime.cutover
+    write_owner: aicrm_next.platform.platform_foundation.execution_runtime.cutover
     read_owners:
       - ID-validation queue operation evidence
       - execution runtime consistency audit
@@ -2096,7 +2096,7 @@ tables:
   queue_runtime_validation_evidence:
     domain: platform_foundation
     lifecycle: audit
-    write_owner: aicrm_next.platform_foundation.execution_runtime.validation
+    write_owner: aicrm_next.platform.platform_foundation.execution_runtime.validation
     read_owners:
       - ID-validation 72-hour soak gate
       - execution runtime consistency audit
@@ -2119,7 +2119,7 @@ tables:
   queue_runtime_lease_recovery_event:
     domain: platform_foundation
     lifecycle: audit
-    write_owner: aicrm_next.platform_foundation.execution_runtime.repository
+    write_owner: aicrm_next.platform.platform_foundation.execution_runtime.repository
     read_owners:
       - ID-validation 72-hour soak gate
       - execution runtime consistency audit
@@ -2127,7 +2127,7 @@ tables:
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - aicrm_next.platform_foundation.execution_runtime.repository
+      - aicrm_next.platform.platform_foundation.execution_runtime.repository
       - scripts/ops/manage_queue_runtime_soak.py
     migration_source: 0136_queue_runtime_validation_soak
     pii_level: none
@@ -2182,15 +2182,15 @@ tables:
   external_effect_job:
     domain: external_effects
     lifecycle: queue
-    write_owner: aicrm_next.platform_foundation.external_effects
+    write_owner: aicrm_next.platform.platform_foundation.external_effects
     write_owners:
-      - aicrm_next.platform_foundation.external_effects
+      - aicrm_next.platform.platform_foundation.external_effects
     status_enum:
       column: status
     read_owners:
-      - aicrm_next.platform_foundation.execution_runtime.read_model
-      - aicrm_next.platform_foundation.external_effects.worker
-      - aicrm_next.platform_foundation.external_effects.reconciliation
+      - aicrm_next.platform.platform_foundation.execution_runtime.read_model
+      - aicrm_next.platform.platform_foundation.external_effects.worker
+      - aicrm_next.platform.platform_foundation.external_effects.reconciliation
       - push center projection
       - admin external effect APIs
     replacement: none; canonical external side-effect queue
@@ -2215,11 +2215,11 @@ tables:
   external_effect_attempt:
     domain: external_effects
     lifecycle: audit
-    write_owner: aicrm_next.platform_foundation.external_effects
+    write_owner: aicrm_next.platform.platform_foundation.external_effects
     write_owners:
-      - aicrm_next.platform_foundation.external_effects
+      - aicrm_next.platform.platform_foundation.external_effects
     read_owners:
-      - aicrm_next.platform_foundation.execution_runtime.read_model
+      - aicrm_next.platform.platform_foundation.execution_runtime.read_model
       - push center projection
       - admin external effect APIs
     replacement: none; canonical external side-effect attempt audit
@@ -2295,9 +2295,9 @@ tables:
   admin_login_audit:
     domain: admin_config
     lifecycle: audit
-    write_owner: aicrm_next.admin_config
+    write_owner: aicrm_next.platform.admin_config
     read_owners:
-      - aicrm_next.admin_config
+      - aicrm_next.platform.admin_config
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2313,11 +2313,11 @@ tables:
   admin_operation_logs:
     domain: platform_foundation
     lifecycle: audit
-    write_owner: aicrm_next.platform_foundation.admin_audit
+    write_owner: aicrm_next.platform.platform_foundation.admin_audit
     write_owners:
-      - aicrm_next.platform_foundation.admin_audit
+      - aicrm_next.platform.platform_foundation.admin_audit
     read_owners:
-      - aicrm_next.admin_config
+      - aicrm_next.platform.admin_config
       - aicrm_next.admin_read_model
     replacement: none; canonical admin operation audit log
     drop_candidate: false
@@ -2340,9 +2340,9 @@ tables:
   admin_user_roles:
     domain: admin_config
     lifecycle: canonical
-    write_owner: aicrm_next.admin_config
+    write_owner: aicrm_next.platform.admin_config
     read_owners:
-      - aicrm_next.admin_config
+      - aicrm_next.platform.admin_config
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2358,9 +2358,9 @@ tables:
   admin_users:
     domain: admin_config
     lifecycle: canonical
-    write_owner: aicrm_next.admin_config
+    write_owner: aicrm_next.platform.admin_config
     read_owners:
-      - aicrm_next.admin_config
+      - aicrm_next.platform.admin_config
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2435,7 +2435,7 @@ tables:
     write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
       - aicrm_next.extensions.ai.ai_audience_ops
-      - aicrm_next.platform_foundation.execution_runtime
+      - aicrm_next.platform.platform_foundation.execution_runtime
     replacement: none; one coalescing durable refresh intent per package
     drop_candidate: false
     drop_after: ""
@@ -3068,7 +3068,7 @@ tables:
     lifecycle: audit
     write_owner: aicrm_next.background_jobs.broadcast_queue_worker
     read_owners:
-      - aicrm_next.admin_jobs
+      - aicrm_next.platform.admin_jobs
       - aicrm_next.background_jobs
       - aicrm_next.delivery_lineage
     replacement: none; active production schema table registered during schema drift closeout
@@ -3086,7 +3086,7 @@ tables:
   broadcast_job_hourly_reports:
     domain: broadcast_jobs
     lifecycle: canonical
-    write_owner: aicrm_next.admin_jobs
+    write_owner: aicrm_next.platform.admin_jobs
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3104,9 +3104,9 @@ tables:
   broadcast_queue_notification_settings:
     domain: broadcast_jobs
     lifecycle: config
-    write_owner: aicrm_next.admin_jobs
+    write_owner: aicrm_next.platform.admin_jobs
     read_owners:
-      - aicrm_next.admin_jobs
+      - aicrm_next.platform.admin_jobs
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -3507,7 +3507,7 @@ tables:
   external_effect_test_receipt:
     domain: external
     lifecycle: audit
-    write_owner: aicrm_next.platform_foundation.external_effects
+    write_owner: aicrm_next.platform.platform_foundation.external_effects
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3527,7 +3527,7 @@ tables:
     lifecycle: config
     write_owner: aicrm_next.extensions.commerce.commerce
     read_owners:
-      - aicrm_next.external_push
+      - aicrm_next.platform.external_push
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -3746,7 +3746,7 @@ tables:
     lifecycle: canonical
     write_owner: aicrm_next.background_jobs.broadcast_queue_worker
     read_owners:
-      - aicrm_next.admin_jobs
+      - aicrm_next.platform.admin_jobs
       - aicrm_next.admin_read_model
       - aicrm_next.background_jobs
     replacement: none; active production schema table registered during schema drift closeout
@@ -3821,11 +3821,11 @@ tables:
   sync_runs:
     domain: admin_jobs
     lifecycle: canonical
-    write_owner: aicrm_next.platform_foundation.job_runs
+    write_owner: aicrm_next.platform.platform_foundation.job_runs
     write_owners:
-      - aicrm_next.platform_foundation.job_runs
+      - aicrm_next.platform.platform_foundation.job_runs
     read_owners:
-      - aicrm_next.admin_jobs
+      - aicrm_next.platform.admin_jobs
       - aicrm_next.admin_read_model
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
@@ -3898,13 +3898,13 @@ tables:
   webhook_inbox:
     domain: webhook_ingress
     lifecycle: canonical
-    write_owner: aicrm_next.platform_foundation.webhook_inbox
+    write_owner: aicrm_next.platform.platform_foundation.webhook_inbox
     write_owners:
-      - aicrm_next.platform_foundation.webhook_inbox
+      - aicrm_next.platform.platform_foundation.webhook_inbox
     read_owners:
-      - aicrm_next.platform_foundation.execution_runtime
-      - aicrm_next.platform_foundation.execution_runtime.read_model
-      - aicrm_next.platform_foundation.webhook_inbox
+      - aicrm_next.platform.platform_foundation.execution_runtime
+      - aicrm_next.platform.platform_foundation.execution_runtime.read_model
+      - aicrm_next.platform.platform_foundation.webhook_inbox
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
@@ -4224,8 +4224,8 @@ tables:
       - aicrm_next.admin_read_model
       - aicrm_next.extensions.commerce.commerce.coupons.checker
       - aicrm_next.crm.customer_read_model
-      - aicrm_next.external_push
-      - aicrm_next.platform_foundation.internal_events
+      - aicrm_next.platform.external_push
+      - aicrm_next.platform.platform_foundation.internal_events
       - aicrm_next.extensions.commerce.service_period
       - aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation
     replacement: none; active production schema table registered during schema drift closeout
@@ -4266,7 +4266,7 @@ tables:
     write_owner: aicrm_next.extensions.commerce.commerce.wechat_pay_service
     read_owners:
       - aicrm_next.extensions.commerce.commerce.coupons
-      - aicrm_next.external_push
+      - aicrm_next.platform.external_push
       - aicrm_next.extensions.commerce.service_period
       - aicrm_next.crm.customer_read_model.sidebar_v2
     replacement: none; active production schema table registered during schema drift closeout
@@ -4380,7 +4380,7 @@ tables:
     write_owners:
       - aicrm_next.crm.identity_contact
     read_owners:
-      - aicrm_next.admin_jobs
+      - aicrm_next.platform.admin_jobs
       - aicrm_next.admin_read_model
       - aicrm_next.crm.identity_contact
     replacement: none; active production schema table registered during schema drift closeout

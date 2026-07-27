@@ -4,17 +4,17 @@ import hashlib
 from dataclasses import replace
 from typing import Any
 
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.internal_events.outbox import (
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.internal_events.outbox import (
     enqueue_transactional_internal_event_outbox,
 )
-from aicrm_next.platform_foundation.internal_events.questionnaire import (
+from aicrm_next.platform.platform_foundation.internal_events.questionnaire import (
     build_questionnaire_submitted_event_request,
 )
-from aicrm_next.shared.db_session import connect_raw_postgres
-from aicrm_next.shared.runtime import raw_database_url
+from aicrm_next.platform.shared.db_session import connect_raw_postgres
+from aicrm_next.platform.shared.runtime import raw_database_url
 
-from aicrm_next.shared.release_cutovers import QUESTIONNAIRE_AUTO_EXECUTE_CUTOVER_AT, QUESTIONNAIRE_AUTO_EXECUTE_CUTOVER_SQL
+from aicrm_next.platform.shared.release_cutovers import QUESTIONNAIRE_AUTO_EXECUTE_CUTOVER_AT, QUESTIONNAIRE_AUTO_EXECUTE_CUTOVER_SQL
 
 
 _QUESTIONNAIRE_R09_PRODUCTION_CUTOVER_SQL = QUESTIONNAIRE_AUTO_EXECUTE_CUTOVER_SQL

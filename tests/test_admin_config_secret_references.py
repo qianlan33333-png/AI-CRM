@@ -6,16 +6,16 @@ from pathlib import Path
 from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine import Engine
 
-from aicrm_next.admin_config.application import AdminConfigReadService, AdminConfigWriteCommand
-from aicrm_next.admin_config.repository import AdminConfigRepository
+from aicrm_next.platform.admin_config.application import AdminConfigReadService, AdminConfigWriteCommand
+from aicrm_next.platform.admin_config.repository import AdminConfigRepository
 from aicrm_next.extensions.archive.message_archive import repo as message_archive_repo
 from aicrm_next.extensions.archive.message_archive import sync_service as message_archive_sync
 from aicrm_next.extensions.forms.questionnaire import repo as questionnaire_repo
-from aicrm_next.shared import runtime_settings
-from aicrm_next.shared import runtime as shared_runtime
-from aicrm_next.shared.runtime_settings import runtime_setting, runtime_settings_request_scope
-from aicrm_next.shared.secret_store import FileSecretStore, is_secret_reference, parse_secret_reference
-from aicrm_next.shared.secret_store import SENSITIVE_SETTING_KEYS
+from aicrm_next.platform.shared import runtime_settings
+from aicrm_next.platform.shared import runtime as shared_runtime
+from aicrm_next.platform.shared.runtime_settings import runtime_setting, runtime_settings_request_scope
+from aicrm_next.platform.shared.secret_store import FileSecretStore, is_secret_reference, parse_secret_reference
+from aicrm_next.platform.shared.secret_store import SENSITIVE_SETTING_KEYS
 
 
 def _engine(tmp_path: Path) -> Engine:

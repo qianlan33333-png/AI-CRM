@@ -4,13 +4,13 @@ import logging
 from typing import Any
 
 from aicrm_next.crm.customer_tags.local_projection import project_questionnaire_tags
-from aicrm_next.platform_foundation.external_effects.continuations import ExternalEffectContinuation
-from aicrm_next.platform_foundation.external_effects.models import (
+from aicrm_next.platform.platform_foundation.external_effects.continuations import ExternalEffectContinuation
+from aicrm_next.platform.platform_foundation.external_effects.models import (
     WECOM_CONTACT_TAG_MARK,
     ExternalEffectDispatchResult,
     ExternalEffectJob,
 )
-from aicrm_next.shared.safe_logging import safe_log_exception
+from aicrm_next.platform.shared.safe_logging import safe_log_exception
 
 LOGGER = logging.getLogger(__name__)
 

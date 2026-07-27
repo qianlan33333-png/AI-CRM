@@ -6,8 +6,8 @@ from typing import Any, Callable
 
 from sqlalchemy import text
 
-from aicrm_next.shared.db_session import get_session_factory
-from aicrm_next.shared.runtime_settings import managed_runtime_int
+from aicrm_next.platform.shared.db_session import get_session_factory
+from aicrm_next.platform.shared.runtime_settings import managed_runtime_int
 
 from .repo import (
     CustomerReadRepository,

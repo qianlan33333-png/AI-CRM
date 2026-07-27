@@ -14,7 +14,7 @@ existing DB/session providers.
 
 Direct DB/session primitives are allowed only in:
 
-- `aicrm_next/shared/db_session.py`
+- `aicrm_next/platform/shared/db_session.py`
 - `aicrm_next/**/repo.py`
 - `aicrm_next/**/repository.py`
 - `aicrm_next/**/repositories.py`
@@ -25,7 +25,7 @@ Direct DB/session primitives are allowed only in:
 
 API, route, admin page, frontend compatibility, application, service, and other
 business context files must move DB access behind a repository or
-`aicrm_next.shared.db_session`.
+`aicrm_next.platform.shared.db_session`.
 
 ## Temporary Allowlist
 

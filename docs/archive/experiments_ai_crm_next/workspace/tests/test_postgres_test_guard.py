@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from aicrm_next.shared.postgres_test_guard import (
+from aicrm_next.platform.shared.postgres_test_guard import (
     UnsafePostgresTestDatabaseError,
     redact_database_url,
     validate_postgres_test_database_url,

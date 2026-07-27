@@ -6,14 +6,14 @@ import pytest
 from fastapi.testclient import TestClient
 from starlette.requests import Request
 
-from aicrm_next.admin_auth.action_token import (
+from aicrm_next.platform.admin_auth.action_token import (
     build_admin_action_token_bundle,
     issue_action_token,
     validate_action_token,
     validate_action_token_for_request,
 )
-from aicrm_next.platform_foundation.auth_platform.context import AuthContext
-from aicrm_next.shared.admin_action_runtime import ensure_admin_action_token, validate_admin_action_token
+from aicrm_next.platform.platform_foundation.auth_platform.context import AuthContext
+from aicrm_next.platform.shared.admin_action_runtime import ensure_admin_action_token, validate_admin_action_token
 from aicrm_next.main import create_app
 from tests.admin_auth_test_helpers import auth_context, install_admin_action_tokens, install_admin_session
 

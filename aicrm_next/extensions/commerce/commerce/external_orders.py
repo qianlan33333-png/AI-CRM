@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse
 
 from aicrm_next.crm.identity_contact.application import ResolvePersonIdentityQuery
 from aicrm_next.crm.identity_contact.dto import ResolvePersonIdentityRequest
-from aicrm_next.shared.errors import NotFoundError
+from aicrm_next.platform.shared.errors import NotFoundError
 
 from .admin_unified_orders import get_order, list_orders
 

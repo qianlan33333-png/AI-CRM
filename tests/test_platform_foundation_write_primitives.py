@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from aicrm_next.platform_foundation.audit_ledger import InMemoryAuditLedger
-from aicrm_next.platform_foundation.command_bus import Command, CommandBus, CommandContext
-from aicrm_next.platform_foundation.external_calls import InMemoryExternalCallAttemptRepository
-from aicrm_next.platform_foundation.reconciliation import InMemoryReconciliationRunRepository
-from aicrm_next.platform_foundation.side_effects import InMemorySideEffectPlanRepository
+from aicrm_next.platform.platform_foundation.audit_ledger import InMemoryAuditLedger
+from aicrm_next.platform.platform_foundation.command_bus import Command, CommandBus, CommandContext
+from aicrm_next.platform.platform_foundation.external_calls import InMemoryExternalCallAttemptRepository
+from aicrm_next.platform.platform_foundation.reconciliation import InMemoryReconciliationRunRepository
+from aicrm_next.platform.platform_foundation.side_effects import InMemorySideEffectPlanRepository
 
 
 def test_command_bus_executes_handler_and_records_audit_hook() -> None:

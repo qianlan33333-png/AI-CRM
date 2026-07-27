@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from aicrm_next.platform_foundation.webhook_inbox.models import WebhookInboxItem
+from aicrm_next.platform.platform_foundation.webhook_inbox.models import WebhookInboxItem
 
 from .application import process_wecom_external_contact_event
 from .domain import text

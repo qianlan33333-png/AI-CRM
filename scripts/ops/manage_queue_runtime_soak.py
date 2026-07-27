@@ -20,22 +20,22 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.platform_foundation.execution_runtime.cutover import (  # noqa: E402
+from aicrm_next.platform.platform_foundation.execution_runtime.cutover import (  # noqa: E402
     RuntimeGenerationRepository,
 )
-from aicrm_next.platform_foundation.execution_runtime.repository import (  # noqa: E402
+from aicrm_next.platform.platform_foundation.execution_runtime.repository import (  # noqa: E402
     normalize_runtime_database_url,
     open_runtime_connection,
 )
-from aicrm_next.platform_foundation.execution_runtime.validation import (  # noqa: E402
+from aicrm_next.platform.platform_foundation.execution_runtime.validation import (  # noqa: E402
     REQUIRED_VALIDATION_EVIDENCE,
     collect_soak_metrics,
     configuration_hash,
     evaluate_soak_snapshot,
 )
-from aicrm_next.platform_foundation.repository import RuntimeReadinessRepository  # noqa: E402
-from aicrm_next.shared.release import current_release_sha  # noqa: E402
-from aicrm_next.shared.runtime import raw_database_url  # noqa: E402
+from aicrm_next.platform.platform_foundation.repository import RuntimeReadinessRepository  # noqa: E402
+from aicrm_next.platform.shared.release import current_release_sha  # noqa: E402
+from aicrm_next.platform.shared.runtime import raw_database_url  # noqa: E402
 
 
 AUTHORIZATION_ENV = "AICRM_QUEUE_SOAK_AUTHORIZED"

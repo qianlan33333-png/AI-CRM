@@ -35,30 +35,30 @@ DECLARED_KEY_NAMES = frozenset({"RUNTIME_ENVIRONMENT_KEYS", "RUNTIME_SETTING_KEY
 STARTUP_ONLY_KEYS = STARTUP_ENVIRONMENT_SETTING_KEYS
 DIRECT_ENVIRONMENT_ACCESS_BOUNDARIES = frozenset(
     {
-        "aicrm_next/shared/database.py",
-        "aicrm_next/shared/db_session.py",
-        "aicrm_next/shared/release.py",
-        "aicrm_next/shared/runtime.py",
-        "aicrm_next/shared/runtime_settings.py",
-        "aicrm_next/shared/secret_store.py",
+        "aicrm_next/platform/shared/database.py",
+        "aicrm_next/platform/shared/db_session.py",
+        "aicrm_next/platform/shared/release.py",
+        "aicrm_next/platform/shared/runtime.py",
+        "aicrm_next/platform/shared/runtime_settings.py",
+        "aicrm_next/platform/shared/secret_store.py",
     }
 )
 DYNAMIC_RUNTIME_ACCESS_BOUNDARIES = frozenset(
     {
         "aicrm_next/extensions/archive/message_archive/repo.py",
         "aicrm_next/extensions/forms/questionnaire/repo.py",
-        "aicrm_next/shared/runtime.py",
-        "aicrm_next/shared/runtime_settings.py",
+        "aicrm_next/platform/shared/runtime.py",
+        "aicrm_next/platform/shared/runtime_settings.py",
     }
 )
 ENVIRONMENT_FALLBACK_BOUNDARIES = frozenset(
     {
-        "aicrm_next/admin_config/secret_settings.py",
+        "aicrm_next/platform/admin_config/secret_settings.py",
         "aicrm_next/channels/integration_gateway/questionnaire_adapters.py",
-        "aicrm_next/platform_foundation/execution_runtime/listener.py",
-        "aicrm_next/platform_foundation/push_center/capability_repository.py",
-        "aicrm_next/platform_foundation/verification_files.py",
-        "aicrm_next/shared/runtime_settings.py",
+        "aicrm_next/platform/platform_foundation/execution_runtime/listener.py",
+        "aicrm_next/platform/platform_foundation/push_center/capability_repository.py",
+        "aicrm_next/platform/platform_foundation/verification_files.py",
+        "aicrm_next/platform/shared/runtime_settings.py",
     }
 )
 
@@ -209,8 +209,8 @@ def check_runtime_configuration_contract(
             if accessor == "environment_fallback":
                 if relative not in ENVIRONMENT_FALLBACK_BOUNDARIES or (
                     key not in STARTUP_ONLY_KEYS and relative not in {
-                        "aicrm_next/admin_config/secret_settings.py",
-                        "aicrm_next/platform_foundation/push_center/capability_repository.py",
+                        "aicrm_next/platform/admin_config/secret_settings.py",
+                        "aicrm_next/platform/platform_foundation/push_center/capability_repository.py",
                     }
                 ):
                     violations.append(
@@ -252,7 +252,7 @@ def check_runtime_configuration_contract(
 def _config_definition_keys() -> set[str]:
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
-    from aicrm_next.admin_config.config_definitions import CONFIG_DEFINITIONS_BY_KEY
+    from aicrm_next.platform.admin_config.config_definitions import CONFIG_DEFINITIONS_BY_KEY
 
     return set(CONFIG_DEFINITIONS_BY_KEY)
 

@@ -1,21 +1,21 @@
 from __future__ import annotations
 
-from aicrm_next.platform_foundation.external_effects.continuations import (
+from aicrm_next.platform.platform_foundation.external_effects.continuations import (
     ExternalEffectContinuation,
     ExternalEffectContinuationConsumer,
 )
-from aicrm_next.platform_foundation.external_effects.models import WEBHOOK_GENERIC_PUSH
-from aicrm_next.platform_foundation.external_effects.repo_memory import (
+from aicrm_next.platform.platform_foundation.external_effects.models import WEBHOOK_GENERIC_PUSH
+from aicrm_next.platform.platform_foundation.external_effects.repo_memory import (
     InMemoryExternalEffectRepository,
 )
-from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
-from aicrm_next.platform_foundation.external_effects.settlement_events import (
+from aicrm_next.platform.platform_foundation.external_effects.service import ExternalEffectService
+from aicrm_next.platform.platform_foundation.external_effects.settlement_events import (
     EXTERNAL_EFFECT_SETTLED_EVENT_TYPE,
     external_effect_settlement_consumer,
     register_external_effect_settled_consumers,
 )
-from aicrm_next.platform_foundation.internal_events import InternalEventConsumerRegistry
-from aicrm_next.platform_foundation.internal_events.models import (
+from aicrm_next.platform.platform_foundation.internal_events import InternalEventConsumerRegistry
+from aicrm_next.platform.platform_foundation.internal_events.models import (
     InternalEvent,
     InternalEventConsumerRun,
 )

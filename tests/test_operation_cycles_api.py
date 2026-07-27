@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from aicrm_next.main import create_app
 from aicrm_next.extensions.hxc.operation_cycles import api as operation_cycles_api
 from aicrm_next.extensions.hxc.operation_cycles.domain import OperationCycleConflictError
-from aicrm_next.platform_foundation.auth_platform.context import PrincipalType
+from aicrm_next.platform.platform_foundation.auth_platform.context import PrincipalType
 from tests.admin_auth_test_helpers import install_admin_auth_service, install_admin_session
 
 

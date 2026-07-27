@@ -4,7 +4,7 @@ import pytest
 
 from aicrm_next.automation_engine.group_ops import domain, message_content
 from aicrm_next.channels.integration_gateway import wecom_group_adapter, wecom_private_adapter
-from aicrm_next.shared import wecom_payload_contract
+from aicrm_next.platform.shared import wecom_payload_contract
 
 
 def test_existing_group_ops_imports_reexport_shared_contract() -> None:

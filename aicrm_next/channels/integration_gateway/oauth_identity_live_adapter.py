@@ -7,8 +7,8 @@ import hashlib
 import json
 from typing import Any
 
-from aicrm_next.shared.runtime import production_environment
-from aicrm_next.shared.runtime_settings import runtime_bool, runtime_setting
+from aicrm_next.platform.shared.runtime import production_environment
+from aicrm_next.platform.shared.runtime_settings import runtime_bool, runtime_setting
 
 from .oauth_identity_adapter import FakeStubOAuthIdentityAdapter
 from .oauth_identity_live_gateway import OAuthIdentityLiveGateway, build_oauth_identity_live_gateway

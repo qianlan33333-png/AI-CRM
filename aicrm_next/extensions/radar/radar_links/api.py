@@ -13,14 +13,14 @@ from fastapi import APIRouter, File, Form, Header, HTTPException, Query, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
-from aicrm_next.shared.errors import ContractError, NotFoundError
-from aicrm_next.shared.pii_audit import set_pii_audit_result_count
-from aicrm_next.shared.public_url import canonical_public_base_url
-from aicrm_next.shared.repository_provider import RepositoryProviderError
-from aicrm_next.shared.runtime_settings import runtime_setting
-from aicrm_next.shared.sidebar_access import sidebar_owner_context_from_request
-from aicrm_next.shared.wechat_identity_page import wechat_identity_failure_response
-from aicrm_next.shared.wechat_h5_session import is_wechat_browser
+from aicrm_next.platform.shared.errors import ContractError, NotFoundError
+from aicrm_next.platform.shared.pii_audit import set_pii_audit_result_count
+from aicrm_next.platform.shared.public_url import canonical_public_base_url
+from aicrm_next.platform.shared.repository_provider import RepositoryProviderError
+from aicrm_next.platform.shared.runtime_settings import runtime_setting
+from aicrm_next.platform.shared.sidebar_access import sidebar_owner_context_from_request
+from aicrm_next.platform.shared.wechat_identity_page import wechat_identity_failure_response
+from aicrm_next.platform.shared.wechat_h5_session import is_wechat_browser
 
 from .application import (
     CompleteRadarOAuthCallbackCommand,

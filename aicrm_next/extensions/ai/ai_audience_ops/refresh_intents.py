@@ -11,11 +11,11 @@ from uuid import uuid4
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from aicrm_next.platform_foundation.command_bus.models import CommandContext
-from aicrm_next.platform_foundation.internal_events.models import InternalEventCreateRequest
-from aicrm_next.platform_foundation.internal_events.outbox import enqueue_internal_event_outbox_in_session
-from aicrm_next.shared.db_session import get_session_factory
-from aicrm_next.shared.sensitive_data import redact_sensitive_text
+from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform.platform_foundation.internal_events.models import InternalEventCreateRequest
+from aicrm_next.platform.platform_foundation.internal_events.outbox import enqueue_internal_event_outbox_in_session
+from aicrm_next.platform.shared.db_session import get_session_factory
+from aicrm_next.platform.shared.sensitive_data import redact_sensitive_text
 
 from .constants import AI_AUDIENCE_REFRESH_DEFAULT_ROW_LIMIT, AI_AUDIENCE_REFRESH_MAX_ROW_LIMIT
 from .event_types import REFRESH_REQUESTED_EVENT, RUN_REFRESHED_EVENT, SOURCE_CHANGED_EVENT

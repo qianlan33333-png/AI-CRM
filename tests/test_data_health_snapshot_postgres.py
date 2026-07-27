@@ -12,7 +12,7 @@ from aicrm_next.data_health.snapshot_repository import (
     DataHealthSnapshotRecord,
     DataHealthSnapshotRepository,
 )
-from aicrm_next.shared.db_session import get_engine
+from aicrm_next.platform.shared.db_session import get_engine
 
 
 def _snapshot(generation: str, *, captured_at: datetime, status: str) -> DataHealthSnapshotRecord:

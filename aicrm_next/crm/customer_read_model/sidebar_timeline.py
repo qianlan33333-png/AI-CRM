@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from urllib.parse import quote
 
-from aicrm_next.shared.errors import NotFoundError
-from aicrm_next.shared.typing import JsonDict
+from aicrm_next.platform.shared.errors import NotFoundError
+from aicrm_next.platform.shared.typing import JsonDict
 
 from .repo import CustomerReadRepository, build_customer_read_model_repository
 

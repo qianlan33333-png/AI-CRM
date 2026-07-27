@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from aicrm_next.shared.release_cutovers import (
+from aicrm_next.platform.shared.release_cutovers import (
     QUESTIONNAIRE_AUTO_EXECUTE_CUTOVER_AT,
     QUESTIONNAIRE_AUTO_EXECUTE_CUTOVER_SQL,
 )

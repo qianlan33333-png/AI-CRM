@@ -18,7 +18,7 @@ from .crm_port import (
     resolve_identity_with_dbapi,
     resolved_unionid,
 )
-from aicrm_next.shared.runtime import raw_database_url
+from aicrm_next.platform.shared.runtime import raw_database_url
 
 from .channel_write_port import (
     UpdateChannelAssignmentRequest,

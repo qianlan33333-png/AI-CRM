@@ -11,8 +11,8 @@ from fastapi.responses import JSONResponse, RedirectResponse
 
 from aicrm_next.automation_engine import channels_repo
 from aicrm_next.common_operation_members import search_operation_members
-from aicrm_next.shared.repository_provider import RepositoryProviderError, blocked_production_payload
-from aicrm_next.shared.runtime import production_repository_required
+from aicrm_next.platform.shared.repository_provider import RepositoryProviderError, blocked_production_payload
+from aicrm_next.platform.shared.runtime import production_repository_required
 
 from .channel_fixture_state import FIXTURE_CHANNELS as _FIXTURE_CHANNELS
 

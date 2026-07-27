@@ -8,12 +8,12 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
 from aicrm_next.extensions.commerce.commerce.domain import has_product_page_material
-from aicrm_next.shared.product_code_aliases import canonical_product_code
-from aicrm_next.navigation_target.resolver import url_link_resolver_response
-from aicrm_next.shared.errors import NotFoundError
-from aicrm_next.shared.sync_request import read_request_body
-from aicrm_next.shared.runtime import production_environment
-from aicrm_next.shared.signed_context import (
+from aicrm_next.platform.shared.product_code_aliases import canonical_product_code
+from aicrm_next.platform.navigation_target.resolver import url_link_resolver_response
+from aicrm_next.platform.shared.errors import NotFoundError
+from aicrm_next.platform.shared.sync_request import read_request_body
+from aicrm_next.platform.shared.runtime import production_environment
+from aicrm_next.platform.shared.signed_context import (
     SIDEBAR_PRODUCT_CONTEXT_COOKIE,
     load_sidebar_product_context_token,
     sidebar_product_context_ttl_seconds,

@@ -4,22 +4,22 @@ from aicrm_next.external_effect_composition import (
     _resolve_production_wecom_welcome_materials,
     build_external_effect_adapter_registry,
 )
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import (
     ExternalEffectService,
     WECOM_MESSAGE_PRIVATE_SEND,
     WECOM_WELCOME_MESSAGE_SEND,
     reset_external_effect_fixture_state,
 )
-from aicrm_next.platform_foundation.external_effects.adapters import (
+from aicrm_next.platform.platform_foundation.external_effects.adapters import (
     ExternalEffectAdapterRegistry,
     WeComPrivateMessageAdapter,
     WeComWelcomeMessageAdapter,
     wecom_execution_settings,
 )
-from aicrm_next.platform_foundation.external_effects.models import ExternalEffectJob
-from aicrm_next.platform_foundation.external_effects.repo import build_external_effect_repository
-from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
+from aicrm_next.platform.platform_foundation.external_effects.models import ExternalEffectJob
+from aicrm_next.platform.platform_foundation.external_effects.repo import build_external_effect_repository
+from aicrm_next.platform.platform_foundation.external_effects.worker import ExternalEffectWorker
 
 
 class _FakeWelcomeAdapter:
@@ -158,7 +158,7 @@ def test_wecom_welcome_disabled_execution_mode_blocks_real_send(monkeypatch) -> 
     reset_external_effect_fixture_state()
     monkeypatch.setenv("AICRM_WECOM_EXECUTION_MODE", "execute")
     monkeypatch.setenv("AICRM_WECOM_ENABLED_EFFECT_TYPES", WECOM_WELCOME_MESSAGE_SEND)
-    monkeypatch.setattr("aicrm_next.platform_foundation.external_effects.worker._capability_gate_error", lambda job: "")
+    monkeypatch.setattr("aicrm_next.platform.platform_foundation.external_effects.worker._capability_gate_error", lambda job: "")
     repo = build_external_effect_repository()
     _plan_welcome_job(repo=repo, execution_mode="disabled")
     fake = _FakeWelcomeAdapter()
@@ -181,7 +181,7 @@ def test_wecom_welcome_missing_composition_never_claims_external_call(monkeypatc
     monkeypatch.setenv("AICRM_WECOM_PROVIDER_TARGET_POLICY", "allowlisted_canary")
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_TARGET_EXTERNAL_USERIDS", "wm_welcome_target")
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS", "HuangYouCan")
-    monkeypatch.setattr("aicrm_next.platform_foundation.external_effects.worker._capability_gate_error", lambda job: "")
+    monkeypatch.setattr("aicrm_next.platform.platform_foundation.external_effects.worker._capability_gate_error", lambda job: "")
     repo = build_external_effect_repository()
     job = _plan_welcome_job(repo=repo, key="welcome-missing-composition")
     assert ExternalEffectService(repo).authorize_allowlisted_canary(
@@ -210,7 +210,7 @@ def test_wecom_welcome_executes_through_external_effect_worker(monkeypatch) -> N
     monkeypatch.setenv("AICRM_WECOM_PROVIDER_TARGET_POLICY", "allowlisted_canary")
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_TARGET_EXTERNAL_USERIDS", "wm_welcome_target")
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS", "HuangYouCan")
-    monkeypatch.setattr("aicrm_next.platform_foundation.external_effects.worker._capability_gate_error", lambda job: "")
+    monkeypatch.setattr("aicrm_next.platform.platform_foundation.external_effects.worker._capability_gate_error", lambda job: "")
     repo = build_external_effect_repository()
     job = _plan_welcome_job(repo=repo)
     assert ExternalEffectService(repo).authorize_allowlisted_canary(
@@ -238,7 +238,7 @@ def test_wecom_welcome_rejects_unresolved_material_without_provider_or_resolver_
     reset_external_effect_fixture_state()
     monkeypatch.setenv("AICRM_WECOM_EXECUTION_MODE", "execute")
     monkeypatch.setenv("AICRM_WECOM_ENABLED_EFFECT_TYPES", WECOM_WELCOME_MESSAGE_SEND)
-    monkeypatch.setattr("aicrm_next.platform_foundation.external_effects.worker._capability_gate_error", lambda job: "")
+    monkeypatch.setattr("aicrm_next.platform.platform_foundation.external_effects.worker._capability_gate_error", lambda job: "")
     repo = build_external_effect_repository()
     job = _plan_welcome_job(
         repo=repo,
@@ -344,7 +344,7 @@ def test_channel_entry_welcome_fallback_private_message_preserves_exact_target(m
                 "wecom_msgid": "fake_msgid",
             }
 
-    monkeypatch.setattr("aicrm_next.platform_foundation.external_effects.worker._capability_gate_error", lambda job: "")
+    monkeypatch.setattr("aicrm_next.platform.platform_foundation.external_effects.worker._capability_gate_error", lambda job: "")
     monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: _FakePrivateAdapter())
     repo = build_external_effect_repository()
     job = ExternalEffectService(repo).plan_effect(

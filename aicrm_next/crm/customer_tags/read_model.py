@@ -7,8 +7,8 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
-from aicrm_next.shared.db_session import get_engine
-from aicrm_next.shared.runtime import database_mode, production_environment
+from aicrm_next.platform.shared.db_session import get_engine
+from aicrm_next.platform.shared.runtime import database_mode, production_environment
 
 
 Json = dict[str, Any]

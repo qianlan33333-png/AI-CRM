@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 from typing import Any
 
-from aicrm_next.shared.runtime import database_mode
+from aicrm_next.platform.shared.runtime import database_mode
 
 from .admin_unified_orders import ROUTE_OWNER, normalize_limit, normalize_offset
 from .repo import connect_commerce_db

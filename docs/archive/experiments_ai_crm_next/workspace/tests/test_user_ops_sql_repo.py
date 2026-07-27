@@ -14,7 +14,7 @@ from aicrm_next.ops_enrollment.models import (
 )
 from aicrm_next.ops_enrollment.repo import InMemoryUserOpsRepository, SqlAlchemyUserOpsRepository
 from aicrm_next.ops_enrollment.user_ops import apply_filters, build_overview_cards, resolve_batch_targets
-from aicrm_next.shared.database import Base
+from aicrm_next.platform.shared.database import Base
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = PROJECT_ROOT.parents[1]

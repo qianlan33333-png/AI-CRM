@@ -17,11 +17,11 @@ from aicrm_next.integration_ports import (
     ProductionWeComAdapter,
     missing_wecom_config,
 )
-from aicrm_next.platform_foundation.internal_events.shadow import (
+from aicrm_next.platform.platform_foundation.internal_events.shadow import (
     emit_owner_migration_executed_shadow_event,
     safe_emit,
 )
-from aicrm_next.shared.runtime import production_data_ready
+from aicrm_next.platform.shared.runtime import production_data_ready
 
 from .repo import FixtureOwnerMigrationRepository, PostgresOwnerMigrationRepository
 

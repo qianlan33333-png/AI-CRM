@@ -6,10 +6,10 @@ from uuid import uuid4
 import psycopg
 from psycopg.rows import dict_row
 
-from aicrm_next.platform_foundation.execution_runtime.commands import QueueRuntimeCommandService
-from aicrm_next.platform_foundation.execution_runtime.repository import ExecutionRuntimeRepository
-from aicrm_next.platform_foundation.internal_events.models import InternalEventCreateRequest
-from aicrm_next.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
+from aicrm_next.platform.platform_foundation.execution_runtime.commands import QueueRuntimeCommandService
+from aicrm_next.platform.platform_foundation.execution_runtime.repository import ExecutionRuntimeRepository
+from aicrm_next.platform.platform_foundation.internal_events.models import InternalEventCreateRequest
+from aicrm_next.platform.platform_foundation.internal_events.outbox import enqueue_transactional_internal_event_outbox
 
 
 def _database_url() -> str:

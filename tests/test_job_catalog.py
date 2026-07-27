@@ -5,7 +5,7 @@ from dataclasses import replace
 import pytest
 
 from aicrm_next.deployment_profile import default_deployment_profile
-from aicrm_next.platform_foundation.background_jobs.catalog import JOB_SPECS, JobCatalog, validate_job_catalog
+from aicrm_next.platform.platform_foundation.background_jobs.catalog import JOB_SPECS, JobCatalog, validate_job_catalog
 from tools.check_job_catalog import (
     validate_internal_worker_consolidation_manifest,
     validate_runtime_role_catalog,

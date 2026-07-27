@@ -13,9 +13,9 @@ from aicrm_next.media_library.wecom_lease import (
     WeComMediaLeaseManager,
 )
 from aicrm_next.wecom_media_jobs import WeComMediaUploadAdapter, enqueue_due_media_refreshes, sync_uploaded_material
-from aicrm_next.platform_foundation.external_effects import WECOM_MEDIA_UPLOAD, ExternalEffectJob
-from aicrm_next.platform_foundation.external_effects.execution_policy import normalize_dispatch_result
-from aicrm_next.platform_foundation.external_effects.repo import InMemoryExternalEffectRepository
+from aicrm_next.platform.platform_foundation.external_effects import WECOM_MEDIA_UPLOAD, ExternalEffectJob
+from aicrm_next.platform.platform_foundation.external_effects.execution_policy import normalize_dispatch_result
+from aicrm_next.platform.platform_foundation.external_effects.repo import InMemoryExternalEffectRepository
 
 
 NOW = datetime(2026, 7, 14, 3, 0, tzinfo=timezone.utc)

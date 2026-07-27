@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from aicrm_next.platform_foundation.internal_events.shadow import (
+from aicrm_next.platform.platform_foundation.internal_events.shadow import (
     emit_broadcast_task_created_shadow_event,
     emit_ops_plan_approved_shadow_event,
     safe_emit,

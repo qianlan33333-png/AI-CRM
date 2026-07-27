@@ -23,7 +23,7 @@ changes that behavior.
 
 ## Job Envelope
 
-`aicrm_next.platform_foundation.background_jobs.contract.BackgroundJobContract`
+`aicrm_next.platform.platform_foundation.background_jobs.contract.BackgroundJobContract`
 defines the shared job envelope:
 
 - `job_type`

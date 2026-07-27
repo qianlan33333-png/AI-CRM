@@ -6,7 +6,7 @@ from urllib.parse import quote, urlencode
 
 from fastapi import Request
 
-from aicrm_next.shared.admin_action_runtime import admin_action_token_bundle
+from aicrm_next.platform.shared.admin_action_runtime import admin_action_token_bundle
 
 
 @dataclass(frozen=True)

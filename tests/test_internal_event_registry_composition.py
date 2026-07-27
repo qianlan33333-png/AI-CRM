@@ -13,14 +13,14 @@ from aicrm_next.external_effect_composition import (
 )
 from aicrm_next.internal_event_composition import build_internal_event_consumer_registry
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.external_effects.completion_events import (
+from aicrm_next.platform.platform_foundation.external_effects.completion_events import (
     EXTERNAL_EFFECT_COMPLETED_EVENT_TYPE,
     LEGACY_EXTERNAL_EFFECT_COMPLETION_CONSUMER,
 )
-from aicrm_next.platform_foundation.external_effects.settlement_events import (
+from aicrm_next.platform.platform_foundation.external_effects.settlement_events import (
     EXTERNAL_EFFECT_SETTLED_EVENT_TYPE,
 )
-from aicrm_next.platform_foundation.internal_events import (
+from aicrm_next.platform.platform_foundation.internal_events import (
     DEFAULT_INTERNAL_EVENT_CONSUMER_REGISTRY,
     InternalEventConsumerRegistry,
     InternalEventService,

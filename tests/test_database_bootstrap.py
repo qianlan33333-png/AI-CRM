@@ -660,7 +660,7 @@ def test_execution_runtime_correctness_freezes_and_classifies_pre_cutover_queue_
         assert external_candidates == 0
         assert new_hold == ("", None)
 
-        from aicrm_next.platform_foundation.repository import RuntimeReadinessRepository
+        from aicrm_next.platform.platform_foundation.repository import RuntimeReadinessRepository
 
         with RuntimeReadinessRepository(database_url) as readiness_repo:
             queue_metrics = readiness_repo.queue_metrics(allowed_pairs=(("payment.succeeded", "payment_projection_consumer"),))
@@ -690,9 +690,9 @@ def test_execution_runtime_correctness_freezes_and_classifies_pre_cutover_queue_
         from sqlalchemy.orm import sessionmaker
 
         from aicrm_next.background_jobs.broadcast_queue_worker import PostgresBroadcastQueueRepository
-        from aicrm_next.platform_foundation.external_effects.repo import SQLAlchemyExternalEffectRepository
-        from aicrm_next.platform_foundation.internal_events.repository import SQLAlchemyInternalEventRepository
-        from aicrm_next.platform_foundation.webhook_inbox.repository import PostgresWebhookInboxRepository
+        from aicrm_next.platform.platform_foundation.external_effects.repo import SQLAlchemyExternalEffectRepository
+        from aicrm_next.platform.platform_foundation.internal_events.repository import SQLAlchemyInternalEventRepository
+        from aicrm_next.platform.platform_foundation.webhook_inbox.repository import PostgresWebhookInboxRepository
 
         sqlalchemy_url = "postgresql+psycopg://" + database_url[len("postgresql://") :] if database_url.startswith("postgresql://") else database_url
         engine = create_engine(sqlalchemy_url)

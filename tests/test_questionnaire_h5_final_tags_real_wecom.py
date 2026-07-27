@@ -17,27 +17,27 @@ from aicrm_next.crm.identity_contact.dto import IdentityResolution, IdentityReso
 from aicrm_next.channels.integration_gateway import wecom_channel_entry_client
 from aicrm_next.channels.integration_gateway.wecom_channel_entry_client import WeComApiError
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.external_effects import (
     WECOM_CONTACT_TAG_MARK,
     ExternalEffectService,
     reset_external_effect_fixture_state,
 )
-from aicrm_next.platform_foundation.external_effects.adapters import (
+from aicrm_next.platform.platform_foundation.external_effects.adapters import (
     ExternalEffectAdapterRegistry,
     WeComContactTagAdapter,
 )
-from aicrm_next.platform_foundation.external_effects.completion_events import (
+from aicrm_next.platform.platform_foundation.external_effects.completion_events import (
     external_effect_continuation_consumer,
 )
-from aicrm_next.platform_foundation.external_effects.repo import build_external_effect_repository
-from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
-from aicrm_next.platform_foundation.internal_events import (
+from aicrm_next.platform.platform_foundation.external_effects.repo import build_external_effect_repository
+from aicrm_next.platform.platform_foundation.external_effects.worker import ExternalEffectWorker
+from aicrm_next.platform.platform_foundation.internal_events import (
     InternalEventService,
     QUESTIONNAIRE_SUBMITTED_EVENT_TYPE,
     reset_internal_event_fixture_state,
 )
-from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
-from aicrm_next.platform_foundation.internal_events.models import (
+from aicrm_next.platform.platform_foundation.internal_events.worker import InternalEventWorker
+from aicrm_next.platform.platform_foundation.internal_events.models import (
     InternalEvent,
     InternalEventConsumerRun,
 )

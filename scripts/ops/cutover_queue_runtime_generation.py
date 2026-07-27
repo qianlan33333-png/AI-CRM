@@ -19,7 +19,7 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.platform_foundation.execution_runtime.cutover import (
+from aicrm_next.platform.platform_foundation.execution_runtime.cutover import (
     CANONICAL_RUNTIME_SERVICES,
     PR3_LEGACY_PERSISTENT_SERVICES,
     PR3_LEGACY_TIMER_OWNERS,

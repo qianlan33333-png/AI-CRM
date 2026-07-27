@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from aicrm_next.platform_foundation.execution_runtime.cutover import (
+from aicrm_next.platform.platform_foundation.execution_runtime.cutover import (
     CANONICAL_RUNTIME_SERVICES,
     PR3_LEGACY_PERSISTENT_SERVICES,
     PR3_LEGACY_TIMER_OWNERS,
@@ -32,28 +32,28 @@ FORBIDDEN_PROVIDER_OWNER_TOKENS = (
 )
 CANARY_SCOPE_LITERAL_ALLOWLIST = frozenset(
     {
-        "aicrm_next/admin_config/application.py",
-        "aicrm_next/admin_config/application_support.py",
-        "aicrm_next/admin_config/runtime_definitions.py",
-        "aicrm_next/platform_foundation/execution_runtime/repository.py",
-        "aicrm_next/platform_foundation/execution_runtime/validation.py",
-        "aicrm_next/platform_foundation/external_effects/canary_repository.py",
-        "aicrm_next/platform_foundation/external_effects/claim_policy.py",
-        "aicrm_next/platform_foundation/external_effects/models.py",
-        "aicrm_next/platform_foundation/external_effects/repo_memory.py",
-        "aicrm_next/platform_foundation/external_effects/runtime_write_repository.py",
-        "aicrm_next/platform_foundation/external_effects/wecom_canary_policy.py",
+        "aicrm_next/platform/admin_config/application.py",
+        "aicrm_next/platform/admin_config/application_support.py",
+        "aicrm_next/platform/admin_config/runtime_definitions.py",
+        "aicrm_next/platform/platform_foundation/execution_runtime/repository.py",
+        "aicrm_next/platform/platform_foundation/execution_runtime/validation.py",
+        "aicrm_next/platform/platform_foundation/external_effects/canary_repository.py",
+        "aicrm_next/platform/platform_foundation/external_effects/claim_policy.py",
+        "aicrm_next/platform/platform_foundation/external_effects/models.py",
+        "aicrm_next/platform/platform_foundation/external_effects/repo_memory.py",
+        "aicrm_next/platform/platform_foundation/external_effects/runtime_write_repository.py",
+        "aicrm_next/platform/platform_foundation/external_effects/wecom_canary_policy.py",
     }
 )
 QUEUE_POLICY_PRODUCER_CONTRACTS = {
-    "aicrm_next/platform_foundation/internal_events/outbox.py": ("internal_event_outbox",),
-    "aicrm_next/platform_foundation/internal_events/repository.py": (
+    "aicrm_next/platform/platform_foundation/internal_events/outbox.py": ("internal_event_outbox",),
+    "aicrm_next/platform/platform_foundation/internal_events/repository.py": (
         "internal_event_consumer_run",
         "internal_event_outbox",
     ),
-    "aicrm_next/platform_foundation/external_effects/repo.py": ("external_effect_job",),
-    "aicrm_next/platform_foundation/external_effects/transactional.py": ("external_effect_job",),
-    "aicrm_next/platform_foundation/webhook_inbox/repository.py": ("webhook_inbox",),
+    "aicrm_next/platform/platform_foundation/external_effects/repo.py": ("external_effect_job",),
+    "aicrm_next/platform/platform_foundation/external_effects/transactional.py": ("external_effect_job",),
+    "aicrm_next/platform/platform_foundation/webhook_inbox/repository.py": ("webhook_inbox",),
 }
 
 
@@ -288,32 +288,32 @@ def collect_errors(root: Path = ROOT) -> list[str]:
             "queue-v2-test-loopback",
             "test_loopback",
         ),
-        "aicrm_next/platform_foundation/execution_runtime/repository.py": (
+        "aicrm_next/platform/platform_foundation/execution_runtime/repository.py": (
             "external_claim_scope_predicate",
             "def next_due_at(",
             "test_only: bool = False",
         ),
-        "aicrm_next/platform_foundation/external_effects/claim_policy.py": (
+        "aicrm_next/platform/platform_foundation/external_effects/claim_policy.py": (
             "def external_claim_scope_predicate(",
             "def external_canary_authorization_predicate(",
             "canary_authorized_expression",
         ),
-        "aicrm_next/platform_foundation/execution_runtime/read_model.py": (
+        "aicrm_next/platform/platform_foundation/execution_runtime/read_model.py": (
             "external_claim_scope_predicate",
             '"policy_gated"',
         ),
-        "aicrm_next/platform_foundation/execution_runtime/service.py": (
+        "aicrm_next/platform/platform_foundation/execution_runtime/service.py": (
             "_validate_external_execution_scope",
             "database test-loopback scope requires a test-only worker",
         ),
-        "aicrm_next/platform_foundation/external_effects/direct_claim_repository.py": (
+        "aicrm_next/platform/platform_foundation/external_effects/direct_claim_repository.py": (
             "def direct_claims_allowed",
             "direct_owner AS MATERIALIZED",
             "control.claim_enabled",
             "control.active_generation > 0",
             "FOR SHARE",
         ),
-        "aicrm_next/platform_foundation/external_effects/worker.py": (
+        "aicrm_next/platform/platform_foundation/external_effects/worker.py": (
             "direct_claims_allowed",
             "postgres_queue_runtime_is_active",
         ),

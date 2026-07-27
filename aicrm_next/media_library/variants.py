@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from io import BytesIO
 from typing import Any
 
-from aicrm_next.shared.errors import ContractError
+from aicrm_next.platform.shared.errors import ContractError
 
 
 VARIANT_KEYS = {"original", "thumb_160", "thumb_320", "preview_720", "mobile_1080", "large_1440"}

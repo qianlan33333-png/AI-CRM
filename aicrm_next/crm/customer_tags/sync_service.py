@@ -9,9 +9,9 @@ from sqlalchemy import bindparam, text
 from sqlalchemy.engine import Engine
 
 from aicrm_next.integration_ports import build_wecom_tag_live_gateway
-from aicrm_next.platform_foundation.job_runs import FinishJobRunRequest, StartJobRunRequest, build_job_run_ledger_port
-from aicrm_next.shared.db_session import get_engine
-from aicrm_next.shared.runtime import fixture_mode
+from aicrm_next.platform.platform_foundation.job_runs import FinishJobRunRequest, StartJobRunRequest, build_job_run_ledger_port
+from aicrm_next.platform.shared.db_session import get_engine
+from aicrm_next.platform.shared.runtime import fixture_mode
 
 from .read_model import _fixture_rows
 

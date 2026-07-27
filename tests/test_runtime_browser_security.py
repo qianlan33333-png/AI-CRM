@@ -5,9 +5,9 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from aicrm_next.admin_auth.service import admin_cookie_secure
+from aicrm_next.platform.admin_auth.service import admin_cookie_secure
 from aicrm_next.main import create_app
-from aicrm_next.shared.signed_session import session_cookie_secure
+from aicrm_next.platform.shared.signed_session import session_cookie_secure
 from scripts.ops.ensure_runtime_environment import (
     DEFAULT_DEPLOYMENT_PROFILE_PATH,
     ensure_runtime_environment,

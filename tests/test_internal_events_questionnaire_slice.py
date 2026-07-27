@@ -8,21 +8,21 @@ from fastapi.testclient import TestClient
 
 from aicrm_next.internal_event_composition import register_questionnaire_event_consumers
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import (
     WEBHOOK_QUESTIONNAIRE_SUBMISSION_PUSH,
     ExternalEffectService,
     reset_external_effect_fixture_state,
 )
-from aicrm_next.platform_foundation.internal_events import (
+from aicrm_next.platform.platform_foundation.internal_events import (
     InternalEventService,
     QUESTIONNAIRE_SUBMITTED_EVENT_TYPE,
     reset_internal_event_fixture_state,
 )
-from aicrm_next.platform_foundation.internal_events.consumer_registry import InternalEventConsumerRegistry
-from aicrm_next.platform_foundation.internal_events.repository import InMemoryInternalEventRepository
-from aicrm_next.platform_foundation.internal_events.view_model import build_event_detail_payload
-from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
+from aicrm_next.platform.platform_foundation.internal_events.consumer_registry import InternalEventConsumerRegistry
+from aicrm_next.platform.platform_foundation.internal_events.repository import InMemoryInternalEventRepository
+from aicrm_next.platform.platform_foundation.internal_events.view_model import build_event_detail_payload
+from aicrm_next.platform.platform_foundation.internal_events.worker import InternalEventWorker
 from aicrm_next.extensions.forms.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
 from aicrm_next.extensions.forms.questionnaire.repo import reset_questionnaire_fixture_state
 from tests.wechat_identity_test_support import authorize_wechat_client

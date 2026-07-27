@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from aicrm_next.shared.runtime_settings import runtime_bool, runtime_csv, runtime_setting
+from aicrm_next.platform.shared.runtime_settings import runtime_bool, runtime_csv, runtime_setting
 
 from .repository import AudienceRepository, build_audience_repository, _json_dumps, _text
 from .webhook_service import AudienceInboundWebhookService

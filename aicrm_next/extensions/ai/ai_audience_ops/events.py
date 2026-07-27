@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from aicrm_next.platform_foundation.internal_events import (
+from aicrm_next.platform.platform_foundation.internal_events import (
     InternalEvent,
     InternalEventConsumerRegistry,
     InternalEventConsumerResult,

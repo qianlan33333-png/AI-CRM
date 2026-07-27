@@ -21,7 +21,7 @@ from .background_jobs.broadcast_effect_repository import (
     BROADCAST_EXTERNAL_EFFECT_SETTLEMENT_CONTINUATION,
 )
 from .extensions.ai.automation_agents.internal_webhook_adapter import AutomationAgentRoutingWebhookAdapter
-from .external_push.external_effect_continuation import (
+from .platform.external_push.external_effect_continuation import (
     EXTERNAL_PUSH_DELIVERY_CONTINUATION,
     EXTERNAL_PUSH_DELIVERY_SETTLEMENT_CONTINUATION,
 )
@@ -31,7 +31,7 @@ from .channels.integration_gateway import (
     wecom_group_adapter,
     wecom_private_adapter,
 )
-from .platform_foundation.external_effects.adapters import (
+from .platform.platform_foundation.external_effects.adapters import (
     ExternalEffectAdapterRegistry,
     WeChatPaymentAdapter,
     WeComContactTagAdapter,
@@ -43,7 +43,7 @@ from .platform_foundation.external_effects.adapters import (
     WebhookAdapter,
 )
 from .wecom_media_jobs import WeComMediaUploadAdapter
-from .platform_foundation.external_effects.continuations import (
+from .platform.platform_foundation.external_effects.continuations import (
     ExternalEffectContinuationConsumer,
     ExternalEffectContinuationRegistry,
     run_external_effect_continuation,
@@ -214,7 +214,7 @@ def _resolve_production_wecom_welcome_materials(attachments, *, resolver=None):
     if resolver is None:
         from .automation_engine.group_ops.material_resolver import PostgresGroupOpsMaterialResolver
         from .media_library.postgres_repo import PostgresMediaLibraryRepository
-        from .shared.runtime import raw_database_url
+        from .platform.shared.runtime import raw_database_url
 
         resolver = PostgresGroupOpsMaterialResolver(
             PostgresMediaLibraryRepository(raw_database_url()),
