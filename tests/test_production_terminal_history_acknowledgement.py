@@ -203,6 +203,8 @@ def test_exact_production_terminal_histories_require_append_only_no_replay_ackno
         "private_message_created_count": 1,
         "refund_acknowledged_count": 3,
         "refund_created_count": 3,
+        "refund_acknowledgement_required": True,
+        "refund_business_outcome_classified": False,
         "replay_prohibited": True,
         "provider_success_claimed": False,
         "real_external_call_executed": False,

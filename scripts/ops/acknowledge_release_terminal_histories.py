@@ -68,6 +68,7 @@ def acknowledge_release_terminal_histories(
         actor=actor,
         reason="operator-authorized production terminal histories; no replay",
         apply=apply,
+        acknowledge_refund_histories=False,
     )
     production_welcome = acknowledge_production_welcome_timeout(
         manifest_path=(

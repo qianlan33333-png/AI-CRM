@@ -108,12 +108,44 @@ def test_deploy_acknowledges_only_exact_authorized_production_terminal_histories
     assert "acknowledge_production_terminal_history" in orchestrator
     assert "acknowledge_production_welcome_timeout" in orchestrator
     assert "operator-authorized production terminal histories; no replay" in orchestrator
+    assert "acknowledge_refund_histories=False" in orchestrator
     assert "operator-authorized welcome job 2157 timeout history; no replay" in orchestrator
     assert "requeue" not in acknowledgement_block.lower()
     assert "requeue" not in orchestrator.lower()
     assert "refund_request(" not in orchestrator
     assert "send_private_message(" not in orchestrator
     assert "send_welcome_msg(" not in orchestrator
+
+
+def test_release_acknowledgement_skips_refunds_now_classified_as_business_outcomes(monkeypatch) -> None:
+    from scripts.ops import acknowledge_release_terminal_histories as release_ack
+
+    calls: dict[str, dict] = {}
+    monkeypatch.setattr(
+        release_ack,
+        "acknowledge_pre_cutover_welcome",
+        lambda **kwargs: calls.setdefault("pre_cutover", kwargs),
+    )
+    monkeypatch.setattr(
+        release_ack,
+        "acknowledge_production_terminal_histories",
+        lambda **kwargs: calls.setdefault("production", kwargs),
+    )
+    monkeypatch.setattr(
+        release_ack,
+        "acknowledge_production_welcome_timeout",
+        lambda **kwargs: calls.setdefault("production_welcome", kwargs),
+    )
+
+    result = release_ack.acknowledge_release_terminal_histories(
+        release_sha="a" * 40,
+        actor="pytest",
+        apply=True,
+    )
+
+    assert result["ok"] is True
+    assert calls["production"]["acknowledge_refund_histories"] is False
+    assert calls["production"]["apply"] is True
 
 
 def test_remote_deploy_holds_target_specific_server_lock_before_sha_checks() -> None:
