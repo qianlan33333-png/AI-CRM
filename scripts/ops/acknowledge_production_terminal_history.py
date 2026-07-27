@@ -557,6 +557,7 @@ def acknowledge(
     actor: str,
     reason: str,
     apply: bool,
+    acknowledge_refund_histories: bool = True,
 ) -> dict[str, Any]:
     manifest = _load_manifest(manifest_path)
     release_sha = _full_sha(release_sha, name="release_sha")
@@ -580,12 +581,15 @@ def acknowledge(
                 authorization_base_sha=authorization_base_sha,
                 provider_error_class="external_contact_relationship_absent",
             ) or _private_candidates(session, manifest[PRIVATE_KEY])
-            refund_rows = _existing_acknowledged_rows(
-                session,
-                authorization=manifest[REFUND_KEY],
-                authorization_base_sha=authorization_base_sha,
-                provider_error_class="merchant_balance_insufficient",
-            ) or _refund_candidates(session, manifest[REFUND_KEY])
+            if acknowledge_refund_histories:
+                refund_rows = _existing_acknowledged_rows(
+                    session,
+                    authorization=manifest[REFUND_KEY],
+                    authorization_base_sha=authorization_base_sha,
+                    provider_error_class="merchant_balance_insufficient",
+                ) or _refund_candidates(session, manifest[REFUND_KEY])
+            else:
+                refund_rows = []
             private_count, private_created = _acknowledge_rows(
                 session,
                 rows=private_rows,
@@ -596,16 +600,19 @@ def acknowledge(
                 reason=reason,
                 apply=apply,
             )
-            refund_count, refund_created = _acknowledge_rows(
-                session,
-                rows=refund_rows,
-                authorization=manifest[REFUND_KEY],
-                release_sha=release_sha,
-                authorization_base_sha=authorization_base_sha,
-                actor=actor,
-                reason=reason,
-                apply=apply,
-            )
+            if acknowledge_refund_histories:
+                refund_count, refund_created = _acknowledge_rows(
+                    session,
+                    rows=refund_rows,
+                    authorization=manifest[REFUND_KEY],
+                    release_sha=release_sha,
+                    authorization_base_sha=authorization_base_sha,
+                    actor=actor,
+                    reason=reason,
+                    apply=apply,
+                )
+            else:
+                refund_count, refund_created = 0, 0
             if apply:
                 session.commit()
             else:
@@ -617,6 +624,8 @@ def acknowledge(
                 "private_message_created_count": private_created,
                 "refund_acknowledged_count": refund_count,
                 "refund_created_count": refund_created,
+                "refund_acknowledgement_required": bool(acknowledge_refund_histories),
+                "refund_business_outcome_classified": not acknowledge_refund_histories,
                 "replay_prohibited": True,
                 "provider_success_claimed": False,
                 "real_external_call_executed": False,

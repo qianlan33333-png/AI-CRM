@@ -45,6 +45,10 @@ provider result, `wechat_refund_executed=false`, and the synchronized local
 refund mirror all agree.  An ordinary HTTP 403 or incomplete local sync remains
 a system-health failure.
 
+Production promotion does not append or require new terminal acknowledgements
+for these strictly proven business outcomes. Older acknowledgements remain
+immutable history.
+
 ## Approval Contract
 
 Jobs created with `requires_approval=true` start as `planned`. Approval moves the
