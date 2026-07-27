@@ -46,7 +46,7 @@ def test_registry_has_seven_stable_core_capabilities_and_opt_in_extensions() -> 
 
 def test_current_contexts_routes_and_config_sections_have_one_logical_owner() -> None:
     contexts = scan_import_graph().contexts
-    assert len(contexts) == 40
+    assert len(contexts) == 39
     assert all(capability_for_context(context) is not None for context in contexts)
     assert len({context for spec in CAPABILITY_SPECS for context in spec.current_contexts}) == len(contexts)
 
