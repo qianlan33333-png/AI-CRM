@@ -9,9 +9,9 @@ import psycopg
 import pytest
 from psycopg.rows import dict_row
 
-import aicrm_next.background_jobs.broadcast_queue_worker as worker
-from aicrm_next.background_jobs import broadcast_effect_repository
-from aicrm_next.background_jobs.broadcast_queue_worker import (
+import aicrm_next.automation.background_jobs.broadcast_queue_worker as worker
+from aicrm_next.automation.background_jobs import broadcast_effect_repository
+from aicrm_next.automation.background_jobs.broadcast_queue_worker import (
     PostgresBroadcastQueueRepository,
     SafeSkippedBroadcastDispatcher,
 )

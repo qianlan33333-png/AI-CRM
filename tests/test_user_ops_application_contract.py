@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.ops_enrollment.application import (
+from aicrm_next.automation.ops_enrollment.application import (
     GetUserOpsCardsQuery,
     GetUserOpsCustomerQuery,
     GetUserOpsCustomerTimelineQuery,
@@ -9,7 +9,7 @@ from aicrm_next.ops_enrollment.application import (
     ListUserOpsCustomersQuery,
     reset_user_ops_fixture_state,
 )
-from aicrm_next.ops_enrollment.dto import UserOpsFilters, UserOpsListRequest
+from aicrm_next.automation.ops_enrollment.dto import UserOpsFilters, UserOpsListRequest
 
 
 def test_user_ops_next_application_read_queries_are_importable_and_executable():

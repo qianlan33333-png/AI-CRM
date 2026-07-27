@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.ops_enrollment.repo import InMemoryUserOpsRepository
+from aicrm_next.automation.ops_enrollment.repo import InMemoryUserOpsRepository
 
 
 def test_marketing_user_ops_fixture_repo_has_seeded_read_model() -> None:

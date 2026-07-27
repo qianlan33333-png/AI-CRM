@@ -191,16 +191,16 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "aicrm_next/platform/platform_foundation/external_effects/runtime_write_repository.py"
     ]["table_writes"] == ["external_effect_attempt", "external_effect_job"]
     assert "external_effect_job" not in repositories[
-        "aicrm_next/automation_engine/group_ops/durable_effects_repository.py"
+        "aicrm_next/automation/automation_engine/group_ops/durable_effects_repository.py"
     ]["table_writes"]
     assert "external_effect_job" not in repositories[
         "aicrm_next/channels/channel_entry/welcome_media_effects_repository.py"
     ]["table_writes"]
     assert manifest["tables"]["broadcast_jobs"]["write_owner"] == (
-        "aicrm_next.background_jobs"
+        "aicrm_next.automation.background_jobs"
     )
     assert manifest["tables"]["broadcast_jobs"]["write_owners"] == [
-        "aicrm_next.background_jobs"
+        "aicrm_next.automation.background_jobs"
     ]
     assert repositories[
         "aicrm_next/platform/platform_foundation/background_jobs/broadcast_job_write_repository.py"
@@ -217,7 +217,7 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
             "aicrm_next.extensions.growth.cloud_orchestrator"
         ]
         assert table not in repositories[
-            "aicrm_next/background_jobs/broadcast_effect_repository.py"
+            "aicrm_next/automation/background_jobs/broadcast_effect_repository.py"
         ]["table_writes"]
         assert table not in repositories[
             "aicrm_next/extensions/growth/cloud_orchestrator/repository.py"

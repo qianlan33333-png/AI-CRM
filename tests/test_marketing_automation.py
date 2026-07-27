@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.ops_enrollment.application import reset_user_ops_fixture_state
+from aicrm_next.automation.ops_enrollment.application import reset_user_ops_fixture_state
 
 
 def test_marketing_broadcast_preview_uses_next_user_ops_plan(monkeypatch) -> None:

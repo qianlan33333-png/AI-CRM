@@ -9,7 +9,7 @@ import pytest
 from psycopg.rows import dict_row
 from sqlalchemy.exc import IntegrityError
 
-from aicrm_next.automation_engine.group_ops.durable_effects_repository import (
+from aicrm_next.automation.automation_engine.group_ops.durable_effects_repository import (
     GroupOpsEffectGraphRequest,
     GroupOpsEffectMaterial,
     SQLAlchemyGroupOpsEffectGraphRepository,

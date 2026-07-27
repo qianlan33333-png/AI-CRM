@@ -24,8 +24,8 @@ def test_questionnaire_and_adjacent_selectors_read_unified_tag_catalog_source() 
     tag_management = _read("aicrm_next/crm/customer_tags/static/admin_console/wecom_tag_management.js")
     automation_picker = _read("aicrm_next/app/admin_console/static/admin_console/automation_agent_config_tag_picker.js")
     automation_channel_model = _read("aicrm_next/app/admin_console/static/admin_console/automation_agent_config_channel_model.js")
-    channel_pages = _read("aicrm_next/automation_engine/static/admin_console/channel_admission_pages.js")
-    channel_admin_pages = _read("aicrm_next/automation_engine/channel_admin_pages.py")
+    channel_pages = _read("aicrm_next/automation/automation_engine/static/admin_console/channel_admission_pages.js")
+    channel_admin_pages = _read("aicrm_next/automation/automation_engine/channel_admin_pages.py")
 
     assert "fetchJson('/api/admin/wecom/tags')" in questionnaire
     assert 'data-api-tags="/api/admin/wecom/tags"' in tag_management_template
@@ -63,8 +63,8 @@ def test_unified_business_tag_picker_visible_copy_hides_internal_fields() -> Non
 
 
 def test_channel_entry_tag_uses_unified_single_picker_and_hidden_save_fields() -> None:
-    template = _read("aicrm_next/automation_engine/templates/admin_console/channel_code_form.html")
-    script = _read("aicrm_next/automation_engine/static/admin_console/channel_admission_pages.js")
+    template = _read("aicrm_next/automation/automation_engine/templates/admin_console/channel_code_form.html")
+    script = _read("aicrm_next/automation/automation_engine/static/admin_console/channel_admission_pages.js")
 
     assert "wecom_tag_picker.css" in template
     assert "wecom_tag_picker.js" in template

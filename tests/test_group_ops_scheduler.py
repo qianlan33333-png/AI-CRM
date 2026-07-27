@@ -82,7 +82,7 @@ def _node(**overrides):
 
 
 def _run(repo, now=None):
-    from aicrm_next.automation_engine.group_ops.scheduler import run_group_ops_due_scheduler
+    from aicrm_next.automation.automation_engine.group_ops.scheduler import run_group_ops_due_scheduler
 
     return run_group_ops_due_scheduler(
         repo=repo,
@@ -117,7 +117,7 @@ def test_active_standard_plan_due_node_enqueues_external_effect_job():
 
 
 def test_group_ops_scheduler_uses_external_effect_payload_contract():
-    from aicrm_next.automation_engine.group_ops.scheduler import run_group_ops_due_scheduler
+    from aicrm_next.automation.automation_engine.group_ops.scheduler import run_group_ops_due_scheduler
 
     repo = FakeGroupOpsRepo(
         plans=[_plan(owner_userid="owner_live")],
@@ -368,7 +368,7 @@ def test_group_ops_content_package_text_enqueues():
 
 
 def test_group_ops_content_package_text_and_durable_media_dependencies_enqueue(monkeypatch):
-    from aicrm_next.automation_engine.group_ops import scheduler
+    from aicrm_next.automation.automation_engine.group_ops import scheduler
 
     monkeypatch.setattr(scheduler, "production_data_ready", lambda: True)
     repo = FakeGroupOpsRepo(
@@ -407,7 +407,7 @@ def test_group_ops_content_package_text_and_durable_media_dependencies_enqueue(m
 
 
 def test_group_ops_media_only_package_plans_upload_before_final_effect(monkeypatch):
-    from aicrm_next.automation_engine.group_ops import scheduler
+    from aicrm_next.automation.automation_engine.group_ops import scheduler
 
     monkeypatch.setattr(scheduler, "production_data_ready", lambda: True)
     repo = FakeGroupOpsRepo(
@@ -458,7 +458,7 @@ def test_group_ops_text_and_attachment_enqueues():
 
 
 def test_group_ops_bad_node_does_not_block_good_node(monkeypatch):
-    from aicrm_next.automation_engine.group_ops import scheduler
+    from aicrm_next.automation.automation_engine.group_ops import scheduler
 
     def fail_resolve(content_package):
         image_ids = content_package.get("image_library_ids") or []
@@ -506,7 +506,7 @@ def test_group_ops_bad_node_does_not_block_good_node(monkeypatch):
 
 
 def test_group_ops_unresolvable_content_package_records_node_error(monkeypatch):
-    from aicrm_next.automation_engine.group_ops import scheduler
+    from aicrm_next.automation.automation_engine.group_ops import scheduler
 
     def fake_resolve(content_package):
         if not (content_package.get("image_library_ids") or []):
@@ -554,7 +554,7 @@ def test_scheduler_has_no_check_then_plan_duplicate_checker():
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[1]
-    source = (root / "aicrm_next/automation_engine/group_ops/scheduler.py").read_text(encoding="utf-8")
+    source = (root / "aicrm_next/automation/automation_engine/group_ops/scheduler.py").read_text(encoding="utf-8")
 
     assert "wecom_ability" + "_service" not in source
     assert "broadcast_jobs.service" not in source

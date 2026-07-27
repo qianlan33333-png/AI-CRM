@@ -27,10 +27,10 @@ from .app.admin_console.routes import router as admin_shell_router
 from .extensions.ai.automation_agents.admin_api import router as automation_agents_admin_router
 from .extensions.ai.automation_agents.admin_pages import router as automation_agents_admin_pages_router
 from .extensions.ai.automation_agents.api import router as automation_agents_router
-from .automation_engine.api import router as automation_router
-from .automation_engine.channel_admin_pages import router as channel_admin_pages_router
-from .automation_engine.channels_api import router as automation_channels_router
-from .automation_engine.group_ops.admin_pages import router as group_ops_admin_pages_router
+from .automation.automation_engine.api import router as automation_router
+from .automation.automation_engine.channel_admin_pages import router as channel_admin_pages_router
+from .automation.automation_engine.channels_api import router as automation_channels_router
+from .automation.automation_engine.group_ops.admin_pages import router as group_ops_admin_pages_router
 from .channels.auth_wecom.api import router as auth_wecom_router
 from .channels.channel_entry.api import router as channel_entry_router
 from .extensions.hxc.class_user_management.api import router as class_user_management_router
@@ -57,8 +57,8 @@ from .channels.integration_gateway.api import router as mcp_router
 from .engagement.media_library.admin_pages import router as media_library_admin_pages_router
 from .engagement.media_library.api import router as media_library_router
 from .extensions.archive.message_archive.api import router as message_archive_router
-from .ops_enrollment.admin_pages import router as user_ops_admin_pages_router
-from .ops_enrollment.api import router as user_ops_router
+from .automation.ops_enrollment.admin_pages import router as user_ops_admin_pages_router
+from .automation.ops_enrollment.api import router as user_ops_router
 from .extensions.hxc.operation_cycles.admin_pages import router as operation_cycles_admin_pages_router
 from .extensions.hxc.operation_cycles.api import router as operation_cycles_router
 from .crm.owner_migration.api import router as owner_migration_router

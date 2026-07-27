@@ -6,15 +6,15 @@ from pathlib import Path
 from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 
-from aicrm_next.automation_engine import channels_api
+from aicrm_next.automation.automation_engine import channels_api
 from aicrm_next.main import create_app
 
 
 ROOT = Path(__file__).resolve().parents[1]
 FRONTEND_TEMPLATES = ROOT / "aicrm_next" / "app" / "admin_console" / "templates" / "admin_console"
 FRONTEND_STATIC = ROOT / "aicrm_next" / "app" / "admin_console" / "static" / "admin_console"
-AUTOMATION_TEMPLATES = ROOT / "aicrm_next" / "automation_engine" / "templates" / "admin_console"
-AUTOMATION_STATIC = ROOT / "aicrm_next" / "automation_engine" / "static" / "admin_console"
+AUTOMATION_TEMPLATES = ROOT / "aicrm_next" / "automation" / "automation_engine" / "templates" / "admin_console"
+AUTOMATION_STATIC = ROOT / "aicrm_next" / "automation" / "automation_engine" / "static" / "admin_console"
 CUSTOMER_TAGS_TEMPLATES = ROOT / "aicrm_next" / "crm" / "customer_tags" / "templates" / "admin_console"
 CUSTOMER_TAGS_STATIC = ROOT / "aicrm_next" / "crm" / "customer_tags" / "static" / "admin_console"
 RADAR_TEMPLATES = ROOT / "aicrm_next" / "extensions" / "radar" / "radar_links" / "templates" / "admin_console"
@@ -53,9 +53,9 @@ def test_channel_radar_and_tag_pages_are_served_by_next_native_routers(monkeypat
     }
 
     assert route_modules == {
-        "api.admin_channels_page": "aicrm_next.automation_engine.channel_admin_pages",
-        "api.admin_channel_new_page": "aicrm_next.automation_engine.channel_admin_pages",
-        "api.admin_channel_edit_page": "aicrm_next.automation_engine.channel_admin_pages",
+        "api.admin_channels_page": "aicrm_next.automation.automation_engine.channel_admin_pages",
+        "api.admin_channel_new_page": "aicrm_next.automation.automation_engine.channel_admin_pages",
+        "api.admin_channel_edit_page": "aicrm_next.automation.automation_engine.channel_admin_pages",
         "api.admin_radar_links": "aicrm_next.extensions.radar.radar_links.admin_pages",
         "api.admin_radar_link_new": "aicrm_next.extensions.radar.radar_links.admin_pages",
         "api.admin_radar_link_edit": "aicrm_next.extensions.radar.radar_links.admin_pages",

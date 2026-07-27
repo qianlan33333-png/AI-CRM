@@ -42,7 +42,7 @@ def _automation_side_effect_safety(**overrides: bool) -> dict[str, bool]:
 
 def _agent_production_unavailable_payload(detail: str | None = None) -> dict[str, Any]:
     payload = blocked_production_payload(
-        capability_owner="aicrm_next.automation_engine",
+        capability_owner="aicrm_next.automation.automation_engine",
         detail=detail
         or "agent production repository is not enabled; production repository handoff remains blocked until explicitly enabled.",
     )
@@ -59,7 +59,7 @@ def _agent_production_unavailable_payload(detail: str | None = None) -> dict[str
 
 def _agent_output_production_unavailable_payload(detail: str | None = None) -> dict[str, Any]:
     payload = blocked_production_payload(
-        capability_owner="aicrm_next.automation_engine",
+        capability_owner="aicrm_next.automation.automation_engine",
         detail=detail
         or "agent output production repository is not enabled; production repository handoff remains blocked until explicitly enabled.",
     )
@@ -76,7 +76,7 @@ def _agent_output_production_unavailable_payload(detail: str | None = None) -> d
 
 def _agent_run_production_unavailable_payload(detail: str | None = None) -> dict[str, Any]:
     payload = blocked_production_payload(
-        capability_owner="aicrm_next.automation_engine",
+        capability_owner="aicrm_next.automation.automation_engine",
         detail=detail
         or "agent run production repository is not enabled; production repository handoff remains blocked until explicitly enabled.",
     )

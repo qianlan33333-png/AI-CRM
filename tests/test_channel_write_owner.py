@@ -103,7 +103,7 @@ def test_channel_write_port_preserves_admin_update_contract() -> None:
 def test_automation_channel_sql_has_one_module_owner() -> None:
     owner_source = (ROOT / "aicrm_next/channels/channel_entry/channel_write_repository.py").read_text(encoding="utf-8")
     callers = [
-        ROOT / "aicrm_next/automation_engine/channels_repo.py",
+        ROOT / "aicrm_next/automation/automation_engine/channels_repo.py",
         ROOT / "aicrm_next/channels/channel_entry/repo.py",
     ]
 

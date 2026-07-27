@@ -47,7 +47,7 @@ def list_operation_member_rows(*, scope: str = "common") -> list[dict[str, Any]]
         if normalize_scope(scope) == "wecom_directory":
             return []
         try:
-            from aicrm_next.automation_engine.group_ops.repo import build_group_ops_repository
+            from aicrm_next.automation.automation_engine.group_ops.repo import build_group_ops_repository
 
             return [
                 {

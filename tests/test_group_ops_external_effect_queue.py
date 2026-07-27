@@ -183,7 +183,7 @@ def test_group_ops_webhook_receive_logs_action_and_creates_wecom_group_effect(gr
             return {"ok": True, "status": "queued", "action_ref_id": "job_123", "side_effect_executed": False}
 
     monkeypatch.setattr(
-        "aicrm_next.automation_engine.group_ops.action_port.build_group_ops_action_port",
+        "aicrm_next.automation.automation_engine.group_ops.action_port.build_group_ops_action_port",
         lambda: FakeActionPort(),
     )
     created = group_ops_api_client.post(

@@ -11,8 +11,8 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.background_jobs.automation_ops_scheduler import run_automation_ops_scheduler
-from aicrm_next.automation_engine.group_ops.scheduler import run_group_ops_due_scheduler
+from aicrm_next.automation.background_jobs.automation_ops_scheduler import run_automation_ops_scheduler
+from aicrm_next.automation.automation_engine.group_ops.scheduler import run_group_ops_due_scheduler
 
 
 def _run_group_ops(*, now, operator, dry_run):

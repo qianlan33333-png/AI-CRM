@@ -5,9 +5,9 @@ from dataclasses import dataclass
 
 from .platform.admin_auth import reset_admin_auth_fixture_state
 from .platform.admin_jobs.repository import reset_admin_jobs_fixture_state
-from .automation_engine.channels_api import reset_wecom_customer_acquisition_link_fixture_state
-from .automation_engine.group_ops.repo import reset_group_ops_fixture_state
-from .automation_engine.repo import reset_automation_fixture_state
+from .automation.automation_engine.channels_api import reset_wecom_customer_acquisition_link_fixture_state
+from .automation.automation_engine.group_ops.repo import reset_group_ops_fixture_state
+from .automation.automation_engine.repo import reset_automation_fixture_state
 from .extensions.growth.cloud_orchestrator.campaigns_read import reset_campaign_read_fixture_state
 from .extensions.growth.cloud_orchestrator.campaigns_write import reset_campaign_write_fixture_state
 from .extensions.growth.cloud_orchestrator.repository import reset_cloud_plan_fixture_state
@@ -19,7 +19,7 @@ from .extensions.hxc.hxc_dashboard.repo import reset_hxc_dashboard_fixture_state
 from .extensions.hxc.hxc_dashboard.safe_mode import reset_hxc_safe_mode_fixture_state
 from .channels.integration_gateway.wecom_jssdk_adapter import reset_sidebar_jssdk_attempts
 from .engagement.media_library.repo import reset_media_library_fixture_state
-from .ops_enrollment.application import reset_user_ops_fixture_state
+from .automation.ops_enrollment.application import reset_user_ops_fixture_state
 from .platform.platform_foundation.external_effects import reset_external_effect_fixture_state
 from .platform.platform_foundation.internal_events import reset_internal_event_fixture_state
 from .extensions.forms.questionnaire.admin_write import reset_questionnaire_admin_write_fixture_state

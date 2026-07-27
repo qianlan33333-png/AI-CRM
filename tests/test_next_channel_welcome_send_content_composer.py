@@ -6,8 +6,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TEMPLATE = ROOT / "aicrm_next" / "automation_engine" / "templates" / "admin_console" / "channel_code_form.html"
-CHANNEL_JS = ROOT / "aicrm_next" / "automation_engine" / "static" / "admin_console" / "channel_admission_pages.js"
+TEMPLATE = ROOT / "aicrm_next" / "automation" / "automation_engine" / "templates" / "admin_console" / "channel_code_form.html"
+CHANNEL_JS = ROOT / "aicrm_next" / "automation" / "automation_engine" / "static" / "admin_console" / "channel_admission_pages.js"
 
 
 def _read(path: Path) -> str:

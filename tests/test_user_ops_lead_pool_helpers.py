@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from aicrm_next.ops_enrollment.dto import BatchSendRequest
-from aicrm_next.ops_enrollment.repo import InMemoryUserOpsRepository
-from aicrm_next.ops_enrollment.user_ops import build_overview_cards, resolve_batch_targets
+from aicrm_next.automation.ops_enrollment.dto import BatchSendRequest
+from aicrm_next.automation.ops_enrollment.repo import InMemoryUserOpsRepository
+from aicrm_next.automation.ops_enrollment.user_ops import build_overview_cards, resolve_batch_targets
 
 
 def test_user_ops_next_overview_cards_count_current_segments():

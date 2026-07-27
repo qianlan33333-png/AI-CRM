@@ -64,9 +64,9 @@ physical_moves:
     - crm
     - channels
     - engagement
+    - automation
     - extensions
   pending_domains:
-    - automation
     - insights
   enable_after:
     - public command and query ports are in use

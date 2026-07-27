@@ -8,8 +8,8 @@ import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-GROUP_OPS_JS = ROOT / "aicrm_next/automation_engine/group_ops/static/admin_console/group_ops.js"
-GROUP_OPS_TEMPLATE = ROOT / "aicrm_next/automation_engine/group_ops/templates/admin_console/group_ops.html"
+GROUP_OPS_JS = ROOT / "aicrm_next/automation/automation_engine/group_ops/static/admin_console/group_ops.js"
+GROUP_OPS_TEMPLATE = ROOT / "aicrm_next/automation/automation_engine/group_ops/templates/admin_console/group_ops.html"
 PICKER_JS = ROOT / "aicrm_next/app/admin_console/static/admin_console/operation_member_picker.js"
 
 

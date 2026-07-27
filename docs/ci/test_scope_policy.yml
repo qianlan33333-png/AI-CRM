@@ -84,7 +84,7 @@
         "aicrm_next/channels/integration_gateway/**",
         "aicrm_next/platform/platform_foundation/external_effects/**",
         "aicrm_next/platform/platform_foundation/webhook_inbox/**",
-        "aicrm_next/background_jobs/**",
+        "aicrm_next/automation/background_jobs/**",
         "aicrm_next/platform/external_push/**",
         "tests/test_*callback*.py",
         "tests/test_external_effect*.py",
@@ -95,7 +95,7 @@
       "name": "approved_high_risk_business_flows",
       "paths": [
         "aicrm_next/extensions/forms/questionnaire/**",
-        "aicrm_next/automation_engine/group_ops/**",
+        "aicrm_next/automation/automation_engine/group_ops/**",
         "tests/test_questionnaire*.py",
         "tests/test_*group_ops*.py"
       ]

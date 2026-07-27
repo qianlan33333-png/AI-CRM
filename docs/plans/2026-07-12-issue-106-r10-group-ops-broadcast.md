@@ -16,8 +16,8 @@
 
 ## Architecture preflight decisions
 
-- Capability owner: `aicrm_next.automation_engine.group_ops` owns Group Ops plans, triggers, and internal action planning.
-- Delivery owners: `aicrm_next.background_jobs` owns final `broadcast_jobs` dispatch state; `aicrm_next.platform.platform_foundation.external_effects` owns group-message and webhook effects.
+- Capability owner: `aicrm_next.automation.automation_engine.group_ops` owns Group Ops plans, triggers, and internal action planning.
+- Delivery owners: `aicrm_next.automation.background_jobs` owns final `broadcast_jobs` dispatch state; `aicrm_next.platform.platform_foundation.external_effects` owns group-message and webhook effects.
 - Formal management routes live under `/api/admin/automation-conversion/group-ops/*` and use admin session/capability policy.
 - Purpose-bound integration routes remain `/api/automation/group-ops/webhooks/{webhook_key}` and `/api/automation/group-ops/broadcast`; all other compatibility management aliases are removed and must return 404.
 - The unlinked `/admin/p1/group-ops-workspace` page and its draft/governance APIs are retired. Its historical tables are preserved as read-only audit data and marked `retired`/`drop_candidate`; R10 performs no table drop or row mutation.
@@ -27,8 +27,8 @@
 
 ## Frontend preflight
 
-- Reference page: `aicrm_next/automation_engine/group_ops/templates/admin_console/group_ops.html` at `/admin/automation-conversion/group-ops` remains the canonical daily workspace.
-- Reference assets: `aicrm_next/automation_engine/group_ops/static/admin_console/group_ops.js` and `group_ops.css` remain the canonical Group Ops frontend implementation.
+- Reference page: `aicrm_next/automation/automation_engine/group_ops/templates/admin_console/group_ops.html` at `/admin/automation-conversion/group-ops` remains the canonical daily workspace.
+- Reference assets: `aicrm_next/automation/automation_engine/group_ops/static/admin_console/group_ops.js` and `group_ops.css` remain the canonical Group Ops frontend implementation.
 - Reference shell: existing `aicrm_next/admin_shell` page layout, navigation, session, and capability behavior are retained.
 - Reused service/API: the existing formal Group Ops admin façade and material-picker integration remain; missing members/audience/segmentation/execution reads move to formal admin URLs rather than a new client wrapper.
 - No component is added. The frontend work is deletion of a duplicate P1 page plus URL convergence in the canonical page.
@@ -78,15 +78,15 @@ Expected: failures identify the still-registered P1 page/APIs and compatibility 
 - Modify: `aicrm_next/router_registry.py`
 - Modify: `aicrm_next/admin_shell/routes.py`
 - Modify: `aicrm_next/admin_shell/navigation.py`
-- Modify: `aicrm_next/automation_engine/group_ops/api.py`
-- Modify: `aicrm_next/automation_engine/group_ops/static/admin_console/group_ops.js`
+- Modify: `aicrm_next/automation/automation_engine/group_ops/api.py`
+- Modify: `aicrm_next/automation/automation_engine/group_ops/static/admin_console/group_ops.js`
 - Delete: `aicrm_next/admin_shell/templates/admin_shell/p1_group_ops_workspace.html`
-- Delete: `aicrm_next/automation_engine/group_ops/draft_api.py`
-- Delete: `aicrm_next/automation_engine/group_ops/draft_repository.py`
-- Delete: `aicrm_next/automation_engine/group_ops/draft_service.py`
-- Delete: `aicrm_next/automation_engine/group_ops/governance_api.py`
-- Delete: `aicrm_next/automation_engine/group_ops/governance_repository.py`
-- Delete: `aicrm_next/automation_engine/group_ops/governance_service.py`
+- Delete: `aicrm_next/automation/automation_engine/group_ops/draft_api.py`
+- Delete: `aicrm_next/automation/automation_engine/group_ops/draft_repository.py`
+- Delete: `aicrm_next/automation/automation_engine/group_ops/draft_service.py`
+- Delete: `aicrm_next/automation/automation_engine/group_ops/governance_api.py`
+- Delete: `aicrm_next/automation/automation_engine/group_ops/governance_repository.py`
+- Delete: `aicrm_next/automation/automation_engine/group_ops/governance_service.py`
 - Delete: `aicrm_next/frontend_compat/static/admin_console/p1/p1_group_ops_workspace/`
 - Delete: `scripts/diagnose_p1_group_ops_workspace_bridge_acceptance.py`
 - Delete: `tests/frontend/p1_group_ops_workspace.test.mjs`
@@ -141,13 +141,13 @@ Expected: one canonical management surface, both external integration routes pro
 
 **Files:**
 
-- Modify: `aicrm_next/automation_engine/group_ops/application.py`
-- Modify: `aicrm_next/automation_engine/group_ops/action_dispatcher.py`
-- Modify: `aicrm_next/automation_engine/group_ops/action_port.py`
-- Modify: `aicrm_next/automation_engine/group_ops/external_effects.py`
-- Modify: `aicrm_next/automation_engine/group_ops/scheduler.py`
-- Delete: `aicrm_next/automation_engine/group_ops/duplicate_checker.py`
-- Modify: `aicrm_next/background_jobs/automation_ops_scheduler.py`
+- Modify: `aicrm_next/automation/automation_engine/group_ops/application.py`
+- Modify: `aicrm_next/automation/automation_engine/group_ops/action_dispatcher.py`
+- Modify: `aicrm_next/automation/automation_engine/group_ops/action_port.py`
+- Modify: `aicrm_next/automation/automation_engine/group_ops/external_effects.py`
+- Modify: `aicrm_next/automation/automation_engine/group_ops/scheduler.py`
+- Delete: `aicrm_next/automation/automation_engine/group_ops/duplicate_checker.py`
+- Modify: `aicrm_next/automation/background_jobs/automation_ops_scheduler.py`
 - Modify: `deploy/production_runtime_units.json`
 - Modify: `tests/test_group_ops_scheduler.py`
 - Modify: `tests/test_group_ops_external_effect_queue.py`
@@ -243,7 +243,7 @@ Expected: clean `0102 -> 0103`, clean empty bootstrap, and reversible schema-onl
 
 **Files:**
 
-- Modify: `aicrm_next/background_jobs/broadcast_queue_worker.py`
+- Modify: `aicrm_next/automation/background_jobs/broadcast_queue_worker.py`
 - Modify: relevant adapter result DTO in the existing broadcast/private dispatch module
 - Modify: `tests/test_broadcast_jobs_service.py`
 - Modify: `tests/test_broadcast_jobs_wecom_private_dispatch.py`

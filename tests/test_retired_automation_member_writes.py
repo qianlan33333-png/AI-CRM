@@ -28,7 +28,7 @@ def test_singular_activation_webhook_is_retired_without_automation_member_write(
 
 
 def test_customer_webhook_implementation_module_is_removed() -> None:
-    assert not (ROOT / "aicrm_next/automation_engine/customer_webhooks.py").exists()
+    assert not (ROOT / "aicrm_next/automation/automation_engine/customer_webhooks.py").exists()
 
 
 def test_questionnaire_adapter_noops_retired_automation_member_projection() -> None:

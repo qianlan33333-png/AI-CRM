@@ -4,8 +4,8 @@ from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from typing import Any
 
-from aicrm_next.background_jobs import broadcast_queue_worker
-from aicrm_next.background_jobs.broadcast_queue_worker import PostgresBroadcastQueueRepository, run_broadcast_queue_worker
+from aicrm_next.automation.background_jobs import broadcast_queue_worker
+from aicrm_next.automation.background_jobs.broadcast_queue_worker import PostgresBroadcastQueueRepository, run_broadcast_queue_worker
 
 
 class FakeBroadcastRepo:

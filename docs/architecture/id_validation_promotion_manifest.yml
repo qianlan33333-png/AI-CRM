@@ -77,9 +77,9 @@ id_only_overlay:
 
 mixed_review_required:
   paths:
-    - aicrm_next/automation_engine/group_ops/domain.py
-    - aicrm_next/automation_engine/group_ops/durable_effects_repository.py
-    - aicrm_next/automation_engine/group_ops/scheduler.py
+    - aicrm_next/automation/automation_engine/group_ops/domain.py
+    - aicrm_next/automation/automation_engine/group_ops/durable_effects_repository.py
+    - aicrm_next/automation/automation_engine/group_ops/scheduler.py
     - aicrm_next/extensions/commerce/service_period/domain.py
     - aicrm_next/platform/admin_config/application.py
     - aicrm_next/platform/admin_config/application_support.py

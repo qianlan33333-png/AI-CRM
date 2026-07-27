@@ -7,8 +7,8 @@ import sys
 
 from sqlalchemy import text
 
-from aicrm_next.background_jobs import broadcast_reconciliation
-from aicrm_next.background_jobs.broadcast_reconciliation import (
+from aicrm_next.automation.background_jobs import broadcast_reconciliation
+from aicrm_next.automation.background_jobs.broadcast_reconciliation import (
     GroupOpsBroadcastReconciliationService,
 )
 from aicrm_next.platform.shared.db_session import get_session_factory

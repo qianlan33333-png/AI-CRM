@@ -15,8 +15,8 @@ from . import fixture_reset_registry
 from .platform.admin_auth.route_policy import route_policy_required_response
 from .platform.admin_auth.action_token import build_admin_action_token_bundle, validate_action_token_for_request
 from .platform.admin_config.pii_audit_repository import AdminConfigPiiAuditRepository
-from .automation_engine.repo import reset_automation_fixture_state
-from .automation_engine.channel_completion import ChannelQrReadService
+from .automation.automation_engine.repo import reset_automation_fixture_state
+from .automation.automation_engine.channel_completion import ChannelQrReadService
 from .channel_entry_composition import (
     build_wecom_callback_inbox_worker_factory,
     configure_channel_crm_dependencies,
@@ -34,8 +34,8 @@ from .channels.integration_gateway.channel_completion_client import configure_ch
 from .engagement.media_library.campaign_reference_port import configure_campaign_media_reference_port
 from .engagement.media_library.repo import reset_media_library_fixture_state
 from .mcp_composition import build_mcp_jsonrpc_application
-from .ops_enrollment.application import reset_user_ops_fixture_state
-from .ops_enrollment.audience_target_port import configure_audience_target_query
+from .automation.ops_enrollment.application import reset_user_ops_fixture_state
+from .automation.ops_enrollment.audience_target_port import configure_audience_target_query
 from .platform.platform_foundation.internal_events import internal_event_consumer_registry_scope
 from .extensions.forms.questionnaire.repo import reset_questionnaire_fixture_state
 from .read_model_composition import build_sidebar_contact_binding_status_query, get_customer_detail
@@ -66,8 +66,8 @@ __all__ = [
 
 _ADMIN_CONSOLE_DIR = Path(__file__).resolve().parent / "app" / "admin_console"
 _OPERATION_CYCLES_DIR = Path(__file__).resolve().parent / "extensions" / "hxc" / "operation_cycles"
-_GROUP_OPS_DIR = Path(__file__).resolve().parent / "automation_engine" / "group_ops"
-_AUTOMATION_ENGINE_DIR = Path(__file__).resolve().parent / "automation_engine"
+_GROUP_OPS_DIR = Path(__file__).resolve().parent / "automation" / "automation_engine" / "group_ops"
+_AUTOMATION_ENGINE_DIR = Path(__file__).resolve().parent / "automation" / "automation_engine"
 _CUSTOMER_TAGS_DIR = Path(__file__).resolve().parent / "crm" / "customer_tags"
 _QUESTIONNAIRE_DIR = Path(__file__).resolve().parent / "extensions" / "forms" / "questionnaire"
 _NAVIGATION_TARGET_DIR = Path(__file__).resolve().parent / "platform" / "navigation_target"

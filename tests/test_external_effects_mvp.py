@@ -490,7 +490,7 @@ def test_business_outbound_entrypoints_do_not_directly_call_external_networks() 
         "aicrm_next/extensions/commerce/commerce/admin_transactions.py",
         "aicrm_next/extensions/commerce/commerce/external_push_admin.py",
         "aicrm_next/crm/customer_tags/live_mutation.py",
-        "aicrm_next/automation_engine/group_ops/application.py",
+        "aicrm_next/automation/automation_engine/group_ops/application.py",
         "aicrm_next/channels/channel_entry/application.py",
     ]
     forbidden_fragments = [

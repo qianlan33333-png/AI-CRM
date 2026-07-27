@@ -193,7 +193,7 @@ def diff_hits_stop_condition(paths: set[str], terms: set[str]) -> list[str]:
         "docs/claude_code_integration/tools.md",
         "docs/claude_code_integration/troubleshooting.md",
         "docs/mcp_usage.md",
-        "aicrm_next/automation_engine/channels_api.py",
+        "aicrm_next/automation/automation_engine/channels_api.py",
         "aicrm_next/extensions/ai/ai_audience_ops/agent_copywriting.py",
         "aicrm_next/extensions/ai/ai_audience_ops/agent_gateway.py",
         "scripts/codex_autopilot_tick.sh",

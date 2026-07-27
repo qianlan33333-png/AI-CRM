@@ -2,7 +2,7 @@
 
 `SendContentPackage` is the only backend contract for the standard send content component in AI-CRM Next.
 
-This capability is Next-native only. New backend behavior must be implemented under `aicrm_next/engagement/send_content` or the existing `aicrm_next/automation_engine` layers. Do not add new `wecom_ability_service/http/*`, `wecom_ability_service/domains/*`, `production_compat`, or legacy facade implementations for this surface.
+This capability is Next-native only. New backend behavior must be implemented under `aicrm_next/engagement/send_content` or the existing `aicrm_next/automation/automation_engine` layers. Do not add new `wecom_ability_service/http/*`, `wecom_ability_service/domains/*`, `production_compat`, or legacy facade implementations for this surface.
 
 ## Payload
 

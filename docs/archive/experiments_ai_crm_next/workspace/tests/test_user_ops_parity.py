@@ -6,7 +6,7 @@ from pathlib import Path
 
 from conftest import make_client
 
-from aicrm_next.ops_enrollment.parity_spec import (
+from aicrm_next.automation.ops_enrollment.parity_spec import (
     OVERVIEW_CARD_LABELS,
     compare_card_labels,
     compare_required_keys,

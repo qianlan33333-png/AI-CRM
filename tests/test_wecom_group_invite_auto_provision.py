@@ -143,7 +143,7 @@ def test_existing_pending_welcome_config_can_be_auto_provisioned_on_save(monkeyp
 
 
 def test_channel_save_calls_group_invite_auto_provisioner() -> None:
-    source = Path("aicrm_next/automation_engine/channels_api.py").read_text(encoding="utf-8")
+    source = Path("aicrm_next/automation/automation_engine/channels_api.py").read_text(encoding="utf-8")
 
     assert "EnsureGroupInviteBindingReadyCommand" in source
     assert 'for group_invite_id in data["welcome_group_invite_library_ids"]' in source

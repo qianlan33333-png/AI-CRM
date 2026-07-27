@@ -12,11 +12,11 @@ from .channels.channel_entry.welcome_media_effects_repository import (
     WELCOME_MEDIA_DEPENDENCY_CONTINUATION,
 )
 from .extensions.ai.automation_agents.external_effect_continuation import AUTOMATION_AGENT_AUDIENCE_WEBHOOK_CONTINUATION
-from .automation_engine.group_ops.external_effect_continuation import (
+from .automation.automation_engine.group_ops.external_effect_continuation import (
     GROUP_OPS_EFFECT_SETTLEMENT_CONTINUATION,
     GROUP_OPS_MEDIA_DEPENDENCY_CONTINUATION,
 )
-from .background_jobs.broadcast_effect_repository import (
+from .automation.background_jobs.broadcast_effect_repository import (
     BROADCAST_EXTERNAL_EFFECT_READ_MODEL_CONTINUATION,
     BROADCAST_EXTERNAL_EFFECT_SETTLEMENT_CONTINUATION,
 )
@@ -212,7 +212,7 @@ def _build_production_wecom_adapter():
 
 def _resolve_production_wecom_welcome_materials(attachments, *, resolver=None):
     if resolver is None:
-        from .automation_engine.group_ops.material_resolver import PostgresGroupOpsMaterialResolver
+        from .automation.automation_engine.group_ops.material_resolver import PostgresGroupOpsMaterialResolver
         from .engagement.media_library.postgres_repo import PostgresMediaLibraryRepository
         from .platform.shared.runtime import raw_database_url
 

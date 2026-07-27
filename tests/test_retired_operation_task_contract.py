@@ -8,7 +8,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_retired_operation_task_contract_module_is_removed() -> None:
-    assert importlib.util.find_spec("aicrm_next.automation_engine.operation_task_contract") is None
+    assert importlib.util.find_spec("aicrm_next.automation.automation_engine.operation_task_contract") is None
 
 
 def test_retired_operation_task_is_not_a_broadcast_source_option() -> None:

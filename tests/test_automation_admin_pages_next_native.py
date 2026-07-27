@@ -9,8 +9,8 @@ from tests.admin_auth_test_helpers import admin_session_cookies
 
 
 ROOT = Path(__file__).resolve().parents[1]
-AUTOMATION_TEMPLATES = ROOT / "aicrm_next" / "automation_engine" / "templates" / "admin_console"
-AUTOMATION_STATIC = ROOT / "aicrm_next" / "automation_engine" / "static" / "admin_console"
+AUTOMATION_TEMPLATES = ROOT / "aicrm_next" / "automation" / "automation_engine" / "templates" / "admin_console"
+AUTOMATION_STATIC = ROOT / "aicrm_next" / "automation" / "automation_engine" / "static" / "admin_console"
 FRONTEND_TEMPLATES = ROOT / "aicrm_next" / "app" / "admin_console" / "templates" / "admin_console"
 FRONTEND_STATIC = ROOT / "aicrm_next" / "app" / "admin_console" / "static" / "admin_console"
 
@@ -115,15 +115,15 @@ def test_retired_automation_project_templates_and_static_are_removed() -> None:
 
 def test_retired_action_template_modules_are_removed() -> None:
     retired_modules = {
-        ROOT / "aicrm_next" / "automation_engine" / "action_templates.py",
-        ROOT / "aicrm_next" / "automation_engine" / "action_template_repository.py",
-        ROOT / "aicrm_next" / "automation_engine" / "action_template_sqlalchemy_repository.py",
+        ROOT / "aicrm_next" / "automation" / "automation_engine" / "action_templates.py",
+        ROOT / "aicrm_next" / "automation" / "automation_engine" / "action_template_repository.py",
+        ROOT / "aicrm_next" / "automation" / "automation_engine" / "action_template_sqlalchemy_repository.py",
     }
 
     for module in retired_modules:
         assert not module.exists()
 
-    dto_source = (ROOT / "aicrm_next" / "automation_engine" / "dto.py").read_text(encoding="utf-8")
+    dto_source = (ROOT / "aicrm_next" / "automation" / "automation_engine" / "dto.py").read_text(encoding="utf-8")
     api_docs_source = (ROOT / "aicrm_next" / "platform" / "admin_config" / "api_docs_view_model.py").read_text(encoding="utf-8")
 
     assert "ActionTemplateListRequest" not in dto_source

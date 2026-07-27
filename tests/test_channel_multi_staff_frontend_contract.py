@@ -5,13 +5,13 @@ import re
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CHANNEL_FORM = ROOT / "aicrm_next/automation_engine/templates/admin_console/channel_code_form.html"
-CHANNEL_CENTER_TEMPLATE = ROOT / "aicrm_next/automation_engine/templates/admin_console/channel_code_center.html"
-CHANNEL_PAGES = ROOT / "aicrm_next/automation_engine/channel_admin_pages.py"
-CHANNEL_BASE = ROOT / "aicrm_next/automation_engine/templates/admin_console/base.html"
-CHANNEL_JS = ROOT / "aicrm_next/automation_engine/static/admin_console/channel_admission_pages.js"
-CHANNEL_CENTER_JS = ROOT / "aicrm_next/automation_engine/static/admin_console/channel_code_center_next.js"
-CHANNEL_CSS = ROOT / "aicrm_next/automation_engine/static/admin_console/channel_admission_pages.css"
+CHANNEL_FORM = ROOT / "aicrm_next/automation/automation_engine/templates/admin_console/channel_code_form.html"
+CHANNEL_CENTER_TEMPLATE = ROOT / "aicrm_next/automation/automation_engine/templates/admin_console/channel_code_center.html"
+CHANNEL_PAGES = ROOT / "aicrm_next/automation/automation_engine/channel_admin_pages.py"
+CHANNEL_BASE = ROOT / "aicrm_next/automation/automation_engine/templates/admin_console/base.html"
+CHANNEL_JS = ROOT / "aicrm_next/automation/automation_engine/static/admin_console/channel_admission_pages.js"
+CHANNEL_CENTER_JS = ROOT / "aicrm_next/automation/automation_engine/static/admin_console/channel_code_center_next.js"
+CHANNEL_CSS = ROOT / "aicrm_next/automation/automation_engine/static/admin_console/channel_admission_pages.css"
 PICKER_JS = ROOT / "aicrm_next/app/admin_console/static/admin_console/operation_member_picker.js"
 
 

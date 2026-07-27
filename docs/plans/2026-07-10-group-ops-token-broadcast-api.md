@@ -13,8 +13,8 @@
 ### Task 1: Define the request and authentication contract
 
 **Files:**
-- Create: `aicrm_next/automation_engine/group_ops/broadcast.py`
-- Modify: `aicrm_next/automation_engine/group_ops/dto.py`
+- Create: `aicrm_next/automation/automation_engine/group_ops/broadcast.py`
+- Modify: `aicrm_next/automation/automation_engine/group_ops/dto.py`
 - Test: `tests/test_group_ops_token_broadcast_api.py`
 
 **Step 1: Write failing tests**
@@ -51,8 +51,8 @@ Expected: auth and validation tests pass.
 ### Task 2: Implement the one-shot broadcast command
 
 **Files:**
-- Create: `aicrm_next/automation_engine/group_ops/broadcast.py`
-- Modify: `aicrm_next/automation_engine/group_ops/application.py`
+- Create: `aicrm_next/automation/automation_engine/group_ops/broadcast.py`
+- Modify: `aicrm_next/automation/automation_engine/group_ops/application.py`
 - Test: `tests/test_group_ops_token_broadcast_api.py`
 
 **Step 1: Write failing behavior tests**
@@ -79,7 +79,7 @@ Expected: all tests pass and no real network call occurs.
 ### Task 3: Register the route and document the contract
 
 **Files:**
-- Modify: `aicrm_next/automation_engine/group_ops/api.py`
+- Modify: `aicrm_next/automation/automation_engine/group_ops/api.py`
 - Modify: `docs/architecture/route_ownership_manifest.yml`
 - Create: `docs/group_ops_broadcast_api.md`
 - Test: `tests/test_next_api_docs_page.py`
@@ -108,7 +108,7 @@ Run: `.venv/bin/python -m pytest tests/test_group_ops_token_broadcast_api.py tes
 
 **Step 2: Run static checks**
 
-Run: `.venv/bin/python -m ruff check aicrm_next/automation_engine/group_ops tests/test_group_ops_token_broadcast_api.py`
+Run: `.venv/bin/python -m ruff check aicrm_next/automation/automation_engine/group_ops tests/test_group_ops_token_broadcast_api.py`
 
 Run: `bash scripts/ci/check_architecture_boundaries.sh`
 
