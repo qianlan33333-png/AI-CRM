@@ -213,7 +213,7 @@ def _build_production_wecom_adapter():
 def _resolve_production_wecom_welcome_materials(attachments, *, resolver=None):
     if resolver is None:
         from .automation_engine.group_ops.material_resolver import PostgresGroupOpsMaterialResolver
-        from .media_library.postgres_repo import PostgresMediaLibraryRepository
+        from .engagement.media_library.postgres_repo import PostgresMediaLibraryRepository
         from .platform.shared.runtime import raw_database_url
 
         resolver = PostgresGroupOpsMaterialResolver(

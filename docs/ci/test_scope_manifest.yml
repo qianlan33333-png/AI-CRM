@@ -436,7 +436,7 @@
       "name": "group_invite_cards",
       "paths": [
         "aicrm_next/automation_engine/group_ops/picker_application.py",
-        "aicrm_next/send_content/**",
+        "aicrm_next/engagement/send_content/**",
         "aicrm_next/automation_engine/static/admin_console/channel_admission_pages.js",
         "aicrm_next/automation_engine/templates/admin_console/channel_code_form.html",
         "aicrm_next/extensions/growth/cloud_orchestrator/campaigns_read.py",
@@ -489,7 +489,7 @@
     {
       "name": "send_content_media_gateway",
       "paths": [
-        "aicrm_next/send_content_media_repository_gateway.py",
+        "aicrm_next/engagement/send_content_media_repository_gateway.py",
         "tests/test_send_content_media_gateway.py"
       ],
       "python_tests": [
@@ -865,7 +865,7 @@
     {
       "name": "media_library",
       "paths": [
-        "aicrm_next/media_library/**",
+        "aicrm_next/engagement/media_library/**",
         "aicrm_next/extensions/commerce/commerce/templates/wechat_products.html",
         "tests/test_image_upload_client_static.py",
         "tests/test_image_library*.py",
@@ -882,9 +882,9 @@
     {
       "name": "wecom_media_lease",
       "paths": [
-        "aicrm_next/media_library/application.py",
-        "aicrm_next/media_library/postgres_repo.py",
-        "aicrm_next/media_library/wecom_lease.py",
+        "aicrm_next/engagement/media_library/application.py",
+        "aicrm_next/engagement/media_library/postgres_repo.py",
+        "aicrm_next/engagement/media_library/wecom_lease.py",
         "aicrm_next/extensions/growth/cloud_orchestrator/media_upload.py",
         "aicrm_next/channels/integration_gateway/wecom_media_upload_client.py",
         "aicrm_next/wecom_media_jobs.py",
@@ -952,7 +952,7 @@
       "name": "ai_assist_external_campaigns",
       "paths": [
         "aicrm_next/extensions/ai/ai_assist/**",
-        "aicrm_next/send_targets/**",
+        "aicrm_next/engagement/send_targets/**",
         "aicrm_next/extensions/growth/cloud_orchestrator/api.py",
         "aicrm_next/extensions/growth/cloud_orchestrator/review_plans.py",
         "tests/test_ai_assist_external_campaigns.py",
@@ -2481,6 +2481,36 @@
         "tests/test_customer_read_model_next_primary.py",
         "tests/test_identity_resolver_contract.py",
         "tests/test_wecom_tag_live_mutation_commands.py"
+      ],
+      "needs_postgres": true,
+      "needs_full_ci": true,
+      "architecture_gate": "full"
+    },
+    {
+      "name": "physical_engagement_package_migration",
+      "paths": [
+        "aicrm_next/engagement/__init__.py",
+        "aicrm_next/media_library/**",
+        "aicrm_next/send_content/**",
+        "aicrm_next/send_targets/**",
+        "aicrm_next/send_content_media_repository_gateway.py",
+        "aicrm_next/engagement/send_content_media_repository_gateway.py",
+        "tests/test_miniprogram_library.py",
+        "tests/test_next_miniprogram_thumb_binding.py"
+      ],
+      "python_tests": [
+        "tests/test_capability_registry.py",
+        "tests/test_import_graph_guard.py",
+        "tests/test_zero_runtime_import_scc.py",
+        "tests/test_structure_migration_gates.py",
+        "tests/test_router_registry_contract.py",
+        "tests/test_route_ownership_manifest.py",
+        "tests/test_runtime_contract_inventory.py",
+        "tests/test_media_library_admin_pages_native.py",
+        "tests/test_group_invite_library.py",
+        "tests/test_next_send_content_package_contract.py",
+        "tests/test_material_library_table_boundary.py",
+        "tests/test_wecom_media_lease.py"
       ],
       "needs_postgres": true,
       "needs_full_ci": true,

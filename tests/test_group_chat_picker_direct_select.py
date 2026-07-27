@@ -8,11 +8,11 @@ from aicrm_next.automation_engine.group_ops.picker_application import ListGroupC
 from aicrm_next.automation_engine.group_ops.dto import GroupChatPickerSyncRequest
 from aicrm_next.automation_engine.group_ops.material_resolver import GroupOpsMaterialResolveError, InMemoryGroupOpsMaterialResolver
 from aicrm_next.automation_engine.group_ops.repo import InMemoryGroupOpsRepository
-from aicrm_next.media_library.application import EnsureGroupInviteBindingCommand
-from aicrm_next.media_library.dto import GroupInviteBindingEnsureRequest
-from aicrm_next.media_library.repo import InMemoryMediaLibraryRepository, reset_media_library_fixture_state
-from aicrm_next.send_content.application import assert_group_invite_bindings_ready, normalize_send_content_package
-from aicrm_next.send_content.repo import InMemorySendContentRepository
+from aicrm_next.engagement.media_library.application import EnsureGroupInviteBindingCommand
+from aicrm_next.engagement.media_library.dto import GroupInviteBindingEnsureRequest
+from aicrm_next.engagement.media_library.repo import InMemoryMediaLibraryRepository, reset_media_library_fixture_state
+from aicrm_next.engagement.send_content.application import assert_group_invite_bindings_ready, normalize_send_content_package
+from aicrm_next.engagement.send_content.repo import InMemorySendContentRepository
 from aicrm_next.platform.shared.errors import ContractError
 
 
@@ -208,7 +208,7 @@ def test_group_dissolution_hides_group_and_invalidates_existing_binding(monkeypa
         GroupChatPickerSyncRequest(owner_userid="HuangYouCan")
     )
 
-    from aicrm_next.media_library.repo import build_media_library_repository
+    from aicrm_next.engagement.media_library.repo import build_media_library_repository
 
     media_repo = build_media_library_repository()
     adapter = FakeGroupInviteAdapter()

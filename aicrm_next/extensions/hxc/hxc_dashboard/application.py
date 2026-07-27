@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from aicrm_next.send_content.application import NormalizeSendContentPackageCommand
+from aicrm_next.engagement.send_content.application import NormalizeSendContentPackageCommand
 from aicrm_next.platform.shared.errors import ContractError
 from aicrm_next.platform.shared.repository_provider import RepositoryProviderError
 

@@ -31,8 +31,8 @@ from .external_effect_composition import (
 )
 from .internal_event_composition import build_internal_event_consumer_registry
 from .channels.integration_gateway.channel_completion_client import configure_channel_completion_provider
-from .media_library.campaign_reference_port import configure_campaign_media_reference_port
-from .media_library.repo import reset_media_library_fixture_state
+from .engagement.media_library.campaign_reference_port import configure_campaign_media_reference_port
+from .engagement.media_library.repo import reset_media_library_fixture_state
 from .mcp_composition import build_mcp_jsonrpc_application
 from .ops_enrollment.application import reset_user_ops_fixture_state
 from .ops_enrollment.audience_target_port import configure_audience_target_query

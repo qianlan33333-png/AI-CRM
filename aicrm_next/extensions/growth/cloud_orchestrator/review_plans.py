@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 from typing import Any
 
-from aicrm_next.send_content.application import normalize_send_content_package
+from aicrm_next.engagement.send_content.application import normalize_send_content_package
 
 from .repository import CloudPlanRepository, build_cloud_plan_repository
 

@@ -102,7 +102,7 @@ def _durable_content_package(
 ) -> tuple[list[dict[str, Any]], tuple[GroupOpsEffectMaterial, ...]]:
     """Resolve local metadata without crossing the WeCom provider boundary."""
 
-    from aicrm_next.media_library.postgres_repo import PostgresMediaLibraryRepository
+    from aicrm_next.engagement.media_library.postgres_repo import PostgresMediaLibraryRepository
 
     repository = PostgresMediaLibraryRepository(raw_database_url())
     materials: list[GroupOpsEffectMaterial] = []

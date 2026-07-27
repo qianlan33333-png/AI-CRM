@@ -20,7 +20,7 @@ from aicrm_next.crm.customer_read_model.sidebar_v2 import (
     SidebarWorkbenchReadModel,
 )
 from aicrm_next.main import create_app
-from aicrm_next.media_library.postgres_repo import PostgresMediaLibraryRepository
+from aicrm_next.engagement.media_library.postgres_repo import PostgresMediaLibraryRepository
 from aicrm_next.platform.shared.errors import NotFoundError
 from tests.sidebar_auth_test_helpers import install_sidebar_auth
 

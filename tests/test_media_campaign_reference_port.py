@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.media_library import campaign_reference_port
+from aicrm_next.engagement.media_library import campaign_reference_port
 
 
 def test_media_campaign_reference_port_is_supplied_by_composition_root(monkeypatch) -> None:

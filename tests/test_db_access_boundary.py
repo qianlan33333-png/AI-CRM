@@ -312,7 +312,7 @@ def test_db_access_boundary_temporary_allowlist_is_empty() -> None:
     for path in (
         "aicrm_next/extensions/growth/cloud_orchestrator/campaigns_read.py",
         "aicrm_next/extensions/hxc/hxc_dashboard/postgres_repo.py",
-        "aicrm_next/media_library/postgres_repo.py",
+        "aicrm_next/engagement/media_library/postgres_repo.py",
         "aicrm_next/platform/shared/postgres_connection.py",
     ):
         source = Path(path).read_text(encoding="utf-8")

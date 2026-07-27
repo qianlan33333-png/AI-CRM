@@ -7,9 +7,9 @@ from typing import Any, Protocol
 
 from aicrm_next.automation_engine.group_ops.message_content import normalize_miniprogram_attachment_payload
 from aicrm_next.integration_ports import build_wecom_media_upload_client
-from aicrm_next.media_library.postgres_repo import PostgresMediaLibraryRepository
-from aicrm_next.media_library.dto import normalize_group_invite_join_url, normalize_http_url
-from aicrm_next.send_content.repo import InMemorySendContentRepository
+from aicrm_next.engagement.media_library.postgres_repo import PostgresMediaLibraryRepository
+from aicrm_next.engagement.media_library.dto import normalize_group_invite_join_url, normalize_http_url
+from aicrm_next.engagement.send_content.repo import InMemorySendContentRepository
 from aicrm_next.platform.shared.errors import ContractError
 from aicrm_next.platform.shared.runtime import production_data_ready, production_environment, raw_database_url
 
@@ -407,7 +407,7 @@ class PostgresGroupOpsMaterialResolver(_BaseGroupOpsMaterialResolver):
         super().__init__(uploader=uploader, real_upload_enabled=real_upload_enabled, fake_media_enabled=False, now=now)
         self._media_repository = media_repository
         if lease_manager is None and real_upload_enabled:
-            from aicrm_next.media_library.wecom_lease import WeComMediaLeaseManager
+            from aicrm_next.engagement.media_library.wecom_lease import WeComMediaLeaseManager
 
             lease_manager = WeComMediaLeaseManager(media_repository, uploader=uploader, now=now)
         self._lease_manager = lease_manager

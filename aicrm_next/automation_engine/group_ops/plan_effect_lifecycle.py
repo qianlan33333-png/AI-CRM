@@ -126,7 +126,7 @@ def enable_plan(
     operator: str,
 ) -> dict[str, Any]:
     existing = _plan(repo, plan_id)
-    from aicrm_next.send_content.application import assert_group_invite_bindings_ready
+    from aicrm_next.engagement.send_content.application import assert_group_invite_bindings_ready
 
     for node in repo.list_nodes(int(plan_id)):
         if clean_text(node.get("status") or "active") == "active":

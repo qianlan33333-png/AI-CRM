@@ -10,7 +10,7 @@ from aicrm_next.platform.platform_foundation.command_bus.models import CommandCo
 from aicrm_next.platform.platform_foundation.external_effects import ExternalEffectService, WECOM_MESSAGE_PRIVATE_SEND
 from aicrm_next.platform.platform_foundation.internal_events.models import InternalEventCreateRequest
 from aicrm_next.platform.platform_foundation.internal_events.outbox import enqueue_internal_event_outbox_in_session
-from aicrm_next.send_content.application import normalize_send_content_package
+from aicrm_next.engagement.send_content.application import normalize_send_content_package
 from aicrm_next.platform.shared.db_session import get_session_factory
 from aicrm_next.platform.shared.runtime_settings import runtime_bool
 

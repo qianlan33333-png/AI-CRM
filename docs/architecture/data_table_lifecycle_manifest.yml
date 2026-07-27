@@ -381,7 +381,7 @@ tables:
     write_owner: aicrm_next.ops_enrollment.repo
     read_owners:
       - aicrm_next.extensions.ai.ai_assist.external_campaigns_repo
-      - aicrm_next.send_targets.repo
+      - aicrm_next.engagement.send_targets.repo
       - aicrm_next.ops_enrollment.repo
     replacement: ""
     drop_candidate: false
@@ -833,7 +833,7 @@ tables:
     read_owners:
       - aicrm_next.extensions.growth.cloud_orchestrator.repository
       - aicrm_next.extensions.growth.cloud_orchestrator.campaigns_read
-      - aicrm_next.media_library
+      - aicrm_next.engagement.media_library
     replacement: future campaign command model plus broadcast_jobs scheduling projection
     drop_candidate: false
     drop_after: ""
@@ -1404,10 +1404,10 @@ tables:
   image_library:
     domain: media_library
     lifecycle: canonical
-    write_owner: aicrm_next.media_library
+    write_owner: aicrm_next.engagement.media_library
     read_owners:
-      - aicrm_next.media_library.postgres_repo
-      - aicrm_next.send_content.postgres_repo
+      - aicrm_next.engagement.media_library.postgres_repo
+      - aicrm_next.engagement.send_content.postgres_repo
       - aicrm_next.admin_read_model.projections
       - aicrm_next.automation_engine.group_ops.material_resolver
       - aicrm_next.channels.channel_entry.application
@@ -1431,9 +1431,9 @@ tables:
   image_library_variants:
     domain: media_library
     lifecycle: read_model
-    write_owner: aicrm_next.media_library.variants
+    write_owner: aicrm_next.engagement.media_library.variants
     read_owners:
-      - aicrm_next.media_library.postgres_repo
+      - aicrm_next.engagement.media_library.postgres_repo
       - image thumbnail/variant API
     replacement: image_library
     drop_candidate: false
@@ -1450,10 +1450,10 @@ tables:
   miniprogram_library:
     domain: media_library
     lifecycle: canonical
-    write_owner: aicrm_next.media_library.postgres_repo
+    write_owner: aicrm_next.engagement.media_library.postgres_repo
     read_owners:
-      - aicrm_next.media_library.postgres_repo
-      - aicrm_next.send_content.postgres_repo
+      - aicrm_next.engagement.media_library.postgres_repo
+      - aicrm_next.engagement.send_content.postgres_repo
       - aicrm_next.admin_read_model.projections
       - aicrm_next.automation_engine.group_ops.material_resolver
       - aicrm_next.channels.channel_entry.application
@@ -1476,10 +1476,10 @@ tables:
   attachment_library:
     domain: media_library
     lifecycle: canonical
-    write_owner: aicrm_next.media_library.postgres_repo
+    write_owner: aicrm_next.engagement.media_library.postgres_repo
     read_owners:
-      - aicrm_next.media_library.postgres_repo
-      - aicrm_next.send_content.postgres_repo
+      - aicrm_next.engagement.media_library.postgres_repo
+      - aicrm_next.engagement.send_content.postgres_repo
       - aicrm_next.admin_read_model.projections
       - aicrm_next.automation_engine.group_ops.material_resolver
       - aicrm_next.channels.channel_entry.application
@@ -1502,10 +1502,10 @@ tables:
   group_invite_library:
     domain: media_library
     lifecycle: canonical
-    write_owner: aicrm_next.media_library.postgres_repo
+    write_owner: aicrm_next.engagement.media_library.postgres_repo
     read_owners:
-      - aicrm_next.media_library.postgres_repo
-      - aicrm_next.send_content.postgres_repo
+      - aicrm_next.engagement.media_library.postgres_repo
+      - aicrm_next.engagement.send_content.postgres_repo
       - aicrm_next.automation_engine.group_ops.material_resolver
       - aicrm_next.channels.channel_entry.application
       - campaign/group-ops SendContentPackage consumers
@@ -1528,9 +1528,9 @@ tables:
   wecom_media_leases:
     domain: media_library
     lifecycle: canonical
-    write_owner: aicrm_next.media_library.wecom_lease
+    write_owner: aicrm_next.engagement.media_library.wecom_lease
     read_owners:
-      - aicrm_next.media_library.wecom_lease
+      - aicrm_next.engagement.media_library.wecom_lease
       - aicrm_next.automation_engine.group_ops.material_resolver
       - aicrm_next.data_health.checks
     replacement: none; canonical lifecycle state for temporary WeCom media ids
@@ -3164,7 +3164,7 @@ tables:
     read_owners:
       - aicrm_next.background_jobs
       - aicrm_next.extensions.growth.cloud_orchestrator
-      - aicrm_next.send_content
+      - aicrm_next.engagement.send_content
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -3787,7 +3787,7 @@ tables:
     lifecycle: canonical
     write_owner: aicrm_next.extensions.radar.radar_links
     read_owners:
-      - aicrm_next.send_content
+      - aicrm_next.engagement.send_content
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -4247,7 +4247,7 @@ tables:
     lifecycle: read_model
     write_owner: aicrm_next.extensions.commerce.commerce.wechat_pay_service
     read_owners:
-      - aicrm_next.send_content
+      - aicrm_next.engagement.send_content
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""

@@ -66,7 +66,7 @@ Each task is scoped for a future Codex execution turn. Keep old production servi
 ## 8. Media Library Storage Adapter
 
 - objective: Add storage port and test implementation for image/attachment/miniprogram assets.
-- files likely involved: `aicrm_next/media_library/application.py`, `aicrm_next/media_library/repo.py`, `docs/archive/experiments_ai_crm_next/workspace/tests/test_media_library_contract.py`.
+- files likely involved: `aicrm_next/engagement/media_library/application.py`, `aicrm_next/engagement/media_library/repo.py`, `docs/archive/experiments_ai_crm_next/workspace/tests/test_media_library_contract.py`.
 - acceptance criteria: storage abstraction tests, file size/type checks, no real cloud default; `retired experiment wrapper; see docs/archive/experiments_ai_crm_next/retired_tools.md` remains read-only by default and fake writes stay Next-only.
 - must not do: upload to production cloud storage.
 - suggested validation command: `.venv/bin/python -m pytest docs/archive/experiments_ai_crm_next/workspace/tests/test_media_library_contract.py -q`.

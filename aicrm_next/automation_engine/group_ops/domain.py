@@ -5,7 +5,7 @@ import re
 from datetime import datetime, timezone
 from typing import Any
 
-from aicrm_next.send_content.application import NormalizeSendContentPackageCommand
+from aicrm_next.engagement.send_content.application import NormalizeSendContentPackageCommand
 from aicrm_next.platform.shared.errors import ContractError
 from aicrm_next.platform.shared.wecom_payload_contract import normalize_group_admin_userids
 

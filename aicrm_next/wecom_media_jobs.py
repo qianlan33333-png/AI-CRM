@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from aicrm_next.media_library.wecom_lease import build_wecom_media_lease_manager
+from aicrm_next.engagement.media_library.wecom_lease import build_wecom_media_lease_manager
 from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
 from aicrm_next.platform.platform_foundation.external_effects import (
     WECOM_MEDIA_UPLOAD,

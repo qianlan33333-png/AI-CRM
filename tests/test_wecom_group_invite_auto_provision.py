@@ -7,8 +7,8 @@ import pytest
 from aicrm_next.channels.integration_gateway.audit import list_audit_events, reset_audit_events
 from aicrm_next.channels.integration_gateway.wecom_channel_entry_client import GuardedWeComAdapter
 from aicrm_next.channels.integration_gateway.wecom_group_invite_adapter import WeComGroupInviteAdapter
-from aicrm_next.media_library.application import EnsureGroupInviteBindingCommand, EnsureGroupInviteBindingReadyCommand
-from aicrm_next.media_library.repo import InMemoryMediaLibraryRepository, build_media_library_repository, reset_media_library_fixture_state
+from aicrm_next.engagement.media_library.application import EnsureGroupInviteBindingCommand, EnsureGroupInviteBindingReadyCommand
+from aicrm_next.engagement.media_library.repo import InMemoryMediaLibraryRepository, build_media_library_repository, reset_media_library_fixture_state
 from aicrm_next.platform.shared.errors import ContractError
 
 
@@ -131,7 +131,7 @@ def test_existing_pending_welcome_config_can_be_auto_provisioned_on_save(monkeyp
     pending = repo.ensure_group_invite_binding({"chat_id": CHAT_ID, "group_name": "已保存的欢迎语群聊"})
     gateway = WeComGroupInviteAdapter(client=RecordingClient())
     monkeypatch.setattr(
-        "aicrm_next.media_library.application.build_wecom_group_invite_adapter",
+        "aicrm_next.engagement.media_library.application.build_wecom_group_invite_adapter",
         lambda: gateway,
     )
 

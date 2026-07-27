@@ -7,7 +7,7 @@ from aicrm_next.platform.platform_foundation.internal_events.shadow import (
     emit_ops_plan_approved_shadow_event,
     safe_emit,
 )
-from aicrm_next.send_content.application import normalize_send_content_package
+from aicrm_next.engagement.send_content.application import normalize_send_content_package
 
 from .repository import CloudPlanRepository, build_cloud_plan_repository
 

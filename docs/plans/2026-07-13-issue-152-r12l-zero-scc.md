@@ -50,7 +50,7 @@
 - Modify: `aicrm_next/commerce/external_orders.py`, `order_reconciliation.py`
 - Modify: `aicrm_next/platform/external_push/repo.py`
 - Modify: `aicrm_next/customer_read_model/sidebar_v2.py`
-- Modify: `aicrm_next/media_library/repo.py`
+- Modify: `aicrm_next/engagement/media_library/repo.py`
 - Modify related service-period/public-product route composition
 
 **Steps:** Move action-token/navigation and questionnaire result access to presentation composition; inject customer/identity queries into commerce and identity façades; relocate neutral product-code/material contracts; remove commerce↔customer, commerce↔public, commerce↔external-push and customer↔identity cycles without changing route or SQL behavior.

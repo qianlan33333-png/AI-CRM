@@ -1251,7 +1251,7 @@
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/media_library/api.py",
+      "file": "aicrm_next/engagement/media_library/api.py",
       "key": "AICRM_NEXT_MEDIA_STORAGE_MODE",
       "line": 46
     },
@@ -1419,13 +1419,13 @@
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/media_library/api.py",
+      "file": "aicrm_next/engagement/media_library/api.py",
       "key": "AICRM_NEXT_WECOM_MEDIA_MODE",
       "line": 47
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/media_library/application.py",
+      "file": "aicrm_next/engagement/media_library/application.py",
       "key": "AICRM_NEXT_WECOM_MEDIA_MODE",
       "line": 96
     },
@@ -7845,7 +7845,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.admin_pages.admin_attachment_library",
+      "endpoint": "aicrm_next.engagement.media_library.admin_pages.admin_attachment_library",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.engagement",
@@ -9407,7 +9407,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.admin_pages.admin_image_library",
+      "endpoint": "aicrm_next.engagement.media_library.admin_pages.admin_image_library",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.engagement",
@@ -9463,7 +9463,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.admin_pages.admin_miniprogram_library",
+      "endpoint": "aicrm_next.engagement.media_library.admin_pages.admin_miniprogram_library",
       "include_in_schema": true,
       "kind": "page",
       "logical_capability_id": "core.engagement",
@@ -11828,7 +11828,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.list_attachments",
+      "endpoint": "aicrm_next.engagement.media_library.api.list_attachments",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -11879,7 +11879,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.create_attachment",
+      "endpoint": "aicrm_next.engagement.media_library.api.create_attachment",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -11947,7 +11947,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.upload_attachment",
+      "endpoint": "aicrm_next.engagement.media_library.api.upload_attachment",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -11999,7 +11999,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.delete_attachment",
+      "endpoint": "aicrm_next.engagement.media_library.api.delete_attachment",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -12051,7 +12051,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.get_attachment",
+      "endpoint": "aicrm_next.engagement.media_library.api.get_attachment",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -12112,7 +12112,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.update_attachment",
+      "endpoint": "aicrm_next.engagement.media_library.api.update_attachment",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -22403,7 +22403,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.list_group_invite_bindings",
+      "endpoint": "aicrm_next.engagement.media_library.api.list_group_invite_bindings",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -22454,7 +22454,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.ensure_group_invite_binding",
+      "endpoint": "aicrm_next.engagement.media_library.api.ensure_group_invite_binding",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -22506,7 +22506,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.get_group_invite_binding",
+      "endpoint": "aicrm_next.engagement.media_library.api.get_group_invite_binding",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -22567,7 +22567,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.update_group_invite_binding",
+      "endpoint": "aicrm_next.engagement.media_library.api.update_group_invite_binding",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -22650,7 +22650,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.list_group_invites",
+      "endpoint": "aicrm_next.engagement.media_library.api.list_group_invites",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -22701,7 +22701,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.create_group_invite",
+      "endpoint": "aicrm_next.engagement.media_library.api.create_group_invite",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -22753,7 +22753,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.delete_group_invite",
+      "endpoint": "aicrm_next.engagement.media_library.api.delete_group_invite",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -22805,7 +22805,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.get_group_invite",
+      "endpoint": "aicrm_next.engagement.media_library.api.get_group_invite",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -22866,7 +22866,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.update_group_invite",
+      "endpoint": "aicrm_next.engagement.media_library.api.update_group_invite",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -23497,7 +23497,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.list_images",
+      "endpoint": "aicrm_next.engagement.media_library.api.list_images",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -23548,7 +23548,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.create_image",
+      "endpoint": "aicrm_next.engagement.media_library.api.create_image",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -23580,7 +23580,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.list_image_facets",
+      "endpoint": "aicrm_next.engagement.media_library.api.list_image_facets",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -23648,7 +23648,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.image_from_base64",
+      "endpoint": "aicrm_next.engagement.media_library.api.image_from_base64",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -23716,7 +23716,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.image_from_url",
+      "endpoint": "aicrm_next.engagement.media_library.api.image_from_url",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -23784,7 +23784,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.upload_image",
+      "endpoint": "aicrm_next.engagement.media_library.api.upload_image",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -23842,7 +23842,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.delete_image",
+      "endpoint": "aicrm_next.engagement.media_library.api.delete_image",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -23914,7 +23914,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.get_image",
+      "endpoint": "aicrm_next.engagement.media_library.api.get_image",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -23975,7 +23975,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.update_image",
+      "endpoint": "aicrm_next.engagement.media_library.api.update_image",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -24049,7 +24049,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.get_image_thumbnail",
+      "endpoint": "aicrm_next.engagement.media_library.api.get_image_thumbnail",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -24122,7 +24122,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.get_image_variant",
+      "endpoint": "aicrm_next.engagement.media_library.api.get_image_variant",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -25180,7 +25180,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.send_content.api.list_material_assets",
+      "endpoint": "aicrm_next.engagement.send_content.api.list_material_assets",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -25229,7 +25229,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.send_content.api.validate_material_assets",
+      "endpoint": "aicrm_next.engagement.send_content.api.validate_material_assets",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -25297,7 +25297,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.send_content.api.get_material_asset_usage",
+      "endpoint": "aicrm_next.engagement.send_content.api.get_material_asset_usage",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -25385,7 +25385,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.send_content.api.list_material_picker_items",
+      "endpoint": "aicrm_next.engagement.send_content.api.list_material_picker_items",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -25468,7 +25468,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.list_miniprograms",
+      "endpoint": "aicrm_next.engagement.media_library.api.list_miniprograms",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -25515,7 +25515,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.create_miniprogram",
+      "endpoint": "aicrm_next.engagement.media_library.api.create_miniprogram",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -25567,7 +25567,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.delete_miniprogram",
+      "endpoint": "aicrm_next.engagement.media_library.api.delete_miniprogram",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -25619,7 +25619,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.get_miniprogram",
+      "endpoint": "aicrm_next.engagement.media_library.api.get_miniprogram",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -25680,7 +25680,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.update_miniprogram",
+      "endpoint": "aicrm_next.engagement.media_library.api.update_miniprogram",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -25732,7 +25732,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.media_library.api.test_resolve_miniprogram",
+      "endpoint": "aicrm_next.engagement.media_library.api.test_resolve_miniprogram",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -30232,7 +30232,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.send_content.api.preview_send_content",
+      "endpoint": "aicrm_next.engagement.send_content.api.preview_send_content",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -30281,7 +30281,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.send_content.api.validate_send_content",
+      "endpoint": "aicrm_next.engagement.send_content.api.validate_send_content",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.engagement",
@@ -48009,12 +48009,12 @@
         "aicrm_next.admin_read_model.projections",
         "aicrm_next.automation_engine.group_ops.material_resolver",
         "aicrm_next.channels.channel_entry.application",
-        "aicrm_next.media_library.postgres_repo",
-        "aicrm_next.send_content.postgres_repo",
+        "aicrm_next.engagement.media_library.postgres_repo",
+        "aicrm_next.engagement.send_content.postgres_repo",
         "campaign/group-ops SendContentPackage consumers"
       ],
       "table": "attachment_library",
-      "write_owner": "aicrm_next.media_library.postgres_repo"
+      "write_owner": "aicrm_next.engagement.media_library.postgres_repo"
     },
     {
       "domain": "automation_group_ops",
@@ -49219,9 +49219,9 @@
       "migration_source": "0005_segments_and_campaigns",
       "pii_level": "",
       "read_owners": [
+        "aicrm_next.engagement.media_library",
         "aicrm_next.extensions.growth.cloud_orchestrator.campaigns_read",
-        "aicrm_next.extensions.growth.cloud_orchestrator.repository",
-        "aicrm_next.media_library"
+        "aicrm_next.extensions.growth.cloud_orchestrator.repository"
       ],
       "table": "campaign_steps",
       "write_owner": "aicrm_next.extensions.growth.cloud_orchestrator.repository"
@@ -49339,8 +49339,8 @@
       "pii_level": "internal_contact",
       "read_owners": [
         "aicrm_next.background_jobs",
-        "aicrm_next.extensions.growth.cloud_orchestrator",
-        "aicrm_next.send_content"
+        "aicrm_next.engagement.send_content",
+        "aicrm_next.extensions.growth.cloud_orchestrator"
       ],
       "table": "cloud_broadcast_plan_recipient_messages",
       "write_owner": "aicrm_next.extensions.growth.cloud_orchestrator"
@@ -49883,12 +49883,12 @@
       "read_owners": [
         "aicrm_next.automation_engine.group_ops.material_resolver",
         "aicrm_next.channels.channel_entry.application",
-        "aicrm_next.media_library.postgres_repo",
-        "aicrm_next.send_content.postgres_repo",
+        "aicrm_next.engagement.media_library.postgres_repo",
+        "aicrm_next.engagement.send_content.postgres_repo",
         "campaign/group-ops SendContentPackage consumers"
       ],
       "table": "group_invite_library",
-      "write_owner": "aicrm_next.media_library.postgres_repo"
+      "write_owner": "aicrm_next.engagement.media_library.postgres_repo"
     },
     {
       "domain": "group_ops",
@@ -50009,12 +50009,12 @@
         "aicrm_next.admin_read_model.projections",
         "aicrm_next.automation_engine.group_ops.material_resolver",
         "aicrm_next.channels.channel_entry.application",
-        "aicrm_next.extensions.commerce.commerce.repo",
-        "aicrm_next.media_library.postgres_repo",
-        "aicrm_next.send_content.postgres_repo"
+        "aicrm_next.engagement.media_library.postgres_repo",
+        "aicrm_next.engagement.send_content.postgres_repo",
+        "aicrm_next.extensions.commerce.commerce.repo"
       ],
       "table": "image_library",
-      "write_owner": "aicrm_next.media_library"
+      "write_owner": "aicrm_next.engagement.media_library"
     },
     {
       "domain": "media_library",
@@ -50023,11 +50023,11 @@
       "migration_source": "0017_image_library_variants",
       "pii_level": "",
       "read_owners": [
-        "aicrm_next.media_library.postgres_repo",
+        "aicrm_next.engagement.media_library.postgres_repo",
         "image thumbnail/variant API"
       ],
       "table": "image_library_variants",
-      "write_owner": "aicrm_next.media_library.variants"
+      "write_owner": "aicrm_next.engagement.media_library.variants"
     },
     {
       "domain": "internal_events",
@@ -50197,12 +50197,12 @@
         "aicrm_next.admin_read_model.projections",
         "aicrm_next.automation_engine.group_ops.material_resolver",
         "aicrm_next.channels.channel_entry.application",
-        "aicrm_next.media_library.postgres_repo",
-        "aicrm_next.send_content.postgres_repo",
+        "aicrm_next.engagement.media_library.postgres_repo",
+        "aicrm_next.engagement.send_content.postgres_repo",
         "campaign/group-ops SendContentPackage consumers"
       ],
       "table": "miniprogram_library",
-      "write_owner": "aicrm_next.media_library.postgres_repo"
+      "write_owner": "aicrm_next.engagement.media_library.postgres_repo"
     },
     {
       "domain": "operation_cycles",
@@ -50743,7 +50743,7 @@
       "migration_source": "migrations/baselines/0001_post_legacy.sql",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.send_content"
+        "aicrm_next.engagement.send_content"
       ],
       "table": "radar_links",
       "write_owner": "aicrm_next.extensions.radar.radar_links"
@@ -50990,9 +50990,9 @@
       "migration_source": "0029_user_ops_prod_tables",
       "pii_level": "internal_contact",
       "read_owners": [
+        "aicrm_next.engagement.send_targets.repo",
         "aicrm_next.extensions.ai.ai_assist.external_campaigns_repo",
-        "aicrm_next.ops_enrollment.repo",
-        "aicrm_next.send_targets.repo"
+        "aicrm_next.ops_enrollment.repo"
       ],
       "table": "user_ops_do_not_disturb_next",
       "write_owner": "aicrm_next.ops_enrollment.repo"
@@ -51217,7 +51217,7 @@
       "migration_source": "0012_wechat_pay_products",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.send_content"
+        "aicrm_next.engagement.send_content"
       ],
       "table": "wechat_pay_product_page_slices",
       "write_owner": "aicrm_next.extensions.commerce.commerce.wechat_pay_service"
@@ -51415,10 +51415,10 @@
       "read_owners": [
         "aicrm_next.automation_engine.group_ops.material_resolver",
         "aicrm_next.data_health.checks",
-        "aicrm_next.media_library.wecom_lease"
+        "aicrm_next.engagement.media_library.wecom_lease"
       ],
       "table": "wecom_media_leases",
-      "write_owner": "aicrm_next.media_library.wecom_lease"
+      "write_owner": "aicrm_next.engagement.media_library.wecom_lease"
     }
   ]
 }

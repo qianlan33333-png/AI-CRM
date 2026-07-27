@@ -54,8 +54,8 @@ from .crm.identity_contact.admin_pages import router as identity_admin_pages_rou
 from .crm.identity_contact.api import router as identity_router
 from .crm.identity_contact.sidebar_jssdk import router as sidebar_jssdk_router
 from .channels.integration_gateway.api import router as mcp_router
-from .media_library.admin_pages import router as media_library_admin_pages_router
-from .media_library.api import router as media_library_router
+from .engagement.media_library.admin_pages import router as media_library_admin_pages_router
+from .engagement.media_library.api import router as media_library_router
 from .extensions.archive.message_archive.api import router as message_archive_router
 from .ops_enrollment.admin_pages import router as user_ops_admin_pages_router
 from .ops_enrollment.api import router as user_ops_router
@@ -75,7 +75,7 @@ from .extensions.forms.questionnaire.admin_pages import router as questionnaire_
 from .extensions.forms.questionnaire.api import router as questionnaire_router
 from .extensions.radar.radar_links.admin_pages import router as radar_links_admin_pages_router
 from .extensions.radar.radar_links.api import router as radar_links_router
-from .send_content.api import router as send_content_router
+from .engagement.send_content.api import router as send_content_router
 from .extensions.commerce.service_period.api import router as service_period_router
 from .crm.sidebar_write.api import router as sidebar_write_router
 

@@ -4,7 +4,7 @@ from copy import deepcopy
 from typing import Any
 
 from aicrm_next.platform.shared.wecom_payload_contract import normalize_miniprogram_attachment_payload
-from aicrm_next.media_library.dto import normalize_group_invite_join_url, normalize_http_url
+from aicrm_next.engagement.media_library.dto import normalize_group_invite_join_url, normalize_http_url
 
 
 MAX_GROUP_OPS_MESSAGE_IMAGES = 3

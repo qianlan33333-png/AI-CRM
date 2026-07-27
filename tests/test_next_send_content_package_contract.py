@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from aicrm_next.send_content.application import NormalizeSendContentPackageCommand
-from aicrm_next.send_content.dto import SendContentPackage
+from aicrm_next.engagement.send_content.application import NormalizeSendContentPackageCommand
+from aicrm_next.engagement.send_content.dto import SendContentPackage
 from aicrm_next.platform.shared.errors import ContractError
 
 

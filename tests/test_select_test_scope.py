@@ -53,11 +53,30 @@ def test_media_library_change_runs_small_no_pg_slice() -> None:
 
 
 def test_every_runtime_python_change_runs_import_graph_architecture_gate() -> None:
-    result = _select("aicrm_next/media_library/variants.py")
+    result = _select("aicrm_next/engagement/media_library/variants.py")
 
     assert result["matched_scopes"] == ["media_library"]
     assert result["architecture_gate"] == "fast"
     assert result["needs_full_ci"] is False
+
+
+def test_physical_engagement_package_migration_forces_full_ci() -> None:
+    result = _select(
+        "aicrm_next/engagement/__init__.py",
+        deleted_files=(
+            "aicrm_next/media_library/api.py",
+            "aicrm_next/send_content/application.py",
+            "aicrm_next/send_targets/resolver.py",
+        ),
+    )
+
+    assert result["unmatched_files"] == []
+    assert result["unmapped_deleted_files"] == []
+    assert "physical_engagement_package_migration" in result["matched_scopes"]
+    assert "tests/test_runtime_contract_inventory.py" in result["python_tests"]
+    assert result["needs_postgres"] is True
+    assert result["needs_full_ci"] is True
+    assert result["architecture_gate"] == "full"
 
 
 def test_unmapped_deleted_path_forces_full_ci_without_blocking_retirement() -> None:
@@ -762,7 +781,7 @@ def test_wecom_payload_contract_has_permanent_full_ci_scope() -> None:
 
 def test_send_content_media_gateway_has_permanent_full_ci_scope() -> None:
     result = _select(
-        "aicrm_next/send_content_media_repository_gateway.py",
+        "aicrm_next/engagement/send_content_media_repository_gateway.py",
         "tests/test_send_content_media_gateway.py",
     )
 
@@ -990,7 +1009,7 @@ def test_ai_assist_external_campaign_change_selects_focused_python_slice() -> No
 
 
 def test_shared_send_target_change_selects_ai_assist_campaign_slice() -> None:
-    result = _select("aicrm_next/send_targets/resolver.py")
+    result = _select("aicrm_next/engagement/send_targets/resolver.py")
 
     assert result["unmatched_files"] == []
     assert "ai_assist_external_campaigns" in result["matched_scopes"]

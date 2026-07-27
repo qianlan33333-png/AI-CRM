@@ -4,7 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from aicrm_next.send_content.dto import SendContentPackage
+from aicrm_next.engagement.send_content.dto import SendContentPackage
 
 
 class HxcBroadcastTaskRequest(BaseModel):

@@ -53,7 +53,7 @@ from .application import (
     UpdateRadarLinkCommand,
     UploadRadarPdfPartCommand,
 )
-from aicrm_next.media_library.application import UploadAttachmentCommand, UploadImageCommand
+from aicrm_next.engagement.media_library.application import UploadAttachmentCommand, UploadImageCommand
 from .domain import verify_radar_state
 from .dto import RadarLinkCreateRequest, RadarLinkUpdateRequest
 

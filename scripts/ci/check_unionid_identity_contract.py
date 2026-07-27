@@ -33,7 +33,7 @@ HIGH_RISK_ALIAS_CONSUMERS = (
     Path("aicrm_next/extensions/hxc/hxc_dashboard/postgres_repo.py"),
     Path("aicrm_next/extensions/archive/message_archive/repo.py"),
     Path("aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py"),
-    Path("aicrm_next/send_targets/repo.py"),
+    Path("aicrm_next/engagement/send_targets/repo.py"),
     Path("aicrm_next/extensions/commerce/service_period/repo.py"),
     Path("aicrm_next/crm/sidebar_write/repo.py"),
 )
