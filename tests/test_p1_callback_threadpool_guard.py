@@ -6,7 +6,7 @@ import inspect
 def test_external_callback_and_webhook_routes_are_sync_threadpool_handlers() -> None:
     from aicrm_next.extensions.ai.ai_audience_ops import api as ai_audience_api
     from aicrm_next.extensions.ai.automation_agents import api as automation_agents_api
-    from aicrm_next.channel_entry import api as channel_entry_api
+    from aicrm_next.channels.channel_entry import api as channel_entry_api
     from aicrm_next.extensions.commerce.commerce import api as commerce_api
     from aicrm_next.extensions.commerce.public_product import api as public_product_api
 
@@ -32,7 +32,7 @@ def test_sync_callback_handlers_read_raw_body_via_threadpool_helper() -> None:
     for relative_path in (
         "aicrm_next/extensions/commerce/commerce/api.py",
         "aicrm_next/extensions/commerce/public_product/api.py",
-        "aicrm_next/channel_entry/api.py",
+        "aicrm_next/channels/channel_entry/api.py",
         "aicrm_next/extensions/ai/automation_agents/api.py",
         "aicrm_next/extensions/ai/ai_audience_ops/api.py",
     ):

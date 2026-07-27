@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.integration_gateway.wecom_group_adapter import WeComGroupMessageAdapter
+from aicrm_next.channels.integration_gateway.wecom_group_adapter import WeComGroupMessageAdapter
 
 
 def test_group_ops_message_adapter_fake_mode_verifies_exact_targets() -> None:

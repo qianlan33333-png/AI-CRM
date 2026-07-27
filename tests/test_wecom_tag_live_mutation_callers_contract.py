@@ -6,7 +6,7 @@ from aicrm_next.crm.customer_tags.live_mutation import execute_wecom_tag_mutatio
 from aicrm_next.crm.customer_tags.local_projection import get_customer_tag_local_projection_fixture_rows
 from aicrm_next.crm.customer_tags.mutation_commands import PlanCustomerTagAssignmentCommand
 from aicrm_next.crm.identity_contact.dto import IdentityResolution
-from aicrm_next.integration_gateway import wecom_channel_entry_client
+from aicrm_next.channels.integration_gateway import wecom_channel_entry_client
 from aicrm_next.main import create_app
 from aicrm_next.platform_foundation.external_effects import ExternalEffectService, reset_external_effect_fixture_state
 from aicrm_next.platform_foundation.internal_events import reset_internal_event_fixture_state

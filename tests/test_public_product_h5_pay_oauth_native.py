@@ -8,7 +8,7 @@ from urllib.parse import parse_qs, urlparse
 import pytest
 from fastapi.testclient import TestClient
 
-from aicrm_next.integration_gateway.wechat_oauth_client import WeChatOAuthClientError
+from aicrm_next.channels.integration_gateway.wechat_oauth_client import WeChatOAuthClientError
 from aicrm_next.main import create_app
 from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
 

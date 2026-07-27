@@ -210,7 +210,7 @@ Each task is scoped for a future Codex execution turn. Keep old production servi
 ## 9. WeCom Media Adapter
 
 - objective: Add a WeCom media upload adapter contract with fake default and sandbox test plan.
-- files likely involved: `aicrm_next/integration_gateway/ports.py`, `aicrm_next/integration_gateway/fake_adapters.py`, `media_library/*`.
+- files likely involved: `aicrm_next/channels/integration_gateway/ports.py`, `aicrm_next/channels/integration_gateway/fake_adapters.py`, `media_library/*`.
 - acceptance criteria: fake adapter remains default; real adapter has config gating and audit.
 - must not do: upload media to real WeCom by default.
 - suggested validation command: `.venv/bin/python -m pytest docs/archive/experiments_ai_crm_next/workspace/tests/test_media_library_contract.py tests/test_architecture_boundaries.py -q`.
@@ -218,7 +218,7 @@ Each task is scoped for a future Codex execution turn. Keep old production servi
 ## 10. OpenClaw Real Webhook Adapter
 
 - objective: Replace fake push preview with a gated real OpenClaw webhook adapter.
-- files likely involved: `aicrm_next/automation_engine/application.py`, `aicrm_next/integration_gateway/ports.py`, `aicrm_next/integration_gateway/fake_adapters.py`.
+- files likely involved: `aicrm_next/automation_engine/application.py`, `aicrm_next/channels/integration_gateway/ports.py`, `aicrm_next/channels/integration_gateway/fake_adapters.py`.
 - acceptance criteria: payload compatibility, auth, retry, failure audit, fake default tests.
 - must not do: send real webhook without explicit config and sandbox.
 - suggested validation command: `.venv/bin/python -m pytest historical removed reference (test_automation_conversion_contract.py) -q`.

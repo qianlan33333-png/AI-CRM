@@ -14,7 +14,7 @@ def test_wecom_callback_cutover_plan_requires_all_local_assets() -> None:
     assert payload["backup_path_file"] == "/tmp/wecom-callback-cutover-backup-path"
     assert any(item["path"] == "aicrm_next/platform_foundation/webhook_inbox/models.py" for item in payload["assets"])
     assert any(item["path"] == "aicrm_next/platform_foundation/webhook_inbox/service.py" for item in payload["assets"])
-    assert any(item["path"] == "aicrm_next/channel_entry/callback_ingress.py" for item in payload["assets"])
+    assert any(item["path"] == "aicrm_next/channels/channel_entry/callback_ingress.py" for item in payload["assets"])
     assert any(item["path"] == "scripts/ops/check_wecom_callback_deploy_smoke.py" for item in payload["assets"])
 
 

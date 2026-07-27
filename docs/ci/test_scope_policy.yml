@@ -52,7 +52,7 @@
       "name": "authentication",
       "paths": [
         "aicrm_next/admin_auth/**",
-        "aicrm_next/auth_wecom/**",
+        "aicrm_next/channels/auth_wecom/**",
         "aicrm_next/platform_foundation/auth_platform/**",
         "tests/test_admin_auth*.py",
         "tests/test_auth_*.py",
@@ -80,8 +80,8 @@
     {
       "name": "callbacks_and_external_effects",
       "paths": [
-        "aicrm_next/channel_entry/**",
-        "aicrm_next/integration_gateway/**",
+        "aicrm_next/channels/channel_entry/**",
+        "aicrm_next/channels/integration_gateway/**",
         "aicrm_next/platform_foundation/external_effects/**",
         "aicrm_next/platform_foundation/webhook_inbox/**",
         "aicrm_next/background_jobs/**",

@@ -14,8 +14,8 @@ from aicrm_next.external_effect_composition import (
     build_external_effect_continuation_registry,
 )
 from aicrm_next.crm.identity_contact.dto import IdentityResolution, IdentityResolveResult
-from aicrm_next.integration_gateway import wecom_channel_entry_client
-from aicrm_next.integration_gateway.wecom_channel_entry_client import WeComApiError
+from aicrm_next.channels.integration_gateway import wecom_channel_entry_client
+from aicrm_next.channels.integration_gateway.wecom_channel_entry_client import WeComApiError
 from aicrm_next.main import create_app
 from aicrm_next.platform_foundation.external_effects import (
     WECOM_CONTACT_TAG_MARK,

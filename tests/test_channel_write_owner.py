@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 import re
 
-from aicrm_next.channel_entry.channel_write_port import (
+from aicrm_next.channels.channel_entry.channel_write_port import (
     SaveChannelRequest,
     UpdateChannelAssignmentRequest,
     UpdateChannelQRCodeRequest,
@@ -101,10 +101,10 @@ def test_channel_write_port_preserves_admin_update_contract() -> None:
 
 
 def test_automation_channel_sql_has_one_module_owner() -> None:
-    owner_source = (ROOT / "aicrm_next/channel_entry/channel_write_repository.py").read_text(encoding="utf-8")
+    owner_source = (ROOT / "aicrm_next/channels/channel_entry/channel_write_repository.py").read_text(encoding="utf-8")
     callers = [
         ROOT / "aicrm_next/automation_engine/channels_repo.py",
-        ROOT / "aicrm_next/channel_entry/repo.py",
+        ROOT / "aicrm_next/channels/channel_entry/repo.py",
     ]
 
     assert "INSERT INTO automation_channel" in owner_source

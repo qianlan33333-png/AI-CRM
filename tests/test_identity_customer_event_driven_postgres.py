@@ -8,11 +8,11 @@ import psycopg
 import pytest
 from psycopg.rows import dict_row
 
-from aicrm_next.channel_entry import application as channel_application
-from aicrm_next.channel_entry import identity_external_effect
-from aicrm_next.channel_entry import repo as channel_repo
-from aicrm_next.channel_entry.application import process_wecom_external_contact_event
-from aicrm_next.channel_entry.schemas import ProcessWeComExternalContactEventCommand
+from aicrm_next.channels.channel_entry import application as channel_application
+from aicrm_next.channels.channel_entry import identity_external_effect
+from aicrm_next.channels.channel_entry import repo as channel_repo
+from aicrm_next.channels.channel_entry.application import process_wecom_external_contact_event
+from aicrm_next.channels.channel_entry.schemas import ProcessWeComExternalContactEventCommand
 from aicrm_next.crm.customer_read_model.refresh_intents import (
     CUSTOMER_REFRESH_COMPLETED_CONSUMER,
     CUSTOMER_REFRESH_COMPLETED_EVENT,

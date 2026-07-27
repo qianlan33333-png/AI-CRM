@@ -206,7 +206,7 @@ def test_admin_config_audit_baseline_tables_exist_in_fresh_schema() -> None:
 
 
 def test_wecom_identity_bridge_writes_new_identity_tables_not_legacy_maps() -> None:
-    source = _read("aicrm_next/channel_entry/identity_bridge_repo.py")
+    source = _read("aicrm_next/channels/channel_entry/identity_bridge_repo.py")
 
     assert "INSERT INTO crm_user_identity" in source
     assert "INSERT INTO crm_user_identity_resolution_queue" in source
@@ -331,8 +331,8 @@ def test_customer_api_exposes_unionid_user_route() -> None:
 
 
 def test_channel_entry_business_write_requires_and_persists_unionid() -> None:
-    application = _read("aicrm_next/channel_entry/application.py")
-    repo = _read("aicrm_next/channel_entry/repo.py")
+    application = _read("aicrm_next/channels/channel_entry/application.py")
+    repo = _read("aicrm_next/channels/channel_entry/repo.py")
     identity_queue_owner = _read("aicrm_next/crm/identity_contact/resolution_queue_repository.py")
     cleanup = _read("migrations/versions/0069_unionid_channel_contact_cleanup.py")
 
@@ -644,7 +644,7 @@ def test_customer_fact_read_sources_drop_legacy_identity_columns() -> None:
     cleanup_source = _read("migrations/versions/0068_unionid_customer_fact_cleanup.py")
     customer_repo_source = _read("aicrm_next/crm/customer_read_model/repo_live_source.py")
     message_archive_source = _read("aicrm_next/extensions/archive/message_archive/repo.py")
-    channel_entry_repo_source = _read("aicrm_next/channel_entry/repo.py")
+    channel_entry_repo_source = _read("aicrm_next/channels/channel_entry/repo.py")
     contact_tag_projection_source = _read("aicrm_next/crm/customer_tags/projection_repository.py")
     identity_queue_source = _read("aicrm_next/crm/identity_contact/resolution_queue_repository.py")
 
@@ -806,8 +806,8 @@ def test_campaign_frequency_and_agent_outputs_are_unionid_only() -> None:
 def test_final_legacy_identity_cleanup_removes_non_boundary_columns() -> None:
     cleanup_source = _read("migrations/versions/0078_final_legacy_identity_column_cleanup.py")
     target_cleanup_source = _read("migrations/versions/0079_final_target_schema_cleanup.py")
-    channel_repo_source = _read("aicrm_next/channel_entry/repo.py")
-    channel_app_source = _read("aicrm_next/channel_entry/application.py")
+    channel_repo_source = _read("aicrm_next/channels/channel_entry/repo.py")
+    channel_app_source = _read("aicrm_next/channels/channel_entry/application.py")
     contact_sync_source = _read("aicrm_next/background_jobs/external_contact_sync.py")
     sidebar_source = _read("aicrm_next/crm/customer_read_model/sidebar_v2.py")
     identity_contact_source = _read("aicrm_next/crm/identity_contact/repo.py")

@@ -70,7 +70,7 @@ def test_count_only_reconciliation_has_pii_free_read_only_aggregate_counts(monke
     _retired_manifest(tmp_path)
     monkeypatch.setattr(broadcast_reconciliation, "connect_raw_postgres", lambda url: connection)
     monkeypatch.setattr(
-        "aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter",
+        "aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter",
         lambda: (_ for _ in ()).throw(AssertionError("provider must not be built")),
     )
 

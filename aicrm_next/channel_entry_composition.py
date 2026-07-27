@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from functools import partial
 
-from .channel_entry.application import process_wecom_external_contact_event
-from .channel_entry.crm_port import ChannelCrmDependencies, configure_channel_crm_port
-from .channel_entry.inbox import WeComCallbackInboxWorker
+from .channels.channel_entry.application import process_wecom_external_contact_event
+from .channels.channel_entry.crm_port import ChannelCrmDependencies, configure_channel_crm_port
+from .channels.channel_entry.inbox import WeComCallbackInboxWorker
 from .crm.customer_tags.projection_port import build_customer_tag_projection_port
 from .crm.identity_contact.event_log_port import build_identity_event_log_port
 from .crm.identity_contact.resolution_effects import (

@@ -5,7 +5,7 @@ from typing import Any
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import JSONResponse
 
-from aicrm_next.integration_gateway.wecom_operation_members_client import WeComOperationMembersClientError
+from aicrm_next.channels.integration_gateway.wecom_operation_members_client import WeComOperationMembersClientError
 from aicrm_next.crm.operation_members.application import SyncOperationMembersFromWeComCommand
 from aicrm_next.shared.operation_members import (
     bool_from_query,

@@ -5,8 +5,8 @@ from aicrm_next.shared.runtime import runtime_route_map_state
 
 
 CHANNEL_ENTRY_ROUTES = {
-    "/wecom/external-contact/callback": "aicrm_next.channel_entry.api",
-    "/api/wecom/events": "aicrm_next.channel_entry.api",
+    "/wecom/external-contact/callback": "aicrm_next.channels.channel_entry.api",
+    "/api/wecom/events": "aicrm_next.channels.channel_entry.api",
 }
 
 
@@ -27,6 +27,6 @@ def test_channel_entry_callbacks_are_next_owned_with_legacy_fallback_disabled(mo
 
 
 def test_wecom_callback_facade_no_longer_exports_legacy_runtime_handler():
-    from aicrm_next.integration_gateway import wecom_callback_facade
+    from aicrm_next.channels.integration_gateway import wecom_callback_facade
 
     assert not hasattr(wecom_callback_facade, "handle_wecom_callback_via_legacy")

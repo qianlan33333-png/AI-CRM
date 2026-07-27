@@ -58,7 +58,7 @@ def test_group_broadcast_global_execution_mode_is_enforced_by_external_effect_ow
     def fail_adapter():
         raise AssertionError("broadcast planner must never build a provider adapter")
 
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_group_adapter.build_wecom_group_message_adapter", fail_adapter)
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_group_adapter.build_wecom_group_message_adapter", fail_adapter)
 
     result = SafeSkippedBroadcastDispatcher().dispatch(
         {

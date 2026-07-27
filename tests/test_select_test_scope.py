@@ -483,7 +483,7 @@ def test_r07_external_effect_delivery_files_force_full_postgres_ci() -> None:
         "aicrm_next/background_jobs/broadcast_queue_worker.py",
         "aicrm_next/external_push/service.py",
         "aicrm_next/delivery_lineage/application.py",
-        "aicrm_next/integration_gateway/wecom_private_adapter.py",
+        "aicrm_next/channels/integration_gateway/wecom_private_adapter.py",
         "migrations/versions/0100_external_effect_delivery_lease.py",
         "scripts/run_external_effect_queue_worker.py",
         "scripts/ops/reconcile_external_effect_dispatch.py",
@@ -513,7 +513,7 @@ def test_external_effect_continuation_composition_has_a_permanent_full_ci_scope(
         "aicrm_next/extensions/ai/automation_agents/external_effect_continuation.py",
         "aicrm_next/extensions/ai/automation_agents/internal_webhook_adapter.py",
         "aicrm_next/shared/automation_agent_webhook_contract.py",
-        "aicrm_next/channel_entry/identity_external_effect.py",
+        "aicrm_next/channels/channel_entry/identity_external_effect.py",
         "aicrm_next/external_push/external_effect_continuation.py",
         "aicrm_next/internal_event_composition.py",
         "aicrm_next/extensions/forms/questionnaire/external_effect_continuation.py",
@@ -547,7 +547,7 @@ def test_external_effect_continuation_composition_has_a_permanent_full_ci_scope(
 
 def test_welcome_media_dependency_migration_has_a_permanent_postgres_scope() -> None:
     result = _select(
-        "aicrm_next/channel_entry/welcome_media_effects_repository.py",
+        "aicrm_next/channels/channel_entry/welcome_media_effects_repository.py",
         "migrations/versions/0130_welcome_media_dependencies.py",
         "scripts/ci/check_welcome_media_effect_ownership.py",
         "tests/test_channel_welcome_media_dependencies_postgres.py",
@@ -1172,7 +1172,7 @@ def test_operation_member_wecom_sync_change_selects_admin_config_and_db_scope() 
         "aicrm_next/common_operation_members.py",
         "aicrm_next/crm/operation_members/application.py",
         "aicrm_next/crm/operation_members/repository.py",
-        "aicrm_next/integration_gateway/wecom_operation_members_client.py",
+        "aicrm_next/channels/integration_gateway/wecom_operation_members_client.py",
         "aicrm_next/frontend_compat/static/admin_console/operation_member_picker.js",
         "aicrm_next/frontend_compat/templates/admin_console/base.html",
         "migrations/versions/0096_admin_wecom_directory_members.py",
@@ -1196,7 +1196,7 @@ def test_operation_member_wecom_sync_change_selects_admin_config_and_db_scope() 
 def test_wecom_tag_catalog_write_change_selects_real_tag_crud_slice() -> None:
     result = _select(
         "aicrm_next/crm/customer_tags/admin_write.py",
-        "aicrm_next/integration_gateway/wecom_tag_live_gateway.py",
+        "aicrm_next/channels/integration_gateway/wecom_tag_live_gateway.py",
         "docs/architecture/wecom_tag_read_route_inventory.md",
         "docs/architecture/wecom_tag_write_route_inventory.md",
         "tests/test_wecom_tag_next_sync.py",
@@ -1422,7 +1422,7 @@ def test_security_hardening_inventory_forces_postgres_and_full_regression() -> N
 
 
 def test_callback_change_forces_full_regression() -> None:
-    result = _select("aicrm_next/channel_entry/callback_ingress.py")
+    result = _select("aicrm_next/channels/channel_entry/callback_ingress.py")
 
     assert "identity_contact" in result["matched_scopes"]
     assert "tests/test_wecom_callback_inbox.py" in result["python_tests"]
@@ -1694,7 +1694,7 @@ def test_channel_write_owner_changes_select_identity_postgres_scope() -> None:
     }
 
     for changed_path in (
-        "aicrm_next/channel_entry/channel_write_repository.py",
+        "aicrm_next/channels/channel_entry/channel_write_repository.py",
         *sorted(expected_tests),
     ):
         result = _select(changed_path)

@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from .deployment_profile import DeploymentProfile
 from .extensions.commerce.commerce.admin_transactions import apply_wechat_refund_result, mark_wechat_refund_request_failed
-from .channel_entry.identity_external_effect import (
+from .channels.channel_entry.identity_external_effect import (
     IDENTITY_EXTERNAL_CONTACT_DETAIL_CONTINUATION,
     IDENTITY_EXTERNAL_EFFECT_SETTLEMENT_CONTINUATION,
 )
 from .channel_entry_composition import configure_channel_crm_dependencies
-from .channel_entry.welcome_media_effects_repository import (
+from .channels.channel_entry.welcome_media_effects_repository import (
     WELCOME_EFFECT_SETTLEMENT_CONTINUATION,
     WELCOME_MEDIA_DEPENDENCY_CONTINUATION,
 )
@@ -25,7 +25,7 @@ from .external_push.external_effect_continuation import (
     EXTERNAL_PUSH_DELIVERY_CONTINUATION,
     EXTERNAL_PUSH_DELIVERY_SETTLEMENT_CONTINUATION,
 )
-from .integration_gateway import (
+from .channels.integration_gateway import (
     wechat_pay_client,
     wecom_channel_entry_client,
     wecom_group_adapter,

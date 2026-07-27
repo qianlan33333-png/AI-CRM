@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.channel_entry.identity_external_effect import (
+from aicrm_next.channels.channel_entry.identity_external_effect import (
     IDENTITY_EXTERNAL_CONTACT_DETAIL_CONTINUATION,
     IDENTITY_RESOLUTION_BUSINESS_TYPE,
 )

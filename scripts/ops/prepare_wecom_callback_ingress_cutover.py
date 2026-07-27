@@ -25,9 +25,9 @@ DEFAULT_BACKUP_PATH_FILE = "/tmp/wecom-callback-cutover-backup-path"
 
 REQUIRED_ASSETS = [
     "migrations/versions/0054_webhook_inbox.py",
-    "aicrm_next/channel_entry/callback_ingress.py",
-    "aicrm_next/channel_entry/ingress_app.py",
-    "aicrm_next/channel_entry/inbox.py",
+    "aicrm_next/channels/channel_entry/callback_ingress.py",
+    "aicrm_next/channels/channel_entry/ingress_app.py",
+    "aicrm_next/channels/channel_entry/inbox.py",
     "aicrm_next/platform_foundation/webhook_inbox/models.py",
     "aicrm_next/platform_foundation/webhook_inbox/repository.py",
     "aicrm_next/platform_foundation/webhook_inbox/service.py",

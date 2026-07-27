@@ -122,7 +122,7 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "domain_event_outbox",
         "external_push_delivery",
     ]
-    assert repositories["aicrm_next/channel_entry/identity_bridge_repo.py"]["capability_owner"] == (
+    assert repositories["aicrm_next/channels/channel_entry/identity_bridge_repo.py"]["capability_owner"] == (
         "aicrm_next.crm.identity_contact"
     )
     assert repositories["aicrm_next/crm/identity_contact/write_repository.py"]["table_writes"] == [
@@ -139,13 +139,13 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "table_reads": [],
         "table_writes": ["contact_tags"],
     }
-    assert "wecom_external_contact_event_logs" not in repositories["aicrm_next/channel_entry/repo.py"][
+    assert "wecom_external_contact_event_logs" not in repositories["aicrm_next/channels/channel_entry/repo.py"][
         "table_reads"
     ]
-    assert "wecom_external_contact_event_logs" not in repositories["aicrm_next/channel_entry/repo.py"][
+    assert "wecom_external_contact_event_logs" not in repositories["aicrm_next/channels/channel_entry/repo.py"][
         "table_writes"
     ]
-    assert "contact_tags" not in repositories["aicrm_next/channel_entry/repo.py"]["table_writes"]
+    assert "contact_tags" not in repositories["aicrm_next/channels/channel_entry/repo.py"]["table_writes"]
     assert repositories["aicrm_next/crm/identity_contact/resolution_queue_repository.py"]["table_reads"] == [
         "crm_user_identity_resolution_queue",
         "identity_resolution_completion_receipt",
@@ -194,7 +194,7 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "aicrm_next/automation_engine/group_ops/durable_effects_repository.py"
     ]["table_writes"]
     assert "external_effect_job" not in repositories[
-        "aicrm_next/channel_entry/welcome_media_effects_repository.py"
+        "aicrm_next/channels/channel_entry/welcome_media_effects_repository.py"
     ]["table_writes"]
     assert manifest["tables"]["broadcast_jobs"]["write_owner"] == (
         "aicrm_next.background_jobs"
@@ -244,7 +244,7 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
     assert manifest["tables"]["contact_tags"]["write_owners"] == ["aicrm_next.crm.customer_tags"]
     for path in (
         "aicrm_next/extensions/ai/ai_audience_ops/repository.py",
-        "aicrm_next/channel_entry/repo.py",
+        "aicrm_next/channels/channel_entry/repo.py",
         "aicrm_next/extensions/archive/message_archive/repo.py",
         "aicrm_next/extensions/forms/questionnaire/repo.py",
     ):
@@ -261,7 +261,7 @@ def test_identity_resolution_queue_write_sql_is_confined_to_logical_owner() -> N
         relative_path = path.relative_to(ROOT).as_posix()
         if relative_path.startswith("aicrm_next/crm/identity_contact/"):
             continue
-        if relative_path == "aicrm_next/channel_entry/identity_bridge_repo.py":
+        if relative_path == "aicrm_next/channels/channel_entry/identity_bridge_repo.py":
             continue
         offenders.append(relative_path)
 

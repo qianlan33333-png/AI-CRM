@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 
 from aicrm_next.admin_auth.service import SESSION_COOKIE
-from aicrm_next.auth_wecom.service import verify_auth_state
+from aicrm_next.channels.auth_wecom.service import verify_auth_state
 from aicrm_next.main import create_app
 from aicrm_next.shared.db_session import reset_engine_cache_for_tests
 from tests.admin_auth_test_helpers import install_admin_auth_service
@@ -106,7 +106,7 @@ def _prepare_client(monkeypatch, tmp_path) -> tuple[TestClient, FakeWeComAdminAu
         )
 
     fake_client = FakeWeComAdminAuthClient()
-    monkeypatch.setattr("aicrm_next.auth_wecom.service.build_wecom_admin_auth_client", lambda: fake_client)
+    monkeypatch.setattr("aicrm_next.channels.auth_wecom.service.build_wecom_admin_auth_client", lambda: fake_client)
     test_client = TestClient(create_app(), raise_server_exceptions=False)
     install_admin_auth_service(test_client)
     return test_client, fake_client

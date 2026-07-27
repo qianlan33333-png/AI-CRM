@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from aicrm_next.channel_entry.identity_bridge_service import IdentityBridgeService
+from aicrm_next.channels.channel_entry.identity_bridge_service import IdentityBridgeService
 
 
 class _DetailAdapter:
@@ -323,7 +323,7 @@ def test_questionnaire_backfill_updates_unbound_submission() -> None:
         "matched_by": "mobile",
     }
 def test_identity_sync_rejects_request_corp_override_before_db_or_external_side_effect(monkeypatch) -> None:
-    from aicrm_next.channel_entry.identity_bridge_service import IdentityBridgeService
+    from aicrm_next.channels.channel_entry.identity_bridge_service import IdentityBridgeService
 
     calls: list[str] = []
 

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from aicrm_next.integration_gateway.mcp import MCP_TOOLS
+from aicrm_next.channels.integration_gateway.mcp import MCP_TOOLS
 
 
 ROOT = Path(__file__).resolve().parents[1]

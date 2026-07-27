@@ -133,7 +133,7 @@ def _job(**overrides: Any) -> dict[str, Any]:
 @pytest.mark.skip(reason="broadcast provider dispatch retired; External Effect owns execution")
 def test_wecom_private_job_is_dispatched_and_marked_sent(monkeypatch) -> None:
     adapter = Adapter({"ok": True, "wecom_msgid": "msg-1", "result": {"msgid": "msg-1"}})
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
     repo = FakeRepo([_job()])
 
     summary = run_broadcast_queue_worker(repo=repo, dispatcher=SafeSkippedBroadcastDispatcher(), now=datetime(2026, 6, 1, tzinfo=timezone.utc))
@@ -160,7 +160,7 @@ def test_wecom_private_fake_success_is_simulated_and_never_projected_as_sent(mon
             "result": {"msgid": "fake-msg-1"},
         }
     )
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
     repo = FakeRepo([_job()])
 
     summary = run_broadcast_queue_worker(repo=repo, dispatcher=SafeSkippedBroadcastDispatcher())
@@ -187,7 +187,7 @@ def test_wecom_group_fake_success_is_simulated_and_never_marked_sent(monkeypatch
 
     monkeypatch.setenv("AICRM_WECOM_EXECUTION_MODE", "execute")
     monkeypatch.setattr(
-        "aicrm_next.integration_gateway.wecom_group_adapter.build_wecom_group_message_adapter",
+        "aicrm_next.channels.integration_gateway.wecom_group_adapter.build_wecom_group_message_adapter",
         lambda: FakeGroupAdapter(),
     )
     repo = FakeRepo(
@@ -218,7 +218,7 @@ def test_wecom_private_global_execution_mode_disabled_blocks_before_adapter(monk
     def fail_adapter():
         raise AssertionError("adapter should not be built when global WeCom execution is disabled")
 
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", fail_adapter)
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", fail_adapter)
     repo = FakeRepo([_job()])
 
     summary = run_broadcast_queue_worker(repo=repo, dispatcher=SafeSkippedBroadcastDispatcher())
@@ -231,7 +231,7 @@ def test_wecom_private_global_execution_mode_disabled_blocks_before_adapter(monk
 @pytest.mark.skip(reason="broadcast provider dispatch retired; External Effect owns execution")
 def test_cloud_plan_recipient_message_uses_bound_sender_and_hydrates_text(monkeypatch) -> None:
     adapter = Adapter({"ok": True, "wecom_msgid": "msg-cloud", "result": {"msgid": "msg-cloud"}})
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
     monkeypatch.setattr(worker, "runtime_setting", lambda key, default="": "HuangYouCan" if key == "AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS" else default)
     monkeypatch.setattr(
         worker,
@@ -561,7 +561,7 @@ def test_cloud_plan_simulation_updates_all_projections_without_sent_timestamp(ne
 
 
 def test_wecom_private_adapter_canonicalizes_miniprogram_attachment(monkeypatch) -> None:
-    from aicrm_next.integration_gateway.wecom_private_adapter import WeComPrivateMessageAdapter
+    from aicrm_next.channels.integration_gateway.wecom_private_adapter import WeComPrivateMessageAdapter
 
     monkeypatch.setenv("AICRM_ENABLE_REAL_WECOM_PRIVATE_MESSAGE", "1")
     client = RecordingWeComClient()
@@ -602,7 +602,7 @@ def test_wecom_private_adapter_canonicalizes_miniprogram_attachment(monkeypatch)
 
 
 def test_wecom_private_adapter_preserves_known_provider_error_evidence(monkeypatch) -> None:
-    from aicrm_next.integration_gateway.wecom_private_adapter import WeComPrivateMessageAdapter
+    from aicrm_next.channels.integration_gateway.wecom_private_adapter import WeComPrivateMessageAdapter
 
     monkeypatch.setenv("AICRM_ENABLE_REAL_WECOM_PRIVATE_MESSAGE", "1")
     client = ResultWeComClient({"errcode": 40096, "errmsg": "invalid external_userid"})
@@ -627,7 +627,7 @@ def test_wecom_private_adapter_preserves_known_provider_error_evidence(monkeypat
 
 
 def test_wecom_private_adapter_preserves_retryable_provider_error(monkeypatch) -> None:
-    from aicrm_next.integration_gateway.wecom_private_adapter import WeComPrivateMessageAdapter
+    from aicrm_next.channels.integration_gateway.wecom_private_adapter import WeComPrivateMessageAdapter
 
     monkeypatch.setenv("AICRM_ENABLE_REAL_WECOM_PRIVATE_MESSAGE", "1")
     client = ResultWeComClient({"errcode": 45009, "errmsg": "rate limit"})
@@ -652,7 +652,7 @@ def test_wecom_private_adapter_preserves_retryable_provider_error(monkeypatch) -
 @pytest.mark.skip(reason="broadcast provider dispatch retired; External Effect owns execution")
 def test_campaign_private_message_job_is_dispatched(monkeypatch) -> None:
     adapter = Adapter({"ok": True, "wecom_msgid": "msg-campaign", "result": {"msgid": "msg-campaign"}})
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
     repo = FakeRepo(
         [
             _job(
@@ -702,7 +702,7 @@ def test_campaign_private_message_materializes_miniprogram_attachment(monkeypatc
             "thumb_media_id": "media_thumb_001",
         },
     }
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
     monkeypatch.setattr(worker, "_resolve_private_attachments", lambda content_package: [attachment])
     repo = FakeRepo(
         [
@@ -758,7 +758,7 @@ def test_campaign_private_message_allows_attachment_only_step(monkeypatch) -> No
             "thumb_media_id": "media_thumb_001",
         },
     }
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
     monkeypatch.setattr(worker, "_resolve_private_attachments", lambda content_package: [attachment])
     repo = FakeRepo(
         [
@@ -808,7 +808,7 @@ def test_campaign_private_message_allows_attachment_only_step(monkeypatch) -> No
 @pytest.mark.skip(reason="broadcast provider dispatch retired; External Effect owns execution")
 def test_campaign_private_message_job_with_complete_fields_is_dispatched(monkeypatch) -> None:
     adapter = Adapter({"ok": True, "wecom_msgid": "msg-campaign-complete", "result": {"msgid": "msg-campaign-complete"}})
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
     repo = FakeRepo(
         [
             _job(
@@ -837,7 +837,7 @@ def test_campaign_private_message_job_with_complete_fields_is_dispatched(monkeyp
 @pytest.mark.skip(reason="material resolution belongs to durable External Effect dependencies")
 def test_campaign_private_message_material_resolve_failure_is_not_sent(monkeypatch) -> None:
     adapter = Adapter({"ok": True, "wecom_msgid": "msg-should-not-send", "result": {"msgid": "msg-should-not-send"}})
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
     monkeypatch.setattr(
         worker,
         "_resolve_private_attachments",
@@ -914,7 +914,7 @@ def test_wecom_private_content_or_attachment_missing_is_validation_failed() -> N
 @pytest.mark.skip(reason="provider failures are recorded by External Effect attempts")
 def test_wecom_private_before_external_call_failure(monkeypatch) -> None:
     adapter = Adapter({"ok": False, "error_code": "before_external_call", "error_message": "disabled"})
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
     repo = FakeRepo([_job()])
 
     run_broadcast_queue_worker(repo=repo, dispatcher=SafeSkippedBroadcastDispatcher())
@@ -926,7 +926,7 @@ def test_wecom_private_before_external_call_failure(monkeypatch) -> None:
 @pytest.mark.skip(reason="provider failures are recorded by External Effect attempts")
 def test_wecom_private_external_known_failure(monkeypatch) -> None:
     adapter = Adapter({"ok": False, "error_code": "external_call_failed_known", "error_message": "invalid external_userid"})
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
     repo = FakeRepo([_job()])
 
     run_broadcast_queue_worker(repo=repo, dispatcher=SafeSkippedBroadcastDispatcher())
@@ -938,7 +938,7 @@ def test_wecom_private_external_known_failure(monkeypatch) -> None:
 @pytest.mark.skip(reason="provider failures are recorded by External Effect attempts")
 def test_wecom_private_no_longer_returns_dispatcher_missing(monkeypatch) -> None:
     adapter = Adapter({"ok": False, "error_code": "external_call_unknown", "error_message": "timeout"})
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
     repo = FakeRepo([_job()])
 
     summary = run_broadcast_queue_worker(repo=repo, dispatcher=SafeSkippedBroadcastDispatcher())

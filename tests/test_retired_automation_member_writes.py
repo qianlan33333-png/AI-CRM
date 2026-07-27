@@ -4,7 +4,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.integration_gateway.questionnaire_adapters import QuestionnaireSubmitSideEffectGateway
+from aicrm_next.channels.integration_gateway.questionnaire_adapters import QuestionnaireSubmitSideEffectGateway
 from aicrm_next.main import create_app
 
 
@@ -48,7 +48,7 @@ def test_questionnaire_adapter_noops_retired_automation_member_projection() -> N
 
 
 def test_questionnaire_adapter_does_not_import_retired_automation_member_command() -> None:
-    source = (ROOT / "aicrm_next/integration_gateway/questionnaire_adapters.py").read_text(encoding="utf-8")
+    source = (ROOT / "aicrm_next/channels/integration_gateway/questionnaire_adapters.py").read_text(encoding="utf-8")
 
     assert "ApplyQuestionnaireResultCommand" not in source
     assert "ApplyQuestionnaireResultRequest" not in source

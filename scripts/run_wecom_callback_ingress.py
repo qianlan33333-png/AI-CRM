@@ -36,7 +36,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     import uvicorn
 
     uvicorn.run(
-        "aicrm_next.channel_entry.ingress_app:app",
+        "aicrm_next.channels.channel_entry.ingress_app:app",
         host=_host(args.host),
         port=int(args.port),
         log_level=str(args.log_level or "info"),

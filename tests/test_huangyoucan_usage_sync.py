@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from aicrm_next.integration_gateway.huangyoucan_usage_client import (
+from aicrm_next.channels.integration_gateway.huangyoucan_usage_client import (
     HUANGYOUCAN_USAGE_SQL,
     HuangYouCanReadonlyDatabaseConfig,
     PyMySQLHuangYouCanUsageSource,

@@ -88,5 +88,5 @@ def test_admin_config_api_has_no_admin_read_model_reverse_dependency() -> None:
 def test_admin_config_mcp_defaults_use_static_composition_catalog() -> None:
     source = (ROOT / "aicrm_next/admin_config/application_support.py").read_text(encoding="utf-8")
 
-    assert "aicrm_next.integration_gateway.mcp" not in source
+    assert "aicrm_next.channels.integration_gateway.mcp" not in source
     assert "from aicrm_next.mcp_tool_catalog import MCP_TOOLS" in source

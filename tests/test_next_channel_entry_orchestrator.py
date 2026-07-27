@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from aicrm_next.channel_entry.application import process_channel_entry
-from aicrm_next.channel_entry.schemas import ProcessChannelEntryCommand
-from aicrm_next.channel_entry.wecom_adapter import get_wecom_adapter, set_wecom_adapter
+from aicrm_next.channels.channel_entry.application import process_channel_entry
+from aicrm_next.channels.channel_entry.schemas import ProcessChannelEntryCommand
+from aicrm_next.channels.channel_entry.wecom_adapter import get_wecom_adapter, set_wecom_adapter
 from aicrm_next.platform_foundation.external_effects import (
     ExternalEffectService,
     WECOM_CONTACT_TAG_MARK,
@@ -14,8 +14,8 @@ from aicrm_next.platform_foundation.external_effects import (
 def _patch_repo(monkeypatch, *, channel_status="active", bindings=None):
     channel = {"id": 10, "channel_code": "c", "channel_name": "C", "scene_value": "scene-a", "status": channel_status, "owner_staff_id": "sales", "welcome_message": "hello", "entry_tag_id": "tag-a"}
     calls: list[str] = []
-    monkeypatch.setattr("aicrm_next.channel_entry.application.resolve_channel_for_scene", lambda **kwargs: (channel, {"match_type": "current_scene", "matched_scene": "scene-a", "channel_id": 10}))
-    monkeypatch.setattr("aicrm_next.channel_entry.repo.upsert_channel_contact", lambda **kwargs: calls.append("contact") or {"ok": True})
+    monkeypatch.setattr("aicrm_next.channels.channel_entry.application.resolve_channel_for_scene", lambda **kwargs: (channel, {"match_type": "current_scene", "matched_scene": "scene-a", "channel_id": 10}))
+    monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.upsert_channel_contact", lambda **kwargs: calls.append("contact") or {"ok": True})
     def fake_upsert_channel_entry_runtime(**kwargs):
         calls.append("runtime_with_identity_effect" if kwargs.get("enqueue_identity_resolution") else "runtime")
         return {
@@ -28,14 +28,14 @@ def _patch_repo(monkeypatch, *, channel_status="active", bindings=None):
             },
         }
 
-    monkeypatch.setattr("aicrm_next.channel_entry.repo.upsert_channel_entry_runtime", fake_upsert_channel_entry_runtime)
+    monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.upsert_channel_entry_runtime", fake_upsert_channel_entry_runtime)
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.repo.enqueue_channel_entry_identity_resolution",
+        "aicrm_next.channels.channel_entry.repo.enqueue_channel_entry_identity_resolution",
         lambda **kwargs: (_ for _ in ()).throw(AssertionError("identity effect must be persisted atomically with the runtime row")),
     )
-    monkeypatch.setattr("aicrm_next.channel_entry.repo.get_channel_entry_effect_log", lambda *args: None)
-    monkeypatch.setattr("aicrm_next.channel_entry.repo.upsert_channel_entry_effect_log", lambda **kwargs: {"ok": True})
-    monkeypatch.setattr("aicrm_next.channel_entry.repo.save_tag_snapshot", lambda *args, **kwargs: None)
+    monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.get_channel_entry_effect_log", lambda *args: None)
+    monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.upsert_channel_entry_effect_log", lambda **kwargs: {"ok": True})
+    monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.save_tag_snapshot", lambda *args, **kwargs: None)
 
     class Adapter:
         def send_welcome_msg(self, payload):
@@ -61,7 +61,7 @@ def test_active_channel_baseline_emits_only_channel_entry_without_program_admiss
         wakeups.append((int(job_id or 0), reason, effect_type))
         return False
 
-    monkeypatch.setattr("aicrm_next.channel_entry.application.wake_external_effect_job", fake_wake)
+    monkeypatch.setattr("aicrm_next.channels.channel_entry.application.wake_external_effect_job", fake_wake)
     try:
         result = process_channel_entry(ProcessChannelEntryCommand(unionid="union-a", external_contact_id="wm-a", payload_json={"State": "scene-a", "WelcomeCode": "wc"}, send_welcome_message=True))
     finally:
@@ -128,8 +128,8 @@ def test_entry_without_unionid_still_queues_external_userid_effects(monkeypatch)
             },
         }
 
-    monkeypatch.setattr("aicrm_next.channel_entry.repo.upsert_channel_entry_runtime", fake_upsert_runtime)
-    monkeypatch.setattr("aicrm_next.channel_entry.application.wake_external_effect_job", lambda *args, **kwargs: False)
+    monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.upsert_channel_entry_runtime", fake_upsert_runtime)
+    monkeypatch.setattr("aicrm_next.channels.channel_entry.application.wake_external_effect_job", lambda *args, **kwargs: False)
     try:
         result = process_channel_entry(
             ProcessChannelEntryCommand(
@@ -172,7 +172,7 @@ def test_entry_without_unionid_still_queues_external_userid_effects(monkeypatch)
 def test_tag_idempotency_is_scoped_to_the_relationship_event(monkeypatch):
     reset_external_effect_fixture_state()
     _calls, previous = _patch_repo(monkeypatch)
-    monkeypatch.setattr("aicrm_next.channel_entry.application.wake_external_effect_job", lambda *args, **kwargs: False)
+    monkeypatch.setattr("aicrm_next.channels.channel_entry.application.wake_external_effect_job", lambda *args, **kwargs: False)
 
     def enter(event_log_id: int):
         return process_channel_entry(

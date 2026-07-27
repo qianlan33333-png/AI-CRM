@@ -3,9 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from aicrm_next import integration_ports
-from aicrm_next.integration_gateway.payment_adapters import build_wechat_pay_adapter
-from aicrm_next.integration_gateway.questionnaire_adapters import build_wechat_oauth_adapter
-from aicrm_next.integration_gateway.wecom_channel_entry_client import build_default_wecom_channel_entry_adapter
+from aicrm_next.channels.integration_gateway.payment_adapters import build_wechat_pay_adapter
+from aicrm_next.channels.integration_gateway.questionnaire_adapters import build_wechat_oauth_adapter
+from aicrm_next.channels.integration_gateway.wecom_channel_entry_client import build_default_wecom_channel_entry_adapter
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -30,7 +30,7 @@ def test_business_contexts_do_not_import_integration_gateway_implementations() -
         if len(relative.parts) < 2 or relative.parts[0] == "integration_gateway":
             continue
         source = path.read_text(encoding="utf-8")
-        if "from aicrm_next.integration_gateway." in source or "import aicrm_next.integration_gateway." in source:
+        if "from aicrm_next.channels.integration_gateway." in source or "import aicrm_next.channels.integration_gateway." in source:
             offenders.append(relative.as_posix())
 
     assert offenders == []

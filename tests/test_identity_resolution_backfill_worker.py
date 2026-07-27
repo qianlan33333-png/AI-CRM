@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from aicrm_next.channel_entry import application
-from aicrm_next.channel_entry.identity_resolution_worker import IdentityResolutionBackfillWorker
+from aicrm_next.channels.channel_entry import application
+from aicrm_next.channels.channel_entry.identity_resolution_worker import IdentityResolutionBackfillWorker
 from aicrm_next.data_health import checks
 
 

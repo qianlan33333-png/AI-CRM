@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from aicrm_next.channel_entry import crm_port
+from aicrm_next.channels.channel_entry import crm_port
 
 
 def test_channel_crm_port_fails_closed_before_composition(monkeypatch) -> None:

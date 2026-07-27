@@ -357,11 +357,11 @@ def test_webhook_execute_routes_accept_commands_without_dispatching_handler(
     assert target is not None
     token = install_admin_action_tokens(next_client, ("POST", route_template))[("POST", route_template)]
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.inbox.WeComCallbackInboxWorker.dispatch_one",
+        "aicrm_next.channels.channel_entry.inbox.WeComCallbackInboxWorker.dispatch_one",
         lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("callback handler is forbidden")),
     )
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.inbox.WeComCallbackInboxWorker.run_due",
+        "aicrm_next.channels.channel_entry.inbox.WeComCallbackInboxWorker.run_due",
         lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("callback worker is forbidden")),
     )
     url = (

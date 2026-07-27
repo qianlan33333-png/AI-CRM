@@ -345,7 +345,7 @@ def test_channel_entry_welcome_fallback_private_message_preserves_exact_target(m
             }
 
     monkeypatch.setattr("aicrm_next.platform_foundation.external_effects.worker._capability_gate_error", lambda job: "")
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: _FakePrivateAdapter())
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: _FakePrivateAdapter())
     repo = build_external_effect_repository()
     job = ExternalEffectService(repo).plan_effect(
         effect_type=WECOM_MESSAGE_PRIVATE_SEND,

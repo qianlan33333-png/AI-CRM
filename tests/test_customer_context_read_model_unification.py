@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from aicrm_next.crm.customer_read_model.application import GetCustomerContextQuery
 from aicrm_next.crm.customer_read_model.dto import CustomerContextRequest
-from aicrm_next.integration_gateway.dispatch import McpToolDispatcher
+from aicrm_next.channels.integration_gateway.dispatch import McpToolDispatcher
 from tests.sidebar_auth_test_helpers import install_sidebar_auth
 
 

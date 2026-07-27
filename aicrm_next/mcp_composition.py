@@ -12,8 +12,8 @@ from .crm.customer_read_model.dto import (
 )
 from .crm.identity_contact.application import ResolvePersonIdentityQuery
 from .crm.identity_contact.dto import ResolvePersonIdentityRequest
-from .integration_gateway.dispatch import McpToolDispatcher
-from .integration_gateway.mcp import McpJsonRpcApplication
+from .channels.integration_gateway.dispatch import McpToolDispatcher
+from .channels.integration_gateway.mcp import McpJsonRpcApplication
 
 
 def build_mcp_jsonrpc_application() -> McpJsonRpcApplication:

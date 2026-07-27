@@ -177,7 +177,7 @@ def test_channel_center_api_routes_keep_unified_contract(monkeypatch) -> None:
             "source": "test",
         }
 
-    monkeypatch.setattr("aicrm_next.channel_entry.api.generate_channel_qrcode", fake_generate)
+    monkeypatch.setattr("aicrm_next.channels.channel_entry.api.generate_channel_qrcode", fake_generate)
     client = _client(monkeypatch)
 
     created = client.post("/api/admin/channels", json={"channel_name": "API 契约", "channel_code": "api-contract"})

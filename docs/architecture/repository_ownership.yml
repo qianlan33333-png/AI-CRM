@@ -320,7 +320,7 @@ repositories:
       - broadcast_job_events
       - broadcast_jobs
       - outbound_tasks
-  aicrm_next/channel_entry/identity_bridge_repo.py:
+  aicrm_next/channels/channel_entry/identity_bridge_repo.py:
     capability_owner: aicrm_next.crm.identity_contact
     table_reads:
       - crm_user_identity
@@ -329,13 +329,13 @@ repositories:
       - crm_user_identity
       - crm_user_identity_conflicts
       - crm_user_identity_resolution_queue
-  aicrm_next/channel_entry/channel_write_repository.py:
-    capability_owner: aicrm_next.channel_entry
+  aicrm_next/channels/channel_entry/channel_write_repository.py:
+    capability_owner: aicrm_next.channels.channel_entry
     table_reads: []
     table_writes:
       - automation_channel
-  aicrm_next/channel_entry/repo.py:
-    capability_owner: aicrm_next.channel_entry
+  aicrm_next/channels/channel_entry/repo.py:
+    capability_owner: aicrm_next.channels.channel_entry
     table_reads:
       - automation_channel
       - automation_channel_assignee
@@ -354,8 +354,8 @@ repositories:
       - automation_channel_entry_runtime
       - automation_channel_qrcode_asset
       - automation_channel_scene_alias
-  aicrm_next/channel_entry/welcome_media_effects_repository.py:
-    capability_owner: aicrm_next.channel_entry.welcome_media_effects_repository
+  aicrm_next/channels/channel_entry/welcome_media_effects_repository.py:
+    capability_owner: aicrm_next.channels.channel_entry.welcome_media_effects_repository
     table_reads:
       - attachment_library
       - channel_welcome_effect_dependency

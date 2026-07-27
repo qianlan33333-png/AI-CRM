@@ -112,7 +112,7 @@ def runtime_diagnosis_dry_run(payload: dict) -> dict:
             dry_run=True,
         )
     )
-    return {"ok": True, "planned_actions": result, "source": "aicrm_next.channel_entry"}
+    return {"ok": True, "planned_actions": result, "source": "aicrm_next.channels.channel_entry"}
 
 
 @router.post("/api/admin/channels/repair-entry")
@@ -125,4 +125,4 @@ def repair_entry(payload: dict) -> JSONResponse:
             corp_id=str(payload.get("corp_id") or payload.get("ToUserName") or "").strip(),
         )
     )
-    return JSONResponse(jsonable_encoder({"ok": bool(result.get("handled")), "result": result, "source": "aicrm_next.channel_entry"}))
+    return JSONResponse(jsonable_encoder({"ok": bool(result.get("handled")), "result": result, "source": "aicrm_next.channels.channel_entry"}))

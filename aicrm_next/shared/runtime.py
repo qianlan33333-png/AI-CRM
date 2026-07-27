@@ -162,9 +162,9 @@ def runtime_route_map_state() -> dict:
         "callback_async_enabled": "next_task_queue",
         "redis_url_active": bool(str(os.getenv("REDIS_URL") or "").strip()),
         "wecom_callback_routes": {
-            "/wecom/external-contact/callback": "aicrm_next.channel_entry.api",
-            "/api/wecom/events": "aicrm_next.channel_entry.api",
-            "/api/admin/channels/{channel_id}/qrcode/generate": "aicrm_next.channel_entry.api",
+            "/wecom/external-contact/callback": "aicrm_next.channels.channel_entry.api",
+            "/api/wecom/events": "aicrm_next.channels.channel_entry.api",
+            "/api/admin/channels/{channel_id}/qrcode/generate": "aicrm_next.channels.channel_entry.api",
         },
         "next_live_callback_gateway_enabled": True,
         "legacy_callback_fallback_enabled": False,

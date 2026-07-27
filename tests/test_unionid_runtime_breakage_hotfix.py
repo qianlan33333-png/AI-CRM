@@ -93,7 +93,7 @@ def test_cloud_broadcast_plan_dispatch_uses_unionid() -> None:
 
 
 def test_channel_assignment_event_writes_unionid() -> None:
-    source = _read("aicrm_next/channel_entry/repo.py")
+    source = _read("aicrm_next/channels/channel_entry/repo.py")
     insert_source = _function_source(source, "insert_assignment_event")
     serializer_source = _function_source(source, "_serialize_assignment_event")
 
@@ -137,7 +137,7 @@ def test_unionid_runtime_sql_guard_blocks_removed_identity_columns() -> None:
     commerce_source = _read("aicrm_next/extensions/commerce/commerce/admin_transaction_detail.py")
     group_ops_source = _read("aicrm_next/automation_engine/group_ops/action_dispatcher.py")
     cloud_source = _read("aicrm_next/extensions/growth/cloud_orchestrator/repository.py")
-    channel_source = _read("aicrm_next/channel_entry/repo.py")
+    channel_source = _read("aicrm_next/channels/channel_entry/repo.py")
     scoped_sources = {
         "h5_wechat_pay_runtime": (
             _function_source(h5_source, "_paid_order_for_product_identity")

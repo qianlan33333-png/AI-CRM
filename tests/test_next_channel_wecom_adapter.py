@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from aicrm_next.channel_entry.wecom_adapter import (
+from aicrm_next.channels.channel_entry.wecom_adapter import (
     ProductionWeComAdapter,
     WeComAdapterBlocked,
     get_wecom_adapter,
@@ -115,7 +115,7 @@ def test_production_wecom_adapter_contract_posts_real_wecom_endpoints():
 
 
 def test_channel_entry_wecom_adapter_facade_has_no_direct_http_call() -> None:
-    source = Path("aicrm_next/channel_entry/wecom_adapter.py").read_text(encoding="utf-8")
+    source = Path("aicrm_next/channels/channel_entry/wecom_adapter.py").read_text(encoding="utf-8")
 
     assert "requests.request" not in source
     assert "import requests" not in source

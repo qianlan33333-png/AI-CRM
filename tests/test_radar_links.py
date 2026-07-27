@@ -329,7 +329,7 @@ def test_real_radar_oauth_callback_exchanges_code_and_records_unionid(client, mo
     monkeypatch.setenv("WECHAT_MP_APP_SECRET", "radar-secret")
     monkeypatch.setenv("WECHAT_MP_OAUTH_SCOPE", "snsapi_userinfo")
 
-    from aicrm_next.integration_gateway import questionnaire_adapters
+    from aicrm_next.channels.integration_gateway import questionnaire_adapters
 
     class FakeOAuthClient:
         def exchange_code(self, *, app_id: str, app_secret: str, code: str):
@@ -374,7 +374,7 @@ def test_real_radar_oauth_callback_ignores_forged_identity_and_requires_unionid(
     monkeypatch.setenv("WECHAT_MP_APP_SECRET", "radar-secret")
     monkeypatch.setenv("WECHAT_MP_OAUTH_SCOPE", "snsapi_base")
 
-    from aicrm_next.integration_gateway import questionnaire_adapters
+    from aicrm_next.channels.integration_gateway import questionnaire_adapters
 
     class FakeOAuthClient:
         def exchange_code(self, *, app_id: str, app_secret: str, code: str):

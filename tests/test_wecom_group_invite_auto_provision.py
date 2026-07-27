@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from aicrm_next.integration_gateway.audit import list_audit_events, reset_audit_events
-from aicrm_next.integration_gateway.wecom_channel_entry_client import GuardedWeComAdapter
-from aicrm_next.integration_gateway.wecom_group_invite_adapter import WeComGroupInviteAdapter
+from aicrm_next.channels.integration_gateway.audit import list_audit_events, reset_audit_events
+from aicrm_next.channels.integration_gateway.wecom_channel_entry_client import GuardedWeComAdapter
+from aicrm_next.channels.integration_gateway.wecom_group_invite_adapter import WeComGroupInviteAdapter
 from aicrm_next.media_library.application import EnsureGroupInviteBindingCommand, EnsureGroupInviteBindingReadyCommand
 from aicrm_next.media_library.repo import InMemoryMediaLibraryRepository, build_media_library_repository, reset_media_library_fixture_state
 from aicrm_next.shared.errors import ContractError

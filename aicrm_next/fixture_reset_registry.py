@@ -17,7 +17,7 @@ from .crm.customer_tags.admin_write import reset_wecom_tag_write_fixture_state
 from .crm.customer_tags.live_mutation import reset_wecom_tag_live_mutation_fixture_state
 from .extensions.hxc.hxc_dashboard.repo import reset_hxc_dashboard_fixture_state
 from .extensions.hxc.hxc_dashboard.safe_mode import reset_hxc_safe_mode_fixture_state
-from .integration_gateway.wecom_jssdk_adapter import reset_sidebar_jssdk_attempts
+from .channels.integration_gateway.wecom_jssdk_adapter import reset_sidebar_jssdk_attempts
 from .media_library.repo import reset_media_library_fixture_state
 from .ops_enrollment.application import reset_user_ops_fixture_state
 from .platform_foundation.external_effects import reset_external_effect_fixture_state

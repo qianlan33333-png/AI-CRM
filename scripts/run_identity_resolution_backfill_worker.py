@@ -11,7 +11,7 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.channel_entry.identity_resolution_worker import IdentityResolutionBackfillWorker
+from aicrm_next.channels.channel_entry.identity_resolution_worker import IdentityResolutionBackfillWorker
 from aicrm_next.channel_entry_composition import configure_channel_crm_dependencies
 
 

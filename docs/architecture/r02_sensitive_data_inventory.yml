@@ -58,44 +58,44 @@ secret_keys:
   AICRM_HUANGYOUCAN_DB_PASSWORD:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.huangyoucan_usage_client
+      - aicrm_next.channels.integration_gateway.huangyoucan_usage_client
   AICRM_MEDIA_UPLOAD_PROVIDER_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.media_live_adapter
+      - aicrm_next.channels.integration_gateway.media_live_adapter
   AICRM_OAUTH_IDENTITY_APP_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.oauth_identity_live_adapter
+      - aicrm_next.channels.integration_gateway.oauth_identity_live_adapter
   AICRM_PAYMENT_COMMERCE_PROVIDER_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.payment_commerce_live_adapter
+      - aicrm_next.channels.integration_gateway.payment_commerce_live_adapter
   AICRM_WECOM_CONTACT_CALLBACK_AES_KEY:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.wecom_contact_callback_live_adapter
+      - aicrm_next.channels.integration_gateway.wecom_contact_callback_live_adapter
   AICRM_WECOM_CONTACT_CALLBACK_TOKEN:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.wecom_contact_callback_live_adapter
+      - aicrm_next.channels.integration_gateway.wecom_contact_callback_live_adapter
   AICRM_WECOM_GROUP_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.wecom_customer_group_client
-      - aicrm_next.integration_gateway.wecom_media_upload_client
+      - aicrm_next.channels.integration_gateway.wecom_customer_group_client
+      - aicrm_next.channels.integration_gateway.wecom_media_upload_client
   AICRM_WECOM_MEDIA_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.wecom_media_upload_client
+      - aicrm_next.channels.integration_gateway.wecom_media_upload_client
   AICRM_WECOM_OPERATION_MEMBERS_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.wecom_operation_members_client
+      - aicrm_next.channels.integration_gateway.wecom_operation_members_client
   AICRM_WECOM_TAG_AGENT_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.wecom_tag_live_gateway
+      - aicrm_next.channels.integration_gateway.wecom_tag_live_gateway
   DEEPSEEK_API_KEY:
     <<: *secret_defaults
     runtime_consumers:
@@ -103,7 +103,7 @@ secret_keys:
   AICRM_SIDEBAR_JSSDK_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.wecom_jssdk_adapter
+      - aicrm_next.channels.integration_gateway.wecom_jssdk_adapter
   SIDEBAR_THIRD_PARTY_API_TOKEN:
     <<: *secret_defaults
     runtime_consumers:
@@ -111,17 +111,17 @@ secret_keys:
   WECOM_CONTACT_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.wecom_tag_live_gateway
-      - aicrm_next.integration_gateway.wecom_operation_members_client
-      - aicrm_next.integration_gateway.wecom_channel_entry_client
+      - aicrm_next.channels.integration_gateway.wecom_tag_live_gateway
+      - aicrm_next.channels.integration_gateway.wecom_operation_members_client
+      - aicrm_next.channels.integration_gateway.wecom_channel_entry_client
       - aicrm_next.platform_foundation.external_effects.adapters
   WECOM_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.auth_wecom.service
+      - aicrm_next.channels.auth_wecom.service
       - aicrm_next.crm.identity_contact.sidebar_jssdk
-      - aicrm_next.integration_gateway.wecom_jssdk_adapter
-      - aicrm_next.integration_gateway.wecom_channel_entry_client
+      - aicrm_next.channels.integration_gateway.wecom_jssdk_adapter
+      - aicrm_next.channels.integration_gateway.wecom_channel_entry_client
   WECOM_ARCHIVE_SECRET:
     <<: *secret_defaults
     runtime_consumers:
@@ -129,33 +129,33 @@ secret_keys:
   WECOM_CALLBACK_TOKEN:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.channel_entry.application
+      - aicrm_next.channels.channel_entry.application
       - aicrm_next.admin_read_model.projections
   WECOM_CALLBACK_AES_KEY:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.channel_entry.application
-      - aicrm_next.channel_entry.wecom_crypto
+      - aicrm_next.channels.channel_entry.application
+      - aicrm_next.channels.channel_entry.wecom_crypto
   WECHAT_MP_APP_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.questionnaire_adapters
+      - aicrm_next.channels.integration_gateway.questionnaire_adapters
       - aicrm_next.extensions.forms.questionnaire.application
       - aicrm_next.extensions.commerce.public_product.h5_wechat_pay
   WECHAT_PAY_API_V3_KEY:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.wechat_pay_client
+      - aicrm_next.channels.integration_gateway.wechat_pay_client
       - aicrm_next.extensions.commerce.public_product.h5_wechat_pay
   WECHAT_PAY_CERT_SERIAL_NO:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.wechat_pay_client
+      - aicrm_next.channels.integration_gateway.wechat_pay_client
       - aicrm_next.extensions.commerce.public_product.h5_wechat_pay
   WECHAT_SHOP_APPSECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.wechat_shop_client
+      - aicrm_next.channels.integration_gateway.wechat_shop_client
       - aicrm_next.extensions.commerce.commerce.wechat_shop_service
   WECHAT_SHOP_CALLBACK_TOKEN:
     <<: *secret_defaults

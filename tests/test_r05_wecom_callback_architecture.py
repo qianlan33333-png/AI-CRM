@@ -10,17 +10,17 @@ import time
 import pytest
 from fastapi.testclient import TestClient
 
-from aicrm_next.channel_entry.callback_ingress import (
+from aicrm_next.channels.channel_entry.callback_ingress import (
     CALLBACK_MAX_BODY_BYTES,
     WeComCallbackIngressValidationError,
     ingest_wecom_external_contact_callback,
 )
-from aicrm_next.channel_entry.ingress_app import create_wecom_callback_ingress_app
-from aicrm_next.channel_entry.inbox import ingest_wecom_callback
-from aicrm_next.channel_entry.inbox import WeComCallbackInboxWorker
-from aicrm_next.channel_entry.wecom_crypto import WeComCallbackError, validate_callback_timestamp
-from aicrm_next.integration_gateway.wecom_channel_entry_client import ProductionWeComAdapter, WeComApiError
-from aicrm_next.integration_gateway.wecom_runtime import (
+from aicrm_next.channels.channel_entry.ingress_app import create_wecom_callback_ingress_app
+from aicrm_next.channels.channel_entry.inbox import ingest_wecom_callback
+from aicrm_next.channels.channel_entry.inbox import WeComCallbackInboxWorker
+from aicrm_next.channels.channel_entry.wecom_crypto import WeComCallbackError, validate_callback_timestamp
+from aicrm_next.channels.integration_gateway.wecom_channel_entry_client import ProductionWeComAdapter, WeComApiError
+from aicrm_next.channels.integration_gateway.wecom_runtime import (
     SingleFlightAccessTokenProvider,
     load_wecom_execution_config,
 )
@@ -53,16 +53,16 @@ def test_callback_ack_never_calls_business_processor_or_provider(monkeypatch) ->
     client = TestClient(app, raise_server_exceptions=False)
 
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.callback_ingress.decrypt_callback_body",
+        "aicrm_next.channels.channel_entry.callback_ingress.decrypt_callback_body",
         lambda **kwargs: (_event(), "<xml>plain</xml>"),
     )
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.callback_ingress.ingest_wecom_callback",
+        "aicrm_next.channels.channel_entry.callback_ingress.ingest_wecom_callback",
         lambda **kwargs: ingest_wecom_callback(**{**kwargs, "repository": repository}),
     )
-    monkeypatch.setattr("aicrm_next.channel_entry.api.encrypted_success_reply", lambda query: "success")
+    monkeypatch.setattr("aicrm_next.channels.channel_entry.api.encrypted_success_reply", lambda query: "success")
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.inbox.process_wecom_external_contact_event",
+        "aicrm_next.channels.channel_entry.inbox.process_wecom_external_contact_event",
         lambda command: provider_calls.append({"provider_delay_seconds": 5}) or time.sleep(5),
     )
 
@@ -85,7 +85,7 @@ def test_callback_ack_never_calls_business_processor_or_provider(monkeypatch) ->
 def test_callback_ingress_rejects_oversized_body_before_decrypt(monkeypatch) -> None:
     decrypt_calls: list[bool] = []
     monkeypatch.setattr(
-        "aicrm_next.channel_entry.callback_ingress.decrypt_callback_body",
+        "aicrm_next.channels.channel_entry.callback_ingress.decrypt_callback_body",
         lambda **kwargs: decrypt_calls.append(True),
     )
 
@@ -206,7 +206,7 @@ def test_callback_worker_does_not_retry_typed_terminal_provider_error() -> None:
 
 
 def test_runtime_has_no_callback_inline_or_process_local_executor_boundary() -> None:
-    callback_source = (ROOT / "aicrm_next/channel_entry/inbox.py").read_text(encoding="utf-8")
+    callback_source = (ROOT / "aicrm_next/channels/channel_entry/inbox.py").read_text(encoding="utf-8")
     realtime_source = (ROOT / "aicrm_next/platform_foundation/external_effects/realtime.py").read_text(encoding="utf-8")
     service = (ROOT / "deploy/openclaw-wecom-callback-inbox-worker.service").read_text(encoding="utf-8")
 

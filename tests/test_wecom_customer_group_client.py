@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from aicrm_next.integration_gateway.wecom_customer_group_client import (
+from aicrm_next.channels.integration_gateway.wecom_customer_group_client import (
     WeComCustomerGroupClient,
     WeComCustomerGroupClientError,
 )

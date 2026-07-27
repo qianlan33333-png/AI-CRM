@@ -9,7 +9,7 @@ using a registered MCP client and short-lived JWT.
 - MCP is a CRM capability facade, not a scheduler.
 - It may read customer context and create CRM tasks.
 - It must not bypass CRM approval for real outbound sends.
-- OpenClaw integration must go through `aicrm_next.integration_gateway`.
+- OpenClaw integration must go through `aicrm_next.channels.integration_gateway`.
 - Deleted historical OpenClaw source paths must not be reintroduced.
 
 ## Authentication

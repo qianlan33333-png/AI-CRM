@@ -10,7 +10,7 @@ Legacy Flask startup compatibility 已关闭；旧 Flask 代码仅作为非 star
 - 问卷与公众号 OAuth 流程
 - 客户中心 / 客户时间线（AI-CRM Next 默认 owner；旧 Flask D3 readonly owner 已退场）
 - 自动化转化配置与阶段看板
-- MCP / OpenClaw 集成（经 `aicrm_next.integration_gateway` D7.7 adapter boundary）
+- MCP / OpenClaw 集成（经 `aicrm_next.channels.integration_gateway` D7.7 adapter boundary）
 
 ## 当前主线口径
 
@@ -18,7 +18,7 @@ Legacy Flask startup compatibility 已关闭；旧 Flask 代码仅作为非 star
 - `python3 app.py run` 默认启动 `aicrm_next.main:app`。
 - `app.py` 是 Next-only startup entrypoint；旧 Flask startup 命令已移除为硬错误。
 - `openclaw_service/` 和 `legacy_flask/openclaw_legacy/` 已在 D9.6 后 physically removed，不是当前 live repo path。
-- MCP / OpenClaw 后续只允许通过 `aicrm_next.integration_gateway` 的 D7.7 adapter boundary 承接。
+- MCP / OpenClaw 后续只允许通过 `aicrm_next.channels.integration_gateway` 的 D7.7 adapter boundary 承接。
 - 本地开发统一基于当前 Git clone，从最新 `main` 开功能分支。
 - 仓库只保留源码、脚本、测试和文档，不再把发布包、导出物、临时备份和本机专属路径一起带进主仓。
 - 生产 Nginx/systemd 切换仍需单独人工审批；本仓库入口切换不代表生产流量已经切换。
@@ -99,7 +99,7 @@ handoff 或由具备权限的人工提供一次性任务口径。
   - `wecom_ability_service/` 已不在当前 live source tree；旧 Flask/production
     compatibility fallback 不再是生产 owner 或 rollback/hotfix 边界
   - `openclaw_service/` 和 `legacy_flask/openclaw_legacy/` 不是当前 live source directory，不得重新引入
-  - MCP / OpenClaw 当前架构入口是 `aicrm_next.integration_gateway`
+  - MCP / OpenClaw 当前架构入口是 `aicrm_next.channels.integration_gateway`
 - `docs/`
   - 项目说明、运行口径、接口和方案文档
 - `scripts/`
