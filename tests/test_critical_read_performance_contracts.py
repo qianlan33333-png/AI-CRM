@@ -40,6 +40,18 @@ def test_critical_read_baseline_covers_all_required_next_routes() -> None:
     assert all(not evaluate_read_path_report(profile, _passing_report(profile)) for profile in profiles.values())
 
 
+def test_customer_projection_baselines_budget_one_generation_pointer_lookup() -> None:
+    profiles = load_read_path_baselines()
+
+    # Double-buffer reads require one bounded singleton-state lookup.  Keep the
+    # timeline ceiling at six and lock the other increases to exactly one query
+    # so future repository calls cannot silently consume more budget.
+    assert profiles["customer_list"].max_query_count == 3
+    assert profiles["sidebar_workbench"].max_query_count == 10
+    assert profiles["sidebar_timeline"].max_query_count == 6
+    assert profiles["sidebar_recent_messages"].max_query_count == 4
+
+
 @pytest.mark.parametrize(
     ("mutation", "message"),
     [

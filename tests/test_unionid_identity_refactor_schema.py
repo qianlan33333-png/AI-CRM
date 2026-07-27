@@ -484,6 +484,7 @@ def test_message_batch_legacy_runtime_tables_are_retired() -> None:
 def test_customer_read_model_tables_are_unionid_only() -> None:
     model_source = _read("aicrm_next/crm/customer_read_model/models.py")
     migration_source = _read("migrations/versions/0026_customer_read_model_next.py")
+    slot_migration_source = _read("migrations/versions/0153_customer_read_model_generation_slots.py")
 
     for table_name in [
         "customer_list_index_next",
@@ -494,14 +495,23 @@ def test_customer_read_model_tables_are_unionid_only() -> None:
         assert table_name in model_source
         assert table_name in migration_source
 
-    assert model_source.count('Column("unionid"') == 4
+    for table_name in [
+        "customer_list_index_next_shadow",
+        "customer_detail_snapshot_next_shadow",
+        "customer_recent_message_next_shadow",
+    ]:
+        assert table_name in model_source
+        assert table_name in slot_migration_source
+
+    assert model_source.count('Column("unionid"') == 7
     assert migration_source.count("unionid TEXT NOT NULL") == 4
+    assert slot_migration_source.count("unionid TEXT NOT NULL") == 3
     assert "ix_customer_list_index_next_unionid" in migration_source
     assert "ix_customer_detail_snapshot_next_unionid" in migration_source
     assert "ix_customer_timeline_event_next_unionid" in migration_source
     assert "ix_customer_recent_message_next_unionid" in migration_source
 
-    for source in (model_source, migration_source):
+    for source in (model_source, migration_source, slot_migration_source):
         assert "person_id" not in source
         assert "external_userid TEXT" not in source
         assert 'Column("external_userid"' not in source

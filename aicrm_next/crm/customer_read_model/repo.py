@@ -5,7 +5,7 @@ import json
 import re
 from copy import deepcopy
 from datetime import datetime, timezone
-from typing import Any, Protocol
+from typing import Any, NamedTuple, Protocol
 
 from sqlalchemy import Text, bindparam, cast, delete, func, insert, or_, select, text
 from sqlalchemy.dialects.postgresql import insert as postgresql_insert
@@ -24,8 +24,11 @@ from aicrm_next.shared.typing import JsonDict
 
 from .models import (
     customer_detail_snapshot_next,
+    customer_detail_snapshot_next_shadow,
     customer_list_index_next,
+    customer_list_index_next_shadow,
     customer_recent_message_next,
+    customer_recent_message_next_shadow,
     customer_timeline_event_next,
 )
 from .sql_dialect import is_sqlite_session, json_text_expression
@@ -35,6 +38,24 @@ _DEFAULT_LIVE_SOURCE_LIST_LIMIT = 200
 _TIMELINE_UPSERT_BATCH_SIZE = 1_000
 _PROJECTION_UPSERT_BATCH_SIZE = 500
 _RECENT_MESSAGE_INSERT_BATCH_SIZE = 1_000
+
+
+class _ProjectionTables(NamedTuple):
+    customer_list: Any
+    customer_detail: Any
+    recent_message: Any
+
+
+_PRIMARY_PROJECTION_TABLES = _ProjectionTables(
+    customer_list_index_next,
+    customer_detail_snapshot_next,
+    customer_recent_message_next,
+)
+_SHADOW_PROJECTION_TABLES = _ProjectionTables(
+    customer_list_index_next_shadow,
+    customer_detail_snapshot_next_shadow,
+    customer_recent_message_next_shadow,
+)
 
 
 class CustomerReadRepository(Protocol):
@@ -105,6 +126,7 @@ class SqlAlchemyCustomerReadModelRepository:
 
     def __init__(self, session: Session) -> None:
         self._session = session
+        self._active_slot_cache: str | None = None
 
     def close(self) -> None:
         try:
@@ -118,10 +140,11 @@ class SqlAlchemyCustomerReadModelRepository:
         self._session.commit()
 
     def clear(self) -> None:
-        self._session.execute(delete(customer_recent_message_next))
+        tables = self._locked_active_projection_tables()
+        self._session.execute(delete(tables.recent_message))
         self._session.execute(delete(customer_timeline_event_next))
-        self._session.execute(delete(customer_detail_snapshot_next))
-        self._session.execute(delete(customer_list_index_next))
+        self._session.execute(delete(tables.customer_detail))
+        self._session.execute(delete(tables.customer_list))
 
     def replace_all(
         self,
@@ -130,30 +153,85 @@ class SqlAlchemyCustomerReadModelRepository:
         timeline_by_external_userid: dict[str, list[JsonDict]] | None = None,
         messages_by_external_userid: dict[str, list[JsonDict]] | None = None,
     ) -> None:
-        self._session.execute(delete(customer_recent_message_next))
-        self._session.execute(delete(customer_detail_snapshot_next))
-        self._session.execute(delete(customer_list_index_next))
-        self.seed(
-            customers=customers,
-            timeline_by_external_userid={},
-            messages_by_external_userid=messages_by_external_userid,
-        )
-        customer_by_key: dict[str, JsonDict] = {}
-        for customer in customers:
-            unionid = str(customer.get("unionid") or dict(customer.get("identity") or {}).get("unionid") or "").strip()
-            external_userid = str(customer.get("external_userid") or "").strip()
-            if unionid:
-                customer_by_key[unionid] = customer
-            if external_userid:
-                customer_by_key[external_userid] = customer
-        events: list[JsonDict] = []
-        for projection_key, rows in (timeline_by_external_userid or {}).items():
-            customer = customer_by_key.get(str(projection_key)) or {}
-            fallback_unionid = str(customer.get("unionid") or dict(customer.get("identity") or {}).get("unionid") or "").strip()
-            for item in rows:
-                events.append({**dict(item), "unionid": str(item.get("unionid") or fallback_unionid).strip()})
-        self.upsert_timeline_events(events, commit=False)
-        self._session.commit()
+        projection_slot = "primary"
+        try:
+            if self._projection_slots_enabled():
+                self._ensure_refresh_state_row()
+                state = self._session.execute(
+                    text(
+                        """
+                        SELECT active_slot, active_generation
+                        FROM customer_read_model_refresh_state
+                        WHERE singleton_id = 1
+                        FOR UPDATE
+                        """
+                    )
+                ).mappings().one()
+                current_slot = self._normalize_slot(state.get("active_slot"))
+                projection_slot = "shadow" if current_slot == "primary" else "primary"
+
+            tables = self._projection_tables(projection_slot)
+            self._session.execute(delete(tables.recent_message))
+            self._session.execute(delete(tables.customer_detail))
+            self._session.execute(delete(tables.customer_list))
+            self.seed(
+                customers=customers,
+                timeline_by_external_userid={},
+                messages_by_external_userid=messages_by_external_userid,
+                projection_slot=projection_slot,
+            )
+
+            expected_count = len(customers)
+            list_count = int(
+                self._session.execute(select(func.count()).select_from(tables.customer_list)).scalar_one()
+                or 0
+            )
+            detail_count = int(
+                self._session.execute(select(func.count()).select_from(tables.customer_detail)).scalar_one()
+                or 0
+            )
+            if list_count != expected_count or detail_count != expected_count:
+                raise RuntimeError("customer_read_model_inactive_slot_count_mismatch")
+
+            customer_by_key: dict[str, JsonDict] = {}
+            for customer in customers:
+                unionid = _customer_unionid(customer)
+                external_userid = str(customer.get("external_userid") or "").strip()
+                if unionid:
+                    customer_by_key[unionid] = customer
+                if external_userid:
+                    customer_by_key[external_userid] = customer
+            events: list[JsonDict] = []
+            for projection_key, rows in (timeline_by_external_userid or {}).items():
+                customer = customer_by_key.get(str(projection_key)) or {}
+                fallback_unionid = _customer_unionid(customer)
+                for item in rows:
+                    events.append(
+                        {
+                            **dict(item),
+                            "unionid": str(item.get("unionid") or fallback_unionid).strip(),
+                        }
+                    )
+            self.upsert_timeline_events(events, commit=False)
+            if self._projection_slots_enabled():
+                self._session.execute(
+                    text(
+                        """
+                        UPDATE customer_read_model_refresh_state
+                        SET active_slot = :active_slot,
+                            active_generation = active_generation + 1,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE singleton_id = 1
+                        """
+                    ),
+                    {"active_slot": projection_slot},
+                )
+            self._session.commit()
+            self._active_slot_cache = projection_slot
+        except Exception:
+            self._session.rollback()
+            self._active_slot_cache = None
+            raise
 
     def upsert_customer_snapshots(
         self,
@@ -177,6 +255,7 @@ class SqlAlchemyCustomerReadModelRepository:
                 raise ValueError("customer_read_model_incremental_duplicate_unionid")
             customer_by_unionid[unionid] = dict(customer)
 
+        tables = self._locked_active_projection_tables()
         dialect = str(self._session.get_bind().dialect.name)
         insert_builder = sqlite_insert if dialect == "sqlite" else postgresql_insert
         list_rows: list[dict[str, Any]] = []
@@ -193,8 +272,8 @@ class SqlAlchemyCustomerReadModelRepository:
                 message_events.append(_message_timeline_event(unionid, message))
 
         for rows, table in (
-            (list_rows, customer_list_index_next),
-            (detail_rows, customer_detail_snapshot_next),
+            (list_rows, tables.customer_list),
+            (detail_rows, tables.customer_detail),
         ):
             for offset in range(0, len(rows), _PROJECTION_UPSERT_BATCH_SIZE):
                 batch = rows[offset : offset + _PROJECTION_UPSERT_BATCH_SIZE]
@@ -210,26 +289,26 @@ class SqlAlchemyCustomerReadModelRepository:
                 self._session.execute(statement)
 
         self._session.execute(
-            delete(customer_recent_message_next).where(
-                customer_recent_message_next.c.unionid.in_(requested)
+            delete(tables.recent_message).where(
+                tables.recent_message.c.unionid.in_(requested)
             )
         )
         for offset in range(0, len(message_rows), _RECENT_MESSAGE_INSERT_BATCH_SIZE):
             self._session.execute(
-                insert(customer_recent_message_next),
+                insert(tables.recent_message),
                 message_rows[offset : offset + _RECENT_MESSAGE_INSERT_BATCH_SIZE],
             )
 
         missing = sorted(requested_set - set(customer_by_unionid))
         if missing:
             self._session.execute(
-                delete(customer_detail_snapshot_next).where(
-                    customer_detail_snapshot_next.c.unionid.in_(missing)
+                delete(tables.customer_detail).where(
+                    tables.customer_detail.c.unionid.in_(missing)
                 )
             )
             self._session.execute(
-                delete(customer_list_index_next).where(
-                    customer_list_index_next.c.unionid.in_(missing)
+                delete(tables.customer_list).where(
+                    tables.customer_list.c.unionid.in_(missing)
                 )
             )
         self.upsert_timeline_events(message_events, commit=False)
@@ -302,7 +381,9 @@ class SqlAlchemyCustomerReadModelRepository:
         customers: list[JsonDict],
         timeline_by_external_userid: dict[str, list[JsonDict]] | None = None,
         messages_by_external_userid: dict[str, list[JsonDict]] | None = None,
+        projection_slot: str | None = None,
     ) -> None:
+        tables = self._projection_tables(projection_slot or self._active_slot())
         timeline_by_external_userid = timeline_by_external_userid or {}
         messages_by_external_userid = messages_by_external_userid or {}
         list_rows: list[dict] = []
@@ -337,13 +418,13 @@ class SqlAlchemyCustomerReadModelRepository:
                 message.setdefault("msgid", f"msg_{index}_{message_index}")
                 message_rows.append(_recent_message_projection_row(customer, message))
         if list_rows:
-            self._session.execute(insert(customer_list_index_next), list_rows)
+            self._session.execute(insert(tables.customer_list), list_rows)
         if detail_rows:
-            self._session.execute(insert(customer_detail_snapshot_next), detail_rows)
+            self._session.execute(insert(tables.customer_detail), detail_rows)
         if timeline_rows:
             self._session.execute(insert(customer_timeline_event_next), timeline_rows)
         if message_rows:
-            self._session.execute(insert(customer_recent_message_next), message_rows)
+            self._session.execute(insert(tables.recent_message), message_rows)
 
     def list_customers(
         self,
@@ -352,8 +433,8 @@ class SqlAlchemyCustomerReadModelRepository:
         limit: int | None = None,
         offset: int = 0,
     ) -> list[JsonDict]:
-        stmt = self._customer_list_stmt(filters or {})
-        stmt = stmt.order_by(customer_list_index_next.c.id.asc())
+        stmt, table = self._customer_list_stmt(filters or {})
+        stmt = stmt.order_by(table.c.id.asc())
         if limit is not None:
             stmt = stmt.limit(max(1, int(limit))).offset(max(0, int(offset or 0)))
         elif offset:
@@ -363,7 +444,8 @@ class SqlAlchemyCustomerReadModelRepository:
         return customers
 
     def count_customers(self, filters: JsonDict | None = None) -> int:
-        stmt = select(func.count()).select_from(self._customer_list_stmt(filters or {}).subquery())
+        filtered, _table = self._customer_list_stmt(filters or {})
+        stmt = select(func.count()).select_from(filtered.subquery())
         return int(self._session.execute(stmt).scalar_one() or 0)
 
     def get_projection_watermark(self) -> JsonDict:
@@ -417,9 +499,10 @@ class SqlAlchemyCustomerReadModelRepository:
     get_customer_detail = get_customer
 
     def get_customer_by_unionid(self, unionid: str) -> JsonDict | None:
+        table = self._active_projection_tables().customer_detail
         row = self._session.execute(
-            select(customer_detail_snapshot_next)
-            .where(customer_detail_snapshot_next.c.unionid == unionid)
+            select(table)
+            .where(table.c.unionid == unionid)
             .limit(1)
         ).mappings().first()
         if not row:
@@ -427,7 +510,8 @@ class SqlAlchemyCustomerReadModelRepository:
         return self._detail_row_to_customer(row)
 
     def _get_sqlite_customer_by_external_userid(self, external_userid: str) -> JsonDict | None:
-        for row in self._session.execute(select(customer_detail_snapshot_next)).mappings():
+        table = self._active_projection_tables().customer_detail
+        for row in self._session.execute(select(table)).mappings():
             customer = self._detail_row_to_customer(row)
             if str(customer.get("external_userid") or "") == external_userid:
                 return customer
@@ -508,10 +592,11 @@ class SqlAlchemyCustomerReadModelRepository:
         return int(self._session.execute(stmt).scalar_one() or 0)
 
     def list_recent_messages_by_unionid(self, unionid: str, *, limit: int | None = None) -> list[JsonDict]:
+        table = self._active_projection_tables().recent_message
         stmt = (
-            select(customer_recent_message_next)
-            .where(customer_recent_message_next.c.unionid == unionid)
-            .order_by(customer_recent_message_next.c.send_time.desc(), customer_recent_message_next.c.id.desc())
+            select(table)
+            .where(table.c.unionid == unionid)
+            .order_by(table.c.send_time.desc(), table.c.id.desc())
         )
         if limit is not None:
             stmt = stmt.limit(max(1, int(limit)))
@@ -525,8 +610,9 @@ class SqlAlchemyCustomerReadModelRepository:
         return self.get_customer_by_unionid(unionid) is not None
 
     def _customer_list_stmt(self, filters: JsonDict):
-        stmt = select(customer_list_index_next)
-        table = customer_list_index_next.c
+        projection_table = self._active_projection_tables().customer_list
+        stmt = select(projection_table)
+        table = projection_table.c
         owner_userid = str(filters.get("owner_userid") or "").strip()
         if owner_userid:
             stmt = stmt.where(table.owner_userid == owner_userid)
@@ -568,7 +654,71 @@ class SqlAlchemyCustomerReadModelRepository:
                     func.lower(cast(table.class_user_status_json, Text)).like(pattern),
                 )
             )
-        return stmt
+        return stmt, projection_table
+
+    def _active_slot(self) -> str:
+        if not self._projection_slots_enabled():
+            return "primary"
+        if self._active_slot_cache is None:
+            value = self._session.execute(
+                text(
+                    """
+                    SELECT active_slot
+                    FROM customer_read_model_refresh_state
+                    WHERE singleton_id = 1
+                    LIMIT 1
+                    """
+                )
+            ).scalar_one_or_none()
+            self._active_slot_cache = self._normalize_slot(value)
+        return self._active_slot_cache
+
+    @staticmethod
+    def _normalize_slot(value: Any) -> str:
+        return "shadow" if str(value or "").strip() == "shadow" else "primary"
+
+    def _projection_tables(self, slot: str) -> _ProjectionTables:
+        return _SHADOW_PROJECTION_TABLES if self._normalize_slot(slot) == "shadow" else _PRIMARY_PROJECTION_TABLES
+
+    def _active_projection_tables(self) -> _ProjectionTables:
+        return self._projection_tables(self._active_slot())
+
+    def _locked_active_projection_tables(self) -> _ProjectionTables:
+        if not self._projection_slots_enabled():
+            return _PRIMARY_PROJECTION_TABLES
+        self._ensure_refresh_state_row()
+        slot = self._normalize_slot(
+            self._session.execute(
+                text(
+                    """
+                    SELECT active_slot
+                    FROM customer_read_model_refresh_state
+                    WHERE singleton_id = 1
+                    FOR SHARE
+                    """
+                )
+            ).scalar_one()
+        )
+        self._active_slot_cache = slot
+        return self._projection_tables(slot)
+
+    def _projection_slots_enabled(self) -> bool:
+        return str(self._session.get_bind().dialect.name) == "postgresql"
+
+    def _ensure_refresh_state_row(self) -> None:
+        self._session.execute(
+            text(
+                """
+                INSERT INTO customer_read_model_refresh_state (
+                    singleton_id, last_succeeded_at, source_count, target_count,
+                    duration_ms, updated_at, active_slot, active_generation
+                ) VALUES (
+                    1, CURRENT_TIMESTAMP, 0, 0, 0, CURRENT_TIMESTAMP, 'primary', 1
+                )
+                ON CONFLICT (singleton_id) DO NOTHING
+                """
+            )
+        )
 
     def _list_row_to_customer(self, row) -> JsonDict:
         data = dict(row)

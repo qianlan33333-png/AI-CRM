@@ -9,8 +9,11 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from aicrm_next.crm.customer_read_model.models import (
     customer_detail_snapshot_next,
+    customer_detail_snapshot_next_shadow,
     customer_list_index_next,
+    customer_list_index_next_shadow,
     customer_recent_message_next,
+    customer_recent_message_next_shadow,
     customer_timeline_event_next,
 )
 from aicrm_next.crm.customer_read_model.refresh import CustomerReadModelRefreshService
@@ -161,6 +164,170 @@ def test_postgres_incremental_repository_uses_unionid_upsert(next_pg_schema) -> 
                 ("union-pg-1", "new one"),
                 ("union-pg-unrelated", "keep"),
             ]
+    finally:
+        engine.dispose()
+
+
+def test_postgres_full_calibration_flips_slots_and_incremental_writes_active_slot(
+    next_pg_schema,
+) -> None:
+    del next_pg_schema
+    database_url = str(os.environ["DATABASE_URL"]).replace(
+        "postgresql://", "postgresql+psycopg://", 1
+    )
+    engine = create_engine(database_url, future=True)
+    try:
+        with Session(engine, future=True) as session:
+            repository = SqlAlchemyCustomerReadModelRepository(session)
+            repository.seed(
+                customers=[_customer("union-slot-old", name="old primary")],
+                messages_by_external_userid={},
+                timeline_by_external_userid={},
+            )
+            session.commit()
+
+            repository.replace_all(
+                customers=[
+                    _customer("union-slot-1", name="shadow one"),
+                    _customer("union-slot-2", name="shadow two"),
+                ],
+                messages_by_external_userid={
+                    "external-union-slot-1": [
+                        {
+                            "msgid": "shadow-message",
+                            "unionid": "union-slot-1",
+                            "content": "shadow",
+                            "send_time": "2026-07-27T01:00:00+00:00",
+                        }
+                    ]
+                },
+                timeline_by_external_userid={},
+            )
+
+            state = session.execute(
+                text(
+                    """
+                    SELECT active_slot, active_generation
+                    FROM customer_read_model_refresh_state
+                    WHERE singleton_id = 1
+                    """
+                )
+            ).one()
+            assert state == ("shadow", 2)
+            assert session.execute(
+                select(customer_list_index_next.c.unionid)
+            ).scalars().all() == ["union-slot-old"]
+            assert session.execute(
+                select(customer_list_index_next_shadow.c.unionid).order_by(
+                    customer_list_index_next_shadow.c.unionid
+                )
+            ).scalars().all() == ["union-slot-1", "union-slot-2"]
+            assert repository.count_customers() == 2
+            assert repository.get_customer_by_unionid("union-slot-1")["customer_name"] == "shadow one"
+            assert repository.list_recent_messages_by_unionid("union-slot-1", limit=1)[0][
+                "msgid"
+            ] == "shadow-message"
+
+            repository.upsert_customer_snapshots(
+                requested_unionids=["union-slot-1", "union-slot-2"],
+                customers=[_customer("union-slot-1", name="shadow incremental")],
+                messages_by_unionid={},
+            )
+            assert session.execute(
+                select(
+                    customer_list_index_next_shadow.c.unionid,
+                    customer_list_index_next_shadow.c.customer_name,
+                )
+            ).all() == [("union-slot-1", "shadow incremental")]
+            assert session.execute(
+                select(customer_list_index_next.c.unionid)
+            ).scalars().all() == ["union-slot-old"]
+
+            repository.replace_all(
+                customers=[_customer("union-slot-final", name="new primary")],
+                messages_by_external_userid={},
+                timeline_by_external_userid={},
+            )
+            assert session.execute(
+                text(
+                    """
+                    SELECT active_slot, active_generation
+                    FROM customer_read_model_refresh_state
+                    WHERE singleton_id = 1
+                    """
+                )
+            ).one() == ("primary", 3)
+            assert session.execute(
+                select(customer_list_index_next.c.unionid)
+            ).scalars().all() == ["union-slot-final"]
+            assert session.execute(
+                select(customer_list_index_next_shadow.c.unionid)
+            ).scalars().all() == ["union-slot-1"]
+            assert repository.get_customer_by_unionid("union-slot-final")["customer_name"] == "new primary"
+    finally:
+        engine.dispose()
+
+
+def test_postgres_failed_full_calibration_preserves_active_projection(next_pg_schema) -> None:
+    del next_pg_schema
+    database_url = str(os.environ["DATABASE_URL"]).replace(
+        "postgresql://", "postgresql+psycopg://", 1
+    )
+    engine = create_engine(database_url, future=True)
+    try:
+        with Session(engine, future=True) as session:
+            repository = SqlAlchemyCustomerReadModelRepository(session)
+            session.execute(
+                text(
+                    """
+                    INSERT INTO customer_read_model_refresh_state (
+                        singleton_id, last_succeeded_at, source_count, target_count,
+                        duration_ms, updated_at, active_slot, active_generation
+                    ) VALUES (1, CURRENT_TIMESTAMP, 1, 1, 0, CURRENT_TIMESTAMP, 'primary', 1)
+                    """
+                )
+            )
+            repository.seed(
+                customers=[_customer("union-slot-stable", name="stable")],
+                messages_by_external_userid={},
+                timeline_by_external_userid={},
+            )
+            session.commit()
+
+            duplicate = _customer("union-slot-duplicate", name="duplicate")
+            try:
+                repository.replace_all(
+                    customers=[duplicate, dict(duplicate)],
+                    messages_by_external_userid={},
+                    timeline_by_external_userid={},
+                )
+            except Exception:
+                pass
+            else:
+                raise AssertionError("duplicate inactive projection must fail closed")
+
+            assert session.execute(
+                text(
+                    """
+                    SELECT active_slot, active_generation
+                    FROM customer_read_model_refresh_state
+                    WHERE singleton_id = 1
+                    """
+                )
+            ).one() == ("primary", 1)
+            assert session.execute(
+                select(customer_list_index_next.c.unionid)
+            ).scalars().all() == ["union-slot-stable"]
+            assert session.execute(
+                select(customer_list_index_next_shadow.c.unionid)
+            ).scalars().all() == []
+            assert session.execute(
+                select(customer_detail_snapshot_next_shadow.c.unionid)
+            ).scalars().all() == []
+            assert session.execute(
+                select(customer_recent_message_next_shadow.c.unionid)
+            ).scalars().all() == []
+            assert repository.get_customer_by_unionid("union-slot-stable")["customer_name"] == "stable"
     finally:
         engine.dispose()
 

@@ -295,6 +295,9 @@ _TABLES_TO_TRUNCATE = [
     "broadcast_job_events",
     "broadcast_jobs",
     # — customer read model projection
+    "customer_recent_message_next_shadow",
+    "customer_detail_snapshot_next_shadow",
+    "customer_list_index_next_shadow",
     "customer_recent_message_next",
     "customer_timeline_event_next",
     "customer_detail_snapshot_next",

@@ -446,6 +446,12 @@ repositories:
       - class_user_status_current
       - contact_tags
       - crm_user_identity
+      - customer_detail_snapshot_next
+      - customer_detail_snapshot_next_shadow
+      - customer_list_index_next
+      - customer_list_index_next_shadow
+      - customer_recent_message_next
+      - customer_recent_message_next_shadow
       - owner_role_map
       - questionnaire_submissions
       - wechat_pay_orders
@@ -455,20 +461,33 @@ repositories:
       - class_user_status_current
       - contact_tags
       - crm_user_identity
+      - customer_detail_snapshot_next
+      - customer_detail_snapshot_next_shadow
+      - customer_list_index_next
+      - customer_list_index_next_shadow
       - customer_read_model_refresh_intent
       - customer_read_model_refresh_state
+      - customer_recent_message_next
+      - customer_recent_message_next_shadow
       - owner_role_map
       - questionnaire_submissions
       - wechat_pay_orders
     table_writes:
       - customer_detail_snapshot_next
+      - customer_detail_snapshot_next_shadow
       - customer_list_index_next
+      - customer_list_index_next_shadow
+      - customer_read_model_refresh_state
       - customer_recent_message_next
+      - customer_recent_message_next_shadow
       - customer_timeline_event_next
     non_literal_table_writes:
       - customer_detail_snapshot_next
+      - customer_detail_snapshot_next_shadow
       - customer_list_index_next
+      - customer_list_index_next_shadow
       - customer_recent_message_next
+      - customer_recent_message_next_shadow
       - customer_timeline_event_next
   aicrm_next/crm/customer_read_model/refresh_scope_repository.py:
     capability_owner: aicrm_next.crm.customer_read_model

@@ -3419,13 +3419,13 @@ tables:
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - inactive generation slot; no active route until the separately released slot writer
+      - inactive full calibration target and active generation after atomic slot switch
     migration_source: 0153_customer_read_model_generation_slots
     pii_level: internal_contact
     guard_tests:
       - tests/test_database_bootstrap.py::test_customer_read_model_generation_foundation_adds_inactive_indexed_slots
       - tests/test_data_table_lifecycle_guard.py
-    notes: Empty, indexed shadow slot created before any query or writer cutover. Revision 0153 keeps active_slot=primary, so this table has no online behavior until a later independently reversible release.
+    notes: Indexed double-buffer slot. Full calibration rebuilds only the inactive slot, validates list/detail cardinality, then changes active_slot in the same transaction; bounded incremental refresh writes the locked active slot.
 
   customer_detail_snapshot_next_shadow:
     domain: customer_read_model
@@ -3438,13 +3438,13 @@ tables:
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - inactive generation slot; no active route until the separately released slot writer
+      - inactive full calibration target and active generation after atomic slot switch
     migration_source: 0153_customer_read_model_generation_slots
     pii_level: internal_contact
     guard_tests:
       - tests/test_database_bootstrap.py::test_customer_read_model_generation_foundation_adds_inactive_indexed_slots
       - tests/test_data_table_lifecycle_guard.py
-    notes: Empty, indexed shadow slot created before any query or writer cutover. Revision 0153 keeps active_slot=primary, so this table has no online behavior until a later independently reversible release.
+    notes: Indexed double-buffer slot. Full calibration rebuilds only the inactive slot, validates list/detail cardinality, then changes active_slot in the same transaction; bounded incremental refresh writes the locked active slot.
 
   customer_recent_message_next_shadow:
     domain: customer_read_model
@@ -3457,13 +3457,13 @@ tables:
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - inactive generation slot; no active route until the separately released slot writer
+      - inactive full calibration target and active generation after atomic slot switch
     migration_source: 0153_customer_read_model_generation_slots
     pii_level: internal_contact
     guard_tests:
       - tests/test_database_bootstrap.py::test_customer_read_model_generation_foundation_adds_inactive_indexed_slots
       - tests/test_data_table_lifecycle_guard.py
-    notes: Empty, indexed shadow slot created before any query or writer cutover. Revision 0153 keeps active_slot=primary, so this table has no online behavior until a later independently reversible release.
+    notes: Indexed double-buffer slot. Full calibration rebuilds only the inactive slot, validates list/detail cardinality, then changes active_slot in the same transaction; bounded incremental refresh writes the locked active slot.
 
   customer_timeline_event_next:
     domain: customer_read_model
