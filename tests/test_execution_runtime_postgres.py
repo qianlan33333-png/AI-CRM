@@ -668,7 +668,7 @@ def test_generation_zero_is_ineligible_in_runtime_and_system_health() -> None:
 
 
 def test_legacy_broadcast_is_visible_but_never_eligible() -> None:
-    from aicrm_next.data_health import checks as data_health_checks
+    from aicrm_next.insights.data_health import checks as data_health_checks
 
     suffix = uuid4().hex
     with _connect() as connection:

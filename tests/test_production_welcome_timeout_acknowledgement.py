@@ -14,7 +14,7 @@ def test_exact_production_welcome_timeout_is_acknowledged_without_replay(
 ) -> None:
     import psycopg
 
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
     from scripts.ops.acknowledge_production_welcome_timeout import (
         AUTHORIZATION_BASE_SHA,
         EXPECTED_ATTEMPT_ID,

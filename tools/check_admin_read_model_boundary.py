@@ -12,13 +12,13 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from aicrm_next.admin_read_model.application import GetAdminProductsPageQuery
-from aicrm_next.admin_read_model.dto import AdminReadDiagnostics
-from aicrm_next.admin_read_model.errors import AdminReadModelError
+from aicrm_next.insights.admin_read_model.application import GetAdminProductsPageQuery
+from aicrm_next.insights.admin_read_model.dto import AdminReadDiagnostics
+from aicrm_next.insights.admin_read_model.errors import AdminReadModelError
 
 
 FRONTEND_ADMIN_REAL_DATA = ROOT / "aicrm_next" / "app" / "admin_console" / "admin_real_data.py"
-ADMIN_REPO = ROOT / "aicrm_next" / "admin_read_model" / "repo.py"
+ADMIN_REPO = ROOT / "aicrm_next" / "insights" / "admin_read_model" / "repo.py"
 
 DIRECT_SQL_PATTERN = re.compile(r"SELECT\s+|INSERT\s+INTO|UPDATE\s+\w+\s+SET|DELETE\s+FROM|psycopg|dict_row|\.connect\(", re.I)
 

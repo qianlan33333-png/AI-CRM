@@ -36,7 +36,7 @@ CAPABILITIES = {
     "automation_engine": ("aicrm_next.automation.automation_engine.repo", "build_automation_repository"),
     "customer_read_model": ("aicrm_next.crm.customer_read_model.repo", "build_customer_read_model_repository"),
     "ops_enrollment": ("aicrm_next.automation.ops_enrollment.repo", "build_user_ops_repository"),
-    "admin_read_model": ("aicrm_next.admin_read_model.repo", "build_admin_read_repository"),
+    "admin_read_model": ("aicrm_next.insights.admin_read_model.repo", "build_admin_read_repository"),
 }
 
 FIXTURE_MARKERS = ("local_contract", "fixture", "demo-only", "hxc-activation-v1", "disabled-demo")

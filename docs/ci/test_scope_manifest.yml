@@ -314,7 +314,7 @@
         "tools/check_live_runtime_readiness.py",
         "tools/check_next_production_runtime_gaps.py",
         "tools/check_next_production_cutover_readiness.py",
-        "aicrm_next/admin_read_model/projections.py",
+        "aicrm_next/insights/admin_read_model/projections.py",
         "tests/test_live_runtime_readiness.py",
         "tests/test_retired_timer_readiness_cleanup.py"
       ],
@@ -625,7 +625,7 @@
     {
       "name": "admin_read_model",
       "paths": [
-        "aicrm_next/admin_read_model/**",
+        "aicrm_next/insights/admin_read_model/**",
         "aicrm_next/app/admin_console/admin_real_data.py",
         "tests/test_admin_read_model_boundary.py",
         "tests/test_admin_pages_real_data_binding.py"
@@ -1343,7 +1343,7 @@
     {
       "name": "data_health",
       "paths": [
-        "aicrm_next/data_health/**",
+        "aicrm_next/insights/data_health/**",
         "docs/architecture/data_health_checks.md",
         "scripts/ops/refresh_data_health_snapshot.py",
         "tests/test_data_health_checks.py",
@@ -1363,8 +1363,8 @@
     {
       "name": "data_health_snapshot",
       "paths": [
-        "aicrm_next/data_health/snapshot_repository.py",
-        "aicrm_next/data_health/snapshot_service.py",
+        "aicrm_next/insights/data_health/snapshot_repository.py",
+        "aicrm_next/insights/data_health/snapshot_service.py",
         "migrations/versions/0143_data_health_snapshot.py",
         "scripts/ops/refresh_data_health_snapshot.py",
         "tests/test_data_health_snapshot.py",
@@ -1439,7 +1439,7 @@
         "aicrm_next/platform/external_push/https_transport.py",
         "aicrm_next/extensions/commerce/commerce/external_push_admin.py",
         "aicrm_next/platform/admin_jobs/application.py",
-        "aicrm_next/admin_read_model/projections.py",
+        "aicrm_next/insights/admin_read_model/projections.py",
         "aicrm_next/extensions/ai/automation_agents/application.py",
         "aicrm_next/extensions/archive/message_archive/api.py",
         "aicrm_next/extensions/archive/message_archive/archive_sdk.py",
@@ -1903,7 +1903,7 @@
         "aicrm_next/platform/platform_foundation/external_effects/**",
         "aicrm_next/automation/background_jobs/broadcast_queue_worker.py",
         "aicrm_next/platform/external_push/**",
-        "aicrm_next/delivery_lineage/**",
+        "aicrm_next/insights/delivery_lineage/**",
         "aicrm_next/channels/integration_gateway/wecom_private_adapter.py",
         "aicrm_next/channels/integration_gateway/wecom_group_adapter.py",
         "migrations/versions/0100_external_effect_delivery_lease.py",
@@ -2560,6 +2560,34 @@
         "tests/test_ops_enrollment_db_session_lifecycle.py",
         "tests/test_runtime_units_autostart.py",
         "tests/test_user_ops_application_contract.py"
+      ],
+      "needs_postgres": true,
+      "needs_full_ci": true,
+      "architecture_gate": "full"
+    },
+    {
+      "name": "physical_insights_package_migration",
+      "paths": [
+        "aicrm_next/insights/__init__.py",
+        "aicrm_next/admin_read_model/**",
+        "aicrm_next/data_health/**",
+        "aicrm_next/delivery_lineage/**",
+        "tests/test_delivery_lineage_api.py",
+        "tests/test_retired_automation_member_read_models.py"
+      ],
+      "python_tests": [
+        "tests/test_capability_registry.py",
+        "tests/test_import_graph_guard.py",
+        "tests/test_zero_runtime_import_scc.py",
+        "tests/test_structure_migration_gates.py",
+        "tests/test_router_registry_contract.py",
+        "tests/test_route_ownership_manifest.py",
+        "tests/test_runtime_contract_inventory.py",
+        "tests/test_admin_read_model_boundary.py",
+        "tests/test_admin_pages_real_data_binding.py",
+        "tests/test_data_health_checks.py",
+        "tests/test_data_health_snapshot.py",
+        "tests/test_delivery_lineage_api.py"
       ],
       "needs_postgres": true,
       "needs_full_ci": true,

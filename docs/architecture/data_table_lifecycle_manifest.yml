@@ -445,7 +445,7 @@ tables:
     lifecycle: read_model
     write_owner: aicrm_next.extensions.archive.message_archive.repo
     read_owners:
-      - aicrm_next.admin_read_model.repo
+      - aicrm_next.insights.admin_read_model.repo
       - aicrm_next.crm.customer_read_model.repo
       - aicrm_next.crm.customer_read_model.refresh_scope_repository
       - aicrm_next.crm.customer_read_model.sidebar_v2
@@ -761,7 +761,7 @@ tables:
       - aicrm_next.automation.background_jobs
     read_owners:
       - aicrm_next.platform.admin_jobs.repository
-      - aicrm_next.admin_read_model.repo
+      - aicrm_next.insights.admin_read_model.repo
       - aicrm_next.extensions.ai.ai_assist.external_campaigns_repo
       - aicrm_next.automation.background_jobs.broadcast_queue_worker
       - aicrm_next.extensions.growth.cloud_orchestrator.repository
@@ -1408,7 +1408,7 @@ tables:
     read_owners:
       - aicrm_next.engagement.media_library.postgres_repo
       - aicrm_next.engagement.send_content.postgres_repo
-      - aicrm_next.admin_read_model.projections
+      - aicrm_next.insights.admin_read_model.projections
       - aicrm_next.automation.automation_engine.group_ops.material_resolver
       - aicrm_next.channels.channel_entry.application
       - aicrm_next.extensions.commerce.commerce.repo
@@ -1454,7 +1454,7 @@ tables:
     read_owners:
       - aicrm_next.engagement.media_library.postgres_repo
       - aicrm_next.engagement.send_content.postgres_repo
-      - aicrm_next.admin_read_model.projections
+      - aicrm_next.insights.admin_read_model.projections
       - aicrm_next.automation.automation_engine.group_ops.material_resolver
       - aicrm_next.channels.channel_entry.application
       - campaign/group-ops SendContentPackage consumers
@@ -1480,7 +1480,7 @@ tables:
     read_owners:
       - aicrm_next.engagement.media_library.postgres_repo
       - aicrm_next.engagement.send_content.postgres_repo
-      - aicrm_next.admin_read_model.projections
+      - aicrm_next.insights.admin_read_model.projections
       - aicrm_next.automation.automation_engine.group_ops.material_resolver
       - aicrm_next.channels.channel_entry.application
       - campaign/group-ops SendContentPackage consumers
@@ -1532,7 +1532,7 @@ tables:
     read_owners:
       - aicrm_next.engagement.media_library.wecom_lease
       - aicrm_next.automation.automation_engine.group_ops.material_resolver
-      - aicrm_next.data_health.checks
+      - aicrm_next.insights.data_health.checks
     replacement: none; canonical lifecycle state for temporary WeCom media ids
     drop_candidate: false
     drop_after: ""
@@ -2318,7 +2318,7 @@ tables:
       - aicrm_next.platform.platform_foundation.admin_audit
     read_owners:
       - aicrm_next.platform.admin_config
-      - aicrm_next.admin_read_model
+      - aicrm_next.insights.admin_read_model
     replacement: none; canonical admin operation audit log
     drop_candidate: false
     drop_after: ""
@@ -2474,7 +2474,7 @@ tables:
     lifecycle: read_model
     write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
-      - aicrm_next.admin_read_model
+      - aicrm_next.insights.admin_read_model
       - aicrm_next.extensions.ai.ai_audience_ops
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
@@ -2691,7 +2691,7 @@ tables:
     lifecycle: config
     write_owner: aicrm_next.extensions.ai.automation_agents
     read_owners:
-      - aicrm_next.admin_read_model
+      - aicrm_next.insights.admin_read_model
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2727,7 +2727,7 @@ tables:
     lifecycle: audit
     write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
-      - aicrm_next.admin_read_model
+      - aicrm_next.insights.admin_read_model
     replacement: none; canonical AI agent provider-call audit log
     drop_candidate: false
     drop_after: ""
@@ -2745,7 +2745,7 @@ tables:
     lifecycle: audit
     write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
-      - aicrm_next.admin_read_model
+      - aicrm_next.insights.admin_read_model
     replacement: none; canonical AI agent output and adoption evidence
     drop_candidate: false
     drop_after: ""
@@ -2763,7 +2763,7 @@ tables:
     lifecycle: canonical
     write_owner: aicrm_next.extensions.ai.automation_agents
     read_owners:
-      - aicrm_next.admin_read_model
+      - aicrm_next.insights.admin_read_model
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -3070,7 +3070,7 @@ tables:
     read_owners:
       - aicrm_next.platform.admin_jobs
       - aicrm_next.automation.background_jobs
-      - aicrm_next.delivery_lineage
+      - aicrm_next.insights.delivery_lineage
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -3747,7 +3747,7 @@ tables:
     write_owner: aicrm_next.automation.background_jobs.broadcast_queue_worker
     read_owners:
       - aicrm_next.platform.admin_jobs
-      - aicrm_next.admin_read_model
+      - aicrm_next.insights.admin_read_model
       - aicrm_next.automation.background_jobs
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
@@ -3826,7 +3826,7 @@ tables:
       - aicrm_next.platform.platform_foundation.job_runs
     read_owners:
       - aicrm_next.platform.admin_jobs
-      - aicrm_next.admin_read_model
+      - aicrm_next.insights.admin_read_model
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -4221,7 +4221,7 @@ tables:
     write_owners:
       - aicrm_next.extensions.commerce.commerce.wechat_pay_service
     read_owners:
-      - aicrm_next.admin_read_model
+      - aicrm_next.insights.admin_read_model
       - aicrm_next.extensions.commerce.commerce.coupons.checker
       - aicrm_next.crm.customer_read_model
       - aicrm_next.platform.external_push
@@ -4381,7 +4381,7 @@ tables:
       - aicrm_next.crm.identity_contact
     read_owners:
       - aicrm_next.platform.admin_jobs
-      - aicrm_next.admin_read_model
+      - aicrm_next.insights.admin_read_model
       - aicrm_next.crm.identity_contact
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
@@ -4401,7 +4401,7 @@ tables:
     lifecycle: canonical
     write_owner: aicrm_next.crm.owner_migration
     read_owners:
-      - aicrm_next.admin_read_model
+      - aicrm_next.insights.admin_read_model
       - aicrm_next.extensions.ai.ai_assist
       - aicrm_next.extensions.ai.ai_audience_ops
       - aicrm_next.crm.owner_migration
@@ -4422,7 +4422,7 @@ tables:
     lifecycle: canonical
     write_owner: aicrm_next.crm.owner_migration
     read_owners:
-      - aicrm_next.admin_read_model
+      - aicrm_next.insights.admin_read_model
       - aicrm_next.extensions.ai.ai_assist
       - aicrm_next.extensions.ai.ai_audience_ops
       - aicrm_next.crm.owner_migration
@@ -4459,9 +4459,9 @@ tables:
   data_health_snapshot:
     domain: data_health
     lifecycle: read_model
-    write_owner: aicrm_next.data_health.snapshot_repository
+    write_owner: aicrm_next.insights.data_health.snapshot_repository
     read_owners:
-      - aicrm_next.data_health.application
+      - aicrm_next.insights.data_health.application
     replacement: none; singleton last-known-good aggregate health projection
     drop_candidate: false
     drop_after: ""
@@ -4482,7 +4482,7 @@ tables:
     lifecycle: read_model
     write_owner: aicrm_next.crm.customer_read_model.refresh
     read_owners:
-      - aicrm_next.data_health
+      - aicrm_next.insights.data_health
     replacement: none; singleton evidence for the managed customer projection refresh
     drop_candidate: false
     drop_after: ""
@@ -4504,7 +4504,7 @@ tables:
     write_owner: aicrm_next.crm.customer_read_model.refresh_intents
     read_owners:
       - aicrm_next.crm.customer_read_model.events
-      - aicrm_next.data_health
+      - aicrm_next.insights.data_health
     replacement: none; singleton coalescing generation owner for projection refresh
     drop_candidate: false
     drop_after: ""

@@ -98,6 +98,25 @@ def test_physical_automation_package_migration_forces_full_ci() -> None:
     assert result["architecture_gate"] == "full"
 
 
+def test_physical_insights_package_migration_forces_full_ci() -> None:
+    result = _select(
+        "aicrm_next/insights/__init__.py",
+        deleted_files=(
+            "aicrm_next/admin_read_model/application.py",
+            "aicrm_next/data_health/checks.py",
+            "aicrm_next/delivery_lineage/api.py",
+        ),
+    )
+
+    assert result["unmatched_files"] == []
+    assert result["unmapped_deleted_files"] == []
+    assert "physical_insights_package_migration" in result["matched_scopes"]
+    assert "tests/test_runtime_contract_inventory.py" in result["python_tests"]
+    assert result["needs_postgres"] is True
+    assert result["needs_full_ci"] is True
+    assert result["architecture_gate"] == "full"
+
+
 def test_unmapped_deleted_path_forces_full_ci_without_blocking_retirement() -> None:
     retired_path = "aicrm_next/retired_context/api.py"
     result = _select(deleted_files=(retired_path,))
@@ -183,7 +202,7 @@ def test_zero_scc_runtime_composition_files_force_full_postgres_ci() -> None:
 
 def test_admin_read_model_runtime_files_have_a_permanent_ci_scope() -> None:
     result = _select(
-        "aicrm_next/admin_read_model/application.py",
+        "aicrm_next/insights/admin_read_model/application.py",
         "aicrm_next/app/admin_console/admin_real_data.py",
     )
 
@@ -252,7 +271,7 @@ def test_live_runtime_readiness_replacement_has_permanent_full_ci_scope() -> Non
         "tools/check_live_runtime_readiness.py",
         "tools/check_next_production_runtime_gaps.py",
         "tools/check_next_production_cutover_readiness.py",
-        "aicrm_next/admin_read_model/projections.py",
+        "aicrm_next/insights/admin_read_model/projections.py",
         "tests/test_live_runtime_readiness.py",
         "tests/test_retired_timer_readiness_cleanup.py",
     )
@@ -520,7 +539,7 @@ def test_r07_external_effect_delivery_files_force_full_postgres_ci() -> None:
         "aicrm_next/platform/platform_foundation/external_effects/reconciliation.py",
         "aicrm_next/automation/background_jobs/broadcast_queue_worker.py",
         "aicrm_next/platform/external_push/service.py",
-        "aicrm_next/delivery_lineage/application.py",
+        "aicrm_next/insights/delivery_lineage/application.py",
         "aicrm_next/channels/integration_gateway/wecom_private_adapter.py",
         "migrations/versions/0100_external_effect_delivery_lease.py",
         "scripts/run_external_effect_queue_worker.py",
@@ -1655,8 +1674,8 @@ def test_query_observability_changes_force_postgres_full_ci() -> None:
 
 def test_data_health_snapshot_changes_force_postgres_full_ci() -> None:
     result = _select(
-        "aicrm_next/data_health/snapshot_repository.py",
-        "aicrm_next/data_health/snapshot_service.py",
+        "aicrm_next/insights/data_health/snapshot_repository.py",
+        "aicrm_next/insights/data_health/snapshot_service.py",
         "migrations/versions/0143_data_health_snapshot.py",
         "scripts/ops/refresh_data_health_snapshot.py",
         "tests/test_data_health_snapshot.py",

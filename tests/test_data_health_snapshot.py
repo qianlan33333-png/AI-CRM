@@ -6,9 +6,9 @@ from uuid import UUID
 
 import pytest
 
-from aicrm_next.data_health.dto import DataHealthCheckResult
-from aicrm_next.data_health.snapshot_repository import DataHealthSnapshotRecord
-from aicrm_next.data_health.snapshot_service import capture_data_health_snapshot
+from aicrm_next.insights.data_health.dto import DataHealthCheckResult
+from aicrm_next.insights.data_health.snapshot_repository import DataHealthSnapshotRecord
+from aicrm_next.insights.data_health.snapshot_service import capture_data_health_snapshot
 
 
 def _check(check_id: str, status: str = "ok") -> DataHealthCheckResult:
@@ -82,7 +82,7 @@ def test_capture_data_health_snapshot_writes_one_complete_generation() -> None:
 
 
 def test_capture_pins_release_sha_before_long_running_checks(monkeypatch) -> None:
-    from aicrm_next.data_health import snapshot_service
+    from aicrm_next.insights.data_health import snapshot_service
 
     repository = _RecordingRepository()
     order: list[str] = []
@@ -222,7 +222,7 @@ def test_refresh_cli_redacts_exception_details(monkeypatch, capsys) -> None:
 
 
 def test_online_data_health_summary_reads_one_snapshot_with_compatible_body(monkeypatch) -> None:
-    from aicrm_next.data_health import application
+    from aicrm_next.insights.data_health import application
 
     captured_at = datetime(2026, 7, 25, 1, 0, tzinfo=timezone.utc)
     repository = _LoadingRepository(_snapshot(captured_at=captured_at))
@@ -251,7 +251,7 @@ def test_online_data_health_summary_reads_one_snapshot_with_compatible_body(monk
 
 
 def test_online_list_and_detail_reuse_only_loaded_aggregate_results(monkeypatch) -> None:
-    from aicrm_next.data_health import application
+    from aicrm_next.insights.data_health import application
 
     captured_at = datetime(2026, 7, 25, 1, 0, tzinfo=timezone.utc)
     repository = _LoadingRepository(_snapshot(captured_at=captured_at))
@@ -296,7 +296,7 @@ def test_online_list_and_detail_reuse_only_loaded_aggregate_results(monkeypatch)
 
 
 def test_online_data_health_fails_closed_for_missing_or_stale_snapshot(monkeypatch) -> None:
-    from aicrm_next.data_health import application
+    from aicrm_next.insights.data_health import application
 
     monkeypatch.setattr(application, "production_repository_required", lambda: True)
     monkeypatch.setattr(
@@ -331,7 +331,7 @@ def test_online_data_health_fails_closed_for_missing_or_stale_snapshot(monkeypat
 
 
 def test_offline_data_health_contract_keeps_explicit_direct_runner(monkeypatch) -> None:
-    from aicrm_next.data_health import application
+    from aicrm_next.insights.data_health import application
 
     repository = _LoadingRepository(None)
     monkeypatch.setattr(application, "production_repository_required", lambda: False)
@@ -348,7 +348,7 @@ def test_offline_data_health_contract_keeps_explicit_direct_runner(monkeypatch) 
 
 
 def test_online_data_health_load_failure_is_safe_and_does_not_fallback(monkeypatch, caplog) -> None:
-    from aicrm_next.data_health import application
+    from aicrm_next.insights.data_health import application
 
     monkeypatch.setattr(application, "production_repository_required", lambda: True)
     monkeypatch.setattr(
@@ -375,7 +375,7 @@ def test_online_summary_http_response_keeps_success_contract(monkeypatch) -> Non
     pytest.importorskip("fastapi")
     from fastapi.testclient import TestClient
 
-    from aicrm_next.data_health import application
+    from aicrm_next.insights.data_health import application
     from aicrm_next.main import create_app
 
     captured_at = datetime.now(timezone.utc)

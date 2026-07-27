@@ -47,8 +47,8 @@ from .crm.customer_tags.admin_pages import router as customer_tags_admin_pages_r
 from .crm.customer_tags.api import read_router as customer_tags_read_router
 from .crm.customer_tags.api import router as customer_tags_router
 from .crm.customer_tags.api import write_router as customer_tags_write_router
-from .data_health.api import router as data_health_router
-from .delivery_lineage.api import router as delivery_lineage_router
+from .insights.data_health.api import router as data_health_router
+from .insights.delivery_lineage.api import router as delivery_lineage_router
 from .extensions.hxc.hxc_dashboard.api import router as hxc_dashboard_router
 from .crm.identity_contact.admin_pages import router as identity_admin_pages_router
 from .crm.identity_contact.api import router as identity_router

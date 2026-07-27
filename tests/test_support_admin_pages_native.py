@@ -81,7 +81,7 @@ def test_api_docs_view_model_has_no_business_router_imports() -> None:
 def test_admin_config_api_has_no_admin_read_model_reverse_dependency() -> None:
     source = (ROOT / "aicrm_next/platform/admin_config/api.py").read_text(encoding="utf-8")
 
-    assert "aicrm_next.admin_read_model" not in source
+    assert "aicrm_next.insights.admin_read_model" not in source
     assert "from .runtime_view_model import GetAdminConfigPageQuery" in source
 
 

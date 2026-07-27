@@ -417,37 +417,37 @@
     },
     {
       "accessor": "managed_runtime_int",
-      "file": "aicrm_next/data_health/checks.py",
+      "file": "aicrm_next/insights/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_BROADCAST_BLOCKED_MAX_COUNT",
       "line": 40
     },
     {
       "accessor": "managed_runtime_int",
-      "file": "aicrm_next/data_health/checks.py",
+      "file": "aicrm_next/insights/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_BROADCAST_RETRYABLE_DUE_MAX_COUNT",
       "line": 45
     },
     {
       "accessor": "managed_runtime_int",
-      "file": "aicrm_next/data_health/checks.py",
+      "file": "aicrm_next/insights/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_BROADCAST_TERMINAL_LOOKBACK_HOURS",
       "line": 52
     },
     {
       "accessor": "managed_runtime_int",
-      "file": "aicrm_next/data_health/checks.py",
+      "file": "aicrm_next/insights/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_RETRYABLE_DUE_MAX_COUNT",
       "line": 58
     },
     {
       "accessor": "managed_runtime_int",
-      "file": "aicrm_next/data_health/checks.py",
+      "file": "aicrm_next/insights/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS",
       "line": 65
     },
     {
       "accessor": "managed_runtime_int",
-      "file": "aicrm_next/data_health/checks.py",
+      "file": "aicrm_next/insights/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_PROJECTION_FRESHNESS_MAX_MINUTES",
       "line": 35
     },
@@ -2709,7 +2709,7 @@
     },
     {
       "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/admin_read_model/projections.py",
+      "file": "aicrm_next/insights/admin_read_model/projections.py",
       "key": "WECHAT_MP_APPID",
       "line": 280
     },
@@ -2787,7 +2787,7 @@
     },
     {
       "accessor": "managed_runtime_setting",
-      "file": "aicrm_next/admin_read_model/projections.py",
+      "file": "aicrm_next/insights/admin_read_model/projections.py",
       "key": "WECHAT_OAUTH_APPID",
       "line": 279
     },
@@ -2858,12 +2858,6 @@
       "line": 80
     },
     {
-      "accessor": "runtime_setting",
-      "file": "aicrm_next/admin_read_model/projections.py",
-      "key": "WECHAT_PAY_MCH_ID",
-      "line": 275
-    },
-    {
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/channels/integration_gateway/wechat_pay_client.py",
       "key": "WECHAT_PAY_MCH_ID",
@@ -2874,6 +2868,12 @@
       "file": "aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py",
       "key": "WECHAT_PAY_MCH_ID",
       "line": 80
+    },
+    {
+      "accessor": "runtime_setting",
+      "file": "aicrm_next/insights/admin_read_model/projections.py",
+      "key": "WECHAT_PAY_MCH_ID",
+      "line": 275
     },
     {
       "accessor": "runtime_setting",
@@ -3183,15 +3183,15 @@
     },
     {
       "accessor": "runtime_setting",
-      "file": "aicrm_next/admin_read_model/projections.py",
-      "key": "WECOM_CALLBACK_TOKEN",
-      "line": 274
-    },
-    {
-      "accessor": "runtime_setting",
       "file": "aicrm_next/channels/channel_entry/application.py",
       "key": "WECOM_CALLBACK_TOKEN",
       "line": 62
+    },
+    {
+      "accessor": "runtime_setting",
+      "file": "aicrm_next/insights/admin_read_model/projections.py",
+      "key": "WECOM_CALLBACK_TOKEN",
+      "line": 274
     },
     {
       "accessor": "runtime_setting",
@@ -20749,7 +20749,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.data_health.api.api_data_health_checks",
+      "endpoint": "aicrm_next.insights.data_health.api.api_data_health_checks",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.insights",
@@ -20797,7 +20797,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.data_health.api.api_data_health_check_detail",
+      "endpoint": "aicrm_next.insights.data_health.api.api_data_health_check_detail",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.insights",
@@ -20825,7 +20825,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.data_health.api.api_data_health_summary",
+      "endpoint": "aicrm_next.insights.data_health.api.api_data_health_summary",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.insights",
@@ -20884,7 +20884,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.delivery_lineage.api.api_delivery_lineage_list",
+      "endpoint": "aicrm_next.insights.delivery_lineage.api.api_delivery_lineage_list",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.insights",
@@ -20952,7 +20952,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.delivery_lineage.api.api_delivery_lineage_by_trace",
+      "endpoint": "aicrm_next.insights.delivery_lineage.api.api_delivery_lineage_by_trace",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.insights",
@@ -21020,7 +21020,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.delivery_lineage.api.api_delivery_lineage_by_unionid",
+      "endpoint": "aicrm_next.insights.delivery_lineage.api.api_delivery_lineage_by_unionid",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.insights",
@@ -21069,7 +21069,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.delivery_lineage.api.api_delivery_lineage_daily_metrics",
+      "endpoint": "aicrm_next.insights.delivery_lineage.api.api_delivery_lineage_daily_metrics",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.insights",
@@ -21117,7 +21117,7 @@
           }
         }
       },
-      "endpoint": "aicrm_next.delivery_lineage.api.api_delivery_lineage_detail",
+      "endpoint": "aicrm_next.insights.delivery_lineage.api.api_delivery_lineage_detail",
       "include_in_schema": true,
       "kind": "api",
       "logical_capability_id": "core.insights",
@@ -47706,7 +47706,7 @@
       "migration_source": "0085_admin_config_audit_baseline",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.admin_read_model",
+        "aicrm_next.insights.admin_read_model",
         "aicrm_next.platform.admin_config"
       ],
       "table": "admin_operation_logs",
@@ -47804,8 +47804,8 @@
       "migration_source": "0045_ai_audience_ops",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.admin_read_model",
-        "aicrm_next.extensions.ai.ai_audience_ops"
+        "aicrm_next.extensions.ai.ai_audience_ops",
+        "aicrm_next.insights.admin_read_model"
       ],
       "table": "ai_audience_member_current",
       "write_owner": "aicrm_next.extensions.ai.ai_audience_ops"
@@ -47990,11 +47990,11 @@
       "migration_source": "0077_id_dev_runtime_baseline",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.admin_read_model.repo",
         "aicrm_next.crm.customer_read_model.refresh_scope_repository",
         "aicrm_next.crm.customer_read_model.repo",
         "aicrm_next.crm.customer_read_model.sidebar_v2",
-        "aicrm_next.extensions.archive.message_archive.repo"
+        "aicrm_next.extensions.archive.message_archive.repo",
+        "aicrm_next.insights.admin_read_model.repo"
       ],
       "table": "archived_messages",
       "write_owner": "aicrm_next.extensions.archive.message_archive.repo"
@@ -48006,11 +48006,11 @@
       "migration_source": "0076_create_missing_baseline_runtime_tables",
       "pii_level": "",
       "read_owners": [
-        "aicrm_next.admin_read_model.projections",
         "aicrm_next.automation.automation_engine.group_ops.material_resolver",
         "aicrm_next.channels.channel_entry.application",
         "aicrm_next.engagement.media_library.postgres_repo",
         "aicrm_next.engagement.send_content.postgres_repo",
+        "aicrm_next.insights.admin_read_model.projections",
         "campaign/group-ops SendContentPackage consumers"
       ],
       "table": "attachment_library",
@@ -48133,7 +48133,7 @@
       "migration_source": "migrations/baselines/0001_post_legacy.sql",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.admin_read_model"
+        "aicrm_next.insights.admin_read_model"
       ],
       "table": "automation_agent_config",
       "write_owner": "aicrm_next.extensions.ai.automation_agents"
@@ -48157,7 +48157,7 @@
       "migration_source": "migrations/versions/0124_automation_agent_audit_tables.py",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.admin_read_model"
+        "aicrm_next.insights.admin_read_model"
       ],
       "table": "automation_agent_llm_call_log",
       "write_owner": "aicrm_next.extensions.ai.ai_audience_ops"
@@ -48169,7 +48169,7 @@
       "migration_source": "migrations/versions/0124_automation_agent_audit_tables.py",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.admin_read_model"
+        "aicrm_next.insights.admin_read_model"
       ],
       "table": "automation_agent_output",
       "write_owner": "aicrm_next.extensions.ai.ai_audience_ops"
@@ -48217,7 +48217,7 @@
       "migration_source": "migrations/baselines/0001_post_legacy.sql",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.admin_read_model"
+        "aicrm_next.insights.admin_read_model"
       ],
       "table": "automation_agent_run",
       "write_owner": "aicrm_next.extensions.ai.automation_agents"
@@ -49127,7 +49127,7 @@
       "pii_level": "internal_contact",
       "read_owners": [
         "aicrm_next.automation.background_jobs",
-        "aicrm_next.delivery_lineage",
+        "aicrm_next.insights.delivery_lineage",
         "aicrm_next.platform.admin_jobs"
       ],
       "table": "broadcast_job_events",
@@ -49152,10 +49152,10 @@
       "migration_source": "0008_broadcast_jobs, hardened by 0021/0066/0089/0100 and crash-safe finalization by 0103",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.admin_read_model.repo",
         "aicrm_next.automation.background_jobs.broadcast_queue_worker",
         "aicrm_next.extensions.ai.ai_assist.external_campaigns_repo",
         "aicrm_next.extensions.growth.cloud_orchestrator.repository",
+        "aicrm_next.insights.admin_read_model.repo",
         "aicrm_next.platform.admin_jobs.repository"
       ],
       "table": "broadcast_jobs",
@@ -49651,7 +49651,7 @@
       "pii_level": "aggregate_only",
       "read_owners": [
         "aicrm_next.crm.customer_read_model.events",
-        "aicrm_next.data_health"
+        "aicrm_next.insights.data_health"
       ],
       "table": "customer_read_model_refresh_intent",
       "write_owner": "aicrm_next.crm.customer_read_model.refresh_intents"
@@ -49676,7 +49676,7 @@
       "migration_source": "0108_customer_read_model_refresh, active slot fields added by 0153_customer_read_model_generation_slots",
       "pii_level": "aggregate_only",
       "read_owners": [
-        "aicrm_next.data_health"
+        "aicrm_next.insights.data_health"
       ],
       "table": "customer_read_model_refresh_state",
       "write_owner": "aicrm_next.crm.customer_read_model.refresh"
@@ -49749,10 +49749,10 @@
       "migration_source": "0143_data_health_snapshot",
       "pii_level": "aggregate_only",
       "read_owners": [
-        "aicrm_next.data_health.application"
+        "aicrm_next.insights.data_health.application"
       ],
       "table": "data_health_snapshot",
-      "write_owner": "aicrm_next.data_health.snapshot_repository"
+      "write_owner": "aicrm_next.insights.data_health.snapshot_repository"
     },
     {
       "domain": "admin_config",
@@ -50006,12 +50006,12 @@
       "migration_source": "0007_image_library",
       "pii_level": "",
       "read_owners": [
-        "aicrm_next.admin_read_model.projections",
         "aicrm_next.automation.automation_engine.group_ops.material_resolver",
         "aicrm_next.channels.channel_entry.application",
         "aicrm_next.engagement.media_library.postgres_repo",
         "aicrm_next.engagement.send_content.postgres_repo",
-        "aicrm_next.extensions.commerce.commerce.repo"
+        "aicrm_next.extensions.commerce.commerce.repo",
+        "aicrm_next.insights.admin_read_model.projections"
       ],
       "table": "image_library",
       "write_owner": "aicrm_next.engagement.media_library"
@@ -50194,11 +50194,11 @@
       "migration_source": "0006_miniprogram_library, 0007_image_library thumb_image_id",
       "pii_level": "",
       "read_owners": [
-        "aicrm_next.admin_read_model.projections",
         "aicrm_next.automation.automation_engine.group_ops.material_resolver",
         "aicrm_next.channels.channel_entry.application",
         "aicrm_next.engagement.media_library.postgres_repo",
         "aicrm_next.engagement.send_content.postgres_repo",
+        "aicrm_next.insights.admin_read_model.projections",
         "campaign/group-ops SendContentPackage consumers"
       ],
       "table": "miniprogram_library",
@@ -50319,8 +50319,8 @@
       "migration_source": "migrations/baselines/0001_post_legacy.sql",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.admin_read_model",
         "aicrm_next.automation.background_jobs",
+        "aicrm_next.insights.admin_read_model",
         "aicrm_next.platform.admin_jobs"
       ],
       "table": "outbound_tasks",
@@ -50943,7 +50943,7 @@
       "migration_source": "migrations/baselines/0001_post_legacy.sql",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.admin_read_model",
+        "aicrm_next.insights.admin_read_model",
         "aicrm_next.platform.admin_jobs"
       ],
       "table": "sync_runs",
@@ -51199,11 +51199,11 @@
       "migration_source": "migrations/baselines/0001_post_legacy.sql",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.admin_read_model",
         "aicrm_next.crm.customer_read_model",
         "aicrm_next.extensions.commerce.commerce.coupons.checker",
         "aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation",
         "aicrm_next.extensions.commerce.service_period",
+        "aicrm_next.insights.admin_read_model",
         "aicrm_next.platform.external_push",
         "aicrm_next.platform.platform_foundation.internal_events"
       ],
@@ -51357,8 +51357,8 @@
       "migration_source": "migrations/baselines/0001_post_legacy.sql",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.admin_read_model",
         "aicrm_next.crm.identity_contact",
+        "aicrm_next.insights.admin_read_model",
         "aicrm_next.platform.admin_jobs"
       ],
       "table": "wecom_external_contact_event_logs",
@@ -51371,10 +51371,10 @@
       "migration_source": "migrations/baselines/0001_post_legacy.sql; canonical mirror columns and indexes repaired by 0106_critical_read_path_indexes",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.admin_read_model",
         "aicrm_next.crm.owner_migration",
         "aicrm_next.extensions.ai.ai_assist",
-        "aicrm_next.extensions.ai.ai_audience_ops"
+        "aicrm_next.extensions.ai.ai_audience_ops",
+        "aicrm_next.insights.admin_read_model"
       ],
       "table": "wecom_external_contact_follow_users",
       "write_owner": "aicrm_next.crm.owner_migration"
@@ -51386,10 +51386,10 @@
       "migration_source": "migrations/baselines/0001_post_legacy.sql; canonical mirror columns and indexes repaired by 0106_critical_read_path_indexes",
       "pii_level": "internal_contact",
       "read_owners": [
-        "aicrm_next.admin_read_model",
         "aicrm_next.crm.owner_migration",
         "aicrm_next.extensions.ai.ai_assist",
-        "aicrm_next.extensions.ai.ai_audience_ops"
+        "aicrm_next.extensions.ai.ai_audience_ops",
+        "aicrm_next.insights.admin_read_model"
       ],
       "table": "wecom_external_contact_identity_map",
       "write_owner": "aicrm_next.crm.owner_migration"
@@ -51414,8 +51414,8 @@
       "pii_level": "",
       "read_owners": [
         "aicrm_next.automation.automation_engine.group_ops.material_resolver",
-        "aicrm_next.data_health.checks",
-        "aicrm_next.engagement.media_library.wecom_lease"
+        "aicrm_next.engagement.media_library.wecom_lease",
+        "aicrm_next.insights.data_health.checks"
       ],
       "table": "wecom_media_leases",
       "write_owner": "aicrm_next.engagement.media_library.wecom_lease"

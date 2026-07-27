@@ -50,7 +50,7 @@ def test_fixture_repositories_allowed_in_fixture_mode(monkeypatch):
     from aicrm_next.extensions.forms.questionnaire.repo import build_questionnaire_repository
     from aicrm_next.extensions.radar.radar_links.repo import build_radar_links_repository
     from aicrm_next.automation.automation_engine.repo import build_automation_repository
-    from aicrm_next.admin_read_model.repo import build_admin_read_repository
+    from aicrm_next.insights.admin_read_model.repo import build_admin_read_repository
 
     assert build_commerce_repository().__class__.__name__.startswith("InMemory")
     assert build_media_library_repository().__class__.__name__.startswith("InMemory")

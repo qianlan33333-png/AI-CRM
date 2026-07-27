@@ -9,7 +9,7 @@ import psycopg
 import pytest
 from psycopg.rows import dict_row
 
-from aicrm_next.data_health import checks as data_health_checks
+from aicrm_next.insights.data_health import checks as data_health_checks
 from aicrm_next.crm.identity_contact.resolution_queue_port import build_identity_resolution_queue_port
 from aicrm_next.platform.platform_foundation.execution_runtime.commands import (
     QUEUE_RUNTIME_COMMAND_APPLIED,

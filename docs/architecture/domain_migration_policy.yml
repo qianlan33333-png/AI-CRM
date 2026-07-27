@@ -65,9 +65,9 @@ physical_moves:
     - channels
     - engagement
     - automation
-    - extensions
-  pending_domains:
     - insights
+    - extensions
+  pending_domains: []
   enable_after:
     - public command and query ports are in use
     - table write ownership is unique

@@ -42,7 +42,7 @@
 ### Task 3: Remove stale callback fallback state
 
 **Files:**
-- Modify: `aicrm_next/admin_read_model/projections.py`
+- Modify: `aicrm_next/insights/admin_read_model/projections.py`
 - Modify: affected admin read-model tests
 
 **Step 1:** Add/adjust a test proving admin projections no longer report retained 5013 fallback state.

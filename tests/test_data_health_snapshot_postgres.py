@@ -6,9 +6,9 @@ from datetime import datetime, timedelta, timezone
 import psycopg
 from sqlalchemy import event
 
-from aicrm_next.data_health.application import data_health_summary
-from aicrm_next.data_health.dto import DataHealthCheckResult
-from aicrm_next.data_health.snapshot_repository import (
+from aicrm_next.insights.data_health.application import data_health_summary
+from aicrm_next.insights.data_health.dto import DataHealthCheckResult
+from aicrm_next.insights.data_health.snapshot_repository import (
     DataHealthSnapshotRecord,
     DataHealthSnapshotRepository,
 )

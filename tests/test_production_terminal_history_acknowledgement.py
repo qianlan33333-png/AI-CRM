@@ -14,7 +14,7 @@ def test_exact_production_terminal_histories_require_append_only_no_replay_ackno
 ) -> None:
     import psycopg
 
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
     from scripts.ops.acknowledge_production_terminal_history import (
         PRIVATE_CONFIRMATION,
         REFUND_CONFIRMATION,

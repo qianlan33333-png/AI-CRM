@@ -99,7 +99,7 @@ def test_data_health_check_detail_and_missing_check(client) -> None:
 
 
 def test_schema_drift_guard_reports_manifest_and_live_schema_mismatches() -> None:
-    from aicrm_next.data_health.schema_drift import evaluate_schema_drift
+    from aicrm_next.insights.data_health.schema_drift import evaluate_schema_drift
 
     manifest = {
         "tables": {
@@ -165,7 +165,7 @@ def test_schema_drift_guard_reports_manifest_and_live_schema_mismatches() -> Non
 
 def test_migrated_schema_matches_lifecycle_manifest(next_pg_schema) -> None:
     del next_pg_schema
-    from aicrm_next.data_health.schema_drift import (
+    from aicrm_next.insights.data_health.schema_drift import (
         evaluate_schema_drift,
         load_table_lifecycle_manifest,
         public_schema_snapshot,
@@ -210,7 +210,7 @@ class _FakeSession:
 
 
 def _patch_health_db(monkeypatch, row: dict) -> list[str]:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     calls: list[str] = []
     monkeypatch.setattr(checks, "database_schema_available", lambda: True)
@@ -219,7 +219,7 @@ def _patch_health_db(monkeypatch, row: dict) -> list[str]:
 
 
 def test_projection_freshness_probe_uses_live_projection_counts(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     calls = _patch_health_db(
         monkeypatch,
@@ -241,7 +241,7 @@ def test_projection_freshness_probe_uses_live_projection_counts(monkeypatch) -> 
 
 
 def test_projection_freshness_probe_accepts_managed_fresh_parity(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     _patch_health_db(
         monkeypatch,
@@ -265,7 +265,7 @@ def test_projection_freshness_probe_accepts_managed_fresh_parity(monkeypatch) ->
 
 
 def test_projection_freshness_probe_rejects_duplicate_timeline_event_ids(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     _patch_health_db(
         monkeypatch,
@@ -289,7 +289,7 @@ def test_projection_freshness_probe_rejects_duplicate_timeline_event_ids(monkeyp
 
 
 def test_projection_freshness_probe_does_not_fail_on_wall_clock_age_without_source_drift(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     _patch_health_db(
         monkeypatch,
@@ -313,7 +313,7 @@ def test_projection_freshness_probe_does_not_fail_on_wall_clock_age_without_sour
 
 
 def test_customer_360_freshness_guard_still_blocks_real_source_lag(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     _patch_health_db(
         monkeypatch,
@@ -338,7 +338,7 @@ def test_customer_360_freshness_guard_still_blocks_real_source_lag(monkeypatch) 
 
 
 def test_broadcast_backlog_probe_counts_blocked_and_retryable(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     calls = _patch_health_db(
         monkeypatch,
@@ -370,7 +370,7 @@ def test_broadcast_backlog_probe_counts_blocked_and_retryable(monkeypatch) -> No
 
 
 def test_broadcast_backlog_probe_keeps_historical_terminal_evidence_without_permanent_failure(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     _patch_health_db(
         monkeypatch,
@@ -402,7 +402,7 @@ def test_broadcast_backlog_probe_keeps_historical_terminal_evidence_without_perm
 
 
 def test_previously_placeholder_probes_are_live_and_green_with_zero_actionable_counts(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     _patch_health_db(
         monkeypatch,
@@ -446,7 +446,7 @@ def test_previously_placeholder_probes_are_live_and_green_with_zero_actionable_c
 
 
 def test_questionnaire_submission_guard_accepts_quarantined_missing_unionids(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     _patch_health_db(
         monkeypatch,
@@ -470,7 +470,7 @@ def test_questionnaire_submission_guard_accepts_quarantined_missing_unionids(mon
 
 
 def test_questionnaire_submission_guard_rejects_unguarded_missing_unionid(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     _patch_health_db(
         monkeypatch,
@@ -493,7 +493,7 @@ def test_questionnaire_submission_guard_rejects_unguarded_missing_unionid(monkey
 
 
 def test_external_effect_backlog_probe_accepts_small_retryable_queue(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     calls = _patch_health_db(
         monkeypatch,
@@ -522,7 +522,7 @@ def test_external_effect_backlog_probe_accepts_small_retryable_queue(monkeypatch
 
 
 def test_external_effect_backlog_excludes_only_shared_pre_cutover_identity_adoption_predicate(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     calls = _patch_health_db(
         monkeypatch,
@@ -566,7 +566,7 @@ def test_external_effect_backlog_excludes_only_shared_pre_cutover_identity_adopt
 
 
 def test_external_effect_backlog_excludes_only_exact_post_cutover_identity_recovery(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     calls = _patch_health_db(
         monkeypatch,
@@ -606,7 +606,7 @@ def test_external_effect_backlog_excludes_only_exact_post_cutover_identity_recov
 
 
 def test_external_effect_backlog_keeps_exact_contact_absence_as_no_replay_business_terminal(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     calls = _patch_health_db(
         monkeypatch,
@@ -646,7 +646,7 @@ def test_external_effect_backlog_keeps_exact_contact_absence_as_no_replay_busine
 
 
 def test_external_effect_backlog_keeps_historical_terminal_evidence_without_permanent_failure(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     _patch_health_db(
         monkeypatch,
@@ -672,7 +672,7 @@ def test_external_effect_backlog_keeps_historical_terminal_evidence_without_perm
 
 
 def test_external_effect_backlog_separates_only_strict_id_validation_canary_failures(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     calls = _patch_health_db(
         monkeypatch,
@@ -746,7 +746,7 @@ def test_external_effect_backlog_separates_only_strict_id_validation_canary_fail
 
 
 def test_external_effect_backlog_still_fails_for_ordinary_terminal_effect(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     _patch_health_db(
         monkeypatch,
@@ -776,7 +776,7 @@ def test_refund_not_enough_is_completed_business_outcome_not_system_failure(
 ) -> None:
     import psycopg
 
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     database_url = os.environ["DATABASE_URL"]
     target_id = "WXR_DATA_HEALTH_NOT_ENOUGH"
@@ -900,7 +900,7 @@ def test_mirrored_welcome_validation_failure_is_excluded_only_with_append_only_p
 ) -> None:
     import psycopg
 
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     database_url = os.environ["DATABASE_URL"]
     execution_id = "exe_data_health_mirrored_welcome"
@@ -999,7 +999,7 @@ def test_pre_cutover_welcome_terminal_requires_exact_no_replay_acknowledgement(
 ) -> None:
     import psycopg
 
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
     from scripts.ops.acknowledge_pre_cutover_welcome_terminal import (
         EXPECTED_CONFIRMATION,
         acknowledge,
@@ -1172,7 +1172,7 @@ def test_pre_cutover_welcome_terminal_requires_exact_no_replay_acknowledgement(
 
 
 def test_wecom_media_health_separates_exclusive_canary_failure_but_keeps_evidence(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     calls = _patch_health_db(
         monkeypatch,
@@ -1201,7 +1201,7 @@ def test_wecom_media_health_separates_exclusive_canary_failure_but_keeps_evidenc
 
 
 def test_wecom_media_health_keeps_ordinary_invalid_source_actionable(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     _patch_health_db(
         monkeypatch,
@@ -1226,7 +1226,7 @@ def test_wecom_media_health_keeps_ordinary_invalid_source_actionable(monkeypatch
 
 
 def test_wecom_media_health_keeps_expired_cache_as_refreshable_evidence(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     _patch_health_db(
         monkeypatch,
@@ -1252,7 +1252,7 @@ def test_wecom_media_health_keeps_expired_cache_as_refreshable_evidence(monkeypa
 
 
 def test_wecom_media_health_keeps_durable_source_gap_actionable(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     _patch_health_db(
         monkeypatch,
@@ -1280,7 +1280,7 @@ def test_wecom_media_health_keeps_durable_source_gap_actionable(monkeypatch) -> 
 def test_id_validation_canary_health_isolation_executes_against_postgres(next_pg_schema) -> None:
     import psycopg
 
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     database_url = os.environ["DATABASE_URL"]
     material_id = 2_147_483_647

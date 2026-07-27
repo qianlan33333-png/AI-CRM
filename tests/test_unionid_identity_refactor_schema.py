@@ -760,7 +760,7 @@ def test_campaign_frequency_and_agent_outputs_are_unionid_only() -> None:
         "aicrm_next/platform/platform_foundation/background_jobs/broadcast_job_write_repository.py"
     )
     agent_copywriting_source = _read("aicrm_next/extensions/ai/ai_audience_ops/agent_copywriting.py")
-    admin_projection_source = _read("aicrm_next/admin_read_model/projections.py")
+    admin_projection_source = _read("aicrm_next/insights/admin_read_model/projections.py")
     agent_run_repo_source = _read("aicrm_next/automation/automation_engine/agent_run_sqlalchemy_repository.py")
     agent_run_domain_source = _read("aicrm_next/automation/automation_engine/agent_runs.py")
     agent_output_repo_source = _read("aicrm_next/automation/automation_engine/agent_output_sqlalchemy_repository.py")
@@ -811,7 +811,7 @@ def test_final_legacy_identity_cleanup_removes_non_boundary_columns() -> None:
     contact_sync_source = _read("aicrm_next/automation/background_jobs/external_contact_sync.py")
     sidebar_source = _read("aicrm_next/crm/customer_read_model/sidebar_v2.py")
     identity_contact_source = _read("aicrm_next/crm/identity_contact/repo.py")
-    admin_projection_source = _read("aicrm_next/admin_read_model/projections.py")
+    admin_projection_source = _read("aicrm_next/insights/admin_read_model/projections.py")
     external_campaigns_source = _read("aicrm_next/extensions/ai/ai_assist/external_campaigns_repo.py")
     owner_migration_source = _read("aicrm_next/crm/owner_migration/repo.py")
 

@@ -60,7 +60,7 @@ jobs:
 
             from sqlalchemy import text
 
-            from aicrm_next.data_health.checks import (
+            from aicrm_next.insights.data_health.checks import (
                 _customer_360_freshness_guard,
                 _external_effect_failed_retryable_backlog,
                 _wecom_media_lease_health,

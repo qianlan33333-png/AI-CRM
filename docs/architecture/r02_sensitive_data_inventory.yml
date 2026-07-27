@@ -130,7 +130,7 @@ secret_keys:
     <<: *secret_defaults
     runtime_consumers:
       - aicrm_next.channels.channel_entry.application
-      - aicrm_next.admin_read_model.projections
+      - aicrm_next.insights.admin_read_model.projections
   WECOM_CALLBACK_AES_KEY:
     <<: *secret_defaults
     runtime_consumers:

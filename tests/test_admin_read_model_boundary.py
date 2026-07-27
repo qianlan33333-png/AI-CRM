@@ -4,11 +4,11 @@ import json
 from pathlib import Path
 from typing import Any
 
-from aicrm_next.admin_read_model.application import GetAdminProductsPageQuery
-from aicrm_next.admin_read_model.dto import AdminReadDiagnostics
-from aicrm_next.admin_read_model.errors import AdminReadModelError
-from aicrm_next.admin_read_model.projections import config_payload
-from aicrm_next.admin_read_model.repo import LocalContractAdminReadRepository
+from aicrm_next.insights.admin_read_model.application import GetAdminProductsPageQuery
+from aicrm_next.insights.admin_read_model.dto import AdminReadDiagnostics
+from aicrm_next.insights.admin_read_model.errors import AdminReadModelError
+from aicrm_next.insights.admin_read_model.projections import config_payload
+from aicrm_next.insights.admin_read_model.repo import LocalContractAdminReadRepository
 from tools import check_admin_read_model_boundary as checker
 
 ROOT = Path(__file__).resolve().parents[1]
