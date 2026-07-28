@@ -707,6 +707,9 @@ def _run_internal_events_admin(database_url: str, profile: ReadPathBaseline):
     from psycopg.rows import dict_row
 
     from aicrm_next.platform.platform_foundation.internal_events import api as internal_events_api
+    from aicrm_next.platform.platform_foundation.internal_events.view_model import (
+        reset_internal_event_overview_cache,
+    )
 
     environment = {
         "AICRM_NEXT_ENV": "test",
@@ -734,6 +737,8 @@ def _run_internal_events_admin(database_url: str, profile: ReadPathBaseline):
         with TestClient(app, raise_server_exceptions=False) as client:
             def invoke(captured: list[CapturedQuery]) -> int:
                 nonlocal active_capture
+                reset_internal_event_overview_cache()
+                internal_events_api.reset_internal_event_runtime_queue_cache()
                 listener = _sqlalchemy_recorder(engine, captured)
                 active_capture = captured
                 try:

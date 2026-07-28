@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
+
 from fastapi.testclient import TestClient
 
 from aicrm_next.platform.platform_foundation.command_bus import CommandContext
@@ -11,6 +13,10 @@ from aicrm_next.platform.platform_foundation.internal_events import (
     reset_internal_event_fixture_state,
 )
 from aicrm_next.platform.platform_foundation.internal_events.repository import build_internal_event_repository
+from aicrm_next.platform.platform_foundation.internal_events.repository import SQLAlchemyInternalEventRepository
+from aicrm_next.platform.platform_foundation.internal_events import view_model
+from aicrm_next.platform.platform_foundation.internal_events.models import InternalEventCreateRequest
+from aicrm_next.platform.platform_foundation.internal_events.repository_memory import InMemoryInternalEventRepository
 from tests.admin_auth_test_helpers import install_admin_action_tokens
 
 
@@ -206,3 +212,100 @@ def test_internal_event_admin_detail_attempts_retry_skip_and_diagnostics(
     assert skipped.status_code == 202
     assert skipped.json()["action"] == "skip"
     assert skipped.json()["status"] == "skipped"
+
+
+def test_default_admin_overview_reuses_only_aggregate_snapshot(monkeypatch) -> None:
+    class RecordingRepository(InMemoryInternalEventRepository):
+        admin_overview_cache_enabled = True
+
+        def __init__(self):
+            super().__init__()
+            self.include_total_calls: list[bool] = []
+            self.metric_calls = 0
+            self.batch_entries = 0
+
+        @contextmanager
+        def read_batch(self):
+            self.batch_entries += 1
+            yield self
+
+        def list_events(self, *args, **kwargs):
+            self.include_total_calls.append(bool(kwargs.get("include_total", True)))
+            return super().list_events(*args, **kwargs)
+
+        def queue_metrics(self, filters=None):
+            self.metric_calls += 1
+            return super().queue_metrics(filters)
+
+    repository = RecordingRepository()
+    repository.create_event(
+        InternalEventCreateRequest(
+            event_type="test.cached",
+            aggregate_type="test",
+            aggregate_id="1",
+            payload={"large": {"not": "returned"}},
+            payload_summary={"safe": "visible"},
+            idempotency_key="test.cached:1",
+        )
+    )
+    monkeypatch.setattr(view_model, "pytest_environment", lambda: False)
+    monkeypatch.setattr(view_model, "allowed_event_types", lambda: [])
+    monkeypatch.setattr(view_model, "allowed_consumers", lambda: [])
+    monkeypatch.setattr(view_model, "allowed_event_consumer_pairs", lambda: [])
+    view_model.reset_internal_event_overview_cache()
+
+    first = view_model.build_events_payload({}, repository=repository)
+    second = view_model.build_events_payload({}, repository=repository)
+
+    assert first["total"] == second["total"] == 1
+    assert first["items"][0]["event_id"] == second["items"][0]["event_id"]
+    assert repository.include_total_calls == [True, False]
+    assert repository.metric_calls == 1
+    assert repository.batch_entries == 2
+    assert second["overview_snapshot_ttl_seconds"] == 10
+
+
+def test_sql_repository_reuses_one_session_and_selects_summary_fields_only() -> None:
+    statements: list[str] = []
+    factory_calls = 0
+
+    class Result:
+        def mappings(self):
+            return self
+
+        def fetchone(self):
+            return {"value": 1}
+
+        def fetchall(self):
+            return []
+
+    class Session:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def execute(self, statement, params):
+            statements.append(str(statement))
+            return Result()
+
+    def session_factory():
+        nonlocal factory_calls
+        factory_calls += 1
+        return Session()
+
+    repository = SQLAlchemyInternalEventRepository(session_factory=session_factory)
+    with repository.read_batch():
+        repository.list_events({}, limit=50, offset=0, include_total=False, summary_only=True)
+        repository.list_consumer_runs_for_events(["event-1"])
+
+    assert factory_calls == 1
+    assert len(statements) == 2
+    event_sql, run_sql = statements
+    assert "payload_summary_json" in event_sql
+    assert "payload_json" not in event_sql
+    assert "fanout_manifest_json" not in event_sql
+    assert "SELECT *" not in event_sql
+    assert "result_summary_json" not in run_sql
+    assert "last_error_message" not in run_sql

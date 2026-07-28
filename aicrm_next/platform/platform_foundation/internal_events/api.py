@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from datetime import date, datetime, time
 from decimal import Decimal
+from threading import Lock
+from time import monotonic
 from typing import Any
 
 from fastapi import APIRouter, Request
@@ -9,6 +12,7 @@ from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 
 from aicrm_next.platform.shared.admin_action_runtime import validate_admin_action_token
+from aicrm_next.platform.shared.runtime import pytest_environment
 from aicrm_next.platform.platform_foundation.execution_runtime.api_command import (
     QueueCommandPayloadError,
     accepted_queue_command_payload,
@@ -32,6 +36,9 @@ from .worker import InternalEventWorker
 router = APIRouter()
 ROUTE_OWNER = "ai_crm_next"
 _INTERNAL_LANES = frozenset({"internal_general", "internal_financial"})
+_RUNTIME_QUEUE_CACHE_TTL_SECONDS = 10.0
+_runtime_queue_cache_lock = Lock()
+_runtime_queue_cache: tuple[float, object, dict[str, Any]] | None = None
 
 
 def _text(value: Any) -> str:
@@ -92,10 +99,31 @@ def _action_or_internal_token_error(request: Request, payload: dict[str, Any]) -
 
 
 def _runtime_queue_summary() -> dict[str, Any]:
+    global _runtime_queue_cache
+    timestamp = monotonic()
+    if not pytest_environment():
+        with _runtime_queue_cache_lock:
+            cached = _runtime_queue_cache
+            if cached is not None and cached[0] > timestamp and cached[1] is ExecutionRuntimeReadModel:
+                return deepcopy(cached[2])
     try:
-        return ExecutionRuntimeReadModel().lane_summary(_INTERNAL_LANES)
+        summary = ExecutionRuntimeReadModel().lane_summary(_INTERNAL_LANES)
     except Exception:
         return {}
+    if not pytest_environment():
+        with _runtime_queue_cache_lock:
+            _runtime_queue_cache = (
+                timestamp + _RUNTIME_QUEUE_CACHE_TTL_SECONDS,
+                ExecutionRuntimeReadModel,
+                deepcopy(summary),
+            )
+    return summary
+
+
+def reset_internal_event_runtime_queue_cache() -> None:
+    global _runtime_queue_cache
+    with _runtime_queue_cache_lock:
+        _runtime_queue_cache = None
 
 
 def _service() -> InternalEventService:

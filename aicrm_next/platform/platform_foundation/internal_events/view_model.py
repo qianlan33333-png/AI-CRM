@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+from contextlib import nullcontext
+from copy import deepcopy
 import hashlib
+from threading import Lock
+from time import monotonic
 from typing import Any
 
 from aicrm_next.platform.shared.admin_read_fallback import admin_read_unavailable_payload
+from aicrm_next.platform.shared.runtime import pytest_environment
 
 from .models import InternalEvent, InternalEventConsumerAttempt, InternalEventConsumerRun
 from .config import (
@@ -18,6 +23,10 @@ from .repository import InternalEventRepository, build_internal_event_repository
 from .service import InternalEventService
 
 ROUTE_OWNER = "ai_crm_next"
+OVERVIEW_CACHE_TTL_SECONDS = 10.0
+
+_overview_cache_lock = Lock()
+_overview_cache: tuple[float, tuple[Any, ...], dict[str, Any]] | None = None
 
 FILTER_KEYS = (
     "event_section",
@@ -106,6 +115,52 @@ def _public_filters(filters: dict[str, Any]) -> dict[str, str]:
         if public_value:
             public[key] = public_value
     return public
+
+
+def reset_internal_event_overview_cache() -> None:
+    global _overview_cache
+    with _overview_cache_lock:
+        _overview_cache = None
+
+
+def _overview_cache_key(
+    repository: InternalEventRepository,
+    filters: dict[str, Any],
+    *,
+    event_types: list[str],
+    consumers: list[str],
+    event_consumers: list[tuple[str, str]],
+) -> tuple[Any, ...] | None:
+    if (
+        pytest_environment()
+        or not bool(getattr(repository, "admin_overview_cache_enabled", False))
+        or any(_text(value) for value in filters.values())
+    ):
+        return None
+    return (
+        tuple(event_types),
+        tuple(consumers),
+        tuple((str(event_type), str(consumer)) for event_type, consumer in event_consumers),
+    )
+
+
+def _cached_overview(key: tuple[Any, ...] | None) -> dict[str, Any] | None:
+    if key is None:
+        return None
+    timestamp = monotonic()
+    with _overview_cache_lock:
+        cached = _overview_cache
+        if cached is None or cached[0] <= timestamp or cached[1] != key:
+            return None
+        return deepcopy(cached[2])
+
+
+def _store_overview(key: tuple[Any, ...] | None, value: dict[str, Any]) -> None:
+    global _overview_cache
+    if key is None:
+        return
+    with _overview_cache_lock:
+        _overview_cache = (monotonic() + OVERVIEW_CACHE_TTL_SECONDS, key, deepcopy(value))
 
 
 def internal_event_filters(params: dict[str, Any] | None = None) -> dict[str, str]:
@@ -299,25 +354,59 @@ def build_events_payload(params: dict[str, Any] | None = None, *, repository: In
     filters = internal_event_filters(params)
     limit = _int((params or {}).get("limit"), default=50, minimum=1, maximum=200)
     offset = _int((params or {}).get("offset"), default=0, minimum=0, maximum=100000)
+    configured_pairs = allowed_event_consumer_pairs()
+    configured_event_types = allowed_event_types()
+    configured_consumers = allowed_consumers()
+    cache_key = _overview_cache_key(
+        repository,
+        filters,
+        event_types=configured_event_types,
+        consumers=configured_consumers,
+        event_consumers=configured_pairs,
+    )
+    cached_overview = _cached_overview(cache_key)
+    read_batch = getattr(repository, "read_batch", None)
+    batch_scope = read_batch() if callable(read_batch) else nullcontext(repository)
     try:
-        events, total = repository.list_events(filters, limit=limit, offset=offset)
-        runs_by_event = repository.list_consumer_runs_for_events([event.event_id for event in events])
-        items = [event_list_item(event, runs_by_event.get(event.event_id, [])) for event in events]
-        metrics = repository.queue_metrics(filters)
-        effective_filters: dict[str, Any] = dict(filters)
-        configured_pairs = allowed_event_consumer_pairs()
-        configured_event_types = allowed_event_types()
-        configured_consumers = allowed_consumers()
-        if configured_event_types:
-            effective_filters["event_types"] = configured_event_types
-        if configured_pairs:
-            effective_filters["event_consumers"] = configured_pairs
-        else:
-            if configured_consumers:
-                effective_filters["consumer_names"] = configured_consumers
-        effective_metrics = repository.queue_metrics(effective_filters) if effective_filters else metrics
+        with batch_scope:
+            events, measured_total = repository.list_events(
+                filters,
+                limit=limit,
+                offset=offset,
+                include_total=cached_overview is None,
+                summary_only=True,
+            )
+            runs_by_event = repository.list_consumer_runs_for_events([event.event_id for event in events])
+            if cached_overview is None:
+                metrics = repository.queue_metrics(filters)
+                effective_filters: dict[str, Any] = dict(filters)
+                if configured_event_types:
+                    effective_filters["event_types"] = configured_event_types
+                if configured_pairs:
+                    effective_filters["event_consumers"] = configured_pairs
+                elif configured_consumers:
+                    effective_filters["consumer_names"] = configured_consumers
+                effective_metrics = (
+                    repository.queue_metrics(effective_filters)
+                    if any(bool(value) for value in effective_filters.values())
+                    else metrics
+                )
+                total = measured_total
+                _store_overview(
+                    cache_key,
+                    {
+                        "total": total,
+                        "metrics": metrics,
+                        "effective_metrics": effective_metrics,
+                    },
+                )
+            else:
+                total = int(cached_overview["total"])
+                metrics = dict(cached_overview["metrics"])
+                effective_metrics = dict(cached_overview["effective_metrics"])
     except Exception as exc:
         return _read_unavailable_payload(filters, exc, limit=limit, offset=offset)
+    items = [event_list_item(event, runs_by_event.get(event.event_id, [])) for event in events]
     return {
         "ok": True,
         "items": items,
@@ -340,6 +429,7 @@ def build_events_payload(params: dict[str, Any] | None = None, *, repository: In
             "consumers": configured_consumers,
         },
         "count_semantics": "计数来自消费者执行记录，不代表消息、外部投递、标签等下游业务已经交付。",
+        "overview_snapshot_ttl_seconds": int(OVERVIEW_CACHE_TTL_SECONDS),
         "route_owner": ROUTE_OWNER,
         "real_external_call_executed": False,
     }

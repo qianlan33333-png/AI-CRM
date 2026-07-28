@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import uuid4
@@ -39,6 +40,43 @@ EVENT_SECTION_EVENT_TYPES: dict[str, tuple[str, ...]] = {
     "owner_migration": ("owner_migration.executed",),
 }
 LEASE_TIMEOUT = timedelta(minutes=5)
+
+
+class SQLAlchemyReadBatchMixin:
+    _read_session: Session | None
+    _session_factory: Callable[[], Session]
+
+    @contextmanager
+    def read_batch(self) -> Iterator[Any]:
+        if self._read_session is not None:
+            yield self
+            return
+        with self._session_factory() as session:
+            self._read_session = session
+            try:
+                yield self
+            finally:
+                self._read_session = None
+
+    def _read_one(self, statement: str, params: dict[str, Any] | None = None) -> dict[str, Any] | None:
+        if self._read_session is None:
+            return None
+        row = self._read_session.execute(text(statement), params or {}).mappings().fetchone()
+        return dict(row) if row else None
+
+    def _read_all(self, statement: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]] | None:
+        if self._read_session is None:
+            return None
+        rows = self._read_session.execute(text(statement), params or {}).mappings().fetchall()
+        return [dict(row) for row in rows]
+
+
+def reset_internal_event_read_caches() -> None:
+    from .api import reset_internal_event_runtime_queue_cache
+    from .view_model import reset_internal_event_overview_cache
+
+    reset_internal_event_overview_cache()
+    reset_internal_event_runtime_queue_cache()
 
 
 def automatic_due_predicate_sql(alias: str = "r") -> str:
@@ -480,7 +518,15 @@ class InternalEventRepository:
     ) -> InternalEvent | None:
         raise NotImplementedError
 
-    def list_events(self, filters: dict[str, Any] | None = None, *, limit: int = 50, offset: int = 0) -> tuple[list[InternalEvent], int]:
+    def list_events(
+        self,
+        filters: dict[str, Any] | None = None,
+        *,
+        limit: int = 50,
+        offset: int = 0,
+        include_total: bool = True,
+        summary_only: bool = False,
+    ) -> tuple[list[InternalEvent], int]:
         raise NotImplementedError
 
     def create_consumer_run(

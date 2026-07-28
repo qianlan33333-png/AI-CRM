@@ -1,9 +1,8 @@
 # ruff: noqa: F401
 from __future__ import annotations
 
-from aicrm_next.platform.shared.runtime import production_data_ready, raw_database_url
-
 from .fanout import validate_fanout_manifest
+from .payment_read.repo import read_wechat_pay_order_for_payment_event
 from .repository_support import (
     AUTOMATIC_PENDING_STATUSES,
     Any,
@@ -18,6 +17,7 @@ from .repository_support import (
     InternalEventOutboxRecord,
     InternalEventRepository,
     LEASE_TIMEOUT,
+    SQLAlchemyReadBatchMixin,
     SQLAlchemyTargetedOutboxMixin,
     Session,
     _SENSITIVE_PAYLOAD_KEYS,
@@ -45,6 +45,7 @@ from .repository_support import (
     public_datetime,
     queue_metric_due_count_breakdowns,
     queue_metric_filter_sql,
+    reset_internal_event_read_caches,
     redact_sensitive_text,
     scrub_summary,
     text,
@@ -59,40 +60,23 @@ from .repository_memory import InMemoryInternalEventRepository
 _fixture_repo = InMemoryInternalEventRepository()
 
 
-def read_wechat_pay_order_for_payment_event(*, lookup: str, aggregate_id: str) -> dict[str, Any]:
-    if not production_data_ready():
-        return {}
-    try:
-        import psycopg
-        from psycopg.rows import dict_row
+class SQLAlchemyInternalEventRepository(SQLAlchemyReadBatchMixin, SQLAlchemyTargetedOutboxMixin, InternalEventRepository):
+    admin_overview_cache_enabled = True
 
-        with psycopg.connect(raw_database_url(), row_factory=dict_row) as conn:
-            if lookup:
-                row = conn.execute("SELECT * FROM wechat_pay_orders WHERE out_trade_no = %s LIMIT 1", (lookup,)).fetchone()
-                if row:
-                    return dict(row)
-            if aggregate_id:
-                row = conn.execute(
-                    "SELECT * FROM wechat_pay_orders WHERE id::text = %s OR out_trade_no = %s LIMIT 1",
-                    (aggregate_id, aggregate_id),
-                ).fetchone()
-                if row:
-                    return dict(row)
-    except Exception as exc:
-        raise RuntimeError("authoritative payment order read failed") from exc
-    return {}
-
-
-class SQLAlchemyInternalEventRepository(SQLAlchemyTargetedOutboxMixin, InternalEventRepository):
     def __init__(self, session_factory: Callable[[], Session] | None = None):
         self._session_factory = session_factory or get_session_factory()
+        self._read_session: Session | None = None
 
     def _one(self, statement: str, params: dict[str, Any] | None = None) -> dict[str, Any] | None:
+        if self._read_session is not None:
+            return self._read_one(statement, params)
         with self._session_factory() as session:
             row = session.execute(text(statement), params or {}).mappings().fetchone()
             return dict(row) if row else None
 
     def _all(self, statement: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+        if self._read_session is not None:
+            return self._read_all(statement, params) or []
         with self._session_factory() as session:
             rows = session.execute(text(statement), params or {}).mappings().fetchall()
             return [dict(row) for row in rows]
@@ -201,7 +185,15 @@ class SQLAlchemyInternalEventRepository(SQLAlchemyTargetedOutboxMixin, InternalE
     def get_event(self, event_id: str) -> InternalEvent | None:
         return _public_event(self._one("SELECT * FROM internal_event WHERE event_id = :event_id LIMIT 1", {"event_id": _text(event_id)}))
 
-    def list_events(self, filters: dict[str, Any] | None = None, *, limit: int = 50, offset: int = 0) -> tuple[list[InternalEvent], int]:
+    def list_events(
+        self,
+        filters: dict[str, Any] | None = None,
+        *,
+        limit: int = 50,
+        offset: int = 0,
+        include_total: bool = True,
+        summary_only: bool = False,
+    ) -> tuple[list[InternalEvent], int]:
         filters = dict(filters or {})
         clauses: list[str] = []
         params: dict[str, Any] = {}
@@ -264,10 +256,19 @@ class SQLAlchemyInternalEventRepository(SQLAlchemyTargetedOutboxMixin, InternalE
             )
             params["consumer_status"] = _text(filters.get("consumer_status"))
         where = "WHERE " + " AND ".join(clauses) if clauses else ""
-        count_row = self._one(f"SELECT COUNT(*) AS total FROM internal_event {where}", params)
+        count_row = self._one(f"SELECT COUNT(*) AS total FROM internal_event {where}", params) if include_total else None
+        projection = (
+            """id, tenant_id, event_id, event_type, event_version,
+                   aggregate_type, aggregate_id, subject_type, subject_id,
+                   idempotency_key, source_module, source_route, trace_id,
+                   request_id, correlation_id, execution_id, parent_execution_id,
+                   occurred_at, payload_summary_json, created_at"""
+            if summary_only
+            else "*"
+        )
         rows = self._all(
             f"""
-            SELECT *
+            SELECT {projection}
             FROM internal_event
             {where}
             ORDER BY occurred_at DESC, id DESC
@@ -415,7 +416,10 @@ class SQLAlchemyInternalEventRepository(SQLAlchemyTargetedOutboxMixin, InternalE
             return grouped
         rows = self._all(
             """
-            SELECT r.*, r.xmin::text AS row_version
+            SELECT r.id, r.tenant_id, r.event_id, r.consumer_name,
+                   r.consumer_type, r.execution_id, r.parent_execution_id,
+                   r.lane, r.available_at, r.status, r.next_retry_at,
+                   r.hold_reason, r.xmin::text AS row_version
             FROM internal_event_consumer_run r
             WHERE r.event_id = ANY(:event_ids)
             ORDER BY r.created_at DESC, r.id DESC
@@ -1488,7 +1492,7 @@ class SQLAlchemyInternalEventRepository(SQLAlchemyTargetedOutboxMixin, InternalE
 def reset_internal_event_fixture_state() -> None:
     global _fixture_repo
     _fixture_repo = InMemoryInternalEventRepository()
-
+    reset_internal_event_read_caches()
 
 def build_internal_event_repository() -> InternalEventRepository:
     if fixture_mode():

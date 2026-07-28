@@ -131,12 +131,21 @@ class InMemoryInternalEventRepository(InternalEventRepository):
                 return _public_event(row)
         return None
 
-    def list_events(self, filters: dict[str, Any] | None = None, *, limit: int = 50, offset: int = 0) -> tuple[list[InternalEvent], int]:
+    def list_events(
+        self,
+        filters: dict[str, Any] | None = None,
+        *,
+        limit: int = 50,
+        offset: int = 0,
+        include_total: bool = True,
+        summary_only: bool = False,
+    ) -> tuple[list[InternalEvent], int]:
+        del summary_only
         rows = list(self._filtered_events(filters or {}))
         rows.sort(key=lambda row: (row.get("occurred_at") or "", int(row.get("id") or 0)), reverse=True)
         total = len(rows)
         window = rows[max(0, int(offset or 0)) : max(0, int(offset or 0)) + max(1, min(int(limit or 50), 200))]
-        return [event for row in window if (event := _public_event(row)) is not None], total
+        return [event for row in window if (event := _public_event(row)) is not None], total if include_total else 0
 
     def create_consumer_run(
         self,

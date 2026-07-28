@@ -779,6 +779,11 @@ repositories:
       - queue_runtime_control
     table_writes:
       - internal_event_outbox
+  aicrm_next/platform/platform_foundation/internal_events/payment_read/repo.py:
+    capability_owner: aicrm_next.platform.platform_foundation.internal_events
+    table_reads:
+      - wechat_pay_orders
+    table_writes: []
   aicrm_next/platform/platform_foundation/internal_events/repository.py:
     capability_owner: aicrm_next.platform.platform_foundation.internal_events
     table_reads:
@@ -787,7 +792,6 @@ repositories:
       - internal_event_consumer_run
       - internal_event_outbox
       - queue_runtime_control
-      - wechat_pay_orders
     table_writes:
       - internal_event
       - internal_event_consumer_attempt

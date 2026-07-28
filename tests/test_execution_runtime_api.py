@@ -7,6 +7,7 @@ from fastapi import HTTPException
 
 from aicrm_next.platform.platform_foundation.execution_runtime import api
 from aicrm_next.platform.platform_foundation.execution_runtime.read_model import ExecutionRuntimeReadModel
+from aicrm_next.platform.platform_foundation.internal_events import api as internal_events_api
 
 
 def _body(response) -> dict:
@@ -163,3 +164,23 @@ def test_lane_summary_returns_zero_without_query_for_empty_scope() -> None:
     assert summary["lanes"] == []
     assert summary["raw_open"] == 0
     assert summary["rollout_mode"] == "blocked"
+
+
+def test_internal_event_runtime_summary_reuses_short_lived_snapshot(monkeypatch) -> None:
+    calls: list[frozenset[str]] = []
+
+    class FakeReadModel:
+        def lane_summary(self, lane_names):
+            calls.append(frozenset(lane_names))
+            return {"raw_open": 7, "lanes": [{"lane": "internal_general", "raw_open": 7}]}
+
+    monkeypatch.setattr(internal_events_api, "pytest_environment", lambda: False)
+    monkeypatch.setattr(internal_events_api, "ExecutionRuntimeReadModel", FakeReadModel)
+    internal_events_api.reset_internal_event_runtime_queue_cache()
+
+    first = internal_events_api._runtime_queue_summary()
+    first["raw_open"] = 99
+    second = internal_events_api._runtime_queue_summary()
+
+    assert second["raw_open"] == 7
+    assert calls == [frozenset({"internal_general", "internal_financial"})]
