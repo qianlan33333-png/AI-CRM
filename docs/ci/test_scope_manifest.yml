@@ -2399,7 +2399,6 @@
         "aicrm_next/platform/shared/database.py",
         "aicrm_next/platform/shared/errors.py",
         "aicrm_next/platform/shared/llm_output_guard.py",
-        "aicrm_next/platform/shared/pagination.py",
         "aicrm_next/platform/shared/postgres_test_guard.py",
         "aicrm_next/platform/shared/release.py",
         "aicrm_next/platform/shared/share_qr.py",
