@@ -8,6 +8,13 @@ class CloudBroadcastProjectionWritePort(Protocol):
 
     def mark_dispatching_dbapi(self, executor: Any, *, job_id: int) -> None: ...
 
+    def mark_delegated_dbapi(
+        self,
+        executor: Any,
+        *,
+        job_id: int,
+    ) -> None: ...
+
     def finalize_dispatch_dbapi(
         self,
         executor: Any,

@@ -286,7 +286,9 @@ repositories:
     table_reads:
       - broadcast_jobs
     table_writes:
+      - broadcast_job_events
       - broadcast_jobs
+      - outbound_tasks
   aicrm_next/platform/platform_foundation/background_jobs/cloud_broadcast_projection_write_repository.py:
     capability_owner: aicrm_next.extensions.growth.cloud_orchestrator
     table_reads:

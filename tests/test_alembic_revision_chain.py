@@ -137,8 +137,13 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     private_message_contact_absence_ack_scope_source = (
         private_message_contact_absence_ack_scope.read_text(encoding="utf-8")
     )
+    ai_assistant_bulk_lane = VERSIONS / "0157_ai_assistant_bulk_lane.py"
+    ai_assistant_bulk_lane_source = ai_assistant_bulk_lane.read_text(encoding="utf-8")
 
-    assert heads == {"0156_campaign_preparation_context"}
+    assert heads == {"0157_ai_assistant_bulk_lane"}
+    assert revisions["0157_ai_assistant_bulk_lane"]["down_revision"] == (
+        "0156_campaign_preparation_context"
+    )
     assert revisions["0156_campaign_preparation_context"]["down_revision"] == (
         "0155_private_message_contact_absence_ack_scope"
     )
@@ -278,6 +283,10 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     )
     assert "external_contact_relationship_absent" in private_message_contact_absence_ack_scope_source
     assert "def downgrade()" in private_message_contact_absence_ack_scope_source
+    assert "wecom_ai_assistant_bulk" in ai_assistant_bulk_lane_source
+    assert "INITIAL_CAPACITY = 4" in ai_assistant_bulk_lane_source
+    assert "MAX_RESERVED_CAPACITY = 24" in ai_assistant_bulk_lane_source
+    assert "'blocked'" in ai_assistant_bulk_lane_source
     assert "global_max_in_flight = global_max_in_flight +" in welcome_realtime_source
     assert "CREATE INDEX CONCURRENTLY IF NOT EXISTS" in sidebar_recent_message_index_source
     assert "ix_customer_recent_message_next_unionid_time_id" in sidebar_recent_message_index_source

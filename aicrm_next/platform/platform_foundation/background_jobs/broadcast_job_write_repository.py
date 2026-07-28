@@ -82,6 +82,109 @@ class PostgresBroadcastJobWriteRepository:
             (str(execution_id or "").strip(), int(job_id)),
         )
 
+    def delegate_external_effect_dbapi(
+        self,
+        executor: Any,
+        *,
+        job_id: int,
+        external_effect_job_id: int,
+        trace_id: str,
+        actor: str,
+    ) -> dict[str, Any] | None:
+        current = executor.execute(
+            "SELECT status, external_effect_job_id FROM broadcast_jobs WHERE id = %s FOR UPDATE",
+            (int(job_id),),
+        ).fetchone()
+        if not current:
+            return None
+        status = str(current.get("status") or "").strip()
+        current_effect_id = int(current.get("external_effect_job_id") or 0)
+        if status not in {"queued", "delegated"}:
+            return None
+        if current_effect_id and current_effect_id != int(external_effect_job_id):
+            raise RuntimeError("broadcast job is already linked to another external effect")
+        outbound_task = executor.execute(
+            """
+            INSERT INTO outbound_tasks (
+                broadcast_job_id, task_type, request_payload, response_payload,
+                wecom_task_id, status, trace_id
+            ) VALUES (
+                %s, 'broadcast_job/external_effect_delegate',
+                jsonb_build_object('broadcast_job_id', %s),
+                jsonb_build_object('external_effect_job_ids', jsonb_build_array(%s)),
+                '', 'delegated', %s
+            )
+            ON CONFLICT (broadcast_job_id) WHERE broadcast_job_id IS NOT NULL
+            DO UPDATE SET
+                task_type = EXCLUDED.task_type,
+                request_payload = EXCLUDED.request_payload,
+                response_payload = EXCLUDED.response_payload,
+                status = EXCLUDED.status,
+                trace_id = EXCLUDED.trace_id
+            RETURNING id
+            """,
+            (
+                int(job_id),
+                int(job_id),
+                int(external_effect_job_id),
+                str(trace_id or "").strip(),
+            ),
+        ).fetchone()
+        row = executor.execute(
+            """
+            UPDATE broadcast_jobs
+            SET status = 'delegated',
+                outbound_task_id = %s,
+                external_effect_job_id = %s,
+                execution_owner = 'external_effect_job',
+                result_summary_json = jsonb_build_object(
+                    'status', 'delegated',
+                    'materialization', 'approval_transaction',
+                    'external_effect_job_id', %s,
+                    'side_effect_executed', FALSE,
+                    'provider_result_received', FALSE
+                ),
+                claim_token = '',
+                lease_expires_at = NULL,
+                completed_at = NULL,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = %s
+              AND status IN ('queued', 'delegated')
+              AND (external_effect_job_id IS NULL OR external_effect_job_id = %s)
+            RETURNING *
+            """,
+            (
+                int((outbound_task or {}).get("id") or 0) or None,
+                int(external_effect_job_id),
+                int(external_effect_job_id),
+                int(job_id),
+                int(external_effect_job_id),
+            ),
+        ).fetchone()
+        if row and status != "delegated":
+            executor.execute(
+                """
+                INSERT INTO broadcast_job_events (
+                    job_id, event_type, from_status, to_status,
+                    event_payload, actor_type, actor_id
+                ) VALUES (
+                    %s, 'effect_materialized', %s, 'delegated',
+                    jsonb_build_object(
+                        'external_effect_job_id', %s,
+                        'materialization', 'approval_transaction'
+                    ),
+                    'system', %s
+                )
+                """,
+                (
+                    int(job_id),
+                    status,
+                    int(external_effect_job_id),
+                    str(actor or "immediate_broadcast_delegate")[:200],
+                ),
+            )
+        return dict(row) if row else None
+
     def cancel_campaign_jobs_dbapi(
         self,
         executor: Any,

@@ -41,6 +41,28 @@ class PostgresCloudBroadcastProjectionWriteRepository:
             (int(job_id),),
         )
 
+    def mark_delegated_dbapi(self, executor: Any, *, job_id: int) -> None:
+        executor.execute(
+            """
+            UPDATE cloud_broadcast_plan_recipients recipient
+            SET send_status = 'delegated', last_error = '', updated_at = CURRENT_TIMESTAMP
+            WHERE recipient.broadcast_job_id = %s
+              AND recipient.send_status IN ('pending', 'queued', 'delegated')
+            """,
+            (int(job_id),),
+        )
+        executor.execute(
+            """
+            UPDATE cloud_broadcast_plan_recipient_messages message
+            SET status = 'delegated', last_error = '', updated_at = CURRENT_TIMESTAMP
+            FROM cloud_broadcast_plan_recipients recipient
+            WHERE recipient.broadcast_job_id = %s
+              AND message.recipient_id = recipient.id
+              AND message.status IN ('pending', 'queued', 'delegated')
+            """,
+            (int(job_id),),
+        )
+
     def finalize_dispatch_dbapi(
         self,
         executor: Any,

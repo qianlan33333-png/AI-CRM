@@ -149,7 +149,7 @@ def test_broadcast_owner_link_and_external_effect_commit_atomically(next_pg_sche
     assert effect["business_type"] == "broadcast_job"
     assert effect["business_id"] == str(seeded["job_id"])
     assert effect["status"] in {"blocked", "queued"}
-    assert effect["lane"] == "wecom_bulk"
+    assert effect["lane"] == "wecom_ai_assistant_bulk"
     assert effect["attempt_count"] == 0
 
 

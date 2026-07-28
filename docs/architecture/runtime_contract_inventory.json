@@ -461,7 +461,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/automation/background_jobs/broadcast_queue_worker.py",
       "key": "AICRM_DYNAMIC_MINIPROGRAM_CARD_V1_ENABLED",
-      "line": 882
+      "line": 890
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -563,7 +563,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/automation/background_jobs/broadcast_queue_worker.py",
       "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS",
-      "line": 768
+      "line": 776
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -2057,7 +2057,7 @@
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/channels/integration_gateway/wecom_customer_group_client.py",
       "key": "AICRM_WECOM_GROUP_API_BASE",
-      "line": 12
+      "line": 17
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -2069,7 +2069,7 @@
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/channels/integration_gateway/wecom_customer_group_client.py",
       "key": "AICRM_WECOM_GROUP_CORP_ID",
-      "line": 12
+      "line": 17
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -2081,7 +2081,7 @@
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/channels/integration_gateway/wecom_customer_group_client.py",
       "key": "AICRM_WECOM_GROUP_SECRET",
-      "line": 12
+      "line": 17
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -2093,7 +2093,7 @@
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/channels/integration_gateway/wecom_customer_group_client.py",
       "key": "AICRM_WECOM_GROUP_TIMEOUT",
-      "line": 12
+      "line": 17
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -2321,13 +2321,13 @@
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/automation/background_jobs/broadcast_queue_worker.py",
       "key": "BROADCAST_QUEUE_LEASE_SECONDS",
-      "line": 1207
+      "line": 1215
     },
     {
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/automation/background_jobs/broadcast_queue_worker.py",
       "key": "BROADCAST_QUEUE_RETRY_DELAY_SECONDS",
-      "line": 397
+      "line": 405
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -3101,7 +3101,7 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/platform/platform_foundation/external_effects/repo_contract.py",
       "key": "WECOM_AGENT_ID",
-      "line": 200
+      "line": 207
     },
     {
       "accessor": "managed_runtime_setting",
@@ -3113,7 +3113,7 @@
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/channels/integration_gateway/wecom_customer_group_client.py",
       "key": "WECOM_API_BASE",
-      "line": 12
+      "line": 17
     },
     {
       "accessor": "managed_runtime_setting",
@@ -3179,7 +3179,7 @@
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/channels/integration_gateway/wecom_customer_group_client.py",
       "key": "WECOM_ARCHIVE_TIMEOUT",
-      "line": 12
+      "line": 17
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -3251,7 +3251,7 @@
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/channels/integration_gateway/wecom_customer_group_client.py",
       "key": "WECOM_CONTACT_SECRET",
-      "line": 12
+      "line": 17
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -3311,7 +3311,7 @@
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/channels/integration_gateway/wecom_customer_group_client.py",
       "key": "WECOM_CORP_ID",
-      "line": 12
+      "line": 17
     },
     {
       "accessor": "managed_runtime_setting",
@@ -3401,7 +3401,7 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/platform/platform_foundation/external_effects/repo_contract.py",
       "key": "WECOM_CORP_ID",
-      "line": 186
+      "line": 193
     },
     {
       "accessor": "managed_runtime_setting",
@@ -3467,7 +3467,7 @@
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/channels/integration_gateway/wecom_customer_group_client.py",
       "key": "WECOM_SECRET",
-      "line": 12
+      "line": 17
     },
     {
       "accessor": "managed_runtime_setting",
@@ -4761,7 +4761,7 @@
     }
   ],
   "migration_heads": [
-    "0156_campaign_preparation_context"
+    "0157_ai_assistant_bulk_lane"
   ],
   "openapi_components": {
     "schemas": {
@@ -49664,7 +49664,7 @@
         "aicrm_next.platform.admin_jobs"
       ],
       "table": "broadcast_job_events",
-      "write_owner": "aicrm_next.automation.background_jobs.broadcast_queue_worker"
+      "write_owner": "aicrm_next.automation.background_jobs"
     },
     {
       "domain": "broadcast_jobs",
@@ -50935,7 +50935,7 @@
         "aicrm_next.platform.admin_jobs"
       ],
       "table": "outbound_tasks",
-      "write_owner": "aicrm_next.automation.background_jobs.broadcast_queue_worker"
+      "write_owner": "aicrm_next.automation.background_jobs"
     },
     {
       "domain": "outbound_webhook",

@@ -97,7 +97,6 @@ def test_private_broadcast_materializes_all_content_package_materials_into_exter
             )
         ]
     )
-
     summary = run_broadcast_queue_worker(repo=repo, dispatcher=dispatcher)
     jobs, total = effects.list_jobs({}, limit=10)
 
@@ -327,6 +326,29 @@ def test_private_broadcast_plans_media_dependencies_before_releasing_final_effec
     assert {job.effect_type for job in dependencies} == {"wecom.media.upload"}
     assert {job.status for job in dependencies} == {"queued"}
     assert repo.delegated[0]["external_effect_job_ids"][0] == final.id
+
+
+def test_ai_assistant_private_broadcast_routes_to_dedicated_lane_with_sender_batch_fairness():
+    effects, dispatcher = _dispatcher()
+    job = _job(
+        business_domain="ai_assistant",
+        batch_key="agent-batch-7",
+        payload={
+            "channel": "wecom_private",
+            "owner_userid": "owner-7",
+            "content_text": "hello",
+        },
+    )
+    repo = FakeRepo([job])
+
+    summary = run_broadcast_queue_worker(repo=repo, dispatcher=dispatcher)
+    jobs, total = effects.list_jobs({}, limit=10)
+
+    assert total == 1
+    assert summary["delegated"] == 1
+    assert jobs[0].lane == "wecom_ai_assistant_bulk"
+    assert jobs[0].ordering_key == "external_contact:wm_test"
+    assert jobs[0].fairness_key == f"broadcast:{jobs[0].payload_json['sender']}:agent-batch-7"
 
 
 def test_group_broadcast_is_only_delegated_to_external_effect():

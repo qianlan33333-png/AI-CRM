@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import json
 from datetime import datetime
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 from uuid import uuid4
 
 from aicrm_next.platform.shared.release import current_release_sha
@@ -785,6 +786,7 @@ class ExecutionRuntimeRepository:
         notification_seen: bool = False,
         drain_completed: bool = False,
         release_sha: str | None = None,
+        metrics: Mapping[str, Any] | None = None,
     ) -> None:
         with self._connect(self._database_url) as connection:
             connection.execute(
@@ -792,12 +794,12 @@ class ExecutionRuntimeRepository:
                 INSERT INTO queue_worker_heartbeat (
                     service_name, worker_id, queue_kind, generation, release_sha,
                     rollout_mode, listener_connected, last_notification_at,
-                    last_drain_at, heartbeat_at, started_at
+                    last_drain_at, metrics_json, heartbeat_at, started_at
                 ) VALUES (
                     %s, %s, %s, %s, %s, %s, %s,
                     CASE WHEN %s THEN CURRENT_TIMESTAMP ELSE NULL END,
                     CASE WHEN %s THEN CURRENT_TIMESTAMP ELSE NULL END,
-                    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                    %s::jsonb, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
                 )
                 ON CONFLICT (service_name, worker_id) DO UPDATE
                 SET queue_kind = EXCLUDED.queue_kind,
@@ -805,6 +807,7 @@ class ExecutionRuntimeRepository:
                     release_sha = EXCLUDED.release_sha,
                     rollout_mode = EXCLUDED.rollout_mode,
                     listener_connected = EXCLUDED.listener_connected,
+                    metrics_json = EXCLUDED.metrics_json,
                     last_notification_at = CASE
                         WHEN %s THEN CURRENT_TIMESTAMP
                         ELSE queue_worker_heartbeat.last_notification_at
@@ -825,6 +828,7 @@ class ExecutionRuntimeRepository:
                     bool(listener_connected),
                     bool(notification_seen),
                     bool(drain_completed),
+                    json.dumps(dict(metrics or {}), ensure_ascii=False, default=str),
                     bool(notification_seen),
                     bool(drain_completed),
                 ),

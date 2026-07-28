@@ -161,6 +161,11 @@ class SafeSkippedBroadcastDispatcher:
                     idempotency_suffix=f"private:{target}",
                     ordering_key=f"external_contact:{target}",
                     status="planned" if material_uploads else "queued",
+                    lane=(
+                        "wecom_ai_assistant_bulk"
+                        if _text(job.get("business_domain")) == "ai_assistant"
+                        else "wecom_bulk"
+                    ),
                 )
             )
         for upload in material_uploads:
@@ -307,7 +312,10 @@ def _effect_plan_request(
         "parent_execution_id": _text(job.get("execution_id")),
         "lane": lane,
         "ordering_key": ordering_key,
-        "fairness_key": f"broadcast:{_text(job.get('batch_key')) or job_id}",
+        "fairness_key": (
+            f"broadcast:{_text(payload.get('sender') or payload.get('owner_userid')) or 'unknown'}:"
+            f"{_text(job.get('batch_key')) or job_id}"
+        ),
     }
 
 

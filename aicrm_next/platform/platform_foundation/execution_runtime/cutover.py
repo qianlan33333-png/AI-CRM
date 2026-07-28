@@ -123,6 +123,7 @@ ACTIVATABLE_LANES = frozenset(
         "wecom_welcome",
         "wecom_interactive",
         "wecom_bulk",
+        "wecom_ai_assistant_bulk",
         "wecom_media",
         "outbound_webhook",
     }

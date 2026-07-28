@@ -97,6 +97,33 @@ def test_worker_id_is_stable_for_the_same_host_and_queue(monkeypatch) -> None:
     assert captured == ["queue-host:webhook", "queue-host:webhook"]
 
 
+def test_external_runtime_composes_dedicated_ai_assistant_bulk_lane(monkeypatch) -> None:
+    captured: list[dict] = []
+    monkeypatch.setattr(
+        run_execution_runtime,
+        "build_external_effect_adapter_registry",
+        lambda *_args, **_kwargs: object(),
+    )
+    monkeypatch.setattr(
+        run_execution_runtime,
+        "_service",
+        lambda **kwargs: captured.append(kwargs) or object(),
+    )
+    args = run_execution_runtime._parse_args(["--queue-kind", "external"])
+
+    run_execution_runtime._build_services(args)
+
+    assert captured[0]["lane_names"] == (
+        "wecom_welcome",
+        "wecom_interactive",
+        "wecom_bulk",
+        "wecom_ai_assistant_bulk",
+        "wecom_media",
+        "outbound_webhook",
+    )
+    assert run_execution_runtime.DEFAULT_LANE_CAPACITY["wecom_ai_assistant_bulk"] == 24
+
+
 def test_execute_requires_explicit_environment_gate(monkeypatch) -> None:
     monkeypatch.delenv("AICRM_QUEUE_RUNTIME_EXECUTE", raising=False)
 

@@ -16,6 +16,9 @@ from aicrm_next.platform.platform_foundation.background_jobs.broadcast_job_write
 from aicrm_next.platform.platform_foundation.background_jobs.cloud_broadcast_projection_write_port import (
     build_cloud_broadcast_projection_write_port,
 )
+from aicrm_next.platform.platform_foundation.background_jobs.immediate_broadcast_delegate import (
+    AiAssistantImmediateBroadcastDelegate,
+)
 from aicrm_next.platform.platform_foundation.admin_audit import (
     AdminAuditRecord,
     build_admin_audit_port,
@@ -30,6 +33,16 @@ from .time_helpers import campaign_step_due_iso
 
 def _text(value: Any) -> str:
     return str(value or "").strip()
+
+
+def _resolved_external_userid_for_unionid(executor: Any, unionid: str) -> str:
+    resolution = resolve_identity_with_dbapi(
+        executor,
+        ResolvePersonIdentityRequest(unionid=_text(unionid) or None),
+    )
+    if resolution.status != "resolved" or resolution.identity is None:
+        return ""
+    return _text(resolution.identity.external_userid)
 
 
 def _json(value: Any, *, default: Any) -> Any:
@@ -793,6 +806,8 @@ class PostgresCloudPlanRepository(CloudLegacyPostgresRepositoryMixin):
         created_count = 0
         reused_count = 0
         target_count = 0
+        immediate_effect_job_ids: list[int] = []
+        immediate_not_materialized: list[dict[str, Any]] = []
         planner_idempotency_key = _plan_broadcast_idempotency_key(
             normalized_plan_id,
             source_event_id=source_event_id,
@@ -908,6 +923,28 @@ class PostgresCloudPlanRepository(CloudLegacyPostgresRepositoryMixin):
                         job_id=job_id,
                         approved_by=_text(operator) or "internal_event_worker",
                     )
+                    immediate = AiAssistantImmediateBroadcastDelegate().delegate_dbapi(
+                        conn,
+                        plan=plan_dict,
+                        recipient=recipient,
+                        job_id=job_id,
+                        operator=_text(operator) or "internal_event_worker",
+                        external_userid=_resolved_external_userid_for_unionid(
+                            conn,
+                            _text(recipient.get("unionid")),
+                        ),
+                    )
+                    if int(immediate.get("external_effect_job_id") or 0):
+                        immediate_effect_job_ids.append(
+                            int(immediate["external_effect_job_id"])
+                        )
+                    elif immediate.get("status") == "not_materialized":
+                        immediate_not_materialized.append(
+                            {
+                                "recipient_id": recipient_id,
+                                "reason": _text(immediate.get("reason")),
+                            }
+                        )
             if not job_ids:
                 return {"status": "skipped", "reason": "missing_send_content"}
             self._audit(
@@ -925,6 +962,8 @@ class PostgresCloudPlanRepository(CloudLegacyPostgresRepositoryMixin):
                     "reused_count": reused_count,
                     "target_count": target_count,
                     "idempotency_key": planner_idempotency_key,
+                    "immediate_effect_count": len(set(immediate_effect_job_ids)),
+                    "immediate_not_materialized_count": len(immediate_not_materialized),
                 },
             )
             conn.commit()
@@ -943,6 +982,9 @@ class PostgresCloudPlanRepository(CloudLegacyPostgresRepositoryMixin):
             "trace_id": normalized_plan_id,
             "downstream_status": "broadcast_job_queued",
             "push_center_job_id": f"broadcast_job:{first_job_id}" if first_job_id else "",
+            "immediate_effect_job_ids": sorted(set(immediate_effect_job_ids)),
+            "immediate_effect_count": len(set(immediate_effect_job_ids)),
+            "immediate_not_materialized": immediate_not_materialized,
         }
 
     def create_or_reuse_plan_broadcast_job(
@@ -1135,9 +1177,36 @@ class PostgresCloudPlanRepository(CloudLegacyPostgresRepositoryMixin):
                 approved_by=_text(operator) or "crm_console",
                 job_id=job_id or None,
             )
+            immediate = (
+                AiAssistantImmediateBroadcastDelegate().delegate_dbapi(
+                    conn,
+                    plan=dict(plan),
+                    recipient=dict(row or recipient),
+                    job_id=job_id,
+                    operator=_text(operator) or "crm_console",
+                    external_userid=_resolved_external_userid_for_unionid(
+                        conn,
+                        _text((row or recipient).get("unionid")),
+                    ),
+                )
+                if job_id
+                else {"status": "not_materialized", "reason": "broadcast_job_missing"}
+            )
+            refreshed = conn.execute(
+                "SELECT * FROM cloud_broadcast_plan_recipients WHERE id = %s",
+                (int(recipient_id),),
+            ).fetchone()
+            if refreshed:
+                row = refreshed
             self._audit(conn, operator=operator, action_type="cloud_plan_recipient_approve", target_type="cloud_broadcast_plan_recipient", target_id=f"{normalized_plan_id}:{int(recipient_id)}", before=before, after=dict(row or {}))
             conn.commit()
-        return {"status": "already_approved" if existing else "approved", "recipient": _recipient_view(dict(row or {})), "job_id": job_id}
+        return {
+            "status": "already_approved" if existing else "approved",
+            "recipient": _recipient_view(dict(row or {})),
+            "job_id": job_id,
+            "immediate_effect": immediate,
+            "external_effect_job_id": int(immediate.get("external_effect_job_id") or 0),
+        }
 
     def reject_recipient(self, plan_id: str, recipient_id: int, *, operator: str, reason: str = "") -> dict[str, Any]:
         with self._connect() as conn:

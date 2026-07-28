@@ -11,6 +11,7 @@ DEFAULT_LANE_CAPACITY: dict[str, int] = {
     "wecom_welcome": 2,
     "wecom_interactive": 4,
     "wecom_bulk": 1,
+    "wecom_ai_assistant_bulk": 24,
     "wecom_media": 2,
     "outbound_webhook": 4,
 }

@@ -21,7 +21,14 @@ from .models import (
 
 _MODEL_FIELD_NAMES: dict[type[Any], set[str]] = {}
 EXTERNAL_EFFECT_LANES = frozenset(
-    {"wecom_welcome", "wecom_interactive", "wecom_bulk", "wecom_media", "outbound_webhook"}
+    {
+        "wecom_welcome",
+        "wecom_interactive",
+        "wecom_bulk",
+        "wecom_ai_assistant_bulk",
+        "wecom_media",
+        "outbound_webhook",
+    }
 )
 
 

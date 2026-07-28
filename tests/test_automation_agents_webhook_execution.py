@@ -583,13 +583,13 @@ def test_external_effect_agent_webhook_continuation_enqueues_broadcast_job(next_
     assert "post_success_continuation" not in response_summary
     assert item["status"] == "callback_succeeded"
     assert recipient["approval_status"] == "approved"
-    assert recipient["send_status"] == "queued"
+    assert recipient["send_status"] == "delegated"
     assert recipient["broadcast_job_id"] == broadcast["id"]
-    assert message["status"] == "queued"
+    assert message["status"] == "delegated"
     assert message["content_text"] == "收到问卷啦，开始体验。"
-    assert broadcast["status"] == "queued"
+    assert broadcast["status"] == "delegated"
     assert _json_mapping(broadcast["target_unionids_json"]) == [_unionid_for_external_userid("wm_001")]
-    assert outbound_task_count == 0
+    assert outbound_task_count == 1
 
 
 def test_worker_fixed_script_uses_configured_text_without_agent_generation(next_client, next_pg_schema, monkeypatch) -> None:

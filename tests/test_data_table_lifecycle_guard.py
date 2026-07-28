@@ -183,8 +183,11 @@ SINGLE_OWNER_RUNTIME_WRITES = {
         {"aicrm_next/automation/automation_engine/agent_sqlalchemy_repository.py"},
     ),
     "broadcast_job_events": (
-        "aicrm_next.automation.background_jobs.broadcast_queue_worker",
-        {"aicrm_next/automation/background_jobs/broadcast_queue_worker.py"},
+        "aicrm_next.automation.background_jobs",
+        {
+            "aicrm_next/automation/background_jobs/broadcast_queue_worker.py",
+            "aicrm_next/platform/platform_foundation/background_jobs/broadcast_job_write_repository.py",
+        },
     ),
     "external_effect_test_receipt": (
         "aicrm_next.platform.platform_foundation.external_effects",
@@ -199,8 +202,11 @@ SINGLE_OWNER_RUNTIME_WRITES = {
         {"aicrm_next/extensions/hxc/hxc_dashboard/postgres_repo.py"},
     ),
     "outbound_tasks": (
-        "aicrm_next.automation.background_jobs.broadcast_queue_worker",
-        {"aicrm_next/automation/background_jobs/broadcast_queue_worker.py"},
+        "aicrm_next.automation.background_jobs",
+        {
+            "aicrm_next/automation/background_jobs/broadcast_queue_worker.py",
+            "aicrm_next/platform/platform_foundation/background_jobs/broadcast_job_write_repository.py",
+        },
     ),
 }
 

@@ -44,6 +44,7 @@ class QueueRuntimeService:
         fallback_seconds: float = 30,
         test_only: bool = False,
         claimless: bool = True,
+        runtime_metrics: Callable[[str], Mapping[str, Any]] | None = None,
     ) -> None:
         if queue_kind not in {
             "external_effect",
@@ -67,6 +68,7 @@ class QueueRuntimeService:
         self._fallback_seconds = max(0.1, float(fallback_seconds))
         self._test_only = bool(test_only)
         self._claimless = bool(claimless)
+        self._runtime_metrics = runtime_metrics
 
     def run(self, *, stop_event: threading.Event) -> QueueRuntimeServiceResult:
         self._validate_external_execution_scope()
@@ -267,6 +269,11 @@ class QueueRuntimeService:
             rollout_mode=lane.rollout_mode,
             listener_connected=listener_connected,
             drain_completed=drain_completed,
+            metrics=(
+                dict(self._runtime_metrics(lane.name))
+                if self._runtime_metrics is not None
+                else {}
+            ),
         )
 
 

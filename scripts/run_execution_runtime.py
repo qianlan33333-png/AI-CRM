@@ -35,7 +35,9 @@ from aicrm_next.platform.platform_foundation.execution_runtime.lanes import (
     QueueLane,
 )
 from aicrm_next.platform.platform_foundation.execution_runtime.service import QueueRuntimeService
+from aicrm_next.platform.platform_foundation.execution_runtime.start_rate import SharedStartRateLimiter
 from aicrm_next.platform.platform_foundation.external_effects.worker import ExternalEffectWorker
+from aicrm_next.platform.shared.wecom_runtime import shared_token_provider_metrics
 from aicrm_next.platform.platform_foundation.internal_events.outbox import InternalEventOutboxRelay
 from aicrm_next.platform.platform_foundation.internal_events.worker import (
     RELAY_ROLE_CONSUMER_ONLY,
@@ -165,6 +167,7 @@ def _service(
     worker_id: str,
     claimless: bool,
     test_only: bool = False,
+    runtime_metrics=None,
 ) -> QueueRuntimeService:
     return QueueRuntimeService(
         queue_kind=queue_kind,
@@ -178,6 +181,7 @@ def _service(
         fallback_seconds=30,
         test_only=test_only,
         claimless=claimless,
+        runtime_metrics=runtime_metrics,
     )
 
 
@@ -198,6 +202,10 @@ def _build_queue_services(
     claimless = not bool(args.execute)
     worker_id = _worker_identity(args, queue_kind=queue_kind)
     if queue_kind == "external":
+        start_rate_limiter = SharedStartRateLimiter(
+            target_rate_per_second=2.0,
+            burst=2,
+        )
         worker = ExternalEffectWorker(
             adapter_registry=build_external_effect_adapter_registry(profile),
             locked_by=worker_id,
@@ -205,6 +213,15 @@ def _build_queue_services(
             critical_post_commit_hook=run_welcome_realtime_post_commit,
             deployment_profile=profile,
         )
+
+        def external_runtime_metrics(lane_name: str) -> dict[str, Any]:
+            if lane_name != "wecom_ai_assistant_bulk":
+                return {}
+            return {
+                "token_provider": shared_token_provider_metrics(),
+                "start_rate_limiter": start_rate_limiter.aggregate_snapshot(),
+            }
+
         return (
             _service(
                 queue_kind="external_effect",
@@ -212,14 +229,19 @@ def _build_queue_services(
                     "wecom_welcome",
                     "wecom_interactive",
                     "wecom_bulk",
+                    "wecom_ai_assistant_bulk",
                     "wecom_media",
                     "outbound_webhook",
                 ),
                 generation=args.generation,
-                handler=external_effect_handler(worker),
+                handler=external_effect_handler(
+                    worker,
+                    start_rate_limiter=start_rate_limiter,
+                ),
                 worker_id=worker_id,
                 claimless=claimless,
                 test_only=bool(args.test_only),
+                runtime_metrics=external_runtime_metrics,
             ),
         )
     if queue_kind == "webhook":

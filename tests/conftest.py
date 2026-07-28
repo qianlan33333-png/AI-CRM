@@ -381,12 +381,16 @@ SET max_in_flight = CASE lane
         WHEN 'webhook_inbox' THEN 4
         WHEN 'wecom_interactive' THEN 4
         WHEN 'wecom_bulk' THEN 1
+        WHEN 'wecom_ai_assistant_bulk' THEN 4
         WHEN 'wecom_media' THEN 2
         WHEN 'outbound_webhook' THEN 4
         ELSE max_in_flight
     END,
     enabled = TRUE,
-    rollout_mode = CASE WHEN lane = 'outbound_webhook' THEN 'blocked' ELSE 'standby' END,
+    rollout_mode = CASE
+        WHEN lane IN ('outbound_webhook', 'wecom_ai_assistant_bulk') THEN 'blocked'
+        ELSE 'standby'
+    END,
     blocked_until = NULL,
     policy_version = 'queue-v2-test-loopback',
     updated_by = 'pytest-fixture',

@@ -161,7 +161,11 @@ class WeComGroupMessageAdapter:
             provider_errcode = _provider_errcode((exc.payload or {}).get("errcode"))
             derived_error_code, classification = classify_wecom_provider_error(
                 provider_errcode=provider_errcode,
-                transport_error=exc.error_code == "wecom_group_client_http_error",
+                status_code=exc.status_code,
+                transport_error=(
+                    exc.error_code == "wecom_group_client_http_error"
+                    and exc.status_code is None
+                ),
             )
             return {
                 "ok": False,
@@ -185,6 +189,16 @@ class WeComGroupMessageAdapter:
                 "provider_errcode": provider_errcode,
                 "provider_error_classification": classification,
                 "retryable": classification == "retryable",
+                **(
+                    {"http_status": exc.status_code}
+                    if exc.status_code is not None
+                    else {}
+                ),
+                **(
+                    {"retry_after_seconds": exc.retry_after_seconds}
+                    if exc.retry_after_seconds is not None
+                    else {}
+                ),
             }
         errcode = _provider_errcode(result.get("errcode")) if isinstance(result, dict) else -1
         msgid = str((result or {}).get("msgid") or "").strip() if isinstance(result, dict) else ""

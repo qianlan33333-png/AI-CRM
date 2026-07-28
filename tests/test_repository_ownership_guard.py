@@ -199,7 +199,11 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
     ]
     assert repositories[
         "aicrm_next/platform/platform_foundation/background_jobs/broadcast_job_write_repository.py"
-    ]["table_writes"] == ["broadcast_jobs"]
+    ]["table_writes"] == [
+        "broadcast_job_events",
+        "broadcast_jobs",
+        "outbound_tasks",
+    ]
     assert "broadcast_jobs" not in repositories[
         "aicrm_next/extensions/growth/cloud_orchestrator/repository.py"
     ]["table_writes"]

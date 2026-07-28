@@ -146,6 +146,7 @@ class ExecutionRuntimeReadModel:
                 SELECT service_name, worker_id, queue_kind, generation,
                        release_sha, rollout_mode, listener_connected,
                        last_notification_at, last_drain_at, heartbeat_at,
+                       metrics_json,
                        heartbeat_at > CURRENT_TIMESTAMP - INTERVAL '30 seconds' AS fresh,
                        release_sha = %s AS release_matches
                 FROM queue_worker_heartbeat
@@ -180,7 +181,14 @@ class ExecutionRuntimeReadModel:
         external_scope_modes = {
             lane["lane"]: public_external_scope
             for lane in lane_items
-            if lane["lane"] in {"wecom_welcome", "wecom_interactive", "wecom_bulk", "wecom_media", "outbound_webhook"}
+            if lane["lane"] in {
+                "wecom_welcome",
+                "wecom_interactive",
+                "wecom_bulk",
+                "wecom_ai_assistant_bulk",
+                "wecom_media",
+                "outbound_webhook",
+            }
         }
         policy_payload = self._policy_payload(policy or {})
         policy_payload["external_claim_scope"] = durable_external_scope
@@ -517,6 +525,51 @@ class ExecutionRuntimeReadModel:
                     'failed_terminal', 'dead_letter'
                 )
                 {inbox_lane_filter}
+            ),
+            external_lane_activity AS (
+                SELECT job.lane,
+                       COUNT(*) FILTER (
+                           WHERE job.completed_at >= CURRENT_TIMESTAMP - INTERVAL '1 minute'
+                       )::BIGINT AS completed_last_minute,
+                       COUNT(*) FILTER (
+                           WHERE job.completed_at >= CURRENT_TIMESTAMP - INTERVAL '1 minute'
+                             AND job.status = 'succeeded'
+                             AND job.provider_result_received
+                       )::BIGINT AS accepted_last_minute,
+                       percentile_cont(0.95) WITHIN GROUP (
+                           ORDER BY EXTRACT(
+                               EPOCH FROM job.provider_call_started_at - job.created_at
+                           ) * 1000
+                       ) FILTER (
+                           WHERE job.provider_call_started_at IS NOT NULL
+                             AND job.provider_call_started_at >= job.created_at
+                       ) AS p95_queue_wait_ms
+                FROM external_effect_job job
+                WHERE job.created_at >= CURRENT_TIMESTAMP - INTERVAL '1 hour'
+                   OR job.completed_at >= CURRENT_TIMESTAMP - INTERVAL '1 hour'
+                GROUP BY job.lane
+            ),
+            external_attempt_activity AS (
+                SELECT job.lane,
+                       percentile_cont(0.95) WITHIN GROUP (
+                           ORDER BY EXTRACT(
+                               EPOCH FROM attempt.completed_at - attempt.provider_call_started_at
+                           ) * 1000
+                       ) FILTER (
+                           WHERE attempt.provider_call_started_at IS NOT NULL
+                             AND attempt.completed_at IS NOT NULL
+                             AND attempt.completed_at >= attempt.provider_call_started_at
+                       ) AS p95_provider_call_ms,
+                       COUNT(*) FILTER (
+                           WHERE attempt.error_code IN (
+                               'rate_limited', 'http_429',
+                               'wecom_error_45009', 'wecom_error_45011'
+                           )
+                       )::BIGINT AS rate_limit_count_last_hour
+                FROM external_effect_attempt attempt
+                JOIN external_effect_job job ON job.id = attempt.job_id
+                WHERE attempt.started_at >= CURRENT_TIMESTAMP - INTERVAL '1 hour'
+                GROUP BY job.lane
             )
             SELECT policy.lane, policy.max_in_flight, policy.enabled,
                    policy.rollout_mode, policy.blocked_until, policy.policy_version,
@@ -588,15 +641,41 @@ class ExecutionRuntimeReadModel:
                        )),
                        0
                    )::BIGINT AS oldest_eligible_age_seconds
+                   , COALESCE(activity.completed_last_minute, 0)::BIGINT AS completed_last_minute
+                   , COALESCE(activity.accepted_last_minute, 0)::BIGINT AS accepted_last_minute
+                   , ROUND(COALESCE(activity.p95_queue_wait_ms, 0)::NUMERIC, 2) AS p95_queue_wait_ms
+                   , ROUND(COALESCE(attempts.p95_provider_call_ms, 0)::NUMERIC, 2) AS p95_provider_call_ms
+                   , COALESCE(attempts.rate_limit_count_last_hour, 0)::BIGINT AS rate_limit_count_last_hour
+                   , CASE
+                       WHEN COALESCE(activity.completed_last_minute, 0) = 0 THEN NULL
+                       ELSE CEIL(
+                           COUNT(rows.*) FILTER (WHERE {eligible})::NUMERIC
+                           * 60
+                           / activity.completed_last_minute
+                       )::BIGINT
+                     END AS estimated_drain_seconds
+                   , CASE
+                       WHEN COALESCE(activity.completed_last_minute, 0) = 0 THEN NULL
+                       ELSE ROUND(
+                           activity.accepted_last_minute::NUMERIC
+                           / activity.completed_last_minute,
+                           4
+                       )
+                     END AS task_acceptance_rate_1m
             FROM queue_lane_policy policy
             CROSS JOIN queue_runtime_control control
             LEFT JOIN queue_rows rows ON rows.lane = policy.lane
+            LEFT JOIN external_lane_activity activity ON activity.lane = policy.lane
+            LEFT JOIN external_attempt_activity attempts ON attempts.lane = policy.lane
             {policy_lane_filter}
             GROUP BY policy.lane, policy.max_in_flight, policy.enabled,
                      policy.rollout_mode, policy.blocked_until, policy.policy_version,
                      control.active_generation, control.claim_enabled,
                      control.rollout_mode, control.policy_version,
-                     control.external_claim_scope
+                     control.external_claim_scope,
+                     activity.completed_last_minute, activity.accepted_last_minute,
+                     activity.p95_queue_wait_ms, attempts.p95_provider_call_ms,
+                     attempts.rate_limit_count_last_hour
             ORDER BY policy.lane
         """
 
@@ -810,6 +889,21 @@ class ExecutionRuntimeReadModel:
                 "failed_terminal": int(row.get("internal_event_failed_terminal") or 0),
                 "blocked": int(row.get("internal_event_blocked") or 0),
             },
+            "throughput_last_minute": int(row.get("completed_last_minute") or 0),
+            "accepted_last_minute": int(row.get("accepted_last_minute") or 0),
+            "p95_queue_wait_ms": float(row.get("p95_queue_wait_ms") or 0),
+            "p95_provider_call_ms": float(row.get("p95_provider_call_ms") or 0),
+            "estimated_drain_seconds": (
+                int(row.get("estimated_drain_seconds"))
+                if row.get("estimated_drain_seconds") is not None
+                else None
+            ),
+            "rate_limit_count_last_hour": int(row.get("rate_limit_count_last_hour") or 0),
+            "task_acceptance_rate_1m": (
+                float(row.get("task_acceptance_rate_1m"))
+                if row.get("task_acceptance_rate_1m") is not None
+                else None
+            ),
         }
 
     @staticmethod
@@ -827,6 +921,7 @@ class ExecutionRuntimeReadModel:
             "heartbeat_at": _public_datetime(row.get("heartbeat_at")),
             "fresh": bool(row.get("fresh")),
             "release_matches": bool(row.get("release_matches")),
+            "metrics": redact_sensitive_data(dict(row.get("metrics_json") or {})),
         }
 
     @staticmethod

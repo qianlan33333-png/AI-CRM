@@ -126,6 +126,13 @@ def test_lane_summary_pushes_lane_scope_into_one_database_query() -> None:
                     "internal_event_failed_retryable": 3,
                     "internal_event_failed_terminal": 2,
                     "internal_event_blocked": 1,
+                    "completed_last_minute": 12,
+                    "accepted_last_minute": 11,
+                    "p95_queue_wait_ms": 125.5,
+                    "p95_provider_call_ms": 830.25,
+                    "estimated_drain_seconds": 2915,
+                    "rate_limit_count_last_hour": 2,
+                    "task_acceptance_rate_1m": 0.9167,
                 }
             ]
 
@@ -159,6 +166,10 @@ def test_lane_summary_pushes_lane_scope_into_one_database_query() -> None:
         "failed_terminal": 2,
         "blocked": 1,
     }
+    assert summary["lanes"][0]["throughput_last_minute"] == 12
+    assert summary["lanes"][0]["p95_provider_call_ms"] == 830.25
+    assert summary["lanes"][0]["estimated_drain_seconds"] == 2915
+    assert summary["lanes"][0]["task_acceptance_rate_1m"] == 0.9167
     assert len(calls) == 1
     statement, params = calls[0]
     assert statement.count("lane = ANY(%s::text[])") == 5

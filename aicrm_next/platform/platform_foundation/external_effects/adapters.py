@@ -605,6 +605,7 @@ class WeComPrivateMessageAdapter:
             "errcode": provider_errcode,
             "errmsg_present": bool(str(provider_result.get("errmsg") or result.get("error_message") or "").strip()),
             "provider_error_classification": str(result.get("provider_error_classification") or ""),
+            **({"retry_after_seconds": _safe_int(result.get("retry_after_seconds"))} if _safe_int(result.get("retry_after_seconds")) > 0 else {}),
             "failed_external_userid_count": _safe_int(
                 result.get("failed_external_userid_count"),
                 default=_safe_list_count(provider_result.get("fail_list")),
@@ -638,6 +639,7 @@ class WeComPrivateMessageAdapter:
             response_summary=response_summary,
             error_code=error_code or "wecom_private_send_failed",
             error_message=_safe_error_message(result.get("error_message") or "WeCom private-message send failed."),
+            retry_after_seconds=_safe_int(result.get("retry_after_seconds")) or None,
             real_external_call_executed=True,
             provider_result_received=provider_result_received,
         )

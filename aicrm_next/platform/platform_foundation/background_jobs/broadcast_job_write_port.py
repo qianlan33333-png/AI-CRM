@@ -46,6 +46,16 @@ class BroadcastJobWritePort(Protocol):
         execution_id: str,
     ) -> None: ...
 
+    def delegate_external_effect_dbapi(
+        self,
+        executor: Any,
+        *,
+        job_id: int,
+        external_effect_job_id: int,
+        trace_id: str,
+        actor: str,
+    ) -> dict[str, Any] | None: ...
+
     def cancel_campaign_jobs_dbapi(
         self,
         executor: Any,

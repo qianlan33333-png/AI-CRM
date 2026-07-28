@@ -44,6 +44,9 @@ EXPECTED_INDEXES = [
     "idx_external_effect_job_reconciliation",
     "uq_external_effect_attempt_open_job",
     "idx_external_effect_job_cancel_requested",
+    "idx_external_effect_job_recent_created",
+    "idx_external_effect_job_recent_completed",
+    "idx_external_effect_attempt_recent",
 ]
 PROBLEM_STATUSES = {"failed_retryable", "failed_terminal", "blocked", "dispatching", "unknown_after_dispatch"}
 REDACTED = SECRET_MASK

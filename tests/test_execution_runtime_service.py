@@ -92,6 +92,7 @@ def test_service_dispatches_claimed_row_and_publishes_worker_heartbeat() -> None
         fallback_seconds=0.05,
         test_only=True,
         claimless=False,
+        runtime_metrics=lambda lane: {"lane": lane, "token_refreshes": 1},
     )
 
     result = service.run(stop_event=stop)
@@ -102,6 +103,10 @@ def test_service_dispatches_claimed_row_and_publishes_worker_heartbeat() -> None
     assert repository.heartbeats
     assert repository.heartbeats[0]["generation"] == 7
     assert repository.heartbeats[0]["queue_kind"] == "external_effect"
+    assert repository.heartbeats[0]["metrics"] == {
+        "lane": "wecom_media",
+        "token_refreshes": 1,
+    }
 
 
 def test_service_rejects_unknown_queue_kind() -> None:

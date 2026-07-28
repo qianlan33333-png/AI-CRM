@@ -33,7 +33,15 @@ from .view_model import (
 )
 
 router = APIRouter()
-_PUSH_LANES = frozenset({"wecom_interactive", "wecom_bulk", "wecom_media", "outbound_webhook"})
+_PUSH_LANES = frozenset(
+    {
+        "wecom_interactive",
+        "wecom_bulk",
+        "wecom_ai_assistant_bulk",
+        "wecom_media",
+        "outbound_webhook",
+    }
+)
 
 
 def _text(value: Any) -> str:

@@ -308,16 +308,22 @@ class SingleFlightAccessTokenProvider:
         self._expires_at = 0.0
         self._last_error: Exception | None = None
         self._last_error_at = 0.0
+        self._refresh_started = 0
+        self._refresh_succeeded = 0
+        self._refresh_failed = 0
+        self._cache_hits = 0
 
     def get(self, refresh: Callable[[], tuple[str, int]]) -> str:
         with self._condition:
             while self._refreshing:
                 self._condition.wait()
             if self._token and self._expires_at > self._now():
+                self._cache_hits += 1
                 return self._token
             if self._last_error is not None and self._last_error_at + 1.0 > self._now():
                 raise self._last_error
             self._refreshing = True
+            self._refresh_started += 1
         try:
             token, expires_in = refresh()
             token = _text(token)
@@ -328,6 +334,7 @@ class SingleFlightAccessTokenProvider:
                 self._last_error = exc
                 self._last_error_at = self._now()
                 self._refreshing = False
+                self._refresh_failed += 1
                 self._condition.notify_all()
             raise
         with self._condition:
@@ -335,6 +342,7 @@ class SingleFlightAccessTokenProvider:
             self._expires_at = self._now() + max(1, int(expires_in or 7200) - 60)
             self._last_error = None
             self._refreshing = False
+            self._refresh_succeeded += 1
             self._condition.notify_all()
             return self._token
 
@@ -343,6 +351,17 @@ class SingleFlightAccessTokenProvider:
             if not token or token == self._token:
                 self._token = ""
                 self._expires_at = 0.0
+
+    def snapshot(self) -> dict[str, int | bool]:
+        with self._condition:
+            return {
+                "refresh_started": self._refresh_started,
+                "refresh_succeeded": self._refresh_succeeded,
+                "refresh_failed": self._refresh_failed,
+                "cache_hits": self._cache_hits,
+                "refreshing": self._refreshing,
+                "token_cached": bool(self._token and self._expires_at > self._now()),
+            }
 
 
 _TOKEN_PROVIDER_LOCK = threading.Lock()
@@ -358,3 +377,15 @@ def shared_token_provider(*, corp_id: str, secret: str, api_base: str) -> Single
 def reset_shared_token_providers() -> None:
     with _TOKEN_PROVIDER_LOCK:
         _TOKEN_PROVIDERS.clear()
+
+
+def shared_token_provider_metrics() -> dict[str, int]:
+    with _TOKEN_PROVIDER_LOCK:
+        snapshots = [provider.snapshot() for provider in _TOKEN_PROVIDERS.values()]
+    return {
+        "provider_count": len(snapshots),
+        "refresh_started": sum(int(item["refresh_started"]) for item in snapshots),
+        "refresh_succeeded": sum(int(item["refresh_succeeded"]) for item in snapshots),
+        "refresh_failed": sum(int(item["refresh_failed"]) for item in snapshots),
+        "cache_hits": sum(int(item["cache_hits"]) for item in snapshots),
+    }

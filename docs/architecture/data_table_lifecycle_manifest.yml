@@ -1937,7 +1937,7 @@ tables:
       - tests/test_execution_runtime_postgres.py
       - tests/test_database_bootstrap.py
       - tests/test_data_table_lifecycle_guard.py
-    notes: Stores reserved per-lane capacity and explicit rollout mode. outbound_webhook is seeded blocked and must remain fail-closed without separate approval.
+    notes: Stores reserved per-lane capacity and explicit rollout mode. outbound_webhook and wecom_ai_assistant_bulk are seeded blocked and must remain fail-closed without separate approval; the AI lane starts at capacity four and has a code ceiling of twenty-four.
 
   queue_policy_snapshot:
     domain: platform_foundation
@@ -2026,7 +2026,7 @@ tables:
       - tests/test_execution_runtime_postgres.py
       - tests/test_database_bootstrap.py
       - tests/test_data_table_lifecycle_guard.py
-    notes: Operational liveness projection keyed by service and worker. It exposes generation, release SHA, listener and drain timestamps without queue payloads or customer identifiers.
+    notes: Operational liveness projection keyed by service and worker. It exposes generation, release SHA, listener and drain timestamps plus payload-free token-refresh and process-local start-rate metrics without queue payloads or customer identifiers.
 
   queue_runtime_scope_transition_audit:
     domain: platform_foundation
@@ -2209,7 +2209,7 @@ tables:
       - tests/test_event_effect_table_lineage.py
       - tests/test_external_effect_runtime_owner.py
       - tests/test_external_effect_runtime_owner_postgres.py
-    notes: Canonical queue for real external side effects. Every mutation is confined to the external_effects capability; execution runtime, welcome and group-ops callers cross the public write port while retaining their surrounding transaction and settlement-event append. Scheduler, realtime, and manual dispatch share lease-token CAS; uncertain outcomes are quarantined for reconciliation and fake outcomes are simulated. Every new runtime terminal transition transactionally emits payload-minimal external_effect.settled; succeeded also retains the provider-result-gated external_effect.completed hand-off. A deterministic provider business rejection may complete the processing flow without completing the side effect; the delivery status remains truthful while data health reports a strictly proven business outcome separately. Revision 0125 makes available_at mandatory and constrains lane to the four external-effect lanes. Unified timeline reads summary projections only and applies centralized sensitive-data redaction; provider request payloads are excluded.
+    notes: Canonical queue for real external side effects. Every mutation is confined to the external_effects capability; execution runtime, welcome and group-ops callers cross the public write port while retaining their surrounding transaction and settlement-event append. Scheduler, realtime, and manual dispatch share lease-token CAS; uncertain outcomes are quarantined for reconciliation and fake outcomes are simulated. Every new runtime terminal transition transactionally emits payload-minimal external_effect.settled; succeeded also retains the provider-result-gated external_effect.completed hand-off. A deterministic provider business rejection may complete the processing flow without completing the side effect; the delivery status remains truthful while data health reports a strictly proven business outcome separately. Revision 0125 makes available_at mandatory and constrains lane to the original external-effect lanes; revision 0156 adds the fail-closed wecom_ai_assistant_bulk service-level lane without changing the queue owner. Unified timeline reads summary projections only and applies centralized sensitive-data redaction; provider request payloads are excluded.
 
   external_effect_attempt:
     domain: external_effects
@@ -3065,7 +3065,9 @@ tables:
   broadcast_job_events:
     domain: broadcast_jobs
     lifecycle: audit
-    write_owner: aicrm_next.automation.background_jobs.broadcast_queue_worker
+    write_owner: aicrm_next.automation.background_jobs
+    write_owners:
+      - aicrm_next.automation.background_jobs
     read_owners:
       - aicrm_next.platform.admin_jobs
       - aicrm_next.automation.background_jobs
@@ -3075,12 +3077,13 @@ tables:
     drop_after: ""
     runtime_entrypoints:
       - existing production runtime
+      - aicrm_next/platform/platform_foundation/background_jobs/broadcast_job_write_repository.py
     migration_source: 0021_broadcast_queue_platform_hardening
     pii_level: internal_contact
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Append-only broadcast state transition evidence. R10 dispatch start, terminal finalization, and reconciliation-required events are written in the owning background-job transaction.
+    notes: Append-only broadcast state transition evidence. Dispatch/finalization and approval-time immediate effect materialization are written through the background-jobs public write port in the owning transaction.
 
   broadcast_job_hourly_reports:
     domain: broadcast_jobs
@@ -3743,7 +3746,9 @@ tables:
   outbound_tasks:
     domain: admin_jobs
     lifecycle: canonical
-    write_owner: aicrm_next.automation.background_jobs.broadcast_queue_worker
+    write_owner: aicrm_next.automation.background_jobs
+    write_owners:
+      - aicrm_next.automation.background_jobs
     read_owners:
       - aicrm_next.platform.admin_jobs
       - aicrm_next.insights.admin_read_model
@@ -3753,12 +3758,13 @@ tables:
     drop_after: ""
     runtime_entrypoints:
       - existing production runtime
+      - aicrm_next/platform/platform_foundation/background_jobs/broadcast_job_write_repository.py
     migration_source: migrations/baselines/0001_post_legacy.sql
     pii_level: internal_contact
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Outbound provider-task evidence is inserted or reused inside the broadcast terminal finalizer transaction. Fake adapter results use simulated; one broadcast_job_id may have at most one row.
+    notes: Outbound task evidence is inserted or reused through the background-jobs public write port during approval-time effect delegation and terminal finalization. Fake adapter results use simulated; one broadcast_job_id may have at most one row.
 
   radar_click_events:
     domain: radar
