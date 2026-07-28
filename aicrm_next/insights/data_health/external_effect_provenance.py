@@ -21,6 +21,15 @@ PRIVATE_MESSAGE_ACKNOWLEDGEMENT_TYPE = "production_private_message_84061_no_repl
 PRIVATE_MESSAGE_AUTHORIZATION_CONFIRMATION_SHA256 = (
     "023361c05331fd999eb7bdfe4117b312f6bb6393bb1efe34226ac52277f23b57"
 )
+PRIVATE_MESSAGE_CONTACT_ABSENCE_ACKNOWLEDGEMENT_TYPE = (
+    "production_private_message_contact_absence_20260728_no_replay"
+)
+PRIVATE_MESSAGE_CONTACT_ABSENCE_AUTHORIZATION_BASE_SHA = (
+    "e240613e20a479ed2083c1d7fe5bd9c59aabef71"
+)
+PRIVATE_MESSAGE_CONTACT_ABSENCE_AUTHORIZATION_CONFIRMATION_SHA256 = (
+    "edcb90948fc6d1d4a06fbc16e370c15d07f81c191fd29e0e194b7baf97513a53"
+)
 REFUND_ACKNOWLEDGEMENT_TYPE = "production_wechat_refund_not_enough_no_replay"
 REFUND_AUTHORIZATION_CONFIRMATION_SHA256 = (
     "adc4f08542ae86f432c00e6dbe318442b0dd588887ff550d6ee48bd20f2f819b"
@@ -295,6 +304,75 @@ def acknowledged_private_message_84061_failure_sql(alias: str) -> str:
               AND acknowledgement.job_fingerprint_sha256 ~ '^[0-9a-f]{{64}}$'
               AND acknowledgement.replay_prohibited IS TRUE
               AND acknowledgement.provider_success_claimed IS FALSE
+              AND LENGTH(BTRIM(acknowledgement.actor)) > 0
+              AND LENGTH(BTRIM(acknowledgement.reason)) > 0
+        )
+    """
+
+
+def acknowledged_private_message_contact_absence_20260728_sql(alias: str) -> str:
+    """Return the exact three operator-authorized 2026-07-28 no-replay rows."""
+
+    strict_business_terminal = private_message_contact_relationship_absent_terminal_sql(
+        job_alias=alias
+    )
+    return f"""
+        ({strict_business_terminal})
+        AND {alias}.last_error_code = 'external_contact_relationship_absent'
+        AND {alias}.updated_at >= TIMESTAMPTZ '2026-07-28T16:27:28+08:00'
+        AND {alias}.updated_at < TIMESTAMPTZ '2026-07-28T17:02:59+08:00'
+        AND EXISTS (
+            SELECT 1
+            FROM queue_terminal_acknowledgement acknowledgement
+            WHERE acknowledgement.acknowledgement_type =
+                    '{PRIVATE_MESSAGE_CONTACT_ABSENCE_ACKNOWLEDGEMENT_TYPE}'
+              AND acknowledgement.job_id = {alias}.id
+              AND acknowledgement.job_execution_id = COALESCE({alias}.execution_id, '')
+              AND acknowledgement.attempt_id = COALESCE({alias}.last_attempt_id, '')
+              AND acknowledgement.graph_id IS NULL
+              AND acknowledgement.status = 'acknowledged_history'
+              AND acknowledgement.job_status = 'failed_terminal'
+              AND acknowledgement.error_code = 'external_contact_relationship_absent'
+              AND acknowledgement.authorization_base_sha =
+                    '{PRIVATE_MESSAGE_CONTACT_ABSENCE_AUTHORIZATION_BASE_SHA}'
+              AND acknowledgement.authorization_confirmation_sha256 =
+                    '{PRIVATE_MESSAGE_CONTACT_ABSENCE_AUTHORIZATION_CONFIRMATION_SHA256}'
+              AND acknowledgement.release_sha ~ '^[0-9a-f]{{40}}$'
+              AND acknowledgement.job_fingerprint_sha256 ~ '^[0-9a-f]{{64}}$'
+              AND acknowledgement.replay_prohibited IS TRUE
+              AND acknowledgement.provider_success_claimed IS FALSE
+              AND COALESCE(
+                    acknowledgement.evidence_json ->> 'durable_provider_attempt_count', ''
+                  ) = '1'
+              AND COALESCE(
+                    acknowledgement.evidence_json ->> 'provider_boundary_crossed', ''
+                  ) = 'true'
+              AND COALESCE(
+                    acknowledgement.evidence_json ->> 'provider_result_received', ''
+                  ) = 'true'
+              AND COALESCE(
+                    acknowledgement.evidence_json ->> 'provider_errcode', ''
+                  ) = '84061'
+              AND COALESCE(
+                    acknowledgement.evidence_json ->> 'real_external_call_executed', ''
+                  ) = 'true'
+              AND COALESCE(
+                    acknowledgement.evidence_json
+                        ->> 'real_external_call_executed_by_acknowledgement', ''
+                  ) = 'false'
+              AND COALESCE(
+                    acknowledgement.evidence_json ->> 'target_values_redacted', ''
+                  ) = 'true'
+              AND COALESCE(
+                    acknowledgement.evidence_json ->> 'target_hash_sha256', ''
+                  ) = ENCODE(
+                      SHA256(
+                          CONVERT_TO(COALESCE({alias}.target_type, ''), 'UTF8')
+                          || DECODE('00', 'hex')
+                          || CONVERT_TO(COALESCE({alias}.target_id, ''), 'UTF8')
+                      ),
+                      'hex'
+                  )
               AND LENGTH(BTRIM(acknowledgement.actor)) > 0
               AND LENGTH(BTRIM(acknowledgement.reason)) > 0
         )
@@ -634,6 +712,8 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                        AS acknowledged_production_welcome_41050,
                    ({acknowledged_private_message_84061_failure_sql("job")})
                        AS acknowledged_private_message_84061,
+                   ({acknowledged_private_message_contact_absence_20260728_sql("job")})
+                       AS acknowledged_private_message_contact_absence_20260728,
                    ({acknowledged_refund_not_enough_failure_sql("job")})
                        AS acknowledged_refund_not_enough,
                    ({refund_not_enough_business_rejection_sql("job")})
@@ -665,6 +745,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                   AND NOT pre_cutover_acknowledged_welcome
                   AND NOT acknowledged_production_welcome_41050
                   AND NOT acknowledged_private_message_84061
+                  AND NOT acknowledged_private_message_contact_absence_20260728
                   AND NOT acknowledged_refund_not_enough
                   AND NOT refund_not_enough_business_rejection
                   AND status = 'failed_retryable'
@@ -674,6 +755,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                   AND NOT pre_cutover_acknowledged_welcome
                   AND NOT acknowledged_production_welcome_41050
                   AND NOT acknowledged_private_message_84061
+                  AND NOT acknowledged_private_message_contact_absence_20260728
                   AND NOT acknowledged_refund_not_enough
                   AND NOT refund_not_enough_business_rejection
                   AND NOT expected_contact_absence
@@ -686,6 +768,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                   AND NOT pre_cutover_acknowledged_welcome
                   AND NOT acknowledged_production_welcome_41050
                   AND NOT acknowledged_private_message_84061
+                  AND NOT acknowledged_private_message_contact_absence_20260728
                   AND NOT acknowledged_refund_not_enough
                   AND NOT refund_not_enough_business_rejection
                   AND NOT post_cutover_recoverable_identity
@@ -698,6 +781,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                   AND NOT pre_cutover_acknowledged_welcome
                   AND NOT acknowledged_production_welcome_41050
                   AND NOT acknowledged_private_message_84061
+                  AND NOT acknowledged_private_message_contact_absence_20260728
                   AND NOT acknowledged_refund_not_enough
                   AND NOT refund_not_enough_business_rejection
                   AND status = 'failed_terminal'
@@ -707,6 +791,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                   AND NOT pre_cutover_acknowledged_welcome
                   AND NOT acknowledged_production_welcome_41050
                   AND NOT acknowledged_private_message_84061
+                  AND NOT acknowledged_private_message_contact_absence_20260728
                   AND NOT acknowledged_refund_not_enough
                   AND NOT refund_not_enough_business_rejection
                   AND NOT post_cutover_recoverable_identity
@@ -718,6 +803,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                   AND NOT pre_cutover_acknowledged_welcome
                   AND NOT acknowledged_production_welcome_41050
                   AND NOT acknowledged_private_message_84061
+                  AND NOT acknowledged_private_message_contact_absence_20260728
                   AND NOT acknowledged_refund_not_enough
                   AND NOT refund_not_enough_business_rejection
                   AND status = 'failed_retryable'
@@ -729,6 +815,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                       AND NOT pre_cutover_acknowledged_welcome
                       AND NOT acknowledged_production_welcome_41050
                       AND NOT acknowledged_private_message_84061
+                      AND NOT acknowledged_private_message_contact_absence_20260728
                       AND NOT acknowledged_refund_not_enough
                       AND NOT refund_not_enough_business_rejection
                       AND status = 'failed_retryable'
@@ -759,6 +846,10 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                 WHERE acknowledged_private_message_84061
                   AND status = 'failed_terminal'
             ) AS acknowledged_private_message_84061_count,
+            COUNT(*) FILTER (
+                WHERE acknowledged_private_message_contact_absence_20260728
+                  AND status = 'failed_terminal'
+            ) AS acknowledged_private_message_contact_absence_20260728_count,
             COUNT(*) FILTER (
                 WHERE acknowledged_refund_not_enough
                   AND status = 'failed_terminal'

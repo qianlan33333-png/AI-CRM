@@ -28,6 +28,15 @@ from scripts.ops.acknowledge_production_terminal_history import (
 from scripts.ops.acknowledge_production_terminal_history import (
     acknowledge as acknowledge_production_terminal_histories,
 )
+from scripts.ops.acknowledge_production_private_message_contact_absence import (
+    AUTHORIZATION_BASE_SHA as PRIVATE_MESSAGE_CONTACT_ABSENCE_AUTHORIZATION_BASE_SHA,
+)
+from scripts.ops.acknowledge_production_private_message_contact_absence import (
+    EXPECTED_CONFIRMATION as PRIVATE_MESSAGE_CONTACT_ABSENCE_CONFIRMATION,
+)
+from scripts.ops.acknowledge_production_private_message_contact_absence import (
+    acknowledge as acknowledge_production_private_message_contact_absence,
+)
 from scripts.ops.acknowledge_production_welcome_timeout import (
     AUTHORIZATION_BASE_SHA as PRODUCTION_WELCOME_AUTHORIZATION_BASE_SHA,
 )
@@ -81,12 +90,34 @@ def acknowledge_release_terminal_histories(
         reason="operator-authorized welcome job 2157 timeout history; no replay",
         apply=apply,
     )
+    production_private_message_contact_absence = (
+        acknowledge_production_private_message_contact_absence(
+            manifest_path=(
+                ROOT
+                / "docs"
+                / "releases"
+                / "production_private_message_contact_absence_20260728_acknowledgement.json"
+            ),
+            release_sha=release_sha,
+            authorization_base_sha=PRIVATE_MESSAGE_CONTACT_ABSENCE_AUTHORIZATION_BASE_SHA,
+            confirmation=PRIVATE_MESSAGE_CONTACT_ABSENCE_CONFIRMATION,
+            actor=actor,
+            reason=(
+                "operator-authorized 2026-07-28 private-message contact-absence "
+                "terminal histories; no replay"
+            ),
+            apply=apply,
+        )
+    )
     return {
         "ok": True,
         "applied": apply,
         "pre_cutover_welcome": pre_cutover,
         "production_terminal_histories": production_histories,
         "production_welcome_timeout": production_welcome,
+        "production_private_message_contact_absence": (
+            production_private_message_contact_absence
+        ),
         "provider_success_claimed": False,
         "real_external_call_executed": False,
         "replay_prohibited": True,

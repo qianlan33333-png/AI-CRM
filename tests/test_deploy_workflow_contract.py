@@ -104,9 +104,14 @@ def test_deploy_acknowledges_only_exact_authorized_production_terminal_histories
     assert "queue_all_scope_cutover.json" in orchestrator
     assert "production_terminal_history_acknowledgements.json" in orchestrator
     assert "production_welcome_timeout_acknowledgement.json" in orchestrator
+    assert (
+        "production_private_message_contact_absence_20260728_acknowledgement.json"
+        in orchestrator
+    )
     assert "acknowledge_pre_cutover_welcome_terminal" in orchestrator
     assert "acknowledge_production_terminal_history" in orchestrator
     assert "acknowledge_production_welcome_timeout" in orchestrator
+    assert "acknowledge_production_private_message_contact_absence" in orchestrator
     assert "operator-authorized production terminal histories; no replay" in orchestrator
     assert "acknowledge_refund_histories=False" in orchestrator
     assert "operator-authorized welcome job 2157 timeout history; no replay" in orchestrator
@@ -136,6 +141,11 @@ def test_release_acknowledgement_skips_refunds_now_classified_as_business_outcom
         "acknowledge_production_welcome_timeout",
         lambda **kwargs: calls.setdefault("production_welcome", kwargs),
     )
+    monkeypatch.setattr(
+        release_ack,
+        "acknowledge_production_private_message_contact_absence",
+        lambda **kwargs: calls.setdefault("private_message_contact_absence", kwargs),
+    )
 
     result = release_ack.acknowledge_release_terminal_histories(
         release_sha="a" * 40,
@@ -146,6 +156,7 @@ def test_release_acknowledgement_skips_refunds_now_classified_as_business_outcom
     assert result["ok"] is True
     assert calls["production"]["acknowledge_refund_histories"] is False
     assert calls["production"]["apply"] is True
+    assert calls["private_message_contact_absence"]["apply"] is True
 
 
 def test_remote_deploy_holds_target_specific_server_lock_before_sha_checks() -> None:

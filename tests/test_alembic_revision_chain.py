@@ -131,8 +131,17 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     customer_generation_slots_source = customer_generation_slots.read_text(encoding="utf-8")
     internal_event_occurred_index = VERSIONS / "0154_internal_event_occurred_index.py"
     internal_event_occurred_index_source = internal_event_occurred_index.read_text(encoding="utf-8")
+    private_message_contact_absence_ack_scope = (
+        VERSIONS / "0155_private_message_contact_absence_ack_scope.py"
+    )
+    private_message_contact_absence_ack_scope_source = (
+        private_message_contact_absence_ack_scope.read_text(encoding="utf-8")
+    )
 
-    assert heads == {"0154_internal_event_occurred_index"}
+    assert heads == {"0155_private_message_contact_absence_ack_scope"}
+    assert revisions["0155_private_message_contact_absence_ack_scope"]["down_revision"] == (
+        "0154_internal_event_occurred_index"
+    )
     assert revisions["0154_internal_event_occurred_index"]["down_revision"] == "0153_customer_read_model_generation_slots"
     assert revisions["0153_customer_read_model_generation_slots"]["down_revision"] == "0152_customer_read_model_incremental"
     assert revisions["0152_customer_read_model_incremental"]["down_revision"] == "0151_ai_audience_hxc_projection_view"
@@ -260,6 +269,12 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     assert "wecom_welcome_ingress" in welcome_realtime_source
     assert "wecom_welcome" in welcome_realtime_source
     assert "production_welcome_41050_job_2157_no_replay" in production_welcome_ack_scope_source
+    assert (
+        "production_private_message_contact_absence_20260728_no_replay"
+        in private_message_contact_absence_ack_scope_source
+    )
+    assert "external_contact_relationship_absent" in private_message_contact_absence_ack_scope_source
+    assert "def downgrade()" in private_message_contact_absence_ack_scope_source
     assert "global_max_in_flight = global_max_in_flight +" in welcome_realtime_source
     assert "CREATE INDEX CONCURRENTLY IF NOT EXISTS" in sidebar_recent_message_index_source
     assert "ix_customer_recent_message_next_unionid_time_id" in sidebar_recent_message_index_source
