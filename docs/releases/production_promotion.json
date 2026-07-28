@@ -296,6 +296,13 @@
     "tests/test_critical_read_performance_contracts.py",
     "tests/test_critical_read_performance_runner.py",
     "tests/test_execution_runtime_api.py",
-    "tools/check_critical_read_performance.py"
+    "tools/check_critical_read_performance.py",
+    "aicrm_next/platform/platform_foundation/internal_events/api.py",
+    "aicrm_next/platform/platform_foundation/internal_events/payment_read/__init__.py",
+    "aicrm_next/platform/platform_foundation/internal_events/payment_read/repo.py",
+    "aicrm_next/platform/platform_foundation/internal_events/repository_memory.py",
+    "aicrm_next/platform/platform_foundation/internal_events/repository_support.py",
+    "aicrm_next/platform/platform_foundation/internal_events/view_model.py",
+    "tests/test_internal_event_admin_api.py"
   ]
 }
