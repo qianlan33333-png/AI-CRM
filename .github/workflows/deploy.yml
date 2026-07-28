@@ -28,6 +28,7 @@ jobs:
       PUBLIC_SERVER_NAME: ${{ vars.PUBLIC_SERVER_NAME }}
       NGINX_CONFIG_PATH: ${{ vars.NGINX_CONFIG_PATH }}
       ALLOW_MISSING_WECHAT_SHOP_CALLBACK_TOKEN: ${{ vars.ALLOW_MISSING_WECHAT_SHOP_CALLBACK_TOKEN || '0' }}
+      RELEASE_REFRESH_ATTEMPT_KEY: ${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - name: Checkout verified release
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0 (Node 24)
@@ -125,6 +126,7 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: RELEASE_REFRESH_ATTEMPT_KEY
           script: |
             set -e
             set -o pipefail
@@ -523,7 +525,7 @@ jobs:
             export AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED=1
             python3 scripts/ops/run_release_customer_read_model_refresh.py \
               --release-sha "$after_sha" \
-              --attempt-key "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+              --attempt-key "$RELEASE_REFRESH_ATTEMPT_KEY" \
               | tee /tmp/aicrm-customer-read-model-release-refresh.json
             unset AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED
             export AICRM_QUEUE_TERMINAL_ACK_AUTHORIZED=1
