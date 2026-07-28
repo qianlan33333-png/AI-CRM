@@ -205,8 +205,38 @@ class ExecutionRuntimeReadModel:
         }
 
     def lane_summary(self, lane_names: set[str] | frozenset[str]) -> dict[str, Any]:
-        snapshot = self.runtime_snapshot()
-        selected = [lane for lane in snapshot.get("lanes", []) if lane.get("lane") in lane_names]
+        selected_lane_names = sorted(
+            {
+                str(lane_name or "").strip()
+                for lane_name in lane_names
+                if str(lane_name or "").strip()
+            }
+        )
+        if not selected_lane_names:
+            return {
+                "policy_version": "",
+                "active_generation": 0,
+                "claim_enabled": False,
+                "rollout_mode": "blocked",
+                "lanes": [],
+                "raw_open": 0,
+                "held": 0,
+                "eligible": 0,
+                "policy_gated": 0,
+                "scheduled": 0,
+                "retry_wait": 0,
+                "rate_limited": 0,
+                "in_flight": 0,
+                "unknown": 0,
+                "dlq": 0,
+            }
+        with self._connect(self._database_url) as connection:
+            rows = connection.execute(
+                self._lane_metrics_sql(filter_lanes=True),
+                tuple(selected_lane_names for _ in range(5)),
+            ).fetchall()
+        selected = [self._lane_payload(row) for row in rows]
+        control = rows[0] if rows else {}
         count_keys = (
             "raw_open",
             "held",
@@ -220,10 +250,10 @@ class ExecutionRuntimeReadModel:
             "dlq",
         )
         return {
-            "policy_version": str((snapshot.get("control") or {}).get("policy_version") or ""),
-            "active_generation": int((snapshot.get("control") or {}).get("active_generation") or 0),
-            "claim_enabled": bool((snapshot.get("control") or {}).get("claim_enabled")),
-            "rollout_mode": str((snapshot.get("control") or {}).get("rollout_mode") or "blocked"),
+            "policy_version": str(control.get("runtime_policy_version") or ""),
+            "active_generation": int(control.get("runtime_active_generation") or 0),
+            "claim_enabled": bool(control.get("runtime_claim_enabled")),
+            "rollout_mode": str(control.get("runtime_rollout_mode") or "blocked"),
             "lanes": selected,
             **{key: sum(int(lane.get(key) or 0) for lane in selected) for key in count_keys},
         }
@@ -333,7 +363,7 @@ class ExecutionRuntimeReadModel:
         }
 
     @staticmethod
-    def _lane_metrics_sql() -> str:
+    def _lane_metrics_sql(*, filter_lanes: bool = False) -> str:
         base_eligible = queue_policy_base_eligible_predicate()
         external_scope = external_claim_scope_predicate(
             row_alias="rows",
@@ -343,6 +373,11 @@ class ExecutionRuntimeReadModel:
         )
         external_canary_authorized = external_canary_authorization_predicate(row_alias="job")
         eligible = queue_policy_eligible_predicate()
+        external_lane_filter = "AND job.lane = ANY(%s::text[])" if filter_lanes else ""
+        internal_lane_filter = "AND run.lane = ANY(%s::text[])" if filter_lanes else ""
+        outbox_lane_filter = "AND outbox.lane = ANY(%s::text[])" if filter_lanes else ""
+        inbox_lane_filter = "AND inbox.lane = ANY(%s::text[])" if filter_lanes else ""
+        policy_lane_filter = "WHERE policy.lane = ANY(%s::text[])" if filter_lanes else ""
         return f"""
             WITH queue_rows AS (
                 SELECT 'external_effect'::TEXT AS queue_kind,
@@ -376,6 +411,7 @@ class ExecutionRuntimeReadModel:
                     'failed_retryable', 'unknown_after_dispatch',
                     'failed_terminal', 'blocked'
                 )
+                {external_lane_filter}
                 UNION ALL
                 SELECT 'internal_event', '', TRUE, lane, status, hold_reason, available_at, lease_expires_at,
                        attempt_count, max_attempts, worker_generation, policy_version,
@@ -397,6 +433,7 @@ class ExecutionRuntimeReadModel:
                     'pending', 'running', 'failed_retryable',
                     'failed_terminal', 'blocked'
                 )
+                {internal_lane_filter}
                 UNION ALL
                 SELECT 'internal_outbox', '', TRUE, lane, status, hold_reason, available_at, lease_expires_at,
                        attempt_count, max_attempts, worker_generation, policy_version,
@@ -417,6 +454,7 @@ class ExecutionRuntimeReadModel:
                 WHERE outbox.status IN (
                     'pending', 'running', 'failed_retryable', 'failed_terminal'
                 )
+                {outbox_lane_filter}
                 UNION ALL
                 SELECT 'webhook_inbox', '', TRUE, lane, status, hold_reason, available_at, lease_expires_at,
                        attempt_count, max_attempts, worker_generation, policy_version,
@@ -438,9 +476,14 @@ class ExecutionRuntimeReadModel:
                     'received', 'processing', 'failed_retryable',
                     'failed_terminal', 'dead_letter'
                 )
+                {inbox_lane_filter}
             )
             SELECT policy.lane, policy.max_in_flight, policy.enabled,
                    policy.rollout_mode, policy.blocked_until, policy.policy_version,
+                   control.active_generation AS runtime_active_generation,
+                   control.claim_enabled AS runtime_claim_enabled,
+                   control.rollout_mode AS runtime_rollout_mode,
+                   control.policy_version AS runtime_policy_version,
                    COUNT(rows.*)::BIGINT AS raw_open,
                    COUNT(rows.*) FILTER (WHERE rows.hold_reason <> '')::BIGINT AS held,
                    COUNT(rows.*) FILTER (
@@ -484,6 +527,7 @@ class ExecutionRuntimeReadModel:
             FROM queue_lane_policy policy
             CROSS JOIN queue_runtime_control control
             LEFT JOIN queue_rows rows ON rows.lane = policy.lane
+            {policy_lane_filter}
             GROUP BY policy.lane, policy.max_in_flight, policy.enabled,
                      policy.rollout_mode, policy.blocked_until, policy.policy_version,
                      control.active_generation, control.claim_enabled,

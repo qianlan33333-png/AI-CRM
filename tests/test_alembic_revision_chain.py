@@ -129,8 +129,11 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     customer_incremental_source = customer_incremental.read_text(encoding="utf-8")
     customer_generation_slots = VERSIONS / "0153_customer_read_model_generation_slots.py"
     customer_generation_slots_source = customer_generation_slots.read_text(encoding="utf-8")
+    internal_event_occurred_index = VERSIONS / "0154_internal_event_occurred_index.py"
+    internal_event_occurred_index_source = internal_event_occurred_index.read_text(encoding="utf-8")
 
-    assert heads == {"0153_customer_read_model_generation_slots"}
+    assert heads == {"0154_internal_event_occurred_index"}
+    assert revisions["0154_internal_event_occurred_index"]["down_revision"] == "0153_customer_read_model_generation_slots"
     assert revisions["0153_customer_read_model_generation_slots"]["down_revision"] == "0152_customer_read_model_incremental"
     assert revisions["0152_customer_read_model_incremental"]["down_revision"] == "0151_ai_audience_hxc_projection_view"
     assert revisions["0151_ai_audience_hxc_projection_view"]["down_revision"] == "0150_crm_identity_updated_cursor_index"
@@ -178,6 +181,10 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     assert "ix_alipay_pay_orders_created_id" in alipay_order_created_index_source
     assert "(created_at DESC, id DESC)" in alipay_order_created_index_source
     assert "DROP INDEX CONCURRENTLY IF EXISTS" in alipay_order_created_index_source
+    assert "CREATE INDEX CONCURRENTLY" in internal_event_occurred_index_source
+    assert "idx_internal_event_occurred_id" in internal_event_occurred_index_source
+    assert "(occurred_at DESC, id DESC)" in internal_event_occurred_index_source
+    assert "DROP INDEX CONCURRENTLY IF EXISTS" in internal_event_occurred_index_source
     assert "CREATE INDEX CONCURRENTLY" in order_source_sort_indexes_source
     assert "idx_wechat_pay_orders_created" in order_source_sort_indexes_source
     assert "idx_wechat_shop_orders_provider_created" in order_source_sort_indexes_source

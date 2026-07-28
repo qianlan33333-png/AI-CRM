@@ -32,6 +32,9 @@ from aicrm_next.platform.platform_foundation.performance_contracts import (
     load_read_path_baselines,
     percentile,
 )
+from aicrm_next.platform.platform_foundation.execution_runtime.read_model import (
+    ExecutionRuntimeReadModel,
+)
 from aicrm_next.platform.platform_foundation.push_center.sql_read_model import SQLPushCenterReadModel
 from aicrm_next.extensions.forms.questionnaire.repo import PostgresQuestionnaireReadRepository
 from aicrm_next.platform.shared.db_session import get_db, get_engine, get_sqlalchemy_database_url
@@ -115,6 +118,8 @@ def _seed_dataset(database_url: str) -> None:
                 "customer_detail_snapshot_next, customer_list_index_next, questionnaire_questions, "
                 "questionnaire_submissions, questionnaires, sidebar_customer_profile_fields, "
                 "crm_user_identity, sync_runs, wecom_external_contact_event_logs, "
+                "internal_event_consumer_attempt, internal_event_consumer_run, "
+                "internal_event_outbox, internal_event, "
                 "external_effect_job, broadcast_jobs, outbound_webhook_deliveries "
                 "RESTART IDENTITY CASCADE"
             )
@@ -340,6 +345,55 @@ def _seed_dataset(database_url: str) -> None:
             )
             conn.execute(
                 """
+                INSERT INTO internal_event (
+                    event_id, event_type, aggregate_type, aggregate_id,
+                    subject_type, subject_id, idempotency_key, source_module,
+                    trace_id, execution_id, occurred_at, payload_summary_json, created_at
+                )
+                SELECT 'perf_internal_event_' || n,
+                       'payment.succeeded',
+                       'wechat_pay_order',
+                       'perf_order_' || n,
+                       'customer',
+                       'perf_union_' || n,
+                       'perf_internal_event_idempotency_' || n,
+                       'performance_fixture',
+                       'perf_internal_trace_' || n,
+                       'exe_perf_internal_event_' || n,
+                       CURRENT_TIMESTAMP - (n || ' milliseconds')::interval,
+                       '{}'::jsonb,
+                       CURRENT_TIMESTAMP - (n || ' milliseconds')::interval
+                FROM generate_series(1, 100000) AS n
+                """
+            )
+            conn.execute(
+                """
+                INSERT INTO internal_event_consumer_run (
+                    event_id, consumer_name, consumer_type, status,
+                    execution_id, parent_execution_id, lane, available_at,
+                    ordering_key, fairness_key, policy_version,
+                    attempt_count, max_attempts, created_at, updated_at
+                )
+                SELECT 'perf_internal_event_' || n,
+                       'order_projection_consumer',
+                       'projection',
+                       CASE WHEN n <= 1000 THEN 'pending' ELSE 'succeeded' END,
+                       'exe_perf_internal_run_' || n,
+                       'exe_perf_internal_event_' || n,
+                       'internal_financial',
+                       CURRENT_TIMESTAMP - (n || ' milliseconds')::interval,
+                       'wechat_pay_order:perf_order_' || n,
+                       'payment.succeeded',
+                       (SELECT policy_version FROM queue_runtime_control WHERE singleton = TRUE),
+                       0,
+                       5,
+                       CURRENT_TIMESTAMP - (n || ' milliseconds')::interval,
+                       CURRENT_TIMESTAMP - (n || ' milliseconds')::interval
+                FROM generate_series(1, 100000) AS n
+                """
+            )
+            conn.execute(
+                """
                 INSERT INTO external_effect_job (
                     effect_type, adapter_name, operation, target_type, target_id,
                     business_type, business_id, source_module, source_route,
@@ -371,6 +425,7 @@ def _seed_dataset(database_url: str) -> None:
                 "ANALYZE customer_list_index_next, questionnaires, questionnaire_questions, "
                 "questionnaire_submissions, crm_user_identity, customer_detail_snapshot_next, "
                 "customer_timeline_event_next, customer_recent_message_next, sidebar_customer_profile_fields, "
+                "internal_event, internal_event_consumer_run, internal_event_outbox, "
                 "sync_runs, wecom_external_contact_event_logs, external_effect_job, "
                 "broadcast_jobs, outbound_webhook_deliveries"
             )
@@ -647,6 +702,73 @@ def _run_admin_jobs(database_url: str, profile: ReadPathBaseline):
             os.environ["DATABASE_URL"] = previous
 
 
+def _run_internal_events_admin(database_url: str, profile: ReadPathBaseline):
+    import psycopg
+    from psycopg.rows import dict_row
+
+    from aicrm_next.platform.platform_foundation.internal_events import api as internal_events_api
+
+    environment = {
+        "AICRM_NEXT_ENV": "test",
+        "AICRM_ADMIN_AUTH_ENFORCED": "false",
+        "DATABASE_URL": database_url,
+    }
+    previous = {key: os.environ.get(key) for key in environment}
+    os.environ.update(environment)
+    engine = get_engine(database_url)
+    app = create_app()
+    active_capture: list[CapturedQuery] | None = None
+    original_read_model = internal_events_api.ExecutionRuntimeReadModel
+
+    def recording_read_model():
+        def connect(url: str):
+            target = active_capture if active_capture is not None else []
+            raw = psycopg.connect(url, row_factory=dict_row)
+            return _RecordingConnection(raw, target)
+
+        return ExecutionRuntimeReadModel(database_url, connect=connect)
+
+    internal_events_api.ExecutionRuntimeReadModel = recording_read_model  # type: ignore[assignment]
+
+    try:
+        with TestClient(app, raise_server_exceptions=False) as client:
+            def invoke(captured: list[CapturedQuery]) -> int:
+                nonlocal active_capture
+                listener = _sqlalchemy_recorder(engine, captured)
+                active_capture = captured
+                try:
+                    response = client.get(
+                        "/api/admin/internal-events",
+                        params={"limit": profile.page_limit, "offset": 0},
+                    )
+                finally:
+                    active_capture = None
+                    event.remove(engine, "before_cursor_execute", listener)
+                if response.status_code != 200:
+                    raise RuntimeError(
+                        f"internal_events_admin: expected HTTP 200, got {response.status_code}"
+                    )
+                payload = response.json()
+                if int(payload.get("total") or 0) != profile.dataset_rows:
+                    raise RuntimeError(
+                        f"internal_events_admin: expected {profile.dataset_rows} rows, "
+                        f"got {payload.get('total')}"
+                    )
+                items = list(payload.get("items") or [])
+                if not items or str(items[0].get("event_id") or "") != "perf_internal_event_1":
+                    raise RuntimeError("internal_events_admin: returned the wrong event page")
+                return len(items)
+
+            return _measure(profile, invoke)
+    finally:
+        internal_events_api.ExecutionRuntimeReadModel = original_read_model
+        for key, value in previous.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+
 def _run_push_center(database_url: str, profile: ReadPathBaseline):
     engine = create_engine(get_sqlalchemy_database_url(database_url), future=True)
     factory = sessionmaker(bind=engine, class_=Session, expire_on_commit=False)
@@ -714,6 +836,7 @@ def run(database_url: str) -> dict[str, Any]:
         "sidebar_workbench": _run_sidebar_workbench,
         "questionnaire_admin": _run_questionnaire_admin,
         "admin_jobs": _run_admin_jobs,
+        "internal_events_admin": _run_internal_events_admin,
         "push_center": _run_push_center,
     }
     reports: dict[str, Any] = {}

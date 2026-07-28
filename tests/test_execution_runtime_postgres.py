@@ -567,6 +567,49 @@ def test_database_scope_unifies_claim_deadline_and_runtime_metrics() -> None:
     assert claim.item_id != real["id"]
 
 
+def test_lane_summary_matches_runtime_snapshot_for_selected_lanes() -> None:
+    with get_session_factory()() as session:
+        enqueue_internal_event_outbox_in_session(
+            session,
+            InternalEventCreateRequest(
+                event_type="runtime.summary.test",
+                aggregate_type="runtime_test",
+                aggregate_id=uuid4().hex,
+                idempotency_key=f"runtime-summary-{uuid4().hex}",
+            ),
+        )
+        session.commit()
+    _enable(generation=7, internal_general=4, internal_financial=1)
+
+    read_model = ExecutionRuntimeReadModel(_database_url())
+    snapshot = read_model.runtime_snapshot()
+    summary = read_model.lane_summary(frozenset({"internal_general", "internal_financial"}))
+    expected_lanes = [
+        lane
+        for lane in snapshot["lanes"]
+        if lane["lane"] in {"internal_general", "internal_financial"}
+    ]
+
+    assert summary["lanes"] == expected_lanes
+    assert summary["active_generation"] == snapshot["control"]["active_generation"]
+    assert summary["claim_enabled"] == snapshot["control"]["claim_enabled"]
+    assert summary["rollout_mode"] == snapshot["control"]["rollout_mode"]
+    assert summary["policy_version"] == snapshot["control"]["policy_version"]
+    for key in (
+        "raw_open",
+        "held",
+        "eligible",
+        "policy_gated",
+        "scheduled",
+        "retry_wait",
+        "rate_limited",
+        "in_flight",
+        "unknown",
+        "dlq",
+    ):
+        assert summary[key] == sum(int(lane[key]) for lane in expected_lanes)
+
+
 def test_canary_runtime_and_system_health_only_count_test_loopback_external_effects() -> None:
     loopback = _job(execution_scope="test_loopback")
     real_target = _job(execution_scope="")

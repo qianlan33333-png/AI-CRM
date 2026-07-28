@@ -91,23 +91,51 @@ def test_runtime_endpoint_fails_closed_without_leaking_error_text(monkeypatch) -
     assert "postgresql://user:secret" not in response.body.decode("utf-8")
 
 
-def test_lane_summary_uses_the_runtime_policy_snapshot(monkeypatch) -> None:
-    model = object.__new__(ExecutionRuntimeReadModel)
-    monkeypatch.setattr(
-        model,
-        "runtime_snapshot",
-        lambda: {
-            "control": {
-                "policy_version": "queue-v7",
-                "active_generation": 7,
-                "claim_enabled": True,
-                "rollout_mode": "canary",
-            },
-            "lanes": [
-                {"lane": "internal_general", "raw_open": 583, "held": 583, "eligible": 0},
-                {"lane": "wecom_media", "raw_open": 2450, "held": 2450, "eligible": 0},
-            ],
-        },
+def test_lane_summary_pushes_lane_scope_into_one_database_query() -> None:
+    calls: list[tuple[str, tuple[object, ...]]] = []
+
+    class Result:
+        def fetchall(self):
+            return [
+                {
+                    "lane": "internal_general",
+                    "max_in_flight": 1,
+                    "enabled": True,
+                    "rollout_mode": "canary",
+                    "blocked_until": None,
+                    "policy_version": "queue-v7",
+                    "runtime_policy_version": "queue-v7",
+                    "runtime_active_generation": 7,
+                    "runtime_claim_enabled": True,
+                    "runtime_rollout_mode": "canary",
+                    "raw_open": 583,
+                    "held": 583,
+                    "eligible": 0,
+                    "policy_gated": 0,
+                    "scheduled": 0,
+                    "retry_wait": 0,
+                    "rate_limited": 0,
+                    "in_flight": 0,
+                    "unknown": 0,
+                    "dlq": 0,
+                    "oldest_eligible_age_seconds": 0,
+                }
+            ]
+
+    class Connection:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def execute(self, statement: str, params: tuple[object, ...]):
+            calls.append((statement, params))
+            return Result()
+
+    model = ExecutionRuntimeReadModel(
+        "postgresql://runtime-read",
+        connect=lambda database_url: Connection(),
     )
 
     summary = model.lane_summary(frozenset({"internal_general"}))
@@ -116,3 +144,22 @@ def test_lane_summary_uses_the_runtime_policy_snapshot(monkeypatch) -> None:
     assert summary["raw_open"] == 583
     assert summary["held"] == 583
     assert summary["eligible"] == 0
+    assert len(calls) == 1
+    statement, params = calls[0]
+    assert statement.count("lane = ANY(%s::text[])") == 5
+    assert params == (["internal_general"],) * 5
+    assert "queue_worker_heartbeat" not in statement
+    assert "queue_policy_snapshot" not in statement
+
+
+def test_lane_summary_returns_zero_without_query_for_empty_scope() -> None:
+    model = ExecutionRuntimeReadModel(
+        "postgresql://runtime-read",
+        connect=lambda database_url: (_ for _ in ()).throw(AssertionError("database should not be queried")),
+    )
+
+    summary = model.lane_summary(frozenset())
+
+    assert summary["lanes"] == []
+    assert summary["raw_open"] == 0
+    assert summary["rollout_mode"] == "blocked"

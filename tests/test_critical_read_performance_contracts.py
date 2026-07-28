@@ -52,6 +52,17 @@ def test_customer_projection_baselines_budget_one_generation_pointer_lookup() ->
     assert profiles["sidebar_recent_messages"].max_query_count == 4
 
 
+def test_internal_events_admin_baseline_locks_scoped_runtime_summary_budget() -> None:
+    profile = load_read_path_baselines()["internal_events_admin"]
+
+    assert profile.route == "/api/admin/internal-events"
+    assert profile.owner == "platform_foundation.internal_events"
+    assert profile.max_query_count == 9
+    assert profile.page_limit == 50
+    assert profile.baseline_p95_ms == 250.0
+    assert profile.allowed_large_seq_scan_relations == frozenset({"internal_event"})
+
+
 @pytest.mark.parametrize(
     ("mutation", "message"),
     [

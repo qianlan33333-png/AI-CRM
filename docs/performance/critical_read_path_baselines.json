@@ -75,6 +75,19 @@
         "wecom_external_contact_event_logs"
       ]
     },
+    "internal_events_admin": {
+      "route": "/api/admin/internal-events",
+      "owner": "platform_foundation.internal_events",
+      "dataset_rows": 100000,
+      "sample_count": 20,
+      "max_query_count": 9,
+      "page_limit": 50,
+      "baseline_p95_ms": 250.0,
+      "max_seq_scan_rows": 1000,
+      "allowed_large_seq_scan_relations": [
+        "internal_event"
+      ]
+    },
     "push_center": {
       "route": "/api/admin/push-center/jobs",
       "owner": "platform_foundation.push_center",

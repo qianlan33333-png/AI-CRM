@@ -513,6 +513,10 @@ class SQLAlchemyInternalEventRepository(SQLAlchemyTargetedOutboxMixin, InternalE
             filters,
             event_consumer_pair_clause=self._event_consumer_pair_clause,
         )
+        metric_status_predicate = (
+            "r.status IN ('pending', 'running', 'failed_retryable', 'failed_terminal', 'blocked')"
+        )
+        metric_where = f"{where} {'AND' if where else 'WHERE'} {metric_status_predicate}"
         due_predicate = automatic_due_predicate_sql("r")
         event_join = "JOIN internal_event e ON e.event_id = r.event_id" if requires_event_join else ""
         row = (
@@ -551,7 +555,7 @@ class SQLAlchemyInternalEventRepository(SQLAlchemyTargetedOutboxMixin, InternalE
                 ) AS oldest_pending_age_seconds
             FROM internal_event_consumer_run r
             {event_join}
-            {where}
+            {metric_where}
             """,
                 params,
             )
@@ -569,8 +573,8 @@ class SQLAlchemyInternalEventRepository(SQLAlchemyTargetedOutboxMixin, InternalE
                     COUNT(*) AS due_count
                 FROM internal_event_consumer_run r
                 JOIN internal_event e ON e.event_id = r.event_id
-                {where}
-                {"AND" if where else "WHERE"} {due_predicate}
+                {metric_where}
+                AND {due_predicate}
                 GROUP BY GROUPING SETS ((e.event_type), (r.consumer_name))
                 """,
                 params,
