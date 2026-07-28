@@ -3101,7 +3101,7 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/platform/platform_foundation/external_effects/repo_contract.py",
       "key": "WECOM_AGENT_ID",
-      "line": 207
+      "line": 210
     },
     {
       "accessor": "managed_runtime_setting",
@@ -3401,7 +3401,7 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/platform/platform_foundation/external_effects/repo_contract.py",
       "key": "WECOM_CORP_ID",
-      "line": 193
+      "line": 196
     },
     {
       "accessor": "managed_runtime_setting",
@@ -3872,6 +3872,17 @@
   ],
   "external_effect_governance": [
     {
+      "adapter_module": "aicrm_next/extensions/ai/automation_agents/generation_effect.py",
+      "allowed_runtime": "real_requires_approval",
+      "audit_required": true,
+      "boundary": "platform_foundation.external_effects",
+      "effect_key": "ai.agent.generate",
+      "idempotency_required": true,
+      "migration_target": "aicrm_next/extensions/ai/automation_agents/generation_effect.py",
+      "owner": "automation_agents",
+      "provider": "ai_model"
+    },
+    {
       "adapter_module": "aicrm_next/channels/integration_gateway/wechat_pay_client.py",
       "allowed_runtime": "real_requires_approval",
       "audit_required": true,
@@ -4165,6 +4176,13 @@
       "max_attempts": 5
     },
     {
+      "consumer_name": "automation_agent_item_prepare_consumer",
+      "consumer_type": "external_effect_planner",
+      "event_type": "automation_agent.item.prepare",
+      "handler_registered": true,
+      "max_attempts": 10
+    },
+    {
       "consumer_name": "ai_assist_notify_consumer",
       "consumer_type": "handler_alias",
       "event_type": "broadcast_task.created",
@@ -4326,6 +4344,13 @@
       "max_attempts": 5
     },
     {
+      "consumer_name": "external_effect_automation_generation_continuation_consumer",
+      "consumer_type": "orchestration",
+      "event_type": "external_effect.completed",
+      "handler_registered": true,
+      "max_attempts": 10
+    },
+    {
       "consumer_name": "external_effect_broadcast_continuation_consumer",
       "consumer_type": "orchestration",
       "event_type": "external_effect.completed",
@@ -4373,6 +4398,13 @@
       "event_type": "external_effect.completed",
       "handler_registered": true,
       "max_attempts": 5
+    },
+    {
+      "consumer_name": "external_effect_automation_generation_settlement_consumer",
+      "consumer_type": "projection",
+      "event_type": "external_effect.settled",
+      "handler_registered": true,
+      "max_attempts": 10
     },
     {
       "consumer_name": "external_effect_broadcast_settlement_consumer",
@@ -4761,7 +4793,7 @@
     }
   ],
   "migration_heads": [
-    "0157_ai_assistant_bulk_lane"
+    "0158_ai_assistant_item_pipeline"
   ],
   "openapi_components": {
     "schemas": {
@@ -48795,7 +48827,7 @@
       "domain": "automation_agents",
       "drop_candidate": false,
       "lifecycle": "audit",
-      "migration_source": "0054_automation_agent_runtime_config",
+      "migration_source": "0054_automation_agent_runtime_config, hardened by 0158_ai_assistant_item_pipeline",
       "pii_level": "internal_contact",
       "read_owners": [
         "historical schema drift guard"
@@ -48807,7 +48839,7 @@
       "domain": "automation_agents",
       "drop_candidate": false,
       "lifecycle": "audit",
-      "migration_source": "0054_automation_agent_runtime_config",
+      "migration_source": "0054_automation_agent_runtime_config, hardened by 0158_ai_assistant_item_pipeline",
       "pii_level": "internal_contact",
       "read_owners": [
         "historical schema drift guard"

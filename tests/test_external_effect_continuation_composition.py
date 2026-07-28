@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from aicrm_next.external_effect_composition import (
     AUTOMATION_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
+    AUTOMATION_GENERATION_EFFECT_CONTINUATION_CONSUMER,
     BROADCAST_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
     EXTERNAL_EFFECT_PROVIDER_RESULT_ACCESS_ALLOWLIST,
     EXTERNAL_PUSH_EFFECT_CONTINUATION_CONSUMER,
@@ -30,6 +31,7 @@ def test_external_effect_continuation_composition_is_explicit_and_deterministic(
         "questionnaire_contact_tags",
         "external_push_delivery",
         "automation_agent_audience_webhook",
+        "automation_agent_generation_completion",
     )
     assert second.names == first.names
 
@@ -45,9 +47,10 @@ def test_external_effect_continuations_have_independent_durable_consumer_names()
         QUESTIONNAIRE_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
         EXTERNAL_PUSH_EFFECT_CONTINUATION_CONSUMER,
         AUTOMATION_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
+        AUTOMATION_GENERATION_EFFECT_CONTINUATION_CONSUMER,
     )
     assert tuple(item.continuation.name for item in consumers) == build_external_effect_continuation_registry().names
-    assert all(item.max_attempts == 5 for item in consumers)
+    assert tuple(item.max_attempts for item in consumers) == (5, 5, 5, 5, 5, 5, 5, 10)
     assert {
         (item.consumer_name, item.continuation.name)
         for item in consumers
@@ -57,7 +60,11 @@ def test_external_effect_continuations_have_independent_durable_consumer_names()
         (
             IDENTITY_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
             "identity_external_contact_detail_continuation",
-        )
+        ),
+        (
+            AUTOMATION_GENERATION_EFFECT_CONTINUATION_CONSUMER,
+            "automation_agent_generation_completion",
+        ),
     }
 
 
@@ -70,8 +77,9 @@ def test_terminal_settlement_continuations_are_separate_and_provider_result_free
         "welcome_effect_graph_settlement",
         "broadcast_external_effect_settlement",
         "external_push_delivery_settlement",
+        "automation_agent_generation_settlement",
     )
-    assert len({item.consumer_name for item in consumers}) == 5
+    assert len({item.consumer_name for item in consumers}) == 6
     assert all(item.continuation.requires_provider_result is False for item in consumers)
 
 
@@ -87,6 +95,7 @@ def test_web_app_owns_its_external_effect_continuation_registry() -> None:
         "questionnaire_contact_tags",
         "external_push_delivery",
         "automation_agent_audience_webhook",
+        "automation_agent_generation_completion",
     )
     assert first_app.state.external_effect_continuation_registry is not second_app.state.external_effect_continuation_registry
 

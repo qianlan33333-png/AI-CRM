@@ -317,9 +317,20 @@ def test_real_external_push_and_automation_predicates_both_execute(monkeypatch) 
             return {"delivery_id": delivery_id, "status": "success", "response_status": kwargs.get("response_status")}
 
     class _AutomationWorker:
-        def run_batch_and_enqueue_broadcast_jobs(self, batch_id: str, *, operator: str):
+        def run_batch_and_enqueue_broadcast_jobs(
+            self,
+            batch_id: str,
+            *,
+            operator: str,
+            parent_execution_id: str = "",
+        ):
             automation_calls.append(batch_id)
-            return {"ok": True, "batch_id": batch_id, "operator": operator}
+            return {
+                "ok": True,
+                "batch_id": batch_id,
+                "operator": operator,
+                "parent_execution_id": parent_execution_id,
+            }
 
     class _OverlapAdapter:
         def dispatch(self, _job):

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import ceil
 
 
 DEFAULT_LANE_CAPACITY: dict[str, int] = {
+    "ai_generation": 64,
     "internal_general": 4,
     "internal_financial": 1,
     "webhook_inbox": 4,
@@ -18,6 +20,17 @@ DEFAULT_LANE_CAPACITY: dict[str, int] = {
 WECOM_WELCOME_RESERVED_LANES = frozenset(
     {"wecom_welcome_ingress", "wecom_welcome"}
 )
+AI_GENERATION_CAPACITY_STEPS = (4, 8, 16, 32, 64)
+
+
+def recommended_ai_generation_capacity(p95_generation_seconds: float) -> int:
+    """Return the reviewed ladder step for a two-items/second intake target."""
+
+    required = ceil(max(0.0, float(p95_generation_seconds)) * 2.0 * 1.25)
+    return next(
+        (capacity for capacity in AI_GENERATION_CAPACITY_STEPS if capacity >= max(4, required)),
+        AI_GENERATION_CAPACITY_STEPS[-1],
+    )
 
 
 @dataclass(frozen=True)

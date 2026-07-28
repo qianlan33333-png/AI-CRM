@@ -116,6 +116,7 @@ REQUIRED_RUNTIME_HEARTBEATS = (
 )
 ACTIVATABLE_LANES = frozenset(
     {
+        "ai_generation",
         "internal_general",
         "internal_financial",
         "webhook_inbox",

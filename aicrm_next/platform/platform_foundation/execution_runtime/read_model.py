@@ -182,6 +182,7 @@ class ExecutionRuntimeReadModel:
             lane["lane"]: public_external_scope
             for lane in lane_items
             if lane["lane"] in {
+                "ai_generation",
                 "wecom_welcome",
                 "wecom_interactive",
                 "wecom_bulk",

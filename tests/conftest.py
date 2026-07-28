@@ -375,7 +375,8 @@ reset_control AS (
     RETURNING singleton
 )
 UPDATE queue_lane_policy
-SET max_in_flight = CASE lane
+    SET max_in_flight = CASE lane
+        WHEN 'ai_generation' THEN 4
         WHEN 'internal_general' THEN 4
         WHEN 'internal_financial' THEN 1
         WHEN 'webhook_inbox' THEN 4
@@ -388,7 +389,7 @@ SET max_in_flight = CASE lane
     END,
     enabled = TRUE,
     rollout_mode = CASE
-        WHEN lane IN ('outbound_webhook', 'wecom_ai_assistant_bulk') THEN 'blocked'
+        WHEN lane IN ('ai_generation', 'outbound_webhook', 'wecom_ai_assistant_bulk') THEN 'blocked'
         ELSE 'standby'
     END,
     blocked_until = NULL,

@@ -27,7 +27,7 @@ from scripts.ops.bootstrap_database import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ALEMBIC_HEAD_REVISION = "0157_ai_assistant_bulk_lane"
+ALEMBIC_HEAD_REVISION = "0158_ai_assistant_item_pipeline"
 CREATE_TABLE_PATTERN = re.compile(
     r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?([a-zA-Z_][a-zA-Z0-9_]*)",
     re.IGNORECASE,
@@ -202,8 +202,9 @@ def test_empty_postgres_database_installs_and_reuses_alembic_head() -> None:
             "expected_consumer_count",
         }
         assert all(row[1] == "NO" for row in manifest_columns)
-        assert runtime_control == (0, False, "standby", 48, "queue-v2-test-loopback", "test_loopback")
+        assert runtime_control == (0, False, "standby", 112, "queue-v2-test-loopback", "test_loopback")
         assert lane_policies == {
+            "ai_generation": (4, "blocked", True),
             "internal_financial": (1, "standby", True),
             "internal_general": (4, "standby", True),
             "outbound_webhook": (4, "blocked", True),

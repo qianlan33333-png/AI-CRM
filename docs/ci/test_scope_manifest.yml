@@ -590,7 +590,9 @@
       "paths": [
         "aicrm_next/external_effect_composition.py",
         "aicrm_next/extensions/ai/automation_agents/external_effect_continuation.py",
+        "aicrm_next/extensions/ai/automation_agents/generation_effect.py",
         "aicrm_next/extensions/ai/automation_agents/internal_webhook_adapter.py",
+        "aicrm_next/extensions/ai/automation_agents/item_events.py",
         "aicrm_next/platform/shared/automation_agent_webhook_contract.py",
         "aicrm_next/channels/channel_entry/identity_external_effect.py",
         "aicrm_next/platform/external_push/external_effect_continuation.py",
@@ -604,12 +606,14 @@
         "deploy/openclaw-internal-event-worker.service",
         "migrations/versions/0131_external_effect_continuation_fanout.py",
         "tests/test_external_effect_completion_event.py",
+        "tests/test_automation_agent_item_pipeline.py",
         "tests/test_automation_agent_internal_webhook_adapter.py",
         "tests/test_external_effect_continuation_composition.py"
       ],
       "python_tests": [
         "tests/test_external_effect_continuation_composition.py",
         "tests/test_external_effect_completion_event.py",
+        "tests/test_automation_agent_item_pipeline.py",
         "tests/test_internal_event_registry_composition.py",
         "tests/test_external_effects_mvp.py",
         "tests/test_questionnaire_h5_final_tags_real_wecom.py",

@@ -35,6 +35,7 @@ from tools.check_import_graph import scan_import_graph
 
 TABLE_MANIFEST = ROOT / "docs" / "architecture" / "data_table_lifecycle_manifest.yml"
 EFFECT_PREFIXES = (
+    "ai.",
     "ai_assist.",
     "feishu.",
     "group_ops.",

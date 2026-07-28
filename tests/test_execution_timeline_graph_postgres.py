@@ -106,8 +106,8 @@ def test_external_effect_root_recursively_includes_completion_fanout_and_attempt
     ).relay_due(limit=10)
     assert relay["ok"] is True
     assert relay["counts"]["relayed_count"] == 2
-    assert relay["items"][0]["consumer_run_count"] == 7
-    assert relay["items"][1]["consumer_run_count"] == 5
+    assert relay["items"][0]["consumer_run_count"] == 8
+    assert relay["items"][1]["consumer_run_count"] == 6
 
     runs = internal_repo.acquire_due_runs(
         limit=10,
@@ -121,7 +121,7 @@ def test_external_effect_root_recursively_includes_completion_fanout_and_attempt
         consumer.consumer_name for consumer in build_external_effect_settlement_consumers()
     }
     assert {run.consumer_name for run in runs} == expected_consumers
-    assert len(runs) == 7
+    assert len(runs) == 8
     for run in runs:
         result = internal_repo.complete_consumer_attempt(
             run=run,
@@ -174,8 +174,8 @@ def test_external_effect_root_recursively_includes_completion_fanout_and_attempt
     assert kinds.count("external_effect_attempt") == 1
     assert kinds.count("internal_outbox") == 2
     assert kinds.count("internal_event") == 2
-    assert kinds.count("internal_consumer_run") == 12
-    assert kinds.count("internal_consumer_attempt") == 7
+    assert kinds.count("internal_consumer_run") == 14
+    assert kinds.count("internal_consumer_attempt") == 8
     completion_items = [
         item
         for item in items
@@ -198,8 +198,8 @@ def test_external_effect_root_recursively_includes_completion_fanout_and_attempt
     } == expected_consumers | expected_settlement_consumers
     assert len({(item["item_kind"], item["item_id"]) for item in items}) == len(items)
     assert timeline["graph"] == {
-        "execution_node_count": 15,
-        "edge_count": 15,
+        "execution_node_count": 17,
+        "edge_count": 17,
         "max_depth_reached": 2,
         "max_depth": 12,
         "max_execution_nodes": 256,
@@ -213,10 +213,10 @@ def test_external_effect_root_recursively_includes_completion_fanout_and_attempt
         run_rows[0]["execution_id"]
     )
     assert leaf_timeline is not None
-    assert leaf_timeline["graph"]["execution_node_count"] == 15
+    assert leaf_timeline["graph"]["execution_node_count"] == 17
     assert sum(
         item["item_kind"] == "internal_consumer_run" for item in leaf_timeline["items"]
-    ) == 12
+    ) == 14
 
 
 class _FakeRows:

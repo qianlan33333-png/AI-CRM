@@ -1,4 +1,13 @@
 effects:
+  - effect_key: ai.agent.generate
+    provider: ai_model
+    owner: automation_agents
+    boundary: platform_foundation.external_effects
+    allowed_runtime: real_requires_approval
+    adapter_module: aicrm_next/extensions/ai/automation_agents/generation_effect.py
+    migration_target: aicrm_next/extensions/ai/automation_agents/generation_effect.py
+    idempotency_required: true
+    audit_required: true
   - effect_key: wecom.channel_entry.api
     provider: wecom
     owner: channel_entry

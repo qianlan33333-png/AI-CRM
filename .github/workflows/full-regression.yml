@@ -133,6 +133,14 @@ jobs:
           python tools/check_critical_read_performance.py
           --report test-results/critical-read-performance.json
 
+      - name: Verify AI assistant 3000-recipient admission SLA
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
+        run: >-
+          python -m pytest
+          tests/test_automation_agent_item_pipeline.py::test_webhook_bulk_persists_3000_items_and_prepare_events_without_model_call
+          -q --tb=short
+
       - name: Upload critical read-path evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1 (Node 24)

@@ -22,6 +22,7 @@ from .models import (
 _MODEL_FIELD_NAMES: dict[type[Any], set[str]] = {}
 EXTERNAL_EFFECT_LANES = frozenset(
     {
+        "ai_generation",
         "wecom_welcome",
         "wecom_interactive",
         "wecom_bulk",
@@ -167,6 +168,8 @@ def _execution_lane(request: ExternalEffectCreateRequest) -> str:
         return explicit
     if request.effect_type == "wecom.media.upload":
         return "wecom_media"
+    if request.effect_type == "ai.agent.generate":
+        return "ai_generation"
     if request.effect_type == "wecom.message.broadcast.send":
         return "wecom_bulk"
     if request.effect_type.startswith("webhook.") or request.effect_type in {

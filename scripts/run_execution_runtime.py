@@ -226,6 +226,7 @@ def _build_queue_services(
             _service(
                 queue_kind="external_effect",
                 lane_names=(
+                    "ai_generation",
                     "wecom_welcome",
                     "wecom_interactive",
                     "wecom_bulk",

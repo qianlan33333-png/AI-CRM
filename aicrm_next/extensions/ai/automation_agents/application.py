@@ -18,7 +18,7 @@ from .repository import AutomationAgentRepository, build_automation_agent_reposi
 
 ALLOWED_STATUSES = {"active", "paused", "archived"}
 ALLOWED_AUTOMATION_TYPES = {"agent", "fixed_script"}
-MAX_WEBHOOK_USERS = 200
+MAX_WEBHOOK_USERS = 5000
 
 
 def _base_url(request_base_url: str = "") -> str:
@@ -362,7 +362,7 @@ class AutomationAgentWebhookService:
         if not idempotency_key:
             idempotency_key = f"agent_webhook:{agent_code}:{hashlib.sha256(raw_body).hexdigest()}"
         batch_id = f"agent_batch_{uuid4().hex}"
-        batch, items = self._repo.create_batch(
+        batch, accepted_count = self._repo.create_batch(
             batch_id=batch_id,
             agent=agent,
             headers=headers,
@@ -379,7 +379,7 @@ class AutomationAgentWebhookService:
                 "batch_id": batch.get("batch_id"),
                 "received_count": received_count,
                 "deduped_count": len(external_userids),
-                "accepted_count": len(items),
+                "accepted_count": accepted_count,
                 "mode": "queued",
             },
             200,

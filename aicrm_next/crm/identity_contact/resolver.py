@@ -406,8 +406,28 @@ def resolve_external_userids_with_sqlalchemy(
             """
             WITH identity_input AS (
                 SELECT unnest(CAST(:external_userids AS text[])) AS external_userid
+            ), matched_identity AS (
+                SELECT input.external_userid AS input_external_userid,
+                       identity.unionid
+                FROM identity_input input
+                JOIN crm_user_identity identity
+                  ON identity.primary_external_userid = input.external_userid
+                UNION
+                SELECT input.external_userid AS input_external_userid,
+                       identity.unionid
+                FROM identity_input input
+                JOIN crm_user_identity identity
+                  ON identity.external_userids_json @> jsonb_build_array(input.external_userid)
+                UNION
+                SELECT input.external_userid AS input_external_userid,
+                       identity.unionid
+                FROM identity_input input
+                JOIN crm_user_identity identity
+                  ON identity.external_userids_json @> jsonb_build_array(
+                        jsonb_build_object('external_userid', input.external_userid)
+                  )
             )
-            SELECT input.external_userid AS input_external_userid,
+            SELECT matched.input_external_userid,
                    identity.unionid,
                    identity.primary_external_userid AS external_userid,
                    identity.primary_openid AS openid,
@@ -421,14 +441,10 @@ def resolve_external_userids_with_sqlalchemy(
                    TRUE AS matched_external_userid,
                    FALSE AS matched_openid,
                    FALSE AS matched_mobile
-            FROM identity_input input
+            FROM matched_identity matched
             JOIN crm_user_identity identity
-              ON identity.primary_external_userid = input.external_userid
-              OR identity.external_userids_json @> jsonb_build_array(input.external_userid)
-              OR identity.external_userids_json @> jsonb_build_array(
-                    jsonb_build_object('external_userid', input.external_userid)
-              )
-            ORDER BY input.external_userid, identity.unionid
+              ON identity.unionid = matched.unionid
+            ORDER BY matched.input_external_userid, identity.unionid
             """
         ),
         {"external_userids": normalized_values},
@@ -583,9 +599,11 @@ def resolved_unionids_for_external_userids_with_sqlalchemy(
     normalized_values = list(dict.fromkeys(_text(value) for value in external_userids if _text(value)))
     resolutions = resolve_external_userids_with_sqlalchemy(executor, normalized_values)
     unionids: list[str] = []
+    seen_unionids: set[str] = set()
     for external_userid in normalized_values:
         unionid = resolved_unionid(resolutions[external_userid])
-        if unionid and unionid not in unionids:
+        if unionid and unionid not in seen_unionids:
+            seen_unionids.add(unionid)
             unionids.append(unionid)
     return unionids
 

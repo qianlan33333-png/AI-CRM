@@ -139,8 +139,13 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     )
     ai_assistant_bulk_lane = VERSIONS / "0157_ai_assistant_bulk_lane.py"
     ai_assistant_bulk_lane_source = ai_assistant_bulk_lane.read_text(encoding="utf-8")
+    ai_assistant_item_pipeline = VERSIONS / "0158_ai_assistant_item_pipeline.py"
+    ai_assistant_item_pipeline_source = ai_assistant_item_pipeline.read_text(encoding="utf-8")
 
-    assert heads == {"0157_ai_assistant_bulk_lane"}
+    assert heads == {"0158_ai_assistant_item_pipeline"}
+    assert revisions["0158_ai_assistant_item_pipeline"]["down_revision"] == (
+        "0157_ai_assistant_bulk_lane"
+    )
     assert revisions["0157_ai_assistant_bulk_lane"]["down_revision"] == (
         "0156_campaign_preparation_context"
     )
@@ -287,6 +292,12 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     assert "INITIAL_CAPACITY = 4" in ai_assistant_bulk_lane_source
     assert "MAX_RESERVED_CAPACITY = 24" in ai_assistant_bulk_lane_source
     assert "'blocked'" in ai_assistant_bulk_lane_source
+    assert "ai_generation" in ai_assistant_item_pipeline_source
+    assert "INITIAL_CAPACITY = 4" in ai_assistant_item_pipeline_source
+    assert "MAX_RESERVED_CAPACITY = 64" in ai_assistant_item_pipeline_source
+    assert "agent_config_snapshot_json" in ai_assistant_item_pipeline_source
+    assert "generation_effect_job_id" in ai_assistant_item_pipeline_source
+    assert "prevents destructive downgrade" in ai_assistant_item_pipeline_source
     assert "global_max_in_flight = global_max_in_flight +" in welcome_realtime_source
     assert "CREATE INDEX CONCURRENTLY IF NOT EXISTS" in sidebar_recent_message_index_source
     assert "ix_customer_recent_message_next_unionid_time_id" in sidebar_recent_message_index_source

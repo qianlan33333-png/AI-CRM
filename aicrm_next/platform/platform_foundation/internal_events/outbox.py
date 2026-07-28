@@ -211,6 +211,151 @@ def enqueue_internal_event_outbox_in_session(
     return dict(existing)
 
 
+def enqueue_internal_event_outbox_batch_in_session(
+    session: Session,
+    requests: list[InternalEventCreateRequest],
+) -> list[dict[str, Any]]:
+    """Insert many durable event envelopes with one PostgreSQL statement.
+
+    The caller owns the transaction. Existing idempotency keys are returned in
+    the same ordinal order as new rows, which lets business repositories link
+    their rows to the durable outbox without an N+1 write loop.
+    """
+
+    if not requests:
+        return []
+    rows: list[dict[str, Any]] = []
+    for ordinal, request in enumerate(requests):
+        tenant_id = _text(request.tenant_id) or DEFAULT_TENANT_ID
+        occurred_at = public_datetime(request.occurred_at or utcnow())
+        rows.append(
+            {
+                "ordinal": ordinal,
+                "tenant_id": tenant_id,
+                "outbox_id": "ieo_" + uuid4().hex,
+                "event_type": _text(request.event_type),
+                "event_version": int(request.event_version or 1),
+                "aggregate_type": _text(request.aggregate_type),
+                "aggregate_id": _text(request.aggregate_id),
+                "subject_type": _text(request.subject_type),
+                "subject_id": _text(request.subject_id),
+                "idempotency_key": _idempotency_key(request),
+                "actor_id": _text(request.context.actor_id),
+                "actor_type": _text(request.context.actor_type) or "system",
+                "source_module": _text(request.source_module),
+                "source_route": _text(request.context.source_route),
+                "source_command_id": _text(request.source_command_id),
+                "trace_id": _text(request.context.trace_id),
+                "request_id": _text(request.context.request_id),
+                "correlation_id": _text(request.correlation_id),
+                "execution_id": _text(request.execution_id) or "exe_" + uuid4().hex,
+                "parent_execution_id": _text(request.parent_execution_id),
+                "lane": (
+                    "internal_financial"
+                    if _text(request.event_type).startswith(("payment.", "refund.", "order."))
+                    else "internal_general"
+                ),
+                "available_at": occurred_at,
+                "ordering_key": f"{_text(request.aggregate_type)}:{_text(request.aggregate_id)}",
+                "fairness_key": _text(request.event_type),
+                "occurred_at": occurred_at,
+                "payload_json": dict(request.payload or {}),
+                "payload_summary_json": _payload_summary(request),
+            }
+        )
+    result = session.execute(
+        text(
+            """
+            WITH input AS (
+                SELECT *
+                FROM jsonb_to_recordset(CAST(:rows_json AS jsonb)) AS row(
+                    ordinal integer,
+                    tenant_id text,
+                    outbox_id text,
+                    event_type text,
+                    event_version integer,
+                    aggregate_type text,
+                    aggregate_id text,
+                    subject_type text,
+                    subject_id text,
+                    idempotency_key text,
+                    actor_id text,
+                    actor_type text,
+                    source_module text,
+                    source_route text,
+                    source_command_id text,
+                    trace_id text,
+                    request_id text,
+                    correlation_id text,
+                    execution_id text,
+                    parent_execution_id text,
+                    lane text,
+                    available_at timestamptz,
+                    ordering_key text,
+                    fairness_key text,
+                    occurred_at timestamptz,
+                    payload_json jsonb,
+                    payload_summary_json jsonb
+                )
+            ), inserted AS (
+                INSERT INTO internal_event_outbox (
+                    tenant_id, outbox_id, event_type, event_version, aggregate_type, aggregate_id,
+                    subject_type, subject_id, idempotency_key, actor_id, actor_type,
+                    source_module, source_route, source_command_id, trace_id, request_id,
+                    correlation_id, execution_id, parent_execution_id, lane, available_at,
+                    ordering_key, fairness_key, policy_version, occurred_at,
+                    payload_json, payload_summary_json, status, attempt_count,
+                    max_attempts, created_at, updated_at
+                )
+                SELECT
+                    tenant_id, outbox_id, event_type, event_version, aggregate_type, aggregate_id,
+                    subject_type, subject_id, idempotency_key, actor_id, actor_type,
+                    source_module, source_route, source_command_id, trace_id, request_id,
+                    correlation_id, execution_id, parent_execution_id, lane, available_at,
+                    ordering_key, fairness_key,
+                    (SELECT policy_version FROM queue_runtime_control WHERE singleton = TRUE FOR SHARE),
+                    occurred_at, payload_json, payload_summary_json, 'pending', 0, 10,
+                    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                FROM input
+                ON CONFLICT (tenant_id, idempotency_key) DO NOTHING
+                RETURNING tenant_id, idempotency_key, outbox_id
+            ), resolved AS (
+                SELECT inserted.tenant_id,
+                       inserted.idempotency_key,
+                       inserted.outbox_id,
+                       input.ordinal
+                FROM inserted
+                JOIN input
+                  ON inserted.tenant_id = input.tenant_id
+                 AND inserted.idempotency_key = input.idempotency_key
+                UNION ALL
+                SELECT outbox.tenant_id,
+                       outbox.idempotency_key,
+                       outbox.outbox_id,
+                       input.ordinal
+                FROM input
+                JOIN internal_event_outbox outbox
+                  ON outbox.tenant_id = input.tenant_id
+                 AND outbox.idempotency_key = input.idempotency_key
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM inserted
+                    WHERE inserted.tenant_id = input.tenant_id
+                      AND inserted.idempotency_key = input.idempotency_key
+                )
+            )
+            SELECT *
+            FROM resolved
+            ORDER BY ordinal ASC
+            """
+        ),
+        {"rows_json": json.dumps(rows, ensure_ascii=False, default=str, separators=(",", ":"))},
+    ).mappings().all()
+    if len(result) != len(rows):
+        raise RuntimeError("internal event outbox batch idempotent create failed")
+    return [{key: value for key, value in dict(row).items() if key != "ordinal"} for row in result]
+
+
 def _retry_at(attempt_count: int):
     delays = (60, 300, 900, 3600, 6 * 3600)
     return utcnow() + timedelta(seconds=delays[min(max(int(attempt_count or 1) - 1, 0), len(delays) - 1)])

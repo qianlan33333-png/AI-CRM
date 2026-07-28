@@ -35,6 +35,7 @@ from .view_model import (
 router = APIRouter()
 _PUSH_LANES = frozenset(
     {
+        "ai_generation",
         "wecom_interactive",
         "wecom_bulk",
         "wecom_ai_assistant_bulk",

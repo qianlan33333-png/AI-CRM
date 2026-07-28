@@ -1937,7 +1937,7 @@ tables:
       - tests/test_execution_runtime_postgres.py
       - tests/test_database_bootstrap.py
       - tests/test_data_table_lifecycle_guard.py
-    notes: Stores reserved per-lane capacity and explicit rollout mode. outbound_webhook and wecom_ai_assistant_bulk are seeded blocked and must remain fail-closed without separate approval; the AI lane starts at capacity four and has a code ceiling of twenty-four.
+    notes: Stores reserved per-lane capacity and explicit rollout mode. outbound_webhook, wecom_ai_assistant_bulk and ai_generation are seeded blocked and must remain fail-closed without separate approval. The WeCom AI lane starts at four with code ceiling twenty-four; generation starts at four with code ceiling sixty-four.
 
   queue_policy_snapshot:
     domain: platform_foundation
@@ -2209,7 +2209,7 @@ tables:
       - tests/test_event_effect_table_lineage.py
       - tests/test_external_effect_runtime_owner.py
       - tests/test_external_effect_runtime_owner_postgres.py
-    notes: Canonical queue for real external side effects. Every mutation is confined to the external_effects capability; execution runtime, welcome and group-ops callers cross the public write port while retaining their surrounding transaction and settlement-event append. Scheduler, realtime, and manual dispatch share lease-token CAS; uncertain outcomes are quarantined for reconciliation and fake outcomes are simulated. Every new runtime terminal transition transactionally emits payload-minimal external_effect.settled; succeeded also retains the provider-result-gated external_effect.completed hand-off. A deterministic provider business rejection may complete the processing flow without completing the side effect; the delivery status remains truthful while data health reports a strictly proven business outcome separately. Revision 0125 makes available_at mandatory and constrains lane to the original external-effect lanes; revision 0156 adds the fail-closed wecom_ai_assistant_bulk service-level lane without changing the queue owner. Unified timeline reads summary projections only and applies centralized sensitive-data redaction; provider request payloads are excluded.
+    notes: Canonical queue for real external side effects. Every mutation is confined to the external_effects capability; execution runtime, welcome, group-ops and Automation Agent callers cross the public write port while retaining their surrounding transaction and settlement-event append. Scheduler, realtime, and manual dispatch share lease-token CAS; uncertain outcomes are quarantined for reconciliation and fake outcomes are simulated. Every new runtime terminal transition transactionally emits payload-minimal external_effect.settled; succeeded also retains the provider-result-gated external_effect.completed hand-off. A deterministic provider business rejection may complete the processing flow without completing the side effect; the delivery status remains truthful while data health reports a strictly proven business outcome separately. Revision 0125 makes available_at mandatory and constrains lane to the original external-effect lanes; revision 0157 adds fail-closed wecom_ai_assistant_bulk and revision 0158 adds fail-closed ai_generation without changing the queue owner. Unified timeline reads summary projections only and applies centralized sensitive-data redaction; provider request payloads are excluded.
 
   external_effect_attempt:
     domain: external_effects
@@ -2804,12 +2804,12 @@ tables:
     drop_after: ""
     runtime_entrypoints:
       - existing production runtime
-    migration_source: 0054_automation_agent_runtime_config
+    migration_source: 0054_automation_agent_runtime_config, hardened by 0158_ai_assistant_item_pipeline
     pii_level: internal_contact
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: Durable batch audit and progress projection. Revision 0158 freezes the published Agent configuration and adds atomic per-stage counters and timestamps for the per-recipient pipeline.
 
   automation_agent_webhook_item:
     domain: automation_agents
@@ -2822,12 +2822,12 @@ tables:
     drop_after: ""
     runtime_entrypoints:
       - existing production runtime
-    migration_source: 0054_automation_agent_runtime_config
+    migration_source: 0054_automation_agent_runtime_config, hardened by 0158_ai_assistant_item_pipeline
     pii_level: internal_contact
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: Durable per-recipient state machine. Revision 0158 adds prepare outbox and generation Effect references, CAS versioning and stage timestamps; stable callback and Effect keys prevent duplicate WeCom task creation after recovery.
 
   automation_agents:
     domain: automation_agents

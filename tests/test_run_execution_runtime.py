@@ -114,6 +114,7 @@ def test_external_runtime_composes_dedicated_ai_assistant_bulk_lane(monkeypatch)
     run_execution_runtime._build_services(args)
 
     assert captured[0]["lane_names"] == (
+        "ai_generation",
         "wecom_welcome",
         "wecom_interactive",
         "wecom_bulk",
@@ -122,6 +123,7 @@ def test_external_runtime_composes_dedicated_ai_assistant_bulk_lane(monkeypatch)
         "outbound_webhook",
     )
     assert run_execution_runtime.DEFAULT_LANE_CAPACITY["wecom_ai_assistant_bulk"] == 24
+    assert run_execution_runtime.DEFAULT_LANE_CAPACITY["ai_generation"] == 64
 
 
 def test_execute_requires_explicit_environment_gate(monkeypatch) -> None:

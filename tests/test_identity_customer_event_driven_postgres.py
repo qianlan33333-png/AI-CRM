@@ -218,7 +218,7 @@ def test_terminal_identity_effect_durably_holds_parent_queue() -> None:
         run.consumer_name == IDENTITY_EXTERNAL_EFFECT_SETTLEMENT_CONSUMER
         for run in runs
     )
-    assert run_count == 5
+    assert run_count == 6
     worker = InternalEventWorker(consumer_registry=registry)
     for run in runs:
         result = worker.dispatch_one(run)

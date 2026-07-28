@@ -9,7 +9,9 @@ from psycopg.rows import dict_row
 
 from aicrm_next.crm.identity_contact.dto import ResolvePersonIdentityRequest
 from aicrm_next.crm.identity_contact.repo import PostgresIdentityBindingRepository, PostgresIdentityRepository
+from aicrm_next.crm.identity_contact.resolver import resolve_external_userids_with_sqlalchemy
 from aicrm_next.extensions.forms.questionnaire.repo import PostgresQuestionnaireReadRepository
+from aicrm_next.platform.shared.db_session import get_session_factory
 from scripts.ops.check_unionid_identity_cutover import _register_duplicate_alias_conflicts, collect
 
 
@@ -103,6 +105,45 @@ def test_postgres_resolver_blocks_cross_field_and_duplicate_alias_conflicts(next
     assert duplicate.reason == "duplicate_alias"
     assert disagreement.status == "conflict"
     assert disagreement.reason == "identity_inputs_disagree"
+
+
+def test_sqlalchemy_batch_external_userid_resolver_preserves_primary_alias_object_and_conflict(
+    next_pg_schema,
+) -> None:
+    _seed_identity(unionid="union-batch-primary", external_userid="external-batch-primary", openid="openid-batch-primary")
+    _seed_identity(unionid="union-batch-alias", external_userid="external-batch-owner", openid="openid-batch-alias")
+    _seed_identity(unionid="union-batch-object", external_userid="external-batch-object-owner", openid="openid-batch-object")
+    _seed_identity(unionid="union-batch-conflict", external_userid="external-batch-conflict-owner", openid="openid-batch-conflict")
+    with psycopg.connect(_database_url()) as conn:
+        conn.execute(
+            """
+            UPDATE crm_user_identity
+            SET external_userids_json = CASE unionid
+                WHEN 'union-batch-alias' THEN '["external-batch-alias"]'::jsonb
+                WHEN 'union-batch-object' THEN '[{"external_userid":"external-batch-object"}]'::jsonb
+                WHEN 'union-batch-conflict' THEN '["external-batch-primary"]'::jsonb
+                ELSE external_userids_json
+            END
+            WHERE unionid IN (
+                'union-batch-alias',
+                'union-batch-object',
+                'union-batch-conflict'
+            )
+            """
+        )
+
+    with get_session_factory()() as session:
+        results = resolve_external_userids_with_sqlalchemy(
+            session,
+            ["external-batch-primary", "external-batch-alias", "external-batch-object"],
+        )
+
+    assert results["external-batch-primary"].status == "conflict"
+    assert results["external-batch-primary"].reason == "duplicate_alias"
+    assert results["external-batch-alias"].identity is not None
+    assert results["external-batch-alias"].identity.unionid == "union-batch-alias"
+    assert results["external-batch-object"].identity is not None
+    assert results["external-batch-object"].identity.unionid == "union-batch-object"
 
 
 def test_postgres_resolver_blocks_deleted_canonical_identity(next_pg_schema) -> None:

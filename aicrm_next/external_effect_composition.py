@@ -11,7 +11,12 @@ from .channels.channel_entry.welcome_media_effects_repository import (
     WELCOME_EFFECT_SETTLEMENT_CONTINUATION,
     WELCOME_MEDIA_DEPENDENCY_CONTINUATION,
 )
-from .extensions.ai.automation_agents.external_effect_continuation import AUTOMATION_AGENT_AUDIENCE_WEBHOOK_CONTINUATION
+from .extensions.ai.automation_agents.external_effect_continuation import (
+    AUTOMATION_AGENT_AUDIENCE_WEBHOOK_CONTINUATION,
+    AUTOMATION_AGENT_GENERATION_CONTINUATION,
+    AUTOMATION_AGENT_GENERATION_SETTLEMENT_CONTINUATION,
+)
+from .extensions.ai.automation_agents.generation_effect import AutomationAgentGenerationAdapter
 from .automation.automation_engine.group_ops.external_effect_continuation import (
     GROUP_OPS_EFFECT_SETTLEMENT_CONTINUATION,
     GROUP_OPS_MEDIA_DEPENDENCY_CONTINUATION,
@@ -57,17 +62,23 @@ BROADCAST_EXTERNAL_EFFECT_CONTINUATION_CONSUMER = "external_effect_broadcast_con
 QUESTIONNAIRE_EXTERNAL_EFFECT_CONTINUATION_CONSUMER = "external_effect_questionnaire_continuation_consumer"
 EXTERNAL_PUSH_EFFECT_CONTINUATION_CONSUMER = "external_effect_external_push_continuation_consumer"
 AUTOMATION_EXTERNAL_EFFECT_CONTINUATION_CONSUMER = "external_effect_automation_continuation_consumer"
+AUTOMATION_GENERATION_EFFECT_CONTINUATION_CONSUMER = "external_effect_automation_generation_continuation_consumer"
 IDENTITY_EXTERNAL_EFFECT_SETTLEMENT_CONSUMER = "external_effect_identity_settlement_consumer"
 GROUP_OPS_EXTERNAL_EFFECT_SETTLEMENT_CONSUMER = "external_effect_group_ops_settlement_consumer"
 WELCOME_EXTERNAL_EFFECT_SETTLEMENT_CONSUMER = "external_effect_welcome_settlement_consumer"
 BROADCAST_EXTERNAL_EFFECT_SETTLEMENT_CONSUMER = "external_effect_broadcast_settlement_consumer"
 EXTERNAL_PUSH_EFFECT_SETTLEMENT_CONSUMER = "external_effect_external_push_settlement_consumer"
+AUTOMATION_GENERATION_EFFECT_SETTLEMENT_CONSUMER = "external_effect_automation_generation_settlement_consumer"
 EXTERNAL_EFFECT_PROVIDER_RESULT_ACCESS_ALLOWLIST = frozenset(
     {
         (
             IDENTITY_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
             IDENTITY_EXTERNAL_CONTACT_DETAIL_CONTINUATION.name,
-        )
+        ),
+        (
+            AUTOMATION_GENERATION_EFFECT_CONTINUATION_CONSUMER,
+            AUTOMATION_AGENT_GENERATION_CONTINUATION.name,
+        ),
     }
 )
 
@@ -103,6 +114,11 @@ def build_external_effect_continuation_consumers() -> tuple[ExternalEffectContin
             AUTOMATION_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
             AUTOMATION_AGENT_AUDIENCE_WEBHOOK_CONTINUATION,
         ),
+        ExternalEffectContinuationConsumer(
+            AUTOMATION_GENERATION_EFFECT_CONTINUATION_CONSUMER,
+            AUTOMATION_AGENT_GENERATION_CONTINUATION,
+            max_attempts=10,
+        ),
     )
 
 
@@ -129,6 +145,11 @@ def build_external_effect_settlement_consumers() -> tuple[ExternalEffectContinua
             EXTERNAL_PUSH_EFFECT_SETTLEMENT_CONSUMER,
             EXTERNAL_PUSH_DELIVERY_SETTLEMENT_CONTINUATION,
         ),
+        ExternalEffectContinuationConsumer(
+            AUTOMATION_GENERATION_EFFECT_SETTLEMENT_CONSUMER,
+            AUTOMATION_AGENT_GENERATION_SETTLEMENT_CONTINUATION,
+            max_attempts=10,
+        ),
     )
 
 
@@ -141,6 +162,8 @@ def _continuation_runtime_enabled(
     capability_id = {
         QUESTIONNAIRE_EXTERNAL_EFFECT_CONTINUATION_CONSUMER: "extension.forms",
         AUTOMATION_EXTERNAL_EFFECT_CONTINUATION_CONSUMER: "extension.ai",
+        AUTOMATION_GENERATION_EFFECT_CONTINUATION_CONSUMER: "extension.ai",
+        AUTOMATION_GENERATION_EFFECT_SETTLEMENT_CONSUMER: "extension.ai",
     }.get(consumer.consumer_name, "core.platform")
     return profile.allows_runtime(capability_id)
 
@@ -197,9 +220,12 @@ def build_external_effect_adapter_registry(
         "wecom_tag": WeComContactTagAdapter(adapter_factory=provider_factory),
         "wecom_profile": WeComProfileUpdateAdapter(adapter_factory=provider_factory),
         "wecom_external_contact_detail": WeComExternalContactDetailAdapter(adapter_factory=provider_factory),
+        "ai_agent_generation": AutomationAgentGenerationAdapter(),
     }
     if profile is not None and profile.activation_mode == "enforce" and not profile.allows_runtime("extension.commerce"):
         adapters.pop("wechat_payment", None)
+    if profile is not None and profile.activation_mode == "enforce" and not profile.allows_runtime("extension.ai"):
+        adapters.pop("ai_agent_generation", None)
     return ExternalEffectAdapterRegistry(adapters)
 
 

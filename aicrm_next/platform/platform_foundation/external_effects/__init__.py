@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from .models import (
+    AI_AGENT_GENERATE,
     AI_ASSIST_CAMPAIGN_MESSAGE_LOOPBACK,
     AI_ASSIST_CAMPAIGN_MESSAGE_PLAN,
     WEBHOOK_CUSTOMER_AUTOMATION_RETRY,
@@ -38,6 +39,7 @@ __all__ = [
     "ExternalEffectJob",
     "ExternalEffectService",
     "InMemoryExternalEffectRepository",
+    "AI_AGENT_GENERATE",
     "AI_ASSIST_CAMPAIGN_MESSAGE_LOOPBACK",
     "AI_ASSIST_CAMPAIGN_MESSAGE_PLAN",
     "WEBHOOK_CUSTOMER_AUTOMATION_RETRY",

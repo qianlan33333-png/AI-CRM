@@ -12,6 +12,8 @@ from .extensions.commerce.commerce.payment_tagging import (
 from .crm.identity_contact.payment_projection import project_payment_order_mobile
 from .external_effect_composition import (
     AUTOMATION_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
+    AUTOMATION_GENERATION_EFFECT_CONTINUATION_CONSUMER,
+    AUTOMATION_GENERATION_EFFECT_SETTLEMENT_CONSUMER,
     EXTERNAL_EFFECT_PROVIDER_RESULT_ACCESS_ALLOWLIST,
     QUESTIONNAIRE_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
     build_external_effect_continuation_consumers,
@@ -19,6 +21,7 @@ from .external_effect_composition import (
     build_external_effect_settlement_consumers,
 )
 from .extensions.ai.ai_audience_ops import register_ai_audience_event_consumers
+from .extensions.ai.automation_agents.item_events import register_automation_agent_event_consumers
 from .operation_cycle_fact_composition import (
     register_operation_cycle_system_fact_consumers,
 )
@@ -147,6 +150,8 @@ def register_shadow_event_consumers(registry: InternalEventConsumerRegistry | No
 _CONTINUATION_CAPABILITY = {
     QUESTIONNAIRE_EXTERNAL_EFFECT_CONTINUATION_CONSUMER: "extension.forms",
     AUTOMATION_EXTERNAL_EFFECT_CONTINUATION_CONSUMER: "extension.ai",
+    AUTOMATION_GENERATION_EFFECT_CONTINUATION_CONSUMER: "extension.ai",
+    AUTOMATION_GENERATION_EFFECT_SETTLEMENT_CONSUMER: "extension.ai",
 }
 
 
@@ -166,12 +171,18 @@ def register_external_effect_completion_consumers(
     profile: DeploymentProfile | None = None,
 ) -> None:
     registry = registry or current_internal_event_consumer_registry()
+    runtime_consumers = _runtime_consumers(build_external_effect_continuation_consumers(), profile)
+    runtime_consumer_names = {consumer.consumer_name for consumer in runtime_consumers}
     register_external_effect_completed_consumers(
         registry,
-        consumers=_runtime_consumers(build_external_effect_continuation_consumers(), profile),
+        consumers=runtime_consumers,
         repository_factory=build_external_effect_repository,
         legacy_continuation_registry_factory=partial(build_external_effect_continuation_registry, profile),
-        provider_result_access_allowlist=EXTERNAL_EFFECT_PROVIDER_RESULT_ACCESS_ALLOWLIST,
+        provider_result_access_allowlist={
+            pair
+            for pair in EXTERNAL_EFFECT_PROVIDER_RESULT_ACCESS_ALLOWLIST
+            if pair[0] in runtime_consumer_names
+        },
     )
 
 
@@ -197,6 +208,7 @@ def build_internal_event_consumer_registry(
     register_questionnaire_event_consumers(registry)
     register_shadow_event_consumers(registry)
     register_ai_audience_event_consumers(registry)
+    register_automation_agent_event_consumers(registry)
     register_customer_read_model_event_consumers(registry)
     register_operation_cycle_system_fact_consumers(registry)
     register_external_effect_completion_consumers(registry, profile=profile)
