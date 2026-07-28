@@ -776,6 +776,10 @@ def test_external_effect_backlog_treats_strict_private_message_84061_as_business
         "private_message_contact_absence",
         "wecom.message.private.send",
         "external_contact_relationship_absent",
+        "cloud_plan_miniprogram_only_compensation",
+        "cloud_orchestrator_compensation",
+        "production_manual_compensation",
+        "codex_production_operator",
         "private_contact_absence_provider_attempt",
         "response_summary_json->>'errcode'",
         "real_external_call_executed",
@@ -857,6 +861,119 @@ def test_private_message_84061_business_rejection_is_fail_closed_against_postgre
                 WHERE attempt_id = %s
                 """,
                 (attempt_id,),
+            )
+        connection.commit()
+
+    unsafe_health = checks._external_effect_failed_retryable_backlog()
+    assert unsafe_health.status == "fail"
+    assert unsafe_health.evidence["failed_terminal_count"] == 1
+    assert unsafe_health.evidence["private_message_contact_relationship_absent"]["count"] == 0
+
+
+@pytest.mark.postgres
+def test_private_message_84061_operator_compensation_is_business_rejection(
+    next_pg_schema,
+) -> None:
+    import psycopg
+
+    from aicrm_next.insights.data_health import checks
+
+    database_url = os.environ["DATABASE_URL"]
+    business_id = f"pytest-private-message-compensation-{uuid4().hex}"
+    source_command_id = f"hxc_monday_abcd_{uuid4().hex}"
+    attempt_id = f"eea-{uuid4().hex}"
+    target_id = f"redacted-{uuid4().hex}"
+    with psycopg.connect(database_url) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO external_effect_job (
+                    effect_type, adapter_name, operation, target_type, target_id,
+                    business_type, business_id, source_module, source_route,
+                    idempotency_key, actor_type, risk_level, execution_mode,
+                    status
+                ) VALUES (
+                    'wecom.message.private.send', 'wecom_private_message',
+                    'send_private_message', 'external_contact', 'other-redacted',
+                    'cloud_plan_miniprogram_only_compensation', %s,
+                    'cloud_orchestrator_compensation',
+                    'production_manual_compensation', %s, 'operator', 'high',
+                    'execute', 'succeeded'
+                )
+                """,
+                (business_id, f"{source_command_id}:succeeded"),
+            )
+            cursor.execute(
+                """
+                INSERT INTO external_effect_job (
+                    effect_type, adapter_name, operation, target_type, target_id,
+                    business_type, business_id, source_module, source_route,
+                    source_event_id, source_command_id, trace_id, request_id,
+                    idempotency_key, execution_id, actor_id, actor_type, risk_level,
+                    requires_approval, execution_mode, status, attempt_count,
+                    max_attempts, last_attempt_id, last_error_code, lane,
+                    worker_generation, policy_version, provider_call_started_at,
+                    side_effect_executed, provider_result_received,
+                    reconciliation_required, completed_at
+                ) VALUES (
+                    'wecom.message.private.send', 'wecom_private_message',
+                    'send_private_message', 'external_contact', %s,
+                    'cloud_plan_miniprogram_only_compensation', %s,
+                    'cloud_orchestrator_compensation',
+                    'production_manual_compensation', %s, %s, %s, %s, %s,
+                    %s, 'codex_production_operator', 'operator', 'high', FALSE,
+                    'execute', 'failed_terminal', 1, 5, %s,
+                    'external_contact_relationship_absent', 'wecom_bulk', 1,
+                    'queue-v2-production-all-g1', CURRENT_TIMESTAMP, TRUE, TRUE,
+                    FALSE, CURRENT_TIMESTAMP
+                )
+                RETURNING id
+                """,
+                (
+                    target_id,
+                    business_id,
+                    f"event-{uuid4().hex}",
+                    source_command_id,
+                    f"{source_command_id}:trace",
+                    source_command_id,
+                    f"{source_command_id}:effect",
+                    f"execution-{uuid4().hex}",
+                    attempt_id,
+                ),
+            )
+            job_id = int(cursor.fetchone()[0])
+            cursor.execute(
+                """
+                INSERT INTO external_effect_attempt (
+                    attempt_id, job_id, adapter_name, adapter_mode, operation,
+                    status, response_summary_json, error_code,
+                    provider_call_started_at, worker_generation, completed_at
+                ) VALUES (
+                    %s, %s, 'wecom_private_message', 'execute',
+                    'send_private_message', 'failed_terminal',
+                    '{"errcode":84061,"real_external_call_executed":true}'::jsonb,
+                    'external_contact_relationship_absent', CURRENT_TIMESTAMP, 1,
+                    CURRENT_TIMESTAMP
+                )
+                """,
+                (attempt_id, job_id),
+            )
+        connection.commit()
+
+    health = checks._external_effect_failed_retryable_backlog()
+    assert health.status == "ok"
+    assert health.evidence["failed_terminal_count"] == 0
+    assert health.evidence["private_message_contact_relationship_absent"]["count"] == 1
+
+    with psycopg.connect(database_url) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE external_effect_job
+                SET actor_id = 'unexpected_operator'
+                WHERE id = %s
+                """,
+                (job_id,),
             )
         connection.commit()
 

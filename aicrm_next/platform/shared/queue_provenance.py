@@ -295,14 +295,48 @@ def private_message_contact_relationship_absent_terminal_sql(*, job_alias: str) 
     """
 
     error_codes = ", ".join(f"'{item}'" for item in EXTERNAL_CONTACT_RELATIONSHIP_ABSENT_ERROR_CODES)
+    standard_broadcast_lineage = f"""
+              {job_alias}.business_type = 'broadcast_job'
+              AND {job_alias}.source_module = 'background_jobs.broadcast_effect_delegate'
+              AND {job_alias}.source_route = 'broadcast_effect_delegate'
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM external_effect_job private_contact_absence_success
+                  WHERE private_contact_absence_success.id <> {job_alias}.id
+                    AND private_contact_absence_success.status = 'succeeded'
+                    AND private_contact_absence_success.effect_type = {job_alias}.effect_type
+                    AND COALESCE({job_alias}.business_id, '') <> ''
+                    AND private_contact_absence_success.business_type = {job_alias}.business_type
+                    AND private_contact_absence_success.business_id = {job_alias}.business_id
+              )
+    """
+    operator_compensation_lineage = f"""
+              {job_alias}.business_type = 'cloud_plan_miniprogram_only_compensation'
+              AND {job_alias}.source_module = 'cloud_orchestrator_compensation'
+              AND {job_alias}.source_route = 'production_manual_compensation'
+              AND {job_alias}.actor_id = 'codex_production_operator'
+              AND {job_alias}.actor_type = 'operator'
+              AND {job_alias}.risk_level = 'high'
+              AND {job_alias}.requires_approval IS FALSE
+              AND {job_alias}.approved_at IS NULL
+              AND COALESCE({job_alias}.business_id, '') <> ''
+              AND COALESCE({job_alias}.target_id, '') <> ''
+              AND COALESCE({job_alias}.execution_id, '') <> ''
+              AND COALESCE({job_alias}.source_event_id, '') <> ''
+              AND COALESCE({job_alias}.source_command_id, '') LIKE 'hxc_monday_abcd_%'
+              AND {job_alias}.request_id = {job_alias}.source_command_id
+              AND {job_alias}.trace_id LIKE {job_alias}.request_id || ':%'
+              AND {job_alias}.idempotency_key LIKE {job_alias}.request_id || ':%'
+    """
     return f"""
               {job_alias}.effect_type = 'wecom.message.private.send'
               AND {job_alias}.adapter_name = 'wecom_private_message'
               AND {job_alias}.operation = 'send_private_message'
               AND {job_alias}.target_type = 'external_contact'
-              AND {job_alias}.business_type = 'broadcast_job'
-              AND {job_alias}.source_module = 'background_jobs.broadcast_effect_delegate'
-              AND {job_alias}.source_route = 'broadcast_effect_delegate'
+              AND (
+                  ({standard_broadcast_lineage})
+                  OR ({operator_compensation_lineage})
+              )
               AND {job_alias}.status = 'failed_terminal'
               AND {job_alias}.last_error_code IN ({error_codes})
               AND {job_alias}.execution_mode = 'execute'
@@ -352,16 +386,6 @@ def private_message_contact_relationship_absent_terminal_sql(*, job_alias: str) 
                         )::BOOLEAN,
                         FALSE
                     )
-              )
-              AND NOT EXISTS (
-                  SELECT 1
-                  FROM external_effect_job private_contact_absence_success
-                  WHERE private_contact_absence_success.id <> {job_alias}.id
-                    AND private_contact_absence_success.status = 'succeeded'
-                    AND private_contact_absence_success.effect_type = {job_alias}.effect_type
-                    AND COALESCE({job_alias}.business_id, '') <> ''
-                    AND private_contact_absence_success.business_type = {job_alias}.business_type
-                    AND private_contact_absence_success.business_id = {job_alias}.business_id
               )
               AND NOT EXISTS (
                   SELECT 1
