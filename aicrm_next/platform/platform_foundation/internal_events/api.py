@@ -252,8 +252,12 @@ def list_internal_events(
     limit: int = 50,
     offset: int = 0,
 ) -> dict[str, Any]:
-    payload = build_events_payload(locals(), repository=build_internal_event_repository())
     runtime_queue = _runtime_queue_summary()
+    payload = build_events_payload(
+        locals(),
+        repository=build_internal_event_repository(),
+        runtime_queue=runtime_queue,
+    )
     payload["runtime_queue"] = runtime_queue
     if runtime_queue and isinstance(payload.get("counts"), dict):
         payload["counts"]["due"] = int(runtime_queue.get("eligible") or 0)
@@ -265,6 +269,13 @@ def list_internal_events(
         payload["counts"]["in_flight"] = int(runtime_queue.get("in_flight") or 0)
         payload["counts"]["unknown"] = int(runtime_queue.get("unknown") or 0)
         payload["counts"]["dlq"] = int(runtime_queue.get("dlq") or 0)
+        internal_event = runtime_queue.get("internal_event") or {}
+        if isinstance(internal_event, dict):
+            payload["counts"]["raw_due"] = int(internal_event.get("raw_due") or 0)
+            payload["counts"]["runtime_raw_due"] = int(internal_event.get("raw_due") or 0)
+            payload["counts"]["failed_retryable"] = int(internal_event.get("failed_retryable") or 0)
+            payload["counts"]["failed_terminal"] = int(internal_event.get("failed_terminal") or 0)
+            payload["counts"]["blocked"] = int(internal_event.get("blocked") or 0)
     return payload
 
 

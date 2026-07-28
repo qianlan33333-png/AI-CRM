@@ -120,6 +120,12 @@ def test_lane_summary_pushes_lane_scope_into_one_database_query() -> None:
                     "unknown": 0,
                     "dlq": 0,
                     "oldest_eligible_age_seconds": 0,
+                    "internal_event_raw_open": 580,
+                    "internal_event_raw_due": 11,
+                    "internal_event_eligible": 7,
+                    "internal_event_failed_retryable": 3,
+                    "internal_event_failed_terminal": 2,
+                    "internal_event_blocked": 1,
                 }
             ]
 
@@ -145,12 +151,22 @@ def test_lane_summary_pushes_lane_scope_into_one_database_query() -> None:
     assert summary["raw_open"] == 583
     assert summary["held"] == 583
     assert summary["eligible"] == 0
+    assert summary["internal_event"] == {
+        "raw_open": 580,
+        "raw_due": 11,
+        "eligible": 7,
+        "failed_retryable": 3,
+        "failed_terminal": 2,
+        "blocked": 1,
+    }
     assert len(calls) == 1
     statement, params = calls[0]
     assert statement.count("lane = ANY(%s::text[])") == 5
     assert params == (["internal_general"],) * 5
     assert "queue_worker_heartbeat" not in statement
     assert "queue_policy_snapshot" not in statement
+    assert "internal_event_failed_retryable" in statement
+    assert "legacy_due_state" in statement
 
 
 def test_lane_summary_returns_zero_without_query_for_empty_scope() -> None:
@@ -164,6 +180,7 @@ def test_lane_summary_returns_zero_without_query_for_empty_scope() -> None:
     assert summary["lanes"] == []
     assert summary["raw_open"] == 0
     assert summary["rollout_mode"] == "blocked"
+    assert summary["internal_event"]["raw_due"] == 0
 
 
 def test_internal_event_runtime_summary_reuses_short_lived_snapshot(monkeypatch) -> None:

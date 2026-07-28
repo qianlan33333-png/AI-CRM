@@ -272,6 +272,54 @@ def test_default_admin_overview_reuses_only_aggregate_snapshot(monkeypatch) -> N
     assert second["overview_snapshot_ttl_seconds"] == 10
 
 
+def test_default_admin_overview_reuses_runtime_snapshot_without_queue_aggregates(monkeypatch) -> None:
+    class RecordingRepository(InMemoryInternalEventRepository):
+        def __init__(self):
+            super().__init__()
+            self.metric_calls = 0
+
+        def queue_metrics(self, filters=None):
+            self.metric_calls += 1
+            return super().queue_metrics(filters)
+
+    repository = RecordingRepository()
+    repository.create_event(
+        InternalEventCreateRequest(
+            event_type="test.runtime-snapshot",
+            aggregate_type="test",
+            aggregate_id="1",
+            payload={},
+            idempotency_key="test.runtime-snapshot:1",
+        )
+    )
+    monkeypatch.setattr(view_model, "allowed_event_types", lambda: [])
+    monkeypatch.setattr(view_model, "allowed_consumers", lambda: [])
+    monkeypatch.setattr(view_model, "allowed_event_consumer_pairs", lambda: [])
+
+    payload = view_model.build_events_payload(
+        {},
+        repository=repository,
+        runtime_queue={
+            "internal_event": {
+                "raw_open": 19,
+                "raw_due": 11,
+                "eligible": 7,
+                "failed_retryable": 3,
+                "failed_terminal": 2,
+                "blocked": 1,
+            }
+        },
+    )
+
+    assert repository.metric_calls == 0
+    assert payload["queue_count_semantics"] == "runtime_lane_snapshot"
+    assert payload["counts"]["due"] == 7
+    assert payload["counts"]["raw_due"] == 11
+    assert payload["counts"]["failed_retryable"] == 3
+    assert payload["counts"]["failed_terminal"] == 2
+    assert payload["counts"]["rollout_gated"] == 4
+
+
 def test_filtered_admin_overview_keeps_exact_total(monkeypatch) -> None:
     class RecordingRepository(InMemoryInternalEventRepository):
         admin_overview_cache_enabled = True

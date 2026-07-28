@@ -229,6 +229,14 @@ class ExecutionRuntimeReadModel:
                 "in_flight": 0,
                 "unknown": 0,
                 "dlq": 0,
+                "internal_event": {
+                    "raw_open": 0,
+                    "raw_due": 0,
+                    "eligible": 0,
+                    "failed_retryable": 0,
+                    "failed_terminal": 0,
+                    "blocked": 0,
+                },
             }
         with self._connect(self._database_url) as connection:
             rows = connection.execute(
@@ -249,6 +257,14 @@ class ExecutionRuntimeReadModel:
             "unknown",
             "dlq",
         )
+        internal_event_count_keys = (
+            "raw_open",
+            "raw_due",
+            "eligible",
+            "failed_retryable",
+            "failed_terminal",
+            "blocked",
+        )
         return {
             "policy_version": str(control.get("runtime_policy_version") or ""),
             "active_generation": int(control.get("runtime_active_generation") or 0),
@@ -256,6 +272,10 @@ class ExecutionRuntimeReadModel:
             "rollout_mode": str(control.get("runtime_rollout_mode") or "blocked"),
             "lanes": selected,
             **{key: sum(int(lane.get(key) or 0) for lane in selected) for key in count_keys},
+            "internal_event": {
+                key: sum(int((lane.get("internal_event") or {}).get(key) or 0) for lane in selected)
+                for key in internal_event_count_keys
+            },
         }
 
     def execution_timeline(self, execution_id: str) -> dict[str, Any] | None:
@@ -404,7 +424,8 @@ class ExecutionRuntimeReadModel:
                              AND active.ordering_key <> ''
                              AND active.status = 'dispatching'
                              AND active.lease_expires_at > CURRENT_TIMESTAMP
-                       ) AS ordering_blocked
+                       ) AS ordering_blocked,
+                       FALSE AS legacy_due_state
                 FROM external_effect_job job
                 WHERE job.status IN (
                     'planned', 'approved', 'queued', 'dispatching',
@@ -427,6 +448,25 @@ class ExecutionRuntimeReadModel:
                              AND active.ordering_key <> ''
                              AND active.status = 'running'
                              AND active.lease_expires_at > CURRENT_TIMESTAMP
+                       ),
+                       (
+                           hold_reason = ''
+                           AND (
+                               (
+                                   status = 'pending'
+                                   AND (locked_at IS NULL OR locked_at <= CURRENT_TIMESTAMP - INTERVAL '5 minutes')
+                               )
+                               OR (
+                                   status = 'failed_retryable'
+                                   AND (next_retry_at IS NULL OR next_retry_at <= CURRENT_TIMESTAMP)
+                                   AND (locked_at IS NULL OR locked_at <= CURRENT_TIMESTAMP - INTERVAL '5 minutes')
+                               )
+                               OR (
+                                   status = 'running'
+                                   AND locked_at IS NOT NULL
+                                   AND locked_at <= CURRENT_TIMESTAMP - INTERVAL '5 minutes'
+                               )
+                           )
                        )
                 FROM internal_event_consumer_run run
                 WHERE run.status IN (
@@ -449,7 +489,7 @@ class ExecutionRuntimeReadModel:
                              AND active.ordering_key <> ''
                              AND active.status = 'running'
                              AND active.lease_expires_at > CURRENT_TIMESTAMP
-                       )
+                       ), FALSE
                 FROM internal_event_outbox outbox
                 WHERE outbox.status IN (
                     'pending', 'running', 'failed_retryable', 'failed_terminal'
@@ -470,7 +510,7 @@ class ExecutionRuntimeReadModel:
                              AND active.ordering_key <> ''
                              AND active.status = 'processing'
                              AND active.lease_expires_at > CURRENT_TIMESTAMP
-                       )
+                       ), FALSE
                 FROM webhook_inbox inbox
                 WHERE inbox.status IN (
                     'received', 'processing', 'failed_retryable',
@@ -518,6 +558,30 @@ class ExecutionRuntimeReadModel:
                    )::BIGINT AS in_flight,
                    COUNT(rows.*) FILTER (WHERE rows.unknown_state)::BIGINT AS unknown,
                    COUNT(rows.*) FILTER (WHERE rows.dlq_state)::BIGINT AS dlq,
+                   COUNT(rows.*) FILTER (
+                       WHERE rows.queue_kind = 'internal_event'
+                         AND rows.status IN ('pending', 'running', 'failed_retryable')
+                   )::BIGINT AS internal_event_raw_open,
+                   COUNT(rows.*) FILTER (
+                       WHERE rows.queue_kind = 'internal_event'
+                         AND rows.legacy_due_state
+                   )::BIGINT AS internal_event_raw_due,
+                   COUNT(rows.*) FILTER (
+                       WHERE rows.queue_kind = 'internal_event'
+                         AND {eligible}
+                   )::BIGINT AS internal_event_eligible,
+                   COUNT(rows.*) FILTER (
+                       WHERE rows.queue_kind = 'internal_event'
+                         AND rows.status = 'failed_retryable'
+                   )::BIGINT AS internal_event_failed_retryable,
+                   COUNT(rows.*) FILTER (
+                       WHERE rows.queue_kind = 'internal_event'
+                         AND rows.status = 'failed_terminal'
+                   )::BIGINT AS internal_event_failed_terminal,
+                   COUNT(rows.*) FILTER (
+                       WHERE rows.queue_kind = 'internal_event'
+                         AND rows.status = 'blocked'
+                   )::BIGINT AS internal_event_blocked,
                    COALESCE(
                        EXTRACT(EPOCH FROM CURRENT_TIMESTAMP - MIN(rows.available_at) FILTER (
                            WHERE {eligible}
@@ -738,6 +802,14 @@ class ExecutionRuntimeReadModel:
             "unknown": int(row.get("unknown") or 0),
             "dlq": int(row.get("dlq") or 0),
             "oldest_eligible_age_seconds": int(row.get("oldest_eligible_age_seconds") or 0),
+            "internal_event": {
+                "raw_open": int(row.get("internal_event_raw_open") or 0),
+                "raw_due": int(row.get("internal_event_raw_due") or 0),
+                "eligible": int(row.get("internal_event_eligible") or 0),
+                "failed_retryable": int(row.get("internal_event_failed_retryable") or 0),
+                "failed_terminal": int(row.get("internal_event_failed_terminal") or 0),
+                "blocked": int(row.get("internal_event_blocked") or 0),
+            },
         }
 
     @staticmethod

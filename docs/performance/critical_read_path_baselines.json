@@ -80,7 +80,7 @@
       "owner": "platform_foundation.internal_events",
       "dataset_rows": 100000,
       "sample_count": 20,
-      "max_query_count": 9,
+      "max_query_count": 5,
       "page_limit": 50,
       "baseline_p95_ms": 250.0,
       "max_seq_scan_rows": 1000,
