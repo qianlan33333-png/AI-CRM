@@ -287,6 +287,15 @@
     "tests/test_import_graph_guard.py",
     "tests/test_next_api_docs_page.py",
     "tests/test_support_admin_pages_native.py",
-    "tests/test_unionid_identity_refactor_schema.py"
+    "tests/test_unionid_identity_refactor_schema.py",
+    "aicrm_next/platform/platform_foundation/execution_runtime/read_model.py",
+    "aicrm_next/platform/platform_foundation/internal_events/repository.py",
+    "aicrm_next/platform/platform_foundation/performance_contracts.py",
+    "docs/performance/critical_read_path_baselines.json",
+    "migrations/versions/0154_internal_event_occurred_index.py",
+    "tests/test_critical_read_performance_contracts.py",
+    "tests/test_critical_read_performance_runner.py",
+    "tests/test_execution_runtime_api.py",
+    "tools/check_critical_read_performance.py"
   ]
 }

@@ -25,6 +25,17 @@ AI_AUDIENCE_RECOVERY_PATHS = {
     "tests/test_internal_event_outbox_runtime_owner_postgres.py",
     "tests/test_webhook_inbox_runtime_owner_postgres.py",
 }
+QUERY_GOVERNANCE_PATHS = {
+    "aicrm_next/platform/platform_foundation/execution_runtime/read_model.py",
+    "aicrm_next/platform/platform_foundation/internal_events/repository.py",
+    "aicrm_next/platform/platform_foundation/performance_contracts.py",
+    "docs/performance/critical_read_path_baselines.json",
+    "migrations/versions/0154_internal_event_occurred_index.py",
+    "tests/test_critical_read_performance_contracts.py",
+    "tests/test_critical_read_performance_runner.py",
+    "tests/test_execution_runtime_api.py",
+    "tools/check_critical_read_performance.py",
+}
 
 
 def _git(root: Path, *args: str) -> str:
@@ -226,4 +237,15 @@ def test_production_manifest_allows_exact_ai_audience_recovery_paths() -> None:
     allowed_paths = set(manifest["allowed_post_candidate_paths"])
 
     assert AI_AUDIENCE_RECOVERY_PATHS <= allowed_paths
+    assert not any("*" in path for path in allowed_paths)
+
+
+def test_production_manifest_allows_exact_query_governance_paths() -> None:
+    manifest = json.loads(
+        (ROOT / "docs" / "releases" / "production_promotion.json").read_text(encoding="utf-8")
+    )
+
+    allowed_paths = set(manifest["allowed_post_candidate_paths"])
+
+    assert QUERY_GOVERNANCE_PATHS <= allowed_paths
     assert not any("*" in path for path in allowed_paths)
