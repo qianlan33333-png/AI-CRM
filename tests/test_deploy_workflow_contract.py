@@ -827,6 +827,10 @@ def test_production_deploy_refreshes_customer_projection_through_the_scoped_inte
         authorization_index,
     )
     release_sha_index = workflow.index('--release-sha "$after_sha"', consumer_index)
+    attempt_key_index = workflow.index(
+        '--attempt-key "$release_refresh_attempt_key"',
+        release_sha_index,
+    )
     unset_index = workflow.index(
         "unset AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED",
         release_sha_index,
@@ -834,9 +838,13 @@ def test_production_deploy_refreshes_customer_projection_through_the_scoped_inte
     smoke_index = workflow.index("python scripts/ops/check_admin_read_pages_smoke.py", unset_index)
 
     assert readiness_index < authorization_index < consumer_index < release_sha_index
-    assert release_sha_index < unset_index < smoke_index
+    assert release_sha_index < attempt_key_index < unset_index < smoke_index
     assert "AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED=1" in workflow[readiness_index:smoke_index]
+    assert 'release_refresh_attempt_key="${{ github.run_id }}-${{ github.run_attempt }}"' in workflow[
+        authorization_index:consumer_index
+    ]
     assert '--release-sha "$after_sha"' in workflow[consumer_index:smoke_index]
+    assert '--attempt-key "$release_refresh_attempt_key"' in workflow[consumer_index:smoke_index]
     refresh_runner = (ROOT / "scripts" / "ops" / "run_release_customer_read_model_refresh.py").read_text(
         encoding="utf-8"
     )
