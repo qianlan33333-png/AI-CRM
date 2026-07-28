@@ -41,6 +41,37 @@ def _internal_event_response(internal_event: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _emit_recipient_job_created_events(
+    *,
+    plan_id: str,
+    operator: str,
+    broadcast_job_ids: list[int],
+) -> dict[str, int]:
+    statuses: dict[str, int] = {}
+    for job_id in broadcast_job_ids:
+        result = safe_emit(
+            "broadcast_task.created",
+            emit_broadcast_task_created_shadow_event,
+            job={
+                "id": int(job_id),
+                "source_type": "cloud_plan",
+                "batch_key": f"cloud_plan_recipient:{plan_id}",
+                "trace_id": plan_id,
+                "plan_id": plan_id,
+                "target_count": 1,
+                "channel": "wecom_private",
+                "status": "created",
+            },
+            source_module="cloud_orchestrator.application",
+            source_route="/api/admin/cloud-orchestrator/plans/{plan_id}/approve",
+            operator=operator,
+            source="cloud_plan_approval",
+        )
+        status = str(result.get("status") or "unknown")
+        statuses[status] = statuses.get(status, 0) + 1
+    return statuses
+
+
 class ListCloudPlansQuery:
     def __init__(self, repo: CloudPlanRepository | None = None) -> None:
         self._repo = repo or build_cloud_plan_repository()
@@ -107,6 +138,16 @@ class ApproveCloudPlanCommand:
             raise CloudPlanNotFoundError("plan not found")
         stats = self._repo.plan_stats(plan_id)
         broadcast_enqueue = self._repo.create_or_reuse_recipient_broadcast_jobs(plan_id, operator=operator)
+        broadcast_job_ids = [
+            int(job_id)
+            for job_id in broadcast_enqueue.pop("broadcast_job_ids", [])
+            if int(job_id) > 0
+        ]
+        broadcast_task_events = _emit_recipient_job_created_events(
+            plan_id=plan_id,
+            operator=operator,
+            broadcast_job_ids=broadcast_job_ids,
+        )
         internal_event = safe_emit(
             "ops_plan.approved",
             emit_ops_plan_approved_shadow_event,
@@ -122,6 +163,7 @@ class ApproveCloudPlanCommand:
             "plan": plan,
             "stats": stats,
             "broadcast_enqueue": broadcast_enqueue,
+            "broadcast_task_events": broadcast_task_events,
             **_internal_event_response(internal_event),
         }
 

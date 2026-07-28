@@ -59,6 +59,10 @@ secret_keys:
     <<: *secret_defaults
     runtime_consumers:
       - aicrm_next.channels.integration_gateway.huangyoucan_usage_client
+  AICRM_HXC_CARD_TARGET_VALIDATION_TOKEN:
+    <<: *secret_defaults
+    runtime_consumers:
+      - aicrm_next.extensions.ai.ai_assist.card_target_validation_port
   AICRM_MEDIA_UPLOAD_PROVIDER_SECRET:
     <<: *secret_defaults
     runtime_consumers:

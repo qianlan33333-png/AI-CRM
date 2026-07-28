@@ -104,6 +104,7 @@ def test_send_content_package_contract_stays_narrow() -> None:
         "miniprogram_library_ids",
         "attachment_library_ids",
         "group_invite_library_ids",
+        "dynamic_miniprogram_card",
     }
     assert set(SendContentValidateRequest.model_fields) == {"content_package", "text_enabled", "require_body"}
     assert set(SendContentPreviewRequest.model_fields) == {"content_package", "text_enabled", "require_body"}

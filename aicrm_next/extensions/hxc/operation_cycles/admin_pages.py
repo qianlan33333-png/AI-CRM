@@ -14,6 +14,8 @@ from aicrm_next.admin_shell_contract import admin_path_for, shell_context
 
 from .application import get_run, get_strategy, list_strategies
 from .markdown_renderer import render_markdown
+from .feature_flags import operation_context_v1_enabled
+from .strategy_context import get_strategy_context
 
 
 router = APIRouter()
@@ -314,6 +316,8 @@ def admin_operation_cycle_strategy_page(request: Request, strategy_key: str):
         "retrospective_details": "本周复盘明细",
         "execution_strategy": "下周执行策略",
         "history": "历史发送记录",
+        "formal_strategy": "正式策略",
+        "optimization_records": "优化记录",
     }
     if section not in allowed_sections:
         section = "broadcast_details"
@@ -330,6 +334,32 @@ def admin_operation_cycle_strategy_page(request: Request, strategy_key: str):
     active_document = documents.get(section) if section != "history" else {}
     if not isinstance(active_document, dict):
         active_document = {}
+    formal_context: dict[str, Any] = {}
+    optimization_context: dict[str, Any] = {}
+    if operation_context_v1_enabled() and section in {"formal_strategy", "optimization_records"}:
+        mode = "execution" if section == "formal_strategy" else "optimization"
+        formal_payload = get_strategy_context(strategy_key, mode=mode, limit=3) or {}
+        if section == "formal_strategy":
+            formal_context = _plain(formal_payload)
+        else:
+            optimization_context = _plain(formal_payload)
+    formal_documents = []
+    document_pack = ((formal_context.get("execution") or {}).get("document_pack") or {})
+    for key, label in (
+        ("execution_guide", "执行指南"),
+        ("copy_guide", "话术指南"),
+        ("measurement_guide", "度量指南"),
+    ):
+        document = document_pack.get(key) if isinstance(document_pack, dict) else {}
+        if isinstance(document, dict):
+            formal_documents.append(
+                {
+                    "key": key,
+                    "label": label,
+                    **document,
+                    "rendered": render_markdown(str(document.get("markdown") or "")),
+                }
+            )
     context = shell_context(
         request=request,
         page_title=str(strategy.get("title") or strategy_key),
@@ -351,6 +381,10 @@ def admin_operation_cycle_strategy_page(request: Request, strategy_key: str):
             "active_document": active_document,
             "rendered_document": render_markdown(str(active_document.get("markdown") or "")),
             "assistant_plans": [item for item in payload.get("assistant_plans") or [] if isinstance(item, dict)],
+            "operation_context_enabled": operation_context_v1_enabled(),
+            "formal_context": formal_context,
+            "formal_documents": formal_documents,
+            "optimization_context": optimization_context,
         }
     )
     return templates.TemplateResponse(request, "admin_shell/operation_cycles_strategy.html", context)

@@ -234,7 +234,7 @@ def test_admin_can_read_but_ops_reporter_cannot_use_admin_routes(monkeypatch) ->
     assert machine_response.status_code == 403
 
 
-def test_operation_cycle_admin_surface_exposes_no_write_routes(monkeypatch) -> None:
+def test_operation_cycle_admin_surface_only_exposes_governed_proposal_decision_write(monkeypatch) -> None:
     client = _client(monkeypatch)
     openapi = client.get("/openapi.json").json()
     methods_by_path = {
@@ -244,7 +244,16 @@ def test_operation_cycle_admin_surface_exposes_no_write_routes(monkeypatch) -> N
     }
 
     assert methods_by_path
-    assert all(methods <= {"get"} for methods in methods_by_path.values())
+    write_paths = {
+        path: methods - {"get"}
+        for path, methods in methods_by_path.items()
+        if methods - {"get"}
+    }
+    assert write_paths == {
+        "/api/admin/operation-cycles/strategy-change-proposals/{proposal_id}/decision": {
+            "post"
+        }
+    }
     report_operation = openapi["paths"]["/api/operation-cycles/reports"]["post"]
     assert report_operation["requestBody"]["required"] is True
     assert report_operation["requestBody"]["content"]["application/json"]["schema"]["title"] == ("OperationCycleSnapshotV1")

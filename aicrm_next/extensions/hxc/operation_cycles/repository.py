@@ -314,7 +314,7 @@ class InMemoryOperationCycleRepository:
                     received_at,
                 )
             current = self._strategies.get((tenant_id, snapshot.strategy.strategy_key))
-            if current is None or snapshot.strategy.version >= current.version:
+            if current is None or snapshot.strategy.version == current.version:
                 self._strategies[(tenant_id, snapshot.strategy.strategy_key)] = deepcopy(snapshot.strategy)
             return receipt
 
@@ -519,12 +519,11 @@ class PostgresOperationCycleRepository:
                             :status, :version, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
                         )
                         ON CONFLICT (tenant_id, strategy_key) DO UPDATE SET
-                            title = CASE WHEN EXCLUDED.current_version >= operation_cycle_strategies.current_version THEN EXCLUDED.title ELSE operation_cycle_strategies.title END,
-                            description = CASE WHEN EXCLUDED.current_version >= operation_cycle_strategies.current_version THEN EXCLUDED.description ELSE operation_cycle_strategies.description END,
-                            cadence = CASE WHEN EXCLUDED.current_version >= operation_cycle_strategies.current_version THEN EXCLUDED.cadence ELSE operation_cycle_strategies.cadence END,
-                            timezone = CASE WHEN EXCLUDED.current_version >= operation_cycle_strategies.current_version THEN EXCLUDED.timezone ELSE operation_cycle_strategies.timezone END,
-                            status = CASE WHEN EXCLUDED.current_version >= operation_cycle_strategies.current_version THEN EXCLUDED.status ELSE operation_cycle_strategies.status END,
-                            current_version = GREATEST(operation_cycle_strategies.current_version, EXCLUDED.current_version),
+                            title = CASE WHEN EXCLUDED.current_version = operation_cycle_strategies.current_version THEN EXCLUDED.title ELSE operation_cycle_strategies.title END,
+                            description = CASE WHEN EXCLUDED.current_version = operation_cycle_strategies.current_version THEN EXCLUDED.description ELSE operation_cycle_strategies.description END,
+                            cadence = CASE WHEN EXCLUDED.current_version = operation_cycle_strategies.current_version THEN EXCLUDED.cadence ELSE operation_cycle_strategies.cadence END,
+                            timezone = CASE WHEN EXCLUDED.current_version = operation_cycle_strategies.current_version THEN EXCLUDED.timezone ELSE operation_cycle_strategies.timezone END,
+                            status = CASE WHEN EXCLUDED.current_version = operation_cycle_strategies.current_version THEN EXCLUDED.status ELSE operation_cycle_strategies.status END,
                             updated_at = CURRENT_TIMESTAMP
                         RETURNING *
                         """
@@ -560,11 +559,14 @@ class PostgresOperationCycleRepository:
                                 """
                                 INSERT INTO operation_cycle_strategy_versions (
                                     strategy_id, version, label, objective, definition_json,
-                                    version_hash, effective_from, created_at
+                                    version_hash, effective_from, governance_status,
+                                    confirmed_at, created_at
                                 ) VALUES (
                                     :strategy_id, :version, :label, :objective,
                                     CAST(:definition_json AS jsonb), :version_hash,
-                                    :effective_from, CURRENT_TIMESTAMP
+                                    :effective_from, :governance_status,
+                                    CASE WHEN :governance_status = 'legacy_confirmed' THEN CURRENT_TIMESTAMP ELSE NULL END,
+                                    CURRENT_TIMESTAMP
                                 ) RETURNING *
                                 """
                             ),
@@ -576,6 +578,11 @@ class PostgresOperationCycleRepository:
                                 "definition_json": _json_dumps(snapshot.strategy.definition),
                                 "version_hash": strategy_hash,
                                 "effective_from": snapshot.strategy.version_effective_from,
+                                "governance_status": (
+                                    "legacy_confirmed"
+                                    if int(strategy_row.get("current_version") or 0) == snapshot.strategy.version
+                                    else "observed"
+                                ),
                             },
                         ).mappings().one()
                     )

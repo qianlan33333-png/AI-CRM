@@ -60,6 +60,16 @@ def _configure(
 
 def _approve_recipient(plan_id: str = "plan_probe") -> dict:
     repo = build_cloud_plan_repository()
+    repo.recipients[:] = [
+        row
+        for row in repo.recipients
+        if row.get("plan_id") != "plan_probe" or int(row.get("id") or 0) == 1
+    ]
+    repo.messages[:] = [
+        row
+        for row in repo.messages
+        if row.get("plan_id") != "plan_probe" or int(row.get("recipient_id") or 0) == 1
+    ]
     for collection_name in ("plans", "recipients", "messages"):
         for row in getattr(repo, collection_name, []):
             if row.get("plan_id") == "plan_probe":
@@ -163,8 +173,8 @@ def test_broadcast_task_created_emits_once_with_expected_safe_schema_and_consume
     assert event.payload_summary_json == {
         "task_id": str(result["job_id"]),
         "task_type": "cloud_plan",
-        "send_channel": "",
-        "source": "cloud_plan_recipient_approval",
+        "send_channel": "wecom_private",
+        "source": "cloud_plan_approval",
         "campaign_code": "",
         "ops_plan_id": plan_ref,
         "ops_plan_ref": plan_ref,

@@ -359,10 +359,58 @@
     root.replaceChildren(tableWrap);
   }
 
+  function bindStrategyProposalDecisions() {
+    const dialog = document.querySelector("[data-operation-cycle-decision-dialog]");
+    const form = document.querySelector("[data-operation-cycle-decision-form]");
+    if (!dialog || !form) return;
+    const copy = dialog.querySelector("[data-operation-cycle-decision-copy]");
+    const note = dialog.querySelector("[data-operation-cycle-decision-note]");
+    const submit = dialog.querySelector("[data-operation-cycle-decision-submit]");
+    let proposalId = "";
+    let decision = "";
+
+    document.querySelectorAll("[data-proposal-decision]").forEach((button) => {
+      button.addEventListener("click", () => {
+        proposalId = String(button.dataset.proposalId || "");
+        decision = String(button.dataset.proposalDecision || "");
+        copy.textContent = decision === "accept"
+          ? "采用后将基于当前版本创建下一正式策略版本，正文不可再编辑。"
+          : "拒绝后该提案不会进入执行上下文，正文仍保留为历史记录。";
+        submit.textContent = decision === "accept" ? "确认采用" : "确认拒绝";
+        note.value = "";
+        dialog.showModal();
+        note.focus();
+      });
+    });
+    dialog.querySelector("[data-operation-cycle-decision-cancel]").addEventListener("click", () => dialog.close());
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const requestJson = window.AdminApi && window.AdminApi.requestJson;
+      const decisionNote = String(note.value || "").trim();
+      if (!proposalId || !decision || !decisionNote || typeof requestJson !== "function") return;
+      submit.disabled = true;
+      try {
+        await requestJson(
+          `/api/admin/operation-cycles/strategy-change-proposals/${encodeURIComponent(proposalId)}/decision`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ decision, note: decisionNote }),
+          },
+        );
+        window.location.reload();
+      } catch (error) {
+        copy.textContent = error && error.message ? error.message : "决定提交失败，请刷新后重试。";
+        submit.disabled = false;
+      }
+    });
+  }
+
   function init() {
     renderCharts();
     renderDiagrams();
     renderPlanHistory();
+    bindStrategyProposalDecisions();
   }
 
   if (document.readyState === "loading") {

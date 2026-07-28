@@ -19,6 +19,9 @@ from .external_effect_composition import (
     build_external_effect_settlement_consumers,
 )
 from .extensions.ai.ai_audience_ops import register_ai_audience_event_consumers
+from .operation_cycle_fact_composition import (
+    register_operation_cycle_system_fact_consumers,
+)
 from .crm.customer_read_model.events import register_customer_read_model_event_consumers
 from .extensions.growth.cloud_orchestrator.repository import build_cloud_plan_repository
 from .extensions.forms.questionnaire.event_consumers import (
@@ -195,6 +198,7 @@ def build_internal_event_consumer_registry(
     register_shadow_event_consumers(registry)
     register_ai_audience_event_consumers(registry)
     register_customer_read_model_event_consumers(registry)
+    register_operation_cycle_system_fact_consumers(registry)
     register_external_effect_completion_consumers(registry, profile=profile)
     register_external_effect_settlement_consumers(registry, profile=profile)
     register_queue_runtime_command_consumer(registry)

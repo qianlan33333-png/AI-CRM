@@ -200,6 +200,11 @@ def finish_query(execution: QueryExecution | None, *, failed: bool = False) -> N
         execution.telemetry.finish(execution, failed=failed)
 
 
+def current_query_count() -> int | None:
+    telemetry = _REQUEST_QUERY_TELEMETRY.get()
+    return telemetry.snapshot().query_count if telemetry is not None else None
+
+
 @contextmanager
 def request_query_telemetry_scope() -> Iterator[RequestQueryTelemetry]:
     telemetry = RequestQueryTelemetry()

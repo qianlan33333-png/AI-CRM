@@ -13,6 +13,10 @@ from aicrm_next.platform.platform_foundation.background_jobs.cloud_broadcast_pro
 )
 from aicrm_next.platform.shared.db_session import get_session_factory
 from aicrm_next.platform.shared.runtime import fixture_mode
+from aicrm_next.platform.platform_foundation.internal_events.shadow import (
+    emit_broadcast_task_finalized_shadow_event,
+    safe_emit,
+)
 
 
 def _matches(job, _dispatch_result) -> bool:
@@ -117,13 +121,35 @@ def _project(job, _dispatch_result):
                 "" if aggregate_status == "sent" else f"external_effect_{aggregate_status}"
             ),
         )
+        plan_row = session.execute(
+            text(
+                """
+                SELECT plan_id
+                FROM cloud_broadcast_plan_recipients
+                WHERE broadcast_job_id = :job_id
+                LIMIT 1
+                """
+            ),
+            {"job_id": broadcast_job_id},
+        ).mappings().first()
+        plan_id = str((plan_row or {}).get("plan_id") or "")
         session.commit()
+    internal_event = safe_emit(
+        "broadcast_task.finalized",
+        emit_broadcast_task_finalized_shadow_event,
+        broadcast_job_id=broadcast_job_id,
+        plan_id=plan_id,
+        status=aggregate_status,
+        sent_count=succeeded_count,
+        failed_count=failed_count,
+    )
     return {
         "ok": True,
         "projected": True,
         "broadcast_job_id": broadcast_job_id,
         "effect_count": len(rows),
         "aggregate_status": aggregate_status,
+        "internal_event_status": str(internal_event.get("status") or ""),
     }
 
 

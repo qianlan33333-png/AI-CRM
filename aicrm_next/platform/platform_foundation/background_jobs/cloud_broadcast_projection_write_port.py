@@ -45,6 +45,14 @@ class CloudBroadcastProjectionWritePort(Protocol):
         approved_by: str,
     ) -> None: ...
 
+    def insert_campaign_preparation_projection_sqlalchemy(
+        self,
+        executor: Any,
+        *,
+        plan_id: str,
+        preparation_id: str,
+    ) -> None: ...
+
     def upsert_agent_recipient_dbapi(
         self,
         executor: Any,

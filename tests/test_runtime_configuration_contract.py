@@ -30,7 +30,7 @@ def test_integration_gateway_runtime_catalog_is_complete_owned_and_gated() -> No
 
     assert MIGRATED_PATHS == ("aicrm_next",)
     assert len(gateway_keys) == 126
-    assert len(MANAGED_RUNTIME_SETTING_KEYS) == 237
+    assert len(MANAGED_RUNTIME_SETTING_KEYS) == 243
     assert gateway_keys <= MANAGED_RUNTIME_SETTING_KEYS
     assert gateway_keys <= set(CONFIG_DEFINITIONS_BY_KEY)
     assert all(CONFIG_DEFINITIONS_BY_KEY[key].capability_id for key in gateway_keys)
@@ -70,7 +70,7 @@ def test_ai_and_commerce_runtime_catalog_is_complete_owned_and_gated() -> None:
 
 
 def test_repository_wide_domain_runtime_catalog_is_complete_owned_and_gated() -> None:
-    assert len(DOMAIN_RUNTIME_SETTING_KEYS) == 55
+    assert len(DOMAIN_RUNTIME_SETTING_KEYS) == 61
     assert len(STARTUP_ENVIRONMENT_SETTING_KEYS) == 32
     assert DOMAIN_RUNTIME_SETTING_KEYS <= MANAGED_RUNTIME_SETTING_KEYS
     assert DOMAIN_RUNTIME_SETTING_KEYS <= set(CONFIG_DEFINITIONS_BY_KEY)

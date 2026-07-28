@@ -138,7 +138,10 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
         private_message_contact_absence_ack_scope.read_text(encoding="utf-8")
     )
 
-    assert heads == {"0155_private_message_contact_absence_ack_scope"}
+    assert heads == {"0156_campaign_preparation_context"}
+    assert revisions["0156_campaign_preparation_context"]["down_revision"] == (
+        "0155_private_message_contact_absence_ack_scope"
+    )
     assert revisions["0155_private_message_contact_absence_ack_scope"]["down_revision"] == (
         "0154_internal_event_occurred_index"
     )

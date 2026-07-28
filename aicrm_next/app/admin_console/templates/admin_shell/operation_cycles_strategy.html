@@ -6,6 +6,7 @@
   data-operation-cycle-surface="strategy-detail"
   data-readonly="true"
   data-active-section="{{ active_section }}"
+  data-strategy-key="{{ strategy.get('strategy_key') }}"
 >
   <section class="operation-cycle-summary-strip" aria-label="循环状态">
     <div class="operation-cycle-summary-strip__count">
@@ -42,12 +43,16 @@
     <article class="operation-cycle-detail-content">
       <header class="operation-cycle-detail-content__head">
         <h2>{{ active_label }}</h2>
-        {% if active_section != "history" %}
+        {% if active_section not in ["history", "formal_strategy", "optimization_records"] %}
         <span>Agent 上报 · 只读</span>
+        {% elif active_section == "formal_strategy" %}
+        <span>已确认版本 · 执行权威</span>
+        {% elif active_section == "optimization_records" %}
+        <span>不可变提案 · 人工决定</span>
         {% endif %}
       </header>
 
-      {% if active_section != "history" %}
+      {% if active_section in ["broadcast_details", "retrospective_details", "execution_strategy"] %}
         {% if active_document.get("markdown") %}
         <div class="operation-cycle-markdown" data-operation-cycle-markdown="{{ active_section }}">
           {{ rendered_document }}
@@ -58,18 +63,117 @@
           <span>Agent 上报该维度的 Markdown 后会直接显示在这里。</span>
         </div>
         {% endif %}
-      {% else %}
+      {% elif active_section == "history" %}
       <script id="operationCycleAssistantPlans" type="application/json">{{ assistant_plans | tojson }}</script>
       <div class="operation-cycle-plan-history" data-operation-cycle-plan-history>
         <div class="operation-cycle-document-empty">AI 助手记录加载中</div>
       </div>
+      {% elif active_section == "formal_strategy" %}
+        {% if not operation_context_enabled %}
+        <div class="operation-cycle-document-empty">
+          <strong>正式策略功能尚未启用</strong>
+          <span>启用灰度开关后，这里只展示最新已确认版本。</span>
+        </div>
+        {% elif formal_context.get("execution") %}
+        {% set execution = formal_context.get("execution") or {} %}
+        <div class="operation-cycle-governance-meta">
+          <div><span>执行版本</span><strong>v{{ execution.get("version") }}</strong></div>
+          <div><span>治理状态</span><strong>{{ execution.get("governance_status") }}</strong></div>
+          <div><span>确认时间</span><strong>{{ execution.get("confirmed_at") or "—" }}</strong></div>
+          <div><span>版本哈希</span><strong>{{ (execution.get("version_hash") or "—")[:16] }}</strong></div>
+        </div>
+        <div class="operation-cycle-formal-documents">
+          {% for document in formal_documents %}
+          <details class="operation-cycle-formal-document"{% if loop.first %} open{% endif %}>
+            <summary>
+              <strong>{{ document.get("label") }}</strong>
+              <span>SHA-256 {{ (document.get("sha256") or "")[:12] }}</span>
+            </summary>
+            {% if document.get("markdown") %}
+            <div class="operation-cycle-markdown">{{ document.get("rendered") }}</div>
+            {% else %}
+            <div class="operation-cycle-document-empty">当前版本尚未保存这份文档</div>
+            {% endif %}
+          </details>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="operation-cycle-document-empty">没有可执行的已确认策略版本</div>
+        {% endif %}
+      {% elif active_section == "optimization_records" %}
+        {% if not operation_context_enabled %}
+        <div class="operation-cycle-document-empty">优化治理功能尚未启用</div>
+        {% else %}
+        {% set facts = optimization_context.get("system_facts") or [] %}
+        {% if facts %}
+        <section class="operation-cycle-system-facts" aria-label="系统发送事实">
+          <strong>最近系统事实</strong>
+          <span>系统事实优先于 Agent 上报数字；出现差异时两者并列保留。</span>
+          <div>
+            {% for fact in facts %}
+            <article>
+              <span>{{ fact.get("run_key") or fact.get("plan_id") }}</span>
+              <strong>发送 {{ fact.get("sent_count") or 0 }} · 失败 {{ fact.get("failed_count") or 0 }}</strong>
+              <small>任务 {{ fact.get("task_count") or 0 }} / 已终态 {{ fact.get("finalized_count") or 0 }}</small>
+            </article>
+            {% endfor %}
+          </div>
+        </section>
+        {% endif %}
+        {% set proposals = optimization_context.get("proposals") or [] %}
+        {% if proposals %}
+        <div class="operation-cycle-proposals" data-operation-cycle-proposals>
+          {% for proposal in proposals %}
+          {% set body = proposal.get("proposal") or {} %}
+          {% set target = body.get("target_version") or {} %}
+          <article class="operation-cycle-proposal is-{{ proposal.get('status') }}">
+            <header>
+              <div>
+                <span>基于 v{{ proposal.get("base_strategy_version") }} → {{ target.get("version_label") or "下一版本" }}</span>
+                <strong>{{ body.get("conclusion") }}</strong>
+              </div>
+              <i>{{ proposal.get("status") }}</i>
+            </header>
+            {% if body.get("hypothesis") %}<p>{{ body.get("hypothesis") }}</p>{% endif %}
+            <ul>{% for action in body.get("actions") or [] %}<li>{{ action }}</li>{% endfor %}</ul>
+            {% if proposal.get("decision_note") %}<small>决定备注：{{ proposal.get("decision_note") }}</small>{% endif %}
+            {% if proposal.get("status") == "pending" %}
+            <footer>
+              <button type="button" data-proposal-decision="accept" data-proposal-id="{{ proposal.get('proposal_id') }}">确认采用</button>
+              <button type="button" class="is-secondary" data-proposal-decision="reject" data-proposal-id="{{ proposal.get('proposal_id') }}">拒绝</button>
+            </footer>
+            {% endif %}
+          </article>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="operation-cycle-document-empty">
+          <strong>还没有优化提案</strong>
+          <span>Agent 基于最近 3 次运行提交完整目标版本后，会在这里等待确认。</span>
+        </div>
+        {% endif %}
+        {% endif %}
       {% endif %}
     </article>
   </section>
+
+  {% if active_section == "optimization_records" %}
+  <dialog class="operation-cycle-decision-dialog" data-operation-cycle-decision-dialog>
+    <form method="dialog" data-operation-cycle-decision-form>
+      <h2>确认策略提案决定</h2>
+      <p data-operation-cycle-decision-copy></p>
+      <label>决定备注<textarea required maxlength="2000" rows="4" data-operation-cycle-decision-note></textarea></label>
+      <div>
+        <button type="button" class="is-secondary" data-operation-cycle-decision-cancel>取消</button>
+        <button type="submit" data-operation-cycle-decision-submit>确认</button>
+      </div>
+    </form>
+  </dialog>
+  {% endif %}
 </div>
 {% endblock %}
 
 {% block scripts_extra %}
 {{ super() }}
-<script defer src="/static/operation-cycles/operation_cycles_detail.js?v=20260714-v1"></script>
+<script defer src="/static/operation-cycles/operation_cycles_detail.js?v=20260728-v2"></script>
 {% endblock %}

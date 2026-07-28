@@ -131,7 +131,7 @@ def test_cloud_plan_recipient_approval_shadow_emits_broadcast_task_created(monke
     plan_id = "plan_probe"
     plan_hash = hashlib.sha256(plan_id.encode("utf-8")).hexdigest()[:16]
     plan_ref = f"ops_plan_ref:{plan_hash}"
-    ApproveCloudPlanCommand().execute(plan_id, operator="pytest")
+    approval = ApproveCloudPlanCommand().execute(plan_id, operator="pytest")
 
     result = ApproveCloudPlanRecipientCommand().execute(plan_id, 1, operator="pytest")
     events, total = InternalEventService().list_events({"event_type": "broadcast_task.created", "aggregate_id": str(result["job_id"])})
@@ -139,19 +139,20 @@ def test_cloud_plan_recipient_approval_shadow_emits_broadcast_task_created(monke
     runs, run_total = InternalEventService().list_consumer_runs({"event_id": events[0].event_id})
 
     assert result["ok"] is True
+    assert approval["broadcast_task_events"] == {"emitted": 2}
     assert result["status"] == "already_approved"
     assert result["internal_event_status"] == "emitted"
     assert result["internal_event_id"] == events[0].event_id
     assert total == 1
-    assert trace_total == 1
-    assert trace_events[0].event_id == events[0].event_id
+    assert trace_total == 2
+    assert events[0].event_id in {event.event_id for event in trace_events}
     assert events[0].trace_id == f"broadcast_task.created:{result['job_id']}"
     assert events[0].aggregate_type == "broadcast_task"
     assert events[0].payload_summary_json == {
         "task_id": str(result["job_id"]),
         "task_type": "cloud_plan",
-        "send_channel": "",
-        "source": "cloud_plan_recipient_approval",
+        "send_channel": "wecom_private",
+        "source": "cloud_plan_approval",
         "campaign_code": "",
         "ops_plan_id": plan_ref,
         "ops_plan_ref": plan_ref,

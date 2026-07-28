@@ -4910,6 +4910,124 @@ tables:
       - tests/test_operation_cycles_migration.py
       - tests/test_data_table_lifecycle_guard.py
 
+  operation_cycle_strategy_version_documents:
+    domain: operation_cycles
+    lifecycle: canonical
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
+    read_owners:
+      - operation cycle execution context
+      - operation cycle admin strategy page
+    replacement: none; immutable confirmed strategy document packs
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - operation cycle execution context API
+      - strategy proposal acceptance
+    migration_source: 0156_campaign_preparation_context
+    pii_level: internal
+    guard_tests:
+      - tests/test_operation_cycle_strategy_context.py
+      - tests/test_data_table_lifecycle_guard.py
+
+  operation_cycle_strategy_change_proposals:
+    domain: operation_cycles
+    lifecycle: event
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
+    read_owners:
+      - operation cycle optimization context
+      - operation cycle admin strategy page
+    replacement: none; immutable full-target strategy proposals and decisions
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - strategy change proposal API
+      - strategy proposal decision API
+    migration_source: 0156_campaign_preparation_context
+    pii_level: internal
+    guard_tests:
+      - tests/test_operation_cycle_strategy_context.py
+      - tests/test_data_table_lifecycle_guard.py
+
+  external_campaign_preparations:
+    domain: campaign
+    lifecycle: canonical
+    write_owner: aicrm_next.extensions.ai.ai_assist
+    read_owners:
+      - campaign preparation API
+      - cloud orchestrator campaign preparation command port
+    replacement: none; immutable preparation header and idempotency authority
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - Campaign prepare API
+      - Campaign commit API
+    migration_source: 0156_campaign_preparation_context
+    pii_level: internal
+    guard_tests:
+      - tests/test_campaign_preparations.py
+      - tests/test_data_table_lifecycle_guard.py
+
+  external_campaign_preparation_recipients:
+    domain: campaign
+    lifecycle: staging
+    write_owner: aicrm_next.extensions.ai.ai_assist
+    read_owners:
+      - campaign preparation API sanitized projection
+      - cloud orchestrator campaign preparation command port
+    replacement: none; TTL-bound sensitive recipient staging for reviewed plan creation
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - Campaign prepare API
+      - Campaign commit API
+      - Campaign preparation TTL cleanup
+    migration_source: 0156_campaign_preparation_context
+    pii_level: restricted_business_payload
+    guard_tests:
+      - tests/test_campaign_preparations.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Raw identities and individualized content remain internal, are never logged or returned, and are removed after the preparation TTL while the idempotency header survives.
+
+  operation_cycle_plan_links:
+    domain: operation_cycles
+    lifecycle: projection
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
+    read_owners:
+      - operation cycle context read model
+      - operation cycle system fact projector
+    replacement: none; aggregate strategy run and reviewed plan link
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - Campaign commit API
+      - internal event operation-cycle projection
+      - operation cycle retrospective context
+    migration_source: 0156_campaign_preparation_context
+    pii_level: none
+    guard_tests:
+      - tests/test_campaign_preparations.py
+      - tests/test_operation_cycle_strategy_context.py
+      - tests/test_data_table_lifecycle_guard.py
+
+  operation_cycle_system_facts:
+    domain: operation_cycles
+    lifecycle: event
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
+    read_owners:
+      - operation cycle context read model
+      - operation cycle admin strategy page
+    replacement: none; deduplicated aggregate plan and delivery facts without recipient identity
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - internal event operation-cycle projection
+      - operation cycle retrospective context
+    migration_source: 0156_campaign_preparation_context
+    pii_level: aggregate_only
+    guard_tests:
+      - tests/test_operation_cycle_strategy_context.py
+      - tests/test_data_table_lifecycle_guard.py
+
   automation_group_ops_effect_graph:
     domain: automation_engine_group_ops
     lifecycle: canonical

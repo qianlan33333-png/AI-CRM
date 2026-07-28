@@ -113,6 +113,14 @@ repositories:
     table_writes: []
     non_literal_table_reads:
       - crm_user_identity
+  aicrm_next/extensions/ai/ai_assist/campaign_preparations_repo.py:
+    capability_owner: aicrm_next.extensions.ai.ai_assist
+    table_reads:
+      - external_campaign_preparation_recipients
+      - external_campaign_preparations
+    table_writes:
+      - external_campaign_preparation_recipients
+      - external_campaign_preparations
   aicrm_next/engagement/send_targets/repo.py:
     capability_owner: aicrm_next.engagement.send_targets
     table_reads:
@@ -275,6 +283,7 @@ repositories:
   aicrm_next/automation/background_jobs/broadcast_effect_repository.py:
     capability_owner: aicrm_next.automation.background_jobs.broadcast_queue_worker
     table_reads:
+      - cloud_broadcast_plan_recipients
       - external_effect_job
     table_writes: []
   aicrm_next/platform/platform_foundation/background_jobs/broadcast_job_write_repository.py:
@@ -289,6 +298,8 @@ repositories:
       - broadcast_jobs
       - cloud_broadcast_plan_recipient_messages
       - cloud_broadcast_plan_recipients
+      - external_campaign_preparation_recipients
+      - external_campaign_preparations
     table_writes:
       - cloud_broadcast_plan_recipient_messages
       - cloud_broadcast_plan_recipients
@@ -958,4 +969,19 @@ repositories:
       - operation_cycle_snapshots
       - operation_cycle_stages
       - operation_cycle_strategies
+      - operation_cycle_strategy_versions
+  aicrm_next/extensions/hxc/operation_cycles/strategy_context_repository.py:
+    capability_owner: aicrm_next.extensions.hxc.operation_cycles
+    table_reads:
+      - operation_cycle_plan_links
+      - operation_cycle_runs
+      - operation_cycle_snapshots
+      - operation_cycle_strategies
+      - operation_cycle_strategy_change_proposals
+      - operation_cycle_strategy_version_documents
+      - operation_cycle_strategy_versions
+    table_writes:
+      - operation_cycle_strategies
+      - operation_cycle_strategy_change_proposals
+      - operation_cycle_strategy_version_documents
       - operation_cycle_strategy_versions

@@ -8,6 +8,9 @@ from fastapi.routing import APIRoute
 
 from .capability_registry import capability_for_route_group
 from .deployment_profile import DeploymentProfile
+from .campaign_preparation_composition import configure_campaign_preparation_dependencies
+
+configure_campaign_preparation_dependencies()
 
 try:  # FastAPI 0.139 keeps included router routes behind include contexts.
     from fastapi.routing import _iter_routes_with_context

@@ -361,6 +361,7 @@ class InMemoryCloudPlanRepository:
         return {
             "status": "created" if created_count else "reused",
             "broadcast_job_id": first_job_id,
+            "broadcast_job_ids": sorted(set(job_ids)),
             "broadcast_job_count": len(set(job_ids)),
             "created_count": created_count,
             "reused_count": reused_count,

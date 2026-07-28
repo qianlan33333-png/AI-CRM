@@ -12382,6 +12382,72 @@ routes:
   - api_client
   - service
   client_purpose: campaign_agent
+- path: /api/ai-assist/external/campaign-preparations
+  methods:
+  - POST
+  route_name: create_external_campaign_preparation
+  capability_owner: ai_assist
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: disable_AICRM_CAMPAIGN_PREPARATION_V1_ENABLED
+  audience: external_integration
+  auth_scheme: api_client_jwt
+  capability: campaign_preparation_create
+  access_scope: service
+  pii_level: sensitive
+  csrf: false
+  rate_limit: integration
+  principal_types:
+  - api_client
+  - service
+  client_purpose: campaign_agent
+- path: /api/ai-assist/external/campaign-preparations/{preparation_id}
+  methods:
+  - GET
+  route_name: get_external_campaign_preparation
+  capability_owner: ai_assist
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: disable_AICRM_CAMPAIGN_PREPARATION_V1_ENABLED
+  audience: external_integration
+  auth_scheme: api_client_jwt
+  capability: campaign_preparation_read
+  access_scope: service
+  pii_level: none
+  csrf: false
+  rate_limit: integration
+  principal_types:
+  - api_client
+  - service
+  client_purpose: campaign_agent
+- path: /api/ai-assist/external/campaign-preparations/{preparation_id}/commit
+  methods:
+  - POST
+  route_name: commit_external_campaign_preparation
+  capability_owner: ai_assist
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: disable_AICRM_CAMPAIGN_PREPARATION_V1_ENABLED
+  audience: external_integration
+  auth_scheme: api_client_jwt
+  capability: campaign_preparation_commit
+  access_scope: service
+  pii_level: internal
+  csrf: false
+  rate_limit: integration
+  principal_types:
+  - api_client
+  - service
+  client_purpose: campaign_agent
 - path: /api/internal/direct-send/wecom-private
   methods:
   - POST
@@ -14085,6 +14151,72 @@ routes:
   principal_types:
   - api_client
   - service
+- path: /api/operation-cycles/context-index
+  methods:
+  - GET
+  route_name: get_operation_cycle_context_index
+  capability_owner: operation_cycles
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: disable_AICRM_OPERATION_CONTEXT_V1_ENABLED
+  audience: external_integration
+  auth_scheme: api_client_jwt
+  capability: operation_cycle_context_read
+  access_scope: service
+  pii_level: internal
+  csrf: false
+  rate_limit: integration
+  client_purpose: campaign_agent
+  principal_types:
+  - api_client
+  - service
+- path: /api/operation-cycles/strategies/{strategy_key}/context
+  methods:
+  - GET
+  route_name: get_operation_cycle_strategy_context
+  capability_owner: operation_cycles
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: disable_AICRM_OPERATION_CONTEXT_V1_ENABLED
+  audience: external_integration
+  auth_scheme: api_client_jwt
+  capability: operation_cycle_context_read
+  access_scope: service
+  pii_level: internal
+  csrf: false
+  rate_limit: integration
+  client_purpose: campaign_agent
+  principal_types:
+  - api_client
+  - service
+- path: /api/operation-cycles/strategy-change-proposals
+  methods:
+  - POST
+  route_name: create_operation_cycle_strategy_change_proposal
+  capability_owner: operation_cycles
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: disable_AICRM_OPERATION_CONTEXT_V1_ENABLED
+  audience: external_integration
+  auth_scheme: api_client_jwt
+  capability: operation_cycle_strategy_propose
+  access_scope: service
+  pii_level: internal
+  csrf: false
+  rate_limit: integration
+  client_purpose: campaign_agent
+  principal_types:
+  - api_client
+  - service
 - path: /api/admin/operation-cycles/strategies
   methods:
   - GET
@@ -14102,6 +14234,46 @@ routes:
   access_scope: global
   pii_level: internal
   csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/operation-cycles/strategies/{strategy_key}/strategy-change-proposals
+  methods:
+  - GET
+  route_name: list_operation_cycle_strategy_change_proposals
+  capability_owner: operation_cycles
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: disable_AICRM_OPERATION_CONTEXT_V1_ENABLED
+  audience: admin
+  auth_scheme: human_session
+  capability: admin_read
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/operation-cycles/strategy-change-proposals/{proposal_id}/decision
+  methods:
+  - POST
+  route_name: decide_operation_cycle_strategy_change_proposal
+  capability_owner: operation_cycles
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: disable_AICRM_OPERATION_CONTEXT_V1_ENABLED
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_operations
+  access_scope: global
+  pii_level: internal
+  csrf: true
   rate_limit: authenticated
   principal_types:
   - human

@@ -369,6 +369,12 @@
     },
     {
       "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/extensions/ai/ai_assist/feature_flags.py",
+      "key": "AICRM_CAMPAIGN_PREPARATION_V1_ENABLED",
+      "line": 8
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform/navigation_target/resolver.py",
       "key": "AICRM_COMPLETION_URL_LINK_API_ALLOWLIST",
       "line": 20
@@ -450,6 +456,18 @@
       "file": "aicrm_next/insights/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_PROJECTION_FRESHNESS_MAX_MINUTES",
       "line": 36
+    },
+    {
+      "accessor": "runtime_setting",
+      "file": "aicrm_next/automation/background_jobs/broadcast_queue_worker.py",
+      "key": "AICRM_DYNAMIC_MINIPROGRAM_CARD_V1_ENABLED",
+      "line": 834
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/extensions/ai/ai_assist/feature_flags.py",
+      "key": "AICRM_DYNAMIC_MINIPROGRAM_CARD_V1_ENABLED",
+      "line": 8
     },
     {
       "accessor": "managed_runtime_bool",
@@ -545,7 +563,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/automation/background_jobs/broadcast_queue_worker.py",
       "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS",
-      "line": 699
+      "line": 720
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -714,6 +732,18 @@
       "file": "aicrm_next/channels/integration_gateway/huangyoucan_usage_client.py",
       "key": "AICRM_HUANGYOUCAN_DB_USER",
       "line": 98
+    },
+    {
+      "accessor": "runtime_setting",
+      "file": "aicrm_next/extensions/ai/ai_assist/card_target_validation_port.py",
+      "key": "AICRM_HXC_CARD_TARGET_VALIDATION_TOKEN",
+      "line": 22
+    },
+    {
+      "accessor": "runtime_setting",
+      "file": "aicrm_next/extensions/ai/ai_assist/card_target_validation_port.py",
+      "key": "AICRM_HXC_CARD_TARGET_VALIDATION_URL",
+      "line": 19
     },
     {
       "accessor": "os.getenv",
@@ -1533,6 +1563,18 @@
     },
     {
       "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/extensions/hxc/operation_cycles/feature_flags.py",
+      "key": "AICRM_OPERATION_CONTEXT_V1_ENABLED",
+      "line": 8
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/extensions/hxc/operation_cycles/feature_flags.py",
+      "key": "AICRM_OPERATION_FACT_PROJECTION_V1_ENABLED",
+      "line": 8
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/channels/integration_gateway/payment_commerce_live_adapter.py",
       "key": "AICRM_PAYMENT_COMMERCE_LIVE_ADAPTER_ENABLED",
       "line": 23
@@ -2279,13 +2321,13 @@
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/automation/background_jobs/broadcast_queue_worker.py",
       "key": "BROADCAST_QUEUE_LEASE_SECONDS",
-      "line": 1061
+      "line": 1107
     },
     {
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/automation/background_jobs/broadcast_queue_worker.py",
       "key": "BROADCAST_QUEUE_RETRY_DELAY_SECONDS",
-      "line": 328
+      "line": 349
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -3527,6 +3569,7 @@
     "AICRM_AUTH_OUTBOUND_WEBHOOK_CLIENT_ID",
     "AICRM_AUTH_SESSION_HASH_PEPPER",
     "AICRM_AUTH_TRUSTED_PROXY_ADDRESSES",
+    "AICRM_CAMPAIGN_PREPARATION_V1_ENABLED",
     "AICRM_COMPLETION_URL_LINK_API_ALLOWLIST",
     "AICRM_COMPLETION_URL_LINK_API_PATH_PREFIXES",
     "AICRM_COMPLETION_URL_LINK_TARGET_ALLOWLIST",
@@ -3538,6 +3581,7 @@
     "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_RETRYABLE_DUE_MAX_COUNT",
     "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS",
     "AICRM_DATA_HEALTH_PROJECTION_FRESHNESS_MAX_MINUTES",
+    "AICRM_DYNAMIC_MINIPROGRAM_CARD_V1_ENABLED",
     "AICRM_ENABLE_IN_PROCESS_ARCHIVE_SYNC",
     "AICRM_ENABLE_REAL_WECOM_GROUP_MESSAGE",
     "AICRM_ENABLE_REAL_WECOM_GROUP_SYNC",
@@ -3567,6 +3611,8 @@
     "AICRM_HUANGYOUCAN_DB_PORT",
     "AICRM_HUANGYOUCAN_DB_READ_TIMEOUT_SECONDS",
     "AICRM_HUANGYOUCAN_DB_USER",
+    "AICRM_HXC_CARD_TARGET_VALIDATION_TOKEN",
+    "AICRM_HXC_CARD_TARGET_VALIDATION_URL",
     "AICRM_INTERNAL_API_BASE_URL",
     "AICRM_INTERNAL_EVENTS_AI_CAMPAIGN_ENABLED",
     "AICRM_INTERNAL_EVENTS_ALLOWED_CONSUMERS",
@@ -3652,6 +3698,8 @@
     "AICRM_OPENCLAW_MCP_AI_ASSIST_NO_AUTOMATION_EXECUTION_CONFIRMED",
     "AICRM_OPENCLAW_MCP_AI_ASSIST_NO_OUTBOUND_SEND_CONFIRMED",
     "AICRM_OPENCLAW_MCP_AI_ASSIST_PROMPT_REDACTION_CONFIRMED",
+    "AICRM_OPERATION_CONTEXT_V1_ENABLED",
+    "AICRM_OPERATION_FACT_PROJECTION_V1_ENABLED",
     "AICRM_PAYMENT_COMMERCE_LIVE_ADAPTER_ENABLED",
     "AICRM_PAYMENT_COMMERCE_LIVE_CALL_APPROVED",
     "AICRM_PAYMENT_COMMERCE_NO_MONEY_MOVEMENT_CONFIRMED",
@@ -4713,7 +4761,7 @@
     }
   ],
   "migration_heads": [
-    "0155_private_message_contact_absence_ack_scope"
+    "0156_campaign_preparation_context"
   ],
   "openapi_components": {
     "schemas": {
@@ -25968,6 +26016,132 @@
       "route_group": "operation_cycles"
     },
     {
+      "capability_owner": "operation_cycles",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "strategy_key",
+            "required": true,
+            "schema": {
+              "title": "Strategy Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Status",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.extensions.hxc.operation_cycles.api.list_operation_cycle_strategy_change_proposals",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "extension.hxc",
+      "methods": [
+        "GET"
+      ],
+      "name": "list_operation_cycle_strategy_change_proposals",
+      "operation_id": "list_operation_cycle_strategy_change_proposals:GET:/api/admin/operation-cycles/strategies/{strategy_key}/strategy-change-proposals",
+      "path": "/api/admin/operation-cycles/strategies/{strategy_key}/strategy-change-proposals",
+      "route_group": "operation_cycles"
+    },
+    {
+      "capability_owner": "operation_cycles",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "proposal_id",
+            "required": true,
+            "schema": {
+              "title": "Proposal Id",
+              "type": "string"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.extensions.hxc.operation_cycles.api.decide_operation_cycle_strategy_change_proposal",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "extension.hxc",
+      "methods": [
+        "POST"
+      ],
+      "name": "decide_operation_cycle_strategy_change_proposal",
+      "operation_id": "decide_operation_cycle_strategy_change_proposal:POST:/api/admin/operation-cycles/strategy-change-proposals/{proposal_id}/decision",
+      "path": "/api/admin/operation-cycles/strategy-change-proposals/{proposal_id}/decision",
+      "route_group": "operation_cycles"
+    },
+    {
       "capability_owner": "commerce",
       "contract": {
         "parameters": [
@@ -36303,6 +36477,130 @@
           }
         }
       },
+      "endpoint": "aicrm_next.extensions.ai.ai_assist.api.create_external_campaign_preparation",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "extension.ai",
+      "methods": [
+        "POST"
+      ],
+      "name": "create_external_campaign_preparation",
+      "operation_id": "create_external_campaign_preparation:POST:/api/ai-assist/external/campaign-preparations",
+      "path": "/api/ai-assist/external/campaign-preparations",
+      "route_group": "ai_assist"
+    },
+    {
+      "capability_owner": "ai_assist",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "preparation_id",
+            "required": true,
+            "schema": {
+              "title": "Preparation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.extensions.ai.ai_assist.api.get_external_campaign_preparation",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "extension.ai",
+      "methods": [
+        "GET"
+      ],
+      "name": "get_external_campaign_preparation",
+      "operation_id": "get_external_campaign_preparation:GET:/api/ai-assist/external/campaign-preparations/{preparation_id}",
+      "path": "/api/ai-assist/external/campaign-preparations/{preparation_id}",
+      "route_group": "ai_assist"
+    },
+    {
+      "capability_owner": "ai_assist",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "preparation_id",
+            "required": true,
+            "schema": {
+              "title": "Preparation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.extensions.ai.ai_assist.api.commit_external_campaign_preparation",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "extension.ai",
+      "methods": [
+        "POST"
+      ],
+      "name": "commit_external_campaign_preparation",
+      "operation_id": "commit_external_campaign_preparation:POST:/api/ai-assist/external/campaign-preparations/{preparation_id}/commit",
+      "path": "/api/ai-assist/external/campaign-preparations/{preparation_id}/commit",
+      "route_group": "ai_assist"
+    },
+    {
+      "capability_owner": "ai_assist",
+      "contract": {
+        "parameters": [],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      },
       "endpoint": "aicrm_next.extensions.ai.ai_assist.api.create_external_campaigns",
       "include_in_schema": true,
       "kind": "api",
@@ -42857,6 +43155,65 @@
     {
       "capability_owner": "operation_cycles",
       "contract": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.extensions.hxc.operation_cycles.api.get_operation_cycle_context_index",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "extension.hxc",
+      "methods": [
+        "GET"
+      ],
+      "name": "get_operation_cycle_context_index",
+      "operation_id": "get_operation_cycle_context_index:GET:/api/operation-cycles/context-index",
+      "path": "/api/operation-cycles/context-index",
+      "route_group": "operation_cycles"
+    },
+    {
+      "capability_owner": "operation_cycles",
+      "contract": {
         "parameters": [],
         "request_body": {
           "content": {
@@ -43855,6 +44212,182 @@
       "name": "report_operation_cycle_snapshot",
       "operation_id": "report_operation_cycle_snapshot:POST:/api/operation-cycles/reports",
       "path": "/api/operation-cycles/reports",
+      "route_group": "operation_cycles"
+    },
+    {
+      "capability_owner": "operation_cycles",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "strategy_key",
+            "required": true,
+            "schema": {
+              "title": "Strategy Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "mode",
+            "required": false,
+            "schema": {
+              "default": "execution",
+              "title": "Mode",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 3,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Date From",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Date To",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "execution_stage",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Execution Stage",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "review_status",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Review Status",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "delivery_status",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Delivery Status",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "metric_window",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Metric Window",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "plan_id",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Plan Id",
+              "type": "string"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.extensions.hxc.operation_cycles.api.get_operation_cycle_strategy_context",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "extension.hxc",
+      "methods": [
+        "GET"
+      ],
+      "name": "get_operation_cycle_strategy_context",
+      "operation_id": "get_operation_cycle_strategy_context:GET:/api/operation-cycles/strategies/{strategy_key}/context",
+      "path": "/api/operation-cycles/strategies/{strategy_key}/context",
+      "route_group": "operation_cycles"
+    },
+    {
+      "capability_owner": "operation_cycles",
+      "contract": {
+        "parameters": [],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.extensions.hxc.operation_cycles.api.create_operation_cycle_strategy_change_proposal",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "extension.hxc",
+      "methods": [
+        "POST"
+      ],
+      "name": "create_operation_cycle_strategy_change_proposal",
+      "operation_id": "create_operation_cycle_strategy_change_proposal:POST:/api/operation-cycles/strategy-change-proposals",
+      "path": "/api/operation-cycles/strategy-change-proposals",
       "route_group": "operation_cycles"
     },
     {
@@ -49782,6 +50315,32 @@
       "write_owner": "aicrm_next.platform.external_push"
     },
     {
+      "domain": "campaign",
+      "drop_candidate": false,
+      "lifecycle": "staging",
+      "migration_source": "0156_campaign_preparation_context",
+      "pii_level": "restricted_business_payload",
+      "read_owners": [
+        "campaign preparation API sanitized projection",
+        "cloud orchestrator campaign preparation command port"
+      ],
+      "table": "external_campaign_preparation_recipients",
+      "write_owner": "aicrm_next.extensions.ai.ai_assist"
+    },
+    {
+      "domain": "campaign",
+      "drop_candidate": false,
+      "lifecycle": "canonical",
+      "migration_source": "0156_campaign_preparation_context",
+      "pii_level": "internal",
+      "read_owners": [
+        "campaign preparation API",
+        "cloud orchestrator campaign preparation command port"
+      ],
+      "table": "external_campaign_preparations",
+      "write_owner": "aicrm_next.extensions.ai.ai_assist"
+    },
+    {
       "domain": "identity_contact",
       "drop_candidate": false,
       "lifecycle": "read_model",
@@ -50232,6 +50791,19 @@
     {
       "domain": "operation_cycles",
       "drop_candidate": false,
+      "lifecycle": "projection",
+      "migration_source": "0156_campaign_preparation_context",
+      "pii_level": "none",
+      "read_owners": [
+        "operation cycle context read model",
+        "operation cycle system fact projector"
+      ],
+      "table": "operation_cycle_plan_links",
+      "write_owner": "aicrm_next.extensions.hxc.operation_cycles"
+    },
+    {
+      "domain": "operation_cycles",
+      "drop_candidate": false,
       "lifecycle": "read_model",
       "migration_source": "0113_operation_cycles",
       "pii_level": "none",
@@ -50293,6 +50865,32 @@
     {
       "domain": "operation_cycles",
       "drop_candidate": false,
+      "lifecycle": "event",
+      "migration_source": "0156_campaign_preparation_context",
+      "pii_level": "internal",
+      "read_owners": [
+        "operation cycle admin strategy page",
+        "operation cycle optimization context"
+      ],
+      "table": "operation_cycle_strategy_change_proposals",
+      "write_owner": "aicrm_next.extensions.hxc.operation_cycles"
+    },
+    {
+      "domain": "operation_cycles",
+      "drop_candidate": false,
+      "lifecycle": "canonical",
+      "migration_source": "0156_campaign_preparation_context",
+      "pii_level": "internal",
+      "read_owners": [
+        "operation cycle admin strategy page",
+        "operation cycle execution context"
+      ],
+      "table": "operation_cycle_strategy_version_documents",
+      "write_owner": "aicrm_next.extensions.hxc.operation_cycles"
+    },
+    {
+      "domain": "operation_cycles",
+      "drop_candidate": false,
       "lifecycle": "canonical",
       "migration_source": "0113_operation_cycles",
       "pii_level": "none",
@@ -50300,6 +50898,19 @@
         "operation cycle admin read model"
       ],
       "table": "operation_cycle_strategy_versions",
+      "write_owner": "aicrm_next.extensions.hxc.operation_cycles"
+    },
+    {
+      "domain": "operation_cycles",
+      "drop_candidate": false,
+      "lifecycle": "event",
+      "migration_source": "0156_campaign_preparation_context",
+      "pii_level": "aggregate_only",
+      "read_owners": [
+        "operation cycle admin strategy page",
+        "operation cycle context read model"
+      ],
+      "table": "operation_cycle_system_facts",
       "write_owner": "aicrm_next.extensions.hxc.operation_cycles"
     },
     {

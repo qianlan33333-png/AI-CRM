@@ -5,6 +5,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from aicrm_next.platform.shared.dynamic_miniprogram_card import DynamicMiniprogramCardV1
+
 
 class SendContentPackage(BaseModel):
     content_text: str = ""
@@ -12,6 +14,7 @@ class SendContentPackage(BaseModel):
     miniprogram_library_ids: list[Any] = Field(default_factory=list)
     attachment_library_ids: list[Any] = Field(default_factory=list)
     group_invite_library_ids: list[Any] = Field(default_factory=list)
+    dynamic_miniprogram_card: DynamicMiniprogramCardV1 | None = None
 
 
 class SendContentValidateRequest(BaseModel):

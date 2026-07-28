@@ -33,6 +33,7 @@ AI_CAMPAIGN_CREATED_EVENT_TYPE = "ai_campaign.created"
 AI_CAMPAIGN_APPROVED_EVENT_TYPE = "ai_campaign.approved"
 AI_CAMPAIGN_STARTED_EVENT_TYPE = "ai_campaign.started"
 BROADCAST_TASK_CREATED_EVENT_TYPE = "broadcast_task.created"
+BROADCAST_TASK_FINALIZED_EVENT_TYPE = "broadcast_task.finalized"
 OPS_PLAN_APPROVED_EVENT_TYPE = "ops_plan.approved"
 OWNER_MIGRATION_EXECUTED_EVENT_TYPE = "owner_migration.executed"
 
@@ -1076,6 +1077,70 @@ def emit_broadcast_task_created_shadow_event(
         },
     )
     return {"status": "emitted", "event_id": result["event"]["event_id"], "consumer_run_count": len(result.get("consumer_runs") or [])}
+
+
+def emit_broadcast_task_finalized_shadow_event(
+    *,
+    broadcast_job_id: int,
+    plan_id: str,
+    status: str,
+    sent_count: int,
+    failed_count: int,
+    operator: str = "external_effect_settlement",
+    occurred_at: Any = None,
+) -> dict[str, Any]:
+    if not broadcast_task_internal_events_enabled():
+        return {"status": "skipped", "reason": "broadcast_task_internal_events_disabled"}
+    configured_event_types = allowed_event_types()
+    if not configured_event_types or BROADCAST_TASK_FINALIZED_EVENT_TYPE not in set(configured_event_types):
+        return {"status": "skipped", "reason": "broadcast_task_finalized_event_type_not_explicitly_allowed"}
+    if not event_type_allowed(BROADCAST_TASK_FINALIZED_EVENT_TYPE, configured=configured_event_types):
+        return {"status": "skipped", "reason": "internal_events_disabled_or_event_type_not_allowed"}
+    job_id = int(broadcast_job_id or 0)
+    normalized_plan_id = _text(plan_id)
+    if job_id <= 0 or not normalized_plan_id:
+        return {"status": "skipped", "reason": "broadcast_task_finalized_link_missing"}
+    normalized_status = _text(status)
+    payload = {
+        "task_id": str(job_id),
+        "plan_id": normalized_plan_id,
+        "status": normalized_status,
+        "sent_count": max(0, int(sent_count or 0)),
+        "failed_count": max(0, int(failed_count or 0)),
+    }
+    result = InternalEventService().emit_event(
+        event_type=BROADCAST_TASK_FINALIZED_EVENT_TYPE,
+        event_version=1,
+        aggregate_type="broadcast_task",
+        aggregate_id=str(job_id),
+        subject_type="broadcast_task",
+        subject_id=str(job_id),
+        idempotency_key=f"broadcast_task.finalized:{job_id}:{normalized_status}",
+        source_module="background_jobs.broadcast_effect_repository",
+        source_command_id=f"broadcast_task.finalized:{job_id}",
+        correlation_id=f"broadcast_task:{job_id}",
+        context=CommandContext(
+            actor_id=operator,
+            actor_type="system",
+            trace_id=f"broadcast_task:{job_id}",
+            request_id=f"broadcast_task.finalized:{job_id}",
+            source_route="external_effect.settled",
+        ),
+        occurred_at=occurred_at,
+        payload={"broadcast_task": payload},
+        payload_summary={
+            "task_id": str(job_id),
+            "plan_id": normalized_plan_id,
+            "status": normalized_status,
+            "sent_count": payload["sent_count"],
+            "failed_count": payload["failed_count"],
+        },
+    )
+    return {
+        "status": "emitted",
+        "event_id": result["event"]["event_id"],
+        "consumer_run_count": len(result.get("consumer_runs") or []),
+    }
 
 
 def emit_ops_plan_approved_shadow_event(

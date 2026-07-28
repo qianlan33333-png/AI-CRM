@@ -4,7 +4,7 @@ import os
 import uuid
 import json
 from datetime import datetime, timedelta, timezone
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 
 from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
 from aicrm_next.platform.platform_foundation.external_effects import (
@@ -48,6 +48,16 @@ class BroadcastQueueRepository(Protocol):
     ) -> dict[str, Any] | None: ...
 
 
+_dynamic_miniprogram_attachment_resolver: Callable[[dict[str, Any]], dict[str, Any]] | None = None
+
+
+def configure_dynamic_miniprogram_attachment_resolver(
+    resolver: Callable[[dict[str, Any]], dict[str, Any]] | None,
+) -> None:
+    global _dynamic_miniprogram_attachment_resolver
+    _dynamic_miniprogram_attachment_resolver = resolver
+
+
 class SafeSkippedBroadcastDispatcher:
     """Compatibility planner; provider ownership belongs to External Effect."""
 
@@ -76,6 +86,17 @@ class SafeSkippedBroadcastDispatcher:
 
     def _plan_private_effects(self, job: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
         payload = _with_cloud_plan_recipient_message(payload)
+        try:
+            payload = _with_dynamic_miniprogram_attachment(payload)
+        except Exception as exc:
+            return {
+                "ok": False,
+                "status": "failed_retryable" if bool(getattr(exc, "retryable", False)) else "failed_terminal",
+                "failure_type": _text(getattr(exc, "code", "")) or "material_resolve_failed",
+                "error": _text(getattr(exc, "code", "")) or "material_resolve_failed",
+                "side_effect_executed": bool(getattr(exc, "provider_call_executed", False)),
+                "provider_result_received": bool(getattr(exc, "provider_result_received", False)),
+            }
         target_unionids = _extract_target_unionids(job, payload)
         external_userids, missing_unionids = _resolve_private_targets_by_unionid(target_unionids)
         sender = _extract_private_sender(payload)
@@ -790,7 +811,10 @@ def _merge_content_package(target: dict[str, Any], source: Any) -> None:
         existing = list(target.get(field) or [])
         if library_id not in existing:
             existing.append(library_id)
-        target[field] = existing
+            target[field] = existing
+    card = source_dict.get("dynamic_miniprogram_card")
+    if isinstance(card, dict) and card:
+        target["dynamic_miniprogram_card"] = dict(card)
 
 
 def _extract_private_content_package(payload: dict[str, Any]) -> dict[str, Any]:
@@ -800,6 +824,28 @@ def _extract_private_content_package(payload: dict[str, Any]) -> dict[str, Any]:
     for source in (payload, rendered, step):
         _merge_content_package(content_package, source)
     return content_package
+
+
+def _with_dynamic_miniprogram_attachment(payload: dict[str, Any]) -> dict[str, Any]:
+    content_package = _extract_private_content_package(payload)
+    card = content_package.get("dynamic_miniprogram_card")
+    if not isinstance(card, dict) or not card:
+        return payload
+    if _text(runtime_setting("AICRM_DYNAMIC_MINIPROGRAM_CARD_V1_ENABLED", "")).lower() not in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }:
+        raise ValueError("dynamic_card_feature_disabled")
+    resolver = _dynamic_miniprogram_attachment_resolver
+    if resolver is None:
+        raise ValueError("dynamic_card_resolver_not_configured")
+    attachment = resolver(card)
+    hydrated = dict(payload)
+    existing = _json_list(payload.get("attachments")) or _json_list(payload.get("attachments_json"))
+    hydrated["attachments"] = [*existing, attachment]
+    return hydrated
 
 
 def _resolve_private_attachments(content_package: dict[str, Any]) -> list[dict[str, Any]]:

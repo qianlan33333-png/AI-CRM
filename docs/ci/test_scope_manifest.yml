@@ -973,6 +973,28 @@
       "architecture_gate": "fast"
     },
     {
+      "name": "campaign_preparations",
+      "paths": [
+        "aicrm_next/campaign_preparation_composition.py",
+        "aicrm_next/extensions/growth/cloud_orchestrator/campaign_preparation_port.py",
+        "aicrm_next/platform/shared/dynamic_miniprogram_card.py",
+        "tests/test_campaign_preparations.py"
+      ],
+      "python_tests": [
+        "tests/test_campaign_preparations.py",
+        "tests/test_ai_assist_external_campaigns.py",
+        "tests/test_internal_events_broadcast_task_slice.py",
+        "tests/test_send_content_global_guardrails.py",
+        "tests/test_alembic_revision_chain.py",
+        "tests/test_database_bootstrap.py",
+        "tests/test_runtime_configuration_contract.py",
+        "tests/test_runtime_contract_inventory.py"
+      ],
+      "needs_postgres": true,
+      "needs_full_ci": true,
+      "architecture_gate": "full"
+    },
+    {
       "name": "customer_read_model_sidebar",
       "paths": [
         "aicrm_next/main.py",
@@ -1739,12 +1761,14 @@
     {
       "name": "operation_cycles",
       "paths": [
+        "aicrm_next/operation_cycle_fact_composition.py",
         "aicrm_next/extensions/hxc/operation_cycles/**",
         "aicrm_next/app/admin_console/templates/admin_shell/operation_cycles_*.html",
         "fixtures/operation_cycles/**",
         "migrations/versions/0113_operation_cycles.py",
         "scripts/build_hxc_monday_operation_cycle_snapshot.py",
-        "tests/test_operation_cycles_*.py"
+        "tests/test_operation_cycles_*.py",
+        "tests/test_operation_cycle_strategy_context.py"
       ],
       "python_tests": [
         "tests/test_operation_cycles_api.py",
@@ -1754,6 +1778,7 @@
         "tests/test_operation_cycles_markdown.py",
         "tests/test_operation_cycles_migration.py",
         "tests/test_operation_cycles_repository.py",
+        "tests/test_operation_cycle_strategy_context.py",
         "tests/test_admin_read_pages_smoke.py",
         "tests/test_admin_shell_native.py",
         "tests/test_database_bootstrap.py",

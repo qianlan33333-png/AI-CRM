@@ -227,6 +227,11 @@ def _content_payload_for_package(content_package: dict[str, Any]) -> dict[str, A
         "miniprogram_library_ids": list(content_package.get("miniprogram_library_ids") or []),
         "attachment_library_ids": list(content_package.get("attachment_library_ids") or []),
         "group_invite_library_ids": list(content_package.get("group_invite_library_ids") or []),
+        "dynamic_miniprogram_card": (
+            dict(content_package.get("dynamic_miniprogram_card") or {})
+            if isinstance(content_package.get("dynamic_miniprogram_card"), dict)
+            else None
+        ),
     }
     return {
         "content_package": package,
@@ -335,6 +340,20 @@ def _recipient_broadcast_execution_id(recipient_idempotency_key: str) -> str:
         raise ValueError("recipient broadcast idempotency key is required")
     digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:32]
     return f"exe_broadcast_{digest}"
+
+
+def _scheduled_for_from_dynamic_plan(plan: dict[str, Any]) -> datetime | None:
+    if _text(plan.get("content_strategy")) != "dynamic_recipient_messages_v1":
+        return None
+    selection = _json(plan.get("selection_json"), default={})
+    raw_value = _text(selection.get("scheduled_for")) if isinstance(selection, dict) else ""
+    if not raw_value:
+        return None
+    try:
+        scheduled_for = datetime.fromisoformat(raw_value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return scheduled_for if scheduled_for.tzinfo is not None else None
 
 
 def _plan_broadcast_content_payload(*, plan_id: str, owner_userid: str, target_count: int, source_event_id: str) -> dict[str, Any]:
@@ -784,6 +803,7 @@ class PostgresCloudPlanRepository(CloudLegacyPostgresRepositoryMixin):
             if not plan:
                 return {"status": "skipped", "reason": "missing_plan_id"}
             plan_dict = dict(plan)
+            scheduled_for = _scheduled_for_from_dynamic_plan(plan_dict)
             source_type = _text(plan_dict.get("source_type")) or "cloud_plan"
             if source_type and source_type != "cloud_plan":
                 return {"status": "skipped", "reason": "unsupported_plan_type", "plan_type": source_type}
@@ -837,7 +857,7 @@ class PostgresCloudPlanRepository(CloudLegacyPostgresRepositoryMixin):
                             source_type="cloud_plan",
                             source_id=f"{normalized_plan_id}:{recipient_id}",
                             source_table="cloud_broadcast_plan_recipients",
-                            scheduled_for=None,
+                            scheduled_for=scheduled_for,
                             priority=100,
                             batch_key=f"cloud_plan_recipient:{normalized_plan_id}",
                             idempotency_key=recipient_idempotency_key,
@@ -913,6 +933,7 @@ class PostgresCloudPlanRepository(CloudLegacyPostgresRepositoryMixin):
         return {
             "status": job_status,
             "broadcast_job_id": first_job_id,
+            "broadcast_job_ids": sorted(set(job_ids)),
             "broadcast_job_count": len(set(job_ids)),
             "created_count": created_count,
             "reused_count": reused_count,
@@ -1057,6 +1078,7 @@ class PostgresCloudPlanRepository(CloudLegacyPostgresRepositoryMixin):
                 raise ValueError("plan is rejected")
             if _text(plan.get("review_status")) not in {"approved", "reviewing"}:
                 raise ValueError("plan is not approved for recipient review")
+            scheduled_for = _scheduled_for_from_dynamic_plan(dict(plan))
             recipient = conn.execute(
                 "SELECT * FROM cloud_broadcast_plan_recipients WHERE plan_id = %s AND id = %s FOR UPDATE",
                 (normalized_plan_id, int(recipient_id)),
@@ -1078,7 +1100,7 @@ class PostgresCloudPlanRepository(CloudLegacyPostgresRepositoryMixin):
                         source_type="cloud_plan",
                         source_id=f"{normalized_plan_id}:{int(recipient_id)}",
                         source_table="cloud_broadcast_plan_recipients",
-                        scheduled_for=None,
+                        scheduled_for=scheduled_for,
                         priority=100,
                         batch_key=f"cloud_plan_recipient:{normalized_plan_id}",
                         idempotency_key=idempotency_key,

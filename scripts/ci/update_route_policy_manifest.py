@@ -400,6 +400,32 @@ def _policy_for(entry: dict[str, Any]) -> dict[str, Any]:
             client_purpose="ops_reporter",
         )
 
+    if path == "/api/operation-cycles/context-index" or (
+        path.startswith("/api/operation-cycles/strategies/") and path.endswith("/context")
+    ):
+        return _policy(
+            "external_integration",
+            "api_client_jwt",
+            "operation_cycle_context_read",
+            "service",
+            "internal",
+            False,
+            "integration",
+            client_purpose="campaign_agent",
+        )
+
+    if path == "/api/operation-cycles/strategy-change-proposals":
+        return _policy(
+            "external_integration",
+            "api_client_jwt",
+            "operation_cycle_strategy_propose",
+            "service",
+            "internal",
+            False,
+            "integration",
+            client_purpose="campaign_agent",
+        )
+
     if path.startswith(("/api/customers", "/api/users", "/api/messages")):
         return _policy(
             "external_integration",
@@ -442,6 +468,30 @@ def _policy_for(entry: dict[str, Any]) -> dict[str, Any]:
             "campaign_draft_create" if write else "campaign_status_read",
             "service",
             _pii_level(entry),
+            False,
+            "integration",
+            client_purpose="campaign_agent",
+        )
+
+    if path == "/api/ai-assist/external/campaign-preparations":
+        return _policy(
+            "external_integration",
+            "api_client_jwt",
+            "campaign_preparation_create",
+            "service",
+            "sensitive",
+            False,
+            "integration",
+            client_purpose="campaign_agent",
+        )
+
+    if path.startswith("/api/ai-assist/external/campaign-preparations/"):
+        return _policy(
+            "external_integration",
+            "api_client_jwt",
+            "campaign_preparation_commit" if write else "campaign_preparation_read",
+            "service",
+            "internal" if write else "none",
             False,
             "integration",
             client_purpose="campaign_agent",

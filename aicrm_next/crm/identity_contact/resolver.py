@@ -447,6 +447,135 @@ def resolve_external_userids_with_sqlalchemy(
     }
 
 
+def resolve_identities_batch_with_sqlalchemy(
+    executor: Any,
+    inputs: Iterable[Mapping[str, Any]],
+) -> dict[str, IdentityResolveResult]:
+    """Resolve multi-alias inputs in one SQL batch.
+
+    Every supplied alias must converge on the same canonical identity.  The
+    returned mapping is keyed only by the caller supplied ``row_key`` so raw
+    aliases never need to leave the identity boundary in logs or responses.
+    """
+
+    from sqlalchemy import text
+
+    normalized_inputs: list[dict[str, str]] = []
+    seen_row_keys: set[str] = set()
+    for item in inputs:
+        row_key = _text(item.get("row_key"))
+        if not row_key or row_key in seen_row_keys:
+            raise ValueError("batch identity row_key must be present and unique")
+        seen_row_keys.add(row_key)
+        query = normalize_identity_request(
+            ResolvePersonIdentityRequest(
+                external_userid=_text(item.get("external_userid")) or None,
+                unionid=_text(item.get("unionid")) or None,
+                openid=_text(item.get("openid")) or None,
+                mobile=_text(item.get("mobile")) or None,
+            )
+        )
+        normalized_inputs.append(
+            {
+                "row_key": row_key,
+                "external_userid": _text(query.external_userid),
+                "unionid": _text(query.unionid),
+                "openid": _text(query.openid),
+                "mobile": _text(query.mobile),
+            }
+        )
+    if not normalized_inputs:
+        return {}
+
+    rows = executor.execute(
+        text(
+            """
+            WITH identity_input AS (
+                SELECT *
+                FROM jsonb_to_recordset(CAST(:rows_json AS jsonb)) AS input(
+                    row_key text,
+                    external_userid text,
+                    unionid text,
+                    openid text,
+                    mobile text
+                )
+            )
+            SELECT input.row_key AS input_row_key,
+                   identity.unionid,
+                   identity.primary_external_userid AS external_userid,
+                   identity.primary_openid AS openid,
+                   identity.primary_owner_userid AS owner_userid,
+                   identity.legacy_person_id AS person_id,
+                   identity.mobile,
+                   identity.mobile_normalized,
+                   identity.mobile_verified,
+                   identity.mobile_source,
+                   identity.customer_name,
+                   identity.remark,
+                   identity.description,
+                   identity.profile_json,
+                   identity.identity_status AS status,
+                   (input.unionid <> '' AND identity.unionid = input.unionid) AS matched_unionid,
+                   (input.external_userid <> '' AND (
+                        identity.primary_external_userid = input.external_userid
+                        OR identity.external_userids_json @> jsonb_build_array(input.external_userid)
+                        OR identity.external_userids_json @> jsonb_build_array(
+                            jsonb_build_object('external_userid', input.external_userid)
+                        )
+                   )) AS matched_external_userid,
+                   (input.openid <> '' AND (
+                        identity.primary_openid = input.openid
+                        OR identity.openids_json @> jsonb_build_array(input.openid)
+                        OR identity.openids_json @> jsonb_build_array(
+                            jsonb_build_object('openid', input.openid)
+                        )
+                   )) AS matched_openid,
+                   (input.mobile <> '' AND identity.mobile_normalized = input.mobile) AS matched_mobile
+            FROM identity_input input
+            JOIN crm_user_identity identity ON (
+                (input.unionid <> '' AND identity.unionid = input.unionid)
+                OR (input.external_userid <> '' AND (
+                    identity.primary_external_userid = input.external_userid
+                    OR identity.external_userids_json @> jsonb_build_array(input.external_userid)
+                    OR identity.external_userids_json @> jsonb_build_array(
+                        jsonb_build_object('external_userid', input.external_userid)
+                    )
+                ))
+                OR (input.openid <> '' AND (
+                    identity.primary_openid = input.openid
+                    OR identity.openids_json @> jsonb_build_array(input.openid)
+                    OR identity.openids_json @> jsonb_build_array(
+                        jsonb_build_object('openid', input.openid)
+                    )
+                ))
+                OR (input.mobile <> '' AND identity.mobile_normalized = input.mobile)
+            )
+            ORDER BY input.row_key, identity.unionid
+            """
+        ),
+        {"rows_json": json.dumps(normalized_inputs, ensure_ascii=False)},
+    ).mappings().all()
+    candidates_by_key: dict[str, list[Mapping[str, Any]]] = {
+        item["row_key"]: [] for item in normalized_inputs
+    }
+    request_by_key: dict[str, ResolvePersonIdentityRequest] = {}
+    for item in normalized_inputs:
+        request_by_key[item["row_key"]] = ResolvePersonIdentityRequest(
+            external_userid=item["external_userid"] or None,
+            unionid=item["unionid"] or None,
+            openid=item["openid"] or None,
+            mobile=item["mobile"] or None,
+        )
+    for row in rows:
+        row_key = _text(row.get("input_row_key"))
+        if row_key in candidates_by_key:
+            candidates_by_key[row_key].append(row)
+    return {
+        row_key: classify_identity_candidates(request_by_key[row_key], candidates)
+        for row_key, candidates in candidates_by_key.items()
+    }
+
+
 def resolved_unionids_for_external_userids_with_sqlalchemy(
     executor: Any,
     external_userids: Iterable[str],

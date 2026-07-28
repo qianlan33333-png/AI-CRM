@@ -48,6 +48,11 @@ def normalize_send_content_package(
     miniprogram_ids = _normalize_ids(content_package.miniprogram_library_ids, field_name="miniprogram_library_ids", max_count=1)
     attachment_ids = _normalize_ids(content_package.attachment_library_ids, field_name="attachment_library_ids", max_count=9)
     group_invite_ids = _normalize_ids(content_package.group_invite_library_ids, field_name="group_invite_library_ids", max_count=1)
+    dynamic_card = (
+        content_package.dynamic_miniprogram_card.model_dump(mode="json")
+        if content_package.dynamic_miniprogram_card is not None
+        else None
+    )
     normalized = {
         "content_text": content_text,
         "image_library_ids": image_ids,
@@ -55,7 +60,9 @@ def normalize_send_content_package(
         "attachment_library_ids": attachment_ids,
         "group_invite_library_ids": group_invite_ids,
     }
-    if require_body and not any([content_text, image_ids, miniprogram_ids, attachment_ids, group_invite_ids]):
+    if dynamic_card is not None:
+        normalized["dynamic_miniprogram_card"] = dynamic_card
+    if require_body and not any([content_text, image_ids, miniprogram_ids, attachment_ids, group_invite_ids, dynamic_card]):
         raise ContractError("内容包不能为空，请填写文本或选择素材")
     return normalized
 

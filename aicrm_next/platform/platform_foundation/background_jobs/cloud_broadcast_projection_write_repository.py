@@ -188,6 +188,69 @@ class PostgresCloudBroadcastProjectionWriteRepository:
             (str(plan_id or "").strip(), int(recipient_id)),
         )
 
+    def insert_campaign_preparation_projection_sqlalchemy(
+        self,
+        executor: Any,
+        *,
+        plan_id: str,
+        preparation_id: str,
+    ) -> None:
+        executor.execute(
+            text(
+                """
+                INSERT INTO cloud_broadcast_plan_recipients (
+                    plan_id, unionid, owner_userid, display_name,
+                    planned_message_count, approval_status, send_status
+                )
+                SELECT :plan_id, resolved_unionid, resolved_owner_userid,
+                       row_key, 1, 'pending', 'pending'
+                FROM external_campaign_preparation_recipients
+                WHERE preparation_id = :preparation_id AND row_status = 'eligible'
+                ORDER BY id
+                ON CONFLICT (plan_id, unionid) DO NOTHING
+                """
+            ),
+            {"plan_id": plan_id, "preparation_id": preparation_id},
+        )
+        executor.execute(
+            text(
+                """
+                INSERT INTO cloud_broadcast_plan_recipient_messages (
+                    plan_id, recipient_id, unionid, sequence_index, day_offset,
+                    send_time, content_text, content_payload_json,
+                    attachments_json, status
+                )
+                SELECT :plan_id, recipient.id, recipient.unionid, 1, 0,
+                       to_char(preparation.scheduled_for AT TIME ZONE preparation.timezone, 'HH24:MI'),
+                       staging.content_text,
+                       jsonb_build_object(
+                           'content_package', jsonb_build_object(
+                               'content_text', staging.content_text,
+                               'image_library_ids', '[]'::jsonb,
+                               'miniprogram_library_ids', '[]'::jsonb,
+                               'attachment_library_ids', '[]'::jsonb,
+                               'group_invite_library_ids', '[]'::jsonb,
+                               'dynamic_miniprogram_card', staging.dynamic_card_json
+                           ),
+                           'dynamic_miniprogram_card', staging.dynamic_card_json,
+                           'scheduled_for', to_jsonb(preparation.scheduled_for),
+                           'timezone', to_jsonb(preparation.timezone)
+                       ),
+                       '[]'::jsonb, 'pending'
+                FROM external_campaign_preparations preparation
+                JOIN external_campaign_preparation_recipients staging
+                  ON staging.preparation_id = preparation.preparation_id
+                 AND staging.row_status = 'eligible'
+                JOIN cloud_broadcast_plan_recipients recipient
+                  ON recipient.plan_id = :plan_id
+                 AND recipient.unionid = staging.resolved_unionid
+                WHERE preparation.preparation_id = :preparation_id
+                ON CONFLICT DO NOTHING
+                """
+            ),
+            {"plan_id": plan_id, "preparation_id": preparation_id},
+        )
+
     def upsert_agent_recipient_dbapi(
         self,
         executor: Any,
