@@ -282,3 +282,95 @@ def external_contact_relationship_absent_terminal_sql(*, job_alias: str) -> str:
                     AND COALESCE((relationship_absent_provider_attempt.response_summary_json->>'real_external_call_executed')::BOOLEAN, FALSE)
               )
     """
+
+
+def private_message_contact_relationship_absent_terminal_sql(*, job_alias: str) -> str:
+    """Recognize an exact provider-declared private-message business rejection.
+
+    WeCom 84061 means the target is no longer an external contact.  The send
+    flow completed at the provider boundary, but delivery was rejected for a
+    deterministic business reason.  Only a single, fully settled production
+    attempt with the raw 84061 response is eligible; any missing or
+    contradictory evidence remains a health failure.
+    """
+
+    error_codes = ", ".join(f"'{item}'" for item in EXTERNAL_CONTACT_RELATIONSHIP_ABSENT_ERROR_CODES)
+    return f"""
+              {job_alias}.effect_type = 'wecom.message.private.send'
+              AND {job_alias}.adapter_name = 'wecom_private_message'
+              AND {job_alias}.operation = 'send_private_message'
+              AND {job_alias}.target_type = 'external_contact'
+              AND {job_alias}.business_type = 'broadcast_job'
+              AND {job_alias}.source_module = 'background_jobs.broadcast_effect_delegate'
+              AND {job_alias}.source_route = 'broadcast_effect_delegate'
+              AND {job_alias}.status = 'failed_terminal'
+              AND {job_alias}.last_error_code IN ({error_codes})
+              AND {job_alias}.execution_mode = 'execute'
+              AND {job_alias}.lane = 'wecom_bulk'
+              AND {job_alias}.attempt_count = 1
+              AND {job_alias}.max_attempts = 5
+              AND {job_alias}.worker_generation = 1
+              AND {job_alias}.policy_version = '{POST_CUTOVER_IDENTITY_RECOVERY_POLICY}'
+              AND {job_alias}.side_effect_executed = TRUE
+              AND {job_alias}.provider_result_received = TRUE
+              AND {job_alias}.provider_call_started_at IS NOT NULL
+              AND {job_alias}.completed_at IS NOT NULL
+              AND {job_alias}.reconciliation_required = FALSE
+              AND {job_alias}.lease_token = ''
+              AND {job_alias}.lease_expires_at IS NULL
+              AND {job_alias}.locked_by = ''
+              AND {job_alias}.locked_at IS NULL
+              AND {job_alias}.hold_reason = ''
+              AND {job_alias}.cancel_requested_at IS NULL
+              AND 1 = (
+                  SELECT COUNT(*)
+                  FROM external_effect_attempt private_contact_absence_all_attempts
+                  WHERE private_contact_absence_all_attempts.job_id = {job_alias}.id
+              )
+              AND 1 = (
+                  SELECT COUNT(*)
+                  FROM external_effect_attempt private_contact_absence_provider_attempt
+                  WHERE private_contact_absence_provider_attempt.job_id = {job_alias}.id
+                    AND private_contact_absence_provider_attempt.attempt_id =
+                        COALESCE({job_alias}.last_attempt_id, '')
+                    AND private_contact_absence_provider_attempt.status = 'failed_terminal'
+                    AND private_contact_absence_provider_attempt.error_code IN ({error_codes})
+                    AND private_contact_absence_provider_attempt.adapter_name = 'wecom_private_message'
+                    AND private_contact_absence_provider_attempt.operation = 'send_private_message'
+                    AND private_contact_absence_provider_attempt.adapter_mode = 'execute'
+                    AND private_contact_absence_provider_attempt.provider_call_started_at IS NOT NULL
+                    AND private_contact_absence_provider_attempt.completed_at IS NOT NULL
+                    AND private_contact_absence_provider_attempt.worker_generation = 1
+                    AND COALESCE(
+                        (private_contact_absence_provider_attempt.response_summary_json->>'errcode')::INTEGER,
+                        0
+                    ) = 84061
+                    AND COALESCE(
+                        (
+                            private_contact_absence_provider_attempt.response_summary_json
+                                ->>'real_external_call_executed'
+                        )::BOOLEAN,
+                        FALSE
+                    )
+              )
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM external_effect_job private_contact_absence_success
+                  WHERE private_contact_absence_success.id <> {job_alias}.id
+                    AND private_contact_absence_success.status = 'succeeded'
+                    AND private_contact_absence_success.effect_type = {job_alias}.effect_type
+                    AND COALESCE({job_alias}.business_id, '') <> ''
+                    AND private_contact_absence_success.business_type = {job_alias}.business_type
+                    AND private_contact_absence_success.business_id = {job_alias}.business_id
+              )
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM external_effect_job private_contact_absence_later_success
+                  WHERE private_contact_absence_later_success.id <> {job_alias}.id
+                    AND private_contact_absence_later_success.status = 'succeeded'
+                    AND private_contact_absence_later_success.effect_type = {job_alias}.effect_type
+                    AND private_contact_absence_later_success.target_type = {job_alias}.target_type
+                    AND private_contact_absence_later_success.target_id = {job_alias}.target_id
+                    AND private_contact_absence_later_success.updated_at > {job_alias}.updated_at
+              )
+    """

@@ -80,6 +80,12 @@ cross-table evidence proves one provider call, a received provider result, no
 refund execution, a synchronized local refund record, and no replay.  Missing
 or contradictory evidence remains fail-closed.
 
+The same fail-closed rule applies to a WeCom private-message `84061` result. It
+is a completed send flow with a business rejection because the external-contact
+relationship no longer exists, not an infrastructure failure, only when the
+production job and its sole attempt prove the real provider call, exact response,
+settled lease state, and absence of any successful replay.
+
 Relations imported from the pre-convergence production database use the
 explicit `legacy` lifecycle. They are registered so they cannot appear as
 unmanaged drift, but unlike Next-owned physical lifecycles their absence is not
@@ -119,7 +125,8 @@ cutover. Singleton refresh evidence is stored in
 `customer_read_model_refresh_state`.
 
 `projection_freshness_customer_read_model` enforces projection population and
-list/detail/managed-refresh count consistency. The wall-clock age of an
+list/detail/managed-refresh count consistency against the currently active
+primary/shadow generation. The wall-clock age of an
 otherwise consistent projection is diagnostic only: elapsed time without a
 source change is not data staleness. `customer_360_freshness_guard` remains the
 release-blocking source-of-truth check and compares the latest identity, order,

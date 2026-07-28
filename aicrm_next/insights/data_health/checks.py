@@ -23,6 +23,7 @@ from .external_effect_provenance import (
     direct_canary_job_sql,
     external_effect_backlog_sql,
 )
+from .projection_health import projection_freshness_customer_read_model
 from .schema_drift import (
     database_schema_available,
     evaluate_schema_drift,
@@ -410,121 +411,9 @@ def _identity_resolution_queue_backlog() -> DataHealthCheckResult:
 
 
 def _projection_freshness_customer_read_model() -> DataHealthCheckResult:
-    check_id = "projection_freshness_customer_read_model"
-    title = "Customer read model projection freshness"
-    source_tables = [
-        "customer_list_index_next",
-        "customer_detail_snapshot_next",
-        "customer_timeline_event_next",
-    ]
-    if not database_schema_available():
-        return _db_unavailable_placeholder(check_id, title, source_tables)
-    try:
-        with get_session_factory()() as session:
-            row = (
-                session.execute(
-                    text(
-                        """
-                        SELECT
-                            (SELECT COUNT(*) FROM customer_list_index_next) AS list_count,
-                            (SELECT COUNT(*) FROM customer_detail_snapshot_next) AS detail_count,
-                            EXISTS (
-                                SELECT 1 FROM customer_read_model_refresh_state WHERE singleton_id = 1
-                            ) AS refresh_state_present,
-                            (
-                                SELECT source_count FROM customer_read_model_refresh_state WHERE singleton_id = 1
-                            ) AS refresh_source_count,
-                            (
-                                SELECT target_count FROM customer_read_model_refresh_state WHERE singleton_id = 1
-                            ) AS refresh_target_count,
-                            (SELECT COUNT(*) FROM customer_timeline_event_next) AS timeline_event_count,
-                            (
-                                SELECT COUNT(*)
-                                FROM (
-                                    SELECT event_id
-                                    FROM customer_timeline_event_next
-                                    GROUP BY event_id
-                                    HAVING COUNT(*) > 1
-                                ) duplicate_events
-                            ) AS timeline_duplicate_event_id_count,
-                            EXTRACT(EPOCH FROM (
-                                CURRENT_TIMESTAMP - (
-                                    SELECT last_succeeded_at
-                                    FROM customer_read_model_refresh_state
-                                    WHERE singleton_id = 1
-                                )
-                            )) / 60 AS refresh_age_minutes
-                        """
-                    )
-                )
-                .mappings()
-                .first()
-                or {}
-            )
-    except Exception as exc:  # pragma: no cover - defensive health endpoint guard
-        return DataHealthCheckResult(
-            check_id=check_id,
-            title=title,
-            status="fail",
-            severity="red",
-            summary="Customer read model freshness check could not read the live projection tables.",
-            evidence={"error": type(exc).__name__, "message": str(exc)[:300]},
-            remediation="Verify customer read model migrations and DATABASE_URL read access.",
-        )
-
-    list_count = int(row.get("list_count") or 0)
-    detail_count = int(row.get("detail_count") or 0)
-    refresh_state_present = bool(row.get("refresh_state_present"))
-    refresh_source_count = int(row.get("refresh_source_count") or 0)
-    refresh_target_count = int(row.get("refresh_target_count") or 0)
-    timeline_event_count = int(row.get("timeline_event_count") or 0)
-    timeline_duplicate_event_id_count = int(row.get("timeline_duplicate_event_id_count") or 0)
-    refresh_age_minutes = float(row.get("refresh_age_minutes") or 0)
-    violations = []
-    if list_count <= 0:
-        violations.append("customer_list_index_next is empty")
-    if detail_count <= 0:
-        violations.append("customer_detail_snapshot_next is empty")
-    if list_count != detail_count:
-        violations.append(f"projection_count_mismatch={list_count}:{detail_count}")
-    if not refresh_state_present:
-        violations.append("customer read model has no successful managed refresh")
-    if refresh_state_present and refresh_target_count != list_count:
-        violations.append(f"refresh_target_count={refresh_target_count} does not match list_count={list_count}")
-    if refresh_state_present and refresh_source_count != refresh_target_count:
-        violations.append(f"refresh_count_mismatch={refresh_source_count}:{refresh_target_count}")
-    if timeline_duplicate_event_id_count > 0:
-        violations.append(f"timeline_duplicate_event_id_count={timeline_duplicate_event_id_count}")
-    evidence = {
-        "list_count": list_count,
-        "detail_count": detail_count,
-        "refresh_state_present": refresh_state_present,
-        "refresh_source_count": refresh_source_count,
-        "refresh_target_count": refresh_target_count,
-        "timeline_event_count": timeline_event_count,
-        "timeline_duplicate_event_id_count": timeline_duplicate_event_id_count,
-        "refresh_age_minutes": refresh_age_minutes,
-        "freshness_policy": "source_change_lag",
-        "wall_clock_age_is_diagnostic": True,
-    }
-    if violations:
-        return DataHealthCheckResult(
-            check_id=check_id,
-            title=title,
-            status="fail",
-            severity="red",
-            summary="Customer read model projections are empty or inconsistent.",
-            evidence={**evidence, "violations": violations},
-            remediation="Inspect the event-driven refresh intent and projection consumer; source-change lag is enforced by customer_360_freshness_guard.",
-        )
-    return DataHealthCheckResult(
-        check_id=check_id,
-        title=title,
-        status="ok",
-        severity="green",
-        summary="Customer read model projections are populated and internally consistent.",
-        evidence=evidence,
-        remediation="",
+    return projection_freshness_customer_read_model(
+        database_schema_available=database_schema_available,
+        get_session_factory=get_session_factory,
     )
 
 
@@ -720,6 +609,7 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
         row.get("refund_not_enough_business_rejection_count") or 0
     )
     expected_contact_absence_count = int(row.get("expected_contact_absence_count") or 0)
+    private_message_contact_absence_count = int(row.get("private_message_contact_absence_count") or 0)
     pre_cutover_deferred_identity_count, post_cutover_recoverable_identity_count = int(row.get("pre_cutover_deferred_identity_count") or 0), int(row.get("post_cutover_recoverable_identity_count") or 0)
     violations = []
     if failed_terminal_count > 0:
@@ -790,6 +680,17 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
             "strict_provenance_required": True,
         },
         "external_contact_relationship_absent": {"count": expected_contact_absence_count, "excluded_from_business_health": True, "provider_boundary_crossed": True, "provider_success_claimed": False, "replay_prohibited": True, "strict_provenance_required": True},
+        "private_message_contact_relationship_absent": {
+            "count": private_message_contact_absence_count,
+            "process_outcome": "completed",
+            "business_outcome": "rejected",
+            "business_reason_code": "external_contact_relationship_absent",
+            "excluded_from_system_health_failures": True,
+            "provider_boundary_crossed": True,
+            "provider_success_claimed": False,
+            "replay_prohibited": True,
+            "strict_provenance_required": True,
+        },
         "pre_cutover_deferred_identity_adoption": {
             "eligible_count": pre_cutover_deferred_identity_count, "excluded_from_business_health": True,
             "provider_boundary_crossed": False, "pending_generation_1_adoption": True,

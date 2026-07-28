@@ -4,6 +4,7 @@ from aicrm_next.platform.shared.queue_provenance import (
     external_contact_relationship_absent_terminal_sql,
     post_cutover_identity_recovery_predicate_sql,
     pre_provider_identity_adoption_predicate_sql,
+    private_message_contact_relationship_absent_terminal_sql,
 )
 
 WELCOME_EFFECT_TYPE = "wecom.welcome_message.send"
@@ -639,6 +640,8 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                        AS refund_not_enough_business_rejection,
                    ({external_contact_relationship_absent_terminal_sql(job_alias="job")})
                        AS expected_contact_absence,
+                   ({private_message_contact_relationship_absent_terminal_sql(job_alias="job")})
+                       AS private_message_contact_absence,
                    EXISTS (
                        SELECT 1
                        FROM crm_user_identity_resolution_queue recovery_identity_queue
@@ -674,6 +677,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                   AND NOT acknowledged_refund_not_enough
                   AND NOT refund_not_enough_business_rejection
                   AND NOT expected_contact_absence
+                  AND NOT private_message_contact_absence
                   AND status = 'failed_terminal'
                   AND updated_at >= CURRENT_TIMESTAMP - make_interval(hours => {lookback_hours})
             ) AS recent_failed_terminal_count,
@@ -764,6 +768,9 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                   AND status = 'failed_terminal'
             ) AS refund_not_enough_business_rejection_count,
             COUNT(*) FILTER (WHERE expected_contact_absence) AS expected_contact_absence_count,
+            COUNT(*) FILTER (
+                WHERE private_message_contact_absence
+            ) AS private_message_contact_absence_count,
             COUNT(*) FILTER (
                 WHERE post_cutover_recoverable_identity AND status = 'blocked'
             ) AS post_cutover_recoverable_identity_count,

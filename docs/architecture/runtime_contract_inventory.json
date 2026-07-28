@@ -419,37 +419,37 @@
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/insights/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_BROADCAST_BLOCKED_MAX_COUNT",
-      "line": 40
+      "line": 41
     },
     {
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/insights/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_BROADCAST_RETRYABLE_DUE_MAX_COUNT",
-      "line": 45
+      "line": 46
     },
     {
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/insights/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_BROADCAST_TERMINAL_LOOKBACK_HOURS",
-      "line": 52
+      "line": 53
     },
     {
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/insights/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_RETRYABLE_DUE_MAX_COUNT",
-      "line": 58
+      "line": 59
     },
     {
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/insights/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS",
-      "line": 65
+      "line": 66
     },
     {
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/insights/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_PROJECTION_FRESHNESS_MAX_MINUTES",
-      "line": 35
+      "line": 36
     },
     {
       "accessor": "managed_runtime_bool",
