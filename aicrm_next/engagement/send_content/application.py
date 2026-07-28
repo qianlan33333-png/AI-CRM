@@ -62,6 +62,9 @@ def normalize_send_content_package(
     }
     if dynamic_card is not None:
         normalized["dynamic_miniprogram_card"] = dynamic_card
+    attachment_count = len(image_ids) + len(miniprogram_ids) + len(attachment_ids) + len(group_invite_ids) + int(dynamic_card is not None)
+    if attachment_count > 9:
+        raise ContractError("内容包附件总数不能超过 9 个")
     if require_body and not any([content_text, image_ids, miniprogram_ids, attachment_ids, group_invite_ids, dynamic_card]):
         raise ContractError("内容包不能为空，请填写文本或选择素材")
     return normalized

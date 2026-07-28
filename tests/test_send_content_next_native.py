@@ -67,6 +67,25 @@ def test_send_content_validate_rejects_non_positive_or_boolean_ids(client) -> No
     assert "正整数" in response.json()["error"]
 
 
+def test_send_content_validate_rejects_more_than_nine_total_attachments(client) -> None:
+    response = client.post(
+        "/api/admin/send-content/validate",
+        json={
+            "content_package": {
+                "image_library_ids": [1, 2, 3],
+                "miniprogram_library_ids": [4],
+                "attachment_library_ids": [5, 6, 7, 8, 9],
+                "group_invite_library_ids": [10],
+            },
+            "require_body": False,
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["ok"] is False
+    assert "总数不能超过 9 个" in response.json()["error"]
+
+
 def test_send_content_preview_and_material_picker_are_local_only(client) -> None:
     preview_response = client.post(
         "/api/admin/send-content/preview",

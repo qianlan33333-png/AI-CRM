@@ -38,10 +38,12 @@ def _external_effect_reconcile(*, dry_run, operator, limit, now):
 
 def _campaign_plan(*, dry_run, operator, limit, now):
     del operator
+    from aicrm_next.campaign_preparation_composition import configure_campaign_preparation_dependencies
     from aicrm_next.automation.background_jobs.broadcast_queue_worker import (
         run_broadcast_queue_worker,
     )
 
+    configure_campaign_preparation_dependencies()
     return run_broadcast_queue_worker(
         dry_run=bool(dry_run),
         limit=int(limit),

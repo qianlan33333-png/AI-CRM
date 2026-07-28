@@ -461,7 +461,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/automation/background_jobs/broadcast_queue_worker.py",
       "key": "AICRM_DYNAMIC_MINIPROGRAM_CARD_V1_ENABLED",
-      "line": 834
+      "line": 882
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -563,7 +563,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/automation/background_jobs/broadcast_queue_worker.py",
       "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS",
-      "line": 720
+      "line": 768
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -593,7 +593,7 @@
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform/platform_foundation/external_effects/adapters.py",
       "key": "AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES",
-      "line": 73
+      "line": 74
     },
     {
       "accessor": "declared_runtime_environment_key",
@@ -611,7 +611,7 @@
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform/platform_foundation/external_effects/adapters.py",
       "key": "AICRM_EXTERNAL_EFFECT_PAYMENT_EXECUTE",
-      "line": 73
+      "line": 74
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -647,13 +647,13 @@
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform/platform_foundation/external_effects/adapters.py",
       "key": "AICRM_EXTERNAL_EFFECT_WEBHOOK_EXECUTE",
-      "line": 73
+      "line": 74
     },
     {
       "accessor": "runtime_setting",
       "file": "aicrm_next/platform/platform_foundation/external_effects/adapters.py",
       "key": "AICRM_EXTERNAL_EFFECT_WEBHOOK_TIMEOUT_SECONDS",
-      "line": 359
+      "line": 360
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -2321,13 +2321,13 @@
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/automation/background_jobs/broadcast_queue_worker.py",
       "key": "BROADCAST_QUEUE_LEASE_SECONDS",
-      "line": 1107
+      "line": 1207
     },
     {
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/automation/background_jobs/broadcast_queue_worker.py",
       "key": "BROADCAST_QUEUE_RETRY_DELAY_SECONDS",
-      "line": 349
+      "line": 397
     },
     {
       "accessor": "declared_runtime_setting_key",

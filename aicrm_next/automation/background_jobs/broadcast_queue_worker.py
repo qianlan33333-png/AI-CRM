@@ -8,6 +8,7 @@ from typing import Any, Callable, Protocol
 
 from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
 from aicrm_next.platform.platform_foundation.external_effects import (
+    WECOM_MEDIA_UPLOAD,
     WECOM_MESSAGE_GROUP_SEND,
     WECOM_MESSAGE_PRIVATE_SEND,
 )
@@ -49,6 +50,7 @@ class BroadcastQueueRepository(Protocol):
 
 
 _dynamic_miniprogram_attachment_resolver: Callable[[dict[str, Any]], dict[str, Any]] | None = None
+_content_package_attachment_resolver: Callable[[dict[str, Any]], dict[str, Any]] | None = None
 
 
 def configure_dynamic_miniprogram_attachment_resolver(
@@ -56,6 +58,13 @@ def configure_dynamic_miniprogram_attachment_resolver(
 ) -> None:
     global _dynamic_miniprogram_attachment_resolver
     _dynamic_miniprogram_attachment_resolver = resolver
+
+
+def configure_content_package_attachment_resolver(
+    resolver: Callable[[dict[str, Any]], dict[str, Any]] | None,
+) -> None:
+    global _content_package_attachment_resolver
+    _content_package_attachment_resolver = resolver
 
 
 class SafeSkippedBroadcastDispatcher:
@@ -87,13 +96,14 @@ class SafeSkippedBroadcastDispatcher:
     def _plan_private_effects(self, job: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
         payload = _with_cloud_plan_recipient_message(payload)
         try:
-            payload = _with_dynamic_miniprogram_attachment(payload)
+            payload = _with_content_package_attachments(payload)
         except Exception as exc:
+            error_code = _text(getattr(exc, "code", ""))
             return {
                 "ok": False,
                 "status": "failed_retryable" if bool(getattr(exc, "retryable", False)) else "failed_terminal",
-                "failure_type": _text(getattr(exc, "code", "")) or "material_resolve_failed",
-                "error": _text(getattr(exc, "code", "")) or "material_resolve_failed",
+                "failure_type": error_code or "material_resolve_failed",
+                "error": error_code or _text(exc) or "material_resolve_failed",
                 "side_effect_executed": bool(getattr(exc, "provider_call_executed", False)),
                 "provider_result_received": bool(getattr(exc, "provider_result_received", False)),
             }
@@ -122,6 +132,7 @@ class SafeSkippedBroadcastDispatcher:
                 "side_effect_executed": False,
                 "provider_result_received": False,
             }
+        material_uploads = [item for item in _json_list(payload.pop("_material_uploads", [])) if isinstance(item, dict)]
         effect_plan_requests: list[dict[str, Any]] = []
         for target in external_userids:
             effect_plan_requests.append(
@@ -149,6 +160,40 @@ class SafeSkippedBroadcastDispatcher:
                     },
                     idempotency_suffix=f"private:{target}",
                     ordering_key=f"external_contact:{target}",
+                    status="planned" if material_uploads else "queued",
+                )
+            )
+        for upload in material_uploads:
+            material_key = _text(upload.get("material_key"))
+            material_kind = _text(upload.get("material_kind"))
+            material_id = int_value(upload.get("material_id"))
+            upload_kind = _text(upload.get("upload_kind"))
+            effect_plan_requests.append(
+                _effect_plan_request(
+                    job=job,
+                    effect_type=WECOM_MEDIA_UPLOAD,
+                    adapter_name="wecom_media_upload",
+                    operation="refresh_temporary_media",
+                    target_type="media_library_material",
+                    target_id=f"{material_kind}:{material_id}:{upload_kind}",
+                    payload={
+                        "material_key": material_key,
+                        "material_kind": material_kind,
+                        "material_id": material_id,
+                        "upload_kind": upload_kind,
+                        "force_refresh": False,
+                        "broadcast_job_id": int_value(job.get("id")),
+                    },
+                    payload_summary={
+                        "broadcast_job_id": int_value(job.get("id")),
+                        "material_key": material_key,
+                        "material_kind": material_kind,
+                        "material_id": material_id,
+                    },
+                    idempotency_suffix=f"material:{material_key}",
+                    ordering_key=f"broadcast_material:{int_value(job.get('id'))}:{material_key}",
+                    business_type="broadcast_material_dependency",
+                    lane="wecom_media",
                 )
             )
         effect_ids = self._plan_for_injected_repository(effect_plan_requests)
@@ -158,7 +203,7 @@ class SafeSkippedBroadcastDispatcher:
             "task_type": "broadcast_job/external_effect_delegate",
             "external_effect_job_ids": effect_ids,
             "effect_plan_requests": [] if effect_ids else effect_plan_requests,
-            "target_count": len(effect_plan_requests),
+            "target_count": len(external_userids),
             "side_effect_executed": False,
             "provider_result_received": False,
             "request_payload": {"broadcast_job_id": int_value(job.get("id"))},
@@ -233,6 +278,9 @@ def _effect_plan_request(
     payload_summary: dict[str, Any],
     idempotency_suffix: str,
     ordering_key: str,
+    business_type: str = "broadcast_job",
+    status: str = "queued",
+    lane: str = "wecom_bulk",
 ) -> dict[str, Any]:
     job_id = int_value(job.get("id"))
     return {
@@ -241,7 +289,7 @@ def _effect_plan_request(
         "operation": operation,
         "target_type": target_type,
         "target_id": target_id,
-        "business_type": "broadcast_job",
+        "business_type": business_type,
         "business_id": str(job_id),
         "payload": payload,
         "payload_summary": payload_summary,
@@ -254,10 +302,10 @@ def _effect_plan_request(
         ),
         "source_module": "background_jobs.broadcast_effect_delegate",
         "source_command_id": str(job_id),
-        "status": "queued",
+        "status": status,
         "idempotency_key": f"broadcast-effect:{job_id}:{idempotency_suffix}",
         "parent_execution_id": _text(job.get("execution_id")),
-        "lane": "wecom_bulk",
+        "lane": lane,
         "ordering_key": ordering_key,
         "fairness_key": f"broadcast:{_text(job.get('batch_key')) or job_id}",
     }
@@ -849,8 +897,60 @@ def _with_dynamic_miniprogram_attachment(payload: dict[str, Any]) -> dict[str, A
 
 
 def _resolve_private_attachments(content_package: dict[str, Any]) -> list[dict[str, Any]]:
-    del content_package
-    raise RuntimeError("retired_direct_broadcast_material_resolution_use_external_effect")
+    resolver = _content_package_attachment_resolver
+    if resolver is None:
+        raise ValueError("content_package_attachment_resolver_not_configured")
+    plan = resolver(content_package)
+    return [dict(item) for item in _json_list(plan.get("attachments")) if isinstance(item, dict)]
+
+
+def _with_content_package_attachments(payload: dict[str, Any]) -> dict[str, Any]:
+    hydrated = dict(payload)
+    content_package = _extract_private_content_package(hydrated)
+    direct = _json_list(hydrated.get("attachments")) or _json_list(hydrated.get("attachments_json"))
+    has_library_materials = any(
+        _json_list(content_package.get(field))
+        for field in (
+            "image_library_ids",
+            "miniprogram_library_ids",
+            "attachment_library_ids",
+            "group_invite_library_ids",
+        )
+    ) or isinstance(content_package.get("dynamic_miniprogram_card"), dict)
+    if not has_library_materials:
+        if direct:
+            attachments = _dedupe_private_attachments(direct)
+            if len(attachments) > 9:
+                raise ValueError("private_message_attachments_exceed_limit")
+            hydrated["attachments"] = attachments
+        return hydrated
+
+    resolver = _content_package_attachment_resolver
+    if resolver is None:
+        raise ValueError("content_package_attachment_resolver_not_configured")
+    material_plan = resolver(content_package)
+    resolved = [dict(item) for item in _json_list(material_plan.get("attachments")) if isinstance(item, dict)]
+    attachments = _dedupe_private_attachments([*direct, *resolved])
+    if len(attachments) > 9:
+        raise ValueError("private_message_attachments_exceed_limit")
+    result = dict(hydrated)
+    result["attachments"] = attachments
+    result["_material_uploads"] = [dict(item) for item in _json_list(material_plan.get("uploads")) if isinstance(item, dict)]
+    return result
+
+
+def _dedupe_private_attachments(attachments: list[Any]) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for item in attachments:
+        if not isinstance(item, dict):
+            raise ValueError("private_message_attachment_must_be_object")
+        key = json.dumps(item, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(dict(item))
+    return result
 
 
 def _normalize_private_attachments_for_wecom(attachments: list[dict[str, Any]]) -> list[dict[str, Any]]:

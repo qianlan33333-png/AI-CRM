@@ -57,6 +57,15 @@ class ExternalEffectRuntimeWritePort(Protocol):
         available_at_mode: str,
     ) -> int | None: ...
 
+    def block_planned_sqlalchemy(
+        self,
+        executor: Any,
+        *,
+        job_id: int,
+        error_code: str,
+        error_message: str,
+    ) -> dict[str, Any] | None: ...
+
     def claim_dbapi(
         self,
         executor: Any,
