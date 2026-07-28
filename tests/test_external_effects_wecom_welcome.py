@@ -100,6 +100,42 @@ def test_private_external_effect_preserves_known_provider_result_without_target_
     assert "wm_test" not in str(result.response_summary)
 
 
+def test_private_external_effect_rejects_unresolved_material_dependency(monkeypatch) -> None:
+    monkeypatch.delenv("AICRM_WECOM_PROVIDER_TARGET_POLICY", raising=False)
+    provider_calls = []
+
+    class Provider:
+        def create_private_message_task(self, payload: dict, *, idempotency_key: str = "") -> dict:
+            provider_calls.append(payload)
+            return {"ok": True, "side_effect_executed": True, "result": {"errcode": 0, "msgid": "unexpected"}}
+
+    job = ExternalEffectJob(
+        id=8,
+        effect_type=WECOM_MESSAGE_PRIVATE_SEND,
+        adapter_name="wecom_private_message",
+        operation="send_private_message",
+        target_type="external_contact",
+        target_id="wm_test",
+        business_type="broadcast_job",
+        business_id="8",
+        idempotency_key="broadcast-8",
+        execution_mode="execute",
+        payload_json={
+            "channel": "wecom_private",
+            "owner_userid": "HuangYouCan",
+            "external_userids": ["wm_test"],
+            "attachments": [{"msgtype": "image", "image": {"media_dependency_key": "image:12:image"}}],
+        },
+    )
+
+    result = WeComPrivateMessageAdapter(adapter_factory=lambda: Provider()).dispatch(job)
+
+    assert result.status == "failed_terminal"
+    assert result.error_code == "unresolved_material_dependency"
+    assert result.real_external_call_executed is False
+    assert provider_calls == []
+
+
 def _plan_welcome_job(
     *,
     repo=None,

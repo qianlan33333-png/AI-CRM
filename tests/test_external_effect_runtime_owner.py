@@ -79,6 +79,7 @@ def test_external_effect_owner_supports_operator_and_graph_mutations() -> None:
     request_cancel = _SQLAlchemyExecutor(_Result(rows=[71]))
     cancel = _SQLAlchemyExecutor(_Result(rows=[_row("cancelled")]))
     release = _SQLAlchemyExecutor(_Result(scalar=71))
+    block = _SQLAlchemyExecutor(_Result(row=_row("blocked")))
 
     assert port.make_eligible_now_sqlalchemy(
         immediate,
@@ -116,12 +117,20 @@ def test_external_effect_owner_supports_operator_and_graph_mutations() -> None:
         payload_summary_json='{"dependencies_resolved":true}',
         available_at_mode="scheduled",
     ) == 71
+    assert port.block_planned_sqlalchemy(
+        block,
+        job_id=71,
+        error_code="dependency_failed",
+        error_message="material upload failed",
+    ) == _row("blocked")
 
     assert "provider_call_started_at IS NULL" in immediate.calls[0][0]
     assert "row_version::text = :expected_version" in retry.calls[0][0]
     assert request_cancel.calls[0][1]["job_ids"] == [71, 72]
     assert "external_effect_attempt" in cancel.calls[0][0]
     assert "available_at = scheduled_at" in release.calls[0][0]
+    assert "status = 'blocked'" in block.calls[0][0]
+    assert "provider_call_started_at IS NULL" in block.calls[0][0]
 
 
 def test_external_effect_owner_supports_claim_and_heartbeat_without_commit() -> None:

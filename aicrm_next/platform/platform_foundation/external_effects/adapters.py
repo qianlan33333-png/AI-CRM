@@ -49,6 +49,7 @@ from .wecom_canary_policy import (
     wecom_canary_job_gate_error,
     wecom_canary_policy_snapshot,
 )
+from .wecom_attachment_contract import wecom_provider_attachment_ready
 
 LOW_RISK_WEBHOOK_EFFECT_TYPES = frozenset(
     {
@@ -663,6 +664,8 @@ class WeComPrivateMessageAdapter:
         has_attachments = isinstance(payload.get("attachments"), list) and bool(payload.get("attachments"))
         if not has_text and not has_attachments:
             return "payload_invalid"
+        if has_attachments and any(not wecom_provider_attachment_ready(item) for item in payload.get("attachments") or []):
+            return "unresolved_material_dependency"
         return _configured_wecom_provider_gate(job)
 
 
@@ -888,26 +891,9 @@ class WeComWelcomeMessageAdapter:
         has_attachments = isinstance(payload.get("attachments"), list) and bool(payload.get("attachments"))
         if not has_text and not has_attachments:
             return "payload_invalid"
-        if has_attachments and any(not self._provider_attachment_ready(item) for item in payload.get("attachments") or []):
+        if has_attachments and any(not wecom_provider_attachment_ready(item) for item in payload.get("attachments") or []):
             return "unresolved_material_dependency"
         return _configured_wecom_provider_gate(job)
-
-    @staticmethod
-    def _provider_attachment_ready(item: Any) -> bool:
-        if not isinstance(item, dict) or item.get("material_id") not in (None, ""):
-            return False
-        msgtype = str(item.get("msgtype") or "").strip()
-        nested = item.get(msgtype) if isinstance(item.get(msgtype), dict) else {}
-        encoded = str(item)
-        if "dependency_key" in encoded:
-            return False
-        if msgtype in {"image", "file"}:
-            return bool(str(nested.get("media_id") or "").strip())
-        if msgtype == "miniprogram":
-            return all(str(nested.get(field) or "").strip() for field in ("appid", "page", "title", "pic_media_id"))
-        if msgtype == "link":
-            return bool(str(nested.get("title") or "").strip() and str(nested.get("url") or "").strip())
-        return False
 
     def _wecom_payload(self, payload: dict[str, Any]) -> dict[str, Any]:
         result: dict[str, Any] = {"welcome_code": str(payload.get("welcome_code") or "").strip()}

@@ -283,8 +283,11 @@ repositories:
   aicrm_next/automation/background_jobs/broadcast_effect_repository.py:
     capability_owner: aicrm_next.automation.background_jobs.broadcast_queue_worker
     table_reads:
+      - attachment_library
       - cloud_broadcast_plan_recipients
       - external_effect_job
+      - image_library
+      - miniprogram_library
     table_writes: []
   aicrm_next/platform/platform_foundation/background_jobs/broadcast_job_write_repository.py:
     capability_owner: aicrm_next.automation.background_jobs

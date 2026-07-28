@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from .automation.background_jobs.broadcast_queue_worker import (
+    configure_content_package_attachment_resolver,
     configure_dynamic_miniprogram_attachment_resolver,
 )
 from .crm.identity_contact.campaign_admission_port import build_campaign_admission_port
 from .engagement.media_library.dynamic_card_port import build_dynamic_card_media_port
+from .engagement.media_library.broadcast_effect_port import build_broadcast_material_plan_port
 from .extensions.ai.ai_assist.campaign_preparations import (
     CampaignPreparationDependencies,
     configure_campaign_preparation_dependencies as _configure,
@@ -28,6 +30,7 @@ def configure_campaign_preparation_dependencies() -> None:
         )
     )
     configure_dynamic_miniprogram_attachment_resolver(media_port.resolve_attachment)
+    configure_content_package_attachment_resolver(build_broadcast_material_plan_port().plan)
 
 
 __all__ = ["configure_campaign_preparation_dependencies"]

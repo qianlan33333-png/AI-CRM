@@ -37,6 +37,8 @@ def normalize_miniprogram_attachment_payload(attachment_payload: dict[str, Any])
         raise ValueError("miniprogram attachments must include page")
     if not title:
         raise ValueError("miniprogram attachments must include title")
+    if len(title.encode("utf-8")) > 64:
+        raise ValueError("miniprogram attachments title exceeds 64 UTF-8 bytes")
     if not pic_media_id:
         raise ValueError("miniprogram attachments must include pic_media_id")
     return {

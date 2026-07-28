@@ -12,10 +12,12 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 ensure_repo_root_on_path()
 
 from aicrm_next.automation.background_jobs.broadcast_queue_worker import run_broadcast_queue_worker
+from aicrm_next.campaign_preparation_composition import configure_campaign_preparation_dependencies
 
 
 def run(*, batch_size: int | None = None, limit: int | None = None, dry_run: bool = False) -> dict:
     """Backward-compatible module entrypoint for existing smoke tests."""
+    configure_campaign_preparation_dependencies()
     selected_limit = limit if limit is not None else batch_size
     return run_broadcast_queue_worker(limit=int(selected_limit or 50), dry_run=bool(dry_run))
 
@@ -32,7 +34,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
-    payload = run_broadcast_queue_worker(limit=int(args.limit), dry_run=bool(args.dry_run))
+    payload = run(limit=int(args.limit), dry_run=bool(args.dry_run))
     print_json(payload)
     return 0 if payload.get("ok") else 1
 

@@ -295,6 +295,42 @@ class PostgresExternalEffectRuntimeWriteRepository:
         ).scalar_one_or_none()
         return int(row) if row is not None else None
 
+    def block_planned_sqlalchemy(
+        self,
+        executor: Any,
+        *,
+        job_id: int,
+        error_code: str,
+        error_message: str,
+    ) -> dict[str, Any] | None:
+        row = (
+            executor.execute(
+                text(
+                    """
+                    UPDATE external_effect_job
+                    SET status = 'blocked',
+                        last_error_code = :error_code,
+                        last_error_message = :error_message,
+                        completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP),
+                        row_version = row_version + 1,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = :job_id
+                      AND status = 'planned'
+                      AND provider_call_started_at IS NULL
+                    RETURNING *
+                    """
+                ),
+                {
+                    "job_id": int(job_id),
+                    "error_code": str(error_code or "").strip()[:200],
+                    "error_message": str(error_message or "").strip()[:1000],
+                },
+            )
+            .mappings()
+            .fetchone()
+        )
+        return dict(row) if row else None
+
     def claim_dbapi(
         self,
         executor: Any,
