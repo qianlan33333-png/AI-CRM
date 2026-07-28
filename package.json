@@ -3,15 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build:frontend": "tsc -p tsconfig.frontend.json",
-    "typecheck": "tsc -p tsconfig.frontend.json --noEmit",
     "test:frontend": "npm run test:frontend:all",
     "test:frontend:security": "node tests/frontend/admin_request_security.test.mjs",
     "test:frontend:coupons": "node tests/frontend/coupon_inline_scripts_syntax.test.mjs",
     "test:frontend:sidebar": "node tests/frontend/sidebar_progressive_loading.test.mjs",
-    "test:frontend:all": "npm run test:frontend:security && npm run test:frontend:coupons && npm run test:frontend:sidebar"
-  },
-  "devDependencies": {
-    "typescript": "5.9.3"
+    "test:frontend:service-period": "node tests/frontend/service_period_member_grid.test.mjs",
+    "test:frontend:service-period-sharing": "node tests/frontend/service_period_member_grid_sharing.test.mjs",
+    "test:frontend:all": "npm run test:frontend:security && npm run test:frontend:coupons && npm run test:frontend:sidebar && npm run test:frontend:service-period && npm run test:frontend:service-period-sharing"
   }
 }

@@ -25,7 +25,6 @@ jobs:
       python_tests: ${{ steps.scope.outputs.python_tests }}
       frontend_tests: ${{ steps.scope.outputs.frontend_tests }}
       needs_postgres: ${{ steps.scope.outputs.needs_postgres }}
-      needs_frontend_build: ${{ steps.scope.outputs.needs_frontend_build }}
       needs_full_ci: ${{ steps.scope.outputs.needs_full_ci }}
       force_full: ${{ steps.scope.outputs.force_full }}
       architecture_gate: ${{ steps.scope.outputs.architecture_gate }}
@@ -145,7 +144,7 @@ jobs:
 
   fast-frontend:
     needs: select
-    if: needs.select.outputs.frontend_tests != '' || needs.select.outputs.needs_frontend_build == 'true'
+    if: needs.select.outputs.frontend_tests != ''
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
@@ -161,13 +160,6 @@ jobs:
 
       - name: Install frontend dependencies
         run: npm ci
-
-      - name: Typecheck and build frontend
-        if: needs.select.outputs.needs_frontend_build == 'true'
-        run: |
-          npm run typecheck
-          npm run build:frontend
-          git diff --exit-code
 
       - name: Run scoped frontend tests
         if: needs.select.outputs.frontend_tests != ''

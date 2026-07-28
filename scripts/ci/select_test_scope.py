@@ -176,7 +176,6 @@ def _select(
         if path.strip()
     }
     high_risk_paths = manifest.get("high_risk_paths", [])
-    frontend_build_paths = manifest.get("frontend_build_paths", [])
     scopes_by_name = {str(scope.get("name")): scope for scope in scopes}
 
     matched_scopes: list[dict] = []
@@ -211,12 +210,6 @@ def _select(
         for path in changed_files
         for pattern in high_risk_paths
     )
-    needs_frontend_build = any(
-        _matches(path, pattern)
-        for path in changed_files
-        for pattern in frontend_build_paths
-    )
-
     python_tests = _unique(
         test
         for scope in matched_scopes
@@ -267,7 +260,6 @@ def _select(
         "python_tests": python_tests,
         "frontend_tests": frontend_tests,
         "needs_postgres": needs_postgres,
-        "needs_frontend_build": needs_frontend_build,
         "needs_full_ci": high_risk or scope_forces_full or force_full or bool(unmapped_deleted),
         "force_full": force_full,
         "architecture_gate": gate,
@@ -282,7 +274,6 @@ def _write_github_output(path: str, result: dict) -> None:
         "python_tests": " ".join(result["python_tests"]),
         "frontend_tests": " ".join(result["frontend_tests"]),
         "needs_postgres": str(result["needs_postgres"]).lower(),
-        "needs_frontend_build": str(result["needs_frontend_build"]).lower(),
         "needs_full_ci": str(result["needs_full_ci"]).lower(),
         "force_full": str(result["force_full"]).lower(),
         "architecture_gate": result["architecture_gate"],
@@ -340,7 +331,6 @@ def main(argv: list[str] | None = None) -> int:
         f"python_tests={len(result['python_tests'])}; "
         f"frontend_tests={len(result['frontend_tests'])}; "
         f"needs_postgres={str(result['needs_postgres']).lower()}; "
-        f"frontend_build={str(result['needs_frontend_build']).lower()}; "
         f"architecture_gate={result['architecture_gate']}; "
         f"needs_full_ci={str(result['needs_full_ci']).lower()}"
     )

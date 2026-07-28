@@ -35,7 +35,7 @@ def test_ci_fast_uses_selector_and_single_required_result() -> None:
     assert "needs.select.outputs.needs_postgres == 'true'" in source
     assert "needs.select.outputs.needs_postgres != 'true'" in source
     assert "needs.select.outputs.frontend_tests != ''" in source
-    assert "needs.select.outputs.needs_frontend_build == 'true'" in source
+    assert "needs_frontend_build" not in source
     assert "bash scripts/ci/run_architecture_gates.sh --mode" in source
     assert "dependency-audit:" in source
     assert "python -m pip_audit -r requirements.lock --require-hashes --progress-spinner=off" in source
@@ -90,8 +90,8 @@ def test_full_regression_owns_full_pytest_and_full_frontend() -> None:
     assert "python tools/check_critical_read_performance.py" in source
     assert "critical-read-performance.json" in source
     assert "npm audit --audit-level=high" in source
-    assert "npm run typecheck" in source
-    assert "npm run build:frontend" in source
+    assert "npm run typecheck" not in source
+    assert "npm run build:frontend" not in source
     assert "npm run test:frontend:all" in source
 
 
@@ -255,4 +255,8 @@ def test_frontend_scripts_are_split_for_scoped_ci() -> None:
     assert "\"test:frontend:security\"" in package_json
     assert "\"test:frontend:coupons\"" in package_json
     assert "\"test:frontend:sidebar\"" in package_json
+    assert "\"test:frontend:service-period\"" in package_json
+    assert "\"test:frontend:service-period-sharing\"" in package_json
+    assert "build:frontend" not in package_json
+    assert "typescript" not in package_json
     assert "test:frontend:push-center" not in package_json

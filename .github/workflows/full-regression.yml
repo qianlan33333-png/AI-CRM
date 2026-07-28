@@ -241,7 +241,4 @@ jobs:
         run: |
           npm ci
           npm audit --audit-level=high
-          npm run typecheck
-          npm run build:frontend
-          git diff --exit-code
           npm run test:frontend:all

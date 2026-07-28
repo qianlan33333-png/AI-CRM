@@ -1137,7 +1137,7 @@ def test_admin_config_page_change_selects_config_scope() -> None:
         "tests/test_support_admin_pages_native.py",
     )
 
-    assert result["matched_scopes"] == ["admin_config"]
+    assert result["matched_scopes"] == ["admin_config", "frontend_static"]
     assert result["unmatched_files"] == []
     assert "tests/test_admin_config_next.py" in result["python_tests"]
     assert "tests/test_operation_member_picker_frontend.py" in result["python_tests"]
@@ -1170,7 +1170,7 @@ def test_operation_member_picker_static_assets_select_admin_config_scope() -> No
         "tests/test_operation_member_picker_frontend.py",
     )
 
-    assert result["matched_scopes"] == ["admin_config"]
+    assert result["matched_scopes"] == ["admin_config", "frontend_static"]
     assert "tests/test_operation_member_picker_frontend.py" in result["python_tests"]
     assert result["needs_postgres"] is False
     assert result["architecture_gate"] == "fast"
@@ -1431,13 +1431,18 @@ def test_ci_manifest_only_references_existing_test_files() -> None:
     assert missing == []
 
 
-def test_frontend_typescript_change_runs_frontend_tests_and_build() -> None:
-    result = _select("frontend/admin/customer/customer_status.ts")
+def test_frontend_static_change_runs_all_frontend_tests_without_build() -> None:
+    result = _select("aicrm_next/app/admin_console/static/admin_console/cloud_plan_review.js")
 
-    assert "frontend_p1" in result["matched_scopes"]
-    assert "tests/frontend/admin_request_security.test.mjs" in result["frontend_tests"]
-    assert result["needs_frontend_build"] is True
-    assert result["python_tests"] == []
+    assert "frontend_static" in result["matched_scopes"]
+    assert result["frontend_tests"] == [
+        "tests/frontend/admin_request_security.test.mjs",
+        "tests/frontend/coupon_inline_scripts_syntax.test.mjs",
+        "tests/frontend/sidebar_progressive_loading.test.mjs",
+        "tests/frontend/service_period_member_grid.test.mjs",
+        "tests/frontend/service_period_member_grid_sharing.test.mjs",
+    ]
+    assert "needs_frontend_build" not in result
 
 
 def test_sidebar_workbench_change_selects_progressive_loading_behavior_test() -> None:

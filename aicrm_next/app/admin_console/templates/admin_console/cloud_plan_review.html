@@ -407,167 +407,9 @@
     display: block;
   }
 
-  .p1-ops-plan-panel {
-    display: grid;
-    gap: 14px;
-    margin-bottom: 18px;
-  }
-
-  .p1-ops-plan-banner,
-  .p1-ops-plan-evidence,
-  .p1-draft-shell {
-    border: 1px solid var(--plan-line);
-    border-radius: 8px;
-    background: #fff;
-    padding: 16px;
-  }
-
-  .p1-ops-plan-banner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    border-color: #fedf89;
-    background: #fffbeb;
-  }
-
-  .p1-ops-plan-banner h2,
-  .p1-ops-plan-evidence h2,
-  .p1-draft-shell__head h2,
-  .p1-closure-card h2 {
-    margin: 0 0 6px;
-    font-size: 15px;
-  }
-
-  .p1-ops-plan-banner p,
-  .p1-ops-plan-evidence p,
-  .p1-draft-shell__head p,
-  .p1-draft-shell-card p,
-  .p1-closure-card p {
-    margin: 0;
-    color: var(--plan-muted);
-  }
-
-  .p1-ops-plan-evidence__grid,
-  .p1-closure-fields {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-    margin: 0;
-  }
-
-  .p1-ops-plan-evidence__grid div,
-  .p1-closure-fields div {
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 8px;
-    min-width: 0;
-  }
-
-  .p1-ops-plan-evidence__grid dt,
-  .p1-closure-fields dt {
-    color: #6b7280;
-    font-size: 12px;
-    margin-bottom: 4px;
-  }
-
-  .p1-ops-plan-evidence__grid dd,
-  .p1-closure-fields dd {
-    margin: 0;
-    font-weight: 700;
-    overflow-wrap: anywhere;
-  }
-
-  .p1-closure-grid,
-  .p1-draft-shell__grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-  }
-
-  .p1-closure-card,
-  .p1-draft-shell-card {
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    background: #fff;
-    padding: 16px;
-    display: grid;
-    gap: 12px;
-  }
-
-  .p1-closure-card--success { border-color: #bbf7d0; }
-  .p1-closure-card--info { border-color: #bfdbfe; }
-  .p1-closure-card--warning { border-color: #fde68a; }
-  .p1-closure-card--danger { border-color: #fecaca; }
-
-  .p1-closure-card__head,
-  .p1-draft-shell-card__head {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .p1-closure-title-row {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-  }
-
-  .p1-closure-pill {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 24px;
-    padding: 3px 9px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 700;
-    white-space: nowrap;
-  }
-
-  .p1-closure-pill--success { color: #166534; background: #dcfce7; }
-  .p1-closure-pill--info { color: #1d4ed8; background: #dbeafe; }
-  .p1-closure-pill--warning { color: #92400e; background: #fef3c7; }
-  .p1-closure-pill--danger { color: #991b1b; background: #fee2e2; }
-  .p1-closure-pill--neutral { color: #374151; background: #f3f4f6; }
-
-  .p1-closure-guardrail,
-  .p1-drag-disabled-reason {
-    background: #f8fafc;
-    border-radius: 8px;
-    padding: 10px;
-  }
-
-  .p1-drag-handle {
-    color: #6b7280;
-    cursor: not-allowed;
-    font-weight: 900;
-    letter-spacing: 0;
-  }
-
-  .p1-drag-guardrails {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .p1-drag-guardrails code {
-    border-radius: 999px;
-    background: #eef2ff;
-    color: #3730a3;
-    padding: 2px 7px;
-    font-size: 12px;
-  }
-
   @media (max-width: 980px) {
     .cloud-plan-stats,
-    .cloud-plan-layout,
-    .p1-closure-grid,
-    .p1-draft-shell__grid,
-    .p1-ops-plan-evidence__grid,
-    .p1-closure-fields {
+    .cloud-plan-layout {
       grid-template-columns: 1fr;
     }
 
@@ -578,35 +420,6 @@
     .cloud-plan-row--head {
       display: none;
     }
-
-    .p1-ops-plan-banner {
-      align-items: flex-start;
-      flex-direction: column;
-    }
-  }
-
-  .p1-diagnostics-toggle {
-    margin-top: 16px;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    background: #fff;
-  }
-
-  .p1-diagnostics-toggle > summary {
-    cursor: pointer;
-    padding: 12px 14px;
-    color: #374151;
-    font-weight: 700;
-  }
-
-  .p1-diagnostics-toggle > summary span {
-    color: #6b7280;
-    font-weight: 500;
-    margin-left: 8px;
-  }
-
-  .p1-diagnostics-toggle .p1-ops-plan-panel {
-    padding: 0 14px 14px;
   }
 </style>
 {% endblock %}
@@ -619,55 +432,6 @@
   data-plan-id="{{ plan_id }}"
   data-admin-action-token="{{ admin_action_token }}"
 >
-  <script id="opsPlanP1StatusPayload" type="application/json">
-  {
-    "cards": [
-      {
-        "title": "Approval event",
-        "rawStatus": "pending",
-        "evidenceStatus": "EVIDENCE_COLLECTED",
-        "derivedStatus": "ops_plan_approved_event_created",
-        "evidenceId": "ops_plan.approved",
-        "summary": "Next-native cloud_plan approval 已生成 ops_plan.approved internal_event。",
-        "guardrail": "approval evidence 只表示事件存在，不代表下游发送完成。",
-        "route": "docs/reports/evidence/ops_plan_to_broadcast_next_native_cloud_plan_e2e_20260623.md"
-      },
-      {
-        "title": "Planner consumer",
-        "rawStatus": "planner_created_broadcast_job",
-        "evidenceStatus": "EVIDENCE_COLLECTED",
-        "derivedStatus": "planner_created_broadcast_job",
-        "evidenceId": "broadcast_task_planner_consumer",
-        "summary": "broadcast_task_planner_consumer succeeded，并幂等创建 broadcast_job:3644。",
-        "guardrail": "broadcast_job created 不等于 external-effect sent。",
-        "route": "docs/reports/evidence/ops_plan_to_broadcast_next_native_cloud_plan_e2e_20260623.md"
-      },
-      {
-        "title": "Downstream external effect",
-        "rawStatus": "external_effect_not_created",
-        "evidenceStatus": "EVIDENCE_COLLECTED",
-        "derivedStatus": "not_pass_90_plus_candidate",
-        "evidenceId": "external_effect_job:not_created",
-        "summary": "external_effect_job 尚未创建，real external call=false；最终状态不是 90%+ 候选。",
-        "guardrail": "缺下游 external effect evidence 不能渲染为 pass-complete。",
-        "route": "docs/reports/business_closure_final_p1_readiness_20260623.md"
-      }
-    ],
-    "evidenceSummary": {
-      "planId": "p0-1283-plan-20260615152503",
-      "planType": "cloud_plan",
-      "internalEvent": "ops_plan.approved",
-      "consumerName": "broadcast_task_planner_consumer",
-      "plannerResult": "planner_created_broadcast_job",
-      "broadcastJobId": "broadcast_job:3644",
-      "pushCenterStatus": "pending",
-      "downstreamStatus": "downstream_pending",
-      "externalEffectJob": "not_created",
-      "realExternalCallExecuted": false,
-      "finalStatus": "EVIDENCE_COLLECTED"
-    }
-  }
-  </script>
   {% if page_mode == "list" %}
   <section class="cloud-plan-toolbar" aria-label="计划筛选">
     <div class="cloud-plan-filters">
@@ -818,13 +582,6 @@
   </aside>
   {% endif %}
 
-  <details class="p1-diagnostics-toggle" data-p1-diagnostics="ops_plan" data-default-collapsed="true">
-    <summary>下游诊断状态 <span>broadcast_job / Push Center pending 证据，仅验收或管理员查看</span></summary>
-    <section id="opsPlanP1StatusApp" class="p1-ops-plan-panel" aria-label="P1 Ops Plan read-only status slice">
-      <div class="cloud-plan-loading">加载 P1 Ops Plan 下游状态...</div>
-    </section>
-  </details>
-
   <div class="cloud-plan-toast" data-plan-toast role="status" aria-live="polite"></div>
 </div>
 {% endblock %}
@@ -834,5 +591,4 @@
 <script src="{{ url_for('static', filename='admin_console/material_picker.js') }}?v=group-chat-direct-select-20260715"></script>
 <script src="{{ url_for('static', filename='admin_console/send_content_composer.js') }}?v=group-chat-selector-20260715"></script>
 <script src="{{ url_for('static', filename='admin_console/cloud_plan_review.js') }}?v=group-chat-selector-20260715"></script>
-<script type="module" src="{{ url_for('static', filename='admin_console/p1/ops_plan/ops_plan_overview.js') }}?v=p1-ops-plan-status-20260623"></script>
 {% endblock %}

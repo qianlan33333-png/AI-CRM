@@ -132,9 +132,10 @@
       "rationale": "The static rollout checker reads repository files instead of importing its protected PostgreSQL contract, so source conventions cannot discover that relationship."
     }
   ],
-  "frontend_build_paths": [
-    "frontend/admin/**/*.ts",
-    "tsconfig.frontend.json",
+  "frontend_static_paths": [
+    "aicrm_next/**/static/**/*",
+    "aicrm_next/**/templates/**/*",
+    "tests/frontend/**",
     "package.json",
     "package-lock.json"
   ],

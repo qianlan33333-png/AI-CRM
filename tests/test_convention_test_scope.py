@@ -174,13 +174,29 @@ def test_deleted_file_uses_safe_full_regression_fallback(tmp_path: Path) -> None
     assert result["needs_full_ci"] is True
 
 
+def test_frontend_static_change_selects_all_native_frontend_tests(tmp_path: Path) -> None:
+    _write(tmp_path, "tests/frontend/first.test.mjs", "// native frontend contract\n")
+    _write(tmp_path, "tests/frontend/second.test.mjs", "// native frontend contract\n")
+
+    result = select_convention_scope(
+        _policy(),
+        ["aicrm_next/app/admin_console/static/admin_console/cloud_plan_review.js"],
+        root=tmp_path,
+    )
+
+    assert result["frontend_tests"] == [
+        "tests/frontend/first.test.mjs",
+        "tests/frontend/second.test.mjs",
+    ]
+    assert "needs_frontend_build" not in result
+
+
 def test_shadow_report_exposes_differences_without_becoming_authoritative() -> None:
     legacy = {
         "matched_scopes": ["data_health"],
         "python_tests": ["tests/test_data_health.py", "tests/test_global_contract.py"],
         "frontend_tests": [],
         "needs_postgres": False,
-        "needs_frontend_build": False,
         "needs_full_ci": True,
         "architecture_gate": "full",
     }
@@ -191,7 +207,6 @@ def test_shadow_report_exposes_differences_without_becoming_authoritative() -> N
         "python_tests": ["tests/test_data_health.py"],
         "frontend_tests": [],
         "needs_postgres": False,
-        "needs_frontend_build": False,
         "needs_full_ci": False,
         "architecture_gate": "fast",
         "high_risk_reasons": [],

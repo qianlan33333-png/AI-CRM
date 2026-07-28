@@ -76,12 +76,6 @@
     "deploy/**",
     "docs/architecture/*manifest*"
   ],
-  "frontend_build_paths": [
-    "frontend/admin/**/*.ts",
-    "tsconfig.frontend.json",
-    "package.json",
-    "package-lock.json"
-  ],
   "exclusive_scope_overrides": [
     {
       "paths": [
@@ -1713,17 +1707,20 @@
       "architecture_gate": "fast"
     },
     {
-      "name": "frontend_p1",
+      "name": "frontend_static",
       "paths": [
-        "frontend/admin/**",
+        "aicrm_next/**/static/**/*",
+        "aicrm_next/**/templates/**/*",
         "tests/frontend/**",
-        "tsconfig.frontend.json",
         "package.json",
         "package-lock.json"
       ],
       "frontend_tests": [
         "tests/frontend/admin_request_security.test.mjs",
-        "tests/frontend/sidebar_progressive_loading.test.mjs"
+        "tests/frontend/coupon_inline_scripts_syntax.test.mjs",
+        "tests/frontend/sidebar_progressive_loading.test.mjs",
+        "tests/frontend/service_period_member_grid.test.mjs",
+        "tests/frontend/service_period_member_grid_sharing.test.mjs"
       ],
       "needs_postgres": false,
       "architecture_gate": "none"

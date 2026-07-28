@@ -64,8 +64,6 @@ def _path_context(path: str) -> str:
     parts = _normalize_path(path).split("/")
     if parts[0] == "aicrm_next" and len(parts) >= 2:
         return parts[1] if len(parts) >= 3 else Path(parts[1]).stem
-    if parts[:2] == ["frontend", "admin"] and len(parts) >= 3:
-        return parts[2]
     return ""
 
 
@@ -142,11 +140,10 @@ def _is_docs_only(path: str, policy: dict) -> bool:
 
 
 def _is_known_runtime_path(path: str) -> bool:
-    return path.startswith(("aicrm_next/", "scripts/", "tools/", "frontend/", "tests/")) or path in {
+    return path.startswith(("aicrm_next/", "scripts/", "tools/", "tests/")) or path in {
         "package.json",
         "package-lock.json",
         "pyproject.toml",
-        "tsconfig.frontend.json",
     }
 
 
@@ -187,6 +184,12 @@ def select_convention_scope(
 
     python_tests = _unique(python_tests)
     frontend_tests = _unique(frontend_tests)
+    if any(
+        _matches(path, pattern)
+        for path in changed_files
+        for pattern in policy.get("frontend_static_paths", [])
+    ):
+        frontend_tests = list(frontend_sources)
     selected_python_source = "\n".join(python_sources.get(path, "") for path in python_tests)
     if any(
         str(indicator).casefold() in selected_python_source
@@ -196,11 +199,6 @@ def select_convention_scope(
     needs_postgres = any(
         str(indicator).casefold() in selected_python_source
         for indicator in policy.get("postgres_indicators", [])
-    )
-    needs_frontend_build = any(
-        _matches(path, pattern)
-        for path in changed_files
-        for pattern in policy.get("frontend_build_paths", [])
     )
     fallback_reasons: list[str] = []
     if deleted_files:
@@ -226,7 +224,6 @@ def select_convention_scope(
         "python_tests": python_tests,
         "frontend_tests": frontend_tests,
         "needs_postgres": needs_postgres,
-        "needs_frontend_build": needs_frontend_build,
         "needs_full_ci": needs_full_ci,
         "architecture_gate": architecture_gate,
         "high_risk_reasons": high_risk_reasons,
@@ -290,7 +287,6 @@ def build_shadow_report(
         "python_tests": legacy.get("python_tests", []),
         "frontend_tests": legacy.get("frontend_tests", []),
         "needs_postgres": legacy.get("needs_postgres", False),
-        "needs_frontend_build": legacy.get("needs_frontend_build", False),
         "needs_full_ci": legacy.get("needs_full_ci", False),
         "architecture_gate": legacy.get("architecture_gate", "none"),
     }
