@@ -16,8 +16,14 @@ SOURCE_SHA = "a" * 40
 AI_AUDIENCE_RECOVERY_PATHS = {
     ".github/workflows/ai-audience-production-diagnostics.yml",
     "aicrm_next/extensions/ai/ai_audience_ops/refresh_intents.py",
+    "aicrm_next/extensions/ai/ai_audience_ops/refresh_recovery.py",
     "tests/test_ai_audience_production_diagnostics_workflow.py",
     "tests/test_ai_audience_refresh_intents_postgres.py",
+    "tests/test_ai_audience_runtime_hotfixes.py",
+    "tests/test_external_effect_runtime_owner_postgres.py",
+    "tests/test_internal_event_consumer_run_owner_postgres.py",
+    "tests/test_internal_event_outbox_runtime_owner_postgres.py",
+    "tests/test_webhook_inbox_runtime_owner_postgres.py",
 }
 
 
