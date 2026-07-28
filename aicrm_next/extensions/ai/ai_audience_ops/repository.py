@@ -198,7 +198,15 @@ class AudienceRepository:
     def replace_dependencies(self, package_id: int, version_id: int, dependencies: list[str]) -> None:
         raise NotImplementedError
 
-    def execute_readonly_query(self, sql: str, params: dict[str, Any], *, limit: int, timeout_seconds: int) -> list[dict[str, Any]]:
+    def execute_readonly_query(
+        self,
+        sql: str,
+        params: dict[str, Any],
+        *,
+        limit: int,
+        timeout_seconds: int,
+        serialization_lock_key: int | None = None,
+    ) -> list[dict[str, Any]]:
         raise NotImplementedError
 
     def explain_readonly_query(self, sql: str, params: dict[str, Any], *, timeout_seconds: int) -> Any:
@@ -393,18 +401,36 @@ class SQLAlchemyAudienceRepository(AudiencePackageRepositoryMixin, AudienceRepos
             )
             session.commit()
 
-    def execute_readonly_query(self, sql: str, params: dict[str, Any], *, limit: int, timeout_seconds: int) -> list[dict[str, Any]]:
+    def execute_readonly_query(
+        self,
+        sql: str,
+        params: dict[str, Any],
+        *,
+        limit: int,
+        timeout_seconds: int,
+        serialization_lock_key: int | None = None,
+    ) -> list[dict[str, Any]]:
         readonly_url = _text(
             startup_environment_setting("AICRM_AUDIENCE_READONLY_DATABASE_URL")
         )
         if not readonly_url:
             raise RuntimeError("audience_readonly_database_url_not_configured")
         session_factory = get_session_factory(database_url=readonly_url)
-        timeout_ms = max(1, min(int(timeout_seconds or 10), 120)) * 1000
+        timeout_ms = max(1, min(int(timeout_seconds or 10), 900)) * 1000
         bounded_limit = max(1, min(int(limit or 100), 100000))
         statement = f"SELECT * FROM ({sql}) AS ai_audience_query LIMIT :__ai_audience_limit"
         with session_factory() as session:
             session.execute(text(f"SET LOCAL statement_timeout = '{timeout_ms}ms'"))
+            if serialization_lock_key is not None:
+                # Daily packages can share expensive catalog views. Keep their
+                # read-only snapshots single-flight across every runtime
+                # process so parallel retries do not multiply database load.
+                # The transaction-scoped lock is released by rollback below,
+                # including when the query raises or times out.
+                session.execute(
+                    text("SELECT pg_advisory_xact_lock(:serialization_lock_key)"),
+                    {"serialization_lock_key": int(serialization_lock_key)},
+                )
             rows = session.execute(text(statement), {**dict(params or {}), "__ai_audience_limit": bounded_limit}).mappings().fetchall()
             session.rollback()
             return [_public_row(dict(row)) or {} for row in rows]

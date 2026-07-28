@@ -89,6 +89,16 @@ def test_internal_event_outbox_owner_runtime_claim_recovery_and_heartbeat(next_p
             "SELECT heartbeat_at FROM internal_event_outbox WHERE id = %s",
             (first.item_id,),
         ).fetchone()
+        recovery_count_before = int(
+            connection.execute(
+                """
+                SELECT COUNT(*) AS count
+                FROM queue_runtime_lease_recovery_event
+                WHERE queue_kind = 'internal_outbox' AND queue_row_id = %s
+                """,
+                (first.item_id,),
+            ).fetchone()["count"]
+        )
         connection.execute(
             "UPDATE internal_event_outbox SET lease_expires_at = CURRENT_TIMESTAMP - INTERVAL '1 second' WHERE id = %s",
             (first.item_id,),
@@ -106,16 +116,18 @@ def test_internal_event_outbox_owner_runtime_claim_recovery_and_heartbeat(next_p
             "SELECT status, attempt_count, locked_by FROM internal_event_outbox WHERE id = %s",
             (first.item_id,),
         ).fetchone()
-        recovery_count = connection.execute(
-            """
-            SELECT COUNT(*) AS count
-            FROM queue_runtime_lease_recovery_event
-            WHERE queue_kind = 'internal_outbox' AND queue_row_id = %s
-            """,
-            (first.item_id,),
-        ).fetchone()
+        recovery_count_after = int(
+            connection.execute(
+                """
+                SELECT COUNT(*) AS count
+                FROM queue_runtime_lease_recovery_event
+                WHERE queue_kind = 'internal_outbox' AND queue_row_id = %s
+                """,
+                (first.item_id,),
+            ).fetchone()["count"]
+        )
     assert row == {"status": "running", "attempt_count": 2, "locked_by": "outbox-owner-worker-2"}
-    assert recovery_count["count"] == 1
+    assert recovery_count_after == recovery_count_before + 1
 
 
 def test_internal_event_outbox_owner_immediate_command_keeps_audit_transaction(next_pg_schema) -> None:

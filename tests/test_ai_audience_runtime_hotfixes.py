@@ -7,9 +7,12 @@ from aicrm_next.extensions.ai.ai_audience_ops.constants import (
     AI_AUDIENCE_REFRESH_MAX_ROW_LIMIT,
 )
 from aicrm_next.extensions.ai.ai_audience_ops.refresh_service import (
+    AI_AUDIENCE_DAILY_REFRESH_QUERY_TIMEOUT_SECONDS,
+    AI_AUDIENCE_DAILY_REFRESH_SERIALIZATION_LOCK_KEY,
     AI_AUDIENCE_REFRESH_QUERY_TIMEOUT_SECONDS,
     AudienceRefreshService,
 )
+from aicrm_next.extensions.ai.ai_audience_ops.repository import SQLAlchemyAudienceRepository
 from aicrm_next.extensions.ai.ai_audience_ops.schemas import RefreshRequest
 from aicrm_next.extensions.ai.ai_audience_ops.simple_sql import compile_simple_sql
 from scripts.ops.ensure_ai_audience_external_api_env import ensure_allowed_prefixes
@@ -38,8 +41,57 @@ def test_ai_audience_refresh_query_timeout_allows_heavier_catalog_views() -> Non
     source = (ROOT / "aicrm_next/extensions/ai/ai_audience_ops/refresh_service.py").read_text(encoding="utf-8")
 
     assert AI_AUDIENCE_REFRESH_QUERY_TIMEOUT_SECONDS == 120
-    assert "timeout_seconds=AI_AUDIENCE_REFRESH_QUERY_TIMEOUT_SECONDS" in source
+    assert AI_AUDIENCE_DAILY_REFRESH_QUERY_TIMEOUT_SECONDS == 600
+    assert AI_AUDIENCE_DAILY_REFRESH_SERIALIZATION_LOCK_KEY > 0
+    assert "AI_AUDIENCE_DAILY_REFRESH_QUERY_TIMEOUT_SECONDS" in source
+    assert "AI_AUDIENCE_DAILY_REFRESH_SERIALIZATION_LOCK_KEY" in source
     assert "timeout_seconds=30" not in source
+
+
+def test_daily_readonly_query_uses_long_budget_and_transaction_lock(monkeypatch) -> None:
+    statements: list[tuple[str, dict]] = []
+
+    class Result:
+        def mappings(self):
+            return self
+
+        def fetchall(self):
+            return [{"identity_value": "opaque-test"}]
+
+    class Session:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def execute(self, statement, params=None):
+            statements.append((str(statement), dict(params or {})))
+            return Result()
+
+        def rollback(self):
+            return None
+
+    from aicrm_next.extensions.ai.ai_audience_ops import repository as repository_module
+
+    monkeypatch.setenv("AICRM_AUDIENCE_READONLY_DATABASE_URL", "postgresql://readonly.example/test")
+    monkeypatch.setattr(repository_module, "get_session_factory", lambda **_kwargs: Session)
+    repo = SQLAlchemyAudienceRepository(session_factory=Session)
+    rows = repo.execute_readonly_query(
+        "SELECT 'opaque-test' AS identity_value",
+        {},
+        limit=1,
+        timeout_seconds=AI_AUDIENCE_DAILY_REFRESH_QUERY_TIMEOUT_SECONDS,
+        serialization_lock_key=AI_AUDIENCE_DAILY_REFRESH_SERIALIZATION_LOCK_KEY,
+    )
+
+    assert rows == [{"identity_value": "opaque-test"}]
+    assert statements[0][0] == "SET LOCAL statement_timeout = '600000ms'"
+    assert statements[1] == (
+        "SELECT pg_advisory_xact_lock(:serialization_lock_key)",
+        {"serialization_lock_key": AI_AUDIENCE_DAILY_REFRESH_SERIALIZATION_LOCK_KEY},
+    )
+    assert "AS ai_audience_query LIMIT" in statements[2][0]
 
 
 def test_ai_audience_refresh_defaults_to_full_platform_row_limit() -> None:

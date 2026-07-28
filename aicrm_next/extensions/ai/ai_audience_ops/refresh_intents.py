@@ -19,6 +19,10 @@ from aicrm_next.platform.shared.sensitive_data import redact_sensitive_text
 
 from .constants import AI_AUDIENCE_REFRESH_DEFAULT_ROW_LIMIT, AI_AUDIENCE_REFRESH_MAX_ROW_LIMIT
 from .event_types import REFRESH_REQUESTED_EVENT, RUN_REFRESHED_EVENT, SOURCE_CHANGED_EVENT
+from .refresh_recovery import (
+    blocked_incompatible_config_recoverable,
+    claim_daily_query_timeout_recovery_marker,
+)
 from .refresh_service import AudienceRefreshService
 
 
@@ -295,35 +299,80 @@ class AudienceRefreshIntentRepository:
             "execution_id": recovery_execution_id,
         }
 
-    @staticmethod
-    def _blocked_incompatible_config_recoverable(
+    def _recover_blocked_daily_query_timeout_signal_in_session(
+        self,
+        session: Session,
         *,
         current: Any,
         package: Any,
         requested_kind: str,
-    ) -> bool:
-        if _text(current.get("status")) != "blocked" or _refresh_kind(requested_kind) != "daily":
-            return False
-        if not bool(package.get("daily_enabled")):
-            return False
-        daily_sql_available = bool(_text(package.get("snapshot_sql_text"))) or (
-            _text(package.get("query_mode")) == "simple_sql"
-            and not bool(package.get("incremental_enabled"))
-            and bool(_text(package.get("simple_compiled_sql_text")))
+        params: dict[str, Any] | None = None,
+        row_limit: int = AI_AUDIENCE_REFRESH_DEFAULT_ROW_LIMIT,
+    ) -> dict[str, Any] | None:
+        dirty_generation = int(current.get("dirty_generation") or 0)
+        completed_generation = int(current.get("completed_generation") or 0)
+        package_id = int(current.get("package_id") or 0)
+        recovery_execution_id = _new_execution_id("daily_timeout_recovery")
+        if (
+            package_id <= 0
+            or dirty_generation <= completed_generation
+            or not claim_daily_query_timeout_recovery_marker(
+                session,
+                current=current,
+                package=package,
+                requested_kind=requested_kind,
+                execution_id=recovery_execution_id,
+            )
+        ):
+            return None
+
+        parent_execution_id = _text(current.get("execution_id"))
+        signal = self._enqueue_refresh_signal(
+            session,
+            package_id=package_id,
+            generation=dirty_generation,
+            execution_id=recovery_execution_id,
+            parent_execution_id=parent_execution_id,
+            refresh_kind="daily",
+            recovery_sequence=1,
+            recovery_scope="daily-timeout-v1",
         )
-        blocked_by_wrong_incremental_kind = (
-            _text(current.get("target_refresh_kind")) == "incremental"
-            and not bool(package.get("incremental_enabled"))
-        )
-        blocked_by_legacy_daily_simple_shape = (
-            _text(current.get("target_refresh_kind")) == "daily"
-            and _text(package.get("query_mode")) == "simple_sql"
-            and not bool(_text(package.get("snapshot_sql_text")))
-            and bool(_text(package.get("simple_compiled_sql_text")))
-        )
-        return daily_sql_available and (
-            blocked_by_wrong_incremental_kind or blocked_by_legacy_daily_simple_shape
-        )
+        updated = session.execute(
+            text(
+                """
+                UPDATE ai_audience_refresh_intent
+                SET signal_generation = :signal_generation,
+                    status = 'waiting',
+                    target_refresh_kind = 'daily',
+                    target_params_json = CAST(:target_params_json AS jsonb),
+                    target_row_limit = :target_row_limit,
+                    execution_id = :execution_id,
+                    parent_execution_id = :parent_execution_id,
+                    available_at = CURRENT_TIMESTAMP,
+                    attempt_count = 0,
+                    last_error_code = '',
+                    last_error_message = '',
+                    row_version = row_version + 1,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE package_id = :package_id
+                RETURNING *
+                """
+            ),
+            {
+                "package_id": package_id,
+                "signal_generation": dirty_generation,
+                "target_params_json": _json(dict(params or {})),
+                "target_row_limit": _bounded_row_limit(row_limit),
+                "execution_id": recovery_execution_id,
+                "parent_execution_id": parent_execution_id,
+            },
+        ).mappings().one()
+        return {
+            "signal": signal,
+            "intent": updated,
+            "generation": dirty_generation,
+            "execution_id": recovery_execution_id,
+        }
 
     def _recover_blocked_incompatible_config_signal_in_session(
         self,
@@ -341,7 +390,7 @@ class AudienceRefreshIntentRepository:
         if (
             package_id <= 0
             or dirty_generation <= completed_generation
-            or not self._blocked_incompatible_config_recoverable(
+            or not blocked_incompatible_config_recoverable(
                 current=current,
                 package=package,
                 requested_kind=requested_kind,
@@ -647,7 +696,19 @@ class AudienceRefreshIntentRepository:
                 if intent and not history_recovery
                 else None
             )
-            recovery = history_recovery or compatibility_recovery
+            daily_timeout_recovery = (
+                self._recover_blocked_daily_query_timeout_signal_in_session(
+                    session,
+                    current=intent,
+                    package=package,
+                    requested_kind=refresh_kind,
+                    params=params,
+                    row_limit=row_limit,
+                )
+                if intent and not history_recovery and not compatibility_recovery
+                else None
+            )
+            recovery = history_recovery or compatibility_recovery or daily_timeout_recovery
             return {
                 "ok": True,
                 "package_id": package_id,
@@ -658,6 +719,7 @@ class AudienceRefreshIntentRepository:
                 "signal_created": bool((recovery or {}).get("signal")),
                 "history_frozen_signal_recovered": bool(history_recovery),
                 "blocked_incompatible_config_recovered": bool(compatibility_recovery),
+                "blocked_daily_query_timeout_recovered": bool(daily_timeout_recovery),
                 "intent": _intent_summary((recovery or {}).get("intent") or intent) if intent else None,
                 "real_external_call_executed": False,
             }
@@ -678,10 +740,18 @@ class AudienceRefreshIntentRepository:
         ).mappings().one()
         current_status = _text(current["status"])
         requested_kind = _refresh_kind(refresh_kind)
-        recover_blocked_incompatible_config = self._blocked_incompatible_config_recoverable(
+        recover_blocked_incompatible_config = blocked_incompatible_config_recoverable(
             current=current,
             package=package,
             requested_kind=requested_kind,
+        )
+        runtime_recovery_execution_id = _new_execution_id("daily_timeout_recovery")
+        recover_blocked_daily_query_timeout = claim_daily_query_timeout_recovery_marker(
+            session,
+            current=current,
+            package=package,
+            requested_kind=requested_kind,
+            execution_id=runtime_recovery_execution_id,
         )
         owner_expected = (
             current_status in _OPEN_OWNER_STATUSES
@@ -712,7 +782,9 @@ class AudienceRefreshIntentRepository:
         target_params = _json_obj(current.get("target_params_json")) if preserve_target_payload else dict(params or {})
         target_row_limit = int(current.get("target_row_limit") or AI_AUDIENCE_REFRESH_DEFAULT_ROW_LIMIT) if preserve_target_payload else _bounded_row_limit(row_limit)
         should_signal = not has_owner and (
-            current_status != "blocked" or recover_blocked_incompatible_config
+            current_status != "blocked"
+            or recover_blocked_incompatible_config
+            or recover_blocked_daily_query_timeout
         )
         status = "waiting" if should_signal else current_status
         signal_generation = generation if should_signal else int(current["signal_generation"] or 0)
@@ -732,7 +804,10 @@ class AudienceRefreshIntentRepository:
                     last_source_event_key = :source_event_key,
                     last_error_code = CASE WHEN :should_signal THEN '' ELSE last_error_code END,
                     last_error_message = CASE WHEN :should_signal THEN '' ELSE last_error_message END,
-                    attempt_count = CASE WHEN :recover_blocked_incompatible_config THEN 0 ELSE attempt_count END,
+                    attempt_count = CASE
+                        WHEN :recover_blocked_incompatible_config OR :recover_blocked_daily_query_timeout THEN 0
+                        ELSE attempt_count
+                    END,
                     row_version = row_version + 1,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE package_id = :package_id
@@ -751,6 +826,7 @@ class AudienceRefreshIntentRepository:
                 "parent_execution_id": _text(parent_execution_id),
                 "should_signal": should_signal,
                 "recover_blocked_incompatible_config": recover_blocked_incompatible_config,
+                "recover_blocked_daily_query_timeout": recover_blocked_daily_query_timeout,
                 "source_event_key": event_key,
             },
         ).mappings().one()
@@ -784,6 +860,7 @@ class AudienceRefreshIntentRepository:
             "signal_created": bool(signal),
             "history_frozen_signal_recovered": owner_state == "history_frozen" and bool(signal),
             "blocked_incompatible_config_recovered": recover_blocked_incompatible_config and bool(signal),
+            "blocked_daily_query_timeout_recovered": recover_blocked_daily_query_timeout and bool(signal),
             "intent": _intent_summary(updated),
             "signal": _public(signal) if signal else None,
             "real_external_call_executed": False,
@@ -1124,7 +1201,13 @@ class AudienceRefreshIntentRepository:
     ) -> dict[str, Any]:
         idempotency_key = f"ai_audience.refresh.requested:{int(package_id)}:{int(generation)}"
         if int(recovery_sequence or 0) > 0:
-            scope = "compat" if _text(recovery_scope) == "compat" else "history"
+            scope = (
+                "compat"
+                if _text(recovery_scope) == "compat"
+                else "daily-timeout-v1"
+                if _text(recovery_scope) == "daily-timeout-v1"
+                else "history"
+            )
             idempotency_key += f":{scope}-recovery:{int(recovery_sequence)}"
         return enqueue_internal_event_outbox_in_session(
             session,
