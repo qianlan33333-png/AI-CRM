@@ -191,12 +191,27 @@ def test_frontend_static_change_selects_all_native_frontend_tests(tmp_path: Path
     assert "needs_frontend_build" not in result
 
 
+def test_convention_selector_reports_dependency_audit_need(tmp_path: Path) -> None:
+    (tmp_path / "tests").mkdir()
+
+    ordinary = select_convention_scope(
+        _policy(),
+        ["aicrm_next/engagement/media_library/variants.py"],
+        root=tmp_path,
+    )
+    dependency = select_convention_scope(_policy(), ["requirements.lock"], root=tmp_path)
+
+    assert ordinary["needs_dependency_audit"] is False
+    assert dependency["needs_dependency_audit"] is True
+
+
 def test_shadow_report_exposes_differences_without_becoming_authoritative() -> None:
     legacy = {
         "matched_scopes": ["data_health"],
         "python_tests": ["tests/test_data_health.py", "tests/test_global_contract.py"],
         "frontend_tests": [],
         "needs_postgres": False,
+        "needs_dependency_audit": False,
         "needs_full_ci": True,
         "architecture_gate": "full",
     }
@@ -207,6 +222,7 @@ def test_shadow_report_exposes_differences_without_becoming_authoritative() -> N
         "python_tests": ["tests/test_data_health.py"],
         "frontend_tests": [],
         "needs_postgres": False,
+        "needs_dependency_audit": False,
         "needs_full_ci": False,
         "architecture_gate": "fast",
         "high_risk_reasons": [],

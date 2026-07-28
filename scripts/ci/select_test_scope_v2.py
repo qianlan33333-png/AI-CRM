@@ -200,6 +200,11 @@ def select_convention_scope(
         str(indicator).casefold() in selected_python_source
         for indicator in policy.get("postgres_indicators", [])
     )
+    needs_dependency_audit = any(
+        _matches(path, pattern)
+        for path in changed_files
+        for pattern in policy.get("dependency_audit_paths", [])
+    )
     fallback_reasons: list[str] = []
     if deleted_files:
         fallback_reasons.append("deleted_files")
@@ -224,6 +229,7 @@ def select_convention_scope(
         "python_tests": python_tests,
         "frontend_tests": frontend_tests,
         "needs_postgres": needs_postgres,
+        "needs_dependency_audit": needs_dependency_audit,
         "needs_full_ci": needs_full_ci,
         "architecture_gate": architecture_gate,
         "high_risk_reasons": high_risk_reasons,
@@ -287,6 +293,7 @@ def build_shadow_report(
         "python_tests": legacy.get("python_tests", []),
         "frontend_tests": legacy.get("frontend_tests", []),
         "needs_postgres": legacy.get("needs_postgres", False),
+        "needs_dependency_audit": legacy.get("needs_dependency_audit", False),
         "needs_full_ci": legacy.get("needs_full_ci", False),
         "architecture_gate": legacy.get("architecture_gate", "none"),
     }

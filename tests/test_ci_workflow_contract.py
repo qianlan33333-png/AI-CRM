@@ -36,12 +36,23 @@ def test_ci_fast_uses_selector_and_single_required_result() -> None:
     assert "needs.select.outputs.needs_postgres != 'true'" in source
     assert "needs.select.outputs.frontend_tests != ''" in source
     assert "needs_frontend_build" not in source
+    assert "needs_dependency_audit: ${{ steps.scope.outputs.needs_dependency_audit }}" in source
     assert "bash scripts/ci/run_architecture_gates.sh --mode" in source
     assert "dependency-audit:" in source
+    assert "github.event_name != 'pull_request' || needs.select.outputs.needs_dependency_audit == 'true'" in source
     assert "python -m pip_audit -r requirements.lock --require-hashes --progress-spinner=off" in source
     assert "npm audit --audit-level=high" in source
-    assert source.count("python -m pip install --require-hashes -r requirements.lock") == 4
-    assert source.count("cache-dependency-path: requirements.lock") == 4
+    assert source.count("actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9") == 4
+    assert source.count("key: venv-v1-${{ runner.os }}-${{ runner.arch }}-py3.10.5-${{ hashFiles('requirements.lock') }}") == 4
+    assert source.count("if: steps.python-venv-cache.outputs.cache-hit != 'true'") == 4
+    assert source.count("python -m venv .venv") == 4
+    assert source.count(".venv/bin/python -m pip install --require-hashes -r requirements.lock") == 4
+    assert source.count('echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"') == 4
+    assert "restore-keys:" not in source
+    assert "cache: pip" not in source
+    assert "cache-dependency-path: requirements.lock" not in source
+    assert "python -m pytest ${PYTHON_TESTS} -n auto --dist=loadfile -q --tb=short" in source
+    assert "python -m pytest ${PYTHON_TESTS} -n auto --dist=loadfile -q --tb=short --timeout=120" in source
     assert "timeout-minutes: 8" in source
     assert "force_full != 'true'" not in source
     assert "full-regression:" in source
@@ -84,7 +95,15 @@ def test_full_regression_owns_full_pytest_and_full_frontend() -> None:
     assert "bash scripts/ci/run_architecture_gates.sh --mode full" in source
     assert "python scripts/ci/check_dependency_security.py" in source
     assert "python -m pip_audit -r requirements.lock --require-hashes --progress-spinner=off" in source
-    assert "python -m pip install --require-hashes -r requirements.lock" in source
+    assert source.count("actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9") == 3
+    assert source.count("key: venv-v1-${{ runner.os }}-${{ runner.arch }}-py3.10.5-${{ hashFiles('requirements.lock') }}") == 3
+    assert source.count("if: steps.python-venv-cache.outputs.cache-hit != 'true'") == 3
+    assert source.count("python -m venv .venv") == 3
+    assert source.count(".venv/bin/python -m pip install --require-hashes -r requirements.lock") == 3
+    assert source.count('echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"') == 3
+    assert "restore-keys:" not in source
+    assert "cache: pip" not in source
+    assert "cache-dependency-path: requirements.lock" not in source
     assert "performance-regression:" in source
     assert "python scripts/ops/bootstrap_database.py" in source
     assert "python tools/check_critical_read_performance.py" in source

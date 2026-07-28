@@ -60,6 +60,25 @@ def test_every_runtime_python_change_runs_import_graph_architecture_gate() -> No
     assert result["needs_full_ci"] is False
 
 
+def test_dependency_audit_is_limited_to_supply_chain_changes() -> None:
+    ordinary_business_change = _select("aicrm_next/engagement/media_library/variants.py")
+
+    assert ordinary_business_change["needs_dependency_audit"] is False
+    for changed_file in (
+        "requirements.txt",
+        "requirements-dev.txt",
+        "requirements.lock",
+        "pyproject.toml",
+        "package.json",
+        "package-lock.json",
+        ".github/workflows/ci-fast.yml",
+        "scripts/ci/check_dependency_security.py",
+        "scripts/ci/check_github_action_pins.py",
+        "docs/security/dependency_risk_acceptance.yml",
+    ):
+        assert _select(changed_file)["needs_dependency_audit"] is True, changed_file
+
+
 def test_physical_engagement_package_migration_forces_full_ci() -> None:
     result = _select(
         "aicrm_next/engagement/__init__.py",

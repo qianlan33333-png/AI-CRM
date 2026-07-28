@@ -23,6 +23,10 @@ def test_repository_external_actions_are_immutable_and_trusted() -> None:
     # deployment workflows.
     assert workflow_count == 15
     assert external_use_count > 0
+    assert TRUSTED_ACTIONS["actions/cache"] == (
+        "55cc8345863c7cc4c66a329aec7e433d2d1c52a9",
+        "v6.1.0",
+    )
 
 
 def test_mutable_action_tag_is_rejected(tmp_path: Path) -> None:

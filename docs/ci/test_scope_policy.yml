@@ -132,6 +132,17 @@
       "rationale": "The static rollout checker reads repository files instead of importing its protected PostgreSQL contract, so source conventions cannot discover that relationship."
     }
   ],
+  "dependency_audit_paths": [
+    "requirements*.txt",
+    "requirements.lock",
+    "pyproject.toml",
+    "package.json",
+    "package-lock.json",
+    ".github/workflows/**",
+    "scripts/ci/check_dependency_security.py",
+    "scripts/ci/check_github_action_pins.py",
+    "docs/security/dependency_risk_acceptance.yml"
+  ],
   "frontend_static_paths": [
     "aicrm_next/**/static/**/*",
     "aicrm_next/**/templates/**/*",

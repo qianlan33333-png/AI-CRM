@@ -176,6 +176,7 @@ def _select(
         if path.strip()
     }
     high_risk_paths = manifest.get("high_risk_paths", [])
+    dependency_audit_paths = manifest.get("dependency_audit_paths", [])
     scopes_by_name = {str(scope.get("name")): scope for scope in scopes}
 
     matched_scopes: list[dict] = []
@@ -209,6 +210,11 @@ def _select(
         _matches(path, pattern)
         for path in changed_files
         for pattern in high_risk_paths
+    )
+    needs_dependency_audit = any(
+        _matches(path, pattern)
+        for path in changed_files
+        for pattern in dependency_audit_paths
     )
     python_tests = _unique(
         test
@@ -260,6 +266,7 @@ def _select(
         "python_tests": python_tests,
         "frontend_tests": frontend_tests,
         "needs_postgres": needs_postgres,
+        "needs_dependency_audit": needs_dependency_audit,
         "needs_full_ci": high_risk or scope_forces_full or force_full or bool(unmapped_deleted),
         "force_full": force_full,
         "architecture_gate": gate,
@@ -274,6 +281,7 @@ def _write_github_output(path: str, result: dict) -> None:
         "python_tests": " ".join(result["python_tests"]),
         "frontend_tests": " ".join(result["frontend_tests"]),
         "needs_postgres": str(result["needs_postgres"]).lower(),
+        "needs_dependency_audit": str(result["needs_dependency_audit"]).lower(),
         "needs_full_ci": str(result["needs_full_ci"]).lower(),
         "force_full": str(result["force_full"]).lower(),
         "architecture_gate": result["architecture_gate"],
@@ -331,6 +339,7 @@ def main(argv: list[str] | None = None) -> int:
         f"python_tests={len(result['python_tests'])}; "
         f"frontend_tests={len(result['frontend_tests'])}; "
         f"needs_postgres={str(result['needs_postgres']).lower()}; "
+        f"needs_dependency_audit={str(result['needs_dependency_audit']).lower()}; "
         f"architecture_gate={result['architecture_gate']}; "
         f"needs_full_ci={str(result['needs_full_ci']).lower()}"
     )
