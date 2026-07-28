@@ -349,7 +349,26 @@ def attempt_item(attempt: InternalEventConsumerAttempt) -> dict[str, Any]:
     }
 
 
-def build_events_payload(params: dict[str, Any] | None = None, *, repository: InternalEventRepository | None = None) -> dict[str, Any]:
+def _runtime_internal_event_metrics(runtime_queue: dict[str, Any] | None) -> dict[str, int] | None:
+    internal_event = (runtime_queue or {}).get("internal_event")
+    if not isinstance(internal_event, dict):
+        return None
+    return {
+        "raw_open_count": int(internal_event.get("raw_open") or 0),
+        "due_count": int(internal_event.get("eligible") or 0),
+        "raw_due_count": int(internal_event.get("raw_due") or 0),
+        "failed_retryable_count": int(internal_event.get("failed_retryable") or 0),
+        "failed_terminal_count": int(internal_event.get("failed_terminal") or 0),
+        "blocked_count": int(internal_event.get("blocked") or 0),
+    }
+
+
+def build_events_payload(
+    params: dict[str, Any] | None = None,
+    *,
+    repository: InternalEventRepository | None = None,
+    runtime_queue: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     repository = repository or build_internal_event_repository()
     filters = internal_event_filters(params)
     limit = _int((params or {}).get("limit"), default=50, minimum=1, maximum=200)
@@ -365,6 +384,11 @@ def build_events_payload(params: dict[str, Any] | None = None, *, repository: In
         event_consumers=configured_pairs,
     )
     cached_overview = _cached_overview(cache_key)
+    runtime_metrics = (
+        _runtime_internal_event_metrics(runtime_queue)
+        if not any(_text(value) for value in filters.values())
+        else None
+    )
     estimate_total = getattr(repository, "estimate_event_total", None)
     use_estimated_total = (
         cached_overview is None
@@ -384,19 +408,25 @@ def build_events_payload(params: dict[str, Any] | None = None, *, repository: In
             )
             runs_by_event = repository.list_consumer_runs_for_events([event.event_id for event in events])
             if cached_overview is None:
-                metrics = repository.queue_metrics(filters)
-                effective_filters: dict[str, Any] = dict(filters)
-                if configured_event_types:
-                    effective_filters["event_types"] = configured_event_types
-                if configured_pairs:
-                    effective_filters["event_consumers"] = configured_pairs
-                elif configured_consumers:
-                    effective_filters["consumer_names"] = configured_consumers
-                effective_metrics = (
-                    repository.queue_metrics(effective_filters)
-                    if any(bool(value) for value in effective_filters.values())
-                    else metrics
-                )
+                if runtime_metrics is not None:
+                    metrics = runtime_metrics
+                    effective_metrics = runtime_metrics
+                    queue_count_semantics = "runtime_lane_snapshot"
+                else:
+                    metrics = repository.queue_metrics(filters)
+                    effective_filters: dict[str, Any] = dict(filters)
+                    if configured_event_types:
+                        effective_filters["event_types"] = configured_event_types
+                    if configured_pairs:
+                        effective_filters["event_consumers"] = configured_pairs
+                    elif configured_consumers:
+                        effective_filters["consumer_names"] = configured_consumers
+                    effective_metrics = (
+                        repository.queue_metrics(effective_filters)
+                        if any(bool(value) for value in effective_filters.values())
+                        else metrics
+                    )
+                    queue_count_semantics = "exact_filtered" if any(_text(value) for value in filters.values()) else "exact_snapshot"
                 if use_estimated_total:
                     total = estimate_total(minimum=offset + len(events))
                     total_semantics = "estimated_unfiltered"
@@ -410,6 +440,7 @@ def build_events_payload(params: dict[str, Any] | None = None, *, repository: In
                         "total_semantics": total_semantics,
                         "metrics": metrics,
                         "effective_metrics": effective_metrics,
+                        "queue_count_semantics": queue_count_semantics,
                     },
                 )
             else:
@@ -417,6 +448,7 @@ def build_events_payload(params: dict[str, Any] | None = None, *, repository: In
                 total_semantics = str(cached_overview.get("total_semantics") or "estimated_unfiltered")
                 metrics = dict(cached_overview["metrics"])
                 effective_metrics = dict(cached_overview["effective_metrics"])
+                queue_count_semantics = str(cached_overview.get("queue_count_semantics") or "exact_snapshot")
     except Exception as exc:
         return _read_unavailable_payload(filters, exc, limit=limit, offset=offset)
     items = [event_list_item(event, runs_by_event.get(event.event_id, [])) for event in events]
@@ -433,8 +465,13 @@ def build_events_payload(params: dict[str, Any] | None = None, *, repository: In
             "due": effective_metrics.get("due_count", 0),
             "failed_retryable": effective_metrics.get("failed_retryable_count", 0),
             "failed_terminal": effective_metrics.get("failed_terminal_count", 0),
-            "raw_due": metrics.get("due_count", 0),
-            "rollout_gated": max(0, int(metrics.get("due_count") or 0) - int(effective_metrics.get("due_count") or 0)),
+            "raw_due": metrics.get("raw_due_count", metrics.get("due_count", 0)),
+            "runtime_raw_due": metrics.get("raw_due_count", metrics.get("due_count", 0)),
+            "rollout_gated": max(
+                0,
+                int(metrics.get("raw_due_count", metrics.get("due_count", 0)) or 0)
+                - int(effective_metrics.get("due_count") or 0),
+            ),
         },
         "filter_options": {
             "event_sections": [{"key": key, "label": label} for key, label in EVENT_SECTION_OPTIONS],
@@ -442,7 +479,8 @@ def build_events_payload(params: dict[str, Any] | None = None, *, repository: In
             "event_types": configured_event_types,
             "consumers": configured_consumers,
         },
-        "count_semantics": "默认列表总数来自数据库统计估算，筛选列表总数为精确值；消费者计数不代表消息、外部投递、标签等下游业务已经交付。",
+        "queue_count_semantics": queue_count_semantics,
+        "count_semantics": "默认列表总数来自数据库统计估算，筛选列表总数为精确值；默认队列计数来自运行时通道快照，筛选队列计数为精确值；消费者计数不代表消息、外部投递、标签等下游业务已经交付。",
         "overview_snapshot_ttl_seconds": int(OVERVIEW_CACHE_TTL_SECONDS),
         "route_owner": ROUTE_OWNER,
         "real_external_call_executed": False,

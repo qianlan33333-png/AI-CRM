@@ -57,7 +57,7 @@ def test_internal_events_admin_baseline_locks_scoped_runtime_summary_budget() ->
 
     assert profile.route == "/api/admin/internal-events"
     assert profile.owner == "platform_foundation.internal_events"
-    assert profile.max_query_count == 9
+    assert profile.max_query_count == 5
     assert profile.page_limit == 50
     assert profile.baseline_p95_ms == 250.0
     assert profile.allowed_large_seq_scan_relations == frozenset({"internal_event"})
