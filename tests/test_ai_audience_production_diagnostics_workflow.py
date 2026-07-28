@@ -13,8 +13,11 @@ def test_ai_audience_production_diagnostics_is_exact_release_read_only() -> None
     ).read_text(encoding="utf-8")
 
     assert "DIAGNOSE AI-CRM AI AUDIENCE PRODUCTION READ ONLY" in workflow
+    assert "ref: ${{ inputs.expected_release_sha }}" in workflow
     assert "test \"$(git rev-parse HEAD)\" = \"$expected_release_sha\"" in workflow
     assert "test \"$public_sha\" = \"$expected_release_sha\"" in workflow
+    assert "git fetch --no-tags origin main" not in workflow
+    assert "git rev-parse FETCH_HEAD" not in workflow
     assert "systemctl is-enabled --quiet aicrm-job-catalog-scheduler.timer" in workflow
     assert "systemctl is-active --quiet aicrm-job-catalog-scheduler.timer" in workflow
     assert "aicrm-ai-audience-daily-intent.timer" in workflow

@@ -39,8 +39,6 @@ jobs:
           test "$confirmation" = 'DIAGNOSE AI-CRM AI AUDIENCE PRODUCTION READ ONLY'
           printf '%s' "$expected_release_sha" | grep -Eq '^[0-9a-f]{40}$'
           test "$(git rev-parse HEAD)" = "$expected_release_sha"
-          git fetch --no-tags origin main
-          test "$(git rev-parse FETCH_HEAD)" = "$expected_release_sha"
           curl -sSf -D /tmp/aicrm-ai-audience-health.headers \
             https://www.youcangogogo.com/health \
             -o /tmp/aicrm-ai-audience-health.json
