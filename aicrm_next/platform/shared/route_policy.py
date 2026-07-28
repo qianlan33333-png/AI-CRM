@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
-from typing import Any, Iterable
+from types import MappingProxyType
+from typing import Any, Iterable, Mapping
 
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
@@ -71,11 +73,12 @@ class RoutePolicyMatch:
 
 class RoutePolicyIndex:
     def __init__(self, policies: Iterable[RoutePolicy]) -> None:
-        self._by_key: dict[str, RoutePolicy] = {}
+        by_key: dict[str, RoutePolicy] = {}
         for policy in policies:
-            if policy.key in self._by_key:
+            if policy.key in by_key:
                 raise ValueError(f"duplicate route policy: {policy.key}")
-            self._by_key[policy.key] = policy
+            by_key[policy.key] = policy
+        self._by_key: Mapping[str, RoutePolicy] = MappingProxyType(by_key)
 
     @classmethod
     def from_manifest(cls, path: str | Path = DEFAULT_ROUTE_POLICY_MANIFEST) -> "RoutePolicyIndex":
@@ -86,6 +89,13 @@ class RoutePolicyIndex:
 
     def __len__(self) -> int:
         return len(self._by_key)
+
+
+@lru_cache(maxsize=1)
+def default_route_policy_index() -> RoutePolicyIndex:
+    """Return the immutable process-wide index for the canonical manifest only."""
+
+    return RoutePolicyIndex.from_manifest(DEFAULT_ROUTE_POLICY_MANIFEST)
 
 
 def match_route_policy(app: FastAPI, scope: dict[str, Any], index: RoutePolicyIndex) -> RoutePolicyMatch:

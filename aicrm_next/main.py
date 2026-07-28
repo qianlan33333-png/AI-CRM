@@ -48,7 +48,7 @@ from .platform.shared.repository_provider import RepositoryProviderError
 from .platform.shared.release import current_release_sha
 from .platform.shared.pii_audit import PiiAuditRepository, apply_pii_audit, pii_audit_enabled
 from .platform.shared.query_telemetry import RequestQueryTelemetry, request_query_telemetry_scope
-from .platform.shared.route_policy import RoutePolicyIndex
+from .platform.shared.route_policy import default_route_policy_index
 from .platform.shared.runtime import assert_required_runtime_secrets, fixture_mode, public_https_environment, require_signing_secret
 from .platform.shared.runtime_settings import runtime_settings_request_scope
 from .platform.shared.safe_logging import safe_log_exception
@@ -108,7 +108,7 @@ def create_app(
 
     if fixture_mode():
         fixture_reset_registry.reset_fixture_state()
-    route_policy_index = RoutePolicyIndex.from_manifest()
+    route_policy_index = default_route_policy_index()
     audit_repository = pii_audit_repository or AdminConfigPiiAuditRepository()
     pii_fingerprint_secret = require_signing_secret("SECRET_KEY", local_fallback="aicrm-next-local-secret")
 
