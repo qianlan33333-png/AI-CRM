@@ -523,6 +523,7 @@ jobs:
             export AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED=1
             python3 scripts/ops/run_release_customer_read_model_refresh.py \
               --release-sha "$after_sha" \
+              --attempt-key "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
               | tee /tmp/aicrm-customer-read-model-release-refresh.json
             unset AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED
             export AICRM_QUEUE_TERMINAL_ACK_AUTHORIZED=1
@@ -532,9 +533,7 @@ jobs:
               --apply \
               | tee /tmp/aicrm-release-terminal-history-acknowledgements.json
             unset AICRM_QUEUE_TERMINAL_ACK_AUTHORIZED
-            # A timer generation may have started before this deploy and drained
-            # after the checkout switched. Always replace it with one generation
-            # pinned to the current release before the all-green admin smoke.
+            # Replace any pre-deploy timer generation before the all-green smoke.
             if ! DB_APPLICATION_NAME=aicrm-next-deploy-data-health \
               PGAPPNAME=aicrm-next-deploy-data-health \
               DB_POOL_SIZE=1 \

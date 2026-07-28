@@ -21,6 +21,7 @@ ensure_repo_root_on_path()
 
 ROOT = Path(__file__).resolve().parents[2]
 SHA_PATTERN = re.compile(r"[0-9a-f]{40}")
+ATTEMPT_KEY_PATTERN = re.compile(r"[0-9]+-[0-9]+")
 REFRESH_EVENT_TYPE = "customer_read_model.refresh.requested"
 REFRESH_CONSUMER = "customer_read_model_refresh_intent_consumer"
 COMPLETION_WAIT_SECONDS = "300"
@@ -75,6 +76,7 @@ def _run_json_command(
 def run_release_refresh(
     *,
     release_sha: str,
+    attempt_key: str = "",
     command_runner: CommandRunner = subprocess.run,
 ) -> dict[str, Any]:
     release_sha = str(release_sha or "").strip()
@@ -84,7 +86,12 @@ def run_release_refresh(
         raise ReleaseRefreshError("customer_read_model_release_refresh_not_authorized")
 
     base_env = dict(os.environ)
+    attempt_key = str(attempt_key or "").strip()
+    if attempt_key and ATTEMPT_KEY_PATTERN.fullmatch(attempt_key) is None:
+        raise ReleaseRefreshError("attempt_key_invalid")
     source_key = f"deploy_runtime:{release_sha}"
+    if attempt_key:
+        source_key = f"{source_key}:{attempt_key}"
     request_command = (
         sys.executable,
         "scripts/run_customer_read_model_refresh.py",
@@ -283,9 +290,10 @@ def run_release_refresh(
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run the exact deploy-time Customer 360 refresh consumer.")
     parser.add_argument("--release-sha", required=True)
+    parser.add_argument("--attempt-key", default="")
     args = parser.parse_args(argv)
     try:
-        payload = run_release_refresh(release_sha=args.release_sha)
+        payload = run_release_refresh(release_sha=args.release_sha, attempt_key=args.attempt_key)
     except ReleaseRefreshError as exc:
         payload = {
             "ok": False,

@@ -35,6 +35,7 @@ def test_release_refresh_script_bootstraps_from_non_repository_working_directory
 
     assert completed.returncode == 0, completed.stderr
     assert "--release-sha" in completed.stdout
+    assert "--attempt-key" in completed.stdout
 
 
 def test_release_refresh_runs_only_the_exact_internal_projection_consumer(monkeypatch) -> None:
@@ -97,7 +98,11 @@ def test_release_refresh_runs_only_the_exact_internal_projection_consumer(monkey
             }
         return CompletedProcess(command, 0, stdout=json.dumps(payload), stderr="")
 
-    result = run_release_refresh(release_sha="a" * 40, command_runner=runner)
+    result = run_release_refresh(
+        release_sha="a" * 40,
+        attempt_key="123456-2",
+        command_runner=runner,
+    )
 
     assert result["ok"] is True
     assert result["real_external_call_executed"] is False
@@ -109,6 +114,16 @@ def test_release_refresh_runs_only_the_exact_internal_projection_consumer(monkey
     assert result["consumer_mode"] == "executed"
     assert result["targeted_relay_mode"] == "relayed"
     assert len(calls) == 3
+    assert calls[0]["command"][-2:] == [
+        "--source-key",
+        f"deploy_runtime:{'a' * 40}:123456-2",
+    ]
+    assert calls[2]["command"][-4:] == [
+        "--source-key",
+        f"deploy_runtime:{'a' * 40}:123456-2",
+        "--wait-seconds",
+        "300",
+    ]
     worker_call = calls[1]
     assert worker_call["env"]["AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_TYPES"] == REFRESH_EVENT_TYPE
     assert worker_call["env"]["AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_CONSUMERS"] == (
@@ -387,3 +402,22 @@ def test_release_refresh_requires_explicit_deploy_authorization(monkeypatch) -> 
 
     with pytest.raises(ReleaseRefreshError, match="not_authorized"):
         run_release_refresh(release_sha="c" * 40)
+
+
+def test_release_refresh_rejects_invalid_attempt_key_before_running_commands(monkeypatch) -> None:
+    monkeypatch.setenv("AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED", "1")
+    command_called = False
+
+    def runner(*_args, **_kwargs):
+        nonlocal command_called
+        command_called = True
+        raise AssertionError("command must not run")
+
+    with pytest.raises(ReleaseRefreshError, match="attempt_key_invalid"):
+        run_release_refresh(
+            release_sha="a" * 40,
+            attempt_key="unsafe key",
+            command_runner=runner,
+        )
+
+    assert command_called is False
