@@ -121,14 +121,6 @@ repositories:
     table_writes:
       - external_campaign_preparation_recipients
       - external_campaign_preparations
-  aicrm_next/engagement/send_targets/repo.py:
-    capability_owner: aicrm_next.engagement.send_targets
-    table_reads:
-      - crm_user_identity
-      - user_ops_do_not_disturb_next
-    table_writes: []
-    non_literal_table_reads:
-      - crm_user_identity
   aicrm_next/extensions/ai/ai_audience_ops/repository.py:
     capability_owner: aicrm_next.extensions.ai.ai_audience_ops
     non_literal_table_reads:

@@ -307,7 +307,3 @@ class FakeStubWeComContactCallbackAdapter:
             "result_status": "blocked" if error_code == "live_callback_not_enabled" else "invalid",
             "error_code": error_code,
         }
-
-
-def build_fake_stub_wecom_contact_callback_adapter() -> FakeStubWeComContactCallbackAdapter:
-    return FakeStubWeComContactCallbackAdapter()

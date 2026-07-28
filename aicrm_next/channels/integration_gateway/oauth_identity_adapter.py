@@ -277,7 +277,3 @@ class FakeStubOAuthIdentityAdapter:
 
     def _error(self, code: str) -> Json:
         return {**_base_response(), "ok": False, "result_status": "invalid" if code != "live_oauth_callback_not_enabled" else "blocked", "error_code": code}
-
-
-def build_fake_stub_oauth_identity_adapter() -> FakeStubOAuthIdentityAdapter:
-    return FakeStubOAuthIdentityAdapter()

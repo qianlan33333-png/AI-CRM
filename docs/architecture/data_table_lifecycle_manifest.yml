@@ -381,7 +381,6 @@ tables:
     write_owner: aicrm_next.automation.ops_enrollment.repo
     read_owners:
       - aicrm_next.extensions.ai.ai_assist.external_campaigns_repo
-      - aicrm_next.engagement.send_targets.repo
       - aicrm_next.automation.ops_enrollment.repo
     replacement: ""
     drop_candidate: false

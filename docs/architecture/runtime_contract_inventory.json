@@ -51602,7 +51602,6 @@
       "pii_level": "internal_contact",
       "read_owners": [
         "aicrm_next.automation.ops_enrollment.repo",
-        "aicrm_next.engagement.send_targets.repo",
         "aicrm_next.extensions.ai.ai_assist.external_campaigns_repo"
       ],
       "table": "user_ops_do_not_disturb_next",
