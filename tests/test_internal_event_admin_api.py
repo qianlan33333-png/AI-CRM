@@ -221,6 +221,7 @@ def test_default_admin_overview_reuses_only_aggregate_snapshot(monkeypatch) -> N
         def __init__(self):
             super().__init__()
             self.include_total_calls: list[bool] = []
+            self.estimate_total_calls = 0
             self.metric_calls = 0
             self.batch_entries = 0
 
@@ -236,6 +237,10 @@ def test_default_admin_overview_reuses_only_aggregate_snapshot(monkeypatch) -> N
         def queue_metrics(self, filters=None):
             self.metric_calls += 1
             return super().queue_metrics(filters)
+
+        def estimate_event_total(self, *, minimum=0):
+            self.estimate_total_calls += 1
+            return super().estimate_event_total(minimum=minimum)
 
     repository = RecordingRepository()
     repository.create_event(
@@ -259,10 +264,75 @@ def test_default_admin_overview_reuses_only_aggregate_snapshot(monkeypatch) -> N
 
     assert first["total"] == second["total"] == 1
     assert first["items"][0]["event_id"] == second["items"][0]["event_id"]
-    assert repository.include_total_calls == [True, False]
+    assert repository.include_total_calls == [False, False]
+    assert repository.estimate_total_calls == 1
     assert repository.metric_calls == 1
     assert repository.batch_entries == 2
+    assert first["total_semantics"] == second["total_semantics"] == "estimated_unfiltered"
     assert second["overview_snapshot_ttl_seconds"] == 10
+
+
+def test_filtered_admin_overview_keeps_exact_total(monkeypatch) -> None:
+    class RecordingRepository(InMemoryInternalEventRepository):
+        admin_overview_cache_enabled = True
+
+        def __init__(self):
+            super().__init__()
+            self.include_total_calls: list[bool] = []
+
+        def list_events(self, *args, **kwargs):
+            self.include_total_calls.append(bool(kwargs.get("include_total", True)))
+            return super().list_events(*args, **kwargs)
+
+    repository = RecordingRepository()
+    repository.create_event(
+        InternalEventCreateRequest(
+            event_type="test.filtered",
+            aggregate_type="test",
+            aggregate_id="1",
+            payload={},
+            idempotency_key="test.filtered:1",
+        )
+    )
+    monkeypatch.setattr(view_model, "allowed_event_types", lambda: [])
+    monkeypatch.setattr(view_model, "allowed_consumers", lambda: [])
+    monkeypatch.setattr(view_model, "allowed_event_consumer_pairs", lambda: [])
+
+    payload = view_model.build_events_payload({"event_type": "test.filtered"}, repository=repository)
+
+    assert payload["total"] == 1
+    assert payload["total_semantics"] == "exact_filtered"
+    assert repository.include_total_calls == [True]
+
+
+def test_sql_repository_estimates_unfiltered_total_from_database_statistics() -> None:
+    statements: list[str] = []
+
+    class Result:
+        def mappings(self):
+            return self
+
+        def fetchone(self):
+            return {"estimated_total": 123}
+
+    class Session:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def execute(self, statement, params):
+            statements.append(str(statement))
+            return Result()
+
+    repository = SQLAlchemyInternalEventRepository(session_factory=Session)
+
+    assert repository.estimate_event_total(minimum=50) == 123
+    assert len(statements) == 1
+    assert "pg_class" in statements[0]
+    assert "pg_stat_user_tables" in statements[0]
+    assert "COUNT(*)" not in statements[0]
 
 
 def test_sql_repository_reuses_one_session_and_selects_summary_fields_only() -> None:

@@ -70,6 +70,24 @@ class SQLAlchemyReadBatchMixin:
         rows = self._read_session.execute(text(statement), params or {}).mappings().fetchall()
         return [dict(row) for row in rows]
 
+    def estimate_event_total(self, *, minimum: int = 0) -> int:
+        statement = """
+            SELECT GREATEST(
+                COALESCE(NULLIF(c.reltuples, -1), 0),
+                COALESCE(s.n_live_tup, 0)
+            )::bigint AS estimated_total
+            FROM pg_class c
+            LEFT JOIN pg_stat_user_tables s ON s.relid = c.oid
+            WHERE c.oid = to_regclass('internal_event')
+        """
+        if self._read_session is not None:
+            row = self._read_one(statement)
+        else:
+            with self._session_factory() as session:
+                result = session.execute(text(statement), {}).mappings().fetchone()
+                row = dict(result) if result else None
+        return max(int(minimum or 0), int((row or {}).get("estimated_total") or 0))
+
 
 def reset_internal_event_read_caches() -> None:
     from .api import reset_internal_event_runtime_queue_cache
@@ -528,6 +546,12 @@ class InternalEventRepository:
         summary_only: bool = False,
     ) -> tuple[list[InternalEvent], int]:
         raise NotImplementedError
+
+    def estimate_event_total(self, *, minimum: int = 0) -> int:
+        """Return a cheap lower-bounded total for the unfiltered admin list."""
+
+        _events, total = self.list_events({}, limit=1, offset=0, include_total=True)
+        return max(int(minimum or 0), int(total or 0))
 
     def create_consumer_run(
         self,

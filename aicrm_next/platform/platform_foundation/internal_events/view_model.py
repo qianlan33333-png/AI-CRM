@@ -365,6 +365,12 @@ def build_events_payload(params: dict[str, Any] | None = None, *, repository: In
         event_consumers=configured_pairs,
     )
     cached_overview = _cached_overview(cache_key)
+    estimate_total = getattr(repository, "estimate_event_total", None)
+    use_estimated_total = (
+        cached_overview is None
+        and not any(_text(value) for value in filters.values())
+        and callable(estimate_total)
+    )
     read_batch = getattr(repository, "read_batch", None)
     batch_scope = read_batch() if callable(read_batch) else nullcontext(repository)
     try:
@@ -373,7 +379,7 @@ def build_events_payload(params: dict[str, Any] | None = None, *, repository: In
                 filters,
                 limit=limit,
                 offset=offset,
-                include_total=cached_overview is None,
+                include_total=cached_overview is None and not use_estimated_total,
                 summary_only=True,
             )
             runs_by_event = repository.list_consumer_runs_for_events([event.event_id for event in events])
@@ -391,17 +397,24 @@ def build_events_payload(params: dict[str, Any] | None = None, *, repository: In
                     if any(bool(value) for value in effective_filters.values())
                     else metrics
                 )
-                total = measured_total
+                if use_estimated_total:
+                    total = estimate_total(minimum=offset + len(events))
+                    total_semantics = "estimated_unfiltered"
+                else:
+                    total = measured_total
+                    total_semantics = "exact_filtered"
                 _store_overview(
                     cache_key,
                     {
                         "total": total,
+                        "total_semantics": total_semantics,
                         "metrics": metrics,
                         "effective_metrics": effective_metrics,
                     },
                 )
             else:
                 total = int(cached_overview["total"])
+                total_semantics = str(cached_overview.get("total_semantics") or "estimated_unfiltered")
                 metrics = dict(cached_overview["metrics"])
                 effective_metrics = dict(cached_overview["effective_metrics"])
     except Exception as exc:
@@ -414,6 +427,7 @@ def build_events_payload(params: dict[str, Any] | None = None, *, repository: In
         "filters": _public_filters(filters),
         "limit": limit,
         "offset": offset,
+        "total_semantics": total_semantics,
         "counts": {
             "total": total,
             "due": effective_metrics.get("due_count", 0),
@@ -428,7 +442,7 @@ def build_events_payload(params: dict[str, Any] | None = None, *, repository: In
             "event_types": configured_event_types,
             "consumers": configured_consumers,
         },
-        "count_semantics": "计数来自消费者执行记录，不代表消息、外部投递、标签等下游业务已经交付。",
+        "count_semantics": "默认列表总数来自数据库统计估算，筛选列表总数为精确值；消费者计数不代表消息、外部投递、标签等下游业务已经交付。",
         "overview_snapshot_ttl_seconds": int(OVERVIEW_CACHE_TTL_SECONDS),
         "route_owner": ROUTE_OWNER,
         "real_external_call_executed": False,

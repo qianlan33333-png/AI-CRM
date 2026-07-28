@@ -147,6 +147,9 @@ class InMemoryInternalEventRepository(InternalEventRepository):
         window = rows[max(0, int(offset or 0)) : max(0, int(offset or 0)) + max(1, min(int(limit or 50), 200))]
         return [event for row in window if (event := _public_event(row)) is not None], total if include_total else 0
 
+    def estimate_event_total(self, *, minimum: int = 0) -> int:
+        return max(int(minimum or 0), len(self._events))
+
     def create_consumer_run(
         self,
         *,
