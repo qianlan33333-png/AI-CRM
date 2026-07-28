@@ -218,7 +218,10 @@ def _build_queue_services(
             if lane_name != "wecom_ai_assistant_bulk":
                 return {}
             return {
-                "token_provider": shared_token_provider_metrics(),
+                # Keep the public metric key free of secret-bearing vocabulary.
+                # The runtime read model intentionally redacts keys containing
+                # "token", even when their values are aggregate counters.
+                "wecom_api_auth_refresh": shared_token_provider_metrics(),
                 "start_rate_limiter": start_rate_limiter.aggregate_snapshot(),
             }
 

@@ -126,6 +126,45 @@ def test_external_runtime_composes_dedicated_ai_assistant_bulk_lane(monkeypatch)
     assert run_execution_runtime.DEFAULT_LANE_CAPACITY["ai_generation"] == 64
 
 
+def test_external_runtime_exposes_safe_token_refresh_counters(monkeypatch) -> None:
+    captured: list[dict] = []
+    monkeypatch.setattr(
+        run_execution_runtime,
+        "build_external_effect_adapter_registry",
+        lambda *_args, **_kwargs: object(),
+    )
+    monkeypatch.setattr(
+        run_execution_runtime,
+        "shared_token_provider_metrics",
+        lambda: {
+            "provider_count": 2,
+            "refresh_started": 3,
+            "refresh_succeeded": 2,
+            "refresh_failed": 1,
+            "cache_hits": 19,
+        },
+    )
+    monkeypatch.setattr(
+        run_execution_runtime,
+        "_service",
+        lambda **kwargs: captured.append(kwargs) or object(),
+    )
+    args = run_execution_runtime._parse_args(["--queue-kind", "external"])
+
+    run_execution_runtime._build_services(args)
+
+    metrics = captured[0]["runtime_metrics"]("wecom_ai_assistant_bulk")
+    assert metrics["wecom_api_auth_refresh"] == {
+        "provider_count": 2,
+        "refresh_started": 3,
+        "refresh_succeeded": 2,
+        "refresh_failed": 1,
+        "cache_hits": 19,
+    }
+    assert "token_provider" not in metrics
+    assert metrics["start_rate_limiter"]["target_rate_per_second"] == 2.0
+
+
 def test_execute_requires_explicit_environment_gate(monkeypatch) -> None:
     monkeypatch.delenv("AICRM_QUEUE_RUNTIME_EXECUTE", raising=False)
 

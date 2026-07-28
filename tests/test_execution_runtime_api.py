@@ -92,6 +92,41 @@ def test_runtime_endpoint_fails_closed_without_leaking_error_text(monkeypatch) -
     assert "postgresql://user:secret" not in response.body.decode("utf-8")
 
 
+def test_worker_snapshot_preserves_safe_refresh_counters_and_redacts_token_fields() -> None:
+    payload = ExecutionRuntimeReadModel._worker_payload(
+        {
+            "service_name": "aicrm-external_effect-runtime",
+            "worker_id": "worker-a",
+            "queue_kind": "external_effect",
+            "generation": 1,
+            "release_sha": "a" * 40,
+            "rollout_mode": "canary",
+            "listener_connected": True,
+            "fresh": True,
+            "release_matches": True,
+            "metrics_json": {
+                "wecom_api_auth_refresh": {
+                    "provider_count": 2,
+                    "refresh_started": 3,
+                    "refresh_succeeded": 2,
+                    "refresh_failed": 1,
+                    "cache_hits": 19,
+                },
+                "token_provider": {"access_token": "must-not-leak"},
+            },
+        }
+    )
+
+    assert payload["metrics"]["wecom_api_auth_refresh"] == {
+        "provider_count": 2,
+        "refresh_started": 3,
+        "refresh_succeeded": 2,
+        "refresh_failed": 1,
+        "cache_hits": 19,
+    }
+    assert payload["metrics"]["token_provider"] == "[redacted]"
+
+
 def test_lane_summary_pushes_lane_scope_into_one_database_query() -> None:
     calls: list[tuple[str, tuple[object, ...]]] = []
 
