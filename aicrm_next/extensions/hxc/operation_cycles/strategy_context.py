@@ -81,9 +81,12 @@ def get_strategy_context(
             offset=safe_offset,
             filters=dict(filters or {}),
         )
+    execution_payload = execution.model_dump(mode="json")
     return OperationCycleStrategyContextView(
         mode=mode,
         strategy=strategy,
+        strategy_version=execution.version,
+        context_hash=compute_snapshot_hash(execution_payload),
         execution=execution,
         recent_runs=recent_runs,
         proposals=proposals,

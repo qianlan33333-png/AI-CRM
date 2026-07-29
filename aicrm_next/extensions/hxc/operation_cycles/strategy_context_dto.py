@@ -172,6 +172,8 @@ class OperationCycleStrategyContextView(StrategyContextModel):
     ok: bool = True
     mode: ContextMode
     strategy: StrategySummary
+    strategy_version: int = Field(ge=1)
+    context_hash: str = Field(min_length=64, max_length=64, pattern=r"^[0-9a-f]{64}$")
     execution: StrategyVersionContextView
     recent_runs: list[RunDetailView] = Field(default_factory=list)
     proposals: list[StrategyChangeProposalView] = Field(default_factory=list)

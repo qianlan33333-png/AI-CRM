@@ -180,6 +180,11 @@ def test_context_modes_default_to_three_runs_and_include_proposal_governance() -
     )
 
     assert execution is not None and execution["recent_runs"] == []
+    preparation_contract = execution_context_contract(_snapshot().strategy.strategy_key, repo=repo)
+    assert preparation_contract is not None
+    assert execution["strategy_version"] == preparation_contract["strategy_version"]
+    assert execution["context_hash"] == preparation_contract["context_hash"]
+    assert len(execution["context_hash"]) == 64
     assert retrospective is not None and len(retrospective["recent_runs"]) == 3
     assert optimization is not None and len(optimization["recent_runs"]) == 3
     assert len(optimization["proposals"]) == 1
