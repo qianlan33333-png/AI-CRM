@@ -11,7 +11,10 @@ from aicrm_next.extensions.hxc.operation_cycles.application import (
 )
 from aicrm_next.extensions.hxc.operation_cycles.domain import OperationCycleConflictError
 from aicrm_next.extensions.hxc.operation_cycles.dto import OperationCycleSnapshotV1, ReferenceSnapshot
-from aicrm_next.extensions.hxc.operation_cycles.repository import InMemoryOperationCycleRepository
+from aicrm_next.extensions.hxc.operation_cycles.repository import (
+    InMemoryOperationCycleRepository,
+    PostgresOperationCycleRepository,
+)
 from tests.test_operation_cycles_domain import snapshot_payload
 
 
@@ -116,6 +119,45 @@ def test_newer_revision_updates_projection_and_read_models() -> None:
     assert run["run"]["plan_version"] == "review-v2"
     assert run["run"]["fact_conflict"] is True
     assert run["documents"]["execution_strategy"]["markdown"].startswith("# 下周执行策略")
+
+
+def test_postgres_strategy_history_includes_formal_plan_links(monkeypatch) -> None:
+    repo = PostgresOperationCycleRepository(session_factory=lambda: None)
+    strategy_row = {
+        "strategy_key": "hxc.monday.activation",
+        "title": "每周一全量用户激活",
+        "current_version": 1,
+        "run_count": 2,
+    }
+    plan_id = "plan_campaign_from_preparation"
+
+    monkeypatch.setattr(repo, "_one", lambda *_args, **_kwargs: strategy_row)
+    monkeypatch.setattr(repo, "list_run_summaries", lambda *_args, **_kwargs: [])
+
+    def fake_all(statement: str, _params: dict) -> list[dict]:
+        if "operation_cycle_plan_links" not in statement:
+            return []
+        assert "NOT EXISTS" in statement
+        assert "cloud_orchestrator_plan" in statement
+        return [
+            {
+                "reference_key": "plan-link:generated",
+                "reference_type": "other",
+                "label": "hxc_monday_abcd_20260728 · AI 助手计划",
+                "source_system": "cloud_orchestrator_plan",
+                "source_id": plan_id,
+                "href": "",
+                "evidence_hash": "",
+                "data_status": "unknown",
+            }
+        ]
+
+    monkeypatch.setattr(repo, "_all", fake_all)
+
+    detail = repo.get_strategy_detail("hxc.monday.activation")
+
+    assert detail is not None
+    assert [item.source_id for item in detail.assistant_plans] == [plan_id]
 
 
 def test_strategy_version_and_run_strategy_version_are_immutable() -> None:

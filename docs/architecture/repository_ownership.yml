@@ -953,6 +953,7 @@ repositories:
   aicrm_next/extensions/hxc/operation_cycles/repository.py:
     capability_owner: aicrm_next.extensions.hxc.operation_cycles
     table_reads:
+      - operation_cycle_plan_links
       - operation_cycle_references
       - operation_cycle_runs
       - operation_cycle_snapshots

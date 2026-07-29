@@ -50827,6 +50827,7 @@
       "migration_source": "0156_campaign_preparation_context",
       "pii_level": "none",
       "read_owners": [
+        "operation cycle admin plan history read model",
         "operation cycle context read model",
         "operation cycle system fact projector"
       ],
