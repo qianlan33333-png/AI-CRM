@@ -1,7 +1,7 @@
 """repair canonical automation agent audit tables on upgraded databases.
 
 Revision ID: 0124_agent_audit_tables
-Revises: 0123_required_physical_schema_repair
+Revises: 0124_questionnaire_continuation_jobs
 
 The post-legacy baseline already contains the canonical table definitions, but
 databases that were Alembic-managed before that baseline was introduced can be
@@ -21,7 +21,7 @@ from alembic import op
 
 
 revision = "0124_agent_audit_tables"
-down_revision = "0123_required_physical_schema_repair"
+down_revision = "0124_questionnaire_continuation_jobs"
 branch_labels = None
 depends_on = None
 
