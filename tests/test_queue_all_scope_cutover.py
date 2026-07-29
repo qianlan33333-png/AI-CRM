@@ -8,6 +8,7 @@ import pytest
 
 from scripts.ops.validate_queue_all_scope_cutover import validate
 from scripts.ops import recover_all_scope_contact_detail
+from scripts.ops import acknowledge_pre_cutover_welcome_terminal as pre_cutover_welcome_ack
 from aicrm_next.platform.platform_foundation.execution_runtime.validation import evaluate_soak_snapshot
 
 
@@ -60,7 +61,7 @@ def test_authorization_envelope_rejects_changed_confirmation() -> None:
         )
 
 
-def test_pre_cutover_welcome_acknowledgement_is_one_exact_no_replay_scope() -> None:
+def test_pre_cutover_welcome_acknowledgement_is_at_most_one_exact_no_replay_scope() -> None:
     acknowledgement = MANIFEST["pre_cutover_welcome_terminal_acknowledgement"]
     production_manifest = json.loads(
         (ROOT / "docs" / "releases" / "production_promotion.json").read_text(
@@ -90,7 +91,8 @@ def test_pre_cutover_welcome_acknowledgement_is_one_exact_no_replay_scope() -> N
         "replay_prohibited": True,
         "provider_success_claimed": False,
     }
-    assert "expected exactly one authorized historical welcome terminal" in script_source
+    assert "expected at most one authorized historical welcome terminal" in script_source
+    assert '"no_op_reason": "authorized_historical_terminal_absent"' in script_source
     assert "provider_success_claimed\": False" in script_source
     assert "real_external_call_executed\": False" in script_source
     assert "send_welcome_msg" not in script_source
@@ -98,6 +100,65 @@ def test_pre_cutover_welcome_acknowledgement_is_one_exact_no_replay_scope() -> N
     assert "tests/test_queue_all_scope_cutover.py" in production_manifest[
         "allowed_post_candidate_paths"
     ]
+
+
+class _TerminalAcknowledgementSession:
+    def __init__(self) -> None:
+        self.rollback_count = 0
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, traceback):
+        return False
+
+    def rollback(self) -> None:
+        self.rollback_count += 1
+
+
+def _acknowledge_pre_cutover_welcome(monkeypatch, *, rows: list[dict]):
+    session = _TerminalAcknowledgementSession()
+    monkeypatch.setattr(
+        pre_cutover_welcome_ack,
+        "get_session_factory",
+        lambda: lambda: session,
+    )
+    monkeypatch.setattr(
+        pre_cutover_welcome_ack,
+        "_candidate_rows",
+        lambda _session, *, cutoff: rows,
+    )
+    monkeypatch.setenv("AICRM_QUEUE_TERMINAL_ACK_AUTHORIZED", "1")
+    result = pre_cutover_welcome_ack.acknowledge(
+        manifest_path=ROOT / "docs" / "releases" / "queue_all_scope_cutover.json",
+        release_sha=RELEASE_SHA,
+        authorization_base_sha=BASE_SHA,
+        confirmation=WELCOME_ACK_CONFIRMATION,
+        actor="pytest",
+        reason="idempotency boundary test",
+        apply=True,
+    )
+    return result, session
+
+
+def test_pre_cutover_welcome_acknowledgement_absence_is_safe_noop(monkeypatch) -> None:
+    result, session = _acknowledge_pre_cutover_welcome(monkeypatch, rows=[])
+
+    assert result["applied"] is False
+    assert result["candidate_count"] == 0
+    assert result["acknowledged_count"] == 0
+    assert result["created_count"] == 0
+    assert result["no_op_reason"] == "authorized_historical_terminal_absent"
+    assert result["real_external_call_executed"] is False
+    assert session.rollback_count == 1
+
+
+def test_pre_cutover_welcome_acknowledgement_rejects_multiple_candidates(monkeypatch) -> None:
+    with pytest.raises(
+        RuntimeError,
+        match="expected at most one authorized historical welcome terminal; found 2",
+    ):
+        _acknowledge_pre_cutover_welcome(monkeypatch, rows=[{}, {}])
 
 
 def test_cutover_exports_database_environment_before_migration_preflight() -> None:
