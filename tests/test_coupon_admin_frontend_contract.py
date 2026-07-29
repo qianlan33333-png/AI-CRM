@@ -131,7 +131,7 @@ class _FakeCouponAdminApplication:
             "ok": True,
             "share": {
                 "url": f"{request_base_url}/c/summer-17",
-                "qr_data_url": "data:image/svg+xml;base64,PHN2Zy8+",
+                "qr_data_url": "data:image/jpeg;base64,/9j/2Q==",
             },
         }
 
@@ -245,7 +245,7 @@ def test_coupon_admin_api_is_thin_application_adapter(next_client, monkeypatch) 
     assert products.json()["total"] == 2
     assert claims.json()["stats"]["reserved"] == 1
     assert share.json()["share"]["url"].endswith("/c/summer-17")
-    assert share.json()["share"]["qr_data_url"].startswith("data:image/svg+xml")
+    assert share.json()["share"]["qr_data_url"].startswith("data:image/jpeg;base64,")
     assert copied.status_code == 201
     assert all(response.headers["X-AICRM-Real-External-Call-Executed"] == "false" for response in (listed, created, updated, products, claims, share, copied))
 

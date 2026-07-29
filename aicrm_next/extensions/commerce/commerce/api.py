@@ -18,7 +18,6 @@ from aicrm_next.admin_shell_contract import shell_context
 from aicrm_next.platform.shared.errors import NotFoundError
 from aicrm_next.platform.shared.pii_audit import infer_pii_result_count, set_pii_audit_result_count
 from aicrm_next.platform.shared.safe_logging import safe_log_exception
-from aicrm_next.platform.shared.share_qr import svg_qr_data_url
 from aicrm_next.platform.shared.sync_request import read_request_body, read_request_json
 
 from .admin_transactions import (

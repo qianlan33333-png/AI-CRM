@@ -15,13 +15,26 @@ window.AICRMSendContentComposer.open({
   onConfirm,
   onCancel
 })
+
+window.AICRMSendContentComposer.mount(container, {
+  title,
+  textEnabled,
+  value,
+  limits,
+  maxTotal,
+  onChange
+})
 ```
 
-The composer only configures `SendContentPackage`: `content_text`, `image_library_ids`, `miniprogram_library_ids`, and `attachment_library_ids`.
+`open()` remains the standard modal API. `mount()` is the backwards-compatible inline mode for an already independent configuration page: it renders the full auto-growing copy textarea, standard material actions, selected items and live preview in the provided container. Inline edits call `onChange(contentPackage)` but do not save automatically; the outer page remains responsible for submission.
+
+The composer only configures `SendContentPackage`: `content_text`, `image_library_ids`, `miniprogram_library_ids`, `attachment_library_ids`, and `group_invite_library_ids`. Defaults are image 3, miniprogram 1, attachment 9, group invite 1, and total materials 9. A caller may reduce type limits but must not bypass the total-material boundary.
 
 It does not own operation mode, profile template selection, behavior rule selection, agent selection, audience preview, send constraints, or backend route selection. Those decisions belong to the outer page.
 
 When `textEnabled=false`, the composer hides the manual copy textarea and the customer-name insertion control. Agent mode uses this form and only configures local material IDs.
+
+Use `mount()` only when the page itself is already the focused content-configuration surface. List pages and mixed workflows should continue to use `open()` so the composer does not displace the page's primary task.
 
 ## MaterialPicker
 

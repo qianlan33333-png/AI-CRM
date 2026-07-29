@@ -300,7 +300,7 @@
         <div class="questionnaire-share-label">问卷二维码</div>
         <div class="questionnaire-share-qr-wrap">
           <img id="questionnaire-share-qr" class="questionnaire-share-qr" alt="问卷二维码">
-          <a id="questionnaire-share-download" class="admin-button admin-button--secondary" href="#" download="问卷二维码.svg">保存二维码</a>
+          <a id="questionnaire-share-download" class="admin-button admin-button--secondary" href="#" download="问卷二维码.jpg">保存二维码</a>
         </div>
       </div>
     </div>
@@ -445,7 +445,7 @@
   }
 
   function safeDownloadName(value) {
-    return `${String(value || '问卷').trim().replace(/[\\/:*?"<>|]+/g, '_') || '问卷'}二维码.svg`;
+    return `${String(value || '问卷').trim().replace(/[\\/:*?"<>|]+/g, '_') || '问卷'}二维码.jpg`;
   }
 
   function openShareModal(share, item) {

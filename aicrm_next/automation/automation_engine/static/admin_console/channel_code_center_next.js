@@ -205,7 +205,7 @@
       ? `<button class="admin-button admin-button--secondary" type="button" data-copy-channel-link data-copy-text="${escapeHtml(copyText)}">复制链接</button>
          <button class="admin-button admin-button--secondary" type="button" data-share-channel-link data-copy-text="${escapeHtml(copyText)}">分享链接</button>`
       : qrcodeReady(channel)
-        ? `<a class="admin-button admin-button--secondary" href="${escapeHtml(downloadUrl)}">下载二维码</a>`
+        ? `<button class="admin-button admin-button--secondary" type="button" data-download-channel-qrcode data-download-url="${escapeHtml(downloadUrl)}">下载二维码</button>`
         : `<button class="admin-button admin-button--secondary" type="button" data-generate-channel-qrcode>生成二维码</button>`;
     return `
       <tr data-channel-row data-channel-id="${escapeHtml(channel.id)}" data-search-text="${escapeHtml(searchText)}">
@@ -254,6 +254,24 @@
   });
 
   list.addEventListener("click", (event) => {
+    const downloadButton = event.target.closest("[data-download-channel-qrcode]");
+    if (downloadButton) {
+      if (!window.AICRMAdminDownload || typeof window.AICRMAdminDownload.download !== "function") {
+        toast("下载组件未加载，请刷新页面后重试");
+        return;
+      }
+      downloadButton.disabled = true;
+      const originalText = downloadButton.textContent;
+      downloadButton.textContent = "下载中";
+      window.AICRMAdminDownload.download(downloadButton.dataset.downloadUrl, { fallbackFilename: "渠道二维码.jpg" })
+        .then(() => toast("二维码已下载"))
+        .catch((error) => toast(error.message || "二维码下载失败"))
+        .finally(() => {
+          downloadButton.disabled = false;
+          downloadButton.textContent = originalText || "下载二维码";
+        });
+      return;
+    }
     const copyButton = event.target.closest("[data-copy-channel-link]");
     if (copyButton) {
       copyText(copyButton.dataset.copyText);

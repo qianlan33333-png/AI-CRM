@@ -64,7 +64,8 @@ def _surface_source(paths: list[Path]) -> str:
 def test_all_migrated_send_content_surfaces_use_standard_composer() -> None:
     for name, paths in SURFACES.items():
         source = _surface_source(paths)
-        assert "AICRMSendContentComposer.open" in source, name
+        api = "AICRMSendContentComposer.mount" if name == "channel_welcome" else "AICRMSendContentComposer.open"
+        assert api in source, name
 
 
 def test_retired_automation_operation_surface_stays_removed() -> None:

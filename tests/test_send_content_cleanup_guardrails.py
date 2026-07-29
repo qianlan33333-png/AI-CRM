@@ -83,6 +83,7 @@ def test_migrated_business_pages_do_not_direct_fetch_material_libraries() -> Non
 
     for path, extra_source in migrated_pages:
         source = _read(path) + extra_source
-        assert "AICRMSendContentComposer.open" in source
+        expected_api = "AICRMSendContentComposer.mount" if path == CHANNEL_TEMPLATE else "AICRMSendContentComposer.open"
+        assert expected_api in source
         for marker in direct_fetch_markers:
             assert marker not in source

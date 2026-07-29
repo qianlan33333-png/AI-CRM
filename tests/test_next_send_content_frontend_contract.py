@@ -21,6 +21,7 @@ RETIRED_AGENT_TEMPLATE_JS = STATIC / "automation_agent_config_templates.js"
 MATERIAL_PICKER_CSS = STATIC / "material_picker.css"
 SEND_CONTENT_ASSET_VERSION = "group-chat-selector-20260715"
 GROUP_CHAT_ASSET_VERSION = "group-chat-direct-select-20260715"
+CHANNEL_INLINE_ASSET_VERSION = "inline-channel-welcome-20260729"
 
 
 def _read(path: Path) -> str:
@@ -31,7 +32,22 @@ def test_send_content_composer_exists_and_exposes_global_api() -> None:
     source = _read(STATIC / "send_content_composer.js")
 
     assert "window.AICRMSendContentComposer" in source
-    assert ".open" in source or "{ open }" in source
+    assert "{ open, mount }" in source
+
+
+def test_send_content_composer_inline_mode_auto_grows_and_emits_changes() -> None:
+    source = _read(STATIC / "send_content_composer.js")
+    css = _read(STATIC / "send_content_composer.css")
+
+    assert "function mount(container, options)" in source
+    assert "function autoGrowTextarea()" in source
+    assert 'textField.style.height = "auto"' in source
+    assert "textField.scrollHeight" in source
+    assert 'typeof options.onChange === "function"' in source
+    assert "countMaterials(currentPackage()) >= maxTotal" in source
+    assert ".aicrm-send-composer--inline" in css
+    assert "overflow-y: hidden" in css
+    assert "grid-template-columns: 1fr" in css
 
 
 def test_material_picker_exists_and_exposes_global_api() -> None:
@@ -64,11 +80,14 @@ def test_standard_send_content_assets_are_cache_busted_on_migrated_surfaces() ->
         assert "send_content_composer.css') }}?v=" in source
         assert "material_picker.js') }}?v=" in source
         assert "send_content_composer.js') }}?v=" in source
-        assert source.count(f"?v={GROUP_CHAT_ASSET_VERSION}") >= 4
+        if path == CHANNEL_FORM_TEMPLATE:
+            assert source.count(f"?v={CHANNEL_INLINE_ASSET_VERSION}") >= 3
+        else:
+            assert source.count(f"?v={GROUP_CHAT_ASSET_VERSION}") >= 4
 
     automation_agent_source = _read(AUTOMATION_AGENT_TEMPLATE)
     assert automation_agent_source.count(f"?v={GROUP_CHAT_ASSET_VERSION}") >= 4
-    assert f"channel_admission_pages.js?v={SEND_CONTENT_ASSET_VERSION}" in _read(CHANNEL_FORM_TEMPLATE)
+    assert f"channel_admission_pages.js?v={CHANNEL_INLINE_ASSET_VERSION}" in _read(CHANNEL_FORM_TEMPLATE)
     assert f"group_ops.js?v={SEND_CONTENT_ASSET_VERSION}" in _read(GROUP_OPS_TEMPLATE)
     assert "cloud_plan_review.js') }}?v=" + SEND_CONTENT_ASSET_VERSION in _read(CLOUD_PLAN_TEMPLATE)
     assert "user_ops_batch_send_modal.js') }}?v=" + SEND_CONTENT_ASSET_VERSION in _read(AI_AUDIENCE_TEMPLATE)

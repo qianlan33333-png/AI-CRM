@@ -127,6 +127,17 @@ def test_admin_application_unifies_ordinary_and_period_products_without_ids() ->
     ).strftime("%Y-%m-%d %H:%M")
 
 
+def test_coupon_admin_share_uses_jpeg_qr_data_url() -> None:
+    repository = InMemoryCouponRepository(product_options=_products())
+    application = CouponAdminApplication(repository)
+    coupon = application.create_coupon(_request(repository))["coupon"]
+
+    share = application.get_share(coupon["id"], request_base_url="https://crm.example.test")["share"]
+
+    assert share["url"].startswith("https://crm.example.test/c/")
+    assert share["qr_data_url"].startswith("data:image/jpeg;base64,")
+
+
 def test_admin_mutations_persist_authenticated_actor_and_reject_payload_spoofing() -> None:
     repository = InMemoryCouponRepository(product_options=_products())
     request = _request(repository)

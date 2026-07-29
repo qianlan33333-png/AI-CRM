@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="/static/automation-engine/admin_console/channel_admission_pages.css?v=group-chat-selector-20260715">
 <link rel="stylesheet" href="{{ url_for('static', filename='admin_console/group_chat_picker.css') }}?v=group-chat-direct-select-20260715">
 <link rel="stylesheet" href="{{ url_for('static', filename='admin_console/material_picker.css') }}?v=group-chat-direct-select-20260715">
-<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/send_content_composer.css') }}?v=group-chat-selector-20260715">
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/send_content_composer.css') }}?v=inline-channel-welcome-20260729">
 <link rel="stylesheet" href="{{ url_for('static', filename='admin_console/wecom_tag_picker.css') }}?v=unified-tag-picker-20260608">
 {% endblock %}
 
@@ -141,7 +141,7 @@
           {% if payload.is_edit %}
           <div class="carrier-actions">
             {% if channel.qr_download_url %}
-            <a class="btn soft" href="{{ channel.qr_download_url }}">下载二维码</a>
+            <button class="btn soft" type="button" data-download-channel-qrcode data-download-url="{{ channel.qr_download_url }}">下载二维码</button>
             {% endif %}
             <button class="btn primary" type="button" data-generate-form-qrcode>生成二维码</button>
           </div>
@@ -214,25 +214,7 @@
       </section>
 
       <section class="panel" data-channel-panel-content="welcome">
-        <div class="panel-title-row">
-          <h3>欢迎语素材</h3>
-          <button class="btn primary" type="button" data-open-welcome-composer>配置欢迎语和素材</button>
-        </div>
-        <div class="summary-box">
-          <div class="summary-row">
-            <strong>话术</strong>
-            <span class="muted" data-welcome-content-summary data-welcome-text-summary>未配置话术</span>
-          </div>
-          <div class="summary-row">
-            <strong>素材</strong>
-            <div class="material-line" data-welcome-material-summary>
-              <span class="pill gray">图片 0</span>
-              <span class="pill gray">小程序 0</span>
-              <span class="pill gray">附件 0</span>
-              <span class="pill gray">客户群 0</span>
-            </div>
-          </div>
-        </div>
+        <div data-welcome-composer-inline></div>
         <input type="hidden" name="welcome_message" data-welcome-message value="{{ channel.welcome_message or '' }}">
         <input type="hidden" name="welcome_image_library_ids" data-image-ids value="{{ (channel.welcome_image_library_ids or []) | join(',') }}">
         <input type="hidden" name="welcome_miniprogram_library_ids" data-miniprogram-ids value="{{ (channel.welcome_miniprogram_library_ids or []) | join(',') }}">
@@ -267,9 +249,10 @@
 {% endblock %}
 
 {% block scripts_extra %}
+<script defer src="{{ url_for('static', filename='admin_console/admin_download.js') }}?v=channel-jpg-20260729"></script>
 <script defer src="{{ url_for('static', filename='admin_console/group_chat_picker.js') }}?v=group-chat-direct-select-20260715"></script>
 <script defer src="{{ url_for('static', filename='admin_console/material_picker.js') }}?v=group-chat-direct-select-20260715"></script>
-<script defer src="{{ url_for('static', filename='admin_console/send_content_composer.js') }}?v=group-chat-selector-20260715"></script>
+<script defer src="{{ url_for('static', filename='admin_console/send_content_composer.js') }}?v=inline-channel-welcome-20260729"></script>
 <script defer src="{{ url_for('static', filename='admin_console/wecom_tag_picker.js') }}?v=unified-tag-picker-20260608"></script>
-<script defer src="/static/automation-engine/admin_console/channel_admission_pages.js?v=group-chat-selector-20260715"></script>
+<script defer src="/static/automation-engine/admin_console/channel_admission_pages.js?v=inline-channel-welcome-20260729"></script>
 {% endblock %}

@@ -656,6 +656,24 @@
       const preview = root.querySelector("[data-link-preview]");
       shareText(preview && "value" in preview ? preview.value : preview?.textContent);
     });
+    root.querySelector("[data-download-channel-qrcode]")?.addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      const downloadUrl = button.dataset.downloadUrl || root.dataset.apiQrcodeDownload || "";
+      if (!window.AICRMAdminDownload || typeof window.AICRMAdminDownload.download !== "function") {
+        toast("下载组件未加载，请刷新页面后重试");
+        return;
+      }
+      button.disabled = true;
+      const originalText = button.textContent;
+      button.textContent = "下载中";
+      window.AICRMAdminDownload.download(downloadUrl, { fallbackFilename: "渠道二维码.jpg" })
+        .then(() => toast("二维码已下载"))
+        .catch((error) => toast(error.message || "二维码下载失败"))
+        .finally(() => {
+          button.disabled = false;
+          button.textContent = originalText || "下载二维码";
+        });
+    });
     root.querySelector("[data-generate-form-qrcode]")?.addEventListener("click", (event) => {
       const button = event.currentTarget;
       const detailUrl = root.dataset.apiDetail || "";
@@ -728,9 +746,8 @@
     const imageInput = root.querySelector("[data-image-ids]");
     const attachmentInput = root.querySelector("[data-attachment-ids]");
     const groupInviteInput = root.querySelector("[data-group-invite-ids]");
-    const summary = root.querySelector("[data-welcome-content-summary]");
-    const materialSummary = root.querySelector("[data-welcome-material-summary]");
-    if (!root.querySelector("[data-open-welcome-composer]")) return;
+    const mountPoint = root.querySelector("[data-welcome-composer-inline]");
+    if (!mountPoint) return;
 
     const currentPackage = () => welcomeFieldsToContentPackage({
       welcome_message: messageInput?.value || "",
@@ -740,66 +757,36 @@
       welcome_group_invite_library_ids: intList(groupInviteInput?.value),
     });
 
-    const renderSummary = () => {
-      const contentPackage = currentPackage();
-      const text = String(contentPackage.content_text || "").trim();
-      const textSummary = text ? (text.length > 60 ? text.slice(0, 60) + "..." : text) : "未配置话术";
-      if (summary) summary.textContent = textSummary;
-      if (materialSummary) {
-        materialSummary.innerHTML =
-          '<span class="pill">图片 ' + contentPackage.image_library_ids.length + '</span>' +
-          '<span class="pill">小程序 ' + contentPackage.miniprogram_library_ids.length + '</span>' +
-          '<span class="pill">附件 ' + contentPackage.attachment_library_ids.length + '</span>' +
-          '<span class="pill">客户群 ' + contentPackage.group_invite_library_ids.length + '</span>';
-      } else if (summary) {
-        summary.innerHTML =
-          '<strong>话术：</strong><span>' + escapeHtml(textSummary) + '</span>' +
-          '<strong>素材：</strong><span>图片 ' + contentPackage.image_library_ids.length +
-          ' / 小程序 ' + contentPackage.miniprogram_library_ids.length +
-          ' / 附件 ' + contentPackage.attachment_library_ids.length +
-          ' / 客户群 ' + contentPackage.group_invite_library_ids.length + '</span>';
-      }
+    const syncHiddenFields = (contentPackage) => {
+      const fields = contentPackageToWelcomeFields(contentPackage);
+      if (messageInput) messageInput.value = fields.welcome_message;
+      setIds(imageInput, fields.welcome_image_library_ids);
+      setIds(miniInput, fields.welcome_miniprogram_library_ids);
+      setIds(attachmentInput, fields.welcome_attachment_library_ids);
+      setIds(groupInviteInput, fields.welcome_group_invite_library_ids);
     };
 
-    const openWelcomeComposer = () => {
-      if (!window.AICRMSendContentComposer || typeof window.AICRMSendContentComposer.open !== "function") {
-        const message = "标准内容编辑器未加载，请刷新页面后重试";
-        toast(message);
-        setSaveFeedback(message, "error");
-        root.dataset.welcomeComposerError = "composer_not_loaded";
-        return;
-      }
-      window.AICRMSendContentComposer.open({
-        title: "配置欢迎语和素材",
-        textEnabled: true,
-        value: currentPackage(),
-        limits: {
-          image: 3,
-          miniprogram: 1,
-          attachment: 9,
-          group_invite: 1,
-        },
-        onConfirm(contentPackage) {
-          const fields = contentPackageToWelcomeFields(contentPackage);
-          if (messageInput) messageInput.value = fields.welcome_message;
-          setIds(imageInput, fields.welcome_image_library_ids);
-          setIds(miniInput, fields.welcome_miniprogram_library_ids);
-          setIds(attachmentInput, fields.welcome_attachment_library_ids);
-          setIds(groupInviteInput, fields.welcome_group_invite_library_ids);
-          renderSummary();
-          toast("欢迎语和素材已更新");
-        },
-      });
-    };
+    if (!window.AICRMSendContentComposer || typeof window.AICRMSendContentComposer.mount !== "function") {
+      const message = "标准内容编辑器未加载，请刷新页面后重试";
+      toast(message);
+      setSaveFeedback(message, "error");
+      root.dataset.welcomeComposerError = "composer_not_loaded";
+      return;
+    }
 
-    root.addEventListener("click", (event) => {
-      const openButton = event.target.closest("[data-open-welcome-composer]");
-      if (!openButton) return;
-      event.preventDefault();
-      openWelcomeComposer();
+    window.AICRMSendContentComposer.mount(mountPoint, {
+      title: "欢迎语素材",
+      textEnabled: true,
+      value: currentPackage(),
+      maxTotal: 9,
+      limits: {
+        image: 3,
+        miniprogram: 1,
+        attachment: 9,
+        group_invite: 1,
+      },
+      onChange: syncHiddenFields,
     });
-
-    renderSummary();
     root.dataset.welcomeComposerReady = "1";
   }
 

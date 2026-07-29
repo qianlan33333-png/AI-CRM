@@ -117,7 +117,7 @@
         <div class="questionnaire-share-label">二维码</div>
         <div class="questionnaire-share-qr-wrap">
           <img class="questionnaire-share-qr" data-share-qr alt="内容雷达二维码">
-          <a class="radar-button" data-share-download href="#" download="内容雷达二维码.svg">保存二维码</a>
+          <a class="radar-button" data-share-download href="#" download="内容雷达二维码.jpg">保存二维码</a>
         </div>
       </div>
     </div>
@@ -248,7 +248,7 @@
     shareUrlEl.value = activeShareUrl;
     shareQrEl.src = String(share.qr_data_url || "");
     shareDownloadEl.href = String(share.qr_data_url || "#");
-    shareDownloadEl.download = String(share.download_filename || "内容雷达二维码.svg");
+    shareDownloadEl.download = String(share.download_filename || "内容雷达二维码.jpg");
     shareModalEl.hidden = false;
     shareModalEl.setAttribute("aria-hidden", "false");
   }

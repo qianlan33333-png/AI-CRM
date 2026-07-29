@@ -25,6 +25,54 @@
   box-shadow: 0 30px 90px rgba(15, 23, 42, .3);
 }
 
+.aicrm-send-composer--inline {
+  width: 100%;
+  max-height: none;
+  display: block;
+  overflow: visible;
+  border-color: rgba(37, 99, 235, .14);
+  background: #f8fafc;
+  box-shadow: none;
+}
+
+.aicrm-send-composer__inline-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(15, 23, 42, .08);
+  background: #fff;
+}
+
+.aicrm-send-composer__inline-head > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.aicrm-send-composer__inline-head strong {
+  color: #1f2937;
+  font-size: 15px;
+}
+
+.aicrm-send-composer__inline-head span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.aicrm-send-composer--inline .aicrm-send-composer__body {
+  overflow: visible;
+  padding: 18px;
+}
+
+.aicrm-send-composer__inline-error {
+  min-height: 20px;
+  padding: 0 18px 14px;
+  color: #b42318;
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .aicrm-send-composer__head,
 .aicrm-send-composer__foot {
   display: flex;
@@ -88,7 +136,8 @@
 .aicrm-send-composer__textarea {
   width: 100%;
   min-height: 150px;
-  resize: vertical;
+  overflow-y: hidden;
+  resize: none;
   border: 1px solid rgba(15, 23, 42, .14);
   border-radius: 12px;
   background: #fff;
@@ -296,4 +345,6 @@
   .aicrm-send-composer__head,
   .aicrm-send-composer__foot { align-items: stretch; flex-direction: column; }
   .aicrm-send-composer__actions { justify-content: flex-end; }
+  .aicrm-send-composer__inline-head { align-items: stretch; flex-direction: column; }
+  .aicrm-send-composer--inline .aicrm-send-composer__body { padding: 12px; }
 }

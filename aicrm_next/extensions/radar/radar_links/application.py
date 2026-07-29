@@ -15,7 +15,7 @@ from aicrm_next.engagement.media_library.application import GetImageVariantQuery
 from aicrm_next.platform.shared.errors import ContractError, NotFoundError
 from aicrm_next.platform.shared.runtime import fixture_mode
 from aicrm_next.platform.shared.runtime_settings import runtime_setting
-from aicrm_next.platform.shared.share_qr import safe_qr_download_filename, svg_qr_data_url
+from aicrm_next.platform.shared.share_qr import jpeg_qr_data_url, safe_qr_download_filename
 
 from .domain import (
     hash_ip,
@@ -214,7 +214,7 @@ class GetRadarLinkShareQuery:
                 "title": title,
                 "url": url,
                 "path": f"/r/{projection['code']}",
-                "qr_data_url": svg_qr_data_url(url),
+                "qr_data_url": jpeg_qr_data_url(url),
                 "download_filename": safe_qr_download_filename(title, fallback="内容雷达"),
             },
         }

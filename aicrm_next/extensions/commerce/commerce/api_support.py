@@ -12,7 +12,7 @@ from aicrm_next.platform.shared.runtime_settings import (
     managed_runtime_setting,
     startup_environment_setting,
 )
-from aicrm_next.platform.shared.share_qr import svg_qr_data_url
+from aicrm_next.platform.shared.share_qr import jpeg_qr_data_url
 
 from .admin_transactions import (
     default_filters,
@@ -276,7 +276,7 @@ def _share_payload(request: Request, product: dict) -> dict:
         "product_code": product_code,
         "product_name": str(product.get("title") or ""),
         "url": url,
-        "qr_data_url": svg_qr_data_url(url),
+        "qr_data_url": jpeg_qr_data_url(url),
     }
 
 def _transaction_admin_context(request: Request, *, provider: str, detail_order: dict | None = None, detail_error: str = "") -> dict:

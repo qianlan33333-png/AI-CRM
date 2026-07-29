@@ -136,7 +136,7 @@ def test_channel_form_hides_shell_header_and_busts_static_cache() -> None:
 
     assert '"show_page_header": False' in pages
     assert "channel_admission_pages.css?v=group-chat-selector-20260715" in html
-    assert "channel_admission_pages.js?v=group-chat-selector-20260715" in html
+    assert "channel_admission_pages.js?v=inline-channel-welcome-20260729" in html
     assert "operation_member_picker.js') }}?v=operation-member-picker-wecom-sync-20260709" in base
 
 
@@ -317,13 +317,11 @@ def test_standard_welcome_tag_components_and_hidden_payload_inputs_are_kept() ->
     html = _read(CHANNEL_FORM)
     js = _read(CHANNEL_JS)
 
-    assert "AICRMSendContentComposer.open" in js
+    assert "AICRMSendContentComposer.mount" in js
     assert "AICRMWeComTagPicker.open" in js
     assert "prompt(" not in js
-    assert "summary-box" in html
-    assert "summary-row" in html
-    assert "data-welcome-material-summary" in html
-    assert "配置欢迎语和素材" in html
+    assert "data-welcome-composer-inline" in html
+    assert "data-open-welcome-composer" not in html
     assert "选择标签" in html
     assert 'name="welcome_message"' in html
     assert 'name="welcome_image_library_ids"' in html
