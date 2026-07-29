@@ -1,0 +1,97 @@
+name: Siyuan Production Schema Diagnostics (Read Only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_release_sha:
+        description: Exact release SHA currently exposed by Siyuan production
+        required: true
+        type: string
+      confirmation:
+        description: Type DIAGNOSE SIYUAN PRODUCTION SCHEMA READ ONLY
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: siyuan-production-schema-diagnostics
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Verify Siyuan public release and confirmation
+        run: |
+          set -e
+          expected_release_sha='${{ inputs.expected_release_sha }}'
+          confirmation='${{ inputs.confirmation }}'
+          test "$GITHUB_REPOSITORY" = 'qianlan333/siyuan-crm'
+          test "$confirmation" = 'DIAGNOSE SIYUAN PRODUCTION SCHEMA READ ONLY'
+          printf '%s' "$expected_release_sha" | grep -Eq '^[0-9a-f]{40}$'
+          curl --retry 3 --retry-all-errors -sSf -D /tmp/siyuan-production-schema-health.headers \
+            https://www.xinliushangye.com/health \
+            -o /tmp/siyuan-production-schema-health.json
+          public_sha="$(awk 'tolower($1) == "x-aicrm-release-sha:" {gsub("\\r", "", $2); print $2}' /tmp/siyuan-production-schema-health.headers)"
+          test "$public_sha" = "$expected_release_sha"
+
+      - name: Read Siyuan public schema relation names
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.2
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          command_timeout: 10m
+          script: |
+            set -e
+            cd '/home/ubuntu/极简 crm'
+            expected_release_sha='${{ inputs.expected_release_sha }}'
+            test "$(git rev-parse HEAD)" = "$expected_release_sha"
+            test "$(tr -d '\r\n' < .release-sha)" = "$expected_release_sha"
+            set -a
+            source /home/ubuntu/.openclaw-wecom-pg.env
+            set +a
+            source /home/ubuntu/venvs/openclaw/bin/activate
+            python3 - <<'PY'
+            import json
+
+            from sqlalchemy import text
+
+            from aicrm_next.platform.shared.db_session import get_session_factory
+
+
+            with get_session_factory()() as session:
+                names = [
+                    str(row.table_name)
+                    for row in session.execute(
+                        text(
+                            """
+                            SELECT DISTINCT table_name
+                            FROM information_schema.columns
+                            WHERE table_schema = 'public'
+                            ORDER BY table_name
+                            """
+                        )
+                    )
+                ]
+                migration_revisions = [
+                    str(row.version_num)
+                    for row in session.execute(
+                        text("SELECT version_num FROM alembic_version ORDER BY version_num")
+                    )
+                ]
+            print(
+                json.dumps(
+                    {
+                        "public_relation_names": names,
+                        "migration_revisions": migration_revisions,
+                        "contains_column_values": False,
+                        "read_only": True,
+                    },
+                    sort_keys=True,
+                )
+            )
+            PY

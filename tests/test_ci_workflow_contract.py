@@ -10,6 +10,9 @@ DURATION_BASELINE_REFRESH_WORKFLOW = ROOT / ".github" / "workflows" / "refresh-p
 DEPLOY_WORKFLOW = ROOT / ".github" / "workflows" / "deploy.yml"
 PROMOTE_PRODUCTION_WORKFLOW = ROOT / ".github" / "workflows" / "promote-production.yml"
 SIYUAN_PROMOTE_PRODUCTION_WORKFLOW = ROOT / ".github" / "workflows" / "siyuan-promote-production.yml"
+SIYUAN_PRODUCTION_SCHEMA_DIAGNOSTICS_WORKFLOW = (
+    ROOT / ".github" / "workflows" / "siyuan-production-schema-diagnostics.yml"
+)
 QUEUE_PRODUCTION_CUTOVER_WORKFLOW = ROOT / ".github" / "workflows" / "queue-production-cutover.yml"
 LEGACY_CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 
@@ -264,6 +267,25 @@ def test_siyuan_production_promotion_is_manual_main_ci_verified_and_environment_
     assert 'if [ "$(git rev-parse FETCH_HEAD)" != "$requested_sha" ]; then' in source
     assert "secrets.DEPLOY_HOST" in deploy_source
     assert "inputs.release_sha != ''" in deploy_source
+
+
+def test_siyuan_production_schema_diagnostics_is_read_only_and_release_pinned() -> None:
+    source = _source(SIYUAN_PRODUCTION_SCHEMA_DIAGNOSTICS_WORKFLOW)
+
+    assert "workflow_dispatch:" in source
+    assert "DIAGNOSE SIYUAN PRODUCTION SCHEMA READ ONLY" in source
+    assert "https://www.xinliushangye.com/health" in source
+    assert 'test "$public_sha" = "$expected_release_sha"' in source
+    assert 'test "$(git rev-parse HEAD)" = "$expected_release_sha"' in source
+    assert 'test "$(tr -d \'\\r\\n\' < .release-sha)" = "$expected_release_sha"' in source
+    assert "SELECT DISTINCT table_name" in source
+    assert "FROM information_schema.columns" in source
+    assert "migration_revisions" in source
+    assert "contains_column_values" in source
+    assert "INSERT " not in source
+    assert "UPDATE " not in source
+    assert "DELETE " not in source
+    assert "DROP " not in source
 
 
 def test_architecture_gate_script_has_fast_db_and_full_modes() -> None:
