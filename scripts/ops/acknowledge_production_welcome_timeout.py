@@ -297,10 +297,24 @@ def acknowledge(
     with get_session_factory()() as session:
         try:
             rows = _candidate_rows(session, authorization)
-            if len(rows) != 1:
+            if len(rows) > 1:
                 raise RuntimeError(
-                    f"expected exactly one authorized production welcome terminal; found {len(rows)}"
+                    f"expected at most one authorized production welcome terminal; found {len(rows)}"
                 )
+            if not rows:
+                session.rollback()
+                return {
+                    "ok": True,
+                    "applied": False,
+                    "candidate_count": 0,
+                    "acknowledged_count": 0,
+                    "created_count": 0,
+                    "no_op_reason": "authorized_historical_terminal_absent",
+                    "replay_prohibited": True,
+                    "provider_success_claimed": False,
+                    "real_external_call_executed": False,
+                    "target_values_redacted": True,
+                }
             row = rows[0]
             fingerprint = _fingerprint(row)
             acknowledgement_id = f"qta_{fingerprint[:32]}"
@@ -419,7 +433,10 @@ def acknowledge(
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Acknowledge production welcome job 2157 as immutable no-replay history.",
+        description=(
+            "Acknowledge at most one production welcome job 2157 as immutable "
+            "no-replay history."
+        ),
     )
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--release-sha", required=True)
