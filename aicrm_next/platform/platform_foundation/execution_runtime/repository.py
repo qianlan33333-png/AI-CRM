@@ -142,6 +142,30 @@ class ExecutionRuntimeRepository:
             raise RuntimeError("queue runtime control row is missing")
         return self._control(row)
 
+    def read_lane_policies(self, lanes: tuple[str, ...]) -> tuple[LanePolicy, ...]:
+        normalized_lanes = tuple(dict.fromkeys(str(lane or "").strip() for lane in lanes))
+        if not normalized_lanes or any(not lane for lane in normalized_lanes):
+            raise ValueError("at least one queue lane is required")
+        with self._connect(self._database_url) as connection:
+            rows = connection.execute(
+                """
+                SELECT lane, max_in_flight, enabled, rollout_mode,
+                       blocked_until, policy_version
+                FROM queue_lane_policy
+                WHERE lane = ANY(%s)
+                """,
+                (list(normalized_lanes),),
+            ).fetchall()
+        policies_by_lane = {
+            policy.lane: policy for policy in (self._lane_policy(row) for row in rows)
+        }
+        missing = tuple(lane for lane in normalized_lanes if lane not in policies_by_lane)
+        if missing:
+            raise RuntimeError(
+                "queue runtime lane policy is missing: " + ", ".join(missing)
+            )
+        return tuple(policies_by_lane[lane] for lane in normalized_lanes)
+
     def claim_external_effect_one(
         self,
         *,

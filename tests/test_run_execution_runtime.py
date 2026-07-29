@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import pytest
 
+from aicrm_next.platform.platform_foundation.execution_runtime.repository import (
+    ExecutionRuntimeRepository,
+    LanePolicy,
+)
 from scripts import run_execution_runtime
 
 
@@ -122,8 +126,150 @@ def test_external_runtime_composes_dedicated_ai_assistant_bulk_lane(monkeypatch)
         "wecom_media",
         "outbound_webhook",
     )
-    assert run_execution_runtime.DEFAULT_LANE_CAPACITY["wecom_ai_assistant_bulk"] == 24
-    assert run_execution_runtime.DEFAULT_LANE_CAPACITY["ai_generation"] == 64
+
+
+class _LanePolicyRepository:
+    def __init__(self, policies: dict[str, int]) -> None:
+        self._policies = policies
+        self.reads: list[tuple[str, ...]] = []
+
+    def read_lane_policies(self, lanes: tuple[str, ...]) -> tuple[LanePolicy, ...]:
+        self.reads.append(lanes)
+        missing = tuple(lane for lane in lanes if lane not in self._policies)
+        if missing:
+            raise RuntimeError("queue runtime lane policy is missing: " + ", ".join(missing))
+        return tuple(
+            LanePolicy(
+                lane=lane,
+                max_in_flight=self._policies[lane],
+                enabled=True,
+                rollout_mode="canary",
+                blocked_until=None,
+                policy_version="policy-v1",
+            )
+            for lane in lanes
+        )
+
+
+class _PolicyRows:
+    def __init__(self, rows: list[dict]) -> None:
+        self._rows = rows
+
+    def fetchall(self) -> list[dict]:
+        return self._rows
+
+
+class _PolicyConnection:
+    def __init__(self, rows: list[dict]) -> None:
+        self._rows = rows
+        self.params = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args) -> None:
+        return None
+
+    def execute(self, _sql: str, params) -> _PolicyRows:
+        self.params = params
+        return _PolicyRows(self._rows)
+
+
+def test_repository_reads_lane_policies_in_requested_order() -> None:
+    connection = _PolicyConnection(
+        [
+            {
+                "lane": "wecom_media",
+                "max_in_flight": 2,
+                "enabled": True,
+                "rollout_mode": "canary",
+                "blocked_until": None,
+                "policy_version": "policy-v1",
+            },
+            {
+                "lane": "ai_generation",
+                "max_in_flight": 4,
+                "enabled": True,
+                "rollout_mode": "blocked",
+                "blocked_until": None,
+                "policy_version": "policy-v1",
+            },
+        ]
+    )
+    repository = ExecutionRuntimeRepository(
+        "postgresql://runtime",
+        connect=lambda _url: connection,
+    )
+
+    policies = repository.read_lane_policies(("ai_generation", "wecom_media"))
+
+    assert [policy.lane for policy in policies] == ["ai_generation", "wecom_media"]
+    assert [policy.max_in_flight for policy in policies] == [4, 2]
+    assert connection.params == (["ai_generation", "wecom_media"],)
+
+
+def test_repository_rejects_incomplete_lane_policy_snapshot() -> None:
+    connection = _PolicyConnection([])
+    repository = ExecutionRuntimeRepository(
+        "postgresql://runtime",
+        connect=lambda _url: connection,
+    )
+
+    with pytest.raises(RuntimeError, match="wecom_media"):
+        repository.read_lane_policies(("wecom_media",))
+
+
+def test_service_uses_authoritative_lane_capacity_and_reuses_repository() -> None:
+    repository = _LanePolicyRepository(
+        {
+            "ai_generation": 4,
+            "wecom_welcome": 2,
+            "wecom_interactive": 4,
+            "wecom_bulk": 1,
+            "wecom_ai_assistant_bulk": 4,
+            "wecom_media": 2,
+            "outbound_webhook": 4,
+        }
+    )
+    lane_names = (
+        "ai_generation",
+        "wecom_welcome",
+        "wecom_interactive",
+        "wecom_bulk",
+        "wecom_ai_assistant_bulk",
+        "wecom_media",
+        "outbound_webhook",
+    )
+
+    service = run_execution_runtime._service(
+        queue_kind="external_effect",
+        lane_names=lane_names,
+        generation=1,
+        handler=lambda _claim: True,
+        worker_id="worker-1",
+        claimless=False,
+        repository=repository,
+    )
+
+    assert repository.reads == [lane_names]
+    assert [lane.max_in_flight for lane in service._lanes] == [4, 2, 4, 1, 4, 2, 4]
+    assert sum(lane.max_in_flight for lane in service._lanes) == 21
+    assert service._repo is repository
+
+
+def test_service_fails_closed_when_authoritative_lane_policy_is_missing() -> None:
+    repository = _LanePolicyRepository({"wecom_media": 2})
+
+    with pytest.raises(RuntimeError, match="missing_lane"):
+        run_execution_runtime._service(
+            queue_kind="external_effect",
+            lane_names=("wecom_media", "missing_lane"),
+            generation=1,
+            handler=lambda _claim: True,
+            worker_id="worker-1",
+            claimless=False,
+            repository=repository,
+        )
 
 
 def test_external_runtime_exposes_safe_token_refresh_counters(monkeypatch) -> None:
