@@ -426,6 +426,7 @@
     "tests/test_automation_agent_output_guard.py",
     "tests/test_automation_agents_webhook_execution.py",
     "tests/test_external_effect_completion_event.py",
-    "tests/test_external_effect_continuation_composition.py"
+    "tests/test_external_effect_continuation_composition.py",
+    "aicrm_next/platform/platform_foundation/execution_runtime/repository.py"
   ]
 }
