@@ -1,0 +1,90 @@
+name: Promote Siyuan to Production (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Exact 40-character siyuan-crm main SHA to deploy
+        required: true
+        type: string
+      confirmation:
+        description: Type DEPLOY SIYUAN PRODUCTION to request production approval
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: siyuan-production-promotion
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout requested release
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0 (Node 24)
+        with:
+          ref: ${{ inputs.release_sha }}
+          fetch-depth: 0
+
+      - name: Verify Siyuan release and successful main CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          set -o pipefail
+          requested_sha="${{ inputs.release_sha }}"
+          confirmation="${{ inputs.confirmation }}"
+          if [ "$GITHUB_REPOSITORY" != "qianlan333/siyuan-crm" ]; then
+            echo "this promotion workflow is restricted to qianlan333/siyuan-crm"
+            exit 1
+          fi
+          if [ "$confirmation" != "DEPLOY SIYUAN PRODUCTION" ]; then
+            echo "production confirmation does not match the required Siyuan target"
+            exit 1
+          fi
+          if ! printf '%s' "$requested_sha" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "release_sha must be a full 40-character commit SHA"
+            exit 1
+          fi
+          if [ "$(git rev-parse HEAD)" != "$requested_sha" ]; then
+            echo "checked out release does not match requested production release"
+            exit 1
+          fi
+          git fetch --no-tags origin main
+          if [ "$(git rev-parse FETCH_HEAD)" != "$requested_sha" ]; then
+            echo "requested production release is not the current siyuan-crm main"
+            exit 1
+          fi
+          curl --retry 3 --retry-all-errors -sSfL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "$GITHUB_API_URL/repos/qianlan333/siyuan-crm/actions/workflows/ci-fast.yml/runs?head_sha=$requested_sha&event=push&status=completed&per_page=20" \
+            -o /tmp/siyuan_target_ci_runs.json
+          python3 - /tmp/siyuan_target_ci_runs.json "$requested_sha" <<'PY'
+          import json
+          import sys
+
+          runs = json.load(open(sys.argv[1], encoding="utf-8")).get("workflow_runs", [])
+          requested_sha = sys.argv[2]
+          successful = [
+              run
+              for run in runs
+              if run.get("head_sha") == requested_sha
+              and run.get("event") == "push"
+              and run.get("conclusion") == "success"
+          ]
+          if not successful:
+              raise SystemExit("current siyuan-crm main has no successful completed CI Fast push run")
+          print(f"verified CI Fast run {successful[0]['id']} for {requested_sha}")
+          PY
+
+  promote:
+    needs: validate
+    uses: ./.github/workflows/deploy.yml
+    with:
+      release_sha: ${{ inputs.release_sha }}
+    secrets: inherit

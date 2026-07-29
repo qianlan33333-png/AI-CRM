@@ -9,6 +9,7 @@ FULL_REGRESSION_WORKFLOW = ROOT / ".github" / "workflows" / "full-regression.yml
 DURATION_BASELINE_REFRESH_WORKFLOW = ROOT / ".github" / "workflows" / "refresh-pytest-duration-baseline.yml"
 DEPLOY_WORKFLOW = ROOT / ".github" / "workflows" / "deploy.yml"
 PROMOTE_PRODUCTION_WORKFLOW = ROOT / ".github" / "workflows" / "promote-production.yml"
+SIYUAN_PROMOTE_PRODUCTION_WORKFLOW = ROOT / ".github" / "workflows" / "siyuan-promote-production.yml"
 QUEUE_PRODUCTION_CUTOVER_WORKFLOW = ROOT / ".github" / "workflows" / "queue-production-cutover.yml"
 LEGACY_CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 
@@ -230,6 +231,39 @@ def test_production_promotion_is_manual_cross_repo_verified_and_environment_appr
     assert "workflow_run:" not in deploy_source
     assert "scripts/ops/ensure_production_public_release_route.py --execute" in deploy_source
     assert '--public-health-url "${{ env.PUBLIC_HEALTH_URL }}"' in deploy_source
+
+
+def test_siyuan_production_promotion_is_manual_main_ci_verified_and_environment_approved() -> None:
+    source = _source(SIYUAN_PROMOTE_PRODUCTION_WORKFLOW)
+    deploy_source = _source(DEPLOY_WORKFLOW)
+
+    assert "name: Promote Siyuan to Production (Manual)" in source
+    assert "workflow_dispatch:" in source
+    assert "release_sha:" in source
+    assert "confirmation:" in source
+    assert "workflow_run:" not in source
+    assert "push:" not in source
+    assert "schedule:" not in source
+    assert "actions: read" in source
+    assert "contents: read" in source
+    assert "uses: ./.github/workflows/deploy.yml" in source
+    assert "needs: validate" in source
+    assert "secrets: inherit" in source
+    assert "environment: production" in deploy_source
+    assert "DEPLOY_TARGET: production" in deploy_source
+    assert "DEPLOY SIYUAN PRODUCTION" in source
+    assert 'if [ "$GITHUB_REPOSITORY" != "qianlan333/siyuan-crm" ]; then' in source
+    assert "qianlan333/AI-CRM-ID-refactor" not in source
+    assert "id-dev.youcangogogo.com" not in source
+    assert "validated_id_sha" not in source
+    assert "production_promotion.json" not in source
+    assert "actions/workflows/ci-fast.yml/runs?head_sha=$requested_sha&event=push&status=completed" in source
+    assert "current siyuan-crm main has no successful completed CI Fast push run" in source
+    assert "ref: ${{ inputs.release_sha }}" in source
+    assert "fetch-depth: 0" in source
+    assert 'if [ "$(git rev-parse FETCH_HEAD)" != "$requested_sha" ]; then' in source
+    assert "secrets.DEPLOY_HOST" in deploy_source
+    assert "inputs.release_sha != ''" in deploy_source
 
 
 def test_architecture_gate_script_has_fast_db_and_full_modes() -> None:
