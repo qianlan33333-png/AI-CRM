@@ -1469,6 +1469,8 @@ def test_frontend_static_change_runs_all_frontend_tests_without_build() -> None:
     assert "frontend_static" in result["matched_scopes"]
     assert result["frontend_tests"] == [
         "tests/frontend/admin_request_security.test.mjs",
+        "tests/frontend/admin_error_messages.test.mjs",
+        "tests/frontend/admin_error_rendering_guard.test.mjs",
         "tests/frontend/coupon_inline_scripts_syntax.test.mjs",
         "tests/frontend/sidebar_progressive_loading.test.mjs",
         "tests/frontend/service_period_member_grid.test.mjs",

@@ -642,6 +642,27 @@ def _pay_page_script(state_json: str) -> str:
         return `¥${{(Number(cents || 0) / 100).toFixed(2)}}`;
       }}
 
+      function formatApiError(value, fallback) {{
+        if (value == null) return fallback || "";
+        if (typeof value === "string") return value === "[object Object]" ? (fallback || "") : value.trim();
+        if (Array.isArray(value)) {{
+          const messages = value.map((item) => formatApiError(item, "")).filter(Boolean);
+          return messages.join("；") || fallback || "";
+        }}
+        if (typeof value === "object") {{
+          if (value.loc && (value.msg || value.message)) {{
+            const field = (Array.isArray(value.loc) ? value.loc : [value.loc]).filter((item) => item !== "body").join(".");
+            return `${{field || "提交内容"}}：${{formatApiError(value.msg || value.message, fallback)}}`;
+          }}
+          for (const key of ["detail", "message", "error", "reason", "errors", "msg"]) {{
+            if (!Object.prototype.hasOwnProperty.call(value, key)) continue;
+            const message = formatApiError(value[key], "");
+            if (message) return message;
+          }}
+        }}
+        return fallback || "";
+      }}
+
       function selectedCoupon() {{
         if (!couponSelect || !availableCoupons.length) return null;
         const value = String(couponSelect.value || "auto");
@@ -674,8 +695,8 @@ def _pay_page_script(state_json: str) -> str:
         if (!state.identity_ready || !state.available_coupon_url || paidOrder) return;
         try {{
           const response = await fetch(state.available_coupon_url, {{ credentials: "same-origin" }});
-          const payload = await response.json();
-          if (!response.ok || payload.ok === false) throw new Error(payload.error || "优惠券加载失败");
+          const payload = await response.json().catch(() => ({{}}));
+          if (!response.ok || payload.ok === false) throw new Error(formatApiError(payload, response.status >= 500 ? "服务暂时不可用，请稍后重试" : "优惠券加载失败"));
           availableCoupons = Array.isArray(payload.items) ? payload.items : [];
           if (!availableCoupons.length || !couponBlock || !couponSelect) return;
           couponBlock.hidden = false;
@@ -699,7 +720,7 @@ def _pay_page_script(state_json: str) -> str:
           renderCouponAmount();
         }} catch (error) {{
           couponLoadFailed = true;
-          if (couponHint) couponHint.textContent = error && error.message ? error.message : "优惠券加载失败";
+          if (couponHint) couponHint.textContent = formatApiError(error, "优惠券加载失败");
         }}
       }}
 
@@ -747,9 +768,9 @@ def _pay_page_script(state_json: str) -> str:
       async function confirmStatus(outTradeNo, refresh) {{
         const url = state.status_url_template.replace("{{out_trade_no}}", encodeURIComponent(outTradeNo)) + (refresh ? "?refresh=1" : "");
         const response = await fetch(url, {{ credentials: "same-origin" }});
-        const payload = await response.json();
+        const payload = await response.json().catch(() => ({{}}));
         if (!response.ok || !payload.ok) {{
-          throw new Error(payload.error || "支付结果确认失败");
+          throw new Error(formatApiError(payload, response.status >= 500 ? "支付服务暂时不可用，请稍后重试" : "支付结果确认失败"));
         }}
         return payload.order || {{}};
       }}
@@ -785,7 +806,7 @@ def _pay_page_script(state_json: str) -> str:
           headers: {{ "Content-Type": "application/json" }},
           body: JSON.stringify(body)
         }});
-        const payload = await response.json();
+        const payload = await response.json().catch(() => ({{}}));
         if (!response.ok || !payload.ok) {{
           if (payload.oauth_start_url) {{
             window.location.href = payload.oauth_start_url;
@@ -799,7 +820,8 @@ def _pay_page_script(state_json: str) -> str:
             order_reconciliation_pending: "订单状态正在与微信确认，请勿重复下单，稍后刷新查看。",
             wechat_pay_provider_outcome_unknown: "微信支付订单状态确认中，请勿重复下单，稍后刷新查看。"
           }};
-          throw new Error(friendlyErrors[payload.error] || payload.error || "下单失败");
+          const errorCode = typeof payload.error === "string" ? payload.error : "";
+          throw new Error(friendlyErrors[errorCode] || formatApiError(payload, response.status >= 500 ? "支付服务暂时不可用，请稍后重试" : "下单失败"));
         }}
         return payload;
       }}

@@ -213,12 +213,292 @@
     return finalOptions;
   }
 
-  function responseErrorMessage(response, payload) {
-    if (payload && payload.error) return String(payload.error);
-    if (payload && payload.message) return String(payload.message);
-    if (response && response.statusText) return response.statusText;
-    if (response && response.status) return `request failed (${response.status})`;
-    return "request failed";
+  const ERROR_VALUE_KEYS = ["detail", "message", "error", "reason", "errors", "error_message", "msg"];
+  const ERROR_META_KEYS = new Set([
+    "ok", "success", "code", "error_code", "type", "loc", "location", "input", "ctx", "context", "status", "status_code",
+    "request_id", "trace_id", "stack", "debug",
+  ]);
+  const GENERIC_ERROR_STRINGS = new Set([
+    "[object object]", "request failed", "failed", "error", "internal server error", "bad request",
+  ]);
+  const ERROR_CODE_MESSAGES = {
+    admin_auth_required: "登录状态已失效，请刷新页面后重新登录",
+    authentication_required: "登录状态已失效，请刷新页面后重新登录",
+    unauthorized: "登录状态已失效，请刷新页面后重新登录",
+    forbidden: "当前账号没有执行此操作的权限",
+    permission_denied: "当前账号没有执行此操作的权限",
+    rate_limited: "操作太频繁，请稍后重试",
+    too_many_requests: "操作太频繁，请稍后重试",
+    payload_too_large: "提交内容过大，请压缩后重试",
+    request_entity_too_large: "提交内容过大，请压缩后重试",
+    not_found: "请求的数据不存在或已被删除",
+    conflict: "数据已发生变化，请刷新页面后重试",
+    channels_load_failed: "渠道列表加载失败，请稍后重试",
+    channel_status_update_failed: "渠道状态更新失败，请稍后重试",
+    sync_failed: "同步失败，请检查配置后重试",
+    external_call_failed_known: "外部服务暂时调用失败，请稍后重试",
+    identity_conflict: "当前客户身份存在冲突，请联系管理员处理",
+    missing_unionid: "当前客户身份信息不完整，请稍后重试",
+  };
+
+  function uniqueMessages(values) {
+    const seen = new Set();
+    return values.filter((value) => {
+      const normalized = String(value || "").trim();
+      if (!normalized || seen.has(normalized)) return false;
+      seen.add(normalized);
+      return true;
+    });
+  }
+
+  function humanizeErrorText(value) {
+    const text = String(value == null ? "" : value).trim();
+    if (!text) return "";
+    const lowered = text.toLowerCase();
+    if (ERROR_CODE_MESSAGES[lowered]) return ERROR_CODE_MESSAGES[lowered];
+    if (GENERIC_ERROR_STRINGS.has(lowered)) return "";
+    if (lowered === "field required" || lowered === "required" || lowered.includes("field required")) return "必填";
+    if (lowered === "failed to fetch" || lowered.includes("networkerror") || lowered.includes("network request failed")) {
+      return "网络连接异常，请检查网络后重试";
+    }
+    if (/^http\s+\d+$/i.test(text) || /^[a-z][a-z0-9]*_[a-z0-9_]+$/i.test(text)) return "";
+    const minLength = text.match(/String should have at least (\d+) characters?/i);
+    if (minLength) return `至少填写 ${minLength[1]} 个字符`;
+    const maxLength = text.match(/String should have at most (\d+) characters?/i);
+    if (maxLength) return `最多填写 ${maxLength[1]} 个字符`;
+    if (/input should be a valid/i.test(text) || /value is not a valid/i.test(text)) return "格式不正确";
+    return text;
+  }
+
+  function fieldPath(location) {
+    const parts = Array.isArray(location) ? location : [location];
+    const filtered = parts
+      .map((part) => String(part == null ? "" : part).trim())
+      .filter((part) => part && !["body", "query", "path", "header", "headers", "cookie"].includes(part));
+    return filtered.join(".");
+  }
+
+  function fieldLabel(path, labels = {}) {
+    const normalizedPath = String(path || "");
+    const leaf = normalizedPath.split(".").filter(Boolean).pop() || "";
+    return labels[normalizedPath] || labels[leaf] || normalizedPath || "提交内容";
+  }
+
+  function collectFieldErrors(value, options = {}, results = [], depth = 0) {
+    if (depth > 8 || value == null) return results;
+    if (Array.isArray(value)) {
+      value.forEach((item) => collectFieldErrors(item, options, results, depth + 1));
+      return results;
+    }
+    if (typeof value !== "object") return results;
+
+    const location = value.loc || value.location;
+    const message = humanizeErrorText(value.msg || value.message || "");
+    if (location && message) {
+      const path = fieldPath(location);
+      results.push({
+        field: path.split(".").filter(Boolean).pop() || path,
+        path,
+        label: fieldLabel(path, options.fieldLabels || {}),
+        message,
+      });
+      return results;
+    }
+
+    ERROR_VALUE_KEYS.forEach((key) => {
+      if (Object.prototype.hasOwnProperty.call(value, key)) {
+        collectFieldErrors(value[key], options, results, depth + 1);
+      }
+    });
+    return results;
+  }
+
+  function formatErrorValue(value, options = {}, depth = 0) {
+    if (depth > 8 || value == null) return "";
+    if (value instanceof Error) return humanizeErrorText(value.message);
+    if (["string", "number", "boolean"].includes(typeof value)) return humanizeErrorText(value);
+    if (Array.isArray(value)) {
+      return uniqueMessages(value.map((item) => formatErrorValue(item, options, depth + 1))).join("；");
+    }
+    if (typeof value !== "object") return "";
+
+    const location = value.loc || value.location;
+    const validationMessage = humanizeErrorText(value.msg || value.message || "");
+    if (location && validationMessage) {
+      return `${fieldLabel(fieldPath(location), options.fieldLabels || {})}：${validationMessage}`;
+    }
+
+    const code = humanizeErrorText(value.code || value.error_code || "");
+    if (code && code !== String(value.code || value.error_code || "").trim()) return code;
+
+    for (const key of ERROR_VALUE_KEYS) {
+      if (!Object.prototype.hasOwnProperty.call(value, key)) continue;
+      const message = formatErrorValue(value[key], options, depth + 1);
+      if (message) return message;
+    }
+
+    const messages = Object.entries(value)
+      .filter(([key]) => !ERROR_META_KEYS.has(key))
+      .map(([key, item]) => {
+        const message = formatErrorValue(item, options, depth + 1);
+        return message ? `${fieldLabel(key, options.fieldLabels || {})}：${message}` : "";
+      });
+    return uniqueMessages(messages).join("；");
+  }
+
+  function statusErrorMessage(status) {
+    const normalizedStatus = Number(status || 0);
+    if (normalizedStatus === 400) return "提交内容有误，请检查后重试";
+    if (normalizedStatus === 401) return "登录状态已失效，请刷新页面后重新登录";
+    if (normalizedStatus === 403) return "当前账号没有执行此操作的权限";
+    if (normalizedStatus === 404) return "请求的数据不存在或已被删除";
+    if (normalizedStatus === 409) return "数据已发生变化，请刷新页面后重试";
+    if (normalizedStatus === 413) return "提交内容过大，请压缩后重试";
+    if (normalizedStatus === 422) return "输入内容有误，请检查标记字段";
+    if (normalizedStatus === 429) return "操作太频繁，请稍后重试";
+    if (normalizedStatus >= 500) return "服务暂时不可用，请稍后重试";
+    return "";
+  }
+
+  function normalizeApiError(response, payload, options = {}) {
+    const status = Number(options.status || (response && response.status) || 0);
+    const fieldErrors = collectFieldErrors(payload, options);
+    const fieldMessage = uniqueMessages(fieldErrors.map((item) => `${item.label}：${item.message}`)).join("；");
+    const payloadMessage = formatErrorValue(payload, options);
+    const fallback = humanizeErrorText(options.fallback || "请求失败") || "请求失败";
+    const protectedStatusMessage = [401, 403, 413, 429].includes(status) || status >= 500
+      ? statusErrorMessage(status)
+      : "";
+    const message = protectedStatusMessage || fieldMessage || payloadMessage || statusErrorMessage(status) || fallback;
+    return { message, fieldErrors, status };
+  }
+
+  function responseErrorMessage(response, payload, fallback = "请求失败", options = {}) {
+    return normalizeApiError(response, payload, { ...options, fallback }).message;
+  }
+
+  function errorMessage(error, fallback = "操作失败", options = {}) {
+    if (error && (error.response || error.payload || error.status)) {
+      return normalizeApiError(error.response, error.payload, {
+        ...options,
+        fallback,
+        status: error.status,
+      }).message;
+    }
+    return formatErrorValue(error, options) || humanizeErrorText(fallback) || "操作失败";
+  }
+
+  function nativeValidationMessage(input) {
+    if (input.validity && input.validity.valueMissing) return "必填";
+    if (input.validity && input.validity.tooShort) return `至少填写 ${input.minLength} 个字符`;
+    if (input.validity && input.validity.tooLong) return `最多填写 ${input.maxLength} 个字符`;
+    if (input.validity && input.validity.rangeUnderflow) return `不能小于 ${input.min}`;
+    if (input.validity && input.validity.rangeOverflow) return `不能大于 ${input.max}`;
+    if (input.validity && (input.validity.stepMismatch || input.validity.badInput || input.validity.typeMismatch)) return "格式不正确";
+    return "输入有误";
+  }
+
+  function createFormErrorController(options = {}) {
+    const form = typeof options.form === "string" ? document.getElementById(options.form) : options.form;
+    const fieldLabels = options.fieldLabels || {};
+    const fieldIds = options.fieldIds || {};
+    const fieldEntries = Object.entries(fieldIds);
+    const errorSuffix = options.errorSuffix || "Error";
+    const invalidClass = options.invalidClass || "has-error";
+    const containerSelector = options.fieldContainerSelector || ".field";
+
+    function inputForField(field) {
+      const inputId = fieldIds[field];
+      return inputId ? document.getElementById(inputId) : null;
+    }
+
+    function fieldForInput(input) {
+      const entry = fieldEntries.find(([, inputId]) => inputId === (input && input.id));
+      return entry ? entry[0] : "";
+    }
+
+    function errorNode(input) {
+      if (!input) return null;
+      if (typeof options.errorNode === "function") return options.errorNode(input);
+      return document.getElementById(`${input.id}${errorSuffix}`);
+    }
+
+    function clearField(input) {
+      if (!input) return;
+      input.removeAttribute("aria-invalid");
+      if (typeof input.closest === "function") input.closest(containerSelector)?.classList.remove(invalidClass);
+      const node = errorNode(input);
+      if (node) node.textContent = "";
+    }
+
+    function clearAll() {
+      Array.from(new Set(Object.values(fieldIds))).forEach((inputId) => clearField(document.getElementById(inputId)));
+    }
+
+    function setField(field, message) {
+      const input = inputForField(field);
+      if (!input) return null;
+      input.setAttribute("aria-invalid", "true");
+      if (typeof input.closest === "function") input.closest(containerSelector)?.classList.add(invalidClass);
+      const node = errorNode(input);
+      if (node) node.textContent = String(message || "输入有误");
+      return input;
+    }
+
+    function normalize(error, fallback) {
+      if (error && (error.response || error.payload || error.status)) {
+        return normalizeApiError(error.response, error.payload, {
+          status: error.status,
+          fallback,
+          fieldLabels,
+        });
+      }
+      return { message: errorMessage(error, fallback, { fieldLabels }), fieldErrors: [] };
+    }
+
+    function focusFirst(input) {
+      if (!input) return;
+      if (typeof options.beforeFocus === "function") options.beforeFocus(input);
+      if (typeof input.focus === "function") input.focus();
+    }
+
+    function present(error, fallback = "操作失败") {
+      const normalized = normalize(error, fallback);
+      clearAll();
+      let firstInput = null;
+      (normalized.fieldErrors || []).forEach((item) => {
+        const input = setField(item.field, item.message);
+        if (!firstInput && input) firstInput = input;
+      });
+      focusFirst(firstInput);
+      if (typeof options.showMessage === "function") options.showMessage(normalized.message || fallback, "error");
+      return normalized.message || fallback;
+    }
+
+    function validate() {
+      if (!form) return true;
+      clearAll();
+      if (form.checkValidity()) return true;
+      const invalidInputs = Array.from(form.elements || []).filter(
+        (input) => typeof input.checkValidity === "function" && !input.checkValidity(),
+      );
+      const reasons = invalidInputs.map((input) => {
+        const field = fieldForInput(input);
+        const message = nativeValidationMessage(input);
+        if (field) setField(field, message);
+        const label = fieldLabels[field] || (input.labels && input.labels[0] && input.labels[0].textContent.trim()) || "表单字段";
+        return `${label}：${message}`;
+      });
+      focusFirst(invalidInputs[0]);
+      if (typeof form.reportValidity === "function") form.reportValidity();
+      const prefix = options.validationPrefix || "未保存";
+      if (typeof options.showMessage === "function") {
+        options.showMessage(`${prefix}：${uniqueMessages(reasons).join("；")}`, "error");
+      }
+      return false;
+    }
+
+    return { clearField, clearAll, setField, present, validate };
   }
 
   function normalizeRequestError(error, context = {}) {
@@ -243,12 +523,15 @@
   }
 
   function buildRequestError(response, payload, context) {
-    return normalizeRequestError(new Error(responseErrorMessage(response, payload)), {
+    const normalized = normalizeApiError(response, payload);
+    const error = normalizeRequestError(new Error(normalized.message), {
       ...context,
       response,
       payload,
       status: response.status,
     });
+    error.fieldErrors = normalized.fieldErrors;
+    return error;
   }
 
   function requestJson(url, options = {}) {
@@ -266,6 +549,15 @@
           throw buildRequestError(response, payload, { url, method });
         }
         return payload || { ok: true };
+      })
+      .catch((error) => {
+        if (error && (error.response || error.payload || error.status)) throw error;
+        const normalized = normalizeRequestError(new Error(errorMessage(error, "网络连接异常，请检查网络后重试")), {
+          url,
+          method,
+        });
+        normalized.cause = error;
+        throw normalized;
       });
   }
 
@@ -285,6 +577,12 @@
     ...(window.AdminApi || {}),
     safeJsonParse,
     escapeHtml,
+    formatErrorValue,
+    collectFieldErrors,
+    normalizeApiError,
+    responseErrorMessage,
+    errorMessage,
+    createFormErrorController,
     requestJson,
     isPermissionError,
     normalizeRequestError,

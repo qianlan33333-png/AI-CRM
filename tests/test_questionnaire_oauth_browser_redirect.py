@@ -93,7 +93,9 @@ def test_h5_page_handles_oauth_required_submit_without_exposing_raw_error(client
     assert "function startOAuthRedirect" in html
     assert "oauth_required_redirect" in html
     assert "请先完成微信授权" in html
-    assert html.index("if (isOAuthRequired(result))") < html.index("throw new Error(result.error || '提交失败')")
+    assert html.index("if (isOAuthRequired(result))") < html.index("throw result;")
+    assert "normalizedErrorMessage(error, '提交失败，请稍后重试')" in html
+    assert "result.error || '提交失败'" not in html
 
 
 def test_oauth_callback_default_still_returns_json_and_cookie(client: TestClient) -> None:

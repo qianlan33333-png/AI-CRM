@@ -249,11 +249,11 @@
       if(data.ok !== false){
         location.reload();
       } else {
-        alert('同步失败: ' + (data.error || '未知错误'));
+        alert('同步失败: ' + window.AdminApi.responseErrorMessage(resp, data, '请稍后重试'));
         btn.disabled = false; btn.textContent = '刷新企微通讯录';
       }
     } catch(err){
-      alert('同步失败: ' + err.message);
+      alert('同步失败: ' + window.AdminApi.errorMessage(err, '请稍后重试'));
       btn.disabled = false; btn.textContent = '刷新企微通讯录';
     }
   });

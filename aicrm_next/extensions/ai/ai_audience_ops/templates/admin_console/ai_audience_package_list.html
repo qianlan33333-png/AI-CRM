@@ -57,6 +57,8 @@
     font-weight: 750;
     white-space: nowrap;
   }
+  .ai-audience-notice { margin: 0 20px 16px; border: 1px solid #d6e4ff; border-radius: 10px; background: #f5f8ff; color: #1849a9; padding: 10px 12px; font-weight: 750; }
+  .ai-audience-notice.is-error { border-color: #fecdca; background: #fff1f3; color: #b42318; }
 
   .ai-audience-table-wrap {
     overflow-x: auto;
@@ -208,6 +210,7 @@
     <h2>人群包列表</h2>
     <div class="ai-audience-count" id="aiAudienceTotal">加载中</div>
   </div>
+  <div class="ai-audience-notice" id="aiAudienceNotice" role="status" aria-live="polite" aria-atomic="true" hidden></div>
   <div class="ai-audience-table-wrap">
     <table class="ai-audience-table">
       <thead>
@@ -239,6 +242,15 @@
     const executeUrl = "/api/admin/user-ops/batch-send/execute";
     const totalEl = document.getElementById("aiAudienceTotal");
     const rowsEl = document.getElementById("aiAudienceRows");
+    const noticeEl = document.getElementById("aiAudienceNotice");
+
+    const notice = (message, isError = false) => {
+      noticeEl.textContent = String(message || "");
+      noticeEl.hidden = !message;
+      noticeEl.classList.toggle("is-error", isError);
+      noticeEl.setAttribute("role", isError ? "alert" : "status");
+      noticeEl.setAttribute("aria-live", isError ? "assertive" : "polite");
+    };
 
     const escapeHtml = (value) => String(value ?? "")
       .replaceAll("&", "&amp;")
@@ -269,17 +281,7 @@
     };
 
     const fetchJson = async (url, options = {}) => {
-      const response = await fetch(url, {
-        credentials: "same-origin",
-        cache: "no-store",
-        headers: { "Accept": "application/json", ...(options.headers || {}) },
-        ...options
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok || payload.ok === false) {
-        throw new Error(payload.error || payload.detail || `HTTP ${response.status}`);
-      }
-      return payload;
+      return window.AdminApi.requestJson(url, { cache: "no-store", ...options });
     };
 
     const packageDetailPath = (id) => `/admin/automation-conversion/packages/${encodeURIComponent(id)}`;
@@ -301,7 +303,7 @@
 
     const openBatchSend = (item) => {
       if (!window.UserOpsBatchSendModal) {
-        window.alert("标准群发组件加载失败，请刷新页面后重试");
+        notice("标准群发组件加载失败，请刷新页面后重试", true);
         return;
       }
       window.UserOpsBatchSendModal.open({
@@ -368,7 +370,7 @@
             button.disabled = true;
             await runPackageAction(item, action);
           } catch (error) {
-            window.alert(error.message || "操作失败");
+            notice(window.AdminApi.errorMessage(error, "操作失败"), true);
           } finally {
             button.disabled = false;
           }
@@ -382,10 +384,13 @@
       try {
         const requestUrl = `${apiUrl}${apiUrl.includes("?") ? "&" : "?"}_=${Date.now()}`;
         const payload = await fetchJson(requestUrl);
+        notice("");
         render(payload);
       } catch (error) {
+        const message = window.AdminApi.errorMessage(error, "加载失败，请稍后重试");
         totalEl.textContent = "加载失败";
-        rowsEl.innerHTML = '<tr><td class="ai-audience-empty" colspan="5">加载失败，请稍后重试</td></tr>';
+        rowsEl.innerHTML = `<tr><td class="ai-audience-empty" colspan="5">${escapeHtml(message)}</td></tr>`;
+        notice(message, true);
       }
     }
 

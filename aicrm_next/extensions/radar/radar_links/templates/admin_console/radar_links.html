@@ -164,10 +164,7 @@
   }
 
   async function fetchJson(url, options = {}) {
-    const response = await fetch(url, {headers: {Accept: "application/json", "Content-Type": "application/json"}, ...options});
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok || payload.ok === false) throw new Error(String(payload.error || payload.detail || payload.message || "请求失败"));
-    return payload;
+    return window.AdminApi.requestJson(url, options);
   }
 
   async function copyText(value) {
@@ -233,7 +230,7 @@
       items = payload.items || payload.radar_links || [];
       render();
     } catch (error) {
-      rowsEl.innerHTML = `<tr><td colspan="8" class="radar-empty">${escapeHtml(error.message || "列表加载失败")}</td></tr>`;
+      rowsEl.innerHTML = `<tr><td colspan="8" class="radar-empty">${escapeHtml(window.AdminApi.errorMessage(error, "列表加载失败"))}</td></tr>`;
     }
   }
 
@@ -267,7 +264,7 @@
         await load();
       }
     } catch (error) {
-      toast(error.message || "操作失败", true);
+      toast(window.AdminApi.errorMessage(error, "操作失败"), true);
     }
   });
   document.querySelector("[data-refresh]").addEventListener("click", load);

@@ -35,13 +35,8 @@
 
   async function fetchItems(type, q) {
     const params = new URLSearchParams({ type, q: q || "", enabled_only: "true", limit: "50", offset: "0" });
-    const response = await fetch(`/api/admin/material-picker/items?${params.toString()}`, {
-      headers: { Accept: "application/json" },
-    });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok || data.ok === false) {
-      throw new Error(data.error || data.detail || "素材列表加载失败");
-    }
+    if (!window.AdminApi?.requestJson) throw new Error("页面请求组件加载失败，请刷新页面后重试");
+    const data = await window.AdminApi.requestJson(`/api/admin/material-picker/items?${params.toString()}`);
     return (data.items || []).map(normalizeItem);
   }
 

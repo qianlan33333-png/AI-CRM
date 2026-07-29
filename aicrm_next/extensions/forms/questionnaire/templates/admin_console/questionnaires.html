@@ -392,12 +392,7 @@
   }
 
   async function fetchJson(url, options = {}) {
-    const response = await fetch(url, options);
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok || data.ok === false) {
-      throw new Error(String(data.error || data.message || '请求失败，请稍后重试'));
-    }
-    return data;
+    return window.AdminApi.requestJson(url, options);
   }
 
   async function copyText(text) {
@@ -610,7 +605,7 @@
       const response = await fetch(`/api/admin/questionnaires/${questionnaireId}/export`);
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        throw new Error(String(data.error || data.message || '下载失败，请稍后重试'));
+        throw new Error(window.AdminApi.responseErrorMessage(response, data, '下载失败，请稍后重试'));
       }
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
@@ -646,23 +641,23 @@
     const item = state.questionnaires.find((entry) => String(entry.id) === String(questionnaireId));
     if (!item) return;
     if (button.dataset.action === 'toggle') {
-      toggleQuestionnaire(questionnaireId).catch((error) => showToast(error.message || '问卷状态更新失败，请稍后重试', true));
+      toggleQuestionnaire(questionnaireId).catch((error) => showToast(window.AdminApi.errorMessage(error, '问卷状态更新失败，请稍后重试'), true));
       return;
     }
     if (button.dataset.action === 'share') {
-      openQuestionnaireShare(item).catch((error) => showToast(error.message || '分享信息加载失败，请稍后重试', true));
+      openQuestionnaireShare(item).catch((error) => showToast(window.AdminApi.errorMessage(error, '分享信息加载失败，请稍后重试'), true));
       return;
     }
     if (button.dataset.action === 'duplicate') {
-      duplicateQuestionnaire(questionnaireId).catch((error) => showToast(error.message || '复制失败，请稍后重试', true));
+      duplicateQuestionnaire(questionnaireId).catch((error) => showToast(window.AdminApi.errorMessage(error, '复制失败，请稍后重试'), true));
       return;
     }
     if (button.dataset.action === 'delete') {
-      deleteQuestionnaire(questionnaireId).catch((error) => showToast(error.message || '删除失败，请稍后重试', true));
+      deleteQuestionnaire(questionnaireId).catch((error) => showToast(window.AdminApi.errorMessage(error, '删除失败，请稍后重试'), true));
       return;
     }
     if (button.dataset.action === 'export') {
-      downloadQuestionnaireData(item.id, button).catch((error) => showToast(error.message || '下载失败，请稍后重试', true));
+      downloadQuestionnaireData(item.id, button).catch((error) => showToast(window.AdminApi.errorMessage(error, '下载失败，请稍后重试'), true));
     }
   });
 

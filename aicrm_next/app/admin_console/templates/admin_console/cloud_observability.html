@@ -11,6 +11,7 @@
         <input id="cloud-obs-session" class="admin-input" placeholder="按 session_id 过滤…">
         <button class="admin-button admin-button--primary" id="cloud-obs-refresh">刷新</button>
       </div>
+      <div class="cloud-obs-notice" id="cloud-obs-notice" role="status" aria-live="polite" aria-atomic="true" hidden></div>
     </header>
   </section>
 
@@ -51,6 +52,7 @@
 .cloud-obs-toolbar input { flex:1; max-width:280px; }
 .cloud-obs-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px; }
 .cloud-obs-card-wide { grid-column: 1 / -1; }
+.cloud-obs-notice { margin-top:10px; border:1px solid #fecdca; border-radius:8px; background:#fff1f3; color:#b42318; padding:9px 11px; font-weight:750; }
 @media (max-width:960px) { .cloud-obs-grid { grid-template-columns:1fr; } }
 </style>
 <script>
@@ -65,23 +67,45 @@
   const toolTbody = root.querySelector('#cloud-obs-tool-stats');
   const errTbody = root.querySelector('#cloud-obs-errors');
   const auditTbody = root.querySelector('#cloud-obs-audit-list');
+  const noticeEl = root.querySelector('#cloud-obs-notice');
 
   const fmt = (s) => (s == null ? '' : String(s));
+  const esc = (s) => window.AdminApi.escapeHtml(fmt(s));
+  const showError = (error, fallback) => {
+    const message = window.AdminApi.errorMessage(error, fallback);
+    noticeEl.textContent = message;
+    noticeEl.hidden = false;
+    noticeEl.setAttribute('role', 'alert');
+    noticeEl.setAttribute('aria-live', 'assertive');
+    return message;
+  };
+  const clearError = () => {
+    noticeEl.textContent = '';
+    noticeEl.hidden = true;
+    noticeEl.setAttribute('role', 'status');
+    noticeEl.setAttribute('aria-live', 'polite');
+  };
 
   async function loadObservability() {
-    const resp = await fetch('/api/admin/cloud-orchestrator/observability');
-    const data = await resp.json();
-    if (!data.ok) return;
-    funnelTbody.innerHTML = Object.entries(data.plan_funnel_7d || {}).map(([k, v]) =>
-      `<tr><td>${k}</td><td>${v}</td></tr>`).join('') || '<tr><td>无</td></tr>';
-    auditStatusTbody.innerHTML = Object.entries(data.audit_status_1d || {}).map(([k, v]) =>
-      `<tr><td>${k}</td><td>${v}</td></tr>`).join('') || '<tr><td>无</td></tr>';
-    toolTbody.innerHTML = (data.tool_stats_1d || []).map(s =>
-      `<tr><td><code>${fmt(s.tool)}</code></td><td>${s.count}</td><td>${s.avg_latency_ms}</td><td>${s.error_count}</td></tr>`
-    ).join('') || '<tr><td colspan="4">无</td></tr>';
-    errTbody.innerHTML = (data.recent_errors || []).map(e =>
-      `<tr><td>${fmt(e.created_at)}</td><td><code>${fmt(e.tool_name)}</code></td><td><code>${fmt(e.trace_id).slice(0,16)}…</code></td><td>${fmt(e.error_message).slice(0,200)}</td></tr>`
-    ).join('') || '<tr><td colspan="4">无</td></tr>';
+    try {
+      const data = await window.AdminApi.requestJson('/api/admin/cloud-orchestrator/observability');
+      funnelTbody.innerHTML = Object.entries(data.plan_funnel_7d || {}).map(([k, v]) =>
+        `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('') || '<tr><td>无</td></tr>';
+      auditStatusTbody.innerHTML = Object.entries(data.audit_status_1d || {}).map(([k, v]) =>
+        `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('') || '<tr><td>无</td></tr>';
+      toolTbody.innerHTML = (data.tool_stats_1d || []).map(s =>
+        `<tr><td><code>${esc(s.tool)}</code></td><td>${esc(s.count)}</td><td>${esc(s.avg_latency_ms)}</td><td>${esc(s.error_count)}</td></tr>`
+      ).join('') || '<tr><td colspan="4">无</td></tr>';
+      errTbody.innerHTML = (data.recent_errors || []).map(e =>
+        `<tr><td>${esc(e.created_at)}</td><td><code>${esc(e.tool_name)}</code></td><td><code>${esc(fmt(e.trace_id).slice(0,16))}…</code></td><td>${esc(fmt(e.error_message).slice(0,200))}</td></tr>`
+      ).join('') || '<tr><td colspan="4">无</td></tr>';
+    } catch (error) {
+      const message = showError(error, '可观察性数据加载失败，请稍后重试');
+      funnelTbody.innerHTML = `<tr><td>${esc(message)}</td></tr>`;
+      auditStatusTbody.innerHTML = `<tr><td>${esc(message)}</td></tr>`;
+      toolTbody.innerHTML = `<tr><td colspan="4">${esc(message)}</td></tr>`;
+      errTbody.innerHTML = `<tr><td colspan="4">${esc(message)}</td></tr>`;
+    }
   }
 
   async function loadAudit() {
@@ -94,25 +118,30 @@
       auditTbody.innerHTML = '<tr><td colspan="7">输入 trace_id 或 session_id 过滤后点刷新</td></tr>';
       return;
     }
-    const resp = await fetch('/api/admin/cloud-orchestrator/audit?' + params.toString());
-    const data = await resp.json();
-    if (!data.ok) return;
-    auditTbody.innerHTML = (data.audit || []).map(a =>
-      `<tr>
-        <td>${fmt(a.created_at)}</td>
-        <td><code>${fmt(a.tool_name)}</code></td>
-        <td>${fmt(a.status)}</td>
-        <td>${fmt(a.latency_ms)}</td>
-        <td><code>${fmt(a.session_id).slice(0,16)}…</code></td>
-        <td><code>${fmt(a.trace_id).slice(0,16)}…</code></td>
-        <td>${fmt(a.result_summary).slice(0,200)}</td>
-      </tr>`
-    ).join('') || '<tr><td colspan="7">无审计</td></tr>';
+    try {
+      const data = await window.AdminApi.requestJson('/api/admin/cloud-orchestrator/audit?' + params.toString());
+      auditTbody.innerHTML = (data.audit || []).map(a =>
+        `<tr>
+          <td>${esc(a.created_at)}</td>
+          <td><code>${esc(a.tool_name)}</code></td>
+          <td>${esc(a.status)}</td>
+          <td>${esc(a.latency_ms)}</td>
+          <td><code>${esc(fmt(a.session_id).slice(0,16))}…</code></td>
+          <td><code>${esc(fmt(a.trace_id).slice(0,16))}…</code></td>
+          <td>${esc(fmt(a.result_summary).slice(0,200))}</td>
+        </tr>`
+      ).join('') || '<tr><td colspan="7">无审计</td></tr>';
+    } catch (error) {
+      const message = showError(error, '审计日志加载失败，请稍后重试');
+      auditTbody.innerHTML = `<tr><td colspan="7">${esc(message)}</td></tr>`;
+    }
   }
 
-  refreshBtn.addEventListener('click', () => {
-    loadObservability();
-    loadAudit();
+  refreshBtn.addEventListener('click', async () => {
+    refreshBtn.disabled = true;
+    clearError();
+    await Promise.allSettled([loadObservability(), loadAudit()]);
+    refreshBtn.disabled = false;
   });
   loadObservability();
 })();

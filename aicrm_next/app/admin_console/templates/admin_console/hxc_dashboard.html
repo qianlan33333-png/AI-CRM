@@ -437,12 +437,12 @@
       } else {
         btn.textContent = original;
         btn.disabled = false;
-        alert("刷新失败: " + (result.error || result.status || "未知错误"));
+        alert("刷新失败: " + window.AdminApi.responseErrorMessage(resp, result, "请稍后重试"));
       }
     } catch (err) {
       btn.textContent = original;
       btn.disabled = false;
-      alert("刷新失败: " + err.message);
+      alert("刷新失败: " + window.AdminApi.errorMessage(err, "请稍后重试"));
     }
   });
 
@@ -535,7 +535,7 @@
           .then(async (resp)=>{
             const result = await resp.json().catch(()=>({}));
             if(!resp.ok || !result.ok){
-              throw new Error(result.detail || result.error || '创建 HXC 群发任务失败');
+              throw new Error(window.AdminApi.responseErrorMessage(resp, result, '创建 HXC 群发任务失败'));
             }
             const task = result.task || {};
             alert(

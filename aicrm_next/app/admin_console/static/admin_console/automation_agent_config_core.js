@@ -59,7 +59,7 @@
         throw error;
       }
       if (error && error.status) {
-        throw new Error(`请求失败（HTTP ${error.status || 0}）`);
+        throw new Error(AdminApi.errorMessage ? AdminApi.errorMessage(error, "请求失败") : "请求失败，请稍后重试");
       }
       throw error;
     });

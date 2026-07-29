@@ -16,14 +16,10 @@
   async function fetchJson(url, options, errorMessage) {
     if (window.AdminApi && typeof window.AdminApi.requestJson === "function") {
       return window.AdminApi.requestJson(url, options || {}).catch((error) => {
-        throw new Error(error.message || errorMessage || "请求失败");
+        throw new Error(window.AdminApi.errorMessage(error, errorMessage || "请求失败"));
       });
     }
-    const response = await fetch(url, options || {});
-    const payload = await response.json().catch(() => ({}));
-    const detail = payload.detail && typeof payload.detail === "object" ? payload.detail.detail : payload.detail;
-    if (!response.ok || payload.ok === false) throw new Error(payload.error || detail || errorMessage || "请求失败");
-    return payload;
+    throw new Error("页面请求组件加载失败，请刷新页面后重试");
   }
 
   function normalizeGroup(raw) {
@@ -120,7 +116,13 @@
       groups = (payload.items || []).map(normalizeGroup);
       loading = false;
       render();
-      if (payload.needs_sync) await syncGroups().catch(() => {});
+      if (payload.needs_sync) {
+        try {
+          await syncGroups();
+        } catch (error) {
+          render(window.AdminApi.errorMessage(error, "群聊自动同步失败，可稍后点击刷新重试"));
+        }
+      }
     }
 
     async function syncGroups() {

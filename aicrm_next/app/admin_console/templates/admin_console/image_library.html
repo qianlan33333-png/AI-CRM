@@ -321,6 +321,7 @@
   function escapeHtml(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
+  function errorText(value, fallback) { return window.AdminApi?.formatErrorValue(value) || fallback; }
   function requestJSON(url, options) {
     var client = window.ImageUploadClient || {};
     var fn = client.requestJsonWithTimeout || client.requestJson;
@@ -507,14 +508,14 @@
     try {
       var d = await getJSON(buildListUrl(), { signal: STATE.listController.signal });
       if (!d.ok) {
-        wrap.innerHTML = '<p class="il-empty-grid">加载失败：' + escapeHtml(d.error || '') + '</p>';
+        wrap.innerHTML = '<p class="il-empty-grid">加载失败：' + escapeHtml(errorText(d, '请稍后重试')) + '</p>';
         return;
       }
       STATE.items = d.items || [];
       renderGrid();
     } catch (e) {
       if (e && e.name === 'AbortError') return;
-      wrap.innerHTML = '<p class="il-empty-grid">加载失败：' + escapeHtml(String(e)) + '</p>';
+      wrap.innerHTML = '<p class="il-empty-grid">加载失败：' + escapeHtml(window.AdminApi.errorMessage(e, '请稍后重试')) + '</p>';
     }
   }
 
@@ -598,11 +599,11 @@
         setTimeout(closeUploadModal, 600);
       } else {
         $uploadStatus.className = 'il-modal-status error';
-        $uploadStatus.textContent = '失败：' + (d.error || '未知错误');
+        $uploadStatus.textContent = '失败：' + errorText(d, '请稍后重试');
       }
     } catch (e) {
       $uploadStatus.className = 'il-modal-status error';
-      $uploadStatus.textContent = '失败：' + String(e);
+      $uploadStatus.textContent = '失败：' + window.AdminApi.errorMessage(e, '请稍后重试');
     } finally {
       btn.disabled = false;
     }
@@ -675,10 +676,10 @@
         await loadAll();
         setTimeout(closeEditModal, 500);
       } else {
-        setEditStatus('保存失败：' + (d.error || '未知错误'), 'error');
+        setEditStatus('保存失败：' + errorText(d, '请稍后重试'), 'error');
       }
     } catch (e) {
-      setEditStatus('保存失败：' + String(e), 'error');
+      setEditStatus('保存失败：' + window.AdminApi.errorMessage(e, '请稍后重试'), 'error');
     }
   });
 
@@ -694,10 +695,10 @@
         setEditStatus(editingItem.enabled ? '已启用' : '已停用', 'success');
         await loadAll();
       } else {
-        setEditStatus('切换失败：' + (d.error || '未知错误'), 'error');
+        setEditStatus('切换失败：' + errorText(d, '请稍后重试'), 'error');
       }
     } catch (e) {
-      setEditStatus('切换失败：' + String(e), 'error');
+      setEditStatus('切换失败：' + window.AdminApi.errorMessage(e, '请稍后重试'), 'error');
     }
   });
 
@@ -734,11 +735,11 @@
         await loadAll();
         setTimeout(closeEditModal, 800);
       } else {
-        setEditStatus('强删失败：' + (d2.error || '未知错误'), 'error');
+        setEditStatus('强删失败：' + errorText(d2, '请稍后重试'), 'error');
       }
       return;
     }
-    setEditStatus('删除失败：' + (d.error || '未知错误'), 'error');
+    setEditStatus('删除失败：' + errorText(d, '请稍后重试'), 'error');
   });
 
   // ===================================================================

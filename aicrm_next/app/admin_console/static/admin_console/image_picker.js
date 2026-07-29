@@ -22,6 +22,9 @@
   let _libraryCachePromise = null;
 
   function requestJson(url, options) {
+    if (window.AdminApi && window.AdminApi.requestJson) {
+      return window.AdminApi.requestJson(url, options || {});
+    }
     if (window.ImageUploadClient && window.ImageUploadClient.requestJson) {
       return window.ImageUploadClient.requestJson(url, options || {});
     }
@@ -41,7 +44,8 @@
         const data = await requestJson('/api/admin/image-library?enabled_only=true&limit=80');
         _libraryCache = data.ok ? (data.items || []) : [];
       } catch (e) {
-        _libraryCache = [];
+        _libraryCachePromise = null;
+        throw e;
       }
       _libraryCachePromise = null;
       return _libraryCache;
@@ -199,6 +203,9 @@
           updateCount();
         });
       });
+    }).catch((error) => {
+      const message = window.AdminApi?.errorMessage(error, '素材库加载失败，请稍后重试') || '素材库加载失败，请稍后重试';
+      listEl.innerHTML = '<div style="grid-column:1/-1;color:#b42318;font-size:13px;text-align:center;padding:30px;">' + escapeHtml(message) + '</div>';
     });
   }
 
@@ -237,7 +244,14 @@
         selectedEl.innerHTML = '<span style="color:#aaa;font-size:12px;">未选择图片</span>';
         return;
       }
-      const items = await fetchLibrary();
+      let items;
+      try {
+        items = await fetchLibrary();
+      } catch (error) {
+        const message = window.AdminApi?.errorMessage(error, '素材库加载失败，请稍后重试') || '素材库加载失败，请稍后重试';
+        selectedEl.innerHTML = '<span style="color:#b42318;font-size:12px;">' + escapeHtml(message) + '</span>';
+        return;
+      }
       selectedEl.innerHTML = ids.map(function (id) {
         const it = items.find(function (x) { return String(x.id) === String(id); }) || { id: id, name: '#' + id };
         return '<div class="img-picker-chip" data-id="' + id + '" style="display:flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid #e5e7eb;border-radius:4px;background:#fafbfc;font-size:12px;">'
@@ -290,7 +304,7 @@
       const files = Array.from(fileInput.files || []);
       if (!files.length) return;
       fileInput.disabled = true;
-      let ok = 0, fail = 0;
+      let ok = 0, fail = 0, lastError = '';
       for (let i = 0; i < files.length; i++) {
         statusEl.textContent = '处理中 ' + (i + 1) + '/' + files.length + '：' + files[i].name;
         try {
@@ -316,14 +330,16 @@
             }
           } else {
             fail++;
-            statusEl.textContent = '上传失败：' + (data.error || '未知错误');
+            lastError = window.AdminApi?.formatErrorValue(data) || '上传失败，请稍后重试';
+            statusEl.textContent = '上传失败：' + lastError;
           }
         } catch (e) {
           fail++;
-          statusEl.textContent = '上传失败：' + String((e && e.message) || e);
+          lastError = window.AdminApi?.errorMessage(e, '上传失败，请稍后重试') || '上传失败，请稍后重试';
+          statusEl.textContent = '上传失败：' + lastError;
         }
       }
-      statusEl.textContent = '已上传 ' + ok + (fail ? '，失败 ' + fail : '') + ' 张';
+      statusEl.textContent = '已上传 ' + ok + (fail ? '，失败 ' + fail + ' 张：' + lastError : ' 张');
       fileInput.disabled = false;
       fileInput.value = '';
       // 等下一帧让 invalidateCache 后的 fetchLibrary 重新拉

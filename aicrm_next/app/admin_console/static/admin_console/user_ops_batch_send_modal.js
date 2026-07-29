@@ -87,18 +87,12 @@
   }
 
   async function postJson(url, payload) {
-    const response = await fetch(url, {
+    if (!window.AdminApi?.requestJson) throw new Error("页面请求组件加载失败，请刷新页面后重试");
+    return window.AdminApi.requestJson(url, {
       method: "POST",
-      credentials: "same-origin",
       cache: "no-store",
-      headers: { Accept: "application/json", "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: payload,
     });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok || data.ok === false) {
-      throw new Error(data.error || data.detail || `HTTP ${response.status}`);
-    }
-    return data;
   }
 
   async function previewAndExecute(contentPackage) {
@@ -141,7 +135,7 @@
       },
       onConfirm(contentPackage) {
         previewAndExecute(normalizeContentPackage(contentPackage)).catch((error) => {
-          window.alert(error.message || "群发任务创建失败");
+          window.alert(window.AdminApi?.errorMessage(error, "群发任务创建失败") || "群发任务创建失败");
         });
       },
     });

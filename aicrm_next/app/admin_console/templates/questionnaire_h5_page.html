@@ -624,9 +624,10 @@
 
       const handleCompletionResponse = window.AICRMQuestionnaireCompletionAction.create({ formEl, weappLaunchPanel, submittedUrl, setState, handleCompletionTarget });
       function normalizedErrorMessage(error, fallback) {
-        if (!error) return fallback;
-        if (typeof error === 'string') return error;
-        if (error instanceof Error && error.message) return error.message;
+        if (!error || typeof error === 'string') return error && error !== '[object Object]' ? error : fallback;
+        if (Array.isArray(error)) return error.map((item) => normalizedErrorMessage(item, '')).filter(Boolean).join('；') || fallback;
+        if (error.loc && (error.msg || error.message)) return `${(Array.isArray(error.loc) ? error.loc : [error.loc]).filter((item) => item !== 'body').join('.') || '提交内容'}：${normalizedErrorMessage(error.msg || error.message, fallback)}`;
+        for (const key of ['detail', 'message', 'error', 'reason', 'errors', 'msg']) { const message = Object.prototype.hasOwnProperty.call(error, key) && normalizedErrorMessage(error[key], ''); if (message) return message; }
         return fallback;
       }
       function isOAuthRequired(result) {
@@ -1135,7 +1136,7 @@
               startOAuthRedirect(data);
               return;
             }
-            if (!ok || !data.ok) throw new Error(data.error || '问卷不存在');
+            if (!ok || !data.ok) throw data;
             renderQuestionnaire({ ...(data.questionnaire || {}), questions: data.questions || (data.questionnaire || {}).questions || [] });
             setState('');
           })
@@ -1247,7 +1248,7 @@
             return;
           }
           if (!response.ok || !result.success) {
-            throw new Error(result.error || '提交失败');
+            throw result;
           }
           handleCompletionResponse(result);
         } catch (error) {

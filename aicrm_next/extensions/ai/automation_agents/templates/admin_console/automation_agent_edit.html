@@ -308,6 +308,7 @@
     opacity: 1;
     transform: translateY(0);
   }
+  .automation-agent-toast.is-error { background: var(--agent-red); }
 
   .automation-agent-modal-mask {
     position: fixed;
@@ -521,7 +522,7 @@
   </div>
 </div>
 
-<div class="automation-agent-toast" id="agentToast">已保存</div>
+<div class="automation-agent-toast" id="agentToast" role="status" aria-live="polite" aria-atomic="true">已保存</div>
 {% endblock %}
 
 {% block scripts_extra %}
@@ -598,28 +599,16 @@
     };
 
     const fetchJson = async (url, options = {}) => {
-      const headers = { Accept: "application/json", ...(options.headers || {}) };
-      if (options.body && typeof options.body !== "string") {
-        headers["Content-Type"] = "application/json";
-      }
-      const response = await fetch(url, {
-        credentials: "same-origin",
-        cache: "no-store",
-        ...options,
-        headers,
-        body: options.body && typeof options.body !== "string" ? JSON.stringify(options.body) : options.body,
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok || payload.ok === false) {
-        throw new Error(payload.error || payload.detail || `HTTP ${response.status}`);
-      }
-      return payload;
+      return window.AdminApi.requestJson(url, { cache: "no-store", ...options });
     };
 
-    const toast = (message) => {
+    const toast = (message, isError = false) => {
       els.toast.textContent = message;
+      els.toast.classList.toggle("is-error", isError);
+      els.toast.setAttribute("role", isError ? "alert" : "status");
+      els.toast.setAttribute("aria-live", isError ? "assertive" : "polite");
       els.toast.classList.add("show");
-      window.setTimeout(() => els.toast.classList.remove("show"), 1500);
+      window.setTimeout(() => els.toast.classList.remove("show"), isError ? 5200 : 1800);
     };
 
     const pathOnly = (value) => {
@@ -901,12 +890,12 @@
         await saveFixedContent();
         els.materialModal.classList.remove("show");
       } catch (error) {
-        window.alert(error.message || "保存失败");
+        toast(window.AdminApi.errorMessage(error, "保存失败"), true);
       }
     });
-    document.getElementById("saveCurrent").addEventListener("click", () => saveAgent("已保存").catch((error) => window.alert(error.message || "保存失败")));
-    document.getElementById("saveDraft").addEventListener("click", () => saveAgent("草稿已保存").catch((error) => window.alert(error.message || "保存失败")));
-    document.getElementById("publishAgent").addEventListener("click", () => publishAgent().catch((error) => window.alert(error.message || "发布失败")));
+    document.getElementById("saveCurrent").addEventListener("click", () => saveAgent("已保存").catch((error) => toast(window.AdminApi.errorMessage(error, "保存失败"), true)));
+    document.getElementById("saveDraft").addEventListener("click", () => saveAgent("草稿已保存").catch((error) => toast(window.AdminApi.errorMessage(error, "保存失败"), true)));
+    document.getElementById("publishAgent").addEventListener("click", () => publishAgent().catch((error) => toast(window.AdminApi.errorMessage(error, "发布失败"), true)));
     document.getElementById("loadPublished").addEventListener("click", () => {
       els.rolePrompt.value = state.agent.published_role_prompt || "";
       els.taskPrompt.value = state.agent.published_task_prompt || "";
@@ -916,7 +905,7 @@
     els.automationType.addEventListener("change", renderMode);
     els.fixedScriptText.addEventListener("input", renderMode);
     els.agentStatus.addEventListener("change", renderStatus);
-    loadAgent().catch((error) => window.alert(error.message || "加载失败"));
+    loadAgent().catch((error) => toast(window.AdminApi.errorMessage(error, "加载失败"), true));
   })();
 </script>
 {% endblock %}

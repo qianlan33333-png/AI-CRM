@@ -106,6 +106,7 @@
   }
 
   function apiErrorMessage(data, fallback) {
+    if (window.AdminApi?.formatErrorValue) return window.AdminApi.formatErrorValue(data) || fallback;
     const detail = data && data.detail;
     if (typeof detail === "string" && detail) return detail;
     if (detail && typeof detail === "object") {
@@ -202,7 +203,7 @@
     if (typeof data.created_count !== "undefined") lines.push("新建人数：" + data.created_count);
     if (typeof data.skipped_count !== "undefined") lines.push("跳过人数：" + data.skipped_count);
     if (data.reason) lines.push("处理说明：" + data.reason);
-    if (Array.isArray(data.errors) && data.errors.length) lines.push("错误：" + data.errors.join("；"));
+    if (Array.isArray(data.errors) && data.errors.length) lines.push("错误：" + apiErrorMessage({ detail: data.errors }, "处理失败"));
     return lines.length ? lines.join("\n") : "导入任务已处理";
   }
 
@@ -919,7 +920,7 @@
         const url = base.replace(/\/0($|[/?#])/, "/" + bindingId + "$1");
         apiJson(url, { method: "DELETE", body: JSON.stringify({ admin_action_token: adminToken }) }).then(({ response, data }) => {
           if (!response.ok || data.ok === false) {
-            toast(data.error || data.reason || "解绑失败");
+            toast(apiErrorMessage(data, "解绑失败"));
             return;
           }
           window.location.reload();

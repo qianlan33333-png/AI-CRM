@@ -80,6 +80,16 @@ def test_wechat_product_admin_pages_keep_existing_routes_and_sections(next_clien
     assert 'payload.ok === false' in edit_page.text
     assert "saveExternalPushOnly" in edit_page.text
     assert "请先保存商品" in edit_page.text
+    assert 'id="productToast" role="status" aria-live="polite"' in edit_page.text
+    assert 'id="productTitleError" aria-live="polite"' in edit_page.text
+    assert 'id="productCodeError" aria-live="polite"' in edit_page.text
+    assert 'id="productPriceError" aria-live="polite"' in edit_page.text
+    assert "validateProductForm" in edit_page.text
+    assert "formErrors.validate()" in edit_page.text
+    assert "window.AdminApi.requestJson" in edit_page.text
+    assert "window.AdminApi.createFormErrorController" in edit_page.text
+    assert "商品未保存" in edit_page.text
+    assert "new Error(payload.detail" not in edit_page.text
     assert "product-module" not in edit_page.text
     assert "saleInfoModule" not in edit_page.text
     assert "mediaModule" not in edit_page.text

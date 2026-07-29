@@ -51,24 +51,22 @@
   }
 
   async function previewPackage(contentPackage, textEnabled) {
-    const response = await fetch("/api/admin/send-content/preview", {
+    if (!window.AdminApi?.requestJson) throw new Error("页面请求组件加载失败，请刷新页面后重试");
+    const data = await window.AdminApi.requestJson("/api/admin/send-content/preview", {
       method: "POST",
       headers: { Accept: "application/json", "Content-Type": "application/json" },
       body: JSON.stringify({ content_package: contentPackage, text_enabled: textEnabled, require_body: false }),
     });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok || data.ok === false) throw new Error(data.error || data.detail || "预览失败");
     return data.preview || {};
   }
 
   async function validatePackage(contentPackage, textEnabled) {
-    const response = await fetch("/api/admin/send-content/validate", {
+    if (!window.AdminApi?.requestJson) throw new Error("页面请求组件加载失败，请刷新页面后重试");
+    const data = await window.AdminApi.requestJson("/api/admin/send-content/validate", {
       method: "POST",
       headers: { Accept: "application/json", "Content-Type": "application/json" },
       body: JSON.stringify({ content_package: contentPackage, text_enabled: textEnabled, require_body: false }),
     });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok || data.ok === false) throw new Error(data.error || data.detail || "内容格式不正确");
     return data.content_package || contentPackage;
   }
 

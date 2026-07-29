@@ -28,19 +28,7 @@
   }
 
   async function requestJson(url, options) {
-    const response = await fetch(url, {
-      credentials: "same-origin",
-      headers: {
-        "Content-Type": "application/json",
-        ...(options.headers || {}),
-      },
-      ...options,
-    });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok || payload.ok === false) {
-      throw new Error(payload.error || "操作失败");
-    }
-    return payload;
+    return window.AdminApi.requestJson(url, options || {});
   }
 
   function bindEnabledSwitch(root, checkbox) {

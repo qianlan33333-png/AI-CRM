@@ -850,7 +850,9 @@
     }
   });
   document.getElementById("service-period-share-close")?.addEventListener("click", closeShare);
-  document.getElementById("service-period-share-copy")?.addEventListener("click", () => copyText(activeShareUrl).catch(() => {}));
+  document.getElementById("service-period-share-copy")?.addEventListener("click", () => copyText(activeShareUrl).catch((error) => {
+    if (summary) summary.textContent = window.AdminApi?.errorMessage(error, "复制失败") || "复制失败";
+  }));
   document.getElementById("service-period-share-modal")?.addEventListener("click", event => {
     if (event.target === document.getElementById("service-period-share-modal")) closeShare();
   });
@@ -1166,7 +1168,7 @@
       form.append("image", prepared.file);
       form.append("name", file.name);
       const payload = await (window.ImageUploadClient.requestJson || api)("/api/admin/image-library/upload", {method: "POST", body: form});
-      if (payload.ok === false) throw new Error(payload.detail || payload.error || "上传失败");
+      if (payload.ok === false) throw new Error(window.AdminApi?.responseErrorMessage(null, payload, "上传失败") || "上传失败");
       product.slices.push({
         local_id: `local_${Date.now()}_${Math.random().toString(16).slice(2)}`,
         image_library_id: payload.item.id,
@@ -1351,7 +1353,9 @@
     }
   });
   $("service-period-share-close").addEventListener("click", closeShareModal);
-  $("service-period-share-copy").addEventListener("click", () => copyText(activeShareUrl).catch(() => {}));
+  $("service-period-share-copy").addEventListener("click", () => copyText(activeShareUrl).catch((error) => {
+    showToast(window.AdminApi?.errorMessage(error, "复制失败") || "复制失败");
+  }));
   $("service-period-share-modal").addEventListener("click", event => { if (event.target === $("service-period-share-modal")) closeShareModal(); });
   $("servicePeriodForm").addEventListener("input", updateSummary);
   $("servicePeriodForm").addEventListener("change", updateSummary);

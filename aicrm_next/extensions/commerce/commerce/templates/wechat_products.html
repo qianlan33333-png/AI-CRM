@@ -30,6 +30,7 @@
   .mini .label { color:#8a94a6; font-size:13px; font-weight:850; }
   .mini .value { color:var(--text); font-size:20px; font-weight:900; overflow-wrap:anywhere; }
   .product-toast { min-height:22px; color:#667085; font-weight:800; }
+  .product-toast.is-error { color:var(--danger, #b42318); }
   .product-form { display:grid; gap:0; }
   .workspace { display:grid; grid-template-columns:196px minmax(0,1fr); gap:18px; align-items:start; }
   .side-nav { padding:10px; position:sticky; top:18px; }
@@ -52,6 +53,8 @@
   .field.full, .product-wide { grid-column:1/-1; }
   .field label, .product-field label { color:#667085; font-size:13px; font-weight:850; }
   .field input, .field select, .field textarea, .product-field input, .product-field select, .product-field textarea { width:100%; border:1px solid #d0d5dd; border-radius:10px; background:#fff; color:#1d2939; font:inherit; outline:none; padding:11px 13px; }
+  .field.has-error input, .field.has-error select, .field.has-error textarea { border-color:var(--danger); box-shadow:0 0 0 3px rgba(217,45,32,.1); }
+  .field-error { min-height:18px; color:var(--danger); font-size:12px; font-weight:750; }
   .field textarea, .product-field textarea { min-height:110px; resize:vertical; }
   .panel-actions { display:flex; justify-content:flex-end; gap:8px; padding-top:20px; margin-top:20px; border-top:1px solid var(--line2); }
   .upload-card, .product-upload-row { border:1px dashed #d0d5dd; border-radius:14px; background:#fff; padding:18px; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:18px; align-items:center; margin-bottom:16px; }
@@ -111,7 +114,7 @@
   {% if product_page_mode == "list" %}
   <section class="admin-card">
     <div class="product-toolbar">
-      <div class="product-toast">共 {{ product_total }} 个商品</div>
+      <div class="product-toast" id="productToast" role="status" aria-live="polite" aria-atomic="true">共 {{ product_total }} 个商品</div>
       <a class="admin-button admin-button--primary" href="/admin/wechat-pay/products/new">创建商品</a>
     </div>
     <div class="admin-table-wrap" style="margin-top:14px;">
@@ -166,7 +169,7 @@
         <div class="mini"><div class="label">页面素材</div><div class="value" id="summarySliceCount">0 / 10</div></div>
         <div class="mini"><div class="label">外部推送</div><div class="value" id="summaryExternalPush">未启用</div></div>
       </div>
-      <span class="product-toast" id="productToast"></span>
+      <span class="product-toast" id="productToast" role="status" aria-live="polite" aria-atomic="true"></span>
     </section>
 
     <form class="product-form" id="productForm">
@@ -186,11 +189,13 @@
             <div class="form-grid">
               <div class="field">
                 <label for="productTitle">商品名称</label>
-                <input id="productTitle" required maxlength="120" autocomplete="off">
+                <input id="productTitle" required maxlength="120" autocomplete="off" aria-describedby="productTitleError">
+                <span class="field-error" id="productTitleError" aria-live="polite"></span>
               </div>
               <div class="field">
                 <label for="productPrice">价格</label>
-                <input id="productPrice" type="number" min="0" step="0.01" required>
+                <input id="productPrice" type="number" min="0" step="0.01" required aria-describedby="productPriceError">
+                <span class="field-error" id="productPriceError" aria-live="polite"></span>
               </div>
               <div class="field">
                 <label for="buyButtonText">购买按钮文案</label>
@@ -213,7 +218,8 @@
               </div>
               <div class="field">
                 <label for="productCode">商品编码</label>
-                <input id="productCode" class="product-mono" required minlength="3" maxlength="80" autocomplete="off" {% if product_page_mode == "edit" %}readonly{% endif %}>
+                <input id="productCode" class="product-mono" required minlength="3" maxlength="80" autocomplete="off" aria-describedby="productCodeError" {% if product_page_mode == "edit" %}readonly{% endif %}>
+                <span class="field-error" id="productCodeError" aria-live="polite"></span>
               </div>
               <div class="field full">
                 <label for="productDescription">商品描述</label>
@@ -410,12 +416,28 @@
   let afterActionEnabled = Boolean((product.completion_target && product.completion_target.enabled) || product.completion_redirect_enabled || product.lead_channel_id);
   let afterActionMode = product.completion_redirect_enabled ? "redirect" : "lead";
   let activeProductPanel = "sale";
+  const productFieldLabels = { title: "商品名称", product_code: "商品编码", code: "商品编码", price_cents: "价格", status: "商品状态", buy_button_text: "购买按钮文案", description: "商品描述", require_mobile: "手机号要求" };
+  const productFieldIds = { title: "productTitle", product_code: "productCode", code: "productCode", price_cents: "productPrice" };
 
   function $(id) { return document.getElementById(id); }
   function esc(value) { return String(value == null ? "" : value).replace(/[&<>'"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c])); }
   function cents(value) { const n = Number.parseFloat(String(value || "0")); return Number.isFinite(n) ? Math.round(n * 100) : 0; }
   function money(value) { return ((Number(value || 0)) / 100).toFixed(2); }
-  function showToast(text) { if (toast) toast.textContent = text; }
+  function showToast(text, kind = "info") {
+    if (!toast) return;
+    toast.textContent = String(text || "");
+    const isError = kind === "error";
+    toast.classList.toggle("is-error", isError);
+    toast.setAttribute("role", isError ? "alert" : "status");
+    toast.setAttribute("aria-live", isError ? "assertive" : "polite");
+  }
+  const formErrors = window.AdminApi.createFormErrorController({
+    form: $("productForm"), fieldLabels: productFieldLabels, fieldIds: productFieldIds,
+    showMessage: showToast, validationPrefix: "商品未保存",
+    beforeFocus: () => switchProductPanel("sale")
+  });
+  function presentError(error, fallback = "操作失败") { return formErrors.present(error, fallback); }
+  function validateProductForm() { return formErrors.validate(); }
   function statusLabel(value) { return { active: "已上架", draft: "草稿", disabled: "已下架" }[value] || value || "草稿"; }
   function productDisplayName(value) { return String(value || "商品").trim() || "商品"; }
   function safeQrDownloadName(value) {
@@ -516,10 +538,8 @@
     window.prompt("请手动复制以下链接", value);
   }
   async function api(url, options) {
-    const res = await fetch(url, Object.assign({ credentials: "same-origin" }, options || {}));
-    const payload = await res.json().catch(() => ({}));
-    if (!res.ok || payload.ok === false) throw new Error(payload.detail || payload.error || "请求失败");
-    return payload;
+    if (!window.AdminApi?.requestJson) throw new Error("页面请求组件加载失败，请刷新页面后重试");
+    return window.AdminApi.requestJson(url, options || {});
   }
 
   function openShareModal(share) {
@@ -744,7 +764,9 @@
       form.append("image", prepared.file);
       form.append("name", file.name);
       const payload = await (window.ImageUploadClient.requestJson || api)("/api/admin/image-library/upload", { method: "POST", body: form });
-      if (payload.ok === false) throw new Error(payload.detail || payload.error || "上传失败");
+      if (payload.ok === false) {
+        throw new Error(window.AdminApi?.responseErrorMessage(null, payload, "上传失败") || "上传失败");
+      }
       product.slices.push({
         local_id: `local_${Date.now()}_${Math.random().toString(16).slice(2)}`,
         image_library_id: payload.item.id,
@@ -759,7 +781,7 @@
 
   async function saveExternalPushOnly() {
     if (mode !== "edit" || !product.id) {
-      showToast("请先保存商品");
+      showToast("请先保存商品", "error");
       return null;
     }
     externalPush = (await api(
@@ -772,6 +794,7 @@
   }
 
   async function saveProduct() {
+    if (!validateProductForm()) return null;
     showToast("保存中");
     const productId = product.id || "";
     const saved = await api(
@@ -791,8 +814,15 @@
       }
       fillExternalPush();
       updateProductSummary();
-      loadShareInfo().catch(() => {});
-      showToast(externalPushError ? `商品已保存，外部推送保存失败：${externalPushError.message || "请求失败"}` : "已保存");
+      loadShareInfo().catch(error => {
+        showToast(`商品已保存，但分享链接加载失败：${window.AdminApi?.errorMessage(error, "请求失败") || "请求失败"}`, "error");
+      });
+      showToast(
+        externalPushError
+          ? `商品已保存，外部推送保存失败：${window.AdminApi?.errorMessage(externalPushError, "请求失败") || "请求失败"}`
+          : "已保存",
+        externalPushError ? "error" : "info"
+      );
     } else {
       window.location.href = `/admin/wechat-pay/products/${encodeURIComponent(product.id)}/edit`;
     }
@@ -809,17 +839,23 @@
 
   async function initEditor() {
     if (!$("productForm")) return;
-    const [channels, pushConfig] = await Promise.all([
-      api("/api/admin/wechat-pay/products/lead-channels").catch(() => ({ items: leadChannels })),
+    const [channelsResult, pushConfigResult] = await Promise.allSettled([
+      api("/api/admin/wechat-pay/products/lead-channels"),
       mode === "edit" && product.id
-        ? api(`/api/admin/wechat-pay/products/${encodeURIComponent(product.id)}/external-push`).catch(() => ({ config: externalPush }))
+        ? api(`/api/admin/wechat-pay/products/${encodeURIComponent(product.id)}/external-push`)
         : Promise.resolve({ config: externalPush })
     ]);
+    const channels = channelsResult.status === "fulfilled" ? channelsResult.value : { items: leadChannels };
+    const pushConfig = pushConfigResult.status === "fulfilled" ? pushConfigResult.value : { config: externalPush };
     leadChannels = channels.items || leadChannels;
     renderLeadChannels();
     externalPush = pushConfig.config || externalPush;
     fillForm();
     fillExternalPush();
+    const loadErrors = [channelsResult, pushConfigResult]
+      .filter(result => result.status === "rejected")
+      .map(result => window.AdminApi?.errorMessage(result.reason, "请求失败") || "请求失败");
+    if (loadErrors.length) showToast(`部分配置加载失败：${Array.from(new Set(loadErrors)).join("；")}`, "error");
   }
 
   document.addEventListener("click", async event => {
@@ -849,7 +885,7 @@
         button.closest(".product-param-row").remove();
       }
     } catch (error) {
-      showToast(error.message || "操作失败");
+      presentError(error, "操作失败");
     }
   });
 
@@ -864,12 +900,12 @@
       const payload = await api(`/api/admin/wechat-pay/products/${encodeURIComponent(product.id)}/external-push/test`, { method: "POST" });
       $("externalPushResult").textContent = `测试推送 ${payload.result.delivery.status}，delivery_id: ${payload.result.delivery.delivery_id}`;
     } catch (error) {
-      $("externalPushResult").textContent = error.message || "测试失败";
+      $("externalPushResult").textContent = window.AdminApi?.errorMessage(error, "测试失败") || "测试失败";
     }
   });
 
   $("sliceInput")?.addEventListener("change", event => {
-    uploadSlices(event.target.files).catch(error => showToast(error.message || "上传失败"));
+    uploadSlices(event.target.files).catch(error => presentError(error, "上传失败"));
     event.target.value = "";
   });
 
@@ -887,19 +923,19 @@
       try {
         await saveCurrentPanel();
       } catch (error) {
-        showToast(error.message || "保存失败");
+        presentError(error, "保存失败");
       }
     });
   });
   $("saveCurrentPanelBtn")?.addEventListener("click", () => {
-    saveCurrentPanel().catch(error => showToast(error.message || "保存失败"));
+    saveCurrentPanel().catch(error => presentError(error, "保存失败"));
   });
   $("copyShareLinkBtn")?.addEventListener("click", async () => {
     try {
       const share = await loadShareInfo();
       await copyText(share?.url || "");
     } catch (error) {
-      showToast(error.message || "复制失败");
+      presentError(error, "复制失败");
     }
   });
   $("openSharePreviewBtn")?.addEventListener("click", async () => {
@@ -908,12 +944,12 @@
       if (!share?.url) throw new Error("当前商品还没有可预览链接");
       window.open(share.url, "_blank", "noopener");
     } catch (error) {
-      showToast(error.message || "打开预览失败");
+      presentError(error, "打开预览失败");
     }
   });
   $("product-share-close")?.addEventListener("click", closeShareModal);
   $("product-share-copy")?.addEventListener("click", () => {
-    copyText(activeShareUrl).catch(error => showToast(error.message || "复制失败"));
+    copyText(activeShareUrl).catch(error => presentError(error, "复制失败"));
   });
   $("product-share-modal")?.addEventListener("click", event => {
     if (event.target === $("product-share-modal")) closeShareModal();
@@ -927,14 +963,24 @@
     try {
       await saveProduct();
     } catch (error) {
-      showToast(error.message || "保存失败");
+      presentError(error, "保存失败");
     }
   });
-  $("productForm")?.addEventListener("input", updateProductSummary);
+  $("productForm")?.addEventListener("input", event => {
+    formErrors.clearField(event.target);
+    updateProductSummary();
+  });
   $("productForm")?.addEventListener("change", updateProductSummary);
 
-  switchProductPanel(activeProductPanel);
-  initEditor().catch(error => showToast(error.message || "加载失败"));
+  function initializeProductPage() {
+    switchProductPanel(activeProductPanel);
+    initEditor().catch(error => presentError(error, "加载失败"));
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initializeProductPage, { once: true });
+  } else {
+    initializeProductPage();
+  }
 })();
 </script>
 {% endblock %}

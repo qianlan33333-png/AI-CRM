@@ -22,23 +22,18 @@
       item.disabled = true;
     });
     try {
-      const response = await fetch(url, {
+      const payload = await window.AdminApi.requestJson(url, {
         method: "POST",
         body: formData,
-        credentials: "same-origin",
         headers: {
           "Accept": "application/json",
           "X-Requested-With": "XMLHttpRequest",
         },
       });
-      const payload = await response.json();
-      if (!response.ok || !payload.ok) {
-        throw new Error(payload.error || payload.message || "执行失败");
-      }
-      statusEl.textContent = payload.message || "执行完成";
+      statusEl.textContent = window.AdminApi.formatErrorValue(payload.message) || "执行完成";
       window.setTimeout(() => window.location.reload(), 600);
     } catch (error) {
-      statusEl.textContent = (error && error.message) ? error.message : "执行失败";
+      statusEl.textContent = window.AdminApi.errorMessage(error, "执行失败");
     } finally {
       buttons.forEach((item) => {
         item.disabled = false;
