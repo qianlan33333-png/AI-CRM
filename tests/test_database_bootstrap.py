@@ -1686,6 +1686,77 @@ def test_continuation_fanout_cutover_holds_legacy_completion_work_without_replay
             ).fetchone() == (reason,)
 
 
+def test_hxc_projection_view_upgrade_does_not_require_database_create() -> None:
+    raw_source_url = os.getenv("AICRM_TEST_DATABASE_URL") or os.getenv("DATABASE_URL")
+    if not raw_source_url:
+        pytest.skip("PostgreSQL integration URL is unavailable")
+    source_url = _psycopg_url(raw_source_url)
+    source_parts = urlsplit(source_url)
+    maintenance_url = urlunsplit(source_parts._replace(path="/postgres"))
+    role_name = f"aicrm_restricted_{uuid.uuid4().hex[:8]}"
+    role_password = f"test_{uuid.uuid4().hex}"
+
+    try:
+        with _isolated_database("hxc_projection_view_restricted") as database_url:
+            database_parts = urlsplit(database_url)
+            database_name = database_parts.path.lstrip("/")
+            with psycopg.connect(database_url, autocommit=True) as connection:
+                connection.execute(BASELINE_PATH.read_text(encoding="utf-8"))
+            _upgrade_database_to(database_url, "0150_crm_identity_updated_cursor_index")
+
+            with psycopg.connect(database_url, autocommit=True) as connection:
+                connection.execute(
+                    sql.SQL("CREATE ROLE {} LOGIN PASSWORD {}").format(
+                        sql.Identifier(role_name), sql.Literal(role_password)
+                    )
+                )
+                connection.execute(
+                    sql.SQL("GRANT CONNECT ON DATABASE {} TO {}").format(
+                        sql.Identifier(database_name), sql.Identifier(role_name)
+                    )
+                )
+                connection.execute(
+                    sql.SQL("ALTER SCHEMA audience_read OWNER TO {}").format(sql.Identifier(role_name))
+                )
+                connection.execute(
+                    sql.SQL(
+                        "ALTER VIEW audience_read.huangxiaocan_member_usage_status_v1 OWNER TO {}"
+                    ).format(sql.Identifier(role_name))
+                )
+                connection.execute(
+                    sql.SQL("GRANT USAGE, CREATE ON SCHEMA public TO {}").format(
+                        sql.Identifier(role_name)
+                    )
+                )
+                connection.execute(
+                    sql.SQL("GRANT SELECT ON ALL TABLES IN SCHEMA public TO {}").format(
+                        sql.Identifier(role_name)
+                    )
+                )
+                connection.execute(
+                    sql.SQL("ALTER TABLE alembic_version OWNER TO {}").format(sql.Identifier(role_name))
+                )
+
+            host = database_parts.hostname or "127.0.0.1"
+            port = f":{database_parts.port}" if database_parts.port else ""
+            restricted_url = urlunsplit(
+                database_parts._replace(netloc=f"{role_name}:{role_password}@{host}{port}")
+            )
+            _upgrade_database_to(restricted_url, "0151_ai_audience_hxc_projection_view")
+
+            with psycopg.connect(database_url) as connection:
+                assert connection.execute("SELECT version_num FROM alembic_version").fetchone() == (
+                    "0151_ai_audience_hxc_projection_view",
+                )
+                assert connection.execute(
+                    "SELECT has_database_privilege(%s, current_database(), 'CREATE')",
+                    (role_name,),
+                ).fetchone() == (False,)
+    finally:
+        with psycopg.connect(maintenance_url, autocommit=True) as connection:
+            connection.execute(sql.SQL("DROP ROLE IF EXISTS {}").format(sql.Identifier(role_name)))
+
+
 def test_customer_read_model_incremental_foundation_repairs_sequences_and_installs_keys() -> None:
     with _isolated_database("customer_incremental_foundation") as database_url:
         with psycopg.connect(database_url, autocommit=True) as connection:

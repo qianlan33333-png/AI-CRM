@@ -21,6 +21,7 @@ def test_hxc_projection_view_cutover_never_rebuilds_online_source_facts() -> Non
 
     assert 'revision = "0151_ai_audience_hxc_projection_view"' in source
     assert 'down_revision = "0150_crm_identity_updated_cursor_index"' in source
+    assert 'op.execute("CREATE SCHEMA IF NOT EXISTS audience_read")' not in upgrade_source
     assert "CREATE OR REPLACE VIEW audience_read.huangxiaocan_member_usage_status_v1" in upgrade_source
     assert "ai_audience_hxc_member_usage_projection_control" in upgrade_source
     assert "ai_audience_hxc_member_usage_projection projection" in upgrade_source
