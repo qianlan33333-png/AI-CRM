@@ -900,6 +900,10 @@ def test_queue_production_diagnostics_is_count_only_and_requires_exact_public_re
     assert "invalid_external_userid" in workflow
     assert "private_target_rejected" in workflow
     assert "_customer_360_freshness_guard" in workflow
+    assert "public_relation_names" in workflow
+    assert "SELECT DISTINCT table_name" in workflow
+    assert "FROM information_schema.columns" in workflow
+    assert "WHERE table_schema = 'public'" in workflow
     assert "COUNT(*) AS row_count" in workflow
     assert "succeeded_same_business" in workflow
     assert "succeeded_same_target_after_terminal" in workflow

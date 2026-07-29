@@ -460,6 +460,44 @@ jobs:
             )
             PY
 
+      - name: Read public schema relation names
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.2
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          command_timeout: 10m
+          script: |
+            set -e
+            cd '/home/ubuntu/极简 crm'
+            expected_release_sha='${{ inputs.expected_release_sha }}'
+            test "$(git rev-parse HEAD)" = "$expected_release_sha"
+            set -a
+            source /home/ubuntu/.openclaw-wecom-pg.env
+            set +a
+            source /home/ubuntu/venvs/openclaw/bin/activate
+            python3 - <<'PY'
+            import json
+            from sqlalchemy import text
+            from aicrm_next.platform.shared.db_session import get_session_factory
+
+            with get_session_factory()() as session:
+                names = [
+                    str(row.table_name)
+                    for row in session.execute(text("""
+                        SELECT DISTINCT table_name
+                        FROM information_schema.columns
+                        WHERE table_schema = 'public'
+                        ORDER BY table_name
+                    """))
+                ]
+            print(json.dumps({
+                "public_relation_names": names,
+                "contains_column_values": False,
+                "read_only": True,
+            }, sort_keys=True))
+            PY
+
       - name: Read payment refund terminal classification
         uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.2
         with:
