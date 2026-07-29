@@ -29,8 +29,15 @@ def test_ci_fast_uses_selector_and_single_required_result() -> None:
     assert "test-scope-v2-shadow.json" in source
     assert "python -m pytest tests/ -n auto" not in source
     assert "ci-fast-result:" in source
-    assert "NEEDS_JSON: ${{ toJson(needs) }}" in source
-    assert "job[\"result\"] not in {\"success\", \"skipped\"}" in source
+    assert "toJson(needs)" not in source
+    assert "SELECT_RESULT: ${{ needs.select.result }}" in source
+    assert "ARCHITECTURE_GATES_RESULT: ${{ needs.architecture-gates.result }}" in source
+    assert "FAST_PYTHON_NO_PG_RESULT: ${{ needs.fast-python-no-pg.result }}" in source
+    assert "FAST_PYTHON_PG_RESULT: ${{ needs.fast-python-pg.result }}" in source
+    assert "FAST_FRONTEND_RESULT: ${{ needs.fast-frontend.result }}" in source
+    assert "DEPENDENCY_AUDIT_RESULT: ${{ needs.dependency-audit.result }}" in source
+    assert "FULL_REGRESSION_RESULT: ${{ needs.full-regression.result }}" in source
+    assert "if result not in {\"success\", \"skipped\"}" in source
     assert "needs.select.outputs.python_tests != ''" in source
     assert "needs.select.outputs.needs_postgres == 'true'" in source
     assert "needs.select.outputs.needs_postgres != 'true'" in source
@@ -61,7 +68,7 @@ def test_ci_fast_uses_selector_and_single_required_result() -> None:
     assert source.count("needs.select.outputs.needs_full_ci != 'true'") == 2
     assert "- full-regression" in source
     assert "- dependency-audit" in source
-    assert "full-regression={needs.get('full-regression', {}).get('result', 'missing')}_but_required" in source
+    assert "full-regression={results['full-regression']}_but_required" in source
     assert not LEGACY_CI_WORKFLOW.exists()
 
 
