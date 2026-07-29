@@ -88,6 +88,7 @@ def test_empty_postgres_database_installs_and_reuses_alembic_head() -> None:
                 """
             ).fetchall()
         table_names = {str(row[0]) for row in rows}
+        assert "questionnaire_continuation_job" not in table_names
         assert {
             "alembic_version",
             "auth_api_clients",
@@ -314,6 +315,66 @@ def test_production_shape_alembic_database_upgrades_without_reapplying_baseline(
             auth_table = connection.execute("SELECT to_regclass('public.auth_sessions')").fetchone()
         assert preserved == ("production-shape-upgrade", 7)
         assert auth_table == ("auth_sessions",)
+
+
+def test_siyuan_historical_questionnaire_revision_advances_without_recreating_retired_schema() -> None:
+    with _isolated_database("siyuan_questionnaire_revision") as database_url:
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            connection.execute(BASELINE_PATH.read_text(encoding="utf-8"))
+        _upgrade_database_to(database_url, "0123_required_physical_schema_repair")
+
+        with psycopg.connect(database_url) as connection:
+            connection.execute(
+                """
+                ALTER TABLE questionnaire_submissions
+                ADD COLUMN unionid_verification_source TEXT NOT NULL DEFAULT ''
+                """
+            )
+            connection.execute(
+                """
+                ALTER TABLE questionnaire_submissions
+                ADD COLUMN unionid_verified_at TIMESTAMPTZ
+                """
+            )
+            connection.execute(
+                """
+                CREATE TABLE questionnaire_continuation_job (
+                    id BIGSERIAL PRIMARY KEY,
+                    source_event_id TEXT NOT NULL DEFAULT ''
+                )
+                """
+            )
+            legacy_row_id = int(
+                connection.execute(
+                    """
+                    INSERT INTO questionnaire_continuation_job (source_event_id)
+                    VALUES ('siyuan-preserved')
+                    RETURNING id
+                    """
+                ).fetchone()[0]
+            )
+            connection.commit()
+
+        _stamp_database_to(database_url, "0124_questionnaire_continuation_jobs")
+        result = install_or_upgrade_database(database_url)
+
+        assert result.baseline_applied is False
+        assert result.revision_before == "0124_questionnaire_continuation_jobs"
+        assert result.revision_after == ALEMBIC_HEAD_REVISION
+        with psycopg.connect(database_url) as connection:
+            preserved = connection.execute(
+                """
+                SELECT source_event_id
+                FROM questionnaire_continuation_job
+                WHERE id = %s
+                """,
+                (legacy_row_id,),
+            ).fetchone()
+            audit_table = connection.execute(
+                "SELECT to_regclass('public.automation_agent_llm_call_log')"
+            ).fetchone()
+        assert preserved == ("siyuan-preserved",)
+        assert audit_table == ("automation_agent_llm_call_log",)
 
 
 def test_upgrade_repairs_missing_or_partial_automation_agent_audit_tables_without_data_loss() -> None:
@@ -1810,6 +1871,20 @@ def _downgrade_database_to(database_url: str, revision: str) -> None:
     os.environ["DATABASE_URL"] = database_url
     try:
         command.downgrade(config, revision)
+    finally:
+        if previous_url is None:
+            os.environ.pop("DATABASE_URL", None)
+        else:
+            os.environ["DATABASE_URL"] = previous_url
+
+
+def _stamp_database_to(database_url: str, revision: str) -> None:
+    config = Config(str(ROOT / "alembic.ini"))
+    config.set_main_option("sqlalchemy.url", database_url)
+    previous_url = os.environ.get("DATABASE_URL")
+    os.environ["DATABASE_URL"] = database_url
+    try:
+        command.stamp(config, revision)
     finally:
         if previous_url is None:
             os.environ.pop("DATABASE_URL", None)

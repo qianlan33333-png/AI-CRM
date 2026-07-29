@@ -25,6 +25,8 @@ DEPLOY_GUARD_SOURCE = ROOT / "deploy" / "systemd" / DEPLOY_GUARD_DROPIN
 PRIMARY_WEB_GUARD_SOURCE = ROOT / "deploy" / "systemd" / "00-aicrm-primary-web-transaction-guard.conf"
 DEFAULT_TIMER_SERVICE_DRAIN_TIMEOUT_SECONDS = 120
 TIMER_SERVICE_DRAIN_POLL_INTERVAL_SECONDS = 1.0
+CURRENT_MANIFEST_SCHEMA_VERSION = 5
+ROLLBACK_CLEANUP_COMPATIBLE_SCHEMA_VERSIONS = frozenset({2, CURRENT_MANIFEST_SCHEMA_VERSION})
 
 
 @dataclass(frozen=True)
@@ -441,8 +443,11 @@ def _validate_deploy_guards() -> None:
 
 
 def validate_manifest(manifest: dict[str, Any], *, validate_unit_files: bool = True) -> None:
-    if manifest.get("schema_version") != 5:
-        raise ValueError("production runtime units manifest schema_version must be 5")
+    if manifest.get("schema_version") != CURRENT_MANIFEST_SCHEMA_VERSION:
+        raise ValueError(
+            "production runtime units manifest schema_version must be "
+            f"{CURRENT_MANIFEST_SCHEMA_VERSION}"
+        )
     drain_timeout = int(manifest.get("timer_service_drain_timeout_seconds") or DEFAULT_TIMER_SERVICE_DRAIN_TIMEOUT_SECONDS)
     if drain_timeout < 1 or drain_timeout > 900:
         raise ValueError("timer_service_drain_timeout_seconds must be between 1 and 900")
@@ -597,6 +602,53 @@ def validate_manifest(manifest: dict[str, Any], *, validate_unit_files: bool = T
             _validate_managed_service(service)
         for service, application_name in application_names.items():
             _validate_database_application_name(service, application_name)
+
+
+def validate_previous_manifest_for_cleanup(manifest: dict[str, Any]) -> None:
+    """Validate only the inventory read while undoing a failed candidate release.
+
+    Production may still run a manifest created before the current control-plane
+    schema.  That manifest is never used to install or start units here; it is
+    only compared with the candidate inventory so rollback does not delete
+    pre-existing unit files or transaction guards.
+    """
+
+    schema_version = manifest.get("schema_version")
+    if schema_version == CURRENT_MANIFEST_SCHEMA_VERSION:
+        validate_manifest(manifest, validate_unit_files=False)
+        return
+    if schema_version not in ROLLBACK_CLEANUP_COMPATIBLE_SCHEMA_VERSIONS:
+        supported = ", ".join(
+            str(version) for version in sorted(ROLLBACK_CLEANUP_COMPATIBLE_SCHEMA_VERSIONS)
+        )
+        raise ValueError(
+            "previous production runtime units manifest schema_version must be one of: "
+            f"{supported}"
+        )
+
+    primary_web = primary_web_service(manifest).service
+    service_units = [
+        primary_web,
+        *(service.service for service in active_services(manifest)),
+        *(unit.service for unit in active_timers(manifest)),
+        *(unit.service for unit in cutover_replacement_timers(manifest)),
+        *(unit.service for unit in approval_timers(manifest)),
+    ]
+    timer_units = [
+        *(unit.timer for unit in active_timers(manifest)),
+        *(unit.timer for unit in cutover_replacement_timers(manifest)),
+        *(unit.timer for unit in approval_timers(manifest)),
+    ]
+    guarded_units = _guarded_units(manifest)
+    for unit in service_units:
+        if Path(unit).name != unit or not unit.endswith(".service"):
+            raise ValueError(f"invalid previous runtime service basename: {unit}")
+    for unit in timer_units:
+        if Path(unit).name != unit or not unit.endswith(".timer"):
+            raise ValueError(f"invalid previous runtime timer basename: {unit}")
+    for unit in guarded_units:
+        if Path(unit).name != unit or not unit.endswith((".service", ".timer")):
+            raise ValueError(f"invalid previous guarded runtime basename: {unit}")
 
 
 class Runner:
@@ -1225,7 +1277,7 @@ def main(argv: list[str] | None = None) -> int:
         if not previous_manifest_path:
             parser.error("--previous-manifest is required for remove-candidate-only-runtime")
         previous_manifest = load_manifest(Path(previous_manifest_path))
-        validate_manifest(previous_manifest, validate_unit_files=False)
+        validate_previous_manifest_for_cleanup(previous_manifest)
     runner = Runner(execute=bool(args.execute and not args.dry_run))
     if args.phase == "authorize-runtime-start":
         phase_authorize_runtime_start(manifest, runner)
