@@ -1,0 +1,872 @@
+{% extends "admin_console/base.html" %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/group_chat_picker.css') }}?v=group-chat-direct-select-20260715">
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/material_picker.css') }}?v=group-chat-direct-select-20260715">
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/send_content_composer.css') }}?v=group-chat-selector-20260715">
+<script defer src="{{ url_for('static', filename='admin_console/group_chat_picker.js') }}?v=group-chat-direct-select-20260715"></script>
+<script defer src="{{ url_for('static', filename='admin_console/material_picker.js') }}?v=group-chat-direct-select-20260715"></script>
+<script defer src="{{ url_for('static', filename='admin_console/send_content_composer.js') }}?v=group-chat-selector-20260715"></script>
+{% endblock %}
+
+{% block content %}
+<div class="cloud-camp-page" data-cloud-camp-root>
+  <section class="admin-card">
+    <header class="admin-card-head">
+      <h2 class="admin-card-title">运营计划审阅</h2>
+      <div class="cloud-camp-toolbar">
+        <select id="cloud-camp-filter-review" class="admin-input">
+          <option value="">全部审阅状态</option>
+          <option value="pending_review">待审阅</option>
+          <option value="approved">已批准</option>
+          <option value="rejected">已拒绝</option>
+        </select>
+        <select id="cloud-camp-filter-run" class="admin-input">
+          <option value="">全部运行状态</option>
+          <option value="draft">草稿</option>
+          <option value="active">运行中</option>
+          <option value="paused">暂停</option>
+          <option value="finished">已结束</option>
+          <option value="cancelled">已撤销</option>
+        </select>
+        <button class="admin-button admin-button--primary" id="cloud-camp-refresh">刷新</button>
+      </div>
+    </header>
+    <table class="admin-table cloud-camp-table">
+      <thead><tr>
+        <th>运营计划</th><th>意图</th><th>分层</th><th>成员</th>
+        <th>审阅</th><th>运行</th><th>更新时间</th><th>操作</th>
+      </tr></thead>
+      <tbody id="cloud-camp-tbody"><tr><td colspan="8">加载中…</td></tr></tbody>
+    </table>
+  </section>
+
+  <div class="cloud-camp-drawer" id="cloud-camp-detail-drawer" hidden>
+    <div class="cloud-camp-drawer-mask" data-detail-close></div>
+    <aside class="cloud-camp-drawer-panel cloud-camp-detail-panel">
+      <header class="cloud-camp-detail-head">
+        <div class="cloud-camp-detail-head-left">
+          <h3 class="admin-card-title" style="margin:0;font-size:15px;">
+            <span id="cloud-camp-detail-name"></span>
+            <span class="cloud-orch-status-chip" id="cloud-camp-detail-review"></span>
+            <span class="cloud-orch-status-chip" id="cloud-camp-detail-run"></span>
+          </h3>
+          <span class="cloud-orch-trace-id" id="cloud-camp-detail-trace"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div class="cloud-camp-actions-menu">
+            <button class="admin-button admin-button--ghost cloud-camp-more-btn" id="cloud-camp-more">⋯</button>
+            <div class="cloud-camp-more-pop" id="cloud-camp-more-pop" hidden>
+              <button class="cloud-camp-more-item" id="cloud-camp-pause">暂停</button>
+              <button class="cloud-camp-more-item" id="cloud-camp-edit" title="编辑功能开发中" disabled>编辑</button>
+              <button class="cloud-camp-more-item cloud-camp-danger" id="cloud-camp-delete">删除</button>
+            </div>
+          </div>
+          <button class="cloud-camp-drawer-close" data-detail-close>×</button>
+        </div>
+      </header>
+      <div class="cloud-camp-drawer-body" id="cloud-camp-detail-body" style="padding:16px 18px;"></div>
+      <footer class="cloud-camp-detail-footer" style="padding:12px 18px;border-top:1px solid #f0f0f0;margin:0;">
+        <button class="admin-button admin-button--ghost" id="cloud-camp-approve">批准</button>
+        <button class="admin-button admin-button--primary" id="cloud-camp-start">启动</button>
+        <button class="admin-button admin-button--ghost cloud-camp-reject" id="cloud-camp-reject">拒绝</button>
+      </footer>
+    </aside>
+  </div>
+
+  <div class="cloud-camp-drawer" id="cloud-camp-members-drawer" hidden>
+    <div class="cloud-camp-drawer-mask" data-close></div>
+    <aside class="cloud-camp-drawer-panel">
+      <header>
+        <strong id="cloud-camp-drawer-title">成员明细</strong>
+        <button class="cloud-camp-drawer-close" data-close>×</button>
+      </header>
+      <div class="cloud-camp-drawer-toolbar">
+        <select id="cloud-camp-drawer-status" class="admin-input">
+          <option value="">全部状态</option>
+          <option value="pending">待发送</option>
+          <option value="sent">已发送</option>
+          <option value="replied">已回复</option>
+          <option value="stopped">已停止</option>
+          <option value="failed">失败</option>
+        </select>
+        <span class="cloud-camp-drawer-count" id="cloud-camp-drawer-count"></span>
+      </div>
+      <div class="cloud-camp-drawer-body" id="cloud-camp-drawer-body">加载中…</div>
+    </aside>
+  </div>
+</div>
+<style>
+.cloud-camp-page { display:flex; flex-direction:column; gap:24px; padding-bottom:48px; }
+.cloud-camp-toolbar { display:flex; gap:8px; margin-top:8px; }
+.cloud-camp-toolbar select { max-width:160px; }
+.cloud-camp-table th, .cloud-camp-table td { padding:8px 12px; vertical-align:top; }
+.cloud-camp-name { font-weight:500; color:#1d1d1f; font-size:13px; line-height:1.4; }
+.cloud-camp-code { display:inline-block; margin-top:4px; color:#a0a4ad; font-size:11px; background:transparent; padding:0; }
+.cloud-camp-intent-cell { max-width:520px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; line-height:1.45; color:#3a3a3c; font-size:13px; }
+.cloud-orch-status-chip { display:inline-block; padding:2px 8px; border-radius:10px; background:#eef0f4; font-size:12px; color:#5b626f; margin-left:8px; }
+.cloud-orch-status-chip.pending_review, .cloud-orch-status-chip.draft { background:#fff7e6; color:#a06400; }
+.cloud-orch-status-chip.approved, .cloud-orch-status-chip.active { background:#e9f7ee; color:#287a3c; }
+.cloud-orch-status-chip.paused { background:#eef0f4; color:#5b626f; }
+.cloud-orch-status-chip.rejected, .cloud-orch-status-chip.cancelled, .cloud-orch-status-chip.finished { background:#fce4e4; color:#a02929; }
+.cloud-orch-trace-id { font-family:ui-monospace,Menlo,monospace; font-size:11px; color:#888; display:block; margin-top:4px; }
+
+.cloud-camp-detail-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+.cloud-camp-detail-head-left { flex:1; min-width:0; }
+.cloud-camp-actions-menu { position:relative; }
+.cloud-camp-more-btn { padding:4px 10px; }
+.cloud-camp-more-pop { position:absolute; right:0; top:32px; background:#fff; border:1px solid #e5e7eb; border-radius:6px; box-shadow:0 8px 20px rgba(0,0,0,0.06); min-width:120px; z-index:5; padding:4px 0; }
+.cloud-camp-more-item { display:block; width:100%; text-align:left; padding:8px 14px; border:0; background:transparent; cursor:pointer; font-size:13px; color:#1d1d1f; }
+.cloud-camp-more-item:hover:not([disabled]) { background:#f5f6f8; }
+.cloud-camp-more-item[disabled] { color:#bbb; cursor:not-allowed; }
+.cloud-camp-more-item.cloud-camp-danger { color:#a02929; }
+
+.cloud-camp-detail-body { display:flex; flex-direction:column; gap:20px; }
+.cloud-camp-section { border:1px solid #ececec; border-radius:8px; padding:14px 16px; background:#fff; }
+.cloud-camp-section h4 { margin:0 0 10px; font-size:14px; color:#1d1d1f; }
+.cloud-camp-section .intent-text { color:#3a3a3c; font-size:13px; line-height:1.6; white-space:pre-wrap; }
+
+.cloud-camp-segment-card { border:1px solid #e5e7eb; border-radius:8px; padding:12px 14px; background:#fafbfc; margin-bottom:12px; }
+.cloud-camp-segment-card:last-child { margin-bottom:0; }
+.cloud-camp-segment-card .seg-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:8px; }
+.cloud-camp-segment-card .seg-head h5 { margin:0; font-size:14px; }
+.cloud-camp-segment-card .seg-meta { font-size:12px; color:#888; }
+.cloud-camp-step-row { background:#fff; border:1px solid #e5e7eb; border-radius:6px; padding:10px 12px; margin-top:8px; }
+.cloud-camp-step-row .step-head { display:flex; gap:10px; align-items:baseline; margin-bottom:6px; }
+.cloud-camp-step-row .step-day { font-weight:600; color:#2c5cdb; }
+.cloud-camp-step-row .step-time { color:#888; font-size:12px; }
+.cloud-camp-step-row .step-stop { font-size:11px; color:#287a3c; background:#e9f7ee; padding:1px 6px; border-radius:8px; }
+.cloud-camp-step-row .step-text { font-size:13px; line-height:1.6; color:#1d1d1f; white-space:pre-wrap; word-break:break-word; }
+.cloud-camp-step-row .step-image { margin-top:8px; font-size:12px; color:#aaa; }
+.cloud-camp-step-row .step-materials { margin-top:6px; font-size:12px; color:#888; }
+.cloud-camp-step-empty { color:#a02929; font-size:13px; padding:8px 0; }
+.cloud-camp-step-edit { margin-left:auto; padding:2px 10px; border:1px solid #d3dcf2; background:#fff; color:#2c5cdb; font-size:12px; border-radius:4px; cursor:pointer; }
+.cloud-camp-step-edit:hover { background:#eef3fb; }
+.cloud-camp-step-delete { padding:2px 10px; border:1px solid #f3c7c7; background:#fff; color:#a02929; font-size:12px; border-radius:4px; cursor:pointer; margin-left:6px; }
+.cloud-camp-step-delete:hover { background:#fdecec; }
+.cloud-camp-step-add-row { margin-top:10px; padding-top:8px; border-top:1px dashed #ececec; text-align:center; }
+.cloud-camp-step-add { padding:6px 14px; border:1px dashed #c7d3f0; background:transparent; color:#2c5cdb; font-size:12px; border-radius:4px; cursor:pointer; }
+.cloud-camp-step-add:hover { background:#eef3fb; border-style:solid; }
+.cloud-camp-step-edit-form { display:flex; flex-direction:column; gap:10px; }
+.cloud-camp-step-edit-form .edit-grid { display:flex; gap:14px; align-items:center; flex-wrap:wrap; font-size:13px; color:#5b626f; }
+.cloud-camp-step-edit-form .edit-grid label { display:flex; align-items:center; gap:6px; }
+.cloud-camp-step-edit-form .edit-grid input[type=number] { width:80px; }
+.cloud-camp-step-edit-form .edit-grid input[type=time] { width:120px; }
+.cloud-camp-step-edit-form .edit-stop-on-reply-label { display:inline-flex; align-items:center; gap:6px; }
+.cloud-camp-step-edit-form .edit-block { display:flex; flex-direction:column; gap:6px; font-size:13px; color:#5b626f; }
+.cloud-camp-step-edit-form textarea { width:100%; font-family:inherit; resize:vertical; padding:8px 10px; border:1px solid #d6dae0; border-radius:4px; box-sizing:border-box; }
+.cloud-camp-step-edit-form .edit-actions { display:flex; gap:8px; justify-content:flex-end; }
+.cloud-camp-step-content-box { display:grid; gap:10px; border:1px solid #e5e7eb; border-radius:8px; padding:12px; background:#fff; }
+.cloud-camp-step-content-summary { display:grid; gap:6px; color:#5b626f; font-size:13px; line-height:1.55; }
+.cloud-camp-step-content-summary strong { color:#1d1d1f; }
+
+.cloud-camp-members-summary { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.cloud-camp-members-total { font-size:18px; font-weight:600; color:#1d1d1f; }
+.cloud-camp-members-status { display:flex; gap:6px; flex-wrap:wrap; }
+.cloud-camp-members-status .chip { font-size:12px; padding:3px 8px; border-radius:10px; background:#eef0f4; color:#5b626f; }
+
+.cloud-camp-detail-footer { display:flex; gap:12px; padding-top:16px; border-top:1px dashed #e5e7eb; margin-top:16px; }
+.cloud-camp-reject { margin-left:auto; }
+
+.cloud-camp-drawer { position:fixed; inset:0; z-index:50; display:flex; }
+.cloud-camp-drawer[hidden] { display:none; }  /* class 的 display:flex 优先级高于 [hidden] 默认样式，必须显式覆盖否则抽屉一直显示 */
+.cloud-camp-drawer-mask { flex:1; background:rgba(0,0,0,0.3); }
+.cloud-camp-drawer-panel { width:520px; max-width:96vw; background:#fff; height:100%; display:flex; flex-direction:column; box-shadow:-2px 0 16px rgba(0,0,0,0.08); }
+.cloud-camp-detail-panel { width:720px; }
+.cloud-camp-drawer-panel header { display:flex; justify-content:space-between; align-items:center; padding:14px 18px; border-bottom:1px solid #f0f0f0; }
+.cloud-camp-drawer-close { border:0; background:transparent; font-size:22px; cursor:pointer; color:#888; line-height:1; }
+.cloud-camp-drawer-toolbar { display:flex; align-items:center; gap:10px; padding:10px 18px; border-bottom:1px solid #f0f0f0; }
+.cloud-camp-drawer-count { color:#888; font-size:12px; }
+.cloud-camp-drawer-body { flex:1; overflow:auto; padding:8px 0; }
+.cloud-camp-member-row { display:grid; grid-template-columns:1fr auto; padding:10px 18px; border-bottom:1px solid #f5f5f5; gap:10px; align-items:center; }
+.cloud-camp-member-row:hover { background:#fafbfc; }
+.cloud-camp-member-meta { font-size:12px; color:#888; margin-top:3px; line-height:1.5; }
+.cloud-camp-member-meta code { background:#f0f0f3; padding:1px 5px; border-radius:3px; font-size:11px; }
+.cloud-camp-member-action a { font-size:12px; color:#2c5cdb; text-decoration:none; padding:4px 10px; border:1px solid #d3dcf2; border-radius:4px; }
+.cloud-camp-member-action a:hover { background:#eef3fb; }
+</style>
+<script>
+(function () {
+  const root = document.querySelector('[data-cloud-camp-root]');
+  if (!root) return;
+  const tbody = root.querySelector('#cloud-camp-tbody');
+  const detailDrawer = root.querySelector('#cloud-camp-detail-drawer');
+  const detailName = root.querySelector('#cloud-camp-detail-name');
+  const detailReview = root.querySelector('#cloud-camp-detail-review');
+  const detailRun = root.querySelector('#cloud-camp-detail-run');
+  const detailTrace = root.querySelector('#cloud-camp-detail-trace');
+  const detailBody = root.querySelector('#cloud-camp-detail-body');
+  const reviewSel = root.querySelector('#cloud-camp-filter-review');
+  const runSel = root.querySelector('#cloud-camp-filter-run');
+  const refreshBtn = root.querySelector('#cloud-camp-refresh');
+  const approveBtn = root.querySelector('#cloud-camp-approve');
+  const startBtn = root.querySelector('#cloud-camp-start');
+  const rejectBtn = root.querySelector('#cloud-camp-reject');
+  const moreBtn = root.querySelector('#cloud-camp-more');
+  const morePop = root.querySelector('#cloud-camp-more-pop');
+  const pauseBtn = root.querySelector('#cloud-camp-pause');
+  const deleteBtn = root.querySelector('#cloud-camp-delete');
+
+  const drawer = root.querySelector('#cloud-camp-members-drawer');
+  const drawerTitle = root.querySelector('#cloud-camp-drawer-title');
+  const drawerStatus = root.querySelector('#cloud-camp-drawer-status');
+  const drawerCount = root.querySelector('#cloud-camp-drawer-count');
+  const drawerBody = root.querySelector('#cloud-camp-drawer-body');
+
+  let currentCode = '';
+  const CAMPAIGN_WRITE_DISABLED = false;
+  const CAMPAIGN_WRITE_DISABLED_MESSAGE = 'Campaign write controls 当前进入 Next CommandBus：只写审计/本地投影/SideEffectPlan，不真实发送、不运行 runtime。';
+
+  const fmt = s => (s == null ? '' : String(s));
+  const escapeHtml = s => fmt(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  // 状态英文 → 中文。CSS class 还是用英文（用于配色），只换显示文案
+  const REVIEW_STATUS_LABEL = {
+    pending_review: '待审阅',
+    approved: '已批准',
+    rejected: '已拒绝',
+    draft: '草稿',
+  };
+  const RUN_STATUS_LABEL = {
+    draft: '草稿',
+    active: '运行中',
+    paused: '已暂停',
+    finished: '已结束',
+    cancelled: '已撤销',
+  };
+  const reviewLabel = s => REVIEW_STATUS_LABEL[s] || fmt(s);
+  const runLabel = s => RUN_STATUS_LABEL[s] || fmt(s);
+
+  function commandHeaders(action) {
+    return {
+      'Content-Type': 'application/json',
+      'Idempotency-Key': `cloud-campaign-${action}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    };
+  }
+
+  // 后端 jsonify 把 datetime 序列化成 RFC1123 ("Sun, 10 May 2026 01:23:45 GMT")
+  // 也可能是 ISO ("2026-05-10T01:23:45Z")。两种都丢给 Date 都能解，最后统一渲染
+  // 成 "YYYY-MM-DD"（只展示年月日，按用户要求）
+  function formatYMD(value) {
+    if (!value) return '';
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return fmt(value).slice(0, 10);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function parsePayloadObject(raw) {
+    if (raw && typeof raw === 'object') return raw;
+    if (typeof raw === 'string' && raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+      } catch {
+        return {};
+      }
+    }
+    return {};
+  }
+
+  function normalizeIdList(value) {
+    const raw = Array.isArray(value) ? value : String(value || '').split(',');
+    const ids = [];
+    raw.forEach(item => {
+      const id = parseInt(String(item).trim(), 10);
+      if (id > 0 && ids.indexOf(id) === -1) ids.push(id);
+    });
+    return ids;
+  }
+
+  function normalizeContentPackage(value) {
+    const data = value && typeof value === 'object' ? value : {};
+    return {
+      content_text: String(data.content_text || '').trim(),
+      image_library_ids: normalizeIdList(data.image_library_ids),
+      miniprogram_library_ids: normalizeIdList(data.miniprogram_library_ids),
+      attachment_library_ids: normalizeIdList(data.attachment_library_ids), group_invite_library_ids: normalizeIdList(data.group_invite_library_ids),
+    };
+  }
+
+  function stepToContentPackage(step) {
+    const current = step || {};
+    const contentPackage = parsePayloadObject(current.content_package_json || current.content_package);
+    const payload = parsePayloadObject(current.content_payload_json);
+    return normalizeContentPackage({
+      content_text: current.content_text || contentPackage.content_text || payload.content_text || '',
+      image_library_ids: current.image_library_ids || contentPackage.image_library_ids || payload.image_library_ids || [],
+      miniprogram_library_ids: current.miniprogram_library_ids || contentPackage.miniprogram_library_ids || payload.miniprogram_library_ids || [],
+      attachment_library_ids: current.attachment_library_ids || contentPackage.attachment_library_ids || payload.attachment_library_ids || [], group_invite_library_ids: current.group_invite_library_ids || contentPackage.group_invite_library_ids || payload.group_invite_library_ids || [],
+    });
+  }
+
+  function contentPackageToStepPayload(contentPackage) {
+    const normalized = normalizeContentPackage(contentPackage);
+    return {
+      content_text: normalized.content_text,
+      content_package_json: normalized,
+      content_package: normalized,
+      image_library_ids: normalized.image_library_ids,
+      image_media_ids: [],
+      miniprogram_library_ids: normalized.miniprogram_library_ids,
+      attachment_library_ids: normalized.attachment_library_ids, group_invite_library_ids: normalized.group_invite_library_ids,
+    };
+  }
+
+  function stepContentSummary(contentPackage) {
+    const normalized = normalizeContentPackage(contentPackage);
+    const text = normalized.content_text || '';
+    return {
+      text: text ? (text.length > 60 ? `${text.slice(0, 60)}...` : text) : '未配置话术',
+      imageCount: normalized.image_library_ids.length,
+      miniprogramCount: normalized.miniprogram_library_ids.length,
+      attachmentCount: normalized.attachment_library_ids.length,
+      groupInviteCount: normalized.group_invite_library_ids.length,
+    };
+  }
+
+  function renderStepContentSummary(contentPackage) {
+    const summary = stepContentSummary(contentPackage);
+    return `
+      <div class="cloud-camp-step-content-summary" data-step-content-summary>
+        <strong>话术：</strong><span>${escapeHtml(summary.text)}</span>
+        <strong>内容：</strong><span>图片 ${summary.imageCount} / 小程序 ${summary.miniprogramCount} / 附件 ${summary.attachmentCount} / 客户群 ${summary.groupInviteCount}</span>
+      </div>
+    `;
+  }
+
+  function updateStepContentState(rowEl, contentPackage) {
+    const hidden = rowEl.querySelector('.edit-content-package-json');
+    if (hidden) hidden.value = JSON.stringify(normalizeContentPackage(contentPackage));
+    const summary = rowEl.querySelector('[data-step-content-summary]');
+    if (summary) summary.outerHTML = renderStepContentSummary(contentPackage);
+  }
+
+  function openStepContentComposer(rowEl) {
+    if (!window.AICRMSendContentComposer || typeof window.AICRMSendContentComposer.open !== 'function') {
+      alert('标准发送内容组件加载失败，请刷新页面后重试');
+      return;
+    }
+    const hidden = rowEl.querySelector('.edit-content-package-json');
+    let value = {};
+    try { value = JSON.parse(hidden?.value || '{}'); } catch { value = {}; }
+    window.AICRMSendContentComposer.open({
+      title: '配置 Campaign Step 内容',
+      textEnabled: true,
+      value: normalizeContentPackage(value),
+      limits: {
+        image: 3,
+        miniprogram: 1,
+        attachment: 9,
+        group_invite: 1,
+      },
+      onConfirm(contentPackage) {
+        updateStepContentState(rowEl, contentPackage);
+      },
+    });
+  }
+
+  if (typeof window !== 'undefined') {
+    window.AICRMCampaignStepContentAdapter = {
+      normalizeContentPackage,
+      stepToContentPackage,
+      contentPackageToStepPayload,
+      stepContentSummary,
+    };
+  }
+
+  async function loadList() {
+    const params = new URLSearchParams();
+    params.set('limit', '5000');
+    if (reviewSel.value) params.set('review_status', reviewSel.value);
+    if (runSel.value) params.set('run_status', runSel.value);
+    const resp = await fetch('/api/admin/cloud-orchestrator/campaigns?' + params.toString());
+    const data = await resp.json();
+    if (!data.ok) return;
+    tbody.innerHTML = '';
+    if (!data.campaigns.length) {
+      tbody.innerHTML = '<tr><td colspan="8">暂无运营计划</td></tr>';
+      return;
+    }
+    // 按 group_code 分桶: 同一份名单按 owner 拆 N 个 campaign 时, 同 group_code
+    // 的多个 campaign 聚合成 1 张展开/收起的卡片 (技能 md §3.5).
+    const groups = new Map();
+    const standalone = [];
+    for (const c of data.campaigns) {
+      const gcode = (c.group_code || '').trim();
+      if (!gcode) { standalone.push(c); continue; }
+      if (!groups.has(gcode)) {
+        groups.set(gcode, { code: gcode, label: c.group_label || gcode, campaigns: [] });
+      }
+      groups.get(gcode).campaigns.push(c);
+    }
+    // group 排序: 各 group 内最大 id 倒序; 然后跟 standalone 按 id 整体合并
+    const groupArr = Array.from(groups.values()).sort((a, b) => {
+      const maxA = Math.max(...a.campaigns.map(c => Number(c.id) || 0));
+      const maxB = Math.max(...b.campaigns.map(c => Number(c.id) || 0));
+      return maxB - maxA;
+    });
+    const standaloneSorted = standalone.slice().sort((a, b) => (Number(b.id) || 0) - (Number(a.id) || 0));
+    // 简单合并: group 显示在前 (新建任务常常 group, 优先看), standalone 跟在后面
+    for (const g of groupArr) renderGroupRow(g);
+    for (const c of standaloneSorted) appendCampaignRow(c, false);
+  }
+
+  function aggLabelByKey(camps, key, labelFn) {
+    const counts = {};
+    for (const c of camps) counts[c[key]] = (counts[c[key]] || 0) + 1;
+    return Object.entries(counts).map(([s, n]) => `${n} ${labelFn(s)}`).join(' · ');
+  }
+
+  function renderGroupRow(g) {
+    const total = g.campaigns.reduce((s, c) => s + (Number(c.member_count) || 0), 0);
+    const owners = Array.from(new Set(g.campaigns.map(c => c.owner_userid || '').filter(Boolean)));
+    const hasDraft = !CAMPAIGN_WRITE_DISABLED && g.campaigns.some(c => ['draft', 'pending_review'].includes(c.review_status) && ['draft', 'paused'].includes(c.run_status));
+    const headTr = document.createElement('tr');
+    headTr.className = 'cloud-camp-group-head';
+    headTr.style.cssText = 'cursor:pointer;background:#fff8e6;border-top:2px solid #f0b400;';
+    headTr.innerHTML = `
+      <td colspan="2">
+        <div class="cloud-camp-name"><span data-toggle-icon>▶</span> 📦 ${escapeHtml(g.label)}</div>
+        <code class="cloud-camp-code" style="opacity:0.65;">group=${escapeHtml(g.code)} · ${g.campaigns.length} 个 sub-Campaign${owners.length ? ' · senders=' + escapeHtml(owners.join(', ')) : ''}</code>
+      </td>
+      <td>${g.campaigns.length}</td>
+      <td><strong>${fmt(total)}</strong></td>
+      <td><small>${escapeHtml(aggLabelByKey(g.campaigns, 'review_status', reviewLabel))}</small></td>
+      <td><small>${escapeHtml(aggLabelByKey(g.campaigns, 'run_status', runLabel))}</small></td>
+      <td><em style="color:#666;font-size:12px;">点行展开 ↓</em></td>
+      <td>${hasDraft ? `<button class="admin-button admin-button--primary" data-batch-start="${escapeHtml(g.code)}" style="font-size:12px;padding:4px 10px;white-space:nowrap;">全部启动</button>` : ''}</td>
+    `;
+    tbody.appendChild(headTr);
+
+    const batchBtn = headTr.querySelector('[data-batch-start]');
+    if (batchBtn) {
+      batchBtn.addEventListener('click', async (ev) => {
+        ev.stopPropagation();
+        const gcode = batchBtn.dataset.batchStart;
+        const draftCount = g.campaigns.filter(c => ['draft', 'pending_review'].includes(c.review_status) && ['draft', 'paused'].includes(c.run_status)).length;
+        if (!confirm(`将批量审批并启动 ${draftCount} 个 sub-Campaign，确认？`)) return;
+        const operator = (window.prompt('确认人（仅做审计标记）', 'ui_user') || '').trim();
+        if (!operator) return;
+        batchBtn.disabled = true;
+        batchBtn.textContent = '启动中…';
+        try {
+          const resp = await fetch('/api/admin/cloud-orchestrator/campaigns/batch-start', {
+            method: 'POST', headers: commandHeaders('batch-start'),
+            body: JSON.stringify({ group_code: gcode, operator }),
+          });
+          const d = await resp.json().catch(() => ({}));
+          if (!resp.ok || !d.ok) { alert('批量启动失败：' + window.AdminApi.responseErrorMessage(resp, d, '请稍后重试')); return; }
+          alert(`批量启动计划已生成 ✓\n成功：${d.started_count}\n跳过：${d.skipped_count}\n失败：${d.failed_count}\n真实发送：否`);
+          loadList();
+        } finally {
+          batchBtn.disabled = false;
+          batchBtn.textContent = '全部启动';
+        }
+      });
+    }
+
+    const childTrs = [];
+    for (const c of g.campaigns) {
+      const tr = appendCampaignRow(c, true);
+      tr.classList.add('cloud-camp-group-child');
+      tr.style.display = 'none';
+      childTrs.push(tr);
+    }
+
+    headTr.addEventListener('click', (ev) => {
+      if (ev.target.tagName === 'BUTTON') return;
+      const opening = childTrs[0]?.style.display === 'none';
+      childTrs.forEach(tr => { tr.style.display = opening ? '' : 'none'; });
+      const icon = headTr.querySelector('[data-toggle-icon]');
+      if (icon) icon.textContent = opening ? '▼' : '▶';
+    });
+  }
+
+  function appendCampaignRow(c, isChild) {
+    const tr = document.createElement('tr');
+    const namePrefix = isChild ? '<span style="opacity:0.45;">└─ </span>' : '';
+    tr.innerHTML = `
+      <td${isChild ? ' style="padding-left:24px;"' : ''}>
+        <div class="cloud-camp-name">${namePrefix}${escapeHtml(c.display_name) || '<em>未命名</em>'}</div>
+        <code class="cloud-camp-code">${escapeHtml(c.campaign_code).slice(0, 18)}${c.owner_userid ? ' · sender=' + escapeHtml(c.owner_userid) : ''}</code>
+      </td>
+      <td><div class="cloud-camp-intent-cell" title="${escapeHtml(c.intent)}">${escapeHtml(c.intent)}</div></td>
+      <td>${fmt(c.segment_count || 0)}</td>
+      <td>${fmt(c.member_count || 0)}</td>
+      <td><span class="cloud-orch-status-chip ${escapeHtml(c.review_status)}">${escapeHtml(reviewLabel(c.review_status))}</span></td>
+      <td><span class="cloud-orch-status-chip ${escapeHtml(c.run_status)}">${escapeHtml(runLabel(c.run_status))}</span></td>
+      <td>${escapeHtml(formatYMD(c.updated_at))}</td>
+      <td><button class="admin-button admin-button--ghost" data-code="${escapeHtml(c.campaign_code)}">查看</button></td>
+    `;
+    tr.querySelector('button').addEventListener('click', e => {
+      e.stopPropagation();
+      loadDetail(e.currentTarget.dataset.code);
+    });
+    tbody.appendChild(tr);
+    return tr;
+  }
+
+  async function loadDetail(code) {
+    currentCode = code;
+    const resp = await fetch('/api/admin/cloud-orchestrator/campaigns/' + encodeURIComponent(code));
+    const data = await resp.json();
+    if (!data.ok) { alert('找不到 Campaign'); return; }
+    const overview = data.campaign;
+    const camp = overview.campaign;
+    detailDrawer.hidden = false;
+    detailName.textContent = camp.display_name || camp.campaign_code;
+    detailReview.className = 'cloud-orch-status-chip ' + escapeHtml(camp.review_status);
+    detailReview.textContent = reviewLabel(camp.review_status);
+    detailRun.className = 'cloud-orch-status-chip ' + escapeHtml(camp.run_status);
+    detailRun.textContent = runLabel(camp.run_status);
+    detailTrace.textContent = `code=${fmt(camp.campaign_code)}  trace=${fmt(camp.trace_id)}`;
+
+    const sections = [];
+
+    sections.push(`
+      <div class="cloud-camp-section">
+        <h4>意图</h4>
+        <div class="intent-text">${escapeHtml(camp.intent)}</div>
+      </div>
+    `);
+
+    const editable = !CAMPAIGN_WRITE_DISABLED && ['draft', 'pending_review'].includes(camp.review_status) && ['draft', 'paused'].includes(camp.run_status);
+
+    let segHtml = '';
+    for (const seg of (overview.segments || [])) {
+      let stepsHtml = '';
+      const steps = seg.steps || [];
+      if (!steps.length) {
+        stepsHtml = `<div class="cloud-camp-step-empty">⚠️ 这个分层没有节奏，无法启动。请让 Agent 重新提交带 steps 的 propose_campaign。</div>`;
+      } else {
+        for (const step of steps) {
+          const dayLabel = step.day_offset === 0 ? 'D+0（首日）' : `D+${step.day_offset}`;
+          const stopChip = step.stop_on_reply ? '<span class="step-stop">回复后停止</span>' : '<span class="step-time">回复后继续</span>';
+          const contentPackage = stepToContentPackage(step);
+          const contentSummary = stepContentSummary(contentPackage);
+          const editBtns = editable
+            ? `<button class="cloud-camp-step-edit" data-step-index="${fmt(step.step_index)}">编辑</button>
+               <button class="cloud-camp-step-delete" data-step-index="${fmt(step.step_index)}">删除</button>`
+            : '';
+          stepsHtml += `
+            <div class="cloud-camp-step-row" data-step-row="${fmt(step.step_index)}">
+              <div class="step-head">
+                <span class="step-day">${escapeHtml(dayLabel)}</span>
+                <span class="step-time">${escapeHtml(step.send_time || '10:00')}</span>
+                ${stopChip}
+                ${editBtns}
+              </div>
+              <div class="step-text">${escapeHtml(contentSummary.text)}</div>
+              <div class="step-materials">图片 ${contentSummary.imageCount} / 小程序 ${contentSummary.miniprogramCount} / 附件 ${contentSummary.attachmentCount} / 客户群 ${contentSummary.groupInviteCount}</div>
+            </div>
+          `;
+        }
+      }
+      const addStepBtn = editable
+        ? `<button class="cloud-camp-step-add" data-segment-id="${fmt(seg.campaign_segment_id)}">+ 新增节奏</button>`
+        : '';
+      segHtml += `
+        <div class="cloud-camp-segment-card">
+          <div class="seg-head">
+            <h5>${escapeHtml(seg.label) || escapeHtml(seg.segment_name)}</h5>
+            <span class="seg-meta">priority ${fmt(seg.priority)} · ${fmt(seg.allocated_count || 0)} 人 · code=${escapeHtml(seg.segment_code)}</span>
+          </div>
+          ${stepsHtml}
+          ${addStepBtn ? `<div class="cloud-camp-step-add-row">${addStepBtn}</div>` : ''}
+        </div>
+      `;
+    }
+    sections.push(`
+      <div class="cloud-camp-section">
+        <h4>分层 + 节奏</h4>
+        ${segHtml || '<em>未挂分层</em>'}
+      </div>
+    `);
+
+    const total = overview.total_members || 0;
+    const counts = overview.member_status_counts || {};
+    const chipMap = {pending:'待发送', sent:'已发送', replied:'已回复', stopped:'已停止', failed:'失败'};
+    const chips = Object.keys(counts).map(k => `<span class="chip">${escapeHtml(chipMap[k] || k)} ${fmt(counts[k])}</span>`).join('');
+    sections.push(`
+      <div class="cloud-camp-section">
+        <h4>命中成员</h4>
+        <div class="cloud-camp-members-summary">
+          <div class="cloud-camp-members-total">${fmt(total)} 人</div>
+          <div class="cloud-camp-members-status">${chips}</div>
+          <button class="admin-button admin-button--ghost" id="cloud-camp-view-members">查看成员明细</button>
+        </div>
+      </div>
+    `);
+
+    detailBody.innerHTML = sections.join('');
+    detailBody.querySelector('#cloud-camp-view-members')?.addEventListener('click', () => openMembersDrawer(camp.display_name || camp.campaign_code));
+    // 给每个 step 卡片的「编辑」按钮挂事件
+    detailBody.querySelectorAll('.cloud-camp-step-edit').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const stepIndex = btn.dataset.stepIndex;
+        const seg = (overview.segments || []).find(s => (s.steps || []).some(st => String(st.step_index) === String(stepIndex)));
+        if (!seg) return;
+        const step = seg.steps.find(st => String(st.step_index) === String(stepIndex));
+        if (!step) return;
+        openStepEditor(step, btn.closest('.cloud-camp-step-row'));
+      });
+    });
+    // 「删除」节奏
+    detailBody.querySelectorAll('.cloud-camp-step-delete').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const stepIndex = btn.dataset.stepIndex;
+        if (!confirm(`确认删除 step ${stepIndex}？此操作不可撤销。`)) return;
+        const resp = await fetch(`/api/admin/cloud-orchestrator/campaigns/${encodeURIComponent(currentCode)}/steps/${encodeURIComponent(stepIndex)}`, {
+          method: 'DELETE', headers: commandHeaders('step-delete'),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok || !data.ok) { alert('删除失败：' + window.AdminApi.responseErrorMessage(resp, data, '请稍后重试')); return; }
+        loadDetail(currentCode);
+      });
+    });
+    // 「+ 新增节奏」
+    detailBody.querySelectorAll('.cloud-camp-step-add').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const segId = parseInt(btn.dataset.segmentId, 10);
+        if (!segId) return;
+        const resp = await fetch(`/api/admin/cloud-orchestrator/campaigns/${encodeURIComponent(currentCode)}/steps`, {
+          method: 'POST', headers: commandHeaders('step-add'),
+          body: JSON.stringify({ campaign_segment_id: segId, day_offset: 0, send_time: '10:00', content_text: '', stop_on_reply: true }),
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok || !data.ok) { alert('新增失败：' + window.AdminApi.responseErrorMessage(resp, data, '请稍后重试')); return; }
+        loadDetail(currentCode);
+      });
+    });
+
+    const startable = !CAMPAIGN_WRITE_DISABLED && ['draft', 'pending_review'].includes(camp.review_status) && ['draft', 'paused'].includes(camp.run_status);
+    const hasSteps = (overview.segments || []).some(s => (s.steps || []).length > 0);
+    approveBtn.disabled = CAMPAIGN_WRITE_DISABLED || !['draft','pending_review'].includes(camp.review_status);
+    approveBtn.title = CAMPAIGN_WRITE_DISABLED ? CAMPAIGN_WRITE_DISABLED_MESSAGE : '仅写入 Next CommandBus 审批状态，不真实发送';
+    startBtn.disabled = !startable || !hasSteps;
+    startBtn.title = CAMPAIGN_WRITE_DISABLED ? CAMPAIGN_WRITE_DISABLED_MESSAGE : (!hasSteps ? '请先让 Agent 提交带节奏的 propose_campaign' : '');
+    rejectBtn.disabled = CAMPAIGN_WRITE_DISABLED || ['rejected','cancelled','finished'].includes(camp.review_status) || ['cancelled','finished'].includes(camp.run_status);
+    rejectBtn.title = CAMPAIGN_WRITE_DISABLED ? CAMPAIGN_WRITE_DISABLED_MESSAGE : '';
+    pauseBtn.disabled = CAMPAIGN_WRITE_DISABLED || camp.run_status !== 'active';
+    pauseBtn.title = CAMPAIGN_WRITE_DISABLED ? CAMPAIGN_WRITE_DISABLED_MESSAGE : '';
+    deleteBtn.disabled = CAMPAIGN_WRITE_DISABLED || camp.run_status === 'active';
+    deleteBtn.title = CAMPAIGN_WRITE_DISABLED ? CAMPAIGN_WRITE_DISABLED_MESSAGE : '';
+  }
+
+  approveBtn.addEventListener('click', async () => {
+    if (CAMPAIGN_WRITE_DISABLED) { alert(CAMPAIGN_WRITE_DISABLED_MESSAGE); return; }
+    if (!currentCode) return;
+    const operator = (window.prompt('批准人（仅做审计标记，可填昵称或工号）', 'ui_user') || '').trim();
+    if (!operator) return;
+    const resp = await fetch(`/api/admin/cloud-orchestrator/campaigns/${encodeURIComponent(currentCode)}/approve`, {
+      method: 'POST', headers: commandHeaders('approve'),
+      body: JSON.stringify({ operator }),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || !data.ok) { alert('批准失败：' + window.AdminApi.responseErrorMessage(resp, data, '请稍后重试')); return; }
+    alert(`审批已写入 ✓\nCommand：${data.command_id || '-'}\n真实发送：否`);
+    loadDetail(currentCode);
+    loadList();
+  });
+
+  startBtn.addEventListener('click', async () => {
+    if (CAMPAIGN_WRITE_DISABLED) { alert(CAMPAIGN_WRITE_DISABLED_MESSAGE); return; }
+    if (!currentCode) return;
+    if (!confirm(`确认生成这个 Campaign 的启动计划吗？本操作只写 CommandBus/AuditLedger/SideEffectPlan，不会真实发送。`)) return;
+    const operator = (window.prompt('确认人（仅做审计标记，可填昵称或工号）', 'ui_user') || '').trim();
+    if (!operator) return;
+    startBtn.disabled = true;
+    const oldText = startBtn.textContent;
+    startBtn.textContent = '生成计划中…';
+    try {
+      const resp2 = await fetch(`/api/admin/cloud-orchestrator/campaigns/${encodeURIComponent(currentCode)}/start`, {
+        method: 'POST', headers: commandHeaders('start'),
+        body: JSON.stringify({ operator, human_approver: operator }),
+      });
+      const d2 = await resp2.json().catch(() => ({}));
+      if (!resp2.ok || !d2.ok) {
+        alert(`启动计划失败：${window.AdminApi.responseErrorMessage(resp2, d2, '请稍后重试')}`);
+        return;
+      }
+      alert(`启动计划已生成 ✓\nCommand：${d2.command_id || '-'}\n真实发送：否\nRuntime 执行：否`);
+      loadDetail(currentCode);
+      loadList();
+    } finally {
+      startBtn.disabled = false;
+      startBtn.textContent = oldText;
+    }
+  });
+
+  rejectBtn.addEventListener('click', async () => {
+    if (CAMPAIGN_WRITE_DISABLED) { alert(CAMPAIGN_WRITE_DISABLED_MESSAGE); return; }
+    if (!currentCode) return;
+    const reason = prompt('拒绝原因？（会写入审计日志）', '运营审阅未通过');
+    if (reason === null) return;
+    const resp = await fetch(`/api/admin/cloud-orchestrator/campaigns/${encodeURIComponent(currentCode)}/reject`, {
+      method: 'POST', headers: commandHeaders('reject'),
+      body: JSON.stringify({ reason }),
+    });
+    const data = await resp.json();
+    if (!data.ok) { alert('操作失败'); return; }
+    loadDetail(currentCode);
+    loadList();
+  });
+
+  moreBtn.addEventListener('click', () => {
+    morePop.hidden = !morePop.hidden;
+  });
+  document.addEventListener('click', (e) => {
+    if (!morePop.contains(e.target) && e.target !== moreBtn) morePop.hidden = true;
+  });
+
+  pauseBtn.addEventListener('click', async () => {
+    if (CAMPAIGN_WRITE_DISABLED) { alert(CAMPAIGN_WRITE_DISABLED_MESSAGE); return; }
+    if (!currentCode) return;
+    morePop.hidden = true;
+    const reason = prompt('暂停原因？', '运营手动暂停');
+    if (reason === null) return;
+    await fetch(`/api/admin/cloud-orchestrator/campaigns/${encodeURIComponent(currentCode)}/pause`, {
+      method: 'POST', headers: commandHeaders('pause'),
+      body: JSON.stringify({ reason }),
+    });
+    loadDetail(currentCode);
+    loadList();
+  });
+
+  deleteBtn.addEventListener('click', async () => {
+    if (CAMPAIGN_WRITE_DISABLED) { alert(CAMPAIGN_WRITE_DISABLED_MESSAGE); return; }
+    if (!currentCode) return;
+    morePop.hidden = true;
+    if (!confirm('永久删除这个 Campaign？包含所有节奏、命中成员、待发批次都会一并清空，且不可恢复。')) return;
+    const resp = await fetch(`/api/admin/cloud-orchestrator/campaigns/${encodeURIComponent(currentCode)}`, {
+      method: 'DELETE', headers: commandHeaders('delete'),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || !data.ok) {
+      alert('删除失败：' + window.AdminApi.responseErrorMessage(resp, data, '请稍后重试'));
+      return;
+    }
+    detailDrawer.hidden = true;
+    currentCode = '';
+    loadList();
+  });
+
+  // ----- step editor (inline) -----
+  function openStepEditor(step, rowEl) {
+    if (!rowEl) return;
+    if (rowEl.dataset.editing === '1') return;
+    rowEl.dataset.editing = '1';
+    const contentPackage = stepToContentPackage(step);
+    const originalHtml = rowEl.innerHTML;
+    rowEl.innerHTML = `
+      <div class="cloud-camp-step-edit-form">
+        <div class="edit-grid">
+          <label>D+
+            <input type="number" min="0" max="365" class="admin-input edit-day-offset" value="${fmt(step.day_offset || 0)}">
+          </label>
+          <label>发送时间
+            <input type="time" class="admin-input edit-send-time" value="${escapeHtml(step.send_time || '10:00')}">
+          </label>
+          <label class="edit-stop-on-reply-label">
+            <input type="checkbox" class="edit-stop-on-reply" ${step.stop_on_reply ? 'checked' : ''}> 收到回复后停止后续节奏
+          </label>
+        </div>
+        <div class="edit-block">
+          <span>Campaign Step 内容</span>
+          <div class="cloud-camp-step-content-box">
+            ${renderStepContentSummary(contentPackage)}
+            <button type="button" class="admin-button admin-button--ghost edit-configure-content">配置话术和素材</button>
+          </div>
+          <input type="hidden" class="edit-content-package-json" value='${escapeHtml(JSON.stringify(contentPackage))}'>
+        </div>
+        <div class="edit-actions">
+          <button class="admin-button admin-button--primary edit-save">保存</button>
+          <button class="admin-button admin-button--ghost edit-cancel">取消</button>
+        </div>
+      </div>
+    `;
+    rowEl.querySelector('.edit-configure-content').addEventListener('click', () => openStepContentComposer(rowEl));
+    rowEl.querySelector('.edit-cancel').addEventListener('click', () => {
+      rowEl.innerHTML = originalHtml;
+      rowEl.dataset.editing = '0';
+      // 重新挂编辑按钮事件
+      rowEl.querySelector('.cloud-camp-step-edit')?.addEventListener('click', () => loadDetail(currentCode));
+    });
+    rowEl.querySelector('.edit-save').addEventListener('click', async () => {
+      let contentPackage = {};
+      try { contentPackage = JSON.parse(rowEl.querySelector('.edit-content-package-json').value || '{}'); } catch {}
+      const body = {
+        ...contentPackageToStepPayload(contentPackage),
+        send_time: rowEl.querySelector('.edit-send-time').value || '10:00',
+        day_offset: parseInt(rowEl.querySelector('.edit-day-offset').value || '0', 10),
+        stop_on_reply: rowEl.querySelector('.edit-stop-on-reply').checked,
+      };
+      const resp = await fetch(`/api/admin/cloud-orchestrator/campaigns/${encodeURIComponent(currentCode)}/steps/${encodeURIComponent(step.step_index)}`, {
+        method: 'PATCH', headers: commandHeaders('step-update'),
+        body: JSON.stringify(body),
+      });
+      const data = await resp.json();
+      if (!resp.ok || !data.ok) { alert('保存失败：' + window.AdminApi.responseErrorMessage(resp, data, '请稍后重试')); return; }
+      loadDetail(currentCode);
+    });
+  }
+
+  // ----- members drawer -----
+  let drawerCampCode = '';
+  function openMembersDrawer(name) {
+    drawerCampCode = currentCode;
+    drawerTitle.textContent = `${name} · 成员明细`;
+    drawerStatus.value = '';
+    drawer.hidden = false;
+    loadMembers();
+  }
+  function closeMembersDrawer() { drawer.hidden = true; }
+  drawer.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', closeMembersDrawer));
+  function closeDetailDrawer() { detailDrawer.hidden = true; }
+  detailDrawer.querySelectorAll('[data-detail-close]').forEach(el => el.addEventListener('click', closeDetailDrawer));
+  drawerStatus.addEventListener('change', loadMembers);
+  async function loadMembers() {
+    if (!drawerCampCode) return;
+    drawerBody.textContent = '加载中…';
+    const params = new URLSearchParams();
+    if (drawerStatus.value) params.set('status', drawerStatus.value);
+    params.set('limit', '200');
+    const resp = await fetch(`/api/admin/cloud-orchestrator/campaigns/${encodeURIComponent(drawerCampCode)}/members?` + params.toString());
+    const data = await resp.json();
+    if (!data.ok) { drawerBody.textContent = '加载失败'; return; }
+    drawerCount.textContent = `共 ${data.total} 人${data.rows.length < data.total ? `（仅展示前 ${data.rows.length} 人）` : ''}`;
+    if (!data.rows.length) { drawerBody.textContent = '无成员'; return; }
+    drawerBody.innerHTML = data.rows.map(r => {
+      const tags = [];
+      if (r.profile_segment_key) tags.push(escapeHtml(r.profile_segment_key));
+      if (r.behavior_tier_key) tags.push(escapeHtml(r.behavior_tier_key));
+      if (r.current_audience_code) tags.push(escapeHtml(r.current_audience_code));
+      const detailUrl = r.external_contact_id ? `/admin/customers/${encodeURIComponent(r.external_contact_id)}` : '';
+      return `
+        <div class="cloud-camp-member-row">
+          <div>
+            <div><strong>${escapeHtml(r.phone || '(无手机号)')}</strong> <span class="cloud-orch-status-chip ${escapeHtml(r.status)}">${escapeHtml(r.status)}</span></div>
+            <div class="cloud-camp-member-meta">
+              <code>${escapeHtml(r.external_contact_id || '-')}</code>
+              ${tags.length ? '· ' + tags.join(' / ') : ''}
+              ${r.last_error_text ? `<br>错误：${escapeHtml(r.last_error_text)}` : ''}
+            </div>
+          </div>
+          <div class="cloud-camp-member-action">
+            ${detailUrl ? `<a href="${detailUrl}" target="_blank" rel="noopener">客户详情</a>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  refreshBtn.addEventListener('click', loadList);
+  reviewSel.addEventListener('change', loadList);
+  runSel.addEventListener('change', loadList);
+  loadList();
+})();
+</script>
+{% endblock %}

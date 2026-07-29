@@ -1,0 +1,11 @@
+[Unit]
+Description=Execute the versioned AI-CRM job catalog every minute
+
+[Timer]
+OnCalendar=*-*-* *:*:40
+Persistent=true
+RandomizedDelaySec=5
+Unit=aicrm-job-catalog-scheduler.service
+
+[Install]
+WantedBy=timers.target

@@ -3,8 +3,8 @@ from __future__ import annotations
 import subprocess
 import sys
 
-from aicrm_next.questionnaire import reconciliation
-from aicrm_next.questionnaire.reconciliation import QuestionnaireRadarReconciliationService
+from aicrm_next.extensions.forms.questionnaire import reconciliation
+from aicrm_next.extensions.forms.questionnaire.reconciliation import QuestionnaireRadarReconciliationService
 
 
 class _Result:

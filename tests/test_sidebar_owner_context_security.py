@@ -3,12 +3,12 @@ from __future__ import annotations
 from datetime import datetime as RealDateTime
 from time import time
 
-from aicrm_next.shared import signed_context
-from aicrm_next.shared.signed_context import (
+from aicrm_next.platform.shared import signed_context
+from aicrm_next.platform.shared.signed_context import (
     build_sidebar_owner_context_token,
     validate_sidebar_owner_context,
 )
-from aicrm_next.shared.signed_session import sign_session_payload
+from aicrm_next.platform.shared.signed_session import sign_session_payload
 
 
 def _viewer_session(

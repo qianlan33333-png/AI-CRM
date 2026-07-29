@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from aicrm_next.background_jobs.automation_ops_scheduler import run_automation_ops_scheduler
+from aicrm_next.automation.background_jobs.automation_ops_scheduler import run_automation_ops_scheduler
 
 
 def test_automation_ops_scheduler_reports_group_ops_and_media_refresh_components() -> None:
     calls: list[str] = []
+    media_calls: list[dict] = []
 
     def fake_group_ops_runner(*, now, operator, dry_run):
         calls.append(f"{operator}:{now.isoformat()}:{dry_run}")
@@ -24,7 +25,7 @@ def test_automation_ops_scheduler_reports_group_ops_and_media_refresh_components
         now=now,
         operator="pytest",
         group_ops_runner=fake_group_ops_runner,
-        media_refresh_runner=lambda **kwargs: {
+        media_refresh_runner=lambda **kwargs: media_calls.append(kwargs) or {
             "component": "wecom_media_lease_refresher",
             "status": "ok",
             "candidate_count": 2,
@@ -34,12 +35,18 @@ def test_automation_ops_scheduler_reports_group_ops_and_media_refresh_components
     )
 
     assert calls == ["pytest:2026-05-29T08:00:00+00:00:False"]
+    assert media_calls == []
     assert summary["ok"] is True
     assert [item["component"] for item in summary["components"]] == [
         "group_ops_scheduler",
         "wecom_media_lease_refresher",
     ]
     assert summary["components"][0]["group_ops_enqueued_jobs"] == 1
+    assert summary["components"][1] == {
+        "component": "wecom_media_lease_refresher",
+        "status": "skipped",
+        "reason": "retired_manual_repair_only",
+    }
 
 
 def test_automation_ops_scheduler_dry_run_skips_both_components() -> None:
@@ -53,7 +60,7 @@ def test_automation_ops_scheduler_dry_run_skips_both_components() -> None:
     assert summary["ok"] is True
     assert summary["components"] == [
         {"component": "group_ops_scheduler", "status": "skipped", "reason": "dry_run"},
-        {"component": "wecom_media_lease_refresher", "status": "skipped", "reason": "dry_run"},
+        {"component": "wecom_media_lease_refresher", "status": "skipped", "reason": "retired_manual_repair_only"},
     ]
 
 
@@ -65,3 +72,15 @@ def test_automation_ops_scheduler_reports_group_ops_failure() -> None:
 
     assert summary["ok"] is False
     assert summary["errors"] == [{"scope": "group_ops_scheduler", "error": "repo unavailable"}]
+
+
+def test_automation_ops_scheduler_requires_composition_root_runner() -> None:
+    summary = run_automation_ops_scheduler(operator="pytest")
+
+    assert summary["ok"] is False
+    assert summary["errors"] == [
+        {
+            "scope": "group_ops_scheduler",
+            "error": "group_ops_runner is required for non-dry-run execution",
+        }
+    ]

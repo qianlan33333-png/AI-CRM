@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from aicrm_next.integration_gateway.dispatch import DispatchGateway, McpToolDispatcher
-from aicrm_next.shared.errors import ContractError
+from aicrm_next.channels.integration_gateway.dispatch import DispatchGateway, McpToolDispatcher
+from aicrm_next.platform.shared.errors import ContractError
 
 
 class FakeBlockedWeComAdapter:

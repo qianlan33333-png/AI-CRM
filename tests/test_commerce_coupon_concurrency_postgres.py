@@ -10,14 +10,14 @@ import psycopg
 import pytest
 from psycopg.rows import dict_row
 
-from aicrm_next.commerce.coupons.repo import (
+from aicrm_next.extensions.commerce.commerce.coupons.repo import (
     PostgresCouponRepository,
     build_coupon_order_repository,
     request_key_hash,
     target_ref_for_product_id,
 )
-from aicrm_next.commerce.repo import PostgresCommerceRepository
-from aicrm_next.shared.errors import ContractError
+from aicrm_next.extensions.commerce.commerce.repo import PostgresCommerceRepository
+from aicrm_next.platform.shared.errors import ContractError
 
 
 TENANT_ID = "aicrm"

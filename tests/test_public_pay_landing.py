@@ -20,7 +20,7 @@ def test_public_pay_landing_renders_wechat_jsapi_checkout(monkeypatch) -> None:
     assert response.headers["X-AICRM-Fallback-Used"] == "false"
     assert "测试商品" in response.text
     assert "确认报名信息" in response.text
-    assert "授权登录" in response.text
+    assert "请在微信中打开" in response.text
     assert "/api/h5/wechat-pay/jsapi/orders" in response.text
     assert "/api/h5/wechat-pay/orders/{out_trade_no}" in response.text
     assert "WeixinJSBridge.invoke" in response.text

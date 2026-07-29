@@ -7,8 +7,8 @@ from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.platform_foundation.auth_platform.models import WebhookClientRecord
-from aicrm_next.platform_foundation.auth_platform.webhook_hmac import WebhookHmacSigner, WebhookHmacVerifier
+from aicrm_next.platform.platform_foundation.auth_platform.models import WebhookClientRecord
+from aicrm_next.platform.platform_foundation.auth_platform.webhook_hmac import WebhookHmacSigner, WebhookHmacVerifier
 
 
 class InMemoryWebhookRepository:

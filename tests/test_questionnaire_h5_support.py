@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from aicrm_next.questionnaire.api import _safe_questionnaire_return_url
-from aicrm_next.questionnaire.dto import OAuthStartRequest
-from aicrm_next.questionnaire.oauth import QuestionnaireOAuthAdapter, questionnaire_oauth_state_context
+from aicrm_next.extensions.forms.questionnaire.api import _safe_questionnaire_return_url
+from aicrm_next.extensions.forms.questionnaire.dto import OAuthStartRequest
+from aicrm_next.extensions.forms.questionnaire.oauth import QuestionnaireOAuthAdapter, questionnaire_oauth_state_context
 
 
 def test_next_questionnaire_h5_return_url_stays_local():

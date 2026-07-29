@@ -9,16 +9,16 @@ pytestmark = pytest.mark.usefixtures("composed_internal_event_registry")
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.cloud_orchestrator.application import ApproveCloudPlanCommand
-from aicrm_next.cloud_orchestrator.repository import build_cloud_plan_repository, reset_cloud_plan_fixture_state
+from aicrm_next.extensions.growth.cloud_orchestrator.application import ApproveCloudPlanCommand
+from aicrm_next.extensions.growth.cloud_orchestrator.repository import build_cloud_plan_repository, reset_cloud_plan_fixture_state
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.external_effects import ExternalEffectService, reset_external_effect_fixture_state
-from aicrm_next.platform_foundation.internal_events import InternalEventService, reset_internal_event_fixture_state
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import ExternalEffectService, reset_external_effect_fixture_state
+from aicrm_next.platform.platform_foundation.internal_events import InternalEventService, reset_internal_event_fixture_state
 from aicrm_next.internal_event_composition import register_shadow_event_consumers
-from aicrm_next.platform_foundation.internal_events.shadow import OPS_PLAN_APPROVED_EVENT_TYPE
-from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
-from aicrm_next.platform_foundation.push_center.projection import PushCenterProjectionService
+from aicrm_next.platform.platform_foundation.internal_events.shadow import OPS_PLAN_APPROVED_EVENT_TYPE
+from aicrm_next.platform.platform_foundation.internal_events.worker import InternalEventWorker
+from aicrm_next.platform.platform_foundation.push_center.projection import PushCenterProjectionService
 
 PLANNER = "broadcast_task_planner_consumer"
 
@@ -154,6 +154,8 @@ def test_agent_send_plan_approval_immediately_enqueues_recipient_jobs(monkeypatc
     assert len(jobs) == 2
     assert {job["source_table"] for job in jobs} == {"cloud_broadcast_plan_recipients"}
     assert {job["content_payload"]["message_mode"] for job in jobs} == {"recipient_messages"}
+    assert all(str(job.get("execution_id") or "").startswith("exe_broadcast_") for job in jobs)
+    assert len({job["execution_id"] for job in jobs}) == 2
     assert recipient_total == 2
     assert {recipient["send_status"] for recipient in recipients} == {"queued"}
     assert {message["status"] for message in messages} == {"queued"}
@@ -237,7 +239,7 @@ def test_planner_unsupported_plan_type_is_non_applicable(monkeypatch) -> None:
     assert result["attempt"]["response_summary_json"]["reason"] == "consumer_non_applicable"
 
 
-def test_planner_broadcast_job_is_visible_in_push_center_projection(monkeypatch) -> None:
+def test_planner_broadcast_jobs_are_visible_as_independent_push_executions(monkeypatch) -> None:
     _configure(monkeypatch)
     event_id = _approve_plan()
     result = _run_planner(event_id)
@@ -248,11 +250,14 @@ def test_planner_broadcast_job_is_visible_in_push_center_projection(monkeypatch)
         broadcast_adapter=_FixtureBroadcastAdapter(fixture_jobs)
     ).list_projections({"business_id": "plan_probe"})
 
-    assert total == 1
-    assert records[0]["projection_id"] == f"broadcast_job:{result['attempt']['response_summary_json']['broadcast_job_id']}"
-    assert records[0]["effective_status"] == "pending"
-    assert records[0]["business_id"] == "plan_probe"
-    assert records[0]["linked_record_counts"]["broadcast_jobs"] == 2
+    assert total == 2
+    assert f"broadcast_job:{result['attempt']['response_summary_json']['broadcast_job_id']}" in {
+        record["projection_id"] for record in records
+    }
+    assert {record["effective_status"] for record in records} == {"pending"}
+    assert {record["business_id"] for record in records} == {"plan_probe"}
+    assert {record["linked_record_counts"]["broadcast_jobs"] for record in records} == {1}
+    assert len({record["root_execution_id"] for record in records}) == 2
 
 
 def test_planner_result_does_not_expose_sensitive_targets(monkeypatch) -> None:

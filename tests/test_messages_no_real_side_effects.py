@@ -24,9 +24,9 @@ def test_message_write_like_routes_are_blocked_without_real_side_effects() -> No
 
 
 def test_message_archive_module_does_not_import_external_call_clients() -> None:
-    import aicrm_next.message_archive.api as api
-    import aicrm_next.message_archive.application as application
-    import aicrm_next.message_archive.repo as repo
+    import aicrm_next.extensions.archive.message_archive.api as api
+    import aicrm_next.extensions.archive.message_archive.application as application
+    import aicrm_next.extensions.archive.message_archive.repo as repo
 
     combined = "\n".join(
         [

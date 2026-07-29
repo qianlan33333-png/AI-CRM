@@ -28,7 +28,7 @@ def _function_source(path: Path, names: set[str]) -> str:
 
 
 def test_questionnaire_admin_read_handlers_do_not_forward_or_call_external_services() -> None:
-    source = _function_source(Path("aicrm_next/questionnaire/api.py"), ADMIN_READ_HANDLER_NAMES)
+    source = _function_source(Path("aicrm_next/extensions/forms/questionnaire/api.py"), ADMIN_READ_HANDLER_NAMES)
 
     forbidden = [
         "forward_to_legacy_flask",

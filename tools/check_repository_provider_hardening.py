@@ -16,7 +16,7 @@ if str(ROOT) not in sys.path:
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.shared.repository_provider import (
+from aicrm_next.platform.shared.repository_provider import (
     RepositoryProviderError,
     allow_fixture_repo_in_prod,
     evaluate_repository,
@@ -30,13 +30,13 @@ PRODUCTION_ENV = {
 }
 
 CAPABILITIES = {
-    "commerce": ("aicrm_next.commerce.repo", "build_commerce_repository"),
-    "media_library": ("aicrm_next.media_library.repo", "build_media_library_repository"),
-    "questionnaire": ("aicrm_next.questionnaire.repo", "build_questionnaire_repository"),
-    "automation_engine": ("aicrm_next.automation_engine.repo", "build_automation_repository"),
-    "customer_read_model": ("aicrm_next.customer_read_model.repo", "build_customer_read_model_repository"),
-    "ops_enrollment": ("aicrm_next.ops_enrollment.repo", "build_user_ops_repository"),
-    "admin_read_model": ("aicrm_next.admin_read_model.repo", "build_admin_read_repository"),
+    "commerce": ("aicrm_next.extensions.commerce.commerce.repo", "build_commerce_repository"),
+    "media_library": ("aicrm_next.engagement.media_library.repo", "build_media_library_repository"),
+    "questionnaire": ("aicrm_next.extensions.forms.questionnaire.repo", "build_questionnaire_repository"),
+    "automation_engine": ("aicrm_next.automation.automation_engine.repo", "build_automation_repository"),
+    "customer_read_model": ("aicrm_next.crm.customer_read_model.repo", "build_customer_read_model_repository"),
+    "ops_enrollment": ("aicrm_next.automation.ops_enrollment.repo", "build_user_ops_repository"),
+    "admin_read_model": ("aicrm_next.insights.admin_read_model.repo", "build_admin_read_repository"),
 }
 
 FIXTURE_MARKERS = ("local_contract", "fixture", "demo-only", "hxc-activation-v1", "disabled-demo")

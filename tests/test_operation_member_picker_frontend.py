@@ -4,24 +4,21 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PICKER_JS = ROOT / "aicrm_next/frontend_compat/static/admin_console/operation_member_picker.js"
-PICKER_CSS = ROOT / "aicrm_next/frontend_compat/static/admin_console/admin_console.css"
-BASE_TEMPLATE = ROOT / "aicrm_next/frontend_compat/templates/admin_console/base.html"
-GROUP_OPS_JS = ROOT / "aicrm_next/automation_engine/group_ops/static/admin_console/group_ops.js"
-CHANNEL_FORM = ROOT / "aicrm_next/automation_engine/templates/admin_console/channel_code_form.html"
-CHANNEL_JS = ROOT / "aicrm_next/automation_engine/static/admin_console/channel_admission_pages.js"
-CHANNEL_CENTER_JS = ROOT / "aicrm_next/automation_engine/static/admin_console/channel_code_center_next.js"
-CHANNEL_CENTER_TEMPLATE = ROOT / "aicrm_next/automation_engine/templates/admin_console/channel_code_center.html"
-OPERATIONS_TEMPLATE = ROOT / "aicrm_next/frontend_compat/templates/admin_console/operations.html"
-JOBS_TEMPLATE = ROOT / "aicrm_next/frontend_compat/templates/admin_console/jobs.html"
-ADMIN_JOBS_TEMPLATE = ROOT / "aicrm_next/admin_jobs/templates/admin_console/jobs.html"
-ADMIN_JOBS_BASE = ROOT / "aicrm_next/admin_jobs/templates/admin_console/base.html"
-CONFIG_CENTER_JS = ROOT / "aicrm_next/frontend_compat/static/admin_console/config_center.js"
-ADMIN_ACCESS_TEMPLATE = ROOT / "aicrm_next/frontend_compat/templates/admin_console/config_admin_access_detail.html"
+PICKER_JS = ROOT / "aicrm_next/app/admin_console/static/admin_console/operation_member_picker.js"
+PICKER_CSS = ROOT / "aicrm_next/app/admin_console/static/admin_console/admin_console.css"
+BASE_TEMPLATE = ROOT / "aicrm_next/app/admin_console/templates/admin_console/base.html"
+GROUP_OPS_JS = ROOT / "aicrm_next/automation/automation_engine/group_ops/static/admin_console/group_ops.js"
+CHANNEL_FORM = ROOT / "aicrm_next/automation/automation_engine/templates/admin_console/channel_code_form.html"
+CHANNEL_JS = ROOT / "aicrm_next/automation/automation_engine/static/admin_console/channel_admission_pages.js"
+CHANNEL_CENTER_JS = ROOT / "aicrm_next/automation/automation_engine/static/admin_console/channel_code_center_next.js"
+CHANNEL_CENTER_TEMPLATE = ROOT / "aicrm_next/automation/automation_engine/templates/admin_console/channel_code_center.html"
+OPERATIONS_TEMPLATE = ROOT / "aicrm_next/app/admin_console/templates/admin_console/operations.html"
+CONFIG_CENTER_JS = ROOT / "aicrm_next/app/admin_console/static/admin_console/config_center.js"
+ADMIN_ACCESS_TEMPLATE = ROOT / "aicrm_next/app/admin_console/templates/admin_console/config_admin_access_detail.html"
 AI_ASSISTANT_SOURCES = [
-    ROOT / "aicrm_next/frontend_compat/static/admin_console/automation_agent_config.js",
-    ROOT / "aicrm_next/frontend_compat/static/admin_console/automation_agent_config_channel_model.js",
-    ROOT / "aicrm_next/frontend_compat/templates/admin_console/automation_agent_config.html",
+    ROOT / "aicrm_next/app/admin_console/static/admin_console/automation_agent_config.js",
+    ROOT / "aicrm_next/app/admin_console/static/admin_console/automation_agent_config_channel_model.js",
+    ROOT / "aicrm_next/app/admin_console/templates/admin_console/automation_agent_config.html",
 ]
 
 
@@ -138,9 +135,6 @@ def test_business_pages_use_operation_member_picker_instead_of_visible_userid_in
     channel_form = _read(CHANNEL_FORM)
     channel_js = _read(CHANNEL_JS)
     operations = _read(OPERATIONS_TEMPLATE)
-    jobs = _read(JOBS_TEMPLATE)
-    admin_jobs = _read(ADMIN_JOBS_TEMPLATE)
-    admin_jobs_base = _read(ADMIN_JOBS_BASE)
     base_template = _read(BASE_TEMPLATE)
     config_center = _read(CONFIG_CENTER_JS)
     admin_access = _read(ADMIN_ACCESS_TEMPLATE)
@@ -148,34 +142,31 @@ def test_business_pages_use_operation_member_picker_instead_of_visible_userid_in
     assert "OperationMemberPicker.open" in group_ops
     assert "OperationMemberPicker.open" in channel_js
     assert "OperationMemberPicker.open" in operations
-    assert "OperationMemberPicker.open" in jobs
-    assert "OperationMemberPicker.open" in admin_jobs
     assert "OperationMemberPicker.open" in config_center
     assert "operation_member_picker.js') }}?v=operation-member-picker-wecom-sync-20260709" in base_template
-    assert "operation_member_picker.js') }}?v=operation-member-picker-wecom-sync-20260709" in admin_jobs_base
     assert "admin_console.css') }}?v=operation-member-picker-fix-20260527" in base_template
-    for source in [group_ops, channel_js, operations, jobs, admin_jobs]:
+    for source in [group_ops, channel_js, operations]:
         assert "value:" in source
         assert "selectedUserId:" not in source
-    for source in [group_ops, operations, jobs, admin_jobs]:
+    for source in [group_ops, operations]:
         assert "onSelect:" in source
     assert "onConfirm:" in channel_js
     assert "multiple: true" in channel_js
-    for source in [group_ops, operations, jobs, admin_jobs]:
+    for source in [group_ops, operations]:
         assert "onConfirm:" not in source
     assert "AICRMWeComTagPicker.open" in channel_js
     assert 'scope: "group_ops"' in group_ops
     assert 'scope: "channel_code"' in channel_js
     assert "page_size: 100" in channel_js
     assert "page_size: 100" in group_ops
-    for source in [operations, jobs, admin_jobs]:
+    for source in [operations]:
         assert "scope:" not in source
     assert "data-channel-owner-modal" not in channel_form + channel_js
     assert "data-channel-owner-pick " not in channel_form + channel_js
     assert "data-channel-owner-pick]" not in channel_form + channel_js
     assert "owner_candidates" not in channel_form
 
-    for source in [operations, jobs, admin_jobs]:
+    for source in [operations]:
         assert 'type="hidden" name="owner_userid"' in source
         assert 'type="text" name="owner_userid"' not in source
         assert "请输入 userID" not in source

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.cloud_orchestrator.campaigns_read import reset_campaign_read_fixture_state
-from aicrm_next.cloud_orchestrator.run_due import (
+from aicrm_next.extensions.growth.cloud_orchestrator.campaigns_read import reset_campaign_read_fixture_state
+from aicrm_next.extensions.growth.cloud_orchestrator.run_due import (
     get_run_due_audit_events,
     get_run_due_external_call_attempts,
     get_run_due_side_effect_plans,

@@ -1,0 +1,72 @@
+{% extends "admin_console/config_base.html" %}
+
+{% block config_content %}
+<section class="admin-card-grid">
+  {% for card in summary_cards %}
+  <article class="admin-card admin-stat-card admin-stat-card--nested">
+    <div class="admin-card-label">{{ card.label }}</div>
+    <div class="admin-card-value">{{ card.value }}</div>
+    <p class="admin-card-copy">{{ card.description }}</p>
+  </article>
+  {% endfor %}
+</section>
+
+<section class="admin-card">
+  <div class="admin-card-head">
+    <div>
+      <h2>发布记录</h2>
+      <p>每次发布保留变更、校验结果、发布人和回滚来源；发布过程不会触发任何企微外发。</p>
+    </div>
+    <a class="admin-button admin-button--primary" href="/admin/config/releases/new">新建配置发布</a>
+  </div>
+
+  {% if releases %}
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>发布</th>
+          <th>状态</th>
+          <th>变更项</th>
+          <th>创建人</th>
+          <th>发布时间</th>
+          <th>回滚来源</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for release in releases %}
+        <tr>
+          <td><strong>#{{ release.id }}</strong><br><code>{{ release.release_key }}</code></td>
+          <td><span class="admin-badge">{{ release.status_label }}</span></td>
+          <td>{{ release.change_count }}</td>
+          <td>{{ release.created_by or "-" }}</td>
+          <td>{{ release.published_at or "-" }}</td>
+          <td>{% if release.rollback_of_release_id %}#{{ release.rollback_of_release_id }}{% else %}-{% endif %}</td>
+          <td><a class="admin-button admin-button--ghost" href="/admin/config/releases/{{ release.id }}">查看</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="admin-empty">尚无配置发布记录。新建草稿后，必须先校验，再由有权限的操作人发布。</div>
+  {% endif %}
+</section>
+
+<section class="admin-card">
+  <div class="admin-card-head">
+    <div>
+      <h2>当前部署档案</h2>
+      <p>档案只保存能力版本、运行角色和配置版本，不保存密钥。</p>
+    </div>
+  </div>
+  <dl class="admin-definition-list">
+    <div><dt>档案 ID</dt><dd><code>{{ profile_state.profile_id }}</code></dd></div>
+    <div><dt>核心版本</dt><dd><code>{{ profile_state.core_version }}</code></dd></div>
+    <div><dt>配置版本</dt><dd>{{ profile_state.config_schema_version }}</dd></div>
+    <div><dt>运行角色</dt><dd>{{ profile_state.runtime_roles | join("、") }}</dd></div>
+    <div><dt>启用能力</dt><dd>{{ profile_state.enabled_capabilities | join("、") }}</dd></div>
+  </dl>
+</section>
+{% endblock %}

@@ -1,0 +1,331 @@
+{% extends "admin_console/base.html" %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="/static/admin_console/group_chat_picker.css?v=group-chat-direct-select-20260715">
+<link rel="stylesheet" href="/static/admin_console/material_picker.css?v=group-chat-direct-select-20260715">
+<style>
+  .radar-form-page { display: grid; gap: 16px; max-width: 980px; }
+  .radar-panel { border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; overflow: hidden; }
+  .radar-panel-head { padding: 16px 18px; border-bottom: 1px solid #eef0f3; }
+  .radar-panel-head h2 { margin: 0; color: #111827; font-size: 18px; }
+  .radar-panel-body { display: grid; gap: 18px; padding: 18px; }
+  .radar-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .radar-field { display: grid; gap: 6px; }
+  .radar-field[hidden] { display: none !important; }
+  .radar-field.wide { grid-column: 1 / -1; }
+  .radar-field label, .radar-field > span { color: #374151; font-size: 13px; font-weight: 800; }
+  .radar-field input, .radar-field select { min-height: 42px; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; }
+  .radar-help, .radar-muted { color: #6b7280; line-height: 1.6; font-size: 13px; }
+  .radar-switches { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .radar-check { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid #e5e7eb; border-radius: 10px; background: #f9fafb; font-weight: 800; }
+  .radar-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; padding: 16px 18px; border-top: 1px solid #eef0f3; background: #f9fafb; }
+  .radar-button { display: inline-flex; align-items: center; justify-content: center; min-height: 38px; padding: 8px 13px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; color: #2563eb; font-weight: 800; text-decoration: none; cursor: pointer; }
+  .radar-button.primary { border-color: #2563eb; background: #2563eb; color: #fff; }
+  .radar-button[disabled] { opacity: .62; cursor: progress; }
+  .radar-media-box { display: grid; gap: 10px; padding: 14px; border: 1px dashed #93c5fd; border-radius: 10px; background: #eff6ff; }
+  .radar-media-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .radar-selected { display: grid; gap: 4px; padding: 10px 12px; border-radius: 8px; background: #fff; color: #1f2937; }
+  .radar-selected strong { color: #111827; }
+  .radar-toast { position: fixed; right: 24px; bottom: 24px; z-index: 40; padding: 10px 14px; border-radius: 10px; background: #111827; color: #fff; }
+  .radar-toast.is-error { background: #b91c1c; }
+  @media (max-width: 760px) {
+    .radar-grid, .radar-switches { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<form class="radar-form-page" data-form>
+  <section class="radar-panel">
+    <div class="radar-panel-head">
+      <h2>基础信息</h2>
+      <div class="radar-muted">内容雷达保存后生成 `/r/{code}` 中转链接；图片和 PDF 授权后进入云端在线预览。</div>
+    </div>
+    <div class="radar-panel-body">
+      <div class="radar-grid">
+        <div class="radar-field wide">
+          <label for="radar-title">内容名称</label>
+          <input id="radar-title" name="title" required placeholder="例如：课程介绍 PDF">
+        </div>
+        <div class="radar-field">
+          <label for="radar-type">内容类型</label>
+          <select id="radar-type" name="target_type" required>
+            <option value="link">外部链接</option>
+            <option value="image">图片预览</option>
+            <option value="pdf">PDF 预览</option>
+          </select>
+        </div>
+        <input name="source_channel" type="hidden">
+        <input name="staff_id" type="hidden">
+        <input name="campaign_id" type="hidden">
+      </div>
+      <div class="radar-switches">
+        <label class="radar-check"><input type="checkbox" name="enabled"> 是否启用</label>
+        <label class="radar-check"><input type="checkbox" name="auth_required"> 是否需要授权</label>
+      </div>
+    </div>
+  </section>
+
+  <section class="radar-panel">
+    <div class="radar-panel-head">
+      <h2>内容配置</h2>
+    </div>
+    <div class="radar-panel-body">
+      <div class="radar-field wide" data-link-config>
+        <label for="radar-url">外部链接</label>
+        <input id="radar-url" name="original_url" type="url" placeholder="https://example.com/page">
+        <div class="radar-help">仅允许合法 http/https 外部链接，禁止 localhost、内网 IP 和脚本协议。</div>
+      </div>
+      <div class="radar-field wide" data-media-config hidden>
+        <span data-media-title>素材</span>
+        <input name="media_item_id" type="hidden">
+        <div class="radar-media-box">
+          <div class="radar-selected" data-selected-media>尚未选择素材</div>
+          <div class="radar-media-actions">
+            <button class="radar-button" type="button" data-pick-media>从素材库选择</button>
+            <label class="radar-button">
+              上传新素材
+              <input name="content_file" type="file" hidden>
+            </label>
+          </div>
+          <div class="radar-help" data-media-help></div>
+        </div>
+      </div>
+    </div>
+    <div class="radar-actions">
+      <a class="radar-button" href="/admin/radar-links">返回列表</a>
+      <button class="radar-button primary" type="submit" data-submit>保存内容雷达</button>
+    </div>
+  </section>
+</form>
+<div class="radar-toast" data-toast hidden></div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="/static/admin_console/group_chat_picker.js?v=group-chat-direct-select-20260715"></script>
+<script src="/static/admin_console/material_picker.js?v=group-chat-direct-select-20260715"></script>
+<script>
+(() => {
+  const mode = "{{ radar_form_mode }}";
+  const linkId = Number({{ radar_link_id }});
+  const form = document.querySelector("[data-form]");
+  const typeEl = form.elements.target_type;
+  const urlConfig = document.querySelector("[data-link-config]");
+  const mediaConfig = document.querySelector("[data-media-config]");
+  const mediaTitle = document.querySelector("[data-media-title]");
+  const mediaHelp = document.querySelector("[data-media-help]");
+  const selectedMedia = document.querySelector("[data-selected-media]");
+  const fileEl = form.elements.content_file;
+  const submitEl = document.querySelector("[data-submit]");
+  const toastEl = document.querySelector("[data-toast]");
+  let toastTimer = null;
+  let currentLink = null;
+  const pdfStatusLabels = {pending: "未处理", processing: "处理中", ready: "可预览", failed: "处理失败"};
+
+  const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+  function formatBytes(value) {
+    const size = Number(value || 0);
+    if (!size) return "-";
+    if (size >= 1024 * 1024) return `${(size / 1024 / 1024).toFixed(1)} MB`;
+    if (size >= 1024) return `${(size / 1024).toFixed(1)} KB`;
+    return `${size} B`;
+  }
+  function toast(message, isError = false) {
+    toastEl.textContent = message;
+    toastEl.className = `radar-toast${isError ? " is-error" : ""}`;
+    toastEl.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toastEl.hidden = true; }, isError ? 5200 : 2600);
+  }
+  async function fetchJson(url, options = {}) {
+    return window.AdminApi.requestJson(url, options);
+  }
+  function setSelectedMedia(id, detail = {}) {
+    form.elements.media_item_id.value = String(id || "");
+    if (!id) {
+      selectedMedia.textContent = "尚未选择素材";
+      return;
+    }
+    const title = detail.title || detail.file_name || detail.name || id;
+    const mime = detail.mime_type || detail.content_type || detail.metadata?.mime_type || "-";
+    const size = detail.file_size || detail.size || detail.metadata?.file_size || 0;
+    const pdfStatus = detail.pdf_processing_status ? `<div class="radar-muted">处理状态：${escapeHtml(pdfStatusLabels[detail.pdf_processing_status] || detail.pdf_processing_status)}${detail.pdf_page_count ? ` · ${escapeHtml(detail.pdf_page_count)} 页` : ""}</div>` : "";
+    selectedMedia.innerHTML = `
+      <strong>${escapeHtml(title)}</strong>
+      <div class="radar-muted">${escapeHtml(mime)} · ${escapeHtml(formatBytes(size))}</div>
+      <div class="radar-muted">media_item_id: ${escapeHtml(String(id))}</div>
+      ${pdfStatus}
+    `;
+  }
+  function updateTypeView() {
+    const type = typeEl.value;
+    urlConfig.hidden = type !== "link";
+    mediaConfig.hidden = type === "link";
+    form.elements.original_url.required = type === "link";
+    fileEl.accept = type === "image" ? "image/jpeg,image/png,image/webp" : "application/pdf";
+    mediaTitle.textContent = type === "image" ? "图片素材" : "PDF 素材";
+    mediaHelp.textContent = type === "image"
+      ? "可从图片素材库选择，或上传 JPG/PNG/WEBP，最大 10MB。"
+      : "可从附件素材库选择 PDF，或上传 PDF，最大 50MB。";
+  }
+  function validateFile(type, file) {
+    if (!file) return;
+    if (type === "image") {
+      if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) throw new Error("图片格式不支持");
+      if (file.size > 10 * 1024 * 1024) throw new Error("文件过大");
+      return;
+    }
+    if (file.type && !["application/pdf", "application/octet-stream"].includes(file.type)) throw new Error("PDF 格式不支持");
+    if (!file.name.toLowerCase().endsWith(".pdf") && file.type !== "application/pdf") throw new Error("PDF 格式不支持");
+    if (file.size > 50 * 1024 * 1024) throw new Error("文件过大");
+  }
+  async function uploadPdfInParts(file, title) {
+    const initiate = await fetchJson("/api/admin/radar-links/pdf-uploads/initiate", {
+      method: "POST",
+      body: JSON.stringify({file_name: file.name, file_size: file.size, mime_type: file.type || "application/pdf"}),
+    });
+    const partSize = Number(initiate.part_size || 1048576);
+    let partNo = 1;
+    for (let start = 0; start < file.size; start += partSize) {
+      const chunk = file.slice(start, Math.min(file.size, start + partSize));
+      await fetchJson(`/api/admin/radar-links/pdf-uploads/${encodeURIComponent(initiate.upload_id)}/parts/${partNo}`, {
+        method: "PUT",
+        body: chunk,
+      });
+      partNo += 1;
+    }
+    const complete = await fetchJson(`/api/admin/radar-links/pdf-uploads/${encodeURIComponent(initiate.upload_id)}/complete`, {
+      method: "POST",
+      body: JSON.stringify({name: title || file.name, tags: "radar_content"}),
+    });
+    return String(complete.media_item_id || complete.item?.id || "");
+  }
+  async function uploadMedia(type, title) {
+    const file = fileEl.files[0];
+    if (!file) return form.elements.media_item_id.value;
+    validateFile(type, file);
+    const body = new FormData();
+    if (type === "image") {
+      body.append("image", file);
+      body.append("name", title || file.name);
+      const payload = await fetchJson("/api/admin/image-library/upload", {method: "POST", body});
+      return String(payload.item?.id || "");
+    }
+    if (file.size > 1024 * 1024) {
+      return uploadPdfInParts(file, title);
+    }
+    body.append("attachment", file);
+    body.append("name", title || file.name);
+    const payload = await fetchJson("/api/admin/attachment-library/upload", {method: "POST", body});
+    return String(payload.item?.id || "");
+  }
+  async function loadOptions() {
+    const payload = await fetchJson("/api/admin/radar-links/new/options");
+    const defaults = payload.defaults || {};
+    form.elements.enabled.checked = defaults.enabled !== false;
+    form.elements.auth_required.checked = defaults.auth_required !== false;
+    form.elements.source_channel.value = defaults.source_channel || "manual";
+    form.elements.staff_id.value = defaults.staff_id || "HuangYouCan";
+  }
+  async function loadExisting() {
+    const payload = await fetchJson(`/api/admin/radar-links/${linkId}`);
+    currentLink = payload.radar_link || {};
+    form.elements.title.value = currentLink.title || "";
+    typeEl.value = currentLink.target_type || "link";
+    form.elements.original_url.value = currentLink.original_url || "";
+    form.elements.enabled.checked = currentLink.enabled !== false;
+    form.elements.auth_required.checked = currentLink.auth_required !== false;
+    form.elements.source_channel.value = currentLink.source_channel || "";
+    form.elements.staff_id.value = currentLink.staff_id || "";
+    form.elements.campaign_id.value = currentLink.campaign_id || "";
+    setSelectedMedia(currentLink.media_item_id, {
+      title: currentLink.file_name_snapshot || currentLink.media_item_id,
+      mime_type: currentLink.mime_type_snapshot,
+      file_size: currentLink.file_size_snapshot,
+      pdf_processing_status: currentLink.pdf_processing_status,
+      pdf_page_count: currentLink.pdf_page_count,
+    });
+    updateTypeView();
+  }
+  async function init() {
+    try {
+      await loadOptions();
+      if (mode === "edit" && linkId) await loadExisting();
+      updateTypeView();
+    } catch (error) {
+      toast(error.message || "页面初始化失败", true);
+    }
+  }
+  typeEl.addEventListener("change", updateTypeView);
+  document.querySelector("[data-pick-media]").addEventListener("click", () => {
+    const type = typeEl.value;
+    if (!window.AICRMMaterialPicker) {
+      toast("素材选择器加载失败", true);
+      return;
+    }
+    window.AICRMMaterialPicker.open({
+      type: type === "image" ? "image" : "attachment",
+      limit: 1,
+      selectedIds: [form.elements.media_item_id.value],
+      title: type === "image" ? "选择图片素材" : "选择 PDF 素材",
+      allowedMimeTypes: type === "pdf" ? ["application/pdf"] : [],
+      onConfirm: (item) => {
+        const mime = String(item.mime_type || item.metadata?.mime_type || "");
+        if (type === "pdf" && mime !== "application/pdf") {
+          toast("PDF 雷达只能选择 PDF 附件", true);
+          return;
+        }
+        setSelectedMedia(item.library_id, item);
+        fileEl.value = "";
+      },
+    });
+  });
+  fileEl.addEventListener("change", () => {
+    const file = fileEl.files[0];
+    if (!file) return;
+    try {
+      validateFile(typeEl.value, file);
+      selectedMedia.innerHTML = `
+        <strong>${escapeHtml(file.name)}</strong>
+        <div class="radar-muted">${escapeHtml(file.type || "-")} · ${escapeHtml(formatBytes(file.size))}</div>
+        <div class="radar-muted">保存时上传</div>
+      `;
+    } catch (error) {
+      fileEl.value = "";
+      toast(error.message, true);
+    }
+  });
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    submitEl.disabled = true;
+    try {
+      const type = typeEl.value;
+      const title = form.elements.title.value.trim();
+      const mediaId = type === "link" ? "" : await uploadMedia(type, title);
+      const payload = {
+        title,
+        target_type: type,
+        original_url: type === "link" ? form.elements.original_url.value.trim() : "",
+        media_item_id: mediaId,
+        enabled: form.elements.enabled.checked,
+        auth_required: form.elements.auth_required.checked,
+        source_channel: form.elements.source_channel.value.trim(),
+        campaign_id: form.elements.campaign_id.value.trim(),
+        staff_id: form.elements.staff_id.value.trim(),
+      };
+      if (type === "link" && !/^https?:\/\//i.test(payload.original_url)) throw new Error("请输入合法 http/https 外部链接");
+      if (type !== "link" && !payload.media_item_id) throw new Error("请选择或上传素材");
+      const url = mode === "edit" ? `/api/admin/radar-links/${linkId}` : "/api/admin/radar-links";
+      const result = await fetchJson(url, {method: mode === "edit" ? "PATCH" : "POST", body: JSON.stringify(payload)});
+      toast("已保存内容雷达");
+      window.setTimeout(() => { window.location.href = "/admin/radar-links"; }, 500);
+    } catch (error) {
+      toast(error.message || "保存失败", true);
+    } finally {
+      submitEl.disabled = false;
+    }
+  });
+  init();
+})();
+</script>
+{% endblock %}

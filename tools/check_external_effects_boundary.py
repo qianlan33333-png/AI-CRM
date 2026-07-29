@@ -17,13 +17,13 @@ RULE_DIRECT_EXTERNAL_EFFECT_CALL = "direct_external_effect_call"
 REQUESTS_CALLEES = {"request", "get", "post", "put", "patch", "delete", "Session"}
 HTTPX_CALLEES = {"request", "get", "post", "put", "patch", "delete", "Client", "AsyncClient"}
 ALLOWED_PREFIXES = (
-    "aicrm_next/platform_foundation/external_effects/",
-    "aicrm_next/integration_gateway/",
+    "aicrm_next/platform/platform_foundation/external_effects/",
+    "aicrm_next/channels/integration_gateway/",
     "tests/",
     "tools/",
     "scripts/",
 )
-ALLOWED_FILES = {"aicrm_next/shared/http_client.py"}
+ALLOWED_FILES = {"aicrm_next/platform/shared/http_client.py"}
 REQUIRED_EFFECT_FIELDS = {
     "effect_key",
     "provider",
@@ -138,7 +138,7 @@ def check_external_effects_boundary(root: Path = ROOT, config_path: Path = DEFAU
                     owner=_owner_for_path(rel),
                     reason=f"{rel} makes a direct external HTTP call outside the approved external effect boundaries.",
                     suggestion=(
-                        "Move the call behind aicrm_next.integration_gateway or "
+                        "Move the call behind aicrm_next.channels.integration_gateway or "
                         "platform_foundation.external_effects; if this is historical debt, add only a precise "
                         "temporary allowlist entry with path, rule, owner, effect_key, reason, migration_target, and exact match."
                     ),

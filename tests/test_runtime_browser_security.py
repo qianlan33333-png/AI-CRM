@@ -2,12 +2,17 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
-from aicrm_next.admin_auth.service import admin_cookie_secure
+from aicrm_next.platform.admin_auth.service import admin_cookie_secure
 from aicrm_next.main import create_app
-from aicrm_next.shared.signed_session import session_cookie_secure
-from scripts.ops.ensure_runtime_environment import ensure_runtime_environment, runtime_environment_values
+from aicrm_next.platform.shared.signed_session import session_cookie_secure
+from scripts.ops.ensure_runtime_environment import (
+    DEFAULT_DEPLOYMENT_PROFILE_PATH,
+    ensure_runtime_environment,
+    runtime_environment_values,
+)
 
 
 def test_https_public_origin_enables_secure_cookies_and_hsts(monkeypatch) -> None:
@@ -36,6 +41,7 @@ def test_deploy_runtime_environment_persists_secure_non_secret_defaults(tmp_path
         "EXISTING='kept'\n"
         "AICRM_NEXT_ENV='old'\n"
         "AICRM_QUESTIONNAIRE_EXTERNAL_PUSH_MODE='queue'\n"
+        "AICRM_NEXT_WECOM_REAL_CALLS_ENABLED='true'\n"
         "AICRM_EXTERNAL_EFFECT_WECOM_EXECUTE='1'\n"
         "AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES='wecom.contact.tag.mark'\n"
         "AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS='legacy-owner'\n",
@@ -60,8 +66,26 @@ def test_deploy_runtime_environment_persists_secure_non_secret_defaults(tmp_path
     assert "AICRM_NEXT_ENV='production'" in body
     assert "AICRM_ADMIN_SESSION_COOKIE_SECURE='1'" in body
     assert "AICRM_PUBLIC_BASE_URL='https://www.youcangogogo.com'" in body
+    assert f"AICRM_DEPLOYMENT_PROFILE_PATH='{DEFAULT_DEPLOYMENT_PROFILE_PATH}'" in body
     assert "AICRM_ALLOW_MISSING_WECHAT_SHOP_CALLBACK_TOKEN='1'" in body
     assert "AICRM_QUESTIONNAIRE_EXTERNAL_PUSH_MODE" not in body
+    assert "AICRM_NEXT_WECOM_REAL_CALLS_ENABLED" not in body
     assert "AICRM_EXTERNAL_EFFECT_WECOM_EXECUTE" not in body
     assert "AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES" not in body
     assert "AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS" not in body
+
+
+def test_runtime_environment_rejects_relative_or_non_json_profile_paths() -> None:
+    with pytest.raises(ValueError, match="must be absolute"):
+        runtime_environment_values(
+            target_environment="production",
+            public_base_url="https://www.youcangogogo.com",
+            deployment_profile_path=Path("deploy/deployment_profiles/production-current.json"),
+        )
+
+    with pytest.raises(ValueError, match="must point to a JSON file"):
+        runtime_environment_values(
+            target_environment="production",
+            public_base_url="https://www.youcangogogo.com",
+            deployment_profile_path=Path("/home/ubuntu/production-current.txt"),
+        )

@@ -13,7 +13,7 @@
       "id": "legacy_cleanup_runtime",
       "kind": "module",
       "patterns": [
-        "aicrm_next.platform_foundation.legacy_cleanup",
+        "aicrm_next.platform.platform_foundation.legacy_cleanup",
         "platform_foundation.legacy_cleanup",
         "LegacyWebhookCleanupService",
         "legacy_cleanup_execute"

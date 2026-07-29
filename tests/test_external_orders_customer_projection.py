@@ -5,8 +5,8 @@ from datetime import datetime, timezone
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
-from aicrm_next.customer_read_model.backfill import CustomerReadModelBackfillService
-from aicrm_next.customer_read_model.repo import FixtureCustomerReadRepository, LiveSourceCustomerReadRepository
+from aicrm_next.crm.customer_read_model.backfill import CustomerReadModelBackfillService
+from aicrm_next.crm.customer_read_model.repo import FixtureCustomerReadRepository, LiveSourceCustomerReadRepository
 
 
 def _session():

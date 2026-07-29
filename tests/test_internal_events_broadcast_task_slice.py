@@ -8,14 +8,14 @@ pytestmark = pytest.mark.usefixtures("composed_internal_event_registry")
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.cloud_orchestrator.application import ApproveCloudPlanCommand, ApproveCloudPlanRecipientCommand
-from aicrm_next.cloud_orchestrator.repository import build_cloud_plan_repository, reset_cloud_plan_fixture_state
+from aicrm_next.extensions.growth.cloud_orchestrator.application import ApproveCloudPlanCommand, ApproveCloudPlanRecipientCommand
+from aicrm_next.extensions.growth.cloud_orchestrator.repository import build_cloud_plan_repository, reset_cloud_plan_fixture_state
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.external_effects import ExternalEffectService, reset_external_effect_fixture_state
-from aicrm_next.platform_foundation.internal_events import InternalEventService, reset_internal_event_fixture_state
-from aicrm_next.platform_foundation.internal_events.repository import build_internal_event_repository
-from aicrm_next.platform_foundation.internal_events.shadow import BROADCAST_TASK_CREATED_EVENT_TYPE, emit_broadcast_task_created_shadow_event
-from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
+from aicrm_next.platform.platform_foundation.external_effects import ExternalEffectService, reset_external_effect_fixture_state
+from aicrm_next.platform.platform_foundation.internal_events import InternalEventService, reset_internal_event_fixture_state
+from aicrm_next.platform.platform_foundation.internal_events.repository import build_internal_event_repository
+from aicrm_next.platform.platform_foundation.internal_events.shadow import BROADCAST_TASK_CREATED_EVENT_TYPE, emit_broadcast_task_created_shadow_event
+from aicrm_next.platform.platform_foundation.internal_events.worker import InternalEventWorker
 
 BROADCAST_TASK_CONSUMERS = [
     "audit_projection_consumer",
@@ -60,6 +60,16 @@ def _configure(
 
 def _approve_recipient(plan_id: str = "plan_probe") -> dict:
     repo = build_cloud_plan_repository()
+    repo.recipients[:] = [
+        row
+        for row in repo.recipients
+        if row.get("plan_id") != "plan_probe" or int(row.get("id") or 0) == 1
+    ]
+    repo.messages[:] = [
+        row
+        for row in repo.messages
+        if row.get("plan_id") != "plan_probe" or int(row.get("recipient_id") or 0) == 1
+    ]
     for collection_name in ("plans", "recipients", "messages"):
         for row in getattr(repo, collection_name, []):
             if row.get("plan_id") == "plan_probe":
@@ -163,8 +173,8 @@ def test_broadcast_task_created_emits_once_with_expected_safe_schema_and_consume
     assert event.payload_summary_json == {
         "task_id": str(result["job_id"]),
         "task_type": "cloud_plan",
-        "send_channel": "",
-        "source": "cloud_plan_recipient_approval",
+        "send_channel": "wecom_private",
+        "source": "cloud_plan_approval",
         "campaign_code": "",
         "ops_plan_id": plan_ref,
         "ops_plan_ref": plan_ref,

@@ -1,0 +1,89 @@
+schema_version: 1
+source_of_truth: aicrm_next.capability_registry
+phase: physical_package_migration
+
+stable_core_domains:
+  - app
+  - platform
+  - crm
+  - channels
+  - engagement
+  - automation
+  - insights
+
+static_package_domain: extensions
+
+# Import direction for the target modular monolith. Same-domain imports are
+# always allowed. A source domain may import only the domains listed here.
+# ``app`` is the composition root; ``extensions`` are static capability packs
+# and may consume stable core ports, but core domains must never import an
+# extension implementation.
+allowed_domain_dependencies:
+  app:
+    - platform
+    - channels
+    - crm
+    - engagement
+    - automation
+    - insights
+    - extensions
+  platform: []
+  channels:
+    - platform
+  crm:
+    - platform
+    - channels
+  engagement:
+    - platform
+    - channels
+    - crm
+  automation:
+    - platform
+    - channels
+    - crm
+    - engagement
+  insights:
+    - platform
+    - channels
+    - crm
+    - engagement
+    - automation
+  extensions:
+    - platform
+    - channels
+    - crm
+    - engagement
+    - automation
+    - insights
+
+physical_moves:
+  enabled: true
+  completed_domains:
+    - app
+    - platform
+    - crm
+    - channels
+    - engagement
+    - automation
+    - insights
+    - extensions
+  pending_domains: []
+  enable_after:
+    - public command and query ports are in use
+    - table write ownership is unique
+    - current HTTP event and effect contracts have parity evidence
+  forbidden_in_same_release:
+    - table_drop
+    - runtime_unit_cutover
+
+dependency_targets:
+  cyclic_contexts: 0
+  cross_context_edges: 110
+  current_baseline_file: docs/architecture/import_graph_baseline.yml
+
+compatibility:
+  preserve_http_paths: true
+  preserve_auth_contracts: true
+  preserve_event_names: true
+  preserve_effect_types: true
+  preserve_database_behavior_until_owner_cutover: true

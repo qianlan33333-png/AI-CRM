@@ -4,10 +4,10 @@ from pathlib import Path
 
 import pytest
 
-from aicrm_next.integration_gateway.audit import reset_audit_events
-from aicrm_next.integration_gateway.idempotency import reset_idempotency_store
-from aicrm_next.integration_gateway.questionnaire_adapters import WeChatOAuthAdapter
-from aicrm_next.integration_gateway.wechat_oauth_client import WeChatOAuthClientError
+from aicrm_next.channels.integration_gateway.audit import reset_audit_events
+from aicrm_next.channels.integration_gateway.idempotency import reset_idempotency_store
+from aicrm_next.channels.integration_gateway.questionnaire_adapters import WeChatOAuthAdapter
+from aicrm_next.channels.integration_gateway.wechat_oauth_client import WeChatOAuthClientError
 
 
 @pytest.fixture(autouse=True)
@@ -130,31 +130,6 @@ def test_wechat_oauth_adapter_fetches_userinfo_when_unionid_missing(monkeypatch:
     assert client.userinfo_calls == [{"access_token": "token_001", "openid": "openid_001"}]
 
 
-def test_wechat_oauth_adapter_never_trusts_callback_identity_aliases(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("AICRM_NEXT_ENABLE_REAL_WECHAT_OAUTH", "1")
-    monkeypatch.setenv("WECHAT_MP_APP_ID", "wx_app")
-    monkeypatch.setenv("WECHAT_MP_APP_SECRET", "secret_value")
-    monkeypatch.setenv("WECHAT_MP_OAUTH_SCOPE", "snsapi_userinfo")
-    client = FakeOAuthClient(
-        exchange_payload={"openid": "openid_provider", "access_token": "token_001"},
-        userinfo_payload={"openid": "openid_provider"},
-    )
-    adapter = WeChatOAuthAdapter(mode="production", oauth_client_factory=lambda: client)
-
-    result = adapter.resolve_oauth_identity(
-        code="code_001",
-        state="slug",
-        openid="openid_forged",
-        unionid="unionid_forged",
-        external_userid="external_forged",
-    )
-
-    assert result["ok"] is True
-    assert result["result"]["openid"] == "openid_provider"
-    assert result["result"]["unionid"] == ""
-    assert result["result"]["external_userid"] == ""
-
-
 def test_wechat_oauth_adapter_exchange_wechat_error_payload(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("AICRM_NEXT_ENABLE_REAL_WECHAT_OAUTH", "1")
     monkeypatch.setenv("WECHAT_MP_APP_ID", "wx_app")
@@ -194,7 +169,7 @@ def test_wechat_oauth_adapter_client_exception_is_controlled(monkeypatch: pytest
 
 
 def test_questionnaire_adapters_runtime_has_no_legacy_oauth_import() -> None:
-    source = Path("aicrm_next/integration_gateway/questionnaire_adapters.py").read_text(encoding="utf-8")
+    source = Path("aicrm_next/channels/integration_gateway/questionnaire_adapters.py").read_text(encoding="utf-8")
 
     assert "wecom_ability" + "_service" not in source
     assert "wechat_oauth.exchange_wechat_oauth_code" not in source

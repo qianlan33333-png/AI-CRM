@@ -6,7 +6,10 @@ from pathlib import Path
 
 import pytest
 
-from aicrm_next.questionnaire.repo import PostgresQuestionnaireReadRepository
+from aicrm_next.extensions.forms.questionnaire.repo import PostgresQuestionnaireReadRepository
+from aicrm_next.platform.platform_foundation.internal_events.repository import (
+    SQLAlchemyInternalEventRepository,
+)
 from tools import check_critical_read_performance
 
 
@@ -57,10 +60,26 @@ def test_performance_runner_uses_existing_next_repository_paths() -> None:
     source = Path(check_critical_read_performance.__file__).read_text(encoding="utf-8")
 
     assert "SqlAlchemyCustomerReadModelRepository" in source
-    assert "SidebarWorkbenchReadModel" in source
+    assert "create_app" in source
     assert "PostgresQuestionnaireReadRepository" in source
     assert "build_jobs_payload" in source
+    assert "_run_internal_events_admin" in source
+    assert "SQLPushCenterReadModel" in source
+    assert "TestClient" in source
+    assert "_StaticCustomerContext" not in source
+    assert "generate_series(1, 100000)" in source
+    assert "generate_series(1, 1000000)" in source
+    assert "generate_series(1, 95000)" in source
     assert "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)" in source
+
+
+def test_internal_event_metrics_exclude_completed_history_before_aggregating() -> None:
+    source = inspect.getsource(SQLAlchemyInternalEventRepository.queue_metrics)
+
+    assert "metric_status_predicate" in source
+    assert "'succeeded'" not in source.split("metric_status_predicate", 1)[1].split(")", 1)[0]
+    assert "'skipped'" not in source.split("metric_status_predicate", 1)[1].split(")", 1)[0]
+    assert source.count("{metric_where}") == 2
 
 
 def test_performance_migration_repairs_contact_mirror_schema_drift() -> None:
@@ -94,7 +113,11 @@ def test_critical_read_performance_against_fixed_postgres_dataset(next_pg_schema
     assert report["ok"] is True, report["failures"]
     assert set(report["profiles"]) == {
         "customer_list",
+        "sidebar_recent_messages",
+        "sidebar_timeline",
         "sidebar_workbench",
         "questionnaire_admin",
         "admin_jobs",
+        "internal_events_admin",
+        "push_center",
     }

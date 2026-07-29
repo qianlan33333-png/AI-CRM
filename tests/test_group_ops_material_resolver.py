@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from aicrm_next.automation_engine.group_ops.material_resolver import (
+from aicrm_next.automation.automation_engine.group_ops.material_resolver import (
     GroupOpsMaterialResolveError,
     InMemoryGroupOpsMaterialResolver,
 )
@@ -301,8 +301,8 @@ def test_group_ops_material_resolver_limits_and_dedupes_ids() -> None:
 
 def test_group_ops_material_resolver_no_legacy_imports() -> None:
     root = Path(__file__).resolve().parents[1]
-    gateway_text = (root / "aicrm_next/automation_engine/group_ops/integration_gateway.py").read_text(encoding="utf-8")
-    resolver_text = (root / "aicrm_next/automation_engine/group_ops/material_resolver.py").read_text(encoding="utf-8")
+    gateway_text = (root / "aicrm_next/automation/automation_engine/group_ops/integration_gateway.py").read_text(encoding="utf-8")
+    resolver_text = (root / "aicrm_next/automation/automation_engine/group_ops/material_resolver.py").read_text(encoding="utf-8")
 
     assert "wecom_ability" + "_service" not in gateway_text
     assert "legacy_flask_facade" not in gateway_text

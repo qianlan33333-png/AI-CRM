@@ -5,9 +5,9 @@ from typing import Any
 
 from fastapi.responses import JSONResponse
 
-from aicrm_next.ai_assist import external_campaigns as service
-from aicrm_next.ai_assist.external_campaigns_repo import PostgresExternalCampaignRepository
-from aicrm_next.platform_foundation.external_effects import AI_ASSIST_CAMPAIGN_MESSAGE_LOOPBACK, ExternalEffectService, reset_external_effect_fixture_state
+from aicrm_next.extensions.ai.ai_assist import external_campaigns as service
+from aicrm_next.extensions.ai.ai_assist.external_campaigns_repo import PostgresExternalCampaignRepository
+from aicrm_next.platform.platform_foundation.external_effects import AI_ASSIST_CAMPAIGN_MESSAGE_LOOPBACK, ExternalEffectService, reset_external_effect_fixture_state
 
 
 def _json_response_payload(response: Any) -> dict[str, Any]:
@@ -250,7 +250,7 @@ def test_external_campaign_contact_lookup_is_optional_when_wecom_tables_missing(
 
 
 def test_campaign_private_broadcast_job_fields_are_complete() -> None:
-    from aicrm_next.cloud_orchestrator.repository import (
+    from aicrm_next.extensions.growth.cloud_orchestrator.repository import (
         _campaign_private_broadcast_job_extra_fields,
         _campaign_private_broadcast_payload,
     )

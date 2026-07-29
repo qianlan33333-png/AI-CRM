@@ -3,9 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from types import SimpleNamespace
 
-import aicrm_next.commerce.coupons.admin_api as coupon_admin_api
-import aicrm_next.commerce.coupons.admin_pages as coupon_admin_pages
-from aicrm_next.admin_shell.navigation import ADMIN_NAV_GROUPS, ADMIN_ROUTE_REGISTRY
+import aicrm_next.extensions.commerce.commerce.coupons.admin_api as coupon_admin_api
+import aicrm_next.extensions.commerce.commerce.coupons.admin_pages as coupon_admin_pages
+from aicrm_next.app.admin_console.navigation import ADMIN_NAV_GROUPS, ADMIN_ROUTE_REGISTRY
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -131,7 +131,7 @@ class _FakeCouponAdminApplication:
             "ok": True,
             "share": {
                 "url": f"{request_base_url}/c/summer-17",
-                "qr_data_url": "data:image/svg+xml;base64,PHN2Zy8+",
+                "qr_data_url": "data:image/jpeg;base64,/9j/2Q==",
             },
         }
 
@@ -245,7 +245,7 @@ def test_coupon_admin_api_is_thin_application_adapter(next_client, monkeypatch) 
     assert products.json()["total"] == 2
     assert claims.json()["stats"]["reserved"] == 1
     assert share.json()["share"]["url"].endswith("/c/summer-17")
-    assert share.json()["share"]["qr_data_url"].startswith("data:image/svg+xml")
+    assert share.json()["share"]["qr_data_url"].startswith("data:image/jpeg;base64,")
     assert copied.status_code == 201
     assert all(response.headers["X-AICRM-Real-External-Call-Executed"] == "false" for response in (listed, created, updated, products, claims, share, copied))
 
@@ -331,13 +331,13 @@ def test_coupon_share_rejects_insecure_production_base_url(next_client, monkeypa
 
 def test_coupon_admin_http_layers_do_not_import_repositories_or_embed_sql() -> None:
     for relative_path in (
-        "aicrm_next/commerce/coupons/admin_api.py",
-        "aicrm_next/commerce/coupons/admin_pages.py",
+        "aicrm_next/extensions/commerce/commerce/coupons/admin_api.py",
+        "aicrm_next/extensions/commerce/commerce/coupons/admin_pages.py",
     ):
         source = (ROOT / relative_path).read_text(encoding="utf-8")
         lowered = source.lower()
         assert "from .repo import" not in lowered
-        assert "from aicrm_next.service_period" not in lowered
+        assert "from aicrm_next.extensions.commerce.service_period" not in lowered
         assert "select " not in lowered
         assert "insert " not in lowered
         assert "update " not in lowered

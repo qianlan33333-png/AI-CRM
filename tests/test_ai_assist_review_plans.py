@@ -5,8 +5,8 @@ import json
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from aicrm_next.cloud_orchestrator import api as cloud_orchestrator_api
-from aicrm_next.cloud_orchestrator.review_plans import create_ai_assist_review_plan
+from aicrm_next.extensions.growth.cloud_orchestrator import api as cloud_orchestrator_api
+from aicrm_next.extensions.growth.cloud_orchestrator.review_plans import create_ai_assist_review_plan
 
 
 class FakeCloudPlanRepository:

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from aicrm_next.commerce import admin_transactions as next_wechat_admin_transactions
-from aicrm_next.commerce.repo import reset_commerce_fixture_state
-from aicrm_next.shared.runtime import database_mode, raw_database_url
+from aicrm_next.extensions.commerce.commerce import admin_transactions as next_wechat_admin_transactions
+from aicrm_next.extensions.commerce.commerce.repo import reset_commerce_fixture_state
+from aicrm_next.platform.shared.runtime import database_mode, raw_database_url
 
 
 def _seed_wechat_pay_admin_order() -> None:

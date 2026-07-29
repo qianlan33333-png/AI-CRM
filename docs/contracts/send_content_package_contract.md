@@ -2,7 +2,7 @@
 
 `SendContentPackage` is the only backend contract for the standard send content component in AI-CRM Next.
 
-This capability is Next-native only. New backend behavior must be implemented under `aicrm_next/send_content` or the existing `aicrm_next/automation_engine` layers. Do not add new `wecom_ability_service/http/*`, `wecom_ability_service/domains/*`, `production_compat`, or legacy facade implementations for this surface.
+This capability is Next-native only. New backend behavior must be implemented under `aicrm_next/engagement/send_content` or the existing `aicrm_next/automation/automation_engine` layers. Do not add new `wecom_ability_service/http/*`, `wecom_ability_service/domains/*`, `production_compat`, or legacy facade implementations for this surface.
 
 ## Payload
 
@@ -34,7 +34,7 @@ The component outputs only `content_text` plus the four compatibility ID arrays.
 ## Customer group selection
 
 - Operators select a synced customer group rather than creating or selecting a group-invite material.
-- A group owner or administrator binds one native WeCom `work.weixin.qq.com/gm/...` join link to each `chat_id` on `/admin/group-invite-library`.
+- A group owner, administrator, or authorized AI operation binds one native WeCom `work.weixin.qq.com/gm/...` join link to each `chat_id` through `/api/admin/group-invite-library`.
 - The settings page generates the link-card title and description from the group name. It does not expose media ID, media refresh, cover, config ID, state, or card-copy fields.
 - The persisted `group_invite_library` row and `group_invite_library_ids` field are compatibility storage only. Sending continues to resolve the row into a WeCom `link` attachment, which has no media-ID lifecycle.
 

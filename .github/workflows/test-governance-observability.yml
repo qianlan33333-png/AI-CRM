@@ -1,0 +1,91 @@
+name: Test Governance Observability
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Weekly at 02:30 Monday Asia/Shanghai.
+    - cron: "30 18 * * 0"
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0 (Node 24)
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0 (Node 24)
+        with:
+          python-version: "3.10.5"
+
+      - name: Collect test-scope shadow evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          evidence_root="$RUNNER_TEMP/test-scope-shadow"
+          metadata_file="$RUNNER_TEMP/ci-fast-run-metadata.json"
+          raw_runs="$RUNNER_TEMP/ci-fast-runs-raw.json"
+          mkdir -p "$evidence_root" test-results
+          since_date="$(date -u -d '21 days ago' +%Y-%m-%d)"
+          gh api --method GET --paginate --slurp \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/ci-fast.yml/runs" \
+            -f per_page=100 \
+            -f created=">=${since_date}" > "$raw_runs"
+          jq '[.[].workflow_runs[] | {
+            run_id: .id,
+            event: .event,
+            conclusion: .conclusion,
+            created_at: .created_at,
+            head_sha: .head_sha,
+            head_branch: .head_branch,
+            pull_request_number: (.pull_requests[0].number // null)
+          }]' "$raw_runs" > "$metadata_file"
+          export TEST_SCOPE_EVIDENCE_ROOT="$evidence_root"
+          jq -r '[.[] | select(
+            .event == "pull_request" and
+            .conclusion == "success" and
+            .head_branch != null
+          )] | sort_by(.head_branch) | group_by(.head_branch) |
+          map(max_by(.created_at)) | .[].run_id' "$metadata_file" |
+            xargs -r -n 1 -P 8 bash -c '
+              run_id="$1"
+              run_dir="$TEST_SCOPE_EVIDENCE_ROOT/$run_id"
+              mkdir -p "$run_dir"
+              if ! gh run download "$run_id" \
+                --repo "$GITHUB_REPOSITORY" \
+                --name test-scope-v2-shadow \
+                --dir "$run_dir" >/dev/null 2>&1; then
+                echo "::notice::No retained selector artifact for CI Fast run $run_id"
+              fi
+            ' _
+          python scripts/ci/summarize_test_scope_shadow.py \
+            --reports-root "$evidence_root" \
+            --run-metadata "$metadata_file" \
+            --json-output test-results/test-scope-shadow-summary.json \
+            --markdown-output test-results/test-scope-shadow-summary.md
+
+      - name: Audit pytest inventory
+        run: >-
+          python scripts/ci/audit_test_inventory.py
+          --json-output test-results/pytest-inventory-audit.json
+          --markdown-output test-results/pytest-inventory-audit.md
+
+      - name: Write governance summary
+        run: |
+          cat test-results/test-scope-shadow-summary.md >> "$GITHUB_STEP_SUMMARY"
+          echo >> "$GITHUB_STEP_SUMMARY"
+          cat test-results/pytest-inventory-audit.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload governance evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1 (Node 24)
+        with:
+          name: test-governance-observability
+          path: test-results/
+          if-no-files-found: error
+          retention-days: 30

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 
 try:
@@ -11,9 +12,14 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.platform_foundation.internal_events.config import DEFAULT_WORKER_BATCH_SIZE
-from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
+from aicrm_next.platform.platform_foundation.internal_events.config import DEFAULT_WORKER_BATCH_SIZE
+from aicrm_next.platform.platform_foundation.internal_events.worker import InternalEventWorker
 from aicrm_next.internal_event_composition import build_internal_event_consumer_registry
+
+
+RELEASE_CUSTOMER_REFRESH_EVENT_TYPE = "customer_read_model.refresh.requested"
+RELEASE_CUSTOMER_REFRESH_CONSUMER = "customer_read_model_refresh_intent_consumer"
+RELEASE_CUSTOMER_REFRESH_AUTHORIZATION_ENV = "AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED"
 
 
 def _csv(value: str) -> list[str]:
@@ -32,14 +38,56 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--limit", "--batch-size", dest="limit", type=int, default=_default_limit())
     parser.add_argument("--event-types", default="")
     parser.add_argument("--consumer-names", default="")
+    parser.add_argument(
+        "--outbox-idempotency-key",
+        default="",
+        help="Relay and dispatch only the exact outbox key; requires --execute plus exactly one event type and consumer.",
+    )
+    parser.add_argument(
+        "--release-customer-read-model-refresh",
+        action="store_true",
+        default=False,
+        help="Use the deploy-only exact Customer 360 refresh pair after explicit release authorization.",
+    )
     parser.add_argument("--execute", action="store_true", default=False, help="Dispatch consumers. Without this flag the worker dry-runs.")
     args = parser.parse_args(argv)
     if args.limit <= 0:
         parser.error("--limit must be >= 1")
+    if args.outbox_idempotency_key and not args.execute:
+        parser.error("--outbox-idempotency-key requires --execute")
+    if args.outbox_idempotency_key and len(_csv(args.event_types)) != 1:
+        parser.error("--outbox-idempotency-key requires exactly one --event-types value")
+    if args.outbox_idempotency_key and len(_csv(args.consumer_names)) != 1:
+        parser.error("--outbox-idempotency-key requires exactly one --consumer-names value")
+    if args.release_customer_read_model_refresh:
+        if os.getenv(RELEASE_CUSTOMER_REFRESH_AUTHORIZATION_ENV, "").strip() != "1":
+            parser.error("--release-customer-read-model-refresh requires explicit release authorization")
+        if not args.execute or args.limit != 1:
+            parser.error("--release-customer-read-model-refresh requires --execute --limit 1")
+        if _csv(args.event_types) != [RELEASE_CUSTOMER_REFRESH_EVENT_TYPE]:
+            parser.error("--release-customer-read-model-refresh requires the exact release event type")
+        if _csv(args.consumer_names) != [RELEASE_CUSTOMER_REFRESH_CONSUMER]:
+            parser.error("--release-customer-read-model-refresh requires the exact release consumer")
+        key_prefix = f"{RELEASE_CUSTOMER_REFRESH_EVENT_TYPE}:"
+        generation = str(args.outbox_idempotency_key or "").removeprefix(key_prefix)
+        if (
+            not args.outbox_idempotency_key.startswith(key_prefix)
+            or not generation.isdigit()
+            or int(generation) <= 0
+        ):
+            parser.error("--release-customer-read-model-refresh requires an exact positive generation outbox key")
     return args
 
 
-def run(*, limit: int | None = None, dry_run: bool = True, event_types: list[str] | None = None, consumer_names: list[str] | None = None) -> dict:
+def run(
+    *,
+    limit: int | None = None,
+    dry_run: bool = True,
+    event_types: list[str] | None = None,
+    consumer_names: list[str] | None = None,
+    outbox_idempotency_key: str = "",
+    exact_target_config_override: tuple[str, str] | None = None,
+) -> dict:
     return InternalEventWorker(
         consumer_registry=build_internal_event_consumer_registry(),
         relay_role="owner",
@@ -48,6 +96,8 @@ def run(*, limit: int | None = None, dry_run: bool = True, event_types: list[str
         dry_run=bool(dry_run),
         event_types=event_types,
         consumer_names=consumer_names,
+        outbox_idempotency_key=str(outbox_idempotency_key or "").strip(),
+        exact_target_config_override=exact_target_config_override,
     )
 
 
@@ -58,6 +108,12 @@ def main(argv: list[str] | None = None) -> int:
         dry_run=not bool(args.execute),
         event_types=_csv(args.event_types),
         consumer_names=_csv(args.consumer_names),
+        outbox_idempotency_key=args.outbox_idempotency_key,
+        exact_target_config_override=(
+            (RELEASE_CUSTOMER_REFRESH_EVENT_TYPE, RELEASE_CUSTOMER_REFRESH_CONSUMER)
+            if args.release_customer_read_model_refresh
+            else None
+        ),
     )
     print_json(payload)
     if payload.get("dry_run"):

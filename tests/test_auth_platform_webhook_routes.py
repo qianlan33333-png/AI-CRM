@@ -4,9 +4,9 @@ import json
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.automation_engine.group_ops.repo import reset_group_ops_fixture_state
+from aicrm_next.automation.automation_engine.group_ops.repo import reset_group_ops_fixture_state
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.external_effects import reset_external_effect_fixture_state
+from aicrm_next.platform.platform_foundation.external_effects import reset_external_effect_fixture_state
 from tests.webhook_hmac_test_helpers import install_webhook_hmac_client, signed_headers
 
 

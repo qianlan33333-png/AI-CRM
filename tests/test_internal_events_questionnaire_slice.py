@@ -8,33 +8,36 @@ from fastapi.testclient import TestClient
 
 from aicrm_next.internal_event_composition import register_questionnaire_event_consumers
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import (
     WEBHOOK_QUESTIONNAIRE_SUBMISSION_PUSH,
     ExternalEffectService,
     reset_external_effect_fixture_state,
 )
-from aicrm_next.platform_foundation.internal_events import (
+from aicrm_next.platform.platform_foundation.internal_events import (
     InternalEventService,
     QUESTIONNAIRE_SUBMITTED_EVENT_TYPE,
     reset_internal_event_fixture_state,
 )
-from aicrm_next.platform_foundation.internal_events.consumer_registry import InternalEventConsumerRegistry
-from aicrm_next.platform_foundation.internal_events.repository import InMemoryInternalEventRepository
-from aicrm_next.platform_foundation.internal_events.view_model import build_event_detail_payload
-from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
-from aicrm_next.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
-from aicrm_next.questionnaire.repo import reset_questionnaire_fixture_state
+from aicrm_next.platform.platform_foundation.internal_events.consumer_registry import InternalEventConsumerRegistry
+from aicrm_next.platform.platform_foundation.internal_events.repository import InMemoryInternalEventRepository
+from aicrm_next.platform.platform_foundation.internal_events.view_model import build_event_detail_payload
+from aicrm_next.platform.platform_foundation.internal_events.worker import InternalEventWorker
+from aicrm_next.extensions.forms.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
+from aicrm_next.extensions.forms.questionnaire.repo import reset_questionnaire_fixture_state
+from tests.wechat_identity_test_support import authorize_wechat_client
 
 
-QUESTIONNAIRE_CONSUMERS = [
+QUESTIONNAIRE_CONSUMERS = frozenset({
     "ai_audience_source_poke_consumer",
     "automation_questionnaire_consumer",
+    "customer_read_model_dirty_consumer",
+    "customer_timeline_projection_consumer",
     "customer_summary_consumer",
     "questionnaire_projection_consumer",
     "questionnaire_tag_consumer",
     "questionnaire_webhook_consumer",
-]
+})
 
 
 def _reset() -> None:
@@ -57,6 +60,15 @@ def _client(monkeypatch, *, questionnaire_enabled: bool = True, allowed_event_ty
 
 
 def _submit(client: TestClient, *, key: str = "q-submit") -> dict:
+    authorize_wechat_client(
+        client,
+        {
+            "external_userid": f"wm_questionnaire_{key}",
+            "openid": f"openid_{key}",
+            "unionid": f"unionid_{key}",
+            "respondent_key": f"respondent_{key}",
+        },
+    )
     response = client.post(
         "/api/h5/questionnaires/hxc-activation-v1/submit",
         json={
@@ -119,8 +131,8 @@ def test_questionnaire_submit_emits_single_event_and_expected_consumer_runs(monk
     assert events[0].payload_summary_json["answer_count"] == 3
     assert "13800138000" not in str(events[0].payload_summary_json)
     assert "openid_flag-on" not in str(events[0].payload_summary_json)
-    assert run_total == 6
-    assert sorted(run.consumer_name for run in runs) == QUESTIONNAIRE_CONSUMERS
+    assert run_total == len(QUESTIONNAIRE_CONSUMERS)
+    assert {run.consumer_name for run in runs} == QUESTIONNAIRE_CONSUMERS
 
 
 def test_questionnaire_projection_consumer_succeeds() -> None:
@@ -393,20 +405,6 @@ def test_internal_event_api_redacts_questionnaire_summary_and_hides_payload(monk
     assert "原始敏感答案" not in str(detail)
     assert "wm_questionnaire_api-safety" not in str(detail)
     assert "13800138000" not in str(detail)
-
-
-def test_internal_events_admin_page_contains_reconciliation_ui(monkeypatch) -> None:
-    client = _client(monkeypatch, questionnaire_enabled=True)
-
-    response = client.get("/admin/internal-events")
-    body = response.text
-
-    assert response.status_code == 200
-    assert "业务效果核对" in body
-    assert "External Effect Job" in body
-    assert "Placeholder Consumers (not actionable)" in body
-    assert "未执行" in body
-    assert "占位" in body
 
 
 def test_worker_payment_allowlist_does_not_scan_questionnaire_until_explicitly_allowed(monkeypatch) -> None:

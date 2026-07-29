@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-REPOSITORY = ROOT / "aicrm_next" / "cloud_orchestrator" / "repository.py"
+REPOSITORY = ROOT / "aicrm_next" / "extensions" / "growth" / "cloud_orchestrator" / "repository.py"
 
 
 def test_campaign_approve_start_no_longer_blocks_on_active_member_conflicts() -> None:

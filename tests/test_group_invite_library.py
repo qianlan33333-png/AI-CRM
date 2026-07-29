@@ -6,11 +6,28 @@ import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.media_library.dto import GroupInviteUpsertRequest
-from aicrm_next.media_library.repo import InMemoryMediaLibraryRepository
+from aicrm_next.engagement.media_library.dto import GroupInviteUpsertRequest
+from aicrm_next.engagement.media_library.repo import InMemoryMediaLibraryRepository
 
 
 VALID_JOIN_URL = "https://work.weixin.qq.com/gm/0123456789abcdef0123456789abcdef"
+
+
+class FakeGroupInviteAdapter:
+    def __init__(self) -> None:
+        self.create_calls = 0
+
+    def create_join_way(self, payload: dict, *, idempotency_key: str = "") -> dict:
+        self.create_calls += 1
+        return {"ok": True, "config_id": f"config-{payload['chat_id_list'][0]}", "real_external_call_executed": True}
+
+    def get_join_way(self, config_id: str, *, idempotency_key: str = "") -> dict:
+        chat_id = config_id.removeprefix("config-")
+        return {
+            "ok": True,
+            "join_way": {"config_id": config_id, "chat_id_list": [chat_id], "qr_code": f"https://work.weixin.qq.com/gm/{chat_id}"},
+            "real_external_call_executed": True,
+        }
 
 
 def test_group_invite_request_accepts_wecom_gm_url_and_rejects_other_links() -> None:
@@ -62,19 +79,11 @@ def test_group_invite_in_memory_repository_crud() -> None:
     assert deleted["deleted"] is True
 
 
-def test_group_invite_admin_api_and_page_contract() -> None:
+def test_group_invite_admin_api_remains_without_standalone_page() -> None:
     client = TestClient(create_app())
 
     page = client.get("/admin/group-invite-library")
-    assert page.status_code == 200
-    assert "群邀请托管" in page.text
-    assert "已同步客户群" in page.text
-    assert "/api/admin/automation-conversion/group-ops/groups" in page.text
-    assert "work.weixin.qq.com/gm" in page.text
-    assert "素材名称" not in page.text
-    assert "卡片标题" not in page.text
-    assert "企微入群方式 config_id" not in page.text
-    assert "卡片封面 URL" not in page.text
+    assert page.status_code == 404
 
     created = client.post(
         "/api/admin/group-invite-library",
@@ -106,7 +115,12 @@ def test_group_invite_admin_api_and_page_contract() -> None:
     assert deleted["deleted"] is True
 
 
-def test_group_invite_binding_ensure_get_update_compatibility_aliases() -> None:
+def test_group_invite_binding_ensure_auto_provisions_and_keeps_update_alias(monkeypatch) -> None:
+    adapter = FakeGroupInviteAdapter()
+    monkeypatch.setattr(
+        "aicrm_next.engagement.media_library.application.build_wecom_group_invite_adapter",
+        lambda: adapter,
+    )
     client = TestClient(create_app())
     payload = {
         "chat_id": "wr_formal_hxc_group",
@@ -119,8 +133,11 @@ def test_group_invite_binding_ensure_get_update_compatibility_aliases() -> None:
     second = client.post("/api/admin/group-invite-bindings/ensure", json=payload)
 
     assert first.status_code == 200
-    assert first.json()["binding_status"] == "pending"
+    assert first.json()["binding_status"] == "ready"
+    assert first.json()["item"]["join_url"].startswith("https://work.weixin.qq.com/gm/")
+    assert first.json()["real_external_call_executed"] is True
     assert first.json()["binding_id"] == second.json()["binding_id"]
+    assert adapter.create_calls == 1
     binding_id = first.json()["binding_id"]
     assert client.get(f"/api/admin/group-invite-bindings/{binding_id}").json()["item"]["chat_id"] == payload["chat_id"]
 
@@ -136,11 +153,11 @@ def test_group_invite_binding_ensure_get_update_compatibility_aliases() -> None:
 def test_group_chat_material_picker_delegates_to_direct_group_picker() -> None:
     material_source = (
         Path(__file__).resolve().parents[1]
-        / "aicrm_next/frontend_compat/static/admin_console/material_picker.js"
+        / "aicrm_next/app/admin_console/static/admin_console/material_picker.js"
     ).read_text(encoding="utf-8")
     group_source = (
         Path(__file__).resolve().parents[1]
-        / "aicrm_next/frontend_compat/static/admin_console/group_chat_picker.js"
+        / "aicrm_next/app/admin_console/static/admin_console/group_chat_picker.js"
     ).read_text(encoding="utf-8")
 
     assert "window.AICRMGroupChatPicker.open(options)" in material_source

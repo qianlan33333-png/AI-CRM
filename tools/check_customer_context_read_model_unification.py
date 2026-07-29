@@ -9,10 +9,10 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 
-APPLICATION = ROOT / "aicrm_next/customer_read_model/application.py"
-API = ROOT / "aicrm_next/customer_read_model/api.py"
-DISPATCH = ROOT / "aicrm_next/integration_gateway/dispatch.py"
-FRONTEND_COMPAT = ROOT / "aicrm_next/frontend_compat/legacy_routes.py"
+APPLICATION = ROOT / "aicrm_next/crm/customer_read_model/application.py"
+API = ROOT / "aicrm_next/crm/customer_read_model/api.py"
+DISPATCH = ROOT / "aicrm_next/channels/integration_gateway/dispatch.py"
+FRONTEND_COMPAT = ROOT / "aicrm_next/app/admin_console/legacy_routes.py"
 
 CONTEXT_QUERY = "GetCustomerContextQuery"
 LEGACY_CONTEXT_QUERY = "GetCustomerChatContextQuery"
@@ -140,7 +140,7 @@ def run_check() -> dict[str, Any]:
         "ok": not blockers,
         "blockers": sorted(set(blockers)),
         "warnings": [],
-        "context_query": "aicrm_next.customer_read_model.application.GetCustomerContextQuery",
+        "context_query": "aicrm_next.crm.customer_read_model.application.GetCustomerContextQuery",
         "bypass_combiners": bypass_combiners,
         "business_impact": "Keeps admin, sidebar, MCP, AI Assist, and automation customer context reads consistent.",
     }

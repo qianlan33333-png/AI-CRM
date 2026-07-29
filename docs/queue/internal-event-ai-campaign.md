@@ -70,7 +70,7 @@ Diagnostics expose `ai_campaign_internal_events_enabled`.
 
 ## Write Paths
 
-The write path is `aicrm_next/cloud_orchestrator/campaigns_write.py`.
+The write path is `aicrm_next/extensions/growth/cloud_orchestrator/campaigns_write.py`.
 
 - `CreateCloudCampaignCommand` emits `ai_campaign.created`
 - `ApproveCloudCampaignCommand` emits `ai_campaign.approved`

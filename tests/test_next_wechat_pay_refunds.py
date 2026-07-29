@@ -3,9 +3,9 @@ from __future__ import annotations
 import sys
 import types
 
-from aicrm_next.commerce import admin_transactions
-from aicrm_next.commerce import admin_transaction_detail
-from aicrm_next.commerce import api as commerce_api
+from aicrm_next.extensions.commerce.commerce import admin_transactions
+from aicrm_next.extensions.commerce.commerce import admin_transaction_detail
+from aicrm_next.extensions.commerce.commerce import api as commerce_api
 
 
 def _paid_order(**overrides):

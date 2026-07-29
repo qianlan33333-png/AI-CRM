@@ -18,8 +18,15 @@ def test_repository_external_actions_are_immutable_and_trusted() -> None:
     errors, workflow_count, external_use_count = check_workflows(ROOT)
 
     assert errors == []
-    assert workflow_count >= 4
+    # AI-CRM owns CI, regression and test-governance workflows plus the guarded
+    # production promotion, runtime-config control, and reusable production
+    # deployment workflows.
+    assert workflow_count == 15
     assert external_use_count > 0
+    assert TRUSTED_ACTIONS["actions/cache"] == (
+        "55cc8345863c7cc4c66a329aec7e433d2d1c52a9",
+        "v6.1.0",
+    )
 
 
 def test_mutable_action_tag_is_rejected(tmp_path: Path) -> None:
@@ -37,6 +44,4 @@ def test_unapproved_action_sha_is_rejected(tmp_path: Path) -> None:
     errors, _, _ = check_workflows(tmp_path)
 
     trusted_sha, trusted_version = TRUSTED_ACTIONS["actions/checkout"]
-    assert errors == [
-        f".github/workflows/ci.yml:4: unapproved SHA for actions/checkout: {bad_sha}; expected {trusted_sha} ({trusted_version})"
-    ]
+    assert errors == [f".github/workflows/ci.yml:4: unapproved SHA for actions/checkout: {bad_sha}; expected {trusted_sha} ({trusted_version})"]

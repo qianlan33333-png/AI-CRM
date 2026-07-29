@@ -11,7 +11,7 @@ from aicrm_next.customer_read_model.repo import (
     InMemoryCustomerReadModelRepository,
     SqlAlchemyCustomerReadModelRepository,
 )
-from aicrm_next.shared.errors import NotFoundError
+from aicrm_next.platform.shared.errors import NotFoundError
 
 pytestmark = pytest.mark.postgres_integration
 

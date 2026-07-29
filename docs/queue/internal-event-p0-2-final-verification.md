@@ -140,7 +140,7 @@ Expected diagnostics:
 
 ### `payment.succeeded`
 
-- 写路径：`aicrm_next/public_product/h5_wechat_pay.py` 的 WeChat Pay notify /
+- 写路径：`aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py` 的 WeChat Pay notify /
   order paid closeout path。
 - event schema：`event_type=payment.succeeded`,
   `aggregate_type=wechat_pay_order`, `aggregate_id=order.id || out_trade_no`,
@@ -156,7 +156,7 @@ Expected diagnostics:
 
 ### `questionnaire.submitted`
 
-- 写路径：`aicrm_next/questionnaire/h5_write.py`，H5 submit 持久化成功后
+- 写路径：`aicrm_next/extensions/forms/questionnaire/h5_write.py`，H5 submit 持久化成功后
   `safe_emit(emit_questionnaire_submitted_shadow_event, ...)`。
 - event schema：`event_type=questionnaire.submitted`,
   `aggregate_type=questionnaire_submission`, `aggregate_id=submission_id`,
@@ -172,7 +172,7 @@ Expected diagnostics:
 
 ### `customer.tagged` / `customer.untagged`
 
-- 写路径：`aicrm_next/customer_tags/live_mutation.py`，tag mark/unmark
+- 写路径：`aicrm_next/crm/customer_tags/live_mutation.py`，tag mark/unmark
   side-effect plan 之后 `safe_emit(emit_customer_tag_shadow_event, ...)`。
 - event schema：`event_type=customer.tagged|customer.untagged`,
   `aggregate_type=customer`, `subject_type=customer`,
@@ -187,7 +187,7 @@ Expected diagnostics:
 
 ### `customer.phone_bound`
 
-- 写路径：`aicrm_next/identity_contact/application.py`，
+- 写路径：`aicrm_next/crm/identity_contact/application.py`，
   `BindMobileToExternalContactCommand` 成功绑定后 emit。
 - event schema：`event_type=customer.phone_bound`,
   `aggregate_type=customer`, `aggregate_id=person_id || external_userid || mobile_hash`,
@@ -203,7 +203,7 @@ Expected diagnostics:
 
 ### `ai_campaign.created` / `ai_campaign.approved` / `ai_campaign.started`
 
-- 写路径：`aicrm_next/cloud_orchestrator/campaigns_write.py`，
+- 写路径：`aicrm_next/extensions/growth/cloud_orchestrator/campaigns_write.py`，
   create / approve / start command 成功后 emit。
 - event schema：`aggregate_type=ai_campaign`, `aggregate_id=campaign_code`,
   `subject_type=ai_campaign`, `subject_id=campaign_code`,
@@ -218,7 +218,7 @@ Expected diagnostics:
 
 ### `ops_plan.approved`
 
-- 写路径：`aicrm_next/cloud_orchestrator/application.py`，
+- 写路径：`aicrm_next/extensions/growth/cloud_orchestrator/application.py`，
   `ApproveCloudPlanCommand.execute` 审批成功后 emit。
 - event schema：`event_type=ops_plan.approved`,
   `aggregate_type=cloud_orchestrator_plan`, `aggregate_id=plan_id`,
@@ -236,9 +236,9 @@ Expected diagnostics:
 ### `broadcast_task.created`
 
 - 写路径：
-  `aicrm_next/cloud_orchestrator/application.py`,
-  `aicrm_next/automation_engine/group_ops/action_dispatcher.py`,
-  `aicrm_next/integration_gateway/wecom_group_adapter.py`,
+  `aicrm_next/extensions/growth/cloud_orchestrator/application.py`,
+  `aicrm_next/automation/automation_engine/group_ops/action_dispatcher.py`,
+  `aicrm_next/channels/integration_gateway/wecom_group_adapter.py`,
   AI Audience outbound planner / external_effect_job。
 - event schema：`event_type=broadcast_task.created`,
   `aggregate_type=broadcast_task`, `aggregate_id=task_id_or_code`,
@@ -254,7 +254,7 @@ Expected diagnostics:
 
 ### `owner_migration.executed`
 
-- 写路径：`aicrm_next/owner_migration/application.py`,
+- 写路径：`aicrm_next/crm/owner_migration/application.py`,
   `OwnerMigrationService.execute_scoped`, legacy `_run_legacy` execute path。
 - event schema：`event_type=owner_migration.executed`,
   `aggregate_type=owner_migration`, `aggregate_id=migration_id_or_batch_id`,
@@ -502,7 +502,7 @@ Expected for non-payment event families while pair allowlist is payment-only:
 
 ## Architecture Boundary
 
-- Capability owner: `aicrm_next/platform_foundation/internal_events` plus the
+- Capability owner: `aicrm_next/platform/platform_foundation/internal_events` plus the
   owning write path for each event family.
 - Routes involved: `/health`, `/api/admin/internal-events/*`,
   `/api/admin/external-effects/diagnostics`, and the event-family write routes.

@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from aicrm_next.admin_shell.navigation import nav_items
-from aicrm_next.commerce.coupons import application as coupon_application
-from aicrm_next.commerce.coupons.application import CouponPublicApplication
+from aicrm_next.app.admin_console.navigation import nav_items
+from aicrm_next.extensions.commerce.commerce.coupons import application as coupon_application
+from aicrm_next.extensions.commerce.commerce.coupons.application import CouponPublicApplication
 
 
 _PRODUCTION_ENV_KEYS = ("AICRM_NEXT_ENV", "ENVIRONMENT", "APP_ENV", "FLASK_ENV")
@@ -197,7 +197,7 @@ def test_production_allows_new_coupon_reservations_and_existing_order_completion
 def test_public_page_has_no_rollout_unavailable_branch() -> None:
     template = (
         Path(__file__).resolve().parents[1]
-        / "aicrm_next/commerce/coupons/templates/coupon_public.html"
+        / "aicrm_next/extensions/commerce/commerce/coupons/templates/coupon_public.html"
     ).read_text(encoding="utf-8")
 
     assert "state.rollout_enabled is sameas false" not in template

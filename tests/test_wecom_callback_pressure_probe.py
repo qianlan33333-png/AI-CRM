@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from scripts.ops import probe_wecom_callback_pressure as probe
-from aicrm_next.channel_entry.wecom_crypto import compute_signature, encrypt_message
+from aicrm_next.channels.channel_entry.wecom_crypto import compute_signature, encrypt_message
 
 
 def test_pressure_probe_percentile_interpolates() -> None:

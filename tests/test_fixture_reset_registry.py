@@ -7,7 +7,6 @@ EXPECTED_RESET_ORDER = [
     "user_ops",
     "questionnaire",
     "questionnaire_h5_write",
-    "questionnaire_continuation",
     "automation",
     "group_ops",
     "commerce",

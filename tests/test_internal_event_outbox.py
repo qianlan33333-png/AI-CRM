@@ -9,30 +9,30 @@ import sys
 import pytest
 from psycopg.rows import dict_row
 
-from aicrm_next.platform_foundation.command_bus.models import CommandContext
-from aicrm_next.platform_foundation.internal_events.consumer_registry import InternalEventConsumerRegistry
-from aicrm_next.platform_foundation.internal_events.models import (
+from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform.platform_foundation.internal_events.consumer_registry import InternalEventConsumerRegistry
+from aicrm_next.platform.platform_foundation.internal_events.models import (
     InternalEventConsumerResult,
     InternalEventConsumerSpec,
     InternalEventCreateRequest,
 )
-from aicrm_next.platform_foundation.internal_events.outbox import (
+from aicrm_next.platform.platform_foundation.internal_events.outbox import (
     InternalEventOutboxRelay,
     enqueue_transactional_internal_event_outbox,
 )
-from aicrm_next.platform_foundation.internal_events.payment import (
+from aicrm_next.platform.platform_foundation.internal_events.payment import (
     PAYMENT_SUCCEEDED_CORE_CONSUMERS,
     PAYMENT_SUCCEEDED_EVENT_TYPE,
 )
-from aicrm_next.platform_foundation.internal_events.reconciliation import InternalEventOutboxReconciliationService
-from aicrm_next.platform_foundation.internal_events.reconciliation import outbox as outbox_reconciliation
-from aicrm_next.platform_foundation.internal_events.repository import (
+from aicrm_next.platform.platform_foundation.internal_events.reconciliation import InternalEventOutboxReconciliationService
+from aicrm_next.platform.platform_foundation.internal_events.reconciliation import outbox as outbox_reconciliation
+from aicrm_next.platform.platform_foundation.internal_events.repository import (
     InMemoryInternalEventRepository,
     SQLAlchemyInternalEventRepository,
 )
-from aicrm_next.platform_foundation.internal_events.service import InternalEventService
-from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.platform.platform_foundation.internal_events.service import InternalEventService
+from aicrm_next.platform.platform_foundation.internal_events.worker import InternalEventWorker
+from aicrm_next.platform.shared.db_session import get_session_factory, reset_engine_cache_for_tests
 from scripts.ops import reconcile_internal_event_outbox
 
 
@@ -74,6 +74,15 @@ def _registry(*names: str) -> InternalEventConsumerRegistry:
 
 def _database_url() -> str:
     return str(os.getenv("AICRM_TEST_DATABASE_URL") or os.getenv("DATABASE_URL") or "").strip()
+
+
+def _enable_internal_event_worker(monkeypatch: pytest.MonkeyPatch, *consumer_names: str) -> None:
+    monkeypatch.setenv("AICRM_INTERNAL_EVENTS_ENABLED", "1")
+    monkeypatch.setenv("AICRM_INTERNAL_EVENTS_AUTO_EXECUTE", "1")
+    monkeypatch.setenv("AICRM_INTERNAL_EVENTS_AUTO_EXECUTE_MAX_BATCH_SIZE", "10")
+    monkeypatch.setenv("AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_TYPES", EVENT_TYPE)
+    monkeypatch.setenv("AICRM_INTERNAL_EVENTS_ALLOWED_CONSUMERS", ",".join(consumer_names))
+    monkeypatch.delenv("AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_CONSUMERS", raising=False)
 
 
 def test_reconciliation_script_supports_direct_file_entrypoint() -> None:
@@ -389,7 +398,8 @@ def test_manifest_reconciliation_never_falls_back_when_stored_hash_is_invalid() 
     assert repo.list_consumer_runs({"event_id": event.event_id}) == ([], 0)
 
 
-def test_scoped_worker_is_consumer_only_and_cannot_relay_pending_outbox() -> None:
+def test_scoped_worker_is_consumer_only_and_cannot_relay_pending_outbox(monkeypatch) -> None:
+    _enable_internal_event_worker(monkeypatch, "projection-a")
     repo = InMemoryInternalEventRepository()
     registry = _registry("projection-a")
     record = repo.enqueue_outbox(_request("transactional-event:scoped-worker"))
@@ -421,7 +431,63 @@ def test_scoped_worker_is_consumer_only_and_cannot_relay_pending_outbox() -> Non
     assert repo.list_due_outbox(limit=10) == []
 
 
-def test_terminal_and_blocked_are_manual_only_and_do_not_gain_attempts() -> None:
+def test_owner_worker_can_relay_one_exact_outbox_without_advancing_older_work(monkeypatch) -> None:
+    _enable_internal_event_worker(monkeypatch, "projection-a")
+    repo = InMemoryInternalEventRepository()
+    registry = _registry("projection-a")
+    older_event, _ = repo.create_event_with_consumer_runs(
+        _request("transactional-event:older-run"),
+        [InternalEventConsumerSpec(consumer_name="projection-a")],
+    )
+    repo.enqueue_outbox(_request("transactional-event:older"))
+    repo.enqueue_outbox(_request("transactional-event:release-target"))
+
+    result = InternalEventWorker(repo, registry, relay_role="owner").run_due(
+        batch_size=1,
+        dry_run=False,
+        event_types=[EVENT_TYPE],
+        consumer_names=["projection-a"],
+        outbox_idempotency_key="transactional-event:release-target",
+    )
+
+    assert result["ok"] is True
+    assert result["counts"]["succeeded_count"] == 1
+    assert result["outbox_relay"]["targeted"] is True
+    assert result["outbox_relay"]["counts"]["candidate_count"] == 1
+    assert result["outbox_relay"]["counts"]["relayed_count"] == 1
+    assert [item.idempotency_key for item in repo.list_due_outbox(limit=10)] == [
+        "transactional-event:older"
+    ]
+    assert repo.get_consumer_run(older_event.event_id, "projection-a").status == "pending"
+
+
+def test_targeted_worker_retry_dispatches_the_exact_already_relayed_event(monkeypatch) -> None:
+    _enable_internal_event_worker(monkeypatch, "projection-a")
+    repo = InMemoryInternalEventRepository()
+    registry = _registry("projection-a")
+    repo.enqueue_outbox(_request("transactional-event:release-retry"))
+    relay = InternalEventOutboxRelay(repo, registry).relay_targeted(
+        idempotency_key="transactional-event:release-retry",
+        event_type=EVENT_TYPE,
+    )
+    assert relay["counts"]["relayed_count"] == 1
+
+    result = InternalEventWorker(repo, registry, relay_role="owner").run_due(
+        batch_size=1,
+        dry_run=False,
+        event_types=[EVENT_TYPE],
+        consumer_names=["projection-a"],
+        outbox_idempotency_key="transactional-event:release-retry",
+    )
+
+    assert result["ok"] is True
+    assert result["outbox_relay"]["counts"]["candidate_count"] == 0
+    assert result["counts"]["candidate_count"] == 1
+    assert result["counts"]["succeeded_count"] == 1
+
+
+def test_terminal_and_blocked_are_manual_only_and_do_not_gain_attempts(monkeypatch) -> None:
+    _enable_internal_event_worker(monkeypatch, "terminal", "blocked")
     repo = InMemoryInternalEventRepository()
     registry = InternalEventConsumerRegistry()
     registry.register(EVENT_TYPE, "terminal", lambda event, run: InternalEventConsumerResult(status="failed_terminal", error_code="invalid"))
@@ -477,6 +543,74 @@ def test_lost_lease_cannot_write_attempt_or_result() -> None:
     assert repo.get_consumer_run_by_id(acquired.id).attempt_count == 0
 
 
+def test_exact_target_override_survives_published_allowlist_cutover(monkeypatch) -> None:
+    monkeypatch.setenv("AICRM_INTERNAL_EVENTS_ENABLED", "1")
+    monkeypatch.setenv("AICRM_INTERNAL_EVENTS_AUTO_EXECUTE", "1")
+    monkeypatch.setenv("AICRM_INTERNAL_EVENTS_AUTO_EXECUTE_MAX_BATCH_SIZE", "1")
+    monkeypatch.setenv("AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_TYPES", "payment.succeeded")
+    monkeypatch.setenv(
+        "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_CONSUMERS",
+        "payment.succeeded:order_projection_consumer",
+    )
+    monkeypatch.setenv("AICRM_INTERNAL_EVENTS_ALLOWED_CONSUMERS", "")
+    repo = InMemoryInternalEventRepository()
+    registry = _registry("projection-a")
+    repo.enqueue_outbox(_request("targeted-config-cutover:release"))
+    worker = InternalEventWorker(repo, registry, relay_role="owner")
+
+    excluded = worker.run_due(
+        batch_size=1,
+        dry_run=False,
+        event_types=[EVENT_TYPE],
+        consumer_names=["projection-a"],
+        outbox_idempotency_key="targeted-config-cutover:release",
+    )
+    released = worker.run_due(
+        batch_size=1,
+        dry_run=False,
+        event_types=[EVENT_TYPE],
+        consumer_names=["projection-a"],
+        outbox_idempotency_key="targeted-config-cutover:release",
+        exact_target_config_override=(EVENT_TYPE, "projection-a"),
+    )
+
+    assert excluded["ok"] is True
+    assert excluded["counts"]["candidate_count"] == 0
+    assert "outbox_relay" not in excluded
+    assert released["ok"] is True
+    assert released["outbox_relay"]["targeted"] is True
+    assert released["outbox_relay"]["counts"] == {
+        "candidate_count": 1,
+        "relayed_count": 1,
+        "failed_retryable_count": 0,
+        "failed_terminal_count": 0,
+        "lost_lease_count": 0,
+        "unhandled_failure_count": 0,
+    }
+    assert released["counts"]["succeeded_count"] == 1
+
+
+def test_exact_target_override_rejects_a_different_requested_pair(monkeypatch) -> None:
+    _enable_internal_event_worker(monkeypatch, "projection-a")
+    worker = InternalEventWorker(
+        InMemoryInternalEventRepository(),
+        _registry("projection-a"),
+        relay_role="owner",
+    )
+
+    result = worker.run_due(
+        batch_size=1,
+        dry_run=False,
+        event_types=[EVENT_TYPE],
+        consumer_names=["projection-a"],
+        outbox_idempotency_key="targeted-config-cutover:mismatch",
+        exact_target_config_override=(EVENT_TYPE, "different-consumer"),
+    )
+
+    assert result["ok"] is False
+    assert result["error"] == "exact_target_config_override_mismatch"
+
+
 def test_manual_retry_requires_actor_reason_and_records_audit_without_execution_attempt_increment() -> None:
     repo = InMemoryInternalEventRepository()
     event, runs = repo.create_event_with_consumer_runs(
@@ -508,8 +642,8 @@ def test_manual_retry_requires_actor_reason_and_records_audit_without_execution_
 
 
 def test_safe_emit_is_documented_as_shadow_only_and_payment_uses_transactional_outbox() -> None:
-    shadow_source = (ROOT / "aicrm_next/platform_foundation/internal_events/shadow.py").read_text(encoding="utf-8")
-    payment_source = (ROOT / "aicrm_next/public_product/h5_wechat_pay.py").read_text(encoding="utf-8")
+    shadow_source = (ROOT / "aicrm_next/platform/platform_foundation/internal_events/shadow.py").read_text(encoding="utf-8")
+    payment_source = (ROOT / "aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py").read_text(encoding="utf-8")
     tree = ast.parse(payment_source)
     called = {node.func.id for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)}
 
@@ -569,6 +703,122 @@ def test_postgres_outbox_obeys_caller_transaction_and_duplicate_relay_is_atomic(
     assert event_count == 1
     assert run_count == 2
     assert relayed_count == 1
+
+
+@pytest.mark.skipif(not _database_url(), reason="PostgreSQL integration database is not configured")
+def test_postgres_targeted_relay_and_retry_do_not_advance_older_work(monkeypatch) -> None:
+    import psycopg
+
+    _enable_internal_event_worker(monkeypatch, "projection-a")
+    database_url = _database_url()
+    repo = SQLAlchemyInternalEventRepository(get_session_factory(database_url))
+    registry = _registry("projection-a")
+    older_event, _ = repo.create_event_with_consumer_runs(
+        _request("postgres-targeted:older-run"),
+        [InternalEventConsumerSpec(consumer_name="projection-a")],
+    )
+    with psycopg.connect(database_url, row_factory=dict_row) as conn:
+        enqueue_transactional_internal_event_outbox(conn, _request("postgres-targeted:older"))
+        enqueue_transactional_internal_event_outbox(conn, _request("postgres-targeted:release"))
+        conn.commit()
+
+    result = InternalEventOutboxRelay(repo, registry).relay_targeted(
+        idempotency_key="postgres-targeted:release",
+        event_type=EVENT_TYPE,
+    )
+
+    with psycopg.connect(database_url, row_factory=dict_row) as conn:
+        rows = conn.execute(
+            "SELECT idempotency_key, status FROM internal_event_outbox "
+            "WHERE idempotency_key IN (%s, %s) ORDER BY idempotency_key",
+            ("postgres-targeted:older", "postgres-targeted:release"),
+        ).fetchall()
+    assert result["ok"] is True
+    assert result["targeted"] is True
+    assert result["counts"]["candidate_count"] == 1
+    assert result["counts"]["relayed_count"] == 1
+    assert [(row["idempotency_key"], row["status"]) for row in rows] == [
+        ("postgres-targeted:older", "pending"),
+        ("postgres-targeted:release", "relayed"),
+    ]
+
+    retried = InternalEventWorker(repo, registry, relay_role="owner").run_due(
+        batch_size=1,
+        dry_run=False,
+        event_types=[EVENT_TYPE],
+        consumer_names=["projection-a"],
+        outbox_idempotency_key="postgres-targeted:release",
+    )
+    assert retried["ok"] is True
+    assert retried["outbox_relay"]["counts"]["candidate_count"] == 0
+    assert retried["counts"]["succeeded_count"] == 1
+    assert repo.get_consumer_run(older_event.event_id, "projection-a").status == "pending"
+
+
+@pytest.mark.skipif(not _database_url(), reason="PostgreSQL integration database is not configured")
+def test_postgres_exact_target_override_survives_config_release_cutover(monkeypatch) -> None:
+    import psycopg
+
+    database_url = _database_url()
+    monkeypatch.setenv("DATABASE_URL", database_url)
+    published_values = {
+        "AICRM_RUNTIME_CONFIG_CUTOVER_KEYS": ",".join(
+            (
+                "AICRM_INTERNAL_EVENTS_ALLOWED_CONSUMERS",
+                "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_CONSUMERS",
+                "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_TYPES",
+                "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE",
+                "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE_MAX_BATCH_SIZE",
+                "AICRM_INTERNAL_EVENTS_ENABLED",
+            )
+        ),
+        "AICRM_INTERNAL_EVENTS_ALLOWED_CONSUMERS": "",
+        "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_CONSUMERS": "payment.succeeded:order_projection_consumer",
+        "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_TYPES": "payment.succeeded",
+        "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE": "true",
+        "AICRM_INTERNAL_EVENTS_AUTO_EXECUTE_MAX_BATCH_SIZE": "1",
+        "AICRM_INTERNAL_EVENTS_ENABLED": "true",
+    }
+    with psycopg.connect(database_url, row_factory=dict_row) as conn:
+        with conn.cursor() as cursor:
+            cursor.executemany(
+                "INSERT INTO app_settings (key, value) VALUES (%s, %s) "
+                "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+                list(published_values.items()),
+            )
+        enqueue_transactional_internal_event_outbox(
+            conn,
+            _request("postgres-targeted:config-release"),
+        )
+        conn.commit()
+
+    reset_engine_cache_for_tests()
+    try:
+        repo = SQLAlchemyInternalEventRepository(get_session_factory(database_url))
+        worker = InternalEventWorker(repo, _registry("projection-a"), relay_role="owner")
+        excluded = worker.run_due(
+            batch_size=1,
+            dry_run=False,
+            event_types=[EVENT_TYPE],
+            consumer_names=["projection-a"],
+            outbox_idempotency_key="postgres-targeted:config-release",
+        )
+        released = worker.run_due(
+            batch_size=1,
+            dry_run=False,
+            event_types=[EVENT_TYPE],
+            consumer_names=["projection-a"],
+            outbox_idempotency_key="postgres-targeted:config-release",
+            exact_target_config_override=(EVENT_TYPE, "projection-a"),
+        )
+    finally:
+        reset_engine_cache_for_tests()
+
+    assert excluded["ok"] is True
+    assert excluded["counts"]["candidate_count"] == 0
+    assert released["ok"] is True
+    assert released["outbox_relay"]["counts"]["relayed_count"] == 1
+    assert released["counts"]["succeeded_count"] == 1
 
 
 @pytest.mark.skipif(not _database_url(), reason="PostgreSQL integration database is not configured")

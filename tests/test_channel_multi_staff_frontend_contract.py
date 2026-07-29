@@ -5,14 +5,14 @@ import re
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CHANNEL_FORM = ROOT / "aicrm_next/automation_engine/templates/admin_console/channel_code_form.html"
-CHANNEL_CENTER_TEMPLATE = ROOT / "aicrm_next/automation_engine/templates/admin_console/channel_code_center.html"
-CHANNEL_PAGES = ROOT / "aicrm_next/automation_engine/channel_admin_pages.py"
-CHANNEL_BASE = ROOT / "aicrm_next/automation_engine/templates/admin_console/base.html"
-CHANNEL_JS = ROOT / "aicrm_next/automation_engine/static/admin_console/channel_admission_pages.js"
-CHANNEL_CENTER_JS = ROOT / "aicrm_next/automation_engine/static/admin_console/channel_code_center_next.js"
-CHANNEL_CSS = ROOT / "aicrm_next/automation_engine/static/admin_console/channel_admission_pages.css"
-PICKER_JS = ROOT / "aicrm_next/frontend_compat/static/admin_console/operation_member_picker.js"
+CHANNEL_FORM = ROOT / "aicrm_next/automation/automation_engine/templates/admin_console/channel_code_form.html"
+CHANNEL_CENTER_TEMPLATE = ROOT / "aicrm_next/automation/automation_engine/templates/admin_console/channel_code_center.html"
+CHANNEL_PAGES = ROOT / "aicrm_next/automation/automation_engine/channel_admin_pages.py"
+CHANNEL_BASE = ROOT / "aicrm_next/automation/automation_engine/templates/admin_console/base.html"
+CHANNEL_JS = ROOT / "aicrm_next/automation/automation_engine/static/admin_console/channel_admission_pages.js"
+CHANNEL_CENTER_JS = ROOT / "aicrm_next/automation/automation_engine/static/admin_console/channel_code_center_next.js"
+CHANNEL_CSS = ROOT / "aicrm_next/automation/automation_engine/static/admin_console/channel_admission_pages.css"
+PICKER_JS = ROOT / "aicrm_next/app/admin_console/static/admin_console/operation_member_picker.js"
 
 
 def _read(path: Path) -> str:
@@ -136,7 +136,7 @@ def test_channel_form_hides_shell_header_and_busts_static_cache() -> None:
 
     assert '"show_page_header": False' in pages
     assert "channel_admission_pages.css?v=group-chat-selector-20260715" in html
-    assert "channel_admission_pages.js?v=group-chat-selector-20260715" in html
+    assert "channel_admission_pages.js?v=inline-channel-welcome-20260729" in html
     assert "operation_member_picker.js') }}?v=operation-member-picker-wecom-sync-20260709" in base
 
 
@@ -317,13 +317,11 @@ def test_standard_welcome_tag_components_and_hidden_payload_inputs_are_kept() ->
     html = _read(CHANNEL_FORM)
     js = _read(CHANNEL_JS)
 
-    assert "AICRMSendContentComposer.open" in js
+    assert "AICRMSendContentComposer.mount" in js
     assert "AICRMWeComTagPicker.open" in js
     assert "prompt(" not in js
-    assert "summary-box" in html
-    assert "summary-row" in html
-    assert "data-welcome-material-summary" in html
-    assert "配置欢迎语和素材" in html
+    assert "data-welcome-composer-inline" in html
+    assert "data-open-welcome-composer" not in html
     assert "选择标签" in html
     assert 'name="welcome_message"' in html
     assert 'name="welcome_image_library_ids"' in html

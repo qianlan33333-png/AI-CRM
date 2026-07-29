@@ -5,10 +5,10 @@ import os
 
 from sqlalchemy import text
 
-from aicrm_next.platform_foundation.auth_platform.credentials import CredentialHasher
-from aicrm_next.platform_foundation.auth_platform.repository import PostgresAuthRepository
-from aicrm_next.platform_foundation.auth_platform.sessions import AuthSessionService
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.platform.platform_foundation.auth_platform.credentials import CredentialHasher
+from aicrm_next.platform.platform_foundation.auth_platform.repository import PostgresAuthRepository
+from aicrm_next.platform.platform_foundation.auth_platform.sessions import AuthSessionService
+from aicrm_next.platform.shared.db_session import get_session_factory
 from scripts.ops import check_admin_read_pages_smoke as smoke
 from scripts.ops import create_deploy_smoke_session as deploy_session
 

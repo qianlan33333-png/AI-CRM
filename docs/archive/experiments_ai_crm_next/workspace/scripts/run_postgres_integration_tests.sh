@@ -25,7 +25,7 @@ fi
 
 "$PYTHON_BIN" - <<'PY'
 import os
-from aicrm_next.shared.postgres_test_guard import validate_postgres_test_database_url
+from aicrm_next.platform.shared.postgres_test_guard import validate_postgres_test_database_url
 
 safe = validate_postgres_test_database_url(os.environ["AICRM_NEXT_TEST_DATABASE_URL"])
 print(f"PostgreSQL integration target: host={safe.host} database={safe.database} url={safe.redacted_url}")

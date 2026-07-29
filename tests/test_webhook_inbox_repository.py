@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from aicrm_next.platform_foundation.webhook_inbox import InMemoryWebhookInboxRepository, WebhookInboxService
-from aicrm_next.platform_foundation.webhook_inbox.models import WebhookInboxMetrics
+from aicrm_next.platform.platform_foundation.webhook_inbox import InMemoryWebhookInboxRepository, WebhookInboxService
+from aicrm_next.platform.platform_foundation.webhook_inbox.models import WebhookInboxMetrics
 
 
 def _ingest(

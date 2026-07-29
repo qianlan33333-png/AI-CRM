@@ -19,8 +19,8 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.channel_entry.inbox import wecom_callback_idempotency_key
-from aicrm_next.channel_entry.wecom_crypto import compute_signature, encrypt_message
+from aicrm_next.channels.channel_entry.inbox import wecom_callback_idempotency_key
+from aicrm_next.channels.channel_entry.wecom_crypto import compute_signature, encrypt_message
 
 
 DEFAULT_CALLBACK_BASE_URL = "http://127.0.0.1:5002/wecom/external-contact/callback"

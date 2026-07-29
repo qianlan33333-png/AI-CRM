@@ -124,11 +124,11 @@ is locally complete enough to run inside an approved production window.
 | --- | --- | --- |
 | Emergency page recovery | Complete | nginx quick ACK restored `/health` and sidebar/admin availability during the incident. |
 | Generic `webhook_inbox` | Locally complete | `migrations/versions/0054_webhook_inbox.py`, repository/service/models, repository tests. |
-| Fast ACK route | Locally complete | `aicrm_next/channel_entry/api.py`, `tests/test_wecom_callback_inbox.py`. |
-| WeCom callback worker | Locally complete | `aicrm_next/channel_entry/inbox.py`, `scripts/run_wecom_callback_inbox_worker.py`, worker service/timer, worker tests including `dispatch_one(inbox_id)`. |
+| Fast ACK route | Locally complete | `aicrm_next/channels/channel_entry/api.py`, `tests/test_wecom_callback_inbox.py`. |
+| WeCom callback worker | Locally complete | `aicrm_next/channels/channel_entry/inbox.py`, `scripts/run_wecom_callback_inbox_worker.py`, worker service/timer, worker tests including `dispatch_one(inbox_id)`. |
 | Internal event boundary | Locally complete for channel entry | Worker calls existing `process_wecom_external_contact_event`, which emits `channel_entry.entered` outside the HTTP path. |
-| External effect realtime wakeup | Locally complete, not enabled in production | `aicrm_next/platform_foundation/external_effects/realtime.py`, welcome/tag/profile gated wakeup tests, retryable adapter-exception handling, stale dispatching reclaim. |
-| Runtime isolation and callback backpressure | Assets prepared, not cut over in production | `aicrm_next/channel_entry/ingress_app.py`, 5002 systemd asset, deploy workflow install step, nginx example with `limit_req`/`limit_conn`/429, cutover checker. |
+| External effect realtime wakeup | Locally complete, not enabled in production | `aicrm_next/platform/platform_foundation/external_effects/realtime.py`, welcome/tag/profile gated wakeup tests, retryable adapter-exception handling, stale dispatching reclaim. |
+| Runtime isolation and callback backpressure | Assets prepared, not cut over in production | `aicrm_next/channels/channel_entry/ingress_app.py`, 5002 systemd asset, deploy workflow install step, nginx example with `limit_req`/`limit_conn`/429, cutover checker. |
 | Admin operations page | Locally complete | `/admin/webhook-inbox`, metrics/items/detail/dispatch/retry/skip/run-due/reconciliation tests. |
 | Production permanent cutover | Not complete | Host check confirms no 5002 listener; nginx still has emergency quick ACK; no production pressure test yet. |
 
@@ -148,11 +148,11 @@ is locally complete enough to run inside an approved production window.
 | Phase | Objective | Evidence | Status |
 | --- | --- | --- | --- |
 | Phase 0 | Observable emergency quick ACK state | `scripts/ops/check_callback_quick_ack_state.py`, route-level quick ACK detection tests, dual public callback POST probe tests, `docs/runbooks/wecom_callback_storm.md` | Locally complete; production script should be rerun before cutover |
-| Phase 1 | Generic `webhook_inbox` schema/repository/service/metrics | `0054_webhook_inbox`, `aicrm_next/platform_foundation/webhook_inbox/*`, `tests/test_webhook_inbox_repository.py` | Locally complete |
-| Phase 2 | Callback HTTP route only verifies/decrypts/enqueues/ACKs | `aicrm_next/channel_entry/api.py`, `tests/test_wecom_callback_inbox.py` | Locally complete |
-| Phase 3 | WeCom callback worker with retry/dead-letter and targeted dispatch | `aicrm_next/channel_entry/inbox.py`, `scripts/run_wecom_callback_inbox_worker.py`, worker service/timer, `dispatch_one(inbox_id)` tests | Locally complete |
+| Phase 1 | Generic `webhook_inbox` schema/repository/service/metrics | `0054_webhook_inbox`, `aicrm_next/platform/platform_foundation/webhook_inbox/*`, `tests/test_webhook_inbox_repository.py` | Locally complete |
+| Phase 2 | Callback HTTP route only verifies/decrypts/enqueues/ACKs | `aicrm_next/channels/channel_entry/api.py`, `tests/test_wecom_callback_inbox.py` | Locally complete |
+| Phase 3 | WeCom callback worker with retry/dead-letter and targeted dispatch | `aicrm_next/channels/channel_entry/inbox.py`, `scripts/run_wecom_callback_inbox_worker.py`, worker service/timer, `dispatch_one(inbox_id)` tests | Locally complete |
 | Phase 4 | Business handling emits internal events outside HTTP path | Existing `process_channel_entry` emits `channel_entry.entered`; worker invokes it after claim | Locally complete for channel-entry flow |
-| Phase 5 | Real outbound effects remain in `external_effect_job`; realtime wakeup is gated | `aicrm_next/platform_foundation/external_effects/realtime.py`, channel-entry welcome/tag/profile wakeups, adapter-exception retry handling, stale dispatching reclaim, realtime tests | Locally complete; production gates still disabled unless explicitly enabled |
+| Phase 5 | Real outbound effects remain in `external_effect_job`; realtime wakeup is gated | `aicrm_next/platform/platform_foundation/external_effects/realtime.py`, channel-entry welcome/tag/profile wakeups, adapter-exception retry handling, stale dispatching reclaim, realtime tests | Locally complete; production gates still disabled unless explicitly enabled |
 | Phase 6 | Callback runtime isolated from admin/sidebar runtime with route-specific backpressure | 5002 ingress app, systemd asset, deploy workflow install/start checks, nginx template, cutover checker, ingress runtime tests | Assets ready; production cutover not complete |
 | Phase 7 | Admin metrics, replay, dead-letter/detail, processing chain | `/admin/webhook-inbox`, `GET /api/admin/webhook-inbox/{id}`, `POST /api/admin/webhook-inbox/{id}/dispatch`, processing-chain tests | Locally complete |
 

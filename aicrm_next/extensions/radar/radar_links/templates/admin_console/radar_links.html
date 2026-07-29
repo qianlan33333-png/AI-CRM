@@ -1,0 +1,284 @@
+{% extends "admin_console/base.html" %}
+
+{% block head_extra %}
+<style>
+  .radar-page { display: grid; gap: 16px; }
+  .radar-toolbar { display: flex; align-items: end; justify-content: space-between; gap: 12px; padding: 16px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; }
+  .radar-filters { display: flex; align-items: end; gap: 10px; flex-wrap: wrap; }
+  .radar-filter-field { display: grid; gap: 6px; }
+  .radar-filter-field span { color: #374151; font-size: 13px; font-weight: 800; }
+  .radar-input, .radar-select { min-height: 38px; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; color: #1f2937; }
+  .radar-button { display: inline-flex; align-items: center; justify-content: center; min-height: 34px; padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; color: #2563eb; font-weight: 700; text-decoration: none; cursor: pointer; }
+  .radar-button.primary { min-height: 40px; padding: 9px 14px; border-color: #2563eb; background: #2563eb; color: #fff; }
+  .radar-button.danger { color: #dc2626; }
+  .radar-table-card { border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; overflow: hidden; }
+  .radar-table { width: 100%; border-collapse: collapse; }
+  .radar-table th, .radar-table td { padding: 12px; border-bottom: 1px solid #eef0f3; text-align: left; vertical-align: top; font-size: 13px; }
+  .radar-table th { background: #f9fafb; color: #4b5563; font-weight: 800; }
+  .radar-title { color: #111827; font-weight: 800; }
+  .radar-muted { color: #6b7280; }
+  .radar-code { max-width: 220px; color: #374151; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .radar-badge { display: inline-flex; padding: 3px 8px; border-radius: 999px; font-size: 12px; font-weight: 800; }
+  .radar-badge.link { background: #eef2ff; color: #4338ca; }
+  .radar-badge.image { background: #ecfdf5; color: #047857; }
+  .radar-badge.pdf { background: #fef2f2; color: #b91c1c; }
+  .radar-status-on { color: #15803d; font-weight: 800; }
+  .radar-status-off { color: #dc2626; font-weight: 800; }
+  .radar-row-disabled { background: rgba(148, 163, 184, .08); }
+  .radar-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .radar-empty { padding: 36px 18px; text-align: center; color: #6b7280; }
+  .radar-toast { position: fixed; right: 24px; bottom: 24px; z-index: 40; padding: 10px 14px; border-radius: 10px; background: #111827; color: #fff; box-shadow: 0 12px 28px rgba(15, 23, 42, .24); }
+  .radar-toast.is-error { background: #b91c1c; }
+  .questionnaire-share-modal[hidden] { display: none !important; }
+  .questionnaire-share-modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(15, 23, 42, 0.34); }
+  .questionnaire-share-panel { width: min(520px, 100%); overflow: hidden; border: 1px solid #e5e7eb; border-radius: 18px; background: #fff; box-shadow: 0 24px 72px rgba(15, 23, 42, 0.22); }
+  .questionnaire-share-head { display: flex; align-items: center; justify-content: space-between; min-height: 58px; padding: 0 18px; border-bottom: 1px solid #e5e7eb; font-size: 18px; font-weight: 900; }
+  .questionnaire-share-close { width: 34px; height: 34px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; color: #111827; cursor: pointer; font-size: 22px; line-height: 1; }
+  .questionnaire-share-body { display: grid; gap: 18px; padding: 18px; }
+  .questionnaire-share-label { margin-bottom: 8px; color: #6b7280; font-size: 13px; font-weight: 850; }
+  .questionnaire-share-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+  .questionnaire-share-input { min-width: 0; height: 42px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fbfcff; color: #111827; padding: 0 12px; }
+  .questionnaire-share-qr-wrap { display: grid; justify-items: center; gap: 10px; }
+  .questionnaire-share-qr { width: 220px; height: 220px; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 16px; background: #fff; padding: 12px; }
+  @media (max-width: 820px) {
+    .radar-toolbar { align-items: stretch; flex-direction: column; }
+    .questionnaire-share-row { grid-template-columns: 1fr; }
+    .radar-table-card { overflow-x: auto; }
+    .radar-table { min-width: 860px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="radar-page">
+  <div class="radar-toolbar">
+    <div class="radar-filters">
+      <label class="radar-filter-field">
+        <span>搜索内容</span>
+        <input class="radar-input" data-search placeholder="按名称、链接、文件名搜索">
+      </label>
+      <label class="radar-filter-field">
+        <span>类型</span>
+        <select class="radar-select" data-type-filter>
+          <option value="all">全部</option>
+          <option value="link">链接</option>
+          <option value="image">图片</option>
+          <option value="pdf">PDF</option>
+        </select>
+      </label>
+      <label class="radar-filter-field">
+        <span>状态</span>
+        <select class="radar-select" data-status-filter>
+          <option value="all">全部</option>
+          <option value="enabled">启用</option>
+          <option value="disabled">停用</option>
+        </select>
+      </label>
+    </div>
+    <button class="radar-button" type="button" data-refresh>刷新</button>
+  </div>
+
+  <div class="radar-table-card">
+    <table class="radar-table">
+      <thead>
+        <tr>
+          <th>内容名称</th>
+          <th>类型</th>
+          <th>状态</th>
+          <th>PV</th>
+          <th>UV</th>
+          <th>查看</th>
+          <th>最近查看</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody data-rows>
+        <tr><td colspan="8" class="radar-empty">列表加载中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="questionnaire-share-modal" data-share-modal aria-hidden="true" hidden>
+  <div class="questionnaire-share-panel" role="dialog" aria-modal="true" aria-labelledby="radar-share-title">
+    <div class="questionnaire-share-head">
+      <span id="radar-share-title">分享内容雷达</span>
+      <button class="questionnaire-share-close" type="button" aria-label="关闭" data-share-close>×</button>
+    </div>
+    <div class="questionnaire-share-body">
+      <div>
+        <div class="questionnaire-share-label">雷达链接</div>
+        <div class="questionnaire-share-row">
+          <input class="questionnaire-share-input" data-share-url readonly>
+          <button class="radar-button" type="button" data-share-copy>复制链接</button>
+        </div>
+      </div>
+      <div>
+        <div class="questionnaire-share-label">二维码</div>
+        <div class="questionnaire-share-qr-wrap">
+          <img class="questionnaire-share-qr" data-share-qr alt="内容雷达二维码">
+          <a class="radar-button" data-share-download href="#" download="内容雷达二维码.jpg">保存二维码</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="radar-toast" data-toast hidden></div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+(() => {
+  const rowsEl = document.querySelector("[data-rows]");
+  const toastEl = document.querySelector("[data-toast]");
+  const searchEl = document.querySelector("[data-search]");
+  const typeFilterEl = document.querySelector("[data-type-filter]");
+  const statusFilterEl = document.querySelector("[data-status-filter]");
+  const shareModalEl = document.querySelector("[data-share-modal]");
+  const shareUrlEl = document.querySelector("[data-share-url]");
+  const shareQrEl = document.querySelector("[data-share-qr]");
+  const shareDownloadEl = document.querySelector("[data-share-download]");
+  let items = [];
+  let toastTimer = null;
+  let activeShareUrl = "";
+
+  const labels = {link: "链接", image: "图片", pdf: "PDF"};
+  const pdfStatusLabels = {pending: "未处理", processing: "处理中", ready: "可预览", failed: "处理失败"};
+  const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+  const shortUrl = (value) => String(value || "").replace(window.location.origin, "");
+  const formatDate = (value) => {
+    const raw = String(value || "").trim();
+    if (!raw) return "-";
+    const date = new Date(raw.includes("T") ? raw : raw.replace(" ", "T"));
+    if (Number.isNaN(date.getTime())) return raw;
+    const pad = (number) => String(number).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  };
+
+  function toast(message, isError = false) {
+    toastEl.textContent = message;
+    toastEl.className = `radar-toast${isError ? " is-error" : ""}`;
+    toastEl.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toastEl.hidden = true; }, isError ? 5200 : 2600);
+  }
+
+  async function fetchJson(url, options = {}) {
+    return window.AdminApi.requestJson(url, options);
+  }
+
+  async function copyText(value) {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch (error) {
+      window.prompt("请复制以下链接", value);
+    }
+    toast("已复制链接");
+  }
+
+  function filteredItems() {
+    const keyword = searchEl.value.trim().toLowerCase();
+    const type = typeFilterEl.value;
+    const status = statusFilterEl.value;
+    return items.filter((item) => {
+      if (type !== "all" && item.target_type !== type) return false;
+      if (status === "enabled" && !item.enabled) return false;
+      if (status === "disabled" && item.enabled) return false;
+      if (!keyword) return true;
+      return String(item.title || "").toLowerCase().includes(keyword)
+        || String(item.wrapper_url || "").toLowerCase().includes(keyword)
+        || String(item.original_url || item.file_name_snapshot || "").toLowerCase().includes(keyword);
+    });
+  }
+
+  function render() {
+    const list = filteredItems();
+    if (!items.length) {
+      rowsEl.innerHTML = `<tr><td colspan="8" class="radar-empty">还没有内容雷达，点击新建开始创建</td></tr>`;
+      return;
+    }
+    if (!list.length) {
+      rowsEl.innerHTML = `<tr><td colspan="8" class="radar-empty">没有匹配的内容雷达</td></tr>`;
+      return;
+    }
+    rowsEl.innerHTML = list.map((item) => `
+      <tr class="${item.enabled ? "" : "radar-row-disabled"}">
+        <td><div class="radar-title">${escapeHtml(item.title || "未命名内容")}</div><div class="radar-muted">${escapeHtml(item.file_name_snapshot || item.original_url || item.media_item_id || "-")}</div>${item.target_type === "pdf" ? `<div class="radar-muted">PDF 状态：${escapeHtml(pdfStatusLabels[item.pdf_processing_status] || "未处理")}</div>` : ""}</td>
+        <td><span class="radar-badge ${escapeHtml(item.target_type || "")}">${escapeHtml(labels[item.target_type] || item.target_type)}</span></td>
+        <td><span class="${item.enabled ? "radar-status-on" : "radar-status-off"}">${item.enabled ? "启用" : "停用"}</span></td>
+        <td>${Number(item.total_landings || 0)}</td>
+        <td>${Number(item.authorized_users || 0)}</td>
+        <td>${Number(item.view_count || 0)}</td>
+        <td>${escapeHtml(formatDate(item.last_viewed_at))}</td>
+        <td>
+          <div class="radar-actions">
+            <button class="radar-button" type="button" data-share="${item.id}">分享</button>
+            <a class="radar-button" href="/admin/radar-links/${item.id}/detail">详情</a>
+            <a class="radar-button" href="/admin/radar-links/${item.id}/edit">编辑</a>
+            <button class="radar-button ${item.enabled ? "danger" : ""}" type="button" data-toggle="${item.id}" data-enabled="${item.enabled ? "0" : "1"}">${item.enabled ? "停用" : "启用"}</button>
+          </div>
+        </td>
+      </tr>
+    `).join("");
+  }
+
+  async function load() {
+    rowsEl.innerHTML = `<tr><td colspan="8" class="radar-empty">列表加载中...</td></tr>`;
+    try {
+      const payload = await fetchJson("/api/admin/radar-links");
+      items = payload.items || payload.radar_links || [];
+      render();
+    } catch (error) {
+      rowsEl.innerHTML = `<tr><td colspan="8" class="radar-empty">${escapeHtml(window.AdminApi.errorMessage(error, "列表加载失败"))}</td></tr>`;
+    }
+  }
+
+  async function openShare(id) {
+    const payload = await fetchJson(`/api/admin/radar-links/${id}/share`);
+    const share = payload.share || {};
+    activeShareUrl = String(share.url || "");
+    if (!activeShareUrl) {
+      toast("当前内容雷达还没有可分享链接", true);
+      return;
+    }
+    shareUrlEl.value = activeShareUrl;
+    shareQrEl.src = String(share.qr_data_url || "");
+    shareDownloadEl.href = String(share.qr_data_url || "#");
+    shareDownloadEl.download = String(share.download_filename || "内容雷达二维码.jpg");
+    shareModalEl.hidden = false;
+    shareModalEl.setAttribute("aria-hidden", "false");
+  }
+
+  document.addEventListener("click", async (event) => {
+    const copyButton = event.target.closest("[data-copy]");
+    const shareButton = event.target.closest("[data-share]");
+    const toggleButton = event.target.closest("[data-toggle]");
+    try {
+      if (copyButton) await copyText(copyButton.dataset.copy || "");
+      if (shareButton) await openShare(shareButton.dataset.share);
+      if (toggleButton) {
+        toggleButton.disabled = true;
+        await fetchJson(`/api/admin/radar-links/${toggleButton.dataset.toggle}/${toggleButton.dataset.enabled === "1" ? "enable" : "disable"}`, {method: "POST"});
+        toast("状态已更新");
+        await load();
+      }
+    } catch (error) {
+      toast(window.AdminApi.errorMessage(error, "操作失败"), true);
+    }
+  });
+  document.querySelector("[data-refresh]").addEventListener("click", load);
+  document.querySelector("[data-share-copy]").addEventListener("click", () => copyText(activeShareUrl));
+  function closeShare() {
+    shareModalEl.hidden = true;
+    shareModalEl.setAttribute("aria-hidden", "true");
+    activeShareUrl = "";
+  }
+  document.querySelector("[data-share-close]").addEventListener("click", closeShare);
+  shareModalEl.addEventListener("click", (event) => { if (event.target === shareModalEl) closeShare(); });
+  document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !shareModalEl.hidden) closeShare(); });
+  [searchEl, typeFilterEl, statusFilterEl].forEach((el) => el.addEventListener("input", render));
+  load();
+})();
+</script>
+{% endblock %}

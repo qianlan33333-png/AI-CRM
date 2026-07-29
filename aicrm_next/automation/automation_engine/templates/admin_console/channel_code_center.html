@@ -1,0 +1,84 @@
+{% extends "admin_console/base.html" %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="/static/automation-engine/admin_console/channel_admission_pages.css">
+{% endblock %}
+
+{% block content %}
+{% set payload = channel_center_payload or {} %}
+<div
+  class="channel-page"
+  data-channel-admission-page="channel-center"
+  data-api-channels="{{ payload.api_urls.channels }}"
+>
+  <script type="application/json" data-channel-bootstrap>{{ payload | tojson }}</script>
+
+  <section class="channel-metric-grid" data-channel-metrics>
+    <article class="channel-metric">
+      <span>渠道总数</span>
+      <strong data-channel-metric="total">0</strong>
+      <em>独立获客资源</em>
+    </article>
+    <article class="channel-metric">
+      <span>渠道资产</span>
+      <strong data-channel-metric="standalone">0</strong>
+      <em>二维码 / 链接资源</em>
+    </article>
+    <article class="channel-metric">
+      <span>企微获客助手链接</span>
+      <strong data-channel-metric="link">0</strong>
+      <em>复制 / 分享链接</em>
+    </article>
+    <article class="channel-metric">
+      <span>渠道用户</span>
+      <strong data-channel-metric="entered">0</strong>
+      <em>渠道进入记录</em>
+    </article>
+  </section>
+
+  <section class="admin-card channel-section">
+    <div class="admin-card-head admin-card-head--tight">
+      <div>
+        <h2>渠道码列表</h2>
+        <p>渠道码中心只管理渠道资产、渠道用户、欢迎语、标签和客服分配。</p>
+      </div>
+      <div class="channel-actions">
+        <input class="channel-search" type="search" data-channel-search placeholder="搜索渠道名称">
+        <a class="admin-button admin-button--primary" href="{{ url_for('api.admin_channel_new_page') }}">新建渠道</a>
+      </div>
+    </div>
+
+    <div class="admin-table-wrap">
+      <table class="admin-table channel-table">
+        <thead>
+          <tr>
+            <th>渠道</th>
+            <th>类型</th>
+            <th>状态</th>
+            <th>欢迎/素材/标签</th>
+            <th>渠道用户</th>
+            <th class="channel-actions-heading" aria-label="行操作"></th>
+          </tr>
+        </thead>
+        <tbody data-channel-list>
+          <tr><td colspan="6">加载中...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <aside class="channel-drawer" data-channel-drawer hidden>
+    <div class="channel-drawer__panel">
+      <button class="channel-drawer__close" type="button" data-close-channel-drawer>关闭</button>
+      <h2>渠道详情</h2>
+      <p class="channel-muted">查看渠道用户列表、二维码/链接状态和渠道进入记录。</p>
+      <div data-channel-drawer-body></div>
+    </div>
+  </aside>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script defer src="{{ url_for('static', filename='admin_console/admin_download.js') }}?v=channel-jpg-20260729"></script>
+<script defer src="/static/automation-engine/admin_console/channel_code_center_next.js?v=remove-recent-entry-20260608"></script>
+{% endblock %}

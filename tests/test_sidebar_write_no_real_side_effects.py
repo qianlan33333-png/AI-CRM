@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.sidebar_write import get_sidebar_write_side_effect_plans
+from aicrm_next.crm.sidebar_write import get_sidebar_write_side_effect_plans
 from tests.sidebar_auth_test_helpers import install_sidebar_auth
 
 
@@ -96,7 +96,7 @@ def test_sidebar_write_internal_mutations_do_not_create_side_effect_plans(client
 def test_sidebar_write_module_does_not_import_real_external_adapters() -> None:
     combined = "\n".join(
         path.read_text(encoding="utf-8")
-        for path in Path("aicrm_next/sidebar_write").glob("*.py")
+        for path in Path("aicrm_next/crm/sidebar_write").glob("*.py")
     )
 
     forbidden = [

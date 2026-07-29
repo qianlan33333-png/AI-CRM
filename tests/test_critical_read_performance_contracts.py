@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from aicrm_next.platform_foundation.performance_contracts import (
+from aicrm_next.platform.platform_foundation.performance_contracts import (
     REQUIRED_PROFILES,
     evaluate_read_path_report,
     load_read_path_baselines,
@@ -38,6 +38,29 @@ def test_critical_read_baseline_covers_all_required_next_routes() -> None:
     assert {profile.regression_factor for profile in profiles.values()} == {1.1}
     assert all(profile.sample_count >= 10 for profile in profiles.values())
     assert all(not evaluate_read_path_report(profile, _passing_report(profile)) for profile in profiles.values())
+
+
+def test_customer_projection_baselines_budget_one_generation_pointer_lookup() -> None:
+    profiles = load_read_path_baselines()
+
+    # Double-buffer reads require one bounded singleton-state lookup.  Keep the
+    # timeline ceiling at six and lock the other increases to exactly one query
+    # so future repository calls cannot silently consume more budget.
+    assert profiles["customer_list"].max_query_count == 3
+    assert profiles["sidebar_workbench"].max_query_count == 10
+    assert profiles["sidebar_timeline"].max_query_count == 6
+    assert profiles["sidebar_recent_messages"].max_query_count == 4
+
+
+def test_internal_events_admin_baseline_locks_scoped_runtime_summary_budget() -> None:
+    profile = load_read_path_baselines()["internal_events_admin"]
+
+    assert profile.route == "/api/admin/internal-events"
+    assert profile.owner == "platform_foundation.internal_events"
+    assert profile.max_query_count == 5
+    assert profile.page_limit == 50
+    assert profile.baseline_p95_ms == 250.0
+    assert profile.allowed_large_seq_scan_relations == frozenset({"internal_event"})
 
 
 @pytest.mark.parametrize(

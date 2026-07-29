@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 import pytest
 from pydantic import ValidationError
 
-from aicrm_next.commerce.coupons import (
+from aicrm_next.extensions.commerce.commerce.coupons import (
     CouponChoice,
     CouponClaimStatus,
     CouponDisplayState,
@@ -23,7 +23,7 @@ from aicrm_next.commerce.coupons import (
     validate_discount_amount_total,
     validate_payable_amount,
 )
-from aicrm_next.shared.errors import ContractError
+from aicrm_next.platform.shared.errors import ContractError
 
 
 SHANGHAI = ZoneInfo("Asia/Shanghai")

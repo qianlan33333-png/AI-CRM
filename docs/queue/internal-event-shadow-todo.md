@@ -4,7 +4,7 @@
 
 `ai_campaign.created` is now implemented by
 `CreateCloudCampaignCommand` in
-`aicrm_next/cloud_orchestrator/campaigns_write.py`.
+`aicrm_next/extensions/growth/cloud_orchestrator/campaigns_write.py`.
 
 The AI Campaign internal event vertical slice covers:
 

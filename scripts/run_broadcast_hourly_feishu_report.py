@@ -14,7 +14,7 @@ ensure_repo_root_on_path()
 
 
 def run() -> dict[str, Any]:
-    from aicrm_next.admin_jobs.notification_settings import (
+    from aicrm_next.platform.admin_jobs.notification_settings import (
         send_broadcast_job_hourly_feishu_report,
     )
 

@@ -4,11 +4,11 @@ import json
 from pathlib import Path
 from typing import Any
 
-from aicrm_next.admin_read_model.application import GetAdminProductsPageQuery
-from aicrm_next.admin_read_model.dto import AdminReadDiagnostics
-from aicrm_next.admin_read_model.errors import AdminReadModelError
-from aicrm_next.admin_read_model.projections import config_payload
-from aicrm_next.admin_read_model.repo import LocalContractAdminReadRepository
+from aicrm_next.insights.admin_read_model.application import GetAdminProductsPageQuery
+from aicrm_next.insights.admin_read_model.dto import AdminReadDiagnostics
+from aicrm_next.insights.admin_read_model.errors import AdminReadModelError
+from aicrm_next.insights.admin_read_model.projections import config_payload
+from aicrm_next.insights.admin_read_model.repo import LocalContractAdminReadRepository
 from tools import check_admin_read_model_boundary as checker
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -38,7 +38,7 @@ class FailingProductionRepo:
 
 
 def test_frontend_compat_admin_real_data_has_no_psycopg_or_sql_boundary():
-    source = (ROOT / "aicrm_next" / "frontend_compat" / "admin_real_data.py").read_text(encoding="utf-8")
+    source = (ROOT / "aicrm_next" / "app" / "admin_console" / "admin_real_data.py").read_text(encoding="utf-8")
 
     assert "psycopg" not in source
     assert "SELECT " not in source

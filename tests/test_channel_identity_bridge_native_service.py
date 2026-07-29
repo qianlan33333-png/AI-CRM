@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from aicrm_next.channel_entry.identity_bridge_service import IdentityBridgeService
+from aicrm_next.channels.channel_entry.identity_bridge_service import IdentityBridgeService
 
 
 class _DetailAdapter:
@@ -207,7 +207,6 @@ def test_sync_external_contact_identity_allows_missing_openid() -> None:
     assert result["status"] == "success"
     assert result["unionid_present"] is True
     assert result["openid_present"] is False
-    assert result["follow_user_userid"] == "owner_native"
     assert result["profile_description"] == {
         "status": "success",
         "description_source": "external_userid",
@@ -252,7 +251,6 @@ def test_sync_external_contact_identity_without_unionid_stays_pending() -> None:
     assert result["status"] == "pending_identity"
     assert result["reason"] == "missing_unionid"
     assert result["unionid_present"] is False
-    assert result["follow_user_userid"] == "owner_native"
     assert result["profile_description"]["status"] == "success"
     assert result["mobile_binding"] == {"status": "skipped", "reason": "identity_pending_unionid"}
     assert repo.binding_status == {"is_bound": False, "mobile": ""}
@@ -302,7 +300,7 @@ def test_bind_mobile_from_identity_sources_conflict() -> None:
     assert result["reason"] == "external_userid already bound to another mobile"
 
 
-def test_questionnaire_submission_is_never_linked_by_mobile() -> None:
+def test_questionnaire_backfill_updates_unbound_submission() -> None:
     repo = _FakeRepo()
     repo.candidate = {"mobile": "18565883798", "matched_count": 1, "sources": ["wechat_pay_orders"]}
 
@@ -318,13 +316,14 @@ def test_questionnaire_submission_is_never_linked_by_mobile() -> None:
 
     assert result["status"] == "success"
     assert result["mobile_binding"]["status"] == "bound"
-    assert result["questionnaire_backfill"] == {
-        "status": "skipped",
-        "reason": "unionid_continuation_required",
+    assert result["questionnaire_backfill"]["updated_count"] == 1
+    assert repo.submissions[0] == {
+        "external_userid": "wm_native_001",
+        "follow_user_userid": "owner_native",
+        "matched_by": "mobile",
     }
-    assert repo.submissions[0] == {"external_userid": "", "follow_user_userid": "", "matched_by": ""}
 def test_identity_sync_rejects_request_corp_override_before_db_or_external_side_effect(monkeypatch) -> None:
-    from aicrm_next.channel_entry.identity_bridge_service import IdentityBridgeService
+    from aicrm_next.channels.channel_entry.identity_bridge_service import IdentityBridgeService
 
     calls: list[str] = []
 

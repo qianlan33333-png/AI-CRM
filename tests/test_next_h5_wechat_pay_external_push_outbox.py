@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.commerce import external_push_outbox
+from aicrm_next.extensions.commerce.commerce import external_push_outbox
 
 
 class FakeCursor:

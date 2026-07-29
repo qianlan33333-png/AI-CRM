@@ -13,7 +13,7 @@ from scripts.script_runtime import ensure_repo_root_on_path, print_json
 
 ensure_repo_root_on_path()
 
-from aicrm_next.questionnaire.reconciliation import QuestionnaireRadarReconciliationService
+from aicrm_next.extensions.forms.questionnaire.reconciliation import QuestionnaireRadarReconciliationService
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:

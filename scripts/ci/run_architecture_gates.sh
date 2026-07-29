@@ -20,6 +20,11 @@ else
 fi
 
 run_fast() {
+"$PYTHON" tools/check_capability_registry.py
+"$PYTHON" tools/check_deployment_profiles.py
+"$PYTHON" tools/check_job_catalog.py
+"$PYTHON" tools/check_domain_migration_contract.py
+"$PYTHON" tools/check_legacy_cleanup_contract.py
 "$PYTHON" tools/check_import_graph.py
 "$PYTHON" tools/check_runtime_module_sizes.py
 "$PYTHON" scripts/ci/check_auth_credential_boundaries.py
@@ -27,8 +32,14 @@ run_fast() {
 "$PYTHON" scripts/ci/update_route_policy_manifest.py --check
 "$PYTHON" tools/check_admin_route_auth.py
 "$PYTHON" tools/check_repository_ownership.py
+"$PYTHON" tools/check_runtime_configuration_contract.py
 "$PYTHON" tools/check_retired_runtime_references.py
 "$PYTHON" scripts/ci/check_github_action_pins.py
+"$PYTHON" scripts/ci/check_github_actions_expression_length.py
+"$PYTHON" scripts/ci/check_queue_runtime_cutover_kernel.py
+"$PYTHON" scripts/ci/check_id_validation_promotion_manifest.py
+"$PYTHON" scripts/ci/check_admin_queue_command_boundary.py
+"$PYTHON" scripts/ci/check_welcome_media_effect_ownership.py
 }
 
 run_db() {
@@ -41,6 +52,7 @@ run_db() {
 run_full_only() {
   "$PYTHON" tools/check_architecture_boundaries.py
   "$PYTHON" tools/check_external_effects_boundary.py
+  "$PYTHON" scripts/ci/check_group_ops_effect_ownership.py
   "$PYTHON" tools/check_background_job_contract.py
   "$PYTHON" tools/check_schema_change_templates.py
   "$PYTHON" scripts/ci/runtime_contract_inventory.py --check docs/architecture/runtime_contract_inventory.json

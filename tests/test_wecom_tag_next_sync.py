@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-import aicrm_next.customer_tags.api as api
-from aicrm_next.customer_tags.sync_service import execute_wecom_tag_catalog_sync
-from aicrm_next.integration_gateway.wecom_tag_live_gateway import WeComTagLiveGateway
+import aicrm_next.crm.customer_tags.api as api
+from aicrm_next.crm.customer_tags.sync_service import execute_wecom_tag_catalog_sync
+from aicrm_next.channels.integration_gateway.wecom_tag_live_gateway import WeComTagLiveGateway
 from aicrm_next.main import create_app
-from aicrm_next.shared.database import get_sqlalchemy_database_url
+from aicrm_next.platform.shared.database import get_sqlalchemy_database_url
 
 
 class FakeSyncRepository:
@@ -132,7 +132,7 @@ def test_wecom_tag_gateway_accepts_existing_wecom_contact_env_names(monkeypatch)
     monkeypatch.delenv("AICRM_WECOM_TAG_AGENT_SECRET", raising=False)
     monkeypatch.setenv("WECOM_CORP_ID", "ww_existing")
     monkeypatch.setenv("WECOM_CONTACT_SECRET", "contact_secret")
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_tag_live_gateway.urlopen", fake_urlopen)
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_tag_live_gateway.urlopen", fake_urlopen)
 
     assert WeComTagLiveGateway(api_base="https://qy.example.test")._access_token() == "token"
     assert "corpid=ww_existing" in captured["url"]

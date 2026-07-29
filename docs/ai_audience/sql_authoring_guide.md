@@ -26,7 +26,8 @@ AI Audience SQL 只能查询 `audience_read.*` 白名单视图。SQL linter 会�
 
 `audience_read.huangxiaocan_member_usage_status_v1` 汇总黄小璨会员命中、
 注册身份命中和真实使用记录。普通业务包只需要通过 Simple SQL 引用该视图，
-不要为单个人群包提交代码或 Markdown spec。
+不要为单个人群包提交代码或 Markdown spec。该视图读取原子切换的 active generation
+投影，不在业务查询中重新扫描会员、注册和消息源表。
 
 示例：
 

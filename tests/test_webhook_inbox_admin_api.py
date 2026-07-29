@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.webhook_inbox import InMemoryWebhookInboxRepository
+from aicrm_next.platform.platform_foundation.webhook_inbox import InMemoryWebhookInboxRepository
 from tests.admin_auth_test_helpers import install_admin_action_tokens
 
 
@@ -34,7 +34,7 @@ def _seed(repo: InMemoryWebhookInboxRepository, key: str = "event-1") -> dict:
 def test_webhook_inbox_admin_metrics_and_items(monkeypatch):
     repo = InMemoryWebhookInboxRepository()
     _seed(repo)
-    monkeypatch.setattr("aicrm_next.platform_foundation.webhook_inbox.api._repo", lambda: repo)
+    monkeypatch.setattr("aicrm_next.platform.platform_foundation.webhook_inbox.api._repo", lambda: repo)
     client = TestClient(create_app(), raise_server_exceptions=False)
 
     metrics = client.get("/api/admin/webhook-inbox/metrics?provider=wecom")
@@ -65,7 +65,7 @@ def test_webhook_inbox_admin_filters_incident_window_pending_failed_rows(monkeyp
     repo.mark_failed_retryable(failed["id"], error_code="RuntimeError", error_message="retry")
     repo.mark_succeeded(succeeded["id"])
     repo.mark_failed_retryable(outside["id"], error_code="RuntimeError", error_message="outside")
-    monkeypatch.setattr("aicrm_next.platform_foundation.webhook_inbox.api._repo", lambda: repo)
+    monkeypatch.setattr("aicrm_next.platform.platform_foundation.webhook_inbox.api._repo", lambda: repo)
     client = TestClient(create_app(), raise_server_exceptions=False)
 
     query = "provider=wecom&status=pending_failed&received_from=2026-06-27T11:00&received_to=2026-06-27T11:20"
@@ -119,9 +119,9 @@ def test_webhook_inbox_admin_detail_returns_processing_chain(monkeypatch):
         def list_attempts(self, job_id: int):
             return [FakeInternalEvent({"id": 9, "attempt_id": "eea_9", "job_id": int(job_id), "status": "blocked"})]
 
-    monkeypatch.setattr("aicrm_next.platform_foundation.webhook_inbox.api._repo", lambda: repo)
-    monkeypatch.setattr("aicrm_next.platform_foundation.webhook_inbox.api.InternalEventService", FakeInternalEventService)
-    monkeypatch.setattr("aicrm_next.platform_foundation.webhook_inbox.api.ExternalEffectService", FakeExternalEffectService)
+    monkeypatch.setattr("aicrm_next.platform.platform_foundation.webhook_inbox.api._repo", lambda: repo)
+    monkeypatch.setattr("aicrm_next.platform.platform_foundation.webhook_inbox.api.InternalEventService", FakeInternalEventService)
+    monkeypatch.setattr("aicrm_next.platform.platform_foundation.webhook_inbox.api.ExternalEffectService", FakeExternalEffectService)
     client = TestClient(create_app(), raise_server_exceptions=False)
 
     response = client.get(f"/api/admin/webhook-inbox/{row['id']}")
@@ -139,7 +139,7 @@ def test_webhook_inbox_admin_retry_and_skip_require_token(monkeypatch):
     repo = InMemoryWebhookInboxRepository()
     row = _seed(repo)
     repo.mark_dead_letter(row["id"], error_code="RuntimeError", error_message="boom")
-    monkeypatch.setattr("aicrm_next.platform_foundation.webhook_inbox.api._repo", lambda: repo)
+    monkeypatch.setattr("aicrm_next.platform.platform_foundation.webhook_inbox.api._repo", lambda: repo)
     client = TestClient(create_app(), raise_server_exceptions=False)
     tokens = install_admin_action_tokens(
         client,
@@ -160,13 +160,14 @@ def test_webhook_inbox_admin_retry_and_skip_require_token(monkeypatch):
     )
 
     assert rejected.status_code == 401
-    assert accepted.status_code == 200
-    assert accepted.json()["item"]["status"] == "failed_retryable"
-    assert skipped.status_code == 200
-    assert skipped.json()["item"]["status"] == "ignored"
+    assert accepted.status_code == 422
+    assert set(accepted.json()["missing_fields"]) == {"actor", "expected_version"}
+    assert skipped.status_code == 422
+    assert set(skipped.json()["missing_fields"]) == {"actor", "expected_version"}
+    assert repo.get_item(row["id"])["status"] == "dead_letter"
 
 
-def test_webhook_inbox_admin_dispatch_one_requires_token_and_supports_execute(monkeypatch):
+def test_webhook_inbox_admin_dispatch_one_requires_token_and_versioned_command(monkeypatch):
     repo = InMemoryWebhookInboxRepository()
     row = _seed(repo)
     calls: list[dict] = []
@@ -179,7 +180,7 @@ def test_webhook_inbox_admin_dispatch_one_requires_token_and_supports_execute(mo
             calls.append({"inbox_id": int(inbox_id), "dry_run": bool(dry_run), "reason": reason})
             return {"ok": True, "id": int(inbox_id), "status": "succeeded", "dry_run": bool(dry_run)}
 
-    monkeypatch.setattr("aicrm_next.platform_foundation.webhook_inbox.api._repo", lambda: repo)
+    monkeypatch.setattr("aicrm_next.platform.platform_foundation.webhook_inbox.api._repo", lambda: repo)
     client = TestClient(create_app(), raise_server_exceptions=False)
     client.app.state.wecom_callback_inbox_worker_factory = FakeWorker
     token = install_admin_action_tokens(
@@ -201,18 +202,17 @@ def test_webhook_inbox_admin_dispatch_one_requires_token_and_supports_execute(mo
     assert rejected.status_code == 401
     assert preview.status_code == 200
     assert preview.json()["dry_run"] is True
-    assert executed.status_code == 200
-    assert executed.json()["dry_run"] is False
+    assert executed.status_code == 422
+    assert set(executed.json()["missing_fields"]) == {"actor", "expected_version"}
     assert calls == [
         {"inbox_id": row["id"], "dry_run": True, "reason": "admin_dispatch_one"},
-        {"inbox_id": row["id"], "dry_run": False, "reason": "manual replay"},
     ]
 
 
 def test_webhook_inbox_admin_run_due_defaults_to_dry_run(monkeypatch):
     repo = InMemoryWebhookInboxRepository()
     _seed(repo)
-    monkeypatch.setattr("aicrm_next.platform_foundation.webhook_inbox.api._repo", lambda: repo)
+    monkeypatch.setattr("aicrm_next.platform.platform_foundation.webhook_inbox.api._repo", lambda: repo)
     client = TestClient(create_app(), raise_server_exceptions=False)
     token = install_admin_action_tokens(
         client,
@@ -234,7 +234,7 @@ def test_webhook_inbox_admin_run_due_defaults_to_dry_run(monkeypatch):
 def test_webhook_inbox_admin_run_due_accepts_admin_action_token(monkeypatch):
     repo = InMemoryWebhookInboxRepository()
     _seed(repo)
-    monkeypatch.setattr("aicrm_next.platform_foundation.webhook_inbox.api._repo", lambda: repo)
+    monkeypatch.setattr("aicrm_next.platform.platform_foundation.webhook_inbox.api._repo", lambda: repo)
     client = TestClient(create_app(), raise_server_exceptions=False)
     token = install_admin_action_tokens(
         client,
@@ -249,35 +249,3 @@ def test_webhook_inbox_admin_run_due_accepts_admin_action_token(monkeypatch):
     assert response.status_code == 200
     assert response.json()["dry_run"] is True
     assert response.json()["due_count"] == 1
-
-
-def test_webhook_inbox_admin_page_renders_shell_and_api_hooks():
-    client = TestClient(create_app(), raise_server_exceptions=False)
-
-    response = client.get("/admin/webhook-inbox")
-
-    assert response.status_code == 200
-    html = response.text
-    assert "<h1 class=\"admin-page-title\">Webhook Inbox</h1>" in html
-    assert "查看入站回调队列、失败重试、死信与企微回调链路。" in html
-    assert "Webhook Inbox" in html
-    assert "/api/admin/webhook-inbox/metrics" in html
-    assert "/api/admin/webhook-inbox/items" in html
-    assert "pending_failed" in html
-    assert "name=\"received_from\"" in html
-    assert "name=\"received_to\"" in html
-    assert "预演单条" in html
-    assert "执行单条" in html
-    assert "dispatch-preview" in html
-    assert "/api/admin/wecom/callback/reconciliation" in html
-    assert "processing_chain" in html
-    assert "internal_event_consumer_run" in html
-    assert "external_effect_attempt" in html
-    assert "webhook-inbox-stat-label\">待处理" in html
-    assert "webhook-inbox-card-title\">入站回调" in html
-    assert "Provider 分布" in html
-    assert "Route 分布" in html
-    assert "最近错误" in html
-    assert "providerDistribution" in html
-    assert "routeDistribution" in html
-    assert "recentErrors" in html

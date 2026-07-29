@@ -4,13 +4,14 @@ import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-import aicrm_next.questionnaire.api as questionnaire_api
-from aicrm_next.questionnaire.admin_write import (
+import aicrm_next.extensions.forms.questionnaire.api as questionnaire_api
+from aicrm_next.extensions.forms.questionnaire.admin_write import (
     get_questionnaire_admin_write_audit_events,
     reset_questionnaire_admin_write_fixture_state,
 )
-from aicrm_next.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
-from aicrm_next.questionnaire.repo import reset_questionnaire_fixture_state
+from aicrm_next.extensions.forms.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
+from aicrm_next.extensions.forms.questionnaire.repo import reset_questionnaire_fixture_state
+from wechat_identity_test_support import authorize_wechat_client
 
 
 @pytest.fixture()
@@ -21,7 +22,9 @@ def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
     reset_questionnaire_fixture_state()
     reset_questionnaire_admin_write_fixture_state()
     reset_questionnaire_h5_write_fixture_state()
-    return TestClient(create_app())
+    client = TestClient(create_app())
+    authorize_wechat_client(client, {"openid": "openid_001", "unionid": "unionid_001", "external_userid": "wx_ext_001"})
+    return client
 
 
 def _payload(title: str = "测试问卷") -> dict:

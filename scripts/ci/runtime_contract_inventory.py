@@ -17,14 +17,24 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 ENV_CALL_NAMES = {
+    "environment_fallback",
+    "env_bool",
     "getenv",
+    "managed_runtime_bool",
+    "managed_runtime_int",
+    "managed_runtime_setting",
     "runtime_setting",
     "runtime_bool",
+    "runtime_csv",
     "runtime_int",
     "_env_flag",
     "env_flag",
 }
-DECLARED_ENVIRONMENT_KEY_NAMES = {"RUNTIME_ENVIRONMENT_KEYS"}
+DECLARED_ENVIRONMENT_KEY_NAMES = {
+    "MANAGED_RUNTIME_SETTING_KEYS",
+    "RUNTIME_ENVIRONMENT_KEYS",
+    "RUNTIME_SETTING_KEYS",
+}
 EFFECT_PREFIXES = (
     "ai_assist.",
     "feishu.",
@@ -88,6 +98,7 @@ def _route_owner_index(router_specs: tuple[Any, ...]) -> dict[tuple[str, str], d
                 continue
             owners[_endpoint_key(endpoint)] = {
                 "capability_owner": str(spec.capability_owner),
+                "logical_capability_id": str(spec.logical_capability_id),
                 "route_group": str(spec.route_group),
             }
     return owners
@@ -119,7 +130,11 @@ def _runtime_routes_and_consumers() -> tuple[list[dict[str, Any]], dict[str, Any
                 continue
             owner = owner_index.get(
                 _endpoint_key(route.endpoint),
-                {"capability_owner": "unregistered", "route_group": "unregistered"},
+                {
+                    "capability_owner": "unregistered",
+                    "logical_capability_id": "unregistered",
+                    "route_group": "unregistered",
+                },
             )
             media_type = str(getattr(route.response_class, "media_type", "") or "")
             for method in sorted(set(route.methods or ()) - {"HEAD", "OPTIONS"}):
@@ -138,6 +153,7 @@ def _runtime_routes_and_consumers() -> tuple[list[dict[str, Any]], dict[str, Any
                         "kind": _route_kind(route.path, method, media_type),
                         "include_in_schema": bool(route.include_in_schema),
                         "capability_owner": owner["capability_owner"],
+                        "logical_capability_id": owner["logical_capability_id"],
                         "route_group": owner["route_group"],
                         "endpoint": ".".join(part for part in _endpoint_key(route.endpoint) if part),
                         "contract": contract,
@@ -190,7 +206,7 @@ def _tables(root: Path) -> list[dict[str, Any]]:
 
 
 def _external_effects(root: Path) -> tuple[list[dict[str, str]], list[dict[str, Any]]]:
-    from aicrm_next.platform_foundation.external_effects import models
+    from aicrm_next.platform.platform_foundation.external_effects import models
 
     runtime_effects = [
         {"constant": name, "effect_type": value}
@@ -223,6 +239,7 @@ def _runtime_units(root: Path) -> list[dict[str, Any]]:
                 "kind": "service",
                 "state": "active",
                 "health_url": str(item.get("health_url") or ""),
+                "stop_for_migration": bool(item.get("stop_for_migration", False)),
             }
         )
     for item in manifest.get("active_autostart", []) or []:
@@ -234,6 +251,40 @@ def _runtime_units(root: Path) -> list[dict[str, Any]]:
                 "service": str(item["service"]),
                 "kick_after_timer_restart": bool(item.get("kick_after_timer_restart", False)),
                 "kick_failure_fatal": bool(item.get("kick_failure_fatal", False)),
+            }
+        )
+    replacement = manifest.get("cutover_replacement_autostart") or {}
+    replacement_inventory = str(replacement.get("owner_inventory") or "")
+    for item in replacement.get("timers", []) or []:
+        units.append(
+            {
+                "unit": str(item["timer"]),
+                "kind": "timer",
+                "state": "cutover_replacement_autostart",
+                "service": str(item["service"]),
+                "owner_inventory": replacement_inventory,
+            }
+        )
+    cutover = manifest.get("cutover_managed_legacy") or {}
+    owner_inventory = str(cutover.get("owner_inventory") or "")
+    for item in cutover.get("timers", []) or []:
+        units.append(
+            {
+                "unit": str(item["timer"]),
+                "kind": "timer",
+                "state": "cutover_managed_legacy",
+                "service": str(item["service"]),
+                "owner_inventory": owner_inventory,
+            }
+        )
+    for item in cutover.get("persistent_services", []) or []:
+        units.append(
+            {
+                "unit": str(item["service"]),
+                "kind": "service",
+                "state": "cutover_managed_legacy",
+                "owner_inventory": owner_inventory,
+                "persistent": True,
             }
         )
     for item in manifest.get("approval_required", []) or []:
@@ -306,13 +357,17 @@ def _environment_references(root: Path) -> list[dict[str, Any]]:
                     value = node.value
                 if target_name not in DECLARED_ENVIRONMENT_KEY_NAMES:
                     continue
+                accessor = {
+                    "MANAGED_RUNTIME_SETTING_KEYS": "declared_managed_runtime_setting_key",
+                    "RUNTIME_SETTING_KEYS": "declared_runtime_setting_key",
+                }.get(target_name, "declared_runtime_environment_key")
                 for key in sorted(_literal_strings(value)):
                     references.append(
                         {
                             "key": key,
                             "file": relative,
                             "line": int(getattr(node, "lineno", 0) or 0),
-                            "accessor": "declared_runtime_environment_key",
+                            "accessor": accessor,
                         }
                     )
             for node in ast.walk(tree):

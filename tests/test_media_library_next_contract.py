@@ -63,7 +63,7 @@ def test_media_library_production_mode_env_is_not_exposed_as_available(monkeypat
 
 
 def test_media_library_postgres_connection_does_not_reuse_sqlalchemy_raw_pool(monkeypatch) -> None:
-    from aicrm_next.media_library.repo import connect_media_library_db
+    from aicrm_next.engagement.media_library.repo import connect_media_library_db
 
     calls: list[dict[str, object]] = []
     dict_row = object()

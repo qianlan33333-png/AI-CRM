@@ -2,16 +2,16 @@ from __future__ import annotations
 
 import pytest
 
-from aicrm_next.operation_cycles.application import (
+from aicrm_next.extensions.hxc.operation_cycles.application import (
     get_run,
     get_strategy,
     list_strategies,
     list_strategy_runs,
     report_operation_cycle,
 )
-from aicrm_next.operation_cycles.domain import OperationCycleConflictError
-from aicrm_next.operation_cycles.dto import OperationCycleSnapshotV1, ReferenceSnapshot
-from aicrm_next.operation_cycles.repository import InMemoryOperationCycleRepository
+from aicrm_next.extensions.hxc.operation_cycles.domain import OperationCycleConflictError
+from aicrm_next.extensions.hxc.operation_cycles.dto import OperationCycleSnapshotV1, ReferenceSnapshot
+from aicrm_next.extensions.hxc.operation_cycles.repository import InMemoryOperationCycleRepository
 from tests.test_operation_cycles_domain import snapshot_payload
 
 

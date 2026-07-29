@@ -4,7 +4,7 @@ import argparse
 import json
 from typing import Any
 
-from aicrm_next.channel_entry import repo
+from aicrm_next.channels.channel_entry import repo
 
 
 def _payload(channel_id: int = 0, scene_value: str = "") -> dict[str, Any]:

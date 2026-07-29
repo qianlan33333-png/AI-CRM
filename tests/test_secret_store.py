@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from aicrm_next.shared import secret_store
-from aicrm_next.shared.secret_store import (
+from aicrm_next.platform.shared import secret_store
+from aicrm_next.platform.shared.secret_store import (
     FileSecretStore,
     SecretReference,
     SecretStoreError,

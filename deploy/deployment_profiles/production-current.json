@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "profile_id": "production-current",
+  "description": "Behavior-equivalent production profile with every currently deployed capability staged",
+  "core_version": "0.1.0",
+  "corp_mode": "single_corp_multi_app",
+  "activation_mode": "enforce",
+  "config_schema_version": 1,
+  "enabled_capabilities": [
+    "core.platform",
+    "core.channels",
+    "core.crm",
+    "core.engagement",
+    "core.automation",
+    "core.insights",
+    "core.app",
+    "extension.ai",
+    "extension.commerce",
+    "extension.forms",
+    "extension.archive",
+    "extension.radar",
+    "extension.growth",
+    "extension.hxc"
+  ],
+  "runtime_roles": [
+    "web",
+    "callback",
+    "internal_worker",
+    "external_worker",
+    "scheduler"
+  ]
+}

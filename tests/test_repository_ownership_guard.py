@@ -13,7 +13,7 @@ from tools.check_repository_ownership import (
 ROOT = Path(__file__).resolve().parents[1]
 REGISTRY_PATH = ROOT / "docs" / "architecture" / "repository_ownership.yml"
 MANIFEST_PATH = ROOT / "docs" / "architecture" / "data_table_lifecycle_manifest.yml"
-ADMIN_READ_REPO_PATH = ROOT / "aicrm_next" / "admin_read_model" / "repo.py"
+ADMIN_READ_REPO_PATH = ROOT / "aicrm_next" / "insights" / "admin_read_model" / "repo.py"
 
 
 def test_repository_ownership_current_registry_passes() -> None:
@@ -29,7 +29,7 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
     repositories = registry["repositories"]
     manifest = yaml.safe_load(MANIFEST_PATH.read_text(encoding="utf-8"))
 
-    assert repositories["aicrm_next/admin_config/repository.py"]["table_reads"] == [
+    assert repositories["aicrm_next/platform/admin_config/repository.py"]["table_reads"] == [
         "admin_login_audit",
         "admin_operation_logs",
         "admin_user_roles",
@@ -43,9 +43,8 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "questionnaire_questions",
         "questionnaires",
     ]
-    assert repositories["aicrm_next/admin_config/repository.py"]["table_writes"] == [
+    assert repositories["aicrm_next/platform/admin_config/repository.py"]["table_writes"] == [
         "admin_login_audit",
-        "admin_operation_logs",
         "admin_user_roles",
         "admin_users",
         "app_settings",
@@ -53,7 +52,7 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "marketing_automation_question_rules",
         "mcp_tool_settings",
     ]
-    assert repositories["aicrm_next/admin_jobs/repository.py"]["table_reads"] == [
+    assert repositories["aicrm_next/platform/admin_jobs/repository.py"]["table_reads"] == [
         "broadcast_job_events",
         "broadcast_jobs",
         "broadcast_queue_notification_settings",
@@ -62,14 +61,12 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "sync_runs",
         "wecom_external_contact_event_logs",
     ]
-    assert repositories["aicrm_next/admin_jobs/repository.py"]["table_writes"] == [
-        "admin_operation_logs",
+    assert repositories["aicrm_next/platform/admin_jobs/repository.py"]["table_writes"] == [
         "broadcast_job_hourly_reports",
-        "broadcast_jobs",
         "broadcast_queue_notification_settings",
         "outbound_webhook_deliveries",
     ]
-    assert repositories["aicrm_next/admin_read_model/repo.py"]["table_reads"] == [
+    assert repositories["aicrm_next/insights/admin_read_model/repo.py"]["table_reads"] == [
         "admin_operation_logs",
         "ai_audience_member_current",
         "archived_messages",
@@ -90,12 +87,21 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "wecom_external_contact_follow_users",
         "wecom_external_contact_identity_map",
     ]
-    assert "aicrm_next.external_push.repo" in manifest["tables"]["domain_event_outbox"]["read_owners"]
-    assert "aicrm_next.external_push.repo" in manifest["tables"]["external_push_delivery"]["read_owners"]
-    assert repositories["aicrm_next/ai_assist/external_campaigns_repo.py"]["table_writes"] == [
-        "broadcast_jobs",
+    assert repositories["aicrm_next/platform/platform_foundation/admin_audit/repository.py"] == {
+        "capability_owner": "aicrm_next.platform.platform_foundation.admin_audit",
+        "table_reads": [],
+        "table_writes": ["admin_operation_logs"],
+    }
+    assert manifest["tables"]["admin_operation_logs"]["write_owner"] == (
+        "aicrm_next.platform.platform_foundation.admin_audit"
+    )
+    assert manifest["tables"]["admin_operation_logs"]["write_owners"] == [
+        "aicrm_next.platform.platform_foundation.admin_audit"
     ]
-    assert repositories["aicrm_next/ai_assist/external_campaigns_repo.py"]["table_reads"] == [
+    assert "aicrm_next.platform.external_push.repo" in manifest["tables"]["domain_event_outbox"]["read_owners"]
+    assert "aicrm_next.platform.external_push.repo" in manifest["tables"]["external_push_delivery"]["read_owners"]
+    assert repositories["aicrm_next/extensions/ai/ai_assist/external_campaigns_repo.py"]["table_writes"] == []
+    assert repositories["aicrm_next/extensions/ai/ai_assist/external_campaigns_repo.py"]["table_reads"] == [
         "broadcast_jobs",
         "campaign_members",
         "campaign_segments",
@@ -107,15 +113,205 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
         "wecom_external_contact_follow_users",
         "wecom_external_contact_identity_map",
     ]
-    assert repositories["aicrm_next/send_targets/repo.py"]["table_reads"] == [
-        "crm_user_identity",
-        "user_ops_do_not_disturb_next",
-    ]
-    assert repositories["aicrm_next/send_targets/repo.py"]["table_writes"] == []
-    assert repositories["aicrm_next/external_push/repo.py"]["table_writes"] == [
+    assert repositories["aicrm_next/platform/external_push/repo.py"]["table_writes"] == [
         "domain_event_outbox",
         "external_push_delivery",
     ]
+    assert repositories["aicrm_next/channels/channel_entry/identity_bridge_repo.py"]["capability_owner"] == (
+        "aicrm_next.crm.identity_contact"
+    )
+    assert repositories["aicrm_next/crm/identity_contact/write_repository.py"]["table_writes"] == [
+        "crm_user_identity",
+        "crm_user_identity_resolution_queue",
+    ]
+    assert repositories["aicrm_next/crm/identity_contact/event_log_repository.py"] == {
+        "capability_owner": "aicrm_next.crm.identity_contact",
+        "table_reads": ["wecom_external_contact_event_logs"],
+        "table_writes": ["wecom_external_contact_event_logs"],
+    }
+    assert repositories["aicrm_next/crm/customer_tags/projection_repository.py"] == {
+        "capability_owner": "aicrm_next.crm.customer_tags",
+        "table_reads": [],
+        "table_writes": ["contact_tags"],
+    }
+    assert "wecom_external_contact_event_logs" not in repositories["aicrm_next/channels/channel_entry/repo.py"][
+        "table_reads"
+    ]
+    assert "wecom_external_contact_event_logs" not in repositories["aicrm_next/channels/channel_entry/repo.py"][
+        "table_writes"
+    ]
+    assert "contact_tags" not in repositories["aicrm_next/channels/channel_entry/repo.py"]["table_writes"]
+    assert repositories["aicrm_next/crm/identity_contact/resolution_queue_repository.py"]["table_reads"] == [
+        "crm_user_identity_resolution_queue",
+        "identity_resolution_completion_receipt",
+    ]
+    assert repositories["aicrm_next/crm/identity_contact/resolution_queue_repository.py"]["table_writes"] == [
+        "crm_user_identity_resolution_queue",
+        "identity_resolution_completion_receipt",
+    ]
+    assert repositories["aicrm_next/crm/customer_read_model/sidebar_profile_repository.py"] == {
+        "capability_owner": "aicrm_next.crm.customer_read_model",
+        "table_reads": [],
+        "table_writes": ["sidebar_customer_profile_fields"],
+    }
+    assert repositories["aicrm_next/crm/sidebar_write/repo.py"]["table_writes"] == []
+    assert "write_owners" not in manifest["tables"]["crm_user_identity"]
+    assert "write_owners" not in manifest["tables"]["crm_user_identity_conflicts"]
+    assert "aicrm_next.crm.sidebar_write" not in manifest["tables"]["crm_user_identity_resolution_queue"][
+        "write_owners"
+    ]
+    assert manifest["tables"]["crm_user_identity_resolution_queue"]["write_owners"] == [
+        "aicrm_next.crm.identity_contact",
+    ]
+    assert manifest["tables"]["identity_resolution_completion_receipt"]["write_owner"] == (
+        "aicrm_next.crm.identity_contact"
+    )
+    assert manifest["tables"]["wecom_external_contact_event_logs"]["write_owners"] == [
+        "aicrm_next.crm.identity_contact"
+    ]
+    assert manifest["tables"]["contact_tags"]["write_owner"] == "aicrm_next.crm.customer_tags"
+    assert manifest["tables"]["external_effect_job"]["write_owner"] == (
+        "aicrm_next.platform.platform_foundation.external_effects"
+    )
+    assert manifest["tables"]["external_effect_job"]["write_owners"] == [
+        "aicrm_next.platform.platform_foundation.external_effects"
+    ]
+    assert manifest["tables"]["external_effect_attempt"]["write_owner"] == (
+        "aicrm_next.platform.platform_foundation.external_effects"
+    )
+    assert manifest["tables"]["external_effect_attempt"]["write_owners"] == [
+        "aicrm_next.platform.platform_foundation.external_effects"
+    ]
+    assert repositories[
+        "aicrm_next/platform/platform_foundation/external_effects/runtime_write_repository.py"
+    ]["table_writes"] == ["external_effect_attempt", "external_effect_job"]
+    assert "external_effect_job" not in repositories[
+        "aicrm_next/automation/automation_engine/group_ops/durable_effects_repository.py"
+    ]["table_writes"]
+    assert "external_effect_job" not in repositories[
+        "aicrm_next/channels/channel_entry/welcome_media_effects_repository.py"
+    ]["table_writes"]
+    assert manifest["tables"]["broadcast_jobs"]["write_owner"] == (
+        "aicrm_next.automation.background_jobs"
+    )
+    assert manifest["tables"]["broadcast_jobs"]["write_owners"] == [
+        "aicrm_next.automation.background_jobs"
+    ]
+    assert repositories[
+        "aicrm_next/platform/platform_foundation/background_jobs/broadcast_job_write_repository.py"
+    ]["table_writes"] == [
+        "broadcast_job_events",
+        "broadcast_jobs",
+        "outbound_tasks",
+    ]
+    assert "broadcast_jobs" not in repositories[
+        "aicrm_next/extensions/growth/cloud_orchestrator/repository.py"
+    ]["table_writes"]
+    for table in (
+        "cloud_broadcast_plan_recipient_messages",
+        "cloud_broadcast_plan_recipients",
+    ):
+        assert manifest["tables"][table]["write_owner"] == "aicrm_next.extensions.growth.cloud_orchestrator"
+        assert manifest["tables"][table]["write_owners"] == [
+            "aicrm_next.extensions.growth.cloud_orchestrator"
+        ]
+        assert table not in repositories[
+            "aicrm_next/automation/background_jobs/broadcast_effect_repository.py"
+        ]["table_writes"]
+        assert table not in repositories[
+            "aicrm_next/extensions/growth/cloud_orchestrator/repository.py"
+        ]["table_writes"]
+    assert repositories[
+        "aicrm_next/platform/platform_foundation/background_jobs/"
+        "cloud_broadcast_projection_write_repository.py"
+    ]["table_writes"] == [
+        "cloud_broadcast_plan_recipient_messages",
+        "cloud_broadcast_plan_recipients",
+    ]
+    assert manifest["tables"]["wechat_pay_orders"]["write_owner"] == (
+        "aicrm_next.extensions.commerce.commerce.wechat_pay_service"
+    )
+    assert manifest["tables"]["wechat_pay_orders"]["write_owners"] == [
+        "aicrm_next.extensions.commerce.commerce.wechat_pay_service"
+    ]
+    assert repositories[
+        "aicrm_next/extensions/commerce/commerce/wechat_pay_order_write_repository.py"
+    ]["table_writes"] == ["wechat_pay_orders"]
+    assert "wechat_pay_orders" not in repositories[
+        "aicrm_next/extensions/commerce/commerce/coupons/repo.py"
+    ]["table_writes"]
+    assert manifest["tables"]["contact_tags"]["write_owners"] == ["aicrm_next.crm.customer_tags"]
+    for path in (
+        "aicrm_next/extensions/ai/ai_audience_ops/repository.py",
+        "aicrm_next/channels/channel_entry/repo.py",
+        "aicrm_next/extensions/archive/message_archive/repo.py",
+        "aicrm_next/extensions/forms/questionnaire/repo.py",
+    ):
+        assert "crm_user_identity_resolution_queue" not in repositories[path]["table_writes"]
+
+
+def test_identity_resolution_queue_write_sql_is_confined_to_logical_owner() -> None:
+    offenders: list[str] = []
+
+    for path in sorted((ROOT / "aicrm_next").rglob("*.py")):
+        access = extract_repository_sql_access(path)
+        if "crm_user_identity_resolution_queue" not in access.table_writes:
+            continue
+        relative_path = path.relative_to(ROOT).as_posix()
+        if relative_path.startswith("aicrm_next/crm/identity_contact/"):
+            continue
+        if relative_path == "aicrm_next/channels/channel_entry/identity_bridge_repo.py":
+            continue
+        offenders.append(relative_path)
+
+    assert offenders == []
+
+
+def test_canonical_identity_table_sql_writes_resolve_to_identity_contact_owner() -> None:
+    registry = yaml.safe_load(REGISTRY_PATH.read_text(encoding="utf-8"))["repositories"]
+    canonical_tables = {"crm_user_identity", "crm_user_identity_conflicts"}
+    offenders: list[str] = []
+
+    for path in sorted((ROOT / "aicrm_next").rglob("*.py")):
+        access = extract_repository_sql_access(path)
+        if not canonical_tables.intersection(access.table_writes):
+            continue
+        relative_path = path.relative_to(ROOT).as_posix()
+        if relative_path.startswith("aicrm_next/crm/identity_contact/"):
+            continue
+        owner = str((registry.get(relative_path) or {}).get("capability_owner") or "")
+        if owner != "aicrm_next.crm.identity_contact":
+            offenders.append(f"{relative_path}:{owner or 'undeclared'}")
+
+    assert offenders == []
+
+
+def test_external_contact_event_log_write_sql_is_confined_to_identity_contact() -> None:
+    offenders: list[str] = []
+
+    for path in sorted((ROOT / "aicrm_next").rglob("*.py")):
+        access = extract_repository_sql_access(path)
+        if "wecom_external_contact_event_logs" not in access.table_writes:
+            continue
+        relative_path = path.relative_to(ROOT).as_posix()
+        if not relative_path.startswith("aicrm_next/crm/identity_contact/"):
+            offenders.append(relative_path)
+
+    assert offenders == []
+
+
+def test_contact_tag_write_sql_is_confined_to_customer_tags() -> None:
+    offenders: list[str] = []
+
+    for path in sorted((ROOT / "aicrm_next").rglob("*.py")):
+        access = extract_repository_sql_access(path)
+        if "contact_tags" not in access.table_writes:
+            continue
+        relative_path = path.relative_to(ROOT).as_posix()
+        if not relative_path.startswith("aicrm_next/crm/customer_tags/"):
+            offenders.append(relative_path)
+
+    assert offenders == []
 
 
 def test_admin_read_count_allowlist_excludes_retired_tables() -> None:

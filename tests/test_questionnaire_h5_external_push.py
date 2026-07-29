@@ -4,12 +4,13 @@ import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.external_effects import ExternalEffectService, WEBHOOK_QUESTIONNAIRE_SUBMISSION_PUSH
-from aicrm_next.platform_foundation.external_effects.repo import reset_external_effect_fixture_state
-from aicrm_next.platform_foundation.internal_events import QUESTIONNAIRE_SUBMITTED_EVENT_TYPE
-from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
-from aicrm_next.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
-from aicrm_next.questionnaire.repo import build_questionnaire_repository
+from aicrm_next.platform.platform_foundation.external_effects import ExternalEffectService, WEBHOOK_QUESTIONNAIRE_SUBMISSION_PUSH
+from aicrm_next.platform.platform_foundation.external_effects.repo import reset_external_effect_fixture_state
+from aicrm_next.platform.platform_foundation.internal_events import QUESTIONNAIRE_SUBMITTED_EVENT_TYPE
+from aicrm_next.platform.platform_foundation.internal_events.worker import InternalEventWorker
+from aicrm_next.extensions.forms.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
+from aicrm_next.extensions.forms.questionnaire.repo import build_questionnaire_repository
+from wechat_identity_test_support import authorize_wechat_client
 
 
 @pytest.fixture()
@@ -20,7 +21,9 @@ def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
     monkeypatch.delenv("AICRM_NEXT_ENABLE_LEGACY_PRODUCTION_FACADE", raising=False)
     monkeypatch.setenv("AICRM_INTERNAL_EVENTS_ENABLED", "1")
     monkeypatch.setenv("AICRM_INTERNAL_EVENTS_AUTO_EXECUTE", "1")
-    return TestClient(create_app())
+    client = TestClient(create_app())
+    authorize_wechat_client(client, {"openid": "openid_001", "unionid": "unionid_001", "external_userid": "wx_ext_001"})
+    return client
 
 
 def test_h5_submit_executes_configured_questionnaire_external_push(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:

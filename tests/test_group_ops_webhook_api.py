@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.platform_foundation.external_effects import ExternalEffectService, WECOM_MESSAGE_GROUP_SEND
+from aicrm_next.platform.platform_foundation.external_effects import ExternalEffectService, WECOM_MESSAGE_GROUP_SEND
 from tests.group_ops_test_helpers import error_code, group_ops_api_client
 
 

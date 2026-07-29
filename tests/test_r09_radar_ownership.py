@@ -18,14 +18,14 @@ def test_radar_click_events_has_one_declared_write_owner_and_explicit_pii_lifecy
     writers = [path for path, declaration in repositories.items() if "radar_click_events" in list(declaration.get("table_writes") or [])]
 
     assert lifecycle["lifecycle"] == "event"
-    assert lifecycle["write_owner"] == "aicrm_next.radar_links"
+    assert lifecycle["write_owner"] == "aicrm_next.extensions.radar.radar_links"
     assert lifecycle["pii_level"] == "direct_contact"
     assert "foreign-key cascade" in lifecycle["retention_policy"]
-    assert writers == ["aicrm_next/radar_links/repo.py"]
+    assert writers == ["aicrm_next/extensions/radar/radar_links/repo.py"]
 
     identity_lifecycle = _yaml("docs/architecture/data_table_lifecycle_manifest.yml")["tables"]["crm_user_identity"]
-    radar_repository = repositories["aicrm_next/radar_links/repo.py"]
-    assert "aicrm_next.radar_links" in identity_lifecycle["read_owners"]
+    radar_repository = repositories["aicrm_next/extensions/radar/radar_links/repo.py"]
+    assert "aicrm_next.extensions.radar.radar_links" in identity_lifecycle["read_owners"]
     assert "crm_user_identity" in radar_repository["table_reads"]
 
 
@@ -46,9 +46,9 @@ def test_radar_click_events_has_an_alembic_create_and_upgrade_path() -> None:
 
 
 def test_radar_public_source_does_not_read_plain_identity_query_or_cookies() -> None:
-    api = (ROOT / "aicrm_next/radar_links/api.py").read_text(encoding="utf-8")
-    application = (ROOT / "aicrm_next/radar_links/application.py").read_text(encoding="utf-8")
-    domain = (ROOT / "aicrm_next/radar_links/domain.py").read_text(encoding="utf-8")
+    api = (ROOT / "aicrm_next/extensions/radar/radar_links/api.py").read_text(encoding="utf-8")
+    application = (ROOT / "aicrm_next/extensions/radar/radar_links/application.py").read_text(encoding="utf-8")
+    domain = (ROOT / "aicrm_next/extensions/radar/radar_links/domain.py").read_text(encoding="utf-8")
 
     for marker in (
         'request.query_params.get("openid")',

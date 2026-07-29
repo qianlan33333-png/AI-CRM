@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from aicrm_next.ops_enrollment.effect_enqueue import UserOpsExternalEffectEnqueueGateway
-from aicrm_next.platform_foundation.external_effects import ExternalEffectService, WECOM_MESSAGE_PRIVATE_SEND, reset_external_effect_fixture_state
+from aicrm_next.automation.ops_enrollment.effect_enqueue import UserOpsExternalEffectEnqueueGateway
+from aicrm_next.platform.platform_foundation.external_effects import ExternalEffectService, WECOM_MESSAGE_PRIVATE_SEND, reset_external_effect_fixture_state
 
 
 def test_user_ops_external_effect_gateway_creates_single_target_private_message_job() -> None:

@@ -6,19 +6,19 @@ from typing import Any
 
 import pytest
 
-from aicrm_next.automation_engine.group_ops.action_dispatcher import (
+from aicrm_next.automation.automation_engine.group_ops.action_dispatcher import (
     GroupOpsActionDispatcher,
     NextOutboundMessageQueueGateway,
 )
-from aicrm_next.automation_engine.group_ops.external_effects import (
+from aicrm_next.automation.automation_engine.group_ops.external_effects import (
     group_ops_effect_action_type,
     plan_group_ops_action_effect,
     plan_group_ops_external_effect,
 )
-from aicrm_next.automation_engine.group_ops.scheduler import run_group_ops_due_scheduler
-from aicrm_next.background_jobs.automation_ops_scheduler import run_automation_ops_scheduler
-from aicrm_next.identity_contact.dto import IdentityResolution, IdentityResolveResult
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.automation.automation_engine.group_ops.scheduler import run_group_ops_due_scheduler
+from aicrm_next.automation.background_jobs.automation_ops_scheduler import run_automation_ops_scheduler
+from aicrm_next.crm.identity_contact.dto import IdentityResolution, IdentityResolveResult
+from aicrm_next.platform.platform_foundation.external_effects import (
     GROUP_OPS_WEBHOOK_ACTION_LOOPBACK,
     WECOM_MESSAGE_GROUP_SEND,
 )
@@ -99,7 +99,7 @@ def test_group_and_webhook_actions_map_to_distinct_effect_types(monkeypatch) -> 
         return {"id": len(calls), "created_on_plan": True}
 
     monkeypatch.setattr(
-        "aicrm_next.automation_engine.group_ops.external_effects.plan_group_ops_external_effect",
+        "aicrm_next.automation.automation_engine.group_ops.external_effects.plan_group_ops_external_effect",
         fake_plan,
     )
 
@@ -156,7 +156,7 @@ def test_external_effect_planner_failure_is_not_swallowed(monkeypatch) -> None:
         raise RuntimeError("postgres planning unavailable")
 
     monkeypatch.setattr(
-        "aicrm_next.automation_engine.group_ops.external_effects.ExternalEffectService.plan_effect",
+        "aicrm_next.automation.automation_engine.group_ops.external_effects.ExternalEffectService.plan_effect",
         fail_plan,
     )
 
@@ -173,15 +173,16 @@ def test_external_effect_planner_failure_is_not_swallowed(monkeypatch) -> None:
 
 
 def test_scheduler_planner_failure_produces_non_success_summary(monkeypatch) -> None:
-    def fail_plan(**_kwargs):
-        raise RuntimeError("planner transaction failed")
+    class FailingGraphRepository:
+        def plan(self, _request):
+            raise RuntimeError("planner transaction failed")
 
     monkeypatch.setattr(
-        "aicrm_next.automation_engine.group_ops.scheduler.plan_group_ops_external_effect",
-        fail_plan,
+        "aicrm_next.automation.automation_engine.group_ops.scheduler.build_group_ops_effect_graph_repository",
+        lambda: FailingGraphRepository(),
     )
     monkeypatch.setattr(
-        "aicrm_next.automation_engine.group_ops.scheduler.resolve_group_ops_content_package_materials",
+        "aicrm_next.automation.automation_engine.group_ops.scheduler.resolve_group_ops_content_package_materials",
         lambda _content_package: ([], []),
     )
 
@@ -210,9 +211,9 @@ def test_group_ops_planning_source_has_no_shadow_or_direct_send_modes() -> None:
     source = "\n".join(
         (ROOT / relative).read_text(encoding="utf-8")
         for relative in (
-            "aicrm_next/automation_engine/group_ops/external_effects.py",
-            "aicrm_next/automation_engine/group_ops/action_dispatcher.py",
-            "aicrm_next/automation_engine/group_ops/scheduler.py",
+            "aicrm_next/automation/automation_engine/group_ops/external_effects.py",
+            "aicrm_next/automation/automation_engine/group_ops/action_dispatcher.py",
+            "aicrm_next/automation/automation_engine/group_ops/scheduler.py",
         )
     )
 

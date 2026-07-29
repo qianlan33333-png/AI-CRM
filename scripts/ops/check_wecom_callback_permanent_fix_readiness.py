@@ -9,7 +9,7 @@ import subprocess
 import sys
 from typing import Any
 from urllib.error import HTTPError, URLError
-from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
+from urllib.request import Request, urlopen
 
 try:
     from scripts.ops.check_callback_quick_ack_state import run as run_quick_ack_check
@@ -28,7 +28,6 @@ DEFAULT_NGINX_CONFIG = "/etc/nginx/sites-enabled/youcangogogo.conf"
 DEFAULT_ENV_FILE = "/home/ubuntu/.openclaw-wecom-pg.env"
 DEFAULT_WEB_HEALTH_URL = "http://127.0.0.1:5001/health"
 DEFAULT_INGRESS_HEALTH_URL = "http://127.0.0.1:5002/health"
-DEFAULT_ADMIN_WEBHOOK_INBOX_URL = "http://127.0.0.1:5001/admin/webhook-inbox"
 DEFAULT_ADMIN_WEBHOOK_INBOX_METRICS_URL = "http://127.0.0.1:5001/api/admin/webhook-inbox/metrics?provider=wecom&event_family=external_contact"
 DEFAULT_ADMIN_WEBHOOK_INBOX_ITEMS_URL = "http://127.0.0.1:5001/api/admin/webhook-inbox/items?provider=wecom&event_family=external_contact&status=pending_failed&limit=1"
 DEFAULT_ADMIN_WEBHOOK_INBOX_RECONCILIATION_URL = "http://127.0.0.1:5001/api/admin/wecom/callback/reconciliation?limit=1"
@@ -80,29 +79,6 @@ def probe_health(url: str, timeout_seconds: float) -> dict[str, Any]:
     except HTTPError as exc:
         body = exc.read(4096).decode("utf-8", errors="replace")
         return {"checked": True, "ok": False, "status_code": int(exc.code), "body": body, "error": ""}
-    except (OSError, URLError) as exc:
-        return {"checked": False, "ok": False, "status_code": None, "body": "", "error": str(exc)}
-
-
-class _NoRedirect(HTTPRedirectHandler):
-    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
-        return None
-
-
-def probe_admin_page(url: str, timeout_seconds: float) -> dict[str, Any]:
-    request = Request(url, headers={"User-Agent": "aicrm-wecom-callback-readiness-check/1.0"}, method="GET")
-    opener = build_opener(_NoRedirect)
-    try:
-        with opener.open(request, timeout=timeout_seconds) as response:
-            body = response.read(4096).decode("utf-8", errors="replace")
-            status_code = int(response.status)
-            ok = 200 <= status_code < 400 or status_code in (401, 403)
-            return {"checked": True, "ok": ok, "status_code": status_code, "body": body, "error": ""}
-    except HTTPError as exc:
-        body = exc.read(4096).decode("utf-8", errors="replace")
-        status_code = int(exc.code)
-        ok = 300 <= status_code < 400 or status_code in (401, 403)
-        return {"checked": True, "ok": ok, "status_code": status_code, "body": body, "error": ""}
     except (OSError, URLError) as exc:
         return {"checked": False, "ok": False, "status_code": None, "body": "", "error": str(exc)}
 
@@ -746,7 +722,7 @@ def read_public_state_evidence(path: str) -> dict[str, Any]:
         "ok": payload.get("ok") is True,
         "permanent_fix_public_signals_ready": payload.get("permanent_fix_public_signals_ready") is True,
         "user_facing_available": payload.get("user_facing_available") is True,
-        "admin_webhook_inbox_deployed": payload.get("admin_webhook_inbox_deployed") is True,
+        "admin_webhook_inbox_api_deployed": payload.get("admin_webhook_inbox_api_deployed") is True,
         "admin_webhook_inbox_detail_route_deployed": payload.get("admin_webhook_inbox_detail_route_deployed") is True,
         "invalid_callback_plain_success": payload.get("invalid_callback_plain_success") is False,
         "app_level_callback_signal": payload.get("app_level_callback_signal") is True,
@@ -804,7 +780,6 @@ def read_deploy_smoke_evidence(path: str) -> dict[str, Any]:
         "web_health_ok": payload.get("web_health_ok") is True,
         "ingress_health_ok": payload.get("ingress_health_ok") is True,
         "ingress_durable_ack_ready": payload.get("ingress_durable_ack_ready") is True,
-        "admin_page_deployed": payload.get("admin_page_deployed") is True,
         "admin_api_deployed": payload.get("admin_api_deployed") is True,
         "admin_detail_route_deployed": payload.get("admin_detail_route_deployed") is True,
         "dual_ingress_callback_route_signal": dual_ingress_callback_route_signal,
@@ -829,7 +804,6 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--env-file", default=DEFAULT_ENV_FILE)
     parser.add_argument("--web-health-url", default=DEFAULT_WEB_HEALTH_URL)
     parser.add_argument("--ingress-health-url", default=DEFAULT_INGRESS_HEALTH_URL)
-    parser.add_argument("--admin-webhook-inbox-url", default=DEFAULT_ADMIN_WEBHOOK_INBOX_URL)
     parser.add_argument("--admin-webhook-inbox-metrics-url", default=DEFAULT_ADMIN_WEBHOOK_INBOX_METRICS_URL)
     parser.add_argument("--admin-webhook-inbox-items-url", default=DEFAULT_ADMIN_WEBHOOK_INBOX_ITEMS_URL)
     parser.add_argument("--admin-webhook-inbox-reconciliation-url", default=DEFAULT_ADMIN_WEBHOOK_INBOX_RECONCILIATION_URL)
@@ -878,7 +852,6 @@ def run(argv: list[str] | None = None) -> dict[str, Any]:
     )
     web_health = probe_health(str(args.web_health_url), float(args.probe_timeout))
     ingress_health = probe_health(str(args.ingress_health_url), float(args.probe_timeout))
-    admin_webhook_inbox = probe_admin_page(str(args.admin_webhook_inbox_url), float(args.probe_timeout))
     admin_webhook_inbox_metrics = probe_json_ok(
         str(args.admin_webhook_inbox_metrics_url),
         float(args.probe_timeout),
@@ -942,14 +915,12 @@ def run(argv: list[str] | None = None) -> dict[str, Any]:
     rollback_ok = rollback_evidence.get("ok") is True
     public_state_ok = public_state_evidence.get("ok") is True
     deploy_smoke_ok = deploy_smoke_evidence.get("ok") is True
-    admin_webhook_inbox_ok = admin_webhook_inbox.get("ok") is True
     admin_webhook_inbox_metrics_ok = admin_webhook_inbox_metrics.get("ok") is True
     admin_webhook_inbox_items_ok = admin_webhook_inbox_items.get("ok") is True
     admin_webhook_inbox_reconciliation_ok = admin_webhook_inbox_reconciliation.get("ok") is True
     cutover_ready = bool(
         web_health.get("ok")
         and ingress_health.get("ok")
-        and admin_webhook_inbox_ok
         and admin_webhook_inbox_metrics_ok
         and admin_webhook_inbox_items_ok
         and admin_webhook_inbox_reconciliation_ok
@@ -984,8 +955,6 @@ def run(argv: list[str] | None = None) -> dict[str, Any]:
         warnings.append("5001 web health is not healthy")
     if not ingress_health.get("ok"):
         warnings.append("5002 ingress health is not healthy")
-    if not admin_webhook_inbox_ok:
-        warnings.append(f"admin webhook inbox page is not available: {admin_webhook_inbox.get('error') or admin_webhook_inbox.get('status_code')}")
     if not admin_webhook_inbox_metrics_ok:
         warnings.append(f"admin webhook inbox metrics API is not available: {admin_webhook_inbox_metrics.get('error') or admin_webhook_inbox_metrics.get('status_code')}")
     if not admin_webhook_inbox_items_ok:
@@ -1049,7 +1018,6 @@ def run(argv: list[str] | None = None) -> dict[str, Any]:
         "env_file_loaded": env_loaded,
         "web_health": web_health,
         "ingress_health": ingress_health,
-        "admin_webhook_inbox": admin_webhook_inbox,
         "admin_webhook_inbox_metrics": admin_webhook_inbox_metrics,
         "admin_webhook_inbox_items": admin_webhook_inbox_items,
         "admin_webhook_inbox_reconciliation": admin_webhook_inbox_reconciliation,

@@ -11,38 +11,43 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from aicrm_next.shared.sensitive_data import redact_sensitive_data, redact_sensitive_text  # noqa: E402
+from aicrm_next.platform.shared.sensitive_data import redact_sensitive_data, redact_sensitive_text  # noqa: E402
 
 
 SOURCE_ROOT = ROOT / "aicrm_next"
-RESOLVER = Path("aicrm_next/identity_contact/resolver.py")
+RESOLVER = Path("aicrm_next/crm/identity_contact/resolver.py")
+CHANNEL_CRM_PORT = Path("aicrm_next/channels/channel_entry/crm_port.py")
+CHANNEL_CRM_COMPOSITION = Path("aicrm_next/channel_entry_composition.py")
 
 HIGH_RISK_ALIAS_CONSUMERS = (
-    Path("aicrm_next/ai_assist/external_campaigns_repo.py"),
-    Path("aicrm_next/ai_audience_ops/repository.py"),
-    Path("aicrm_next/automation_agents/repository.py"),
-    Path("aicrm_next/automation_engine/group_ops/action_dispatcher.py"),
-    Path("aicrm_next/channel_entry/identity_bridge_repo.py"),
-    Path("aicrm_next/channel_entry/repo.py"),
-    Path("aicrm_next/cloud_orchestrator/repository.py"),
-    Path("aicrm_next/customer_read_model/repo.py"),
-    Path("aicrm_next/customer_read_model/sidebar_v2.py"),
-    Path("aicrm_next/customer_tags/local_projection.py"),
-    Path("aicrm_next/hxc_dashboard/postgres_repo.py"),
-    Path("aicrm_next/message_archive/repo.py"),
-    Path("aicrm_next/public_product/h5_wechat_pay.py"),
-    Path("aicrm_next/send_targets/repo.py"),
-    Path("aicrm_next/service_period/repo.py"),
-    Path("aicrm_next/sidebar_write/repo.py"),
+    Path("aicrm_next/extensions/ai/ai_assist/external_campaigns_repo.py"),
+    Path("aicrm_next/extensions/ai/ai_audience_ops/repository.py"),
+    Path("aicrm_next/extensions/ai/automation_agents/repository.py"),
+    Path("aicrm_next/automation/automation_engine/group_ops/action_dispatcher.py"),
+    Path("aicrm_next/channels/channel_entry/identity_bridge_repo.py"),
+    Path("aicrm_next/channels/channel_entry/repo.py"),
+    Path("aicrm_next/extensions/growth/cloud_orchestrator/repository.py"),
+    Path("aicrm_next/crm/customer_read_model/repo.py"),
+    Path("aicrm_next/crm/customer_read_model/sidebar_v2.py"),
+    Path("aicrm_next/crm/customer_tags/local_projection.py"),
+    Path("aicrm_next/extensions/hxc/hxc_dashboard/postgres_repo.py"),
+    Path("aicrm_next/extensions/archive/message_archive/repo.py"),
+    Path("aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py"),
+    Path("aicrm_next/extensions/commerce/service_period/repo.py"),
+    Path("aicrm_next/crm/sidebar_write/repo.py"),
 )
 
+CHANNEL_CRM_PORT_CONSUMERS = {
+    Path("aicrm_next/channels/channel_entry/identity_bridge_repo.py"),
+    Path("aicrm_next/channels/channel_entry/repo.py"),
+}
+
 CANONICAL_WRITE_OWNERS = {
-    Path("aicrm_next/channel_entry/identity_bridge_repo.py"),
-    Path("aicrm_next/identity_contact/oauth_projection_repo.py"),
-    Path("aicrm_next/identity_contact/payment_projection.py"),
-    Path("aicrm_next/identity_contact/repo.py"),
-    Path("aicrm_next/public_product/h5_wechat_pay.py"),
-    Path("aicrm_next/sidebar_write/repo.py"),
+    Path("aicrm_next/channels/channel_entry/identity_bridge_repo.py"),
+    Path("aicrm_next/crm/identity_contact/oauth_projection_repo.py"),
+    Path("aicrm_next/crm/identity_contact/payment_projection.py"),
+    Path("aicrm_next/crm/identity_contact/repo.py"),
+    Path("aicrm_next/crm/identity_contact/write_repository.py"),
 }
 
 RAW_ALIAS_SQL = (
@@ -96,6 +101,24 @@ def check() -> list[str]:
     if "LIMIT 1" in resolver_source:
         errors.append("central resolver must collect all canonical candidates; LIMIT 1 is forbidden")
 
+    channel_crm_port_source = _read(CHANNEL_CRM_PORT)
+    channel_crm_composition_source = _read(CHANNEL_CRM_COMPOSITION)
+    for required in (
+        "class ResolvePersonIdentityRequest(BaseModel)",
+        "def resolve_identity_with_dbapi(",
+        "_dependencies().resolve_identity_with_dbapi(",
+        'raise RuntimeError("channel_crm_port_not_configured")',
+    ):
+        if required not in channel_crm_port_source:
+            errors.append(f"channel CRM resolver port missing token: {required}")
+    for required in (
+        "resolve_external_userid_with_dbapi, resolve_identity_with_dbapi",
+        "ChannelCrmDependencies(",
+        "configure_channel_crm_port(",
+    ):
+        if required not in channel_crm_composition_source:
+            errors.append(f"channel CRM resolver composition missing token: {required}")
+
     private_resolver_pattern = re.compile(r"^\s*def\s+_resolve_unionids?", re.MULTILINE)
     for source_path in SOURCE_ROOT.rglob("*.py"):
         relative = source_path.relative_to(ROOT)
@@ -105,7 +128,13 @@ def check() -> list[str]:
 
     for relative in HIGH_RISK_ALIAS_CONSUMERS:
         source = _read(relative)
-        if "identity_contact.resolver" not in source and relative != Path("aicrm_next/hxc_dashboard/postgres_repo.py"):
+        imports_central_resolver = "identity_contact.resolver" in source
+        imports_channel_crm_port = relative in CHANNEL_CRM_PORT_CONSUMERS and "from .crm_port import" in source
+        if (
+            not imports_central_resolver
+            and not imports_channel_crm_port
+            and relative != Path("aicrm_next/extensions/hxc/hxc_dashboard/postgres_repo.py")
+        ):
             errors.append(f"high-risk identity consumer does not import central resolver: {relative}")
         for pattern in RAW_ALIAS_SQL:
             if pattern.search(source):
@@ -117,28 +146,25 @@ def check() -> list[str]:
     if unexpected_writers:
         errors.append("unexpected crm_user_identity write owners: " + ", ".join(map(str, unexpected_writers)))
 
-    postgres_binding_source = _read(Path("aicrm_next/identity_contact/repo.py")).split("class PostgresIdentityBindingRepository:", 1)[1]
+    postgres_binding_source = _read(Path("aicrm_next/crm/identity_contact/repo.py")).split("class PostgresIdentityBindingRepository:", 1)[1]
     for forbidden in ("INSERT INTO people", "UPDATE people", "INSERT INTO external_contact_bindings", "UPDATE external_contact_bindings"):
         if forbidden in postgres_binding_source:
             errors.append(f"production identity binding still writes legacy canonical path: {forbidden}")
 
-    consumer_path = Path("aicrm_next/service_period/payment_consumer.py")
+    consumer_path = Path("aicrm_next/extensions/commerce/service_period/payment_consumer.py")
     for line in _missing_unionid_succeeded_branches(consumer_path):
         errors.append(f"missing_unionid branch returns succeeded: {consumer_path}:{line}")
     consumer_source = _read(consumer_path)
     if 'status="failed_retryable"' not in consumer_source or 'error_code="missing_unionid"' not in consumer_source:
         errors.append("service period missing_unionid must be failed_retryable with an explicit error code")
 
-    questionnaire_h5 = _read(Path("aicrm_next/questionnaire/h5_write.py"))
-    questionnaire_waiting_tokens = (
-        "identity_ready = bool(unionid and external_userid and follow_user_userid)",
-        '"identity_pending_unionid"',
-        '"identity_pending_wecom"',
-        '"identity_pending": not identity_ready',
-    )
-    if any(token not in questionnaire_h5 for token in questionnaire_waiting_tokens):
+    questionnaire_h5 = _read(Path("aicrm_next/extensions/forms/questionnaire/h5_write.py"))
+    if (
+        '"error_code": "identity_pending_unionid" if not unionid else ""' not in questionnaire_h5
+        or '"identity_pending": not bool(unionid and external_userid and follow_user_userid)' not in questionnaire_h5
+    ):
         errors.append("questionnaire H5 must expose unresolved canonical identity as queued continuation state")
-    questionnaire_consumer = _read(Path("aicrm_next/questionnaire/event_consumers.py"))
+    questionnaire_consumer = _read(Path("aicrm_next/extensions/forms/questionnaire/event_consumers.py"))
     if (
         'if not _text(submission.get("unionid"))' not in questionnaire_consumer
         or 'status="failed_retryable"' not in questionnaire_consumer
@@ -152,7 +178,7 @@ def check() -> list[str]:
     ):
         errors.append("questionnaire tag consumer must require canonical unionid before planning an effect")
 
-    payment_source = _read(Path("aicrm_next/public_product/h5_wechat_pay.py"))
+    payment_source = _read(Path("aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py"))
     payment_resolver_source = payment_source.split("def _resolve_payment_identity(", 1)[1].split("\ndef _paid_order_for_product_identity(", 1)[0]
     if "external_userid" in payment_resolver_source or "mobile=" in payment_resolver_source:
         errors.append("payment identity resolver must not mix sidebar customer context into payer identity")
@@ -175,7 +201,7 @@ def check() -> list[str]:
             "payment identity resolution must happen before order insert, and the local order must exist before WeChat Pay call"
         )
 
-    bridge_service = _read(Path("aicrm_next/channel_entry/identity_bridge_service.py"))
+    bridge_service = _read(Path("aicrm_next/channels/channel_entry/identity_bridge_service.py"))
     if "corp_id_mismatch" not in bridge_service or "_single_corp_id" not in bridge_service:
         errors.append("identity bridge must reject request corp overrides before side effects")
     return errors

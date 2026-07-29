@@ -41,8 +41,8 @@ def test_sidebar_readonly_inventory_documents_readonly_and_out_of_scope_routes()
 
 
 def test_sidebar_readonly_inventory_matches_source_route_surface() -> None:
-    source = (ROOT / "aicrm_next/customer_read_model/api.py").read_text(encoding="utf-8")
-    identity_source = (ROOT / "aicrm_next/identity_contact/api.py").read_text(encoding="utf-8")
+    source = (ROOT / "aicrm_next/crm/customer_read_model/api.py").read_text(encoding="utf-8")
+    identity_source = (ROOT / "aicrm_next/crm/identity_contact/api.py").read_text(encoding="utf-8")
     inventory = INVENTORY.read_text(encoding="utf-8")
 
     for route in READONLY_ROUTES:

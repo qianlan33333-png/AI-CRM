@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.ai_audience_ops.e2e_runner import (
+from aicrm_next.extensions.ai.ai_audience_ops.e2e_runner import (
     TEST_EXTERNAL_USERID,
     TEST_SENDER_USERID,
     AudienceRealE2ERunner,
@@ -9,10 +9,10 @@ from aicrm_next.ai_audience_ops.e2e_runner import (
     _skipped_count,
     _webhook_job_guard,
 )
-from aicrm_next.ai_audience_ops.package_spec import parse_markdown_spec_text, validate_spec
-from aicrm_next.ai_audience_ops.test_agent_service import AudienceTestAgentService
-from aicrm_next.platform_foundation.external_effects import WEBHOOK_GENERIC_PUSH, WECOM_MESSAGE_PRIVATE_SEND
-from aicrm_next.platform_foundation.external_effects.models import ExternalEffectJob
+from aicrm_next.extensions.ai.ai_audience_ops.package_spec import parse_markdown_spec_text, validate_spec
+from aicrm_next.extensions.ai.ai_audience_ops.test_agent_service import AudienceTestAgentService
+from aicrm_next.platform.platform_foundation.external_effects import WEBHOOK_GENERIC_PUSH, WECOM_MESSAGE_PRIVATE_SEND
+from aicrm_next.platform.platform_foundation.external_effects.models import ExternalEffectJob
 
 
 def test_external_e2e_route_is_removed(next_client, next_pg_schema, monkeypatch) -> None:

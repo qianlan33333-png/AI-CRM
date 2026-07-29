@@ -25,12 +25,12 @@ DEFAULT_BACKUP_PATH_FILE = "/tmp/wecom-callback-cutover-backup-path"
 
 REQUIRED_ASSETS = [
     "migrations/versions/0054_webhook_inbox.py",
-    "aicrm_next/channel_entry/callback_ingress.py",
-    "aicrm_next/channel_entry/ingress_app.py",
-    "aicrm_next/channel_entry/inbox.py",
-    "aicrm_next/platform_foundation/webhook_inbox/models.py",
-    "aicrm_next/platform_foundation/webhook_inbox/repository.py",
-    "aicrm_next/platform_foundation/webhook_inbox/service.py",
+    "aicrm_next/channels/channel_entry/callback_ingress.py",
+    "aicrm_next/channels/channel_entry/ingress_app.py",
+    "aicrm_next/channels/channel_entry/inbox.py",
+    "aicrm_next/platform/platform_foundation/webhook_inbox/models.py",
+    "aicrm_next/platform/platform_foundation/webhook_inbox/repository.py",
+    "aicrm_next/platform/platform_foundation/webhook_inbox/service.py",
     "scripts/run_wecom_callback_ingress.py",
     "scripts/run_wecom_callback_inbox_worker.py",
     "scripts/ops/check_callback_quick_ack_state.py",
@@ -289,7 +289,7 @@ def build_plan(args: argparse.Namespace) -> dict[str, Any]:
         "/tmp/wecom-callback-public-state.json proves public webhook inbox routes are deployed and invalid callback returns app-level 4xx",
         "/tmp/wecom-callback-deploy-smoke.json proves web, ingress, admin API, and detail routes are deployed after cutover",
         "callback pressure probe at 1200/min meets P95/P99 targets and page samples stay non-5xx",
-        "/admin/webhook-inbox shows queue metrics and dead-letter rows are replayable",
+        "webhook inbox JSON APIs expose queue metrics and replayable dead-letter rows",
     ]
     warnings = []
     if missing_assets:

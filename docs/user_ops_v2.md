@@ -213,7 +213,7 @@ is retained in the archived route inventory.
 
 建议先读：
 
-1. [`aicrm_next/frontend_compat/templates/admin_user_ops.html`](aicrm_next/frontend_compat/templates/admin_user_ops.html)
-2. [`aicrm_next/ops_enrollment`](../aicrm_next/ops_enrollment)
+1. [`aicrm_next/app/admin_console/templates/admin_user_ops.html`](aicrm_next/app/admin_console/templates/admin_user_ops.html)
+2. [`aicrm_next/automation/ops_enrollment`](../aicrm_next/automation/ops_enrollment)
 3. [`docs/archive/route_inventory/user_ops_route_inventory.md`](archive/route_inventory/user_ops_route_inventory.md)
 4. [`tests/test_user_ops_api.py`](../tests/test_user_ops_api.py)

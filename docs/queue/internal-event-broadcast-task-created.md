@@ -168,11 +168,11 @@ Diagnostics expose:
 
 Current emit surfaces are the existing broadcast job creation paths:
 
-- `aicrm_next/cloud_orchestrator/application.py`
+- `aicrm_next/extensions/growth/cloud_orchestrator/application.py`
   - `ApproveCloudPlanRecipientCommand.execute`
-- `aicrm_next/automation_engine/group_ops/action_dispatcher.py`
+- `aicrm_next/automation/automation_engine/group_ops/action_dispatcher.py`
   - private message broadcast job enqueue
-- `aicrm_next/integration_gateway/wecom_group_adapter.py`
+- `aicrm_next/channels/integration_gateway/wecom_group_adapter.py`
   - group message broadcast job enqueue
 - AI Audience outbound planner / external_effect_job
   - automation task-plan broadcast job enqueue

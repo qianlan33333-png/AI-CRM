@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from aicrm_next.identity_contact.dto import ResolvePersonIdentityRequest
-from aicrm_next.identity_contact.resolver import DBAPIIdentityResolver, classify_identity_candidates
+from aicrm_next.crm.identity_contact.dto import ResolvePersonIdentityRequest
+from aicrm_next.crm.identity_contact.resolver import DBAPIIdentityResolver, classify_identity_candidates
 
 
 def _candidate(unionid: str, **matches):

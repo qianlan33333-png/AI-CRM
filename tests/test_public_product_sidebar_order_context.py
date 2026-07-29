@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from aicrm_next.public_product.sidebar_order_context import resolve_sidebar_order_context
-from aicrm_next.shared.signed_context import build_sidebar_product_context_token
+from aicrm_next.extensions.commerce.public_product.sidebar_order_context import resolve_sidebar_order_context
+from aicrm_next.platform.shared.signed_context import build_sidebar_product_context_token
 
 
 def _token(monkeypatch) -> str:
@@ -97,7 +97,7 @@ def test_sidebar_order_context_requires_mobile_effective(monkeypatch) -> None:
 
 
 def test_sidebar_order_context_has_no_legacy_imports() -> None:
-    source = Path("aicrm_next/public_product/sidebar_order_context.py").read_text(encoding="utf-8")
+    source = Path("aicrm_next/extensions/commerce/public_product/sidebar_order_context.py").read_text(encoding="utf-8")
     forbidden = ["wecom_" + "ability_service", "current_" + "app", "fl" + "ask", "legacy_" + "flask_facade"]
 
     for marker in forbidden:

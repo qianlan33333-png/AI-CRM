@@ -69,7 +69,7 @@ Diagnostics exposes:
 
 The write path is:
 
-- `aicrm_next/cloud_orchestrator/application.py`
+- `aicrm_next/extensions/growth/cloud_orchestrator/application.py`
 - `ApproveCloudPlanCommand.execute`
 
 The command approves the plan first, then calls `safe_emit`. Internal event

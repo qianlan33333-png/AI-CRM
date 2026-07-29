@@ -44,7 +44,7 @@ def test_messages_inventory_search_references_are_explained() -> None:
                 referenced_files.add(str(path.relative_to(ROOT)))
 
     for required in [
-        "aicrm_next/customer_read_model/api.py",
+        "aicrm_next/crm/customer_read_model/api.py",
         "tests/test_customer_read_model_next_primary.py",
         "tests/test_messages_exact_routes.py",
         "docs/crm_sensitive_routes.md",

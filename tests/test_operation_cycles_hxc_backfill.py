@@ -10,7 +10,7 @@ from types import ModuleType
 
 import pytest
 
-from aicrm_next.operation_cycles.dto import OperationCycleSnapshotV1
+from aicrm_next.extensions.hxc.operation_cycles.dto import OperationCycleSnapshotV1
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -109,7 +109,7 @@ def test_committed_fixture_is_safe_and_preserves_the_known_aggregate_funnel() ->
     assert delivery_reference["data_status"] == "observed"
     assert delivery_reference["source_system"] == "ai_crm_production_readonly"
     assert delivery_reference["source_id"] == "hxc-monday-abcd-20260713-1600-final-848-weekly-cover-v1"
-    assert delivery_reference["href"] == "/admin/broadcast-jobs?source_type=cloud_plan"
+    assert delivery_reference["href"] == ""
     assert len(delivery_reference["evidence_hash"]) == 64
     _assert_safe_snapshot(payload)
 

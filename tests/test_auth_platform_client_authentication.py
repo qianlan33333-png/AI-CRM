@@ -2,7 +2,7 @@ import base64
 
 import pytest
 
-from aicrm_next.platform_foundation.auth_platform.client_authentication import (
+from aicrm_next.platform.platform_foundation.auth_platform.client_authentication import (
     ClientAuthenticationError,
     client_credentials,
     request_source_ip,

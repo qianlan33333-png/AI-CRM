@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from aicrm_next.send_content.dto import (
+from aicrm_next.engagement.send_content.dto import (
     SendContentPackage,
     SendContentPreviewRequest,
     SendContentValidateRequest,
@@ -10,8 +10,8 @@ from aicrm_next.send_content.dto import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-FRONTEND = ROOT / "aicrm_next" / "frontend_compat"
-AUTOMATION = ROOT / "aicrm_next" / "automation_engine"
+FRONTEND = ROOT / "aicrm_next" / "app" / "admin_console"
+AUTOMATION = ROOT / "aicrm_next" / "automation" / "automation_engine"
 STATIC = FRONTEND / "static" / "admin_console"
 TEMPLATES = FRONTEND / "templates" / "admin_console"
 AUTOMATION_STATIC = AUTOMATION / "static" / "admin_console"
@@ -64,7 +64,8 @@ def _surface_source(paths: list[Path]) -> str:
 def test_all_migrated_send_content_surfaces_use_standard_composer() -> None:
     for name, paths in SURFACES.items():
         source = _surface_source(paths)
-        assert "AICRMSendContentComposer.open" in source, name
+        api = "AICRMSendContentComposer.mount" if name == "channel_welcome" else "AICRMSendContentComposer.open"
+        assert api in source, name
 
 
 def test_retired_automation_operation_surface_stays_removed() -> None:
@@ -104,6 +105,7 @@ def test_send_content_package_contract_stays_narrow() -> None:
         "miniprogram_library_ids",
         "attachment_library_ids",
         "group_invite_library_ids",
+        "dynamic_miniprogram_card",
     }
     assert set(SendContentValidateRequest.model_fields) == {"content_package", "text_enabled", "require_body"}
     assert set(SendContentPreviewRequest.model_fields) == {"content_package", "text_enabled", "require_body"}

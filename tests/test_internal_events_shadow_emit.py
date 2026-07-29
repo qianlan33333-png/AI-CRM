@@ -6,20 +6,33 @@ pytestmark = pytest.mark.usefixtures("composed_internal_event_registry")
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.cloud_orchestrator.campaigns_read import reset_campaign_read_fixture_state
-from aicrm_next.cloud_orchestrator.campaigns_write import (
+from aicrm_next.extensions.growth.cloud_orchestrator.campaigns_read import reset_campaign_read_fixture_state
+from aicrm_next.extensions.growth.cloud_orchestrator.campaigns_write import (
     ApproveCloudCampaignCommand,
     CreateCloudCampaignCommand,
     StartCloudCampaignCommand,
     execute_cloud_campaign_command,
     reset_campaign_write_fixture_state,
 )
-from aicrm_next.customer_tags.live_mutation import execute_wecom_tag_mutation, reset_wecom_tag_live_mutation_fixture_state
-from aicrm_next.customer_tags.mutation_commands import PlanWeComTagMarkCommand, PlanWeComTagUnmarkCommand
+from aicrm_next.crm.customer_tags.live_mutation import execute_wecom_tag_mutation, reset_wecom_tag_live_mutation_fixture_state
+from aicrm_next.crm.customer_tags.mutation_commands import PlanWeComTagMarkCommand, PlanWeComTagUnmarkCommand
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.internal_events import InternalEventService, reset_internal_event_fixture_state
-from aicrm_next.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
-from aicrm_next.questionnaire.repo import reset_questionnaire_fixture_state
+from aicrm_next.platform.platform_foundation.internal_events import InternalEventService, reset_internal_event_fixture_state
+from aicrm_next.extensions.forms.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
+from aicrm_next.extensions.forms.questionnaire.repo import reset_questionnaire_fixture_state
+from tests.wechat_identity_test_support import authorize_wechat_client
+
+
+QUESTIONNAIRE_CONSUMERS = frozenset({
+    "ai_audience_source_poke_consumer",
+    "automation_questionnaire_consumer",
+    "customer_read_model_dirty_consumer",
+    "customer_timeline_projection_consumer",
+    "customer_summary_consumer",
+    "questionnaire_projection_consumer",
+    "questionnaire_tag_consumer",
+    "questionnaire_webhook_consumer",
+})
 
 
 def _client(monkeypatch) -> TestClient:
@@ -36,6 +49,14 @@ def test_questionnaire_submit_emits_durable_event_without_request_path_side_effe
     monkeypatch.setenv("AICRM_INTERNAL_EVENTS_QUESTIONNAIRE_ENABLED", "1")
     monkeypatch.setenv("AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_TYPES", "questionnaire.submitted")
     client = _client(monkeypatch)
+    authorize_wechat_client(
+        client,
+        {
+            "external_userid": "wm_shadow_questionnaire",
+            "openid": "openid_shadow_questionnaire",
+            "unionid": "unionid_shadow_questionnaire",
+        },
+    )
 
     response = client.post(
         "/api/h5/questionnaires/hxc-activation-v1/submit",
@@ -55,7 +76,7 @@ def test_questionnaire_submit_emits_durable_event_without_request_path_side_effe
     assert body["external_effect_job_id"] is None
     assert body["external_effect_job_status"] == "not_planned"
     assert body["side_effects"]["wecom_tag"]["status"] == "queued"
-    assert body["side_effects"]["wecom_tag"]["error_code"] == "identity_pending_unionid"
+    assert body["side_effects"]["wecom_tag"]["error_code"] == ""
     assert body["side_effects"]["wecom_tag"]["external_effect_job_id"] is None
     assert body["side_effects"]["wecom_tag"]["wecom_api_called"] is False
     assert body["durable_continuation_queued"] is True
@@ -72,17 +93,10 @@ def test_questionnaire_submit_emits_durable_event_without_request_path_side_effe
         "questionnaire_id": 1,
         "slug": "hxc-activation-v1",
         "submission_id": body["submission_id"],
-        "unionid_present": False,
+        "unionid_present": True,
     }
-    assert run_total == 6
-    assert sorted(run.consumer_name for run in runs) == [
-        "ai_audience_source_poke_consumer",
-        "automation_questionnaire_consumer",
-        "customer_summary_consumer",
-        "questionnaire_projection_consumer",
-        "questionnaire_tag_consumer",
-        "questionnaire_webhook_consumer",
-    ]
+    assert run_total == len(QUESTIONNAIRE_CONSUMERS)
+    assert {run.consumer_name for run in runs} == QUESTIONNAIRE_CONSUMERS
 
 
 def test_customer_tag_mark_and_unmark_shadow_emit_internal_events(monkeypatch) -> None:
@@ -198,7 +212,7 @@ def test_shadow_emit_failure_does_not_break_original_tag_write(monkeypatch) -> N
         def emit_event(self, **_kwargs):
             raise RuntimeError("internal event unavailable")
 
-    monkeypatch.setattr("aicrm_next.platform_foundation.internal_events.shadow.InternalEventService", BrokenInternalEventService)
+    monkeypatch.setattr("aicrm_next.platform.platform_foundation.internal_events.shadow.InternalEventService", BrokenInternalEventService)
 
     result = execute_wecom_tag_mutation(
         PlanWeComTagMarkCommand(

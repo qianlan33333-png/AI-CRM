@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-READ_MODEL = ROOT / "aicrm_next" / "cloud_orchestrator" / "campaigns_read.py"
+READ_MODEL = ROOT / "aicrm_next" / "extensions" / "growth" / "cloud_orchestrator" / "campaigns_read.py"
 
 
 def test_cloud_campaign_member_read_model_does_not_join_retired_automation_member() -> None:

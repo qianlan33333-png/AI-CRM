@@ -11,8 +11,8 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.commerce.order_reconciliation import WeChatPayOrderReconciliationWorker
-from aicrm_next.public_product.h5_wechat_pay import _apply_transaction
+from aicrm_next.extensions.commerce.commerce.order_reconciliation import WeChatPayOrderReconciliationWorker
+from aicrm_next.extensions.commerce.public_product.h5_wechat_pay import _apply_transaction
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:

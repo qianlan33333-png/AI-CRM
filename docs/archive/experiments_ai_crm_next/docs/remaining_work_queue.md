@@ -66,7 +66,7 @@ Each task is scoped for a future Codex execution turn. Keep old production servi
 ## 8. Media Library Storage Adapter
 
 - objective: Add storage port and test implementation for image/attachment/miniprogram assets.
-- files likely involved: `aicrm_next/media_library/application.py`, `aicrm_next/media_library/repo.py`, `docs/archive/experiments_ai_crm_next/workspace/tests/test_media_library_contract.py`.
+- files likely involved: `aicrm_next/engagement/media_library/application.py`, `aicrm_next/engagement/media_library/repo.py`, `docs/archive/experiments_ai_crm_next/workspace/tests/test_media_library_contract.py`.
 - acceptance criteria: storage abstraction tests, file size/type checks, no real cloud default; `retired experiment wrapper; see docs/archive/experiments_ai_crm_next/retired_tools.md` remains read-only by default and fake writes stay Next-only.
 - must not do: upload to production cloud storage.
 - suggested validation command: `.venv/bin/python -m pytest docs/archive/experiments_ai_crm_next/workspace/tests/test_media_library_contract.py -q`.
@@ -210,7 +210,7 @@ Each task is scoped for a future Codex execution turn. Keep old production servi
 ## 9. WeCom Media Adapter
 
 - objective: Add a WeCom media upload adapter contract with fake default and sandbox test plan.
-- files likely involved: `aicrm_next/integration_gateway/ports.py`, `aicrm_next/integration_gateway/fake_adapters.py`, `media_library/*`.
+- files likely involved: `aicrm_next/channels/integration_gateway/ports.py`, `aicrm_next/channels/integration_gateway/fake_adapters.py`, `media_library/*`.
 - acceptance criteria: fake adapter remains default; real adapter has config gating and audit.
 - must not do: upload media to real WeCom by default.
 - suggested validation command: `.venv/bin/python -m pytest docs/archive/experiments_ai_crm_next/workspace/tests/test_media_library_contract.py tests/test_architecture_boundaries.py -q`.
@@ -218,7 +218,7 @@ Each task is scoped for a future Codex execution turn. Keep old production servi
 ## 10. OpenClaw Real Webhook Adapter
 
 - objective: Replace fake push preview with a gated real OpenClaw webhook adapter.
-- files likely involved: `aicrm_next/automation_engine/application.py`, `aicrm_next/integration_gateway/ports.py`, `aicrm_next/integration_gateway/fake_adapters.py`.
+- files likely involved: `aicrm_next/automation/automation_engine/application.py`, `aicrm_next/channels/integration_gateway/ports.py`, `aicrm_next/channels/integration_gateway/fake_adapters.py`.
 - acceptance criteria: payload compatibility, auth, retry, failure audit, fake default tests.
 - must not do: send real webhook without explicit config and sandbox.
 - suggested validation command: `.venv/bin/python -m pytest historical removed reference (test_automation_conversion_contract.py) -q`.
@@ -226,7 +226,7 @@ Each task is scoped for a future Codex execution turn. Keep old production servi
 ## 11. Automation Workflow Runtime Phase 2
 
 - objective: Add workflow scheduling/runtime semantics on top of the six-pool state machine.
-- files likely involved: `historical removed reference (workflow.py)`, `aicrm_next/automation_engine/application.py`, `historical removed reference (test_automation_conversion_contract.py)`.
+- files likely involved: `historical removed reference (workflow.py)`, `aicrm_next/automation/automation_engine/application.py`, `historical removed reference (test_automation_conversion_contract.py)`.
 - acceptance criteria: runtime is idempotent, records execution, respects silent/converted/exited pools.
 - must not do: call real WeCom/OpenClaw.
 - suggested validation command: `.venv/bin/python -m pytest historical removed reference (test_automation_conversion_contract.py) -q`.
@@ -250,7 +250,7 @@ Each task is scoped for a future Codex execution turn. Keep old production servi
 ## 14. Observability / Audit / Idempotency Hardening
 
 - objective: Make writes traceable and replay-safe before shadow-write or production use.
-- files likely involved: `aicrm_next/platform_foundation/audit.py`, `aicrm_next/platform_foundation/idempotency.py`, API modules.
+- files likely involved: `aicrm_next/platform/platform_foundation/audit.py`, `aicrm_next/platform/platform_foundation/idempotency.py`, API modules.
 - acceptance criteria: correlation IDs, audit records, idempotency keys, and failure logs are tested.
 - must not do: introduce cross-module hidden writes.
 - suggested validation command: `.venv/bin/python -m pytest tests/test_*contract.py -q`.

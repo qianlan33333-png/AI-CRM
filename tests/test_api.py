@@ -3,8 +3,9 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.questionnaire.repo import reset_questionnaire_fixture_state
+from aicrm_next.extensions.forms.questionnaire.repo import reset_questionnaire_fixture_state
 from tests.sidebar_auth_test_helpers import install_sidebar_auth
+from tests.wechat_identity_test_support import authorize_wechat_client
 
 
 def _client(monkeypatch) -> TestClient:
@@ -32,6 +33,7 @@ def _assert_next_response(response) -> dict:
 
 def test_questionnaire_sidebar_customer_api_contracts_are_next_owned(monkeypatch):
     client = _client(monkeypatch)
+    authorize_wechat_client(client, {"external_userid": "wx_ext_001"})
 
     questionnaire = _assert_next_response(client.get("/api/admin/questionnaires/1"))
     h5 = _assert_next_response(client.get("/api/h5/questionnaires/hxc-activation-v1"))

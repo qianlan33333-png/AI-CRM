@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from aicrm_next.identity_contact.dto import IdentityResolution
-from aicrm_next.questionnaire.application import ListQuestionnaireSubmissionsQuery
-from aicrm_next.questionnaire.h5_write import QuestionnaireH5SubmitCommand, execute_questionnaire_h5_submit
-from aicrm_next.questionnaire.repo import reset_questionnaire_fixture_state
+from aicrm_next.crm.identity_contact.dto import IdentityResolution
+from aicrm_next.extensions.forms.questionnaire.application import ListQuestionnaireSubmissionsQuery
+from aicrm_next.extensions.forms.questionnaire.h5_write import QuestionnaireH5SubmitCommand, execute_questionnaire_h5_submit
+from aicrm_next.extensions.forms.questionnaire.repo import reset_questionnaire_fixture_state
 
 
 def test_questionnaire_submission_identity_is_written_by_next_submit_command():
@@ -48,7 +48,7 @@ def test_questionnaire_submission_persists_identity_map_resolution(monkeypatch):
             )
 
     monkeypatch.setattr(
-        "aicrm_next.questionnaire.h5_write.ResolvePersonIdentityQuery",
+        "aicrm_next.extensions.forms.questionnaire.h5_write.ResolvePersonIdentityQuery",
         FakeResolvePersonIdentityQuery,
     )
 

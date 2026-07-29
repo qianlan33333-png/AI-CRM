@@ -13,13 +13,13 @@
 ### Task 1: Replace database marker calls with a stateless retired contract
 
 **Files:**
-- Create: `aicrm_next/shared/retired_contracts.py`
+- Create: `aicrm_next/platform/shared/retired_contracts.py`
 - Create: `tests/test_retired_runtime_contract.py`
-- Modify: `aicrm_next/admin_jobs/application.py`
-- Modify: `aicrm_next/admin_jobs/notification_settings.py`
+- Modify: `aicrm_next/platform/admin_jobs/application.py`
+- Modify: `aicrm_next/platform/admin_jobs/notification_settings.py`
 - Modify: `aicrm_next/commerce/admin_refunds.py`
 - Modify: `aicrm_next/commerce/external_push_admin.py`
-- Modify: `aicrm_next/external_push/service.py`
+- Modify: `aicrm_next/platform/external_push/service.py`
 - Modify: `aicrm_next/owner_migration/application.py`
 
 **Steps:** Write failing tests for the stable disabled payload and zero legacy-cleanup imports; implement the pure contract; delete all best-effort marker helpers/calls; run caller contract tests.
@@ -27,7 +27,7 @@
 ### Task 2: Delete the runtime module and route surface
 
 **Files:**
-- Delete: `aicrm_next/platform_foundation/legacy_cleanup/`
+- Delete: `aicrm_next/platform/platform_foundation/legacy_cleanup/`
 - Delete: `tests/test_legacy_webhook_cleanup.py`
 - Modify: `aicrm_next/router_registry.py`
 - Modify: `aicrm_next/fixture_reset_registry.py`

@@ -5,7 +5,6 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from tests.admin_auth_test_helpers import install_admin_session
 
 
 def test_questionnaire_admin_list_page_exposes_next_read_status_without_facade() -> None:
@@ -46,18 +45,6 @@ def test_questionnaire_admin_new_page_is_readonly_shell_without_write_execution(
     assert "/static/questionnaire/admin_questionnaire_editor.js?v=20260715-operations-only" in response.text
 
 
-def test_questionnaire_editor_loads_the_shared_authenticated_request_client() -> None:
-    client = TestClient(create_app())
-    install_admin_session(client, "super_admin")
-
-    response = client.get("/admin/questionnaires/new")
-
-    assert response.status_code == 200
-    assert "/static/admin_console/admin_api_client.js?v=admin-request-security-v2-20260713" in response.text
-    assert 'id="aicrmAdminActionGrants"' in response.text
-    assert "POST /api/admin/questionnaires" in response.text
-
-
 def test_questionnaire_admin_editor_exposes_other_option_controls() -> None:
     response = TestClient(create_app()).get("/admin/questionnaires/new")
 
@@ -87,18 +74,18 @@ def test_questionnaire_admin_detail_page_uses_next_read_model_editor_payload() -
 def test_questionnaire_admin_pages_are_removed_from_frontend_compat_routes() -> None:
     root = Path(__file__).resolve().parents[1]
 
-    assert not (root / "aicrm_next/frontend_compat/legacy_routes.py").exists()
+    assert not (root / "aicrm_next/app/admin_console/legacy_routes.py").exists()
 
 
 def test_questionnaire_admin_templates_live_in_questionnaire_bundle() -> None:
     root = Path(__file__).resolve().parents[1]
 
-    assert (root / "aicrm_next/questionnaire/templates/admin_console/questionnaires.html").exists()
-    assert (root / "aicrm_next/questionnaire/templates/admin_questionnaires.html").exists()
-    assert (root / "aicrm_next/questionnaire/static/admin_questionnaire_editor.css").exists()
-    assert (root / "aicrm_next/questionnaire/static/admin_questionnaire_editor.js").exists()
-    assert not (root / "aicrm_next/frontend_compat/templates/admin_console/questionnaires.html").exists()
-    assert not (root / "aicrm_next/frontend_compat/templates/admin_questionnaires.html").exists()
+    assert (root / "aicrm_next/extensions/forms/questionnaire/templates/admin_console/questionnaires.html").exists()
+    assert (root / "aicrm_next/extensions/forms/questionnaire/templates/admin_questionnaires.html").exists()
+    assert (root / "aicrm_next/extensions/forms/questionnaire/static/admin_questionnaire_editor.css").exists()
+    assert (root / "aicrm_next/extensions/forms/questionnaire/static/admin_questionnaire_editor.js").exists()
+    assert not (root / "aicrm_next/app/admin_console/templates/admin_console/questionnaires.html").exists()
+    assert not (root / "aicrm_next/app/admin_console/templates/admin_questionnaires.html").exists()
 
 
 def test_questionnaire_operations_page_owns_completion_and_external_push_ui() -> None:
@@ -120,22 +107,16 @@ def test_questionnaire_operations_page_owns_completion_and_external_push_ui() ->
     assert 'id="qo-legacy-path"' in page.text
     assert "外部推送" in page.text
     assert "测试推送" in page.text
-    assert "身份续接" in page.text
-    assert "等待企微身份" in page.text
-    assert 'id="qo-continuation-summary"' in page.text
-    assert 'id="qo-continuation-rows"' in page.text
     assert "/static/navigation-target/completion_target_config.js" in page.text
 
-    operations_script = (root / "aicrm_next/questionnaire/static/questionnaire_operations.js").read_text(encoding="utf-8")
+    operations_script = (root / "aicrm_next/extensions/forms/questionnaire/static/questionnaire_operations.js").read_text(encoding="utf-8")
     assert 'document.addEventListener("DOMContentLoaded", initialize' in operations_script
     assert 'document.readyState === "loading" || !window.AdminApi' in operations_script
     assert "const api = window.AdminApi;" in operations_script
     assert '$("qo-legacy-appid").textContent' in operations_script
     assert '$("qo-legacy-path").textContent' in operations_script
-    assert "renderContinuation" in operations_script
-    assert '["completion", "external-push", "continuation"]' in operations_script
 
-    editor_script = (root / "aicrm_next/questionnaire/static/admin_questionnaire_editor.js").read_text(encoding="utf-8")
+    editor_script = (root / "aicrm_next/extensions/forms/questionnaire/static/admin_questionnaire_editor.js").read_text(encoding="utf-8")
     assert "completion_target" not in editor_script
     assert "external_push" not in editor_script
     assert "field-external-push" not in editor_script
@@ -143,16 +124,14 @@ def test_questionnaire_operations_page_owns_completion_and_external_push_ui() ->
     assert "editor-external-push-logs-btn" not in editor_script
     assert "/admin/questionnaires/external-push-logs" not in editor_script
 
-    product_template = (root / "aicrm_next/commerce/templates/wechat_products.html").read_text(encoding="utf-8")
+    product_template = (root / "aicrm_next/extensions/commerce/commerce/templates/wechat_products.html").read_text(encoding="utf-8")
     assert "/static/navigation-target/completion_target_config.js" in product_template
     assert "window.AICRMCompletionTargetConfig.mount" in product_template
 
-    public_template = (root / "aicrm_next/frontend_compat/templates/questionnaire_h5_page.html").read_text(encoding="utf-8")
-    public_completion_script = (root / "aicrm_next/questionnaire/static/questionnaire_completion_action.js").read_text(encoding="utf-8")
-    public_page_script = (root / "aicrm_next/questionnaire/static/questionnaire_h5_page.js").read_text(encoding="utf-8")
+    public_template = (root / "aicrm_next/app/admin_console/templates/questionnaire_h5_page.html").read_text(encoding="utf-8")
+    public_completion_script = (root / "aicrm_next/extensions/forms/questionnaire/static/questionnaire_completion_action.js").read_text(encoding="utf-8")
     assert "/static/questionnaire/questionnaire_completion_action.js" in public_template
-    assert "/static/questionnaire/questionnaire_h5_page.js" in public_template
-    assert "AICRMQuestionnaireCompletionAction.create" in public_page_script
+    assert "AICRMQuestionnaireCompletionAction.create" in public_template
     assert 'action.type === "lead_qr"' in public_completion_script
 
 

@@ -11,7 +11,7 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
-from aicrm_next.background_jobs.external_contact_sync import run_external_contact_sync
+from aicrm_next.automation.background_jobs.external_contact_sync import run_external_contact_sync
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:

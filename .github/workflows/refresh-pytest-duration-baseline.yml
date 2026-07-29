@@ -1,0 +1,92 @@
+name: Refresh Pytest Duration Baseline
+
+on:
+  workflow_run:
+    workflows: ["Full Regression"]
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == 'qianlan333/AI-CRM' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      (github.event.workflow_run.event == 'schedule' || github.event.workflow_run.event == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Checkout tested main revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0 (Node 24)
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0 (Node 24)
+        with:
+          python-version: "3.10.5"
+
+      - name: Download all pytest shard evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1 (Node 24)
+        with:
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id }}
+          pattern: full-python-shard-*
+          path: ${{ runner.temp }}/pytest-junit
+          merge-multiple: true
+
+      - name: Build duration baseline from the successful run
+        id: baseline
+        env:
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          junit_args=()
+          while IFS= read -r junit_file; do
+            junit_args+=(--junit-xml "$junit_file")
+          done < <(find "$RUNNER_TEMP/pytest-junit" -type f -name 'python-shard-*.xml' -print | sort)
+          if [ "${#junit_args[@]}" -ne 16 ]; then
+            echo "expected eight JUnit files"
+            exit 1
+          fi
+          python scripts/ci/build_pytest_duration_baseline.py \
+            "${junit_args[@]}" \
+            --source-run-id "$SOURCE_RUN_ID" \
+            --source-sha "$SOURCE_SHA" \
+            --output docs/ci/pytest_duration_baseline.json
+          if git diff --quiet -- docs/ci/pytest_duration_baseline.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open or update baseline draft pull request
+        if: steps.baseline.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          branch="automation/pytest-duration-baseline"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "refs/heads/${branch}:refs/remotes/origin/${branch}" || true
+          git switch -C "$branch"
+          git add docs/ci/pytest_duration_baseline.json
+          git commit -m "ci: refresh pytest duration baseline from run ${SOURCE_RUN_ID}"
+          git push --force-with-lease origin "HEAD:refs/heads/${branch}"
+          existing_pr="$(gh pr list --base main --head "$branch" --state open --json url --jq '.[0].url // ""')"
+          if [ -z "$existing_pr" ]; then
+            existing_pr="$(gh pr create \
+              --base main \
+              --head "$branch" \
+              --draft \
+              --title "ci: 自动刷新 pytest 耗时基线" \
+              --body "由成功的 Full Regression #${SOURCE_RUN_ID} 自动生成。仅更新测试分片耗时数据，不自动合并。")"
+          fi
+          echo "Duration baseline draft PR: $existing_pr" >> "$GITHUB_STEP_SUMMARY"

@@ -22,11 +22,11 @@
 ### Task 2: Invert platform-foundation concrete business dependencies
 
 **Files:**
-- Modify: `aicrm_next/platform_foundation/external_effects/`
-- Modify: `aicrm_next/platform_foundation/internal_events/`
-- Modify: `aicrm_next/platform_foundation/webhook_inbox/`
-- Modify: `aicrm_next/platform_foundation/push_center/`
-- Modify: `aicrm_next/platform_foundation/readiness.py`
+- Modify: `aicrm_next/platform/platform_foundation/external_effects/`
+- Modify: `aicrm_next/platform/platform_foundation/internal_events/`
+- Modify: `aicrm_next/platform/platform_foundation/webhook_inbox/`
+- Modify: `aicrm_next/platform/platform_foundation/push_center/`
+- Modify: `aicrm_next/platform/platform_foundation/readiness.py`
 - Create/modify top-level composition modules under `aicrm_next/*.py`
 - Modify: `aicrm_next/main.py`
 
@@ -35,8 +35,8 @@
 ### Task 3: Invert integration-gateway business dependencies
 
 **Files:**
-- Modify: `aicrm_next/integration_gateway/dispatch.py`
-- Modify: `aicrm_next/integration_gateway/questionnaire_adapters.py`
+- Modify: `aicrm_next/channels/integration_gateway/dispatch.py`
+- Modify: `aicrm_next/channels/integration_gateway/questionnaire_adapters.py`
 - Create/modify top-level customer/identity/questionnaire composition modules
 - Modify relevant contract tests
 
@@ -45,12 +45,12 @@
 ### Task 4: Remove presentation/auth and direct business bidirectional edges
 
 **Files:**
-- Modify: `aicrm_next/admin_auth/`, `aicrm_next/admin_shell/`
+- Modify: `aicrm_next/platform/admin_auth/`, `aicrm_next/admin_shell/`
 - Modify: `aicrm_next/identity_contact/application.py`
 - Modify: `aicrm_next/commerce/external_orders.py`, `order_reconciliation.py`
-- Modify: `aicrm_next/external_push/repo.py`
+- Modify: `aicrm_next/platform/external_push/repo.py`
 - Modify: `aicrm_next/customer_read_model/sidebar_v2.py`
-- Modify: `aicrm_next/media_library/repo.py`
+- Modify: `aicrm_next/engagement/media_library/repo.py`
 - Modify related service-period/public-product route composition
 
 **Steps:** Move action-token/navigation and questionnaire result access to presentation composition; inject customer/identity queries into commerce and identity façades; relocate neutral product-code/material contracts; remove commerce↔customer, commerce↔public, commerce↔external-push and customer↔identity cycles without changing route or SQL behavior.

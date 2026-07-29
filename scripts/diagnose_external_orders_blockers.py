@@ -967,7 +967,7 @@ def _load_readonly_db_evidence(*, order_id: str, database_url: str | None) -> di
 
 def _collect_payment_run_due_gate_config() -> dict[str, Any]:
     try:
-        from aicrm_next.platform_foundation.internal_events.config import (
+        from aicrm_next.platform.platform_foundation.internal_events.config import (
             allowed_consumers,
             allowed_event_consumers,
             allowed_event_types,

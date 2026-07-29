@@ -1,19 +1,46 @@
 from __future__ import annotations
 
-from .commerce.admin_transactions import apply_wechat_refund_result, mark_wechat_refund_request_failed
-from .automation_agents.external_effect_continuation import AUTOMATION_AGENT_AUDIENCE_WEBHOOK_CONTINUATION
-from .automation_agents.internal_webhook_adapter import AutomationAgentRoutingWebhookAdapter
-from .external_push.external_effect_continuation import EXTERNAL_PUSH_DELIVERY_CONTINUATION
-from .integration_gateway import (
+from .deployment_profile import DeploymentProfile
+from .extensions.commerce.commerce.admin_transactions import apply_wechat_refund_result, mark_wechat_refund_request_failed
+from .channels.channel_entry.identity_external_effect import (
+    IDENTITY_EXTERNAL_CONTACT_DETAIL_CONTINUATION,
+    IDENTITY_EXTERNAL_EFFECT_SETTLEMENT_CONTINUATION,
+)
+from .channel_entry_composition import configure_channel_crm_dependencies
+from .channels.channel_entry.welcome_media_effects_repository import (
+    WELCOME_EFFECT_SETTLEMENT_CONTINUATION,
+    WELCOME_MEDIA_DEPENDENCY_CONTINUATION,
+)
+from .extensions.ai.automation_agents.external_effect_continuation import (
+    AUTOMATION_AGENT_AUDIENCE_WEBHOOK_CONTINUATION,
+    AUTOMATION_AGENT_GENERATION_CONTINUATION,
+    AUTOMATION_AGENT_GENERATION_SETTLEMENT_CONTINUATION,
+)
+from .extensions.ai.automation_agents.generation_effect import AutomationAgentGenerationAdapter
+from .automation.automation_engine.group_ops.external_effect_continuation import (
+    GROUP_OPS_EFFECT_SETTLEMENT_CONTINUATION,
+    GROUP_OPS_MEDIA_DEPENDENCY_CONTINUATION,
+)
+from .automation.background_jobs.broadcast_effect_repository import (
+    BROADCAST_EXTERNAL_EFFECT_READ_MODEL_CONTINUATION,
+    BROADCAST_EXTERNAL_EFFECT_SETTLEMENT_CONTINUATION,
+)
+from .extensions.ai.automation_agents.internal_webhook_adapter import AutomationAgentRoutingWebhookAdapter
+from .platform.external_push.external_effect_continuation import (
+    EXTERNAL_PUSH_DELIVERY_CONTINUATION,
+    EXTERNAL_PUSH_DELIVERY_SETTLEMENT_CONTINUATION,
+)
+from .channels.integration_gateway import (
     wechat_pay_client,
     wecom_channel_entry_client,
     wecom_group_adapter,
     wecom_private_adapter,
 )
-from .platform_foundation.external_effects.adapters import (
+from .platform.platform_foundation.external_effects.adapters import (
     ExternalEffectAdapterRegistry,
     WeChatPaymentAdapter,
     WeComContactTagAdapter,
+    WeComExternalContactDetailAdapter,
     WeComGroupMessageExternalEffectAdapter,
     WeComPrivateMessageAdapter,
     WeComProfileUpdateAdapter,
@@ -21,47 +48,185 @@ from .platform_foundation.external_effects.adapters import (
     WebhookAdapter,
 )
 from .wecom_media_jobs import WeComMediaUploadAdapter
-from .platform_foundation.external_effects.continuations import ExternalEffectContinuationRegistry
-from .questionnaire.external_effect_continuation import QUESTIONNAIRE_CONTACT_TAGS_CONTINUATION
+from .platform.platform_foundation.external_effects.continuations import (
+    ExternalEffectContinuationConsumer,
+    ExternalEffectContinuationRegistry,
+    run_external_effect_continuation,
+)
+from .extensions.forms.questionnaire.external_effect_continuation import QUESTIONNAIRE_CONTACT_TAGS_CONTINUATION
 
-
-def build_external_effect_continuation_registry() -> ExternalEffectContinuationRegistry:
-    return ExternalEffectContinuationRegistry(
+IDENTITY_EXTERNAL_EFFECT_CONTINUATION_CONSUMER = "external_effect_identity_continuation_consumer"
+GROUP_OPS_EXTERNAL_EFFECT_CONTINUATION_CONSUMER = "external_effect_group_ops_continuation_consumer"
+WELCOME_MEDIA_EXTERNAL_EFFECT_CONTINUATION_CONSUMER = "external_effect_welcome_media_continuation_consumer"
+BROADCAST_EXTERNAL_EFFECT_CONTINUATION_CONSUMER = "external_effect_broadcast_continuation_consumer"
+QUESTIONNAIRE_EXTERNAL_EFFECT_CONTINUATION_CONSUMER = "external_effect_questionnaire_continuation_consumer"
+EXTERNAL_PUSH_EFFECT_CONTINUATION_CONSUMER = "external_effect_external_push_continuation_consumer"
+AUTOMATION_EXTERNAL_EFFECT_CONTINUATION_CONSUMER = "external_effect_automation_continuation_consumer"
+AUTOMATION_GENERATION_EFFECT_CONTINUATION_CONSUMER = "external_effect_automation_generation_continuation_consumer"
+IDENTITY_EXTERNAL_EFFECT_SETTLEMENT_CONSUMER = "external_effect_identity_settlement_consumer"
+GROUP_OPS_EXTERNAL_EFFECT_SETTLEMENT_CONSUMER = "external_effect_group_ops_settlement_consumer"
+WELCOME_EXTERNAL_EFFECT_SETTLEMENT_CONSUMER = "external_effect_welcome_settlement_consumer"
+BROADCAST_EXTERNAL_EFFECT_SETTLEMENT_CONSUMER = "external_effect_broadcast_settlement_consumer"
+EXTERNAL_PUSH_EFFECT_SETTLEMENT_CONSUMER = "external_effect_external_push_settlement_consumer"
+AUTOMATION_GENERATION_EFFECT_SETTLEMENT_CONSUMER = "external_effect_automation_generation_settlement_consumer"
+EXTERNAL_EFFECT_PROVIDER_RESULT_ACCESS_ALLOWLIST = frozenset(
+    {
         (
+            IDENTITY_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
+            IDENTITY_EXTERNAL_CONTACT_DETAIL_CONTINUATION.name,
+        ),
+        (
+            AUTOMATION_GENERATION_EFFECT_CONTINUATION_CONSUMER,
+            AUTOMATION_AGENT_GENERATION_CONTINUATION.name,
+        ),
+    }
+)
+
+
+def build_external_effect_continuation_consumers() -> tuple[ExternalEffectContinuationConsumer, ...]:
+    configure_channel_crm_dependencies()
+    return (
+        ExternalEffectContinuationConsumer(
+            IDENTITY_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
+            IDENTITY_EXTERNAL_CONTACT_DETAIL_CONTINUATION,
+        ),
+        ExternalEffectContinuationConsumer(
+            GROUP_OPS_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
+            GROUP_OPS_MEDIA_DEPENDENCY_CONTINUATION,
+        ),
+        ExternalEffectContinuationConsumer(
+            WELCOME_MEDIA_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
+            WELCOME_MEDIA_DEPENDENCY_CONTINUATION,
+        ),
+        ExternalEffectContinuationConsumer(
+            BROADCAST_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
+            BROADCAST_EXTERNAL_EFFECT_READ_MODEL_CONTINUATION,
+        ),
+        ExternalEffectContinuationConsumer(
+            QUESTIONNAIRE_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
             QUESTIONNAIRE_CONTACT_TAGS_CONTINUATION,
+        ),
+        ExternalEffectContinuationConsumer(
+            EXTERNAL_PUSH_EFFECT_CONTINUATION_CONSUMER,
             EXTERNAL_PUSH_DELIVERY_CONTINUATION,
+        ),
+        ExternalEffectContinuationConsumer(
+            AUTOMATION_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
             AUTOMATION_AGENT_AUDIENCE_WEBHOOK_CONTINUATION,
-        )
+        ),
+        ExternalEffectContinuationConsumer(
+            AUTOMATION_GENERATION_EFFECT_CONTINUATION_CONSUMER,
+            AUTOMATION_AGENT_GENERATION_CONTINUATION,
+            max_attempts=10,
+        ),
     )
 
 
-def build_external_effect_adapter_registry() -> ExternalEffectAdapterRegistry:
+def build_external_effect_settlement_consumers() -> tuple[ExternalEffectContinuationConsumer, ...]:
+    configure_channel_crm_dependencies()
+    return (
+        ExternalEffectContinuationConsumer(
+            IDENTITY_EXTERNAL_EFFECT_SETTLEMENT_CONSUMER,
+            IDENTITY_EXTERNAL_EFFECT_SETTLEMENT_CONTINUATION,
+        ),
+        ExternalEffectContinuationConsumer(
+            GROUP_OPS_EXTERNAL_EFFECT_SETTLEMENT_CONSUMER,
+            GROUP_OPS_EFFECT_SETTLEMENT_CONTINUATION,
+        ),
+        ExternalEffectContinuationConsumer(
+            WELCOME_EXTERNAL_EFFECT_SETTLEMENT_CONSUMER,
+            WELCOME_EFFECT_SETTLEMENT_CONTINUATION,
+        ),
+        ExternalEffectContinuationConsumer(
+            BROADCAST_EXTERNAL_EFFECT_SETTLEMENT_CONSUMER,
+            BROADCAST_EXTERNAL_EFFECT_SETTLEMENT_CONTINUATION,
+        ),
+        ExternalEffectContinuationConsumer(
+            EXTERNAL_PUSH_EFFECT_SETTLEMENT_CONSUMER,
+            EXTERNAL_PUSH_DELIVERY_SETTLEMENT_CONTINUATION,
+        ),
+        ExternalEffectContinuationConsumer(
+            AUTOMATION_GENERATION_EFFECT_SETTLEMENT_CONSUMER,
+            AUTOMATION_AGENT_GENERATION_SETTLEMENT_CONTINUATION,
+            max_attempts=10,
+        ),
+    )
+
+
+def _continuation_runtime_enabled(
+    consumer: ExternalEffectContinuationConsumer,
+    profile: DeploymentProfile | None,
+) -> bool:
+    if profile is None or profile.activation_mode == "observe":
+        return True
+    capability_id = {
+        QUESTIONNAIRE_EXTERNAL_EFFECT_CONTINUATION_CONSUMER: "extension.forms",
+        AUTOMATION_EXTERNAL_EFFECT_CONTINUATION_CONSUMER: "extension.ai",
+        AUTOMATION_GENERATION_EFFECT_CONTINUATION_CONSUMER: "extension.ai",
+        AUTOMATION_GENERATION_EFFECT_SETTLEMENT_CONSUMER: "extension.ai",
+    }.get(consumer.consumer_name, "core.platform")
+    return profile.allows_runtime(capability_id)
+
+
+def build_external_effect_continuation_registry(
+    profile: DeploymentProfile | None = None,
+) -> ExternalEffectContinuationRegistry:
+    return ExternalEffectContinuationRegistry(
+        consumer.continuation
+        for consumer in build_external_effect_continuation_consumers()
+        if _continuation_runtime_enabled(consumer, profile)
+    )
+
+
+def run_welcome_realtime_post_commit(job, dispatch_result) -> dict:
+    """Release a welcome dependency immediately after upload persistence.
+
+    The ordinary ``external_effect.completed`` fan-out remains the durable,
+    idempotent recovery path.  This narrow hook only removes that fan-out's
+    latency from the 20-second welcome-code critical path.
+    """
+
+    return run_external_effect_continuation(
+        WELCOME_MEDIA_DEPENDENCY_CONTINUATION,
+        job,
+        dispatch_result,
+    )
+
+
+def build_external_effect_adapter_registry(
+    profile: DeploymentProfile | None = None,
+) -> ExternalEffectAdapterRegistry:
     provider_factory = _build_production_wecom_adapter
     generic_webhook_adapter = WebhookAdapter()
-    return ExternalEffectAdapterRegistry(
-        {
-            "outbound_webhook": WebhookAdapter(),
-            "webhook": AutomationAgentRoutingWebhookAdapter(generic_webhook_adapter),
-            "wechat_payment": WeChatPaymentAdapter(
-                client_factory=_build_wechat_pay_client,
-                refund_result_sync=apply_wechat_refund_result,
-                refund_failure_sync=mark_wechat_refund_request_failed,
-            ),
-            "wecom_private_message": WeComPrivateMessageAdapter(
-                adapter_factory=wecom_private_adapter.build_wecom_private_message_adapter,
-            ),
-            "wecom_group_message": WeComGroupMessageExternalEffectAdapter(
-                adapter_factory=wecom_group_adapter.build_wecom_group_message_adapter,
-            ),
-            "wecom_welcome_message": WeComWelcomeMessageAdapter(
-                adapter_factory=provider_factory,
-                material_resolver=_resolve_production_wecom_welcome_materials,
-            ),
-            "wecom_media_upload": WeComMediaUploadAdapter(),
-            "wecom_tag": WeComContactTagAdapter(adapter_factory=provider_factory),
-            "wecom_profile": WeComProfileUpdateAdapter(adapter_factory=provider_factory),
-        }
-    )
+    adapters = {
+        "outbound_webhook": WebhookAdapter(),
+        "webhook": AutomationAgentRoutingWebhookAdapter(generic_webhook_adapter),
+        "wechat_payment": WeChatPaymentAdapter(
+            client_factory=_build_wechat_pay_client,
+            refund_result_sync=apply_wechat_refund_result,
+            refund_failure_sync=mark_wechat_refund_request_failed,
+        ),
+        "wecom_private_message": WeComPrivateMessageAdapter(
+            adapter_factory=wecom_private_adapter.build_wecom_private_message_adapter,
+        ),
+        "wecom_group_message": WeComGroupMessageExternalEffectAdapter(
+            adapter_factory=wecom_group_adapter.build_wecom_group_message_adapter,
+        ),
+        "wecom_welcome_message": WeComWelcomeMessageAdapter(
+            adapter_factory=provider_factory,
+            material_resolver=_resolve_production_wecom_welcome_materials,
+        ),
+        "wecom_media_upload": WeComMediaUploadAdapter(),
+        "wecom_tag": WeComContactTagAdapter(adapter_factory=provider_factory),
+        "wecom_profile": WeComProfileUpdateAdapter(adapter_factory=provider_factory),
+        "wecom_external_contact_detail": WeComExternalContactDetailAdapter(adapter_factory=provider_factory),
+        "ai_agent_generation": AutomationAgentGenerationAdapter(),
+    }
+    if profile is not None and profile.activation_mode == "enforce" and not profile.allows_runtime("extension.commerce"):
+        adapters.pop("wechat_payment", None)
+    if profile is not None and profile.activation_mode == "enforce" and not profile.allows_runtime("extension.ai"):
+        adapters.pop("ai_agent_generation", None)
+    return ExternalEffectAdapterRegistry(adapters)
 
 
 def _build_production_wecom_adapter():
@@ -73,9 +238,9 @@ def _build_production_wecom_adapter():
 
 def _resolve_production_wecom_welcome_materials(attachments, *, resolver=None):
     if resolver is None:
-        from .automation_engine.group_ops.material_resolver import PostgresGroupOpsMaterialResolver
-        from .media_library.postgres_repo import PostgresMediaLibraryRepository
-        from .shared.runtime import raw_database_url
+        from .automation.automation_engine.group_ops.material_resolver import PostgresGroupOpsMaterialResolver
+        from .engagement.media_library.postgres_repo import PostgresMediaLibraryRepository
+        from .platform.shared.runtime import raw_database_url
 
         resolver = PostgresGroupOpsMaterialResolver(
             PostgresMediaLibraryRepository(raw_database_url()),
@@ -140,10 +305,7 @@ def _resolve_production_wecom_welcome_materials(attachments, *, resolver=None):
         resolved.append(
             {
                 "msgtype": "miniprogram",
-                "miniprogram": {
-                    field: str(nested_payload.get(field) or "").strip()
-                    for field in required
-                },
+                "miniprogram": {field: str(nested_payload.get(field) or "").strip() for field in required},
             }
         )
     return resolved
@@ -154,6 +316,22 @@ def _build_wechat_pay_client():
 
 
 __all__ = [
+    "AUTOMATION_EXTERNAL_EFFECT_CONTINUATION_CONSUMER",
+    "BROADCAST_EXTERNAL_EFFECT_CONTINUATION_CONSUMER",
+    "BROADCAST_EXTERNAL_EFFECT_SETTLEMENT_CONSUMER",
+    "EXTERNAL_EFFECT_PROVIDER_RESULT_ACCESS_ALLOWLIST",
+    "EXTERNAL_PUSH_EFFECT_CONTINUATION_CONSUMER",
+    "EXTERNAL_PUSH_EFFECT_SETTLEMENT_CONSUMER",
+    "GROUP_OPS_EXTERNAL_EFFECT_CONTINUATION_CONSUMER",
+    "GROUP_OPS_EXTERNAL_EFFECT_SETTLEMENT_CONSUMER",
+    "IDENTITY_EXTERNAL_EFFECT_CONTINUATION_CONSUMER",
+    "IDENTITY_EXTERNAL_EFFECT_SETTLEMENT_CONSUMER",
+    "QUESTIONNAIRE_EXTERNAL_EFFECT_CONTINUATION_CONSUMER",
+    "WELCOME_MEDIA_EXTERNAL_EFFECT_CONTINUATION_CONSUMER",
+    "WELCOME_EXTERNAL_EFFECT_SETTLEMENT_CONSUMER",
     "build_external_effect_adapter_registry",
+    "run_welcome_realtime_post_commit",
+    "build_external_effect_continuation_consumers",
     "build_external_effect_continuation_registry",
+    "build_external_effect_settlement_consumers",
 ]

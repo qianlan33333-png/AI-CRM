@@ -1,0 +1,20 @@
+{% extends "admin_shell/base.html" %}
+
+{% block content %}
+<section class="admin-card">
+  <div class="admin-card-head">
+    <div>
+      <h2>快捷入口</h2>
+      <p>从这里可以快速进入常用模块。</p>
+    </div>
+  </div>
+  <div class="admin-quick-links">
+    {% for item in quick_links %}
+    <a class="admin-quick-link" href="{{ item.href }}">
+      <strong>{{ item.label }}</strong>
+      <span>{{ item.description }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

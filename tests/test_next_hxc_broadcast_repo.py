@@ -5,12 +5,12 @@ import os
 import pytest
 from sqlalchemy import text
 
-from aicrm_next.hxc_dashboard.application import CreateHxcBroadcastTaskCommand
-from aicrm_next.hxc_dashboard.dto import HxcBroadcastTaskRequest
-from aicrm_next.hxc_dashboard.repo import InMemoryHxcDashboardBroadcastRepository
-from aicrm_next.hxc_dashboard.postgres_repo import PostgresHxcDashboardBroadcastRepository
-from aicrm_next.shared.db_session import get_session_factory
-from aicrm_next.shared.repository_provider import RepositoryProviderError
+from aicrm_next.extensions.hxc.hxc_dashboard.application import CreateHxcBroadcastTaskCommand
+from aicrm_next.extensions.hxc.hxc_dashboard.dto import HxcBroadcastTaskRequest
+from aicrm_next.extensions.hxc.hxc_dashboard.repo import InMemoryHxcDashboardBroadcastRepository
+from aicrm_next.extensions.hxc.hxc_dashboard.postgres_repo import PostgresHxcDashboardBroadcastRepository
+from aicrm_next.platform.shared.db_session import get_session_factory
+from aicrm_next.platform.shared.repository_provider import RepositoryProviderError
 
 
 def test_fixture_repo_returns_predictable_audience_preview() -> None:

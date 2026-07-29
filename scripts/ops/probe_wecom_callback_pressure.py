@@ -179,8 +179,8 @@ def validate_callback_sample(callback_url: str, body: bytes) -> dict[str, Any]:
             "error": "callback URL missing required query params: " + ", ".join(missing),
         }
     try:
-        from aicrm_next.channel_entry.application import decrypt_callback_body
-        from aicrm_next.channel_entry.inbox import wecom_callback_idempotency_key
+        from aicrm_next.channels.channel_entry.application import decrypt_callback_body
+        from aicrm_next.channels.channel_entry.inbox import wecom_callback_idempotency_key
 
         event_data, plain_xml = decrypt_callback_body(query=query, body=body)
     except Exception as exc:

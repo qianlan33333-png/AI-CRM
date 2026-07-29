@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.questionnaire.admin_write import get_questionnaire_admin_write_audit_events
+from aicrm_next.extensions.forms.questionnaire.admin_write import get_questionnaire_admin_write_audit_events
 
 
 @pytest.fixture()

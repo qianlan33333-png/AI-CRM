@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "artifact_policy": "same_commit_same_artifact",
+  "activation_mode": "enforce",
+  "role_activation": {
+    "web": "enforce",
+    "callback": "enforce",
+    "internal_worker": "enforce",
+    "external_worker": "enforce",
+    "scheduler": "enforce"
+  },
+  "roles": [
+    {
+      "role": "web",
+      "command": "uvicorn aicrm_next.main:app",
+      "responsibilities": ["admin_console", "business_api"],
+      "may_call_real_provider": false
+    },
+    {
+      "role": "callback",
+      "command": "python scripts/run_wecom_callback_ingress.py",
+      "responsibilities": ["signature_verify", "decrypt", "fast_inbox_persist"],
+      "may_call_real_provider": false
+    },
+    {
+      "role": "internal_worker",
+      "command": "python scripts/run_execution_runtime.py --role internal_worker",
+      "responsibilities": ["webhook_inbox", "internal_event", "internal_outbox"],
+      "may_call_real_provider": false
+    },
+    {
+      "role": "external_worker",
+      "command": "python scripts/run_execution_runtime.py --role external_worker",
+      "responsibilities": ["external_effect"],
+      "may_call_real_provider": true
+    },
+    {
+      "role": "scheduler",
+      "command": "python scripts/run_job_catalog_scheduler.py --execute --confirmation EXECUTE_SAFE_JOB_CATALOG_SCHEDULER",
+      "responsibilities": ["recovery", "reconciliation", "compensation", "clock_intents"],
+      "may_call_real_provider": false
+    }
+  ],
+  "cutover_policy": {
+    "activate_new_units": true,
+    "observer_unit_active": false,
+    "internal_worker_predecessors_authoritative": false,
+    "scheduler_predecessors_authoritative": false,
+    "requires_successor_parity": true,
+    "requires_independent_release": true,
+    "legacy_units_remain_authoritative": false
+  }
+}

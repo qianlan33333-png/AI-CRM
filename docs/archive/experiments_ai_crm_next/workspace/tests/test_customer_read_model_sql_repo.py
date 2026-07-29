@@ -35,8 +35,8 @@ from aicrm_next.customer_read_model.repo import (
     InMemoryCustomerReadModelRepository,
     SqlAlchemyCustomerReadModelRepository,
 )
-from aicrm_next.shared.database import Base
-from aicrm_next.shared.errors import NotFoundError
+from aicrm_next.platform.shared.database import Base
+from aicrm_next.platform.shared.errors import NotFoundError
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = PROJECT_ROOT.parents[1]

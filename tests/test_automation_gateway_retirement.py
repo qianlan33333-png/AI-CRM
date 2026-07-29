@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import importlib.util
 
-from aicrm_next.ai_audience_ops import agent_gateway
+from aicrm_next.extensions.ai.ai_audience_ops import agent_gateway
 
 
 def test_retired_automation_gateway_modules_are_removed() -> None:
-    assert importlib.util.find_spec("aicrm_next.integration_gateway.automation_adapters") is None
-    assert importlib.util.find_spec("aicrm_next.integration_gateway.automation_contracts") is None
+    assert importlib.util.find_spec("aicrm_next.channels.integration_gateway.automation_adapters") is None
+    assert importlib.util.find_spec("aicrm_next.channels.integration_gateway.automation_contracts") is None
 
 
 def test_ai_audience_agent_gateway_remains_available(monkeypatch) -> None:

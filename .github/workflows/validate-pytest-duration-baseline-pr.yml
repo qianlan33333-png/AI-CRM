@@ -1,0 +1,123 @@
+name: Validate Pytest Duration Baseline PR
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    paths:
+      - docs/ci/pytest_duration_baseline.json
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: read
+
+jobs:
+  ci-fast-result:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      EXPECTED_REPOSITORY: qianlan333/AI-CRM-ID-refactor
+      EXPECTED_HEAD_BRANCH: automation/pytest-duration-baseline
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: Checkout trusted base revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0 (Node 24)
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0 (Node 24)
+        with:
+          python-version: "3.10.5"
+
+      - name: Verify trusted automation identity and extract proposed baseline
+        env:
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+          PR_HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          PR_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "$EXPECTED_REPOSITORY"
+          test "$PR_AUTHOR" = "github-actions[bot]"
+          test "$PR_BASE_BRANCH" = "main"
+          test "$PR_HEAD_BRANCH" = "$EXPECTED_HEAD_BRANCH"
+          test "$PR_HEAD_REPOSITORY" = "$EXPECTED_REPOSITORY"
+          git fetch --no-tags origin "$HEAD_SHA"
+          read -r commit parent extra < <(git rev-list --parents -n 1 "$HEAD_SHA")
+          test "$commit" = "$HEAD_SHA"
+          test "$parent" = "$BASE_SHA"
+          test -z "${extra:-}"
+          mapfile -t changed_files < <(git diff --name-only "$BASE_SHA" "$HEAD_SHA")
+          test "${#changed_files[@]}" -eq 1
+          test "${changed_files[0]}" = "docs/ci/pytest_duration_baseline.json"
+          git show "$HEAD_SHA:docs/ci/pytest_duration_baseline.json" > "$RUNNER_TEMP/proposed-baseline.json"
+
+      - name: Verify trusted Full Regression provenance
+        id: provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          source_run_id="$(python - "$RUNNER_TEMP/proposed-baseline.json" <<'PY'
+          import json
+          import sys
+          value = json.load(open(sys.argv[1], encoding="utf-8")).get("source_run_id")
+          if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+              raise SystemExit("invalid baseline source_run_id")
+          print(value)
+          PY
+          )"
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${source_run_id}" > "$RUNNER_TEMP/source-run.json"
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${source_run_id}/artifacts" > "$RUNNER_TEMP/source-artifacts.json"
+          python scripts/ci/validate_pytest_duration_baseline_pr.py \
+            --baseline "$RUNNER_TEMP/proposed-baseline.json" \
+            --source-run "$RUNNER_TEMP/source-run.json" \
+            --source-artifacts "$RUNNER_TEMP/source-artifacts.json" \
+            --expected-repository "$EXPECTED_REPOSITORY" \
+            --expected-base-sha "$BASE_SHA" \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Download trusted pytest shard evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1 (Node 24)
+        with:
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.provenance.outputs.source_run_id }}
+          pattern: full-python-shard-*
+          path: ${{ runner.temp }}/pytest-junit
+          merge-multiple: true
+
+      - name: Rebuild and compare exact baseline
+        env:
+          SOURCE_RUN_ID: ${{ steps.provenance.outputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          junit_args=()
+          junit_file_count=0
+          while IFS= read -r junit_file; do
+            junit_args+=(--junit-xml "$junit_file")
+            junit_file_count=$((junit_file_count + 1))
+          done < <(find "$RUNNER_TEMP/pytest-junit" -type f -name 'python-shard-*.xml' -print | sort)
+          if [ "$junit_file_count" -ne 8 ]; then
+            echo "expected eight JUnit files"
+            exit 1
+          fi
+          python scripts/ci/build_pytest_duration_baseline.py \
+            "${junit_args[@]}" \
+            --source-run-id "$SOURCE_RUN_ID" \
+            --source-sha "$BASE_SHA" \
+            --output "$RUNNER_TEMP/rebuilt-baseline.json"
+          cmp --silent "$RUNNER_TEMP/proposed-baseline.json" "$RUNNER_TEMP/rebuilt-baseline.json"
+          python scripts/ci/audit_test_inventory.py \
+            --duration-baseline "$RUNNER_TEMP/proposed-baseline.json" \
+            --json-output "$RUNNER_TEMP/proposed-inventory.json"
+          python - "$RUNNER_TEMP/proposed-inventory.json" <<'PY'
+          import json
+          import sys
+          baseline = json.load(open(sys.argv[1], encoding="utf-8"))["duration_baseline"]
+          if baseline["missing_current_files"] or baseline["retired_files"]:
+              raise SystemExit("proposed duration baseline does not exactly cover current pytest files")
+          PY

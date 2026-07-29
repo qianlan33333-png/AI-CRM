@@ -4,9 +4,9 @@ import inspect
 
 from fastapi.testclient import TestClient
 
-import aicrm_next.customer_tags.admin_write as admin_write
-import aicrm_next.customer_tags.api as api
-import aicrm_next.customer_tags.write_repo as write_repo
+import aicrm_next.crm.customer_tags.admin_write as admin_write
+import aicrm_next.crm.customer_tags.api as api
+import aicrm_next.crm.customer_tags.write_repo as write_repo
 from aicrm_next.main import create_app
 
 

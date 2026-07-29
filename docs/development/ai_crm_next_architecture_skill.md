@@ -13,7 +13,7 @@
 - `wecom_ability_service/` 已不在当前 live source tree；只允许作为历史参考名词
   出现在归档/closeout 证据中，不得重新引入或作为 fallback 依赖。
 - `openclaw_service/` 和 `legacy_flask/openclaw_legacy/` 已物理删除，不得重新引入。
-- MCP/OpenClaw 后续只允许通过 `aicrm_next.integration_gateway` adapter boundary 承接。
+- MCP/OpenClaw 后续只允许通过 `aicrm_next.channels.integration_gateway` adapter boundary 承接。
 - WeCom External Effect 真实执行已按 PR #1505 批准范围默认开启：仅限支持的
   WeCom effect_type、明确 target/sender/content 结构、审计、幂等和回滚口径。
   Payment / OAuth / OpenClaw / MCP / Webhook 以及其他真实外呼仍 blocked，不能
@@ -70,7 +70,7 @@
 
 ## G. Retired Legacy Runtime
 
-- WeCom channel-entry callback owner is `aicrm_next.channel_entry`.
+- WeCom channel-entry callback owner is `aicrm_next.channels.channel_entry`.
 - `/wecom/external-contact/callback`, `/api/wecom/events`,
   `/api/admin/channels/runtime-diagnosis`, and `/api/admin/channels/repair-entry`
   must not be forwarded to legacy Flask.

@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 
-from aicrm_next.channel_entry import repo
+from aicrm_next.channels.channel_entry import repo
 
 
 def main() -> None:

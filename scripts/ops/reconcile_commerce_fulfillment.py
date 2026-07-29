@@ -13,7 +13,7 @@ from scripts.script_runtime import ensure_repo_root_on_path, print_json
 
 ensure_repo_root_on_path()
 
-from aicrm_next.commerce.fulfillment_reconciliation import CommerceFulfillmentReconciliationService
+from aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation import CommerceFulfillmentReconciliationService
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:

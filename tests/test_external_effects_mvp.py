@@ -1,21 +1,23 @@
 from __future__ import annotations
 
 import json
+import os
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 
 import requests
+import psycopg
 import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.external_effect_composition import build_external_effect_continuation_registry
-from aicrm_next.customer_tags.live_mutation import execute_wecom_tag_mutation, reset_wecom_tag_live_mutation_fixture_state
-from aicrm_next.customer_tags.mutation_commands import PlanWeComTagMarkCommand, PlanWeComTagUnmarkCommand
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.auth_platform.webhook_hmac import WebhookHmacSigner
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.crm.customer_tags.live_mutation import execute_wecom_tag_mutation, reset_wecom_tag_live_mutation_fixture_state
+from aicrm_next.crm.customer_tags.mutation_commands import PlanWeComTagMarkCommand, PlanWeComTagUnmarkCommand
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.auth_platform.webhook_hmac import WebhookHmacSigner
+from aicrm_next.platform.platform_foundation.external_effects import (
     ExternalEffectDispatchResult,
     ExternalEffectService,
     PAYMENT_WECHAT_REFUND_REQUEST,
@@ -28,10 +30,14 @@ from aicrm_next.platform_foundation.external_effects import (
     WECOM_PROFILE_UPDATE,
     reset_external_effect_fixture_state,
 )
-from aicrm_next.platform_foundation.external_effects.repo import InMemoryExternalEffectRepository, _public_job, build_external_effect_repository
-from aicrm_next.platform_foundation.external_effects.retry_policy import classify_error_code, retry_delay_seconds
-from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
-from aicrm_next.platform_foundation.external_effects.adapters import (
+from aicrm_next.platform.platform_foundation.external_effects.repo import InMemoryExternalEffectRepository, _public_job, build_external_effect_repository
+from aicrm_next.platform.platform_foundation.external_effects.retry_policy import (
+    classify_error_code,
+    next_retry_at,
+    retry_delay_seconds,
+)
+from aicrm_next.platform.platform_foundation.external_effects.worker import ExternalEffectWorker
+from aicrm_next.platform.platform_foundation.external_effects.adapters import (
     DEFAULT_ADAPTER_REGISTRY,
     ExternalEffectAdapterRegistry,
     WeChatPaymentAdapter,
@@ -39,15 +45,16 @@ from aicrm_next.platform_foundation.external_effects.adapters import (
     WeComProfileUpdateAdapter,
     WebhookAdapter,
 )
-from aicrm_next.platform_foundation.internal_events import QUESTIONNAIRE_SUBMITTED_EVENT_TYPE
-from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
-from aicrm_next.integration_gateway.wechat_pay_client import WeChatPayClientError
-from aicrm_next.public_product import h5_wechat_pay
-from aicrm_next.public_product.h5_wechat_pay import _apply_transaction
-from aicrm_next.questionnaire import external_push
-from aicrm_next.questionnaire.repo import build_questionnaire_repository
+from aicrm_next.platform.platform_foundation.internal_events import QUESTIONNAIRE_SUBMITTED_EVENT_TYPE
+from aicrm_next.platform.platform_foundation.internal_events.worker import InternalEventWorker
+from aicrm_next.channels.integration_gateway.wechat_pay_client import WeChatPayClientError
+from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
+from aicrm_next.extensions.commerce.public_product.h5_wechat_pay import _apply_transaction
+from aicrm_next.extensions.forms.questionnaire import external_push
+from aicrm_next.extensions.forms.questionnaire.repo import build_questionnaire_repository
 from tests.webhook_hmac_test_helpers import install_webhook_hmac_client, outbound_webhook_hmac_signer
 from tests.admin_auth_test_helpers import install_admin_action_tokens
+from tests.wechat_identity_test_support import authorize_wechat_client
 
 
 RUN_DUE_ROUTE = "/api/admin/external-effects/run-due"
@@ -98,6 +105,11 @@ class _QuestionnaireRepoOverride:
         if str(slug or "").strip() == str(self._questionnaire.get("slug") or ""):
             return deepcopy(self._questionnaire)
         return self._repo.get_questionnaire_by_slug(slug)
+
+    def get_questionnaire(self, questionnaire_id: int):
+        if int(questionnaire_id or 0) == int(self._questionnaire.get("id") or 0):
+            return deepcopy(self._questionnaire)
+        return self._repo.get_questionnaire(questionnaire_id)
 
     def __getattr__(self, name: str):
         return getattr(self._repo, name)
@@ -241,8 +253,45 @@ def _install_loopback_http_adapter(monkeypatch, client: TestClient) -> list[dict
 
 
 def _seed_hxc_questionnaire(monkeypatch, external_push_config: dict) -> tuple[dict, str]:
-    from aicrm_next.questionnaire import h5_write
+    from aicrm_next.extensions.forms.questionnaire import event_consumers, h5_write
 
+    monkeypatch.setenv("AICRM_INTERNAL_EVENTS_ENABLED", "1")
+    monkeypatch.setenv("AICRM_INTERNAL_EVENTS_QUESTIONNAIRE_ENABLED", "1")
+    monkeypatch.setenv("AICRM_INTERNAL_EVENTS_AUTO_EXECUTE", "1")
+    monkeypatch.setenv(
+        "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_TYPES",
+        QUESTIONNAIRE_SUBMITTED_EVENT_TYPE,
+    )
+    monkeypatch.setenv(
+        "AICRM_INTERNAL_EVENTS_ALLOWED_EVENT_CONSUMERS",
+        f"{QUESTIONNAIRE_SUBMITTED_EVENT_TYPE}:questionnaire_webhook_consumer",
+    )
+    database_url = str(os.getenv("DATABASE_URL") or "").strip()
+    if database_url:
+        with psycopg.connect(database_url) as connection:
+            connection.execute(
+                """
+                INSERT INTO crm_user_identity (
+                    unionid, primary_external_userid, external_userids_json,
+                    identity_status, created_at, updated_at
+                ) VALUES
+                    (
+                        'union-questionnaire-external-effects-001',
+                        'wx_ext_001', '["wx_ext_001"]'::jsonb,
+                        'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                    ),
+                    (
+                        'union-questionnaire-external-effects-002',
+                        'wx_ext_002', '["wx_ext_002"]'::jsonb,
+                        'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                    )
+                ON CONFLICT (unionid) DO UPDATE
+                SET primary_external_userid = EXCLUDED.primary_external_userid,
+                    external_userids_json = EXCLUDED.external_userids_json,
+                    identity_status = EXCLUDED.identity_status,
+                    updated_at = CURRENT_TIMESTAMP
+                """
+            )
     repo = build_questionnaire_repository()
     existing = repo.get_questionnaire_by_slug("hxc-activation-v1")
     standard_config = {
@@ -264,7 +313,13 @@ def _seed_hxc_questionnaire(monkeypatch, external_push_config: dict) -> tuple[di
     patched = deepcopy(questionnaire)
     patched["external_push_config"] = {**dict(patched.get("external_push_config") or {}), **external_push_config}
     patched["external_push_enabled"] = bool(external_push_config.get("enabled"))
-    monkeypatch.setattr(h5_write, "build_questionnaire_repository", lambda: _QuestionnaireRepoOverride(repo, patched))
+    repository_override = _QuestionnaireRepoOverride(repo, patched)
+    monkeypatch.setattr(h5_write, "build_questionnaire_repository", lambda: repository_override)
+    monkeypatch.setattr(
+        event_consumers,
+        "build_questionnaire_repository",
+        lambda: repository_override,
+    )
     return patched, str((patched.get("questions") or [{}])[0].get("id") or "q_mobile")
 
 
@@ -302,6 +357,7 @@ def _submit_questionnaire_queue_loopback_job(
     response_status: int,
     external_userid: str = "wx_ext_001",
 ) -> dict:
+    authorize_wechat_client(client, {"external_userid": external_userid})
     _questionnaire, phone_question_id = _seed_hxc_questionnaire(
         monkeypatch,
         {
@@ -330,6 +386,7 @@ def _submit_questionnaire_queue_loopback_job(
 
     planned = InternalEventWorker(
         consumer_registry=client.app.state.internal_event_consumer_registry,
+        relay_role="owner",
     ).run_due(
         batch_size=1,
         dry_run=False,
@@ -426,15 +483,15 @@ def test_external_effect_migration_contract_contains_required_tables_indexes_and
 
 def test_business_outbound_entrypoints_do_not_directly_call_external_networks() -> None:
     monitored_files = [
-        "aicrm_next/questionnaire/external_push.py",
-        "aicrm_next/questionnaire/external_push_logs.py",
-        "aicrm_next/admin_jobs/application.py",
-        "aicrm_next/admin_jobs/notification_settings.py",
-        "aicrm_next/commerce/admin_transactions.py",
-        "aicrm_next/commerce/external_push_admin.py",
-        "aicrm_next/customer_tags/live_mutation.py",
-        "aicrm_next/automation_engine/group_ops/application.py",
-        "aicrm_next/channel_entry/application.py",
+        "aicrm_next/extensions/forms/questionnaire/external_push.py",
+        "aicrm_next/extensions/forms/questionnaire/external_push_logs.py",
+        "aicrm_next/platform/admin_jobs/application.py",
+        "aicrm_next/platform/admin_jobs/notification_settings.py",
+        "aicrm_next/extensions/commerce/commerce/admin_transactions.py",
+        "aicrm_next/extensions/commerce/commerce/external_push_admin.py",
+        "aicrm_next/crm/customer_tags/live_mutation.py",
+        "aicrm_next/automation/automation_engine/group_ops/application.py",
+        "aicrm_next/channels/channel_entry/application.py",
     ]
     forbidden_fragments = [
         "requests.post(",
@@ -466,7 +523,9 @@ def test_retry_policy_classifies_retryable_terminal_and_blocked_errors() -> None
     assert classify_error_code("payload_invalid") == "terminal"
     assert classify_error_code("adapter_blocked") == "blocked"
     assert retry_delay_seconds(0) == 60
-    assert retry_delay_seconds(3) == 3600
+    assert retry_delay_seconds(3) == 480
+    now = datetime(2026, 7, 17, tzinfo=timezone.utc)
+    assert next_retry_at(8, now=now, retry_after_seconds=7) == now + timedelta(seconds=7)
 
 
 def test_run_due_preview_dry_run_and_disabled_adapter_do_not_execute_real_call() -> None:
@@ -713,8 +772,8 @@ def test_webhook_adapter_enabled_allowlisted_2xx_succeeds_and_records_attempt(mo
     assert attempts[0].response_summary_json["real_external_call_executed"] is True
 
 
-def test_external_effect_worker_continues_automation_agent_webhook_batch(monkeypatch) -> None:
-    from aicrm_next.automation_agents.worker import AutomationAgentWorker
+def test_external_effect_worker_queues_automation_agent_continuation_without_running_it_inline(monkeypatch) -> None:
+    from aicrm_next.extensions.ai.automation_agents.worker import AutomationAgentWorker
 
     seen: dict[str, str] = {}
 
@@ -753,16 +812,20 @@ def test_external_effect_worker_continues_automation_agent_webhook_batch(monkeyp
     ).run_due(batch_size=1, dry_run=False, effect_types=[WEBHOOK_GENERIC_PUSH])
     attempts = repo.list_attempts(job["id"])
 
-    assert seen == {"batch_id": "agent_batch_unit_001", "operator": "external_effect_agent_continuation"}
+    assert seen == {}
     assert result["counts"]["succeeded_count"] == 1
     continuation = result["items"][0]["post_success_continuation"]
-    assert continuation["ok"] is True
-    assert continuation["broadcast_enqueue"]["approved_count"] == 1
+    assert continuation["applicable"] is False
+    assert continuation["reason"] == "durable_completion_event_pending"
+    assert result["items"][0]["completion_event_queued"] is True
+    events = repo.list_completion_events()
+    assert len(events) == 1
+    assert events[0]["event_type"] == "external_effect.completed"
+    assert events[0]["payload"]["attempt_id"] == attempts[0].attempt_id
     response_summary = attempts[0].response_summary_json
     if isinstance(response_summary, str):
         response_summary = json.loads(response_summary)
-    continuation_summary = response_summary["post_success_continuation"]
-    assert continuation_summary == "dict" or continuation_summary == continuation
+    assert "post_success_continuation" not in response_summary
 
 
 def test_webhook_adapter_retryable_statuses_and_timeout_set_next_retry(monkeypatch) -> None:
@@ -851,6 +914,52 @@ def test_cancelled_job_is_not_scanned_by_run_due_preview() -> None:
     assert preview["counts"]["candidate_count"] == 0
 
 
+def test_external_effect_cancel_api_requires_actor_reason_and_row_version(next_client: TestClient, monkeypatch) -> None:
+    tokens = _external_effect_admin_tokens(next_client, monkeypatch, CANCEL_JOB_ROUTE)
+    service = ExternalEffectService()
+    job = service.plan_effect(
+        effect_type=WEBHOOK_QUESTIONNAIRE_SUBMISSION_PUSH,
+        adapter_name="outbound_webhook",
+        operation="post",
+        target_type="questionnaire_submission",
+        target_id="api-cancel-cas",
+        idempotency_key="api-external-effect-cancel-cas",
+        status="queued",
+    )
+
+    missing_actor = next_client.post(
+        f"/api/admin/external-effects/jobs/{job['id']}/cancel",
+        json={
+            "admin_action_token": tokens[CANCEL_JOB_ROUTE],
+            "expected_version": job["row_version"],
+            "reason": "missing actor",
+        },
+    )
+    missing_reason = next_client.post(
+        f"/api/admin/external-effects/jobs/{job['id']}/cancel",
+        json={
+            "admin_action_token": tokens[CANCEL_JOB_ROUTE],
+            "expected_version": job["row_version"],
+            "actor": "operator",
+        },
+    )
+    missing_version = next_client.post(
+        f"/api/admin/external-effects/jobs/{job['id']}/cancel",
+        json={
+            "admin_action_token": tokens[CANCEL_JOB_ROUTE],
+            "actor": "operator",
+            "reason": "missing version",
+        },
+    )
+
+    assert missing_actor.status_code == 422
+    assert missing_actor.json()["missing_fields"] == ["actor"]
+    assert missing_reason.status_code == 422
+    assert missing_reason.json()["missing_fields"] == ["reason"]
+    assert missing_version.status_code == 422
+    assert missing_version.json()["missing_fields"] == ["expected_version"]
+
+
 def test_external_effect_admin_api_lists_previews_retries_and_cancels(next_client: TestClient, monkeypatch) -> None:
     tokens = _external_effect_admin_tokens(
         next_client,
@@ -909,10 +1018,10 @@ def test_external_effect_admin_api_lists_previews_retries_and_cancels(next_clien
     assert preview.json()["real_external_call_executed"] is False
     assert dry_run.status_code == 200
     assert dry_run.json()["dry_run"] is True
-    assert retried.status_code == 200
-    assert retried.json()["job"]["status"] == "queued"
-    assert cancelled.status_code == 200
-    assert cancelled.json()["job"]["status"] == "cancelled"
+    assert retried.status_code == 422
+    assert set(retried.json()["missing_fields"]) == {"actor", "reason", "expected_version"}
+    assert cancelled.status_code == 422
+    assert set(cancelled.json()["missing_fields"]) == {"actor", "reason", "expected_version"}
     assert unauthorized_cancel.status_code == 401
     assert diagnostics.status_code == 200
     assert diagnostics.json()["schema_contract"]["idempotency_constraint"] == "UNIQUE (tenant_id, idempotency_key)"
@@ -923,7 +1032,7 @@ def test_external_effect_admin_api_lists_previews_retries_and_cancels(next_clien
     assert diagnostics.json()["wecom_execution"]["execution_mode"] == "disabled"
 
 
-def test_unknown_external_effect_api_retry_requires_duplicate_risk_confirmation(next_client: TestClient, monkeypatch) -> None:
+def test_unknown_external_effect_api_retry_requires_full_versioned_command(next_client: TestClient, monkeypatch) -> None:
     reset_external_effect_fixture_state()
     repo = build_external_effect_repository()
     job = _queued_webhook_job(ExternalEffectService(repo), idempotency_key="api-unknown-retry")
@@ -940,33 +1049,18 @@ def test_unknown_external_effect_api_retry_requires_duplicate_risk_confirmation(
     )
     token = _external_effect_admin_tokens(next_client, monkeypatch, RETRY_JOB_ROUTE)[RETRY_JOB_ROUTE]
 
-    missing_confirmation = next_client.post(
-        f"/api/admin/external-effects/jobs/{job['id']}/retry",
-        json={"admin_action_token": token, "actor": "pytest", "reason": "checked provider"},
-    )
-    missing_audit_fields = next_client.post(
-        f"/api/admin/external-effects/jobs/{job['id']}/retry",
-        json={"admin_action_token": token, "confirm_duplicate_risk": True},
-    )
-    accepted = next_client.post(
+    missing_version = next_client.post(
         f"/api/admin/external-effects/jobs/{job['id']}/retry",
         json={
             "admin_action_token": token,
             "actor": "pytest",
             "reason": "provider confirms no delivery",
-            "confirm_duplicate_risk": True,
+            "duplicate_risk_confirmed": True,
         },
     )
 
-    assert missing_confirmation.status_code == 409
-    assert missing_confirmation.json()["error"] == "duplicate_risk_confirmation_required"
-    assert missing_audit_fields.status_code == 422
-    assert missing_audit_fields.json()["error"] == "manual_retry_actor_and_reason_required"
-    assert accepted.status_code == 200
-    assert accepted.json()["job"]["status"] == "queued"
-    audit_attempt = repo.list_attempts(job["id"])[0]
-    assert audit_attempt.adapter_mode == "manual_retry_authorization"
-    assert audit_attempt.request_summary_json["confirm_duplicate_risk"] is True
+    assert missing_version.status_code == 422
+    assert missing_version.json()["missing_fields"] == ["expected_version"]
 
 
 def test_wecom_execution_diagnostics_reports_unified_config(next_client: TestClient, monkeypatch) -> None:
@@ -976,6 +1070,7 @@ def test_wecom_execution_diagnostics_reports_unified_config(next_client: TestCli
     monkeypatch.setenv("WECOM_CONTACT_SECRET", "secret_fixture")
     monkeypatch.setenv("AICRM_WECOM_DEFAULT_SENDER_USERID", "owner_fixture")
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS", "legacy_owner")
+    monkeypatch.setenv("AICRM_WECOM_PROVIDER_TARGET_POLICY", "allowlisted_canary")
 
     response = next_client.get("/api/admin/wecom/execution-diagnostics")
     body = response.json()
@@ -989,6 +1084,8 @@ def test_wecom_execution_diagnostics_reports_unified_config(next_client: TestCli
     assert body["enabled_effect_types"] == [WECOM_CONTACT_TAG_MARK, WECOM_WELCOME_MESSAGE_SEND]
     assert body["deprecated_settings_present"] == ["AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS"]
     assert body["blocking_reasons"] == []
+    assert body["wecom_execution"]["allowlist_counts"]["owner_userid"] == 1
+    assert "legacy_owner" not in str(body["wecom_execution"]["allowlist_counts"])
 
 
 def test_external_effect_public_job_ignores_forward_schema_columns() -> None:
@@ -1085,7 +1182,7 @@ def test_external_effect_diagnostics_metrics_execution_mode_and_allowed_types(ne
     assert enabled_body["allowed_effect_types"] == [WEBHOOK_ORDER_PAID_PUSH]
 
 
-def test_external_effect_due_queue_quarantines_stale_dispatching_jobs() -> None:
+def test_external_effect_due_queue_requeues_stale_pre_provider_jobs() -> None:
     repo = InMemoryExternalEffectRepository()
     service = _service(repo)
     job = _queued_webhook_job(service, idempotency_key="stale-dispatching-reclaim")
@@ -1102,23 +1199,24 @@ def test_external_effect_due_queue_quarantines_stale_dispatching_jobs() -> None:
     updated = repo.get_job(job["id"])
 
     assert quarantined == 1
-    assert metrics["eligible_due_count"] == 0
-    assert metrics["unknown_after_dispatch_count"] == 1
-    assert due == []
-    assert acquired == []
+    assert metrics["eligible_due_count"] == 1
+    assert metrics["unknown_after_dispatch_count"] == 0
+    assert [item.id for item in due] == [job["id"]]
+    assert [item.id for item in acquired] == [job["id"]]
     assert updated is not None
-    assert updated.status == "unknown_after_dispatch"
-    assert updated.locked_by == ""
-    assert updated.locked_at == ""
-    assert updated.reconciliation_required is True
+    assert updated.status == "dispatching"
+    assert updated.locked_by == "replacement-worker"
+    assert updated.reconciliation_required is False
 
 
 def test_external_effect_sql_due_queue_quarantines_stale_dispatching_jobs() -> None:
-    source = (Path(__file__).resolve().parents[1] / "aicrm_next/platform_foundation/external_effects/repo.py").read_text(encoding="utf-8")
+    source = (Path(__file__).resolve().parents[1] / "aicrm_next/platform/platform_foundation/external_effects/repo.py").read_text(encoding="utf-8")
 
     assert "status = 'dispatching'" in source
     assert "lease_expires_at <= CURRENT_TIMESTAMP" in source
     assert "status = 'unknown_after_dispatch'" in source
+    assert "status = 'queued'" in source
+    assert "provider_boundary_crossed" in source
 
 
 def test_external_effect_admin_page_is_removed_and_troubleshooting_api_covers_queue_debug(next_client: TestClient) -> None:
@@ -1218,7 +1316,7 @@ def test_external_effect_admin_page_is_removed_and_troubleshooting_api_covers_qu
     detail = next_client.get(f"/api/admin/external-effects/troubleshooting/jobs/{job['id']}").json()
 
     assert page.status_code == 404
-    assert push_center.status_code == 200
+    assert push_center.status_code == 404
     assert summary["purpose"] == "external_effect_queue_troubleshooting"
     assert summary["real_external_call_executed"] is False
     assert summary["problem_count"] >= 1
@@ -1495,6 +1593,50 @@ def test_external_effect_loopback_dry_run_allowlist_miss_and_test_only_gate(next
     assert repo.test_receipt_metrics()["non_test_execution_blocked_count"] == 1
 
 
+def test_test_loopback_scope_cannot_smuggle_a_real_wecom_adapter_call(monkeypatch) -> None:
+    monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_TEST_EXECUTION_ONLY", "1")
+    monkeypatch.setenv("AICRM_WECOM_EXECUTION_MODE", "execute")
+    monkeypatch.setenv("AICRM_WECOM_ENABLED_EFFECT_TYPES", WECOM_CONTACT_TAG_MARK)
+    repo = InMemoryExternalEffectRepository()
+    calls: list[int] = []
+
+    class CountingAdapter:
+        def dispatch(self, job):
+            calls.append(int(job.id))
+            return ExternalEffectDispatchResult(status="succeeded", real_external_call_executed=True)
+
+    job = ExternalEffectService(repo).plan_effect(
+        effect_type=WECOM_CONTACT_TAG_MARK,
+        adapter_name="wecom_tag",
+        operation="mark",
+        target_type="external_userid",
+        target_id="wm_test_scope_must_not_reach_wecom",
+        payload={
+            "execution_scope": "test_loopback",
+            "is_test": True,
+            "external_userid": "wm_test_scope_must_not_reach_wecom",
+            "add_tags": ["tag-test"],
+            "remove_tags": [],
+        },
+        idempotency_key="test-loopback-cannot-smuggle-wecom",
+        lane="wecom_interactive",
+    )
+    registry = ExternalEffectAdapterRegistry({"wecom_tag": CountingAdapter()})
+
+    result = ExternalEffectWorker(repo, registry).run_due(
+        batch_size=1,
+        dry_run=False,
+        effect_types=[WECOM_CONTACT_TAG_MARK],
+        test_only=True,
+    )
+
+    updated = repo.get_job(job["id"])
+    assert calls == []
+    assert result["real_external_call_executed"] is False
+    assert updated is not None and updated.status == "blocked"
+    assert updated.last_error_code == "test_execution_adapter_not_allowed"
+
+
 def test_external_effect_diagnostics_and_api_docs_show_virtual_test_state(next_client: TestClient, monkeypatch) -> None:
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_TEST_RECEIVER_ENABLED", "1")
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_TEST_EXECUTION_ONLY", "1")
@@ -1523,6 +1665,7 @@ def test_external_effect_diagnostics_and_api_docs_show_virtual_test_state(next_c
 
 
 def test_questionnaire_submit_queues_external_push_without_legacy_call(client: TestClient, monkeypatch) -> None:
+    authorize_wechat_client(client, {"external_userid": "wx_ext_001"})
     _questionnaire, phone_question_id = _seed_hxc_questionnaire(
         monkeypatch,
         {"enabled": True, "webhook_url": "https://hooks.example.com/questionnaire"},
@@ -1547,6 +1690,7 @@ def test_questionnaire_submit_queues_external_push_without_legacy_call(client: T
 
     planned = InternalEventWorker(
         consumer_registry=client.app.state.internal_event_consumer_registry,
+        relay_role="owner",
     ).run_due(
         batch_size=1,
         dry_run=False,
@@ -1560,6 +1704,7 @@ def test_questionnaire_submit_queues_external_push_without_legacy_call(client: T
 
 
 def test_questionnaire_external_push_is_queue_only(client: TestClient, monkeypatch) -> None:
+    authorize_wechat_client(client, {"external_userid": "wx_ext_001"})
     monkeypatch.setenv("AICRM_QUESTIONNAIRE_EXTERNAL_PUSH_MODE", "legacy")
     _questionnaire, phone_question_id = _seed_hxc_questionnaire(
         monkeypatch,
@@ -1588,6 +1733,7 @@ def test_questionnaire_external_push_is_queue_only(client: TestClient, monkeypat
 
     planned = InternalEventWorker(
         consumer_registry=client.app.state.internal_event_consumer_registry,
+        relay_role="owner",
     ).run_due(
         batch_size=1,
         dry_run=False,
@@ -1693,6 +1839,7 @@ def test_questionnaire_queue_mode_job_creation_failure_is_retryable_after_submis
     monkeypatch,
     failure_stage: str,
 ) -> None:
+    authorize_wechat_client(client, {"external_userid": "wx_ext_001"})
     monkeypatch.setenv("AICRM_QUESTIONNAIRE_EXTERNAL_PUSH_MODE", "queue")
     _questionnaire, phone_question_id = _seed_hxc_questionnaire(
         monkeypatch,
@@ -1710,7 +1857,7 @@ def test_questionnaire_queue_mode_job_creation_failure_is_retryable_after_submis
                 raise AssertionError("planner must not run after lookup failure")
             raise RuntimeError("external effect unavailable")
 
-    from aicrm_next.questionnaire import event_consumers
+    from aicrm_next.extensions.forms.questionnaire import event_consumers
 
     monkeypatch.setattr(event_consumers, "ExternalEffectService", _BrokenExternalEffectService)
 
@@ -1731,6 +1878,7 @@ def test_questionnaire_queue_mode_job_creation_failure_is_retryable_after_submis
     assert body["external_effect_job_id"] is None
     planned = InternalEventWorker(
         consumer_registry=client.app.state.internal_event_consumer_registry,
+        relay_role="owner",
     ).run_due(
         batch_size=1,
         dry_run=False,
@@ -1780,6 +1928,9 @@ def test_wecom_tag_adapter_registry_dispatches_contact_tag_mark_and_unmark(monke
 
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_WECOM_EXECUTE", "1")
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES", f"{WECOM_CONTACT_TAG_MARK},{WECOM_CONTACT_TAG_UNMARK}")
+    monkeypatch.setenv("AICRM_WECOM_PROVIDER_TARGET_POLICY", "allowlisted_canary")
+    monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_TARGET_EXTERNAL_USERIDS", "wx_ext_tag_dispatch")
+    monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS", "owner-a")
     repo = InMemoryExternalEffectRepository()
     mark_job = _service(repo).plan_effect(
         effect_type=WECOM_CONTACT_TAG_MARK,
@@ -1790,6 +1941,7 @@ def test_wecom_tag_adapter_registry_dispatches_contact_tag_mark_and_unmark(monke
         business_type="channel_entry",
         business_id="channel-1",
         payload={
+            "execution_scope": "allowlisted_canary",
             "external_userid": "wx_ext_tag_dispatch",
             "follow_user_userid": "owner-a",
             "add_tags": ["tag_a"],
@@ -1807,12 +1959,25 @@ def test_wecom_tag_adapter_registry_dispatches_contact_tag_mark_and_unmark(monke
         business_type="wecom_tag",
         business_id="wx_ext_tag_dispatch",
         payload={
+            "execution_scope": "allowlisted_canary",
             "external_userid": "wx_ext_tag_dispatch",
             "follow_user_userid": "owner-a",
             "tag_ids": ["tag_b"],
         },
         context=_sample_context("trace-wecom-tag-unmark-dispatch"),
         idempotency_key="wecom-tag-unmark-dispatch",
+    )
+    assert _service(repo).authorize_allowlisted_canary(
+        mark_job["id"],
+        actor="pytest",
+        reason="explicit tag canary authorization",
+        expected_version=mark_job["row_version"],
+    )
+    assert _service(repo).authorize_allowlisted_canary(
+        unmark_job["id"],
+        actor="pytest",
+        reason="explicit tag canary authorization",
+        expected_version=unmark_job["row_version"],
     )
     registry = ExternalEffectAdapterRegistry()
     assert isinstance(registry._adapters["wecom_tag"], WeComContactTagAdapter)  # type: ignore[attr-defined]
@@ -1855,6 +2020,9 @@ def test_wecom_profile_adapter_registry_dispatches_description_update(monkeypatc
 
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_WECOM_EXECUTE", "1")
     monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES", WECOM_PROFILE_UPDATE)
+    monkeypatch.setenv("AICRM_WECOM_PROVIDER_TARGET_POLICY", "allowlisted_canary")
+    monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_TARGET_EXTERNAL_USERIDS", "wx_ext_profile")
+    monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS", "owner-a")
     repo = InMemoryExternalEffectRepository()
     job = _service(repo).plan_effect(
         effect_type=WECOM_PROFILE_UPDATE,
@@ -1865,12 +2033,19 @@ def test_wecom_profile_adapter_registry_dispatches_description_update(monkeypatc
         business_type="channel_entry",
         business_id="channel-1",
         payload={
+            "execution_scope": "allowlisted_canary",
             "external_userid": "wx_ext_profile",
             "follow_user_userid": "owner-a",
             "description": "wx_ext_profile",
         },
         context=_sample_context("trace-wecom-profile-dispatch"),
         idempotency_key="wecom-profile-dispatch",
+    )
+    assert _service(repo).authorize_allowlisted_canary(
+        job["id"],
+        actor="pytest",
+        reason="explicit profile canary authorization",
+        expected_version=job["row_version"],
     )
     registry = ExternalEffectAdapterRegistry()
     assert isinstance(registry._adapters["wecom_profile"], WeComProfileUpdateAdapter)  # type: ignore[attr-defined]
@@ -2057,6 +2232,82 @@ def test_wechat_payment_adapter_terminal_provider_failure_marks_refund_failed(mo
     assert failure_sync_calls[0]["out_refund_no"] == "WXRTESTPAY400"
     assert failure_sync_calls[0]["error_code"] == "http_400"
     assert failure_sync_calls[0]["response_payload"]["real_external_call_executed"] is True
+
+
+def test_wechat_payment_not_enough_is_completed_business_rejection(monkeypatch) -> None:
+    failure_sync_calls: list[dict] = []
+
+    class FakeWeChatPayClient:
+        def create_refund(self, payload):
+            raise WeChatPayClientError(
+                "provider rejected refund",
+                status_code=403,
+                payload={"code": "NOT_ENOUGH"},
+            )
+
+    def sync_failure(out_refund_no, *, error_code, error_message, response_payload):
+        failure_sync_calls.append(
+            {
+                "out_refund_no": out_refund_no,
+                "error_code": error_code,
+                "error_message": error_message,
+                "response_payload": response_payload,
+            }
+        )
+        return {"ok": True}
+
+    monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_PAYMENT_EXECUTE", "1")
+    monkeypatch.setenv("AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES", PAYMENT_WECHAT_REFUND_REQUEST)
+    repo = InMemoryExternalEffectRepository()
+    job = _service(repo).plan_effect(
+        effect_type=PAYMENT_WECHAT_REFUND_REQUEST,
+        adapter_name="wechat_payment",
+        operation="refund_request",
+        target_type="wechat_pay_refund",
+        target_id="WXRTESTPAYNOTENOUGH",
+        business_type="commerce_order",
+        business_id="WXPTESTPAYNOTENOUGH",
+        payload={
+            "transaction_id": "420000TESTPAYNOTENOUGH",
+            "out_refund_no": "WXRTESTPAYNOTENOUGH",
+            "request_payload": {
+                "transaction_id": "420000TESTPAYNOTENOUGH",
+                "out_refund_no": "WXRTESTPAYNOTENOUGH",
+                "amount": {"refund": 9900, "total": 9900, "currency": "CNY"},
+            },
+        },
+        context=_sample_context("trace-wechat-refund-not-enough"),
+        idempotency_key="wechat-refund-not-enough",
+    )
+    registry = ExternalEffectAdapterRegistry()
+    registry._adapters["wechat_payment"] = WeChatPaymentAdapter(  # type: ignore[attr-defined]
+        client_factory=lambda: FakeWeChatPayClient(),
+        refund_failure_sync=sync_failure,
+    )
+
+    result = ExternalEffectWorker(repo, registry).run_due(
+        batch_size=1,
+        dry_run=False,
+        effect_types=[PAYMENT_WECHAT_REFUND_REQUEST],
+    )
+    attempts = ExternalEffectService(repo).list_attempts(job["id"])
+
+    assert result["counts"]["failed_count"] == 1
+    assert result["items"][0]["job"]["status"] == "failed_terminal"
+    assert result["real_external_call_executed"] is True
+    assert len(attempts) == 1
+    response_summary = attempts[0].response_summary_json
+    assert response_summary["process_outcome"] == "completed"
+    assert response_summary["business_outcome"] == "rejected"
+    assert response_summary["business_reason_code"] == "insufficient_refund_balance"
+    assert response_summary["system_health_impact"] is False
+    assert response_summary["wechat_refund_executed"] is False
+    assert response_summary["refund_failure_synced"] is True
+    assert response_summary["provider_result_received"] is True
+    assert response_summary["replay_prohibited"] is True
+    assert response_summary["provider_success_claimed"] is False
+    assert failure_sync_calls[0]["response_payload"]["business_outcome"] == "rejected"
+    assert failure_sync_calls[0]["response_payload"]["system_health_impact"] is False
 
 
 def test_wecom_tag_mark_and_unmark_create_shadow_jobs() -> None:

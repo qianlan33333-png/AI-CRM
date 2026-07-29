@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.ops_enrollment.application import get_user_ops_audit_events, get_user_ops_side_effect_plans
+from aicrm_next.automation.ops_enrollment.application import get_user_ops_audit_events, get_user_ops_side_effect_plans
 
 
 def test_user_ops_broadcast_preview_is_commandbus_plan_only() -> None:

@@ -4,8 +4,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-FRONTEND = ROOT / "aicrm_next" / "frontend_compat"
-AUTOMATION = ROOT / "aicrm_next" / "automation_engine"
+FRONTEND = ROOT / "aicrm_next" / "app" / "admin_console"
+AUTOMATION = ROOT / "aicrm_next" / "automation" / "automation_engine"
 STATIC = FRONTEND / "static" / "admin_console"
 TEMPLATES = FRONTEND / "templates" / "admin_console"
 AUTOMATION_STATIC = AUTOMATION / "static" / "admin_console"
@@ -83,6 +83,7 @@ def test_migrated_business_pages_do_not_direct_fetch_material_libraries() -> Non
 
     for path, extra_source in migrated_pages:
         source = _read(path) + extra_source
-        assert "AICRMSendContentComposer.open" in source
+        expected_api = "AICRMSendContentComposer.mount" if path == CHANNEL_TEMPLATE else "AICRMSendContentComposer.open"
+        assert expected_api in source
         for marker in direct_fetch_markers:
             assert marker not in source

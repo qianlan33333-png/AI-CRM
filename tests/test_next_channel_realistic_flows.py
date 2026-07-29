@@ -6,8 +6,8 @@ import json
 
 import pytest
 
-from aicrm_next.channel_entry import repo as channel_repo
-from aicrm_next.channel_entry.application import (
+from aicrm_next.channels.channel_entry import repo as channel_repo
+from aicrm_next.channels.channel_entry.application import (
     decrypt_callback_body,
     diagnose_channel_runtime,
     dry_run_channel_entry,
@@ -15,12 +15,12 @@ from aicrm_next.channel_entry.application import (
     repair_channel_entry,
     resolve_channel_for_scene,
 )
-from aicrm_next.channel_entry.schemas import (
+from aicrm_next.channels.channel_entry.schemas import (
     DiagnoseChannelRuntimeQuery,
     ProcessChannelEntryCommand,
     RepairChannelEntryCommand,
 )
-from aicrm_next.channel_entry.wecom_adapter import get_wecom_adapter, set_wecom_adapter
+from aicrm_next.channels.channel_entry.wecom_adapter import get_wecom_adapter, set_wecom_adapter
 
 
 class RuntimeHarness:
@@ -75,25 +75,25 @@ class RuntimeHarness:
         self.validate_effect_json = False
 
     def install(self, monkeypatch):
-        monkeypatch.setattr("aicrm_next.channel_entry.repo.find_qrcode_asset_by_scene", self.find_asset)
-        monkeypatch.setattr("aicrm_next.channel_entry.repo.touch_qrcode_asset_callback", lambda asset_id: None)
-        monkeypatch.setattr("aicrm_next.channel_entry.repo.find_channel_by_scene_value", lambda scene: self.current_scenes.get(scene))
-        monkeypatch.setattr("aicrm_next.channel_entry.repo.find_channel_by_scene_alias", self.find_alias)
-        monkeypatch.setattr("aicrm_next.channel_entry.repo.find_confirmed_channel_by_scene_alias", self.find_confirmed_alias)
-        monkeypatch.setattr("aicrm_next.channel_entry.repo.find_channel_by_historical_scene_value", lambda scene: self.historical.get(scene))
-        monkeypatch.setattr("aicrm_next.channel_entry.repo.upsert_channel_scene_alias", self.upsert_alias)
-        monkeypatch.setattr("aicrm_next.channel_entry.repo.backfill_scene_alias_from_historical_vote", self.backfill_alias)
-        monkeypatch.setattr("aicrm_next.channel_entry.repo.update_alias_last_seen_at", lambda corp_id, scene: self.alias_last_seen.append(scene) or 1)
-        monkeypatch.setattr("aicrm_next.channel_entry.repo.upsert_channel_contact", self.upsert_contact)
-        monkeypatch.setattr("aicrm_next.channel_entry.repo.get_channel_entry_effect_log", self.get_effect)
-        monkeypatch.setattr("aicrm_next.channel_entry.repo.upsert_channel_entry_effect_log", self.upsert_effect)
-        monkeypatch.setattr("aicrm_next.channel_entry.repo.save_tag_snapshot", self.save_tag_snapshot)
-        monkeypatch.setattr("aicrm_next.channel_entry.repo.get_channel_by_id", lambda channel_id: self.channel if channel_id == 101 else None)
-        monkeypatch.setattr("aicrm_next.channel_entry.repo.list_channel_scene_aliases", lambda channel_id: list(self.aliases.values()))
-        monkeypatch.setattr("aicrm_next.channel_entry.repo.list_channel_entry_effect_logs", lambda **kwargs: list(self.effect_logs))
-        monkeypatch.setattr("aicrm_next.channel_entry.repo.list_recent_events", lambda scene, limit=20: [{"id": 1, "scene_value": scene, "process_status": "success"}])
-        monkeypatch.setattr("aicrm_next.channel_entry.repo.get_external_contact_event_log", lambda event_log_id: self.events.get(event_log_id))
-        monkeypatch.setattr("aicrm_next.channel_entry.repo.decode_payload_json", lambda value: value if isinstance(value, dict) else {})
+        monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.find_qrcode_asset_by_scene", self.find_asset)
+        monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.touch_qrcode_asset_callback", lambda asset_id: None)
+        monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.find_channel_by_scene_value", lambda scene: self.current_scenes.get(scene))
+        monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.find_channel_by_scene_alias", self.find_alias)
+        monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.find_confirmed_channel_by_scene_alias", self.find_confirmed_alias)
+        monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.find_channel_by_historical_scene_value", lambda scene: self.historical.get(scene))
+        monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.upsert_channel_scene_alias", self.upsert_alias)
+        monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.backfill_scene_alias_from_historical_vote", self.backfill_alias)
+        monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.update_alias_last_seen_at", lambda corp_id, scene: self.alias_last_seen.append(scene) or 1)
+        monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.upsert_channel_contact", self.upsert_contact)
+        monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.get_channel_entry_effect_log", self.get_effect)
+        monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.upsert_channel_entry_effect_log", self.upsert_effect)
+        monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.save_tag_snapshot", self.save_tag_snapshot)
+        monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.get_channel_by_id", lambda channel_id: self.channel if channel_id == 101 else None)
+        monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.list_channel_scene_aliases", lambda channel_id: list(self.aliases.values()))
+        monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.list_channel_entry_effect_logs", lambda **kwargs: list(self.effect_logs))
+        monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.list_recent_events", lambda scene, limit=20: [{"id": 1, "scene_value": scene, "process_status": "success"}])
+        monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.get_external_contact_event_log", lambda event_log_id: self.events.get(event_log_id))
+        monkeypatch.setattr("aicrm_next.channels.channel_entry.repo.decode_payload_json", lambda value: value if isinstance(value, dict) else {})
 
         class Adapter:
             def send_welcome_msg(adapter_self, payload):
@@ -405,7 +405,7 @@ def test_diagnosis_dry_run_and_repair(runtime):
     process_channel_entry(_command(external="wm-diagnosis"))
 
     diagnosis = diagnose_channel_runtime(DiagnoseChannelRuntimeQuery(scene_value="scene-current"))
-    assert diagnosis["callback_route_owner"] == "aicrm_next.channel_entry"
+    assert diagnosis["callback_route_owner"] == "aicrm_next.channels.channel_entry"
     assert diagnosis["scene_resolve"]["match_type"] == "qrcode_asset_active"
     assert diagnosis["welcome_configured"] is True
     assert diagnosis["entry_tag_configured"] is True

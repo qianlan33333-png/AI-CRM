@@ -8,7 +8,7 @@ from aicrm_next.main import create_app
 
 
 def test_user_ops_module_has_no_legacy_forward_or_real_external_markers() -> None:
-    combined = "\n".join(path.read_text(encoding="utf-8") for path in Path("aicrm_next/ops_enrollment").glob("*.py"))
+    combined = "\n".join(path.read_text(encoding="utf-8") for path in Path("aicrm_next/automation/ops_enrollment").glob("*.py"))
 
     forbidden = [
         "forward_to_legacy_flask",

@@ -6,11 +6,11 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from aicrm_next.admin_config.repository import AdminConfigRepository
-from aicrm_next.admin_config.application import AdminConfigReadService
-from aicrm_next.admin_config.application_support import _validate_known_setting
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.admin_config.repository import AdminConfigRepository
+from aicrm_next.platform.admin_config.application import AdminConfigReadService
+from aicrm_next.platform.admin_config.application_support import _validate_known_setting
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import (
     FEISHU_WEBHOOK_NOTIFY,
     MEDIA_STORAGE_UPLOAD,
     OPENCLAW_CONTEXT_PUSH,
@@ -23,13 +23,13 @@ from aicrm_next.platform_foundation.external_effects import (
     ExternalEffectService,
     reset_external_effect_fixture_state,
 )
-from aicrm_next.platform_foundation.external_effects.jobs import SCHEDULER_BATCH_SIZE_KEY, SCHEDULER_ENABLED_KEY, SCHEDULER_INTERVAL_SECONDS_KEY
-from aicrm_next.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry
-from aicrm_next.platform_foundation.external_effects.adapters import WECOM_EFFECT_TYPES
-from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
-from aicrm_next.platform_foundation.push_center.capability_registry import PUSH_CAPABILITIES
-from aicrm_next.platform_foundation.push_center.section_mapper import all_sections, effect_types_for_section, label_for_section
-from aicrm_next.shared.wecom_runtime import WECOM_ENABLED_EFFECT_TYPES_KEY, WECOM_EXECUTION_MODE_KEY
+from aicrm_next.platform.platform_foundation.external_effects.jobs import SCHEDULER_BATCH_SIZE_KEY, SCHEDULER_ENABLED_KEY, SCHEDULER_INTERVAL_SECONDS_KEY
+from aicrm_next.platform.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry
+from aicrm_next.platform.platform_foundation.external_effects.adapters import WECOM_EFFECT_TYPES
+from aicrm_next.platform.platform_foundation.external_effects.worker import ExternalEffectWorker
+from aicrm_next.platform.platform_foundation.push_center.capability_registry import PUSH_CAPABILITIES
+from aicrm_next.platform.platform_foundation.push_center.section_mapper import all_sections, effect_types_for_section, label_for_section
+from aicrm_next.platform.shared.wecom_runtime import WECOM_ENABLED_EFFECT_TYPES_KEY, WECOM_EXECUTION_MODE_KEY
 from tests.admin_auth_test_helpers import install_admin_action_tokens
 
 
@@ -182,7 +182,9 @@ def test_push_capabilities_get_hides_raw_engineering_settings_and_sensitive_valu
         "test_receiver",
     } <= keys
     assert body["summary"]["total"] == len(PUSH_CAPABILITIES)
-    assert all(item["push_center_href"].startswith("/admin/push-center?section=") for item in body["capabilities"])
+    assert all("push_center_href" not in item for item in body["capabilities"])
+    assert all("queue_counts" not in item for item in body["capabilities"])
+    assert "abnormal_count" not in body["summary"]
     assert "super-secret" not in text
     assert "Authorization" not in text
     assert "access_token" not in text
@@ -191,21 +193,13 @@ def test_push_capabilities_get_hides_raw_engineering_settings_and_sensitive_valu
     assert "AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES" not in text
 
 
-def test_push_capabilities_read_accepts_nonempty_projection_dicts() -> None:
-    class _ProjectionRepository:
-        def list_jobs(self, filters, *, limit=50, offset=0):
-            del filters, limit, offset
-            return ([{"status": "failed_terminal", "last_error_code": "provider_error", "last_error_message": "failed"}], 1)
-
-        def counts(self, filters):
-            del filters
-            return {"total": 1, "failed": 1}
-
-    payload = AdminConfigReadService().get_push_capabilities(repository=_ProjectionRepository())  # type: ignore[arg-type]
+def test_push_capabilities_read_is_configuration_only() -> None:
+    payload = AdminConfigReadService().get_push_capabilities()
 
     assert payload["ok"] is True
-    assert payload["summary"]["abnormal_count"] > 0
-    assert any(item["last_error_code"] == "provider_error" for item in payload["capabilities"])
+    assert "abnormal_count" not in payload["summary"]
+    assert all("queue_counts" not in item for item in payload["capabilities"])
+    assert all("last_error_code" not in item for item in payload["capabilities"])
 
 
 def test_push_capabilities_derive_missing_wecom_toggles_from_typed_runtime() -> None:
@@ -554,7 +548,7 @@ def test_webhooks_push_page_is_push_capability_entry(next_client: TestClient) ->
     assert "推送能力配置" in response.text
     assert "统一队列自动调度" in response.text
     assert "已开启能力" in response.text
-    assert "异常任务" in response.text
+    assert "异常任务" not in response.text
     assert "业务推送能力" in response.text
     assert "capabilityTbody" in response.text
     assert "advancedPanel" in response.text
@@ -562,7 +556,7 @@ def test_webhooks_push_page_is_push_capability_entry(next_client: TestClient) ->
     assert "缺少操作令牌" in response.text
     assert "data-action=\"toggle\"" in response.text
     assert "readonly_reason" in response.text
-    assert "push_center_href" in response.text
+    assert "push_center_href" not in response.text
     assert "timeout" not in response.text.lower()
     assert "retry" not in response.text.lower()
     assert "allowed_types" not in response.text
@@ -571,7 +565,7 @@ def test_webhooks_push_page_is_push_capability_entry(next_client: TestClient) ->
     assert "Authorization" not in response.text
     assert "access_token" not in response.text
     assert "/api/admin/config/push-capabilities" in response.text
-    assert "/api/admin/push-center/stats" in response.text
+    assert "/api/admin/push-center/stats" not in response.text
     assert "/api/admin/push-center/legacy-deprecations" not in response.text
     assert "/api/admin/push-center?section=questionnaire" not in response.text
 

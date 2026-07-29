@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.questionnaire.admin_write import get_questionnaire_admin_write_side_effect_plans
+from aicrm_next.extensions.forms.questionnaire.admin_write import get_questionnaire_admin_write_side_effect_plans
 
 
 @pytest.fixture()
@@ -47,7 +47,7 @@ def test_questionnaire_admin_write_external_effects_create_plans_only(client: Te
 def test_questionnaire_admin_write_module_does_not_import_real_external_adapters() -> None:
     combined = "\n".join(
         path.read_text(encoding="utf-8")
-        for path in [Path("aicrm_next/questionnaire/admin_write.py"), Path("aicrm_next/questionnaire/api.py")]
+        for path in [Path("aicrm_next/extensions/forms/questionnaire/admin_write.py"), Path("aicrm_next/extensions/forms/questionnaire/api.py")]
     )
 
     forbidden = [

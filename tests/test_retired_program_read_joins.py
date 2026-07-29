@@ -11,7 +11,7 @@ def _read(path: str) -> str:
 
 
 def test_customer_sidebar_no_longer_reads_automation_program_for_workflow_title() -> None:
-    source = _read("aicrm_next/customer_read_model/sidebar_v2.py")
+    source = _read("aicrm_next/crm/customer_read_model/sidebar_v2.py")
 
     assert "JOIN automation_program" not in source
     assert "p.program_name" not in source
@@ -19,8 +19,8 @@ def test_customer_sidebar_no_longer_reads_automation_program_for_workflow_title(
 
 
 def test_commerce_lead_channel_choices_do_not_join_or_display_old_programs() -> None:
-    repo_source = _read("aicrm_next/commerce/repo.py")
-    template_source = _read("aicrm_next/commerce/templates/wechat_products.html")
+    repo_source = _read("aicrm_next/extensions/commerce/commerce/repo.py")
+    template_source = _read("aicrm_next/extensions/commerce/commerce/templates/wechat_products.html")
 
     assert "JOIN automation_program" not in repo_source
     assert "p.program_name" not in repo_source
@@ -30,7 +30,7 @@ def test_commerce_lead_channel_choices_do_not_join_or_display_old_programs() -> 
 
 
 def test_public_product_lead_qr_resolves_only_explicit_channel_binding() -> None:
-    source = _read("aicrm_next/public_product/h5_wechat_pay.py")
+    source = _read("aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py")
 
     assert "WHERE c.program_id" not in source
     assert "lead_program_id" not in source

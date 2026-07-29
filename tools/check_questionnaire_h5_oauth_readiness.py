@@ -128,7 +128,18 @@ def production_probe_env():
 
 def _client() -> TestClient:
     module = importlib.import_module("aicrm_next.main")
-    return TestClient(module.create_app())
+    session_module = importlib.import_module("aicrm_next.platform.shared.wechat_h5_session")
+    client = TestClient(module.create_app())
+    client.cookies.set(
+        session_module.WECHAT_PAYMENT_IDENTITY_COOKIE,
+        session_module.sign_payment_session_payload(
+            {
+                "openid": "openid_questionnaire_readiness_probe",
+                "unionid": "unionid_questionnaire_readiness_probe",
+            }
+        ),
+    )
+    return client
 
 
 def _json_or_none(response: Any) -> Any:

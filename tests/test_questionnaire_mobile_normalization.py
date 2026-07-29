@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from aicrm_next.questionnaire.h5_write import QuestionnaireH5SubmitCommand, execute_questionnaire_h5_submit
-from aicrm_next.questionnaire.domain import normalize_mobile_answer
-from aicrm_next.questionnaire.repo import reset_questionnaire_fixture_state
+from aicrm_next.extensions.forms.questionnaire.h5_write import QuestionnaireH5SubmitCommand, execute_questionnaire_h5_submit
+from aicrm_next.extensions.forms.questionnaire.domain import normalize_mobile_answer
+from aicrm_next.extensions.forms.questionnaire.repo import reset_questionnaire_fixture_state
 
 
 def test_questionnaire_h5_submit_normalizes_mobile_identity():

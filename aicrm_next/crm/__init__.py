@@ -1,0 +1,2 @@
+"""Stable CRM domain package."""
+

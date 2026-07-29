@@ -7,9 +7,8 @@ from fastapi.testclient import TestClient
 from aicrm_next.main import create_app
 
 ROOT = Path(__file__).resolve().parents[1]
-TEMPLATE = ROOT / "aicrm_next" / "frontend_compat" / "templates" / "admin_console" / "cloud_plan_review.html"
-SCRIPT = ROOT / "aicrm_next" / "frontend_compat" / "static" / "admin_console" / "cloud_plan_review.js"
-OPS_PLAN_OVERVIEW_TS = ROOT / "frontend" / "admin" / "ops_plan" / "ops_plan_overview.ts"
+TEMPLATE = ROOT / "aicrm_next" / "app" / "admin_console" / "templates" / "admin_console" / "cloud_plan_review.html"
+SCRIPT = ROOT / "aicrm_next" / "app" / "admin_console" / "static" / "admin_console" / "cloud_plan_review.js"
 
 
 def _client(monkeypatch) -> TestClient:
@@ -34,9 +33,10 @@ def test_plan_list_page_contract(monkeypatch):
     assert "一级页加载人员" in html
     assert "0 人" in html
     assert "计划列表加载中" in html
-    assert 'data-p1-diagnostics="ops_plan"' in html
-    assert 'data-default-collapsed="true"' in html
-    assert html.index("计划列表加载中") < html.index("opsPlanP1StatusApp")
+    assert 'data-p1-diagnostics="ops_plan"' not in html
+    assert "opsPlanP1StatusPayload" not in html
+    assert "opsPlanP1StatusApp" not in html
+    assert "admin_console/p1/ops_plan" not in html
     assert "计划编号" not in html
     assert "<div>已批准</div>" not in html
     assert "<div>待处理</div>" not in html
@@ -44,7 +44,7 @@ def test_plan_list_page_contract(monkeypatch):
     assert "查看详情" in html
     assert "data-page-mode=\"list\"" in html
     assert "cloud_plan_review.js" in html
-    assert "admin_api_client.js?v=admin-request-security-v2-20260713" in html
+    assert "admin_api_client.js?v=admin-error-messages-v1-20260729" in html
     assert html.index("admin_api_client.js") < html.index("cloud_plan_review.js")
     for forbidden in ["进入审批", "全部启动", "批量审批", "展开子计划", "加载子计划", "cloud-camp-group-child"]:
         assert forbidden not in html
@@ -66,15 +66,17 @@ def test_plan_detail_page_contract(monkeypatch):
     assert "批准这个人发送" in html
     assert "拒绝这个人" in html
     assert "继续加载 50 人" in html
-    assert 'data-p1-diagnostics="ops_plan"' in html
-    assert html.index("目标人员") < html.index("opsPlanP1StatusApp")
+    assert 'data-p1-diagnostics="ops_plan"' not in html
+    assert "opsPlanP1StatusPayload" not in html
+    assert "opsPlanP1StatusApp" not in html
+    assert "admin_console/p1/ops_plan" not in html
     assert "已加载 0 / 0 人" in html
     assert "data-page-mode=\"detail\"" in html
     assert "material_picker.css" in html
     assert "send_content_composer.css" in html
     assert "material_picker.js" in html
     assert "send_content_composer.js" in html
-    assert "admin_api_client.js?v=admin-request-security-v2-20260713" in html
+    assert "admin_api_client.js?v=admin-error-messages-v1-20260729" in html
     assert html.index("admin_api_client.js") < html.index("cloud_plan_review.js")
     for forbidden in ["进入审批", "全部启动", "批量审批", "展开子计划", "加载子计划", "话术节奏", "cloud-camp-group-child"]:
         assert forbidden not in html
@@ -83,15 +85,8 @@ def test_plan_detail_page_contract(monkeypatch):
 def test_plan_review_static_contract():
     template = TEMPLATE.read_text(encoding="utf-8")
     script = SCRIPT.read_text(encoding="utf-8")
-    overview_source = OPS_PLAN_OVERVIEW_TS.read_text(encoding="utf-8")
     combined = template + "\n" + script
 
-    assert 'from "../shared/interaction_shell.js"' in overview_source
-    assert "renderInteractionShell" in overview_source
-    assert "renderOpsPlanInteractionShell" in overview_source
-    assert "renderReadonlyInteractionShell" not in overview_source
-    assert "p1-draft-shell" in template
-    assert "p1-ops-plan-interaction-shell" not in template
     assert "params.set(\"limit\", \"20\")" in script
     assert "plan.approved_count" not in script
     assert "plan.pending_count" not in script
@@ -124,5 +119,10 @@ def test_plan_review_static_contract():
         "pool key",
         "profile key",
         "behavior tier",
+        "opsPlanP1StatusPayload",
+        "opsPlanP1StatusApp",
+        "data-p1-diagnostics",
+        "admin_console/p1/ops_plan",
+        ".p1-",
     ]:
         assert forbidden not in combined

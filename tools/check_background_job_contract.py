@@ -9,8 +9,8 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from aicrm_next.platform_foundation.background_jobs.contract import WebhookRouteContract, webhook_route_contracts
-from aicrm_next.shared.route_ownership import load_route_manifest, route_key
+from aicrm_next.platform.platform_foundation.background_jobs.contract import WebhookRouteContract, webhook_route_contracts
+from aicrm_next.platform.shared.route_ownership import load_route_manifest, route_key
 
 DEFAULT_MANIFEST = ROOT / "docs" / "architecture" / "route_ownership_manifest.yml"
 WEBHOOK_MARKERS = ("webhook", "callback", "notify")

@@ -24,7 +24,7 @@
 - `config_admin`：系统配置相关读写能力。
 - `viewer`：只读；所有写操作返回 `403`。
 
-最终授权以 route policy 声明的 capability 和 `aicrm_next/admin_auth/capabilities.py` 映射为准。
+最终授权以 route policy 声明的 capability 和 `aicrm_next/platform/admin_auth/capabilities.py` 映射为准。
 
 ## Session 与 CSRF
 

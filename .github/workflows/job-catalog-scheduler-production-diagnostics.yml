@@ -1,0 +1,262 @@
+name: Job Catalog Scheduler Production Diagnostics (Read Only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_release_sha:
+        description: Exact release SHA currently exposed by production
+        required: true
+        type: string
+      confirmation:
+        description: Exact read-only diagnostics confirmation
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aicrm-production-job-catalog-scheduler-diagnostics
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Verify public release and confirmation
+        env:
+          EXPECTED_RELEASE_SHA: ${{ inputs.expected_release_sha }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -e
+          test "$CONFIRMATION" = 'DIAGNOSE AI-CRM JOB CATALOG SCHEDULER READ ONLY'
+          printf '%s' "$EXPECTED_RELEASE_SHA" | grep -Eq '^[0-9a-f]{40}$'
+          curl -sSf -D /tmp/aicrm-job-catalog-health.headers \
+            https://www.youcangogogo.com/health \
+            -o /tmp/aicrm-job-catalog-health.json
+          public_sha="$(awk 'tolower($1) == "x-aicrm-release-sha:" {gsub("\\r", "", $2); print $2}' /tmp/aicrm-job-catalog-health.headers)"
+          test "$public_sha" = "$EXPECTED_RELEASE_SHA"
+
+      - name: Read scheduler and predecessor parity evidence
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        env:
+          EXPECTED_RELEASE_SHA: ${{ inputs.expected_release_sha }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          command_timeout: 10m
+          envs: EXPECTED_RELEASE_SHA
+          script: |
+            set -e
+            set -o pipefail
+            cd '/home/ubuntu/极简 crm'
+            test "$(git rev-parse HEAD)" = "$EXPECTED_RELEASE_SHA"
+            test "$(tr -d '\r\n' < .release-sha)" = "$EXPECTED_RELEASE_SHA"
+            set -a
+            source /home/ubuntu/.openclaw-wecom-pg.env
+            set +a
+            source /home/ubuntu/venvs/openclaw/bin/activate
+
+            for unit in \
+              aicrm-job-catalog-scheduler.timer \
+              aicrm-job-catalog-scheduler.service \
+              aicrm-next-broadcast-delegation.timer \
+              aicrm-next-broadcast-delegation.service \
+              aicrm-next-group-ops-planning.timer \
+              aicrm-next-group-ops-planning.service \
+              aicrm-ai-audience-daily-intent.timer \
+              aicrm-ai-audience-daily-intent.service \
+              openclaw-wechat-pay-order-reconciliation-worker.timer \
+              openclaw-wechat-pay-order-reconciliation-worker.service
+            do
+              load_state="$(systemctl show "$unit" --property=LoadState --value 2>/dev/null || true)"
+              enabled="$(systemctl is-enabled "$unit" 2>/dev/null || true)"
+              active="$(systemctl is-active "$unit" 2>/dev/null || true)"
+              printf 'runtime_unit=%s load=%s enabled=%s active=%s\n' \
+                "$unit" "${load_state:-unknown}" "${enabled:-unknown}" "${active:-unknown}"
+            done
+
+            systemctl show aicrm-job-catalog-scheduler.service \
+              --property=LoadState,UnitFileState,ActiveState,SubState,Result,ExecMainCode,ExecMainStatus,FragmentPath,InactiveExitTimestamp \
+              --no-pager || true
+
+            scheduler_mode="$(python3 - <<'PY'
+            import json
+
+            manifest = json.load(open("deploy/production_runtime_units.json", encoding="utf-8"))
+            scheduler = manifest.get("job_catalog_scheduler") or {}
+            print(str(scheduler.get("activation_mode") or "absent"))
+            PY
+            )"
+            printf 'expected_scheduler_mode=%s\n' "$scheduler_mode"
+            scheduler_residue=0
+            if [ "$scheduler_mode" = "absent" ]; then
+              scheduler_timer_load="$(systemctl show aicrm-job-catalog-scheduler.timer --property=LoadState --value 2>/dev/null || true)"
+              scheduler_service_load="$(systemctl show aicrm-job-catalog-scheduler.service --property=LoadState --value 2>/dev/null || true)"
+              scheduler_timer_enabled="$(systemctl is-enabled aicrm-job-catalog-scheduler.timer 2>/dev/null || true)"
+              scheduler_timer_active="$(systemctl is-active aicrm-job-catalog-scheduler.timer 2>/dev/null || true)"
+              if [ "$scheduler_timer_load" != "not-found" ] \
+                || [ "$scheduler_service_load" != "not-found" ] \
+                || [ "$scheduler_timer_enabled" = "enabled" ] \
+                || [ "$scheduler_timer_active" = "active" ]; then
+                scheduler_residue=1
+              fi
+              printf 'scheduler_runtime_contract=absent_for_release residue=%s\n' "$scheduler_residue"
+            elif [ "$scheduler_mode" = "observe" ]; then
+              test -f aicrm_next/platform/platform_foundation/background_jobs/scheduler_runtime.py
+              systemctl is-enabled --quiet aicrm-job-catalog-scheduler.timer
+              systemctl is-active --quiet aicrm-job-catalog-scheduler.timer
+            elif [ "$scheduler_mode" = "enforce" ]; then
+              test -f aicrm_next/platform/platform_foundation/background_jobs/scheduler_runtime.py
+              systemctl is-enabled --quiet aicrm-job-catalog-scheduler.timer
+              systemctl is-active --quiet aicrm-job-catalog-scheduler.timer
+              systemctl is-enabled --quiet openclaw-wechat-pay-order-reconciliation-worker.timer
+              systemctl is-active --quiet openclaw-wechat-pay-order-reconciliation-worker.timer
+              grep -Fq 'Environment=AICRM_JOB_CATALOG_SCHEDULER_EXECUTE=1' \
+                deploy/aicrm-job-catalog-scheduler.service
+              grep -Fq -- '--confirmation EXECUTE_SAFE_JOB_CATALOG_SCHEDULER' \
+                deploy/aicrm-job-catalog-scheduler.service
+              grep -Fq 'EnvironmentFile=-/home/ubuntu/.aicrm-queue-runtime-generation.env' \
+                deploy/aicrm-job-catalog-scheduler.service
+              ! grep -Fq 'AICRM_GROUP_OPS_MATERIAL_UPLOAD_MODE=real' \
+                deploy/aicrm-job-catalog-scheduler.service
+
+              for unit in \
+                aicrm-next-broadcast-delegation.timer \
+                aicrm-next-broadcast-delegation.service \
+                aicrm-next-group-ops-planning.timer \
+                aicrm-next-group-ops-planning.service \
+                aicrm-ai-audience-daily-intent.timer \
+                aicrm-ai-audience-daily-intent.service
+              do
+                load_state="$(systemctl show "$unit" --property=LoadState --value 2>/dev/null || true)"
+                enabled="$(systemctl is-enabled "$unit" 2>/dev/null || true)"
+                active="$(systemctl is-active "$unit" 2>/dev/null || true)"
+                test "$load_state" = "not-found"
+                test "$enabled" != "enabled"
+                test "$active" != "active"
+                test ! -e "/etc/systemd/system/$unit"
+              done
+
+              release_epoch="$(stat -c %Y .release-sha)"
+              scheduler_exit_epoch=0
+              for _attempt in 1 2 3 4 5 6 7 8 9
+              do
+                scheduler_result="$(systemctl show aicrm-job-catalog-scheduler.service --property=Result --value)"
+                scheduler_status="$(systemctl show aicrm-job-catalog-scheduler.service --property=ExecMainStatus --value)"
+                scheduler_exit="$(systemctl show aicrm-job-catalog-scheduler.service --property=InactiveExitTimestamp --value)"
+                scheduler_exit_epoch="$(date -d "$scheduler_exit" +%s 2>/dev/null || printf '0')"
+                if [ "$scheduler_result" = "success" ] \
+                  && [ "$scheduler_status" = "0" ] \
+                  && [ "$scheduler_exit_epoch" -ge "$release_epoch" ]; then
+                  break
+                fi
+                sleep 10
+              done
+              test "$scheduler_result" = "success"
+              test "$scheduler_status" = "0"
+              test "$scheduler_exit_epoch" -ge "$release_epoch"
+              printf 'scheduler_owner_last_exit_epoch=%s release_epoch=%s\n' \
+                "$scheduler_exit_epoch" "$release_epoch"
+            else
+              echo "unsupported scheduler activation mode: $scheduler_mode"
+              exit 1
+            fi
+
+            if [ "$scheduler_mode" = "observe" ] || [ "$scheduler_mode" = "enforce" ]; then
+              python3 tools/check_job_catalog.py
+              python3 scripts/run_job_catalog_scheduler.py \
+                --dry-run \
+                --operator github_actions_scheduler_diagnostics \
+                --limit 100 \
+                > /tmp/aicrm-job-catalog-scheduler-report.json
+
+              python3 - <<'PY'
+            import json
+
+            path = "/tmp/aicrm-job-catalog-scheduler-report.json"
+            body = open(path, encoding="utf-8").read()
+            report = json.loads(body)
+            assert report["ok"] is True
+            assert report["dry_run"] is True
+            assert report["real_external_call_executed"] is False
+            assert report["executed_count"] == 0
+            assert "secretref:" not in body.lower()
+            assert "access_token" not in body.lower()
+            assert "client_secret" not in body.lower()
+            print(json.dumps(report, ensure_ascii=False, sort_keys=True, default=str))
+            PY
+            fi
+
+            python3 - <<'PY'
+            import json
+
+            from sqlalchemy import text
+
+            from aicrm_next.platform.shared.db_session import get_session_factory
+
+
+            with get_session_factory()() as session:
+                intent = session.execute(
+                    text(
+                        """
+                        SELECT dirty_generation, completed_generation, signal_generation,
+                               running_generation, status, attempt_count, max_attempts,
+                               last_error_code, row_version, updated_at, completed_at
+                        FROM customer_read_model_refresh_intent
+                        WHERE singleton_id = 1
+                        """
+                    )
+                ).mappings().fetchone()
+                outbox = [
+                    dict(row)
+                    for row in session.execute(
+                        text(
+                            """
+                            SELECT status, last_error_code, COUNT(*) AS row_count,
+                                   MAX(updated_at) AS newest_updated_at
+                            FROM internal_event_outbox
+                            WHERE event_type = 'customer_read_model.refresh.requested'
+                              AND updated_at >= CURRENT_TIMESTAMP - INTERVAL '24 hours'
+                            GROUP BY status, last_error_code
+                            ORDER BY status, last_error_code
+                            """
+                        )
+                    ).mappings()
+                ]
+                consumers = [
+                    dict(row)
+                    for row in session.execute(
+                        text(
+                            """
+                            SELECT status, last_error_code, COUNT(*) AS row_count,
+                                   MAX(updated_at) AS newest_updated_at
+                            FROM internal_event_consumer_run
+                            WHERE consumer_name = 'customer_read_model_refresh_intent_consumer'
+                              AND updated_at >= CURRENT_TIMESTAMP - INTERVAL '24 hours'
+                            GROUP BY status, last_error_code
+                            ORDER BY status, last_error_code
+                            """
+                        )
+                    ).mappings()
+                ]
+
+            print(
+                json.dumps(
+                    {
+                        "customer_read_model_refresh_intent": dict(intent or {}),
+                        "refresh_outbox_24h": outbox,
+                        "refresh_consumer_24h": consumers,
+                        "target_values_redacted": True,
+                        "real_external_call_executed": False,
+                    },
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    default=str,
+                )
+            )
+            PY
+
+            test "$scheduler_residue" = "0"

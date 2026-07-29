@@ -39,7 +39,6 @@ ADMIN_PAGES = [
     "/admin/image-library",
     "/admin/miniprogram-library",
     "/admin/attachment-library",
-    "/admin/jobs",
     "/admin/runtime-config",
     "/admin/api-docs",
     "/admin/automation-conversion",
@@ -120,8 +119,6 @@ def _has_real_data(route: str, html: str) -> tuple[bool, int]:
         return hxc_stats >= 5 and "/api/admin/hxc-dashboard/refresh" in html, max(rows, hxc_stats)
     if route == "/admin/api-docs":
         return rows >= 10, rows
-    if route == "/admin/jobs":
-        return rows >= 4, rows
     if route in {"/admin/user-ops", "/admin/user-ops/ui", "/admin/runtime-config", "/admin/cloud-orchestrator"}:
         return cards >= 3 or rows > 0, max(rows, cards)
     if route == "/admin/attachment-library":

@@ -1,0 +1,13 @@
+[Unit]
+Description=AI-CRM Queue Runtime Soak Snapshot
+After=network.target openclaw-wecom-postgres.service
+Requires=openclaw-wecom-postgres.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/极简 crm
+EnvironmentFile=/home/ubuntu/.openclaw-wecom-pg.env
+Environment=DB_APPLICATION_NAME=aicrm-next-cron-queue-soak
+Environment=PGAPPNAME=aicrm-next-cron-queue-soak
+ExecStart=/bin/bash -lc 'source /home/ubuntu/venvs/openclaw/bin/activate; exec python scripts/ops/manage_queue_runtime_soak.py --action snapshot'

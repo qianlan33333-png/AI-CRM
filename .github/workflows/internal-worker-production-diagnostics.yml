@@ -1,0 +1,263 @@
+name: Internal Worker Owner Production Diagnostics (Read Only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_release_sha:
+        description: Exact release SHA currently exposed by production
+        required: true
+        type: string
+      confirmation:
+        description: Exact read-only diagnostics confirmation
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aicrm-production-internal-worker-owner-diagnostics
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Verify public release and confirmation
+        env:
+          EXPECTED_RELEASE_SHA: ${{ inputs.expected_release_sha }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -e
+          test "$CONFIRMATION" = 'DIAGNOSE AI-CRM INTERNAL WORKER OWNER READ ONLY'
+          printf '%s' "$EXPECTED_RELEASE_SHA" | grep -Eq '^[0-9a-f]{40}$'
+          curl -sSf -D /tmp/aicrm-internal-worker-health.headers \
+            https://www.youcangogogo.com/health \
+            -o /tmp/aicrm-internal-worker-health.json
+          public_sha="$(awk 'tolower($1) == "x-aicrm-release-sha:" {gsub("\\r", "", $2); print $2}' /tmp/aicrm-internal-worker-health.headers)"
+          test "$public_sha" = "$EXPECTED_RELEASE_SHA"
+
+      - name: Read single-owner runtime and queue evidence
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        env:
+          EXPECTED_RELEASE_SHA: ${{ inputs.expected_release_sha }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          command_timeout: 10m
+          envs: EXPECTED_RELEASE_SHA
+          script: |
+            set -e
+            set -o pipefail
+            cd '/home/ubuntu/极简 crm'
+            test "$(git rev-parse HEAD)" = "$EXPECTED_RELEASE_SHA"
+            test "$(tr -d '\r\n' < .release-sha)" = "$EXPECTED_RELEASE_SHA"
+
+            owner_unit='aicrm-internal-worker.service'
+            systemctl is-enabled --quiet "$owner_unit"
+            systemctl is-active --quiet "$owner_unit"
+            for retired in \
+              aicrm-internal-queue-runtime.service \
+              aicrm-inbox-queue-runtime.service \
+              aicrm-internal-worker-observer.service
+            do
+              if systemctl is-enabled --quiet "$retired"; then
+                echo "retired internal worker unit remains enabled: $retired"
+                exit 1
+              fi
+              if systemctl is-active --quiet "$retired"; then
+                echo "retired internal worker unit remains active: $retired"
+                exit 1
+              fi
+              test ! -e "/etc/systemd/system/$retired"
+            done
+
+            owner_exec="$(systemctl show "$owner_unit" --property=ExecStart --value)"
+            printf 'owner_exec_contract=%s\n' "$owner_exec"
+            case "$owner_exec" in
+              *'run_execution_runtime.py --role internal_worker'*) ;;
+              *) echo 'internal_worker is not using the reviewed combined role command'; exit 1 ;;
+            esac
+            case "$owner_exec" in
+              *'--standby'*|*'--queue-kind'*) echo 'internal_worker is not the combined execution owner'; exit 1 ;;
+              *) ;;
+            esac
+
+            set -a
+            source /home/ubuntu/.openclaw-wecom-pg.env
+            source /home/ubuntu/.aicrm-queue-runtime-generation.env
+            set +a
+            test "${AICRM_QUEUE_RUNTIME_EXECUTE:-}" = '1'
+            test "${AICRM_QUEUE_CUTOVER_COMMITTED:-}" = '1'
+            test "${AICRM_QUEUE_WORKER_GENERATION:-0}" -gt 0
+            owner_pid="$(systemctl show "$owner_unit" --property=MainPID --value)"
+            test "$owner_pid" -gt 0
+            sudo cat "/proc/$owner_pid/environ" \
+              | tr '\0' '\n' \
+              | grep -Fx 'AICRM_QUEUE_RUNTIME_EXECUTE=1' >/dev/null
+            sudo cat "/proc/$owner_pid/environ" \
+              | tr '\0' '\n' \
+              | grep -Fx "AICRM_QUEUE_WORKER_GENERATION=$AICRM_QUEUE_WORKER_GENERATION" >/dev/null
+
+            systemctl is-active --quiet aicrm-external-queue-runtime.service
+            external_exec="$(systemctl show aicrm-external-queue-runtime.service --property=ExecStart --value)"
+            case "$external_exec" in
+              *'run_execution_runtime.py --queue-kind external'*) ;;
+              *) echo 'external worker ownership changed unexpectedly'; exit 1 ;;
+            esac
+
+            source /home/ubuntu/venvs/openclaw/bin/activate
+            python3 - <<'PY'
+            import json
+
+            from sqlalchemy import text
+
+            from aicrm_next.platform.shared.db_session import get_session_factory
+
+
+            expected_counts = {
+                "aicrm-internal_event-runtime": 2,
+                "aicrm-internal_outbox-runtime": 2,
+                "aicrm-webhook_inbox-runtime": 2,
+            }
+            with get_session_factory()() as session:
+                control = dict(
+                    session.execute(
+                        text(
+                            """
+                            SELECT active_generation, claim_enabled, rollout_mode,
+                                   external_claim_scope
+                            FROM queue_runtime_control
+                            WHERE singleton = TRUE
+                            """
+                        )
+                    ).mappings().one()
+                )
+                owner_rows = [
+                    dict(row)
+                    for row in session.execute(
+                        text(
+                            """
+                            SELECT service_name, queue_kind, generation, rollout_mode,
+                                   COUNT(*) AS heartbeat_count,
+                                   BOOL_AND(listener_connected) AS listeners_connected,
+                                   MAX(EXTRACT(EPOCH FROM (
+                                       CURRENT_TIMESTAMP - heartbeat_at
+                                   )))::BIGINT AS oldest_heartbeat_age_seconds
+                            FROM queue_worker_heartbeat
+                            WHERE worker_id LIKE '%:role:internal_worker:%'
+                              AND heartbeat_at >= CURRENT_TIMESTAMP - INTERVAL '45 seconds'
+                            GROUP BY service_name, queue_kind, generation, rollout_mode
+                            ORDER BY service_name
+                            """
+                        )
+                    ).mappings()
+                ]
+                competing_rows = [
+                    dict(row)
+                    for row in session.execute(
+                        text(
+                            """
+                            SELECT service_name, queue_kind, generation, rollout_mode,
+                                   COUNT(*) AS heartbeat_count
+                            FROM queue_worker_heartbeat
+                            WHERE worker_id NOT LIKE '%:role:internal_worker:%'
+                              AND service_name = ANY(:service_names)
+                              AND heartbeat_at >= CURRENT_TIMESTAMP - INTERVAL '45 seconds'
+                            GROUP BY service_name, queue_kind, generation, rollout_mode
+                            ORDER BY service_name
+                            """
+                        ),
+                        {"service_names": list(expected_counts)},
+                    ).mappings()
+                ]
+                claim_rows = [
+                    dict(row)
+                    for row in session.execute(
+                        text(
+                            """
+                            SELECT queue_kind, owner_kind, COUNT(*)::BIGINT AS row_count
+                            FROM (
+                                SELECT 'internal_event'::TEXT AS queue_kind,
+                                       CASE WHEN locked_by LIKE '%:role:internal_worker:%'
+                                            THEN 'internal_worker' ELSE 'competing' END AS owner_kind
+                                FROM internal_event_consumer_run
+                                WHERE status = 'running'
+                                UNION ALL
+                                SELECT 'internal_outbox',
+                                       CASE WHEN locked_by LIKE '%:role:internal_worker:%'
+                                            THEN 'internal_worker' ELSE 'competing' END
+                                FROM internal_event_outbox
+                                WHERE status = 'running'
+                                UNION ALL
+                                SELECT 'webhook_inbox',
+                                       CASE WHEN locked_by LIKE '%:role:internal_worker:%'
+                                            THEN 'internal_worker' ELSE 'competing' END
+                                FROM webhook_inbox
+                                WHERE status = 'processing'
+                            ) claimed
+                            GROUP BY queue_kind, owner_kind
+                            ORDER BY queue_kind, owner_kind
+                            """
+                        )
+                    ).mappings()
+                ]
+                backlog = dict(
+                    session.execute(
+                        text(
+                            """
+                            SELECT
+                              (SELECT COUNT(*) FROM internal_event_consumer_run
+                               WHERE status IN ('pending', 'failed_retryable')
+                                 AND (next_retry_at IS NULL OR next_retry_at <= CURRENT_TIMESTAMP))
+                                AS internal_event_due_count,
+                              (SELECT COUNT(*) FROM internal_event_outbox
+                               WHERE status IN ('pending', 'failed_retryable')
+                                 AND (next_retry_at IS NULL OR next_retry_at <= CURRENT_TIMESTAMP))
+                                AS internal_outbox_due_count,
+                              (SELECT COUNT(*) FROM webhook_inbox
+                               WHERE status IN ('received', 'failed_retryable')
+                                 AND (next_retry_at IS NULL OR next_retry_at <= CURRENT_TIMESTAMP))
+                                AS webhook_inbox_due_count
+                            """
+                        )
+                    ).mappings().one()
+                )
+
+            active_generation = int(control["active_generation"])
+            assert active_generation > 0
+            assert control["claim_enabled"] is True
+            owner_counts = {
+                str(row["service_name"]): int(row["heartbeat_count"])
+                for row in owner_rows
+            }
+            assert owner_counts == expected_counts
+            assert all(int(row["generation"]) == active_generation for row in owner_rows)
+            assert all(row["rollout_mode"] in {"canary", "execute"} for row in owner_rows)
+            assert all(row["listeners_connected"] is True for row in owner_rows)
+            assert competing_rows == []
+            assert all(row["owner_kind"] == "internal_worker" for row in claim_rows)
+
+            print(
+                json.dumps(
+                    {
+                        "runtime_control": control,
+                        "owner_heartbeat_groups": owner_rows,
+                        "competing_heartbeat_groups": competing_rows,
+                        "active_claim_groups": claim_rows,
+                        "backlog_counts": backlog,
+                        "single_internal_worker_owner": True,
+                        "predecessor_units_retired": True,
+                        "external_worker_unchanged": True,
+                        "target_values_redacted": True,
+                        "real_external_call_executed": False,
+                        "read_only": True,
+                    },
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    default=str,
+                )
+            )
+            PY

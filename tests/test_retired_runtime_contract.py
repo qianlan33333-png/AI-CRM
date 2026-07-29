@@ -3,19 +3,19 @@ from __future__ import annotations
 from pathlib import Path
 
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.auth_platform.profiles import API_CLIENT_PROFILES
-from aicrm_next.platform_foundation.background_jobs.contract import webhook_route_contracts
-from aicrm_next.shared.retired_contracts import retired_external_effect_payload
+from aicrm_next.platform.platform_foundation.auth_platform.profiles import API_CLIENT_PROFILES
+from aicrm_next.platform.platform_foundation.background_jobs.contract import webhook_route_contracts
+from aicrm_next.platform.shared.retired_contracts import retired_external_effect_payload
 
 
 ROOT = Path(__file__).resolve().parents[1]
 CALLER_PATHS = (
-    "aicrm_next/admin_jobs/application.py",
-    "aicrm_next/admin_jobs/notification_settings.py",
-    "aicrm_next/commerce/admin_refunds.py",
-    "aicrm_next/commerce/external_push_admin.py",
-    "aicrm_next/external_push/service.py",
-    "aicrm_next/owner_migration/application.py",
+    "aicrm_next/platform/admin_jobs/application.py",
+    "aicrm_next/platform/admin_jobs/notification_settings.py",
+    "aicrm_next/extensions/commerce/commerce/admin_refunds.py",
+    "aicrm_next/extensions/commerce/commerce/external_push_admin.py",
+    "aicrm_next/platform/external_push/service.py",
+    "aicrm_next/crm/owner_migration/application.py",
 )
 
 
@@ -32,7 +32,7 @@ def test_retired_external_effect_contract_is_stateless_and_explicit() -> None:
         "legacy_outbound_disabled": True,
         "external_effect_required": True,
         "migration_target": "external_effect_queue",
-        "push_center_url": "/admin/push-center",
+        "push_center_url": "/api/admin/push-center/jobs",
         "retirement_state": "physically_removed",
         "real_external_call_executed": False,
     }
@@ -47,7 +47,7 @@ def test_active_callers_do_not_import_or_write_legacy_cleanup_markers() -> None:
 
 
 def test_legacy_cleanup_runtime_package_is_physically_removed() -> None:
-    assert not any((ROOT / "aicrm_next/platform_foundation/legacy_cleanup").glob("*.py"))
+    assert not any((ROOT / "aicrm_next/platform/platform_foundation/legacy_cleanup").glob("*.py"))
     assert not (ROOT / "tests/test_legacy_webhook_cleanup.py").exists()
 
 

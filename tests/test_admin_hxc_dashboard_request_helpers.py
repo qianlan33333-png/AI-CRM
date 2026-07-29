@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from aicrm_next.hxc_dashboard.safe_mode import (
+from aicrm_next.extensions.hxc.hxc_dashboard.safe_mode import (
     HxcDashboardInputError,
     normalize_external_userids,
     normalize_image_library_ids,

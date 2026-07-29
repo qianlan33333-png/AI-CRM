@@ -4,8 +4,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.questionnaire.h5_write import get_questionnaire_h5_write_audit_events
-from aicrm_next.questionnaire.oauth import COOKIE_NAME, build_questionnaire_h5_identity_cookie
+from aicrm_next.extensions.forms.questionnaire.h5_write import get_questionnaire_h5_write_audit_events
+from wechat_identity_test_support import authorize_wechat_client
 
 
 @pytest.fixture()
@@ -13,7 +13,9 @@ def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
     monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.delenv("AICRM_NEXT_ENV", raising=False)
     monkeypatch.delenv("AICRM_NEXT_ENABLE_LEGACY_PRODUCTION_FACADE", raising=False)
-    return TestClient(create_app())
+    client = TestClient(create_app())
+    authorize_wechat_client(client, {"openid": "openid_001", "unionid": "unionid_001", "external_userid": "wx_ext_001"})
+    return client
 
 
 def _assert_next_command(body: dict, command_name: str) -> None:
@@ -80,7 +82,7 @@ def test_h5_submit_executes_next_commandbus_and_writes_submission_projection(cli
     assert body["command_id"] in {event["command_id"] for event in audit_events}
 
 
-def test_h5_submit_supports_anonymous_identity(client: TestClient) -> None:
+def test_h5_submit_without_payload_identity_uses_signed_session(client: TestClient) -> None:
     response = client.post(
         "/api/h5/questionnaires/hxc-activation-v1/submit",
         json={"answers": {"q_activation": "not_activated"}},
@@ -89,24 +91,13 @@ def test_h5_submit_supports_anonymous_identity(client: TestClient) -> None:
     assert response.status_code == 200
     body = response.json()
     _assert_next_command(body, "questionnaire.h5.submit")
-    assert body["identity"]["anonymous"] is True
-    assert body["binding_status"] == "unresolved"
+    assert body["identity"]["anonymous"] is False
+    assert body["identity"]["unionid"] == "unionid_001"
+    assert body["binding_status"] == "bound"
     assert body["result"]["score"] == 0
 
 
-def test_h5_submit_uses_oauth_cookie_identity_when_payload_has_no_identity(client: TestClient) -> None:
-    client.cookies.set(
-        COOKIE_NAME,
-        build_questionnaire_h5_identity_cookie(
-            {
-                "openid": "openid_001",
-                "unionid": "unionid_001",
-                "respondent_key": "unionid_001",
-                "external_userid": "wx_ext_001",
-            }
-        ),
-    )
-
+def test_h5_submit_uses_signed_payment_identity_when_payload_has_no_identity(client: TestClient) -> None:
     response = client.post(
         "/api/h5/questionnaires/hxc-activation-v1/submit",
         json={"answers": {"q_activation": "not_activated"}},
@@ -126,7 +117,7 @@ def test_h5_submit_fails_closed_when_identity_resolution_is_unavailable(client: 
         def __call__(self, query):
             raise RuntimeError("column b.id does not exist")
 
-    monkeypatch.setattr("aicrm_next.questionnaire.h5_write.ResolvePersonIdentityQuery", lambda: FailingIdentityQuery())
+    monkeypatch.setattr("aicrm_next.extensions.forms.questionnaire.h5_write.ResolvePersonIdentityQuery", lambda: FailingIdentityQuery())
 
     response = client.post(
         "/api/h5/questionnaires/hxc-activation-v1/submit",
@@ -165,7 +156,7 @@ def test_h5_submit_syncs_mobile_binding_without_external_webhook_switch(
             }
 
     monkeypatch.setattr(
-        "aicrm_next.questionnaire.h5_write.BindMobileToExternalContactCommand",
+        "aicrm_next.extensions.forms.questionnaire.h5_write.BindMobileToExternalContactCommand",
         lambda: FakeBindMobileCommand(),
     )
 

@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from aicrm_next.main import app
-from aicrm_next.shared.route_ownership import validate_route_manifest
+from aicrm_next.platform.shared.route_ownership import validate_route_manifest
 
 
 DEFAULT_MANIFEST = ROOT / "docs" / "architecture" / "route_ownership_manifest.yml"

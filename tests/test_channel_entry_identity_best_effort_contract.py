@@ -44,14 +44,14 @@ def test_channel_entry_identity_best_effort_runtime_table_is_governed() -> None:
 
     assert runtime_entry["domain"] == "channel_entry"
     assert runtime_entry["lifecycle"] == "queue"
-    assert runtime_entry["write_owner"] == "aicrm_next.channel_entry.repo"
-    assert "aicrm_next.channel_entry.repo" in runtime_entry["read_owners"]
+    assert runtime_entry["write_owner"] == "aicrm_next.channels.channel_entry.repo"
+    assert "aicrm_next.channels.channel_entry.repo" in runtime_entry["read_owners"]
     assert runtime_entry["migration_source"].startswith("0088_channel_entry_identity_best_effort")
     assert "0092_channel_entry_runtime_identity_backoff" in runtime_entry["migration_source"]
     assert runtime_entry["pii_level"] == "internal_contact"
 
     registry = yaml.safe_load(REPOSITORY_OWNERSHIP.read_text(encoding="utf-8"))
-    channel_entry_repo = registry["repositories"]["aicrm_next/channel_entry/repo.py"]
+    channel_entry_repo = registry["repositories"]["aicrm_next/channels/channel_entry/repo.py"]
 
     assert "automation_channel_entry_runtime" in channel_entry_repo["table_writes"]
 

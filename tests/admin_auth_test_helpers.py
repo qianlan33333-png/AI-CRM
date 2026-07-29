@@ -6,19 +6,19 @@ from typing import Any
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.admin_auth.capabilities import capabilities_for_roles
-from aicrm_next.admin_auth.service import CSRF_COOKIE, SESSION_COOKIE
-from aicrm_next.platform_foundation.auth_platform.context import AuthContext, PrincipalType
-from aicrm_next.platform_foundation.auth_platform.credentials import (
+from aicrm_next.platform.admin_auth.capabilities import capabilities_for_roles
+from aicrm_next.platform.admin_auth.service import CSRF_COOKIE, SESSION_COOKIE
+from aicrm_next.platform.platform_foundation.auth_platform.context import AuthContext, PrincipalType
+from aicrm_next.platform.platform_foundation.auth_platform.credentials import (
     CredentialHasher,
     hash_client_secret,
     issue_client_secret,
 )
-from aicrm_next.platform_foundation.auth_platform.models import ApiClientRecord, AuthSessionRecord, SessionSubject
-from aicrm_next.platform_foundation.auth_platform.service import ApiClientService, AuthServiceConfig
-from aicrm_next.platform_foundation.auth_platform.sessions import AuthSessionService, IssuedSession
-from aicrm_next.admin_auth.action_token import issue_action_token
-from aicrm_next.shared.route_ownership import load_route_manifest
+from aicrm_next.platform.platform_foundation.auth_platform.models import ApiClientRecord, AuthSessionRecord, SessionSubject
+from aicrm_next.platform.platform_foundation.auth_platform.service import ApiClientService, AuthServiceConfig
+from aicrm_next.platform.platform_foundation.auth_platform.sessions import AuthSessionService, IssuedSession
+from aicrm_next.platform.admin_auth.action_token import issue_action_token
+from aicrm_next.platform.shared.route_ownership import load_route_manifest
 
 
 TEST_PEPPER = "pytest-admin-session-pepper-material-32-bytes"

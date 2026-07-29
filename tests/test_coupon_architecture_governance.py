@@ -19,7 +19,7 @@ def test_coupon_routes_are_next_owned_and_admin_writes_issue_bound_action_grants
     routes = _routes()
     coupon_routes = [route for route in routes if "coupon" in route["route_name"]]
 
-    assert len(coupon_routes) == 20
+    assert len(coupon_routes) == 21
     assert {route["runtime_owner"] for route in coupon_routes} == {"ai_crm_next"}
     assert {route["capability_owner"] for route in coupon_routes} == {"commerce"}
 
@@ -73,6 +73,6 @@ def test_coupon_tables_have_canonical_lifecycle_and_no_drop_candidate() -> None:
     assert names <= set(tables)
     for name in names:
         assert tables[name]["lifecycle"] == "canonical"
-        assert tables[name]["write_owner"] == "aicrm_next.commerce.coupons"
+        assert tables[name]["write_owner"] == "aicrm_next.extensions.commerce.commerce.coupons"
         assert tables[name]["drop_candidate"] is False
         assert tables[name]["migration_source"] == "0114_commerce_coupons"

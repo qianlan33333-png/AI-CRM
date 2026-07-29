@@ -11,9 +11,9 @@ from aicrm_next.main import create_app
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TEMPLATE_DIR = ROOT / "aicrm_next" / "admin_shell" / "templates" / "admin_shell"
-STYLESHEET = ROOT / "aicrm_next" / "operation_cycles" / "static" / "operation_cycles.css"
-DETAIL_SCRIPT = ROOT / "aicrm_next" / "operation_cycles" / "static" / "operation_cycles_detail.js"
+TEMPLATE_DIR = ROOT / "aicrm_next" / "app" / "admin_console" / "templates" / "admin_shell"
+STYLESHEET = ROOT / "aicrm_next" / "extensions" / "hxc" / "operation_cycles" / "static" / "operation_cycles.css"
+DETAIL_SCRIPT = ROOT / "aicrm_next" / "extensions" / "hxc" / "operation_cycles" / "static" / "operation_cycles_detail.js"
 AGENT_GUIDE = ROOT / "docs" / "operation_cycles" / "agent_usage_guide.md"
 AGENT_ENTRY = ROOT / "AGENTS.md"
 
@@ -90,7 +90,7 @@ def _run() -> dict:
 
 
 def _client(monkeypatch) -> TestClient:
-    from aicrm_next.operation_cycles import admin_pages
+    from aicrm_next.extensions.hxc.operation_cycles import admin_pages
 
     strategy = _strategy()
     run = _run()
@@ -283,7 +283,7 @@ def _client(monkeypatch) -> TestClient:
     return TestClient(create_app(), raise_server_exceptions=False)
 
 
-def test_operation_cycle_templates_are_readonly_and_use_three_level_ia() -> None:
+def test_operation_cycle_templates_keep_three_level_ia_and_limit_writes_to_strategy_decisions() -> None:
     sources = {
         path.name: path.read_text(encoding="utf-8")
         for path in (
@@ -301,13 +301,17 @@ def test_operation_cycle_templates_are_readonly_and_use_three_level_ia() -> None
     assert "operationCycleAssistantPlans" in sources["operation_cycles_strategy.html"]
     for index in range(1, 9):
         assert f'id="cycle-step-{index}"' in sources["operation_cycles_run.html"]
-    for source in sources.values():
+    for name in ("operation_cycles_list.html", "operation_cycles_run.html"):
+        source = sources[name]
         assert 'data-readonly="true"' in source
         assert "<form" not in source
         assert 'method="post"' not in source.lower()
+    assert 'data-operation-cycle-decision-form' in sources["operation_cycles_strategy.html"]
+    assert 'data-proposal-decision="accept"' in sources["operation_cycles_strategy.html"]
+    assert 'data-proposal-decision="reject"' in sources["operation_cycles_strategy.html"]
+    assert 'method="post"' not in sources["operation_cycles_strategy.html"].lower()
     assert sources["operation_cycles_list.html"].count("<button") == 2
     assert sources["operation_cycles_list.html"].count('disabled aria-disabled="true"') == 2
-    assert "<button" not in sources["operation_cycles_strategy.html"]
     assert "<button" not in sources["operation_cycles_run.html"]
 
 
@@ -343,7 +347,7 @@ def test_operation_cycle_pages_render_dense_readonly_evidence(monkeypatch) -> No
     assert listing.status_code == strategy.status_code == run.status_code == 200
     assert stylesheet.status_code == detail_script.status_code == 200
     assert ".operation-cycle-step" in stylesheet.text
-    assert "/static/operation-cycles/operation_cycles.css?v=20260715-v1" in listing.text
+    assert "/static/operation-cycles/operation_cycles.css?v=20260728-v2" in listing.text
     assert "每周一全量用户激活" in listing.text
     assert "任务列表" in listing.text
     assert "本周进度" in listing.text
@@ -366,6 +370,8 @@ def test_operation_cycle_pages_render_dense_readonly_evidence(monkeypatch) -> No
     assert "本周复盘明细" in strategy.text
     assert "下周执行策略" in strategy.text
     assert "历史发送记录" in strategy.text
+    assert "正式策略" in strategy.text
+    assert "优化记录" in strategy.text
     assert "本周群发结果" in strategy.text
     assert "有效发送" in strategy.text
     assert "data-operation-cycle-chart=" in strategy.text
@@ -406,7 +412,7 @@ def test_operation_cycle_pages_render_dense_readonly_evidence(monkeypatch) -> No
 
 
 def test_operation_cycle_weekly_progress_resets_outside_current_week() -> None:
-    from aicrm_next.operation_cycles.admin_pages import _strategy_summaries
+    from aicrm_next.extensions.hxc.operation_cycles.admin_pages import _strategy_summaries
 
     payload = {"items": [_strategy()]}
     current_week = _strategy_summaries(
@@ -430,7 +436,7 @@ def test_operation_cycle_weekly_progress_resets_outside_current_week() -> None:
 
 
 def test_operation_cycle_empty_state_never_presents_missing_as_zero(monkeypatch) -> None:
-    from aicrm_next.operation_cycles import admin_pages
+    from aicrm_next.extensions.hxc.operation_cycles import admin_pages
 
     client = _client(monkeypatch)
     monkeypatch.setattr(
@@ -462,7 +468,7 @@ def test_operation_cycle_styles_are_namespaced_and_responsive() -> None:
     assert "@media (prefers-reduced-motion: reduce)" in operation_cycle_css
     assert "--operation-cycle-amber" in operation_cycle_css
     base = (TEMPLATE_DIR / "operation_cycles_base.html").read_text(encoding="utf-8")
-    assert "/static/operation-cycles/operation_cycles.css?v=20260715-v1" in base
+    assert "/static/operation-cycles/operation_cycles.css?v=20260728-v2" in base
 
 
 def test_operation_cycle_templates_do_not_name_sensitive_identity_fields() -> None:

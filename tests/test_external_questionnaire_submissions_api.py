@@ -3,8 +3,9 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.questionnaire.repo import build_questionnaire_repository, reset_questionnaire_fixture_state
+from aicrm_next.extensions.forms.questionnaire.repo import build_questionnaire_repository, reset_questionnaire_fixture_state
 from tests.admin_auth_test_helpers import access_token_headers, install_access_token
+from tests.wechat_identity_test_support import authorize_wechat_client
 
 
 def _client(monkeypatch, *, authorized: bool = True) -> TestClient:
@@ -39,16 +40,18 @@ def _submit_fixture(
     unionid: str = "unionid_001",
     external_userid: str = "wx_ext_001",
 ) -> str:
+    authorize_wechat_client(
+        client,
+        {
+            "external_userid": external_userid,
+            "openid": "openid_001",
+            "unionid": unionid,
+        },
+    )
     response = client.post(
         "/api/h5/questionnaires/hxc-activation-v1/submit",
         json={
             "answers": {"q_activation": "activated", "q_interest": ["ai_tools"]},
-            "identity": {
-                "external_userid": external_userid,
-                "openid": "openid_001",
-                "unionid": unionid,
-                "mobile": mobile,
-            },
             "source": {"scene": "external-questionnaire-api-test"},
         },
         headers={"Idempotency-Key": f"external-questionnaire-{mobile}"},

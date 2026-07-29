@@ -5,14 +5,28 @@ import pytest
 pytestmark = pytest.mark.usefixtures("composed_internal_event_registry")
 
 from aicrm_next.internal_event_composition import register_payment_succeeded_consumers
-from aicrm_next.platform_foundation.external_effects import WEBHOOK_ORDER_PAID_PUSH, ExternalEffectService, reset_external_effect_fixture_state
-from aicrm_next.platform_foundation.internal_events import InternalEventService, reset_internal_event_fixture_state
-from aicrm_next.platform_foundation.internal_events.outbox import InternalEventOutboxRelay
-from aicrm_next.platform_foundation.internal_events.payment import PAYMENT_SUCCEEDED_EVENT_TYPE
-from aicrm_next.platform_foundation.internal_events.repository import build_internal_event_repository
-from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
-from aicrm_next.public_product import h5_wechat_pay
-from aicrm_next.public_product.h5_wechat_pay import _apply_transaction
+from aicrm_next.platform.platform_foundation.external_effects import WEBHOOK_ORDER_PAID_PUSH, ExternalEffectService, reset_external_effect_fixture_state
+from aicrm_next.platform.platform_foundation.internal_events import InternalEventService, reset_internal_event_fixture_state
+from aicrm_next.platform.platform_foundation.internal_events.outbox import InternalEventOutboxRelay
+from aicrm_next.platform.platform_foundation.internal_events.payment import PAYMENT_SUCCEEDED_EVENT_TYPE
+from aicrm_next.platform.platform_foundation.internal_events.repository import build_internal_event_repository
+from aicrm_next.platform.platform_foundation.internal_events.worker import InternalEventWorker
+from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
+from aicrm_next.extensions.commerce.public_product.h5_wechat_pay import _apply_transaction
+
+
+PAYMENT_CONSUMERS = frozenset({
+    "ai_assist_notify_consumer",
+    "ai_audience_source_poke_consumer",
+    "customer_business_summary_consumer",
+    "customer_read_model_dirty_consumer",
+    "customer_timeline_projection_consumer",
+    "dnd_policy_consumer",
+    "order_projection_consumer",
+    "product_paid_wecom_tag_consumer",
+    "service_period_entitlement_consumer",
+    "webhook_order_paid_consumer",
+})
 
 
 class _FakeCursor:
@@ -134,7 +148,7 @@ def _enable_payment_events(monkeypatch) -> None:
     monkeypatch.setenv("AICRM_INTERNAL_EVENTS_PAYMENT_ENABLED", "1")
     monkeypatch.setenv("AICRM_INTERNAL_EVENTS_SHADOW_ONLY", "0")
     monkeypatch.setenv("AICRM_INTERNAL_EVENTS_PAYMENT_DISABLE_LEGACY_AUTOMATION_DIRECT", "1")
-    monkeypatch.setattr("aicrm_next.commerce.external_push_admin.resolve_and_validate_public_https_url", lambda url: url)
+    monkeypatch.setattr("aicrm_next.extensions.commerce.commerce.external_push_admin.resolve_and_validate_public_https_url", lambda url: url)
     monkeypatch.setattr(
         h5_wechat_pay,
         "enqueue_transactional_internal_event_outbox",
@@ -209,26 +223,8 @@ def test_payment_success_emits_payment_succeeded_and_duplicate_notify_is_idempot
     assert events[0].payload_summary_json["mobile_masked"] == "138****1234"
     assert "13800001234" not in str(events[0].payload_summary_json)
     consumer_names = {run.consumer_name for run in runs}
-    assert run_total == len(consumer_names)
-    assert {
-        "ai_assist_notify_consumer",
-        "customer_business_summary_consumer",
-        "dnd_policy_consumer",
-        "order_projection_consumer",
-        "product_paid_wecom_tag_consumer",
-        "service_period_entitlement_consumer",
-        "webhook_order_paid_consumer",
-    }.issubset(consumer_names)
-    assert consumer_names <= {
-        "ai_assist_notify_consumer",
-        "ai_audience_source_poke_consumer",
-        "customer_business_summary_consumer",
-        "dnd_policy_consumer",
-        "order_projection_consumer",
-        "product_paid_wecom_tag_consumer",
-        "service_period_entitlement_consumer",
-        "webhook_order_paid_consumer",
-    }
+    assert run_total == len(PAYMENT_CONSUMERS)
+    assert consumer_names == PAYMENT_CONSUMERS
 
 
 def test_webhook_order_paid_consumer_creates_external_effect_job_without_external_call(monkeypatch) -> None:

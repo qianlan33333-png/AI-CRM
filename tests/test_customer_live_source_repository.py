@@ -5,12 +5,12 @@ import os
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
-from aicrm_next.customer_read_model.repo import (
+from aicrm_next.crm.customer_read_model.repo import (
     _DEFAULT_LIVE_SOURCE_LIST_LIMIT,
     LiveSourceCustomerReadRepository,
     build_customer_live_source_repository,
 )
-from aicrm_next.shared.database import get_sqlalchemy_database_url
+from aicrm_next.platform.shared.database import get_sqlalchemy_database_url
 
 
 def _execute_all(session, statements: list[str]) -> None:
@@ -238,6 +238,43 @@ def test_recent_message_snapshot_supports_legacy_text_send_time(next_pg_schema):
 
         assert [item["msgid"] for item in snapshot["union-legacy"]] == ["msg-newer", "msg-older"]
         assert snapshot["union-legacy"][1]["send_time"].startswith("2026-07-12 ")
+    finally:
+        session.close()
+        transaction.rollback()
+        connection.close()
+        engine.dispose()
+
+
+def test_recent_message_snapshot_large_postgres_scope_uses_one_array_parameter(next_pg_schema):
+    engine = create_engine(get_sqlalchemy_database_url(os.environ["DATABASE_URL"]), future=True)
+    connection = engine.connect()
+    transaction = connection.begin()
+    session = sessionmaker(bind=connection, future=True)()
+    try:
+        session.execute(
+            text(
+                """
+                CREATE TEMPORARY TABLE archived_messages (
+                    id BIGINT PRIMARY KEY,
+                    msgid TEXT,
+                    chat_type TEXT,
+                    unionid TEXT,
+                    owner_userid TEXT,
+                    msgtype TEXT,
+                    content TEXT,
+                    send_time TEXT,
+                    created_at TIMESTAMPTZ NOT NULL
+                ) ON COMMIT DROP
+                """
+            )
+        )
+
+        snapshot = LiveSourceCustomerReadRepository(session).snapshot_recent_messages_by_unionid(
+            [f"union-large-{index}" for index in range(70_000)],
+            per_customer_limit=100,
+        )
+
+        assert snapshot == {}
     finally:
         session.close()
         transaction.rollback()

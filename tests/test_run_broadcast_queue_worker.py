@@ -3,8 +3,8 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-import aicrm_next.background_jobs.broadcast_queue_worker as worker
-from aicrm_next.background_jobs.broadcast_queue_worker import run_broadcast_queue_worker
+import aicrm_next.automation.background_jobs.broadcast_queue_worker as worker
+from aicrm_next.automation.background_jobs.broadcast_queue_worker import run_broadcast_queue_worker
 
 
 class FakeRepo:

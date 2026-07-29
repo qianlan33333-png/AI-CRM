@@ -8,13 +8,13 @@ from typing import Any, Iterator
 import pytest
 import requests
 
-from aicrm_next.admin_config.repository import AdminConfigRepository
-from aicrm_next.admin_config.settings import mask_value
-from aicrm_next.ai_audience_ops.package_spec import redact_report
-from aicrm_next.platform_foundation.external_calls import scrub_summary
-from aicrm_next.platform_foundation.external_effects.adapters import WebhookAdapter
-from aicrm_next.platform_foundation.external_effects.models import WEBHOOK_GENERIC_PUSH
-from aicrm_next.shared.sensitive_data import (
+from aicrm_next.platform.admin_config.repository import AdminConfigRepository
+from aicrm_next.platform.admin_config.settings import mask_value
+from aicrm_next.extensions.ai.ai_audience_ops.package_spec import redact_report
+from aicrm_next.platform.platform_foundation.external_calls import scrub_summary
+from aicrm_next.platform.platform_foundation.external_effects.adapters import WebhookAdapter
+from aicrm_next.platform.platform_foundation.external_effects.models import WEBHOOK_GENERIC_PUSH
+from aicrm_next.platform.shared.sensitive_data import (
     PII_MASK,
     SECRET_MASK,
     redact_sensitive_data,

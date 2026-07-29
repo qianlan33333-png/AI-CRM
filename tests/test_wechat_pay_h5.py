@@ -10,10 +10,10 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from cryptography.x509.oid import NameOID
 
-from aicrm_next.admin_config.settings import mask_value
-from aicrm_next.commerce.order_expiration import close_expired_wechat_pay_orders
-from aicrm_next.commerce.repo import reset_commerce_fixture_state
-from aicrm_next.commerce.wechat_pay_client import WeChatPayClient, WeChatPayClientConfig
+from aicrm_next.platform.admin_config.settings import mask_value
+from aicrm_next.extensions.commerce.commerce.order_expiration import close_expired_wechat_pay_orders
+from aicrm_next.extensions.commerce.commerce.repo import reset_commerce_fixture_state
+from aicrm_next.extensions.commerce.commerce.wechat_pay_client import WeChatPayClient, WeChatPayClientConfig
 
 
 def _wechat_checkout_payload(product_code: str = "test-product") -> dict:
@@ -200,7 +200,7 @@ def test_next_wechat_pay_client_verifies_notify_signature_with_platform_certific
 
 
 def test_commerce_wechat_pay_client_facade_has_no_direct_http_call() -> None:
-    source = Path("aicrm_next/commerce/wechat_pay_client.py").read_text(encoding="utf-8")
+    source = Path("aicrm_next/extensions/commerce/commerce/wechat_pay_client.py").read_text(encoding="utf-8")
 
     assert "requests.request" not in source
     assert "import requests" not in source
@@ -242,7 +242,7 @@ def test_next_wechat_checkout_and_notify_keep_h5_payment_contract(next_client):
 
 
 def test_h5_wechat_pay_order_expiry_defaults_to_two_hours() -> None:
-    from aicrm_next.public_product import h5_wechat_pay
+    from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
 
     now = datetime.now(timezone.utc)
     expires_at = datetime.fromisoformat(h5_wechat_pay._expires_at().replace("Z", "+00:00"))
@@ -297,7 +297,7 @@ def test_close_expired_wechat_pay_orders_only_targets_unpaid_pending_orders() ->
 
 
 def test_h5_order_status_closes_expired_pending_order_before_return(monkeypatch) -> None:
-    from aicrm_next.public_product import h5_wechat_pay
+    from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
 
     calls: list[dict] = []
 
@@ -377,7 +377,7 @@ def test_h5_order_status_closes_expired_pending_order_before_return(monkeypatch)
 
 
 def test_h5_order_status_requires_signed_payment_identity_before_db_access(monkeypatch) -> None:
-    from aicrm_next.public_product import h5_wechat_pay
+    from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
 
     monkeypatch.setattr(h5_wechat_pay, "production_data_ready", lambda: True)
     monkeypatch.setattr(h5_wechat_pay, "_identity_from_request", lambda _request: {})
@@ -389,15 +389,15 @@ def test_h5_order_status_requires_signed_payment_identity_before_db_access(monke
 
     response = h5_wechat_pay.order_status_response(
         "WXP_PRIVATE_ORDER",
-        type("Request", (), {"query_params": {}, "cookies": {}})(),
+        type("Request", (), {"query_params": {}, "cookies": {}, "headers": {"User-Agent": "MicroMessenger"}})(),
     )
 
     assert response.status_code == 401
-    assert b"payment_identity_required" in response.body
+    assert b"unionid_oauth_required" in response.body
 
 
 def test_h5_order_status_hides_orders_owned_by_another_unionid(monkeypatch) -> None:
-    from aicrm_next.public_product import h5_wechat_pay
+    from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
 
     calls: list[str] = []
 

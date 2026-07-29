@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.external_effects import reset_external_effect_fixture_state
+from aicrm_next.platform.platform_foundation.external_effects import reset_external_effect_fixture_state
 
 
 def _client() -> TestClient:
@@ -70,8 +70,8 @@ def test_user_ops_workspace_api_string_contract_is_preserved() -> None:
 
 
 def test_user_ops_admin_page_routes_are_owned_by_native_module() -> None:
-    assert _endpoint_module("/admin/user-ops/ui") == "aicrm_next.ops_enrollment.admin_pages"
-    assert _endpoint_module("/admin/user-ops") == "aicrm_next.ops_enrollment.admin_pages"
+    assert _endpoint_module("/admin/user-ops/ui") == "aicrm_next.automation.ops_enrollment.admin_pages"
+    assert _endpoint_module("/admin/user-ops") == "aicrm_next.automation.ops_enrollment.admin_pages"
 
 
 def test_user_ops_pages_removed_from_frontend_compat_inventory() -> None:

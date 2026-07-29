@@ -10,14 +10,14 @@ from aicrm_next.main import create_app
 
 ROOT = Path(__file__).resolve().parents[1]
 RETIRED_RUNTIME_FILES = (
-    ROOT / "aicrm_next/admin_shell/templates/admin_shell/p1_group_ops_workspace.html",
-    ROOT / "aicrm_next/automation_engine/group_ops/draft_api.py",
-    ROOT / "aicrm_next/automation_engine/group_ops/draft_repository.py",
-    ROOT / "aicrm_next/automation_engine/group_ops/draft_service.py",
-    ROOT / "aicrm_next/automation_engine/group_ops/governance_api.py",
-    ROOT / "aicrm_next/automation_engine/group_ops/governance_repository.py",
-    ROOT / "aicrm_next/automation_engine/group_ops/governance_service.py",
-    ROOT / "aicrm_next/frontend_compat/static/admin_console/p1/p1_group_ops_workspace",
+    ROOT / "aicrm_next/app/admin_console/templates/admin_shell/p1_group_ops_workspace.html",
+    ROOT / "aicrm_next/automation/automation_engine/group_ops/draft_api.py",
+    ROOT / "aicrm_next/automation/automation_engine/group_ops/draft_repository.py",
+    ROOT / "aicrm_next/automation/automation_engine/group_ops/draft_service.py",
+    ROOT / "aicrm_next/automation/automation_engine/group_ops/governance_api.py",
+    ROOT / "aicrm_next/automation/automation_engine/group_ops/governance_repository.py",
+    ROOT / "aicrm_next/automation/automation_engine/group_ops/governance_service.py",
+    ROOT / "aicrm_next/app/admin_console/static/admin_console/p1/p1_group_ops_workspace",
     ROOT / "scripts/diagnose_p1_group_ops_workspace_bridge_acceptance.py",
 )
 

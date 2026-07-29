@@ -5,16 +5,29 @@ from urllib.parse import urlparse
 
 from sqlalchemy import text
 
-from aicrm_next.automation_agents.context_builder import referenced_context_keys
-from aicrm_next.automation_agents.worker import AutomationAgentWorker
-from aicrm_next.external_effect_composition import build_external_effect_continuation_registry
-from aicrm_next.platform_foundation.command_bus.models import CommandContext
-from aicrm_next.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry, WebhookAdapter
-from aicrm_next.platform_foundation.external_effects.models import WEBHOOK_GENERIC_PUSH
-from aicrm_next.platform_foundation.external_effects.service import ExternalEffectService
-from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
-from aicrm_next.platform_foundation.auth_platform.webhook_hmac import WebhookHmacSigner
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.extensions.ai.automation_agents.context_builder import referenced_context_keys
+from aicrm_next.extensions.ai.automation_agents.worker import AutomationAgentWorker
+from aicrm_next.extensions.ai.automation_agents.item_events import ITEM_PREPARE_CONSUMER, ITEM_PREPARE_EVENT
+from aicrm_next.extensions.ai.ai_audience_ops.event_types import INBOUND_RECEIVED_EVENT
+from aicrm_next.external_effect_composition import (
+    AUTOMATION_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
+    build_external_effect_continuation_consumers,
+    build_external_effect_continuation_registry,
+)
+from aicrm_next.internal_event_composition import build_internal_event_consumer_registry
+from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects.adapters import ExternalEffectAdapterRegistry, WebhookAdapter
+from aicrm_next.platform.platform_foundation.external_effects.models import AI_AGENT_GENERATE, WEBHOOK_GENERIC_PUSH
+from aicrm_next.platform.platform_foundation.external_effects.completion_events import (
+    EXTERNAL_EFFECT_COMPLETED_EVENT_TYPE,
+)
+from aicrm_next.platform.platform_foundation.external_effects.service import ExternalEffectService
+from aicrm_next.platform.platform_foundation.external_effects.worker import ExternalEffectWorker
+from aicrm_next.platform.platform_foundation.internal_events import InternalEventService
+from aicrm_next.platform.platform_foundation.internal_events.outbox import InternalEventOutboxRelay
+from aicrm_next.platform.platform_foundation.internal_events.worker import InternalEventWorker
+from aicrm_next.platform.platform_foundation.auth_platform.webhook_hmac import WebhookHmacSigner
+from aicrm_next.platform.shared.db_session import get_session_factory
 from tests.webhook_hmac_test_helpers import (
     install_webhook_hmac_client,
     outbound_webhook_hmac_signer,
@@ -40,6 +53,55 @@ def _insert_package(session, *, package_key: str = "agent_callback_pkg") -> int:
         .one()
     )
     return int(row["id"])
+
+
+def _dispatch_ai_audience_inbound_events() -> list[dict]:
+    registry = build_internal_event_consumer_registry()
+    relayed = InternalEventOutboxRelay(consumer_registry=registry).relay_due(limit=100)
+    assert relayed["ok"] is True
+    events, _ = InternalEventService().list_events({"event_type": INBOUND_RECEIVED_EVENT}, limit=100)
+    worker = InternalEventWorker(consumer_registry=registry)
+    results: list[dict] = []
+    for event in events:
+        runs, _ = InternalEventService().list_consumer_runs({"event_id": event.event_id}, limit=100)
+        for run in runs:
+            if run.status in {"pending", "failed_retryable"}:
+                results.append(worker.dispatch_one(run))
+    assert results
+    assert {item["consumer_run"]["status"] for item in results} == {"succeeded"}
+    return results
+
+
+def _dispatch_item_prepare_events() -> list[dict]:
+    registry = build_internal_event_consumer_registry()
+    InternalEventOutboxRelay(consumer_registry=registry).relay_due(limit=100)
+    events, _ = InternalEventService().list_events({"event_type": ITEM_PREPARE_EVENT}, limit=100)
+    worker = InternalEventWorker(consumer_registry=registry)
+    results: list[dict] = []
+    for event in events:
+        runs, _ = InternalEventService().list_consumer_runs({"event_id": event.event_id}, limit=100)
+        for run in runs:
+            if run.consumer_name == ITEM_PREPARE_CONSUMER and run.status in {"pending", "failed_retryable"}:
+                results.append(worker.dispatch_one(run))
+    assert results
+    return results
+
+
+def _generation_effect() -> dict:
+    with get_session_factory()() as session:
+        row = session.execute(
+            text(
+                """
+                SELECT *
+                FROM external_effect_job
+                WHERE effect_type = :effect_type
+                ORDER BY id DESC
+                LIMIT 1
+                """
+            ),
+            {"effect_type": AI_AGENT_GENERATE},
+        ).mappings().one()
+    return dict(row)
 
 
 def _insert_agent(
@@ -217,7 +279,7 @@ def test_agent_webhook_rejects_inactive_and_large_payload(next_client, next_pg_s
     assert paused.status_code == 409
     assert paused.json()["error"] == "agent_not_active"
 
-    large_payload = {"external_userids": [f"wm_{i:03d}" for i in range(201)]}
+    large_payload = {"external_userids": [f"wm_{i:04d}" for i in range(5001)]}
     large_raw = json.dumps(large_payload, separators=(",", ":")).encode()
     large = next_client.post(
         "/api/ai/agents/large_agent/audience-webhook",
@@ -234,7 +296,7 @@ def test_prompt_context_key_detection_uses_chinese_placeholders() -> None:
 
 
 def test_context_builder_hydrates_questionnaire_from_bound_audience_payload(monkeypatch) -> None:
-    from aicrm_next.automation_agents import context_builder
+    from aicrm_next.extensions.ai.automation_agents import context_builder
 
     class FakeBoundRepository:
         def get_bound_audience_context_for_item(self, **kwargs):
@@ -299,11 +361,7 @@ def test_context_builder_hydrates_questionnaire_from_bound_audience_payload(monk
     assert context["bound_audience_context"]["member_event_id"] == 88
 
 
-def test_worker_fake_mode_generates_package_and_enqueues_send_plan(next_client, next_pg_schema, monkeypatch) -> None:
-    monkeypatch.setenv("AICRM_AI_AUDIENCE_AGENT_MODE", "fake")
-    monkeypatch.setenv("AICRM_AI_AUDIENCE_AGENT_FAKE_ALLOWED", "1")
-    monkeypatch.setenv("AICRM_AI_AUDIENCE_AGENT_FAKE_OUTPUT", "你好，这是 Agent 生成的话术")
-
+def test_worker_plans_generation_effect_then_enqueues_send_plan(next_client, next_pg_schema, monkeypatch) -> None:
     with get_session_factory()() as session:
         _insert_package(session)
         _insert_agent(session)
@@ -316,9 +374,9 @@ def test_worker_fake_mode_generates_package_and_enqueues_send_plan(next_client, 
         content=raw,
         headers={"Content-Type": "application/json"},
     )
-    batch_id = accepted.json()["batch_id"]
+    assert accepted.json()["batch_id"].startswith("agent_batch_")
 
-    from aicrm_next.automation_agents import worker as worker_module
+    from aicrm_next.extensions.ai.automation_agents import worker as worker_module
 
     seen_keys = {}
 
@@ -335,29 +393,40 @@ def test_worker_fake_mode_generates_package_and_enqueues_send_plan(next_client, 
 
     monkeypatch.setattr(worker_module, "build_agent_context", fake_context)
 
-    result = AutomationAgentWorker().run_batch(batch_id)
+    results = _dispatch_item_prepare_events()
 
-    assert result["status"] == "succeeded"
+    assert {item["consumer_run"]["status"] for item in results} == {"succeeded"}
     assert seen_keys["keys"] == {"tags", "recent_messages"}
+    generation = _generation_effect()
+    assert generation["lane"] == "ai_generation"
+    with get_session_factory()() as session:
+        assert int(session.execute(text("SELECT COUNT(*) FROM cloud_broadcast_plans")).scalar() or 0) == 0
+    completed = AutomationAgentWorker().complete_generation(
+        item_id=int(generation["target_id"]),
+        generation_effect_job_id=int(generation["id"]),
+        final_text="你好，这是 Agent 生成的话术",
+    )
+    assert completed["ok"] is True
+    replay = AutomationAgentWorker().complete_generation(
+        item_id=int(generation["target_id"]),
+        generation_effect_job_id=int(generation["id"]),
+        final_text="你好，这是 Agent 生成的话术",
+    )
+    assert replay == {"ok": True, "deduplicated": True, "item_id": int(generation["target_id"])}
     with get_session_factory()() as session:
         item = session.execute(text("SELECT * FROM automation_agent_webhook_item")).mappings().one()
         plan_count = int(session.execute(text("SELECT COUNT(*) FROM cloud_broadcast_plans")).scalar() or 0)
         message = session.execute(text("SELECT * FROM cloud_broadcast_plan_recipient_messages")).mappings().one()
-        effect_count = int(session.execute(text("SELECT COUNT(*) FROM external_effect_job WHERE effect_type = 'WECOM_MESSAGE_PRIVATE_SEND'")).scalar() or 0)
-    assert item["status"] == "callback_succeeded"
+        assert int(session.execute(text("SELECT COUNT(*) FROM broadcast_jobs")).scalar() or 0) == 1
+    assert item["status"] == "send_plan_created"
     assert item["owner_userid"] == "owner_001"
     assert item["content_package_json"]["content_text"] == "你好，这是 Agent 生成的话术"
     assert item["content_package_json"]["image_library_ids"] == [12]
     assert plan_count == 1
     assert message["content_text"] == "你好，这是 Agent 生成的话术"
-    assert effect_count == 0
 
 
-def test_worker_rejects_prompt_like_llm_output_before_callback(next_client, next_pg_schema, monkeypatch) -> None:
-    monkeypatch.setenv("AICRM_AI_AUDIENCE_AGENT_MODE", "fake")
-    monkeypatch.setenv("AICRM_AI_AUDIENCE_AGENT_FAKE_ALLOWED", "1")
-    monkeypatch.setenv("AICRM_AI_AUDIENCE_AGENT_FAKE_OUTPUT", "输出话术：{{最近20条聊天信息}}")
-
+def test_generation_completion_rejects_prompt_like_output_before_callback(next_client, next_pg_schema, monkeypatch) -> None:
     with get_session_factory()() as session:
         _insert_package(session)
         _insert_agent(session)
@@ -370,9 +439,9 @@ def test_worker_rejects_prompt_like_llm_output_before_callback(next_client, next
         content=raw,
         headers={"Content-Type": "application/json"},
     )
-    batch_id = accepted.json()["batch_id"]
+    assert accepted.json()["batch_id"].startswith("agent_batch_")
 
-    from aicrm_next.automation_agents import worker as worker_module
+    from aicrm_next.extensions.ai.automation_agents import worker as worker_module
 
     monkeypatch.setattr(
         worker_module,
@@ -385,9 +454,15 @@ def test_worker_rejects_prompt_like_llm_output_before_callback(next_client, next
         },
     )
 
-    result = AutomationAgentWorker().run_batch(batch_id)
+    _dispatch_item_prepare_events()
+    generation = _generation_effect()
+    result = AutomationAgentWorker().complete_generation(
+        item_id=int(generation["target_id"]),
+        generation_effect_job_id=int(generation["id"]),
+        final_text="输出话术：{{最近20条聊天信息}}",
+    )
 
-    assert result["status"] == "failed"
+    assert result["business_outcome"] == "failed"
     with get_session_factory()() as session:
         item = session.execute(text("SELECT * FROM automation_agent_webhook_item")).mappings().one()
         plan_count = int(session.execute(text("SELECT COUNT(*) FROM cloud_broadcast_plans")).scalar() or 0)
@@ -398,11 +473,7 @@ def test_worker_rejects_prompt_like_llm_output_before_callback(next_client, next
     assert message_count == 0
 
 
-def test_worker_human_review_gate_blocks_auto_send(next_client, next_pg_schema, monkeypatch) -> None:
-    monkeypatch.setenv("AICRM_AI_AUDIENCE_AGENT_MODE", "fake")
-    monkeypatch.setenv("AICRM_AI_AUDIENCE_AGENT_FAKE_ALLOWED", "1")
-    monkeypatch.setenv("AICRM_AI_AUDIENCE_AGENT_FAKE_OUTPUT", "你好，这是需要审核的话术")
-
+def test_worker_human_review_gate_blocks_generation_effect(next_client, next_pg_schema, monkeypatch) -> None:
     with get_session_factory()() as session:
         _insert_package(session)
         _insert_agent(session)
@@ -416,9 +487,9 @@ def test_worker_human_review_gate_blocks_auto_send(next_client, next_pg_schema, 
         content=raw,
         headers={"Content-Type": "application/json"},
     )
-    batch_id = accepted.json()["batch_id"]
+    assert accepted.json()["batch_id"].startswith("agent_batch_")
 
-    from aicrm_next.automation_agents import worker as worker_module
+    from aicrm_next.extensions.ai.automation_agents import worker as worker_module
 
     monkeypatch.setattr(
         worker_module,
@@ -431,15 +502,23 @@ def test_worker_human_review_gate_blocks_auto_send(next_client, next_pg_schema, 
         },
     )
 
-    result = AutomationAgentWorker().run_batch(batch_id)
+    results = _dispatch_item_prepare_events()
 
-    assert result["status"] == "failed"
+    assert {item["consumer_run"]["status"] for item in results} == {"succeeded"}
     with get_session_factory()() as session:
         item = session.execute(text("SELECT * FROM automation_agent_webhook_item")).mappings().one()
         plan_count = int(session.execute(text("SELECT COUNT(*) FROM cloud_broadcast_plans")).scalar() or 0)
+        generation_count = int(
+            session.execute(
+                text("SELECT COUNT(*) FROM external_effect_job WHERE effect_type = :effect_type"),
+                {"effect_type": AI_AGENT_GENERATE},
+            ).scalar()
+            or 0
+        )
     assert item["status"] == "failed"
     assert item["error_code"] == "human_review_required"
     assert plan_count == 0
+    assert generation_count == 0
 
 
 def test_external_effect_agent_webhook_continuation_enqueues_broadcast_job(next_client, next_pg_schema, monkeypatch) -> None:
@@ -453,7 +532,7 @@ def test_external_effect_agent_webhook_continuation_enqueues_broadcast_job(next_
         _insert_identities(session, "wm_001")
         session.commit()
 
-    from aicrm_next.automation_agents import worker as worker_module
+    from aicrm_next.extensions.ai.automation_agents import worker as worker_module
 
     monkeypatch.setattr(
         worker_module,
@@ -518,9 +597,24 @@ def test_external_effect_agent_webhook_continuation_enqueues_broadcast_job(next_
 
     assert result["counts"]["succeeded_count"] == 1
     assert len(calls) == 1
-    item_result = result["items"][0]["post_success_continuation"]
-    assert item_result["ok"] is True
-    assert item_result["broadcast_enqueue"]["approved_count"] == 1
+    assert result["items"][0]["post_success_continuation"]["reason"] == "durable_completion_event_pending"
+    registry = build_internal_event_consumer_registry()
+    relayed = InternalEventOutboxRelay(consumer_registry=registry).relay_due(limit=100)
+    assert relayed["counts"]["relayed_count"] >= 2
+    completion_event = InternalEventService().list_events({"event_type": EXTERNAL_EFFECT_COMPLETED_EVENT_TYPE})[0][0]
+    completion_runs, completion_run_count = InternalEventService().list_consumer_runs({"event_id": completion_event.event_id})
+    assert completion_run_count == len(build_external_effect_continuation_consumers())
+    internal_worker = InternalEventWorker(consumer_registry=registry)
+    completion_results = {
+        run.consumer_name: internal_worker.dispatch_one(run)
+        for run in completion_runs
+    }
+    assert {item["consumer_run"]["status"] for item in completion_results.values()} == {"succeeded"}
+    completion_result = completion_results[AUTOMATION_EXTERNAL_EFFECT_CONTINUATION_CONSUMER]
+    assert completion_result["ok"] is True
+    assert completion_result["consumer_run"]["result_summary_json"]["continuation"] == "dict"
+    prepare_results = _dispatch_item_prepare_events()
+    assert {item["consumer_run"]["status"] for item in prepare_results} == {"succeeded"}
     with get_session_factory()() as session:
         job_row = session.execute(text("SELECT * FROM external_effect_job WHERE id = :job_id"), {"job_id": job["id"]}).mappings().one()
         attempt = session.execute(text("SELECT * FROM external_effect_attempt WHERE job_id = :job_id"), {"job_id": job["id"]}).mappings().one()
@@ -532,16 +626,17 @@ def test_external_effect_agent_webhook_continuation_enqueues_broadcast_job(next_
     response_summary = _json_mapping(attempt["response_summary_json"])
     assert job_row["status"] == "succeeded"
     assert response_summary["automation_agent_batch_id"].startswith("agent_batch_")
-    assert response_summary["post_success_continuation"] == "dict"
-    assert item["status"] == "callback_succeeded"
+    assert response_summary["provider_result_received"] is True
+    assert "post_success_continuation" not in response_summary
+    assert item["status"] == "send_plan_created"
     assert recipient["approval_status"] == "approved"
-    assert recipient["send_status"] == "queued"
+    assert recipient["send_status"] == "delegated"
     assert recipient["broadcast_job_id"] == broadcast["id"]
-    assert message["status"] == "queued"
+    assert message["status"] == "delegated"
     assert message["content_text"] == "收到问卷啦，开始体验。"
-    assert broadcast["status"] == "queued"
+    assert broadcast["status"] == "delegated"
     assert _json_mapping(broadcast["target_unionids_json"]) == [_unionid_for_external_userid("wm_001")]
-    assert outbound_task_count == 0
+    assert outbound_task_count == 1
 
 
 def test_worker_fixed_script_uses_configured_text_without_agent_generation(next_client, next_pg_schema, monkeypatch) -> None:
@@ -562,9 +657,9 @@ def test_worker_fixed_script_uses_configured_text_without_agent_generation(next_
         content=raw,
         headers={"Content-Type": "application/json"},
     )
-    batch_id = accepted.json()["batch_id"]
+    assert accepted.json()["batch_id"].startswith("agent_batch_")
 
-    from aicrm_next.automation_agents import worker as worker_module
+    from aicrm_next.extensions.ai.automation_agents import worker as worker_module
 
     seen_keys = {}
 
@@ -577,26 +672,28 @@ def test_worker_fixed_script_uses_configured_text_without_agent_generation(next_
             "referenced_context_keys": sorted(referenced_keys),
         }
 
-    def fail_generation(*args, **kwargs):
-        raise AssertionError("fixed_script must not call generate_agent_reply")
-
     monkeypatch.setattr(worker_module, "build_agent_context", fake_context)
-    monkeypatch.setattr(worker_module, "generate_agent_reply", fail_generation)
 
-    result = AutomationAgentWorker().run_batch(batch_id)
+    results = _dispatch_item_prepare_events()
 
-    assert result["status"] == "succeeded"
+    assert {item["consumer_run"]["status"] for item in results} == {"succeeded"}
     assert seen_keys["keys"] == set()
     with get_session_factory()() as session:
         item = session.execute(text("SELECT * FROM automation_agent_webhook_item")).mappings().one()
         message = session.execute(text("SELECT * FROM cloud_broadcast_plan_recipient_messages")).mappings().one()
-        effect_count = int(session.execute(text("SELECT COUNT(*) FROM external_effect_job WHERE effect_type = 'WECOM_MESSAGE_PRIVATE_SEND'")).scalar() or 0)
-    assert item["status"] == "callback_succeeded"
+        generation_count = int(
+            session.execute(
+                text("SELECT COUNT(*) FROM external_effect_job WHERE effect_type = :effect_type"),
+                {"effect_type": AI_AGENT_GENERATE},
+            ).scalar()
+            or 0
+        )
+    assert item["status"] == "send_plan_created"
     assert item["raw_agent_output"] == "你好，这是固定话术"
     assert item["content_package_json"]["content_text"] == "你好，这是固定话术"
     assert item["content_package_json"]["image_library_ids"] == [12]
     assert message["content_text"] == "你好，这是固定话术"
-    assert effect_count == 0
+    assert generation_count == 0
 
 
 def test_worker_fixed_script_fails_when_content_text_missing(next_client, next_pg_schema, monkeypatch) -> None:
@@ -612,24 +709,18 @@ def test_worker_fixed_script_fails_when_content_text_missing(next_client, next_p
         content=raw,
         headers={"Content-Type": "application/json"},
     )
-    batch_id = accepted.json()["batch_id"]
+    assert accepted.json()["batch_id"].startswith("agent_batch_")
 
-    from aicrm_next.automation_agents import worker as worker_module
+    from aicrm_next.extensions.ai.automation_agents import worker as worker_module
 
     monkeypatch.setattr(
         worker_module,
         "build_agent_context",
         lambda external_userid, referenced_keys, **kwargs: {"owner_userid": "owner_001", "blocks": {}, "referenced_context_keys": sorted(referenced_keys)},
     )
-    monkeypatch.setattr(
-        worker_module,
-        "generate_agent_reply",
-        lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("fixed_script must not call generate_agent_reply")),
-    )
+    results = _dispatch_item_prepare_events()
 
-    result = AutomationAgentWorker().run_batch(batch_id)
-
-    assert result["status"] == "failed"
+    assert {item["consumer_run"]["status"] for item in results} == {"succeeded"}
     with get_session_factory()() as session:
         item = session.execute(text("SELECT * FROM automation_agent_webhook_item")).mappings().one()
         plan_count = int(session.execute(text("SELECT COUNT(*) FROM cloud_broadcast_plans")).scalar() or 0)
@@ -760,9 +851,9 @@ def test_worker_hydrates_questionnaire_prompt_from_bound_audience_submission(nex
     )
     assert accepted.status_code == 200
 
-    result = AutomationAgentWorker().run_batch(accepted.json()["batch_id"])
+    results = _dispatch_item_prepare_events()
 
-    assert result["status"] == "succeeded"
+    assert {item["consumer_run"]["status"] for item in results} == {"succeeded"}
     with get_session_factory()() as session:
         item = session.execute(text("SELECT * FROM automation_agent_webhook_item")).mappings().one()
     context = _json_mapping(item["context_snapshot_json"])
