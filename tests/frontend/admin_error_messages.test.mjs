@@ -8,9 +8,10 @@ const source = await readFile(
 );
 
 const responses = [];
+const nodes = new Map();
 const document = {
   cookie: "",
-  getElementById() { return null; },
+  getElementById(id) { return nodes.get(id) || null; },
   addEventListener() {},
 };
 const window = {
@@ -76,6 +77,57 @@ assert.equal(
   AdminApi.normalizeApiError(null, { ok: false, error: "unknown_internal_code" }, { fallback: "保存失败" }).message,
   "保存失败",
 );
+
+let focusedInput = "";
+let reportedValidity = 0;
+let displayedValidation = "";
+function fakeInput(id, validity, label) {
+  const classes = new Set();
+  const attributes = new Map();
+  const container = { classList: { add: (value) => classes.add(value), remove: (value) => classes.delete(value) } };
+  return {
+    id,
+    validity,
+    labels: [{ textContent: label }],
+    minLength: 3,
+    maxLength: 120,
+    min: "0",
+    checkValidity: () => false,
+    closest: () => container,
+    setAttribute: (name, value) => attributes.set(name, value),
+    removeAttribute: (name) => attributes.delete(name),
+    focus: () => { focusedInput = id; },
+    classes,
+    attributes,
+  };
+}
+const titleInput = fakeInput("productTitle", { valueMissing: true }, "商品名称");
+const codeInput = fakeInput("productCode", { valueMissing: true }, "商品编码");
+const titleError = { textContent: "" };
+const codeError = { textContent: "" };
+const form = {
+  elements: [titleInput, codeInput],
+  checkValidity: () => false,
+  reportValidity: () => { reportedValidity += 1; },
+};
+nodes.set("productTitle", titleInput);
+nodes.set("productCode", codeInput);
+nodes.set("productTitleError", titleError);
+nodes.set("productCodeError", codeError);
+const formErrors = AdminApi.createFormErrorController({
+  form,
+  fieldLabels: { title: "商品名称", product_code: "商品编码" },
+  fieldIds: { title: "productTitle", product_code: "productCode" },
+  validationPrefix: "商品未保存",
+  showMessage: (message) => { displayedValidation = message; },
+});
+assert.equal(formErrors.validate(), false);
+assert.equal(displayedValidation, "商品未保存：商品名称：必填；商品编码：必填");
+assert.equal(titleError.textContent, "必填");
+assert.equal(codeError.textContent, "必填");
+assert.equal(titleInput.attributes.get("aria-invalid"), "true");
+assert.equal(focusedInput, "productTitle");
+assert.equal(reportedValidity, 1);
 
 responses.push({ ok: false, status: 413, statusText: "Payload Too Large", text: async () => "<html>nginx</html>" });
 await assert.rejects(

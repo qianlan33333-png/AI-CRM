@@ -285,9 +285,7 @@
   function escapeHtml(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
-  function errorText(value, fallback) {
-    return window.AdminApi?.formatErrorValue(value) || fallback;
-  }
+  function errorText(value, fallback) { return window.AdminApi?.formatErrorValue(value) || fallback; }
   function requestJSON(url, options) {
     var client = window.ImageUploadClient || {};
     var fn = client.requestJsonWithTimeout || client.requestJson;

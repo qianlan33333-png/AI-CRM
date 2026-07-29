@@ -388,6 +388,119 @@
     return formatErrorValue(error, options) || humanizeErrorText(fallback) || "操作失败";
   }
 
+  function nativeValidationMessage(input) {
+    if (input.validity && input.validity.valueMissing) return "必填";
+    if (input.validity && input.validity.tooShort) return `至少填写 ${input.minLength} 个字符`;
+    if (input.validity && input.validity.tooLong) return `最多填写 ${input.maxLength} 个字符`;
+    if (input.validity && input.validity.rangeUnderflow) return `不能小于 ${input.min}`;
+    if (input.validity && input.validity.rangeOverflow) return `不能大于 ${input.max}`;
+    if (input.validity && (input.validity.stepMismatch || input.validity.badInput || input.validity.typeMismatch)) return "格式不正确";
+    return "输入有误";
+  }
+
+  function createFormErrorController(options = {}) {
+    const form = typeof options.form === "string" ? document.getElementById(options.form) : options.form;
+    const fieldLabels = options.fieldLabels || {};
+    const fieldIds = options.fieldIds || {};
+    const fieldEntries = Object.entries(fieldIds);
+    const errorSuffix = options.errorSuffix || "Error";
+    const invalidClass = options.invalidClass || "has-error";
+    const containerSelector = options.fieldContainerSelector || ".field";
+
+    function inputForField(field) {
+      const inputId = fieldIds[field];
+      return inputId ? document.getElementById(inputId) : null;
+    }
+
+    function fieldForInput(input) {
+      const entry = fieldEntries.find(([, inputId]) => inputId === (input && input.id));
+      return entry ? entry[0] : "";
+    }
+
+    function errorNode(input) {
+      if (!input) return null;
+      if (typeof options.errorNode === "function") return options.errorNode(input);
+      return document.getElementById(`${input.id}${errorSuffix}`);
+    }
+
+    function clearField(input) {
+      if (!input) return;
+      input.removeAttribute("aria-invalid");
+      if (typeof input.closest === "function") input.closest(containerSelector)?.classList.remove(invalidClass);
+      const node = errorNode(input);
+      if (node) node.textContent = "";
+    }
+
+    function clearAll() {
+      Array.from(new Set(Object.values(fieldIds))).forEach((inputId) => clearField(document.getElementById(inputId)));
+    }
+
+    function setField(field, message) {
+      const input = inputForField(field);
+      if (!input) return null;
+      input.setAttribute("aria-invalid", "true");
+      if (typeof input.closest === "function") input.closest(containerSelector)?.classList.add(invalidClass);
+      const node = errorNode(input);
+      if (node) node.textContent = String(message || "输入有误");
+      return input;
+    }
+
+    function normalize(error, fallback) {
+      if (error && (error.response || error.payload || error.status)) {
+        return normalizeApiError(error.response, error.payload, {
+          status: error.status,
+          fallback,
+          fieldLabels,
+        });
+      }
+      return { message: errorMessage(error, fallback, { fieldLabels }), fieldErrors: [] };
+    }
+
+    function focusFirst(input) {
+      if (!input) return;
+      if (typeof options.beforeFocus === "function") options.beforeFocus(input);
+      if (typeof input.focus === "function") input.focus();
+    }
+
+    function present(error, fallback = "操作失败") {
+      const normalized = normalize(error, fallback);
+      clearAll();
+      let firstInput = null;
+      (normalized.fieldErrors || []).forEach((item) => {
+        const input = setField(item.field, item.message);
+        if (!firstInput && input) firstInput = input;
+      });
+      focusFirst(firstInput);
+      if (typeof options.showMessage === "function") options.showMessage(normalized.message || fallback, "error");
+      return normalized.message || fallback;
+    }
+
+    function validate() {
+      if (!form) return true;
+      clearAll();
+      if (form.checkValidity()) return true;
+      const invalidInputs = Array.from(form.elements || []).filter(
+        (input) => typeof input.checkValidity === "function" && !input.checkValidity(),
+      );
+      const reasons = invalidInputs.map((input) => {
+        const field = fieldForInput(input);
+        const message = nativeValidationMessage(input);
+        if (field) setField(field, message);
+        const label = fieldLabels[field] || (input.labels && input.labels[0] && input.labels[0].textContent.trim()) || "表单字段";
+        return `${label}：${message}`;
+      });
+      focusFirst(invalidInputs[0]);
+      if (typeof form.reportValidity === "function") form.reportValidity();
+      const prefix = options.validationPrefix || "未保存";
+      if (typeof options.showMessage === "function") {
+        options.showMessage(`${prefix}：${uniqueMessages(reasons).join("；")}`, "error");
+      }
+      return false;
+    }
+
+    return { clearField, clearAll, setField, present, validate };
+  }
+
   function normalizeRequestError(error, context = {}) {
     if (!error.status && context.response) {
       error.status = context.response.status;
@@ -469,6 +582,7 @@
     normalizeApiError,
     responseErrorMessage,
     errorMessage,
+    createFormErrorController,
     requestJson,
     isPermissionError,
     normalizeRequestError,

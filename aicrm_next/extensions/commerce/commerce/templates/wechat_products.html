@@ -416,22 +416,8 @@
   let afterActionEnabled = Boolean((product.completion_target && product.completion_target.enabled) || product.completion_redirect_enabled || product.lead_channel_id);
   let afterActionMode = product.completion_redirect_enabled ? "redirect" : "lead";
   let activeProductPanel = "sale";
-  const productFieldLabels = {
-    title: "商品名称",
-    product_code: "商品编码",
-    code: "商品编码",
-    price_cents: "价格",
-    status: "商品状态",
-    buy_button_text: "购买按钮文案",
-    description: "商品描述",
-    require_mobile: "手机号要求"
-  };
-  const productFieldIds = {
-    title: "productTitle",
-    product_code: "productCode",
-    code: "productCode",
-    price_cents: "productPrice"
-  };
+  const productFieldLabels = { title: "商品名称", product_code: "商品编码", code: "商品编码", price_cents: "价格", status: "商品状态", buy_button_text: "购买按钮文案", description: "商品描述", require_mobile: "手机号要求" };
+  const productFieldIds = { title: "productTitle", product_code: "productCode", code: "productCode", price_cents: "productPrice" };
 
   function $(id) { return document.getElementById(id); }
   function esc(value) { return String(value == null ? "" : value).replace(/[&<>'"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[c])); }
@@ -445,84 +431,13 @@
     toast.setAttribute("role", isError ? "alert" : "status");
     toast.setAttribute("aria-live", isError ? "assertive" : "polite");
   }
-  function clearFieldError(input) {
-    if (!input) return;
-    input.removeAttribute("aria-invalid");
-    input.closest(".field")?.classList.remove("has-error");
-    const error = $(`${input.id}Error`);
-    if (error) error.textContent = "";
-  }
-  function clearFieldErrors() {
-    Object.values(productFieldIds).forEach(id => clearFieldError($(id)));
-  }
-  function setFieldError(field, message) {
-    const inputId = productFieldIds[field];
-    const input = inputId ? $(inputId) : null;
-    if (!input) return null;
-    input.setAttribute("aria-invalid", "true");
-    input.closest(".field")?.classList.add("has-error");
-    const error = $(`${input.id}Error`);
-    if (error) error.textContent = String(message || "输入有误");
-    return input;
-  }
-  function normalizeUiError(error, fallback) {
-    if (window.AdminApi?.normalizeApiError && (error?.response || error?.payload || error?.status)) {
-      return window.AdminApi.normalizeApiError(error?.response, error?.payload, {
-        status: error?.status,
-        fallback,
-        fieldLabels: productFieldLabels
-      });
-    }
-    if (window.AdminApi?.errorMessage) {
-      return { message: window.AdminApi.errorMessage(error, fallback, { fieldLabels: productFieldLabels }), fieldErrors: [] };
-    }
-    const message = String(error?.message || "").trim();
-    return { message: message && message !== "[object Object]" ? message : fallback, fieldErrors: [] };
-  }
-  function presentError(error, fallback = "操作失败") {
-    const normalized = normalizeUiError(error, fallback);
-    clearFieldErrors();
-    let firstInput = null;
-    (normalized.fieldErrors || []).forEach(item => {
-      const input = setFieldError(item.field, item.message);
-      if (!firstInput && input) firstInput = input;
-    });
-    if (firstInput) {
-      switchProductPanel("sale");
-      firstInput.focus();
-    }
-    showToast(normalized.message || fallback, "error");
-    return normalized.message || fallback;
-  }
-  function invalidFieldMessage(input) {
-    if (input.validity?.valueMissing) return "必填";
-    if (input.validity?.tooShort) return `至少填写 ${input.minLength} 个字符`;
-    if (input.validity?.tooLong) return `最多填写 ${input.maxLength} 个字符`;
-    if (input.validity?.rangeUnderflow) return `不能小于 ${input.min}`;
-    if (input.validity?.rangeOverflow) return `不能大于 ${input.max}`;
-    if (input.validity?.stepMismatch || input.validity?.badInput || input.validity?.typeMismatch) return "格式不正确";
-    return "输入有误";
-  }
-  function validateProductForm() {
-    const form = $("productForm");
-    if (!form) return true;
-    clearFieldErrors();
-    if (form.checkValidity()) return true;
-    const invalidFields = Array.from(form.elements).filter(input => typeof input.checkValidity === "function" && !input.checkValidity());
-    const reasons = [];
-    invalidFields.forEach(input => {
-      const message = invalidFieldMessage(input);
-      const field = Object.keys(productFieldIds).find(key => productFieldIds[key] === input.id);
-      if (field) setFieldError(field, message);
-      const label = productFieldLabels[field] || input.labels?.[0]?.textContent?.trim() || "表单字段";
-      reasons.push(`${label}：${message}`);
-    });
-    switchProductPanel("sale");
-    invalidFields[0]?.focus();
-    form.reportValidity();
-    showToast(`商品未保存：${Array.from(new Set(reasons)).join("；")}`, "error");
-    return false;
-  }
+  const formErrors = window.AdminApi.createFormErrorController({
+    form: $("productForm"), fieldLabels: productFieldLabels, fieldIds: productFieldIds,
+    showMessage: showToast, validationPrefix: "商品未保存",
+    beforeFocus: () => switchProductPanel("sale")
+  });
+  function presentError(error, fallback = "操作失败") { return formErrors.present(error, fallback); }
+  function validateProductForm() { return formErrors.validate(); }
   function statusLabel(value) { return { active: "已上架", draft: "草稿", disabled: "已下架" }[value] || value || "草稿"; }
   function productDisplayName(value) { return String(value || "商品").trim() || "商品"; }
   function safeQrDownloadName(value) {
@@ -1052,7 +967,7 @@
     }
   });
   $("productForm")?.addEventListener("input", event => {
-    clearFieldError(event.target);
+    formErrors.clearField(event.target);
     updateProductSummary();
   });
   $("productForm")?.addEventListener("change", updateProductSummary);
