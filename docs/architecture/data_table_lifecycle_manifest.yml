@@ -4724,6 +4724,13 @@ tables:
     <<: *legacy_production_table_defaults
     domain: legacy_schema_backup
 
+  questionnaire_continuation_job:
+    <<: *legacy_production_table_defaults
+    domain: legacy_questionnaire
+    replacement: internal_event and external_effect continuation chain
+    migration_source: historical Siyuan 0124_questionnaire_continuation_jobs
+    notes: Preserved historical Siyuan rows must remain intact during cumulative-main upgrades. Fresh databases do not recreate this retired capability table, and current runtime code has no read or write entrypoint.
+
   questionnaire_scrm_apply_logs:
     <<: *legacy_production_table_defaults
     domain: legacy_questionnaire

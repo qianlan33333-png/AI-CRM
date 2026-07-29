@@ -51088,6 +51088,18 @@
       "write_owner": "legacy.production_runtime"
     },
     {
+      "domain": "legacy_questionnaire",
+      "drop_candidate": false,
+      "lifecycle": "legacy",
+      "migration_source": "historical Siyuan 0124_questionnaire_continuation_jobs",
+      "pii_level": "internal_contact",
+      "read_owners": [
+        "production compatibility and historical audit"
+      ],
+      "table": "questionnaire_continuation_job",
+      "write_owner": "legacy.production_runtime"
+    },
+    {
       "domain": "questionnaire",
       "drop_candidate": true,
       "lifecycle": "audit",
