@@ -7,6 +7,117 @@ from uuid import uuid4
 import pytest
 
 
+class _PrivateMessageContactAbsenceSession:
+    def __init__(self) -> None:
+        self.rollback_count = 0
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, traceback):
+        return False
+
+    def rollback(self) -> None:
+        self.rollback_count += 1
+
+
+def _acknowledge_with_rows(monkeypatch, *, rows: list[dict]):
+    from scripts.ops import (
+        acknowledge_production_private_message_contact_absence as contact_absence,
+    )
+
+    session = _PrivateMessageContactAbsenceSession()
+    monkeypatch.setattr(
+        contact_absence,
+        "get_session_factory",
+        lambda: lambda: session,
+    )
+    monkeypatch.setattr(contact_absence, "_existing_rows", lambda _session: [])
+    monkeypatch.setattr(
+        contact_absence,
+        "_candidate_rows",
+        lambda _session, _authorization: rows,
+    )
+    monkeypatch.setenv("AICRM_QUEUE_TERMINAL_ACK_AUTHORIZED", "1")
+    result = contact_absence.acknowledge(
+        manifest_path=(
+            Path(__file__).resolve().parents[1]
+            / "docs"
+            / "releases"
+            / "production_private_message_contact_absence_20260728_acknowledgement.json"
+        ),
+        release_sha="a" * 40,
+        authorization_base_sha=contact_absence.AUTHORIZATION_BASE_SHA,
+        confirmation=contact_absence.EXPECTED_CONFIRMATION,
+        actor="pytest",
+        reason="private-message contact-absence history idempotency boundary test",
+        apply=True,
+    )
+    return result, session
+
+
+def test_absent_private_message_contact_absence_histories_are_an_idempotent_noop(
+    monkeypatch,
+) -> None:
+    result, session = _acknowledge_with_rows(monkeypatch, rows=[])
+
+    assert result == {
+        "ok": True,
+        "applied": False,
+        "acknowledged_count": 0,
+        "created_count": 0,
+        "no_op_reason": "authorized_historical_terminals_absent",
+        "replay_prohibited": True,
+        "provider_success_claimed": False,
+        "real_external_call_executed": False,
+        "target_values_redacted": True,
+    }
+    assert session.rollback_count == 1
+
+
+def test_partial_private_message_contact_absence_history_remains_rejected(
+    monkeypatch,
+) -> None:
+    with pytest.raises(
+        RuntimeError,
+        match="expected exactly 3 authorized production private-message terminals; found 1",
+    ):
+        _acknowledge_with_rows(monkeypatch, rows=[{}])
+
+
+@pytest.mark.postgres
+def test_absent_private_message_contact_absence_histories_are_a_postgres_noop(
+    next_pg_schema,
+    monkeypatch,
+) -> None:
+    from scripts.ops import (
+        acknowledge_production_private_message_contact_absence as contact_absence,
+    )
+
+    del next_pg_schema
+    monkeypatch.setenv("AICRM_QUEUE_TERMINAL_ACK_AUTHORIZED", "1")
+    result = contact_absence.acknowledge(
+        manifest_path=(
+            Path(__file__).resolve().parents[1]
+            / "docs"
+            / "releases"
+            / "production_private_message_contact_absence_20260728_acknowledgement.json"
+        ),
+        release_sha="a" * 40,
+        authorization_base_sha=contact_absence.AUTHORIZATION_BASE_SHA,
+        confirmation=contact_absence.EXPECTED_CONFIRMATION,
+        actor="pytest",
+        reason="postgres absent private-message contact-absence history no-op",
+        apply=True,
+    )
+
+    assert result["applied"] is False
+    assert result["acknowledged_count"] == 0
+    assert result["created_count"] == 0
+    assert result["no_op_reason"] == "authorized_historical_terminals_absent"
+    assert result["real_external_call_executed"] is False
+
+
 @pytest.mark.postgres
 def test_exact_private_message_contact_absence_terminals_are_acknowledged_without_replay(
     next_pg_schema,
