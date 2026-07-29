@@ -91,7 +91,7 @@ def _inspect_target(connection: psycopg.Connection[object]) -> PostgresTarget:
         """
         SELECT current_database(),
                current_setting('port')::integer,
-               COALESCE(inet_server_addr()::text, ''),
+               COALESCE(host(inet_server_addr()), ''),
                EXISTS (SELECT 1 FROM pg_extension WHERE extname = %s)
         """,
         (EXTENSION_NAME,),

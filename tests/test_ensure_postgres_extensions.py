@@ -33,7 +33,8 @@ class _Connection:
     def __exit__(self, *_args: object) -> None:
         return None
 
-    def execute(self, _query: str, parameters: tuple[object, ...]) -> _Result:
+    def execute(self, query: str, parameters: tuple[object, ...]) -> _Result:
+        assert "host(inet_server_addr())" in query
         assert parameters == ("pg_trgm",)
         return _Result(next(self._rows))
 
