@@ -52,6 +52,19 @@ def test_media_library_change_runs_small_no_pg_slice() -> None:
     assert result["needs_full_ci"] is False
 
 
+def test_qr_jpg_and_shared_download_contracts_have_permanent_scopes() -> None:
+    result = _select(
+        "tests/test_admin_download_frontend_contract.py",
+        "tests/test_share_qr_jpeg.py",
+        "tests/test_wecom_qrcode_image_client.py",
+    )
+
+    assert result["unmatched_files"] == []
+    assert "tests/test_admin_download_frontend_contract.py" in result["python_tests"]
+    assert "tests/test_share_qr_jpeg.py" in result["python_tests"]
+    assert "tests/test_wecom_qrcode_image_client.py" in result["python_tests"]
+
+
 def test_every_runtime_python_change_runs_import_graph_architecture_gate() -> None:
     result = _select("aicrm_next/engagement/media_library/variants.py")
 

@@ -4,15 +4,21 @@ import json
 import uuid
 from datetime import datetime, timezone
 from typing import Any
-from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
 
 from fastapi import APIRouter, HTTPException, Query, Request
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, Response
 
 from aicrm_next.automation.automation_engine import channels_repo
+from aicrm_next.integration_ports import (
+    WeComQrImageClientError,
+    build_wecom_qrcode_image_client,
+)
 from aicrm_next.common_operation_members import search_operation_members
+from aicrm_next.platform.shared.errors import ContractError
 from aicrm_next.platform.shared.repository_provider import RepositoryProviderError, blocked_production_payload
 from aicrm_next.platform.shared.runtime import production_repository_required
+from aicrm_next.platform.shared.share_qr import image_bytes_to_jpeg, safe_qr_download_filename
 
 from .channel_fixture_state import FIXTURE_CHANNELS as _FIXTURE_CHANNELS
 
@@ -1191,18 +1197,36 @@ def download_channel_qrcode(channel_id: int):
         )
     asset = status.get("active_qrcode_asset") or {}
     qr_url = _text(asset.get("qr_url"))
-    if qr_url.startswith(("http://", "https://")):
-        return RedirectResponse(
-            qr_url,
-            status_code=302,
-            headers={
-                "Cache-Control": "no-store",
-                "X-AICRM-Channel-ID": str(int(channel_id)),
-                "X-AICRM-QR-Scene": _text(asset.get("scene_value")),
-                "X-AICRM-QR-Asset-ID": str(int(asset.get("id") or 0)),
-            },
+    try:
+        image = build_wecom_qrcode_image_client().download(qr_url)
+        jpeg = image_bytes_to_jpeg(image.file_bytes)
+    except WeComQrImageClientError as exc:
+        return JSONResponse(
+            status_code=504 if exc.timed_out else 502,
+            content={"ok": False, "reason": exc.reason, "error": "渠道二维码下载失败"},
+            headers={"Cache-Control": "no-store"},
         )
-    raise HTTPException(status_code=404, detail="qrcode_not_ready")
+    except ContractError:
+        return JSONResponse(
+            status_code=502,
+            content={"ok": False, "reason": "qrcode_image_payload_invalid", "error": "渠道二维码不是有效图片"},
+            headers={"Cache-Control": "no-store"},
+        )
+
+    channel = status.get("channel") or {}
+    download_name = safe_qr_download_filename(_text(channel.get("channel_name")) or f"渠道{int(channel_id)}")
+    disposition = f"attachment; filename=channel-{int(channel_id)}-qrcode.jpg; filename*=UTF-8''{quote(download_name)}"
+    return Response(
+        content=jpeg,
+        media_type="image/jpeg",
+        headers={
+            "Content-Disposition": disposition,
+            "Cache-Control": "no-store",
+            "X-AICRM-Channel-ID": str(int(channel_id)),
+            "X-AICRM-QR-Scene": _text(asset.get("scene_value")),
+            "X-AICRM-QR-Asset-ID": str(int(asset.get("id") or 0)),
+        },
+    )
 
 
 @router.get("/api/admin/channels/{channel_id:int}/qrcode/status")

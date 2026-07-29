@@ -8,7 +8,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from aicrm_next.platform.shared.errors import ContractError, NotFoundError
-from aicrm_next.platform.shared.share_qr import svg_qr_data_url
+from aicrm_next.platform.shared.share_qr import jpeg_qr_data_url
 
 from .domain import (
     CouponChoiceMode,
@@ -373,7 +373,7 @@ class CouponAdminApplication:
                 "public_url": url,
                 "url": url,
                 "qr_value": url,
-                "qr_data_url": svg_qr_data_url(url),
+                "qr_data_url": jpeg_qr_data_url(url),
             },
         }
 

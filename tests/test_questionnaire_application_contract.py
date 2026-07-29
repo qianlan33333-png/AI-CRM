@@ -62,7 +62,7 @@ def test_next_questionnaire_share_payload_keeps_public_paths():
     assert share["slug"] == "hxc-activation-v1"
     assert share["public_path"] == "/s/hxc-activation-v1"
     assert share["url"] == "https://crm.example.test/s/hxc-activation-v1"
-    assert share["qr_data_url"].startswith("data:image/svg+xml")
+    assert share["qr_data_url"].startswith("data:image/jpeg;base64,")
 
 
 def test_questionnaire_submit_extracts_mobile_answer_and_runs_binding_boundary():

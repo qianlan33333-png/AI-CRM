@@ -529,7 +529,7 @@ def test_radar_link_form_hides_internal_tracking_fields_and_type_sections(client
     assert "data-media-config hidden" in response.text
 
 
-def test_radar_link_share_returns_full_url_and_base64_svg_qr(client):
+def test_radar_link_share_returns_full_url_and_base64_jpeg_qr(client):
     link = _create_link(client, title="课程介绍 PDF")
 
     response = client.get(f"/api/admin/radar-links/{link['id']}/share")
@@ -539,8 +539,8 @@ def test_radar_link_share_returns_full_url_and_base64_svg_qr(client):
     assert share["title"] == "课程介绍 PDF"
     assert share["url"] == f"https://testserver/r/{link['code']}"
     assert share["path"] == f"/r/{link['code']}"
-    assert share["qr_data_url"].startswith("data:image/svg+xml;base64,")
-    assert share["download_filename"] == "课程介绍 PDF二维码.svg"
+    assert share["qr_data_url"].startswith("data:image/jpeg;base64,")
+    assert share["download_filename"] == "课程介绍 PDF二维码.jpg"
 
 
 def test_radar_events_support_stage_filter_and_mask_identity(client):

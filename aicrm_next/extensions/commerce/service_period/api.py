@@ -16,7 +16,7 @@ from aicrm_next.admin_shell_contract import shell_context
 from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
 from aicrm_next.platform.shared.errors import ContractError, NotFoundError
 from aicrm_next.platform.shared.safe_logging import safe_log_exception, safe_log_fields
-from aicrm_next.platform.shared.share_qr import svg_qr_data_url
+from aicrm_next.platform.shared.share_qr import jpeg_qr_data_url
 from aicrm_next.platform.shared.sync_request import read_request_json
 from aicrm_next.crm.identity_contact.wechat_unionid_guard import evaluate_wechat_unionid_access
 
@@ -471,7 +471,7 @@ def share_service_period_product(service_product_id: str, request: Request) -> d
                 "product_code": str(product.get("product_code") or ""),
                 "product_name": str(product.get("title") or product.get("name") or ""),
                 "url": url,
-                "qr_data_url": svg_qr_data_url(url),
+                "qr_data_url": jpeg_qr_data_url(url),
             },
         }
     )

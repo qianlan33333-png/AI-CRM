@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from urllib.parse import unquote
+import base64
 
 from fastapi.testclient import TestClient
 
@@ -24,8 +24,8 @@ def test_questionnaire_share_endpoint_returns_public_link_and_qr(monkeypatch):
     assert share["questionnaire_id"] == 1
     assert share["slug"] == "hxc-activation-v1"
     assert share["url"] == "http://testserver/s/hxc-activation-v1"
-    assert share["qr_data_url"].startswith("data:image/svg+xml;charset=UTF-8,")
-    assert 'xmlns="http://www.w3.org/2000/svg"' in unquote(share["qr_data_url"])
+    assert share["qr_data_url"].startswith("data:image/jpeg;base64,")
+    assert base64.b64decode(share["qr_data_url"].split(",", 1)[1]).startswith(b"\xff\xd8")
 
 
 def test_public_api_uses_next_identity_status_and_filters_backend_fields(monkeypatch):

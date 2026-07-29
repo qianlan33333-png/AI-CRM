@@ -172,7 +172,7 @@ def test_payments_and_refunds(monkeypatch) -> None:
     assert payload["source_status"] == "next_admin_refund_request"
 
 
-def test_product_share_uses_real_qr_svg(monkeypatch) -> None:
+def test_product_share_uses_real_qr_jpeg(monkeypatch) -> None:
     client = _client(monkeypatch)
     products = client.get("/api/admin/wechat-pay/products").json()
     product = products["items"][0]
@@ -181,12 +181,10 @@ def test_product_share_uses_real_qr_svg(monkeypatch) -> None:
 
     share = payload["share"]
     assert share["url"].endswith(f"/pay/{product['product_code']}")
-    assert share["qr_data_url"].startswith("data:image/svg+xml;base64,")
-    svg = base64.b64decode(share["qr_data_url"].split(",", 1)[1]).decode("utf-8")
-    assert 'xmlns="http://www.w3.org/2000/svg"' in svg
-    assert "<path" in svg
-    assert "PRODUCT" not in svg
-    assert product["product_code"] not in svg
+    assert share["qr_data_url"].startswith("data:image/jpeg;base64,")
+    jpeg = base64.b64decode(share["qr_data_url"].split(",", 1)[1])
+    assert jpeg.startswith(b"\xff\xd8")
+    assert jpeg.endswith(b"\xff\xd9")
 
     material = client.post(
         "/api/admin/wechat-pay/products",

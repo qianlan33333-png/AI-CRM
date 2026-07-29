@@ -652,6 +652,7 @@
       "paths": [
         "aicrm_next/extensions/commerce/commerce/**",
         "aicrm_next/extensions/commerce/public_product/**",
+        "tests/test_share_qr_jpeg.py",
         "tests/test_wechat_products_admin_page_contract.py",
         "tests/test_product_external_push.py",
         "tests/test_admin_p0_commerce_api.py",
@@ -669,6 +670,7 @@
         "tests/test_product_paid_wecom_tagging.py"
       ],
       "python_tests": [
+        "tests/test_share_qr_jpeg.py",
         "tests/test_admin_p0_commerce_api.py",
         "tests/test_commerce_admin_transaction_detail.py",
         "tests/test_wechat_products_admin_page_contract.py",
@@ -1692,6 +1694,7 @@
         "aicrm_next/app/admin_console/templates/admin_shell/base.html",
         "aicrm_next/extensions/radar/radar_links/templates/admin_console/base.html",
         "aicrm_next/app/admin_console/static/admin_console/admin_console.css",
+        "aicrm_next/app/admin_console/static/admin_console/admin_download.js",
         "aicrm_next/app/admin_console/static/admin_console/config_center.css",
         "aicrm_next/app/admin_console/static/admin_console/config_center.js",
         "aicrm_next/app/admin_console/static/admin_console/operation_member_picker.js",
@@ -1706,9 +1709,11 @@
         "tests/test_channel_multi_staff_frontend_contract.py",
         "tests/test_wecom_operation_members_sync.py",
         "tests/test_admin_pages_real_data_binding.py",
-        "tests/test_admin_heading_deduplication.py"
+        "tests/test_admin_heading_deduplication.py",
+        "tests/test_admin_download_frontend_contract.py"
       ],
       "python_tests": [
+        "tests/test_admin_download_frontend_contract.py",
         "tests/test_admin_config_next.py",
         "tests/test_push_capabilities_config.py",
         "tests/test_operation_member_picker_frontend.py",
@@ -2406,6 +2411,7 @@
         "aicrm_next/platform/shared/postgres_test_guard.py",
         "aicrm_next/platform/shared/release.py",
         "aicrm_next/platform/shared/share_qr.py",
+        "tests/test_share_qr_jpeg.py",
         "aicrm_next/platform/shared/sync_request.py",
         "aicrm_next/platform/shared/text_encoding.py",
         "aicrm_next/platform/shared/typing.py",
@@ -2428,6 +2434,7 @@
         "tests/test_webhook_inbox_repository.py"
       ],
       "python_tests": [
+        "tests/test_share_qr_jpeg.py",
         "tests/test_capability_registry.py",
         "tests/test_import_graph_guard.py",
         "tests/test_zero_runtime_import_scc.py",
@@ -2465,9 +2472,11 @@
         "tests/test_retired_automation_member_writes.py",
         "tests/test_wechat_oauth_client.py",
         "tests/test_wecom_callback_inbox.py",
-        "tests/test_wecom_customer_group_client.py"
+        "tests/test_wecom_customer_group_client.py",
+        "tests/test_wecom_qrcode_image_client.py"
       ],
       "python_tests": [
+        "tests/test_wecom_qrcode_image_client.py",
         "tests/test_capability_registry.py",
         "tests/test_import_graph_guard.py",
         "tests/test_zero_runtime_import_scc.py",

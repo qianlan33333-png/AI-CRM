@@ -378,7 +378,7 @@
           <div class="product-share-label">商品二维码</div>
           <div class="product-share-qr-wrap">
             <img id="product-share-qr" class="product-share-qr" alt="商品二维码">
-            <a id="product-share-download" class="admin-button admin-button--secondary" href="#" download="商品二维码.svg">保存二维码</a>
+            <a id="product-share-download" class="admin-button admin-button--secondary" href="#" download="商品二维码.jpg">保存二维码</a>
           </div>
         </div>
       </div>
@@ -419,7 +419,7 @@
   function statusLabel(value) { return { active: "已上架", draft: "草稿", disabled: "已下架" }[value] || value || "草稿"; }
   function productDisplayName(value) { return String(value || "商品").trim() || "商品"; }
   function safeQrDownloadName(value) {
-    return `${productDisplayName(value).replace(/[\\/:*?"<>|]+/g, "_")}二维码.svg`;
+    return `${productDisplayName(value).replace(/[\\/:*?"<>|]+/g, "_")}二维码.jpg`;
   }
   function updateProductSummary() {
     const title = $("productEditTitle");

@@ -142,6 +142,7 @@ def test_create_update_copy_disable_delete_facade(next_client) -> None:
     assert members.json()["items"] == []
 
     share = next_client.get(f"/api/admin/service-period-products/{product['id']}/share")
+    assert share.json()["share"]["qr_data_url"].startswith("data:image/jpeg;base64,")
     assert share.status_code == 200
     assert "/s/sp_course_001" in share.json()["share"]["url"]
 

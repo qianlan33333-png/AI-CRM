@@ -6,6 +6,7 @@ from aicrm_next import integration_ports
 from aicrm_next.channels.integration_gateway.payment_adapters import build_wechat_pay_adapter
 from aicrm_next.channels.integration_gateway.questionnaire_adapters import build_wechat_oauth_adapter
 from aicrm_next.channels.integration_gateway.wecom_channel_entry_client import build_default_wecom_channel_entry_adapter
+from aicrm_next.channels.integration_gateway.wecom_qrcode_image_client import build_wecom_qrcode_image_client
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,6 +16,7 @@ def test_integration_ports_preserve_concrete_adapter_bindings() -> None:
     assert integration_ports.build_wechat_pay_adapter is build_wechat_pay_adapter
     assert integration_ports.build_wechat_oauth_adapter is build_wechat_oauth_adapter
     assert integration_ports.build_default_wecom_channel_entry_adapter is build_default_wecom_channel_entry_adapter
+    assert integration_ports.build_wecom_qrcode_image_client is build_wecom_qrcode_image_client
     assert len(integration_ports.__all__) == len(set(integration_ports.__all__))
     assert set(integration_ports.__all__) == {
         name for name in integration_ports.__all__ if hasattr(integration_ports, name)
