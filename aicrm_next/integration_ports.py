@@ -109,6 +109,10 @@ from aicrm_next.channels.integration_gateway.wecom_operation_members_client impo
     WeComOperationMembersClient,
     build_wecom_operation_members_client,
 )
+from aicrm_next.channels.integration_gateway.wecom_qrcode_image_client import (
+    WeComQrImageClientError,
+    build_wecom_qrcode_image_client,
+)
 from aicrm_next.channels.integration_gateway.wecom_tag_live_gateway import (
     WeComTagLiveGateway,
     build_wecom_tag_live_gateway,
@@ -148,6 +152,7 @@ __all__ = [
     "WeComMediaAdapter",
     "WeComMediaUploadClientError",
     "WeComOperationMembersClient",
+    "WeComQrImageClientError",
     "WeComTagLiveGateway",
     "build_alipay_adapter",
     "build_archive_sync_adapter",
@@ -176,6 +181,7 @@ __all__ = [
     "build_wecom_media_upload_client",
     "build_wecom_message_dispatch_adapter",
     "build_wecom_operation_members_client",
+    "build_wecom_qrcode_image_client",
     "build_wecom_tag_live_gateway",
     "customer_sync_side_effect_safety",
     "extract_base64_payload",

@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, Response
 
 from aicrm_next.automation.automation_engine import channels_repo
-from aicrm_next.channels.integration_gateway.wecom_qrcode_image_client import (
+from aicrm_next.integration_ports import (
     WeComQrImageClientError,
     build_wecom_qrcode_image_client,
 )
