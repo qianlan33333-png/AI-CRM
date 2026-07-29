@@ -31,8 +31,11 @@ from aicrm_next.platform.platform_foundation.execution_runtime.handlers import (
     webhook_inbox_handler,
 )
 from aicrm_next.platform.platform_foundation.execution_runtime.lanes import (
-    DEFAULT_LANE_CAPACITY,
     QueueLane,
+)
+from aicrm_next.platform.platform_foundation.execution_runtime.repository import (
+    ExecutionRuntimeRepository,
+    LanePolicy,
 )
 from aicrm_next.platform.platform_foundation.execution_runtime.service import QueueRuntimeService
 from aicrm_next.platform.platform_foundation.execution_runtime.start_rate import SharedStartRateLimiter
@@ -145,14 +148,15 @@ def _install_signal_handlers(stop_event: threading.Event) -> None:
     signal.signal(signal.SIGTERM, stop)
 
 
-def _lane(name: str, *, claimless: bool) -> QueueLane:
+def _lane(policy: LanePolicy, *, claimless: bool) -> QueueLane:
     return QueueLane(
-        name=name,
-        max_in_flight=DEFAULT_LANE_CAPACITY[name],
-        rollout_mode="standby" if claimless else "canary",
+        name=policy.lane,
+        max_in_flight=policy.max_in_flight,
+        enabled=policy.enabled,
+        rollout_mode="standby" if claimless else policy.rollout_mode,
         fallback_seconds=(
             WECOM_WELCOME_FALLBACK_SECONDS
-            if name in {"wecom_welcome_ingress", "wecom_welcome"}
+            if policy.lane in {"wecom_welcome_ingress", "wecom_welcome"}
             else None
         ),
     )
@@ -168,12 +172,16 @@ def _service(
     claimless: bool,
     test_only: bool = False,
     runtime_metrics=None,
+    repository: ExecutionRuntimeRepository | None = None,
 ) -> QueueRuntimeService:
+    runtime_repository = repository or ExecutionRuntimeRepository()
+    policies = runtime_repository.read_lane_policies(lane_names)
     return QueueRuntimeService(
         queue_kind=queue_kind,
-        lanes=tuple(_lane(name, claimless=claimless) for name in lane_names),
+        lanes=tuple(_lane(policy, claimless=claimless) for policy in policies),
         generation=generation,
         handler=handler,
+        repository=runtime_repository,
         service_name=f"aicrm-{queue_kind}-runtime",
         worker_id=worker_id,
         lease_seconds=30,
