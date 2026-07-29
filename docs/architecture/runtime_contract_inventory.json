@@ -2487,6 +2487,12 @@
     },
     {
       "accessor": "os.getenv",
+      "file": "scripts/ops/ensure_postgres_extensions.py",
+      "key": "DATABASE_URL",
+      "line": 178
+    },
+    {
+      "accessor": "os.getenv",
       "file": "scripts/ops/manage_auth_clients.py",
       "key": "DATABASE_URL",
       "line": 131
