@@ -399,6 +399,7 @@
     "tests/test_operation_cycle_strategy_context.py",
     "tests/test_operation_cycles_api.py",
     "tests/test_operation_cycles_frontend_contract.py",
+    "tests/test_operation_cycles_repository.py",
     "tests/test_p1_diagnostics_removal_contract.py",
     "tests/test_send_content_global_guardrails.py",
     "tests/test_wecom_frontend_contract.py",
