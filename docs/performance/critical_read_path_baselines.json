@@ -7,7 +7,7 @@
       "owner": "customer_read_model",
       "dataset_rows": 10000,
       "sample_count": 20,
-      "max_query_count": 2,
+      "max_query_count": 3,
       "page_limit": 50,
       "baseline_p95_ms": 250.0,
       "max_seq_scan_rows": 1000,
@@ -16,11 +16,33 @@
     "sidebar_workbench": {
       "route": "/api/sidebar/v2/workbench",
       "owner": "customer_read_model",
-      "dataset_rows": 5000,
+      "dataset_rows": 100000,
       "sample_count": 20,
-      "max_query_count": 6,
+      "max_query_count": 10,
       "page_limit": 1,
       "baseline_p95_ms": 250.0,
+      "max_seq_scan_rows": 1000,
+      "allowed_large_seq_scan_relations": []
+    },
+    "sidebar_timeline": {
+      "route": "/api/sidebar/v2/timeline",
+      "owner": "customer_read_model",
+      "dataset_rows": 100000,
+      "sample_count": 30,
+      "max_query_count": 6,
+      "page_limit": 20,
+      "baseline_p95_ms": 225.0,
+      "max_seq_scan_rows": 1000,
+      "allowed_large_seq_scan_relations": []
+    },
+    "sidebar_recent_messages": {
+      "route": "/api/messages/{external_userid}/recent",
+      "owner": "customer_read_model",
+      "dataset_rows": 100000,
+      "sample_count": 30,
+      "max_query_count": 4,
+      "page_limit": 20,
+      "baseline_p95_ms": 100.0,
       "max_seq_scan_rows": 1000,
       "allowed_large_seq_scan_relations": []
     },
@@ -38,7 +60,7 @@
       ]
     },
     "admin_jobs": {
-      "route": "/admin/jobs",
+      "route": "/api/admin/jobs/summary",
       "owner": "admin_jobs",
       "dataset_rows": 20000,
       "sample_count": 20,
@@ -51,6 +73,33 @@
         "outbound_webhook_deliveries",
         "sync_runs",
         "wecom_external_contact_event_logs"
+      ]
+    },
+    "internal_events_admin": {
+      "route": "/api/admin/internal-events",
+      "owner": "platform_foundation.internal_events",
+      "dataset_rows": 100000,
+      "sample_count": 20,
+      "max_query_count": 5,
+      "page_limit": 50,
+      "baseline_p95_ms": 250.0,
+      "max_seq_scan_rows": 1000,
+      "allowed_large_seq_scan_relations": [
+        "internal_event"
+      ]
+    },
+    "push_center": {
+      "route": "/api/admin/push-center/jobs",
+      "owner": "platform_foundation.push_center",
+      "dataset_rows": 100000,
+      "sample_count": 20,
+      "max_query_count": 1,
+      "page_limit": 100,
+      "baseline_p95_ms": 450.0,
+      "max_seq_scan_rows": 1000,
+      "allowed_large_seq_scan_relations": [
+        "external_effect_job",
+        "broadcast_jobs"
       ]
     }
   }

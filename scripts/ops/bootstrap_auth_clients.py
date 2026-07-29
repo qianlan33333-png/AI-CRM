@@ -16,20 +16,20 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from aicrm_next.platform_foundation.auth_platform.credentials import (  # noqa: E402
+from aicrm_next.platform.platform_foundation.auth_platform.credentials import (  # noqa: E402
     hash_client_secret,
     issue_client_secret,
     verify_client_secret,
 )
-from aicrm_next.platform_foundation.auth_platform.models import ApiClientRecord, WebhookClientRecord  # noqa: E402
-from aicrm_next.platform_foundation.auth_platform.profiles import (  # noqa: E402
+from aicrm_next.platform.platform_foundation.auth_platform.models import ApiClientRecord, WebhookClientRecord  # noqa: E402
+from aicrm_next.platform.platform_foundation.auth_platform.profiles import (  # noqa: E402
     API_CLIENT_PROFILES,
     WEBHOOK_CLIENT_PROFILES,
 )
-from aicrm_next.platform_foundation.auth_platform.repository import PostgresAuthRepository  # noqa: E402
-from aicrm_next.platform_foundation.auth_platform.service import ApiClientService, AuthServiceConfig  # noqa: E402
-from aicrm_next.platform_foundation.auth_platform.webhook_hmac import issue_webhook_secret  # noqa: E402
-from aicrm_next.shared.secret_store import FileSecretStore, SecretStoreError, is_secret_reference  # noqa: E402
+from aicrm_next.platform.platform_foundation.auth_platform.repository import PostgresAuthRepository  # noqa: E402
+from aicrm_next.platform.platform_foundation.auth_platform.service import ApiClientService, AuthServiceConfig  # noqa: E402
+from aicrm_next.platform.platform_foundation.auth_platform.webhook_hmac import issue_webhook_secret  # noqa: E402
+from aicrm_next.platform.shared.secret_store import FileSecretStore, SecretStoreError, is_secret_reference  # noqa: E402
 from scripts.ops.migrate_app_setting_secrets import _persist_environment_values  # noqa: E402
 
 

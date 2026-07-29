@@ -3,8 +3,8 @@ from __future__ import annotations
 import subprocess
 import sys
 
-from aicrm_next.commerce import fulfillment_reconciliation
-from aicrm_next.commerce.fulfillment_reconciliation import CommerceFulfillmentReconciliationService
+from aicrm_next.extensions.commerce.commerce import fulfillment_reconciliation
+from aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation import CommerceFulfillmentReconciliationService
 
 
 class _Result:

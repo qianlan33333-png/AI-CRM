@@ -6,8 +6,8 @@ from typing import Iterator
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.customer_read_model.errors import CustomerScopeForbiddenError
-from aicrm_next.shared.db_session import get_db
+from aicrm_next.crm.customer_read_model.errors import CustomerScopeForbiddenError
+from aicrm_next.platform.shared.db_session import get_db
 from tests.sidebar_auth_test_helpers import install_sidebar_auth
 
 
@@ -130,7 +130,7 @@ def _production_env(monkeypatch) -> None:
 
 
 def _client_with_request_scope(monkeypatch, *, pii_audit_repository=None):
-    from aicrm_next.customer_read_model import application
+    from aicrm_next.crm.customer_read_model import application
 
     _production_env(monkeypatch)
     session = FakeSession()
@@ -210,7 +210,8 @@ def test_sidebar_customer_context_reuses_one_request_scoped_repo(monkeypatch) ->
     assert read_repos[0].session is session
     assert live_repos[0].session is session
     assert read_repos[0].closed is False
-    assert set(read_repos[0].calls) >= {"get_customer", "customer_exists", "list_timeline", "list_recent_messages"}
+    assert set(read_repos[0].calls) >= {"get_customer", "list_timeline", "list_recent_messages"}
+    assert "customer_exists" not in read_repos[0].calls
 
 
 def test_sidebar_v2_releases_request_scoped_session_before_pii_audit(monkeypatch) -> None:
@@ -221,7 +222,7 @@ def test_sidebar_v2_releases_request_scoped_session_before_pii_audit(monkeypatch
     )
     audit_repository.session = session
     monkeypatch.setattr(
-        "aicrm_next.customer_read_model.api.SidebarCommerceReadModel.orders",
+        "aicrm_next.crm.customer_read_model.api.SidebarCommerceReadModel.orders",
         lambda _read_model, **_kwargs: {"orders": []},
     )
     headers = install_sidebar_auth(
@@ -247,7 +248,7 @@ def test_sidebar_customer_context_rejects_resolved_customer_outside_staff_scope_
         raise CustomerScopeForbiddenError("customer scope forbidden")
 
     monkeypatch.setattr(
-        "aicrm_next.customer_read_model.api.verify_sidebar_identity_snapshot_owner_scope",
+        "aicrm_next.crm.customer_read_model.api.verify_sidebar_identity_snapshot_owner_scope",
         reject_current_scope,
     )
     headers = install_sidebar_auth(
@@ -274,7 +275,7 @@ def test_sidebar_customer_context_prefers_current_owner_when_projection_scope_is
     verifier_calls: list[tuple[str, str]] = []
 
     monkeypatch.setattr(
-        "aicrm_next.customer_read_model.api.verify_sidebar_identity_snapshot_owner_scope",
+        "aicrm_next.crm.customer_read_model.api.verify_sidebar_identity_snapshot_owner_scope",
         lambda *, external_userid, owner_userid: verifier_calls.append((external_userid, owner_userid)),
     )
     headers = install_sidebar_auth(
@@ -304,7 +305,7 @@ def test_sidebar_customer_context_rechecks_current_owner_when_projection_scope_i
 
     monkeypatch.setattr(f"{__name__}._customer", lambda: customer)
     monkeypatch.setattr(
-        "aicrm_next.customer_read_model.api.verify_sidebar_identity_snapshot_owner_scope",
+        "aicrm_next.crm.customer_read_model.api.verify_sidebar_identity_snapshot_owner_scope",
         lambda *, external_userid, owner_userid: verifier_calls.append((external_userid, owner_userid)),
     )
     headers = install_sidebar_auth(
@@ -338,7 +339,7 @@ def test_sidebar_customer_context_keeps_empty_projection_scope_fail_closed(monke
         raise CustomerScopeForbiddenError("customer scope forbidden")
 
     monkeypatch.setattr(
-        "aicrm_next.customer_read_model.api.verify_sidebar_identity_snapshot_owner_scope",
+        "aicrm_next.crm.customer_read_model.api.verify_sidebar_identity_snapshot_owner_scope",
         reject_current_scope,
     )
     headers = install_sidebar_auth(
@@ -358,7 +359,7 @@ def test_sidebar_customer_context_keeps_empty_projection_scope_fail_closed(monke
 
 
 def test_customer_read_model_api_has_no_naked_high_frequency_query_calls() -> None:
-    source = Path("aicrm_next/customer_read_model/api.py").read_text(encoding="utf-8")
+    source = Path("aicrm_next/crm/customer_read_model/api.py").read_text(encoding="utf-8")
 
     forbidden = [
         "ListCustomersQuery()(",

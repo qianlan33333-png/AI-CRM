@@ -1,51 +1,39 @@
-name: Deploy
+name: Deploy Production Release
+# Promotion attestation: AI-CRM candidate 46d110da / ID validation 94de2901.
 
 on:
-  workflow_run:
-    workflows: ["CI Fast"]
-    types: [completed]
   workflow_call:
     inputs:
-      target_environment:
-        description: Deployment environment selected by a guarded caller
-        required: false
-        default: test
-        type: string
       release_sha:
-        description: Exact tested SHA selected for a manual production promotion
-        required: false
-        default: ""
+        description: Exact AI-CRM main SHA selected by the guarded production promotion workflow
+        required: true
         type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: aicrm-deploy-${{ inputs.target_environment || vars.DEFAULT_DEPLOY_ENVIRONMENT || 'test' }}
+  group: aicrm-production-deploy
   cancel-in-progress: false
 
 jobs:
   deploy:
-    if: >-
-      (github.event_name == 'workflow_run' &&
-       github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_branch == 'main') ||
-      (inputs.target_environment == 'production' &&
-       inputs.release_sha != '')
-    environment: ${{ inputs.target_environment || vars.DEFAULT_DEPLOY_ENVIRONMENT || 'test' }}
+    if: inputs.release_sha != ''
+    environment: production
     runs-on: ubuntu-latest
     env:
-      DEPLOY_TARGET: ${{ inputs.target_environment || vars.DEFAULT_DEPLOY_ENVIRONMENT || 'test' }}
+      DEPLOY_TARGET: production
       PUBLIC_BASE_URL: ${{ vars.PUBLIC_BASE_URL }}
       PUBLIC_HEALTH_URL: ${{ vars.PUBLIC_HEALTH_URL }}
       PUBLIC_SERVER_NAME: ${{ vars.PUBLIC_SERVER_NAME }}
       NGINX_CONFIG_PATH: ${{ vars.NGINX_CONFIG_PATH }}
       ALLOW_MISSING_WECHAT_SHOP_CALLBACK_TOKEN: ${{ vars.ALLOW_MISSING_WECHAT_SHOP_CALLBACK_TOKEN || '0' }}
+      RELEASE_REFRESH_ATTEMPT_KEY: ${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - name: Checkout verified release
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0 (Node 24)
         with:
-          ref: ${{ inputs.release_sha || github.event.workflow_run.head_sha }}
+          ref: ${{ inputs.release_sha }}
           fetch-depth: 0
 
       - name: Build verified release bundle
@@ -53,7 +41,7 @@ jobs:
         run: |
           set -e
           set -o pipefail
-          verified_sha="${{ inputs.release_sha || github.event.workflow_run.head_sha }}"
+          verified_sha="${{ inputs.release_sha }}"
           deploy_target="$DEPLOY_TARGET"
           if ! printf '%s' "$verified_sha" | grep -Eq '^[0-9a-f]{40}$'; then
             echo "invalid verified workflow sha"
@@ -64,13 +52,12 @@ jobs:
             exit 1
           fi
           git fetch --no-tags origin main
-          if [ "$deploy_target" = "production" ]; then
-            if ! git merge-base --is-ancestor "$verified_sha" FETCH_HEAD; then
-              echo "requested production release is not part of repository main"
-              exit 1
-            fi
-          elif [ "$(git rev-parse FETCH_HEAD)" != "$verified_sha" ]; then
-            echo "verified workflow sha is no longer the repository main head"
+          if [ "$deploy_target" != "production" ]; then
+            echo "AI-CRM deploy workflow is production-only"
+            exit 1
+          fi
+          if [ "$(git rev-parse FETCH_HEAD)" != "$verified_sha" ]; then
+            echo "requested production release is not the current repository main"
             exit 1
           fi
           public_base_url="${PUBLIC_BASE_URL%/}"
@@ -98,14 +85,14 @@ jobs:
             exit 1
           fi
           if ! git cat-file -e "$base_sha^{commit}"; then
-            echo "target environment release is not present in repository history"
+            echo "production release is not present in repository history"
             exit 1
-          fi
-          if ! git merge-base --is-ancestor "$base_sha" "$verified_sha"; then
-            echo "target environment release is not an ancestor of the requested release"
+          elif ! git merge-base --is-ancestor "$base_sha" "$verified_sha"; then
+            echo "production release is not an ancestor of the requested release"
             exit 1
           fi
           echo "base_sha=$base_sha" >> "$GITHUB_OUTPUT"
+          echo "bundle_mode=incremental" >> "$GITHUB_OUTPUT"
           mkdir -p release
           git update-ref refs/deploy/release "$verified_sha"
           git update-ref refs/deploy/base "$base_sha"
@@ -125,20 +112,21 @@ jobs:
       - name: Transfer verified release bundle
         uses: appleboy/scp-action@ff85246acaad7bdce478db94a363cd2bf7c90345 # v1.0.0
         with:
-          host: ${{ env.DEPLOY_TARGET == 'production' && secrets.DEPLOY_HOST || secrets.TEST_DEPLOY_HOST }}
-          username: ${{ env.DEPLOY_TARGET == 'production' && secrets.DEPLOY_USER || secrets.TEST_DEPLOY_USER }}
-          key: ${{ env.DEPLOY_TARGET == 'production' && secrets.DEPLOY_SSH_KEY || secrets.TEST_DEPLOY_SSH_KEY }}
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
           source: "release/aicrm-release.bundle,release/aicrm-release.bundle.sha256"
-          target: /tmp/aicrm-release-${{ inputs.release_sha || github.event.workflow_run.head_sha }}
+          target: /tmp/aicrm-release-${{ inputs.release_sha }}
           strip_components: 1
           overwrite: true
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
         with:
-          host: ${{ env.DEPLOY_TARGET == 'production' && secrets.DEPLOY_HOST || secrets.TEST_DEPLOY_HOST }}
-          username: ${{ env.DEPLOY_TARGET == 'production' && secrets.DEPLOY_USER || secrets.TEST_DEPLOY_USER }}
-          key: ${{ env.DEPLOY_TARGET == 'production' && secrets.DEPLOY_SSH_KEY || secrets.TEST_DEPLOY_SSH_KEY }}
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: RELEASE_REFRESH_ATTEMPT_KEY
           script: |
             set -e
             set -o pipefail
@@ -147,6 +135,16 @@ jobs:
             release_control_dir=""
             release_control_manager=""
             release_control_manifest=""
+            previous_control_dir=""
+            previous_control_manager=""
+            previous_control_manifest=""
+            restore_control_manager=""
+            restore_control_manifest=""
+            restore_runtime_phase() {
+              python3 "$restore_control_manager" \
+                --manifest "$restore_control_manifest" \
+                --phase "$1" --execute
+            }
             cd '/home/ubuntu/极简 crm'
             deploy_target="${{ env.DEPLOY_TARGET }}"
             deploy_lock_file="/tmp/aicrm-deploy-${deploy_target}.lock"
@@ -157,14 +155,23 @@ jobs:
             fi
             cd '/home/ubuntu/极简 crm'
             before_sha="$(git rev-parse HEAD)"
-            verified_sha="${{ inputs.release_sha || github.event.workflow_run.head_sha }}"
+            verified_sha="${{ inputs.release_sha }}"
             base_sha="${{ steps.release.outputs.base_sha }}"
+            bundle_mode="${{ steps.release.outputs.bundle_mode }}"
             if ! printf '%s' "$verified_sha" | grep -Eq '^[0-9a-f]{40}$'; then
               echo "invalid verified workflow sha"
               exit 1
             fi
+            if [ "$deploy_target" != "production" ]; then
+              echo "AI-CRM remote deploy target must be production"
+              exit 1
+            fi
+            if [ "$bundle_mode" != "incremental" ]; then
+              echo "invalid release bundle mode"
+              exit 1
+            fi
             if [ "$before_sha" != "$base_sha" ]; then
-              echo "target checkout moved after the incremental release bundle was built"
+              echo "target checkout moved after the release bundle was built"
               exit 1
             fi
             release_bundle_dir="/tmp/aicrm-release-$verified_sha"
@@ -201,7 +208,7 @@ jobs:
                   fi
                   if ! python3 "$release_control_manager" \
                     --manifest "$release_control_manifest" \
-                    --phase stop-for-migration --execute; then
+                    --phase stop-for-migration-recovery --execute; then
                     cleanup_failed=1
                   fi
                 else
@@ -219,6 +226,13 @@ jobs:
                 else
                   echo "primary Web remains active while the partial runtime transaction is rolled back"
                 fi
+                if ! python3 "$release_control_manager" \
+                  --manifest "$release_control_manifest" \
+                  --previous-manifest "$previous_control_manifest" \
+                  --phase remove-candidate-only-runtime --execute; then
+                  echo "failed to remove candidate-only runtime units"
+                  cleanup_failed=1
+                fi
                 if git reset --hard "$before_sha"; then
                   printf '%s\n' "$before_sha" > .release-sha
                   if ! git diff --quiet "$before_sha" "$verified_sha" -- requirements.lock; then
@@ -232,12 +246,12 @@ jobs:
                   echo "failed to restore checkout to $before_sha"
                   cleanup_failed=1
                 fi
+                restore_control_manager="$previous_control_manager"
+                restore_control_manifest="$previous_control_manifest"
               fi
               if [ "${runtime_units_stopped:-0}" = "1" ]; then
                 echo "restoring runtime units for $restore_expected_sha"
-                if ! python3 "$release_control_manager" \
-                  --manifest "$release_control_manifest" \
-                  --phase authorize-web-start --execute; then
+                if ! restore_runtime_phase authorize-web-start; then
                   cleanup_failed=1
                 fi
                 sudo systemctl reset-failed \
@@ -256,24 +270,16 @@ jobs:
                   sleep 1
                 done
                 if [ "$restored_web_ready" = "1" ]; then
-                  if ! python3 "$release_control_manager" \
-                    --manifest "$release_control_manifest" \
-                    --phase authorize-runtime-start --execute; then
+                  if ! restore_runtime_phase authorize-runtime-start; then
                     cleanup_failed=1
                   fi
-                  if ! python3 "$release_control_manager" \
-                    --manifest "$release_control_manifest" \
-                    --phase install-enable-after-web-health --execute; then
+                  if ! restore_runtime_phase install-enable-after-web-health; then
                     cleanup_failed=1
                   fi
-                  if ! python3 "$release_control_manager" \
-                    --manifest "$release_control_manifest" \
-                    --phase verify --execute; then
+                  if ! restore_runtime_phase verify-staged-runtime; then
                     cleanup_failed=1
                   fi
-                  if ! python3 "$release_control_manager" \
-                    --manifest "$release_control_manifest" \
-                    --phase release-runtime-guard --execute; then
+                  if ! restore_runtime_phase release-runtime-guard; then
                     cleanup_failed=1
                   fi
                 else
@@ -297,24 +303,16 @@ jobs:
                   sleep 1
                 done
                 if [ "$partial_web_ready" = "1" ]; then
-                  if ! python3 "$release_control_manager" \
-                    --manifest "$release_control_manifest" \
-                    --phase authorize-runtime-restore --execute; then
+                  if ! restore_runtime_phase authorize-runtime-restore; then
                     cleanup_failed=1
                   fi
-                  if ! python3 "$release_control_manager" \
-                    --manifest "$release_control_manifest" \
-                    --phase install-enable-after-web-health --execute; then
+                  if ! restore_runtime_phase install-enable-after-web-health; then
                     cleanup_failed=1
                   fi
-                  if ! python3 "$release_control_manager" \
-                    --manifest "$release_control_manifest" \
-                    --phase verify-staged-runtime --execute; then
+                  if ! restore_runtime_phase verify-staged-runtime; then
                     cleanup_failed=1
                   fi
-                  if ! python3 "$release_control_manager" \
-                    --manifest "$release_control_manifest" \
-                    --phase release-runtime-guard --execute; then
+                  if ! restore_runtime_phase release-runtime-guard; then
                     cleanup_failed=1
                   fi
                   runtime_transaction_partial=0
@@ -323,6 +321,7 @@ jobs:
                   cleanup_failed=1
                 fi
               fi
+              rm -rf -- "$previous_control_dir"
               rm -rf -- "$release_control_dir"
               rm -rf -- "$release_bundle_dir"
               if [ "$exit_status" -eq 0 ] && [ "$cleanup_failed" -ne 0 ]; then
@@ -355,6 +354,14 @@ jobs:
               exit 1
             fi
             release_control_dir="$(mktemp -d /tmp/aicrm-release-control.XXXXXX)"
+            previous_control_dir="$(mktemp -d /tmp/aicrm-previous-control.XXXXXX)"
+            git archive "$before_sha" \
+              app.py \
+              scripts \
+              deploy \
+              | tar -x -C "$previous_control_dir"
+            previous_control_manager="$previous_control_dir/scripts/ops/manage_production_runtime_units.py"
+            previous_control_manifest="$previous_control_dir/deploy/production_runtime_units.json"
             git archive "$verified_sha" \
               app.py \
               scripts \
@@ -362,6 +369,8 @@ jobs:
               | tar -x -C "$release_control_dir"
             release_control_manager="$release_control_dir/scripts/ops/manage_production_runtime_units.py"
             release_control_manifest="$release_control_dir/deploy/production_runtime_units.json"
+            restore_control_manager="$release_control_manager"
+            restore_control_manifest="$release_control_manifest"
             git reset --hard "$verified_sha"
             release_switched=1
             after_sha="$(git rev-parse HEAD)"
@@ -395,10 +404,14 @@ jobs:
               --environment-file /home/ubuntu/.openclaw-wecom-pg.env \
               --target-environment "$deploy_target" \
               --public-base-url "$auth_issuer" \
+              --deployment-profile-path '/home/ubuntu/极简 crm/deploy/deployment_profiles/production-current.json' \
               "${runtime_environment_args[@]}"
             set -a
             source /home/ubuntu/.openclaw-wecom-pg.env
             set +a
+            python3 -m scripts.ops.validate_production_deployment_profile \
+              --expected-profile-path '/home/ubuntu/极简 crm/deploy/deployment_profiles/production-current.json' \
+              | tee /tmp/aicrm-deployment-profile-preflight.json
             # Identity preflight must fail before any runtime unit is stopped.
             python3 scripts/ops/check_unionid_identity_cutover.py \
               --phase preflight \
@@ -509,15 +522,38 @@ jobs:
               --expected-callback-url "$auth_issuer/auth/wecom/callback" \
               "${runtime_secret_args[@]}" \
               | tee /tmp/aicrm-runtime-secret-readiness.json
+            export AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED=1
+            python3 scripts/ops/run_release_customer_read_model_refresh.py \
+              --release-sha "$after_sha" \
+              --attempt-key "$RELEASE_REFRESH_ATTEMPT_KEY" \
+              | tee /tmp/aicrm-customer-read-model-release-refresh.json
+            unset AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED
+            export AICRM_QUEUE_TERMINAL_ACK_AUTHORIZED=1
+            python3 scripts/ops/acknowledge_release_terminal_histories.py \
+              --release-sha "$after_sha" \
+              --actor github-actions \
+              --apply \
+              | tee /tmp/aicrm-release-terminal-history-acknowledgements.json
+            unset AICRM_QUEUE_TERMINAL_ACK_AUTHORIZED
+            # Replace any pre-deploy timer generation before the all-green smoke.
+            if ! DB_APPLICATION_NAME=aicrm-next-deploy-data-health \
+              PGAPPNAME=aicrm-next-deploy-data-health \
+              DB_POOL_SIZE=1 \
+              DB_MAX_OVERFLOW=0 \
+              PGOPTIONS='-c statement_timeout=120s -c idle_in_transaction_session_timeout=60s -c lock_timeout=5s' \
+              python3 scripts/ops/refresh_data_health_snapshot.py \
+                --expected-release-sha "$after_sha" \
+                | tee /tmp/aicrm-data-health-release-snapshot.json; then
+              sudo systemctl status openclaw-wecom-postgres.service --no-pager || true
+              sudo journalctl -u openclaw-wecom-postgres.service -n 120 --no-pager || true
+              exit 1
+            fi
             deploy_smoke_session_file="$(mktemp /tmp/aicrm-deploy-smoke-session.XXXXXX)"
             python3 scripts/ops/create_deploy_smoke_session.py issue \
               --output-file "$deploy_smoke_session_file" \
               --ttl-seconds 300 \
               | tee /tmp/aicrm-deploy-smoke-session-issue.json
-            admin_smoke_sidebar_args=()
-            if [ "$deploy_target" = "production" ]; then
-              admin_smoke_sidebar_args=(--include-all-sidebar --require-all-data-health-green)
-            fi
+            admin_smoke_sidebar_args=(--include-all-sidebar --require-all-data-health-green)
             if ! python scripts/ops/check_admin_read_pages_smoke.py \
               --base-url http://127.0.0.1:5001 \
               --require-admin-cookie \
@@ -534,7 +570,23 @@ jobs:
             deploy_smoke_session_file=""
             python3 scripts/ops/manage_production_runtime_units.py --phase authorize-runtime-start --execute
             python3 scripts/ops/manage_production_runtime_units.py --phase install-enable-after-web-health --execute
-            python scripts/ops/check_wecom_callback_deploy_smoke.py | tee /tmp/wecom-callback-deploy-smoke.json
+            callback_smoke_ready=0
+            for callback_smoke_attempt in 1 2; do
+              if python scripts/ops/check_wecom_callback_deploy_smoke.py \
+                | tee /tmp/wecom-callback-deploy-smoke.json; then
+                callback_smoke_ready=1
+                break
+              fi
+              if [ "$callback_smoke_attempt" -lt 2 ]; then
+                echo "callback deploy smoke failed during runtime warm-up; retrying once"
+                sleep 2
+              fi
+            done
+            if [ "$callback_smoke_ready" != "1" ]; then
+              sudo systemctl status openclaw-wecom-callback-ingress.service --no-pager || true
+              sudo journalctl -u openclaw-wecom-callback-ingress.service -n 120 --no-pager || true
+              exit 1
+            fi
             python3 scripts/ops/manage_production_runtime_units.py --phase verify-staged-runtime --execute
             curl -sSf http://127.0.0.1:5001/api/system/health \
               | tee /tmp/aicrm-runtime-readiness.json
@@ -550,38 +602,16 @@ jobs:
             # Count-only R10 Group Ops/broadcast reconciliation. Never repairs, resends, or calls providers.
             python scripts/ops/reconcile_group_ops_broadcast.py \
               | tee /tmp/aicrm-group-ops-broadcast-reconciliation.json
-            if [ "$deploy_target" = "production" ]; then
-              test -n "${{ env.PUBLIC_SERVER_NAME }}"
-              test -n "${{ env.NGINX_CONFIG_PATH }}"
-              sudo /home/ubuntu/venvs/openclaw/bin/python \
-                scripts/ops/ensure_production_public_release_route.py --execute \
-                --expected-sha "$after_sha" \
-                --server-name "${{ env.PUBLIC_SERVER_NAME }}" \
-                --nginx-config "${{ env.NGINX_CONFIG_PATH }}" \
-                --local-health-url http://127.0.0.1:5001/health \
-                --public-health-url "${{ env.PUBLIC_HEALTH_URL }}" \
-                | tee /tmp/aicrm-public-release-route.json
-            else
-              test_public_ready=0
-              for _ in $(seq 1 30); do
-                if curl -sSf -D /tmp/aicrm_test_public_health_headers.txt \
-                  "${{ env.PUBLIC_HEALTH_URL }}" \
-                  -o /tmp/aicrm_test_public_health.json \
-                  && grep -i "x-aicrm-release-sha: $after_sha" /tmp/aicrm_test_public_health_headers.txt; then
-                  test_public_ready=1
-                  break
-                fi
-                actual_test_release_sha="$(awk 'tolower($1) == "x-aicrm-release-sha:" {print $2}' \
-                  /tmp/aicrm_test_public_health_headers.txt 2>/dev/null | tr -d '\r' | tail -n 1 || true)"
-                echo "waiting for public test release sha: expected=$after_sha actual=${actual_test_release_sha:-missing}"
-                sleep 2
-              done
-              if [ "$test_public_ready" != "1" ]; then
-                echo "public test health does not expose the deployed release sha"
-                exit 1
-              fi
-              cat /tmp/aicrm_test_public_health.json
-            fi
+            test -n "${{ env.PUBLIC_SERVER_NAME }}"
+            test -n "${{ env.NGINX_CONFIG_PATH }}"
+            sudo /home/ubuntu/venvs/openclaw/bin/python \
+              scripts/ops/ensure_production_public_release_route.py --execute \
+              --expected-sha "$after_sha" \
+              --server-name "${{ env.PUBLIC_SERVER_NAME }}" \
+              --nginx-config "${{ env.NGINX_CONFIG_PATH }}" \
+              --local-health-url http://127.0.0.1:5001/health \
+              --public-health-url "${{ env.PUBLIC_HEALTH_URL }}" \
+              | tee /tmp/aicrm-public-release-route.json
             python3 scripts/ops/manage_production_runtime_units.py --phase release-runtime-guard --execute
             runtime_units_stopped=0
             runtime_committed=1

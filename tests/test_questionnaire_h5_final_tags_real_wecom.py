@@ -5,36 +5,47 @@ import pytest
 pytestmark = pytest.mark.usefixtures("composed_internal_event_registry")
 from fastapi.testclient import TestClient
 
-from aicrm_next.customer_tags.local_projection import (
+from aicrm_next.crm.customer_tags.local_projection import (
     get_customer_tag_local_projection_fixture_rows,
     reset_customer_tag_local_projection_fixture_state,
 )
-from aicrm_next.external_effect_composition import build_external_effect_continuation_registry
-from aicrm_next.identity_contact.dto import IdentityResolution, IdentityResolveResult
-from aicrm_next.integration_gateway import wecom_channel_entry_client
-from aicrm_next.integration_gateway.wecom_channel_entry_client import WeComApiError
+from aicrm_next.external_effect_composition import (
+    QUESTIONNAIRE_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
+    build_external_effect_continuation_registry,
+)
+from aicrm_next.crm.identity_contact.dto import IdentityResolution, IdentityResolveResult
+from aicrm_next.channels.integration_gateway import wecom_channel_entry_client
+from aicrm_next.channels.integration_gateway.wecom_channel_entry_client import WeComApiError
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.external_effects import (
     WECOM_CONTACT_TAG_MARK,
     ExternalEffectService,
     reset_external_effect_fixture_state,
 )
-from aicrm_next.platform_foundation.external_effects.adapters import (
+from aicrm_next.platform.platform_foundation.external_effects.adapters import (
     ExternalEffectAdapterRegistry,
     WeComContactTagAdapter,
 )
-from aicrm_next.platform_foundation.external_effects.repo import build_external_effect_repository
-from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
-from aicrm_next.platform_foundation.internal_events import (
+from aicrm_next.platform.platform_foundation.external_effects.completion_events import (
+    external_effect_continuation_consumer,
+)
+from aicrm_next.platform.platform_foundation.external_effects.repo import build_external_effect_repository
+from aicrm_next.platform.platform_foundation.external_effects.worker import ExternalEffectWorker
+from aicrm_next.platform.platform_foundation.internal_events import (
     InternalEventService,
     QUESTIONNAIRE_SUBMITTED_EVENT_TYPE,
     reset_internal_event_fixture_state,
 )
-from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
-from aicrm_next.questionnaire import h5_write
-from aicrm_next.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
-from aicrm_next.questionnaire.repo import reset_questionnaire_fixture_state
-from aicrm_next.questionnaire.continuation_repo import build_questionnaire_continuation_repository
+from aicrm_next.platform.platform_foundation.internal_events.worker import InternalEventWorker
+from aicrm_next.platform.platform_foundation.internal_events.models import (
+    InternalEvent,
+    InternalEventConsumerRun,
+)
+from aicrm_next.extensions.forms.questionnaire import h5_write
+from aicrm_next.extensions.forms.questionnaire.external_effect_continuation import QUESTIONNAIRE_CONTACT_TAGS_CONTINUATION
+from aicrm_next.extensions.forms.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
+from aicrm_next.extensions.forms.questionnaire.repo import reset_questionnaire_fixture_state
+from wechat_identity_test_support import authorize_wechat_client
 
 
 def _client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
@@ -88,11 +99,21 @@ def _enable_wecom_execution(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("AICRM_WECOM_DEFAULT_SENDER_USERID", "owner-default")
     monkeypatch.setenv("WECOM_CORP_ID", "corp-r09-tags")
     monkeypatch.setenv("WECOM_CONTACT_SECRET", "secret-r09-tags")
+    monkeypatch.setenv("AICRM_WECOM_PROVIDER_TARGET_POLICY", "allowlisted_canary")
+    monkeypatch.setenv(
+        "AICRM_EXTERNAL_EFFECT_ALLOWED_TARGET_EXTERNAL_USERIDS",
+        "wx_real_001,wx_retry_001",
+    )
+    monkeypatch.setenv(
+        "AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS",
+        "owner-real-001,owner-retry-001",
+    )
     monkeypatch.delenv("AICRM_EXTERNAL_EFFECT_WECOM_EXECUTE", raising=False)
     monkeypatch.delenv("AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES", raising=False)
 
 
 def _submit(client: TestClient, *, identity: dict, idempotency_key: str):
+    authorize_wechat_client(client, identity)
     return client.post(
         "/api/h5/questionnaires/hxc-activation-v1/submit",
         json={
@@ -112,6 +133,19 @@ def _run_tag_consumer(client: TestClient) -> dict:
         event_types=[QUESTIONNAIRE_SUBMITTED_EVENT_TYPE],
         consumer_names=["questionnaire_tag_consumer"],
     )
+
+
+def _authorize_tag_canary() -> None:
+    service = ExternalEffectService()
+    jobs, total = service.list_jobs({"effect_type": WECOM_CONTACT_TAG_MARK})
+    assert total == 1
+    authorized = service.authorize_allowlisted_canary(
+        jobs[0].id,
+        actor="pytest",
+        reason="explicit questionnaire canary target confirmation",
+        expected_version=jobs[0].row_version,
+    )
+    assert authorized is not None
 
 
 def test_h5_submit_never_calls_wecom_and_only_reports_durable_queue(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -177,32 +211,6 @@ def test_tag_consumer_waits_retryably_for_canonical_identity(
     assert get_customer_tag_local_projection_fixture_rows() == []
 
 
-def test_tag_consumer_hands_incomplete_identity_to_durable_continuation(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("AICRM_QUESTIONNAIRE_CONTINUATION_ENABLED", "1")
-    client = _client(monkeypatch)
-    response = _submit(
-        client,
-        identity={
-            "follow_user_userid": "owner-real-001",
-            "unionid": "union-missing-external",
-        },
-        idempotency_key="questionnaire-continuation-waiting-tag",
-    )
-
-    result = _run_tag_consumer(client)
-    rows, counts = build_questionnaire_continuation_repository().list_operations(
-        int(response.json()["questionnaire_id"])
-    )
-    assert result["counts"]["succeeded_count"] == 1, result
-    response_summary = result["items"][0]["attempt"]["response_summary_json"]
-    assert response_summary["continuation_status"] == "waiting_identity"
-    # Internal-event audit summaries intentionally collapse collection values.
-    assert response_summary["missing_identity_fields"] == "list"
-    assert counts == {"waiting_identity": 1}
-    assert rows[0]["action_type"] == "wecom_tag"
-    assert ExternalEffectService().list_jobs({"effect_type": WECOM_CONTACT_TAG_MARK})[1] == 0
-
-
 def test_tag_consumer_plans_one_job_and_reuses_the_same_lineage(monkeypatch: pytest.MonkeyPatch) -> None:
     _enable_wecom_execution(monkeypatch)
     client = _client(monkeypatch)
@@ -219,7 +227,7 @@ def test_tag_consumer_plans_one_job_and_reuses_the_same_lineage(monkeypatch: pyt
     first = _run_tag_consumer(client)
     events, _ = InternalEventService().list_events({"event_type": QUESTIONNAIRE_SUBMITTED_EVENT_TYPE})
     runs, _ = InternalEventService().list_consumer_runs({"event_id": events[0].event_id, "consumer_name": "questionnaire_tag_consumer"})
-    from aicrm_next.questionnaire.event_consumers import questionnaire_tag_consumer
+    from aicrm_next.extensions.forms.questionnaire.event_consumers import questionnaire_tag_consumer
 
     replay = questionnaire_tag_consumer(events[0], runs[0])
     jobs, total = ExternalEffectService().list_jobs({"effect_type": WECOM_CONTACT_TAG_MARK})
@@ -258,13 +266,15 @@ def test_provider_success_projects_tags_only_after_external_effect_success(monke
     planned = _run_tag_consumer(client)
     assert planned["counts"]["succeeded_count"] == 1, planned
     assert get_customer_tag_local_projection_fixture_rows() == []
+    _authorize_tag_canary()
 
     registry = ExternalEffectAdapterRegistry()
     registry._adapters["wecom_tag"] = WeComContactTagAdapter(  # type: ignore[attr-defined]
         adapter_factory=lambda: FakeWeComAdapter()
     )
+    external_effect_repo = build_external_effect_repository()
     executed = ExternalEffectWorker(
-        build_external_effect_repository(),
+        external_effect_repo,
         registry,
         continuation_registry=build_external_effect_continuation_registry(),
     ).run_due(
@@ -275,7 +285,26 @@ def test_provider_success_projects_tags_only_after_external_effect_success(monke
 
     assert response.status_code == 200
     assert executed["counts"]["succeeded_count"] == 1, executed
-    assert executed["items"][0]["post_success_continuation"]["ok"] is True
+    assert executed["items"][0]["post_success_continuation"]["reason"] == "durable_completion_event_pending"
+    queued_event = external_effect_repo.list_completion_events()[0]
+    completion_result = external_effect_continuation_consumer(
+        InternalEvent(
+            event_id="iev_questionnaire_tag_completion",
+            event_type=queued_event["event_type"],
+            aggregate_type="external_effect_job",
+            aggregate_id=queued_event["aggregate_id"],
+            payload_json=dict(queued_event["payload"]),
+        ),
+        InternalEventConsumerRun(
+            id=1,
+            event_id="iev_questionnaire_tag_completion",
+            consumer_name=QUESTIONNAIRE_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
+        ),
+        repository_factory=lambda: external_effect_repo,
+        continuation=QUESTIONNAIRE_CONTACT_TAGS_CONTINUATION,
+    )
+    assert completion_result.status == "succeeded"
+    assert completion_result.response_summary["continuation"]["ok"] is True
     assert calls == [
         {
             "external_userid": "wx_real_001",
@@ -327,6 +356,7 @@ def test_provider_429_and_timeout_keep_durable_recovery_truth_without_projection
         idempotency_key=f"questionnaire-r09-{provider_error.error_code}",
     )
     assert _run_tag_consumer(client)["counts"]["succeeded_count"] == 1
+    _authorize_tag_canary()
 
     registry = ExternalEffectAdapterRegistry()
     registry._adapters["wecom_tag"] = WeComContactTagAdapter(  # type: ignore[attr-defined]

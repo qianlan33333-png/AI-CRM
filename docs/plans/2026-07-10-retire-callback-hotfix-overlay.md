@@ -67,8 +67,8 @@ Expected: PASS.
 
 **Files:**
 - Verify: `scripts/ops/check_wecom_callback_deploy_smoke.py`
-- Verify: `aicrm_next/channel_entry/inbox.py`
-- Verify: `aicrm_next/channel_entry/ingress_app.py`
+- Verify: `aicrm_next/channels/channel_entry/inbox.py`
+- Verify: `aicrm_next/channels/channel_entry/ingress_app.py`
 
 **Step 1: Run focused regression tests**
 

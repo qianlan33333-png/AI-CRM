@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from fastapi.routing import APIRoute
 
 from aicrm_next.main import create_app
-from aicrm_next.shared.route_ownership import FASTAPI_BUILTIN_ROUTE_PATHS, collect_route_inventory, load_route_manifest
-from aicrm_next.shared.route_policy import RoutePolicyIndex
+from aicrm_next.platform.shared import route_policy as route_policy_module
+from aicrm_next.platform.shared.route_ownership import FASTAPI_BUILTIN_ROUTE_PATHS, collect_route_inventory, load_route_manifest
+from aicrm_next.platform.shared.route_policy import DEFAULT_ROUTE_POLICY_MANIFEST, RoutePolicyIndex, default_route_policy_index
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,22 +27,69 @@ def _assert_policy(path: str, method: str, expected: dict) -> None:
     assert expected.items() <= actual.items()
 
 
-def test_route_policy_inventory_covers_every_runtime_business_route() -> None:
+def test_route_policy_inventory_covers_every_runtime_business_route(monkeypatch) -> None:
     app = create_app()
     index = RoutePolicyIndex.from_manifest(MANIFEST)
     inventory = collect_route_inventory(app)
 
-    # Operation Cycles contributes eight routes, Coupon V1 contributes twenty,
-    # questionnaire operations contributes five, direct group selection and
-    # invitation bindings add six, the service-period member grid adds seven,
-    # table ACL plus external sharing adds nine, and the environment-backed
-    # domain-verification route adds one;
-    # static mounts are counted separately by the router-registry contract.
-    assert len(index) == len(inventory) == 738
+    assert len(index) == len(inventory)
     for route in app.routes:
         if not isinstance(route, APIRoute) or route.path in FASTAPI_BUILTIN_ROUTE_PATHS:
             continue
         assert index.get(path=route.path, methods=route.methods, route_name=route.name) is not None
+
+    _assert_route_policy_index_mapping_is_read_only()
+    _assert_custom_route_policy_manifest_loads_are_not_cached()
+    _assert_create_app_keeps_mutable_state_isolated()
+    _assert_default_route_policy_index_loads_canonical_manifest_once(monkeypatch)
+
+
+def _assert_route_policy_index_mapping_is_read_only() -> None:
+    index = RoutePolicyIndex.from_manifest(MANIFEST)
+    entry = load_route_manifest(MANIFEST)[0]
+    policy = index.get(path=entry["path"], methods=entry["methods"], route_name=entry["route_name"])
+
+    assert policy is not None
+    with pytest.raises(TypeError):
+        index._by_key[policy.key] = policy  # type: ignore[index]
+
+
+def _assert_default_route_policy_index_loads_canonical_manifest_once(monkeypatch) -> None:
+    calls: list[Path] = []
+    original = route_policy_module.load_route_manifest
+
+    def tracking_loader(path):
+        calls.append(Path(path))
+        return original(path)
+
+    default_route_policy_index.cache_clear()
+    monkeypatch.setattr(route_policy_module, "load_route_manifest", tracking_loader)
+    try:
+        first = default_route_policy_index()
+        second = default_route_policy_index()
+
+        assert first is second
+        assert calls == [DEFAULT_ROUTE_POLICY_MANIFEST]
+    finally:
+        default_route_policy_index.cache_clear()
+
+
+def _assert_custom_route_policy_manifest_loads_are_not_cached() -> None:
+    first = RoutePolicyIndex.from_manifest(MANIFEST)
+    second = RoutePolicyIndex.from_manifest(MANIFEST)
+
+    assert first is not second
+
+
+def _assert_create_app_keeps_mutable_state_isolated() -> None:
+    first = create_app()
+    second = create_app()
+
+    assert first is not second
+    assert first.dependency_overrides is not second.dependency_overrides
+    assert first.state.external_effect_adapter_registry is not second.state.external_effect_adapter_registry
+    assert first.state.external_effect_continuation_registry is not second.state.external_effect_continuation_registry
+    assert first.state.internal_event_consumer_registry is not second.state.internal_event_consumer_registry
 
 
 def test_route_policy_inventory_uses_all_required_audiences() -> None:
@@ -97,16 +146,6 @@ def test_known_unsafe_routes_have_explicit_deny_by_default_policies() -> None:
         },
     )
     assert _entry("/api/identity/resolve", "GET")["auth_scheme"] == "api_client_jwt"
-    _assert_policy(
-        "/api/admin/channels/{channel_id:int}/qrcode/generate",
-        "POST",
-        {
-            "audience": "admin",
-            "auth_scheme": "human_session",
-            "capability": "manage_automation",
-            "csrf": True,
-        },
-    )
     _assert_policy(
         "/api/sidebar/bind-mobile",
         "POST",

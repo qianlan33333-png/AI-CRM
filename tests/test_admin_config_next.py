@@ -8,10 +8,10 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.external_effects.adapters import webhook_execution_settings, wecom_execution_settings
-from aicrm_next.platform_foundation.external_effects.realtime import realtime_wakeup_state
-from aicrm_next.shared.db_session import reset_engine_cache_for_tests
-from aicrm_next.shared.secret_store import FileSecretStore, is_secret_reference
+from aicrm_next.platform.platform_foundation.external_effects.adapters import webhook_execution_settings, wecom_execution_settings
+from aicrm_next.platform.platform_foundation.external_effects.realtime import realtime_wakeup_state
+from aicrm_next.platform.shared.db_session import reset_engine_cache_for_tests
+from aicrm_next.platform.shared.secret_store import FileSecretStore, is_secret_reference
 from tests.admin_auth_test_helpers import install_admin_session
 
 
@@ -36,6 +36,55 @@ def _prepare_client(monkeypatch, tmp_path) -> TestClient:
                 CREATE TABLE app_settings (
                     key TEXT PRIMARY KEY,
                     value TEXT NOT NULL,
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                CREATE TABLE config_releases (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    release_key TEXT NOT NULL UNIQUE,
+                    profile_id TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'draft',
+                    changes_json TEXT NOT NULL DEFAULT '{}',
+                    before_json TEXT NOT NULL DEFAULT '{}',
+                    validation_errors_json TEXT NOT NULL DEFAULT '[]',
+                    checksum TEXT NOT NULL,
+                    based_on_release_id INTEGER,
+                    rollback_of_release_id INTEGER,
+                    created_by TEXT NOT NULL,
+                    published_by TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    validated_at TEXT,
+                    published_at TEXT
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                CREATE UNIQUE INDEX uq_config_releases_profile_published
+                ON config_releases(profile_id)
+                WHERE status = 'published'
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                CREATE TABLE deployment_profile_state (
+                    profile_id TEXT PRIMARY KEY,
+                    core_version TEXT NOT NULL,
+                    config_schema_version INTEGER NOT NULL,
+                    activation_mode TEXT NOT NULL,
+                    enabled_capabilities_json TEXT NOT NULL DEFAULT '[]',
+                    runtime_roles_json TEXT NOT NULL DEFAULT '[]',
+                    active_config_release_id INTEGER,
+                    updated_by TEXT NOT NULL DEFAULT '',
                     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
                 )
                 """
@@ -270,6 +319,8 @@ def test_admin_config_pages_are_next_owned_and_nonblank(monkeypatch, tmp_path) -
     for path, marker in [
         ("/admin/config", "系统配置"),
         ("/admin/config/app-settings", "系统设置"),
+        ("/admin/config/releases", "配置发布"),
+        ("/admin/config/releases/new", "新建配置发布"),
         ("/admin/config/detail/admin_access", "后台访问"),
         ("/admin/config/checklist", "配置检查清单"),
         ("/setup/wizard", "系统配置向导"),
@@ -301,6 +352,94 @@ def test_legacy_login_access_page_redirects_to_admin_access_detail(monkeypatch, 
     assert wecom_tags_alias.status_code == 302
     assert wecom_tags_alias.headers["location"] == "/admin/wecom-tags"
     assert "X-AICRM-Compatibility-Facade" not in wecom_tags_alias.headers
+
+
+def test_config_release_api_validates_publishes_and_rolls_back_without_external_effects(monkeypatch, tmp_path) -> None:
+    client = _prepare_client(monkeypatch, tmp_path)
+    token_page = client.get("/admin/config/releases").text
+
+    capabilities = client.get("/api/admin/config/capabilities")
+    definitions = client.get("/api/admin/config/definitions")
+    assert capabilities.status_code == 200
+    assert capabilities.json()["registry"]["core_count"] == 7
+    assert definitions.status_code == 200
+    assert definitions.json()["schema"]["definition_count"] >= 100
+    assert "super-secret-value" not in definitions.text
+
+    create = client.post(
+        "/api/admin/config/releases",
+        json={
+            "admin_action_token": _token(token_page, method="POST", path="/api/admin/config/releases"),
+            "confirm": True,
+            "operator": "release-author",
+            "changes": {"WECOM_CORP_ID": "ww-release"},
+        },
+    )
+    assert create.status_code == 200
+    draft = create.json()["release"]
+    release_id = draft["id"]
+    assert draft["status"] == "draft"
+    assert create.json()["real_external_call_executed"] is False
+
+    detail_page = client.get(f"/admin/config/releases/{release_id}")
+    assert detail_page.status_code == 200
+    assert "WECOM_CORP_ID" in detail_page.text
+    assert "ww-release" in detail_page.text
+    shadow = client.get(f"/api/admin/config/releases/{release_id}/shadow-compare")
+    assert shadow.status_code == 200
+    assert shadow.json()["comparison"]["changed_count"] == 1
+
+    validate = client.post(
+        f"/api/admin/config/releases/{release_id}/validate",
+        json={
+            "admin_action_token": _token(
+                token_page,
+                method="POST",
+                path="/api/admin/config/releases/{release_id}/validate",
+            )
+        },
+    )
+    assert validate.status_code == 200
+    assert validate.json()["release"]["status"] == "validated"
+
+    publish = client.post(
+        f"/api/admin/config/releases/{release_id}/publish",
+        json={
+            "admin_action_token": _token(
+                token_page,
+                method="POST",
+                path="/api/admin/config/releases/{release_id}/publish",
+            ),
+            "confirm": True,
+            "operator": "release-publisher",
+            "checksum": draft["checksum"],
+        },
+    )
+    assert publish.status_code == 200
+    assert publish.json()["release"]["status"] == "published"
+    assert publish.json()["real_external_call_executed"] is False
+    assert _scalar(_db_url(monkeypatch), "SELECT value FROM app_settings WHERE key = 'WECOM_CORP_ID'") == "ww-release"
+
+    profile = client.get("/api/admin/config/deployment-profile")
+    assert profile.status_code == 200
+    assert profile.json()["profile"]["active_config_release_id"] == release_id
+
+    rollback = client.post(
+        f"/api/admin/config/releases/{release_id}/rollback",
+        json={
+            "admin_action_token": _token(
+                token_page,
+                method="POST",
+                path="/api/admin/config/releases/{release_id}/rollback",
+            ),
+            "confirm": True,
+            "operator": "release-rollback",
+        },
+    )
+    assert rollback.status_code == 200
+    assert rollback.json()["release"]["status"] == "published"
+    assert rollback.json()["release"]["rollback_of_release_id"] == release_id
+    assert _scalar(_db_url(monkeypatch), "SELECT COUNT(*) FROM app_settings WHERE key = 'WECOM_CORP_ID'") == 0
 
 
 def test_app_settings_api_masks_secrets_and_save_is_idempotent(monkeypatch, tmp_path) -> None:
@@ -595,7 +734,7 @@ def test_webhooks_push_category_controls_external_effect_runtime(monkeypatch, tm
     assert detail_page.status_code == 200
     assert "推送能力配置" in detail_page.text
     assert "/api/admin/config/push-capabilities" in detail_page.text
-    assert "/api/admin/push-center/stats" in detail_page.text
+    assert "/api/admin/push-center/stats" not in detail_page.text
     assert "/api/admin/push-center/legacy-deprecations" not in detail_page.text
     assert "Webhook 队列真实执行" not in detail_page.text
     assert "AICRM_EXTERNAL_EFFECT_ALLOWED_TYPES" not in detail_page.text
@@ -627,7 +766,7 @@ def test_webhooks_push_category_controls_external_effect_runtime(monkeypatch, tm
     )
 
     assert rejected_legacy_save.status_code == 400
-    assert "push capabilities API" in rejected_legacy_save.json()["error"]
+    assert "managed by push capabilities API" in rejected_legacy_save.json()["error"]
 
     saved = client.patch(
         "/api/admin/config/push-capabilities/questionnaire_external_push",
@@ -663,7 +802,12 @@ def test_webhooks_push_category_controls_external_effect_runtime(monkeypatch, tm
     assert welcome_saved.json()["derived_gates"]["realtime_allowed_types"] == ["wecom.welcome_message.send"]
     assert _scalar(database_url, "SELECT value FROM app_settings WHERE key = 'AICRM_EXTERNAL_EFFECT_REALTIME_ENABLED'") == "true"
     assert _scalar(database_url, "SELECT value FROM app_settings WHERE key = 'AICRM_EXTERNAL_EFFECT_REALTIME_ALLOWED_TYPES'") == "wecom.welcome_message.send"
-    assert realtime_wakeup_state()["channel_entry_missing_types"] == ["wecom.contact.tag.mark", "wecom.profile.update"]
+    realtime_state = realtime_wakeup_state()
+    assert realtime_state["status"] == "durable_signal_only"
+    assert realtime_state["channel_entry_missing_types"] == []
+    assert realtime_state["channel_entry_ready"] is True
+    assert realtime_state["dispatch_boundary"] == "postgres_execution_runtime_claim_one"
+    assert realtime_state["provider_dispatch_allowed"] is False
 
     rejected = client.put(
         "/api/admin/config/categories/webhooks_push/settings",
@@ -913,15 +1057,15 @@ def test_signup_conversion_config_alias_is_next_owned_and_audited(monkeypatch, t
 
 
 def test_admin_config_routes_no_longer_forward_to_legacy_facade() -> None:
-    assert not (ROOT / "aicrm_next/frontend_compat/legacy_routes.py").exists()
-    admin_config_source = "\n".join(path.read_text(encoding="utf-8") for path in (ROOT / "aicrm_next/admin_config").glob("*.py"))
+    assert not (ROOT / "aicrm_next/app/admin_console/legacy_routes.py").exists()
+    admin_config_source = "\n".join(path.read_text(encoding="utf-8") for path in (ROOT / "aicrm_next/platform/admin_config").glob("*.py"))
     assert "legacy_flask_facade" not in admin_config_source
     assert "forward_to_legacy_flask" not in admin_config_source
     assert "wecom_ability" + "_service" not in admin_config_source
 
 
 def test_marketing_automation_config_page_points_to_ai_audience_not_legacy_programs() -> None:
-    template = (ROOT / "aicrm_next/frontend_compat/templates/admin_console/config_marketing_automation.html").read_text(encoding="utf-8")
+    template = (ROOT / "aicrm_next/app/admin_console/templates/admin_console/config_marketing_automation.html").read_text(encoding="utf-8")
 
     assert "AI 自动化运营入口" in template
     assert "进入 AI 自动化运营" in template

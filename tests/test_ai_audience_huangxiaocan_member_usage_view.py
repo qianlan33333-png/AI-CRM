@@ -6,12 +6,13 @@ from pathlib import Path
 import pytest
 from sqlalchemy import text
 
-from aicrm_next.ai_audience_ops.simple_sql import validate_simple_sql
-from aicrm_next.ai_audience_ops.sql_catalog import ALLOWED_VIEWS, schema_catalog_payload
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.extensions.ai.ai_audience_ops.hxc_projection import HxcMemberUsageProjectionService
+from aicrm_next.extensions.ai.ai_audience_ops.simple_sql import validate_simple_sql
+from aicrm_next.extensions.ai.ai_audience_ops.sql_catalog import ALLOWED_VIEWS, schema_catalog_payload
+from aicrm_next.platform.shared.db_session import get_session_factory
 
 
-MIGRATION = importlib.import_module("migrations.versions.0060_ai_audience_huangxiaocan_member_usage_view")
+MIGRATION = importlib.import_module("migrations.versions.0151_ai_audience_hxc_projection_view")
 
 
 def test_huangxiaocan_member_usage_view_is_simple_sql_catalog_allowed() -> None:
@@ -115,6 +116,11 @@ def test_huangxiaocan_member_usage_view_marks_registered_members_without_usage()
         )
         session.commit()
 
+    refreshed = HxcMemberUsageProjectionService().refresh_full()
+
+    assert refreshed["ok"] is True
+    assert refreshed["projected_row_count"] == 3
+    with session_factory() as session:
         rows = session.execute(
             text(
                 """

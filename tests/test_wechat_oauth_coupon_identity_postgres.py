@@ -7,7 +7,7 @@ from urllib.parse import parse_qs, urlparse
 import psycopg
 from psycopg.rows import dict_row
 
-from aicrm_next.public_product import h5_wechat_pay
+from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
 
 
 def _connect():
@@ -185,7 +185,8 @@ def test_oauth_alias_conflict_is_audited_and_does_not_issue_cookie(
         )
 
         assert callback.status_code == 409
-        assert callback.json()["error"] == "openid_identity_conflict"
+        assert callback.headers["content-type"].startswith("text/html")
+        assert "当前微信身份存在冲突" in callback.text
         assert h5_wechat_pay.COOKIE_NAME not in callback.headers.get("set-cookie", "")
         with _connect() as conn:
             conflicting_identity = conn.execute(

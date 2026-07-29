@@ -3,7 +3,7 @@ import {createRequire} from "node:module";
 import test from "node:test";
 
 const require = createRequire(import.meta.url);
-require("../../aicrm_next/service_period/static/admin_console/member_grid_state.js");
+require("../../aicrm_next/extensions/commerce/service_period/static/admin_console/member_grid_state.js");
 const GridState = globalThis.ServicePeriodMemberGridState;
 
 test("view drafts stay explicit and do not mutate saved configuration", () => {

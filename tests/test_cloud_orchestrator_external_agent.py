@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.cloud_orchestrator.run_due import (
+from aicrm_next.extensions.growth.cloud_orchestrator.run_due import (
     PlanCloudCampaignRunDueCommand,
     execute_cloud_campaign_run_due_command,
     reset_run_due_fixture_state,

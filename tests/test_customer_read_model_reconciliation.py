@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from aicrm_next.customer_read_model.reconciliation import reconcile_customer_read_model
-from aicrm_next.customer_read_model.repo import FixtureCustomerReadRepository
+from aicrm_next.crm.customer_read_model.reconciliation import reconcile_customer_read_model
+from aicrm_next.crm.customer_read_model.repo import FixtureCustomerReadRepository
 
 
 def test_customer_read_model_reconciliation_records_counts_and_diffs() -> None:

@@ -110,7 +110,7 @@ A：默认 `overwrite=false` 已经在保护人工编辑过的字段。但 AI �
 
 **Q：能不能扩展工作流？**
 
-A：可以。在 `references/` 加新 markdown，在 `SKILL.md` 顶部"何时触发"和"三条工作流"区块加一段。如果是通用 CRM 能力，先在主仓库当前 Next 边界中扩展：图片素材读写在 `aicrm_next/media_library/`，MCP 暴露在 `aicrm_next/integration_gateway/`。不要新增或恢复已退场的 `wecom_ability_service/` 路径。
+A：可以。在 `references/` 加新 markdown，在 `SKILL.md` 顶部"何时触发"和"三条工作流"区块加一段。如果是通用 CRM 能力，先在主仓库当前 Next 边界中扩展：图片素材读写在 `aicrm_next/engagement/media_library/`，MCP 暴露在 `aicrm_next/channels/integration_gateway/`。不要新增或恢复已退场的 `wecom_ability_service/` 路径。
 
 ## 相关
 

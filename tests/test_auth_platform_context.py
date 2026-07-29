@@ -1,6 +1,6 @@
 import pytest
 
-from aicrm_next.platform_foundation.auth_platform.context import AuthContext, PrincipalType
+from aicrm_next.platform.platform_foundation.auth_platform.context import AuthContext, PrincipalType
 
 
 def test_auth_context_normalizes_permissions_and_enforces_owner_scope() -> None:

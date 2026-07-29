@@ -19,7 +19,7 @@ import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TEMPLATE = ROOT / "aicrm_next" / "frontend_compat" / "templates" / "admin_console" / "image_library.html"
+TEMPLATE = ROOT / "aicrm_next" / "app" / "admin_console" / "templates" / "admin_console" / "image_library.html"
 
 
 @pytest.fixture(scope="module")

@@ -1,10 +1,15 @@
 name: Promote to Production (Manual)
+# Promotion attestation: AI-CRM PR #1770 is bound to ID validation PR #222.
 
 on:
   workflow_dispatch:
     inputs:
       release_sha:
-        description: Exact 40-character SHA already verified on id-dev
+        description: Exact 40-character AI-CRM main SHA bound by the promotion manifest
+        required: true
+        type: string
+      validated_id_sha:
+        description: Exact ID-refactor SHA currently verified on id-dev
         required: true
         type: string
       confirmation:
@@ -29,11 +34,14 @@ jobs:
           ref: ${{ inputs.release_sha }}
           fetch-depth: 0
 
-      - name: Verify manual confirmation, main ancestry, and test release
+      - name: Verify manual confirmation and cross-repository promotion evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -e
           set -o pipefail
           requested_sha="${{ inputs.release_sha }}"
+          validated_id_sha="${{ inputs.validated_id_sha }}"
           confirmation="${{ inputs.confirmation }}"
           if [ "$confirmation" != "DEPLOY 150.158.82.186" ]; then
             echo "production confirmation does not match the required target"
@@ -43,29 +51,79 @@ jobs:
             echo "release_sha must be a full 40-character commit SHA"
             exit 1
           fi
+          if ! printf '%s' "$validated_id_sha" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "validated_id_sha must be a full 40-character commit SHA"
+            exit 1
+          fi
           if [ "$(git rev-parse HEAD)" != "$requested_sha" ]; then
             echo "checked out release does not match requested production release"
             exit 1
           fi
           git fetch --no-tags origin main
-          if ! git merge-base --is-ancestor "$requested_sha" FETCH_HEAD; then
-            echo "requested production release is not part of ID-refactor main"
+          if [ "$(git rev-parse FETCH_HEAD)" != "$requested_sha" ]; then
+            echo "requested production release is not the current AI-CRM main"
+            exit 1
+          fi
+          source_main_sha="$(
+            git ls-remote --exit-code \
+              https://github.com/qianlan333/AI-CRM-ID-refactor.git \
+              refs/heads/main \
+              | awk '{print $1}'
+          )"
+          if ! printf '%s' "$source_main_sha" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "ID-refactor main did not resolve to one full SHA"
             exit 1
           fi
           curl -sSf -D /tmp/aicrm_test_release_headers.txt \
             https://id-dev.youcangogogo.com/health \
             -o /tmp/aicrm_test_release.json
-          test_release_sha="$(awk 'tolower($1) == "x-aicrm-release-sha:" {print $2}' \
-            /tmp/aicrm_test_release_headers.txt | tr -d '\r' | tail -n 1)"
-          if [ "$test_release_sha" != "$requested_sha" ]; then
-            echo "test release sha does not match requested production release"
-            exit 1
-          fi
+          public_id_sha="$(python3 - /tmp/aicrm_test_release_headers.txt <<'PY'
+          import re
+          import sys
+          from pathlib import Path
+
+          headers = Path(sys.argv[1]).read_text(encoding="iso-8859-1")
+          values = []
+          for line in headers.replace("\r\n", "\n").splitlines():
+              name, separator, value = line.partition(":")
+              if separator and name.lower() == "x-aicrm-release-sha":
+                  values.append(value.strip())
+          if len(values) != 1 or re.fullmatch(r"[0-9a-f]{40}", values[0]) is None:
+              raise SystemExit("id-dev health must expose exactly one full release SHA")
+          print(values[0])
+          PY
+          )"
+          read -r source_ci_run_id source_deploy_run_id < <(
+            python3 -c 'import json; data=json.load(open("docs/releases/production_promotion.json", encoding="utf-8")); print(data["source"]["ci_run_id"], data["source"]["deploy_run_id"])'
+          )
+          curl --retry 3 --retry-all-errors -sSfL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "$GITHUB_API_URL/repos/qianlan333/AI-CRM-ID-refactor/actions/runs/$source_ci_run_id" \
+            -o /tmp/aicrm_source_ci_run.json
+          curl --retry 3 --retry-all-errors -sSfL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "$GITHUB_API_URL/repos/qianlan333/AI-CRM-ID-refactor/actions/runs/$source_deploy_run_id" \
+            -o /tmp/aicrm_source_deploy_run.json
+          curl --retry 3 --retry-all-errors -sSfL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "$GITHUB_API_URL/repos/qianlan333/AI-CRM/actions/workflows/ci-fast.yml/runs?head_sha=$requested_sha&event=push&status=completed&per_page=20" \
+            -o /tmp/aicrm_target_ci_runs.json
+          python3 scripts/ops/validate_production_promotion.py \
+            --manifest docs/releases/production_promotion.json \
+            --release-sha "$requested_sha" \
+            --validated-id-sha "$validated_id_sha" \
+            --source-main-sha "$source_main_sha" \
+            --public-id-sha "$public_id_sha" \
+            --source-ci-run-json /tmp/aicrm_source_ci_run.json \
+            --source-deploy-run-json /tmp/aicrm_source_deploy_run.json \
+            --target-ci-runs-json /tmp/aicrm_target_ci_runs.json
 
   promote:
     needs: validate
     uses: ./.github/workflows/deploy.yml
     with:
-      target_environment: production
       release_sha: ${{ inputs.release_sha }}
     secrets: inherit

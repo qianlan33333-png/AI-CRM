@@ -34,10 +34,10 @@ def test_order_identity_repair_requires_cron_or_action_token_before_retired_resp
 
 
 def test_order_identity_repair_runtime_module_is_removed() -> None:
-    routes_source = Path("aicrm_next/admin_jobs/routes.py").read_text(encoding="utf-8")
+    routes_source = Path("aicrm_next/platform/admin_jobs/routes.py").read_text(encoding="utf-8")
 
-    assert not Path("aicrm_next/commerce/order_identity_repair.py").exists()
-    assert "aicrm_next.commerce.order_identity_repair" not in routes_source
+    assert not Path("aicrm_next/extensions/commerce/commerce/order_identity_repair.py").exists()
+    assert "aicrm_next.extensions.commerce.commerce.order_identity_repair" not in routes_source
     assert "repair_missing_order_identities" not in routes_source
     assert "order_identity_repair_retired" in routes_source
 

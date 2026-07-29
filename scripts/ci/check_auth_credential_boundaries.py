@@ -100,7 +100,7 @@ def check_auth_credential_boundaries() -> dict[str, Any]:
             if key in source:
                 violations.append({"rule": "forbidden_credential_in_active_contract", "path": relative, "detail": key})
 
-    auth_root = ROOT / "aicrm_next/platform_foundation/auth_platform"
+    auth_root = ROOT / "aicrm_next/platform/platform_foundation/auth_platform"
     for obsolete in ("oauthlib_provider.py", "oidc_signing.py", "http_signatures.py"):
         if (auth_root / obsolete).exists():
             violations.append({"rule": "obsolete_auth_module", "path": str((auth_root / obsolete).relative_to(ROOT)), "detail": obsolete})

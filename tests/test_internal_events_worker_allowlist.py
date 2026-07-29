@@ -1,19 +1,19 @@
 from __future__ import annotations
 
 from aicrm_next.internal_event_composition import register_payment_succeeded_consumers
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.external_effects import WEBHOOK_ORDER_PAID_PUSH, ExternalEffectService, reset_external_effect_fixture_state
-from aicrm_next.platform_foundation.internal_events import (
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import WEBHOOK_ORDER_PAID_PUSH, ExternalEffectService, reset_external_effect_fixture_state
+from aicrm_next.platform.platform_foundation.internal_events import (
     InMemoryInternalEventRepository,
     InternalEventConsumerRegistry,
     InternalEventConsumerResult,
     InternalEventService,
     reset_internal_event_fixture_state,
 )
-from aicrm_next.platform_foundation.internal_events.models import InternalEvent, InternalEventConsumerRun
-from aicrm_next.platform_foundation.internal_events.config import worker_allows
-from aicrm_next.platform_foundation.internal_events.payment import PAYMENT_SUCCEEDED_EVENT_TYPE
-from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
+from aicrm_next.platform.platform_foundation.internal_events.models import InternalEvent, InternalEventConsumerRun
+from aicrm_next.platform.platform_foundation.internal_events.config import worker_allows
+from aicrm_next.platform.platform_foundation.internal_events.payment import PAYMENT_SUCCEEDED_EVENT_TYPE
+from aicrm_next.platform.platform_foundation.internal_events.worker import InternalEventWorker
 
 
 OTHER_EVENT_TYPE = "questionnaire.submitted"

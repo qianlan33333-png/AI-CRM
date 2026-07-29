@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.questionnaire.oauth import get_questionnaire_oauth_audit_events, reset_questionnaire_oauth_state
+from aicrm_next.extensions.forms.questionnaire.oauth import get_questionnaire_oauth_audit_events, reset_questionnaire_oauth_state
 
 
 @pytest.fixture()

@@ -9,9 +9,9 @@ from aicrm_next.commerce.parity_spec import ENDPOINT_SPECS as COMMERCE_SPECS
 from aicrm_next.commerce.parity_spec import WRITE_ENDPOINTS as COMMERCE_WRITE_ENDPOINTS
 from aicrm_next.commerce.parity_spec import compare_endpoint_payloads as compare_commerce_payloads
 from aicrm_next.commerce.parity_spec import validate_payload as validate_commerce_payload
-from aicrm_next.media_library.parity_spec import ENDPOINT_SPECS as MEDIA_SPECS
-from aicrm_next.media_library.parity_spec import compare_endpoint_payloads as compare_media_payloads
-from aicrm_next.media_library.parity_spec import validate_payload as validate_media_payload
+from aicrm_next.engagement.media_library.parity_spec import ENDPOINT_SPECS as MEDIA_SPECS
+from aicrm_next.engagement.media_library.parity_spec import compare_endpoint_payloads as compare_media_payloads
+from aicrm_next.engagement.media_library.parity_spec import validate_payload as validate_media_payload
 from conftest import make_client
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]

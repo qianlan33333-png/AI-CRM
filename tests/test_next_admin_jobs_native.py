@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 import pytest
 from fastapi.testclient import TestClient
 
-from aicrm_next.admin_jobs.notification_settings import (
+from aicrm_next.platform.admin_jobs.notification_settings import (
     FeishuWebhookValidationError,
     build_broadcast_job_hourly_report_message,
     build_hourly_report_key,
@@ -16,7 +16,7 @@ from aicrm_next.admin_jobs.notification_settings import (
     send_broadcast_job_hourly_feishu_report,
     validate_feishu_webhook_url,
 )
-from aicrm_next.admin_jobs.repository import build_admin_jobs_repository
+from aicrm_next.platform.admin_jobs.repository import build_admin_jobs_repository
 from aicrm_next.main import create_app
 from tests.admin_auth_test_helpers import install_admin_action_tokens, install_admin_session
 
@@ -35,113 +35,22 @@ def _jobs_action_token(client: TestClient, method: str, path: str) -> str:
     return install_admin_action_tokens(client, (method, path))[(method.upper(), path)]
 
 
-def test_admin_jobs_page_is_native_jobs_console(monkeypatch):
+def test_admin_jobs_monitoring_pages_and_retired_runners_are_removed(monkeypatch):
     client = _client(monkeypatch)
 
-    response = client.get("/admin/jobs")
-    html = response.text
-
-    assert response.status_code == 200
-    assert "同步与任务总览" in html
-    for text in ["聊天同步", "回调状态", "消息批次", "待处理作业", "Webhook 投递", "群发队列"]:
-        assert text in html
-    assert "数据读取状态" not in html
-    assert "production_unavailable" not in html
-    assert "degraded" not in html
-
-
-def test_admin_jobs_deferred_runner_is_retired(monkeypatch):
-    client = _client(monkeypatch)
-
-    page = client.get("/admin/jobs?tab=deferred")
-    html = page.text
-    token = _jobs_action_token(client, "POST", "/api/admin/jobs/deferred-jobs/run")
-
-    assert page.status_code == 200
-    assert "待处理作业执行已退场" in html
-    assert "手动执行待处理作业" not in html
-    assert 'name="action" value="run-deferred-jobs"' not in html
-
-    response = client.post(
+    for path in ("/admin/jobs", "/admin/broadcast-jobs", "/admin/broadcast-jobs/1"):
+        assert client.get(path).status_code == 404
+    for path in (
         "/api/admin/jobs/deferred-jobs/run",
-        json={"confirm": True, "admin_action_token": token, "operator": "tester-deferred"},
-    )
-
-    assert response.status_code == 409
-    assert response.json()["ok"] is False
-    assert response.json()["legacy_outbound_disabled"] is True
-    assert response.json()["error"] == "legacy_deferred_jobs_runner_disabled"
-    assert response.json()["real_external_call_executed"] is False
-
-
-def test_admin_jobs_legacy_actions_return_disabled_payload(monkeypatch):
-    _client(monkeypatch)
-
-    from aicrm_next.admin_jobs.application import execute_jobs_action
-
-    deferred = execute_jobs_action(action="run-deferred-jobs", form={"confirm": True}, operator="pytest")
-    retry_one = execute_jobs_action(action="retry-webhook-delivery", form={"confirm": True, "delivery_id": 1}, operator="pytest")
-    retry_due = execute_jobs_action(action="run-webhook-retries", form={"confirm": True}, operator="pytest")
-
-    assert deferred["ok"] is False
-    assert deferred["error"] == "legacy_deferred_jobs_runner_disabled"
-    assert retry_one["ok"] is False
-    assert retry_one["error"] == "legacy_webhook_retry_disabled"
-    assert retry_due["ok"] is False
-    assert retry_due["error"] == "legacy_webhook_retry_disabled"
-
-
-def test_admin_jobs_webhooks_tab_is_read_only_for_legacy_retries(monkeypatch):
-    client = _client(monkeypatch)
-
-    response = client.get("/admin/jobs?tab=webhooks&webhook_status=retry_scheduled")
-    html = response.text
-    tokens = install_admin_action_tokens(
-        client,
-        ("POST", "/api/admin/jobs/webhook-deliveries/run"),
-        ("POST", "/api/admin/jobs/webhook-deliveries/{delivery_id}/retry"),
-    )
-    run_token = tokens[("POST", "/api/admin/jobs/webhook-deliveries/run")]
-    retry_token = tokens[("POST", "/api/admin/jobs/webhook-deliveries/{delivery_id}/retry")]
-
-    assert response.status_code == 200
-    assert "Webhook 投递状态" in html
-    assert "Webhook 重试执行已退场" in html
-    assert "执行到期重试" not in html
-    assert 'name="action" value="run-webhook-retries"' not in html
-    assert 'name="action" value="retry-webhook-delivery"' not in html
-    assert "重试已退场" in html
-    assert "ext-3" in html
-    assert "Payload 摘要" in html
-
-    run_due = client.post(
         "/api/admin/jobs/webhook-deliveries/run",
-        json={"confirm": True, "admin_action_token": run_token, "operator": "tester-webhook"},
-    )
-    assert run_due.status_code == 409
-    assert run_due.json()["ok"] is False
-    assert run_due.json()["legacy_outbound_disabled"] is True
-    assert run_due.json()["error"] == "legacy_webhook_retry_disabled"
-    assert run_due.json()["real_external_call_executed"] is False
-
-    retry = client.post(
         "/api/admin/jobs/webhook-deliveries/2/retry",
-        json={"confirm": True, "admin_action_token": retry_token, "operator": "tester-webhook"},
-    )
-    assert retry.status_code == 409
-    assert retry.json()["ok"] is False
-    assert retry.json()["legacy_outbound_disabled"] is True
-    assert retry.json()["external_effect_required"] is True
-    assert retry.json()["migration_target"] == "external_effect_queue"
-    assert retry.json()["push_center_url"] == "/admin/push-center"
-    assert retry.json()["real_external_call_executed"] is False
+    ):
+        assert client.post(path, json={}).status_code == 404
 
 
-def test_admin_broadcast_jobs_page_filters_and_actions(monkeypatch):
+def test_admin_broadcast_jobs_api_filters_and_actions(monkeypatch):
     client = _client(monkeypatch)
 
-    page = client.get("/admin/broadcast-jobs?status=waiting_approval&source_type=campaign")
-    html = page.text
     tokens = install_admin_action_tokens(
         client,
         ("POST", "/api/admin/broadcast-jobs/{job_id}/approve"),
@@ -150,57 +59,120 @@ def test_admin_broadcast_jobs_page_filters_and_actions(monkeypatch):
     approve_token = tokens[("POST", "/api/admin/broadcast-jobs/{job_id}/approve")]
     cancel_token = tokens[("POST", "/api/admin/broadcast-jobs/{job_id}/cancel")]
 
-    assert page.status_code == 200
-    assert "群发任务队列" in html
-    assert "审批通过" in html
-    assert "取消" in html
-    assert "campaign" in html
-    assert "排队中内容" not in html
+    filtered = client.get(
+        "/api/admin/broadcast-jobs?status=waiting_approval&source_type=campaign"
+    ).json()
+    assert filtered["total"] == 1
+    assert filtered["counts"]["total_count"] == 1
+    assert filtered["counts"]["waiting_approval_count"] == 1
+    assert filtered["counts"]["queued_count"] == 0
 
     approve = client.post(
         "/api/admin/broadcast-jobs/1/approve",
-        json={"admin_action_token": approve_token, "operator": "tester-broadcast"},
+        json={
+            "admin_action_token": approve_token,
+            "operator": "spoofed-browser-actor",
+            "reason": "审批内容与白名单已核对",
+            "expected_version": 1,
+        },
     )
     assert approve.status_code == 200
     assert approve.json()["job"]["status"] == "queued"
-    assert approve.json()["job"]["approved_by"] == "tester-broadcast"
+    assert approve.json()["job"]["approved_by"] == "admin-user:test"
 
     cancel = client.post(
         "/api/admin/broadcast-jobs/2/cancel",
-        json={"admin_action_token": cancel_token, "operator": "tester-broadcast", "reason": "manual stop"},
+        json={
+            "admin_action_token": cancel_token,
+            "operator": "spoofed-browser-actor",
+            "reason": "manual stop",
+            "expected_version": 1,
+        },
     )
     assert cancel.status_code == 200
     assert cancel.json()["job"]["status"] == "cancelled"
-    assert cancel.json()["job"]["cancelled_by"] == "tester-broadcast"
+    assert cancel.json()["job"]["cancelled_by"] == "admin-user:test"
     assert cancel.json()["job"]["cancel_reason"] == "manual stop"
 
     sent_cancel = client.post(
         "/api/admin/broadcast-jobs/3/cancel",
-        json={"admin_action_token": cancel_token, "operator": "tester-broadcast"},
+        json={
+            "admin_action_token": cancel_token,
+            "reason": "验证终态不可取消",
+            "expected_version": 1,
+        },
     )
-    assert sent_cancel.status_code == 400
+    assert sent_cancel.status_code == 409
     assert "not cancelable" in sent_cancel.json()["error"]
 
 
-def test_broadcast_queue_feishu_settings_page_module(monkeypatch):
+def test_broadcast_job_level_two_detail_is_redacted_and_query_compatible(monkeypatch):
     client = _client(monkeypatch)
+    repo = build_admin_jobs_repository()
+    job = repo.broadcast_jobs[0]
+    job.update(
+        {
+            "source_id": "private-source-secret",
+            "target_unionids_json": ["unionid-secret"],
+            "content_payload": {"phone": "13800138000", "token": "secret-token"},
+            "metadata_json": {"webhook_url": "https://example.test/hook/secret-token"},
+            "idempotency_key": "idempotency-secret",
+            "content_summary": "发送给 13800138000",
+        }
+    )
+    repo.messages[1] = [
+        {
+            "message_id": 99 + index,
+            "send_time": "2026-04-02 12:41:00",
+            "chat_type": "private",
+            "external_userid": "wm-secret-user",
+            "chat_id": "chat-secret",
+            "content": "private message secret-token",
+            "msgtype": "broadcast.dispatched",
+        }
+        for index in range(150)
+    ]
 
-    response = client.get("/admin/broadcast-jobs")
-    html = response.text
-
+    response = client.get("/api/admin/broadcast-jobs/1")
     assert response.status_code == 200
-    assert "飞书监控配置" in html
-    assert "配置后，系统会每小时统计上一小时的群发任务" in html
-    assert "data-feishu-open" in html
-    assert "data-feishu-overlay" in html
-    assert "data-feishu-webhook-input" in html
-    assert "data-feishu-save" in html
-    assert "data-feishu-validate" in html
-    assert "Outbound Task" not in html
-    assert "Trace" not in html
-    assert "Campaign" not in html
-    assert "Workflow" not in html
-    assert "+08:00" not in html
+    body = response.json()
+    serialized = str(body)
+    assert body["ok"] is True
+    assert body["route_owner"] == "ai_crm_next"
+    assert body["real_external_call_executed"] is False
+    assert body["push_center_url"] == "/api/admin/push-center/jobs/broadcast_job:1"
+    assert body["linked_record_counts"]["broadcast_job_events"] == 150
+    assert len(body["events"]) == 100
+    assert body["events_truncated"] is True
+    assert body["events"][0]["has_external_target"] is True
+    assert body["events"][0]["has_content"] is True
+    for forbidden in [
+        "private-source-secret",
+        "unionid-secret",
+        "13800138000",
+        "secret-token",
+        "wm-secret-user",
+        "chat-secret",
+        "private message",
+        "idempotency-secret",
+        "target_unionids_json",
+        "content_payload",
+        "metadata_json",
+        "webhook_url",
+    ]:
+        assert forbidden not in serialized
+
+    listing = client.get("/api/admin/broadcast-jobs").json()
+    assert listing["total"] == 3
+    assert listing["route_owner"] == "ai_crm_next"
+    assert {item["key"] for item in listing["status_options"]} >= {
+        "dispatching",
+        "simulated",
+        "failed_retryable",
+        "failed_terminal",
+        "blocked",
+        "unknown_after_dispatch",
+    }
 
 
 def test_mask_webhook_url_safely_masks_feishu_and_lark_tokens():
@@ -278,24 +250,28 @@ def test_broadcast_queue_feishu_settings_api_masks_saves_and_validates(monkeypat
         captured["text"] = text
         return {"ok": True}
 
-    monkeypatch.setattr("aicrm_next.admin_jobs.notification_settings.send_feishu_webhook_message", fake_send)
+    monkeypatch.setattr("aicrm_next.platform.admin_jobs.notification_settings.send_feishu_webhook_message", fake_send)
     validated = client.post(
         "/api/admin/broadcast-jobs/notification-settings/feishu/validate",
         headers={"X-Admin-Action-Token": validate_token},
         json={"enabled": True, "webhookUrl": webhook, "admin_action_token": validate_token},
     )
-    assert validated.status_code == 200
+    assert validated.status_code == 202
     assert validated.json()["ok"] is True
-    assert validated.json()["validationStatus"] == "valid"
+    assert validated.json()["validationStatus"] == "unverified"
     assert validated.json()["webhookMasked"].endswith("****abcd")
-    assert captured["url"] == webhook
-    assert "群发队列监控验证" in captured["text"]
+    assert validated.json()["accepted"] is True
+    assert validated.json()["externalEffectJobId"]
+    assert validated.json()["statusUrl"].endswith(
+        f"external_effect_job:{validated.json()['externalEffectJobId']}"
+    )
+    assert captured == {}
     assert "secret-token" not in validated.text
 
     get_after_validate = client.get(
         "/api/admin/broadcast-jobs/notification-settings/feishu",
     )
-    assert get_after_validate.json()["validationStatus"] == "valid"
+    assert get_after_validate.json()["validationStatus"] == "unverified"
     assert "secret-token" not in get_after_validate.text
 
 
@@ -305,7 +281,7 @@ def test_broadcast_queue_feishu_validate_failure_does_not_leak_webhook(monkeypat
     webhook = "https://open.larksuite.com/open-apis/bot/v2/hook/top-secret-7890"
 
     monkeypatch.setattr(
-        "aicrm_next.admin_jobs.notification_settings.send_feishu_webhook_message",
+        "aicrm_next.platform.admin_jobs.notification_settings.send_feishu_webhook_message",
         lambda url, text: {"ok": False, "raw": {"url": url, "body": "large external body"}},
     )
     response = client.post(
@@ -314,17 +290,18 @@ def test_broadcast_queue_feishu_validate_failure_does_not_leak_webhook(monkeypat
         json={"enabled": False, "webhookUrl": webhook, "admin_action_token": token},
     )
 
-    assert response.status_code == 400
-    assert response.json()["ok"] is False
-    assert response.json()["validationStatus"] == "invalid"
-    assert response.json()["message"] == "飞书 webhook 验证失败，请检查地址或机器人配置"
+    assert response.status_code == 202
+    assert response.json()["ok"] is True
+    assert response.json()["validationStatus"] == "unverified"
+    assert response.json()["accepted"] is True
+    assert response.json()["externalEffectJobId"]
     assert "top-secret" not in response.text
     assert "large external body" not in response.text
 
     setting = client.get(
         "/api/admin/broadcast-jobs/notification-settings/feishu",
     ).json()
-    assert setting["validationStatus"] == "invalid"
+    assert setting["validationStatus"] == "unverified"
     assert setting["enabled"] is False
     assert "top-secret" not in str(setting)
 
@@ -465,6 +442,46 @@ def test_broadcast_queue_hourly_report_skips_no_jobs_sends_once_and_records_fail
     assert "hourly-secret" not in str(repo.broadcast_hourly_reports[report_key]["error_message"])
 
 
+def test_broadcast_queue_hourly_report_does_not_mark_queue_acceptance_as_sent(monkeypatch):
+    _client(monkeypatch)
+    repo = build_admin_jobs_repository()
+    now = datetime(2026, 5, 27, 14, 5, tzinfo=ZoneInfo("Asia/Shanghai"))
+    window = get_previous_hour_window(now=now)
+    repo.upsert_broadcast_notification_setting(
+        channel="feishu",
+        enabled=True,
+        webhook_url="https://open.feishu.cn/open-apis/bot/v2/hook/hourly-secret-abcd",
+        validation_status="valid",
+        validated_at=now,
+        last_validation_error=None,
+    )
+    repo.broadcast_jobs = [
+        {"id": 204, "scheduled_for": window["windowStart"], "status": "sent"}
+    ]
+
+    result = send_broadcast_job_hourly_feishu_report(
+        now=now,
+        repo=repo,
+        sender=lambda _url, _text: {
+            "ok": True,
+            "queued": True,
+            "external_effect_job_id": 77,
+            "real_external_call_executed": False,
+        },
+    )
+    report_key = build_hourly_report_key(
+        channel="feishu",
+        window_start=window["windowStart"],
+    )
+
+    assert result == {
+        "status": "queued",
+        "summary": {"totalJobs": 1, "successJobs": 1, "failedJobs": 0},
+        "externalEffectJobId": 77,
+    }
+    assert repo.broadcast_hourly_reports[report_key]["status"] == "pending"
+
+
 def test_broadcast_queue_hourly_report_run_api_requires_route_bound_action_grant(monkeypatch):
     client = _client(monkeypatch)
 
@@ -472,7 +489,7 @@ def test_broadcast_queue_hourly_report_run_api_requires_route_bound_action_grant
     assert denied.status_code == 401
 
     monkeypatch.setattr(
-        "aicrm_next.admin_jobs.routes.send_broadcast_job_hourly_feishu_report",
+        "aicrm_next.platform.admin_jobs.routes.send_broadcast_job_hourly_feishu_report",
         lambda: {"status": "sent", "summary": {"totalJobs": 1, "successJobs": 1, "failedJobs": 0}},
     )
     token = _jobs_action_token(client, "POST", "/api/admin/broadcast-jobs/feishu-hourly-report/run")
@@ -512,7 +529,7 @@ def test_broadcast_queue_hourly_report_run_api_real_no_jobs_duplicate_and_no_web
     repo.broadcast_jobs = [{"id": 301, "scheduled_for": now_window["windowStart"], "status": "sent"}]
     calls: list[str] = []
     monkeypatch.setattr(
-        "aicrm_next.admin_jobs.notification_settings.send_feishu_webhook_message",
+        "aicrm_next.platform.admin_jobs.notification_settings.send_feishu_webhook_message",
         lambda url, text: calls.append(url) or {"ok": True},
     )
     sent = client.post(
@@ -534,7 +551,7 @@ def test_broadcast_queue_hourly_report_run_api_real_no_jobs_duplicate_and_no_web
 
 def test_admin_read_model_count_uses_identifier_not_percent_i(monkeypatch):
     psycopg = pytest.importorskip("psycopg")
-    from aicrm_next.admin_read_model.repo import PostgresAdminReadRepository
+    from aicrm_next.insights.admin_read_model.repo import PostgresAdminReadRepository
 
     executed: list[object] = []
 

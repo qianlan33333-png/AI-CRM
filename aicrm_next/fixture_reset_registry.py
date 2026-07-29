@@ -3,32 +3,31 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from .admin_auth import reset_admin_auth_fixture_state
-from .admin_jobs.repository import reset_admin_jobs_fixture_state
-from .automation_engine.channels_api import reset_wecom_customer_acquisition_link_fixture_state
-from .automation_engine.group_ops.repo import reset_group_ops_fixture_state
-from .automation_engine.repo import reset_automation_fixture_state
-from .cloud_orchestrator.campaigns_read import reset_campaign_read_fixture_state
-from .cloud_orchestrator.campaigns_write import reset_campaign_write_fixture_state
-from .cloud_orchestrator.repository import reset_cloud_plan_fixture_state
-from .commerce.coupons.repo import reset_coupon_fixture_state
-from .commerce.repo import reset_commerce_fixture_state
-from .customer_tags.admin_write import reset_wecom_tag_write_fixture_state
-from .customer_tags.live_mutation import reset_wecom_tag_live_mutation_fixture_state
-from .hxc_dashboard.repo import reset_hxc_dashboard_fixture_state
-from .hxc_dashboard.safe_mode import reset_hxc_safe_mode_fixture_state
-from .integration_gateway.wecom_jssdk_adapter import reset_sidebar_jssdk_attempts
-from .media_library.repo import reset_media_library_fixture_state
-from .ops_enrollment.application import reset_user_ops_fixture_state
-from .platform_foundation.external_effects import reset_external_effect_fixture_state
-from .platform_foundation.internal_events import reset_internal_event_fixture_state
-from .questionnaire.admin_write import reset_questionnaire_admin_write_fixture_state
-from .questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
-from .questionnaire.repo import reset_questionnaire_fixture_state
-from .questionnaire.continuation_repo import reset_questionnaire_continuation_fixture_state
-from .radar_links.repo import reset_radar_links_fixture_state
-from .service_period import reset_service_period_fixture_state
-from .sidebar_write import reset_sidebar_write_fixture_state
+from .platform.admin_auth import reset_admin_auth_fixture_state
+from .platform.admin_jobs.repository import reset_admin_jobs_fixture_state
+from .automation.automation_engine.channels_api import reset_wecom_customer_acquisition_link_fixture_state
+from .automation.automation_engine.group_ops.repo import reset_group_ops_fixture_state
+from .automation.automation_engine.repo import reset_automation_fixture_state
+from .extensions.growth.cloud_orchestrator.campaigns_read import reset_campaign_read_fixture_state
+from .extensions.growth.cloud_orchestrator.campaigns_write import reset_campaign_write_fixture_state
+from .extensions.growth.cloud_orchestrator.repository import reset_cloud_plan_fixture_state
+from .extensions.commerce.commerce.coupons.repo import reset_coupon_fixture_state
+from .extensions.commerce.commerce.repo import reset_commerce_fixture_state
+from .crm.customer_tags.admin_write import reset_wecom_tag_write_fixture_state
+from .crm.customer_tags.live_mutation import reset_wecom_tag_live_mutation_fixture_state
+from .extensions.hxc.hxc_dashboard.repo import reset_hxc_dashboard_fixture_state
+from .extensions.hxc.hxc_dashboard.safe_mode import reset_hxc_safe_mode_fixture_state
+from .channels.integration_gateway.wecom_jssdk_adapter import reset_sidebar_jssdk_attempts
+from .engagement.media_library.repo import reset_media_library_fixture_state
+from .automation.ops_enrollment.application import reset_user_ops_fixture_state
+from .platform.platform_foundation.external_effects import reset_external_effect_fixture_state
+from .platform.platform_foundation.internal_events import reset_internal_event_fixture_state
+from .extensions.forms.questionnaire.admin_write import reset_questionnaire_admin_write_fixture_state
+from .extensions.forms.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
+from .extensions.forms.questionnaire.repo import reset_questionnaire_fixture_state
+from .extensions.radar.radar_links.repo import reset_radar_links_fixture_state
+from .extensions.commerce.service_period import reset_service_period_fixture_state
+from .crm.sidebar_write import reset_sidebar_write_fixture_state
 
 
 @dataclass(frozen=True)
@@ -41,7 +40,6 @@ FIXTURE_RESET_STEPS: tuple[FixtureResetStep, ...] = (
     FixtureResetStep("user_ops", reset_user_ops_fixture_state),
     FixtureResetStep("questionnaire", reset_questionnaire_fixture_state),
     FixtureResetStep("questionnaire_h5_write", reset_questionnaire_h5_write_fixture_state),
-    FixtureResetStep("questionnaire_continuation", reset_questionnaire_continuation_fixture_state),
     FixtureResetStep("automation", reset_automation_fixture_state),
     FixtureResetStep("group_ops", reset_group_ops_fixture_state),
     FixtureResetStep("commerce", reset_commerce_fixture_state),

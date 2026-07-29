@@ -17,14 +17,14 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from aicrm_next.admin_auth.capabilities import ALL_CAPABILITIES  # noqa: E402
-from aicrm_next.admin_auth.service import SESSION_COOKIE  # noqa: E402
-from aicrm_next.platform_foundation.auth_platform.credentials import CredentialHasher  # noqa: E402
-from aicrm_next.platform_foundation.auth_platform.models import SessionSubject  # noqa: E402
-from aicrm_next.platform_foundation.auth_platform.repository import PostgresAuthRepository  # noqa: E402
-from aicrm_next.platform_foundation.auth_platform.sessions import AuthSessionService  # noqa: E402
-from aicrm_next.shared.db_session import get_session_factory  # noqa: E402
-from aicrm_next.shared.runtime_settings import runtime_setting  # noqa: E402
+from aicrm_next.platform.admin_auth.capabilities import ALL_CAPABILITIES  # noqa: E402
+from aicrm_next.platform.admin_auth.service import SESSION_COOKIE  # noqa: E402
+from aicrm_next.platform.platform_foundation.auth_platform.credentials import CredentialHasher  # noqa: E402
+from aicrm_next.platform.platform_foundation.auth_platform.models import SessionSubject  # noqa: E402
+from aicrm_next.platform.platform_foundation.auth_platform.repository import PostgresAuthRepository  # noqa: E402
+from aicrm_next.platform.platform_foundation.auth_platform.sessions import AuthSessionService  # noqa: E402
+from aicrm_next.platform.shared.db_session import get_session_factory  # noqa: E402
+from aicrm_next.platform.shared.runtime_settings import runtime_setting  # noqa: E402
 
 
 DEFAULT_TTL_SECONDS = 300

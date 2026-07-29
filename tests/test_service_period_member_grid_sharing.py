@@ -5,37 +5,37 @@ from dataclasses import dataclass, field
 import pytest
 from fastapi.testclient import TestClient
 
-from aicrm_next.admin_auth.capabilities import SERVICE_PERIOD_GRID_COLLABORATOR_ROLE
-from aicrm_next.admin_config.service_period_grid_accounts import (
+from aicrm_next.platform.admin_auth.capabilities import SERVICE_PERIOD_GRID_COLLABORATOR_ROLE
+from aicrm_next.platform.admin_config.service_period_grid_accounts import (
     CollaboratorAccountDisabledError,
     ServicePeriodGridAccountService,
     SYSTEM_AUTH_SOURCE,
 )
-from aicrm_next.commerce.repo import reset_commerce_fixture_state
+from aicrm_next.extensions.commerce.commerce.repo import reset_commerce_fixture_state
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.auth_platform.context import AuthContext, PrincipalType
-from aicrm_next.platform_foundation.auth_platform.service_period_grid_share import (
+from aicrm_next.platform.platform_foundation.auth_platform.context import AuthContext, PrincipalType
+from aicrm_next.platform.platform_foundation.auth_platform.service_period_grid_share import (
     issue_service_period_grid_share_token,
 )
-from aicrm_next.service_period.application import CreateServicePeriodProductCommand
-from aicrm_next.service_period.dto import ServicePeriodProductCreateRequest
-from aicrm_next.service_period.member_grid import empty_view_config
-from aicrm_next.service_period.member_grid_access import (
+from aicrm_next.extensions.commerce.service_period.application import CreateServicePeriodProductCommand
+from aicrm_next.extensions.commerce.service_period.dto import ServicePeriodProductCreateRequest
+from aicrm_next.extensions.commerce.service_period.member_grid import empty_view_config
+from aicrm_next.extensions.commerce.service_period.member_grid_access import (
     MemberGridAccessConflictError,
     MemberGridAccessDeniedError,
     MemberGridShareGoneError,
 )
-from aicrm_next.service_period.member_grid_sharing import (
+from aicrm_next.extensions.commerce.service_period.member_grid_sharing import (
     MemberGridShareUnauthorizedError,
     PublicServicePeriodMemberGridService,
     ServicePeriodMemberGridAccessService,
 )
-from aicrm_next.service_period.repo import (
+from aicrm_next.extensions.commerce.service_period.repo import (
     InMemoryServicePeriodRepository,
     build_service_period_repository,
     reset_service_period_fixture_state,
 )
-from aicrm_next.shared.errors import NotFoundError
+from aicrm_next.platform.shared.errors import NotFoundError
 from tests.admin_auth_test_helpers import install_admin_session
 
 

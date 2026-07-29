@@ -1,9 +1,9 @@
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
-from aicrm_next.platform_foundation.auth_platform.credentials import CredentialHasher
-from aicrm_next.platform_foundation.auth_platform.models import SessionSubject
-from aicrm_next.platform_foundation.auth_platform.sessions import AuthSessionService
+from aicrm_next.platform.platform_foundation.auth_platform.credentials import CredentialHasher
+from aicrm_next.platform.platform_foundation.auth_platform.models import SessionSubject
+from aicrm_next.platform.platform_foundation.auth_platform.sessions import AuthSessionService
 
 
 NOW = datetime(2026, 7, 12, tzinfo=timezone.utc)

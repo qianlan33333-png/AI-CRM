@@ -10,6 +10,35 @@ PR #19 turns the existing table and identity governance checks into a Next-nativ
 
 Responses use only check metadata, counts, table names, and remediation hints. They must not expose raw payloads, phone numbers, OpenIDs, external user IDs, or other identity fields outside the existing identity boundary.
 
+## Snapshot rollout
+
+The first snapshot slice adds `data_health_snapshot` and the explicit
+`scripts/ops/refresh_data_health_snapshot.py` writer. The writer completes and
+validates every registered check before atomically replacing one singleton
+row. An exception, empty result, duplicate check ID, or failed transaction
+leaves the previous generation untouched. The table stores aggregate check
+results, release provenance, duration, and the refresh timestamp; it contains
+no customer identifier or message payload.
+
+The foundation release did not change the three HTTP APIs or schedule the
+writer. The second slice registers an active systemd timer that refreshes the
+aggregate singleton every 15 minutes. It uses a dedicated PostgreSQL
+`application_name`, a one-connection pool, bounded statement/lock/transaction
+timeouts, and a 240-second process boundary. The service completes all checks
+before its short atomic upsert, so a timeout or failed check run preserves the
+previous complete generation. The online read cutover remains a separate
+release so runtime activation and API compatibility can be verified and rolled
+back independently.
+
+The third slice moves all three online APIs to one indexed singleton snapshot
+read per request. Their successful JSON bodies remain unchanged. Production
+never falls back to running the 16 live checks inline: a missing, invalid, or
+older-than-25-minutes snapshot returns a privacy-safe `503` error so a stopped
+timer is visible instead of silently restoring the original high-cost path.
+Offline fixture/test runtimes without a production repository keep the direct
+check runner for local contract tests only. Detail lookup scans only the 16
+already-loaded aggregate results and does not execute check prefixes eagerly.
+
 ## Initial Checks
 
 Green static checks:
@@ -44,6 +73,19 @@ declared physical tables, unregistered live tables, retired physical tables,
 missing canonical owners, missing PII levels, or missing queue status enum
 metadata.
 
+`external_effect_failed_retryable_backlog` separates delivery failures from
+deterministic business outcomes.  A WeChat refund `NOT_ENOUGH` result is reported
+as a completed business rejection, not a system failure, only when strict
+cross-table evidence proves one provider call, a received provider result, no
+refund execution, a synchronized local refund record, and no replay.  Missing
+or contradictory evidence remains fail-closed.
+
+The same fail-closed rule applies to a WeCom private-message `84061` result. It
+is a completed send flow with a business rejection because the external-contact
+relationship no longer exists, not an infrastructure failure, only when the
+production job and its sole attempt prove the real provider call, exact response,
+settled lease state, and absence of any successful replay.
+
 Relations imported from the pre-convergence production database use the
 explicit `legacy` lifecycle. They are registered so they cannot appear as
 unmanaged drift, but unlike Next-owned physical lifecycles their absence is not
@@ -75,44 +117,21 @@ owner can fail the current continuation guard.
 - `fail`: check found a red condition that should block migration/release work.
 - `not_applicable`: the runtime has no configured database, so a live probe cannot run.
 
-The managed customer read model is rebuilt every 30 minutes by
-`openclaw-customer-read-model-refresh.timer`; its singleton refresh evidence is
-stored in `customer_read_model_refresh_state`.
+The managed customer read model is refreshed through durable source events and
+the coalesced `customer_read_model_refresh_intent`. The compatibility timer may
+write an intent while the legacy generation remains the active owner, but it
+never rebuilds the projection inline and is retired at the PR-3 generation
+cutover. Singleton refresh evidence is stored in
+`customer_read_model_refresh_state`.
 
-## Data Quality Registry
+`projection_freshness_customer_read_model` enforces projection population and
+list/detail/managed-refresh count consistency against the currently active
+primary/shadow generation. The wall-clock age of an
+otherwise consistent projection is diagnostic only: elapsed time without a
+source change is not data staleness. `customer_360_freshness_guard` remains the
+release-blocking source-of-truth check and compares the latest identity, order,
+questionnaire, and message facts with the last successful managed refresh.
 
-Phase 7 starts turning data health into an operator-readable issue list. The
-registry lives in `aicrm_next.data_health.quality_registry` and is metadata-only:
-it defines the rule IDs, groups, source tables, thresholds, and remediation
-language that later admin APIs and scheduled snapshots can execute through
-production-safe read probes.
-
-Registry API:
-
-- `GET /api/admin/data-quality/summary`
-- `GET /api/admin/data-quality/groups`
-- `GET /api/admin/data-quality/checks`
-- `GET /api/admin/data-quality/checks/{check_id}`
-
-These endpoints expose only registry metadata. They do not connect to the
-production database and do not evaluate rule status yet.
-
-Admin dashboard:
-
-- `GET /admin/data-quality`
-
-The dashboard groups rules by operator domain and displays rule severity,
-threshold, source table metadata, and remediation text from the registry.
-
-Scheduled snapshot entrypoint:
-
-- `scripts/run_data_quality_snapshot.py`
-- `aicrm_next.background_jobs.data_quality_snapshot.run_scheduled_data_quality_snapshot`
-
-The scheduled entrypoint currently generates a registry snapshot payload for
-cron/systemd orchestration. It reports `database_probe_executed=false` and
-`persistence_status=not_configured`; a later PR must attach production-safe
-read probes and persistence before it can become a historical DQ snapshot table.
 
 ## Development Guardrails
 
@@ -153,3 +172,8 @@ Groups and registered rule counts:
 Until each rule gets a read-only probe, `probe_status` remains `needs_probe`.
 The registry must not expose raw identity values, payload JSON, phone numbers,
 OpenIDs, or customer content; it may expose only rule metadata and table names.
+
+Production snapshot provenance is pinned before the long-running checks begin,
+so an in-flight timer cannot be relabelled when a deploy switches the checkout.
+After the new Web release is healthy, the deploy creates and validates one
+generation for that exact release SHA before running the all-green admin smoke.

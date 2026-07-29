@@ -5,9 +5,9 @@ from decimal import Decimal
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.customer_read_model.application import GetCustomerContextQuery
-from aicrm_next.customer_read_model.dto import CustomerContextRequest
-from aicrm_next.integration_gateway.dispatch import McpToolDispatcher
+from aicrm_next.crm.customer_read_model.application import GetCustomerContextQuery
+from aicrm_next.crm.customer_read_model.dto import CustomerContextRequest
+from aicrm_next.channels.integration_gateway.dispatch import McpToolDispatcher
 from tests.sidebar_auth_test_helpers import install_sidebar_auth
 
 
@@ -50,7 +50,7 @@ def test_customer_context_query_unifies_detail_timeline_messages_and_binding(mon
 
 
 def test_customer_context_query_does_not_return_fixture_success_when_production_ready(monkeypatch):
-    from aicrm_next.customer_read_model import application
+    from aicrm_next.crm.customer_read_model import application
 
     monkeypatch.setenv("AICRM_NEXT_ENV", "production")
     monkeypatch.setenv("DATABASE_URL", "postgresql://ctx:ctx@127.0.0.1:1/aicrm_ctx")
@@ -73,8 +73,8 @@ def test_customer_context_query_does_not_return_fixture_success_when_production_
 
 
 def test_sidebar_and_profile_readonly_routes_reuse_customer_context_query(monkeypatch):
-    from aicrm_next.customer_read_model import application as customer_application
-    from aicrm_next.customer_read_model import api as customer_api
+    from aicrm_next.crm.customer_read_model import application as customer_application
+    from aicrm_next.crm.customer_read_model import api as customer_api
     from aicrm_next.main import create_app
 
     calls: list[CustomerContextRequest] = []
@@ -112,8 +112,8 @@ def test_sidebar_and_profile_readonly_routes_reuse_customer_context_query(monkey
 
 
 def test_admin_customer_profile_route_json_encodes_legacy_scalar_values(monkeypatch):
-    from aicrm_next.customer_read_model import application as customer_application
-    from aicrm_next.customer_read_model import api as customer_api
+    from aicrm_next.crm.customer_read_model import application as customer_application
+    from aicrm_next.crm.customer_read_model import api as customer_api
     from aicrm_next.main import create_app
 
     class FakeGetCustomerContextQuery:

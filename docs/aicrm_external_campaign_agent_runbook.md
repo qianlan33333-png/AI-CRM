@@ -272,7 +272,7 @@ external data -> dry-run preview -> AI assistant pending_review plan -> human ap
 
 ```bash
 .venv/bin/python -m pytest -q tests/test_ai_assist_external_campaigns.py
-.venv/bin/python -m py_compile aicrm_next/ai_assist/external_campaigns.py aicrm_next/ai_assist/api.py
+.venv/bin/python -m py_compile aicrm_next/extensions/ai/ai_assist/external_campaigns.py aicrm_next/extensions/ai/ai_assist/api.py
 ```
 
 ### 11.2 生产 dry-run

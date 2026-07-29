@@ -54,7 +54,7 @@ business-route changes until this preflight has been completed.
 - `openclaw_service/` and `legacy_flask/openclaw_legacy/` are deleted
   historical paths and must not be reintroduced.
 - MCP/OpenClaw work must enter through the
-  `aicrm_next.integration_gateway` adapter boundary.
+  `aicrm_next.channels.integration_gateway` adapter boundary.
 - WeCom External Effect execution is approved only within the current PR #1505
   boundary: supported WeCom effect types, required target/sender/content
   structure, audit/idempotency, and rollback language. Payment, OAuth,

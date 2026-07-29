@@ -5,18 +5,18 @@ from typing import Any
 
 import pytest
 
-from aicrm_next.external_push.https_transport import HttpsTransportResponse, PinnedHttpsTransport
-from aicrm_next.external_push.security import (
+from aicrm_next.platform.external_push.https_transport import HttpsTransportResponse, PinnedHttpsTransport
+from aicrm_next.platform.external_push.security import (
     WebhookUrlValidationError,
     resolve_and_validate_public_https_target,
 )
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import (
     ExternalEffectService,
     WEBHOOK_GENERIC_PUSH,
 )
-from aicrm_next.platform_foundation.external_effects.adapters import WebhookAdapter
-from aicrm_next.platform_foundation.external_effects.repo import InMemoryExternalEffectRepository
+from aicrm_next.platform.platform_foundation.external_effects.adapters import WebhookAdapter
+from aicrm_next.platform.platform_foundation.external_effects.repo import InMemoryExternalEffectRepository
 from tests.webhook_hmac_test_helpers import outbound_webhook_hmac_signer
 
 

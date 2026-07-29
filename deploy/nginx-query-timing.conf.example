@@ -1,0 +1,21 @@
+# AI-CRM request/upstream timing telemetry template.
+#
+# Add this log_format at Nginx http{} scope only during an approved maintenance
+# window. The private operations handoff selects the log destination and adds
+# one access_log directive to the reviewed production server. This checked-in
+# template intentionally does not activate logging or name a production path.
+#
+# Do not add URL/path values, query arguments, client IPs, headers, cookies,
+# request bodies, phone numbers, external_userid, or unionid to this format.
+log_format aicrm_query_timing escape=json
+    '{"timestamp":"$time_iso8601",'
+    '"request_id":"$request_id",'
+    '"method":"$request_method",'
+    '"status":$status,'
+    '"request_time_seconds":$request_time,'
+    '"upstream_connect_time_seconds":"$upstream_connect_time",'
+    '"upstream_response_time_seconds":"$upstream_response_time",'
+    '"upstream_status":"$upstream_status"}';
+
+# Activation belongs in the reviewed server{} block and remains intentionally
+# absent here. It must reference the aicrm_query_timing format exactly once.

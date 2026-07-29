@@ -53,4 +53,4 @@ def test_auth_wecom_exact_routes_are_registered_before_production_compat_wildcar
 
     for path in ["/auth/wecom/start", "/auth/wecom/callback"]:
         endpoint = getattr(by_path[path], "endpoint", None)
-        assert getattr(endpoint, "__module__", "") == "aicrm_next.auth_wecom.api"
+        assert getattr(endpoint, "__module__", "") == "aicrm_next.channels.auth_wecom.api"

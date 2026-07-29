@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_wecom_tag_management_js_keeps_api_and_actions_contract():
-    source = (ROOT / "aicrm_next" / "customer_tags" / "static" / "admin_console" / "wecom_tag_management.js").read_text(
+    source = (ROOT / "aicrm_next" / "crm" / "customer_tags" / "static" / "admin_console" / "wecom_tag_management.js").read_text(
         encoding="utf-8"
     )
 

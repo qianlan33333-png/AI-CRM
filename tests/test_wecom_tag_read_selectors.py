@@ -17,15 +17,15 @@ def _admin_cookies(client: TestClient) -> dict[str, str]:
 
 
 def test_questionnaire_and_adjacent_selectors_read_unified_tag_catalog_source() -> None:
-    questionnaire = _read("aicrm_next/questionnaire/templates/admin_questionnaires.html") + _read(
-        "aicrm_next/questionnaire/static/admin_questionnaire_editor.js"
+    questionnaire = _read("aicrm_next/extensions/forms/questionnaire/templates/admin_questionnaires.html") + _read(
+        "aicrm_next/extensions/forms/questionnaire/static/admin_questionnaire_editor.js"
     )
-    tag_management_template = _read("aicrm_next/customer_tags/templates/admin_console/config_wecom_tags.html")
-    tag_management = _read("aicrm_next/customer_tags/static/admin_console/wecom_tag_management.js")
-    automation_picker = _read("aicrm_next/frontend_compat/static/admin_console/automation_agent_config_tag_picker.js")
-    automation_channel_model = _read("aicrm_next/frontend_compat/static/admin_console/automation_agent_config_channel_model.js")
-    channel_pages = _read("aicrm_next/automation_engine/static/admin_console/channel_admission_pages.js")
-    channel_admin_pages = _read("aicrm_next/automation_engine/channel_admin_pages.py")
+    tag_management_template = _read("aicrm_next/crm/customer_tags/templates/admin_console/config_wecom_tags.html")
+    tag_management = _read("aicrm_next/crm/customer_tags/static/admin_console/wecom_tag_management.js")
+    automation_picker = _read("aicrm_next/app/admin_console/static/admin_console/automation_agent_config_tag_picker.js")
+    automation_channel_model = _read("aicrm_next/app/admin_console/static/admin_console/automation_agent_config_channel_model.js")
+    channel_pages = _read("aicrm_next/automation/automation_engine/static/admin_console/channel_admission_pages.js")
+    channel_admin_pages = _read("aicrm_next/automation/automation_engine/channel_admin_pages.py")
 
     assert "fetchJson('/api/admin/wecom/tags')" in questionnaire
     assert 'data-api-tags="/api/admin/wecom/tags"' in tag_management_template
@@ -42,7 +42,7 @@ def test_questionnaire_and_adjacent_selectors_read_unified_tag_catalog_source() 
 
 
 def test_questionnaire_tag_selector_treats_degraded_empty_catalog_as_warning() -> None:
-    questionnaire = _read("aicrm_next/questionnaire/static/admin_questionnaire_editor.js")
+    questionnaire = _read("aicrm_next/extensions/forms/questionnaire/static/admin_questionnaire_editor.js")
 
     assert "data.degraded || !state.availableTags.length" in questionnaire
     assert "data.page_error || '当前未获取到企微标签，可稍后重试'" in questionnaire
@@ -52,7 +52,7 @@ def test_questionnaire_tag_selector_treats_degraded_empty_catalog_as_warning() -
 
 
 def test_unified_business_tag_picker_visible_copy_hides_internal_fields() -> None:
-    picker = _read("aicrm_next/frontend_compat/static/admin_console/wecom_tag_picker.js")
+    picker = _read("aicrm_next/app/admin_console/static/admin_console/wecom_tag_picker.js")
     visible_block = picker[picker.index("overlay.innerHTML = `") : picker.index("document.body.appendChild")]
 
     for forbidden in ["tag_id", "entry_tag_id", "et_", "使用人数", "人", "保存 tag_id", "先选择标签组"]:
@@ -63,8 +63,8 @@ def test_unified_business_tag_picker_visible_copy_hides_internal_fields() -> Non
 
 
 def test_channel_entry_tag_uses_unified_single_picker_and_hidden_save_fields() -> None:
-    template = _read("aicrm_next/automation_engine/templates/admin_console/channel_code_form.html")
-    script = _read("aicrm_next/automation_engine/static/admin_console/channel_admission_pages.js")
+    template = _read("aicrm_next/automation/automation_engine/templates/admin_console/channel_code_form.html")
+    script = _read("aicrm_next/automation/automation_engine/static/admin_console/channel_admission_pages.js")
 
     assert "wecom_tag_picker.css" in template
     assert "wecom_tag_picker.js" in template
@@ -79,8 +79,8 @@ def test_channel_entry_tag_uses_unified_single_picker_and_hidden_save_fields() -
 
 
 def test_questionnaire_tags_use_unified_multiple_picker_without_flat_modal() -> None:
-    template = _read("aicrm_next/questionnaire/templates/admin_questionnaires.html")
-    script = _read("aicrm_next/questionnaire/static/admin_questionnaire_editor.js")
+    template = _read("aicrm_next/extensions/forms/questionnaire/templates/admin_questionnaires.html")
+    script = _read("aicrm_next/extensions/forms/questionnaire/static/admin_questionnaire_editor.js")
 
     assert "wecom_tag_picker.css" in template
     assert "wecom_tag_picker.js" in template
@@ -96,8 +96,8 @@ def test_questionnaire_tags_use_unified_multiple_picker_without_flat_modal() -> 
 
 
 def test_automation_default_entry_tag_uses_unified_single_picker() -> None:
-    picker = _read("aicrm_next/frontend_compat/static/admin_console/automation_agent_config_tag_picker.js")
-    channel_model = _read("aicrm_next/frontend_compat/static/admin_console/automation_agent_config_channel_model.js")
+    picker = _read("aicrm_next/app/admin_console/static/admin_console/automation_agent_config_tag_picker.js")
+    channel_model = _read("aicrm_next/app/admin_console/static/admin_console/automation_agent_config_channel_model.js")
 
     assert "AICRMWeComTagPicker.open" in picker
     assert 'mode: "single"' in picker

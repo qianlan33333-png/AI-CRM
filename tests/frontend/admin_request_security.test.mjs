@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import vm from "node:vm";
 
 const source = await readFile(
-  new URL("../../aicrm_next/frontend_compat/static/admin_console/admin_api_client.js", import.meta.url),
+  new URL("../../aicrm_next/app/admin_console/static/admin_console/admin_api_client.js", import.meta.url),
   "utf8",
 );
 

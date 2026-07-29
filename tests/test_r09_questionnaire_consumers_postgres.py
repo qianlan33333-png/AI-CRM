@@ -4,21 +4,21 @@ import os
 
 import pytest
 
-from aicrm_next.customer_tags.local_projection import project_questionnaire_tags
+from aicrm_next.crm.customer_tags.local_projection import project_questionnaire_tags
 from aicrm_next.internal_event_composition import register_questionnaire_event_consumers
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.internal_events.consumer_registry import (
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.internal_events.consumer_registry import (
     InternalEventConsumerRegistry,
 )
-from aicrm_next.platform_foundation.internal_events.questionnaire import (
+from aicrm_next.platform.platform_foundation.internal_events.questionnaire import (
     QUESTIONNAIRE_SUBMITTED_EVENT_TYPE,
 )
-from aicrm_next.platform_foundation.internal_events.repository import (
+from aicrm_next.platform.platform_foundation.internal_events.repository import (
     SQLAlchemyInternalEventRepository,
 )
-from aicrm_next.platform_foundation.internal_events.service import InternalEventService
-from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
-from aicrm_next.shared.db_session import get_engine, get_session_factory
+from aicrm_next.platform.platform_foundation.internal_events.service import InternalEventService
+from aicrm_next.platform.platform_foundation.internal_events.worker import InternalEventWorker
+from aicrm_next.platform.shared.db_session import get_engine, get_session_factory
 
 
 @pytest.fixture()

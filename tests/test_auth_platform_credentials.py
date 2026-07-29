@@ -1,4 +1,4 @@
-from aicrm_next.platform_foundation.auth_platform.credentials import (
+from aicrm_next.platform.platform_foundation.auth_platform.credentials import (
     CSRF_PREFIX,
     SESSION_PREFIX,
     CredentialHasher,

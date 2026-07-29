@@ -1,15 +1,22 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
+
 from fastapi.testclient import TestClient
 
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.internal_events import (
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.execution_runtime.commands import QueueRuntimeCommandService
+from aicrm_next.platform.platform_foundation.internal_events import (
     InternalEventConsumerRegistry,
     InternalEventConsumerResult,
     InternalEventService,
     reset_internal_event_fixture_state,
 )
-from aicrm_next.platform_foundation.internal_events.repository import build_internal_event_repository
+from aicrm_next.platform.platform_foundation.internal_events.repository import build_internal_event_repository
+from aicrm_next.platform.platform_foundation.internal_events.repository import SQLAlchemyInternalEventRepository
+from aicrm_next.platform.platform_foundation.internal_events import view_model
+from aicrm_next.platform.platform_foundation.internal_events.models import InternalEventCreateRequest
+from aicrm_next.platform.platform_foundation.internal_events.repository_memory import InMemoryInternalEventRepository
 from tests.admin_auth_test_helpers import install_admin_action_tokens
 
 
@@ -125,6 +132,9 @@ def test_internal_event_admin_api_lists_filters_and_redacts_payload(next_client:
     assert body["items"][0]["succeeded_count"] == 1
     assert body["items"][0]["failed_count"] == 1
     assert body["items"][0]["skipped_count"] == 1
+    assert body["counts"]["total"] == 1
+    assert body["counts"]["failed_retryable"] == 1
+    assert body["counts"]["failed_terminal"] == 0
     assert body["items"][0]["payload_summary_json"]["phone"] == "[redacted]"
     assert body["items"][0]["payload_summary_json"]["openid"] == "[redacted]"
     assert body["items"][0]["payload_summary_json"]["unionid"] == "[redacted]"
@@ -137,9 +147,13 @@ def test_internal_event_admin_api_lists_filters_and_redacts_payload(next_client:
     assert "token-secret" not in str(body)
 
 
-def test_internal_event_admin_detail_attempts_retry_skip_and_diagnostics(next_client: TestClient, monkeypatch) -> None:
+def test_internal_event_admin_detail_attempts_retry_skip_and_diagnostics(
+    next_client: TestClient,
+    next_pg_schema,
+    monkeypatch,
+) -> None:
     event_id = _seed_payment_event()
-    del monkeypatch
+    del next_pg_schema, monkeypatch
     tokens = install_admin_action_tokens(
         next_client,
         ("POST", "/api/admin/internal-events/{event_id}/consumers/{consumer_name}/retry"),
@@ -148,17 +162,34 @@ def test_internal_event_admin_detail_attempts_retry_skip_and_diagnostics(next_cl
 
     detail = next_client.get(f"/api/admin/internal-events/{event_id}")
     diagnostics = next_client.get("/api/admin/internal-events/diagnostics")
+    command_service = QueueRuntimeCommandService()
+    retry_target = command_service.read_internal_consumer_target(
+        event_id,
+        "webhook_order_paid_consumer",
+    )
+    skip_target = command_service.read_internal_consumer_target(
+        event_id,
+        "ai_assist_notify_consumer",
+    )
+    assert retry_target is not None
+    assert skip_target is not None
     unauthorized = next_client.post(f"/api/admin/internal-events/{event_id}/consumers/webhook_order_paid_consumer/retry", json={})
     retried = next_client.post(
         f"/api/admin/internal-events/{event_id}/consumers/webhook_order_paid_consumer/retry",
         headers={"X-Admin-Action-Token": tokens[("POST", "/api/admin/internal-events/{event_id}/consumers/{consumer_name}/retry")]},
-        json={"reason": "approved retry after timeout review"},
+        json={
+            "actor": "pytest-operator",
+            "reason": "approved retry after timeout review",
+            "expected_version": retry_target.version_token,
+        },
     )
     skipped = next_client.post(
         f"/api/admin/internal-events/{event_id}/consumers/ai_assist_notify_consumer/skip",
         json={
             "admin_action_token": tokens[("POST", "/api/admin/internal-events/{event_id}/consumers/{consumer_name}/skip")],
+            "actor": "pytest-operator",
             "reason": "manual_noop",
+            "expected_version": skip_target.version_token,
         },
     )
 
@@ -175,8 +206,224 @@ def test_internal_event_admin_detail_attempts_retry_skip_and_diagnostics(next_cl
     assert diagnostics.status_code == 200
     assert "due_count" in diagnostics.json()
     assert unauthorized.status_code == 401
-    assert retried.status_code == 200
-    assert retried.json()["consumer_run"]["status"] == "pending"
-    assert skipped.status_code == 200
-    assert skipped.json()["consumer_run"]["status"] == "skipped"
-    assert skipped.json()["attempt"]["response_summary_json"]["reason"] == "manual_noop"
+    assert retried.status_code == 202
+    assert retried.json()["action"] == "retry"
+    assert retried.json()["status"] == "pending"
+    assert skipped.status_code == 202
+    assert skipped.json()["action"] == "skip"
+    assert skipped.json()["status"] == "skipped"
+
+
+def test_default_admin_overview_reuses_only_aggregate_snapshot(monkeypatch) -> None:
+    class RecordingRepository(InMemoryInternalEventRepository):
+        admin_overview_cache_enabled = True
+
+        def __init__(self):
+            super().__init__()
+            self.include_total_calls: list[bool] = []
+            self.estimate_total_calls = 0
+            self.metric_calls = 0
+            self.batch_entries = 0
+
+        @contextmanager
+        def read_batch(self):
+            self.batch_entries += 1
+            yield self
+
+        def list_events(self, *args, **kwargs):
+            self.include_total_calls.append(bool(kwargs.get("include_total", True)))
+            return super().list_events(*args, **kwargs)
+
+        def queue_metrics(self, filters=None):
+            self.metric_calls += 1
+            return super().queue_metrics(filters)
+
+        def estimate_event_total(self, *, minimum=0):
+            self.estimate_total_calls += 1
+            return super().estimate_event_total(minimum=minimum)
+
+    repository = RecordingRepository()
+    repository.create_event(
+        InternalEventCreateRequest(
+            event_type="test.cached",
+            aggregate_type="test",
+            aggregate_id="1",
+            payload={"large": {"not": "returned"}},
+            payload_summary={"safe": "visible"},
+            idempotency_key="test.cached:1",
+        )
+    )
+    monkeypatch.setattr(view_model, "pytest_environment", lambda: False)
+    monkeypatch.setattr(view_model, "allowed_event_types", lambda: [])
+    monkeypatch.setattr(view_model, "allowed_consumers", lambda: [])
+    monkeypatch.setattr(view_model, "allowed_event_consumer_pairs", lambda: [])
+    view_model.reset_internal_event_overview_cache()
+
+    first = view_model.build_events_payload({}, repository=repository)
+    second = view_model.build_events_payload({}, repository=repository)
+
+    assert first["total"] == second["total"] == 1
+    assert first["items"][0]["event_id"] == second["items"][0]["event_id"]
+    assert repository.include_total_calls == [False, False]
+    assert repository.estimate_total_calls == 1
+    assert repository.metric_calls == 1
+    assert repository.batch_entries == 2
+    assert first["total_semantics"] == second["total_semantics"] == "estimated_unfiltered"
+    assert second["overview_snapshot_ttl_seconds"] == 10
+
+
+def test_default_admin_overview_reuses_runtime_snapshot_without_queue_aggregates(monkeypatch) -> None:
+    class RecordingRepository(InMemoryInternalEventRepository):
+        def __init__(self):
+            super().__init__()
+            self.metric_calls = 0
+
+        def queue_metrics(self, filters=None):
+            self.metric_calls += 1
+            return super().queue_metrics(filters)
+
+    repository = RecordingRepository()
+    repository.create_event(
+        InternalEventCreateRequest(
+            event_type="test.runtime-snapshot",
+            aggregate_type="test",
+            aggregate_id="1",
+            payload={},
+            idempotency_key="test.runtime-snapshot:1",
+        )
+    )
+    monkeypatch.setattr(view_model, "allowed_event_types", lambda: [])
+    monkeypatch.setattr(view_model, "allowed_consumers", lambda: [])
+    monkeypatch.setattr(view_model, "allowed_event_consumer_pairs", lambda: [])
+
+    payload = view_model.build_events_payload(
+        {},
+        repository=repository,
+        runtime_queue={
+            "internal_event": {
+                "raw_open": 19,
+                "raw_due": 11,
+                "eligible": 7,
+                "failed_retryable": 3,
+                "failed_terminal": 2,
+                "blocked": 1,
+            }
+        },
+    )
+
+    assert repository.metric_calls == 0
+    assert payload["queue_count_semantics"] == "runtime_lane_snapshot"
+    assert payload["counts"]["due"] == 7
+    assert payload["counts"]["raw_due"] == 11
+    assert payload["counts"]["failed_retryable"] == 3
+    assert payload["counts"]["failed_terminal"] == 2
+    assert payload["counts"]["rollout_gated"] == 4
+
+
+def test_filtered_admin_overview_keeps_exact_total(monkeypatch) -> None:
+    class RecordingRepository(InMemoryInternalEventRepository):
+        admin_overview_cache_enabled = True
+
+        def __init__(self):
+            super().__init__()
+            self.include_total_calls: list[bool] = []
+
+        def list_events(self, *args, **kwargs):
+            self.include_total_calls.append(bool(kwargs.get("include_total", True)))
+            return super().list_events(*args, **kwargs)
+
+    repository = RecordingRepository()
+    repository.create_event(
+        InternalEventCreateRequest(
+            event_type="test.filtered",
+            aggregate_type="test",
+            aggregate_id="1",
+            payload={},
+            idempotency_key="test.filtered:1",
+        )
+    )
+    monkeypatch.setattr(view_model, "allowed_event_types", lambda: [])
+    monkeypatch.setattr(view_model, "allowed_consumers", lambda: [])
+    monkeypatch.setattr(view_model, "allowed_event_consumer_pairs", lambda: [])
+
+    payload = view_model.build_events_payload({"event_type": "test.filtered"}, repository=repository)
+
+    assert payload["total"] == 1
+    assert payload["total_semantics"] == "exact_filtered"
+    assert repository.include_total_calls == [True]
+
+
+def test_sql_repository_estimates_unfiltered_total_from_database_statistics() -> None:
+    statements: list[str] = []
+
+    class Result:
+        def mappings(self):
+            return self
+
+        def fetchone(self):
+            return {"estimated_total": 123}
+
+    class Session:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def execute(self, statement, params):
+            statements.append(str(statement))
+            return Result()
+
+    repository = SQLAlchemyInternalEventRepository(session_factory=Session)
+
+    assert repository.estimate_event_total(minimum=50) == 123
+    assert len(statements) == 1
+    assert "pg_class" in statements[0]
+    assert "pg_stat_user_tables" in statements[0]
+    assert "COUNT(*)" not in statements[0]
+
+
+def test_sql_repository_reuses_one_session_and_selects_summary_fields_only() -> None:
+    statements: list[str] = []
+    factory_calls = 0
+
+    class Result:
+        def mappings(self):
+            return self
+
+        def fetchone(self):
+            return {"value": 1}
+
+        def fetchall(self):
+            return []
+
+    class Session:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def execute(self, statement, params):
+            statements.append(str(statement))
+            return Result()
+
+    def session_factory():
+        nonlocal factory_calls
+        factory_calls += 1
+        return Session()
+
+    repository = SQLAlchemyInternalEventRepository(session_factory=session_factory)
+    with repository.read_batch():
+        repository.list_events({}, limit=50, offset=0, include_total=False, summary_only=True)
+        repository.list_consumer_runs_for_events(["event-1"])
+
+    assert factory_calls == 1
+    assert len(statements) == 2
+    event_sql, run_sql = statements
+    assert "payload_summary_json" in event_sql
+    assert "payload_json" not in event_sql
+    assert "fanout_manifest_json" not in event_sql
+    assert "SELECT *" not in event_sql
+    assert "result_summary_json" not in run_sql
+    assert "last_error_message" not in run_sql

@@ -1,8 +1,8 @@
 version: 1
 
 repositories:
-  aicrm_next/admin_config/repository.py:
-    capability_owner: aicrm_next.admin_config
+  aicrm_next/platform/admin_config/repository.py:
+    capability_owner: aicrm_next.platform.admin_config
     table_reads:
       - admin_login_audit
       - admin_operation_logs
@@ -18,20 +18,28 @@ repositories:
       - questionnaires
     table_writes:
       - admin_login_audit
-      - admin_operation_logs
       - admin_user_roles
       - admin_users
       - app_settings
       - marketing_automation_configs
       - marketing_automation_question_rules
       - mcp_tool_settings
-  aicrm_next/admin_config/pii_audit_repository.py:
-    capability_owner: aicrm_next.admin_config
-    table_reads: []
+  aicrm_next/platform/admin_config/config_release_repository.py:
+    capability_owner: aicrm_next.platform.admin_config
+    table_reads:
+      - app_settings
+      - config_releases
+      - deployment_profile_state
     table_writes:
-      - admin_operation_logs
-  aicrm_next/admin_jobs/repository.py:
-    capability_owner: aicrm_next.admin_jobs
+      - app_settings
+      - config_releases
+      - deployment_profile_state
+  aicrm_next/platform/admin_config/pii_audit_repository.py:
+    capability_owner: aicrm_next.platform.admin_config
+    table_reads: []
+    table_writes: []
+  aicrm_next/platform/admin_jobs/repository.py:
+    capability_owner: aicrm_next.platform.admin_jobs
     table_reads:
       - broadcast_job_events
       - broadcast_jobs
@@ -41,13 +49,11 @@ repositories:
       - sync_runs
       - wecom_external_contact_event_logs
     table_writes:
-      - admin_operation_logs
       - broadcast_job_hourly_reports
-      - broadcast_jobs
       - broadcast_queue_notification_settings
       - outbound_webhook_deliveries
-  aicrm_next/admin_read_model/repo.py:
-    capability_owner: aicrm_next.admin_read_model
+  aicrm_next/insights/admin_read_model/repo.py:
+    capability_owner: aicrm_next.insights.admin_read_model
     table_reads:
       - admin_operation_logs
       - ai_audience_member_current
@@ -91,8 +97,8 @@ repositories:
       - wecom_external_contact_identity_map
     optional_relations:
       - reply_message_batch
-  aicrm_next/ai_assist/external_campaigns_repo.py:
-    capability_owner: aicrm_next.ai_assist
+  aicrm_next/extensions/ai/ai_assist/external_campaigns_repo.py:
+    capability_owner: aicrm_next.extensions.ai.ai_assist
     table_reads:
       - broadcast_jobs
       - campaign_members
@@ -104,20 +110,19 @@ repositories:
       - user_ops_do_not_disturb_next
       - wecom_external_contact_follow_users
       - wecom_external_contact_identity_map
-    table_writes:
-      - broadcast_jobs
-    non_literal_table_reads:
-      - crm_user_identity
-  aicrm_next/send_targets/repo.py:
-    capability_owner: aicrm_next.send_targets
-    table_reads:
-      - crm_user_identity
-      - user_ops_do_not_disturb_next
     table_writes: []
     non_literal_table_reads:
       - crm_user_identity
-  aicrm_next/ai_audience_ops/repository.py:
-    capability_owner: aicrm_next.ai_audience_ops
+  aicrm_next/extensions/ai/ai_assist/campaign_preparations_repo.py:
+    capability_owner: aicrm_next.extensions.ai.ai_assist
+    table_reads:
+      - external_campaign_preparation_recipients
+      - external_campaign_preparations
+    table_writes:
+      - external_campaign_preparation_recipients
+      - external_campaign_preparations
+  aicrm_next/extensions/ai/ai_audience_ops/repository.py:
+    capability_owner: aicrm_next.extensions.ai.ai_audience_ops
     non_literal_table_reads:
       - ai_audience_package_version
     non_literal_table_writes:
@@ -138,7 +143,6 @@ repositories:
       - wecom_external_contact_follow_users
       - wecom_external_contact_identity_map
     table_writes:
-      - admin_operation_logs
       - ai_audience_inbound_webhook_event
       - ai_audience_member_current
       - ai_audience_member_event
@@ -148,9 +152,8 @@ repositories:
       - ai_audience_package_run
       - ai_audience_package_sender
       - ai_audience_package_version
-      - crm_user_identity_resolution_queue
-  aicrm_next/automation_agents/repository.py:
-    capability_owner: aicrm_next.automation_agents
+  aicrm_next/extensions/ai/automation_agents/repository.py:
+    capability_owner: aicrm_next.extensions.ai.automation_agents
     table_reads:
       - ai_audience_member_current
       - ai_audience_member_event
@@ -167,24 +170,24 @@ repositories:
       - automation_agent_runtime_config
       - automation_agent_webhook_batch
       - automation_agent_webhook_item
-  aicrm_next/automation_engine/agent_output_sqlalchemy_repository.py:
-    capability_owner: aicrm_next.automation_engine
+  aicrm_next/automation/automation_engine/agent_output_sqlalchemy_repository.py:
+    capability_owner: aicrm_next.automation.automation_engine
     access_scope: test_staging
     table_reads:
       - automation_agent_outputs
     table_writes: []
-  aicrm_next/automation_engine/agent_postgres_repository.py:
-    capability_owner: aicrm_next.automation_engine
+  aicrm_next/automation/automation_engine/agent_postgres_repository.py:
+    capability_owner: aicrm_next.automation.automation_engine
     table_reads: []
     table_writes: []
-  aicrm_next/automation_engine/agent_run_sqlalchemy_repository.py:
-    capability_owner: aicrm_next.automation_engine
+  aicrm_next/automation/automation_engine/agent_run_sqlalchemy_repository.py:
+    capability_owner: aicrm_next.automation.automation_engine
     access_scope: test_staging
     table_reads:
       - automation_agent_runs
     table_writes: []
-  aicrm_next/automation_engine/agent_sqlalchemy_repository.py:
-    capability_owner: aicrm_next.automation_engine
+  aicrm_next/automation/automation_engine/agent_sqlalchemy_repository.py:
+    capability_owner: aicrm_next.automation.automation_engine
     table_reads:
       - automation_agent_audit_log
       - automation_agent_idempotency
@@ -193,8 +196,8 @@ repositories:
       - automation_agent_audit_log
       - automation_agent_idempotency
       - automation_agents
-  aicrm_next/automation_engine/channels_repo.py:
-    capability_owner: aicrm_next.automation_engine.channels_api
+  aicrm_next/automation/automation_engine/channels_repo.py:
+    capability_owner: aicrm_next.automation.automation_engine.channels_api
     table_reads:
       - attachment_library
       - automation_channel
@@ -208,22 +211,14 @@ repositories:
       - miniprogram_library
       - wecom_customer_acquisition_links
       - wecom_external_contact_event_logs
-    table_writes:
-      - automation_channel
-      - automation_channel_assignee
-      - automation_channel_assignment_event
-      - automation_channel_qrcode_asset
+    table_writes: []
     non_literal_table_reads:
       - automation_channel_assignee
       - automation_channel_assignment_event
       - automation_channel_entry_effect_log
       - wecom_external_contact_event_logs
-    non_literal_table_writes:
-      - automation_channel_assignee
-      - automation_channel_assignment_event
-      - automation_channel_qrcode_asset
-  aicrm_next/automation_engine/group_ops/postgres_repo.py:
-    capability_owner: aicrm_next.automation_engine.group_ops
+  aicrm_next/automation/automation_engine/group_ops/postgres_repo.py:
+    capability_owner: aicrm_next.automation.automation_engine.group_ops
     table_reads:
       - audience_rule
       - audience_rule_result
@@ -253,44 +248,88 @@ repositories:
       - automation_group_ops_trigger_event
       - automation_group_ops_webhook_events
       - wecom_group_chat_snapshots
-  aicrm_next/automation_engine/group_ops/repo.py:
-    capability_owner: aicrm_next.automation_engine.group_ops
-    table_reads: []
-    table_writes: []
-  aicrm_next/automation_engine/repo.py:
-    capability_owner: aicrm_next.automation_engine
-    table_reads: []
-    table_writes: []
-  aicrm_next/background_jobs/repository.py:
-    capability_owner: aicrm_next.background_jobs
+  aicrm_next/automation/automation_engine/group_ops/durable_effects_repository.py:
+    capability_owner: aicrm_next.automation.automation_engine.group_ops
     table_reads:
+      - attachment_library
+      - automation_group_ops_effect_dependency
+      - automation_group_ops_effect_graph
+      - automation_group_ops_effect_material
+      - external_effect_job
+      - image_library
+      - miniprogram_library
+    table_writes:
+      - automation_group_ops_effect_dependency
+      - automation_group_ops_effect_graph
+      - automation_group_ops_effect_material
+  aicrm_next/automation/automation_engine/group_ops/effect_graph_lifecycle_repository.py:
+    capability_owner: aicrm_next.automation.automation_engine.group_ops
+    table_reads:
+      - automation_group_ops_effect_dependency
+      - automation_group_ops_effect_graph
+      - external_effect_attempt
+      - external_effect_job
+    table_writes:
+      - automation_group_ops_effect_dependency
+      - automation_group_ops_effect_graph
+  aicrm_next/automation/background_jobs/broadcast_effect_repository.py:
+    capability_owner: aicrm_next.automation.background_jobs.broadcast_queue_worker
+    table_reads:
+      - attachment_library
+      - cloud_broadcast_plan_recipients
+      - external_effect_job
+      - image_library
+      - miniprogram_library
+    table_writes: []
+  aicrm_next/platform/platform_foundation/background_jobs/broadcast_job_write_repository.py:
+    capability_owner: aicrm_next.automation.background_jobs
+    table_reads:
+      - broadcast_jobs
+    table_writes:
       - broadcast_job_events
+      - broadcast_jobs
+      - outbound_tasks
+  aicrm_next/platform/platform_foundation/background_jobs/cloud_broadcast_projection_write_repository.py:
+    capability_owner: aicrm_next.extensions.growth.cloud_orchestrator
+    table_reads:
       - broadcast_jobs
       - cloud_broadcast_plan_recipient_messages
       - cloud_broadcast_plan_recipients
+      - external_campaign_preparation_recipients
+      - external_campaign_preparations
+    table_writes:
+      - cloud_broadcast_plan_recipient_messages
+      - cloud_broadcast_plan_recipients
+  aicrm_next/automation/automation_engine/group_ops/repo.py:
+    capability_owner: aicrm_next.automation.automation_engine.group_ops
+    table_reads: []
+    table_writes: []
+  aicrm_next/automation/automation_engine/repo.py:
+    capability_owner: aicrm_next.automation.automation_engine
+    table_reads: []
+    table_writes: []
+  aicrm_next/automation/background_jobs/repository.py:
+    capability_owner: aicrm_next.automation.background_jobs
+    table_reads:
+      - broadcast_job_events
+      - broadcast_jobs
       - crm_user_identity
       - outbound_tasks
     table_writes:
       - broadcast_job_events
       - broadcast_jobs
-      - cloud_broadcast_plan_recipient_messages
-      - cloud_broadcast_plan_recipients
       - outbound_tasks
     non_literal_table_reads:
       - broadcast_job_events
       - broadcast_jobs
-      - cloud_broadcast_plan_recipient_messages
-      - cloud_broadcast_plan_recipients
       - crm_user_identity
       - outbound_tasks
     non_literal_table_writes:
       - broadcast_job_events
       - broadcast_jobs
-      - cloud_broadcast_plan_recipient_messages
-      - cloud_broadcast_plan_recipients
       - outbound_tasks
-  aicrm_next/channel_entry/identity_bridge_repo.py:
-    capability_owner: aicrm_next.channel_entry
+  aicrm_next/channels/channel_entry/identity_bridge_repo.py:
+    capability_owner: aicrm_next.crm.identity_contact
     table_reads:
       - crm_user_identity
       - crm_user_identity_resolution_queue
@@ -298,8 +337,13 @@ repositories:
       - crm_user_identity
       - crm_user_identity_conflicts
       - crm_user_identity_resolution_queue
-  aicrm_next/channel_entry/repo.py:
-    capability_owner: aicrm_next.channel_entry
+  aicrm_next/channels/channel_entry/channel_write_repository.py:
+    capability_owner: aicrm_next.channels.channel_entry
+    table_reads: []
+    table_writes:
+      - automation_channel
+  aicrm_next/channels/channel_entry/repo.py:
+    capability_owner: aicrm_next.channels.channel_entry
     table_reads:
       - automation_channel
       - automation_channel_assignee
@@ -308,11 +352,9 @@ repositories:
       - automation_channel_qrcode_asset
       - automation_channel_scene_alias
       - crm_user_identity
-      - wecom_external_contact_event_logs
     non_literal_table_reads:
       - crm_user_identity
     table_writes:
-      - automation_channel
       - automation_channel_assignee
       - automation_channel_assignment_event
       - automation_channel_contact
@@ -320,11 +362,22 @@ repositories:
       - automation_channel_entry_runtime
       - automation_channel_qrcode_asset
       - automation_channel_scene_alias
-      - contact_tags
-      - crm_user_identity_resolution_queue
-      - wecom_external_contact_event_logs
-  aicrm_next/cloud_orchestrator/repository.py:
-    capability_owner: aicrm_next.cloud_orchestrator
+  aicrm_next/channels/channel_entry/welcome_media_effects_repository.py:
+    capability_owner: aicrm_next.channels.channel_entry.welcome_media_effects_repository
+    table_reads:
+      - attachment_library
+      - channel_welcome_effect_dependency
+      - channel_welcome_effect_graph
+      - external_effect_attempt
+      - external_effect_job
+      - group_invite_library
+      - image_library
+      - miniprogram_library
+    table_writes:
+      - channel_welcome_effect_dependency
+      - channel_welcome_effect_graph
+  aicrm_next/extensions/growth/cloud_orchestrator/repository.py:
+    capability_owner: aicrm_next.extensions.growth.cloud_orchestrator
     table_reads:
       - broadcast_jobs
       - campaign_members
@@ -336,13 +389,9 @@ repositories:
       - crm_user_identity
       - customer_read_model_current
     table_writes:
-      - admin_operation_logs
-      - broadcast_jobs
       - campaign_members
       - campaign_steps
       - campaigns
-      - cloud_broadcast_plan_recipient_messages
-      - cloud_broadcast_plan_recipients
       - cloud_broadcast_plans
     non_literal_table_reads:
       - crm_user_identity
@@ -352,8 +401,14 @@ repositories:
       - campaigns
     non_table_relations:
       - customer_read_model_current
-  aicrm_next/commerce/repo.py:
-    capability_owner: aicrm_next.commerce
+  aicrm_next/extensions/growth/cloud_orchestrator/campaign_step_media_repository.py:
+    capability_owner: aicrm_next.extensions.growth.cloud_orchestrator
+    table_reads:
+      - campaign_steps
+    table_writes:
+      - campaign_steps
+  aicrm_next/extensions/commerce/commerce/repo.py:
+    capability_owner: aicrm_next.extensions.commerce.commerce
     table_reads:
       - automation_channel
       - automation_channel_qrcode_asset
@@ -370,8 +425,8 @@ repositories:
       - external_push_config
       - wechat_pay_product_page_slices
       - wechat_pay_products
-  aicrm_next/commerce/coupons/repo.py:
-    capability_owner: aicrm_next.commerce.coupons
+  aicrm_next/extensions/commerce/commerce/coupons/repo.py:
+    capability_owner: aicrm_next.extensions.commerce.commerce.coupons
     table_reads:
       - commerce_coupon_claims
       - commerce_coupon_product_bindings
@@ -385,15 +440,26 @@ repositories:
       - commerce_coupon_product_bindings
       - commerce_coupon_redemptions
       - commerce_coupons
+  aicrm_next/extensions/commerce/commerce/wechat_pay_order_write_repository.py:
+    capability_owner: aicrm_next.extensions.commerce.commerce.wechat_pay_service
+    table_reads:
       - wechat_pay_orders
-  aicrm_next/customer_read_model/repo.py:
-    capability_owner: aicrm_next.customer_read_model
+    table_writes:
+      - wechat_pay_orders
+  aicrm_next/crm/customer_read_model/repo.py:
+    capability_owner: aicrm_next.crm.customer_read_model
     non_literal_table_reads:
       - archived_messages
       - automation_channel_contact
       - class_user_status_current
       - contact_tags
       - crm_user_identity
+      - customer_detail_snapshot_next
+      - customer_detail_snapshot_next_shadow
+      - customer_list_index_next
+      - customer_list_index_next_shadow
+      - customer_recent_message_next
+      - customer_recent_message_next_shadow
       - owner_role_map
       - questionnaire_submissions
       - wechat_pay_orders
@@ -403,28 +469,75 @@ repositories:
       - class_user_status_current
       - contact_tags
       - crm_user_identity
+      - customer_detail_snapshot_next
+      - customer_detail_snapshot_next_shadow
+      - customer_list_index_next
+      - customer_list_index_next_shadow
+      - customer_read_model_refresh_intent
+      - customer_read_model_refresh_state
+      - customer_recent_message_next
+      - customer_recent_message_next_shadow
       - owner_role_map
       - questionnaire_submissions
       - wechat_pay_orders
+    table_writes:
+      - customer_detail_snapshot_next
+      - customer_detail_snapshot_next_shadow
+      - customer_list_index_next
+      - customer_list_index_next_shadow
+      - customer_read_model_refresh_state
+      - customer_recent_message_next
+      - customer_recent_message_next_shadow
+      - customer_timeline_event_next
+    non_literal_table_writes:
+      - customer_detail_snapshot_next
+      - customer_detail_snapshot_next_shadow
+      - customer_list_index_next
+      - customer_list_index_next_shadow
+      - customer_recent_message_next
+      - customer_recent_message_next_shadow
+      - customer_timeline_event_next
+  aicrm_next/crm/customer_read_model/refresh_scope_repository.py:
+    capability_owner: aicrm_next.crm.customer_read_model
+    table_reads:
+      - archived_messages
+      - customer_read_model_refresh_source_receipt
+      - internal_event
     table_writes: []
-  aicrm_next/customer_tags/write_repo.py:
-    capability_owner: aicrm_next.customer_tags
+  aicrm_next/crm/customer_read_model/sidebar_profile_repository.py:
+    capability_owner: aicrm_next.crm.customer_read_model
+    table_reads: []
+    table_writes:
+      - sidebar_customer_profile_fields
+  aicrm_next/crm/customer_tags/write_repo.py:
+    capability_owner: aicrm_next.crm.customer_tags
     table_reads:
       - wecom_corp_tag_groups
       - wecom_corp_tags
     table_writes:
       - wecom_corp_tag_groups
       - wecom_corp_tags
-  aicrm_next/delivery_lineage/repository.py:
-    capability_owner: aicrm_next.delivery_lineage
+  aicrm_next/crm/customer_tags/projection_repository.py:
+    capability_owner: aicrm_next.crm.customer_tags
+    table_reads: []
+    table_writes:
+      - contact_tags
+  aicrm_next/insights/data_health/snapshot_repository.py:
+    capability_owner: aicrm_next.insights.data_health
+    table_reads:
+      - data_health_snapshot
+    table_writes:
+      - data_health_snapshot
+  aicrm_next/insights/delivery_lineage/repository.py:
+    capability_owner: aicrm_next.insights.delivery_lineage
     table_reads:
       - broadcast_job_events
       - broadcast_jobs
       - external_effect_job
       - internal_event
     table_writes: []
-  aicrm_next/external_push/repo.py:
-    capability_owner: aicrm_next.external_push
+  aicrm_next/platform/external_push/repo.py:
+    capability_owner: aicrm_next.platform.external_push
     table_reads:
       - crm_user_identity
       - domain_event_outbox
@@ -435,25 +548,8 @@ repositories:
     table_writes:
       - domain_event_outbox
       - external_push_delivery
-  aicrm_next/growth_orchestration/repository.py:
-    capability_owner: aicrm_next.growth_orchestration
-    table_reads:
-      - ai_audience_member_current
-      - ai_audience_package
-      - automation_group_ops_plan_groups
-      - automation_group_ops_plan_nodes
-      - automation_group_ops_plans
-      - broadcast_jobs
-      - campaign_members
-      - campaign_steps
-      - campaigns
-      - cloud_broadcast_plan_recipients
-      - cloud_broadcast_plans
-      - external_effect_job
-      - outbound_tasks
-    table_writes: []
-  aicrm_next/hxc_dashboard/postgres_repo.py:
-    capability_owner: aicrm_next.hxc_dashboard
+  aicrm_next/extensions/hxc/hxc_dashboard/postgres_repo.py:
+    capability_owner: aicrm_next.extensions.hxc.hxc_dashboard
     table_reads:
       - crm_user_identity
       - hxc_dashboard_broadcast_tasks
@@ -464,19 +560,19 @@ repositories:
       - hxc_dashboard_broadcast_tasks
     non_table_relations:
       - snapshot_identity
-  aicrm_next/hxc_dashboard/repo.py:
-    capability_owner: aicrm_next.hxc_dashboard
+  aicrm_next/extensions/hxc/hxc_dashboard/repo.py:
+    capability_owner: aicrm_next.extensions.hxc.hxc_dashboard
     table_reads: []
     table_writes: []
-  aicrm_next/identity_contact/oauth_projection_repo.py:
-    capability_owner: aicrm_next.identity_contact
+  aicrm_next/crm/identity_contact/oauth_projection_repo.py:
+    capability_owner: aicrm_next.crm.identity_contact
     table_reads:
       - crm_user_identity_conflicts
     table_writes:
       - crm_user_identity
       - crm_user_identity_conflicts
-  aicrm_next/identity_contact/repo.py:
-    capability_owner: aicrm_next.identity_contact
+  aicrm_next/crm/identity_contact/repo.py:
+    capability_owner: aicrm_next.crm.identity_contact
     table_reads:
       - crm_user_identity
       - external_contact_bindings
@@ -488,29 +584,52 @@ repositories:
       - crm_user_identity_resolution_queue
     non_literal_table_reads:
       - external_contact_bindings
-  aicrm_next/media_library/postgres_repo.py:
-    capability_owner: aicrm_next.media_library
+  aicrm_next/crm/identity_contact/event_log_repository.py:
+    capability_owner: aicrm_next.crm.identity_contact
     table_reads:
-      - campaign_steps
+      - wecom_external_contact_event_logs
+    table_writes:
+      - wecom_external_contact_event_logs
+  aicrm_next/crm/identity_contact/resolution_queue_repository.py:
+    capability_owner: aicrm_next.crm.identity_contact
+    table_reads:
+      - crm_user_identity_resolution_queue
+      - identity_resolution_completion_receipt
+    table_writes:
+      - crm_user_identity_resolution_queue
+      - identity_resolution_completion_receipt
+  aicrm_next/crm/identity_contact/write_repository.py:
+    capability_owner: aicrm_next.crm.identity_contact
+    table_reads: []
+    table_writes:
+      - crm_user_identity
+      - crm_user_identity_resolution_queue
+  aicrm_next/engagement/media_library/effect_material_repository.py:
+    capability_owner: aicrm_next.engagement.media_library
+    table_reads: []
+    table_writes:
+      - image_library
+  aicrm_next/engagement/media_library/postgres_repo.py:
+    capability_owner: aicrm_next.engagement.media_library
+    table_reads:
       - group_invite_library
       - image_library
       - image_library_variants
       - miniprogram_library
     table_writes:
       - attachment_library
-      - campaign_steps
       - group_invite_library
       - image_library
       - image_library_variants
       - miniprogram_library
     non_literal_table_reads:
       - group_invite_library
-  aicrm_next/media_library/repo.py:
-    capability_owner: aicrm_next.media_library
+  aicrm_next/engagement/media_library/repo.py:
+    capability_owner: aicrm_next.engagement.media_library
     table_reads: []
     table_writes: []
-  aicrm_next/message_archive/repo.py:
-    capability_owner: aicrm_next.message_archive
+  aicrm_next/extensions/archive/message_archive/repo.py:
+    capability_owner: aicrm_next.extensions.archive.message_archive
     table_reads:
       - app_settings
       - archive_sync_state
@@ -519,12 +638,10 @@ repositories:
     table_writes:
       - archive_sync_state
       - archived_messages
-      - crm_user_identity_resolution_queue
-      - sync_runs
     non_literal_table_reads:
       - app_settings
-  aicrm_next/ops_enrollment/repo.py:
-    capability_owner: aicrm_next.ops_enrollment
+  aicrm_next/automation/ops_enrollment/repo.py:
+    capability_owner: aicrm_next.automation.ops_enrollment
     table_reads:
       - user_ops_do_not_disturb_next
       - user_ops_pool_current_next
@@ -541,8 +658,8 @@ repositories:
       - user_ops_do_not_disturb_next
       - user_ops_pool_current_next
       - user_ops_send_records_next
-  aicrm_next/owner_migration/repo.py:
-    capability_owner: aicrm_next.owner_migration
+  aicrm_next/crm/owner_migration/repo.py:
+    capability_owner: aicrm_next.crm.owner_migration
     table_reads:
       - broadcast_jobs
       - customer_detail_snapshot_next
@@ -555,7 +672,6 @@ repositories:
       - wecom_external_contact_follow_users
       - wecom_external_contact_identity_map
     table_writes:
-      - admin_operation_logs
       - customer_detail_snapshot_next
       - customer_list_index_next
       - external_contact_bindings
@@ -564,16 +680,21 @@ repositories:
       - owner_migration_results
       - wecom_external_contact_follow_users
       - wecom_external_contact_identity_map
-  aicrm_next/operation_members/repository.py:
-    capability_owner: aicrm_next.operation_members
+  aicrm_next/crm/operation_members/repository.py:
+    capability_owner: aicrm_next.crm.operation_members
     table_reads:
       - admin_wecom_directory_members
     table_writes:
       - admin_wecom_directory_members
     non_literal_table_reads:
       - admin_wecom_directory_members
-  aicrm_next/platform_foundation/auth_platform/repository.py:
-    capability_owner: aicrm_next.platform_foundation.auth_platform
+  aicrm_next/platform/platform_foundation/admin_audit/repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.admin_audit
+    table_reads: []
+    table_writes:
+      - admin_operation_logs
+  aicrm_next/platform/platform_foundation/auth_platform/repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.auth_platform
     table_reads:
       - admin_users
       - auth_api_clients
@@ -585,74 +706,159 @@ repositories:
       - auth_sessions
       - auth_webhook_clients
       - auth_webhook_replay
-  aicrm_next/platform_foundation/external_effects/repo.py:
-    capability_owner: aicrm_next.platform_foundation.external_effects
+  aicrm_next/platform/platform_foundation/execution_runtime/repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.execution_runtime
+    table_reads:
+      - external_effect_attempt
+      - external_effect_job
+      - internal_event_consumer_run
+      - internal_event_outbox
+      - queue_lane_policy
+      - queue_rate_scope_cooldown
+      - queue_runtime_control
+      - webhook_inbox
+    table_writes:
+      - queue_fairness_cursor
+      - queue_runtime_lease_recovery_event
+      - queue_worker_heartbeat
+  aicrm_next/platform/platform_foundation/external_effects/canary_repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.external_effects
+    table_reads: []
+    table_writes:
+      - external_effect_job
+  aicrm_next/platform/platform_foundation/external_effects/direct_claim_repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.external_effects
+    table_reads:
+      - external_effect_job
+      - queue_runtime_control
+    table_writes:
+      - external_effect_job
+  aicrm_next/platform/platform_foundation/external_effects/provider_result_repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.external_effects
+    table_reads:
+      - external_effect_attempt
+    table_writes:
+      - external_effect_attempt
+  aicrm_next/platform/platform_foundation/external_effects/provider_attempt/repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.external_effects
+    table_reads:
+      - external_effect_job
+    table_writes:
+      - external_effect_attempt
+      - external_effect_job
+  aicrm_next/platform/platform_foundation/external_effects/repo.py:
+    capability_owner: aicrm_next.platform.platform_foundation.external_effects
     table_reads:
       - external_effect_attempt
       - external_effect_job
       - external_effect_test_receipt
+      - queue_runtime_control
     table_writes:
       - external_effect_attempt
       - external_effect_job
       - external_effect_test_receipt
-  aicrm_next/platform_foundation/internal_events/repository.py:
-    capability_owner: aicrm_next.platform_foundation.internal_events
+  aicrm_next/platform/platform_foundation/external_effects/runtime_write_repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.external_effects
+    table_reads:
+      - external_effect_attempt
+      - external_effect_job
+      - queue_fairness_cursor
+      - queue_history_classification
+      - queue_rate_scope_cooldown
+      - queue_runtime_control
+    table_writes:
+      - external_effect_attempt
+      - external_effect_job
+  aicrm_next/platform/platform_foundation/internal_events/consumer_run_write_repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.internal_events
     table_reads:
       - internal_event
+      - internal_event_consumer_run
+      - queue_fairness_cursor
+      - queue_runtime_control
+    table_writes:
       - internal_event_consumer_attempt
       - internal_event_consumer_run
+  aicrm_next/platform/platform_foundation/internal_events/outbox_runtime_write_repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.internal_events
+    table_reads:
       - internal_event_outbox
+      - queue_fairness_cursor
+      - queue_runtime_control
+    table_writes:
+      - internal_event_outbox
+  aicrm_next/platform/platform_foundation/internal_events/payment_read/repo.py:
+    capability_owner: aicrm_next.platform.platform_foundation.internal_events
+    table_reads:
       - wechat_pay_orders
+    table_writes: []
+  aicrm_next/platform/platform_foundation/internal_events/repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.internal_events
+    table_reads:
+      - internal_event
+      - internal_event_consumer_attempt
+      - internal_event_consumer_run
+      - internal_event_outbox
+      - queue_runtime_control
     table_writes:
       - internal_event
       - internal_event_consumer_attempt
       - internal_event_consumer_run
       - internal_event_outbox
-  aicrm_next/platform_foundation/push_center/capability_repository.py:
-    capability_owner: aicrm_next.platform_foundation.push_center
+  aicrm_next/platform/platform_foundation/job_runs/repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.job_runs
+    table_reads: []
+    table_writes:
+      - sync_runs
+  aicrm_next/platform/platform_foundation/rate_scope_cooldown/repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.rate_scope_cooldown
+    table_reads: []
+    table_writes:
+      - queue_rate_scope_cooldown
+  aicrm_next/platform/platform_foundation/push_center/capability_repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.push_center
     table_reads:
       - app_settings
     table_writes: []
-  aicrm_next/platform_foundation/push_center/repository.py:
-    capability_owner: aicrm_next.platform_foundation.push_center
+  aicrm_next/platform/platform_foundation/push_center/repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.push_center
     table_reads: []
     table_writes: []
-  aicrm_next/platform_foundation/repository.py:
-    capability_owner: aicrm_next.platform_foundation
+  aicrm_next/platform/platform_foundation/repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation
     table_reads:
       - alembic_version
+      - broadcast_jobs
       - external_effect_job
       - internal_event
       - internal_event_consumer_run
+      - internal_event_outbox
+      - queue_lane_policy
+      - queue_rate_scope_cooldown
+      - queue_runtime_control
       - webhook_inbox
     table_writes: []
-  aicrm_next/platform_foundation/webhook_inbox/repository.py:
-    capability_owner: aicrm_next.platform_foundation.webhook_inbox
+  aicrm_next/platform/platform_foundation/webhook_inbox/repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.webhook_inbox
     table_reads:
+      - queue_runtime_control
       - webhook_inbox
     table_writes:
       - webhook_inbox
-  aicrm_next/public_product/repo.py:
-    capability_owner: aicrm_next.public_product
+  aicrm_next/platform/platform_foundation/webhook_inbox/runtime_write_repository.py:
+    capability_owner: aicrm_next.platform.platform_foundation.webhook_inbox
+    table_reads:
+      - queue_fairness_cursor
+      - queue_runtime_control
+      - webhook_inbox
+    table_writes:
+      - webhook_inbox
+  aicrm_next/extensions/commerce/public_product/repo.py:
+    capability_owner: aicrm_next.extensions.commerce.public_product
     table_reads: []
     table_writes: []
-  aicrm_next/questionnaire/continuation_repo.py:
-    capability_owner: aicrm_next.questionnaire
-    table_reads:
-      - ai_audience_package
-      - ai_audience_package_dependency
-      - automation_agent_webhook_batch
-      - automation_agent_webhook_item
-      - crm_user_identity
-      - external_effect_job
-      - questionnaire_continuation_job
-      - questionnaire_submissions
-    table_writes:
-      - questionnaire_continuation_job
-    non_literal_table_reads:
-      - crm_user_identity
-  aicrm_next/questionnaire/repo.py:
-    capability_owner: aicrm_next.questionnaire
+  aicrm_next/extensions/forms/questionnaire/repo.py:
+    capability_owner: aicrm_next.extensions.forms.questionnaire
     table_reads:
       - app_settings
       - crm_user_identity
@@ -664,7 +870,6 @@ repositories:
       - questionnaire_submissions
       - questionnaires
     table_writes:
-      - crm_user_identity_resolution_queue
       - questionnaire_options
       - questionnaire_questions
       - questionnaire_score_rules
@@ -673,10 +878,8 @@ repositories:
       - questionnaires
     non_literal_table_reads:
       - app_settings
-    non_literal_table_writes:
-      - crm_user_identity_resolution_queue
-  aicrm_next/radar_links/repo.py:
-    capability_owner: aicrm_next.radar_links
+  aicrm_next/extensions/radar/radar_links/repo.py:
+    capability_owner: aicrm_next.extensions.radar.radar_links
     table_reads:
       - crm_user_identity
       - radar_click_events
@@ -686,8 +889,8 @@ repositories:
       - radar_click_events
       - radar_links
       - radar_pdf_preview_assets
-  aicrm_next/send_content/postgres_repo.py:
-    capability_owner: aicrm_next.send_content
+  aicrm_next/engagement/send_content/postgres_repo.py:
+    capability_owner: aicrm_next.engagement.send_content
     table_reads:
       - automation_agents
       - automation_channel
@@ -696,12 +899,12 @@ repositories:
       - radar_links
       - wechat_pay_product_page_slices
     table_writes: []
-  aicrm_next/send_content/repo.py:
-    capability_owner: aicrm_next.send_content
+  aicrm_next/engagement/send_content/repo.py:
+    capability_owner: aicrm_next.engagement.send_content
     table_reads: []
     table_writes: []
-  aicrm_next/service_period/member_grid_repo.py:
-    capability_owner: aicrm_next.service_period
+  aicrm_next/extensions/commerce/service_period/member_grid_repo.py:
+    capability_owner: aicrm_next.extensions.commerce.service_period
     table_reads:
       - crm_user_identity
       - service_period_entitlements
@@ -712,16 +915,16 @@ repositories:
       - wecom_external_contact_identity_map
     table_writes:
       - service_period_member_views
-  aicrm_next/service_period/member_grid_access_repo.py:
-    capability_owner: aicrm_next.service_period
+  aicrm_next/extensions/commerce/service_period/member_grid_access_repo.py:
+    capability_owner: aicrm_next.extensions.commerce.service_period
     table_reads:
       - service_period_member_collaborators
       - service_period_member_shares
     table_writes:
       - service_period_member_collaborators
       - service_period_member_shares
-  aicrm_next/service_period/repo.py:
-    capability_owner: aicrm_next.service_period
+  aicrm_next/extensions/commerce/service_period/repo.py:
+    capability_owner: aicrm_next.extensions.commerce.service_period
     table_reads:
       - crm_user_identity
       - service_period_entitlements
@@ -735,8 +938,8 @@ repositories:
       - service_period_entitlements
       - service_period_events
       - service_period_products
-  aicrm_next/sidebar_write/repo.py:
-    capability_owner: aicrm_next.sidebar_write
+  aicrm_next/crm/sidebar_write/repo.py:
+    capability_owner: aicrm_next.crm.sidebar_write
     table_reads:
       - attachment_library
       - crm_user_identity
@@ -744,14 +947,11 @@ repositories:
       - miniprogram_library
       - wecom_external_contact_follow_users
       - wecom_external_contact_identity_map
-    table_writes:
-      - crm_user_identity
-      - crm_user_identity_resolution_queue
-      - sidebar_customer_profile_fields
+    table_writes: []
     non_literal_table_reads:
       - crm_user_identity
-  aicrm_next/operation_cycles/repository.py:
-    capability_owner: aicrm_next.operation_cycles
+  aicrm_next/extensions/hxc/operation_cycles/repository.py:
+    capability_owner: aicrm_next.extensions.hxc.operation_cycles
     table_reads:
       - operation_cycle_references
       - operation_cycle_runs
@@ -766,4 +966,19 @@ repositories:
       - operation_cycle_snapshots
       - operation_cycle_stages
       - operation_cycle_strategies
+      - operation_cycle_strategy_versions
+  aicrm_next/extensions/hxc/operation_cycles/strategy_context_repository.py:
+    capability_owner: aicrm_next.extensions.hxc.operation_cycles
+    table_reads:
+      - operation_cycle_plan_links
+      - operation_cycle_runs
+      - operation_cycle_snapshots
+      - operation_cycle_strategies
+      - operation_cycle_strategy_change_proposals
+      - operation_cycle_strategy_version_documents
+      - operation_cycle_strategy_versions
+    table_writes:
+      - operation_cycle_strategies
+      - operation_cycle_strategy_change_proposals
+      - operation_cycle_strategy_version_documents
       - operation_cycle_strategy_versions

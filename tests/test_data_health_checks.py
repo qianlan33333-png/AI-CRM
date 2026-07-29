@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import json
+import os
 from pathlib import Path
+from uuid import uuid4
 
 import pytest
 
@@ -96,7 +99,7 @@ def test_data_health_check_detail_and_missing_check(client) -> None:
 
 
 def test_schema_drift_guard_reports_manifest_and_live_schema_mismatches() -> None:
-    from aicrm_next.data_health.schema_drift import evaluate_schema_drift
+    from aicrm_next.insights.data_health.schema_drift import evaluate_schema_drift
 
     manifest = {
         "tables": {
@@ -160,6 +163,22 @@ def test_schema_drift_guard_reports_manifest_and_live_schema_mismatches() -> Non
     assert "queue_with_status_enum" not in joined
 
 
+def test_migrated_schema_matches_lifecycle_manifest(next_pg_schema) -> None:
+    del next_pg_schema
+    from aicrm_next.insights.data_health.schema_drift import (
+        evaluate_schema_drift,
+        load_table_lifecycle_manifest,
+        public_schema_snapshot,
+    )
+
+    violations = evaluate_schema_drift(
+        manifest=load_table_lifecycle_manifest(),
+        actual_schema=public_schema_snapshot(),
+    )
+
+    assert violations == []
+
+
 class _FakeResult:
     def __init__(self, row: dict):
         self._row = row
@@ -168,6 +187,9 @@ class _FakeResult:
         return self
 
     def first(self):
+        return self._row
+
+    def one(self):
         return self._row
 
 
@@ -188,7 +210,7 @@ class _FakeSession:
 
 
 def _patch_health_db(monkeypatch, row: dict) -> list[str]:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     calls: list[str] = []
     monkeypatch.setattr(checks, "database_schema_available", lambda: True)
@@ -197,7 +219,7 @@ def _patch_health_db(monkeypatch, row: dict) -> list[str]:
 
 
 def test_projection_freshness_probe_uses_live_projection_counts(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     calls = _patch_health_db(
         monkeypatch,
@@ -219,7 +241,125 @@ def test_projection_freshness_probe_uses_live_projection_counts(monkeypatch) -> 
 
 
 def test_projection_freshness_probe_accepts_managed_fresh_parity(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
+
+    _patch_health_db(
+        monkeypatch,
+        {
+            "list_count": 12,
+            "detail_count": 12,
+            "active_slot": "shadow",
+            "refresh_state_present": True,
+            "refresh_source_count": 12,
+            "refresh_target_count": 12,
+            "timeline_event_count": 48,
+            "timeline_duplicate_event_id_count": 0,
+            "refresh_age_minutes": 5,
+        },
+    )
+
+    result = checks._projection_freshness_customer_read_model()
+
+    assert result.status == "ok"
+    assert result.evidence["active_slot"] == "shadow"
+    assert result.evidence["refresh_state_present"] is True
+    assert result.evidence["timeline_event_count"] == 48
+
+
+def test_projection_freshness_probe_counts_the_active_generation(monkeypatch) -> None:
+    from aicrm_next.insights.data_health import checks
+
+    calls = _patch_health_db(
+        monkeypatch,
+        {
+            "list_count": 12,
+            "detail_count": 12,
+            "active_slot": "shadow",
+            "refresh_state_present": True,
+            "refresh_source_count": 12,
+            "refresh_target_count": 12,
+            "timeline_event_count": 48,
+            "timeline_duplicate_event_id_count": 0,
+            "refresh_age_minutes": 5,
+        },
+    )
+
+    result = checks._projection_freshness_customer_read_model()
+
+    assert result.status == "ok"
+    query = "\n".join(calls)
+    assert "WITH refresh_state AS" in query
+    assert "active_slot" in query
+    assert "customer_list_index_next_shadow" in query
+    assert "customer_detail_snapshot_next_shadow" in query
+    assert "END AS list_count" in query
+    assert "END AS detail_count" in query
+
+
+@pytest.mark.postgres
+def test_projection_freshness_reads_the_active_shadow_slot_against_postgres(
+    next_pg_schema,
+) -> None:
+    import psycopg
+
+    from aicrm_next.insights.data_health import checks
+
+    database_url = os.environ["DATABASE_URL"]
+    with psycopg.connect(database_url) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO customer_list_index_next (unionid) VALUES ('primary-only')"
+            )
+            cursor.execute(
+                "INSERT INTO customer_detail_snapshot_next (unionid) VALUES ('primary-only')"
+            )
+            cursor.execute(
+                """
+                INSERT INTO customer_list_index_next_shadow (unionid)
+                VALUES ('shadow-one'), ('shadow-two')
+                """
+            )
+            cursor.execute(
+                """
+                INSERT INTO customer_detail_snapshot_next_shadow (unionid)
+                VALUES ('shadow-one'), ('shadow-two')
+                """
+            )
+            cursor.execute(
+                """
+                INSERT INTO customer_read_model_refresh_state (
+                    singleton_id, last_succeeded_at, source_count, target_count,
+                    duration_ms, active_slot, active_generation
+                ) VALUES (1, CURRENT_TIMESTAMP, 2, 2, 1, 'shadow', 2)
+                """
+            )
+        connection.commit()
+
+    healthy = checks._projection_freshness_customer_read_model()
+    assert healthy.status == "ok"
+    assert healthy.evidence["active_slot"] == "shadow"
+    assert healthy.evidence["list_count"] == 2
+    assert healthy.evidence["detail_count"] == 2
+
+    with psycopg.connect(database_url) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE customer_read_model_refresh_state
+                SET active_slot = 'primary'
+                WHERE singleton_id = 1
+                """
+            )
+        connection.commit()
+
+    unsafe = checks._projection_freshness_customer_read_model()
+    assert unsafe.status == "fail"
+    assert unsafe.evidence["active_slot"] == "primary"
+    assert unsafe.evidence["list_count"] == 1
+
+
+def test_projection_freshness_probe_rejects_duplicate_timeline_event_ids(monkeypatch) -> None:
+    from aicrm_next.insights.data_health import checks
 
     _patch_health_db(
         monkeypatch,
@@ -229,22 +369,79 @@ def test_projection_freshness_probe_accepts_managed_fresh_parity(monkeypatch) ->
             "refresh_state_present": True,
             "refresh_source_count": 12,
             "refresh_target_count": 12,
+            "timeline_event_count": 49,
+            "timeline_duplicate_event_id_count": 1,
             "refresh_age_minutes": 5,
         },
     )
 
     result = checks._projection_freshness_customer_read_model()
 
+    assert result.status == "fail"
+    assert result.evidence["timeline_duplicate_event_id_count"] == 1
+    assert "timeline_duplicate_event_id_count=1" in result.evidence["violations"]
+
+
+def test_projection_freshness_probe_does_not_fail_on_wall_clock_age_without_source_drift(monkeypatch) -> None:
+    from aicrm_next.insights.data_health import checks
+
+    _patch_health_db(
+        monkeypatch,
+        {
+            "list_count": 12,
+            "detail_count": 12,
+            "refresh_state_present": True,
+            "refresh_source_count": 12,
+            "refresh_target_count": 12,
+            "refresh_age_minutes": 600,
+        },
+    )
+
+    result = checks._projection_freshness_customer_read_model()
+
     assert result.status == "ok"
-    assert result.evidence["refresh_state_present"] is True
+    assert result.evidence["refresh_age_minutes"] == 600
+    assert result.evidence["freshness_policy"] == "source_change_lag"
+    assert result.evidence["wall_clock_age_is_diagnostic"] is True
+    assert "max_stale_minutes" not in result.evidence
+
+
+def test_customer_360_freshness_guard_still_blocks_real_source_lag(monkeypatch) -> None:
+    from aicrm_next.insights.data_health import checks
+
+    _patch_health_db(
+        monkeypatch,
+        {
+            "refresh_state_present": True,
+            "refresh_age_minutes": 600,
+            "identity_lag_minutes": checks.PROJECTION_FRESHNESS_MAX_MINUTES + 1,
+            "order_lag_minutes": 0,
+            "questionnaire_lag_minutes": 0,
+            "message_lag_minutes": 0,
+        },
+    )
+
+    result = checks._customer_360_freshness_guard()
+
+    assert result.status == "fail"
+    assert result.evidence["identity_lag_minutes"] == checks.PROJECTION_FRESHNESS_MAX_MINUTES + 1
+    assert result.evidence["refresh_age_minutes"] == 600
+    assert result.evidence["violations"] == [
+        f"identity_lag_minutes={checks.PROJECTION_FRESHNESS_MAX_MINUTES + 1:.1f} exceeds {checks.PROJECTION_FRESHNESS_MAX_MINUTES}"
+    ]
 
 
 def test_broadcast_backlog_probe_counts_blocked_and_retryable(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     calls = _patch_health_db(
         monkeypatch,
         {
+            "raw_open_count": 4,
+            "held_count": 1,
+            "eligible_count": 999,
+            "dlq_count": 1,
+            "unknown_count": 0,
             "blocked_count": 1,
             "failed_terminal_count": 0,
             "due_retryable_count": 2,
@@ -255,17 +452,28 @@ def test_broadcast_backlog_probe_counts_blocked_and_retryable(monkeypatch) -> No
     result = checks._broadcast_job_blocked_backlog()
 
     assert result.status == "fail"
+    assert result.evidence["execution_owner"] == "legacy_frozen"
+    assert result.evidence["execution_semantics"] == "readonly"
+    assert result.evidence["raw_open_count"] == 4
+    assert result.evidence["held_count"] == 1
+    assert result.evidence["eligible_count"] == 0
+    assert result.evidence["dlq_count"] == 1
     assert result.evidence["blocked_count"] == 1
     assert result.evidence["due_retryable_count"] == 2
     assert any("FROM broadcast_jobs" in sql for sql in calls)
 
 
 def test_broadcast_backlog_probe_keeps_historical_terminal_evidence_without_permanent_failure(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     _patch_health_db(
         monkeypatch,
         {
+            "raw_open_count": 14,
+            "held_count": 14,
+            "eligible_count": 7,
+            "dlq_count": 14,
+            "unknown_count": 0,
             "recent_blocked_count": 0,
             "recent_failed_terminal_count": 0,
             "historical_blocked_count": 8,
@@ -278,13 +486,17 @@ def test_broadcast_backlog_probe_keeps_historical_terminal_evidence_without_perm
     result = checks._broadcast_job_blocked_backlog()
 
     assert result.status == "ok"
+    assert result.evidence["raw_open_count"] == 14
+    assert result.evidence["held_count"] == 14
+    assert result.evidence["eligible_count"] == 0
+    assert result.evidence["dlq_count"] == 14
     assert result.evidence["blocked_count"] == 0
     assert result.evidence["historical_blocked_count"] == 8
     assert result.evidence["historical_failed_terminal_count"] == 6
 
 
 def test_previously_placeholder_probes_are_live_and_green_with_zero_actionable_counts(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     _patch_health_db(
         monkeypatch,
@@ -328,7 +540,7 @@ def test_previously_placeholder_probes_are_live_and_green_with_zero_actionable_c
 
 
 def test_questionnaire_submission_guard_accepts_quarantined_missing_unionids(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     _patch_health_db(
         monkeypatch,
@@ -352,7 +564,7 @@ def test_questionnaire_submission_guard_accepts_quarantined_missing_unionids(mon
 
 
 def test_questionnaire_submission_guard_rejects_unguarded_missing_unionid(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     _patch_health_db(
         monkeypatch,
@@ -375,7 +587,7 @@ def test_questionnaire_submission_guard_rejects_unguarded_missing_unionid(monkey
 
 
 def test_external_effect_backlog_probe_accepts_small_retryable_queue(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     calls = _patch_health_db(
         monkeypatch,
@@ -394,10 +606,385 @@ def test_external_effect_backlog_probe_accepts_small_retryable_queue(monkeypatch
     assert result.evidence["failed_retryable_count"] == 2
     assert result.evidence["oldest_failed_retryable_age_seconds"] == 120
     assert any("FROM external_effect_job" in sql for sql in calls)
+    assert any(
+        "WHERE job.status IN ('failed_retryable', 'failed_terminal', 'blocked')" in sql
+        for sql in calls
+    )
+    query = "\n".join(calls)
+    assert "aicrm_next.identity_contact.resolution_effects" in query
+    assert "aicrm_next.crm.identity_contact.resolution_effects" in query
+
+
+def test_external_effect_backlog_excludes_only_shared_pre_cutover_identity_adoption_predicate(monkeypatch) -> None:
+    from aicrm_next.insights.data_health import checks
+
+    calls = _patch_health_db(
+        monkeypatch,
+        {
+            "failed_retryable_count": 0,
+            "recent_failed_terminal_count": 0,
+            "recent_blocked_count": 0,
+            "historical_failed_terminal_count": 0,
+            "historical_blocked_count": 0,
+            "due_retryable_count": 0,
+            "oldest_failed_retryable_age_seconds": 0,
+            "pre_cutover_deferred_identity_count": 4,
+        },
+    )
+
+    result = checks._external_effect_failed_retryable_backlog()
+
+    assert result.status == "ok"
+    assert result.evidence["pre_cutover_deferred_identity_adoption"] == {
+        "eligible_count": 4,
+        "excluded_from_business_health": True,
+        "provider_boundary_crossed": False,
+        "pending_generation_1_adoption": True,
+        "predicate_version": "identity_contact_detail_test_policy_v2",
+        "strict_provenance_required": True,
+    }
+    query = "\n".join(calls)
+    for strict_token in (
+        "wecom.external_contact.detail.fetch",
+        "wecom_external_contact_detail",
+        "channel_entry.identity_resolution.enqueue",
+        "message_archive.identity_resolution.enqueue",
+        "provider_call_started_at IS NULL",
+        "side_effect_executed = FALSE",
+        "provider_result_received = FALSE",
+        "SELECT COUNT(*)",
+        "adoption_control.active_generation = 0",
+        "adoption_control.external_claim_scope = 'test_loopback'",
+    ):
+        assert strict_token in query
+
+
+def test_external_effect_backlog_excludes_only_exact_post_cutover_identity_recovery(monkeypatch) -> None:
+    from aicrm_next.insights.data_health import checks
+
+    calls = _patch_health_db(
+        monkeypatch,
+        {
+            "failed_retryable_count": 0,
+            "recent_failed_terminal_count": 0,
+            "recent_blocked_count": 0,
+            "historical_failed_terminal_count": 0,
+            "historical_blocked_count": 0,
+            "due_retryable_count": 0,
+            "post_cutover_recoverable_identity_count": 6,
+        },
+    )
+
+    result = checks._external_effect_failed_retryable_backlog()
+
+    assert result.status == "ok"
+    assert result.evidence["post_cutover_identity_recovery"] == {
+        "eligible_count": 6,
+        "excluded_from_business_health": True,
+        "provider_boundary_crossed": False,
+        "predicate_version": "identity_contact_detail_all_scope_preprovider_v2",
+        "strict_provenance_required": True,
+    }
+    query = "\n".join(calls)
+    for strict_token in (
+        "recovery_control.active_generation = 1",
+        "recovery_control.claim_enabled = TRUE",
+        "recovery_control.external_claim_scope = 'all'",
+        "job.attempt_count BETWEEN 1 AND 2",
+        "unsafe_recovery_attempt.worker_generation NOT IN (0, 1)",
+        "provider_call_started_at IS NULL",
+        "provider_result_json",
+        "NOT EXISTS",
+    ):
+        assert strict_token in query
+
+
+def test_external_effect_backlog_keeps_exact_contact_absence_as_no_replay_business_terminal(monkeypatch) -> None:
+    from aicrm_next.insights.data_health import checks
+
+    calls = _patch_health_db(
+        monkeypatch,
+        {
+            "failed_retryable_count": 0,
+            "recent_failed_terminal_count": 0,
+            "recent_blocked_count": 0,
+            "historical_failed_terminal_count": 3,
+            "historical_blocked_count": 0,
+            "due_retryable_count": 0,
+            "expected_contact_absence_count": 3,
+        },
+    )
+
+    result = checks._external_effect_failed_retryable_backlog()
+
+    assert result.status == "ok"
+    assert result.evidence["external_contact_relationship_absent"] == {
+        "count": 3,
+        "excluded_from_business_health": True,
+        "provider_boundary_crossed": True,
+        "provider_success_claimed": False,
+        "replay_prohibited": True,
+        "strict_provenance_required": True,
+    }
+    query = "\n".join(calls)
+    for strict_token in (
+        "wecom.external_contact.detail.fetch",
+        "wecom_error_84061",
+        "relationship_absent_provider_attempt",
+        "response_summary_json->>'errcode'",
+        "provider_call_started_at IS NOT NULL",
+        "provider_result_received = TRUE",
+        "relationship_absent_gate_attempt",
+    ):
+        assert strict_token in query
+
+
+def test_external_effect_backlog_treats_strict_private_message_84061_as_business_rejection(
+    monkeypatch,
+) -> None:
+    from aicrm_next.insights.data_health import checks
+
+    calls = _patch_health_db(
+        monkeypatch,
+        {
+            "failed_retryable_count": 0,
+            "recent_failed_terminal_count": 0,
+            "recent_blocked_count": 0,
+            "historical_failed_terminal_count": 3,
+            "historical_blocked_count": 0,
+            "due_retryable_count": 0,
+            "private_message_contact_absence_count": 3,
+        },
+    )
+
+    result = checks._external_effect_failed_retryable_backlog()
+
+    assert result.status == "ok"
+    assert result.evidence["private_message_contact_relationship_absent"] == {
+        "count": 3,
+        "process_outcome": "completed",
+        "business_outcome": "rejected",
+        "business_reason_code": "external_contact_relationship_absent",
+        "excluded_from_system_health_failures": True,
+        "provider_boundary_crossed": True,
+        "provider_success_claimed": False,
+        "replay_prohibited": True,
+        "strict_provenance_required": True,
+    }
+    query = "\n".join(calls)
+    for strict_token in (
+        "private_message_contact_absence",
+        "wecom.message.private.send",
+        "external_contact_relationship_absent",
+        "cloud_plan_miniprogram_only_compensation",
+        "cloud_orchestrator_compensation",
+        "production_manual_compensation",
+        "codex_production_operator",
+        "private_contact_absence_provider_attempt",
+        "response_summary_json->>'errcode'",
+        "real_external_call_executed",
+        "provider_result_received = TRUE",
+        "NOT EXISTS",
+    ):
+        assert strict_token in query
+
+
+@pytest.mark.postgres
+def test_private_message_84061_business_rejection_is_fail_closed_against_postgres(
+    next_pg_schema,
+) -> None:
+    import psycopg
+
+    from aicrm_next.insights.data_health import checks
+
+    database_url = os.environ["DATABASE_URL"]
+    business_id = f"pytest-private-message-84061-{uuid4().hex}"
+    attempt_id = f"eea-{uuid4().hex}"
+    with psycopg.connect(database_url) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO external_effect_job (
+                    effect_type, adapter_name, operation, target_type, target_id,
+                    business_type, business_id, source_module, source_route,
+                    idempotency_key, actor_type, risk_level, execution_mode,
+                    status, attempt_count, max_attempts, last_attempt_id,
+                    last_error_code, lane, worker_generation, policy_version,
+                    provider_call_started_at, side_effect_executed,
+                    provider_result_received, reconciliation_required,
+                    completed_at
+                ) VALUES (
+                    'wecom.message.private.send', 'wecom_private_message',
+                    'send_private_message', 'external_contact', 'redacted',
+                    'broadcast_job', %s, 'background_jobs.broadcast_effect_delegate',
+                    'broadcast_effect_delegate', %s, 'system', 'medium', 'execute',
+                    'failed_terminal', 1, 5, %s,
+                    'external_contact_relationship_absent', 'wecom_bulk', 1,
+                    'queue-v2-production-all-g1', CURRENT_TIMESTAMP, TRUE, TRUE,
+                    FALSE, CURRENT_TIMESTAMP
+                )
+                RETURNING id
+                """,
+                (business_id, business_id, attempt_id),
+            )
+            job_id = int(cursor.fetchone()[0])
+            cursor.execute(
+                """
+                INSERT INTO external_effect_attempt (
+                    attempt_id, job_id, adapter_name, adapter_mode, operation,
+                    status, response_summary_json, error_code,
+                    provider_call_started_at, worker_generation, completed_at
+                ) VALUES (
+                    %s, %s, 'wecom_private_message', 'execute',
+                    'send_private_message', 'failed_terminal',
+                    '{"errcode":84061,"real_external_call_executed":true}'::jsonb,
+                    'external_contact_relationship_absent', CURRENT_TIMESTAMP, 1,
+                    CURRENT_TIMESTAMP
+                )
+                """,
+                (attempt_id, job_id),
+            )
+        connection.commit()
+
+    health = checks._external_effect_failed_retryable_backlog()
+    assert health.status == "ok"
+    assert health.evidence["failed_terminal_count"] == 0
+    assert health.evidence["private_message_contact_relationship_absent"]["count"] == 1
+
+    with psycopg.connect(database_url) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE external_effect_attempt
+                SET response_summary_json =
+                    '{"errcode":84062,"real_external_call_executed":true}'::jsonb
+                WHERE attempt_id = %s
+                """,
+                (attempt_id,),
+            )
+        connection.commit()
+
+    unsafe_health = checks._external_effect_failed_retryable_backlog()
+    assert unsafe_health.status == "fail"
+    assert unsafe_health.evidence["failed_terminal_count"] == 1
+    assert unsafe_health.evidence["private_message_contact_relationship_absent"]["count"] == 0
+
+
+@pytest.mark.postgres
+def test_private_message_84061_operator_compensation_is_business_rejection(
+    next_pg_schema,
+) -> None:
+    import psycopg
+
+    from aicrm_next.insights.data_health import checks
+
+    database_url = os.environ["DATABASE_URL"]
+    business_id = f"pytest-private-message-compensation-{uuid4().hex}"
+    source_command_id = f"hxc_monday_abcd_{uuid4().hex}"
+    attempt_id = f"eea-{uuid4().hex}"
+    target_id = f"redacted-{uuid4().hex}"
+    with psycopg.connect(database_url) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO external_effect_job (
+                    effect_type, adapter_name, operation, target_type, target_id,
+                    business_type, business_id, source_module, source_route,
+                    idempotency_key, actor_type, risk_level, execution_mode,
+                    status
+                ) VALUES (
+                    'wecom.message.private.send', 'wecom_private_message',
+                    'send_private_message', 'external_contact', 'other-redacted',
+                    'cloud_plan_miniprogram_only_compensation', %s,
+                    'cloud_orchestrator_compensation',
+                    'production_manual_compensation', %s, 'operator', 'high',
+                    'execute', 'succeeded'
+                )
+                """,
+                (business_id, f"{source_command_id}:succeeded"),
+            )
+            cursor.execute(
+                """
+                INSERT INTO external_effect_job (
+                    effect_type, adapter_name, operation, target_type, target_id,
+                    business_type, business_id, source_module, source_route,
+                    source_event_id, source_command_id, trace_id, request_id,
+                    idempotency_key, execution_id, actor_id, actor_type, risk_level,
+                    requires_approval, execution_mode, status, attempt_count,
+                    max_attempts, last_attempt_id, last_error_code, lane,
+                    worker_generation, policy_version, provider_call_started_at,
+                    side_effect_executed, provider_result_received,
+                    reconciliation_required, completed_at
+                ) VALUES (
+                    'wecom.message.private.send', 'wecom_private_message',
+                    'send_private_message', 'external_contact', %s,
+                    'cloud_plan_miniprogram_only_compensation', %s,
+                    'cloud_orchestrator_compensation',
+                    'production_manual_compensation', %s, %s, %s, %s, %s,
+                    %s, 'codex_production_operator', 'operator', 'high', FALSE,
+                    'execute', 'failed_terminal', 1, 5, %s,
+                    'external_contact_relationship_absent', 'wecom_bulk', 1,
+                    'queue-v2-production-all-g1', CURRENT_TIMESTAMP, TRUE, TRUE,
+                    FALSE, CURRENT_TIMESTAMP
+                )
+                RETURNING id
+                """,
+                (
+                    target_id,
+                    business_id,
+                    f"event-{uuid4().hex}",
+                    source_command_id,
+                    f"{source_command_id}:trace",
+                    source_command_id,
+                    f"{source_command_id}:effect",
+                    f"execution-{uuid4().hex}",
+                    attempt_id,
+                ),
+            )
+            job_id = int(cursor.fetchone()[0])
+            cursor.execute(
+                """
+                INSERT INTO external_effect_attempt (
+                    attempt_id, job_id, adapter_name, adapter_mode, operation,
+                    status, response_summary_json, error_code,
+                    provider_call_started_at, worker_generation, completed_at
+                ) VALUES (
+                    %s, %s, 'wecom_private_message', 'execute',
+                    'send_private_message', 'failed_terminal',
+                    '{"errcode":84061,"real_external_call_executed":true}'::jsonb,
+                    'external_contact_relationship_absent', CURRENT_TIMESTAMP, 1,
+                    CURRENT_TIMESTAMP
+                )
+                """,
+                (attempt_id, job_id),
+            )
+        connection.commit()
+
+    health = checks._external_effect_failed_retryable_backlog()
+    assert health.status == "ok"
+    assert health.evidence["failed_terminal_count"] == 0
+    assert health.evidence["private_message_contact_relationship_absent"]["count"] == 1
+
+    with psycopg.connect(database_url) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                UPDATE external_effect_job
+                SET actor_id = 'unexpected_operator'
+                WHERE id = %s
+                """,
+                (job_id,),
+            )
+        connection.commit()
+
+    unsafe_health = checks._external_effect_failed_retryable_backlog()
+    assert unsafe_health.status == "fail"
+    assert unsafe_health.evidence["failed_terminal_count"] == 1
+    assert unsafe_health.evidence["private_message_contact_relationship_absent"]["count"] == 0
 
 
 def test_external_effect_backlog_keeps_historical_terminal_evidence_without_permanent_failure(monkeypatch) -> None:
-    from aicrm_next.data_health import checks
+    from aicrm_next.insights.data_health import checks
 
     _patch_health_db(
         monkeypatch,
@@ -420,6 +1007,737 @@ def test_external_effect_backlog_keeps_historical_terminal_evidence_without_perm
     assert result.evidence["historical_failed_terminal_count"] == 7
     assert result.evidence["historical_blocked_count"] == 3
     assert result.evidence["terminal_lookback_hours"] == 24
+
+
+def test_external_effect_backlog_separates_only_strict_id_validation_canary_failures(monkeypatch) -> None:
+    from aicrm_next.insights.data_health import checks
+
+    calls = _patch_health_db(
+        monkeypatch,
+        {
+            "failed_retryable_count": 0,
+            "recent_failed_terminal_count": 0,
+            "recent_blocked_count": 0,
+            "historical_failed_terminal_count": 0,
+            "historical_blocked_count": 0,
+            "due_retryable_count": 0,
+            "oldest_failed_retryable_age_seconds": 0,
+            "canary_failed_retryable_count": 0,
+            "canary_failed_terminal_count": 1,
+            "canary_blocked_count": 1,
+            "callback_welcome_failed_terminal_count": 1,
+        },
+    )
+
+    result = checks._external_effect_failed_retryable_backlog()
+
+    assert result.status == "ok"
+    assert result.evidence["id_validation_canary"] == {
+        "failed_retryable_count": 0,
+        "failed_terminal_count": 1,
+        "blocked_count": 1,
+        "callback_welcome_failed_terminal_count": 1,
+        "excluded_from_business_health": True,
+        "strict_provenance_required": True,
+    }
+    assert result.evidence["pre_cutover_welcome_terminal_acknowledgement"] == {
+        "acknowledged_count": 0,
+        "excluded_from_business_health": True,
+        "operator_acknowledgement_required": True,
+        "provider_success_claimed": False,
+        "replay_prohibited": True,
+        "strict_provenance_required": True,
+    }
+    query = "\n".join(calls)
+    for required_provenance in (
+        "business_type",
+        "business_id",
+        "source_module",
+        "source_route",
+        "trace_id",
+        "request_id",
+        "idempotency_key",
+        "fairness_key",
+        "actor_id",
+        "actor_type",
+        "risk_level",
+        "execution_mode",
+        "max_attempts",
+    ):
+        assert required_provenance in query
+
+    for callback_proof in (
+        "queue_runtime_validation_evidence",
+        "wecom.welcome_message.send",
+        "wecom_error_41050",
+        "source_webhook_inbox_id",
+        "callback_to_provider_boundary_ms",
+        "provider_attempt_count",
+        "provider_policy_gate_passed",
+        "target_values_redacted",
+        "queue_terminal_acknowledgement",
+        "pre_cutover_welcome_41050_no_replay",
+        "provider_success_claimed",
+        "replay_prohibited",
+    ):
+        assert callback_proof in query
+
+
+def test_external_effect_backlog_still_fails_for_ordinary_terminal_effect(monkeypatch) -> None:
+    from aicrm_next.insights.data_health import checks
+
+    _patch_health_db(
+        monkeypatch,
+        {
+            "failed_retryable_count": 0,
+            "recent_failed_terminal_count": 1,
+            "recent_blocked_count": 0,
+            "historical_failed_terminal_count": 1,
+            "historical_blocked_count": 0,
+            "due_retryable_count": 0,
+            "oldest_failed_retryable_age_seconds": 0,
+            "canary_failed_retryable_count": 0,
+            "canary_failed_terminal_count": 0,
+            "canary_blocked_count": 0,
+        },
+    )
+
+    result = checks._external_effect_failed_retryable_backlog()
+
+    assert result.status == "fail"
+    assert result.evidence["failed_terminal_count"] == 1
+
+
+@pytest.mark.postgres
+def test_refund_not_enough_is_completed_business_outcome_not_system_failure(
+    next_pg_schema,
+) -> None:
+    import psycopg
+
+    from aicrm_next.insights.data_health import checks
+
+    database_url = os.environ["DATABASE_URL"]
+    target_id = "WXR_DATA_HEALTH_NOT_ENOUGH"
+    attempt_id = "eea_data_health_not_enough"
+    with psycopg.connect(database_url) as connection:
+        job_id = int(
+            connection.execute(
+                """
+                INSERT INTO external_effect_job (
+                    effect_type, adapter_name, operation, target_type, target_id,
+                    business_type, business_id, source_module, source_route,
+                    idempotency_key,
+                    execution_mode, status, attempt_count, max_attempts,
+                    last_error_code, side_effect_executed, provider_result_received,
+                    provider_call_started_at, reconciliation_required,
+                    worker_generation, policy_version, completed_at
+                ) VALUES (
+                    'payment.wechat.refund.request', 'wechat_payment',
+                    'refund_request', 'wechat_pay_refund', %s,
+                    'commerce_order', 'order_data_health_not_enough',
+                    'commerce.admin_transactions',
+                    'commerce.admin_transactions.create_wechat_refund_request',
+                    'data-health-refund-not-enough',
+                    'execute', 'failed_terminal', 1, 5,
+                    'http_403', TRUE, TRUE, CURRENT_TIMESTAMP, FALSE,
+                    1, 'queue-v2-production-all-g1', CURRENT_TIMESTAMP
+                )
+                RETURNING id
+                """,
+                (target_id,),
+            ).fetchone()[0]
+        )
+        connection.execute(
+            """
+            INSERT INTO external_effect_attempt (
+                attempt_id, job_id, adapter_name, adapter_mode, operation,
+                status, response_summary_json, error_code,
+                provider_call_started_at, worker_generation,
+                started_at, completed_at
+            ) VALUES (
+                %s, %s, 'wechat_payment', 'execute', 'refund_request',
+                'failed_terminal', %s::jsonb, 'http_403',
+                CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            )
+            """,
+            (
+                attempt_id,
+                job_id,
+                json.dumps(
+                    {
+                        "status_code": 403,
+                        "provider_payload_present": True,
+                        "provider_result_received": True,
+                        "real_external_call_executed": True,
+                        "wechat_refund_executed": False,
+                        "refund_failure_synced": True,
+                    }
+                ),
+            ),
+        )
+        connection.execute(
+            "UPDATE external_effect_job SET last_attempt_id = %s WHERE id = %s",
+            (attempt_id, job_id),
+        )
+        connection.execute(
+            """
+            INSERT INTO wechat_pay_refunds (
+                out_refund_no, refund_id, status, response_payload_json
+            ) VALUES (
+                %s, '', 'failed',
+                '{"provider_payload":{"code":"NOT_ENOUGH"},"real_external_call_executed":true}'::jsonb
+            )
+            """,
+            (target_id,),
+        )
+        connection.commit()
+
+    result = checks._external_effect_failed_retryable_backlog()
+
+    assert result.status == "ok"
+    assert result.evidence["failed_terminal_count"] == 0
+    business_outcome = result.evidence["wechat_refund_not_enough_business_outcome"]
+    assert business_outcome == {
+        "completed_count": 1,
+        "process_outcome": "completed",
+        "business_outcome": "rejected",
+        "business_reason_code": "insufficient_refund_balance",
+        "excluded_from_system_health_failures": True,
+        "refund_executed": False,
+        "provider_success_claimed": False,
+        "replay_prohibited": True,
+        "strict_provenance_required": True,
+    }
+
+    with psycopg.connect(database_url) as connection:
+        connection.execute(
+            """
+            UPDATE external_effect_attempt
+            SET response_summary_json = jsonb_set(
+                response_summary_json,
+                '{refund_failure_synced}',
+                'false'::jsonb
+            )
+            WHERE job_id = %s
+            """,
+            (job_id,),
+        )
+        connection.commit()
+
+    incomplete_process = checks._external_effect_failed_retryable_backlog()
+    assert incomplete_process.status == "fail"
+    assert incomplete_process.evidence["failed_terminal_count"] == 1
+    assert incomplete_process.evidence["wechat_refund_not_enough_business_outcome"][
+        "completed_count"
+    ] == 0
+
+
+@pytest.mark.postgres
+def test_mirrored_welcome_validation_failure_is_excluded_only_with_append_only_proof(
+    next_pg_schema,
+) -> None:
+    import psycopg
+
+    from aicrm_next.insights.data_health import checks
+
+    database_url = os.environ["DATABASE_URL"]
+    execution_id = "exe_data_health_mirrored_welcome"
+    policy_version = "queue-v2-allowlisted-data-health-test"
+    evidence = {
+        "job_status": "failed_terminal",
+        "job_error_code": "wecom_error_41050",
+        "execution_scope": "allowlisted_canary",
+        "attempt_count": 1,
+        "provider_attempt_count": 1,
+        "provider_attempt_status": "failed_terminal",
+        "provider_attempt_error_code": "wecom_error_41050",
+        "provider_adapter_mode": "execute",
+        "provider_error_classification": "terminal",
+        "provider_errcode": 41050,
+        "callback_duplicate_count": 0,
+        "source_webhook_inbox_id": 3810,
+        "callback_to_provider_boundary_ms": 1948,
+        "provider_boundary_started": True,
+        "provider_result_received": True,
+        "side_effect_executed": True,
+        "duplicate_provider_call_proof": True,
+        "worker_generation_matches": True,
+        "evidence_type_matches": True,
+        "job_policy_version_matches": True,
+        "policy_proof_valid": True,
+        "provider_policy_gate_passed": True,
+        "test_receipt_proof_valid": True,
+        "provider_blocked": False,
+        "target_values_redacted": True,
+        "error_messages_redacted": True,
+    }
+    with psycopg.connect(database_url) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO external_effect_job (
+                    effect_type, adapter_name, operation, target_type, target_id,
+                    business_type, business_id, source_module, source_route,
+                    trace_id, request_id, idempotency_key, fairness_key,
+                    actor_id, actor_type, risk_level, execution_mode,
+                    execution_id, payload_json, status, attempt_count, max_attempts,
+                    last_error_code, side_effect_executed, provider_result_received,
+                    worker_generation, policy_version
+                ) VALUES (
+                    'wecom.welcome_message.send', 'wecom_welcome_message', 'send_welcome',
+                    'external_user', 'redacted', 'channel_entry', 'redacted',
+                    'aicrm_next.channels.channel_entry', '/wecom/external-contact/callback',
+                    'redacted', 'redacted', 'redacted', 'channel_entry',
+                    'system', 'system', 'high', 'execute',
+                    %s, '{"execution_scope":"allowlisted_canary"}'::jsonb,
+                    'failed_terminal', 1, 3, 'wecom_error_41050', TRUE, TRUE, 1, %s
+                )
+                RETURNING id
+                """,
+                (execution_id, policy_version),
+            )
+            job_id = int(cursor.fetchone()[0])
+        connection.commit()
+
+    without_proof = checks._external_effect_failed_retryable_backlog()
+
+    assert without_proof.status == "fail"
+    assert without_proof.evidence["failed_terminal_count"] == 1
+
+    with psycopg.connect(database_url) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO queue_runtime_validation_evidence (
+                    evidence_id, evidence_type, release_sha, active_generation,
+                    policy_version, execution_id, job_id, status, evidence_json,
+                    actor, reason
+                ) VALUES (
+                    'qrve_data_health_mirrored_welcome', 'wecom_welcome', %s, 1,
+                    %s, %s, %s, 'failed', %s::jsonb,
+                    'github:data-health-test', 'guarded mirrored callback validation'
+                )
+                """,
+                ("0" * 40, policy_version, execution_id, job_id, json.dumps(evidence)),
+            )
+        connection.commit()
+
+    result = checks._external_effect_failed_retryable_backlog()
+
+    assert result.status == "ok"
+    assert result.evidence["failed_terminal_count"] == 0
+    assert result.evidence["id_validation_canary"]["failed_terminal_count"] == 1
+    assert result.evidence["id_validation_canary"]["callback_welcome_failed_terminal_count"] == 1
+
+
+@pytest.mark.postgres
+def test_pre_cutover_welcome_terminal_requires_exact_no_replay_acknowledgement(
+    next_pg_schema,
+    monkeypatch,
+) -> None:
+    import psycopg
+
+    from aicrm_next.insights.data_health import checks
+    from scripts.ops.acknowledge_pre_cutover_welcome_terminal import (
+        EXPECTED_CONFIRMATION,
+        acknowledge,
+    )
+
+    # The acknowledged row is intentionally pinned before the production
+    # cutover cutoff. Keep this contract independent from wall-clock drift so
+    # the pre-ack assertion does not silently age out of the health lookback.
+    monkeypatch.setattr(checks, "EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS", 24 * 365 * 100)
+
+    database_url = os.environ["DATABASE_URL"]
+    suffix = uuid4().hex
+    execution_id = f"exe-pre-cutover-welcome-{suffix}"
+    target_id = f"redacted-pre-cutover-target-{suffix}"
+    attempt_id = f"eea-pre-cutover-welcome-{suffix}"
+    with psycopg.connect(database_url) as connection:
+        job_id = int(
+            connection.execute(
+                """
+                INSERT INTO external_effect_job (
+                    effect_type, adapter_name, operation, target_type, target_id,
+                    business_type, business_id, source_module, source_route,
+                    idempotency_key, execution_mode, status, attempt_count,
+                    max_attempts, last_error_code, side_effect_executed,
+                    provider_result_received, provider_call_started_at,
+                    reconciliation_required, worker_generation, policy_version,
+                    execution_id, created_at, updated_at, completed_at
+                ) VALUES (
+                    'wecom.welcome_message.send', 'wecom_welcome_message', 'send',
+                    'external_user', %s,
+                    'channel_welcome_effect_graph', %s,
+                    'channel_entry.application', 'channel_entry.process_channel_entry',
+                    %s, 'execute', 'failed_terminal',
+                    1, 5, 'wecom_error_41050', TRUE, TRUE,
+                    TIMESTAMPTZ '2026-07-22T03:01:00Z', FALSE, 0,
+                    'queue-v2-test-loopback', %s,
+                    TIMESTAMPTZ '2026-07-22T03:00:00Z',
+                    TIMESTAMPTZ '2026-07-22T03:02:00Z',
+                    TIMESTAMPTZ '2026-07-22T03:02:00Z'
+                )
+                RETURNING id
+                """,
+                (
+                    target_id,
+                    execution_id,
+                    f"pre-cutover-welcome-terminal-test-{suffix}",
+                    execution_id,
+                ),
+            ).fetchone()[0]
+        )
+        connection.execute(
+            """
+            INSERT INTO external_effect_attempt (
+                attempt_id, job_id, adapter_name, adapter_mode, operation,
+                status, error_code, provider_call_started_at, worker_generation,
+                started_at, completed_at
+            ) VALUES (
+                %s, %s, 'wecom_welcome_message', 'execute',
+                'send', 'failed_terminal', 'wecom_error_41050',
+                TIMESTAMPTZ '2026-07-22T03:01:00Z', 0,
+                TIMESTAMPTZ '2026-07-22T03:01:00Z',
+                TIMESTAMPTZ '2026-07-22T03:02:00Z'
+            )
+            """,
+            (attempt_id, job_id),
+        )
+        connection.execute(
+            "UPDATE external_effect_job SET last_attempt_id = %s WHERE id = %s",
+            (attempt_id, job_id),
+        )
+        connection.execute(
+            """
+            INSERT INTO channel_welcome_effect_graph (
+                execution_id, idempotency_key, status, final_effect_job_id
+            ) VALUES (
+                %s, %s, 'ready', %s
+            )
+            """,
+            (execution_id, f"graph-pre-cutover-welcome-{suffix}", job_id),
+        )
+        connection.commit()
+
+    without_acknowledgement = checks._external_effect_failed_retryable_backlog()
+    assert without_acknowledgement.status == "fail"
+    assert without_acknowledgement.evidence["failed_terminal_count"] == 1
+
+    monkeypatch.setenv("AICRM_QUEUE_TERMINAL_ACK_AUTHORIZED", "1")
+    manifest_path = Path(__file__).resolve().parents[1] / "docs" / "releases" / "queue_all_scope_cutover.json"
+    result = acknowledge(
+        manifest_path=manifest_path,
+        release_sha="a" * 40,
+        authorization_base_sha="7369fa6c7858165097f25dff26f324d109cf7b80",
+        confirmation=EXPECTED_CONFIRMATION,
+        actor="pytest",
+        reason="exact no-replay history test",
+        apply=True,
+    )
+
+    assert result == {
+        "ok": True,
+        "applied": True,
+        "acknowledged_count": 1,
+        "created_count": 1,
+        "graph_terminalized_count": 1,
+        "replay_prohibited": True,
+        "provider_success_claimed": False,
+        "real_external_call_executed": False,
+        "target_values_redacted": True,
+    }
+    repeated = acknowledge(
+        manifest_path=manifest_path,
+        release_sha="b" * 40,
+        authorization_base_sha="7369fa6c7858165097f25dff26f324d109cf7b80",
+        confirmation=EXPECTED_CONFIRMATION,
+        actor="pytest",
+        reason="idempotent no-replay history test",
+        apply=True,
+    )
+    assert repeated["acknowledged_count"] == 1
+    assert repeated["created_count"] == 0
+    assert repeated["graph_terminalized_count"] == 0
+    assert repeated["real_external_call_executed"] is False
+    health = checks._external_effect_failed_retryable_backlog()
+    assert health.status == "ok"
+    assert health.evidence["failed_terminal_count"] == 0
+    assert health.evidence["pre_cutover_welcome_terminal_acknowledgement"] == {
+        "acknowledged_count": 1,
+        "excluded_from_business_health": True,
+        "operator_acknowledgement_required": True,
+        "provider_success_claimed": False,
+        "replay_prohibited": True,
+        "strict_provenance_required": True,
+    }
+    with psycopg.connect(database_url) as connection:
+        graph_status = connection.execute(
+            "SELECT status FROM channel_welcome_effect_graph WHERE final_effect_job_id = %s",
+            (job_id,),
+        ).fetchone()[0]
+        acknowledgement = connection.execute(
+            """
+            SELECT replay_prohibited, provider_success_claimed
+            FROM queue_terminal_acknowledgement
+            WHERE job_id = %s
+            """,
+            (job_id,),
+        ).fetchone()
+    assert graph_status == "terminal"
+    assert acknowledgement == (True, False)
+
+    with psycopg.connect(database_url) as connection:
+        connection.execute(
+            """
+            INSERT INTO external_effect_attempt (
+                attempt_id, job_id, adapter_name, adapter_mode, operation,
+                status, error_code, provider_call_started_at, worker_generation,
+                started_at, completed_at
+            ) VALUES (
+                %s, %s, 'wecom_welcome_message', 'execute', 'send',
+                'failed_terminal', 'wecom_error_41050', CURRENT_TIMESTAMP, 0,
+                CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            )
+            """,
+            (f"eea-unexpected-replay-{suffix}", job_id),
+        )
+        connection.commit()
+
+    after_unexpected_second_attempt = checks._external_effect_failed_retryable_backlog()
+    assert after_unexpected_second_attempt.status == "fail"
+    assert after_unexpected_second_attempt.evidence["failed_terminal_count"] == 1
+
+
+def test_wecom_media_health_separates_exclusive_canary_failure_but_keeps_evidence(monkeypatch) -> None:
+    from aicrm_next.insights.data_health import checks
+
+    calls = _patch_health_db(
+        monkeypatch,
+        {
+            "total_count": 1,
+            "ready_count": 0,
+            "refresh_due_count": 0,
+            "refreshing_count": 0,
+            "failed_count": 0,
+            "invalid_source_count": 0,
+            "canary_failed_count": 0,
+            "canary_invalid_source_count": 1,
+            "expired_count": 0,
+            "source_gap_count": 0,
+        },
+    )
+
+    result = checks._wecom_media_lease_health()
+
+    assert result.status == "ok"
+    assert result.evidence["canary_invalid_source_count"] == 1
+    query = "\n".join(calls)
+    assert "id_validation_canary_referenced" in query
+    assert "ordinary_job_referenced" in query
+    assert "AND NOT (" in query
+
+
+def test_wecom_media_health_keeps_ordinary_invalid_source_actionable(monkeypatch) -> None:
+    from aicrm_next.insights.data_health import checks
+
+    _patch_health_db(
+        monkeypatch,
+        {
+            "total_count": 1,
+            "ready_count": 0,
+            "refresh_due_count": 0,
+            "refreshing_count": 0,
+            "failed_count": 0,
+            "invalid_source_count": 1,
+            "canary_failed_count": 0,
+            "canary_invalid_source_count": 0,
+            "expired_count": 0,
+            "source_gap_count": 0,
+        },
+    )
+
+    result = checks._wecom_media_lease_health()
+
+    assert result.status == "warn"
+    assert result.evidence["invalid_source_count"] == 1
+
+
+def test_wecom_media_health_keeps_expired_cache_as_refreshable_evidence(monkeypatch) -> None:
+    from aicrm_next.insights.data_health import checks
+
+    _patch_health_db(
+        monkeypatch,
+        {
+            "total_count": 111,
+            "ready_count": 5,
+            "refresh_due_count": 106,
+            "refreshing_count": 0,
+            "failed_count": 0,
+            "invalid_source_count": 0,
+            "canary_failed_count": 0,
+            "canary_invalid_source_count": 0,
+            "expired_count": 106,
+            "source_gap_count": 0,
+        },
+    )
+
+    result = checks._wecom_media_lease_health()
+
+    assert result.status == "ok"
+    assert result.evidence["expired_count"] == 106
+    assert "refreshable on demand" in result.summary
+
+
+def test_wecom_media_health_keeps_durable_source_gap_actionable(monkeypatch) -> None:
+    from aicrm_next.insights.data_health import checks
+
+    _patch_health_db(
+        monkeypatch,
+        {
+            "total_count": 1,
+            "ready_count": 0,
+            "refresh_due_count": 0,
+            "refreshing_count": 0,
+            "failed_count": 0,
+            "invalid_source_count": 0,
+            "canary_failed_count": 0,
+            "canary_invalid_source_count": 0,
+            "expired_count": 0,
+            "source_gap_count": 1,
+        },
+    )
+
+    result = checks._wecom_media_lease_health()
+
+    assert result.status == "warn"
+    assert result.evidence["source_gap_count"] == 1
+
+
+@pytest.mark.postgres
+def test_id_validation_canary_health_isolation_executes_against_postgres(next_pg_schema) -> None:
+    import psycopg
+
+    from aicrm_next.insights.data_health import checks
+
+    database_url = os.environ["DATABASE_URL"]
+    material_id = 2_147_483_647
+    target_id = f"image:{material_id}:image"
+    test_prefix = f"data-health-isolation-{material_id}"
+
+    def plan(*, scenario: str, status: str, strict_canary: bool, target_type: str, target_id: str) -> None:
+        source_module = "scripts.ops.plan_wecom_canary" if strict_canary else "tests.data_health"
+        source_route = "scripts/ops/plan_wecom_canary.py" if strict_canary else "tests/test_data_health_checks.py"
+        prefix = "id-validation-canary" if strict_canary else "ordinary"
+        business_id = f"{test_prefix}-{scenario}"
+        with psycopg.connect(database_url) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    INSERT INTO external_effect_job (
+                        effect_type, adapter_name, operation, target_type, target_id,
+                        business_type, business_id, source_module, source_route,
+                        trace_id, request_id, idempotency_key, fairness_key,
+                        actor_id, actor_type, risk_level, execution_mode,
+                        status, max_attempts
+                    ) VALUES (
+                        %s, 'test', 'test', %s, %s,
+                        %s, %s, %s, %s,
+                        %s, %s, %s, %s,
+                        %s, %s, %s, 'execute',
+                        %s, %s
+                    )
+                    """,
+                    (
+                        "wecom.media.upload" if target_type == "media_library_material" else "wecom.profile.update",
+                        target_type,
+                        target_id,
+                        "id_validation_canary" if strict_canary else "ordinary",
+                        business_id,
+                        source_module,
+                        source_route,
+                        f"{prefix}:postgres:{business_id}",
+                        business_id,
+                        f"{prefix}:postgres:{business_id}",
+                        "id_validation_canary" if strict_canary else "ordinary",
+                        "github:codex-test" if strict_canary else "test",
+                        "operator" if strict_canary else "system",
+                        "high" if strict_canary else "medium",
+                        status,
+                        1 if strict_canary else 5,
+                    ),
+                )
+            connection.commit()
+
+    with psycopg.connect(database_url) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "DELETE FROM wecom_media_leases WHERE tenant_id = 'aicrm' AND material_kind = 'image' AND material_id = %s AND upload_kind = 'image'",
+                (material_id,),
+            )
+            cursor.execute(
+                "INSERT INTO wecom_media_leases (tenant_id, material_kind, material_id, upload_kind, status) VALUES ('aicrm', 'image', %s, 'image', 'invalid_source')",
+                (material_id,),
+            )
+        connection.commit()
+
+    try:
+        plan(
+            scenario="media",
+            status="failed_terminal",
+            strict_canary=True,
+            target_type="media_library_material",
+            target_id=target_id,
+        )
+        plan(
+            scenario="profile",
+            status="blocked",
+            strict_canary=True,
+            target_type="external_user",
+            target_id="redacted",
+        )
+
+        external = checks._external_effect_failed_retryable_backlog()
+        media = checks._wecom_media_lease_health()
+        assert external.status == "ok"
+        assert external.evidence["id_validation_canary"]["failed_terminal_count"] == 1
+        assert external.evidence["id_validation_canary"]["blocked_count"] == 1
+        assert media.status == "ok"
+        assert media.evidence["canary_invalid_source_count"] == 1
+
+        plan(
+            scenario="ordinary-terminal",
+            status="failed_terminal",
+            strict_canary=False,
+            target_type="external_user",
+            target_id="ordinary",
+        )
+        plan(
+            scenario="ordinary-media-reference",
+            status="queued",
+            strict_canary=False,
+            target_type="media_library_material",
+            target_id=target_id,
+        )
+
+        external = checks._external_effect_failed_retryable_backlog()
+        media = checks._wecom_media_lease_health()
+        assert external.status == "fail"
+        assert external.evidence["failed_terminal_count"] == 1
+        assert media.status == "warn"
+        assert media.evidence["invalid_source_count"] == 1
+    finally:
+        with psycopg.connect(database_url) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "DELETE FROM wecom_media_leases WHERE tenant_id = 'aicrm' AND material_kind = 'image' AND material_id = %s AND upload_kind = 'image'",
+                    (material_id,),
+                )
+                cursor.execute(
+                    "DELETE FROM external_effect_job WHERE business_id LIKE %s",
+                    (f"{test_prefix}%",),
+                )
+            connection.commit()
 
 
 def test_retired_runtime_reference_scan_reads_each_source_once(tmp_path, monkeypatch) -> None:

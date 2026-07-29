@@ -9,7 +9,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.radar_links.repo import PostgresRadarLinksRepository, build_radar_links_repository
+from aicrm_next.extensions.radar.radar_links.domain import sign_viewer_session
+from aicrm_next.extensions.radar.radar_links.repo import PostgresRadarLinksRepository, build_radar_links_repository
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,7 +23,9 @@ def client(monkeypatch):
     monkeypatch.delenv("AICRM_NEXT_ENABLE_LEGACY_PRODUCTION_FACADE", raising=False)
     monkeypatch.setenv("SECRET_KEY", "radar-links-test-secret")
     monkeypatch.setenv("AICRM_NEXT_WECHAT_OAUTH_MODE", "fake")
-    return TestClient(create_app(), raise_server_exceptions=False, base_url="https://testserver")
+    client = TestClient(create_app(), raise_server_exceptions=False, base_url="https://testserver")
+    client.headers["User-Agent"] = "Mozilla/5.0 MicroMessenger/8.0"
+    return client
 
 
 def _create_link(client: TestClient, **overrides):
@@ -143,6 +146,38 @@ def test_public_radar_ignores_forged_query_and_plain_identity_cookies(client):
     assert all(not str(event.get("unionid") or "") for event in raw_events)
     assert all(not str(event.get("external_userid") or "") for event in raw_events)
     assert all(not ({"openid", "unionid", "external_userid"} & {key.lower() for key in event["query_params_json"]}) for event in raw_events)
+
+
+def test_protected_radar_requires_wechat_browser_before_oauth(client):
+    link = _create_link(client, auth_required=True)
+
+    response = client.get(
+        f"/r/{link['code']}",
+        headers={"User-Agent": "Mozilla/5.0 Safari/605.1.15"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 403
+    assert response.headers["content-type"].startswith("text/html")
+    assert "请在微信中打开" in response.text
+    assert "open.weixin.qq.com" not in response.text
+
+
+def test_protected_radar_reauthenticates_openid_only_viewer_session(client):
+    link = _create_link(client, auth_required=True)
+    client.cookies.set(
+        "aicrm_radar_viewer",
+        sign_viewer_session(
+            code=link["code"],
+            openid="openid_only_viewer",
+            secret_key="radar-links-test-secret",
+        ),
+    )
+
+    response = client.get(f"/r/{link['code']}", follow_redirects=False)
+
+    assert response.status_code == 302
+    assert response.headers["location"].startswith("/api/h5/radar/oauth/start?state=")
 
 
 def test_fake_oauth_callback_with_unionid_records_authorized_click_and_redirects(client):
@@ -294,7 +329,7 @@ def test_real_radar_oauth_callback_exchanges_code_and_records_unionid(client, mo
     monkeypatch.setenv("WECHAT_MP_APP_SECRET", "radar-secret")
     monkeypatch.setenv("WECHAT_MP_OAUTH_SCOPE", "snsapi_userinfo")
 
-    from aicrm_next.integration_gateway import questionnaire_adapters
+    from aicrm_next.channels.integration_gateway import questionnaire_adapters
 
     class FakeOAuthClient:
         def exchange_code(self, *, app_id: str, app_secret: str, code: str):
@@ -332,14 +367,14 @@ def test_real_radar_oauth_callback_exchanges_code_and_records_unionid(client, mo
     assert [event["stage"] for event in raw_events] == ["redirect", "authorized", "oauth_callback", "oauth_start", "landing"]
 
 
-def test_real_radar_oauth_callback_ignores_direct_identity_parameters(client, monkeypatch):
+def test_real_radar_oauth_callback_ignores_forged_identity_and_requires_unionid(client, monkeypatch):
     monkeypatch.setenv("AICRM_NEXT_WECHAT_OAUTH_MODE", "production")
     monkeypatch.setenv("AICRM_NEXT_ENABLE_REAL_WECHAT_OAUTH", "1")
     monkeypatch.setenv("WECHAT_MP_APP_ID", "wx-radar-app")
     monkeypatch.setenv("WECHAT_MP_APP_SECRET", "radar-secret")
     monkeypatch.setenv("WECHAT_MP_OAUTH_SCOPE", "snsapi_base")
 
-    from aicrm_next.integration_gateway import questionnaire_adapters
+    from aicrm_next.channels.integration_gateway import questionnaire_adapters
 
     class FakeOAuthClient:
         def exchange_code(self, *, app_id: str, app_secret: str, code: str):
@@ -363,14 +398,14 @@ def test_real_radar_oauth_callback_ignores_direct_identity_parameters(client, mo
         follow_redirects=False,
     )
 
-    assert callback_response.status_code == 302
+    assert callback_response.status_code == 409
+    assert callback_response.headers["content-type"].startswith("text/html")
+    assert "微信未返回 UnionID" in callback_response.text
+    assert "forged" not in callback_response.text
     events = client.get(f"/api/admin/radar-links/{link['id']}/events?stage=authorized").json()["events"]
     assert events == []
     raw_events, _ = build_radar_links_repository().list_click_events(link["id"], stage="authorized")
-    assert raw_events[0]["openid"] == "openid_from_provider"
-    assert raw_events[0]["unionid"] == ""
-    assert raw_events[0]["external_userid"] == ""
-    assert "forged" not in str(raw_events[0])
+    assert raw_events == []
 
 
 def test_real_radar_oauth_requires_explicit_flag(client, monkeypatch):
@@ -494,7 +529,7 @@ def test_radar_link_form_hides_internal_tracking_fields_and_type_sections(client
     assert "data-media-config hidden" in response.text
 
 
-def test_radar_link_share_returns_full_url_and_base64_svg_qr(client):
+def test_radar_link_share_returns_full_url_and_base64_jpeg_qr(client):
     link = _create_link(client, title="课程介绍 PDF")
 
     response = client.get(f"/api/admin/radar-links/{link['id']}/share")
@@ -504,8 +539,8 @@ def test_radar_link_share_returns_full_url_and_base64_svg_qr(client):
     assert share["title"] == "课程介绍 PDF"
     assert share["url"] == f"https://testserver/r/{link['code']}"
     assert share["path"] == f"/r/{link['code']}"
-    assert share["qr_data_url"].startswith("data:image/svg+xml;base64,")
-    assert share["download_filename"] == "课程介绍 PDF二维码.svg"
+    assert share["qr_data_url"].startswith("data:image/jpeg;base64,")
+    assert share["download_filename"] == "课程介绍 PDF二维码.jpg"
 
 
 def test_radar_events_support_stage_filter_and_mask_identity(client):
@@ -741,7 +776,7 @@ def test_radar_pdf_chunk_upload_supports_out_of_order_and_retries(client):
 
 
 def test_radar_pdf_manifest_page_images_and_range(client, monkeypatch):
-    monkeypatch.setattr("aicrm_next.radar_links.application._render_pdf_preview_assets_with_pymupdf", lambda *args, **kwargs: [])
+    monkeypatch.setattr("aicrm_next.extensions.radar.radar_links.application._render_pdf_preview_assets_with_pymupdf", lambda *args, **kwargs: [])
     upload_response = client.post(
         "/api/admin/radar-links/upload-pdf",
         files={"pdf": ("manifest.pdf", b"%PDF-1.4\n1 0 obj\n<< /Type /Page >>\nendobj\n", "application/pdf")},

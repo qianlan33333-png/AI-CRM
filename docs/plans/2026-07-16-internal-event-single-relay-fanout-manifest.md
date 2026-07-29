@@ -13,7 +13,7 @@
 ### Task 1: Make scoped workers consumer-only by default
 
 **Files:**
-- Modify: `aicrm_next/platform_foundation/internal_events/worker.py`
+- Modify: `aicrm_next/platform/platform_foundation/internal_events/worker.py`
 - Modify: `scripts/run_internal_event_worker.py`
 - Modify: `aicrm_next/ai_audience_ops/scheduler.py`
 - Test: `tests/test_internal_event_outbox.py`
@@ -42,9 +42,9 @@ Expected: ownership tests pass and scoped consumers still execute existing runs.
 ### Task 2: Seal the canonical fan-out contract
 
 **Files:**
-- Modify: `aicrm_next/platform_foundation/internal_events/consumer_registry.py`
+- Modify: `aicrm_next/platform/platform_foundation/internal_events/consumer_registry.py`
 - Modify: `aicrm_next/internal_event_composition.py`
-- Modify: `aicrm_next/platform_foundation/internal_events/outbox.py`
+- Modify: `aicrm_next/platform/platform_foundation/internal_events/outbox.py`
 - Test: `tests/test_internal_event_outbox.py`
 - Test: `tests/test_internal_events_payment_slice.py`
 
@@ -72,11 +72,11 @@ Expected: contract tests pass.
 
 **Files:**
 - Create: `migrations/versions/0122_internal_event_fanout_manifest.py`
-- Modify: `aicrm_next/platform_foundation/internal_events/models.py`
-- Modify: `aicrm_next/platform_foundation/internal_events/repository_support.py`
-- Modify: `aicrm_next/platform_foundation/internal_events/repository.py`
-- Modify: `aicrm_next/platform_foundation/internal_events/repository_memory.py`
-- Modify: `aicrm_next/platform_foundation/internal_events/outbox.py`
+- Modify: `aicrm_next/platform/platform_foundation/internal_events/models.py`
+- Modify: `aicrm_next/platform/platform_foundation/internal_events/repository_support.py`
+- Modify: `aicrm_next/platform/platform_foundation/internal_events/repository.py`
+- Modify: `aicrm_next/platform/platform_foundation/internal_events/repository_memory.py`
+- Modify: `aicrm_next/platform/platform_foundation/internal_events/outbox.py`
 - Test: `tests/test_internal_event_outbox.py`
 - Test: `tests/test_database_bootstrap.py`
 
@@ -107,7 +107,7 @@ Expected: persistence and completeness tests pass.
 ### Task 4: Make reconciliation manifest-aware
 
 **Files:**
-- Modify: `aicrm_next/platform_foundation/internal_events/reconciliation/outbox.py`
+- Modify: `aicrm_next/platform/platform_foundation/internal_events/reconciliation/outbox.py`
 - Modify: `docs/runbooks/internal_event_outbox_reconciliation.md`
 - Test: `tests/test_internal_event_outbox.py`
 

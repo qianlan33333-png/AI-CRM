@@ -31,10 +31,10 @@ Expected before enabling test mode:
 }
 ```
 
-Open `/admin/push-center` for business delivery inspection. For queue-level
-diagnostics, use `/admin/api-docs` and the
-`/api/admin/external-effects/troubleshooting/*` APIs; the old
-`/admin/external-effects` CRM page is intentionally not exposed.
+Use `/api/admin/push-center/jobs` for business delivery inspection. For
+queue-level diagnostics, use `/admin/api-docs` and the
+`/api/admin/external-effects/troubleshooting/*` APIs. Queue monitoring pages are
+intentionally not exposed.
 
 ## 2. Host Trust Boundary Check
 

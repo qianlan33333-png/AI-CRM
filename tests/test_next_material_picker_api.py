@@ -201,7 +201,7 @@ def test_material_assets_all_type_fetches_enough_rows_before_unified_slice(clien
 
 
 def test_material_assets_all_type_deep_offset_stays_inside_large_source(client, monkeypatch) -> None:
-    import aicrm_next.send_content.application as app_module
+    import aicrm_next.engagement.send_content.application as app_module
 
     repo = _LargeMaterialAssetsRepository()
     monkeypatch.setattr(app_module, "build_send_content_repository", lambda: repo)
@@ -218,7 +218,7 @@ def test_material_assets_all_type_deep_offset_stays_inside_large_source(client, 
 
 
 def test_material_assets_cursor_continues_inside_large_source(client, monkeypatch) -> None:
-    import aicrm_next.send_content.application as app_module
+    import aicrm_next.engagement.send_content.application as app_module
 
     repo = _LargeMaterialAssetsRepository()
     monkeypatch.setattr(app_module, "build_send_content_repository", lambda: repo)
@@ -367,7 +367,7 @@ def test_material_assets_validate_checks_channel_compatibility(client) -> None:
 
 
 def test_material_assets_validate_detects_incomplete_metadata_and_payload_leak(client, monkeypatch) -> None:
-    import aicrm_next.send_content.application as app_module
+    import aicrm_next.engagement.send_content.application as app_module
 
     monkeypatch.setattr(app_module, "build_send_content_repository", lambda: _InvalidValidationRepository())
     response = client.post(

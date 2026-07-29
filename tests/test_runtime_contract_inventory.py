@@ -28,15 +28,99 @@ def test_runtime_contract_inventory_covers_r00_behavior_surfaces() -> None:
     assert any(route["path"] == "/health" and route["methods"] == ["GET"] for route in routes)
     assert any(route["kind"] == "page" for route in routes)
     assert all(route["capability_owner"] for route in routes)
+    assert all(route["logical_capability_id"] for route in routes)
     assert all("responses" in route["contract"] for route in routes)
 
-    assert inventory["migration_heads"] == ["0124_questionnaire_continuation_jobs"]
+    assert inventory["migration_heads"] == [
+        "0158_ai_assistant_item_pipeline"
+    ]
     assert len(inventory["tables"]) >= 150
     owned_lifecycles = {"canonical", "read_model", "event", "queue", "config"}
     assert all(table["write_owner"] for table in inventory["tables"] if table["lifecycle"] in owned_lifecycles)
+    tables_by_name = {table["table"]: table for table in inventory["tables"]}
+    assert {
+        "queue_runtime_control",
+        "queue_lane_policy",
+        "queue_policy_snapshot",
+        "queue_fairness_cursor",
+        "queue_rate_scope_cooldown",
+        "queue_worker_heartbeat",
+    } <= set(tables_by_name)
+    assert {
+        name: tables_by_name[name]["lifecycle"]
+        for name in (
+            "queue_runtime_control",
+            "queue_lane_policy",
+            "queue_policy_snapshot",
+            "queue_fairness_cursor",
+            "queue_rate_scope_cooldown",
+            "queue_worker_heartbeat",
+        )
+    } == {
+        "queue_runtime_control": "config",
+        "queue_lane_policy": "config",
+        "queue_policy_snapshot": "config",
+        "queue_fairness_cursor": "read_model",
+        "queue_rate_scope_cooldown": "queue",
+        "queue_worker_heartbeat": "read_model",
+    }
+    assert all(
+        tables_by_name[name]["migration_source"] == "0126_postgres_execution_runtime"
+        for name in (
+            "queue_runtime_control",
+            "queue_lane_policy",
+            "queue_policy_snapshot",
+            "queue_fairness_cursor",
+            "queue_rate_scope_cooldown",
+            "queue_worker_heartbeat",
+        )
+    )
     assert inventory["internal_event_consumers"]
     assert inventory["external_effects"]
     assert any(unit["unit"] == "openclaw-wecom-callback-ingress.service" for unit in inventory["runtime_units"])
+    runtime_units = {unit["unit"]: unit for unit in inventory["runtime_units"]}
+    for unit_name in (
+        "aicrm-internal-worker.service",
+        "aicrm-external-queue-runtime.service",
+    ):
+        assert runtime_units[unit_name]["kind"] == "service"
+        assert runtime_units[unit_name]["state"] == "active"
+        assert runtime_units[unit_name]["stop_for_migration"] is True
+    for unit_name in (
+        "aicrm-internal-queue-runtime.service",
+        "aicrm-inbox-queue-runtime.service",
+        "aicrm-internal-worker-observer.service",
+    ):
+        assert runtime_units[unit_name]["state"] == "retired_forbidden"
+    assert runtime_units["aicrm-job-catalog-scheduler.timer"] == {
+        "unit": "aicrm-job-catalog-scheduler.timer",
+        "kind": "timer",
+        "state": "active_autostart",
+        "service": "aicrm-job-catalog-scheduler.service",
+        "kick_after_timer_restart": False,
+        "kick_failure_fatal": False,
+    }
+    for unit_name in (
+        "openclaw-internal-event-worker.timer",
+        "openclaw-external-effect-worker.timer",
+        "openclaw-broadcast-queue-worker.timer",
+        "openclaw-ai-audience-scheduler.timer",
+        "openclaw-identity-resolution-worker.timer",
+        "openclaw-customer-read-model-refresh.timer",
+        "openclaw-automation-ops-scheduler.timer",
+        "openclaw-wecom-callback-inbox-worker.service",
+    ):
+        assert runtime_units[unit_name]["state"] == "cutover_managed_legacy"
+        assert runtime_units[unit_name]["owner_inventory"] == "pr3"
+    for unit_name in (
+        "aicrm-ai-audience-daily-intent.timer",
+        "aicrm-ai-audience-daily-intent.service",
+        "aicrm-next-broadcast-delegation.timer",
+        "aicrm-next-broadcast-delegation.service",
+        "aicrm-next-group-ops-planning.timer",
+        "aicrm-next-group-ops-planning.service",
+    ):
+        assert runtime_units[unit_name]["state"] == "retired_forbidden"
     assert "DATABASE_URL" in inventory["environment_variables"]
     assert {
         "AICRM_AUTH_ARCHIVE_WORKER_CLIENT_ID",

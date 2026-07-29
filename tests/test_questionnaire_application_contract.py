@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from aicrm_next.questionnaire.application import (
+from aicrm_next.extensions.forms.questionnaire.application import (
     GetQuestionnaireDetailQuery,
     ListQuestionnairesQuery,
     SubmitQuestionnaireCommand,
     build_questionnaire_share_payload,
 )
-from aicrm_next.questionnaire.dto import QuestionnaireSubmitRequest
-from aicrm_next.questionnaire.repo import InMemoryQuestionnaireRepository, reset_questionnaire_fixture_state
+from aicrm_next.extensions.forms.questionnaire.dto import QuestionnaireSubmitRequest
+from aicrm_next.extensions.forms.questionnaire.repo import InMemoryQuestionnaireRepository, reset_questionnaire_fixture_state
 
 
 class _NullIdentityQuery:
@@ -62,7 +62,7 @@ def test_next_questionnaire_share_payload_keeps_public_paths():
     assert share["slug"] == "hxc-activation-v1"
     assert share["public_path"] == "/s/hxc-activation-v1"
     assert share["url"] == "https://crm.example.test/s/hxc-activation-v1"
-    assert share["qr_data_url"].startswith("data:image/svg+xml")
+    assert share["qr_data_url"].startswith("data:image/jpeg;base64,")
 
 
 def test_questionnaire_submit_extracts_mobile_answer_and_runs_binding_boundary():

@@ -1,0 +1,720 @@
+{% extends "admin_console/base.html" %}
+
+{% block head_extra %}
+<style>
+  .wxpay-page {
+    --wx-blue: #2563eb;
+    --wx-blue-soft: #eaf1ff;
+    --wx-border: #d9e4f2;
+    --wx-muted: #64748b;
+    --wx-text: #172033;
+  }
+  .wxpay-card {
+    border: 1px solid var(--wx-border);
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 10px 24px rgba(30, 64, 175, 0.07);
+  }
+  .wxpay-card__head,
+  .wxpay-card__body,
+  .wxpay-card__foot {
+    padding: 18px 20px;
+  }
+  .wxpay-card__head {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 1px solid #edf2f7;
+  }
+  .wxpay-card__head h2,
+  .wxpay-card__head h3 {
+    margin: 0;
+    color: var(--wx-text);
+  }
+  .wxpay-card__head p {
+    margin: 6px 0 0;
+    color: var(--wx-muted);
+    line-height: 1.6;
+  }
+  .wxpay-card__foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    border-top: 1px solid #edf2f7;
+    background: #fbfdff;
+  }
+  .wxpay-actions,
+  .wxpay-pager {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .wxpay-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 9px 14px;
+    border: 1px solid var(--wx-border);
+    border-radius: 999px;
+    background: #fff;
+    color: #1e293b;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .wxpay-btn--primary {
+    border-color: var(--wx-blue);
+    background: var(--wx-blue);
+    color: #fff;
+  }
+  .wxpay-btn--soft {
+    border-color: #c7d7fe;
+    background: var(--wx-blue-soft);
+    color: #1d4ed8;
+  }
+  .wxpay-text-link {
+    border: 0;
+    background: transparent;
+    color: var(--wx-blue);
+    font-weight: 900;
+    cursor: pointer;
+    padding: 0;
+  }
+  .wxpay-text-link:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .wxpay-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .wxpay-field label {
+    display: block;
+    margin-bottom: 7px;
+    color: #334155;
+    font-size: 13px;
+    font-weight: 900;
+  }
+  .wxpay-field input,
+  .wxpay-field select,
+  .wxpay-field textarea {
+    width: 100%;
+    min-height: 40px;
+    border: 1px solid var(--wx-border);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--wx-text);
+    padding: 9px 11px;
+  }
+  .wxpay-status-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+  .wxpay-status-row label {
+    color: #334155;
+    font-size: 13px;
+    font-weight: 900;
+  }
+  .wxpay-table-wrap {
+    overflow-x: auto;
+  }
+  .wxpay-table {
+    width: 100%;
+    min-width: 1080px;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid var(--wx-border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .wxpay-table th,
+  .wxpay-table td {
+    padding: 13px 12px;
+    border-bottom: 1px solid #edf2f7;
+    text-align: left;
+    vertical-align: top;
+  }
+  .wxpay-table th {
+    background: #f7faff;
+    color: var(--wx-muted);
+    font-size: 13px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+  .wxpay-table tr:last-child td {
+    border-bottom: 0;
+  }
+  .wxpay-id {
+    color: #1e293b;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+    font-weight: 800;
+  }
+  .wxpay-muted {
+    color: var(--wx-muted);
+  }
+  .wxpay-product,
+  .wxpay-money,
+  .wxpay-identity-name {
+    font-weight: 900;
+  }
+  .wxpay-identity-sub {
+    color: var(--wx-muted);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .wxpay-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+  }
+  .wxpay-pill--pending { color: #8a5a00; background: #fff4d6; }
+  .wxpay-pill--paid { color: #0f7a43; background: #e7f8ee; }
+  .wxpay-pill--partial_refunded { color: #1d4ed8; background: #e7efff; }
+  .wxpay-pill--full_refunded { color: #475569; background: #eef2f7; }
+  .wxpay-empty {
+    padding: 28px;
+    border: 1px dashed #b7c6dc;
+    border-radius: 12px;
+    background: #fbfdff;
+    color: var(--wx-muted);
+    text-align: center;
+    font-weight: 800;
+  }
+  .wxpay-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(15, 23, 42, 0.38);
+  }
+  .wxpay-modal-backdrop.is-open {
+    display: flex;
+  }
+  .wxpay-modal {
+    width: min(680px, 100%);
+    border: 1px solid var(--wx-border);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 24px 80px rgba(15, 23, 42, 0.24);
+    overflow: hidden;
+  }
+  .wxpay-summary-list {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 8px 12px;
+    padding: 14px;
+    border: 1px solid #edf2f7;
+    border-radius: 12px;
+    background: #fbfdff;
+  }
+  .wxpay-summary-list dt {
+    color: var(--wx-muted);
+    font-weight: 900;
+  }
+  .wxpay-summary-list dd {
+    margin: 0;
+    font-weight: 800;
+    word-break: break-all;
+  }
+  .wxpay-kv {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 10px 16px;
+  }
+  .wxpay-kv__label {
+    color: var(--wx-muted);
+    font-weight: 800;
+  }
+  .wxpay-kv__value {
+    min-width: 0;
+    color: var(--wx-text);
+    font-weight: 900;
+    word-break: break-all;
+  }
+  .wxpay-detail-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 18px;
+  }
+  .wxpay-event {
+    display: grid;
+    grid-template-columns: 14px 1fr;
+    gap: 10px;
+    padding: 10px 0;
+  }
+  .wxpay-event__dot {
+    width: 9px;
+    height: 9px;
+    margin-top: 7px;
+    border-radius: 50%;
+    background: var(--wx-blue);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+  }
+  .wxpay-event__title {
+    font-weight: 900;
+  }
+  .wxpay-event__meta {
+    margin-top: 3px;
+    color: var(--wx-muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  @media (max-width: 1180px) {
+    .wxpay-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .wxpay-detail-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 760px) {
+    .wxpay-card__head,
+    .wxpay-card__foot { flex-direction: column; align-items: stretch; }
+    .wxpay-filter-grid,
+    .wxpay-kv { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="wxpay-page" data-admin-action-token="{{ admin_action_token }}">
+  {% if page_mode == "detail" %}
+    {% if detail_error %}
+    <section class="wxpay-card">
+      <div class="wxpay-card__body">
+        <div class="wxpay-empty">{{ detail_error }}</div>
+        <p><a class="wxpay-text-link" href="{{ url_for('api.admin_wechat_pay_transactions_page') }}">返回交易管理</a></p>
+      </div>
+    </section>
+    {% else %}
+    {% set order = detail.order %}
+    <div class="wxpay-detail-grid">
+      <section class="wxpay-card">
+        <div class="wxpay-card__head">
+          <div>
+            <h2>订单详情</h2>
+            <p>只展示微信侧交易单号和运营核对字段，不展示内部商户单号。</p>
+          </div>
+          <a class="wxpay-btn wxpay-btn--soft" href="{{ url_for('api.admin_wechat_pay_transactions_page') }}">返回列表</a>
+        </div>
+        <div class="wxpay-card__body">
+          <div class="wxpay-kv">
+            <div class="wxpay-kv__label">微信单号</div>
+            <div class="wxpay-kv__value wxpay-id">{{ order.transaction_id }}</div>
+            <div class="wxpay-kv__label">创建时间</div>
+            <div class="wxpay-kv__value">{{ order.created_at }}</div>
+            <div class="wxpay-kv__label">付款人 / 客户身份</div>
+            <div class="wxpay-kv__value">{{ order.identity }}</div>
+            <div class="wxpay-kv__label">商品</div>
+            <div class="wxpay-kv__value">{{ order.product_name }} / {{ order.product_code }}</div>
+            <div class="wxpay-kv__label">金额</div>
+            <div class="wxpay-kv__value">¥{{ order.amount_yuan }}</div>
+            <div class="wxpay-kv__label">状态</div>
+            <div class="wxpay-kv__value"><span class="wxpay-pill wxpay-pill--{{ order.status }}">{{ order.status_label }}</span></div>
+            <div class="wxpay-kv__label">已退款</div>
+            <div class="wxpay-kv__value">¥{{ order.refunded_amount_yuan }}</div>
+            <div class="wxpay-kv__label">可退款</div>
+            <div class="wxpay-kv__value">¥{{ order.refundable_amount_yuan }}</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="wxpay-card">
+        <div class="wxpay-card__head">
+          <div>
+            <h3>申请退款</h3>
+            <p>仅已支付或部分退款且仍有可退金额的订单可提交。</p>
+          </div>
+        </div>
+        <div class="wxpay-card__body">
+          {% if order.can_refund %}
+          <form id="refundForm" data-order-id="{{ order.id }}" data-transaction-id="{{ order.transaction_id }}">
+            <div class="wxpay-field">
+              <label for="refundAmount">退款金额</label>
+              <input id="refundAmount" name="refund_amount_yuan" inputmode="decimal" placeholder="例如 99.00" required>
+            </div>
+            <div class="wxpay-field">
+              <label for="refundReason">退款原因</label>
+              <select id="refundReason" name="reason" required>
+                <option value="">请选择</option>
+                <option value="客户主动申请退款">客户主动申请退款</option>
+                <option value="重复支付">重复支付</option>
+                <option value="商品或服务未交付">商品或服务未交付</option>
+                <option value="运营核销调整">运营核销调整</option>
+              </select>
+            </div>
+            <div class="wxpay-field">
+              <label for="transactionConfirm">再次完整输入微信单号</label>
+              <input id="transactionConfirm" name="transaction_id_confirmation" autocomplete="off" required>
+            </div>
+            <label class="wxpay-status-row">
+              <input id="refundChecked" type="checkbox" style="width:auto;min-height:0">
+              <span>已核对付款人、商品、金额和微信单号</span>
+            </label>
+            <div class="wxpay-actions" style="margin-top:14px">
+              <button class="wxpay-btn wxpay-btn--primary" type="submit">提交退款申请</button>
+            </div>
+          </form>
+          <div id="refundResult" class="wxpay-muted" style="margin-top:12px"></div>
+          {% else %}
+          <div class="wxpay-empty">当前订单状态不可申请退款。</div>
+          {% endif %}
+        </div>
+      </section>
+    </div>
+
+    <section class="wxpay-card">
+      <div class="wxpay-card__head">
+        <div>
+          <h2>订单关键事件</h2>
+          <p>展示支付通知、主动查询和后台退款申请等关键节点。</p>
+        </div>
+      </div>
+      <div class="wxpay-card__body">
+        {% if detail.events %}
+          {% for event in detail.events %}
+          <div class="wxpay-event">
+            <div class="wxpay-event__dot"></div>
+            <div>
+              <div class="wxpay-event__title">{{ event.event_label }}</div>
+              <div class="wxpay-event__meta">{{ event.created_at }} · 微信单号 {{ event.transaction_id }} · {{ event.trade_state }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="wxpay-empty">暂无订单事件。</div>
+        {% endif %}
+      </div>
+    </section>
+    {% endif %}
+  {% else %}
+  <section class="wxpay-card">
+    <div class="wxpay-card__head">
+      <div>
+        <h2>筛选</h2>
+        <p>默认查看最近 30 天，按订单创建时间倒序；商品使用商品编码精确筛选。</p>
+      </div>
+      <div class="wxpay-actions">
+        <button class="wxpay-btn wxpay-btn--primary" id="wxpaySearch" type="button">查询</button>
+        <button class="wxpay-btn wxpay-btn--soft" id="wxpayExport" type="button">导出筛选结果</button>
+        <button class="wxpay-btn" id="wxpayReset" type="button">重置</button>
+      </div>
+    </div>
+    <div class="wxpay-card__body">
+      <div class="wxpay-filter-grid">
+        <div class="wxpay-field">
+          <label for="filterMobile">手机号</label>
+          <input id="filterMobile" value="{{ default_filters.mobile }}" placeholder="mobile_snapshot / mobile">
+        </div>
+        <div class="wxpay-field">
+          <label for="filterIdentity">userid / external_userid</label>
+          <input id="filterIdentity" value="{{ default_filters.identity }}" placeholder="精确输入客户身份">
+        </div>
+        <div class="wxpay-field">
+          <label for="filterTransaction">微信单号</label>
+          <input id="filterTransaction" value="{{ default_filters.transaction_id }}" placeholder="transaction_id">
+        </div>
+        <div class="wxpay-field">
+          <label for="filterProduct">商品</label>
+          <select id="filterProduct">
+            <option value="">全部商品</option>
+            {% for product in product_options %}
+            <option value="{{ product.product_code }}">{{ product.product_name }} / {{ product.product_code }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="wxpay-field">
+          <label for="filterCreatedFrom">订单创建开始</label>
+          <input id="filterCreatedFrom" type="datetime-local" value="{{ default_filters.created_from }}">
+        </div>
+        <div class="wxpay-field">
+          <label for="filterCreatedTo">订单创建结束</label>
+          <input id="filterCreatedTo" type="datetime-local" value="{{ default_filters.created_to }}">
+        </div>
+        <div class="wxpay-field">
+          <label for="filterStatus">状态</label>
+          <select id="filterStatus">
+            <option value="">全部</option>
+            <option value="pending">待支付</option>
+            <option value="paid">已支付</option>
+            <option value="partial_refunded">部分退款</option>
+            <option value="full_refunded">全额退款</option>
+          </select>
+        </div>
+      </div>
+      <div id="exportNotice" class="wxpay-muted" style="margin-top:14px"></div>
+    </div>
+  </section>
+
+  <section class="wxpay-card">
+    <div class="wxpay-card__head">
+      <div>
+        <h2>订单列表</h2>
+        <p id="wxpaySummary">正在加载订单...</p>
+      </div>
+      <div class="wxpay-actions">
+        <select class="wxpay-btn" id="wxpayLimit" aria-label="每页条数">
+          <option value="20">每页 20 条</option>
+          <option value="50">每页 50 条</option>
+          <option value="100">每页 100 条</option>
+        </select>
+        <button class="wxpay-btn" id="wxpayRefresh" type="button">刷新</button>
+      </div>
+    </div>
+    <div class="wxpay-card__body">
+      <div class="wxpay-table-wrap">
+        <table class="wxpay-table">
+          <thead>
+            <tr>
+              <th>订单创建时间</th>
+              <th>微信单号</th>
+              <th>付款人 / 客户身份</th>
+              <th>商品</th>
+              <th>金额</th>
+              <th>状态</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="wxpayTableBody"></tbody>
+        </table>
+      </div>
+      <div id="wxpayEmpty" class="wxpay-empty" style="display:none">暂无符合条件的订单。</div>
+    </div>
+    <div class="wxpay-card__foot">
+      <div class="wxpay-muted" id="wxpayPageHint">服务端 cursor 分页，不计算全量总数。</div>
+      <div class="wxpay-pager">
+        <button class="wxpay-btn" id="wxpayPrev" type="button">上一页</button>
+        <button class="wxpay-btn wxpay-btn--soft" id="wxpayNext" type="button">下一页</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="wxpay-modal-backdrop" id="exportModal" role="dialog" aria-modal="true" aria-labelledby="exportTitle">
+    <div class="wxpay-modal">
+      <div class="wxpay-card__head">
+        <div>
+          <h2 id="exportTitle">创建导出任务</h2>
+          <p>导出文件包含订单创建时间、微信单号、手机号、unionid、商品名称、商品编码、金额和状态。</p>
+        </div>
+        <button class="wxpay-text-link" id="exportClose" type="button">关闭</button>
+      </div>
+      <div class="wxpay-card__body">
+        <dl class="wxpay-summary-list" id="exportSummary"></dl>
+        <div class="wxpay-filter-grid" style="grid-template-columns:1fr 1fr">
+          <div class="wxpay-field">
+            <label for="exportFormat">文件格式</label>
+            <select id="exportFormat">
+              <option value="xlsx">xlsx</option>
+              <option value="csv">csv</option>
+            </select>
+          </div>
+          <div class="wxpay-field">
+            <label for="exportScope">导出范围</label>
+            <select id="exportScope">
+              <option value="filtered">当前筛选结果</option>
+              <option value="current_page">仅当前页</option>
+            </select>
+          </div>
+        </div>
+        <div id="exportJobResult" class="wxpay-muted"></div>
+      </div>
+      <div class="wxpay-card__foot">
+        <span class="wxpay-muted">超过 90 天时间范围会被后端拒绝。</span>
+        <button class="wxpay-btn wxpay-btn--primary" id="exportCreate" type="button">创建导出任务</button>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+(() => {
+  const root = document.querySelector(".wxpay-page");
+  if (!root) return;
+  const adminActionToken = root.dataset.adminActionToken || "";
+  const text = (value) => String(value || "").trim();
+  const moneyCents = (value) => Math.round(Number(value || 0) * 100);
+  const escapeHtml = (value) => text(value).replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[char]);
+
+  {% if page_mode == "detail" %}
+  const refundForm = document.getElementById("refundForm");
+  if (refundForm) {
+    refundForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const result = document.getElementById("refundResult");
+      result.textContent = "正在提交退款申请...";
+      const orderId = refundForm.dataset.orderId;
+      const payload = {
+        admin_action_token: adminActionToken,
+        refund_amount_total: moneyCents(document.getElementById("refundAmount").value),
+        reason: document.getElementById("refundReason").value,
+        transaction_id_confirmation: document.getElementById("transactionConfirm").value,
+        checked: document.getElementById("refundChecked").checked
+      };
+      try {
+        const data = await window.AdminApi.requestJson(`/api/admin/wechat-pay/orders/${orderId}/refunds`, { method: "POST", body: payload });
+        const refundLabel = data.refund ? `，微信退款状态：${data.refund.status_label}` : "";
+        result.textContent = `退款申请已提交${refundLabel}，当前订单状态：${data.order.status_label}，已退款 ¥${data.order.refunded_amount_yuan}`;
+      } catch (error) {
+        result.textContent = window.AdminApi.errorMessage(error, "退款申请提交失败");
+      }
+    });
+  }
+  {% else %}
+
+  const tableBody = document.getElementById("wxpayTableBody");
+  if (!tableBody) return;
+  const state = {cursor: "", history: [], nextCursor: "", hasMore: false, items: []};
+
+  function filters() {
+    return {
+      mobile: document.getElementById("filterMobile").value,
+      identity: document.getElementById("filterIdentity").value,
+      transaction_id: document.getElementById("filterTransaction").value,
+      product_code: document.getElementById("filterProduct").value,
+      created_from: document.getElementById("filterCreatedFrom").value,
+      created_to: document.getElementById("filterCreatedTo").value,
+      status: document.getElementById("filterStatus").value
+    };
+  }
+
+  function filterParams(cursor) {
+    const params = new URLSearchParams();
+    Object.entries(filters()).forEach(([key, value]) => {
+      if (text(value)) params.set(key, value);
+    });
+    params.set("limit", document.getElementById("wxpayLimit").value || "20");
+    if (cursor) params.set("cursor", cursor);
+    return params;
+  }
+
+  function statusPill(row) {
+    return `<span class="wxpay-pill wxpay-pill--${escapeHtml(row.status)}">${escapeHtml(row.status_label)}</span>`;
+  }
+
+  function renderRows(items) {
+    tableBody.innerHTML = items.map((row) => `
+      <tr>
+        <td>${escapeHtml(row.created_at)}</td>
+        <td><span class="wxpay-id">${escapeHtml(row.transaction_id)}</span></td>
+        <td>
+          <div class="wxpay-identity-name">${escapeHtml(row.payer_name)}</div>
+          <div class="wxpay-identity-sub">${escapeHtml(row.mobile || "未记录手机号")} · ${escapeHtml(row.userid || row.external_userid || "-")}</div>
+        </td>
+        <td>
+          <div class="wxpay-product">${escapeHtml(row.product_name)}</div>
+          <div class="wxpay-identity-sub">${escapeHtml(row.product_code)}</div>
+        </td>
+        <td class="wxpay-money">¥${escapeHtml(row.amount_yuan)}</td>
+        <td>${statusPill(row)}</td>
+        <td><a class="wxpay-text-link" href="${escapeHtml(row.detail_url)}">查看详情</a></td>
+      </tr>
+    `).join("");
+    document.getElementById("wxpayEmpty").style.display = items.length ? "none" : "block";
+    document.getElementById("wxpaySummary").textContent = `当前页 ${items.length} 条`;
+    document.getElementById("wxpayNext").disabled = !state.hasMore;
+    document.getElementById("wxpayPrev").disabled = state.history.length === 0;
+  }
+
+  async function loadPage(cursor = "", pushHistory = false) {
+    document.getElementById("wxpaySummary").textContent = "正在加载订单...";
+    try {
+      const data = await window.AdminApi.requestJson(`/api/admin/wechat-pay/orders?${filterParams(cursor).toString()}`);
+      if (pushHistory) state.history.push(state.cursor);
+      state.cursor = cursor;
+      state.nextCursor = data.next_cursor || "";
+      state.hasMore = Boolean(data.has_more);
+      state.items = data.items || [];
+      renderRows(state.items);
+    } catch (error) {
+      document.getElementById("wxpaySummary").textContent = window.AdminApi.errorMessage(error, "订单加载失败，请稍后重试");
+    }
+  }
+
+  function resetPaging() {
+    state.cursor = "";
+    state.history = [];
+    state.nextCursor = "";
+  }
+
+  document.getElementById("wxpaySearch").addEventListener("click", () => {
+    resetPaging();
+    loadPage("");
+  });
+  document.getElementById("wxpayRefresh").addEventListener("click", () => loadPage(state.cursor));
+  document.getElementById("wxpayLimit").addEventListener("change", () => {
+    resetPaging();
+    loadPage("");
+  });
+  document.getElementById("wxpayReset").addEventListener("click", () => {
+    ["filterMobile", "filterIdentity", "filterTransaction", "filterProduct", "filterStatus"].forEach((id) => {
+      document.getElementById(id).value = "";
+    });
+    resetPaging();
+    loadPage("");
+  });
+  document.getElementById("wxpayNext").addEventListener("click", () => {
+    if (state.nextCursor) loadPage(state.nextCursor, true);
+  });
+  document.getElementById("wxpayPrev").addEventListener("click", () => {
+    const previous = state.history.pop();
+    loadPage(previous || "");
+  });
+
+  const modal = document.getElementById("exportModal");
+  const summary = document.getElementById("exportSummary");
+  const filterLabels = {
+    created_from: "创建开始", created_to: "创建结束", product_code: "商品编码", status: "状态",
+    mobile: "手机号", identity: "客户身份", transaction_id: "微信单号"
+  };
+  const statusLabels = {pending: "待支付", paid: "已支付", partial_refunded: "部分退款", full_refunded: "全额退款"};
+  document.getElementById("wxpayExport").addEventListener("click", () => {
+    const currentFilters = filters();
+    summary.innerHTML = Object.entries(filterLabels).map(([key, label]) => {
+      const raw = text(currentFilters[key]);
+      const value = key === "status" ? (statusLabels[raw] || "全部") : (raw || "全部");
+      return `<dt>${label}</dt><dd>${escapeHtml(value)}</dd>`;
+    }).join("");
+    document.getElementById("exportJobResult").textContent = "";
+    modal.classList.add("is-open");
+  });
+  document.getElementById("exportClose").addEventListener("click", () => modal.classList.remove("is-open"));
+  document.getElementById("exportCreate").addEventListener("click", async () => {
+    const result = document.getElementById("exportJobResult");
+    result.textContent = "正在创建导出任务...";
+    try {
+      const data = await window.AdminApi.requestJson("/api/admin/wechat-pay/order-exports", { method: "POST", body: {
+        admin_action_token: adminActionToken,
+        filters: filters(),
+        scope: document.getElementById("exportScope").value,
+        format: document.getElementById("exportFormat").value,
+        cursor: state.cursor,
+        limit: document.getElementById("wxpayLimit").value
+      }});
+      const jobId = data.job.job_id;
+      result.innerHTML = `导出任务已创建：<strong>${escapeHtml(jobId)}</strong> · 状态 ${escapeHtml(data.job.status)} · <a class="wxpay-text-link" href="/api/admin/wechat-pay/order-exports/${encodeURIComponent(jobId)}/download">下载</a>`;
+      document.getElementById("exportNotice").textContent = `最近创建的导出任务：${jobId}`;
+    } catch (error) {
+      result.textContent = window.AdminApi.errorMessage(error, "导出任务创建失败");
+    }
+  });
+
+  loadPage("");
+  {% endif %}
+})();
+</script>
+{% endblock %}

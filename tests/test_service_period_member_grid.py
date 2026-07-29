@@ -7,27 +7,28 @@ import os
 import pytest
 from fastapi.testclient import TestClient
 
-from aicrm_next.commerce.repo import reset_commerce_fixture_state
+from aicrm_next.extensions.commerce.commerce.repo import reset_commerce_fixture_state
 from aicrm_next.main import create_app
-from aicrm_next.service_period.application import (
+from aicrm_next.extensions.commerce.service_period.application import (
     ApplyServicePeriodRefundCommand,
     CreateServicePeriodProductCommand,
     GrantOrRenewEntitlementCommand,
 )
-from aicrm_next.service_period.dto import ServicePeriodProductCreateRequest
-from aicrm_next.service_period.member_grid import (
+from aicrm_next.extensions.commerce.service_period.dto import ServicePeriodProductCreateRequest
+from aicrm_next.extensions.commerce.service_period.huangyoucan_usage import huangyoucan_usage_match_joins
+from aicrm_next.extensions.commerce.service_period.member_grid import (
     MemberViewConflictError,
     empty_view_config,
     member_grid_schema,
     normalize_view_config,
     query_in_memory_rows,
 )
-from aicrm_next.service_period.repo import (
+from aicrm_next.extensions.commerce.service_period.repo import (
     PostgresServicePeriodRepository,
     build_service_period_repository,
     reset_service_period_fixture_state,
 )
-from aicrm_next.shared.errors import ContractError
+from aicrm_next.platform.shared.errors import ContractError
 from tests.admin_auth_test_helpers import install_admin_action_tokens
 
 
@@ -110,6 +111,56 @@ def test_member_grid_schema_is_code_owned_and_fixed_to_ten_fields() -> None:
         "page_size": 100,
     }
     assert [field["id"] for field in schema["fields"] if field["editable"]] == ["remark", "alliance"]
+
+
+def test_postgres_member_grid_page_query_does_not_compute_global_exact_total() -> None:
+    class CapturedResult:
+        @staticmethod
+        def fetchall() -> list[dict]:
+            return []
+
+    class CapturedConnection:
+        statement = ""
+        params: tuple = ()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, traceback) -> None:
+            return None
+
+        def execute(self, statement: str, params: tuple):
+            self.statement = statement
+            self.params = params
+            return CapturedResult()
+
+    connection = CapturedConnection()
+
+    class CapturedRepository(PostgresServicePeriodRepository):
+        def __init__(self) -> None:
+            self.connection = connection
+
+        @staticmethod
+        def get_product(service_product_id: str) -> dict:
+            return {"id": service_product_id}
+
+        def _connect(self):
+            return self.connection
+
+    repository = CapturedRepository()
+
+    payload = repository.query_member_grid(
+        "1",
+        config=empty_view_config(),
+        limit=20,
+        cursor="",
+    )
+
+    assert "COUNT(*) OVER () AS total_count" not in connection.statement
+    assert "LIMIT %s" in connection.statement
+    assert connection.params[-1] == 21
+    assert payload["total"] is None
+    assert payload["has_more"] is False
 
 
 @pytest.mark.parametrize(
@@ -211,7 +262,9 @@ def test_signed_keyset_cursor_has_no_cross_page_duplicates_and_rejects_tampering
 
     assert len(record_ids) == 235
     assert len(set(record_ids)) == 235
-    assert first["total"] == 235
+    assert first["total"] is None
+    assert first["has_more"] is True
+    assert third["has_more"] is False
     assert third["next_cursor"] == ""
 
     tampered = first["next_cursor"][:-1] + ("A" if first["next_cursor"][-1] != "A" else "B")
@@ -388,6 +441,77 @@ def test_viewer_can_query_drafts_but_cannot_manage_views_or_edit_remarks(monkeyp
     assert "POST /api/admin/service-period-products/{service_product_id}/member-views" not in grants_text
     assert "PUT /api/admin/service-period-products/{service_product_id}/members/{unionid}/remark" not in grants_text
     assert "PUT /api/admin/service-period-products/{service_product_id}/members/{unionid}/alliance" not in grants_text
+
+
+def test_huangyoucan_usage_match_joins_hit_existing_partial_indexes(next_pg_schema) -> None:
+    import psycopg
+
+    database_url = os.environ["DATABASE_URL"]
+    usage_joins = huangyoucan_usage_match_joins(
+        unionid_sql="identity.unionid",
+        mobile_sql="identity.mobile",
+    )
+    with psycopg.connect(database_url) as connection:
+        connection.execute(
+            """
+            INSERT INTO service_period_huangyoucan_usage_snapshot (
+                huangyoucan_user_id, unionid, mobile_md5, formally_logged_in, has_token_usage,
+                learning_plan_id, open_count_7d, refreshed_at
+            )
+            SELECT
+                'hyc_partial_index_noise_' || series,
+                'union_partial_index_noise_' || series,
+                md5((10000000000 + series)::text),
+                FALSE,
+                FALSE,
+                '',
+                0,
+                CURRENT_TIMESTAMP
+            FROM generate_series(1, 5000) AS series
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO service_period_huangyoucan_usage_snapshot (
+                huangyoucan_user_id, unionid, mobile_md5, formally_logged_in, has_token_usage,
+                learning_plan_id, open_count_7d, refreshed_at
+            ) VALUES (
+                'hyc_partial_index_target',
+                'union_partial_index_target',
+                md5('13800138000'),
+                TRUE,
+                TRUE,
+                '',
+                0,
+                CURRENT_TIMESTAMP
+            )
+            """
+        )
+        connection.execute("ANALYZE service_period_huangyoucan_usage_snapshot")
+        plan_payload = connection.execute(
+            f"""
+            EXPLAIN (COSTS OFF, FORMAT JSON)
+            SELECT
+                huangyoucan_match.match_status,
+                huangyoucan_usage.huangyoucan_user_id
+            FROM (
+                VALUES ('union_partial_index_target'::text, '13800138000'::text)
+            ) AS identity(unionid, mobile)
+            {usage_joins}
+            """
+        ).fetchone()[0][0]
+
+    index_names: set[str] = set()
+
+    def collect_indexes(node: dict) -> None:
+        if node.get("Index Name"):
+            index_names.add(str(node["Index Name"]))
+        for child in node.get("Plans") or []:
+            collect_indexes(child)
+
+    collect_indexes(plan_payload["Plan"])
+    assert "idx_service_period_hyc_usage_unionid" in index_names
+    assert "idx_service_period_hyc_usage_mobile_md5" in index_names
 
 
 def test_postgres_grid_query_and_view_repository_contract(next_pg_schema) -> None:
@@ -571,7 +695,9 @@ def test_postgres_grid_query_and_view_repository_contract(next_pg_schema) -> Non
     rows = [row for page in pages for row in page["rows"]]
     assert len(rows) == 230
     assert len({row["record_id"] for row in rows}) == 230
-    assert pages[0]["total"] == 230
+    assert pages[0]["total"] is None
+    assert pages[0]["has_more"] is True
+    assert pages[-1]["has_more"] is False
     assert all(len(row["group_path"]) == 2 for row in rows)
     assert {row["values"]["renewal_count"] for row in rows} == {0, 1, 2, 3}
     rows_by_unionid = {row["unionid"]: row for row in rows}

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from aicrm_next.automation_engine.repo import reset_automation_fixture_state
+from aicrm_next.automation.automation_engine.repo import reset_automation_fixture_state
 
 
 @pytest.fixture()

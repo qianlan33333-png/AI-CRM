@@ -21,7 +21,8 @@ def _function_source(source: str, name: str) -> str:
 
 
 def test_h5_wechat_pay_notify_after_unionid_cleanup() -> None:
-    source = _read("aicrm_next/public_product/h5_wechat_pay.py")
+    source = _read("aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py")
+    owner_source = _read("aicrm_next/extensions/commerce/commerce/wechat_pay_order_write_repository.py")
     payment_identity_source = _function_source(source, "_resolve_payment_identity")
     paid_order_source = _function_source(source, "_paid_order_for_product_identity")
     apply_transaction_source = _function_source(source, "_apply_transaction")
@@ -33,11 +34,13 @@ def test_h5_wechat_pay_notify_after_unionid_cleanup() -> None:
     assert "unionid = %s" in paid_order_source
     assert "external_userid = %s" not in paid_order_source
     assert "payer_openid = %s" not in apply_transaction_source
-    assert "notify_payload_json = %s::jsonb" in apply_transaction_source
+    assert "build_wechat_pay_order_write_port().apply_provider_transaction_dbapi" in apply_transaction_source
+    assert "notify_payload_json = %s::jsonb" not in apply_transaction_source
+    assert "notify_payload_json = %s::jsonb" in owner_source
 
 
 def test_questionnaire_admin_reads_after_unionid_cleanup() -> None:
-    source = _read("aicrm_next/questionnaire/repo.py")
+    source = _read("aicrm_next/extensions/forms/questionnaire/repo.py")
     for name in ["list_submissions", "list_external_submissions", "find_submission_for_identity"]:
         section = _function_source(source, name)
         assert "LEFT JOIN crm_user_identity identity ON identity.unionid = qs.unionid" in section
@@ -48,7 +51,7 @@ def test_questionnaire_admin_reads_after_unionid_cleanup() -> None:
 
 
 def test_alipay_admin_transactions_after_unionid_cleanup() -> None:
-    source = _read("aicrm_next/commerce/admin_transaction_detail.py")
+    source = _read("aicrm_next/extensions/commerce/commerce/admin_transaction_detail.py")
     filter_source = _function_source(source, "_postgres_filter_clause")
     select_source = _function_source(source, "_postgres_order_select")
 
@@ -60,31 +63,37 @@ def test_alipay_admin_transactions_after_unionid_cleanup() -> None:
         assert forbidden not in select_source
 
 
-def test_group_ops_dispatcher_writes_target_unionids() -> None:
-    source = _read("aicrm_next/automation_engine/group_ops/action_dispatcher.py")
-    insert_source = _function_source(source, "_insert_broadcast_job")
+def test_group_ops_dispatcher_plans_one_external_effect_with_unionid_link() -> None:
+    source = _read("aicrm_next/automation/automation_engine/group_ops/action_dispatcher.py")
     enqueue_source = _function_source(source, "enqueue_private_message")
 
-    assert "target_unionids_json" in insert_source
-    assert "'unionid'" in insert_source
-    assert "target_external_userids" not in insert_source
+    assert "_insert_broadcast_job" not in source
+    assert "WECOM_MESSAGE_PRIVATE_SEND" in enqueue_source
+    assert "self._external_effect_service.plan_effect" in enqueue_source
+    assert 'adapter_name="wecom_private_message"' in enqueue_source
     assert "\"unionids\"" in enqueue_source
-    assert "\"external_userid\"" not in enqueue_source
+    assert '"external_userids"' in enqueue_source
+    assert '"target_unionid"' in enqueue_source
+    assert '"execution_owner": "external_effect_job"' in enqueue_source
 
 
 def test_cloud_broadcast_plan_dispatch_uses_unionid() -> None:
-    source = _read("aicrm_next/cloud_orchestrator/repository.py")
+    source = _read("aicrm_next/extensions/growth/cloud_orchestrator/repository.py")
+    owner_source = _read(
+        "aicrm_next/platform/platform_foundation/background_jobs/broadcast_job_write_repository.py"
+    )
     section = source.split("def create_or_reuse_recipient_broadcast_jobs", 1)[1].split("def create_or_reuse_plan_broadcast_job", 1)[0]
 
     assert "SELECT id, unionid, display_name, owner_userid" in section
     assert "COALESCE(unionid, '') <> ''" in section
-    assert "target_unionids_json" in section
+    assert 'target_unionids=(_text(recipient.get("unionid")),)' in section
+    assert "target_unionids_json" in owner_source
     assert "SELECT id, external_userid" not in section
     assert "COALESCE(external_userid, '') <> ''" not in section
 
 
 def test_channel_assignment_event_writes_unionid() -> None:
-    source = _read("aicrm_next/channel_entry/repo.py")
+    source = _read("aicrm_next/channels/channel_entry/repo.py")
     insert_source = _function_source(source, "insert_assignment_event")
     serializer_source = _function_source(source, "_serialize_assignment_event")
 
@@ -96,9 +105,9 @@ def test_channel_assignment_event_writes_unionid() -> None:
 
 
 def test_customer_external_userid_lookup_exact_jsonb_membership() -> None:
-    source = _read("aicrm_next/customer_read_model/repo_live_source.py")
+    source = _read("aicrm_next/crm/customer_read_model/repo_live_source.py")
     section = _function_source(source, "_identity_by_external_userid")
-    resolver = _read("aicrm_next/identity_contact/resolver.py")
+    resolver = _read("aicrm_next/crm/identity_contact/resolver.py")
 
     assert "SQLAlchemyIdentityResolver" in section
     assert "identity.external_userids_json ? input.external_userid" not in resolver
@@ -110,22 +119,25 @@ def test_customer_external_userid_lookup_exact_jsonb_membership() -> None:
 
 
 def test_automation_agent_webhook_item_upsert_matches_partial_index() -> None:
-    source = _read("aicrm_next/automation_agents/repository.py")
+    source = _read("aicrm_next/extensions/ai/automation_agents/repository.py")
     assert "ON CONFLICT (batch_id, unionid) WHERE unionid <> '' DO UPDATE" in source
 
 
 def test_cloud_plan_recipient_upsert_matches_partial_index() -> None:
-    source = _read("aicrm_next/cloud_orchestrator/repository.py")
+    source = _read(
+        "aicrm_next/platform/platform_foundation/background_jobs/"
+        "cloud_broadcast_projection_write_repository.py"
+    )
     assert "ON CONFLICT (plan_id, unionid) WHERE unionid <> '' DO UPDATE" in source
 
 
 def test_unionid_runtime_sql_guard_blocks_removed_identity_columns() -> None:
-    h5_source = _read("aicrm_next/public_product/h5_wechat_pay.py")
-    questionnaire_source = _read("aicrm_next/questionnaire/repo.py")
-    commerce_source = _read("aicrm_next/commerce/admin_transaction_detail.py")
-    group_ops_source = _read("aicrm_next/automation_engine/group_ops/action_dispatcher.py")
-    cloud_source = _read("aicrm_next/cloud_orchestrator/repository.py")
-    channel_source = _read("aicrm_next/channel_entry/repo.py")
+    h5_source = _read("aicrm_next/extensions/commerce/public_product/h5_wechat_pay.py")
+    questionnaire_source = _read("aicrm_next/extensions/forms/questionnaire/repo.py")
+    commerce_source = _read("aicrm_next/extensions/commerce/commerce/admin_transaction_detail.py")
+    group_ops_source = _read("aicrm_next/automation/automation_engine/group_ops/action_dispatcher.py")
+    cloud_source = _read("aicrm_next/extensions/growth/cloud_orchestrator/repository.py")
+    channel_source = _read("aicrm_next/channels/channel_entry/repo.py")
     scoped_sources = {
         "h5_wechat_pay_runtime": (
             _function_source(h5_source, "_paid_order_for_product_identity")
@@ -161,8 +173,8 @@ def test_unionid_runtime_sql_guard_blocks_removed_identity_columns() -> None:
             "o.respondent_key",
             ],
         ),
-        "group_ops_broadcast_job": (
-            _function_source(group_ops_source, "_insert_broadcast_job"),
+        "group_ops_external_effect_owner": (
+            _function_source(group_ops_source, "enqueue_private_message"),
             [
             "target_external_userids",
             "'external_userid', '{}'::jsonb",
@@ -182,13 +194,13 @@ def test_unionid_runtime_sql_guard_blocks_removed_identity_columns() -> None:
             ],
         ),
         "customer_exact_external_lookup": (
-            _function_source(_read("aicrm_next/customer_read_model/repo_live_source.py"), "_identity_by_external_userid"),
+            _function_source(_read("aicrm_next/crm/customer_read_model/repo_live_source.py"), "_identity_by_external_userid"),
             [
             "CAST(external_userids_json AS TEXT) LIKE",
             ],
         ),
         "automation_agent_webhook_item_upsert": (
-            _read("aicrm_next/automation_agents/repository.py"),
+            _read("aicrm_next/extensions/ai/automation_agents/repository.py"),
             [
             "ON CONFLICT (batch_id, unionid) DO UPDATE",
             ],
@@ -220,8 +232,8 @@ def test_id_dev_runtime_baseline_migration_covers_exposed_missing_tables() -> No
 
 
 def test_identity_contact_resolve_reads_current_owner_column() -> None:
-    source = _read("aicrm_next/identity_contact/resolver.py")
-    application_source = _read("aicrm_next/identity_contact/application.py")
+    source = _read("aicrm_next/crm/identity_contact/resolver.py")
+    application_source = _read("aicrm_next/crm/identity_contact/application.py")
     binding_section = application_source.split("class GetSidebarContactBindingStatusQuery:", 1)[1].split("class BindMobileToExternalContactCommand:", 1)[0]
 
     assert "identity.primary_owner_userid AS owner_userid" in source
@@ -232,7 +244,7 @@ def test_identity_contact_resolve_reads_current_owner_column() -> None:
 
 
 def test_wechat_admin_order_list_projects_identity_from_unionid() -> None:
-    source = _read("aicrm_next/commerce/admin_transactions.py")
+    source = _read("aicrm_next/extensions/commerce/commerce/admin_transactions.py")
     select_source = _function_source(source, "_postgres_order_select")
     orders_source = _function_source(source, "_postgres_orders")
 
@@ -246,7 +258,7 @@ def test_wechat_admin_order_list_projects_identity_from_unionid() -> None:
 
 
 def test_sidebar_v2_reads_orders_and_messages_via_unionid_identity() -> None:
-    source = _read("aicrm_next/customer_read_model/sidebar_v2.py")
+    source = _read("aicrm_next/crm/customer_read_model/sidebar_v2.py")
     binding_source = _function_source(source, "get_contact_binding_status")
     bindable_source = _function_source(source, "get_bindable_wechat_pay_order_mobile")
     orders_source = _function_source(source, "list_customer_wechat_pay_orders")
@@ -264,7 +276,8 @@ def test_sidebar_v2_reads_orders_and_messages_via_unionid_identity() -> None:
     assert "FROM wechat_shop_orders o" in orders_source
     assert "JOIN identity_scope identity ON identity.unionid = o.unionid" in orders_source
     assert "JOIN crm_user_identity identity ON identity.unionid = s.unionid" in questionnaire_source
-    assert "JOIN crm_user_identity identity ON identity.unionid = message.unionid" in messages_source
+    assert "WHERE message.unionid = :unionid" in messages_source
+    assert "message.unionid <> ''" in messages_source
     for forbidden in [
         "buyer_mobile",
         "openid AS payer",
@@ -276,7 +289,7 @@ def test_sidebar_v2_reads_orders_and_messages_via_unionid_identity() -> None:
 
 
 def test_admin_read_transactions_projection_does_not_require_legacy_order_identity_columns() -> None:
-    source = _read("aicrm_next/admin_read_model/projections.py")
+    source = _read("aicrm_next/insights/admin_read_model/projections.py")
     section = _function_source(source, "transactions_payload")
 
     assert "LEFT JOIN crm_user_identity identity ON identity.unionid = o.unionid" in section

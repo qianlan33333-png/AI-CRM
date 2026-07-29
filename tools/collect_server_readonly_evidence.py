@@ -18,7 +18,6 @@ READONLY_ROUTES = [
     {"path": "/admin/customers", "expected_runtime_owner": "next"},
     {"path": "/admin/questionnaires", "expected_runtime_owner": "next"},
     {"path": "/admin/automation-conversion", "expected_runtime_owner": "next"},
-    {"path": "/admin/jobs", "expected_runtime_owner": "next"},
     {"path": "/sidebar/bind-mobile", "expected_runtime_owner": "next"},
     {"path": "/api/customers?limit=1", "expected_runtime_owner": "next"},
     {"path": "/api/admin/questionnaires?limit=1", "expected_runtime_owner": "next"},

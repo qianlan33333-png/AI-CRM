@@ -54,7 +54,7 @@ def test_service_period_tables_registered_in_lifecycle_manifest_and_cleanup_orde
 
     for table in ("service_period_products", "service_period_entitlements", "service_period_events"):
         assert manifest[table]["domain"] == "service_period"
-        assert manifest[table]["write_owner"] == "aicrm_next.service_period"
+        assert manifest[table]["write_owner"] == "aicrm_next.extensions.commerce.service_period"
         expected_migration = (
             "0097_service_period_unionid_cleanup"
             if table == "service_period_entitlements"
@@ -62,7 +62,7 @@ def test_service_period_tables_registered_in_lifecycle_manifest_and_cleanup_orde
         )
         assert manifest[table]["migration_source"] == expected_migration
 
-    assert "aicrm_next.service_period" in manifest["wechat_pay_orders"]["read_owners"]
+    assert "aicrm_next.extensions.commerce.service_period" in manifest["wechat_pay_orders"]["read_owners"]
     tables = conftest._TABLES_TO_TRUNCATE
     assert tables.index("service_period_events") < tables.index("service_period_entitlements")
     assert tables.index("service_period_member_views") < tables.index("service_period_products")
@@ -80,12 +80,12 @@ def test_huangyoucan_usage_projection_schema_and_lifecycle_contract() -> None:
     ):
         assert f"CREATE TABLE IF NOT EXISTS {table}" in migration
         assert manifest[table]["domain"] == "service_period"
-        assert manifest[table]["write_owner"] == "aicrm_next.service_period"
+        assert manifest[table]["write_owner"] == "aicrm_next.extensions.commerce.service_period"
         assert manifest[table]["migration_source"] == "0107_hyc_usage_snapshot"
 
     assert "mobile_md5 CHAR(32)" in migration
     assert "mobile TEXT" not in migration
-    assert "aicrm_next.customer_read_model" in manifest["service_period_huangyoucan_usage_snapshot"]["read_owners"]
+    assert "aicrm_next.crm.customer_read_model" in manifest["service_period_huangyoucan_usage_snapshot"]["read_owners"]
     tables = conftest._TABLES_TO_TRUNCATE
     assert tables.index("service_period_huangyoucan_usage_sync_runs") < tables.index(
         "service_period_huangyoucan_usage_snapshot"
@@ -109,7 +109,7 @@ def test_service_period_member_views_schema_backfill_and_lifecycle_contract() ->
     assert "FROM service_period_products products" in migration
     assert "products.deleted = FALSE" in migration
     assert entry["domain"] == "service_period"
-    assert entry["write_owner"] == "aicrm_next.service_period"
+    assert entry["write_owner"] == "aicrm_next.extensions.commerce.service_period"
     assert entry["migration_source"] == "0120_service_period_member_views"
 
 
@@ -131,7 +131,7 @@ def test_service_period_member_grid_sharing_schema_backfill_and_lifecycle_contra
     for table in ("service_period_member_collaborators", "service_period_member_shares"):
         entry = manifest[table]
         assert entry["domain"] == "service_period"
-        assert entry["write_owner"] == "aicrm_next.service_period"
+        assert entry["write_owner"] == "aicrm_next.extensions.commerce.service_period"
         assert entry["migration_source"] == "0121_service_period_member_grid_sharing"
 
     tables = conftest._TABLES_TO_TRUNCATE

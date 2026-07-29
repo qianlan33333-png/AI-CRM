@@ -8,7 +8,7 @@ import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 
-from aicrm_next.shared.secret_store import FileSecretStore, SecretStoreError, is_secret_reference
+from aicrm_next.platform.shared.secret_store import FileSecretStore, SecretStoreError, is_secret_reference
 from scripts.ops import migrate_app_setting_secrets as migration_script
 from scripts.ops.check_secret_reference_cutover import reconcile_secret_reference_cutover
 from scripts.ops.migrate_app_setting_secrets import (

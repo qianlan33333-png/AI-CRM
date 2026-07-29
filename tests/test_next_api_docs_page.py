@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.admin_config.api_docs_view_model import build_api_docs_view_model
+from aicrm_next.platform.admin_config.api_docs_view_model import build_api_docs_view_model
 from aicrm_next.main import create_app
 
 
@@ -26,7 +26,8 @@ def _endpoint_paths(view_model: dict) -> set[tuple[str, str]]:
 
 
 def test_api_docs_view_model_scans_current_fastapi_routes() -> None:
-    view_model = build_api_docs_view_model()
+    app = create_app()
+    view_model = build_api_docs_view_model(routes=app.routes)
     paths = _endpoint_paths(view_model)
     group_titles = {group["title"] for group in view_model["endpoint_groups"]}
 
@@ -53,7 +54,6 @@ def test_api_docs_view_model_scans_current_fastapi_routes() -> None:
         ("GET", "/api/system/health"),
         ("GET", "/mcp"),
         ("POST", "/mcp"),
-        ("GET", "/api/admin/dashboard/shell-context"),
         ("GET", "/api/customers/{external_userid}/timeline"),
         ("GET", "/api/sidebar/contact-binding-status"),
         ("GET", "/api/admin/channels/{channel_id}/contacts"),

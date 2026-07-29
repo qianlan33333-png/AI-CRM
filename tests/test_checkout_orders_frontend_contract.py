@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.commerce.parity_spec import ENDPOINT_SPECS
+from aicrm_next.extensions.commerce.commerce.parity_spec import ENDPOINT_SPECS
 from aicrm_next.main import create_app
 
 

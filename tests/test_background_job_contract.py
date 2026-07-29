@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from aicrm_next.platform_foundation.background_jobs.contract import (
+from aicrm_next.platform.platform_foundation.background_jobs.contract import (
     BackgroundJobContract,
     BackgroundJobHandlerResult,
     BackgroundJobQueue,

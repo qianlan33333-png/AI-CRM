@@ -13,12 +13,12 @@ ensure_repo_root_on_path()
 
 from aicrm_next.external_effect_composition import build_external_effect_adapter_registry
 from aicrm_next.wecom_media_jobs import enqueue_due_media_refreshes
-from aicrm_next.media_library.wecom_lease import build_wecom_media_lease_manager
-from aicrm_next.media_library.postgres_repo import PostgresMediaLibraryRepository
-from aicrm_next.platform_foundation.external_effects import WECOM_MEDIA_UPLOAD
-from aicrm_next.platform_foundation.external_effects.repo import build_external_effect_repository
-from aicrm_next.platform_foundation.external_effects.worker import ExternalEffectWorker
-from aicrm_next.shared.runtime import raw_database_url
+from aicrm_next.engagement.media_library.wecom_lease import build_wecom_media_lease_manager
+from aicrm_next.engagement.media_library.postgres_repo import PostgresMediaLibraryRepository
+from aicrm_next.platform.platform_foundation.external_effects import WECOM_MEDIA_UPLOAD
+from aicrm_next.platform.platform_foundation.external_effects.repo import build_external_effect_repository
+from aicrm_next.platform.platform_foundation.external_effects.worker import ExternalEffectWorker
+from aicrm_next.platform.shared.runtime import raw_database_url
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -55,7 +55,13 @@ def run(*, execute: bool, batch_size: int, max_batches: int, operator: str, bind
     )
     manager = build_wecom_media_lease_manager()
     if not execute:
-        preview = enqueue_due_media_refreshes(dry_run=True, limit=bounded_batch, manager=manager)
+        preview = enqueue_due_media_refreshes(
+            dry_run=True,
+            limit=bounded_batch,
+            manager=manager,
+            operator=operator,
+            repair_authorized=True,
+        )
         return {
             "ok": True,
             "execute": False,
@@ -80,6 +86,7 @@ def run(*, execute: bool, batch_size: int, max_batches: int, operator: str, bind
             limit=bounded_batch,
             manager=manager,
             repository=repository,
+            repair_authorized=True,
         )
         if not int(enqueued.get("candidate_count") or 0):
             break

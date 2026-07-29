@@ -19,6 +19,7 @@ exports/
 /AI-CRM/
 /config/
 /outputs/
+/.release-sha
 .codex_artifacts/
 /local-environments-settings-page-*.js
 /worktree-*.js

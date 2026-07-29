@@ -45,7 +45,6 @@ def test_key_admin_pages_render_server_side_rows_or_stats(monkeypatch):
         "/admin/image-library",
         "/admin/miniprogram-library",
         "/admin/attachment-library",
-        "/admin/jobs",
         "/admin/runtime-config",
         "/admin/api-docs",
     ]:
@@ -109,7 +108,7 @@ def test_wecom_tags_page_uses_full_management_workspace(monkeypatch):
 
 
 def test_customer_page_does_not_render_sample_fixture_names(monkeypatch):
-    import aicrm_next.customer_read_model.admin_pages as customer_admin_pages
+    import aicrm_next.crm.customer_read_model.admin_pages as customer_admin_pages
 
     class FakeListCustomersQuery:
         def __call__(self, query):
@@ -137,7 +136,7 @@ def test_customer_page_does_not_render_sample_fixture_names(monkeypatch):
 
 
 def test_customer_page_uses_native_read_model_when_data_is_available(monkeypatch):
-    import aicrm_next.customer_read_model.admin_pages as customer_admin_pages
+    import aicrm_next.crm.customer_read_model.admin_pages as customer_admin_pages
 
     class FakeListCustomersQuery:
         def __call__(self, query):
@@ -166,7 +165,7 @@ def test_customer_page_uses_native_read_model_when_data_is_available(monkeypatch
 
 
 def test_questionnaire_page_uses_next_native_admin_pages(monkeypatch):
-    assert not (ROOT / "aicrm_next/frontend_compat/legacy_routes.py").exists()
+    assert not (ROOT / "aicrm_next/app/admin_console/legacy_routes.py").exists()
 
     response = _client(monkeypatch).get("/admin/questionnaires")
 
@@ -190,14 +189,14 @@ def test_questionnaire_editor_uses_next_native_admin_pages(monkeypatch):
 
 
 def test_questionnaire_external_push_log_routes_use_next_native_handlers(monkeypatch):
-    source = (ROOT / "aicrm_next" / "questionnaire" / "admin_pages.py").read_text(encoding="utf-8")
+    source = (ROOT / "aicrm_next" / "extensions" / "forms" / "questionnaire" / "admin_pages.py").read_text(encoding="utf-8")
 
     assert "forward_to_legacy_flask" not in source
     assert '"/admin/questionnaires/external-push-logs"' in source
     assert "QuestionnaireExternalPushLogReadService" in source
     assert "QuestionnaireExternalPushRetryService" not in source
     assert "external-push-logs/retry-batch" not in source
-    assert not (ROOT / "aicrm_next/frontend_compat/legacy_routes.py").exists()
+    assert not (ROOT / "aicrm_next/app/admin_console/legacy_routes.py").exists()
 
 
 def test_wechat_pay_transactions_page_does_not_use_frontend_compat_router(monkeypatch):
@@ -215,7 +214,7 @@ def test_wechat_pay_transaction_detail_does_not_use_frontend_compat_router(monke
 
 
 def test_questionnaire_page_no_longer_depends_on_frontend_compat_legacy_items(monkeypatch):
-    assert not (ROOT / "aicrm_next/frontend_compat/legacy_routes.py").exists()
+    assert not (ROOT / "aicrm_next/app/admin_console/legacy_routes.py").exists()
 
     response = _client(monkeypatch).get("/admin/questionnaires")
 
@@ -363,15 +362,3 @@ def test_api_docs_page_lists_real_route_groups(monkeypatch):
     assert "/api/admin/ai-audience/packages" in response.text
     assert "/api/wechat-pay/notify" in response.text
     assert checker._row_count(response.text) >= 10
-
-
-def test_jobs_page_mentions_scheduled_safe_mode_without_disabled_timer_copy(monkeypatch):
-    response = _client(monkeypatch).get("/admin/jobs")
-
-    assert response.status_code == 200
-    assert "同步与任务总览" in response.text
-    assert "Webhook 投递" in response.text
-    assert "群发队列" in response.text
-    assert "数据读取状态" not in response.text
-    assert "degraded" not in response.text
-    assert "disabled timers" not in response.text.lower()

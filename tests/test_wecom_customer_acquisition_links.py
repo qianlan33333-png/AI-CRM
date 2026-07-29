@@ -4,7 +4,7 @@ from urllib.parse import parse_qs, urlsplit
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.automation_engine.channels_api import reset_wecom_customer_acquisition_link_fixture_state
+from aicrm_next.automation.automation_engine.channels_api import reset_wecom_customer_acquisition_link_fixture_state
 from aicrm_next.main import create_app
 
 

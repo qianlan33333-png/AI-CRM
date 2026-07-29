@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.customer_tags.live_mutation import (
+from aicrm_next.crm.customer_tags.live_mutation import (
     get_wecom_tag_live_mutation_audit_events,
     get_wecom_tag_live_mutation_side_effect_plans,
 )

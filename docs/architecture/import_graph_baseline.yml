@@ -2,8 +2,8 @@ schema_version: 1
 package: aicrm_next
 
 limits:
-  max_contexts: 41
-  max_cross_context_edges: 170
+  max_contexts: 40
+  max_cross_context_edges: 110
   max_cyclic_contexts: 0
 
 allowed_cyclic_components: []

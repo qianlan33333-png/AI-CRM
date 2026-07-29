@@ -8,7 +8,7 @@ This failure mode is an application connection lifecycle and pool governance iss
 
 ## Current Application Mechanism
 
-`aicrm_next/shared/db_session.py` is the single SQLAlchemy Engine and SessionFactory owner for `aicrm_next` runtime code.
+`aicrm_next/platform/shared/db_session.py` is the single SQLAlchemy Engine and SessionFactory owner for `aicrm_next` runtime code.
 
 - `get_engine()` returns a process-level shared Engine.
 - `get_session_factory()` reuses the shared Engine.
@@ -24,6 +24,7 @@ Supported environment variables:
 - `DB_POOL_TIMEOUT`
 - `DB_POOL_RECYCLE`
 - `DB_APPLICATION_NAME`
+- `PGAPPNAME`
 
 Recommended production defaults:
 
@@ -33,7 +34,22 @@ DB_MAX_OVERFLOW=0
 DB_POOL_TIMEOUT=5
 DB_POOL_RECYCLE=1800
 DB_APPLICATION_NAME=aicrm-next-web
+PGAPPNAME=aicrm-next-web
 ```
+
+`DB_APPLICATION_NAME` labels SQLAlchemy engines. `PGAPPNAME` is the matching
+libpq fallback for direct psycopg connections inherited by the same systemd
+service. Production runtime units must declare both values identically. The
+checked-in runtime manifest owns one unique label for Web, callback ingress,
+each persistent queue consumer, and each active scheduled job. Queue listener
+connections append `-listener` to their service label, so they remain
+attributable without recording queue payloads, customer identifiers, SQL text,
+or binding values.
+
+The deployment validator rejects missing, duplicate, mismatched, or unsafe
+labels before installing a unit. Application names are operational constants;
+never derive them from a request, external_userid, unionid, phone number, job
+payload, or another business value.
 
 Connection budget:
 

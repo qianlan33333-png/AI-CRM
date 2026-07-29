@@ -26,8 +26,8 @@ def test_retired_worker_uses_count_only_reconciliation_without_legacy_sender_imp
     assert "import " + "wecom_ability" + "_service" not in source
     assert "create_app" not in source
     assert "app_context" not in source
-    assert "aicrm_next.external_push" not in source
-    assert "aicrm_next.commerce.fulfillment_reconciliation" in source
+    assert "aicrm_next.platform.external_push" not in source
+    assert "aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation" in source
     assert "run_due_external_push_events" not in source
     assert "run_due_external_push_retries" not in source
 

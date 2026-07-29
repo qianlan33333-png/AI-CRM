@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import importlib.util
 
-import aicrm_next.automation_engine.application as automation_application
-from aicrm_next.automation_engine.repo import build_automation_repository
+import aicrm_next.automation.automation_engine.application as automation_application
+from aicrm_next.automation.automation_engine.repo import build_automation_repository
 
 
 def test_automation_application_surface_is_next_native() -> None:
@@ -45,12 +45,12 @@ def test_retired_task_workflow_member_action_surface_is_not_exported() -> None:
 
 def test_retired_task_workflow_sql_repository_modules_are_removed() -> None:
     retired_modules = {
-        "aicrm_next.automation_engine.postgres_repo",
-        "aicrm_next.automation_engine.task_sqlalchemy_repository",
-        "aicrm_next.automation_engine.task_group_sqlalchemy_repository",
-        "aicrm_next.automation_engine.workflow_sqlalchemy_repository",
-        "aicrm_next.automation_engine.workflow_node_sqlalchemy_repository",
-        "aicrm_next.automation_engine.customer_webhooks",
+        "aicrm_next.automation.automation_engine.postgres_repo",
+        "aicrm_next.automation.automation_engine.task_sqlalchemy_repository",
+        "aicrm_next.automation.automation_engine.task_group_sqlalchemy_repository",
+        "aicrm_next.automation.automation_engine.workflow_sqlalchemy_repository",
+        "aicrm_next.automation.automation_engine.workflow_node_sqlalchemy_repository",
+        "aicrm_next.automation.automation_engine.customer_webhooks",
     }
 
     for module_name in retired_modules:
@@ -73,8 +73,8 @@ def test_retired_task_workflow_repository_backends_are_not_accepted() -> None:
         raise AssertionError(f"retired repository backend was still accepted: {kwargs}")
 
 def test_retired_automation_member_write_dtos_and_repo_methods_are_not_exported() -> None:
-    import aicrm_next.automation_engine.dto as automation_dto
-    import aicrm_next.automation_engine.repo as automation_repo
+    import aicrm_next.automation.automation_engine.dto as automation_dto
+    import aicrm_next.automation.automation_engine.repo as automation_repo
 
     for name in (
         "ApplyQuestionnaireResultRequest",
@@ -115,7 +115,7 @@ def test_retired_customer_webhook_command_module_is_not_application_surface() ->
 
 
 def test_agent_run_side_effect_safety_is_not_workflow_task_scoped() -> None:
-    from aicrm_next.automation_engine.agent_runs import agent_run_side_effect_safety
+    from aicrm_next.automation.automation_engine.agent_runs import agent_run_side_effect_safety
 
     safety = agent_run_side_effect_safety()
 

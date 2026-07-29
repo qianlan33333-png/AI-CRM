@@ -2,15 +2,18 @@ from __future__ import annotations
 
 import pytest
 
-from aicrm_next.integration_gateway.wecom_customer_group_client import (
+from aicrm_next.channels.integration_gateway.wecom_customer_group_client import (
     WeComCustomerGroupClient,
     WeComCustomerGroupClientError,
 )
+from aicrm_next.platform.shared.wecom_runtime import SingleFlightAccessTokenProvider
 
 
 class FakeResponse:
-    def __init__(self, payload: dict) -> None:
+    def __init__(self, payload: dict, *, status_code: int = 200, headers: dict | None = None) -> None:
         self._payload = payload
+        self.status_code = status_code
+        self.headers = headers or {}
 
     def raise_for_status(self) -> None:
         return None
@@ -139,3 +142,103 @@ def test_customer_group_client_http_exception_fails() -> None:
 
     assert exc.value.stage == "/cgi-bin/externalcontact/add_msg_template"
     assert exc.value.error_code == "wecom_group_client_http_error"
+
+
+def test_customer_group_clients_share_singleflight_token_provider() -> None:
+    calls = {"get": 0}
+    provider = SingleFlightAccessTokenProvider()
+
+    def fake_get(url, *, params, timeout):
+        calls["get"] += 1
+        return {"errcode": 0, "access_token": "shared-token", "expires_in": 7200}
+
+    kwargs = {
+        "corp_id": "corp_001",
+        "secret": "secret_001",
+        "http_get": fake_get,
+        "http_post": lambda *args, **kwargs: {"errcode": 0},
+        "token_provider": provider,
+    }
+    first = WeComCustomerGroupClient(**kwargs)
+    second = WeComCustomerGroupClient(**kwargs)
+
+    assert first.get_access_token() == "shared-token"
+    assert second.get_access_token() == "shared-token"
+    assert calls["get"] == 1
+    assert provider.snapshot()["refresh_succeeded"] == 1
+
+
+def test_customer_group_client_invalid_token_refreshes_and_retries_once() -> None:
+    tokens = iter(("expired-token", "fresh-token"))
+    calls = {"get": 0, "post_tokens": []}
+
+    def fake_get(url, *, params, timeout):
+        calls["get"] += 1
+        return {"errcode": 0, "access_token": next(tokens), "expires_in": 7200}
+
+    def fake_post(url, *, params, json, timeout):
+        calls["post_tokens"].append(params["access_token"])
+        if params["access_token"] == "expired-token":
+            return {"errcode": 40014, "errmsg": "invalid access token"}
+        return {"errcode": 0, "errmsg": "ok", "msgid": "msg-after-refresh"}
+
+    client = WeComCustomerGroupClient(
+        corp_id="corp_001",
+        secret="secret_001",
+        http_get=fake_get,
+        http_post=fake_post,
+    )
+
+    result = client.create_group_message_task({"sender": "owner_001"})
+
+    assert result["msgid"] == "msg-after-refresh"
+    assert calls == {
+        "get": 2,
+        "post_tokens": ["expired-token", "fresh-token"],
+    }
+
+
+def test_customer_group_client_retries_invalid_token_only_once() -> None:
+    calls = {"get": 0, "post": 0}
+
+    def fake_get(url, *, params, timeout):
+        calls["get"] += 1
+        return {"errcode": 0, "access_token": f"token-{calls['get']}", "expires_in": 7200}
+
+    def fake_post(url, *, params, json, timeout):
+        calls["post"] += 1
+        return {"errcode": 42001, "errmsg": "token expired"}
+
+    client = WeComCustomerGroupClient(
+        corp_id="corp_001",
+        secret="secret_001",
+        http_get=fake_get,
+        http_post=fake_post,
+    )
+
+    assert client.create_group_message_task({"sender": "owner_001"})["errcode"] == 42001
+    assert calls == {"get": 2, "post": 2}
+
+
+def test_customer_group_client_preserves_http_429_rate_limit_signal() -> None:
+    client = WeComCustomerGroupClient(
+        corp_id="corp_001",
+        secret="secret_001",
+        http_get=lambda *args, **kwargs: {
+            "errcode": 0,
+            "access_token": "token",
+            "expires_in": 7200,
+        },
+        http_post=lambda *args, **kwargs: FakeResponse(
+            {"errcode": 0, "errmsg": "too many requests"},
+            status_code=429,
+            headers={"Retry-After": "3"},
+        ),
+    )
+
+    with pytest.raises(WeComCustomerGroupClientError) as exc:
+        client.create_group_message_task({"sender": "owner_001"})
+
+    assert exc.value.error_code == "rate_limited"
+    assert exc.value.status_code == 429
+    assert exc.value.retry_after_seconds == 3.0

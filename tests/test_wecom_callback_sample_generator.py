@@ -3,10 +3,10 @@ from __future__ import annotations
 import time
 from urllib.parse import parse_qsl, urlsplit
 
-from aicrm_next.channel_entry import application as channel_application
-from aicrm_next.channel_entry.inbox import WeComCallbackInboxWorker, ingest_wecom_callback
-from aicrm_next.channel_entry.schemas import ProcessWeComExternalContactEventCommand
-from aicrm_next.platform_foundation.webhook_inbox import InMemoryWebhookInboxRepository
+from aicrm_next.channels.channel_entry import application as channel_application
+from aicrm_next.channels.channel_entry.inbox import WeComCallbackInboxWorker, ingest_wecom_callback
+from aicrm_next.channels.channel_entry.schemas import ProcessWeComExternalContactEventCommand
+from aicrm_next.platform.platform_foundation.webhook_inbox import InMemoryWebhookInboxRepository
 from scripts.ops import generate_wecom_callback_sample as generator
 from scripts.ops import probe_wecom_callback_pressure as probe
 

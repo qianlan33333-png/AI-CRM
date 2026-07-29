@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.admin_auth.service import CSRF_COOKIE
+from aicrm_next.platform.admin_auth.service import CSRF_COOKIE
 from aicrm_next.main import create_app
 from tests.admin_auth_test_helpers import install_admin_session
 from tests.sidebar_auth_test_helpers import install_sidebar_auth
@@ -31,7 +31,7 @@ def test_admin_pages_redirect_to_login_when_enforced(monkeypatch) -> None:
 
 def test_production_data_mode_enforces_all_admin_pages_by_default(monkeypatch) -> None:
     monkeypatch.delenv("AICRM_ADMIN_AUTH_ENFORCED", raising=False)
-    monkeypatch.setattr("aicrm_next.admin_auth.guards.production_data_ready", lambda: True)
+    monkeypatch.setattr("aicrm_next.platform.admin_auth.guards.production_data_ready", lambda: True)
     client = TestClient(create_app(), raise_server_exceptions=False)
 
     admin_pages = [
@@ -50,7 +50,7 @@ def test_production_data_mode_enforces_all_admin_pages_by_default(monkeypatch) -
 
 def test_production_data_mode_enforces_all_admin_apis_by_default(monkeypatch) -> None:
     monkeypatch.delenv("AICRM_ADMIN_AUTH_ENFORCED", raising=False)
-    monkeypatch.setattr("aicrm_next.admin_auth.guards.production_data_ready", lambda: True)
+    monkeypatch.setattr("aicrm_next.platform.admin_auth.guards.production_data_ready", lambda: True)
     client = TestClient(create_app(), raise_server_exceptions=False)
 
     for path in ["/api/admin/ai-audience/packages", "/api/admin/automation-agents", "/api/admin/channels"]:

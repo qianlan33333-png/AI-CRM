@@ -14,6 +14,16 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_BASELINE = ROOT / "docs" / "architecture" / "import_graph_baseline.yml"
+STABLE_DOMAIN_PACKAGES = {
+    "app",
+    "platform",
+    "channels",
+    "crm",
+    "engagement",
+    "automation",
+    "insights",
+    "extensions",
+}
 
 
 @dataclass(frozen=True, order=True)
@@ -122,19 +132,19 @@ def scan_import_graph(root: Path = ROOT, *, package: str = "aicrm_next") -> Impo
         raise ValueError(f"runtime package directory does not exist: {package_dir}")
 
     contexts = {
-        path.relative_to(package_dir).parts[0]
+        context
         for path in _iter_python_files(package_dir)
-        if len(path.relative_to(package_dir).parts) >= 2
+        if (context := _source_context(path.relative_to(package_dir).parts)) is not None
     }
     edge_evidence: dict[tuple[str, str], set[ImportEvidence]] = {}
     non_literal_dynamic_imports: set[ImportEvidence] = set()
 
     for path in _iter_python_files(package_dir):
         rel_to_package = path.relative_to(package_dir)
-        if len(rel_to_package.parts) < 2:
+        source_context = _source_context(rel_to_package.parts)
+        if source_context is None:
             # Direct package modules are composition-root/support modules, not business contexts.
             continue
-        source_context = rel_to_package.parts[0]
         rel_to_root = path.relative_to(root).as_posix()
         try:
             tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
@@ -505,7 +515,24 @@ def _target_context(module_name: str, package: str) -> str | None:
     parts = str(module_name or "").split(".")
     if len(parts) < 2 or parts[0] != package:
         return None
-    return parts[1] or None
+    return _context_from_package_parts(parts[1:])
+
+
+def _source_context(relative_parts: tuple[str, ...]) -> str | None:
+    if len(relative_parts) < 2:
+        return None
+    return _context_from_package_parts(relative_parts[:-1])
+
+
+def _context_from_package_parts(parts: tuple[str, ...] | list[str]) -> str | None:
+    normalized = tuple(str(part or "").strip() for part in parts)
+    if not normalized or not normalized[0]:
+        return None
+    if normalized[0] == "extensions":
+        return normalized[2] if len(normalized) >= 3 and normalized[2] else None
+    if normalized[0] in STABLE_DOMAIN_PACKAGES:
+        return normalized[1] if len(normalized) >= 2 and normalized[1] else None
+    return normalized[0]
 
 
 def _strongly_connected_components(graph: dict[str, set[str]]) -> list[list[str]]:

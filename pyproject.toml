@@ -16,3 +16,10 @@ exclude = "^(\\.venv310|node_modules)/"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "--strict-markers"
+markers = [
+    "unit: isolated logic with no PostgreSQL or external process dependency",
+    "postgres: requires the migrated PostgreSQL test schema",
+    "high_risk: protects an approved high-risk business or delivery boundary",
+    "slow: intentionally expensive and intended for full or nightly regression",
+]

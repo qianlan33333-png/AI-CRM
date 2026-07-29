@@ -46,7 +46,7 @@ Two blockers remain:
 ### Expected Consumers
 
 For `payment.succeeded`, the expected consumers are registered in
-`aicrm_next/platform_foundation/internal_events/payment.py`:
+`aicrm_next/platform/platform_foundation/internal_events/payment.py`:
 
 | Consumer | Type / intent | Placeholder? | Expected terminal state |
 | --- | --- | --- | --- |

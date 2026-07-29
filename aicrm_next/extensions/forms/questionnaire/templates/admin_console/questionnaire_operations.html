@@ -1,0 +1,199 @@
+{% extends "admin_shell/base.html" %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="/static/questionnaire/questionnaire_operations.css?v=20260714">
+<script defer src="/static/navigation-target/completion_target_config.js?v=20260714"></script>
+<script defer src="/static/questionnaire/questionnaire_operations.js?v=20260714.2"></script>
+{% endblock %}
+
+{% block content %}
+<div class="qo-page" data-questionnaire-id="{{ operations_payload.questionnaire.id }}">
+  <section class="qo-card qo-summary" aria-labelledby="qo-summary-title">
+    <div class="qo-summary-head">
+      <div class="qo-summary-copy">
+        <a class="qo-back" href="/admin/questionnaires">返回问卷管理</a>
+        <h1 id="qo-summary-title">{{ operations_payload.questionnaire.title }}</h1>
+        <div class="qo-code">问卷 ID · {{ operations_payload.questionnaire.id }}</div>
+      </div>
+      <div class="qo-actions">
+        <button class="qo-button qo-button--secondary" id="qo-copy-public-url" type="button">复制公开地址</button>
+        <a class="qo-button qo-button--secondary" href="{{ operations_payload.questionnaire.public_path }}" target="_blank" rel="noopener">打开公开页</a>
+        <button class="qo-button qo-button--primary" id="qo-save-current" type="button">保存当前维度</button>
+      </div>
+    </div>
+    <div class="qo-summary-grid">
+      <div class="qo-metric">
+        <span>问卷状态</span>
+        <strong id="qo-summary-status">{{ "已停用" if operations_payload.questionnaire.is_disabled else "启用中" }}</strong>
+      </div>
+      <div class="qo-metric">
+        <span>提交量</span>
+        <strong>{{ operations_payload.questionnaire.submission_count }}</strong>
+      </div>
+      <div class="qo-metric">
+        <span>提交后动作</span>
+        <strong id="qo-summary-completion">未启用</strong>
+      </div>
+      <div class="qo-metric">
+        <span>外部推送</span>
+        <strong id="qo-summary-push">未启用</strong>
+      </div>
+    </div>
+    <div class="qo-toast" id="qo-toast" role="status" aria-live="polite"></div>
+  </section>
+
+  <section class="qo-workspace">
+    <nav class="qo-card qo-nav" aria-label="问卷运营配置维度">
+      <button class="is-active" data-qo-panel="completion" type="button">
+        <span class="qo-index">1</span><span>提交后动作</span>
+      </button>
+      <button data-qo-panel="external-push" type="button">
+        <span class="qo-index">2</span><span>外部推送</span>
+      </button>
+    </nav>
+
+    <div class="qo-card qo-panels">
+      <section class="qo-panel is-active" data-qo-panel-content="completion">
+        <div class="qo-panel-head">
+          <div>
+            <h2>提交后动作</h2>
+            <p>仅在提交成功，或已通过身份机制识别为提交过时执行。</p>
+          </div>
+          <label class="qo-switch-line">
+            <span id="qo-completion-enabled-text">未启用</span>
+            <input id="qo-completion-enabled" type="checkbox" role="switch">
+          </label>
+        </div>
+
+        <div id="qo-completion-body" class="qo-panel-body" hidden>
+          <div class="qo-option-grid" role="group" aria-label="提交后动作类型">
+            <button class="qo-option is-active" data-qo-completion-mode="lead_qr" type="button">
+              <span class="qo-radio" aria-hidden="true"></span>
+              <span><strong>展示渠道二维码</strong><small>提交完成后展示所绑定渠道的实时二维码。</small></span>
+            </button>
+            <button class="qo-option" data-qo-completion-mode="redirect" type="button">
+              <span class="qo-radio" aria-hidden="true"></span>
+              <span><strong>直接跳转</strong><small>支持 H5 或小程序动态 URL Link。</small></span>
+            </button>
+          </div>
+
+          <div id="qo-lead-fields" class="qo-config-card">
+            <label class="qo-field">
+              <span>绑定渠道码</span>
+              <select id="qo-lead-channel"><option value="">正在加载可用渠道…</option></select>
+              <small>仅可选择启用中、二维码载体且已有可用二维码的渠道。</small>
+            </label>
+            <div id="qo-channel-preview" class="qo-channel-preview" hidden>
+              <img id="qo-channel-preview-image" alt="渠道二维码预览">
+              <div><strong id="qo-channel-preview-name"></strong><small>展示时实时解析渠道当前二维码</small></div>
+            </div>
+          </div>
+
+            <div id="qo-redirect-fields" hidden>
+              <div id="qo-legacy-target" class="qo-alert" hidden>
+                <strong>当前是旧版原生小程序配置，仅只读保留。</strong>
+                <span>请选择 H5 或动态 URL Link 后保存，即可显式转换。</span>
+                <dl class="qo-legacy-summary">
+                  <div><dt>AppID</dt><dd id="qo-legacy-appid">未记录</dd></div>
+                  <div><dt>Username</dt><dd id="qo-legacy-username">未记录</dd></div>
+                  <div><dt>页面路径</dt><dd id="qo-legacy-path">未记录</dd></div>
+                  <div><dt>环境</dt><dd id="qo-legacy-env">release</dd></div>
+                  <div class="qo-legacy-summary--full"><dt>Query</dt><dd id="qo-legacy-query">未记录</dd></div>
+                </dl>
+              </div>
+            <section class="qo-config-card qo-target" data-completion-target-config>
+              <input class="qo-hidden" type="checkbox" data-target-enabled>
+              <div data-target-body>
+                <div class="qo-field-grid">
+                  <label class="qo-field">
+                    <span>跳转类型</span>
+                    <select name="completion_target_type">
+                      <option value="h5">H5 跳转地址</option>
+                      <option value="url_link">动态 URL Link 接口</option>
+                    </select>
+                  </label>
+                  <label class="qo-field qo-field--full" data-h5-url-fields>
+                    <span>H5 跳转地址</span>
+                    <input name="completion_h5_url" placeholder="https://example.com/landing 或 /internal/path">
+                  </label>
+                  <label class="qo-field qo-field--full" data-url-link-fields hidden>
+                    <span>动态 URL Link 接口</span>
+                    <input name="completion_url_link_source_url" placeholder="https://example.com/api/wxlink">
+                    <small>提交成功后请求该接口，并从响应中读取微信官方 URL Link。</small>
+                  </label>
+                  <label class="qo-field" data-url-link-fields hidden>
+                    <span>响应字段</span>
+                    <input name="completion_url_link_response_key" value="url_link" placeholder="url_link">
+                  </label>
+                </div>
+              </div>
+              <div class="qo-warning" data-validation-warning hidden></div>
+            </section>
+          </div>
+        </div>
+        <div class="qo-panel-actions">
+          <button class="qo-button qo-button--primary" id="qo-save-completion" type="button">保存提交后动作</button>
+        </div>
+      </section>
+
+      <section class="qo-panel" data-qo-panel-content="external-push">
+        <div class="qo-panel-head">
+          <div>
+            <h2>外部推送</h2>
+            <p>提交完成后仅入 External Effect 异步队列，不在提交请求中直连 Webhook。</p>
+          </div>
+          <label class="qo-switch-line">
+            <span id="qo-push-enabled-text">未启用</span>
+            <input id="qo-push-enabled" type="checkbox" role="switch">
+          </label>
+        </div>
+        <div class="qo-field-grid">
+          <label class="qo-field qo-field--full">
+            <span>Webhook 地址</span>
+            <input id="qo-push-url" type="url" placeholder="https://hooks.example.com/questionnaire">
+          </label>
+          <label class="qo-field">
+            <span>订阅类型</span>
+            <select id="qo-push-type">
+              <option value="">不传</option>
+              <option value="subscription">subscription</option>
+              <option value="premium">premium</option>
+              <option value="trial">trial</option>
+            </select>
+          </label>
+          <label class="qo-field">
+            <span>到期时间（秒级时间戳）</span>
+            <input id="qo-push-expires-at" type="number" min="0" step="1">
+          </label>
+          <label class="qo-field">
+            <span>服务周期（天）</span>
+            <input id="qo-push-day" type="number" min="0" step="1">
+          </label>
+          <label class="qo-field">
+            <span>频率</span>
+            <input id="qo-push-frequency" type="number" min="0" step="1">
+          </label>
+          <label class="qo-field qo-field--full">
+            <span>备注</span>
+            <textarea id="qo-push-remark" rows="3" placeholder="推送用途说明"></textarea>
+          </label>
+        </div>
+        <div class="qo-subsection-head">
+          <div><strong>自定义参数</strong><small>随测试与正式异步推送一并发送。</small></div>
+          <button class="qo-button qo-button--secondary" id="qo-add-param" type="button">添加参数</button>
+        </div>
+        <div class="qo-param-list" id="qo-param-list"></div>
+        <div class="qo-capability" id="qo-push-capability"></div>
+        <div class="qo-panel-actions qo-panel-actions--split">
+          <a class="qo-button qo-button--secondary" href="/admin/questionnaires/{{ operations_payload.questionnaire.id }}/external-push-logs">查看推送日志</a>
+          <div>
+            <button class="qo-button qo-button--secondary" id="qo-test-push" type="button">测试推送</button>
+            <button class="qo-button qo-button--primary" id="qo-save-push" type="button">保存外部推送</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </section>
+</div>
+<script id="questionnaire-operations-config" type="application/json">{{ operations_payload|tojson }}</script>
+{% endblock %}

@@ -4,13 +4,13 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.cloud_orchestrator.campaigns_read import reset_campaign_read_fixture_state
-from aicrm_next.cloud_orchestrator.run_due import reset_run_due_fixture_state
+from aicrm_next.extensions.growth.cloud_orchestrator.campaigns_read import reset_campaign_read_fixture_state
+from aicrm_next.extensions.growth.cloud_orchestrator.run_due import reset_run_due_fixture_state
 from aicrm_next.main import create_app
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RUN_DUE = ROOT / "aicrm_next/cloud_orchestrator/run_due.py"
+RUN_DUE = ROOT / "aicrm_next/extensions/growth/cloud_orchestrator/run_due.py"
 
 
 def test_run_due_module_has_no_legacy_scheduler_send_or_http_clients():

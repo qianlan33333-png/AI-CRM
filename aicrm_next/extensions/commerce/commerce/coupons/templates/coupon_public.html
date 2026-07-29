@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{{ state.coupon.name or "优惠券" }}</title>
+  <style>
+    :root { --blue:#2f6fed; --blue-soft:#edf4ff; --ink:#172033; --muted:#7b8498; --line:#e9edf4; --danger:#d92d20; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; background:linear-gradient(180deg,#edf4ff 0,#f6f8fc 42%,#f6f8fc 100%); color:var(--ink); font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; }
+    .page { width:min(520px,100%); margin:0 auto; padding:28px 16px 42px; }
+    .coupon { position:relative; overflow:hidden; padding:28px 24px 24px; border-radius:20px; background:#fff; box-shadow:0 18px 50px rgba(47,111,237,.13); }
+    .coupon::before,.coupon::after { content:""; position:absolute; top:145px; width:22px; height:22px; border-radius:50%; background:#f3f6fb; }
+    .coupon::before { left:-11px; } .coupon::after { right:-11px; }
+    .eyebrow { color:var(--blue); font-size:13px; font-weight:800; letter-spacing:.08em; }
+    h1 { margin:7px 0 12px; font-size:23px; line-height:1.3; }
+    .amount { display:flex; align-items:baseline; color:#f04438; font-weight:900; }
+    .amount small { font-size:24px; } .amount strong { font-size:58px; line-height:1; letter-spacing:-.04em; }
+    .amount span { margin-left:9px; color:#667085; font-size:14px; font-weight:700; }
+    .rule { margin:20px 0 0; padding-top:18px; border-top:1px dashed #d8deea; color:#667085; }
+    .rule div + div { margin-top:5px; }
+    .claim { width:100%; min-height:50px; margin-top:22px; border:0; border-radius:12px; background:var(--blue); color:#fff; font:inherit; font-size:17px; font-weight:850; cursor:pointer; box-shadow:0 10px 24px rgba(47,111,237,.22); }
+    .claim:disabled { background:#c7cedb; box-shadow:none; cursor:not-allowed; }
+    .message { min-height:22px; margin-top:12px; color:var(--muted); text-align:center; font-size:13px; }
+    .message.error { color:var(--danger); }
+    .section { margin-top:16px; padding:20px; border:1px solid var(--line); border-radius:16px; background:#fff; }
+    .section h2 { margin:0 0 14px; font-size:17px; }
+    .product { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:center; padding:14px 0; border-top:1px solid var(--line); }
+    .product:first-of-type { border-top:0; padding-top:0; }
+    .product:last-child { padding-bottom:0; }
+    .product-name { font-weight:800; }
+    .product-meta { margin-top:3px; color:var(--muted); font-size:12px; }
+    .use { min-width:78px; padding:8px 12px; border:1px solid #bfd2ff; border-radius:9px; color:var(--blue); font-size:13px; font-weight:800; text-align:center; text-decoration:none; }
+    .use.disabled { border-color:#e1e5ec; color:#a3abba; pointer-events:none; }
+    .instructions { margin:0; color:#667085; white-space:pre-wrap; }
+    .wechat-tip { padding:14px 16px; border-radius:12px; background:#fff7e6; color:#8a5a00; text-align:center; font-weight:700; }
+  </style>
+</head>
+<body>
+  {% set coupon = state.coupon or {} %}
+  {% set products = state.products or coupon.products or [] %}
+  {% set discount = coupon.discount_amount_total or 0 %}
+  <main class="page" data-route-owner="ai_crm_next" data-fallback-used="false" data-public-slug="{{ public_slug }}">
+    {% if not is_wechat %}<div class="wechat-tip">请使用微信打开此页面后领取优惠券</div>{% endif %}
+    <section class="coupon">
+      <div class="eyebrow">无门槛固定减免券</div>
+      <h1>{{ coupon.name or "优惠券" }}</h1>
+      <div class="amount"><small>¥</small><strong>{{ "%.2f"|format(discount / 100) }}</strong><span>直接减免</span></div>
+      <div class="rule">
+        <div>{{ state.validity_text or coupon.validity_text or "请在有效期内使用" }}</div>
+        <div>适用于已配置的 {{ products|length }} 个商品</div>
+      </div>
+      {% set claimable = state.claimable and is_wechat and identity_ready %}
+      <button class="claim" id="claimButton" type="button" {% if not claimable %}disabled{% endif %}>
+        {% if not is_wechat %}请在微信中领取
+        {% elif state.user_limit_reached %}已达到领取上限
+        {% elif state.display_state == "sold_out" %}已领完
+        {% elif state.display_state == "scheduled" %}领取尚未开始
+        {% elif state.display_state in ["ended", "stopped", "archived"] %}领取已结束
+        {% elif state.claimed %}再领一张
+        {% else %}立即领取{% endif %}
+      </button>
+      <div class="message" id="claimMessage">{% if state.claimed %}领取成功，可选择下方商品使用{% else %}{{ state.message or "" }}{% endif %}</div>
+    </section>
+
+    {% if state.claimed or state.user_claim_count %}
+    <section class="section" id="productSection">
+      <h2>适用商品</h2>
+      {% for product in products %}
+      <div class="product">
+        <div>
+          <div class="product-name">{{ product.title or product.name }}</div>
+          <div class="product-meta">{{ "周期商品" if product.product_type == "service_period" else "普通商品" }} · ¥{{ "%.2f"|format((product.amount_total or product.price_cents or 0) / 100) }}</div>
+        </div>
+        <a class="use{% if not product.available %} disabled{% endif %}" href="{{ product.purchase_url if product.available else '#' }}">{{ "立即使用" if product.available else "暂不可售" }}</a>
+      </div>
+      {% else %}
+      <div class="product-meta">暂无可购买商品</div>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    {% if coupon.instructions %}
+    <section class="section">
+      <h2>使用说明</h2>
+      <p class="instructions">{{ coupon.instructions }}</p>
+    </section>
+    {% endif %}
+  </main>
+  <script>
+    (() => {
+      const button = document.getElementById("claimButton");
+      const message = document.getElementById("claimMessage");
+      if (!button || button.disabled) return;
+      const slug = document.querySelector("[data-public-slug]").dataset.publicSlug;
+      const formatError = (value) => {
+        if (value == null) return "";
+        if (typeof value === "string") return value.trim();
+        if (Array.isArray(value)) return value.map(formatError).filter(Boolean).join("；");
+        if (typeof value === "object") {
+          if (value.loc && (value.msg || value.message)) {
+            const field = (Array.isArray(value.loc) ? value.loc : [value.loc]).filter(item => item !== "body").join(".");
+            return `${field || "提交内容"}：${formatError(value.msg || value.message)}`;
+          }
+          for (const key of ["detail", "message", "error", "reason", "errors", "msg"]) {
+            const text = formatError(value[key]);
+            if (text) return text;
+          }
+        }
+        return "";
+      };
+      const key = (globalThis.crypto && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : `claim-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        button.textContent = "领取中…";
+        message.classList.remove("error");
+        try {
+          const response = await fetch(`/api/h5/coupons/${encodeURIComponent(slug)}/claim`, {
+            method: "POST",
+            headers: {"Idempotency-Key": key, "Content-Type": "application/json"},
+            body: "{}",
+            credentials: "same-origin",
+          });
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok || payload.ok === false) throw new Error(formatError(payload) || (response.status >= 500 ? "服务暂时不可用，请稍后重试" : "领取失败"));
+          message.textContent = "领取成功，正在刷新可用商品…";
+          window.location.reload();
+        } catch (error) {
+          message.textContent = formatError(error) || "领取失败，请稍后重试";
+          message.classList.add("error");
+          button.disabled = false;
+          button.textContent = "重新领取";
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

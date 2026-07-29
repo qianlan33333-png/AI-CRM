@@ -27,7 +27,7 @@ tables:
   auth_api_clients:
     domain: auth_platform
     lifecycle: config
-    write_owner: aicrm_next.platform_foundation.auth_platform
+    write_owner: aicrm_next.platform.platform_foundation.auth_platform
     read_owners:
       - centralized route authentication
       - auth bootstrap and readiness
@@ -46,7 +46,7 @@ tables:
   auth_security_events:
     domain: auth_platform
     lifecycle: audit
-    write_owner: aicrm_next.platform_foundation.auth_platform
+    write_owner: aicrm_next.platform.platform_foundation.auth_platform
     read_owners:
       - security operations
     replacement: none; append-only authentication security evidence
@@ -63,7 +63,7 @@ tables:
   auth_sessions:
     domain: auth_platform
     lifecycle: canonical
-    write_owner: aicrm_next.platform_foundation.auth_platform
+    write_owner: aicrm_next.platform.platform_foundation.auth_platform
     read_owners:
       - centralized human session authentication
     replacement: none; server-side opaque browser session state
@@ -80,7 +80,7 @@ tables:
   auth_webhook_clients:
     domain: auth_platform
     lifecycle: config
-    write_owner: aicrm_next.platform_foundation.auth_platform
+    write_owner: aicrm_next.platform.platform_foundation.auth_platform
     read_owners:
       - centralized webhook HMAC verification
       - auth bootstrap and readiness
@@ -98,7 +98,7 @@ tables:
   auth_webhook_replay:
     domain: auth_platform
     lifecycle: audit
-    write_owner: aicrm_next.platform_foundation.auth_platform
+    write_owner: aicrm_next.platform.platform_foundation.auth_platform
     read_owners:
       - centralized webhook HMAC verification
     replacement: none; persistent webhook replay prevention window
@@ -115,10 +115,9 @@ tables:
   contact_tags:
     domain: customer_tags
     lifecycle: read_model
-    write_owner: aicrm_next.customer_tags.local_projection
+    write_owner: aicrm_next.crm.customer_tags
     write_owners:
-      - aicrm_next.channel_entry
-      - aicrm_next.customer_tags.local_projection
+      - aicrm_next.crm.customer_tags
     read_owners:
       - customer read model
       - admin WeCom tags payload
@@ -135,7 +134,9 @@ tables:
     guard_tests:
       - tests/test_unionid_identity_refactor_schema.py::test_contact_tags_mirror_has_fresh_schema_table
       - tests/test_data_table_lifecycle_guard.py
-    notes: Unionid-only local cache for successful externalcontact tag writes; external_userid belongs only in identity mapping or resolution queue.
+      - tests/test_customer_tag_projection_port.py
+      - tests/test_repository_ownership_guard.py::test_contact_tag_write_sql_is_confined_to_customer_tags
+    notes: Unionid-only local cache for successful externalcontact tag writes. Questionnaire and channel-entry projections are both customer_tags-owned. Channel ingress resolves unionid first and writes through CustomerTagProjectionPort in the caller transaction; unresolved identities enqueue recovery and never create alias-tag rows.
 
   class_user_status_current:
     domain: customer_read_model
@@ -204,7 +205,7 @@ tables:
   admin_wecom_directory_members:
     domain: admin_identity
     lifecycle: read_model
-    write_owner: aicrm_next.operation_members.SyncOperationMembersFromWeComCommand
+    write_owner: aicrm_next.crm.operation_members.SyncOperationMembersFromWeComCommand
     read_owners:
       - common operation members
       - admin member selectors
@@ -360,9 +361,9 @@ tables:
   user_ops_pool_current_next:
     domain: user_ops
     lifecycle: read_model
-    write_owner: aicrm_next.ops_enrollment.repo
+    write_owner: aicrm_next.automation.ops_enrollment.repo
     read_owners:
-      - aicrm_next.ops_enrollment.repo
+      - aicrm_next.automation.ops_enrollment.repo
     replacement: ""
     drop_candidate: false
     runtime_entrypoints:
@@ -377,11 +378,10 @@ tables:
   user_ops_do_not_disturb_next:
     domain: user_ops
     lifecycle: canonical
-    write_owner: aicrm_next.ops_enrollment.repo
+    write_owner: aicrm_next.automation.ops_enrollment.repo
     read_owners:
-      - aicrm_next.ai_assist.external_campaigns_repo
-      - aicrm_next.send_targets.repo
-      - aicrm_next.ops_enrollment.repo
+      - aicrm_next.extensions.ai.ai_assist.external_campaigns_repo
+      - aicrm_next.automation.ops_enrollment.repo
     replacement: ""
     drop_candidate: false
     runtime_entrypoints:
@@ -396,9 +396,9 @@ tables:
   user_ops_send_records_next:
     domain: user_ops
     lifecycle: event
-    write_owner: aicrm_next.ops_enrollment.repo
+    write_owner: aicrm_next.automation.ops_enrollment.repo
     read_owners:
-      - aicrm_next.ops_enrollment.repo
+      - aicrm_next.automation.ops_enrollment.repo
     replacement: ""
     drop_candidate: false
     runtime_entrypoints:
@@ -442,12 +442,13 @@ tables:
   archived_messages:
     domain: messaging
     lifecycle: read_model
-    write_owner: aicrm_next.message_archive.repo
+    write_owner: aicrm_next.extensions.archive.message_archive.repo
     read_owners:
-      - aicrm_next.admin_read_model.repo
-      - aicrm_next.customer_read_model.repo
-      - aicrm_next.customer_read_model.sidebar_v2
-      - aicrm_next.message_archive.repo
+      - aicrm_next.insights.admin_read_model.repo
+      - aicrm_next.crm.customer_read_model.repo
+      - aicrm_next.crm.customer_read_model.refresh_scope_repository
+      - aicrm_next.crm.customer_read_model.sidebar_v2
+      - aicrm_next.extensions.archive.message_archive.repo
     replacement: ""
     drop_candidate: false
     runtime_entrypoints:
@@ -464,9 +465,9 @@ tables:
   archive_sync_state:
     domain: messaging
     lifecycle: config
-    write_owner: aicrm_next.message_archive.repo
+    write_owner: aicrm_next.extensions.archive.message_archive.repo
     read_owners:
-      - aicrm_next.message_archive.repo
+      - aicrm_next.extensions.archive.message_archive.repo
     replacement: ""
     drop_candidate: false
     runtime_entrypoints:
@@ -479,10 +480,10 @@ tables:
   marketing_automation_question_rules:
     domain: admin_config
     lifecycle: config
-    write_owner: aicrm_next.admin_config.repository
+    write_owner: aicrm_next.platform.admin_config.repository
     read_owners:
-      - aicrm_next.admin_config.repository
-      - aicrm_next.admin_config.application
+      - aicrm_next.platform.admin_config.repository
+      - aicrm_next.platform.admin_config.application
     replacement: automation workflow config or questionnaire rule package to be selected in PR #14
     drop_candidate: true
     drop_after: "after marketing automation config is reconciled with automation_program/workflow"
@@ -496,10 +497,10 @@ tables:
   marketing_automation_configs:
     domain: admin_config
     lifecycle: config
-    write_owner: aicrm_next.admin_config.repository
+    write_owner: aicrm_next.platform.admin_config.repository
     read_owners:
-      - aicrm_next.admin_config.repository
-      - aicrm_next.admin_config.application
+      - aicrm_next.platform.admin_config.repository
+      - aicrm_next.platform.admin_config.application
     replacement: automation_program, automation_workflow, or package config to be selected in PR #14
     drop_candidate: true
     drop_after: "after marketing automation config is reconciled with automation_program/workflow"
@@ -513,13 +514,13 @@ tables:
   app_settings:
     domain: admin_config
     lifecycle: config
-    write_owner: aicrm_next.admin_config.repository
+    write_owner: aicrm_next.platform.admin_config.repository
     read_owners:
-      - aicrm_next.admin_config.repository
-      - aicrm_next.message_archive.repo
-      - aicrm_next.platform_foundation.push_center.capability_repository
-      - aicrm_next.questionnaire.repo
-      - aicrm_next.shared.runtime_settings
+      - aicrm_next.platform.admin_config.repository
+      - aicrm_next.extensions.archive.message_archive.repo
+      - aicrm_next.platform.platform_foundation.push_center.capability_repository
+      - aicrm_next.extensions.forms.questionnaire.repo
+      - aicrm_next.platform.shared.runtime_settings
     replacement: ""
     drop_candidate: false
     runtime_entrypoints:
@@ -535,12 +536,56 @@ tables:
       - tests/test_unionid_identity_refactor_schema.py::test_id_dev_p1_baseline_tables_exist_in_fresh_schema
     notes: Runtime app configuration table. Push consumers read capability gates through the platform push-center boundary; secret values are masked at API/UI boundaries.
 
+  config_releases:
+    domain: admin_config
+    lifecycle: config
+    write_owner: aicrm_next.platform.admin_config.config_release_repository
+    read_owners:
+      - aicrm_next.platform.admin_config.config_release_repository
+      - aicrm_next.platform.admin_config.config_releases
+      - aicrm_next.platform.admin_config.api
+    replacement: ""
+    drop_candidate: false
+    runtime_entrypoints:
+      - admin config release draft and validation
+      - atomic config publish and rollback
+    migration_source: 0144_config_release_control_plane
+    pii_level: config_secret
+    guard_tests:
+      - tests/test_config_releases.py
+      - tests/test_config_releases_postgres.py
+      - tests/test_data_table_lifecycle_guard.py
+      - tests/test_repository_ownership_guard.py
+    notes: Versioned configuration release audit. Sensitive values may only be stored as Secret Store references and are redacted at API/UI boundaries.
+
+  deployment_profile_state:
+    domain: admin_config
+    lifecycle: config
+    write_owner: aicrm_next.platform.admin_config.config_release_repository
+    read_owners:
+      - aicrm_next.platform.admin_config.config_release_repository
+      - aicrm_next.platform.admin_config.config_releases
+      - aicrm_next.platform.admin_config.api
+    replacement: ""
+    drop_candidate: false
+    runtime_entrypoints:
+      - deployment profile readiness
+      - config release activation
+    migration_source: 0144_config_release_control_plane
+    pii_level: internal
+    guard_tests:
+      - tests/test_config_releases.py
+      - tests/test_config_releases_postgres.py
+      - tests/test_data_table_lifecycle_guard.py
+      - tests/test_repository_ownership_guard.py
+    notes: Records the deployed profile, enabled static capabilities, runtime roles, and active config release without containing runtime secrets.
+
   mcp_tool_settings:
     domain: admin_config
     lifecycle: config
-    write_owner: aicrm_next.admin_config.repository
+    write_owner: aicrm_next.platform.admin_config.repository
     read_owners:
-      - aicrm_next.admin_config.repository
+      - aicrm_next.platform.admin_config.repository
     replacement: ""
     drop_candidate: false
     runtime_entrypoints:
@@ -557,12 +602,12 @@ tables:
   sidebar_customer_profile_fields:
     domain: customer_read_model
     lifecycle: read_model
-    write_owner: aicrm_next.customer_read_model.sidebar_v2
+    write_owner: aicrm_next.crm.customer_read_model
     write_owners:
-      - aicrm_next.customer_read_model.sidebar_v2
-      - aicrm_next.sidebar_write
+      - aicrm_next.crm.customer_read_model
+      - aicrm_next.crm.owner_migration
     read_owners:
-      - aicrm_next.customer_read_model.sidebar_v2
+      - aicrm_next.crm.customer_read_model.sidebar_v2
     replacement: ""
     drop_candidate: false
     runtime_entrypoints:
@@ -572,15 +617,15 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_unionid_runtime_breakage_hotfix.py
-    notes: Sidebar-only editable customer profile projection keyed by unionid.
+    notes: Sidebar-only editable customer profile projection keyed by unionid; writes use the customer-read-model owner port inside the sidebar command transaction.
 
   wecom_customer_acquisition_links:
     domain: channel_entry
     lifecycle: read_model
-    write_owner: aicrm_next.automation_engine.channels_api
+    write_owner: aicrm_next.automation.automation_engine.channels_api
     read_owners:
-      - aicrm_next.automation_engine.channels_api
-      - aicrm_next.customer_read_model.sidebar_v2
+      - aicrm_next.automation.automation_engine.channels_api
+      - aicrm_next.crm.customer_read_model.sidebar_v2
     replacement: ""
     drop_candidate: false
     runtime_entrypoints:
@@ -596,9 +641,9 @@ tables:
   automation_channel_entry_effect_log:
     domain: channel_entry
     lifecycle: event
-    write_owner: aicrm_next.channel_entry.repo
+    write_owner: aicrm_next.channels.channel_entry.repo
     read_owners:
-      - aicrm_next.channel_entry.repo
+      - aicrm_next.channels.channel_entry.repo
     replacement: ""
     drop_candidate: false
     runtime_entrypoints:
@@ -614,29 +659,29 @@ tables:
   automation_channel_entry_runtime:
     domain: channel_entry
     lifecycle: queue
-    write_owner: aicrm_next.channel_entry.repo
+    write_owner: aicrm_next.channels.channel_entry.repo
     read_owners:
-      - aicrm_next.channel_entry.repo
+      - aicrm_next.channels.channel_entry.repo
     replacement: ""
     drop_candidate: false
     runtime_entrypoints:
       - channel entry callback runtime buffer
       - unresolved channel entry identity reconciliation
-    migration_source: 0088_channel_entry_identity_best_effort, hardened by 0092_channel_entry_runtime_identity_backoff
+    migration_source: 0088_channel_entry_identity_best_effort, hardened by 0092_channel_entry_runtime_identity_backoff and 0129_identity_customer_event_driven
     pii_level: internal_contact
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_channel_entry_identity_best_effort_contract.py::test_channel_entry_identity_best_effort_runtime_table_is_governed
-    notes: Runtime staging table keyed by WeCom external_userid/follow_user_userid/scene until unionid canonicalization writes automation_channel_contact.
+    notes: Runtime staging table keyed by WeCom external_userid/follow_user_userid/scene until unionid canonicalization writes automation_channel_contact. Revision 0129 links new rows to one canonical wecom_interactive external effect in the same transaction; pre-cutover unresolved rows are held for manual classification and are never replayed automatically.
 
   wechat_shop_orders:
     domain: commerce
     lifecycle: canonical
-    write_owner: aicrm_next.commerce.wechat_shop_service
+    write_owner: aicrm_next.extensions.commerce.commerce.wechat_shop_service
     read_owners:
-      - aicrm_next.commerce.admin_transaction_detail
-      - aicrm_next.commerce.wechat_shop_service
-      - aicrm_next.customer_read_model.sidebar_v2
+      - aicrm_next.extensions.commerce.commerce.admin_transaction_detail
+      - aicrm_next.extensions.commerce.commerce.wechat_shop_service
+      - aicrm_next.crm.customer_read_model.sidebar_v2
     replacement: ""
     drop_candidate: false
     runtime_entrypoints:
@@ -654,10 +699,10 @@ tables:
   wechat_shop_order_events:
     domain: commerce
     lifecycle: event
-    write_owner: aicrm_next.commerce.wechat_shop_service
+    write_owner: aicrm_next.extensions.commerce.commerce.wechat_shop_service
     read_owners:
-      - aicrm_next.commerce.admin_transaction_detail
-      - aicrm_next.commerce.wechat_shop_service
+      - aicrm_next.extensions.commerce.commerce.admin_transaction_detail
+      - aicrm_next.extensions.commerce.commerce.wechat_shop_service
     replacement: ""
     drop_candidate: false
     runtime_entrypoints:
@@ -674,10 +719,10 @@ tables:
   segments:
     domain: campaign
     lifecycle: canonical
-    write_owner: aicrm_next.cloud_orchestrator.repository
+    write_owner: aicrm_next.extensions.growth.cloud_orchestrator
     read_owners:
-      - aicrm_next.ai_assist.external_campaigns_repo
-      - aicrm_next.cloud_orchestrator.repository
+      - aicrm_next.extensions.ai.ai_assist.external_campaigns_repo
+      - aicrm_next.extensions.growth.cloud_orchestrator.repository
     replacement: ai_audience_package or future audience rule read model after campaign convergence
     drop_candidate: true
     drop_after: "after campaign segment sourcing is reconciled with ai_audience and group-ops audience rules"
@@ -710,18 +755,15 @@ tables:
   broadcast_jobs:
     domain: broadcast
     lifecycle: queue
-    write_owner: aicrm_next.background_jobs
+    write_owner: aicrm_next.automation.background_jobs
     write_owners:
-      - aicrm_next.ai_assist.external_campaigns_repo
-      - aicrm_next.admin_jobs.repository
-      - aicrm_next.background_jobs.broadcast_queue_worker
-      - aicrm_next.cloud_orchestrator.repository
+      - aicrm_next.automation.background_jobs
     read_owners:
-      - aicrm_next.admin_jobs.repository
-      - aicrm_next.admin_read_model.repo
-      - aicrm_next.ai_assist.external_campaigns_repo
-      - aicrm_next.background_jobs.broadcast_queue_worker
-      - aicrm_next.cloud_orchestrator.repository
+      - aicrm_next.platform.admin_jobs.repository
+      - aicrm_next.insights.admin_read_model.repo
+      - aicrm_next.extensions.ai.ai_assist.external_campaigns_repo
+      - aicrm_next.automation.background_jobs.broadcast_queue_worker
+      - aicrm_next.extensions.growth.cloud_orchestrator.repository
     replacement: none; this is the canonical private-broadcast command and delivery ledger
     drop_candidate: false
     drop_after: ""
@@ -736,18 +778,20 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_repository_ownership_guard.py
-    notes: Background jobs owns claim, dispatching, evidence, and terminal finalization. Planning writers may insert queued rows only. Fake provider success is simulated; ambiguous post-provider outcomes stop at unknown_after_dispatch and are never lease-reclaimed.
+      - tests/test_broadcast_job_owner.py
+      - tests/test_broadcast_job_owner_postgres.py
+    notes: Background jobs owns the complete broadcast job lifecycle through one public write port. Admin approval, AI Assist, cloud planning, worker claim/finalization and external-effect settlement retain their original transactions but no longer write the fact directly. Fake provider success is simulated; ambiguous post-provider outcomes stop at unknown_after_dispatch and are never lease-reclaimed.
 
   campaigns:
     domain: campaign
     lifecycle: canonical
-    write_owner: aicrm_next.cloud_orchestrator.repository
+    write_owner: aicrm_next.extensions.growth.cloud_orchestrator.repository
     write_owners:
-      - aicrm_next.cloud_orchestrator.repository
+      - aicrm_next.extensions.growth.cloud_orchestrator.repository
     read_owners:
-      - aicrm_next.cloud_orchestrator.campaigns_read
-      - aicrm_next.cloud_orchestrator.repository
-      - aicrm_next.ai_assist.external_campaigns_repo
+      - aicrm_next.extensions.growth.cloud_orchestrator.campaigns_read
+      - aicrm_next.extensions.growth.cloud_orchestrator.repository
+      - aicrm_next.extensions.ai.ai_assist.external_campaigns_repo
     replacement: external_effect_job, broadcast_jobs, or future campaign command model after convergence
     drop_candidate: false
     drop_after: ""
@@ -760,15 +804,15 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_campaign_automation_table_boundary.py
-    notes: Active campaign business state; external token sends create broadcast_jobs directly and no longer write campaigns.
+    notes: Active campaign business state; external token sends request broadcast jobs through the canonical background-jobs write port and no longer write campaigns.
 
   campaign_segments:
     domain: campaign
     lifecycle: canonical
-    write_owner: aicrm_next.cloud_orchestrator.repository
+    write_owner: aicrm_next.extensions.growth.cloud_orchestrator.repository
     read_owners:
-      - aicrm_next.cloud_orchestrator.repository
-      - aicrm_next.cloud_orchestrator.campaigns_read
+      - aicrm_next.extensions.growth.cloud_orchestrator.repository
+      - aicrm_next.extensions.growth.cloud_orchestrator.campaigns_read
     replacement: future campaign command model after segment assignment convergence
     drop_candidate: false
     drop_after: ""
@@ -784,13 +828,11 @@ tables:
   campaign_steps:
     domain: campaign
     lifecycle: canonical
-    write_owner: aicrm_next.cloud_orchestrator.repository
-    write_owners:
-      - aicrm_next.cloud_orchestrator.repository
-      - aicrm_next.media_library
+    write_owner: aicrm_next.extensions.growth.cloud_orchestrator.repository
     read_owners:
-      - aicrm_next.cloud_orchestrator.repository
-      - aicrm_next.cloud_orchestrator.campaigns_read
+      - aicrm_next.extensions.growth.cloud_orchestrator.repository
+      - aicrm_next.extensions.growth.cloud_orchestrator.campaigns_read
+      - aicrm_next.engagement.media_library
     replacement: future campaign command model plus broadcast_jobs scheduling projection
     drop_candidate: false
     drop_after: ""
@@ -802,20 +844,20 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_campaign_automation_table_boundary.py
-    notes: Active campaign step definition table; external sends still belong to broadcast/external-effect records.
+    notes: Active campaign step definition table; all writes, including media-reference cleanup, go through the cloud-orchestrator owner port. External sends still belong to broadcast/external-effect records.
 
   campaign_members:
     domain: campaign
     lifecycle: queue
-    write_owner: aicrm_next.cloud_orchestrator.repository
+    write_owner: aicrm_next.extensions.growth.cloud_orchestrator.repository
     write_owners:
-      - aicrm_next.cloud_orchestrator.repository
+      - aicrm_next.extensions.growth.cloud_orchestrator.repository
     status_enum:
       column: status
     read_owners:
-      - aicrm_next.cloud_orchestrator.campaigns_read
-      - aicrm_next.cloud_orchestrator.repository
-      - aicrm_next.ai_assist.external_campaigns_repo
+      - aicrm_next.extensions.growth.cloud_orchestrator.campaigns_read
+      - aicrm_next.extensions.growth.cloud_orchestrator.repository
+      - aicrm_next.extensions.ai.ai_assist.external_campaigns_repo
     replacement: broadcast_jobs, outbound_tasks, external_effect_job after run-due convergence
     drop_candidate: false
     drop_after: ""
@@ -832,10 +874,10 @@ tables:
   automation_group_ops_plans:
     domain: automation_group_ops
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine.group_ops.postgres_repo
+    write_owner: aicrm_next.automation.automation_engine.group_ops.postgres_repo
     read_owners:
-      - aicrm_next.automation_engine.group_ops.postgres_repo
-      - aicrm_next.admin_jobs.application
+      - aicrm_next.automation.automation_engine.group_ops.postgres_repo
+      - aicrm_next.platform.admin_jobs.application
       - broadcast jobs projection
     replacement: none; canonical group-ops plan model
     drop_candidate: false
@@ -854,9 +896,9 @@ tables:
   automation_group_ops_plan_groups:
     domain: automation_group_ops
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine.group_ops.postgres_repo
+    write_owner: aicrm_next.automation.automation_engine.group_ops.postgres_repo
     read_owners:
-      - aicrm_next.automation_engine.group_ops.postgres_repo
+      - aicrm_next.automation.automation_engine.group_ops.postgres_repo
     replacement: none; canonical group binding model
     drop_candidate: false
     drop_after: ""
@@ -872,9 +914,9 @@ tables:
   automation_group_ops_plan_nodes:
     domain: automation_group_ops
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine.group_ops.postgres_repo
+    write_owner: aicrm_next.automation.automation_engine.group_ops.postgres_repo
     read_owners:
-      - aicrm_next.automation_engine.group_ops.postgres_repo
+      - aicrm_next.automation.automation_engine.group_ops.postgres_repo
     replacement: none; canonical group-ops content/action node model
     drop_candidate: false
     drop_after: ""
@@ -890,9 +932,9 @@ tables:
   automation_group_ops_webhook_events:
     domain: automation_group_ops
     lifecycle: event
-    write_owner: aicrm_next.automation_engine.group_ops.postgres_repo
+    write_owner: aicrm_next.automation.automation_engine.group_ops.postgres_repo
     read_owners:
-      - aicrm_next.automation_engine.group_ops.postgres_repo
+      - aicrm_next.automation.automation_engine.group_ops.postgres_repo
     replacement: internal_event or external_effect_job after webhook event convergence
     drop_candidate: false
     drop_after: ""
@@ -908,9 +950,9 @@ tables:
   automation_group_ops_plan_scope:
     domain: automation_group_ops
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine.group_ops.postgres_repo
+    write_owner: aicrm_next.automation.automation_engine.group_ops.postgres_repo
     read_owners:
-      - aicrm_next.automation_engine.group_ops.postgres_repo
+      - aicrm_next.automation.automation_engine.group_ops.postgres_repo
     replacement: none; canonical group-ops scope model
     drop_candidate: false
     drop_after: ""
@@ -924,9 +966,9 @@ tables:
   automation_group_ops_plan_member:
     domain: automation_group_ops
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine.group_ops.postgres_repo
+    write_owner: aicrm_next.automation.automation_engine.group_ops.postgres_repo
     read_owners:
-      - aicrm_next.automation_engine.group_ops.postgres_repo
+      - aicrm_next.automation.automation_engine.group_ops.postgres_repo
     replacement: audience_rule_result or future group-ops member projection after member model convergence
     drop_candidate: false
     drop_after: ""
@@ -942,9 +984,9 @@ tables:
   audience_rule:
     domain: automation_group_ops
     lifecycle: config
-    write_owner: aicrm_next.automation_engine.group_ops.postgres_repo
+    write_owner: aicrm_next.automation.automation_engine.group_ops.postgres_repo
     read_owners:
-      - aicrm_next.automation_engine.group_ops.postgres_repo
+      - aicrm_next.automation.automation_engine.group_ops.postgres_repo
     replacement: none; canonical audience rule catalog for group-ops
     drop_candidate: false
     drop_after: ""
@@ -958,9 +1000,9 @@ tables:
   audience_rule_version:
     domain: automation_group_ops
     lifecycle: config
-    write_owner: aicrm_next.automation_engine.group_ops.postgres_repo
+    write_owner: aicrm_next.automation.automation_engine.group_ops.postgres_repo
     read_owners:
-      - aicrm_next.automation_engine.group_ops.postgres_repo
+      - aicrm_next.automation.automation_engine.group_ops.postgres_repo
     replacement: none; canonical audience rule version catalog for group-ops
     drop_candidate: false
     drop_after: ""
@@ -974,9 +1016,9 @@ tables:
   audience_rule_result:
     domain: automation_group_ops
     lifecycle: read_model
-    write_owner: aicrm_next.automation_engine.group_ops.postgres_repo
+    write_owner: aicrm_next.automation.automation_engine.group_ops.postgres_repo
     read_owners:
-      - aicrm_next.automation_engine.group_ops.postgres_repo
+      - aicrm_next.automation.automation_engine.group_ops.postgres_repo
     replacement: none; canonical group-ops audience result read model
     drop_candidate: false
     drop_after: ""
@@ -991,9 +1033,9 @@ tables:
   automation_group_ops_plan_segmentation:
     domain: automation_group_ops
     lifecycle: config
-    write_owner: aicrm_next.automation_engine.group_ops.postgres_repo
+    write_owner: aicrm_next.automation.automation_engine.group_ops.postgres_repo
     read_owners:
-      - aicrm_next.automation_engine.group_ops.postgres_repo
+      - aicrm_next.automation.automation_engine.group_ops.postgres_repo
     replacement: none; canonical group-ops segmentation config
     drop_candidate: false
     drop_after: ""
@@ -1007,9 +1049,9 @@ tables:
   automation_group_ops_trigger_event:
     domain: automation_group_ops
     lifecycle: event
-    write_owner: aicrm_next.automation_engine.group_ops.postgres_repo
+    write_owner: aicrm_next.automation.automation_engine.group_ops.postgres_repo
     read_owners:
-      - aicrm_next.automation_engine.group_ops.postgres_repo
+      - aicrm_next.automation.automation_engine.group_ops.postgres_repo
     replacement: internal_event after trigger-event convergence
     drop_candidate: false
     drop_after: ""
@@ -1025,9 +1067,9 @@ tables:
   automation_group_ops_execution_log:
     domain: automation_group_ops
     lifecycle: audit
-    write_owner: aicrm_next.automation_engine.group_ops.postgres_repo
+    write_owner: aicrm_next.automation.automation_engine.group_ops.postgres_repo
     read_owners:
-      - aicrm_next.automation_engine.group_ops.postgres_repo
+      - aicrm_next.automation.automation_engine.group_ops.postgres_repo
     replacement: external_effect_attempt after execution-attempt convergence
     drop_candidate: false
     drop_after: ""
@@ -1361,14 +1403,14 @@ tables:
   image_library:
     domain: media_library
     lifecycle: canonical
-    write_owner: aicrm_next.media_library.postgres_repo
+    write_owner: aicrm_next.engagement.media_library
     read_owners:
-      - aicrm_next.media_library.postgres_repo
-      - aicrm_next.send_content.postgres_repo
-      - aicrm_next.admin_read_model.projections
-      - aicrm_next.automation_engine.group_ops.material_resolver
-      - aicrm_next.channel_entry.application
-      - aicrm_next.commerce.repo
+      - aicrm_next.engagement.media_library.postgres_repo
+      - aicrm_next.engagement.send_content.postgres_repo
+      - aicrm_next.insights.admin_read_model.projections
+      - aicrm_next.automation.automation_engine.group_ops.material_resolver
+      - aicrm_next.channels.channel_entry.application
+      - aicrm_next.extensions.commerce.commerce.repo
     replacement: none; canonical reusable image material table
     drop_candidate: false
     drop_after: ""
@@ -1383,14 +1425,14 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_material_library_table_boundary.py
-    notes: Canonical local image material metadata/payload table; real external storage and WeCom upload remain guarded outside this lifecycle PR.
+    notes: Canonical local image material metadata/payload table; group-ops durable material creation uses the media-library owner port inside the caller transaction. Real external storage and WeCom upload remain separately guarded.
 
   image_library_variants:
     domain: media_library
     lifecycle: read_model
-    write_owner: aicrm_next.media_library.variants
+    write_owner: aicrm_next.engagement.media_library.variants
     read_owners:
-      - aicrm_next.media_library.postgres_repo
+      - aicrm_next.engagement.media_library.postgres_repo
       - image thumbnail/variant API
     replacement: image_library
     drop_candidate: false
@@ -1407,13 +1449,13 @@ tables:
   miniprogram_library:
     domain: media_library
     lifecycle: canonical
-    write_owner: aicrm_next.media_library.postgres_repo
+    write_owner: aicrm_next.engagement.media_library.postgres_repo
     read_owners:
-      - aicrm_next.media_library.postgres_repo
-      - aicrm_next.send_content.postgres_repo
-      - aicrm_next.admin_read_model.projections
-      - aicrm_next.automation_engine.group_ops.material_resolver
-      - aicrm_next.channel_entry.application
+      - aicrm_next.engagement.media_library.postgres_repo
+      - aicrm_next.engagement.send_content.postgres_repo
+      - aicrm_next.insights.admin_read_model.projections
+      - aicrm_next.automation.automation_engine.group_ops.material_resolver
+      - aicrm_next.channels.channel_entry.application
       - campaign/group-ops SendContentPackage consumers
     replacement: none; canonical reusable mini-program material table
     drop_candidate: false
@@ -1433,13 +1475,13 @@ tables:
   attachment_library:
     domain: media_library
     lifecycle: canonical
-    write_owner: aicrm_next.media_library.postgres_repo
+    write_owner: aicrm_next.engagement.media_library.postgres_repo
     read_owners:
-      - aicrm_next.media_library.postgres_repo
-      - aicrm_next.send_content.postgres_repo
-      - aicrm_next.admin_read_model.projections
-      - aicrm_next.automation_engine.group_ops.material_resolver
-      - aicrm_next.channel_entry.application
+      - aicrm_next.engagement.media_library.postgres_repo
+      - aicrm_next.engagement.send_content.postgres_repo
+      - aicrm_next.insights.admin_read_model.projections
+      - aicrm_next.automation.automation_engine.group_ops.material_resolver
+      - aicrm_next.channels.channel_entry.application
       - campaign/group-ops SendContentPackage consumers
     replacement: none; canonical reusable attachment material table
     drop_candidate: false
@@ -1459,12 +1501,12 @@ tables:
   group_invite_library:
     domain: media_library
     lifecycle: canonical
-    write_owner: aicrm_next.media_library.postgres_repo
+    write_owner: aicrm_next.engagement.media_library.postgres_repo
     read_owners:
-      - aicrm_next.media_library.postgres_repo
-      - aicrm_next.send_content.postgres_repo
-      - aicrm_next.automation_engine.group_ops.material_resolver
-      - aicrm_next.channel_entry.application
+      - aicrm_next.engagement.media_library.postgres_repo
+      - aicrm_next.engagement.send_content.postgres_repo
+      - aicrm_next.automation.automation_engine.group_ops.material_resolver
+      - aicrm_next.channels.channel_entry.application
       - campaign/group-ops SendContentPackage consumers
     replacement: none; canonical reusable WeCom group invite link card table
     drop_candidate: false
@@ -1485,11 +1527,11 @@ tables:
   wecom_media_leases:
     domain: media_library
     lifecycle: canonical
-    write_owner: aicrm_next.media_library.wecom_lease
+    write_owner: aicrm_next.engagement.media_library.wecom_lease
     read_owners:
-      - aicrm_next.media_library.wecom_lease
-      - aicrm_next.automation_engine.group_ops.material_resolver
-      - aicrm_next.data_health.checks
+      - aicrm_next.engagement.media_library.wecom_lease
+      - aicrm_next.automation.automation_engine.group_ops.material_resolver
+      - aicrm_next.insights.data_health.checks
     replacement: none; canonical lifecycle state for temporary WeCom media ids
     drop_candidate: false
     drop_after: ""
@@ -1506,11 +1548,11 @@ tables:
   questionnaires:
     domain: questionnaire
     lifecycle: canonical
-    write_owner: aicrm_next.questionnaire.repo
+    write_owner: aicrm_next.extensions.forms.questionnaire.repo
     read_owners:
-      - aicrm_next.questionnaire.repo
-      - aicrm_next.questionnaire.api
-      - aicrm_next.questionnaire.operations
+      - aicrm_next.extensions.forms.questionnaire.repo
+      - aicrm_next.extensions.forms.questionnaire.api
+      - aicrm_next.extensions.forms.questionnaire.operations
     replacement: none; canonical questionnaire definition table
     drop_candidate: false
     drop_after: ""
@@ -1528,9 +1570,9 @@ tables:
   questionnaire_questions:
     domain: questionnaire
     lifecycle: canonical
-    write_owner: aicrm_next.questionnaire.repo
+    write_owner: aicrm_next.extensions.forms.questionnaire.repo
     read_owners:
-      - aicrm_next.questionnaire.repo
+      - aicrm_next.extensions.forms.questionnaire.repo
     replacement: none; canonical questionnaire question table
     drop_candidate: false
     drop_after: ""
@@ -1546,9 +1588,9 @@ tables:
   questionnaire_options:
     domain: questionnaire
     lifecycle: canonical
-    write_owner: aicrm_next.questionnaire.repo
+    write_owner: aicrm_next.extensions.forms.questionnaire.repo
     read_owners:
-      - aicrm_next.questionnaire.repo
+      - aicrm_next.extensions.forms.questionnaire.repo
     replacement: none; canonical questionnaire option table
     drop_candidate: false
     drop_after: ""
@@ -1564,9 +1606,9 @@ tables:
   questionnaire_score_rules:
     domain: questionnaire
     lifecycle: canonical
-    write_owner: aicrm_next.questionnaire.repo
+    write_owner: aicrm_next.extensions.forms.questionnaire.repo
     read_owners:
-      - aicrm_next.questionnaire.repo
+      - aicrm_next.extensions.forms.questionnaire.repo
     replacement: none; canonical questionnaire scoring rule table
     drop_candidate: false
     drop_after: ""
@@ -1582,10 +1624,10 @@ tables:
   questionnaire_submissions:
     domain: questionnaire
     lifecycle: event
-    write_owner: aicrm_next.questionnaire.repo
+    write_owner: aicrm_next.extensions.forms.questionnaire.repo
     read_owners:
-      - aicrm_next.questionnaire.repo
-      - aicrm_next.automation_agents.repository
+      - aicrm_next.extensions.forms.questionnaire.repo
+      - aicrm_next.extensions.ai.automation_agents.repository
       - audience_read.questionnaire_submissions_v1
     replacement: none; canonical questionnaire submission fact table
     drop_candidate: false
@@ -1602,35 +1644,13 @@ tables:
       - tests/test_unionid_identity_refactor_schema.py
     notes: Unionid-keyed submission fact table; legacy identity fields are boundary projections only.
 
-  questionnaire_continuation_job:
-    domain: questionnaire
-    lifecycle: canonical
-    write_owner: aicrm_next.questionnaire.continuation_repo
-    read_owners:
-      - aicrm_next.questionnaire.continuation
-      - aicrm_next.questionnaire.operations
-    replacement: none; durable identity-dependent questionnaire continuation state
-    drop_candidate: false
-    drop_after: ""
-    runtime_entrypoints:
-      - questionnaire submitted internal event consumers
-      - customer wecom identity ready consumer
-      - questionnaire continuation reconciliation worker
-      - questionnaire operations admin API
-    migration_source: 0124_questionnaire_continuation_jobs
-    pii_level: internal_contact
-    guard_tests:
-      - tests/test_data_table_lifecycle_guard.py
-      - tests/test_questionnaire_continuation.py
-    notes: Stores one idempotent action row per submission without mobile, openid, answers, or message content; UnionID is the sole wake-up key.
-
   questionnaire_submission_answers:
     domain: questionnaire
     lifecycle: event
-    write_owner: aicrm_next.questionnaire.repo
+    write_owner: aicrm_next.extensions.forms.questionnaire.repo
     read_owners:
-      - aicrm_next.questionnaire.repo
-      - aicrm_next.automation_agents.repository
+      - aicrm_next.extensions.forms.questionnaire.repo
+      - aicrm_next.extensions.ai.automation_agents.repository
     replacement: none; canonical questionnaire answer snapshot table
     drop_candidate: false
     drop_after: ""
@@ -1650,9 +1670,9 @@ tables:
     lifecycle: audit
     write_owner: ""
     read_owners:
-      - aicrm_next.questionnaire.repo
+      - aicrm_next.extensions.forms.questionnaire.repo
       - questionnaire external push admin pages
-      - aicrm_next.questionnaire.reconciliation
+      - aicrm_next.extensions.forms.questionnaire.reconciliation
     replacement: internal_event, internal_event_consumer_run, external_effect_job, external_effect_attempt
     drop_candidate: true
     drop_after: "after historical rows are exported or their retention window expires"
@@ -1670,13 +1690,12 @@ tables:
   domain_event_outbox:
     domain: commerce_events
     lifecycle: event
-    write_owner: aicrm_next.commerce.external_push_outbox
+    write_owner: aicrm_next.platform.external_push
     write_owners:
-      - aicrm_next.commerce.external_push_outbox
-      - aicrm_next.external_push.repo
+      - aicrm_next.platform.external_push
     read_owners:
-      - aicrm_next.commerce.external_push_admin
-      - aicrm_next.external_push.repo
+      - aicrm_next.extensions.commerce.commerce.external_push_admin
+      - aicrm_next.platform.external_push.repo
     replacement: internal_event or external_effect_job after event/outbox convergence is designed
     drop_candidate: true
     drop_after: "after PR #13 lineage proves commerce outbox is fully represented by internal_event/external_effect"
@@ -1687,18 +1706,18 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_event_effect_table_lineage.py
-    notes: Business event outbox for commerce external push; not an external side-effect executor.
+      - tests/test_external_push_domain_event_outbox_owner_postgres.py
+    notes: Business event outbox for commerce external push; Commerce writes through the External Push owner port inside the payment transaction. It is not an external side-effect executor.
 
   external_push_delivery:
     domain: commerce_events
     lifecycle: legacy_boundary
-    write_owner: aicrm_next.commerce.external_push_admin
+    write_owner: aicrm_next.platform.external_push
     write_owners:
-      - aicrm_next.commerce.external_push_admin
-      - aicrm_next.external_push.repo
+      - aicrm_next.platform.external_push
     read_owners:
-      - aicrm_next.commerce.external_push_admin
-      - aicrm_next.external_push.repo
+      - aicrm_next.extensions.commerce.commerce.external_push_admin
+      - aicrm_next.platform.external_push.repo
       - external_effect compatibility diagnostics
     replacement: external_effect_job, external_effect_attempt
     drop_candidate: true
@@ -1710,19 +1729,19 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_event_effect_table_lineage.py
-    notes: Active legacy delivery ledger; future work should converge retries and status to external_effect.
+      - tests/test_external_push_delivery_projection_owner_postgres.py
+    notes: Active legacy delivery ledger. Commerce commands and reconciliation write through the External Push owner port inside their caller transaction; future work should converge retries and status to external_effect.
 
   outbound_webhook_deliveries:
     domain: outbound_webhook
     lifecycle: queue
-    write_owner: outbound webhook worker/runtime
+    write_owner: aicrm_next.platform.admin_jobs
     write_owners:
-      - aicrm_next.admin_jobs.repository
-      - outbound webhook worker/runtime
+      - aicrm_next.platform.admin_jobs
     status_enum:
       column: status
     read_owners:
-      - aicrm_next.admin_jobs.repository
+      - aicrm_next.platform.admin_jobs.repository
     replacement: external_effect_job, external_effect_attempt
     drop_candidate: true
     drop_after: "after webhook deliveries are represented as external_effect jobs"
@@ -1733,7 +1752,7 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_event_effect_table_lineage.py
-    notes: Queue-like webhook delivery ledger; overlaps with external_effect but remains active.
+    notes: Queue-like webhook delivery ledger; current runtime mutation is confined to the admin-jobs repository. It overlaps with external_effect but remains active until parity and migration evidence exist.
 
   outbound_event_outbox:
     domain: outbound_webhook
@@ -1753,9 +1772,11 @@ tables:
   internal_event:
     domain: internal_events
     lifecycle: event
-    write_owner: aicrm_next.platform_foundation.internal_events.service
+    write_owner: aicrm_next.platform.platform_foundation.internal_events.service
     read_owners:
-      - aicrm_next.platform_foundation.internal_events.worker
+      - aicrm_next.crm.customer_read_model.refresh_scope_repository
+      - aicrm_next.platform.platform_foundation.execution_runtime.read_model
+      - aicrm_next.platform.platform_foundation.internal_events.worker
       - internal event admin/reconciliation APIs
     replacement: none; canonical internal event bus
     drop_candidate: false
@@ -1764,6 +1785,7 @@ tables:
       - internal event publish
       - internal event worker
       - internal event admin API
+      - unified execution timeline
     migration_source: 0043_internal_event_queue, fan-out manifest added by 0122_internal_event_fanout_manifest
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
@@ -1773,18 +1795,16 @@ tables:
   internal_event_outbox:
     domain: internal_events
     lifecycle: queue
-    write_owner: aicrm_next.platform_foundation.internal_events.outbox
+    write_owner: aicrm_next.platform.platform_foundation.internal_events
     write_owners:
-      - aicrm_next.commerce.fulfillment_reconciliation
-      - aicrm_next.commerce.admin_transactions
-      - aicrm_next.platform_foundation.internal_events.outbox
-      - aicrm_next.public_product.h5_wechat_pay
+      - aicrm_next.platform.platform_foundation.internal_events
     status_enum:
       column: status
     read_owners:
-      - aicrm_next.platform_foundation.internal_events.worker
-      - aicrm_next.platform_foundation.internal_events.reconciliation
-      - aicrm_next.commerce.fulfillment_reconciliation
+      - aicrm_next.platform.platform_foundation.execution_runtime.read_model
+      - aicrm_next.platform.platform_foundation.internal_events.worker
+      - aicrm_next.platform.platform_foundation.internal_events.reconciliation
+      - aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation
     replacement: none; transactional durability boundary for existing internal business events
     drop_candidate: false
     drop_after: ""
@@ -1794,21 +1814,28 @@ tables:
       - internal event outbox relay
       - internal event outbox reconciliation
       - commerce fulfillment reconciliation repair
+      - unified execution timeline
     migration_source: 0099_internal_event_outbox_and_consumer_lease
     pii_level: restricted_business_payload
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_event_effect_table_lineage.py
       - tests/test_internal_event_outbox.py
-    notes: Technical outbox only; payment and refund state share this durability boundary. scripts/run_internal_event_worker.py is the only relay owner; scoped schedulers are consumer-only. Commerce and internal-event repair only ensure idempotent technical continuations and never execute consumers or providers.
+      - tests/test_internal_event_outbox_runtime_owner.py
+      - tests/test_internal_event_outbox_runtime_owner_postgres.py
+      - tests/test_execution_runtime_postgres.py
+    notes: The platform internal_events capability is the sole writer. Business producers append through transactional owner functions, while queue claim/recovery/heartbeat, operator wake CAS, stale-signal quarantine, relay settlement, and reconciliation use owner repositories without taking over caller commit boundaries. Payment and refund state share this durability boundary. scripts/run_internal_event_worker.py is the only relay owner; scoped schedulers are consumer-only. Commerce and internal-event repair only ensure idempotent technical continuations and never execute consumers or providers. Revision 0125 makes available_at mandatory and constrains lane to internal_general or internal_financial. Unified timeline reads payload_summary_json only and applies centralized sensitive-data redaction; full payload_json is excluded.
 
   internal_event_consumer_run:
     domain: internal_events
     lifecycle: queue
-    write_owner: aicrm_next.platform_foundation.internal_events.worker
+    write_owner: aicrm_next.platform.platform_foundation.internal_events
+    write_owners:
+      - aicrm_next.platform.platform_foundation.internal_events
     status_enum:
       column: status
     read_owners:
+      - aicrm_next.platform.platform_foundation.execution_runtime.read_model
       - internal event admin/reconciliation APIs
     replacement: none; canonical internal consumer queue
     drop_candidate: false
@@ -1816,41 +1843,353 @@ tables:
     runtime_entrypoints:
       - internal event consumer scheduling
       - internal event worker retry
+      - unified execution timeline
     migration_source: 0043_internal_event_queue, lease CAS hardened by 0099_internal_event_outbox_and_consumer_lease
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_event_effect_table_lineage.py
-    notes: Tracks consumer execution state for internal_event. Relay creates the exact manifest-declared set atomically; manifest-aware reconciliation may only restore missing declared rows without executing handlers. Automatic due is limited to pending, due failed_retryable, and stale running; failed_terminal/blocked require audited manual action.
+      - tests/test_internal_event_consumer_run_owner.py
+      - tests/test_internal_event_consumer_run_owner_postgres.py
+      - tests/test_execution_runtime_postgres.py
+      - tests/test_admin_queue_command_api.py
+    notes: The platform internal_events capability is the sole writer for consumer creation, settlement, runtime claim/recovery/heartbeat, audited operator CAS, and dead-signal quarantine. Execution runtime and customer read-model callers retain their existing transaction, policy lock, fairness, wakeup, and audit boundaries through the public owner port. Relay creates the exact manifest-declared set atomically; manifest-aware reconciliation may only restore missing declared rows without executing handlers. Each external_effect.completed continuation owns an independent success-only row and retry budget; external_effect.settled independently fans every terminal status to the Identity, Group Ops, Welcome, Broadcast, and External Push parent projections without provider-result access. Predicate misses succeed as no-op, while the former first-match consumer name is a history-only handler alias excluded from new manifests. Revision 0131 holds and classifies all nonterminal work created under the former contract. Automatic due is limited to pending, due failed_retryable, and stale running; failed_terminal/blocked require audited manual action. Revision 0125 makes available_at mandatory and constrains lane to internal_general or internal_financial.
 
   internal_event_consumer_attempt:
     domain: internal_events
     lifecycle: audit
-    write_owner: aicrm_next.platform_foundation.internal_events.worker
+    write_owner: aicrm_next.platform.platform_foundation.internal_events
     read_owners:
+      - aicrm_next.platform.platform_foundation.execution_runtime.read_model
       - internal event admin/reconciliation APIs
     replacement: none; canonical internal consumer attempt audit
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
       - internal event worker attempt logging
+      - unified execution timeline
     migration_source: 0043_internal_event_queue, manual retry audit hardened by 0099_internal_event_outbox_and_consumer_lease
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_event_effect_table_lineage.py
-    notes: Attempt audit for internal_event_consumer_run.
+      - tests/test_internal_event_consumer_run_owner.py
+      - tests/test_internal_event_consumer_run_owner_postgres.py
+    notes: Attempt audit for internal_event_consumer_run. external_effect.completed sibling attempts are independent, so one failed continuation cannot overwrite provider truth or a sibling result. Unified timeline combines request/response summaries only and applies centralized sensitive-data redaction; restricted provider payload is never copied into these summaries.
+
+  queue_history_classification:
+    domain: platform_foundation
+    lifecycle: audit
+    write_owner: migrations.0125_execution_runtime_correctness
+    read_owners:
+      - queue history classification operations snapshot
+      - execution runtime consistency audit
+    replacement: none; immutable cutover evidence for pre-runtime queue history
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - scripts/ops/snapshot_queue_history_classification.py
+    migration_source: 0125_execution_runtime_correctness
+    pii_level: none
+    guard_tests:
+      - tests/test_queue_history_freeze.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Append-only classification of the exact pre-cutover rows, including revision 0131 completion outbox and legacy first-match consumer work. It stores queue kind, numeric row id, source status, classification and non-sensitive evidence only; update and delete are rejected by a database trigger, and no automatic release path exists.
+
+  queue_runtime_control:
+    domain: platform_foundation
+    lifecycle: config
+    write_owner: aicrm_next.platform.platform_foundation.execution_runtime
+    read_owners:
+      - PostgreSQL execution runtime generation gate
+      - execution runtime admin read model
+    replacement: none; canonical singleton generation and global claim gate
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - execution runtime claim authorization
+      - generation cutover command
+      - execution runtime admin API
+    migration_source: 0126_postgres_execution_runtime
+    pii_level: none
+    guard_tests:
+      - tests/test_execution_runtime_postgres.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Fail-closed singleton control row. A generation must match and claim_enabled plus rollout policy must authorize a claim; deployment labels alone never activate execution.
+
+  queue_lane_policy:
+    domain: platform_foundation
+    lifecycle: config
+    write_owner: aicrm_next.platform.platform_foundation.execution_runtime
+    read_owners:
+      - PostgreSQL execution runtime lane capacity gate
+      - execution runtime admin read model
+    replacement: none; canonical per-lane capacity and rollout policy
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - execution runtime claim authorization
+      - lane policy administration
+      - execution runtime admin API
+    migration_source: 0126_postgres_execution_runtime
+    pii_level: none
+    guard_tests:
+      - tests/test_execution_runtime_postgres.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Stores reserved per-lane capacity and explicit rollout mode. outbound_webhook, wecom_ai_assistant_bulk and ai_generation are seeded blocked and must remain fail-closed without separate approval. The WeCom AI lane starts at four with code ceiling twenty-four; generation starts at four with code ceiling sixty-four.
+
+  queue_policy_snapshot:
+    domain: platform_foundation
+    lifecycle: config
+    write_owner: aicrm_next.platform.platform_foundation.execution_runtime
+    read_owners:
+      - PostgreSQL execution runtime policy resolver
+      - execution runtime admin read model
+    replacement: none; canonical versioned queue policy snapshot
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - execution runtime policy resolution
+      - execution runtime health and statistics
+    migration_source: 0126_postgres_execution_runtime
+    pii_level: none
+    guard_tests:
+      - tests/test_execution_runtime_postgres.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Versioned non-secret policy document shared by claim and read paths so health metrics and execution decisions use the same policy snapshot. It is append-only at the database boundary; UPDATE and DELETE are rejected by a trigger.
+
+  queue_fairness_cursor:
+    domain: platform_foundation
+    lifecycle: read_model
+    write_owner: aicrm_next.platform.platform_foundation.execution_runtime.repository
+    read_owners:
+      - PostgreSQL execution runtime fair claim selector
+      - execution runtime admin read model
+    replacement: none; durable scheduler fairness projection
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - execution runtime claim_one
+      - execution runtime queue diagnostics
+    migration_source: 0126_postgres_execution_runtime
+    pii_level: none
+    guard_tests:
+      - tests/test_execution_runtime_postgres.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Derived scheduling state only. fairness_key must be a non-secret operational partition key and must not contain message content or personal contact data.
+
+  queue_rate_scope_cooldown:
+    domain: platform_foundation
+    lifecycle: queue
+    write_owner: aicrm_next.platform.platform_foundation.rate_scope_cooldown
+    write_owners:
+      - aicrm_next.platform.platform_foundation.rate_scope_cooldown
+    read_owners:
+      - PostgreSQL execution runtime external-effect claim selector
+      - execution runtime admin read model
+    replacement: none; canonical provider rate-scope cooldown state
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - provider rate-limit result handling
+      - execution runtime external-effect claim_one
+      - execution runtime admin API
+    migration_source: 0126_postgres_execution_runtime
+    pii_level: none
+    guard_tests:
+      - tests/test_execution_runtime_postgres.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+      - tests/test_rate_scope_cooldown_owner_postgres.py
+    notes: Durable rate-scope deadline releases worker capacity instead of sleeping. Execution-runtime administration and external-effect 429 settlement write through the public RateScopeCooldownPort. The port preserves each caller's existing transaction, never commits on its behalf, and is the sole SQL writer. It records provider/corp/app/operation identifiers and audit reason only; request payload, recipient identity, content and secrets are forbidden.
+
+  queue_worker_heartbeat:
+    domain: platform_foundation
+    lifecycle: read_model
+    write_owner: aicrm_next.platform.platform_foundation.execution_runtime
+    read_owners:
+      - execution runtime admin read model
+      - execution runtime consistency audit
+    replacement: none; canonical worker and listener liveness projection
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - execution runtime worker heartbeat
+      - listener reconnect and drain tracking
+      - execution runtime admin API
+    migration_source: 0126_postgres_execution_runtime
+    pii_level: none
+    guard_tests:
+      - tests/test_execution_runtime_postgres.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Operational liveness projection keyed by service and worker. It exposes generation, release SHA, listener and drain timestamps plus payload-free token-refresh and process-local start-rate metrics without queue payloads or customer identifiers.
+
+  queue_runtime_scope_transition_audit:
+    domain: platform_foundation
+    lifecycle: audit
+    write_owner: aicrm_next.platform.platform_foundation.execution_runtime.cutover
+    read_owners:
+      - ID-validation queue operation evidence
+      - execution runtime consistency audit
+    replacement: none; immutable scope and policy transition evidence
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - scripts/ops/transition_queue_runtime_scope.py
+    migration_source: 0135_queue_scope_transition_audit
+    pii_level: none
+    guard_tests:
+      - tests/test_queue_runtime_cutover_postgres.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Append-only evidence for each drained test_loopback to allowlisted transition or rollback. Policy JSON is non-secret and target identifiers are not stored.
+
+  queue_runtime_canary_config_audit:
+    domain: platform_foundation
+    lifecycle: audit
+    write_owner: scripts.ops.configure_wecom_canary
+    read_owners:
+      - ID-validation queue operation evidence
+      - execution runtime consistency audit
+    replacement: none; immutable canary configuration hash and count evidence
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - scripts/ops/configure_wecom_canary.py
+    migration_source: 0135_queue_scope_transition_audit
+    pii_level: none
+    guard_tests:
+      - tests/test_wecom_canary_configuration.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Append-only before and after configuration hashes plus allowlist counts. Exact target values and secrets are forbidden.
+
+  queue_terminal_acknowledgement:
+    domain: platform_foundation
+    lifecycle: audit
+    write_owner: scripts.ops.acknowledge_production_terminal_history
+    read_owners:
+      - external effect data health
+      - production queue cutover evidence
+    replacement: none; immutable operator acknowledgement of strictly authorized no-replay terminal histories
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - scripts/ops/acknowledge_pre_cutover_welcome_terminal.py
+      - scripts/ops/acknowledge_production_terminal_history.py
+      - external effect data health
+    migration_source: 0139_queue_terminal_acknowledgement_scope
+    pii_level: none
+    guard_tests:
+      - tests/test_queue_all_scope_cutover.py
+      - tests/test_production_terminal_history_acknowledgement.py
+      - tests/test_data_health_checks.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Append-only acknowledgement for the exactly authorized generation-0 welcome 41050, one production private-message 84061, and three refund NOT_ENOUGH terminals. It preserves numeric job linkage and hashes only, forbids replay and provider-success claims, and stores no provider target, content, credential, or error message.
+
+  queue_runtime_validation_evidence:
+    domain: platform_foundation
+    lifecycle: audit
+    write_owner: aicrm_next.platform.platform_foundation.execution_runtime.validation
+    read_owners:
+      - ID-validation 72-hour soak gate
+      - execution runtime consistency audit
+    replacement: none; immutable canary and fault-drill evidence
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - scripts/ops/run_test_loopback_canary.py
+      - scripts/ops/plan_wecom_canary.py
+      - scripts/ops/attest_queue_runtime_validation.py
+      - scripts/ops/run_queue_runtime_fault_drill.py
+    migration_source: 0136_queue_runtime_validation_soak
+    pii_level: none
+    guard_tests:
+      - tests/test_queue_runtime_validation.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Append-only redacted proof bound to release SHA, generation and immutable policy. It stores execution and numeric job IDs, outcome booleans and counts only, never provider targets, content or credentials.
+
+  queue_runtime_lease_recovery_event:
+    domain: platform_foundation
+    lifecycle: audit
+    write_owner: aicrm_next.platform.platform_foundation.execution_runtime.repository
+    read_owners:
+      - ID-validation 72-hour soak gate
+      - execution runtime consistency audit
+    replacement: none; immutable lease-loss occurrence evidence
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - aicrm_next.platform.platform_foundation.execution_runtime.repository
+      - scripts/ops/manage_queue_runtime_soak.py
+    migration_source: 0136_queue_runtime_validation_soak
+    pii_level: none
+    guard_tests:
+      - tests/test_execution_runtime_postgres.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Append-only recovery occurrence rows written before an expired queue lease is mutated. Stores queue kind, numeric row ID, generation, error code and timestamps only; no payload, target, lease token or credential.
+
+  queue_runtime_soak_run:
+    domain: platform_foundation
+    lifecycle: canonical
+    write_owner: scripts.ops.manage_queue_runtime_soak
+    read_owners:
+      - ID-validation queue operation status
+      - 15-minute soak snapshot service
+    replacement: none; canonical 72-hour validation state machine
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - scripts/ops/manage_queue_runtime_soak.py
+      - aicrm-queue-soak-snapshot.service
+    migration_source: 0136_queue_runtime_validation_soak
+    pii_level: none
+    guard_tests:
+      - tests/test_queue_runtime_validation.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: CAS-controlled running, passed, failed or invalidated soak identity bound to one release, migration, generation, scope and configuration hash.
+
+  queue_runtime_soak_snapshot:
+    domain: platform_foundation
+    lifecycle: audit
+    write_owner: scripts.ops.manage_queue_runtime_soak
+    read_owners:
+      - ID-validation 72-hour soak completion gate
+      - execution runtime consistency audit
+    replacement: none; immutable periodic soak metrics
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - aicrm-queue-soak-snapshot.service
+      - scripts/ops/manage_queue_runtime_soak.py
+    migration_source: 0136_queue_runtime_validation_soak
+    pii_level: none
+    guard_tests:
+      - tests/test_queue_runtime_validation.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Append-only 15-minute operational metrics and invariant violations. It has a foreign key to the canonical soak run and contains no task payload or customer identity.
 
   external_effect_job:
     domain: external_effects
     lifecycle: queue
-    write_owner: aicrm_next.platform_foundation.external_effects.service
+    write_owner: aicrm_next.platform.platform_foundation.external_effects
     write_owners:
-      - aicrm_next.platform_foundation.external_effects.service
-      - aicrm_next.platform_foundation.external_effects.transactional
+      - aicrm_next.platform.platform_foundation.external_effects
     status_enum:
       column: status
     read_owners:
-      - aicrm_next.platform_foundation.external_effects.worker
-      - aicrm_next.platform_foundation.external_effects.reconciliation
+      - aicrm_next.platform.platform_foundation.execution_runtime.read_model
+      - aicrm_next.platform.platform_foundation.external_effects.worker
+      - aicrm_next.platform.platform_foundation.external_effects.reconciliation
       - push center projection
       - admin external effect APIs
     replacement: none; canonical external side-effect queue
@@ -1862,18 +2201,24 @@ tables:
       - payment external-push planner transaction
       - external effect worker
       - push center reconciliation
+      - unified execution timeline
     migration_source: 0039_external_effect_queue, hardened by 0100_external_effect_delivery_lease and R08 transactional producers
     pii_level: internal_contact
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_event_effect_table_lineage.py
-    notes: Canonical queue for real external side effects. Scheduler, realtime, and manual dispatch share lease-token CAS; uncertain outcomes are quarantined for reconciliation and fake outcomes are simulated.
+      - tests/test_external_effect_runtime_owner.py
+      - tests/test_external_effect_runtime_owner_postgres.py
+    notes: Canonical queue for real external side effects. Every mutation is confined to the external_effects capability; execution runtime, welcome, group-ops and Automation Agent callers cross the public write port while retaining their surrounding transaction and settlement-event append. Scheduler, realtime, and manual dispatch share lease-token CAS; uncertain outcomes are quarantined for reconciliation and fake outcomes are simulated. Every new runtime terminal transition transactionally emits payload-minimal external_effect.settled; succeeded also retains the provider-result-gated external_effect.completed hand-off. A deterministic provider business rejection may complete the processing flow without completing the side effect; the delivery status remains truthful while data health reports a strictly proven business outcome separately. Revision 0125 makes available_at mandatory and constrains lane to the original external-effect lanes; revision 0157 adds fail-closed wecom_ai_assistant_bulk and revision 0158 adds fail-closed ai_generation without changing the queue owner. Unified timeline reads summary projections only and applies centralized sensitive-data redaction; provider request payloads are excluded.
 
   external_effect_attempt:
     domain: external_effects
     lifecycle: audit
-    write_owner: aicrm_next.platform_foundation.external_effects.worker
+    write_owner: aicrm_next.platform.platform_foundation.external_effects
+    write_owners:
+      - aicrm_next.platform.platform_foundation.external_effects
     read_owners:
+      - aicrm_next.platform.platform_foundation.execution_runtime.read_model
       - push center projection
       - admin external effect APIs
     replacement: none; canonical external side-effect attempt audit
@@ -1881,16 +2226,19 @@ tables:
     drop_after: ""
     runtime_entrypoints:
       - external effect worker attempt logging
-    migration_source: 0039_external_effect_queue
+      - unified execution timeline
+    migration_source: 0039_external_effect_queue, private provider-result handoff added by 0129_identity_customer_event_driven
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_event_effect_table_lineage.py
-    notes: Append-only attempt audit for external_effect_job execution. Provider result and job state are committed atomically under the active lease.
+      - tests/test_external_effect_runtime_owner.py
+      - tests/test_external_effect_runtime_owner_postgres.py
+    notes: Append-only public attempt audit for external_effect_job execution. Provider result and job state are committed atomically under the active lease. Revision 0129 adds a repository-only restricted provider-result handoff; it is absent from ExternalEffectAttempt, Push Center, timeline, and admin API models, and is loaded only by the explicitly allowlisted identity continuation after predicate plus job/attempt/tenant linkage validation, then cleared after its idempotent local receipt commits. Revision 0125 freezes a historical dispatching attempt as unknown_after_dispatch when its parent job has already left dispatching, recording historical_freeze_orphan evidence instead of replaying it. Unified timeline redacts combined request/response summaries before returning them.
 
   owner_migration_import_sessions:
     domain: owner_migration
     lifecycle: config
-    write_owner: aicrm_next.owner_migration.repo
+    write_owner: aicrm_next.crm.owner_migration.repo
     read_owners:
       - owner migration import/preview APIs
     replacement: none; canonical owner migration import session state
@@ -1908,7 +2256,7 @@ tables:
   owner_migration_previews:
     domain: owner_migration
     lifecycle: read_model
-    write_owner: aicrm_next.owner_migration.repo
+    write_owner: aicrm_next.crm.owner_migration.repo
     read_owners:
       - owner migration preview APIs
       - owner migration execute APIs
@@ -1927,7 +2275,7 @@ tables:
   owner_migration_results:
     domain: owner_migration
     lifecycle: audit
-    write_owner: aicrm_next.owner_migration.repo
+    write_owner: aicrm_next.crm.owner_migration.repo
     read_owners:
       - owner migration result APIs
       - owner migration report downloads
@@ -1946,9 +2294,9 @@ tables:
   admin_login_audit:
     domain: admin_config
     lifecycle: audit
-    write_owner: aicrm_next.admin_config
+    write_owner: aicrm_next.platform.admin_config
     read_owners:
-      - aicrm_next.admin_config
+      - aicrm_next.platform.admin_config
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -1962,22 +2310,14 @@ tables:
     notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
 
   admin_operation_logs:
-    domain: admin_config
+    domain: platform_foundation
     lifecycle: audit
-    write_owner: aicrm_next.admin_config
+    write_owner: aicrm_next.platform.platform_foundation.admin_audit
     write_owners:
-      - aicrm_next.admin_config
-      - aicrm_next.admin_jobs
-      - aicrm_next.ai_audience_ops
-      - aicrm_next.cloud_orchestrator
-      - aicrm_next.owner_migration
+      - aicrm_next.platform.platform_foundation.admin_audit
     read_owners:
-      - aicrm_next.admin_config
-      - aicrm_next.admin_jobs
-      - aicrm_next.admin_read_model
-      - aicrm_next.ai_audience_ops
-      - aicrm_next.cloud_orchestrator
-      - aicrm_next.owner_migration
+      - aicrm_next.platform.admin_config
+      - aicrm_next.insights.admin_read_model
     replacement: none; canonical admin operation audit log
     drop_candidate: false
     drop_after: ""
@@ -1991,15 +2331,17 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_repository_ownership_guard.py
+      - tests/test_admin_audit_owner.py
+      - tests/test_admin_audit_owner_postgres.py
       - tests/test_unionid_identity_refactor_schema.py::test_admin_config_audit_baseline_tables_exist_in_fresh_schema
-    notes: JSONB before/after audit payloads for admin-facing configuration and operations.
+    notes: JSONB before/after audit payloads use the platform admin_audit port; callers retain their original transaction boundaries and redaction responsibilities.
 
   admin_user_roles:
     domain: admin_config
     lifecycle: canonical
-    write_owner: aicrm_next.admin_config
+    write_owner: aicrm_next.platform.admin_config
     read_owners:
-      - aicrm_next.admin_config
+      - aicrm_next.platform.admin_config
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2015,9 +2357,9 @@ tables:
   admin_users:
     domain: admin_config
     lifecycle: canonical
-    write_owner: aicrm_next.admin_config
+    write_owner: aicrm_next.platform.admin_config
     read_owners:
-      - aicrm_next.admin_config
+      - aicrm_next.platform.admin_config
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2033,7 +2375,7 @@ tables:
   ai_audience_inbound_webhook_event:
     domain: ai_audience_ops
     lifecycle: audit
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2048,14 +2390,91 @@ tables:
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
     notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
 
+  ai_audience_hxc_member_usage_projection:
+    domain: ai_audience_ops
+    lifecycle: read_model
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
+    read_owners:
+      - aicrm_next.extensions.ai.ai_audience_ops
+    replacement: none; generation-based maintained projection replaces the dynamic multi-source audience join after a separately verified cutover
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - HuangXiaoCan audience projection refresh
+      - audience_read.huangxiaocan_member_usage_status_v1 after cutover
+    migration_source: 0149_ai_audience_hxc_projection
+    pii_level: internal_contact
+    guard_tests:
+      - tests/test_ai_audience_hxc_projection_foundation.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Stores canonical unionid, owner_userid and one-way mobile hashes; legacy contact identifiers, raw mobile values and source payloads are forbidden.
+
+  ai_audience_hxc_member_usage_projection_control:
+    domain: ai_audience_ops
+    lifecycle: canonical
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
+    read_owners:
+      - aicrm_next.extensions.ai.ai_audience_ops
+    replacement: none; singleton active-generation and freshness watermark control
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - HuangXiaoCan audience projection refresh
+      - projection readiness diagnostics
+    migration_source: 0149_ai_audience_hxc_projection
+    pii_level: none
+    guard_tests:
+      - tests/test_ai_audience_hxc_projection_foundation.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Contains generation numbers, aggregate row counts, timestamps, redacted error codes, and source watermarks only.
+
+  ai_audience_refresh_intent:
+    domain: ai_audience_ops
+    lifecycle: canonical
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
+    read_owners:
+      - aicrm_next.extensions.ai.ai_audience_ops
+      - aicrm_next.platform.platform_foundation.execution_runtime
+    replacement: none; one coalescing durable refresh intent per package
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - AI Audience source event dirty marking
+      - PostgreSQL internal event refresh consumer
+      - daily clock intent writer
+    migration_source: 0128_ai_audience_refresh_intents
+    pii_level: restricted_business_payload
+    guard_tests:
+      - tests/test_ai_audience_refresh_intents_postgres.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Stores generation, execution links, scheduling state, refresh query parameters, and redacted failure metadata. Public summaries exclude parameter payloads and error text is centrally redacted.
+
+  ai_audience_refresh_source_receipt:
+    domain: ai_audience_ops
+    lifecycle: audit
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
+    read_owners:
+      - aicrm_next.extensions.ai.ai_audience_ops
+    replacement: none; idempotent source-event to package-generation evidence
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - AI Audience source event dirty marking
+      - daily and manual refresh intent creation
+    migration_source: 0128_ai_audience_refresh_intents
+    pii_level: none
+    guard_tests:
+      - tests/test_ai_audience_refresh_intents_postgres.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Stores only SHA-256 opaque source identifiers and execution links; never stores raw contact identity, message content, or provider secrets.
+
   ai_audience_member_current:
     domain: ai_audience_ops
     lifecycle: read_model
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
-      - aicrm_next.admin_read_model
-      - aicrm_next.ai_audience_ops
-      - aicrm_next.growth_orchestration
+      - aicrm_next.insights.admin_read_model
+      - aicrm_next.extensions.ai.ai_audience_ops
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2071,9 +2490,9 @@ tables:
   ai_audience_member_event:
     domain: ai_audience_ops
     lifecycle: audit
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
-      - aicrm_next.ai_audience_ops
+      - aicrm_next.extensions.ai.ai_audience_ops
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2089,9 +2508,9 @@ tables:
   ai_audience_outbound_subscription:
     domain: ai_audience_ops
     lifecycle: canonical
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
-      - aicrm_next.ai_audience_ops
+      - aicrm_next.extensions.ai.ai_audience_ops
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2107,10 +2526,9 @@ tables:
   ai_audience_package:
     domain: ai_audience_ops
     lifecycle: canonical
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
-      - aicrm_next.ai_audience_ops
-      - aicrm_next.growth_orchestration
+      - aicrm_next.extensions.ai.ai_audience_ops
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2126,9 +2544,9 @@ tables:
   ai_audience_package_dependency:
     domain: ai_audience_ops
     lifecycle: canonical
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
-      - aicrm_next.ai_audience_ops
+      - aicrm_next.extensions.ai.ai_audience_ops
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2144,9 +2562,9 @@ tables:
   ai_audience_package_run:
     domain: ai_audience_ops
     lifecycle: canonical
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
-      - aicrm_next.ai_audience_ops
+      - aicrm_next.extensions.ai.ai_audience_ops
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2162,9 +2580,9 @@ tables:
   ai_audience_package_sender:
     domain: ai_audience_ops
     lifecycle: canonical
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
-      - aicrm_next.ai_audience_ops
+      - aicrm_next.extensions.ai.ai_audience_ops
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2180,9 +2598,9 @@ tables:
   ai_audience_package_version:
     domain: ai_audience_ops
     lifecycle: canonical
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
-      - aicrm_next.ai_audience_ops
+      - aicrm_next.extensions.ai.ai_audience_ops
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2216,7 +2634,7 @@ tables:
   alipay_pay_order_events:
     domain: commerce
     lifecycle: audit
-    write_owner: aicrm_next.commerce.alipay_service
+    write_owner: aicrm_next.extensions.commerce.commerce.alipay_service
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2234,7 +2652,7 @@ tables:
   alipay_pay_orders:
     domain: commerce
     lifecycle: canonical
-    write_owner: aicrm_next.commerce.alipay_service
+    write_owner: aicrm_next.extensions.commerce.commerce.alipay_service
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2252,10 +2670,7 @@ tables:
   automation_agent_audit_log:
     domain: automation_agents
     lifecycle: audit
-    write_owner: aicrm_next.automation_agents
-    write_owners:
-      - aicrm_next.automation_agents
-      - aicrm_next.automation_engine
+    write_owner: aicrm_next.automation.automation_engine
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2268,14 +2683,14 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: Automation-engine persistence is the only runtime writer; automation_agents routes consume that owner service.
 
   automation_agent_config:
     domain: automation_agents
     lifecycle: config
-    write_owner: aicrm_next.automation_agents
+    write_owner: aicrm_next.extensions.ai.automation_agents
     read_owners:
-      - aicrm_next.admin_read_model
+      - aicrm_next.insights.admin_read_model
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2291,10 +2706,7 @@ tables:
   automation_agent_idempotency:
     domain: automation_agents
     lifecycle: canonical
-    write_owner: aicrm_next.automation_agents
-    write_owners:
-      - aicrm_next.automation_agents
-      - aicrm_next.automation_engine
+    write_owner: aicrm_next.automation.automation_engine
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2307,21 +2719,21 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: Automation-engine persistence is the only runtime writer; automation_agents routes consume that owner service.
 
   automation_agent_llm_call_log:
     domain: ai_audience_ops
     lifecycle: audit
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
-      - aicrm_next.admin_read_model
+      - aicrm_next.insights.admin_read_model
     replacement: none; canonical AI agent provider-call audit log
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
       - AI audience agent execution
       - admin AI assistant diagnostics
-    migration_source: migrations/baselines/0001_post_legacy.sql
+    migration_source: migrations/versions/0124_automation_agent_audit_tables.py
     pii_level: internal_contact
     guard_tests:
       - tests/test_ai_audience_agent_copywriting.py
@@ -2330,16 +2742,16 @@ tables:
   automation_agent_output:
     domain: ai_audience_ops
     lifecycle: audit
-    write_owner: aicrm_next.ai_audience_ops
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
     read_owners:
-      - aicrm_next.admin_read_model
+      - aicrm_next.insights.admin_read_model
     replacement: none; canonical AI agent output and adoption evidence
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
       - AI audience agent execution
       - admin AI assistant diagnostics
-    migration_source: migrations/baselines/0001_post_legacy.sql
+    migration_source: migrations/versions/0124_automation_agent_audit_tables.py
     pii_level: internal_contact
     guard_tests:
       - tests/test_ai_audience_agent_copywriting.py
@@ -2348,9 +2760,9 @@ tables:
   automation_agent_run:
     domain: automation_agents
     lifecycle: canonical
-    write_owner: aicrm_next.automation_agents
+    write_owner: aicrm_next.extensions.ai.automation_agents
     read_owners:
-      - aicrm_next.admin_read_model
+      - aicrm_next.insights.admin_read_model
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2366,7 +2778,7 @@ tables:
   automation_agent_runtime_config:
     domain: automation_agents
     lifecycle: config
-    write_owner: aicrm_next.automation_agents
+    write_owner: aicrm_next.extensions.ai.automation_agents
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2384,7 +2796,7 @@ tables:
   automation_agent_webhook_batch:
     domain: automation_agents
     lifecycle: audit
-    write_owner: aicrm_next.automation_agents
+    write_owner: aicrm_next.extensions.ai.automation_agents
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2392,17 +2804,17 @@ tables:
     drop_after: ""
     runtime_entrypoints:
       - existing production runtime
-    migration_source: 0054_automation_agent_runtime_config
+    migration_source: 0054_automation_agent_runtime_config, hardened by 0158_ai_assistant_item_pipeline
     pii_level: internal_contact
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: Durable batch audit and progress projection. Revision 0158 freezes the published Agent configuration and adds atomic per-stage counters and timestamps for the per-recipient pipeline.
 
   automation_agent_webhook_item:
     domain: automation_agents
     lifecycle: audit
-    write_owner: aicrm_next.automation_agents
+    write_owner: aicrm_next.extensions.ai.automation_agents
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2410,20 +2822,17 @@ tables:
     drop_after: ""
     runtime_entrypoints:
       - existing production runtime
-    migration_source: 0054_automation_agent_runtime_config
+    migration_source: 0054_automation_agent_runtime_config, hardened by 0158_ai_assistant_item_pipeline
     pii_level: internal_contact
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: Durable per-recipient state machine. Revision 0158 adds prepare outbox and generation Effect references, CAS versioning and stage timestamps; stable callback and Effect keys prevent duplicate WeCom task creation after recovery.
 
   automation_agents:
     domain: automation_agents
     lifecycle: canonical
-    write_owner: aicrm_next.automation_agents
-    write_owners:
-      - aicrm_next.automation_agents
-      - aicrm_next.automation_engine
+    write_owner: aicrm_next.automation.automation_engine
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2436,12 +2845,12 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: Automation-engine persistence is the only runtime writer; automation_agents routes consume that owner service.
 
   automation_ai_push_log:
     domain: automation_engine
     lifecycle: audit
-    write_owner: aicrm_next.automation_engine
+    write_owner: aicrm_next.automation.automation_engine
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2459,13 +2868,12 @@ tables:
   automation_channel:
     domain: channel_entry
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine.channels_api
+    write_owner: aicrm_next.channels.channel_entry
     write_owners:
-      - aicrm_next.automation_engine.channels_api
-      - aicrm_next.channel_entry
+      - aicrm_next.channels.channel_entry
     read_owners:
       - historical schema drift guard
-      - aicrm_next.automation_engine.channel_completion
+      - aicrm_next.automation.automation_engine.channel_completion
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2477,15 +2885,15 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Canonical channel metadata; questionnaire reads it only through the channel application-layer completion projection.
+      - tests/test_channel_write_owner_postgres.py
+    notes: Canonical channel metadata owned by channel_entry. Admin create/update, assignment settings, and QR metadata changes use ChannelWritePort while preserving each caller's existing DBAPI transaction. Questionnaire reads it only through the channel application-layer completion projection.
 
   automation_channel_assignee:
     domain: channel_entry
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine.channels_api
+    write_owner: aicrm_next.channels.channel_entry
     write_owners:
-      - aicrm_next.automation_engine.channels_api
-      - aicrm_next.channel_entry
+      - aicrm_next.channels.channel_entry
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2498,15 +2906,14 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: Canonical channel-assignee projection. Runtime mutation is confined to channel_entry; automation channel services delegate to its public repository functions and are read-only SQL consumers.
 
   automation_channel_assignment_event:
     domain: channel_entry
     lifecycle: audit
-    write_owner: aicrm_next.automation_engine.channels_api
+    write_owner: aicrm_next.channels.channel_entry
     write_owners:
-      - aicrm_next.automation_engine.channels_api
-      - aicrm_next.channel_entry
+      - aicrm_next.channels.channel_entry
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2519,15 +2926,14 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: Canonical channel-assignment audit. Runtime mutation is confined to channel_entry; automation channel services delegate event creation and only read the resulting audit projection.
 
   automation_channel_contact:
     domain: channel_entry
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine.channels_api
+    write_owner: aicrm_next.channels.channel_entry
     write_owners:
-      - aicrm_next.automation_engine.channels_api
-      - aicrm_next.channel_entry
+      - aicrm_next.channels.channel_entry
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2540,18 +2946,17 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: Canonical channel-entry contact projection. Runtime mutation is confined to the channel-entry repository; automation channel services are read-only consumers.
 
   automation_channel_qrcode_asset:
     domain: channel_entry
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine.channels_api
+    write_owner: aicrm_next.channels.channel_entry
     write_owners:
-      - aicrm_next.automation_engine.channels_api
-      - aicrm_next.channel_entry
+      - aicrm_next.channels.channel_entry
     read_owners:
       - historical schema drift guard
-      - aicrm_next.automation_engine.channel_completion
+      - aicrm_next.automation.automation_engine.channel_completion
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2563,15 +2968,14 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Canonical channel QR asset table; questionnaire stores only channel ID and resolves the active QR asset at response time.
+    notes: Canonical channel QR asset table owned by channel_entry. Automation channel services delegate stale-state mutation to that owner and otherwise read the active asset; questionnaire stores only channel ID and resolves the active QR asset at response time.
 
   automation_channel_scene_alias:
     domain: channel_entry
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine.channels_api
+    write_owner: aicrm_next.channels.channel_entry
     write_owners:
-      - aicrm_next.automation_engine.channels_api
-      - aicrm_next.channel_entry
+      - aicrm_next.channels.channel_entry
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2584,12 +2988,12 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: Canonical callback scene-alias projection. Runtime mutation is confined to the channel-entry repository; automation channel services are read-only consumers.
 
   automation_frequency_budget:
     domain: automation_engine
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine
+    write_owner: aicrm_next.automation.automation_engine
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2607,7 +3011,7 @@ tables:
   automation_frequency_consumption:
     domain: automation_engine
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine
+    write_owner: aicrm_next.automation.automation_engine
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2625,7 +3029,7 @@ tables:
   automation_sop_template:
     domain: automation_engine
     lifecycle: config
-    write_owner: aicrm_next.automation_engine
+    write_owner: aicrm_next.automation.automation_engine
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2643,7 +3047,7 @@ tables:
   automation_touch_delivery_log:
     domain: automation_engine
     lifecycle: audit
-    write_owner: aicrm_next.automation_engine
+    write_owner: aicrm_next.automation.automation_engine
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2661,30 +3065,30 @@ tables:
   broadcast_job_events:
     domain: broadcast_jobs
     lifecycle: audit
-    write_owner: aicrm_next.admin_jobs
+    write_owner: aicrm_next.automation.background_jobs
     write_owners:
-      - aicrm_next.admin_jobs
-      - aicrm_next.background_jobs.broadcast_queue_worker
+      - aicrm_next.automation.background_jobs
     read_owners:
-      - aicrm_next.admin_jobs
-      - aicrm_next.background_jobs
-      - aicrm_next.delivery_lineage
+      - aicrm_next.platform.admin_jobs
+      - aicrm_next.automation.background_jobs
+      - aicrm_next.insights.delivery_lineage
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
       - existing production runtime
+      - aicrm_next/platform/platform_foundation/background_jobs/broadcast_job_write_repository.py
     migration_source: 0021_broadcast_queue_platform_hardening
     pii_level: internal_contact
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Append-only broadcast state transition evidence. R10 dispatch start, terminal finalization, and reconciliation-required events are written in the owning background-job transaction.
+    notes: Append-only broadcast state transition evidence. Dispatch/finalization and approval-time immediate effect materialization are written through the background-jobs public write port in the owning transaction.
 
   broadcast_job_hourly_reports:
     domain: broadcast_jobs
     lifecycle: canonical
-    write_owner: aicrm_next.admin_jobs
+    write_owner: aicrm_next.platform.admin_jobs
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2702,9 +3106,9 @@ tables:
   broadcast_queue_notification_settings:
     domain: broadcast_jobs
     lifecycle: config
-    write_owner: aicrm_next.admin_jobs
+    write_owner: aicrm_next.platform.admin_jobs
     read_owners:
-      - aicrm_next.admin_jobs
+      - aicrm_next.platform.admin_jobs
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2720,7 +3124,7 @@ tables:
   cloud_agent_audit_log:
     domain: cloud_orchestrator
     lifecycle: audit
-    write_owner: aicrm_next.cloud_orchestrator
+    write_owner: aicrm_next.extensions.growth.cloud_orchestrator
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2738,7 +3142,7 @@ tables:
   cloud_approval_tokens:
     domain: cloud_orchestrator
     lifecycle: config
-    write_owner: aicrm_next.cloud_orchestrator
+    write_owner: aicrm_next.extensions.growth.cloud_orchestrator
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2756,14 +3160,13 @@ tables:
   cloud_broadcast_plan_recipient_messages:
     domain: cloud_orchestrator
     lifecycle: canonical
-    write_owner: aicrm_next.cloud_orchestrator
+    write_owner: aicrm_next.extensions.growth.cloud_orchestrator
     write_owners:
-      - aicrm_next.background_jobs.broadcast_queue_worker
-      - aicrm_next.cloud_orchestrator
+      - aicrm_next.extensions.growth.cloud_orchestrator
     read_owners:
-      - aicrm_next.background_jobs
-      - aicrm_next.cloud_orchestrator
-      - aicrm_next.send_content
+      - aicrm_next.automation.background_jobs
+      - aicrm_next.extensions.growth.cloud_orchestrator
+      - aicrm_next.engagement.send_content
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2774,19 +3177,19 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Cloud-plan message projection finalized atomically with broadcast_jobs and outbound_tasks. Fake execution is simulated without sent_at; ambiguous execution is unknown_after_dispatch.
+      - tests/test_cloud_broadcast_projection_owner.py
+      - tests/test_cloud_broadcast_projection_owner_postgres.py
+    notes: Cloud orchestrator owns every recipient-message mutation through one public projection write port. Planning, approval, worker finalization and External Effect settlement retain their original transactions. Fake execution is simulated without sent_at; ambiguous execution is unknown_after_dispatch.
 
   cloud_broadcast_plan_recipients:
     domain: cloud_orchestrator
     lifecycle: canonical
-    write_owner: aicrm_next.cloud_orchestrator
+    write_owner: aicrm_next.extensions.growth.cloud_orchestrator
     write_owners:
-      - aicrm_next.background_jobs.broadcast_queue_worker
-      - aicrm_next.cloud_orchestrator
+      - aicrm_next.extensions.growth.cloud_orchestrator
     read_owners:
-      - aicrm_next.background_jobs
-      - aicrm_next.cloud_orchestrator
-      - aicrm_next.growth_orchestration
+      - aicrm_next.automation.background_jobs
+      - aicrm_next.extensions.growth.cloud_orchestrator
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2797,15 +3200,16 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Cloud-plan recipient projection finalized atomically with broadcast_jobs and outbound_tasks. Fake execution is simulated; ambiguous execution is unknown_after_dispatch.
+      - tests/test_cloud_broadcast_projection_owner.py
+      - tests/test_cloud_broadcast_projection_owner_postgres.py
+    notes: Cloud orchestrator owns every recipient mutation through one public projection write port. Planning, approval, worker finalization and External Effect settlement retain their original transactions. Fake execution is simulated; ambiguous execution is unknown_after_dispatch.
 
   cloud_broadcast_plans:
     domain: cloud_orchestrator
     lifecycle: canonical
-    write_owner: aicrm_next.cloud_orchestrator
+    write_owner: aicrm_next.extensions.growth.cloud_orchestrator
     read_owners:
-      - aicrm_next.cloud_orchestrator
-      - aicrm_next.growth_orchestration
+      - aicrm_next.extensions.growth.cloud_orchestrator
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2839,24 +3243,19 @@ tables:
   crm_user_identity:
     domain: identity_contact
     lifecycle: canonical
-    write_owner: aicrm_next.identity_contact
-    write_owners:
-      - aicrm_next.channel_entry
-      - aicrm_next.identity_contact
-      - aicrm_next.public_product
-      - aicrm_next.sidebar_write
+    write_owner: aicrm_next.crm.identity_contact
     read_owners:
-      - aicrm_next.ai_assist
-      - aicrm_next.ai_audience_ops
-      - aicrm_next.background_jobs
-      - aicrm_next.channel_entry
-      - aicrm_next.cloud_orchestrator
-      - aicrm_next.customer_read_model
-      - aicrm_next.identity_contact
-      - aicrm_next.message_archive
-      - aicrm_next.questionnaire
-      - aicrm_next.radar_links
-      - aicrm_next.sidebar_write
+      - aicrm_next.extensions.ai.ai_assist
+      - aicrm_next.extensions.ai.ai_audience_ops
+      - aicrm_next.automation.background_jobs
+      - aicrm_next.channels.channel_entry
+      - aicrm_next.extensions.growth.cloud_orchestrator
+      - aicrm_next.crm.customer_read_model
+      - aicrm_next.crm.identity_contact
+      - aicrm_next.extensions.archive.message_archive
+      - aicrm_next.extensions.forms.questionnaire
+      - aicrm_next.extensions.radar.radar_links
+      - aicrm_next.crm.sidebar_write
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -2867,15 +3266,12 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Unionid is the only canonical business identity. Channel entry, public payment projection, and sidebar are bounded ingress adapters; every mutation alias lookup uses aicrm_next.identity_contact.resolver and every write targets a resolved active unionid. Declared cross-context read projections must fail closed instead of selecting an arbitrary identity when an alias has multiple candidates.
+    notes: Unionid is the only canonical business identity. Channel entry, public payment projection, and sidebar are bounded ingress adapters that mutate only through the identity_contact owner port; every mutation alias lookup uses aicrm_next.crm.identity_contact.resolver and every write targets a resolved active unionid. Declared cross-context read projections must fail closed instead of selecting an arbitrary identity when an alias has multiple candidates.
 
   crm_user_identity_conflicts:
     domain: identity_contact
     lifecycle: canonical
-    write_owner: aicrm_next.identity_contact
-    write_owners:
-      - aicrm_next.channel_entry
-      - aicrm_next.identity_contact
+    write_owner: aicrm_next.crm.identity_contact
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2893,7 +3289,7 @@ tables:
   crm_user_identity_merge_audit:
     domain: identity_contact
     lifecycle: audit
-    write_owner: aicrm_next.identity_contact
+    write_owner: aicrm_next.crm.identity_contact
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -2911,88 +3307,170 @@ tables:
   crm_user_identity_resolution_queue:
     domain: identity_contact
     lifecycle: queue
-    write_owner: aicrm_next.identity_contact
+    write_owner: aicrm_next.crm.identity_contact
     write_owners:
-      - aicrm_next.ai_audience_ops
-      - aicrm_next.channel_entry
-      - aicrm_next.identity_contact
-      - aicrm_next.message_archive
-      - aicrm_next.questionnaire
-      - aicrm_next.sidebar_write
+      - aicrm_next.crm.identity_contact
     read_owners:
-      - aicrm_next.channel_entry
+      - aicrm_next.channels.channel_entry
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
       - existing production runtime
-    migration_source: migrations/baselines/0001_post_legacy.sql
+    migration_source: migrations/baselines/0001_post_legacy.sql, event-driven effect ownership added by 0129_identity_customer_event_driven
     pii_level: internal_contact
     status_enum:
       column: status
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Existing unresolved identity boundary. Missing aliases remain pending/failed/conflict here and must never be treated as a canonical identity or successful consumer outcome.
+    notes: Durable unresolved identity intent. Ingress, claims, backfill results, external-effect completion, terminal settlement, and authorized pre-provider reopen all mutate the queue only through the identity_contact owner port. Revision 0129 gives each new eligible row an execution_id and exactly one canonical wecom_interactive external effect; linked rows are excluded from the legacy poller. All pre-cutover pending/polling rows are held for manual classification and never auto-replayed. Missing aliases remain held/conflict and must never be treated as a canonical identity or successful consumer outcome.
+
+  identity_resolution_completion_receipt:
+    domain: identity_contact
+    lifecycle: audit
+    write_owner: aicrm_next.crm.identity_contact
+    read_owners:
+      - aicrm_next.crm.identity_contact
+      - identity resolution reconciliation
+    replacement: none; idempotent local continuation evidence after provider success
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - external_effect.completed identity continuation
+    migration_source: 0129_identity_customer_event_driven
+    pii_level: aggregate_only
+    guard_tests:
+      - tests/test_identity_customer_event_driven_postgres.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: One receipt per canonical external effect. It stores only result status, execution links, internal row ids, and a boolean/count summary; raw provider detail is never copied here.
 
   customer_detail_snapshot_next:
     domain: customer_read_model
     lifecycle: read_model
-    write_owner: aicrm_next.owner_migration
+    write_owner: aicrm_next.crm.customer_read_model
+    write_owners:
+      - aicrm_next.crm.customer_read_model
+      - aicrm_next.crm.owner_migration
     read_owners:
-      - aicrm_next.owner_migration
+      - aicrm_next.crm.customer_read_model
+      - aicrm_next.crm.owner_migration
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - existing production runtime
+      - customer read-model full calibration
+      - customer source-event incremental refresh
     migration_source: 0026_customer_read_model_next
     pii_level: internal_contact
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes. Revision 0152 adds the unique unionid key and synchronizes the id sequence; the customer source-event worker then owns bounded unionid upserts while release calibration remains separately observable.
 
   customer_list_index_next:
     domain: customer_read_model
     lifecycle: read_model
-    write_owner: aicrm_next.owner_migration
+    write_owner: aicrm_next.crm.customer_read_model
+    write_owners:
+      - aicrm_next.crm.customer_read_model
+      - aicrm_next.crm.owner_migration
     read_owners:
-      - aicrm_next.owner_migration
+      - aicrm_next.crm.customer_read_model
+      - aicrm_next.crm.owner_migration
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - existing production runtime
+      - customer read-model full calibration
+      - customer source-event incremental refresh
     migration_source: 0026_customer_read_model_next
     pii_level: internal_contact
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes. Revision 0152 adds the unique unionid key and synchronizes the id sequence; the customer source-event worker then owns bounded unionid upserts while release calibration remains separately observable.
 
   customer_recent_message_next:
     domain: customer_read_model
     lifecycle: canonical
-    write_owner: aicrm_next.customer_read_model
+    write_owner: aicrm_next.crm.customer_read_model
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - existing production runtime
+      - customer read-model full calibration
+      - customer source-event incremental refresh
     migration_source: 0026_customer_read_model_next
     pii_level: internal_contact
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes. Revision 0152 synchronizes the id sequence; incremental refresh replaces only the bounded unionid message slice and leaves unrelated customers untouched.
+
+  customer_list_index_next_shadow:
+    domain: customer_read_model
+    lifecycle: read_model
+    write_owner: aicrm_next.crm.customer_read_model
+    read_owners:
+      - aicrm_next.crm.customer_read_model
+      - aicrm_next.crm.owner_migration
+    replacement: inactive double-buffer slot for atomic full customer calibration
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - inactive full calibration target and active generation after atomic slot switch
+    migration_source: 0153_customer_read_model_generation_slots
+    pii_level: internal_contact
+    guard_tests:
+      - tests/test_database_bootstrap.py::test_customer_read_model_generation_foundation_adds_inactive_indexed_slots
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Indexed double-buffer slot. Full calibration rebuilds only the inactive slot, validates list/detail cardinality, then changes active_slot in the same transaction; bounded incremental refresh writes the locked active slot.
+
+  customer_detail_snapshot_next_shadow:
+    domain: customer_read_model
+    lifecycle: read_model
+    write_owner: aicrm_next.crm.customer_read_model
+    read_owners:
+      - aicrm_next.crm.customer_read_model
+      - aicrm_next.crm.owner_migration
+    replacement: inactive double-buffer slot for atomic full customer calibration
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - inactive full calibration target and active generation after atomic slot switch
+    migration_source: 0153_customer_read_model_generation_slots
+    pii_level: internal_contact
+    guard_tests:
+      - tests/test_database_bootstrap.py::test_customer_read_model_generation_foundation_adds_inactive_indexed_slots
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Indexed double-buffer slot. Full calibration rebuilds only the inactive slot, validates list/detail cardinality, then changes active_slot in the same transaction; bounded incremental refresh writes the locked active slot.
+
+  customer_recent_message_next_shadow:
+    domain: customer_read_model
+    lifecycle: read_model
+    write_owner: aicrm_next.crm.customer_read_model
+    read_owners:
+      - aicrm_next.crm.customer_read_model
+      - aicrm_next.crm.owner_migration
+    replacement: inactive double-buffer slot for atomic full customer calibration
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - inactive full calibration target and active generation after atomic slot switch
+    migration_source: 0153_customer_read_model_generation_slots
+    pii_level: internal_contact
+    guard_tests:
+      - tests/test_database_bootstrap.py::test_customer_read_model_generation_foundation_adds_inactive_indexed_slots
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Indexed double-buffer slot. Full calibration rebuilds only the inactive slot, validates list/detail cardinality, then changes active_slot in the same transaction; bounded incremental refresh writes the locked active slot.
 
   customer_timeline_event_next:
     domain: customer_read_model
     lifecycle: canonical
-    write_owner: aicrm_next.customer_read_model
+    write_owner: aicrm_next.crm.customer_read_model
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3010,12 +3488,12 @@ tables:
   external_contact_bindings:
     domain: identity_contact
     lifecycle: read_model
-    write_owner: aicrm_next.owner_migration
+    write_owner: aicrm_next.crm.owner_migration
     write_owners:
-      - aicrm_next.owner_migration
+      - aicrm_next.crm.owner_migration
     read_owners:
-      - aicrm_next.identity_contact
-      - aicrm_next.owner_migration
+      - aicrm_next.crm.identity_contact
+      - aicrm_next.crm.owner_migration
     replacement: crm_user_identity
     drop_candidate: false
     drop_after: ""
@@ -3031,10 +3509,7 @@ tables:
   external_effect_test_receipt:
     domain: external
     lifecycle: audit
-    write_owner: aicrm_next.external_effect
-    write_owners:
-      - aicrm_next.external_effect
-      - aicrm_next.platform_foundation.external_effects
+    write_owner: aicrm_next.platform.platform_foundation.external_effects
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3047,17 +3522,14 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: The platform external-effect receipt repository is the only runtime writer.
 
   external_push_config:
     domain: external
     lifecycle: config
-    write_owner: aicrm_next.external_push
-    write_owners:
-      - aicrm_next.commerce
-      - aicrm_next.external_push
+    write_owner: aicrm_next.extensions.commerce.commerce
     read_owners:
-      - aicrm_next.external_push
+      - aicrm_next.platform.external_push
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -3068,12 +3540,12 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: Commerce product configuration is the only runtime writer; external_push consumes this configuration read model.
 
   group_chats:
     domain: group_ops
     lifecycle: canonical
-    write_owner: aicrm_next.automation_engine.group_ops
+    write_owner: aicrm_next.automation.automation_engine.group_ops
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3224,10 +3696,7 @@ tables:
   hxc_dashboard_broadcast_tasks:
     domain: user_ops
     lifecycle: canonical
-    write_owner: aicrm_next.user_ops
-    write_owners:
-      - aicrm_next.hxc_dashboard
-      - aicrm_next.user_ops
+    write_owner: aicrm_next.extensions.hxc.hxc_dashboard
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3240,7 +3709,7 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+    notes: The HXC dashboard repository is the only runtime writer; user_ops is a logical product surface, not a second storage owner.
 
   legacy_webhook_cleanup_audit:
     domain: legacy_webhook_cleanup
@@ -3277,31 +3746,30 @@ tables:
   outbound_tasks:
     domain: admin_jobs
     lifecycle: canonical
-    write_owner: aicrm_next.admin_jobs
+    write_owner: aicrm_next.automation.background_jobs
     write_owners:
-      - aicrm_next.admin_jobs
-      - aicrm_next.background_jobs.broadcast_queue_worker
+      - aicrm_next.automation.background_jobs
     read_owners:
-      - aicrm_next.admin_jobs
-      - aicrm_next.admin_read_model
-      - aicrm_next.background_jobs
-      - aicrm_next.growth_orchestration
+      - aicrm_next.platform.admin_jobs
+      - aicrm_next.insights.admin_read_model
+      - aicrm_next.automation.background_jobs
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
       - existing production runtime
+      - aicrm_next/platform/platform_foundation/background_jobs/broadcast_job_write_repository.py
     migration_source: migrations/baselines/0001_post_legacy.sql
     pii_level: internal_contact
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Outbound provider-task evidence is inserted or reused inside the broadcast terminal finalizer transaction. Fake adapter results use simulated; one broadcast_job_id may have at most one row.
+    notes: Outbound task evidence is inserted or reused through the background-jobs public write port during approval-time effect delegation and terminal finalization. Fake adapter results use simulated; one broadcast_job_id may have at most one row.
 
   radar_click_events:
     domain: radar
     lifecycle: event
-    write_owner: aicrm_next.radar_links
+    write_owner: aicrm_next.extensions.radar.radar_links
     read_owners:
       - radar admin event list, export, and aggregate statistics
       - external radar logical-click read model
@@ -3322,9 +3790,9 @@ tables:
   radar_links:
     domain: radar
     lifecycle: canonical
-    write_owner: aicrm_next.radar_links
+    write_owner: aicrm_next.extensions.radar.radar_links
     read_owners:
-      - aicrm_next.send_content
+      - aicrm_next.engagement.send_content
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -3340,7 +3808,7 @@ tables:
   radar_pdf_preview_assets:
     domain: radar
     lifecycle: read_model
-    write_owner: aicrm_next.radar_links
+    write_owner: aicrm_next.extensions.radar.radar_links
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3358,25 +3826,25 @@ tables:
   sync_runs:
     domain: admin_jobs
     lifecycle: canonical
-    write_owner: aicrm_next.admin_jobs
+    write_owner: aicrm_next.platform.platform_foundation.job_runs
     write_owners:
-      - aicrm_next.admin_jobs
-      - aicrm_next.customer_tags
-      - aicrm_next.message_archive
+      - aicrm_next.platform.platform_foundation.job_runs
     read_owners:
-      - aicrm_next.admin_jobs
-      - aicrm_next.admin_read_model
+      - aicrm_next.platform.admin_jobs
+      - aicrm_next.insights.admin_read_model
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - existing production runtime
+      - message archive synchronization
+      - WeCom tag catalog synchronization
     migration_source: migrations/baselines/0001_post_legacy.sql
     pii_level: internal_contact
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+      - tests/test_job_run_ledger_owner_postgres.py
+    notes: Shared task-run audit ledger owned by Platform. Message archive and customer-tag synchronization write through the public JobRunLedgerPort while preserving their existing caller transactions.
 
   user_ops_hxc_dashboard_meta:
     domain: user_ops
@@ -3435,37 +3903,44 @@ tables:
   webhook_inbox:
     domain: webhook_ingress
     lifecycle: canonical
-    write_owner: aicrm_next.webhook_ingress
+    write_owner: aicrm_next.platform.platform_foundation.webhook_inbox
     write_owners:
-      - aicrm_next.platform_foundation.webhook_inbox
-      - aicrm_next.webhook_ingress
+      - aicrm_next.platform.platform_foundation.webhook_inbox
     read_owners:
+      - aicrm_next.platform.platform_foundation.execution_runtime
+      - aicrm_next.platform.platform_foundation.execution_runtime.read_model
+      - aicrm_next.platform.platform_foundation.webhook_inbox
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
       - existing production runtime
+      - unified execution timeline
     migration_source: 0054_webhook_inbox
     pii_level: internal_contact
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+      - tests/test_webhook_inbox_runtime_owner.py
+      - tests/test_webhook_inbox_runtime_owner_postgres.py
+      - tests/test_execution_runtime_postgres.py
+      - tests/test_queue_runtime_cutover_postgres.py
+    notes: The platform webhook_inbox capability owns ingestion, worker settlement, runtime claim/recovery/heartbeat, and operator CAS mutations. Revision 0125 makes available_at mandatory and constrains lane to webhook_inbox. Unified timeline reads summary projections only and applies centralized sensitive-data redaction; raw callback bodies are excluded.
 
   commerce_coupons:
     domain: commerce
     lifecycle: canonical
-    write_owner: aicrm_next.commerce.coupons
+    write_owner: aicrm_next.extensions.commerce.commerce.coupons
     read_owners:
-      - aicrm_next.commerce.coupons
-      - aicrm_next.commerce.coupons.checker
+      - aicrm_next.extensions.commerce.commerce.coupons
+      - aicrm_next.extensions.commerce.commerce.coupons.checker
     replacement: none; canonical fixed-amount coupon campaign definition
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - aicrm_next.commerce.coupons.admin_api
-      - aicrm_next.commerce.coupons.public_api
+      - aicrm_next.extensions.commerce.commerce.coupons.admin_api
+      - aicrm_next.extensions.commerce.commerce.coupons.public_api
     migration_source: 0114_commerce_coupons
     pii_level: internal
     guard_tests:
@@ -3476,18 +3951,18 @@ tables:
   commerce_coupon_product_bindings:
     domain: commerce
     lifecycle: canonical
-    write_owner: aicrm_next.commerce.coupons
+    write_owner: aicrm_next.extensions.commerce.commerce.coupons
     read_owners:
-      - aicrm_next.commerce.coupons
-      - aicrm_next.commerce.coupons.checker
+      - aicrm_next.extensions.commerce.commerce.coupons
+      - aicrm_next.extensions.commerce.commerce.coupons.checker
     replacement: none; canonical coupon to unified trade product binding
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - aicrm_next.commerce.coupons.admin_api
-      - aicrm_next.commerce.coupons.public_api
-      - aicrm_next.public_product.h5_wechat_pay
-      - aicrm_next.service_period.api
+      - aicrm_next.extensions.commerce.commerce.coupons.admin_api
+      - aicrm_next.extensions.commerce.commerce.coupons.public_api
+      - aicrm_next.extensions.commerce.public_product.h5_wechat_pay
+      - aicrm_next.extensions.commerce.service_period.api
     migration_source: 0114_commerce_coupons
     pii_level: none
     guard_tests:
@@ -3498,18 +3973,18 @@ tables:
   commerce_coupon_claims:
     domain: commerce
     lifecycle: canonical
-    write_owner: aicrm_next.commerce.coupons
+    write_owner: aicrm_next.extensions.commerce.commerce.coupons
     read_owners:
-      - aicrm_next.commerce.coupons
-      - aicrm_next.commerce.coupons.checker
+      - aicrm_next.extensions.commerce.commerce.coupons
+      - aicrm_next.extensions.commerce.commerce.coupons.checker
     replacement: none; canonical user coupon instance with immutable amount and validity snapshots
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - aicrm_next.commerce.coupons.public_api
-      - aicrm_next.public_product.h5_wechat_pay
-      - aicrm_next.service_period.api
-      - aicrm_next.commerce.coupons.checker
+      - aicrm_next.extensions.commerce.commerce.coupons.public_api
+      - aicrm_next.extensions.commerce.public_product.h5_wechat_pay
+      - aicrm_next.extensions.commerce.service_period.api
+      - aicrm_next.extensions.commerce.commerce.coupons.checker
     migration_source: 0114_commerce_coupons
     pii_level: direct_contact
     guard_tests:
@@ -3520,18 +3995,18 @@ tables:
   commerce_coupon_redemptions:
     domain: commerce
     lifecycle: canonical
-    write_owner: aicrm_next.commerce.coupons
+    write_owner: aicrm_next.extensions.commerce.commerce.coupons
     read_owners:
-      - aicrm_next.commerce.coupons
-      - aicrm_next.commerce.coupons.checker
-      - aicrm_next.commerce.fulfillment_reconciliation
+      - aicrm_next.extensions.commerce.commerce.coupons
+      - aicrm_next.extensions.commerce.commerce.coupons.checker
+      - aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation
     replacement: none; canonical coupon reservation consumption and release ledger
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - aicrm_next.public_product.h5_wechat_pay
-      - aicrm_next.commerce.order_reconciliation
-      - aicrm_next.commerce.coupons.checker
+      - aicrm_next.extensions.commerce.public_product.h5_wechat_pay
+      - aicrm_next.extensions.commerce.commerce.order_reconciliation
+      - aicrm_next.extensions.commerce.commerce.coupons.checker
     migration_source: 0114_commerce_coupons
     pii_level: financial
     guard_tests:
@@ -3542,7 +4017,7 @@ tables:
   wechat_pay_order_events:
     domain: commerce
     lifecycle: audit
-    write_owner: aicrm_next.commerce.wechat_pay_service
+    write_owner: aicrm_next.extensions.commerce.commerce.wechat_pay_service
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3576,20 +4051,20 @@ tables:
   service_period_products:
     domain: service_period
     lifecycle: canonical
-    write_owner: aicrm_next.service_period
+    write_owner: aicrm_next.extensions.commerce.service_period
     read_owners:
-      - aicrm_next.service_period
-      - aicrm_next.commerce
-      - aicrm_next.customer_read_model.sidebar_v2
-      - aicrm_next.commerce.fulfillment_reconciliation
+      - aicrm_next.extensions.commerce.service_period
+      - aicrm_next.extensions.commerce.commerce
+      - aicrm_next.crm.customer_read_model.sidebar_v2
+      - aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation
     replacement: none; service period semantic binding over wechat_pay_products
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - aicrm_next.service_period.api
-      - aicrm_next.service_period.application
-      - aicrm_next.service_period.payment_consumer
-      - aicrm_next.customer_read_model.sidebar_v2
+      - aicrm_next.extensions.commerce.service_period.api
+      - aicrm_next.extensions.commerce.service_period.application
+      - aicrm_next.extensions.commerce.service_period.payment_consumer
+      - aicrm_next.crm.customer_read_model.sidebar_v2
     migration_source: 0095_service_period_products
     pii_level: internal_contact
     guard_tests:
@@ -3600,15 +4075,15 @@ tables:
   service_period_member_views:
     domain: service_period
     lifecycle: canonical
-    write_owner: aicrm_next.service_period
+    write_owner: aicrm_next.extensions.commerce.service_period
     read_owners:
-      - aicrm_next.service_period
+      - aicrm_next.extensions.commerce.service_period
     replacement: none; shared saved member-grid views for each service period product
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - aicrm_next.service_period.api
-      - aicrm_next.service_period.application
+      - aicrm_next.extensions.commerce.service_period.api
+      - aicrm_next.extensions.commerce.service_period.application
     migration_source: 0120_service_period_member_views
     pii_level: internal_contact
     guard_tests:
@@ -3620,15 +4095,15 @@ tables:
   service_period_member_collaborators:
     domain: service_period
     lifecycle: canonical
-    write_owner: aicrm_next.service_period
+    write_owner: aicrm_next.extensions.commerce.service_period
     read_owners:
-      - aicrm_next.service_period
+      - aicrm_next.extensions.commerce.service_period
     replacement: none; resource ACL for service-period member-grid workspaces
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - aicrm_next.service_period.api
-      - aicrm_next.service_period.member_grid_sharing
+      - aicrm_next.extensions.commerce.service_period.api
+      - aicrm_next.extensions.commerce.service_period.member_grid_sharing
     migration_source: 0121_service_period_member_grid_sharing
     pii_level: internal_contact
     guard_tests:
@@ -3640,15 +4115,15 @@ tables:
   service_period_member_shares:
     domain: service_period
     lifecycle: canonical
-    write_owner: aicrm_next.service_period
+    write_owner: aicrm_next.extensions.commerce.service_period
     read_owners:
-      - aicrm_next.service_period
+      - aicrm_next.extensions.commerce.service_period
     replacement: none; revocable signed public share state for member-grid workspaces
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - aicrm_next.service_period.api
-      - aicrm_next.service_period.member_grid_sharing
+      - aicrm_next.extensions.commerce.service_period.api
+      - aicrm_next.extensions.commerce.service_period.member_grid_sharing
     migration_source: 0121_service_period_member_grid_sharing
     pii_level: internal_contact
     guard_tests:
@@ -3660,20 +4135,20 @@ tables:
   service_period_entitlements:
     domain: service_period
     lifecycle: canonical
-    write_owner: aicrm_next.service_period
+    write_owner: aicrm_next.extensions.commerce.service_period
     read_owners:
-      - aicrm_next.service_period
-      - aicrm_next.customer_read_model.sidebar_v2
-      - aicrm_next.commerce.fulfillment_reconciliation
+      - aicrm_next.extensions.commerce.service_period
+      - aicrm_next.crm.customer_read_model.sidebar_v2
+      - aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation
     replacement: none; current entitlement state for service period products
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - aicrm_next.service_period.api
-      - aicrm_next.service_period.application
-      - aicrm_next.service_period.payment_consumer
-      - aicrm_next.service_period.refund_consumer
-      - aicrm_next.customer_read_model.sidebar_v2
+      - aicrm_next.extensions.commerce.service_period.api
+      - aicrm_next.extensions.commerce.service_period.application
+      - aicrm_next.extensions.commerce.service_period.payment_consumer
+      - aicrm_next.extensions.commerce.service_period.refund_consumer
+      - aicrm_next.crm.customer_read_model.sidebar_v2
     migration_source: 0097_service_period_unionid_cleanup
     pii_level: direct_contact
     guard_tests:
@@ -3684,18 +4159,18 @@ tables:
   service_period_events:
     domain: service_period
     lifecycle: canonical
-    write_owner: aicrm_next.service_period
+    write_owner: aicrm_next.extensions.commerce.service_period
     read_owners:
-      - aicrm_next.service_period
-      - aicrm_next.commerce.fulfillment_reconciliation
+      - aicrm_next.extensions.commerce.service_period
+      - aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation
     replacement: none; immutable-ish service period event ledger
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - aicrm_next.service_period.api
-      - aicrm_next.service_period.application
-      - aicrm_next.service_period.payment_consumer
-      - aicrm_next.service_period.refund_consumer
+      - aicrm_next.extensions.commerce.service_period.api
+      - aicrm_next.extensions.commerce.service_period.application
+      - aicrm_next.extensions.commerce.service_period.payment_consumer
+      - aicrm_next.extensions.commerce.service_period.refund_consumer
     migration_source: 0095_service_period_products
     pii_level: direct_contact
     guard_tests:
@@ -3706,17 +4181,17 @@ tables:
   service_period_huangyoucan_usage_snapshot:
     domain: service_period
     lifecycle: projection
-    write_owner: aicrm_next.service_period
+    write_owner: aicrm_next.extensions.commerce.service_period
     read_owners:
-      - aicrm_next.service_period
-      - aicrm_next.customer_read_model
+      - aicrm_next.extensions.commerce.service_period
+      - aicrm_next.crm.customer_read_model
     replacement: none; local readonly HuangYouCan usage projection for service period views
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
       - scripts.run_huangyoucan_usage_sync
-      - aicrm_next.service_period.api
-      - aicrm_next.customer_read_model.sidebar_v2
+      - aicrm_next.extensions.commerce.service_period.api
+      - aicrm_next.crm.customer_read_model.sidebar_v2
     migration_source: 0107_hyc_usage_snapshot
     pii_level: internal_contact
     guard_tests:
@@ -3728,9 +4203,9 @@ tables:
   service_period_huangyoucan_usage_sync_runs:
     domain: service_period
     lifecycle: event
-    write_owner: aicrm_next.service_period
+    write_owner: aicrm_next.extensions.commerce.service_period
     read_owners:
-      - aicrm_next.service_period
+      - aicrm_next.extensions.commerce.service_period
     replacement: none; HuangYouCan usage projection sync audit trail
     drop_candidate: false
     drop_after: ""
@@ -3747,18 +4222,17 @@ tables:
   wechat_pay_orders:
     domain: commerce
     lifecycle: canonical
-    write_owner: aicrm_next.commerce.wechat_pay_service
+    write_owner: aicrm_next.extensions.commerce.commerce.wechat_pay_service
     write_owners:
-      - aicrm_next.commerce.coupons
-      - aicrm_next.commerce.wechat_pay_service
+      - aicrm_next.extensions.commerce.commerce.wechat_pay_service
     read_owners:
-      - aicrm_next.admin_read_model
-      - aicrm_next.commerce.coupons.checker
-      - aicrm_next.customer_read_model
-      - aicrm_next.external_push
-      - aicrm_next.platform_foundation.internal_events
-      - aicrm_next.service_period
-      - aicrm_next.commerce.fulfillment_reconciliation
+      - aicrm_next.insights.admin_read_model
+      - aicrm_next.extensions.commerce.commerce.coupons.checker
+      - aicrm_next.crm.customer_read_model
+      - aicrm_next.platform.external_push
+      - aicrm_next.platform.platform_foundation.internal_events
+      - aicrm_next.extensions.commerce.service_period
+      - aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -3769,14 +4243,16 @@ tables:
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes. The coupon owner may only write additive coupon claim and immutable amount snapshot fields inside the payment order transaction.
+      - tests/test_wechat_pay_order_owner.py
+      - tests/test_wechat_pay_order_owner_postgres.py
+    notes: The WeChat Pay service owns every order mutation through one public write port. H5 checkout, provider callback, reconciliation, expiration, refund and coupon reservation retain their original transactions and invariants while no longer writing the fact directly.
 
   wechat_pay_product_page_slices:
     domain: commerce
     lifecycle: read_model
-    write_owner: aicrm_next.commerce.wechat_pay_service
+    write_owner: aicrm_next.extensions.commerce.commerce.wechat_pay_service
     read_owners:
-      - aicrm_next.send_content
+      - aicrm_next.engagement.send_content
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -3792,18 +4268,18 @@ tables:
   wechat_pay_products:
     domain: commerce
     lifecycle: canonical
-    write_owner: aicrm_next.commerce.wechat_pay_service
+    write_owner: aicrm_next.extensions.commerce.commerce.wechat_pay_service
     read_owners:
-      - aicrm_next.commerce.coupons
-      - aicrm_next.external_push
-      - aicrm_next.service_period
-      - aicrm_next.customer_read_model.sidebar_v2
+      - aicrm_next.extensions.commerce.commerce.coupons
+      - aicrm_next.platform.external_push
+      - aicrm_next.extensions.commerce.service_period
+      - aicrm_next.crm.customer_read_model.sidebar_v2
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
       - existing production runtime
-      - aicrm_next.customer_read_model.sidebar_v2
+      - aicrm_next.crm.customer_read_model.sidebar_v2
     migration_source: migrations/baselines/0001_post_legacy.sql
     pii_level: internal_contact
     guard_tests:
@@ -3814,10 +4290,10 @@ tables:
   wechat_pay_refunds:
     domain: commerce
     lifecycle: canonical
-    write_owner: aicrm_next.commerce.wechat_pay_service
+    write_owner: aicrm_next.extensions.commerce.commerce.wechat_pay_service
     read_owners:
       - historical schema drift guard
-      - aicrm_next.commerce.fulfillment_reconciliation
+      - aicrm_next.extensions.commerce.commerce.fulfillment_reconciliation
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -3833,7 +4309,7 @@ tables:
   wechat_shop_refunds:
     domain: commerce
     lifecycle: canonical
-    write_owner: aicrm_next.commerce.wechat_shop_service
+    write_owner: aicrm_next.extensions.commerce.commerce.wechat_shop_service
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3851,7 +4327,7 @@ tables:
   wechat_shop_sync_runs:
     domain: commerce
     lifecycle: canonical
-    write_owner: aicrm_next.commerce.wechat_shop_service
+    write_owner: aicrm_next.extensions.commerce.commerce.wechat_shop_service
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3869,7 +4345,7 @@ tables:
   wecom_corp_tag_groups:
     domain: customer_tags
     lifecycle: canonical
-    write_owner: aicrm_next.customer_tags.local_projection
+    write_owner: aicrm_next.crm.customer_tags.local_projection
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3887,7 +4363,7 @@ tables:
   wecom_corp_tags:
     domain: customer_tags
     lifecycle: canonical
-    write_owner: aicrm_next.customer_tags.local_projection
+    write_owner: aicrm_next.crm.customer_tags.local_projection
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout
@@ -3905,34 +4381,35 @@ tables:
   wecom_external_contact_event_logs:
     domain: identity_contact
     lifecycle: audit
-    write_owner: aicrm_next.identity_contact
+    write_owner: aicrm_next.crm.identity_contact
     write_owners:
-      - aicrm_next.channel_entry
-      - aicrm_next.identity_contact
+      - aicrm_next.crm.identity_contact
     read_owners:
-      - aicrm_next.admin_jobs
-      - aicrm_next.admin_read_model
+      - aicrm_next.platform.admin_jobs
+      - aicrm_next.insights.admin_read_model
+      - aicrm_next.crm.identity_contact
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
-      - existing production runtime
+      - channel_entry callback processing through IdentityEventLogPort
     migration_source: migrations/baselines/0001_post_legacy.sql
     pii_level: internal_contact
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
-    notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
+      - tests/test_identity_event_log_port.py
+    notes: External-contact callback audit and identity-sync diagnostics are written only through the identity_contact event-log port. Channel callback processing keeps its existing compatibility functions but no longer owns table SQL.
 
   wecom_external_contact_follow_users:
     domain: identity_contact
     lifecycle: canonical
-    write_owner: aicrm_next.owner_migration
+    write_owner: aicrm_next.crm.owner_migration
     read_owners:
-      - aicrm_next.admin_read_model
-      - aicrm_next.ai_assist
-      - aicrm_next.ai_audience_ops
-      - aicrm_next.owner_migration
+      - aicrm_next.insights.admin_read_model
+      - aicrm_next.extensions.ai.ai_assist
+      - aicrm_next.extensions.ai.ai_audience_ops
+      - aicrm_next.crm.owner_migration
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -3948,12 +4425,12 @@ tables:
   wecom_external_contact_identity_map:
     domain: identity_contact
     lifecycle: canonical
-    write_owner: aicrm_next.owner_migration
+    write_owner: aicrm_next.crm.owner_migration
     read_owners:
-      - aicrm_next.admin_read_model
-      - aicrm_next.ai_assist
-      - aicrm_next.ai_audience_ops
-      - aicrm_next.owner_migration
+      - aicrm_next.insights.admin_read_model
+      - aicrm_next.extensions.ai.ai_assist
+      - aicrm_next.extensions.ai.ai_audience_ops
+      - aicrm_next.crm.owner_migration
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -3969,9 +4446,9 @@ tables:
   wecom_group_chat_snapshots:
     domain: group_ops
     lifecycle: read_model
-    write_owner: aicrm_next.automation_engine.group_ops
+    write_owner: aicrm_next.automation.automation_engine.group_ops
     read_owners:
-      - aicrm_next.automation_engine.group_ops
+      - aicrm_next.automation.automation_engine.group_ops
     replacement: none; active production schema table registered during schema drift closeout
     drop_candidate: false
     drop_after: ""
@@ -3984,25 +4461,88 @@ tables:
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
     notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
 
+  data_health_snapshot:
+    domain: data_health
+    lifecycle: read_model
+    write_owner: aicrm_next.insights.data_health.snapshot_repository
+    read_owners:
+      - aicrm_next.insights.data_health.application
+    replacement: none; singleton last-known-good aggregate health projection
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - scripts/ops/refresh_data_health_snapshot.py
+      - data-health read APIs after separately verified cutover
+    migration_source: 0143_data_health_snapshot
+    pii_level: aggregate_only
+    guard_tests:
+      - tests/test_data_health_snapshot.py
+      - tests/test_data_health_snapshot_postgres.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: One atomically replaced row containing only validated data-health results, counts, release provenance, duration and refresh time. Failed or partial refreshes never replace the last successful generation; no customer identifier or message payload is stored.
+
   customer_read_model_refresh_state:
     domain: customer_read_model
     lifecycle: read_model
-    write_owner: aicrm_next.customer_read_model.refresh
+    write_owner: aicrm_next.crm.customer_read_model.refresh
     read_owners:
-      - aicrm_next.data_health
+      - aicrm_next.insights.data_health
     replacement: none; singleton evidence for the managed customer projection refresh
     drop_candidate: false
     drop_after: ""
     runtime_entrypoints:
       - openclaw-customer-read-model-refresh.service
       - data health projection freshness probe
-    migration_source: 0108_customer_read_model_refresh
+    migration_source: 0108_customer_read_model_refresh, active slot fields added by 0153_customer_read_model_generation_slots
     pii_level: aggregate_only
     guard_tests:
       - tests/test_customer_read_model_refresh.py
+      - tests/test_database_bootstrap.py::test_customer_read_model_generation_foundation_adds_inactive_indexed_slots
       - tests/test_data_health_checks.py
       - tests/test_data_table_lifecycle_guard.py
-    notes: Count-only refresh evidence. It contains no customer identifiers or payloads.
+    notes: Count-only refresh evidence. Revision 0153 adds active_slot and active_generation with primary/1 defaults while the shadow tables remain inactive; it contains no customer identifiers or payloads.
+
+  customer_read_model_refresh_intent:
+    domain: customer_read_model
+    lifecycle: canonical
+    write_owner: aicrm_next.crm.customer_read_model.refresh_intents
+    read_owners:
+      - aicrm_next.crm.customer_read_model.events
+      - aicrm_next.insights.data_health
+    replacement: none; singleton coalescing generation owner for projection refresh
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - customer source-event dirty consumer
+      - customer_read_model.refresh.requested consumer
+      - compatibility clock intent writer
+    migration_source: 0129_identity_customer_event_driven
+    pii_level: aggregate_only
+    guard_tests:
+      - tests/test_identity_customer_event_driven_postgres.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Global singleton generation intent. Source events only advance dirty_generation and create at most one outstanding signal; the internal consumer owns the local projection refresh, and dirty-during-run creates one explicit continuation generation.
+
+  customer_read_model_refresh_source_receipt:
+    domain: customer_read_model
+    lifecycle: audit
+    write_owner: aicrm_next.crm.customer_read_model.refresh_intents
+    read_owners:
+      - aicrm_next.crm.customer_read_model.refresh_intents
+      - aicrm_next.crm.customer_read_model.refresh_scope_repository
+    replacement: none; idempotent source-event dirty-mark evidence
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - customer source-event dirty consumer
+      - manual or compatibility refresh intent request
+    migration_source: 0129_identity_customer_event_driven
+    pii_level: none
+    guard_tests:
+      - tests/test_identity_customer_event_driven_postgres.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Stores only a SHA-256 opaque source event key, opaque internal source event id, source event type, generation, and execution links. Revision 0152 adds the source-event reference and generation index for bounded coalesced reads; refresh_scope_repository joins the canonical internal event only in the worker and never copies customer identifiers or payloads into this receipt.
 
   admin_sso_states:
     <<: *legacy_production_table_defaults
@@ -4231,7 +4771,7 @@ tables:
   operation_cycle_attempts:
     domain: operation_cycles
     lifecycle: canonical
-    write_owner: aicrm_next.operation_cycles
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
     read_owners:
       - operation cycle report projection
       - operation cycle admin read model
@@ -4250,7 +4790,7 @@ tables:
   operation_cycle_metrics:
     domain: operation_cycles
     lifecycle: read_model
-    write_owner: aicrm_next.operation_cycles
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
     read_owners:
       - operation cycle admin read model
     replacement: none; canonical aggregate observation metrics
@@ -4268,7 +4808,7 @@ tables:
   operation_cycle_references:
     domain: operation_cycles
     lifecycle: read_model
-    write_owner: aicrm_next.operation_cycles
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
     read_owners:
       - operation cycle admin evidence links
     replacement: none; canonical hashed evidence references without attachments
@@ -4286,7 +4826,7 @@ tables:
   operation_cycle_runs:
     domain: operation_cycles
     lifecycle: canonical
-    write_owner: aicrm_next.operation_cycles
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
     read_owners:
       - operation cycle admin read model
     replacement: none; canonical latest run projection with independent status axes
@@ -4304,7 +4844,7 @@ tables:
   operation_cycle_snapshots:
     domain: operation_cycles
     lifecycle: event
-    write_owner: aicrm_next.operation_cycles
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
     read_owners:
       - operation cycle projection rebuild
       - operation cycle audit
@@ -4324,7 +4864,7 @@ tables:
   operation_cycle_stages:
     domain: operation_cycles
     lifecycle: canonical
-    write_owner: aicrm_next.operation_cycles
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
     read_owners:
       - operation cycle admin read model
     replacement: none; canonical per-attempt stage projection
@@ -4342,7 +4882,7 @@ tables:
   operation_cycle_strategies:
     domain: operation_cycles
     lifecycle: canonical
-    write_owner: aicrm_next.operation_cycles
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
     read_owners:
       - operation cycle admin read model
     replacement: none; canonical operation strategy registry
@@ -4360,7 +4900,7 @@ tables:
   operation_cycle_strategy_versions:
     domain: operation_cycles
     lifecycle: canonical
-    write_owner: aicrm_next.operation_cycles
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
     read_owners:
       - operation cycle admin read model
     replacement: none; canonical versioned strategy definition
@@ -4374,3 +4914,238 @@ tables:
     guard_tests:
       - tests/test_operation_cycles_migration.py
       - tests/test_data_table_lifecycle_guard.py
+
+  operation_cycle_strategy_version_documents:
+    domain: operation_cycles
+    lifecycle: canonical
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
+    read_owners:
+      - operation cycle execution context
+      - operation cycle admin strategy page
+    replacement: none; immutable confirmed strategy document packs
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - operation cycle execution context API
+      - strategy proposal acceptance
+    migration_source: 0156_campaign_preparation_context
+    pii_level: internal
+    guard_tests:
+      - tests/test_operation_cycle_strategy_context.py
+      - tests/test_data_table_lifecycle_guard.py
+
+  operation_cycle_strategy_change_proposals:
+    domain: operation_cycles
+    lifecycle: event
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
+    read_owners:
+      - operation cycle optimization context
+      - operation cycle admin strategy page
+    replacement: none; immutable full-target strategy proposals and decisions
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - strategy change proposal API
+      - strategy proposal decision API
+    migration_source: 0156_campaign_preparation_context
+    pii_level: internal
+    guard_tests:
+      - tests/test_operation_cycle_strategy_context.py
+      - tests/test_data_table_lifecycle_guard.py
+
+  external_campaign_preparations:
+    domain: campaign
+    lifecycle: canonical
+    write_owner: aicrm_next.extensions.ai.ai_assist
+    read_owners:
+      - campaign preparation API
+      - cloud orchestrator campaign preparation command port
+    replacement: none; immutable preparation header and idempotency authority
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - Campaign prepare API
+      - Campaign commit API
+    migration_source: 0156_campaign_preparation_context
+    pii_level: internal
+    guard_tests:
+      - tests/test_campaign_preparations.py
+      - tests/test_data_table_lifecycle_guard.py
+
+  external_campaign_preparation_recipients:
+    domain: campaign
+    lifecycle: staging
+    write_owner: aicrm_next.extensions.ai.ai_assist
+    read_owners:
+      - campaign preparation API sanitized projection
+      - cloud orchestrator campaign preparation command port
+    replacement: none; TTL-bound sensitive recipient staging for reviewed plan creation
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - Campaign prepare API
+      - Campaign commit API
+      - Campaign preparation TTL cleanup
+    migration_source: 0156_campaign_preparation_context
+    pii_level: restricted_business_payload
+    guard_tests:
+      - tests/test_campaign_preparations.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Raw identities and individualized content remain internal, are never logged or returned, and are removed after the preparation TTL while the idempotency header survives.
+
+  operation_cycle_plan_links:
+    domain: operation_cycles
+    lifecycle: projection
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
+    read_owners:
+      - operation cycle context read model
+      - operation cycle system fact projector
+    replacement: none; aggregate strategy run and reviewed plan link
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - Campaign commit API
+      - internal event operation-cycle projection
+      - operation cycle retrospective context
+    migration_source: 0156_campaign_preparation_context
+    pii_level: none
+    guard_tests:
+      - tests/test_campaign_preparations.py
+      - tests/test_operation_cycle_strategy_context.py
+      - tests/test_data_table_lifecycle_guard.py
+
+  operation_cycle_system_facts:
+    domain: operation_cycles
+    lifecycle: event
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
+    read_owners:
+      - operation cycle context read model
+      - operation cycle admin strategy page
+    replacement: none; deduplicated aggregate plan and delivery facts without recipient identity
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - internal event operation-cycle projection
+      - operation cycle retrospective context
+    migration_source: 0156_campaign_preparation_context
+    pii_level: aggregate_only
+    guard_tests:
+      - tests/test_operation_cycle_strategy_context.py
+      - tests/test_data_table_lifecycle_guard.py
+
+  automation_group_ops_effect_graph:
+    domain: automation_engine_group_ops
+    lifecycle: canonical
+    write_owner: aicrm_next.automation.automation_engine.group_ops.durable_effects_repository
+    read_owners:
+      - Group Ops execution status API
+      - unified execution timeline
+    replacement: none; canonical root and version record for one durable Group Ops effect graph
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - Group Ops direct send command
+      - Group Ops future plan materializer
+      - Group Ops media completion continuation
+      - external_effect.settled terminal continuation
+    migration_source: 0127_group_ops_durable_effect_graph
+    pii_level: none
+    guard_tests:
+      - tests/test_group_ops_durable_effect_graph.py
+      - tests/test_group_ops_durable_effect_graph_postgres.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Stores public execution identifiers, revision-aware plan and node versions, schedule and the final External Effect link. Content, owner, schedule and active-binding changes cancel the old pre-provider graph before materializing a new version; provider-boundary truth is preserved. Terminal child settlements close the graph and cancel unreleased siblings transactionally. Provider payload and recipient content remain in their canonical execution facts.
+
+  automation_group_ops_effect_material:
+    domain: automation_engine_group_ops
+    lifecycle: canonical
+    write_owner: aicrm_next.automation.automation_engine.group_ops.durable_effects_repository
+    read_owners:
+      - Group Ops media completion continuation
+      - Group Ops execution detail
+    replacement: none; canonical material reference for a Group Ops effect dependency
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - Group Ops direct send command
+      - Group Ops future plan materializer
+      - Group Ops media completion continuation
+    migration_source: 0127_group_ops_durable_effect_graph
+    pii_level: none
+    guard_tests:
+      - tests/test_group_ops_durable_effect_graph_postgres.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: References durable media-library source rows and stores only non-secret attachment metadata; uploaded bytes remain in image_library.
+
+  automation_group_ops_effect_dependency:
+    domain: automation_engine_group_ops
+    lifecycle: queue
+    write_owner: aicrm_next.automation.automation_engine.group_ops.durable_effects_repository
+    read_owners:
+      - Group Ops media completion continuation
+      - execution runtime consistency audit
+    replacement: none; canonical prerequisite edge from media upload effect to final send effect
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - Group Ops effect graph planning
+      - external_effect.completed continuation
+      - external_effect.settled continuation
+    migration_source: 0127_group_ops_durable_effect_graph
+    pii_level: none
+    status_enum:
+      column: status
+    guard_tests:
+      - tests/test_group_ops_durable_effect_graph.py
+      - tests/test_group_ops_durable_effect_graph_postgres.py
+      - tests/test_data_table_lifecycle_guard.py
+      - tests/test_data_health_checks.py::test_migrated_schema_matches_lifecycle_manifest
+    notes: CAS-updated dependency state. Only every prerequisite succeeded may release the final planned effect; failed, cancelled and superseded graphs cannot release. A non-success prerequisite settlement marks the graph terminal and emits attemptless settlements for every sibling cancelled before provider dispatch.
+
+  channel_welcome_effect_graph:
+    domain: channel_entry
+    lifecycle: canonical
+    write_owner: aicrm_next.channels.channel_entry.welcome_media_effects_repository
+    read_owners:
+      - channel welcome completion continuation
+      - unified execution timeline
+      - execution runtime consistency audit
+    replacement: none; canonical root for one welcome-message media dependency graph
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - channel welcome effect planning
+      - external_effect.completed continuation
+      - external_effect.settled continuation
+      - channel welcome cancellation command
+    migration_source: 0130_welcome_media_dependencies
+    pii_level: internal_contact
+    guard_tests:
+      - tests/test_channel_welcome_media_dependencies_postgres.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Stores only the public execution link, channel reference and final effect owner. Non-success child settlements close the graph and transactionally settle siblings cancelled before the provider boundary. Provider identity, payload and content remain in the external-effect boundary.
+
+  channel_welcome_effect_dependency:
+    domain: channel_entry
+    lifecycle: queue
+    write_owner: aicrm_next.channels.channel_entry.welcome_media_effects_repository
+    read_owners:
+      - channel welcome completion continuation
+      - unified execution timeline
+      - execution runtime consistency audit
+    replacement: none; canonical prerequisite edge from one media upload effect to the held welcome effect
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - channel welcome effect planning
+      - external_effect.completed continuation
+      - channel welcome cancellation command
+    migration_source: 0130_welcome_media_dependencies
+    pii_level: internal_contact
+    status_enum:
+      column: status
+    guard_tests:
+      - tests/test_channel_welcome_media_dependencies_postgres.py
+      - tests/test_data_table_lifecycle_guard.py
+      - tests/test_data_health_checks.py::test_migrated_schema_matches_lifecycle_manifest
+    notes: CAS-updated dependency state. The final welcome effect is released only after every prerequisite succeeds and is never released by cancelled or failed graphs.

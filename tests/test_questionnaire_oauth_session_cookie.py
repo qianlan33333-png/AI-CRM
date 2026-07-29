@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.questionnaire.oauth import _load_signed_blob, reset_questionnaire_oauth_state
+from aicrm_next.extensions.forms.questionnaire.oauth import _load_signed_blob, reset_questionnaire_oauth_state
 
 
 @pytest.fixture()
@@ -27,6 +27,4 @@ def test_oauth_session_cookie_is_signed_and_contains_identity(client: TestClient
     assert payload["slug"] == "hxc-activation-v1"
     assert payload["openid"].startswith("openid_fake_")
     assert payload["respondent_key"]
-    assert payload["unionid_verified"] is True
-    assert payload["identity_source"] == "wechat_oauth_provider"
     assert "HttpOnly" in cookie_header

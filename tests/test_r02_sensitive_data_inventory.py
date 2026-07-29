@@ -4,8 +4,8 @@ from pathlib import Path
 
 import yaml
 
-from aicrm_next.admin_config.settings import SENSITIVE_KEYS
-from aicrm_next.shared.route_ownership import load_route_manifest
+from aicrm_next.platform.admin_config.settings import SENSITIVE_KEYS
+from aicrm_next.platform.shared.route_ownership import load_route_manifest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -95,7 +95,7 @@ def test_outbound_webhook_inventory_has_one_secure_dispatch_owner() -> None:
 
     assert callers
     for item in callers:
-        assert item["dispatch_owner"] == "aicrm_next.external_push.https_transport", item["source"]
+        assert item["dispatch_owner"] == "aicrm_next.platform.external_push.https_transport", item["source"]
         assert item["redirect_policy"] == "deny", item["source"]
         assert item["dns_policy"] == "resolve_validate_pin", item["source"]
         assert item["real_execution_change"] == "none", item["source"]

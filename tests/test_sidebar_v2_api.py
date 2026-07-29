@@ -8,19 +8,20 @@ from fastapi.testclient import TestClient
 from sqlalchemy import event
 from sqlalchemy import create_engine, text
 
-from aicrm_next.commerce.repo import PostgresCommerceRepository
-from aicrm_next.customer_read_model import sidebar_v2
-from aicrm_next.customer_read_model.application import GetCustomerContextQuery
-from aicrm_next.customer_read_model.dto import CustomerContextRequest
-from aicrm_next.customer_read_model.sidebar_v2 import (
+from aicrm_next.extensions.commerce.commerce.repo import PostgresCommerceRepository
+from aicrm_next.crm.customer_read_model import api as customer_read_model_api
+from aicrm_next.crm.customer_read_model import sidebar_v2
+from aicrm_next.crm.customer_read_model.application import GetCustomerContextQuery
+from aicrm_next.crm.customer_read_model.dto import CustomerContextRequest
+from aicrm_next.crm.customer_read_model.sidebar_v2 import (
     SidebarCommerceReadModel,
     SidebarQuestionnaireReadModel,
     SidebarV2SqlRepository,
     SidebarWorkbenchReadModel,
 )
 from aicrm_next.main import create_app
-from aicrm_next.media_library.postgres_repo import PostgresMediaLibraryRepository
-from aicrm_next.shared.errors import NotFoundError
+from aicrm_next.engagement.media_library.postgres_repo import PostgresMediaLibraryRepository
+from aicrm_next.platform.shared.errors import NotFoundError
 from tests.sidebar_auth_test_helpers import install_sidebar_auth
 
 
@@ -52,6 +53,36 @@ def _unauthenticated_client(monkeypatch) -> TestClient:
 def _assert_next(payload: dict) -> None:
     assert payload["route_owner"] == "ai_crm_next"
     assert payload["fallback_used"] is False
+
+
+def test_sidebar_owner_scope_returns_resolved_context_without_loading_activity() -> None:
+    requests: list[CustomerContextRequest] = []
+
+    class ContextQuery:
+        def __call__(self, request: CustomerContextRequest) -> dict:
+            requests.append(request)
+            return {
+                "ok": True,
+                "external_userid": "wm-canonical",
+                "unionid": "union-canonical",
+            }
+
+    context = customer_read_model_api._verify_sidebar_owner_scope(
+        ContextQuery(),
+        external_userid="wm-alias",
+        owner_userid="owner-a",
+        corp_id="ww-test",
+        owner_verified=True,
+    )
+
+    assert context.external_userid == "wm-canonical"
+    assert context.unionid == "union-canonical"
+    assert context.owner_userid == "owner-a"
+    assert context.corp_id == "ww-test"
+    assert context.owner_verified is True
+    assert len(requests) == 1
+    assert requests[0].external_userid == "wm-alias"
+    assert requests[0].include_activity is False
 
 
 def test_sidebar_workflow_title_uses_preserved_channel_link_tables_after_retirement() -> None:
@@ -217,8 +248,8 @@ def test_sidebar_v2_workbench_rejects_missing_viewer_without_returning_customer(
         def get_bindable_wechat_pay_order_mobile(self, external_userid: str) -> dict | None:
             return None
 
-    monkeypatch.setattr("aicrm_next.customer_read_model.api.SidebarV2SqlRepository", FakeSidebarRepo)
-    monkeypatch.setattr("aicrm_next.customer_read_model.sidebar_v2.SidebarV2SqlRepository", FakeSidebarRepo)
+    monkeypatch.setattr("aicrm_next.crm.customer_read_model.api.SidebarV2SqlRepository", FakeSidebarRepo)
+    monkeypatch.setattr("aicrm_next.crm.customer_read_model.sidebar_v2.SidebarV2SqlRepository", FakeSidebarRepo)
     client = _unauthenticated_client(monkeypatch)
 
     response = client.get("/api/sidebar/v2/workbench?external_userid=wx_ext_001")
@@ -276,9 +307,9 @@ def test_sidebar_v2_empty_owner_scope_rejects_all_panels_without_pii(monkeypatch
                 ]
             }
 
-    monkeypatch.setattr("aicrm_next.customer_read_model.api.SidebarV2SqlRepository", EmptySidebarRepo)
-    monkeypatch.setattr("aicrm_next.customer_read_model.sidebar_v2.SidebarV2SqlRepository", EmptySidebarRepo)
-    monkeypatch.setattr("aicrm_next.customer_read_model.sidebar_v2.build_commerce_repository", lambda: FakeCommerceRepo())
+    monkeypatch.setattr("aicrm_next.crm.customer_read_model.api.SidebarV2SqlRepository", EmptySidebarRepo)
+    monkeypatch.setattr("aicrm_next.crm.customer_read_model.sidebar_v2.SidebarV2SqlRepository", EmptySidebarRepo)
+    monkeypatch.setattr("aicrm_next.crm.customer_read_model.sidebar_v2.build_commerce_repository", lambda: FakeCommerceRepo())
     client = _unauthenticated_client(monkeypatch)
 
     workbench = client.get("/api/sidebar/v2/workbench?external_userid=wx_ext_missing")
@@ -509,7 +540,7 @@ def test_sidebar_orders_expose_wechat_shop_channel_fields() -> None:
 
 
 def test_sidebar_context_query_can_skip_unused_activity_reads(monkeypatch) -> None:
-    monkeypatch.setattr("aicrm_next.shared.runtime.production_data_ready", lambda: False)
+    monkeypatch.setattr("aicrm_next.platform.shared.runtime.production_data_ready", lambda: False)
 
     class ActivityTrackingRepo:
         def __init__(self) -> None:
@@ -552,7 +583,7 @@ def test_sidebar_context_query_can_skip_unused_activity_reads(monkeypatch) -> No
 
 
 def test_sidebar_context_query_skips_unused_activity_reads_in_production(monkeypatch) -> None:
-    monkeypatch.setattr("aicrm_next.shared.runtime.production_data_ready", lambda: True)
+    monkeypatch.setattr("aicrm_next.platform.shared.runtime.production_data_ready", lambda: True)
 
     class ProductionActivityTrackingRepo:
         def __init__(self) -> None:
@@ -841,10 +872,10 @@ def test_sidebar_periodic_order_remark_route_writes_service_period_member_remark
             calls.append(("remark", service_product_id, unionid, remark))
             return {"ok": True, "member": {"remark": remark}}
 
-    monkeypatch.setattr("aicrm_next.customer_read_model.api.SidebarCommerceReadModel", FakeCommerceReadModel)
-    monkeypatch.setattr("aicrm_next.customer_read_model.api.UpdateServicePeriodMemberRemarkCommand", lambda: FakeRemarkCommand())
-    monkeypatch.setattr("aicrm_next.customer_read_model.api._verify_sidebar_owner_scope", lambda *args, **kwargs: None)
-    monkeypatch.setattr("aicrm_next.customer_read_model.api._request_scoped_customer_context_query", lambda _db: (object(), None))
+    monkeypatch.setattr("aicrm_next.crm.customer_read_model.api.SidebarCommerceReadModel", FakeCommerceReadModel)
+    monkeypatch.setattr("aicrm_next.crm.customer_read_model.api.UpdateServicePeriodMemberRemarkCommand", lambda: FakeRemarkCommand())
+    monkeypatch.setattr("aicrm_next.crm.customer_read_model.api._verify_sidebar_owner_scope", lambda *args, **kwargs: None)
+    monkeypatch.setattr("aicrm_next.crm.customer_read_model.api._request_scoped_customer_context_query", lambda _db: (object(), None))
     client = _client(
         monkeypatch,
         external_userid="wx_periodic",
@@ -1117,6 +1148,8 @@ def test_sidebar_questionnaires_fall_back_to_identity_snapshot_when_context_flap
     assert payload["questionnaires"] == [
         {
             "id": "1414",
+            "submission_id": "1414",
+            "questionnaire_id": "21",
             "title": "填写问卷激活黄小璨AI",
             "submitted_at": "2026-06-24 18:04",
             "answer_count": 1,

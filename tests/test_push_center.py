@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import pytest
 from fastapi.testclient import TestClient
 
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.external_effects import (
     AI_ASSIST_CAMPAIGN_MESSAGE_LOOPBACK,
     GROUP_OPS_MESSAGE_LOOPBACK,
     WECOM_MESSAGE_GROUP_SEND,
@@ -12,20 +13,87 @@ from aicrm_next.platform_foundation.external_effects import (
     ExternalEffectService,
     reset_external_effect_fixture_state,
 )
-from aicrm_next.platform_foundation.external_effects.repo import build_external_effect_repository
-from aicrm_next.platform_foundation.push_center.projection import BroadcastJobAdapter, PushCenterProjectionService
-from aicrm_next.platform_foundation.push_center import api as push_center_api
-from aicrm_next.platform_foundation.push_center.repository import PushCenterRepository
-from aicrm_next.platform_foundation.push_center.section_mapper import effect_types_for_section, label_for_section, section_for_job
-from aicrm_next.platform_foundation.push_center.view_model import (
+from aicrm_next.platform.platform_foundation.external_effects.repo import build_external_effect_repository
+from aicrm_next.platform.platform_foundation.push_center.projection import BroadcastJobAdapter, PushCenterProjectionService
+from aicrm_next.platform.platform_foundation.push_center.repository import PushCenterRepository
+from aicrm_next.platform.platform_foundation.push_center.section_mapper import effect_types_for_section, label_for_section, section_for_job
+from aicrm_next.platform.platform_foundation.push_center.sql_read_model import (
+    InvalidPushCenterCursor,
+    _FAST_PAGE_SQL,
+    _public_item,
+    decode_push_center_cursor,
+    encode_push_center_cursor,
+)
+from aicrm_next.platform.platform_foundation.push_center.view_model import (
     build_job_detail_payload,
     build_job_reconciliation_payload,
     build_jobs_payload,
     build_stats_payload,
 )
 from tests.admin_auth_test_helpers import install_admin_action_tokens
+from tests.wechat_identity_test_support import authorize_wechat_client
 
 pytest_plugins = ("tests.group_ops_test_helpers",)
+
+
+def test_push_center_only_materializes_narrow_filter_rows() -> None:
+    assert "WITH runtime_control AS MATERIALIZED (" in _FAST_PAGE_SQL
+    assert "wide_source_rows AS NOT MATERIALIZED (" in _FAST_PAGE_SQL
+    assert "), filtered AS MATERIALIZED (" in _FAST_PAGE_SQL
+    assert "summary_counts AS MATERIALIZED (" in _FAST_PAGE_SQL
+    assert "CROSS JOIN LATERAL (" in _FAST_PAGE_SQL
+    assert "FROM wide_source_rows candidate" in _FAST_PAGE_SQL
+    assert ") < (CAST(:cursor_created_at AS timestamptz), :cursor_projection_id)" in _FAST_PAGE_SQL
+
+
+def test_push_center_cursor_is_signed_and_bound_to_filters(monkeypatch) -> None:
+    monkeypatch.setenv("AICRM_PUSH_CENTER_CURSOR_SECRET", "pytest-push-center-cursor-secret")
+    filters = {"section": "group_ops", "status": "pending"}
+    cursor = encode_push_center_cursor(
+        created_at="2026-07-17T10:00:00+08:00",
+        projection_id="external_effect_job:42",
+        filters=filters,
+    )
+
+    assert decode_push_center_cursor(cursor, filters=filters) == (
+        "2026-07-17T10:00:00+08:00",
+        "external_effect_job:42",
+    )
+    with pytest.raises(InvalidPushCenterCursor, match="does not match"):
+        decode_push_center_cursor(cursor, filters={**filters, "status": "failed"})
+    with pytest.raises(InvalidPushCenterCursor, match="signature"):
+        decode_push_center_cursor(cursor[:-1] + ("a" if cursor[-1] != "a" else "b"), filters=filters)
+
+
+def test_push_center_fast_sql_row_keeps_source_fields_and_delivery_semantics() -> None:
+    item = _public_item(
+        {
+            "projection_id": "external_effect_job:42",
+            "record_type": "external_effect_job",
+            "source_record_id": 42,
+            "effect_type": "wecom.contact.tag.mark",
+            "raw_status": "succeeded",
+            "effective_status": "succeeded",
+            "queue_state": "terminal",
+            "delivery_state": "not_applicable",
+            "section": "tags",
+            "business_type": "contact_tag",
+            "business_id": "tag-42",
+            "created_at": "2026-07-17T10:00:00+08:00",
+            "payload_summary_json": {"token": "private-token", "tag_id": "tag-42"},
+            "attempt_count": 1,
+        }
+    )
+
+    assert item["source_record_id"] == 42
+    assert item["display_id"] == "#42"
+    assert item["effect_type"] == "wecom.contact.tag.mark"
+    assert item["status"] == "succeeded"
+    assert item["status_label"] == "执行成功"
+    assert item["delivery_state"] == "not_applicable"
+    assert item["payload_summary_json"]["token"] == "[redacted]"
+    assert item["linked_record_counts"]["external_effect_jobs"] == 1
+    assert item["linked_record_counts"]["external_effect_attempts"] == 1
 
 
 class _FakeBroadcastJobAdapter(BroadcastJobAdapter):
@@ -90,6 +158,7 @@ def _plan_job(
     payload_summary: dict | None = None,
     trace_id: str = "trace-push-center",
     idempotency_key: str = "",
+    execution_id: str = "",
 ) -> dict:
     return ExternalEffectService().plan_effect(
         effect_type=effect_type,
@@ -109,6 +178,7 @@ def _plan_job(
         execution_mode=execution_mode,
         status=status,
         idempotency_key=idempotency_key or f"push-center:{effect_type}:{business_id}:{target_id}",
+        execution_id=execution_id,
     )
 
 
@@ -166,6 +236,7 @@ def test_push_center_jobs_filters_and_payload_redaction(next_client: TestClient)
     assert {item["key"] for item in planned["status_definitions"]} == {
         "pending",
         "running",
+        "succeeded",
         "sent",
         "simulated",
         "unknown_after_dispatch",
@@ -186,7 +257,14 @@ def test_push_center_group_ops_shadow_failed_with_sent_broadcast_is_warning_not_
         status="failed_terminal",
         trace_id="group-ops-legacy-bundle:11:23:daily-lesson",
         idempotency_key="group-ops-legacy-bundle:11:23:daily-lesson",
-        payload_summary={"plan_id": 11, "trigger_event_id": "23", "chat_count": 8, "webhook_key": "正式群运营计划测试-584571"},
+        payload_summary={
+            "execution_id": "exe_group_ops_11_23",
+            "plan_id": 11,
+            "trigger_event_id": "23",
+            "chat_count": 8,
+            "webhook_key": "正式群运营计划测试-584571",
+        },
+        execution_id="exe_group_ops_11_23",
     )
     repo = build_external_effect_repository()
     job_obj = repo.get_job(job["id"])
@@ -224,6 +302,8 @@ def test_push_center_group_ops_shadow_failed_with_sent_broadcast_is_warning_not_
             "failed_count": 0,
             "trace_id": "group_ops:11:webhook:23:2026-06-18T08:57:15.390408+08:00",
             "idempotency_key": "group_ops:11:webhook:23:2026-06-18T08:57:15.390408+08:00",
+            "execution_id": "exe_group_ops_11_23",
+            "metadata_json": {"execution_id": "exe_group_ops_11_23"},
             "created_by": "group_ops_webhook",
             "created_at": "2026-06-18T00:57:10Z",
             "updated_at": "2026-06-18T00:58:04Z",
@@ -296,6 +376,51 @@ def test_push_center_group_ops_shadow_failed_without_primary_is_not_business_fai
     assert stats["counts"]["shadow_warning"] == 1
 
 
+def test_push_center_does_not_infer_parentage_from_matching_trace_or_idempotency() -> None:
+    reset_external_effect_fixture_state()
+    _plan_job(
+        effect_type=WECOM_MESSAGE_PRIVATE_SEND,
+        business_type="campaign",
+        business_id="external-only",
+        status="succeeded",
+        execution_mode="execute",
+        trace_id="shared-but-not-a-parent-key",
+        idempotency_key="shared-but-not-a-parent-key",
+    )
+    projection_repo = _projection_repo(
+        broadcast_rows=[
+            {
+                "id": 9001,
+                "source_type": "campaign",
+                "source_id": "broadcast-only",
+                "status": "sent",
+                "trace_id": "shared-but-not-a-parent-key",
+                "idempotency_key": "shared-but-not-a-parent-key",
+                "created_at": "2026-07-17T10:00:00Z",
+                "updated_at": "2026-07-17T10:00:01Z",
+                "sent_at": "2026-07-17T10:00:01Z",
+            }
+        ]
+    )
+
+    body = build_jobs_payload({}, repository=projection_repo)
+    succeeded = build_jobs_payload({"status": "succeeded"}, repository=projection_repo)
+    sent = build_jobs_payload({"status": "sent"}, repository=projection_repo)
+
+    assert body["total"] == 2
+    assert {item["effective_status"] for item in body["items"]} == {"succeeded", "sent"}
+    assert succeeded["total"] == 1
+    assert succeeded["items"][0]["effective_status"] == "succeeded"
+    assert sent["total"] == 1
+    assert sent["items"][0]["effective_status"] == "sent"
+    assert all(
+        item["linked_record_counts"]["external_effect_jobs"]
+        + item["linked_record_counts"]["broadcast_jobs"]
+        == 1
+        for item in body["items"]
+    )
+
+
 def test_push_center_detail_includes_attempts_without_full_payload(next_client: TestClient) -> None:
     reset_external_effect_fixture_state()
     job = _plan_job(
@@ -362,12 +487,15 @@ def test_push_center_sections_stats_retry_cancel_auth(next_client: TestClient, m
     retried = next_client.post(
         f"/api/admin/push-center/jobs/{failed['id']}/retry",
         headers={"X-Admin-Action-Token": tokens[("POST", "/api/admin/push-center/jobs/{job_id}/retry")]},
-        json={},
+        json={"reason": "人工确认安全重试", "expected_version": 1},
     )
     cancelled = next_client.post(
         f"/api/admin/push-center/jobs/{queued['id']}/cancel",
         headers={"X-Admin-Action-Token": tokens[("POST", "/api/admin/push-center/jobs/{job_id}/cancel")]},
-        json={},
+        json={
+            "expected_version": queued["row_version"],
+            "actor": "push-center-operator",
+        },
     )
 
     assert any(item["key"] == "questionnaire" and item["count"] == 1 for item in sections["sections"])
@@ -379,95 +507,10 @@ def test_push_center_sections_stats_retry_cancel_auth(next_client: TestClient, m
     assert reconciliation.json()["reconciliation"]["next_action_label"] == "重试"
     assert reconciliation.json()["reconciliation"]["linked_record_counts"]["external_effect_jobs"] == 1
     assert rejected.status_code == 401
-    assert retried.status_code == 200
-    assert retried.json()["job"]["status"] == "pending"
-    assert retried.json()["job"]["raw_status"] == "queued"
-    assert cancelled.status_code == 200
-    assert cancelled.json()["job"]["status"] == "failed"
-    assert cancelled.json()["job"]["raw_status"] == "cancelled"
-
-
-def test_push_center_page_smoke(next_client: TestClient) -> None:
-    reset_external_effect_fixture_state()
-    _plan_job(
-        effect_type=WEBHOOK_QUESTIONNAIRE_SUBMISSION_PUSH,
-        business_type="questionnaire",
-        business_id="q_page",
-        target_type="questionnaire_submission",
-        target_id="sub_page",
-    )
-
-    response = next_client.get("/admin/push-center")
-
-    assert response.status_code == 200
-    assert "推送中心" in response.text
-    assert 'id="statsGrid"' in response.text
-    assert 'id="sectionTabs"' in response.text
-    assert 'id="filterForm"' in response.text
-    assert 'id="pushCenterTable"' in response.text
-    assert 'id="detailModal"' in response.text
-    assert 'id="detailPanel"' in response.text
-    assert "data-close-detail" in response.text
-    assert 'role="dialog"' in response.text
-    assert 'aria-modal="true"' in response.text
-    assert 'aria-hidden="true"' in response.text
-    assert "push-center-modal" in response.text
-    assert "push-center-modal-card" in response.text
-    assert "push-center-detail-card" not in response.text
-    assert "openDetailModal" in response.text
-    assert "closeDetailModal" in response.text
-    assert "is-open" in response.text
-    assert 'event.key === "Escape"' in response.text
-    assert 'class="push-center-header"' not in response.text
-    assert "push-center-title" not in response.text
-    assert 'href="#refresh"' in response.text
-    assert 'href="#export"' in response.text
-    assert "<colgroup>" in response.text
-    assert "push-center-col-section" in response.text
-    assert "push-center-section-label" in response.text
-    assert "push-center-ellipsis" in response.text
-    assert "STATUS_LABELS" in response.text
-    assert "EFFECT_TYPE_LABELS" in response.text
-    assert "TARGET_TYPE_LABELS" in response.text
-    assert "BUSINESS_TYPE_LABELS" in response.text
-    assert "formatBeijingTime" in response.text
-    assert 'timeZone: "Asia/Shanghai"' in response.text
-    assert "push-center-time-date" in response.text
-    assert "push-center-time-clock" in response.text
-    assert "已计划" not in response.text
-    assert "失败可重试" not in response.text
-    assert "失败不可重试" not in response.text
-    assert 'id="legacyDeprecationsPanel"' not in response.text
-    assert 'id="legacyDeprecationsList"' not in response.text
-    assert "/api/admin/push-center/legacy-deprecations" not in response.text
-    assert "旧链路下线状态" not in response.text
-    assert "下次删除" not in response.text
-    assert "/api/admin/push-center/stats" in response.text
-    assert "/api/admin/push-center/jobs" in response.text
-    assert 'data-action="retry"' in response.text
-    assert 'data-action="cancel"' in response.text
-    assert "问卷外推" in response.text
-    assert "外部动作队列" not in response.text
-    assert "payload_json" not in response.text
-    assert "token" not in response.text.lower()
-    assert "secret" not in response.text.lower()
-    assert "Authorization" not in response.text
-    assert "access_token" not in response.text
-    assert "secret-token" not in response.text
-
-
-def test_push_center_page_shell_does_not_query_projection(monkeypatch, next_client: TestClient) -> None:
-    def fail_if_constructed(*_args, **_kwargs):
-        raise AssertionError("push center page shell must not query the projection")
-
-    monkeypatch.setattr(push_center_api, "PushCenterRepository", fail_if_constructed)
-
-    response = next_client.get("/admin/push-center")
-
-    assert response.status_code == 200
-    assert 'id="pushCenterTable"' in response.text
-    assert "/api/admin/push-center/stats" in response.text
-    assert "/api/admin/push-center/jobs" in response.text
+    assert retried.status_code == 422
+    assert retried.json()["missing_fields"] == ["actor"]
+    assert cancelled.status_code == 422
+    assert cancelled.json()["missing_fields"] == ["reason"]
 
 
 def test_push_center_list_and_stats_reuse_one_projection_snapshot() -> None:
@@ -514,8 +557,9 @@ def test_push_center_counts_cover_records_beyond_page_limit(monkeypatch) -> None
 
 
 def test_questionnaire_default_external_push_is_queue_first(client: TestClient, monkeypatch) -> None:
-    from aicrm_next.questionnaire.repo import build_questionnaire_repository
+    from aicrm_next.extensions.forms.questionnaire.repo import build_questionnaire_repository
 
+    authorize_wechat_client(client, {"external_userid": "wx_ext_001"})
     monkeypatch.delenv("AICRM_QUESTIONNAIRE_EXTERNAL_PUSH_MODE", raising=False)
     repo = build_questionnaire_repository()
     existing = repo.get_questionnaire_by_slug("hxc-activation-v1")

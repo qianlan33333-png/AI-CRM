@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 
-TEMPLATE = Path("aicrm_next/commerce/templates/wechat_products.html")
+TEMPLATE = Path("aicrm_next/extensions/commerce/commerce/templates/wechat_products.html")
 
 
 def test_product_editor_toggles_are_persisted_business_enablement_controls() -> None:

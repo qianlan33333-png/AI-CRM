@@ -6,10 +6,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from aicrm_next.commerce import external_push_admin
-from aicrm_next.external_push import security, service
-from aicrm_next.commerce.repo import reset_commerce_fixture_state
-from aicrm_next.platform_foundation.external_effects import ExternalEffectService, WEBHOOK_ORDER_PAID_PUSH, reset_external_effect_fixture_state
+from aicrm_next.extensions.commerce.commerce import external_push_admin
+from aicrm_next.platform.external_push import security, service
+from aicrm_next.extensions.commerce.commerce.repo import reset_commerce_fixture_state
+from aicrm_next.platform.platform_foundation.external_effects import ExternalEffectService, WEBHOOK_ORDER_PAID_PUSH, reset_external_effect_fixture_state
 
 
 def _public_dns(monkeypatch, ip: str = "93.184.216.34") -> None:
@@ -77,7 +77,7 @@ def test_webhook_url_security_rejects_private_targets(monkeypatch):
 
 
 def test_external_push_admin_reuses_next_native_security_and_payload_helpers():
-    source = Path("aicrm_next/commerce/external_push_admin.py").read_text(encoding="utf-8")
+    source = Path("aicrm_next/extensions/commerce/commerce/external_push_admin.py").read_text(encoding="utf-8")
 
     assert "def _validate_webhook_url" not in source
     assert "def _resolve_and_validate_public_https_url" not in source
@@ -183,7 +183,6 @@ def test_external_push_attempt_queues_external_effect_and_updates_delivery(monke
         assert kwargs.pop("connection") is connection
         return real_plan_effect(self, **kwargs)
 
-    monkeypatch.setattr(external_push_admin, "_jsonb", lambda value: value)
     monkeypatch.setattr(external_push_admin.ExternalEffectService, "plan_effect", fixture_plan_effect)
 
     result = external_push_admin._attempt_delivery(
@@ -197,8 +196,8 @@ def test_external_push_attempt_queues_external_effect_and_updates_delivery(monke
     assert result["delivery"]["status"] == "retrying"
     assert result["external_effect_job_id"]
     assert result["real_external_call_executed"] is False
-    assert updates[0]["request_headers"]["X-AICRM-Signature"].startswith("sha256=")
-    assert updates[0]["request_body"]["phone_number"] == "[pii]"
+    assert json.loads(updates[0]["request_headers"])["X-AICRM-Signature"].startswith("sha256=")
+    assert json.loads(updates[0]["request_body"])["phone_number"] == "[pii]"
     assert updates[0]["response_status"] is None
     items, total = ExternalEffectService().list_jobs({"effect_type": WEBHOOK_ORDER_PAID_PUSH, "target_id": "deliv_attempt"})
     assert total == 1

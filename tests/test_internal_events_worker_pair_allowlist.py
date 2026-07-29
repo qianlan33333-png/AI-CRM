@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.internal_events import (
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.internal_events import (
     InMemoryInternalEventRepository,
     InternalEventConsumerRegistry,
     InternalEventConsumerResult,
     InternalEventService,
 )
-from aicrm_next.platform_foundation.internal_events.models import InternalEvent, InternalEventConsumerRun
-from aicrm_next.platform_foundation.internal_events.payment import PAYMENT_SUCCEEDED_EVENT_TYPE
-from aicrm_next.platform_foundation.internal_events.shadow import CUSTOMER_TAGGED_EVENT_TYPE, tag_external_effect_shadow_consumer
-from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
+from aicrm_next.platform.platform_foundation.internal_events.models import InternalEvent, InternalEventConsumerRun
+from aicrm_next.platform.platform_foundation.internal_events.payment import PAYMENT_SUCCEEDED_EVENT_TYPE
+from aicrm_next.platform.platform_foundation.internal_events.shadow import CUSTOMER_TAGGED_EVENT_TYPE, tag_external_effect_shadow_consumer
+from aicrm_next.platform.platform_foundation.internal_events.worker import InternalEventWorker
 
 
 AI_ASSIST = "ai_assist_notify_consumer"

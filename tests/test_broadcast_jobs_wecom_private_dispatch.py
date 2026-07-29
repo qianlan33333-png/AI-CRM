@@ -8,14 +8,15 @@ from typing import Any
 import pytest
 from sqlalchemy import text
 
-import aicrm_next.background_jobs.broadcast_queue_worker as worker
-from aicrm_next.background_jobs.broadcast_queue_worker import PostgresBroadcastQueueRepository, SafeSkippedBroadcastDispatcher, run_broadcast_queue_worker
-from aicrm_next.shared.db_session import get_session_factory
+import aicrm_next.automation.background_jobs.broadcast_queue_worker as worker
+from aicrm_next.automation.background_jobs.broadcast_queue_worker import PostgresBroadcastQueueRepository, SafeSkippedBroadcastDispatcher, run_broadcast_queue_worker
+from aicrm_next.platform.shared.db_session import get_session_factory
 
 
 class FakeRepo:
     def __init__(self, jobs: list[dict[str, Any]]) -> None:
         self.jobs = jobs
+        self.delegated: list[dict[str, Any]] = []
         self.sent: list[dict[str, Any]] = []
         self.simulated: list[dict[str, Any]] = []
         self.failed: list[dict[str, Any]] = []
@@ -33,6 +34,8 @@ class FakeRepo:
         record = {"job_id": job_id, "claim_token": claim_token, "outbound_task_id": None, **outcome}
         if outcome["status"] == "sent":
             self.sent.append(record)
+        elif outcome["status"] == "delegated":
+            self.delegated.append(record)
         elif outcome["status"] == "simulated":
             self.simulated.append(record)
         else:
@@ -84,6 +87,15 @@ class RecordingWeComClient:
         return {"errcode": 0, "msgid": "msg-recorded"}
 
 
+class ResultWeComClient:
+    def __init__(self, result: dict[str, Any]) -> None:
+        self.result = dict(result)
+
+    def create_group_message_task(self, payload: dict[str, Any]) -> dict[str, Any]:
+        self.payload = dict(payload)
+        return dict(self.result)
+
+
 @pytest.fixture(autouse=True)
 def _resolve_unionid_targets(monkeypatch) -> None:
     def fake_resolver(unionids: list[str]) -> tuple[list[str], list[str]]:
@@ -118,9 +130,10 @@ def _job(**overrides: Any) -> dict[str, Any]:
     return job
 
 
+@pytest.mark.skip(reason="broadcast provider dispatch retired; External Effect owns execution")
 def test_wecom_private_job_is_dispatched_and_marked_sent(monkeypatch) -> None:
     adapter = Adapter({"ok": True, "wecom_msgid": "msg-1", "result": {"msgid": "msg-1"}})
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
     repo = FakeRepo([_job()])
 
     summary = run_broadcast_queue_worker(repo=repo, dispatcher=SafeSkippedBroadcastDispatcher(), now=datetime(2026, 6, 1, tzinfo=timezone.utc))
@@ -136,6 +149,7 @@ def test_wecom_private_job_is_dispatched_and_marked_sent(monkeypatch) -> None:
     assert adapter.payload["external_userids"] == ["wm_test"]
 
 
+@pytest.mark.skip(reason="broadcast provider dispatch retired; External Effect owns execution")
 def test_wecom_private_fake_success_is_simulated_and_never_projected_as_sent(monkeypatch) -> None:
     adapter = Adapter(
         {
@@ -146,7 +160,7 @@ def test_wecom_private_fake_success_is_simulated_and_never_projected_as_sent(mon
             "result": {"msgid": "fake-msg-1"},
         }
     )
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
     repo = FakeRepo([_job()])
 
     summary = run_broadcast_queue_worker(repo=repo, dispatcher=SafeSkippedBroadcastDispatcher())
@@ -158,6 +172,7 @@ def test_wecom_private_fake_success_is_simulated_and_never_projected_as_sent(mon
     assert summary["results"][0]["side_effect_executed"] is False
 
 
+@pytest.mark.skip(reason="broadcast provider dispatch retired; External Effect owns execution")
 def test_wecom_group_fake_success_is_simulated_and_never_marked_sent(monkeypatch) -> None:
     class FakeGroupAdapter:
         def create_group_message_task(self, payload: dict[str, Any], *, idempotency_key: str = "") -> dict[str, Any]:
@@ -172,7 +187,7 @@ def test_wecom_group_fake_success_is_simulated_and_never_marked_sent(monkeypatch
 
     monkeypatch.setenv("AICRM_WECOM_EXECUTION_MODE", "execute")
     monkeypatch.setattr(
-        "aicrm_next.integration_gateway.wecom_group_adapter.build_wecom_group_message_adapter",
+        "aicrm_next.channels.integration_gateway.wecom_group_adapter.build_wecom_group_message_adapter",
         lambda: FakeGroupAdapter(),
     )
     repo = FakeRepo(
@@ -196,13 +211,14 @@ def test_wecom_group_fake_success_is_simulated_and_never_marked_sent(monkeypatch
     assert repo.simulated[0]["status"] == "simulated"
 
 
+@pytest.mark.skip(reason="execution policy is enforced by the External Effect owner")
 def test_wecom_private_global_execution_mode_disabled_blocks_before_adapter(monkeypatch) -> None:
     monkeypatch.setenv("AICRM_WECOM_EXECUTION_MODE", "disabled")
 
     def fail_adapter():
         raise AssertionError("adapter should not be built when global WeCom execution is disabled")
 
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", fail_adapter)
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", fail_adapter)
     repo = FakeRepo([_job()])
 
     summary = run_broadcast_queue_worker(repo=repo, dispatcher=SafeSkippedBroadcastDispatcher())
@@ -212,9 +228,10 @@ def test_wecom_private_global_execution_mode_disabled_blocks_before_adapter(monk
     assert "AICRM_WECOM_EXECUTION_MODE=disabled" in repo.failed[0]["error"]
 
 
+@pytest.mark.skip(reason="broadcast provider dispatch retired; External Effect owns execution")
 def test_cloud_plan_recipient_message_uses_bound_sender_and_hydrates_text(monkeypatch) -> None:
     adapter = Adapter({"ok": True, "wecom_msgid": "msg-cloud", "result": {"msgid": "msg-cloud"}})
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
     monkeypatch.setattr(worker, "runtime_setting", lambda key, default="": "HuangYouCan" if key == "AICRM_EXTERNAL_EFFECT_ALLOWED_OWNER_USERIDS" else default)
     monkeypatch.setattr(
         worker,
@@ -250,48 +267,6 @@ def test_cloud_plan_recipient_message_uses_bound_sender_and_hydrates_text(monkey
     assert repo.sent[0]["request_payload"]["content_preview"] == "agent generated hello"
 
 
-def test_cloud_plan_recipient_message_hydrates_recipient_owner_when_job_omits_sender(monkeypatch) -> None:
-    adapter = Adapter({"ok": True, "wecom_msgid": "msg-cloud-owner", "result": {"msgid": "msg-cloud-owner"}})
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
-    monkeypatch.setattr(worker, "runtime_setting", lambda _key, default="": default)
-    monkeypatch.setattr(
-        worker,
-        "_load_cloud_plan_recipient_message",
-        lambda payload: {
-            "cloud_plan_message_id": 78,
-            "content_text": "owner hydrated hello",
-            "content_payload_json": {},
-            "attachments": [],
-            "owner_userid": "QuestionnaireOwner",
-        },
-    )
-    repo = FakeRepo(
-        [
-            _job(
-                source_type="cloud_plan",
-                source_table="cloud_broadcast_plan_recipients",
-                source_id="agent_plan:3",
-                idempotency_key="cloud_plan_recipient:agent_plan:3",
-                channel="wecom_private",
-                content_type="cloud_plan",
-                payload={
-                    "plan_id": "agent_plan",
-                    "recipient_id": 3,
-                    "message_mode": "recipient_messages",
-                    "sender_userid": "",
-                    "rendered_content": {},
-                },
-            )
-        ]
-    )
-
-    summary = run_broadcast_queue_worker(repo=repo, dispatcher=SafeSkippedBroadcastDispatcher())
-
-    assert summary["sent_ok"] == 1
-    assert adapter.payload["sender"] == "QuestionnaireOwner"
-    assert adapter.payload["text"] == {"content": "owner hydrated hello"}
-
-
 def test_cloud_plan_message_loader_does_not_require_external_userid_column(monkeypatch) -> None:
     class Cursor:
         def execute(self, sql: str, params: tuple[Any, ...]) -> "Cursor":
@@ -306,7 +281,6 @@ def test_cloud_plan_message_loader_does_not_require_external_userid_column(monke
                 "content_text": "agent generated hello",
                 "content_payload_json": {"miniprogram_library_ids": [1325]},
                 "attachments_json": [],
-                "owner_userid": "QuestionnaireOwner",
             }
 
     @contextmanager
@@ -329,7 +303,6 @@ def test_cloud_plan_message_loader_does_not_require_external_userid_column(monke
         "content_text": "agent generated hello",
         "content_payload_json": {"miniprogram_library_ids": [1325]},
         "attachments": [],
-        "owner_userid": "QuestionnaireOwner",
     }
 
 
@@ -346,9 +319,10 @@ def test_cloud_plan_retryable_failure_keeps_all_projections_retryable(next_pg_sc
             ),
             {"plan_id": plan_id},
         )
-        recipient = session.execute(
-            text(
-                """
+        recipient = (
+            session.execute(
+                text(
+                    """
                 INSERT INTO cloud_broadcast_plan_recipients (
                     plan_id, unionid, owner_userid, display_name,
                     planned_message_count, approval_status, send_status
@@ -359,9 +333,12 @@ def test_cloud_plan_retryable_failure_keeps_all_projections_retryable(next_pg_sc
                 )
                 RETURNING id
                 """
-            ),
-            {"plan_id": plan_id},
-        ).mappings().one()
+                ),
+                {"plan_id": plan_id},
+            )
+            .mappings()
+            .one()
+        )
         recipient_id = int(recipient["id"])
         session.execute(
             text(
@@ -374,9 +351,10 @@ def test_cloud_plan_retryable_failure_keeps_all_projections_retryable(next_pg_sc
             ),
             {"plan_id": plan_id, "recipient_id": recipient_id},
         )
-        job = session.execute(
-            text(
-                """
+        job = (
+            session.execute(
+                text(
+                    """
                 INSERT INTO broadcast_jobs (
                     source_type, source_id, source_table, status,
                     business_domain, idempotency_key, channel, target_kind,
@@ -389,21 +367,24 @@ def test_cloud_plan_retryable_failure_keeps_all_projections_retryable(next_pg_sc
                 )
                 RETURNING id
                 """
-            ),
-            {
-                "source_id": f"{plan_id}:{recipient_id}",
-                "idempotency_key": f"cloud_plan_recipient:{plan_id}:{recipient_id}",
-                "payload": json.dumps(
-                    {
-                        "plan_id": plan_id,
-                        "recipient_id": recipient_id,
-                        "unionid": "union_failed",
-                        "message_mode": "recipient_messages",
-                    },
-                    ensure_ascii=False,
                 ),
-            },
-        ).mappings().one()
+                {
+                    "source_id": f"{plan_id}:{recipient_id}",
+                    "idempotency_key": f"cloud_plan_recipient:{plan_id}:{recipient_id}",
+                    "payload": json.dumps(
+                        {
+                            "plan_id": plan_id,
+                            "recipient_id": recipient_id,
+                            "unionid": "union_failed",
+                            "message_mode": "recipient_messages",
+                        },
+                        ensure_ascii=False,
+                    ),
+                },
+            )
+            .mappings()
+            .one()
+        )
         job_id = int(job["id"])
         session.execute(
             text("UPDATE cloud_broadcast_plan_recipients SET broadcast_job_id = :job_id WHERE id = :recipient_id"),
@@ -415,9 +396,7 @@ def test_cloud_plan_retryable_failure_keeps_all_projections_retryable(next_pg_sc
     claim_token = "failure-sync-owner"
     with get_session_factory()() as session:
         session.execute(
-            text(
-                "UPDATE broadcast_jobs SET claim_token = :claim_token, lease_expires_at = CURRENT_TIMESTAMP + INTERVAL '5 minutes' WHERE id = :job_id"
-            ),
+            text("UPDATE broadcast_jobs SET claim_token = :claim_token, lease_expires_at = CURRENT_TIMESTAMP + INTERVAL '5 minutes' WHERE id = :job_id"),
             {"claim_token": claim_token, "job_id": job_id},
         )
         session.commit()
@@ -438,14 +417,22 @@ def test_cloud_plan_retryable_failure_keeps_all_projections_retryable(next_pg_sc
 
     with get_session_factory()() as session:
         job_row = session.execute(text("SELECT status, failure_type, last_error FROM broadcast_jobs WHERE id = :job_id"), {"job_id": job_id}).mappings().one()
-        recipient_row = session.execute(
-            text("SELECT send_status, last_error FROM cloud_broadcast_plan_recipients WHERE id = :recipient_id"),
-            {"recipient_id": recipient_id},
-        ).mappings().one()
-        message_row = session.execute(
-            text("SELECT status, last_error FROM cloud_broadcast_plan_recipient_messages WHERE recipient_id = :recipient_id"),
-            {"recipient_id": recipient_id},
-        ).mappings().one()
+        recipient_row = (
+            session.execute(
+                text("SELECT send_status, last_error FROM cloud_broadcast_plan_recipients WHERE id = :recipient_id"),
+                {"recipient_id": recipient_id},
+            )
+            .mappings()
+            .one()
+        )
+        message_row = (
+            session.execute(
+                text("SELECT status, last_error FROM cloud_broadcast_plan_recipient_messages WHERE recipient_id = :recipient_id"),
+                {"recipient_id": recipient_id},
+            )
+            .mappings()
+            .one()
+        )
 
     assert job_row["status"] == "failed_retryable"
     assert job_row["failure_type"] == "wecom_api_error"
@@ -543,18 +530,30 @@ def test_cloud_plan_simulation_updates_all_projections_without_sent_timestamp(ne
     )
 
     with get_session_factory()() as session:
-        job_row = session.execute(
-            text("SELECT status, sent_count, sent_at, claim_token FROM broadcast_jobs WHERE id = :job_id"),
-            {"job_id": job_id},
-        ).mappings().one()
-        recipient_row = session.execute(
-            text("SELECT send_status FROM cloud_broadcast_plan_recipients WHERE id = :recipient_id"),
-            {"recipient_id": recipient_id},
-        ).mappings().one()
-        message_row = session.execute(
-            text("SELECT status, sent_at FROM cloud_broadcast_plan_recipient_messages WHERE recipient_id = :recipient_id"),
-            {"recipient_id": recipient_id},
-        ).mappings().one()
+        job_row = (
+            session.execute(
+                text("SELECT status, sent_count, sent_at, claim_token FROM broadcast_jobs WHERE id = :job_id"),
+                {"job_id": job_id},
+            )
+            .mappings()
+            .one()
+        )
+        recipient_row = (
+            session.execute(
+                text("SELECT send_status FROM cloud_broadcast_plan_recipients WHERE id = :recipient_id"),
+                {"recipient_id": recipient_id},
+            )
+            .mappings()
+            .one()
+        )
+        message_row = (
+            session.execute(
+                text("SELECT status, sent_at FROM cloud_broadcast_plan_recipient_messages WHERE recipient_id = :recipient_id"),
+                {"recipient_id": recipient_id},
+            )
+            .mappings()
+            .one()
+        )
 
     assert dict(job_row) == {"status": "simulated", "sent_count": 0, "sent_at": None, "claim_token": ""}
     assert recipient_row["send_status"] == "simulated"
@@ -562,7 +561,7 @@ def test_cloud_plan_simulation_updates_all_projections_without_sent_timestamp(ne
 
 
 def test_wecom_private_adapter_canonicalizes_miniprogram_attachment(monkeypatch) -> None:
-    from aicrm_next.integration_gateway.wecom_private_adapter import WeComPrivateMessageAdapter
+    from aicrm_next.channels.integration_gateway.wecom_private_adapter import WeComPrivateMessageAdapter
 
     monkeypatch.setenv("AICRM_ENABLE_REAL_WECOM_PRIVATE_MESSAGE", "1")
     client = RecordingWeComClient()
@@ -602,9 +601,58 @@ def test_wecom_private_adapter_canonicalizes_miniprogram_attachment(monkeypatch)
     ]
 
 
+def test_wecom_private_adapter_preserves_known_provider_error_evidence(monkeypatch) -> None:
+    from aicrm_next.channels.integration_gateway.wecom_private_adapter import WeComPrivateMessageAdapter
+
+    monkeypatch.setenv("AICRM_ENABLE_REAL_WECOM_PRIVATE_MESSAGE", "1")
+    client = ResultWeComClient({"errcode": 40096, "errmsg": "invalid external_userid"})
+    adapter = WeComPrivateMessageAdapter(mode="production", client_factory=lambda: client)
+
+    result = adapter.create_private_message_task(
+        {
+            "sender": "HuangYouCan",
+            "external_userids": ["wm_test"],
+            "text": {"content": "hello"},
+        },
+        idempotency_key="adapter-known-provider-error",
+    )
+
+    assert result["ok"] is False
+    assert result["side_effect_executed"] is True
+    assert result["provider_errcode"] == 40096
+    assert result["provider_error_classification"] == "terminal"
+    assert result["error_code"] == "wecom_error_40096"
+    assert result["retryable"] is False
+    assert result["result"] == {"errcode": 40096, "errmsg": "invalid external_userid"}
+
+
+def test_wecom_private_adapter_preserves_retryable_provider_error(monkeypatch) -> None:
+    from aicrm_next.channels.integration_gateway.wecom_private_adapter import WeComPrivateMessageAdapter
+
+    monkeypatch.setenv("AICRM_ENABLE_REAL_WECOM_PRIVATE_MESSAGE", "1")
+    client = ResultWeComClient({"errcode": 45009, "errmsg": "rate limit"})
+    adapter = WeComPrivateMessageAdapter(mode="production", client_factory=lambda: client)
+
+    result = adapter.create_private_message_task(
+        {
+            "sender": "HuangYouCan",
+            "external_userids": ["wm_test"],
+            "text": {"content": "hello"},
+        },
+        idempotency_key="adapter-retryable-provider-error",
+    )
+
+    assert result["ok"] is False
+    assert result["provider_errcode"] == 45009
+    assert result["provider_error_classification"] == "retryable"
+    assert result["error_code"] == "rate_limited"
+    assert result["retryable"] is True
+
+
+@pytest.mark.skip(reason="broadcast provider dispatch retired; External Effect owns execution")
 def test_campaign_private_message_job_is_dispatched(monkeypatch) -> None:
     adapter = Adapter({"ok": True, "wecom_msgid": "msg-campaign", "result": {"msgid": "msg-campaign"}})
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
     repo = FakeRepo(
         [
             _job(
@@ -642,6 +690,7 @@ def test_campaign_private_message_job_is_dispatched(monkeypatch) -> None:
     assert adapter.payload["text"]["content"] == "campaign private hello"
 
 
+@pytest.mark.skip(reason="broadcast provider dispatch retired; External Effect owns execution")
 def test_campaign_private_message_materializes_miniprogram_attachment(monkeypatch) -> None:
     adapter = Adapter({"ok": True, "wecom_msgid": "msg-campaign-mini", "result": {"msgid": "msg-campaign-mini"}})
     attachment = {
@@ -653,7 +702,7 @@ def test_campaign_private_message_materializes_miniprogram_attachment(monkeypatc
             "thumb_media_id": "media_thumb_001",
         },
     }
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
     monkeypatch.setattr(worker, "_resolve_private_attachments", lambda content_package: [attachment])
     repo = FakeRepo(
         [
@@ -697,6 +746,7 @@ def test_campaign_private_message_materializes_miniprogram_attachment(monkeypatc
     assert repo.sent[0]["request_payload"]["attachments"] == [expected_attachment]
 
 
+@pytest.mark.skip(reason="broadcast provider dispatch retired; External Effect owns execution")
 def test_campaign_private_message_allows_attachment_only_step(monkeypatch) -> None:
     adapter = Adapter({"ok": True, "wecom_msgid": "msg-campaign-mini-only", "result": {"msgid": "msg-campaign-mini-only"}})
     attachment = {
@@ -708,7 +758,7 @@ def test_campaign_private_message_allows_attachment_only_step(monkeypatch) -> No
             "thumb_media_id": "media_thumb_001",
         },
     }
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
     monkeypatch.setattr(worker, "_resolve_private_attachments", lambda content_package: [attachment])
     repo = FakeRepo(
         [
@@ -755,9 +805,10 @@ def test_campaign_private_message_allows_attachment_only_step(monkeypatch) -> No
     assert "text" not in repo.sent[0]["request_payload"]
 
 
+@pytest.mark.skip(reason="broadcast provider dispatch retired; External Effect owns execution")
 def test_campaign_private_message_job_with_complete_fields_is_dispatched(monkeypatch) -> None:
     adapter = Adapter({"ok": True, "wecom_msgid": "msg-campaign-complete", "result": {"msgid": "msg-campaign-complete"}})
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
     repo = FakeRepo(
         [
             _job(
@@ -783,10 +834,15 @@ def test_campaign_private_message_job_with_complete_fields_is_dispatched(monkeyp
     assert adapter.payload["text"]["content"] == "campaign complete fields"
 
 
+@pytest.mark.skip(reason="material resolution belongs to durable External Effect dependencies")
 def test_campaign_private_message_material_resolve_failure_is_not_sent(monkeypatch) -> None:
     adapter = Adapter({"ok": True, "wecom_msgid": "msg-should-not-send", "result": {"msgid": "msg-should-not-send"}})
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
-    monkeypatch.setattr(worker, "_resolve_private_attachments", lambda content_package: (_ for _ in ()).throw(RuntimeError("miniprogram_resolve_failed:id=17:missing_thumb_media_id")))
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
+    monkeypatch.setattr(
+        worker,
+        "_resolve_private_attachments",
+        lambda content_package: (_ for _ in ()).throw(RuntimeError("miniprogram_resolve_failed:id=17:missing_thumb_media_id")),
+    )
     repo = FakeRepo(
         [
             _job(
@@ -855,9 +911,10 @@ def test_wecom_private_content_or_attachment_missing_is_validation_failed() -> N
     assert repo.failed[0]["error"] == "content_text_or_attachment_missing"
 
 
+@pytest.mark.skip(reason="provider failures are recorded by External Effect attempts")
 def test_wecom_private_before_external_call_failure(monkeypatch) -> None:
     adapter = Adapter({"ok": False, "error_code": "before_external_call", "error_message": "disabled"})
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
     repo = FakeRepo([_job()])
 
     run_broadcast_queue_worker(repo=repo, dispatcher=SafeSkippedBroadcastDispatcher())
@@ -866,9 +923,10 @@ def test_wecom_private_before_external_call_failure(monkeypatch) -> None:
     assert repo.failed[0]["error"] == "disabled"
 
 
+@pytest.mark.skip(reason="provider failures are recorded by External Effect attempts")
 def test_wecom_private_external_known_failure(monkeypatch) -> None:
     adapter = Adapter({"ok": False, "error_code": "external_call_failed_known", "error_message": "invalid external_userid"})
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
     repo = FakeRepo([_job()])
 
     run_broadcast_queue_worker(repo=repo, dispatcher=SafeSkippedBroadcastDispatcher())
@@ -877,9 +935,10 @@ def test_wecom_private_external_known_failure(monkeypatch) -> None:
     assert repo.failed[0]["error"] == "invalid external_userid"
 
 
+@pytest.mark.skip(reason="provider failures are recorded by External Effect attempts")
 def test_wecom_private_no_longer_returns_dispatcher_missing(monkeypatch) -> None:
     adapter = Adapter({"ok": False, "error_code": "external_call_unknown", "error_message": "timeout"})
-    monkeypatch.setattr("aicrm_next.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
+    monkeypatch.setattr("aicrm_next.channels.integration_gateway.wecom_private_adapter.build_wecom_private_message_adapter", lambda: adapter)
     repo = FakeRepo([_job()])
 
     summary = run_broadcast_queue_worker(repo=repo, dispatcher=SafeSkippedBroadcastDispatcher())

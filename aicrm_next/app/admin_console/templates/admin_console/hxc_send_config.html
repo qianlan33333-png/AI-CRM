@@ -1,0 +1,264 @@
+{% extends "admin_console/base.html" %}
+
+{% block head_extra %}
+<style>
+  .sc-toolbar {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;
+  }
+  .sc-toolbar input.sc-search {
+    flex: 1; min-width: 200px; max-width: 300px;
+    padding: 7px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;
+  }
+  .sc-toolbar input.sc-search:focus { outline: 2px solid #3b82f6; outline-offset: -1px; border-color: #3b82f6; }
+  .sc-meta { font-size: 12px; color: #6b7280; margin-left: auto; }
+  .sc-meta b { color: #111827; }
+
+  .sc-stats {
+    display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .sc-stat {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
+    padding: 12px 18px; min-width: 140px;
+  }
+  .sc-stat-label { font-size: 12px; color: #6b7280; margin-bottom: 4px; }
+  .sc-stat-value { font-size: 20px; font-weight: 600; color: #111827; }
+
+  .sc-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .sc-table th {
+    text-align: left; padding: 8px 12px; background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb; font-weight: 500; color: #6b7280; font-size: 12px;
+  }
+  .sc-table td { padding: 8px 12px; border-bottom: 1px solid #f3f4f6; }
+  .sc-table tr:hover { background: #f9fafb; }
+
+  .sc-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 11px; font-weight: 500;
+  }
+  .sc-badge--on  { background: #d1fae5; color: #065f46; }
+  .sc-badge--off { background: #f3f4f6; color: #6b7280; }
+  .sc-badge--active { background: #dbeafe; color: #1e40af; }
+
+  .sc-btn {
+    padding: 4px 12px; font-size: 12px; border: 1px solid #d1d5db;
+    border-radius: 4px; cursor: pointer; background: #fff; transition: background 0.15s;
+  }
+  .sc-btn:hover { background: #f3f4f6; }
+  .sc-btn--primary { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+  .sc-btn--primary:hover { background: #2563eb; }
+  .sc-btn--danger { color: #dc2626; border-color: #fca5a5; }
+  .sc-btn--danger:hover { background: #fef2f2; }
+  .sc-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .sc-pri-input {
+    width: 60px; padding: 3px 6px; border: 1px solid #d1d5db;
+    border-radius: 4px; font-size: 12px; text-align: center;
+  }
+
+  .sc-row-dimmed td { color: #9ca3af; }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="admin-card">
+  <div class="admin-card-head">
+    <div>
+      <h2>发送人列表与启用状态</h2>
+      <p>从企微通讯录选择可群发的发送人；只有启用的发送人才会在一键群发中被分配目标用户。</p>
+    </div>
+    <div class="admin-toolbar">
+      <a class="admin-button admin-button--ghost" href="/admin/hxc-dashboard">&larr; 返回漏斗看板</a>
+      <button class="admin-button admin-button--secondary" type="button" id="sc-refresh-dir-btn">刷新企微通讯录</button>
+    </div>
+  </div>
+
+  <div class="sc-stats">
+    <div class="sc-stat">
+      <div class="sc-stat-label">通讯录成员</div>
+      <div class="sc-stat-value" id="sc-dir-count">{{ directory_count }}</div>
+    </div>
+    <div class="sc-stat">
+      <div class="sc-stat-label">已选为发送人</div>
+      <div class="sc-stat-value" id="sc-sender-count">{{ sender_count }}</div>
+    </div>
+    <div class="sc-stat">
+      <div class="sc-stat-label">启用中</div>
+      <div class="sc-stat-value" id="sc-active-count">{{ active_sender_count }}</div>
+    </div>
+    <div class="sc-stat">
+      <div class="sc-stat-label">最近同步</div>
+      <div class="sc-stat-value" style="font-size:14px">{{ last_synced_at }}</div>
+    </div>
+  </div>
+
+  <div class="sc-toolbar">
+    <input id="sc-search" class="sc-search" placeholder="搜索成员名称或 UserID...">
+    <label style="font-size:12px;color:#6b7280;display:flex;align-items:center;gap:4px">
+      <input type="checkbox" id="sc-filter-sender"> 只看已选发送人
+    </label>
+  </div>
+
+  <div class="admin-table-wrap">
+    <table class="sc-table">
+      <thead>
+        <tr>
+          <th>成员</th>
+          <th>企微 UserID</th>
+          <th>职位</th>
+          <th>发送人</th>
+          <th>优先级 (越小越优先)</th>
+          <th>状态</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="sc-tbody"></tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts_extra %}
+<script id="sc-members-data" type="application/json">{{ members | tojson }}</script>
+<script>
+(function(){
+  let members = JSON.parse(document.getElementById('sc-members-data').textContent);
+  const tbody = document.getElementById('sc-tbody');
+  const searchInput = document.getElementById('sc-search');
+  const filterCheck = document.getElementById('sc-filter-sender');
+
+  function render(){
+    const q = searchInput.value.trim().toLowerCase();
+    const onlySender = filterCheck.checked;
+    tbody.innerHTML = '';
+    let shown = 0;
+
+    members.forEach((m, idx) => {
+      if(onlySender && !m.is_sender) return;
+      if(q && !m.display_name.toLowerCase().includes(q) && !m.wecom_userid.toLowerCase().includes(q)) return;
+      shown++;
+
+      const tr = document.createElement('tr');
+      if(m.is_sender && !m.is_active) tr.className = 'sc-row-dimmed';
+      tr.innerHTML =
+        '<td><b>' + esc(m.display_name) + '</b></td>' +
+        '<td><code>' + esc(m.wecom_userid) + '</code></td>' +
+        '<td>' + esc(m.position || '-') + '</td>' +
+        '<td>' + (m.is_sender
+          ? '<span class="sc-badge sc-badge--on">已选</span>'
+          : '<span class="sc-badge sc-badge--off">未选</span>') + '</td>' +
+        '<td>' + (m.is_sender
+          ? '<input type="number" class="sc-pri-input" value="' + m.priority + '" min="1" data-idx="' + idx + '">'
+          : '<span style="color:#9ca3af">-</span>') + '</td>' +
+        '<td>' + (m.is_sender
+          ? (m.is_active
+            ? '<span class="sc-badge sc-badge--active">启用</span>'
+            : '<span class="sc-badge sc-badge--off">停用</span>')
+          : '-') + '</td>' +
+        '<td>' + (m.is_sender
+          ? '<button class="sc-btn" data-toggle="' + idx + '">' + (m.is_active ? '停用' : '启用') + '</button> ' +
+            '<button class="sc-btn sc-btn--danger" data-remove="' + idx + '">移除</button>'
+          : '<button class="sc-btn sc-btn--primary" data-add="' + idx + '">选为发送人</button>') + '</td>';
+      tbody.appendChild(tr);
+    });
+
+    if(!shown){
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#9ca3af;padding:24px">' +
+        (q || onlySender ? '无匹配结果' : '尚未同步通讯录，请先点击「刷新企微通讯录」') + '</td></tr>';
+    }
+
+    tbody.querySelectorAll('[data-add]').forEach(btn => {
+      btn.addEventListener('click', () => addSender(parseInt(btn.dataset.add)));
+    });
+    tbody.querySelectorAll('[data-toggle]').forEach(btn => {
+      btn.addEventListener('click', () => toggleSender(parseInt(btn.dataset.toggle)));
+    });
+    tbody.querySelectorAll('[data-remove]').forEach(btn => {
+      btn.addEventListener('click', () => removeSender(parseInt(btn.dataset.remove)));
+    });
+    tbody.querySelectorAll('.sc-pri-input').forEach(input => {
+      let timer;
+      input.addEventListener('change', () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => updatePriority(parseInt(input.dataset.idx), parseInt(input.value) || 100), 300);
+      });
+    });
+
+    updateStats();
+  }
+
+  function updateStats(){
+    document.getElementById('sc-sender-count').textContent = members.filter(m => m.is_sender).length;
+    document.getElementById('sc-active-count').textContent = members.filter(m => m.is_sender && m.is_active).length;
+  }
+
+  function esc(s){ const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+  async function apiSave(uid, displayName, priority, isActive){
+    await fetch('/api/admin/hxc-dashboard/send-config', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({sender_userid: uid, display_name: displayName, priority: priority, is_active: isActive}),
+    });
+  }
+
+  async function apiDelete(uid){
+    await fetch('/api/admin/hxc-dashboard/send-config/' + encodeURIComponent(uid), {method: 'DELETE'});
+  }
+
+  async function addSender(idx){
+    const m = members[idx];
+    m.is_sender = true;
+    m.is_active = true;
+    m.priority = 100;
+    render();
+    await apiSave(m.wecom_userid, m.display_name, m.priority, true);
+  }
+
+  async function toggleSender(idx){
+    const m = members[idx];
+    m.is_active = !m.is_active;
+    render();
+    await apiSave(m.wecom_userid, m.display_name, m.priority, m.is_active);
+  }
+
+  async function removeSender(idx){
+    const m = members[idx];
+    if(!confirm('确定移除发送人 ' + m.display_name + ' (' + m.wecom_userid + ') ?')) return;
+    m.is_sender = false;
+    m.is_active = true;
+    m.priority = 100;
+    render();
+    await apiDelete(m.wecom_userid);
+  }
+
+  async function updatePriority(idx, newPri){
+    const m = members[idx];
+    m.priority = newPri;
+    await apiSave(m.wecom_userid, m.display_name, newPri, m.is_active);
+  }
+
+  searchInput.addEventListener('input', render);
+  filterCheck.addEventListener('change', render);
+
+  document.getElementById('sc-refresh-dir-btn').addEventListener('click', async function(){
+    const btn = this;
+    btn.disabled = true; btn.textContent = '同步中...';
+    try {
+      const resp = await fetch('/api/admin/hxc-dashboard/refresh-directory', {method: 'POST'});
+      const data = await resp.json();
+      if(data.ok !== false){
+        location.reload();
+      } else {
+        alert('同步失败: ' + window.AdminApi.responseErrorMessage(resp, data, '请稍后重试'));
+        btn.disabled = false; btn.textContent = '刷新企微通讯录';
+      }
+    } catch(err){
+      alert('同步失败: ' + window.AdminApi.errorMessage(err, '请稍后重试'));
+      btn.disabled = false; btn.textContent = '刷新企微通讯录';
+    }
+  });
+
+  render();
+})();
+</script>
+{% endblock %}

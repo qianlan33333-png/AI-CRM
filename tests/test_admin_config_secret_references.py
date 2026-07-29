@@ -3,19 +3,19 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine import Engine
 
-from aicrm_next.admin_config.application import AdminConfigReadService, AdminConfigWriteCommand
-from aicrm_next.admin_config.repository import AdminConfigRepository
-from aicrm_next.message_archive import repo as message_archive_repo
-from aicrm_next.message_archive import sync_service as message_archive_sync
-from aicrm_next.questionnaire import repo as questionnaire_repo
-from aicrm_next.shared import runtime_settings
-from aicrm_next.shared import runtime as shared_runtime
-from aicrm_next.shared.runtime_settings import runtime_setting
-from aicrm_next.shared.secret_store import FileSecretStore, is_secret_reference, parse_secret_reference
-from aicrm_next.shared.secret_store import SENSITIVE_SETTING_KEYS
+from aicrm_next.platform.admin_config.application import AdminConfigReadService, AdminConfigWriteCommand
+from aicrm_next.platform.admin_config.repository import AdminConfigRepository
+from aicrm_next.extensions.archive.message_archive import repo as message_archive_repo
+from aicrm_next.extensions.archive.message_archive import sync_service as message_archive_sync
+from aicrm_next.extensions.forms.questionnaire import repo as questionnaire_repo
+from aicrm_next.platform.shared import runtime_settings
+from aicrm_next.platform.shared import runtime as shared_runtime
+from aicrm_next.platform.shared.runtime_settings import runtime_setting, runtime_settings_request_scope
+from aicrm_next.platform.shared.secret_store import FileSecretStore, is_secret_reference, parse_secret_reference
+from aicrm_next.platform.shared.secret_store import SENSITIVE_SETTING_KEYS
 
 
 def _engine(tmp_path: Path) -> Engine:
@@ -125,6 +125,176 @@ def test_runtime_setting_resolves_db_and_environment_references(monkeypatch, tmp
     assert runtime_setting("WECOM_CONTACT_SECRET") == "complete-env-secret"
 
 
+def test_typed_runtime_integer_uses_central_environment_fallback(monkeypatch) -> None:
+    def unavailable_engine():
+        raise RuntimeError("database unavailable")
+
+    monkeypatch.setattr(runtime_settings, "get_engine", unavailable_engine)
+    monkeypatch.setenv("AICRM_TYPED_INTEGER", "600")
+
+    assert runtime_settings.runtime_int(
+        "AICRM_TYPED_INTEGER",
+        50,
+        minimum=1,
+        maximum=500,
+    ) == 500
+
+    monkeypatch.setenv("AICRM_TYPED_INTEGER", "invalid")
+    assert runtime_settings.runtime_int("AICRM_TYPED_INTEGER", 50, minimum=1) == 50
+
+
+def test_environment_snapshot_is_detached_from_source_mapping() -> None:
+    source = {"AICRM_FLAG": "before"}
+
+    snapshot = runtime_settings.environment_snapshot(source, environment=source)
+    source["AICRM_FLAG"] = "after"
+
+    assert snapshot == {"AICRM_FLAG": "before"}
+
+
+def test_managed_runtime_setting_preserves_environment_until_explicit_cutover(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    engine = _engine(tmp_path)
+    with engine.begin() as conn:
+        conn.execute(
+            text("INSERT INTO app_settings (key, value) VALUES ('WECOM_CORP_ID', 'ww-published')")
+        )
+    monkeypatch.setattr(runtime_settings, "get_engine", lambda: engine)
+    monkeypatch.setenv("WECOM_CORP_ID", "ww-environment")
+
+    assert runtime_settings.managed_runtime_setting("WECOM_CORP_ID") == "ww-environment"
+    assert runtime_settings.runtime_setting("WECOM_CORP_ID") == "ww-environment"
+
+    with engine.begin() as conn:
+        conn.execute(
+            text("INSERT INTO app_settings (key, value) VALUES ('AICRM_RUNTIME_CONFIG_CUTOVER_KEYS', 'WECOM_CORP_ID')")
+        )
+
+    assert runtime_settings.managed_runtime_setting("WECOM_CORP_ID") == "ww-published"
+    assert runtime_settings.runtime_setting("WECOM_CORP_ID") == "ww-published"
+
+
+def test_gateway_secret_preserves_environment_then_cuts_over_to_secret_store(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    engine = _engine(tmp_path)
+    root = tmp_path / "secrets"
+    monkeypatch.setenv("AICRM_SECRET_STORE_DIR", str(root))
+    published_reference = FileSecretStore(root).write(
+        "AICRM_HUANGYOUCAN_DB_PASSWORD",
+        "published-password",
+    )
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO app_settings (key, value) "
+                "VALUES ('AICRM_HUANGYOUCAN_DB_PASSWORD', :value)"
+            ),
+            {"value": published_reference},
+        )
+    monkeypatch.setattr(runtime_settings, "get_engine", lambda: engine)
+    monkeypatch.setenv("AICRM_HUANGYOUCAN_DB_PASSWORD", "environment-password")
+
+    assert (
+        runtime_settings.runtime_setting("AICRM_HUANGYOUCAN_DB_PASSWORD")
+        == "environment-password"
+    )
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO app_settings (key, value) "
+                "VALUES ('AICRM_RUNTIME_CONFIG_CUTOVER_KEYS', "
+                "'AICRM_HUANGYOUCAN_DB_PASSWORD')"
+            )
+        )
+
+    assert (
+        runtime_settings.runtime_setting("AICRM_HUANGYOUCAN_DB_PASSWORD")
+        == "published-password"
+    )
+
+
+def test_runtime_setting_preserves_valid_client_secret_reference(monkeypatch) -> None:
+    reference = (
+        "secretref:file:AICRM_AUTH_ARCHIVE_WORKER_CLIENT_SECRET:"
+        "v1_0000000000000000_0123456789abcdef"
+    )
+
+    def unavailable_engine():
+        raise RuntimeError("database unavailable")
+
+    monkeypatch.setattr(runtime_settings, "get_engine", unavailable_engine)
+    monkeypatch.setenv("AICRM_AUTH_ARCHIVE_WORKER_CLIENT_SECRET_REF", reference)
+
+    assert (
+        runtime_setting("AICRM_AUTH_ARCHIVE_WORKER_CLIENT_SECRET_REF")
+        == reference
+    )
+
+
+def test_runtime_settings_request_scope_uses_one_database_snapshot(monkeypatch, tmp_path: Path) -> None:
+    engine = _engine(tmp_path)
+    with engine.begin() as conn:
+        conn.execute(
+            text("INSERT INTO app_settings (key, value) VALUES ('AICRM_PUBLIC_BASE_URL', 'https://example.invalid')")
+        )
+    monkeypatch.setattr(runtime_settings, "get_engine", lambda: engine)
+    monkeypatch.setenv("SECRET_KEY", "request-scoped-signing-secret")
+    statements: list[str] = []
+
+    @event.listens_for(engine, "before_cursor_execute")
+    def record_statement(conn, cursor, statement, parameters, context, executemany):  # noqa: ANN001
+        if "app_settings" in statement:
+            statements.append(statement)
+
+    with runtime_settings_request_scope():
+        assert runtime_setting("AICRM_PUBLIC_BASE_URL") == "https://example.invalid"
+        assert runtime_setting("SECRET_KEY") == "request-scoped-signing-secret"
+        assert runtime_setting("MISSING_SETTING", "fallback") == "fallback"
+        assert runtime_setting("AICRM_PUBLIC_BASE_URL") == "https://example.invalid"
+
+    assert len(statements) == 1
+    assert "SELECT key, value FROM app_settings" in statements[0]
+
+    assert runtime_setting("AICRM_PUBLIC_BASE_URL") == "https://example.invalid"
+    assert len(statements) == 2
+
+
+def test_runtime_settings_request_scope_can_be_invalidated_after_write(monkeypatch, tmp_path: Path) -> None:
+    engine = _engine(tmp_path)
+    with engine.begin() as conn:
+        conn.execute(text("INSERT INTO app_settings (key, value) VALUES ('RUNTIME_FLAG', 'before')"))
+    monkeypatch.setattr(runtime_settings, "get_engine", lambda: engine)
+
+    with runtime_settings_request_scope():
+        assert runtime_setting("RUNTIME_FLAG") == "before"
+        with engine.begin() as conn:
+            conn.execute(text("UPDATE app_settings SET value = 'after' WHERE key = 'RUNTIME_FLAG'"))
+        runtime_settings.invalidate_runtime_settings_request_snapshot()
+        assert runtime_setting("RUNTIME_FLAG") == "after"
+
+
+def test_nested_runtime_settings_scope_reuses_outer_snapshot(monkeypatch, tmp_path: Path) -> None:
+    engine = _engine(tmp_path)
+    with engine.begin() as conn:
+        conn.execute(text("INSERT INTO app_settings (key, value) VALUES ('RUNTIME_FLAG', 'before')"))
+    monkeypatch.setattr(runtime_settings, "get_engine", lambda: engine)
+
+    with runtime_settings_request_scope():
+        assert runtime_setting("RUNTIME_FLAG") == "before"
+        with runtime_settings_request_scope():
+            with engine.begin() as conn:
+                conn.execute(text("UPDATE app_settings SET value = 'after' WHERE key = 'RUNTIME_FLAG'"))
+            assert runtime_setting("RUNTIME_FLAG") == "before"
+        assert runtime_setting("RUNTIME_FLAG") == "before"
+
+    assert runtime_setting("RUNTIME_FLAG") == "after"
+
+
 def test_legacy_shared_runtime_facade_resolves_secret_references(monkeypatch, tmp_path: Path) -> None:
     engine = _engine(tmp_path)
     root = tmp_path / "secrets"
@@ -160,6 +330,25 @@ def test_runtime_setting_allows_expand_mode_but_rejects_raw_secret_after_cutover
     monkeypatch.setenv("WECOM_SECRET", raw_secret)
     assert runtime_setting("WECOM_SECRET", "missing") == "missing"
     assert runtime_setting("WECOM_CORP_ID", "ww-default") == "ww-default"
+
+
+def test_managed_sensitive_environment_value_fails_closed_when_secret_cutover_is_environment_enabled(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    engine = _engine(tmp_path)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO app_settings (key, value) VALUES "
+                "('AICRM_SECRET_REFERENCE_CUTOVER', 'false')"
+            )
+        )
+    monkeypatch.setattr(runtime_settings, "get_engine", lambda: engine)
+    monkeypatch.setenv("AICRM_SECRET_REFERENCE_CUTOVER", "true")
+    monkeypatch.setenv("WECOM_SECRET", "complete-legacy-secret")
+
+    assert runtime_setting("WECOM_SECRET", "missing") == "missing"
 
 
 def test_runtime_setting_fails_closed_for_unreadable_reference_without_logging_it(monkeypatch, tmp_path: Path, caplog) -> None:

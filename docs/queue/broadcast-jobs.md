@@ -1,6 +1,28 @@
 # Broadcast Jobs Queue Contract
 
-`broadcast_jobs` is the shared queue for scheduled broadcast sends. It keeps the existing `source_type` handler dispatch model and adds metadata that makes new business intake clearer without replacing the Postgres queue or worker.
+`broadcast_jobs` is the durable business-intent queue for scheduled broadcast
+sends. After the scheduler consolidation cutover,
+`aicrm-job-catalog-scheduler.timer` is its only automatic clock owner and invokes
+the versioned `campaign.plan` handler. For ordinary and historical rows, the
+Next-native worker converts supported rows into `external_effect_job` records
+in one database transaction. For an approved `agent_generated_single`
+AI-assistant recipient, approval creates the `broadcast_jobs` owner row, its
+`external_effect_job`, projection state, audit event, and durable PostgreSQL
+wake signal in the same transaction. The catalog scheduler remains a
+leak-reconciliation path for rows that could not be materialized at approval
+time; neither path owns the provider call. The persistent External Effect
+runtime remains the only WeCom delivery owner.
+
+AI-assistant private effects use `wecom_ai_assistant_bulk`. Ordinary private
+broadcasts stay on `wecom_bulk`; welcome and interactive traffic therefore do
+not lose their lane capacity during an AI burst. Both bulk lanes use the same
+`rate_scope_key` and process-level 2 starts/second, burst-2 limiter, while the
+existing durable cooldown remains authoritative for 429/45009/45011 across
+processes.
+
+`openclaw-broadcast-queue-worker.timer` and the intermediate
+`aicrm-next-broadcast-delegation.timer` are retired owners. They must stay
+disabled and must not be restored as fallbacks.
 
 ## Field Roles
 
@@ -20,7 +42,8 @@
 - [ ] Choose the `target_kind`.
 - [ ] Define a stable `idempotency_key`.
 - [ ] Define the `content_payload` schema.
-- [ ] Route supported dispatch through the Next broadcast queue worker in `aicrm_next/background_jobs/broadcast_queue_worker.py`.
+- [ ] Route supported delegation through the Next broadcast queue worker in `aicrm_next/automation/background_jobs/broadcast_queue_worker.py`.
+- [ ] For AI-assistant recipient approval, attempt transactional immediate materialization and retain scheduler reconciliation when validation cannot materialize it.
 - [ ] Keep unsupported `source_type` values safely skipped until a Next-native dispatcher path is reviewed.
 - [ ] Ensure the dispatcher path is safe around external side effects and resume cases.
 - [ ] Use `enqueue_broadcast_job(...)` or pass the standard metadata through `enqueue_job(...)`.
@@ -35,7 +58,13 @@ Handlers receive one job dict and return one of:
 {"ok": False, "error": "safe short reason"}
 ```
 
-Handlers own the domain side effects. The worker owns queue state transitions through `mark_sent` and `mark_failed`.
+The Broadcast worker owns claim, planning, and delegation state transitions.
+The External Effect runtime owns provider attempts and final delivery truth.
+
+For private effects, `ordering_key = external_contact:<external_userid>` keeps
+one customer's calls strictly ordered. Fairness uses
+`broadcast:<sender_userid>:<batch_key>` so different senders and batches rotate
+without combining message contents.
 
 Do not blindly retry sends with unknown external side effects. Future retry policy can use `failure_type`, for example:
 

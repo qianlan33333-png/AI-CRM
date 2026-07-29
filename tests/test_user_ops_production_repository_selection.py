@@ -5,9 +5,9 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.ops_enrollment import application, repo as repo_module
-from aicrm_next.ops_enrollment.repo import InMemoryUserOpsRepository, SqlAlchemyUserOpsRepository
-from aicrm_next.shared.repository_provider import evaluate_repository
+from aicrm_next.automation.ops_enrollment import application, repo as repo_module
+from aicrm_next.automation.ops_enrollment.repo import InMemoryUserOpsRepository, SqlAlchemyUserOpsRepository
+from aicrm_next.platform.shared.repository_provider import evaluate_repository
 
 ROOT = Path(__file__).resolve().parents[1]
 USER_OPS_PROD_TABLES_MIGRATION = ROOT / "migrations" / "versions" / "0029_user_ops_prod_tables.py"

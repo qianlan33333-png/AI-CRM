@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
+
 from fastapi.testclient import TestClient
 
-from aicrm_next.channel_entry.ingress_app import create_wecom_callback_ingress_app
+from aicrm_next.channels.channel_entry.ingress_app import create_wecom_callback_ingress_app
 from scripts.ops import check_callback_quick_ack_state as quick_ack_state
 from scripts.ops.check_wecom_callback_ingress_cutover import analyze_nginx_config, run as run_cutover_check
 
@@ -45,8 +47,8 @@ def test_wecom_callback_ingress_runtime_fast_acks_after_inbox_ingest(monkeypatch
     app = create_wecom_callback_ingress_app()
     client = TestClient(app, raise_server_exceptions=False)
 
-    monkeypatch.setattr("aicrm_next.channel_entry.api.encrypted_success_reply", lambda query: "success")
-    monkeypatch.setattr("aicrm_next.channel_entry.api.ingest_wecom_external_contact_callback", lambda **kwargs: calls.append(kwargs) or {"ok": True, "id": 1})
+    monkeypatch.setattr("aicrm_next.channels.channel_entry.api.encrypted_success_reply", lambda query: "success")
+    monkeypatch.setattr("aicrm_next.channels.channel_entry.api.ingest_wecom_external_contact_callback", lambda **kwargs: calls.append(kwargs) or {"ok": True, "id": 1})
 
     response = client.post(
         "/wecom/external-contact/callback?timestamp=1&nonce=n&msg_signature=s",
@@ -64,12 +66,64 @@ def test_wecom_callback_ingress_runtime_never_fake_acks_when_inbox_fails(monkeyp
     app = create_wecom_callback_ingress_app()
     client = TestClient(app, raise_server_exceptions=False)
 
-    monkeypatch.setattr("aicrm_next.channel_entry.api.ingest_wecom_external_contact_callback", lambda **kwargs: (_ for _ in ()).throw(RuntimeError("db down")))
+    monkeypatch.setattr("aicrm_next.channels.channel_entry.api.ingest_wecom_external_contact_callback", lambda **kwargs: (_ for _ in ()).throw(RuntimeError("db down")))
 
     response = client.post("/api/wecom/events?timestamp=1&nonce=n&msg_signature=s", content=b"<xml>encrypted</xml>")
 
     assert response.status_code == 503
     assert "webhook ingress unavailable" in response.text
+
+
+def test_wecom_callback_ingress_runtime_scopes_settings_once_per_request(monkeypatch) -> None:
+    events: list[str] = []
+
+    @contextmanager
+    def settings_scope():
+        events.append("enter")
+        try:
+            yield
+        finally:
+            events.append("exit")
+
+    monkeypatch.setattr(
+        "aicrm_next.channels.channel_entry.ingress_app.runtime_settings_request_scope",
+        settings_scope,
+    )
+    monkeypatch.setattr(
+        "aicrm_next.channels.channel_entry.api.ingest_wecom_external_contact_callback",
+        lambda **kwargs: {"ok": True, "id": 1},
+    )
+    monkeypatch.setattr(
+        "aicrm_next.channels.channel_entry.api.encrypted_success_reply",
+        lambda query: "success",
+    )
+    client = TestClient(create_wecom_callback_ingress_app(), raise_server_exceptions=False)
+
+    response = client.post(
+        "/api/wecom/events?timestamp=1&nonce=n&msg_signature=s",
+        content=b"<xml>encrypted</xml>",
+    )
+
+    assert response.status_code == 200
+    assert events == ["enter", "exit"]
+
+
+def test_expired_callback_is_rejected_before_runtime_settings_are_loaded(monkeypatch) -> None:
+    config_reads: list[bool] = []
+    monkeypatch.setattr(
+        "aicrm_next.channels.channel_entry.application.callback_config",
+        lambda: config_reads.append(True) or {},
+    )
+    client = TestClient(create_wecom_callback_ingress_app(), raise_server_exceptions=False)
+
+    response = client.post(
+        "/api/wecom/events?msg_signature=invalid&timestamp=1&nonce=deploy-smoke-probe-api-events",
+        content=b"<xml>invalid</xml>",
+    )
+
+    assert response.status_code == 400
+    assert "expired callback timestamp" in response.text
+    assert config_reads == []
 
 
 def test_wecom_callback_ingress_nginx_template_routes_to_5002_with_short_timeouts_and_backpressure() -> None:

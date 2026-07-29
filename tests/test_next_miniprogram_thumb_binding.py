@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from aicrm_next.media_library.application import TestResolveMiniprogramThumbCommand as ResolveMiniprogramThumbCommand
-from aicrm_next.media_library.application import UpsertMediaItemCommand
-from aicrm_next.media_library.repo import InMemoryMediaLibraryRepository
+from aicrm_next.engagement.media_library.application import TestResolveMiniprogramThumbCommand as ResolveMiniprogramThumbCommand
+from aicrm_next.engagement.media_library.application import UpsertMediaItemCommand
+from aicrm_next.engagement.media_library.repo import InMemoryMediaLibraryRepository
 
 
 PNG_1PX_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkAAEAAAcAAekVCC0AAAAASUVORK5CYII="
@@ -42,7 +42,7 @@ def test_miniprogram_save_binds_cached_image_library_media_id() -> None:
 
 
 def test_production_thumb_resolve_does_not_fallback_to_fake_media(monkeypatch) -> None:
-    import aicrm_next.media_library.application as app_module
+    import aicrm_next.engagement.media_library.application as app_module
 
     repo = _empty_repo()
     image = repo.save_item(

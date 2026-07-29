@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.platform_foundation.internal_events import legacy_path_markers
-from aicrm_next.platform_foundation.internal_events.legacy_path_markers import (
+from aicrm_next.platform.platform_foundation.internal_events import legacy_path_markers
+from aicrm_next.platform.platform_foundation.internal_events.legacy_path_markers import (
     legacy_path_marker_diagnostics,
     mark_legacy_path_invoked,
     reset_legacy_path_marker_state,

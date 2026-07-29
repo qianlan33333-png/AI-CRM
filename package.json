@@ -3,22 +3,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build:frontend": "tsc -p tsconfig.frontend.json",
-    "typecheck": "tsc -p tsconfig.frontend.json --noEmit",
     "test:frontend": "npm run test:frontend:all",
-    "test:frontend:push-center": "node tests/frontend/p1_push_center_status.test.mjs",
-    "test:frontend:group-ops": "node tests/frontend/p1_group_ops_status.test.mjs",
-    "test:frontend:ops-plan": "node tests/frontend/p1_ops_plan_status.test.mjs",
-    "test:frontend:wecom": "node tests/frontend/p1_wecom_status.test.mjs",
-    "test:frontend:interaction-shell": "node tests/frontend/p1_interaction_shell.test.mjs",
-    "test:frontend:preview": "node tests/frontend/p1_preview_board.test.mjs",
-    "test:frontend:business-pages": "node tests/frontend/p1_business_pages_interaction_shell.test.mjs",
     "test:frontend:security": "node tests/frontend/admin_request_security.test.mjs",
+    "test:frontend:errors": "node tests/frontend/admin_error_messages.test.mjs",
+    "test:frontend:error-guard": "node tests/frontend/admin_error_rendering_guard.test.mjs",
     "test:frontend:coupons": "node tests/frontend/coupon_inline_scripts_syntax.test.mjs",
     "test:frontend:sidebar": "node tests/frontend/sidebar_progressive_loading.test.mjs",
-    "test:frontend:all": "npm run test:frontend:security && npm run test:frontend:push-center && npm run test:frontend:group-ops && npm run test:frontend:ops-plan && npm run test:frontend:wecom && npm run test:frontend:interaction-shell && npm run test:frontend:preview && npm run test:frontend:business-pages && npm run test:frontend:coupons && npm run test:frontend:sidebar"
-  },
-  "devDependencies": {
-    "typescript": "5.9.3"
+    "test:frontend:service-period": "node tests/frontend/service_period_member_grid.test.mjs",
+    "test:frontend:service-period-sharing": "node tests/frontend/service_period_member_grid_sharing.test.mjs",
+    "test:frontend:all": "npm run test:frontend:security && npm run test:frontend:errors && npm run test:frontend:error-guard && npm run test:frontend:coupons && npm run test:frontend:sidebar && npm run test:frontend:service-period && npm run test:frontend:service-period-sharing"
   }
 }

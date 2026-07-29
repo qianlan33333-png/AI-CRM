@@ -210,7 +210,7 @@
     {
       "data_status": "observed",
       "evidence_hash": "c1ef73c6a4a4297102160f0c42d2dd7a487bfa15ecb6b74b68ea5f44c207a01b",
-      "href": "/admin/broadcast-jobs?source_type=cloud_plan",
+      "href": "",
       "label": "发送与行为聚合",
       "reference_key": "hxc-20260713-delivery-metrics",
       "reference_type": "artifact",

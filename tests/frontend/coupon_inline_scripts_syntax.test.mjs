@@ -6,10 +6,10 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const TEMPLATE_FILES = [
-  "aicrm_next/commerce/coupons/templates/admin_console/coupon_form.html",
-  "aicrm_next/commerce/coupons/templates/admin_console/coupon_list.html",
-  "aicrm_next/commerce/coupons/templates/admin_console/coupon_data.html",
-  "aicrm_next/commerce/coupons/templates/coupon_public.html",
+  "aicrm_next/extensions/commerce/commerce/coupons/templates/admin_console/coupon_form.html",
+  "aicrm_next/extensions/commerce/commerce/coupons/templates/admin_console/coupon_list.html",
+  "aicrm_next/extensions/commerce/commerce/coupons/templates/admin_console/coupon_data.html",
+  "aicrm_next/extensions/commerce/commerce/coupons/templates/coupon_public.html",
 ];
 
 function executableScripts(html) {
@@ -39,7 +39,7 @@ for (const relativePath of TEMPLATE_FILES) {
 }
 
 const paymentRenderer = fs.readFileSync(
-  path.join(ROOT, "aicrm_next/public_product/service.py"),
+  path.join(ROOT, "aicrm_next/extensions/commerce/public_product/service.py"),
   "utf8",
 );
 assert.match(paymentRenderer, /coupon_choice:\s*couponChoice\(\)/);

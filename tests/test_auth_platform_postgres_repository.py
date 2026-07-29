@@ -2,10 +2,10 @@ from datetime import datetime, timedelta, timezone
 import os
 from uuid import uuid4
 
-from aicrm_next.platform_foundation.auth_platform.context import PrincipalType
-from aicrm_next.platform_foundation.auth_platform.credentials import hash_client_secret, issue_client_secret
-from aicrm_next.platform_foundation.auth_platform.models import ApiClientRecord, WebhookClientRecord
-from aicrm_next.platform_foundation.auth_platform.repository import PostgresAuthRepository
+from aicrm_next.platform.platform_foundation.auth_platform.context import PrincipalType
+from aicrm_next.platform.platform_foundation.auth_platform.credentials import hash_client_secret, issue_client_secret
+from aicrm_next.platform.platform_foundation.auth_platform.models import ApiClientRecord, WebhookClientRecord
+from aicrm_next.platform.platform_foundation.auth_platform.repository import PostgresAuthRepository
 
 
 def test_postgres_api_client_round_trip_rotation_and_disable(next_pg_schema) -> None:

@@ -13,18 +13,18 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from aicrm_next.platform_foundation.auth_platform.credentials import (  # noqa: E402
+from aicrm_next.platform.platform_foundation.auth_platform.credentials import (  # noqa: E402
     hash_client_secret,
     issue_client_secret,
     verify_client_secret,
 )
-from aicrm_next.platform_foundation.auth_platform.models import ApiClientRecord  # noqa: E402
-from aicrm_next.platform_foundation.auth_platform.profiles import (  # noqa: E402
+from aicrm_next.platform.platform_foundation.auth_platform.models import ApiClientRecord  # noqa: E402
+from aicrm_next.platform.platform_foundation.auth_platform.profiles import (  # noqa: E402
     API_CLIENT_PROFILE_BY_PURPOSE,
     API_CLIENT_PROFILES,
 )
-from aicrm_next.platform_foundation.auth_platform.repository import PostgresAuthRepository  # noqa: E402
-from aicrm_next.shared.secret_store import FileSecretStore, is_secret_reference  # noqa: E402
+from aicrm_next.platform.platform_foundation.auth_platform.repository import PostgresAuthRepository  # noqa: E402
+from aicrm_next.platform.shared.secret_store import FileSecretStore, is_secret_reference  # noqa: E402
 from scripts.ops.bootstrap_auth_clients import _read_environment_file  # noqa: E402
 from scripts.ops.migrate_app_setting_secrets import _persist_environment_values  # noqa: E402
 

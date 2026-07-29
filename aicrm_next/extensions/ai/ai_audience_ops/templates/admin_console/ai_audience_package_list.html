@@ -1,0 +1,400 @@
+{% extends "admin_console/base.html" %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/group_chat_picker.css') }}?v=group-chat-direct-select-20260715">
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/material_picker.css') }}?v=group-chat-direct-select-20260715">
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/send_content_composer.css') }}?v=group-chat-selector-20260715">
+<style>
+  :root {
+    --ai-bg: #f6f8fb;
+    --ai-panel: #fff;
+    --ai-line: #e7ebf2;
+    --ai-line2: #eef2f7;
+    --ai-text: #101828;
+    --ai-muted: #667085;
+    --ai-muted2: #98a2b3;
+    --ai-blue: #2563eb;
+    --ai-blue2: #eff6ff;
+    --ai-danger: #d92d20;
+    --ai-danger2: #fff1f3;
+    --ai-green: #079455;
+    --ai-green2: #ecfdf3;
+    --ai-warn: #b54708;
+    --ai-warn2: #fffaeb;
+    --ai-shadow: 0 12px 32px rgba(16, 24, 40, .07);
+    --ai-r: 16px;
+  }
+
+  .admin-page-summary {
+    display: none;
+  }
+
+  .ai-audience-card {
+    background: var(--ai-panel);
+    border: 1px solid var(--ai-line);
+    border-radius: var(--ai-r);
+    box-shadow: var(--ai-shadow);
+  }
+
+  .ai-audience-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 22px;
+    border-bottom: 1px solid var(--ai-line2);
+  }
+
+  .ai-audience-card-head h2 {
+    margin: 0;
+    color: var(--ai-text);
+    font-size: 20px;
+    font-weight: 850;
+  }
+
+  .ai-audience-count {
+    color: #475467;
+    font-weight: 750;
+    white-space: nowrap;
+  }
+  .ai-audience-notice { margin: 0 20px 16px; border: 1px solid #d6e4ff; border-radius: 10px; background: #f5f8ff; color: #1849a9; padding: 10px 12px; font-weight: 750; }
+  .ai-audience-notice.is-error { border-color: #fecdca; background: #fff1f3; color: #b42318; }
+
+  .ai-audience-table-wrap {
+    overflow-x: auto;
+  }
+
+  .ai-audience-table {
+    width: 100%;
+    min-width: 960px;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .ai-audience-table th,
+  .ai-audience-table td {
+    padding: 15px 18px;
+    border-bottom: 1px solid var(--ai-line2);
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  .ai-audience-table th {
+    background: #fafbfc;
+    color: #8993a4;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .ai-audience-table tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .ai-audience-name-cell {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    gap: 10px;
+    border: 0;
+    background: transparent;
+    color: #1849a9;
+    cursor: pointer;
+    font-weight: 850;
+    padding: 0;
+  }
+
+  .ai-audience-name-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ai-audience-dot {
+    width: 10px;
+    height: 10px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--ai-blue);
+    box-shadow: 0 0 0 4px var(--ai-blue2);
+  }
+
+  .ai-audience-dot.is-muted {
+    background: #98a2b3;
+    box-shadow: 0 0 0 4px #f2f4f7;
+  }
+
+  .ai-audience-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 10px;
+    border: 1px solid #dbeafe;
+    border-radius: 999px;
+    background: var(--ai-blue2);
+    color: #1d4ed8;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .ai-audience-pill.gray {
+    border-color: #eaecf0;
+    background: #f2f4f7;
+    color: #475467;
+  }
+
+  .ai-audience-btns {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .ai-audience-btn {
+    min-height: 36px;
+    border: 1px solid #d0d5dd;
+    border-radius: 10px;
+    background: #fff;
+    color: #344054;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 800;
+    padding: 8px 12px;
+  }
+
+  .ai-audience-btn:hover {
+    border-color: #98a2b3;
+  }
+
+  .ai-audience-btn.primary {
+    border-color: var(--ai-blue);
+    background: var(--ai-blue);
+    color: #fff;
+  }
+
+  .ai-audience-btn.soft {
+    border-color: #d6e4ff;
+    background: #f5f8ff;
+    color: #1849a9;
+  }
+
+  .ai-audience-btn.danger {
+    border-color: #fecdca;
+    background: var(--ai-danger2);
+    color: var(--ai-danger);
+  }
+
+  .ai-audience-empty {
+    padding: 42px 12px;
+    color: var(--ai-muted);
+    text-align: center;
+  }
+
+  .ai-audience-strong {
+    color: var(--ai-text);
+    font-weight: 850;
+  }
+
+  @media (max-width: 960px) {
+    .ai-audience-table th,
+    .ai-audience-table td {
+      padding: 12px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="ai-audience-card" aria-label="AI 自动化运营人群包列表">
+  <div class="ai-audience-card-head">
+    <h2>人群包列表</h2>
+    <div class="ai-audience-count" id="aiAudienceTotal">加载中</div>
+  </div>
+  <div class="ai-audience-notice" id="aiAudienceNotice" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+  <div class="ai-audience-table-wrap">
+    <table class="ai-audience-table">
+      <thead>
+        <tr>
+          <th style="width:34%">人群包名称</th>
+          <th style="width:10%">人数</th>
+          <th style="width:17%">最后一次刷新时间</th>
+          <th style="width:13%">刷新方式</th>
+          <th style="width:26%;text-align:right">操作</th>
+        </tr>
+      </thead>
+      <tbody id="aiAudienceRows">
+        <tr><td class="ai-audience-empty" colspan="5">加载中</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="{{ url_for('static', filename='admin_console/group_chat_picker.js') }}?v=group-chat-direct-select-20260715"></script>
+<script src="{{ url_for('static', filename='admin_console/material_picker.js') }}?v=group-chat-direct-select-20260715"></script>
+<script src="{{ url_for('static', filename='admin_console/send_content_composer.js') }}?v=group-chat-selector-20260715"></script>
+<script src="{{ url_for('static', filename='admin_console/user_ops_batch_send_modal.js') }}?v=group-chat-selector-20260715"></script>
+<script>
+  (() => {
+    const apiUrl = {{ ai_audience_packages_api_url | tojson }};
+    const previewUrl = "/api/admin/user-ops/batch-send/preview";
+    const executeUrl = "/api/admin/user-ops/batch-send/execute";
+    const totalEl = document.getElementById("aiAudienceTotal");
+    const rowsEl = document.getElementById("aiAudienceRows");
+    const noticeEl = document.getElementById("aiAudienceNotice");
+
+    const notice = (message, isError = false) => {
+      noticeEl.textContent = String(message || "");
+      noticeEl.hidden = !message;
+      noticeEl.classList.toggle("is-error", isError);
+      noticeEl.setAttribute("role", isError ? "alert" : "status");
+      noticeEl.setAttribute("aria-live", isError ? "assertive" : "polite");
+    };
+
+    const escapeHtml = (value) => String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll("\"", "&quot;")
+      .replaceAll("'", "&#039;");
+
+    const formatNumber = (value) => new Intl.NumberFormat("zh-CN").format(Number(value || 0));
+
+    const formatTime = (value) => {
+      if (!value) return "-";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return escapeHtml(value);
+      const parts = new Intl.DateTimeFormat("zh-CN", {
+        timeZone: "Asia/Shanghai",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+      }).formatToParts(date).reduce((acc, item) => {
+        acc[item.type] = item.value;
+        return acc;
+      }, {});
+      return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
+    };
+
+    const fetchJson = async (url, options = {}) => {
+      return window.AdminApi.requestJson(url, { cache: "no-store", ...options });
+    };
+
+    const packageDetailPath = (id) => `/admin/automation-conversion/packages/${encodeURIComponent(id)}`;
+
+    const runPackageAction = async (item, action) => {
+      const id = item.id;
+      if (action === "delete" && !window.confirm(`确认删除「${item.name || "未命名人群包"}」？`)) {
+        return;
+      }
+      const actionUrls = {
+        copy: `${apiUrl}/${encodeURIComponent(id)}/copy`,
+        pause: `${apiUrl}/${encodeURIComponent(id)}/pause`,
+        activate: `${apiUrl}/${encodeURIComponent(id)}/activate`,
+        delete: `${apiUrl}/${encodeURIComponent(id)}`
+      };
+      await fetchJson(actionUrls[action], { method: action === "delete" ? "DELETE" : "POST" });
+      await loadPackages();
+    };
+
+    const openBatchSend = (item) => {
+      if (!window.UserOpsBatchSendModal) {
+        notice("标准群发组件加载失败，请刷新页面后重试", true);
+        return;
+      }
+      window.UserOpsBatchSendModal.open({
+        targetSource: "ai_audience_package",
+        targetSourceId: item.id,
+        targetLabel: `AI 人群包：${item.name || "未命名人群包"}（当前 ${formatNumber(item.member_count)} 人）`,
+        previewUrl,
+        executeUrl,
+        operator: "admin"
+      });
+    };
+
+    const render = (payload) => {
+      const items = Array.isArray(payload.items) ? payload.items : [];
+      totalEl.textContent = `共 ${Number(payload.total ?? items.length)} 个`;
+      if (!items.length) {
+        rowsEl.innerHTML = '<tr><td class="ai-audience-empty" colspan="5">暂无人群包</td></tr>';
+        return;
+      }
+      rowsEl.innerHTML = items.map((item, index) => {
+        const name = item.name || "未命名人群包";
+        const isActive = item.status === "active";
+        const toggleLabel = isActive ? "停止" : "启用";
+        const toggleAction = isActive ? "pause" : "activate";
+        const dotClass = isActive ? "ai-audience-dot" : "ai-audience-dot is-muted";
+        const pillClass = item.refresh_mode === "manual" ? "ai-audience-pill gray" : "ai-audience-pill";
+        return `
+          <tr>
+            <td>
+              <button class="ai-audience-name-cell" type="button" data-action="edit" data-index="${index}">
+                <span class="${dotClass}" aria-hidden="true"></span>
+                <span class="ai-audience-name-text" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
+              </button>
+            </td>
+            <td><span class="ai-audience-strong">${formatNumber(item.member_count)}</span></td>
+            <td>${formatTime(item.last_refreshed_at)}</td>
+            <td><span class="${pillClass}">${escapeHtml(item.refresh_mode_label || "手动")}</span></td>
+            <td>
+              <div class="ai-audience-btns">
+                <button class="ai-audience-btn soft" type="button" data-action="edit" data-index="${index}">编辑</button>
+                <button class="ai-audience-btn" type="button" data-action="copy" data-index="${index}">复制</button>
+                <button class="ai-audience-btn" type="button" data-action="${toggleAction}" data-index="${index}">${toggleLabel}</button>
+                <button class="ai-audience-btn danger" type="button" data-action="delete" data-index="${index}">删除</button>
+                <button class="ai-audience-btn primary" type="button" data-action="send" data-index="${index}">群发</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      rowsEl.querySelectorAll("[data-action]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const item = items[Number(button.dataset.index)];
+          const action = button.dataset.action;
+          try {
+            if (action === "edit") {
+              window.location.href = packageDetailPath(item.id);
+              return;
+            }
+            if (action === "send") {
+              openBatchSend(item);
+              return;
+            }
+            button.disabled = true;
+            await runPackageAction(item, action);
+          } catch (error) {
+            notice(window.AdminApi.errorMessage(error, "操作失败"), true);
+          } finally {
+            button.disabled = false;
+          }
+        });
+      });
+    };
+
+    async function loadPackages() {
+      totalEl.textContent = "加载中";
+      rowsEl.innerHTML = '<tr><td class="ai-audience-empty" colspan="5">加载中</td></tr>';
+      try {
+        const requestUrl = `${apiUrl}${apiUrl.includes("?") ? "&" : "?"}_=${Date.now()}`;
+        const payload = await fetchJson(requestUrl);
+        notice("");
+        render(payload);
+      } catch (error) {
+        const message = window.AdminApi.errorMessage(error, "加载失败，请稍后重试");
+        totalEl.textContent = "加载失败";
+        rowsEl.innerHTML = `<tr><td class="ai-audience-empty" colspan="5">${escapeHtml(message)}</td></tr>`;
+        notice(message, true);
+      }
+    }
+
+    loadPackages();
+  })();
+</script>
+{% endblock %}

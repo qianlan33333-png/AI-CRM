@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from aicrm_next.admin_shell.navigation import ADMIN_NAV_GROUPS, admin_path_for  # noqa: E402
+from aicrm_next.app.admin_console.navigation import ADMIN_NAV_GROUPS, admin_path_for  # noqa: E402
 from scripts.script_runtime import print_json  # noqa: E402
 
 REQUIRED_OPENAPI_PATHS = (
@@ -47,8 +47,6 @@ SMOKE_PATHS = (
     "/admin/automation-conversion",
     "/admin/automation-conversion/group-ops/ui",
     "/admin/wecom-tags",
-    "/admin/push-center",
-    "/admin/internal-events",
     "/admin/automation-agents",
     "/api/admin/push-center/stats",
     "/api/admin/push-center/jobs?limit=1",

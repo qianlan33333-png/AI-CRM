@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.customer_read_model.application import GetCustomer360ProfileQuery
-from aicrm_next.customer_read_model.dto import CustomerContextRequest
+from aicrm_next.crm.customer_read_model.application import GetCustomer360ProfileQuery
+from aicrm_next.crm.customer_read_model.dto import CustomerContextRequest
 from aicrm_next.main import create_app
 
 
@@ -108,7 +108,7 @@ def test_customer_360_admin_api_returns_fixture_profile_without_external_join(mo
 def test_customer_360_sources_do_not_reference_retired_automation_tables() -> None:
     import inspect
 
-    from aicrm_next.customer_read_model import application
+    from aicrm_next.crm.customer_read_model import application
 
     source = inspect.getsource(application.GetCustomer360ProfileQuery) + inspect.getsource(application._customer_360_automation_status)
 

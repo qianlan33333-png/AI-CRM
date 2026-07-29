@@ -1,19 +1,15 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.questionnaire.h5_write import (
+from aicrm_next.extensions.forms.questionnaire.h5_write import (
     get_questionnaire_h5_side_effect_plans,
     reset_questionnaire_h5_write_fixture_state,
 )
-from aicrm_next.questionnaire.repo import build_questionnaire_repository, reset_questionnaire_fixture_state
-
-
-ROOT = Path(__file__).resolve().parents[1]
+from aicrm_next.extensions.forms.questionnaire.repo import build_questionnaire_repository, reset_questionnaire_fixture_state
+from wechat_identity_test_support import authorize_wechat_client
 
 
 @pytest.fixture()
@@ -23,7 +19,9 @@ def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
     monkeypatch.delenv("AICRM_NEXT_ENABLE_LEGACY_PRODUCTION_FACADE", raising=False)
     reset_questionnaire_fixture_state()
     reset_questionnaire_h5_write_fixture_state()
-    return TestClient(create_app())
+    client = TestClient(create_app())
+    authorize_wechat_client(client, {"openid": "openid_001", "unionid": "unionid_001", "external_userid": "wx_ext_001"})
+    return client
 
 
 def _submission_count() -> int:
@@ -173,7 +171,5 @@ def test_questionnaire_mobile_field_frontend_enforces_11_digits(client: TestClie
 
     assert response.status_code == 200
     assert 'maxlength="11"' in response.text
-    assert '/static/questionnaire/questionnaire_h5_page.js?v=20260721-unionid-continuation' in response.text
-    frontend_source = (ROOT / "aicrm_next/questionnaire/static/questionnaire_h5_page.js").read_text(encoding="utf-8")
-    assert "input.maxLength = 11" in frontend_source
-    assert "请输入11位有效手机号。" in frontend_source
+    assert "input.maxLength = 11" in response.text
+    assert "请输入11位有效手机号。" in response.text

@@ -4,6 +4,10 @@ from scripts.ops import check_wecom_callback_objective_coverage as coverage
 
 
 def test_objective_coverage_local_contract_is_ready_without_production_completion() -> None:
+    assert coverage.REQUIRED_TEST_PROOFS["external_effect_stale_dispatching_quarantine"] == (
+        "tests/test_external_effect_delivery_lease.py",
+        "test_stale_post_provider_dispatch_is_quarantined_as_unknown",
+    )
     payload = coverage.run([])
 
     assert payload["local_contract_ready"] is True
@@ -36,10 +40,10 @@ def test_objective_coverage_local_contract_is_ready_without_production_completio
         ]
         is True
     )
-    assert payload["test_proofs"]["external_effect_realtime_unknown_quarantine"]["ok"] is True
+    assert payload["test_proofs"]["external_effect_realtime_signal_only"]["ok"] is True
     assert (
         payload["objective_requirements"]["real_outbound_effect_boundary"]["test_evidence"][
-            "external_effect_realtime_unknown_quarantine"
+            "external_effect_realtime_signal_only"
         ]
         is True
     )
@@ -91,7 +95,7 @@ def test_objective_coverage_local_contract_is_ready_without_production_completio
     )
     assert payload["objective_requirements"]["operator_runbook_and_acceptance_report"]["test_evidence"]["admin_retry_skip"] is True
     assert payload["objective_requirements"]["operator_runbook_and_acceptance_report"]["test_evidence"]["admin_run_due"] is True
-    assert payload["objective_requirements"]["operator_runbook_and_acceptance_report"]["test_evidence"]["admin_page_hooks"] is True
+    assert payload["objective_requirements"]["operator_runbook_and_acceptance_report"]["test_evidence"]["admin_api_only_contract"] is True
     assert payload["assets"]["production_cutover_checklist_zh"]["ok"] is True
     assert (
         payload["objective_requirements"]["operator_runbook_and_acceptance_report"]["asset_evidence"][
@@ -216,7 +220,6 @@ def test_objective_coverage_accepts_completion_readiness_file(tmp_path) -> None:
                 "webhook_ingestion_evidence": {"ok": True},
                 "webhook_processing_evidence": {"ok": True},
                 "same_sample_evidence": {"ok": True},
-                "admin_webhook_inbox": {"ok": True},
                 "admin_webhook_inbox_metrics": {"ok": True},
                 "admin_webhook_inbox_items": {"ok": True},
                 "admin_webhook_inbox_reconciliation": {"ok": True},
@@ -241,7 +244,7 @@ def test_objective_coverage_accepts_completion_readiness_file(tmp_path) -> None:
     assert payload["readiness"]["webhook_ingestion_ok"] is True
     assert payload["readiness"]["webhook_processing_ok"] is True
     assert payload["readiness"]["same_sample_ok"] is True
-    assert payload["readiness"]["admin_webhook_inbox_ok"] is True
+    assert "admin_webhook_inbox_ok" not in payload["readiness"]
     assert payload["readiness"]["admin_webhook_inbox_metrics_ok"] is True
     assert payload["readiness"]["admin_webhook_inbox_items_ok"] is True
     assert payload["readiness"]["admin_webhook_inbox_reconciliation_ok"] is True
@@ -536,7 +539,7 @@ def test_objective_coverage_rejects_completion_without_same_sample_evidence(tmp_
     assert "production readiness JSON does not prove completion" in payload["warnings"]
 
 
-def test_objective_coverage_rejects_completion_without_admin_webhook_inbox_page(tmp_path) -> None:
+def test_objective_coverage_does_not_require_admin_webhook_inbox_page(tmp_path) -> None:
     readiness = tmp_path / "readiness.json"
     readiness.write_text(
         coverage.json.dumps(
@@ -556,6 +559,8 @@ def test_objective_coverage_rejects_completion_without_admin_webhook_inbox_page(
                 "internal_event_worker_isolation_evidence": {"ok": True},
                 "downstream_worker_isolation_evidence": {"ok": True},
                 "rollback_evidence": {"ok": True},
+                "public_state_evidence": {"ok": True},
+                "deploy_smoke_evidence": {"ok": True},
                 "warnings": ["admin webhook inbox page is not available"],
             }
         ),
@@ -565,10 +570,9 @@ def test_objective_coverage_rejects_completion_without_admin_webhook_inbox_page(
     payload = coverage.run(["--readiness-file", str(readiness)])
 
     assert payload["local_contract_ready"] is True
-    assert payload["production_completion_ready"] is False
-    assert payload["ok"] is False
-    assert payload["readiness"]["admin_webhook_inbox_ok"] is False
-    assert "production readiness JSON does not prove completion" in payload["warnings"]
+    assert payload["production_completion_ready"] is True
+    assert payload["ok"] is True
+    assert "admin_webhook_inbox_ok" not in payload["readiness"]
 
 
 def test_objective_coverage_rejects_completion_without_admin_webhook_inbox_metrics_api(tmp_path) -> None:

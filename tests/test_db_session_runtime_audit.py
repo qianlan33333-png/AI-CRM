@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 RUNTIME_SQLALCHEMY_FACTORY_ALLOWLIST = {
-    Path("aicrm_next/shared/db_session.py"): "single process-level Engine and SessionFactory owner",
+    Path("aicrm_next/platform/shared/db_session.py"): "single process-level Engine and SessionFactory owner",
 }
 
 
@@ -27,14 +27,14 @@ def test_runtime_create_engine_and_sessionmaker_are_centralized() -> None:
 
 def test_sql_repository_close_does_not_dispose_global_engine() -> None:
     checked_files = [
-        Path("aicrm_next/customer_read_model/repo.py"),
-        Path("aicrm_next/customer_read_model/repo_live_source.py"),
-        Path("aicrm_next/ops_enrollment/repo.py"),
-        Path("aicrm_next/customer_read_model/sidebar_v2.py"),
+        Path("aicrm_next/crm/customer_read_model/repo.py"),
+        Path("aicrm_next/crm/customer_read_model/repo_live_source.py"),
+        Path("aicrm_next/automation/ops_enrollment/repo.py"),
+        Path("aicrm_next/crm/customer_read_model/sidebar_v2.py"),
     ]
 
     for path in checked_files:
         source = path.read_text(encoding="utf-8")
-        assert "create_engine(" not in source or path == Path("aicrm_next/shared/db_session.py")
+        assert "create_engine(" not in source or path == Path("aicrm_next/platform/shared/db_session.py")
         assert "sessionmaker(" not in source
         assert ".dispose(" not in source

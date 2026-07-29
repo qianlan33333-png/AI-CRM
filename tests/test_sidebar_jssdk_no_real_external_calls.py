@@ -4,8 +4,8 @@ import inspect
 
 from fastapi.testclient import TestClient
 
-import aicrm_next.identity_contact.sidebar_jssdk as api
-import aicrm_next.integration_gateway.wecom_jssdk_adapter as adapter
+import aicrm_next.crm.identity_contact.sidebar_jssdk as api
+import aicrm_next.channels.integration_gateway.wecom_jssdk_adapter as adapter
 from aicrm_next.main import create_app
 
 

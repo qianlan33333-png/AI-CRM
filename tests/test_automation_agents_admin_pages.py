@@ -7,7 +7,7 @@ from tests.admin_auth_test_helpers import admin_session_cookies
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TEMPLATE_DIR = ROOT / "aicrm_next" / "automation_agents" / "templates" / "admin_console"
+TEMPLATE_DIR = ROOT / "aicrm_next" / "extensions" / "ai" / "automation_agents" / "templates" / "admin_console"
 LIST_TEMPLATE = TEMPLATE_DIR / "automation_agent_list.html"
 EDIT_TEMPLATE = TEMPLATE_DIR / "automation_agent_edit.html"
 

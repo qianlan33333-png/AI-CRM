@@ -14,7 +14,7 @@ from scripts.script_runtime import ensure_repo_root_on_path, print_json
 ensure_repo_root_on_path()
 
 from aicrm_next.internal_event_composition import build_internal_event_consumer_registry
-from aicrm_next.platform_foundation.internal_events.reconciliation import InternalEventOutboxReconciliationService
+from aicrm_next.platform.platform_foundation.internal_events.reconciliation import InternalEventOutboxReconciliationService
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:

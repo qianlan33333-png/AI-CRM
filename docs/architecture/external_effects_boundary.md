@@ -13,15 +13,15 @@ configuration, and explicit business approval.
 
 Direct HTTP client usage is allowed only in:
 
-- `aicrm_next/platform_foundation/external_effects/**`
-- `aicrm_next/integration_gateway/**`
+- `aicrm_next/platform/platform_foundation/external_effects/**`
+- `aicrm_next/channels/integration_gateway/**`
 - `historical removed reference (http_client.py)`, if present
 - `tests/**`, `tools/**`, and `scripts/**`
 
 Business context files such as `api.py`, `application.py`, `service.py`,
 `admin_pages.py`, `routes.py`, `repo.py`, and other context modules must move
-external effects behind `aicrm_next.integration_gateway` or
-`aicrm_next.platform_foundation.external_effects`.
+external effects behind `aicrm_next.channels.integration_gateway` or
+`aicrm_next.platform.platform_foundation.external_effects`.
 
 ## Temporary Allowlist
 
@@ -33,9 +33,9 @@ are forbidden.
 
 The current historical entries are not a long-term approval:
 
-- `aicrm_next/channel_entry/wecom_adapter.py`
-- `aicrm_next/commerce/wechat_pay_client.py`
-- `aicrm_next/commerce/wechat_shop_client.py`
+- `aicrm_next/channels/channel_entry/wecom_adapter.py`
+- `aicrm_next/extensions/commerce/commerce/wechat_pay_client.py`
+- `aicrm_next/extensions/commerce/commerce/wechat_shop_client.py`
 
 The next migration step is to move these clients behind integration gateway or
 external effects boundaries without changing route behavior in this checker PR.

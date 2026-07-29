@@ -2,32 +2,54 @@ from __future__ import annotations
 
 from functools import partial
 
-from .commerce.external_push_admin import plan_order_paid_external_push_effect
-from .commerce.repo import execute_commerce_transaction
-from .commerce.payment_tagging import (
+from .capability_registry import capability_for_event_type
+from .extensions.commerce.commerce.external_push_admin import plan_order_paid_external_push_effect
+from .extensions.commerce.commerce.repo import execute_commerce_transaction
+from .extensions.commerce.commerce.payment_tagging import (
     product_paid_wecom_tag_consumer,
     resolve_payment_tag_identity,
 )
-from .identity_contact.payment_projection import project_payment_order_mobile
-from .ai_audience_ops import register_ai_audience_event_consumers
-from .ai_audience_ops.repository import build_audience_repository
-from .cloud_orchestrator.repository import build_cloud_plan_repository
-from .questionnaire.event_consumers import (
+from .crm.identity_contact.payment_projection import project_payment_order_mobile
+from .external_effect_composition import (
+    AUTOMATION_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
+    AUTOMATION_GENERATION_EFFECT_CONTINUATION_CONSUMER,
+    AUTOMATION_GENERATION_EFFECT_SETTLEMENT_CONSUMER,
+    EXTERNAL_EFFECT_PROVIDER_RESULT_ACCESS_ALLOWLIST,
+    QUESTIONNAIRE_EXTERNAL_EFFECT_CONTINUATION_CONSUMER,
+    build_external_effect_continuation_consumers,
+    build_external_effect_continuation_registry,
+    build_external_effect_settlement_consumers,
+)
+from .extensions.ai.ai_audience_ops import register_ai_audience_event_consumers
+from .extensions.ai.automation_agents.item_events import register_automation_agent_event_consumers
+from .operation_cycle_fact_composition import (
+    register_operation_cycle_system_fact_consumers,
+)
+from .crm.customer_read_model.events import register_customer_read_model_event_consumers
+from .extensions.growth.cloud_orchestrator.repository import build_cloud_plan_repository
+from .extensions.forms.questionnaire.event_consumers import (
     automation_questionnaire_consumer,
     customer_summary_consumer,
     questionnaire_projection_consumer,
     questionnaire_tag_consumer,
     questionnaire_webhook_consumer,
 )
-from .questionnaire.continuation import (
-    configure_questionnaire_continuation_audience_repository,
-    questionnaire_identity_continuation_consumer,
+from .extensions.commerce.service_period.payment_consumer import service_period_entitlement_consumer
+from .extensions.commerce.service_period.refund_consumer import service_period_refund_consumer
+from .platform.platform_foundation.internal_events.shadow import broadcast_task_planner_consumer
+from .platform.platform_foundation.internal_events.payment import webhook_order_paid_consumer
+from .platform.platform_foundation.external_effects.completion_events import (
+    register_external_effect_completed_consumers,
 )
-from .service_period.payment_consumer import service_period_entitlement_consumer
-from .service_period.refund_consumer import service_period_refund_consumer
-from .platform_foundation.internal_events.shadow import broadcast_task_planner_consumer
-from .platform_foundation.internal_events.payment import webhook_order_paid_consumer
-from .shared.runtime import production_data_ready
+from .platform.platform_foundation.external_effects.settlement_events import (
+    register_external_effect_settled_consumers,
+)
+from .platform.platform_foundation.external_effects.repo import build_external_effect_repository
+from .platform.platform_foundation.execution_runtime.commands import (
+    register_queue_runtime_command_consumer,
+)
+from .platform.shared.runtime import production_data_ready
+from .deployment_profile import DeploymentProfile
 
 
 def _plan_order_paid_external_push_effect_from_db(
@@ -38,6 +60,7 @@ def _plan_order_paid_external_push_effect_from_db(
 ) -> dict | None:
     if not production_data_ready():
         raise RuntimeError("production database is required for order-paid external push planning")
+
     def _plan(conn):
         return plan_order_paid_external_push_effect(
             conn,
@@ -47,6 +70,7 @@ def _plan_order_paid_external_push_effect_from_db(
             source_module="platform_foundation.internal_events.payment",
             source_route="/internal-events/payment.succeeded/webhook_order_paid_consumer",
         )
+
     return execute_commerce_transaction(_plan)
 
 
@@ -54,23 +78,20 @@ def _project_payment_order_identity_from_db(*, order: dict, source_route: str) -
     if not production_data_ready():
         return {"ok": True, "projected": False, "reason": "production_database_required"}
 
-    return execute_commerce_transaction(
-        lambda conn: project_payment_order_mobile(conn, order, source_route=source_route)
-    )
+    return execute_commerce_transaction(lambda conn: project_payment_order_mobile(conn, order, source_route=source_route))
 
 
 def _resolve_payment_tag_identity_from_db(order: dict, owner_userid: str) -> dict:
     if not production_data_ready():
         return {"ok": False, "reason": "production_database_required"}
-    return execute_commerce_transaction(
-        lambda conn: resolve_payment_tag_identity(conn, order, owner_userid)
-    )
-from .platform_foundation.internal_events import (
+    return execute_commerce_transaction(lambda conn: resolve_payment_tag_identity(conn, order, owner_userid))
+
+
+from .platform.platform_foundation.internal_events import (
     InternalEventConsumerRegistry,
     current_internal_event_consumer_registry,
     register_payment_succeeded_consumers as _register_payment_succeeded_consumers,
     register_questionnaire_event_consumers as _register_questionnaire_event_consumers,
-    register_customer_wecom_identity_ready_consumer as _register_customer_wecom_identity_ready_consumer,
     register_refund_succeeded_consumers as _register_refund_succeeded_consumers,
     register_shadow_event_consumers as _register_shadow_event_consumers,
 )
@@ -115,16 +136,6 @@ def register_questionnaire_event_consumers(registry: InternalEventConsumerRegist
     )
 
 
-def register_questionnaire_identity_continuation_consumer(
-    registry: InternalEventConsumerRegistry | None = None,
-) -> None:
-    registry = registry or current_internal_event_consumer_registry()
-    _register_customer_wecom_identity_ready_consumer(
-        questionnaire_identity_continuation_consumer,
-        registry,
-    )
-
-
 def register_shadow_event_consumers(registry: InternalEventConsumerRegistry | None = None) -> None:
     registry = registry or current_internal_event_consumer_registry()
     _register_shadow_event_consumers(
@@ -136,15 +147,78 @@ def register_shadow_event_consumers(registry: InternalEventConsumerRegistry | No
     )
 
 
-def build_internal_event_consumer_registry() -> InternalEventConsumerRegistry:
-    configure_questionnaire_continuation_audience_repository(build_audience_repository)
+_CONTINUATION_CAPABILITY = {
+    QUESTIONNAIRE_EXTERNAL_EFFECT_CONTINUATION_CONSUMER: "extension.forms",
+    AUTOMATION_EXTERNAL_EFFECT_CONTINUATION_CONSUMER: "extension.ai",
+    AUTOMATION_GENERATION_EFFECT_CONTINUATION_CONSUMER: "extension.ai",
+    AUTOMATION_GENERATION_EFFECT_SETTLEMENT_CONSUMER: "extension.ai",
+}
+
+
+def _runtime_consumers(consumers, profile: DeploymentProfile | None):
+    if profile is None or profile.activation_mode == "observe":
+        return consumers
+    return tuple(
+        consumer
+        for consumer in consumers
+        if profile.allows_runtime(_CONTINUATION_CAPABILITY.get(consumer.consumer_name, "core.platform"))
+    )
+
+
+def register_external_effect_completion_consumers(
+    registry: InternalEventConsumerRegistry | None = None,
+    *,
+    profile: DeploymentProfile | None = None,
+) -> None:
+    registry = registry or current_internal_event_consumer_registry()
+    runtime_consumers = _runtime_consumers(build_external_effect_continuation_consumers(), profile)
+    runtime_consumer_names = {consumer.consumer_name for consumer in runtime_consumers}
+    register_external_effect_completed_consumers(
+        registry,
+        consumers=runtime_consumers,
+        repository_factory=build_external_effect_repository,
+        legacy_continuation_registry_factory=partial(build_external_effect_continuation_registry, profile),
+        provider_result_access_allowlist={
+            pair
+            for pair in EXTERNAL_EFFECT_PROVIDER_RESULT_ACCESS_ALLOWLIST
+            if pair[0] in runtime_consumer_names
+        },
+    )
+
+
+def register_external_effect_settlement_consumers(
+    registry: InternalEventConsumerRegistry | None = None,
+    *,
+    profile: DeploymentProfile | None = None,
+) -> None:
+    registry = registry or current_internal_event_consumer_registry()
+    register_external_effect_settled_consumers(
+        registry,
+        consumers=_runtime_consumers(build_external_effect_settlement_consumers(), profile),
+        repository_factory=build_external_effect_repository,
+    )
+
+
+def build_internal_event_consumer_registry(
+    profile: DeploymentProfile | None = None,
+) -> InternalEventConsumerRegistry:
     registry = InternalEventConsumerRegistry()
     register_payment_succeeded_consumers(registry)
     register_refund_succeeded_consumers(registry)
     register_questionnaire_event_consumers(registry)
-    register_questionnaire_identity_continuation_consumer(registry)
     register_shadow_event_consumers(registry)
     register_ai_audience_event_consumers(registry)
+    register_automation_agent_event_consumers(registry)
+    register_customer_read_model_event_consumers(registry)
+    register_operation_cycle_system_fact_consumers(registry)
+    register_external_effect_completion_consumers(registry, profile=profile)
+    register_external_effect_settlement_consumers(registry, profile=profile)
+    register_queue_runtime_command_consumer(registry)
+    if profile is not None and profile.activation_mode == "enforce":
+        for event_type in tuple(registry.to_dict()):
+            capability = capability_for_event_type(event_type)
+            if capability is not None and not profile.allows_runtime(capability.capability_id):
+                registry.remove_event_type(event_type)
     registry.seal_fanout_contract()
     return registry
 
@@ -153,7 +227,8 @@ __all__ = [
     "build_internal_event_consumer_registry",
     "register_payment_succeeded_consumers",
     "register_questionnaire_event_consumers",
-    "register_questionnaire_identity_continuation_consumer",
     "register_refund_succeeded_consumers",
     "register_shadow_event_consumers",
+    "register_external_effect_completion_consumers",
+    "register_external_effect_settlement_consumers",
 ]

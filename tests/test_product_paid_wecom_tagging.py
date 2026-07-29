@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.commerce.payment_tagging import (
+from aicrm_next.extensions.commerce.commerce.payment_tagging import (
     OWNER_USERID,
     PRODUCT_CODE,
     PRODUCT_CODES,
@@ -8,12 +8,12 @@ from aicrm_next.commerce.payment_tagging import (
     product_paid_wecom_tag_consumer,
     resolve_payment_tag_identity,
 )
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.external_effects import (
     ExternalEffectService,
     InMemoryExternalEffectRepository,
     WECOM_CONTACT_TAG_MARK,
 )
-from aicrm_next.platform_foundation.internal_events.models import InternalEvent, InternalEventConsumerRun
+from aicrm_next.platform.platform_foundation.internal_events.models import InternalEvent, InternalEventConsumerRun
 
 
 def _event(*, product_code: str = PRODUCT_CODE) -> InternalEvent:

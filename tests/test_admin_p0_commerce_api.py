@@ -4,11 +4,11 @@ import base64
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.admin_config.api_docs_view_model import build_api_docs_view_model
-from aicrm_next.commerce.admin_exports import reset_export_jobs_for_tests
-from aicrm_next.commerce.admin_unified_orders import list_orders
-from aicrm_next.commerce.repo import reset_commerce_fixture_state
-from aicrm_next.customer_read_model import admin_business_profile, api as customer_api
+from aicrm_next.platform.admin_config.api_docs_view_model import build_api_docs_view_model
+from aicrm_next.extensions.commerce.commerce.admin_exports import reset_export_jobs_for_tests
+from aicrm_next.extensions.commerce.commerce.admin_unified_orders import list_orders
+from aicrm_next.extensions.commerce.commerce.repo import reset_commerce_fixture_state
+from aicrm_next.crm.customer_read_model import admin_business_profile, api as customer_api
 from aicrm_next.main import create_app
 
 
@@ -32,7 +32,8 @@ def _paths(view_model: dict) -> dict[tuple[str, str], str]:
 
 
 def test_admin_p0_routes_are_in_api_docs() -> None:
-    view_model = build_api_docs_view_model()
+    app = create_app()
+    view_model = build_api_docs_view_model(routes=app.routes)
     paths = _paths(view_model)
     assert view_model["endpoint_count"] > 80
     assert view_model["markdown_data"]["full"]
@@ -126,7 +127,7 @@ def test_unified_orders_paginate_by_created_at_not_paid_at(monkeypatch) -> None:
         }
 
     monkeypatch.setattr(
-        "aicrm_next.commerce.admin_unified_orders.CommerceAdminTransactionListReadModel.execute",
+        "aicrm_next.extensions.commerce.commerce.admin_unified_orders.CommerceAdminTransactionListReadModel.execute",
         fake_execute,
     )
 
@@ -171,7 +172,7 @@ def test_payments_and_refunds(monkeypatch) -> None:
     assert payload["source_status"] == "next_admin_refund_request"
 
 
-def test_product_share_uses_real_qr_svg(monkeypatch) -> None:
+def test_product_share_uses_real_qr_jpeg(monkeypatch) -> None:
     client = _client(monkeypatch)
     products = client.get("/api/admin/wechat-pay/products").json()
     product = products["items"][0]
@@ -180,12 +181,10 @@ def test_product_share_uses_real_qr_svg(monkeypatch) -> None:
 
     share = payload["share"]
     assert share["url"].endswith(f"/pay/{product['product_code']}")
-    assert share["qr_data_url"].startswith("data:image/svg+xml;base64,")
-    svg = base64.b64decode(share["qr_data_url"].split(",", 1)[1]).decode("utf-8")
-    assert 'xmlns="http://www.w3.org/2000/svg"' in svg
-    assert "<path" in svg
-    assert "PRODUCT" not in svg
-    assert product["product_code"] not in svg
+    assert share["qr_data_url"].startswith("data:image/jpeg;base64,")
+    jpeg = base64.b64decode(share["qr_data_url"].split(",", 1)[1])
+    assert jpeg.startswith(b"\xff\xd8")
+    assert jpeg.endswith(b"\xff\xd9")
 
     material = client.post(
         "/api/admin/wechat-pay/products",

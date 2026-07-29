@@ -1,0 +1,176 @@
+{% extends "admin_console/base.html" %}
+
+{% block head_extra %}
+<style>
+  .radar-detail-page { display: grid; gap: 16px; }
+  .radar-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; }
+  .radar-top h2 { margin: 0; color: #111827; font-size: 20px; }
+  .radar-muted { color: #6b7280; line-height: 1.6; }
+  .radar-button { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; color: #2563eb; font-weight: 800; text-decoration: none; cursor: pointer; }
+  .radar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .radar-filter { display: flex; align-items: end; gap: 10px; flex-wrap: wrap; padding: 16px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; }
+  .radar-filter-field { display: grid; gap: 6px; flex: 1 1 220px; }
+  .radar-filter-field.compact { flex: 0 0 180px; }
+  .radar-filter-field span { color: #374151; font-size: 13px; font-weight: 800; }
+  .radar-filter input, .radar-filter select { min-height: 38px; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; }
+  .radar-event-card { overflow: hidden; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; }
+  .radar-event-table { width: 100%; border-collapse: collapse; }
+  .radar-event-table th, .radar-event-table td { padding: 13px 16px; border-bottom: 1px solid #eef0f3; text-align: left; vertical-align: top; }
+  .radar-event-table th { background: #f9fafb; color: #4b5563; font-size: 13px; font-weight: 850; }
+  .radar-event-table td { color: #111827; overflow-wrap: anywhere; }
+  .radar-empty { padding: 34px 16px; text-align: center; color: #6b7280; }
+  .radar-code { color: #374151; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+  .radar-toast { position: fixed; right: 24px; bottom: 24px; z-index: 40; padding: 10px 14px; border-radius: 10px; background: #111827; color: #fff; }
+  .radar-toast.is-error { background: #b91c1c; }
+  @media (max-width: 820px) {
+    .radar-top, .radar-filter { align-items: stretch; flex-direction: column; }
+    .radar-event-card { overflow-x: auto; }
+    .radar-event-table { min-width: 640px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="radar-detail-page">
+  <div class="radar-top">
+    <div>
+      <h2 data-title>雷达概览</h2>
+      <div class="radar-muted" data-summary>加载内容基础信息...</div>
+    </div>
+    <div class="radar-actions">
+      <a class="radar-button" href="/admin/radar-links">返回列表</a>
+      <button class="radar-button" type="button" data-copy>复制链接</button>
+      <button class="radar-button" type="button" data-export>导出 CSV</button>
+    </div>
+  </div>
+
+  <div class="radar-filter">
+    <label class="radar-filter-field">
+      <span>搜索用户</span>
+      <input data-keyword placeholder="unionid / 外部联系人 ID">
+    </label>
+    <label class="radar-filter-field compact">
+      <span>开始时间</span>
+      <input data-start type="datetime-local" aria-label="开始时间">
+    </label>
+    <label class="radar-filter-field compact">
+      <span>结束时间</span>
+      <input data-end type="datetime-local" aria-label="结束时间">
+    </label>
+    <button class="radar-button" type="button" data-refresh>刷新</button>
+  </div>
+
+  <div class="radar-event-card">
+    <table class="radar-event-table">
+      <thead>
+        <tr>
+          <th>unionid</th>
+          <th>外部联系人ID</th>
+          <th>时间</th>
+        </tr>
+      </thead>
+      <tbody data-rows>
+        <tr><td colspan="3" class="radar-empty">点击记录加载中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+<div class="radar-toast" data-toast hidden></div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+(() => {
+  const linkId = Number({{ radar_link_id }});
+  const titleEl = document.querySelector("[data-title]");
+  const summaryEl = document.querySelector("[data-summary]");
+  const rowsEl = document.querySelector("[data-rows]");
+  const toastEl = document.querySelector("[data-toast]");
+  const keywordEl = document.querySelector("[data-keyword]");
+  const startEl = document.querySelector("[data-start]");
+  const endEl = document.querySelector("[data-end]");
+  let link = null;
+  let lastEvents = [];
+  let toastTimer = null;
+  const typeLabels = {link:"链接", image:"图片", pdf:"PDF"};
+  const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+  function toast(message, isError = false) {
+    toastEl.textContent = message;
+    toastEl.className = `radar-toast${isError ? " is-error" : ""}`;
+    toastEl.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toastEl.hidden = true; }, isError ? 5200 : 2600);
+  }
+  async function fetchJson(url) {
+    return window.AdminApi.requestJson(url);
+  }
+  function formatDate(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return "-";
+    const date = new Date(raw.includes("T") ? raw : raw.replace(" ", "T"));
+    if (Number.isNaN(date.getTime())) return raw;
+    const pad = (number) => String(number).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+  function queryTime(value) {
+    return String(value || "").trim().replace("T", " ");
+  }
+  function renderEvents(events) {
+    const keyword = String(keywordEl.value || "").trim().toLowerCase();
+    const list = keyword ? events.filter((event) => {
+      return [event.external_userid, event.unionid_masked]
+        .some((value) => String(value || "").toLowerCase().includes(keyword));
+    }) : events;
+    if (!list.length) {
+      rowsEl.innerHTML = `<tr><td colspan="3" class="radar-empty">暂无已授权访问记录</td></tr>`;
+      return;
+    }
+    rowsEl.innerHTML = list.map((event) => `
+      <tr>
+        <td>${escapeHtml(event.unionid_masked || "-")}</td>
+        <td>${escapeHtml(event.external_userid || "-")}</td>
+        <td>${escapeHtml(formatDate(event.created_at))}</td>
+      </tr>
+    `).join("");
+  }
+  async function load() {
+    rowsEl.innerHTML = `<tr><td colspan="3" class="radar-empty">点击记录加载中...</td></tr>`;
+    const params = new URLSearchParams({limit: "100", offset: "0"});
+    if (startEl.value) params.set("start_at", queryTime(startEl.value));
+    if (endEl.value) params.set("end_at", queryTime(endEl.value));
+    try {
+      const payload = await fetchJson(`/api/admin/radar-links/${linkId}/events?${params.toString()}`);
+      link = payload.link || {};
+      titleEl.textContent = link.title || "未命名内容";
+      summaryEl.textContent = `${link.title || "未命名内容"} · ${typeLabels[link.target_type] || link.target_type || "-"} · ${link.enabled === false ? "停用" : "启用"} · ${link.wrapper_url || ""}`;
+      lastEvents = payload.events || [];
+      renderEvents(lastEvents);
+    } catch (error) {
+      const message = window.AdminApi.errorMessage(error, "点击记录加载失败，请稍后重试");
+      rowsEl.innerHTML = `<tr><td colspan="3" class="radar-empty">${escapeHtml(message)}</td></tr>`;
+      toast(message, true);
+    }
+  }
+  function exportEvents() {
+    const params = new URLSearchParams();
+    if (startEl.value) params.set("start_at", queryTime(startEl.value));
+    if (endEl.value) params.set("end_at", queryTime(endEl.value));
+    const suffix = params.toString() ? `?${params.toString()}` : "";
+    window.location.href = `/api/admin/radar-links/${linkId}/events/export${suffix}`;
+  }
+  document.querySelector("[data-refresh]").addEventListener("click", load);
+  document.querySelector("[data-export]").addEventListener("click", exportEvents);
+  keywordEl.addEventListener("input", () => renderEvents(lastEvents));
+  document.querySelector("[data-copy]").addEventListener("click", async () => {
+    if (!link?.wrapper_url) return;
+    try {
+      await navigator.clipboard.writeText(link.wrapper_url);
+      toast("已复制链接");
+    } catch (error) {
+      window.prompt("请复制以下链接", link.wrapper_url);
+    }
+  });
+  load();
+})();
+</script>
+{% endblock %}

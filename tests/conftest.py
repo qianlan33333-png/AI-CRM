@@ -17,6 +17,7 @@ superuser，开箱即用）。
 - ``next_pg_schema``：显式 opt-in 的 Next/Alembic PG schema 测试入口
 - ``app`` / ``client``：默认指向 Next FastAPI，测试层不再提供 legacy Flask bridge
 """
+
 from __future__ import annotations
 
 import os
@@ -93,9 +94,14 @@ def _resolve_worker_database_url() -> str:
 
 # 测试间需要清理的关键表（FK 反向顺序：子表先清，autouse 用 CASCADE 兜底剩余 FK）
 _TABLES_TO_TRUNCATE = [
+    # — data health read model
+    "data_health_snapshot",
     # durable callback ingress
     "webhook_inbox",
     # — ai audience ops
+    "ai_audience_refresh_source_receipt",
+    "ai_audience_refresh_intent",
+    "ai_audience_hxc_member_usage_projection",
     "ai_audience_inbound_webhook_event",
     "ai_audience_package_sender",
     "ai_audience_outbound_subscription",
@@ -139,6 +145,11 @@ _TABLES_TO_TRUNCATE = [
     "automation_sop_batch",
     "automation_sop_template",
     "automation_agent_run",
+    "channel_welcome_effect_dependency",
+    "channel_welcome_effect_graph",
+    "automation_group_ops_effect_dependency",
+    "automation_group_ops_effect_material",
+    "automation_group_ops_effect_graph",
     "automation_agent_output",
     "automation_agent_llm_call_log",
     "automation_agent_webhook_item",
@@ -182,7 +193,6 @@ _TABLES_TO_TRUNCATE = [
     # — questionnaire
     "questionnaire_external_push_logs",
     "questionnaire_scrm_apply_logs",
-    "questionnaire_continuation_job",
     "questionnaire_submission_answers",
     "questionnaire_submissions",
     "questionnaire_options",
@@ -190,6 +200,7 @@ _TABLES_TO_TRUNCATE = [
     "questionnaire_score_rules",
     "questionnaires",
     "external_push_delivery",
+    "identity_resolution_completion_receipt",
     "internal_event_consumer_attempt",
     "internal_event_consumer_run",
     "internal_event",
@@ -213,6 +224,10 @@ _TABLES_TO_TRUNCATE = [
     "service_period_products",
     "wechat_pay_product_page_slices",
     "wechat_pay_products",
+    "wechat_shop_order_events",
+    "wechat_shop_refunds",
+    "wechat_shop_sync_runs",
+    "wechat_shop_orders",
     "wechat_pay_order_export_jobs",
     "wechat_pay_refunds",
     "wechat_pay_order_events",
@@ -233,6 +248,8 @@ _TABLES_TO_TRUNCATE = [
     "wechat_pay_orders",
     "alipay_pay_order_events",
     "alipay_pay_orders",
+    "config_releases",
+    "deployment_profile_state",
     "app_settings",
     "mcp_tool_settings",
     # — contacts / identity
@@ -278,10 +295,15 @@ _TABLES_TO_TRUNCATE = [
     "broadcast_job_events",
     "broadcast_jobs",
     # — customer read model projection
+    "customer_recent_message_next_shadow",
+    "customer_detail_snapshot_next_shadow",
+    "customer_list_index_next_shadow",
     "customer_recent_message_next",
     "customer_timeline_event_next",
     "customer_detail_snapshot_next",
     "customer_list_index_next",
+    "customer_read_model_refresh_source_receipt",
+    "customer_read_model_refresh_intent",
     "customer_read_model_refresh_state",
     # — archive / system
     "archived_messages",
@@ -321,6 +343,63 @@ _truncate_state: dict[str, Any] = {
     "tables_sql": "",
     "conn": None,  # session-cached autocommit psycopg conn
 }
+
+_QUEUE_RUNTIME_RESET_SQL = """
+WITH reset_hxc_projection AS (
+    UPDATE ai_audience_hxc_member_usage_projection_control
+    SET active_generation = 0,
+        status = 'empty',
+        projected_row_count = 0,
+        last_incremental_watermark_at = NULL,
+        last_full_refreshed_at = NULL,
+        last_refresh_started_at = NULL,
+        last_refresh_finished_at = NULL,
+        source_watermarks_json = '{}'::jsonb,
+        last_error_code = '',
+        updated_at = CURRENT_TIMESTAMP
+    WHERE singleton = TRUE
+    RETURNING singleton
+),
+reset_control AS (
+    UPDATE queue_runtime_control
+    SET active_generation = 0,
+        claim_enabled = FALSE,
+        rollout_mode = 'standby',
+        global_max_in_flight = 20,
+        policy_version = 'queue-v2-test-loopback',
+        external_claim_scope = 'test_loopback',
+        updated_by = 'pytest-fixture',
+        updated_reason = 'reset mutable queue control between tests',
+        updated_at = CURRENT_TIMESTAMP
+    WHERE singleton = TRUE
+    RETURNING singleton
+)
+UPDATE queue_lane_policy
+    SET max_in_flight = CASE lane
+        WHEN 'ai_generation' THEN 4
+        WHEN 'internal_general' THEN 4
+        WHEN 'internal_financial' THEN 1
+        WHEN 'webhook_inbox' THEN 4
+        WHEN 'wecom_interactive' THEN 4
+        WHEN 'wecom_bulk' THEN 1
+        WHEN 'wecom_ai_assistant_bulk' THEN 4
+        WHEN 'wecom_media' THEN 2
+        WHEN 'outbound_webhook' THEN 4
+        ELSE max_in_flight
+    END,
+    enabled = TRUE,
+    rollout_mode = CASE
+        WHEN lane IN ('ai_generation', 'outbound_webhook', 'wecom_ai_assistant_bulk') THEN 'blocked'
+        ELSE 'standby'
+    END,
+    blocked_until = NULL,
+    policy_version = 'queue-v2-test-loopback',
+    updated_by = 'pytest-fixture',
+    updated_reason = 'reset mutable queue lane policy between tests',
+    updated_at = CURRENT_TIMESTAMP
+WHERE EXISTS (SELECT 1 FROM reset_control)
+  AND EXISTS (SELECT 1 FROM reset_hxc_projection)
+"""
 
 
 def _close_truncate_conn() -> None:
@@ -423,8 +502,7 @@ def _ensure_schema_once():
     pcur = probe.cursor()
     placeholders = ", ".join(["%s"] * len(_TABLES_TO_TRUNCATE))
     pcur.execute(
-        f"SELECT table_name FROM information_schema.tables "
-        f"WHERE table_schema = 'public' AND table_name IN ({placeholders})",
+        f"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ({placeholders})",
         tuple(_TABLES_TO_TRUNCATE),
     )
     existing = {row[0] for row in pcur.fetchall()}
@@ -432,15 +510,20 @@ def _ensure_schema_once():
     probe.close()
     ordered = [t for t in _TABLES_TO_TRUNCATE if t in existing]
     _truncate_state["url"] = url
-    _truncate_state["tables_sql"] = (
-        f"TRUNCATE TABLE {', '.join(ordered)} RESTART IDENTITY CASCADE"
-        if ordered
-        else ""
-    )
+    _truncate_state["tables_sql"] = f"TRUNCATE TABLE {', '.join(ordered)} RESTART IDENTITY CASCADE" if ordered else ""
     if _fixture_default_runtime_enabled():
         os.environ.pop("DATABASE_URL", None)
     yield
     _close_truncate_conn()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _configure_static_domain_ports():
+    """Mirror production composition for tests that exercise workers directly."""
+
+    from aicrm_next.channel_entry_composition import configure_channel_crm_dependencies
+
+    configure_channel_crm_dependencies()
 
 
 @pytest.fixture(autouse=True)
@@ -473,6 +556,7 @@ def _truncate_before_each_test():
     cur = conn.cursor()
     try:
         cur.execute(sql)
+        cur.execute(_QUEUE_RUNTIME_RESET_SQL)
     except Exception:
         # 断连 / 死锁 / 上个 test 遗留 idle transaction：弃旧连接，清 blocker 后重试。
         try:
@@ -486,6 +570,7 @@ def _truncate_before_each_test():
         try:
             retry_cur.execute("SET lock_timeout = '5s'")
             retry_cur.execute(sql)
+            retry_cur.execute(_QUEUE_RUNTIME_RESET_SQL)
             _truncate_state["conn"] = retry_conn
         except Exception:
             try:
@@ -517,7 +602,7 @@ def next_pg_schema(monkeypatch):
 def composed_internal_event_registry():
     """Bind one isolated, fully composed consumer registry for a whole test."""
     from aicrm_next.internal_event_composition import build_internal_event_consumer_registry
-    from aicrm_next.platform_foundation.internal_events import internal_event_consumer_registry_scope
+    from aicrm_next.platform.platform_foundation.internal_events import internal_event_consumer_registry_scope
 
     registry = build_internal_event_consumer_registry()
     with internal_event_consumer_registry_scope(registry):

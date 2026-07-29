@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from aicrm_next import send_content_media_repository_gateway as media_gateway
-from aicrm_next.send_content import postgres_repo
+from aicrm_next.engagement import send_content_media_repository_gateway as media_gateway
+from aicrm_next.engagement.send_content import postgres_repo
 
 
 def test_send_content_repository_uses_package_root_media_gateway(monkeypatch) -> None:
@@ -18,4 +18,4 @@ def test_send_content_repository_uses_package_root_media_gateway(monkeypatch) ->
 
     assert repository._media_repo is media_repository
     assert captured == {"database_url": "postgresql://example.invalid/aicrm"}
-    assert postgres_repo.build_send_content_media_repository.__module__ == "aicrm_next.send_content_media_repository_gateway"
+    assert postgres_repo.build_send_content_media_repository.__module__ == "aicrm_next.engagement.send_content_media_repository_gateway"

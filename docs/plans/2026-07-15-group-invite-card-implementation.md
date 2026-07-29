@@ -14,9 +14,9 @@
 
 **Files:**
 - Create: `migrations/versions/0117_group_invite_cards.py`
-- Modify: `aicrm_next/media_library/dto.py`
-- Modify: `aicrm_next/media_library/repo.py`
-- Modify: `aicrm_next/media_library/postgres_repo.py`
+- Modify: `aicrm_next/engagement/media_library/dto.py`
+- Modify: `aicrm_next/engagement/media_library/repo.py`
+- Modify: `aicrm_next/engagement/media_library/postgres_repo.py`
 - Test: `tests/test_group_invite_library.py`
 
 **Steps:**
@@ -29,8 +29,8 @@
 ### Task 2: Admin API and reusable management page
 
 **Files:**
-- Modify: `aicrm_next/media_library/api.py`
-- Modify: `aicrm_next/media_library/admin_pages.py`
+- Modify: `aicrm_next/engagement/media_library/api.py`
+- Modify: `aicrm_next/engagement/media_library/admin_pages.py`
 - Modify: `aicrm_next/admin_shell/navigation.py`
 - Create: `aicrm_next/frontend_compat/templates/admin_console/group_invite_library.html`
 - Test: `tests/test_group_invite_library.py`
@@ -45,10 +45,10 @@
 ### Task 3: Standard send-content package and shared picker
 
 **Files:**
-- Modify: `aicrm_next/send_content/dto.py`
-- Modify: `aicrm_next/send_content/application.py`
-- Modify: `aicrm_next/send_content/repo.py`
-- Modify: `aicrm_next/send_content/postgres_repo.py`
+- Modify: `aicrm_next/engagement/send_content/dto.py`
+- Modify: `aicrm_next/engagement/send_content/application.py`
+- Modify: `aicrm_next/engagement/send_content/repo.py`
+- Modify: `aicrm_next/engagement/send_content/postgres_repo.py`
 - Modify: `aicrm_next/frontend_compat/static/admin_console/material_picker.js`
 - Modify: `aicrm_next/frontend_compat/static/admin_console/send_content_composer.js`
 - Modify: `aicrm_next/frontend_compat/static/admin_console/send_content_composer.css`
@@ -66,10 +66,10 @@
 ### Task 4: WeCom link payload and all send queues
 
 **Files:**
-- Modify: `aicrm_next/automation_engine/group_ops/material_resolver.py`
-- Modify: `aicrm_next/automation_engine/group_ops/message_content.py`
-- Modify: `aicrm_next/automation_engine/group_ops/domain.py`
-- Modify: `aicrm_next/background_jobs/broadcast_queue_worker.py`
+- Modify: `aicrm_next/automation/automation_engine/group_ops/material_resolver.py`
+- Modify: `aicrm_next/automation/automation_engine/group_ops/message_content.py`
+- Modify: `aicrm_next/automation/automation_engine/group_ops/domain.py`
+- Modify: `aicrm_next/automation/background_jobs/broadcast_queue_worker.py`
 - Modify: `aicrm_next/external_effect_composition.py`
 - Modify: `aicrm_next/cloud_orchestrator/repository.py`
 - Test: `tests/test_group_ops_material_resolver.py`
@@ -86,13 +86,13 @@
 ### Task 5: Welcome-message configuration and resolution
 
 **Files:**
-- Modify: `aicrm_next/automation_engine/channels_repo.py`
-- Modify: `aicrm_next/automation_engine/channels_api.py`
-- Modify: `aicrm_next/channel_entry/repo.py`
-- Modify: `aicrm_next/channel_entry/application.py`
+- Modify: `aicrm_next/automation/automation_engine/channels_repo.py`
+- Modify: `aicrm_next/automation/automation_engine/channels_api.py`
+- Modify: `aicrm_next/channels/channel_entry/repo.py`
+- Modify: `aicrm_next/channels/channel_entry/application.py`
 - Modify: `aicrm_next/external_effect_composition.py`
-- Modify: `aicrm_next/automation_engine/templates/admin_console/channel_code_form.html`
-- Modify: `aicrm_next/automation_engine/static/admin_console/channel_admission_pages.js`
+- Modify: `aicrm_next/automation/automation_engine/templates/admin_console/channel_code_form.html`
+- Modify: `aicrm_next/automation/automation_engine/static/admin_console/channel_admission_pages.js`
 - Test: `tests/test_next_channel_welcome_attachments.py`
 - Test: `tests/test_channel_multi_staff_backend.py`
 - Test: `tests/test_channel_multi_staff_frontend_contract.py`
@@ -109,7 +109,7 @@
 **Files:**
 - Modify: `aicrm_next/automation_agents/templates/admin_console/automation_agent_edit.html`
 - Modify: `aicrm_next/automation_agents/templates/admin_console/automation_agent_list.html`
-- Modify: `aicrm_next/automation_engine/group_ops/static/admin_console/group_ops.js`
+- Modify: `aicrm_next/automation/automation_engine/group_ops/static/admin_console/group_ops.js`
 - Modify: `aicrm_next/frontend_compat/templates/admin_console/cloud_campaigns_workspace.html`
 - Modify: `aicrm_next/frontend_compat/static/admin_console/cloud_plan_review.js`
 - Modify: `aicrm_next/frontend_compat/static/admin_console/user_ops_batch_send_modal.js`

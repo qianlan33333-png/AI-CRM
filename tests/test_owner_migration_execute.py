@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from aicrm_next.owner_migration import application
-from aicrm_next.owner_migration.application import DEFAULT_TRANSFER_WELCOME_MSG, OwnerMigrationCommand, OwnerMigrationService, build_xlsx
+from aicrm_next.crm.owner_migration import application
+from aicrm_next.crm.owner_migration.application import DEFAULT_TRANSFER_WELCOME_MSG, OwnerMigrationCommand, OwnerMigrationService, build_xlsx
 
 from test_owner_migration_import import StatefulOwnerMigrationRepo
 

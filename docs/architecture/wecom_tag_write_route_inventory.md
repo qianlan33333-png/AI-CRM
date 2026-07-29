@@ -36,19 +36,19 @@ Lifecycle for exact write routes is `delete_status=deletion_locked` and `replace
 
 ## Backend Boundary
 
-`aicrm_next/customer_tags/api.py` exposes `write_router` and registers exact write routes before `production compatibility router` in `aicrm_next/main.py`.
+`aicrm_next/crm/customer_tags/api.py` exposes `write_router` and registers exact write routes before `production compatibility router` in `aicrm_next/main.py`.
 
 `historical retired production_compat module` no longer registers WeCom tag read/write/sync exact or family fallback routes.
 
-`aicrm_next/customer_tags/commands.py` defines the write command shapes. `aicrm_next/customer_tags/admin_write.py` owns CommandBus dispatch, validation, idempotency, audit recording, live write orchestration, catalog-sync orchestration, and response shape. `aicrm_next/customer_tags/write_repo.py` owns `WeComTagWriteRepository` for local fixture mode and `PostgresWeComTagWriteRepository` for production tag catalog projection reads around update/delete responses.
+`aicrm_next/crm/customer_tags/commands.py` defines the write command shapes. `aicrm_next/crm/customer_tags/admin_write.py` owns CommandBus dispatch, validation, idempotency, audit recording, live write orchestration, catalog-sync orchestration, and response shape. `aicrm_next/crm/customer_tags/write_repo.py` owns `WeComTagWriteRepository` for local fixture mode and `PostgresWeComTagWriteRepository` for production tag catalog projection reads around update/delete responses.
 
 Local/fixture successful command responses include `route_owner=ai_crm_next`, `source_status=next_command`, `fallback_used=false`, `real_external_call_executed=false`, `local_only=true`, and a `SideEffectPlan` exposed as `side_effect_plan` with `adapter_mode=real_blocked`. Production data mode successful command responses include `real_external_call_executed=true`, `sync_executed=true`, `local_only=false`, `write_model_status=live_wecom_synced`, and a `SideEffectPlan` exposed as `side_effect_plan` with `adapter_mode=live_wecom_tag_write`.
 
-`aicrm_next/customer_tags/sync_service.py` owns the sync route. It calls the Next `WeComTagLiveGateway`, normalizes remote `tag_group`/`tag` payloads, and refreshes only `wecom_corp_tag_groups` and `wecom_corp_tags` projection rows. A live success returns `route_owner=ai_crm_next`, `source_status=next_live_remote_synced`, `fallback_used=false`, `real_external_call_executed=true`, `sync_executed=true`, and `adapter_mode=live_catalog_sync`. Fixture/local contract mode returns `source_status=local_contract_refreshed`, `real_external_call_executed=false`, and `sync_executed=false`.
+`aicrm_next/crm/customer_tags/sync_service.py` owns the sync route. It calls the Next `WeComTagLiveGateway`, normalizes remote `tag_group`/`tag` payloads, and refreshes only `wecom_corp_tag_groups` and `wecom_corp_tags` projection rows. A live success returns `route_owner=ai_crm_next`, `source_status=next_live_remote_synced`, `fallback_used=false`, `real_external_call_executed=true`, `sync_executed=true`, and `adapter_mode=live_catalog_sync`. Fixture/local contract mode returns `source_status=local_contract_refreshed`, `real_external_call_executed=false`, and `sync_executed=false`.
 
 ## Guardrails
 
-Real WeCom create/update/delete is executed only in production data mode through `aicrm_next.integration_gateway.wecom_tag_live_gateway.WeComTagLiveGateway` using WeCom corp-tag APIs. After every successful live write, the catalog sync refreshes `wecom_corp_tag_groups` / `wecom_corp_tags`, so tag ids returned to users are WeCom tag ids that can be used by `mark_tag`. A production environment without PostgreSQL still returns `production_unavailable` instead of fixture writes.
+Real WeCom create/update/delete is executed only in production data mode through `aicrm_next.channels.integration_gateway.wecom_tag_live_gateway.WeComTagLiveGateway` using WeCom corp-tag APIs. After every successful live write, the catalog sync refreshes `wecom_corp_tag_groups` / `wecom_corp_tags`, so tag ids returned to users are WeCom tag ids that can be used by `mark_tag`. A production environment without PostgreSQL still returns `production_unavailable` instead of fixture writes.
 
 Sync may execute the read-only WeCom tag catalog API and must not create/update/delete WeCom tags, tag groups, customer tags, questionnaire tags, payment records, storage assets, OpenClaw tasks, or automation runtime jobs. Sync writes are limited to the Next tag catalog projection tables and sync run evidence. CRUD routes are the only approved tag-catalog mutation routes in this inventory.
 

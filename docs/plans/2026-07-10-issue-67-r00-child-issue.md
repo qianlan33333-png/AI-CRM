@@ -38,8 +38,8 @@
 - `scripts/ops/check_wecom_callback_objective_coverage.py`（仅修正过期证据节点）
 - `tools/check_repository_provider_hardening.py`（仅修复 fixture 字段名误报）
 - `tools/check_sql_static_guard.py`
-- `aicrm_next/automation_engine/group_ops/application.py`
-- `aicrm_next/automation_engine/group_ops/projections.py`
+- `aicrm_next/automation/automation_engine/group_ops/application.py`
+- `aicrm_next/automation/automation_engine/group_ops/projections.py`
 - `aicrm_next/service_period/repo.py`
 - `aicrm_next/customer_read_model/repo.py`（仅增加 SQLite/PostgreSQL JSON 文本提取方言分支）
 - `aicrm_next/customer_read_model/sql_dialect.py`（新增小型方言 helper）

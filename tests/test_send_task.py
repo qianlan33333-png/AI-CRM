@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from aicrm_next.background_jobs.broadcast_queue_worker import run_broadcast_queue_worker
+from aicrm_next.automation.background_jobs.broadcast_queue_worker import run_broadcast_queue_worker
 
 
 class EmptyRepo:

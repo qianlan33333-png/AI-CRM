@@ -3,10 +3,10 @@
 Lifecycle manifest entry:
 - table: group_invite_library
 - lifecycle: canonical
-- write_owner: aicrm_next.media_library.postgres_repo
+- write_owner: aicrm_next.engagement.media_library.postgres_repo
 
 Schema ownership:
-- capability_owner: aicrm_next.media_library
+- capability_owner: aicrm_next.engagement.media_library
 - business_key: chat_id, the stable WeCom customer-group identifier
 - pii_level: low
 - read_path: media library, send-content validation, group-ops material resolution, channel welcome resolution

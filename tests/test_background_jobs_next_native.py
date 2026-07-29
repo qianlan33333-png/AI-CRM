@@ -3,9 +3,9 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from aicrm_next.background_jobs.automation_ops_scheduler import run_automation_ops_scheduler
-from aicrm_next.background_jobs.broadcast_queue_worker import run_broadcast_queue_worker
-from aicrm_next.background_jobs.external_contact_sync import run_external_contact_sync
+from aicrm_next.automation.background_jobs.automation_ops_scheduler import run_automation_ops_scheduler
+from aicrm_next.automation.background_jobs.broadcast_queue_worker import run_broadcast_queue_worker
+from aicrm_next.automation.background_jobs.external_contact_sync import run_external_contact_sync
 
 
 class FakeBroadcastRepo:
@@ -101,7 +101,7 @@ def test_automation_ops_scheduler_dry_run_returns_structured_skips() -> None:
     assert result["ok"] is True
     assert result["components"] == [
         {"component": "group_ops_scheduler", "status": "skipped", "reason": "dry_run"},
-        {"component": "wecom_media_lease_refresher", "status": "skipped", "reason": "dry_run"},
+        {"component": "wecom_media_lease_refresher", "status": "skipped", "reason": "retired_manual_repair_only"},
     ]
 
 

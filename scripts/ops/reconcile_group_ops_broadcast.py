@@ -13,7 +13,7 @@ from scripts.script_runtime import ensure_repo_root_on_path, print_json
 
 ensure_repo_root_on_path()
 
-from aicrm_next.background_jobs.broadcast_reconciliation import (
+from aicrm_next.automation.background_jobs.broadcast_reconciliation import (
     GroupOpsBroadcastReconciliationService,
 )
 

@@ -8,13 +8,13 @@ from typing import Any, Callable
 
 import pytest
 
-from aicrm_next.platform_foundation.command_bus import CommandContext
-from aicrm_next.platform_foundation.internal_events.questionnaire import (
+from aicrm_next.platform.platform_foundation.command_bus import CommandContext
+from aicrm_next.platform.platform_foundation.internal_events.questionnaire import (
     build_questionnaire_submitted_event_request,
 )
-from aicrm_next.questionnaire import repo as questionnaire_repo
-from aicrm_next.questionnaire.reconciliation import QuestionnaireRadarReconciliationService
-from aicrm_next.questionnaire.repo import PostgresQuestionnaireReadRepository
+from aicrm_next.extensions.forms.questionnaire import repo as questionnaire_repo
+from aicrm_next.extensions.forms.questionnaire.reconciliation import QuestionnaireRadarReconciliationService
+from aicrm_next.extensions.forms.questionnaire.repo import PostgresQuestionnaireReadRepository
 
 
 @pytest.fixture()

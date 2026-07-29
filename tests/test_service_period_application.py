@@ -5,11 +5,11 @@ from datetime import datetime, timezone
 
 import pytest
 
-from aicrm_next.commerce.repo import PostgresCommerceRepository, reset_commerce_fixture_state
-from aicrm_next.identity_contact.dto import IdentityResolution, IdentityResolveResult
-from aicrm_next.service_period import repo as service_period_repo
-from aicrm_next.service_period.huangyoucan_usage import huangyoucan_usage_match_joins
-from aicrm_next.service_period.application import (
+from aicrm_next.extensions.commerce.commerce.repo import PostgresCommerceRepository, reset_commerce_fixture_state
+from aicrm_next.crm.identity_contact.dto import IdentityResolution, IdentityResolveResult
+from aicrm_next.extensions.commerce.service_period import repo as service_period_repo
+from aicrm_next.extensions.commerce.service_period.huangyoucan_usage import huangyoucan_usage_match_joins
+from aicrm_next.extensions.commerce.service_period.application import (
     ApplyServicePeriodRefundCommand,
     CreateServicePeriodProductCommand,
     ExpireDueEntitlementsCommand,
@@ -18,8 +18,9 @@ from aicrm_next.service_period.application import (
     UpdateServicePeriodMemberAllianceCommand,
     UpdateServicePeriodMemberRemarkCommand,
 )
-from aicrm_next.service_period.dto import ServicePeriodProductCreateRequest
-from aicrm_next.service_period.repo import PostgresServicePeriodRepository, build_service_period_repository, reset_service_period_fixture_state
+from aicrm_next.extensions.commerce.service_period.dto import ServicePeriodProductCreateRequest
+from aicrm_next.extensions.commerce.service_period.repo import PostgresServicePeriodRepository, build_service_period_repository, reset_service_period_fixture_state
+from wechat_identity_test_support import authorize_wechat_client
 
 
 def _reset() -> None:
@@ -141,6 +142,7 @@ def test_create_update_copy_disable_delete_facade(next_client) -> None:
     assert members.json()["items"] == []
 
     share = next_client.get(f"/api/admin/service-period-products/{product['id']}/share")
+    assert share.json()["share"]["qr_data_url"].startswith("data:image/jpeg;base64,")
     assert share.status_code == 200
     assert "/s/sp_course_001" in share.json()["share"]["url"]
 
@@ -227,6 +229,7 @@ def test_update_service_period_product_persists_page_slices(next_client) -> None
 
 def test_public_state_and_page_use_service_period_slug(next_client) -> None:
     _reset()
+    authorize_wechat_client(next_client)
     CreateServicePeriodProductCommand()(ServicePeriodProductCreateRequest(**_payload(product_code="sp_public_001")))
 
     state = next_client.get("/api/h5/service-period-products/sp_public_001")
@@ -330,6 +333,7 @@ def test_public_state_hides_lead_qr_when_resolver_fails() -> None:
 
 def test_draft_service_period_slug_renders_owned_preview_without_payment(next_client) -> None:
     _reset()
+    authorize_wechat_client(next_client)
     CreateServicePeriodProductCommand()(ServicePeriodProductCreateRequest(**_payload(product_code="sp_public_draft", status="draft")))
 
     state = next_client.get("/api/h5/service-period-products/sp_public_draft")
@@ -408,10 +412,14 @@ def test_member_list_postgres_uses_existing_identity_and_contact_fallbacks() -> 
     assert repo_source.index("NULLIF(wfu.remark, '')") < repo_source.index("NULLIF(NULLIF(c.customer_name, ''), '问卷提交用户')")
     assert "NULLIF(NULLIF(c.customer_name, ''), '问卷提交用户')" in repo_source
     assert "NULLIF(wim.name, '')" in repo_source
-    assert "service_period_huangyoucan_usage_snapshot" in huangyoucan_usage_match_joins(
+    usage_joins = huangyoucan_usage_match_joins(
         unionid_sql="e.unionid",
         mobile_sql="c.mobile",
     )
+    assert "service_period_huangyoucan_usage_snapshot" in usage_joins
+    assert "snapshot.unionid <> ''" in usage_joins
+    assert "snapshot.mobile_md5 <> ''" in usage_joins
+    assert ")::CHAR(32)" in usage_joins
     assert "public_huangyoucan_usage_fields" in repo_source
 
 

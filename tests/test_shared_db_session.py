@@ -5,7 +5,7 @@ import types
 
 import pytest
 
-from aicrm_next.shared import db_session
+from aicrm_next.platform.shared import db_session
 
 
 @pytest.fixture(autouse=True)
@@ -63,6 +63,49 @@ def test_postgres_engine_uses_pool_env_and_application_name(monkeypatch) -> None
     ]
 
 
+def test_postgres_web_engine_applies_bounded_query_and_idle_transaction_timeouts(monkeypatch) -> None:
+    calls: list[tuple[str, dict[str, object]]] = []
+
+    class FakeEngine:
+        def dispose(self) -> None:
+            pass
+
+    def fake_create_engine(url: str, **kwargs):
+        calls.append((url, kwargs))
+        return FakeEngine()
+
+    monkeypatch.setattr(db_session, "create_engine", fake_create_engine)
+    monkeypatch.setenv("DB_APPLICATION_NAME", "aicrm-next-web")
+
+    db_session.get_engine("postgresql://user:pass@db.internal:5432/aicrm")
+
+    assert calls[0][1]["connect_args"] == {
+        "application_name": "aicrm-next-web",
+        "options": "-c statement_timeout=30s -c idle_in_transaction_session_timeout=60s",
+    }
+
+
+def test_postgres_background_engine_does_not_inherit_web_timeouts(monkeypatch) -> None:
+    calls: list[tuple[str, dict[str, object]]] = []
+
+    class FakeEngine:
+        def dispose(self) -> None:
+            pass
+
+    def fake_create_engine(url: str, **kwargs):
+        calls.append((url, kwargs))
+        return FakeEngine()
+
+    monkeypatch.setattr(db_session, "create_engine", fake_create_engine)
+    monkeypatch.setenv("DB_APPLICATION_NAME", "aicrm-next-queue-internal")
+
+    db_session.get_engine("postgresql://user:pass@db.internal:5432/aicrm")
+
+    assert calls[0][1]["connect_args"] == {
+        "application_name": "aicrm-next-queue-internal",
+    }
+
+
 def test_get_pool_settings_redacts_database_url_and_uses_env(monkeypatch) -> None:
     monkeypatch.setenv("DB_POOL_SIZE", "9")
     monkeypatch.setenv("DB_MAX_OVERFLOW", "1")
@@ -84,6 +127,13 @@ def test_get_pool_settings_redacts_database_url_and_uses_env(monkeypatch) -> Non
     assert "super-secret" not in str(settings)
     assert "db.internal" not in str(settings)
     assert "user" not in str(settings)
+
+
+def test_database_application_name_uses_libpq_fallback_and_sanitizes(monkeypatch) -> None:
+    monkeypatch.delenv("DB_APPLICATION_NAME", raising=False)
+    monkeypatch.setenv("PGAPPNAME", "aicrm next / cron:sync")
+
+    assert db_session.database_application_name() == "aicrm-next-cron:sync"
 
 
 def test_engine_initialization_log_does_not_include_database_secret(monkeypatch) -> None:

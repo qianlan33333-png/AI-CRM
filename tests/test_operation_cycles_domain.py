@@ -3,8 +3,8 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from aicrm_next.operation_cycles.domain import compute_snapshot_hash
-from aicrm_next.operation_cycles.dto import OperationCycleSnapshotV1
+from aicrm_next.extensions.hxc.operation_cycles.domain import compute_snapshot_hash
+from aicrm_next.extensions.hxc.operation_cycles.dto import OperationCycleSnapshotV1
 
 
 def snapshot_payload() -> dict:

@@ -6,10 +6,10 @@ from pathlib import Path
 
 from sqlalchemy import text
 
-from aicrm_next.ai_audience_ops.outbound_service import AudienceOutboundService
-from aicrm_next.ai_audience_ops.refresh_service import AudienceRefreshService
-from aicrm_next.ai_audience_ops.repository import build_audience_repository
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.extensions.ai.ai_audience_ops.outbound_service import AudienceOutboundService
+from aicrm_next.extensions.ai.ai_audience_ops.refresh_service import AudienceRefreshService, _refresh_sql
+from aicrm_next.extensions.ai.ai_audience_ops.repository import build_audience_repository
+from aicrm_next.platform.shared.db_session import get_session_factory
 from scripts import ai_audience_apply_package_spec as spec_script
 from tests.admin_auth_test_helpers import access_token_headers, install_access_token
 from tests.test_ai_audience_package_spec import VALID_SPEC
@@ -327,6 +327,43 @@ def _simple_payload(package_key: str = "audience_simple_hyc") -> dict:
     }
 
 
+def test_refresh_sql_uses_only_strict_daily_simple_compatibility_shape() -> None:
+    version = {
+        "snapshot_sql_text": "",
+        "incremental_sql_text": "SELECT incremental",
+        "simple_compiled_sql_text": "SELECT compiled",
+    }
+
+    assert _refresh_sql(
+        {
+            "query_mode": "simple_sql",
+            "daily_enabled": True,
+            "incremental_enabled": False,
+        },
+        version,
+        "daily",
+    ) == "SELECT compiled"
+    assert _refresh_sql(
+        {
+            "query_mode": "snapshot_current",
+            "daily_enabled": True,
+            "incremental_enabled": False,
+        },
+        version,
+        "daily",
+    ) == ""
+    assert _refresh_sql(
+        {
+            "query_mode": "simple_sql",
+            "daily_enabled": True,
+            "incremental_enabled": True,
+        },
+        version,
+        "daily",
+    ) == ""
+    assert _refresh_sql({}, version, "incremental") == "SELECT incremental"
+
+
 def _unionid_for_external_userid(external_userid: str) -> str:
     return "union_" + external_userid.removeprefix("wm_")
 
@@ -509,6 +546,42 @@ def test_external_simple_sync_refresh_enters_idempotently_and_exits(next_client,
     assert second["entered_count"] == 0
     assert second["updated_count"] == 0
     assert third["exited_count"] == 1
+
+
+def test_legacy_daily_simple_package_uses_canonical_compiled_sql(next_client, next_pg_schema, monkeypatch) -> None:
+    del next_pg_schema
+    _ready_env(monkeypatch, next_client)
+    payload = _simple_payload("audience_legacy_daily_simple")
+    payload["refresh_mode"] = "daily_0200"
+    applied = next_client.post(
+        "/api/external/ai-audience/simple/apply",
+        headers=_headers(),
+        json=payload,
+    ).json()
+    with get_session_factory()() as session:
+        session.execute(
+            text(
+                """
+                UPDATE ai_audience_package_version
+                SET snapshot_sql_text = ''
+                WHERE id = :version_id
+                """
+            ),
+            {"version_id": applied["version_id"]},
+        )
+        session.commit()
+    repo = build_audience_repository()
+    package = repo.get_package(applied["package_id"])
+
+    result = AudienceRefreshService(repository=repo).refresh_package(
+        applied["package_id"],
+        run_type="daily",
+        package=package,
+        row_limit=1000,
+    )
+
+    assert result["ok"] is True
+    assert result["run"]["status"] == "succeeded"
 
 
 def test_external_simple_outbound_plan_keeps_external_userids_array_body(next_client, next_pg_schema, monkeypatch) -> None:

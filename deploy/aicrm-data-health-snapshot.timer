@@ -1,0 +1,11 @@
+[Unit]
+Description=Refresh the AI-CRM aggregate data health snapshot every 15 minutes
+
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+RandomizedDelaySec=120
+Unit=aicrm-data-health-snapshot.service
+
+[Install]
+WantedBy=timers.target

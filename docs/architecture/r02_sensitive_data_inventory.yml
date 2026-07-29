@@ -19,146 +19,154 @@ secret_keys:
   SECRET_KEY:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.shared.runtime
-      - aicrm_next.admin_auth.service
-      - aicrm_next.shared.signed_session
-      - aicrm_next.questionnaire.oauth
-      - aicrm_next.radar_links
+      - aicrm_next.platform.shared.runtime
+      - aicrm_next.platform.admin_auth.service
+      - aicrm_next.platform.shared.signed_session
+      - aicrm_next.extensions.forms.questionnaire.oauth
+      - aicrm_next.extensions.radar.radar_links
   AICRM_NEXT_ACTION_TOKEN_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.admin_auth.action_token
-      - aicrm_next.admin_jobs.routes
+      - aicrm_next.platform.admin_auth.action_token
+      - aicrm_next.platform.admin_jobs.routes
   AICRM_AUTH_SESSION_HASH_PEPPER:
     <<: *secret_defaults
     purpose: server_session_hashing
     runtime_consumers:
-      - aicrm_next.platform_foundation.auth_platform.sessions
+      - aicrm_next.platform.platform_foundation.auth_platform.sessions
       - scripts.ops.bootstrap_auth_clients
       - scripts.ops.check_auth_readiness
   AICRM_AUTH_JWT_SIGNING_KEY:
     <<: *secret_defaults
     purpose: api_access_jwt_signing
     runtime_consumers:
-      - aicrm_next.platform_foundation.auth_platform.service
+      - aicrm_next.platform.platform_foundation.auth_platform.service
       - scripts.ops.bootstrap_auth_clients
       - scripts.ops.check_auth_readiness
   AICRM_QUESTIONNAIRE_OAUTH_STATE_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.questionnaire.oauth
+      - aicrm_next.extensions.forms.questionnaire.oauth
   AICRM_AI_AUDIENCE_AGENT_API_KEY:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.ai_audience_ops.agent_gateway
+      - aicrm_next.extensions.ai.ai_audience_ops.agent_gateway
   AICRM_RUNTIME_V2_AGENT_API_KEY:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.ai_audience_ops.agent_gateway
+      - aicrm_next.extensions.ai.ai_audience_ops.agent_gateway
+  AICRM_HUANGYOUCAN_DB_PASSWORD:
+    <<: *secret_defaults
+    runtime_consumers:
+      - aicrm_next.channels.integration_gateway.huangyoucan_usage_client
+  AICRM_HXC_CARD_TARGET_VALIDATION_TOKEN:
+    <<: *secret_defaults
+    runtime_consumers:
+      - aicrm_next.extensions.ai.ai_assist.card_target_validation_port
   AICRM_MEDIA_UPLOAD_PROVIDER_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.media_live_adapter
+      - aicrm_next.channels.integration_gateway.media_live_adapter
   AICRM_OAUTH_IDENTITY_APP_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.oauth_identity_live_adapter
+      - aicrm_next.channels.integration_gateway.oauth_identity_live_adapter
   AICRM_PAYMENT_COMMERCE_PROVIDER_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.payment_commerce_live_adapter
+      - aicrm_next.channels.integration_gateway.payment_commerce_live_adapter
   AICRM_WECOM_CONTACT_CALLBACK_AES_KEY:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.wecom_contact_callback_live_adapter
+      - aicrm_next.channels.integration_gateway.wecom_contact_callback_live_adapter
   AICRM_WECOM_CONTACT_CALLBACK_TOKEN:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.wecom_contact_callback_live_adapter
+      - aicrm_next.channels.integration_gateway.wecom_contact_callback_live_adapter
   AICRM_WECOM_GROUP_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.wecom_customer_group_client
-      - aicrm_next.integration_gateway.wecom_media_upload_client
+      - aicrm_next.channels.integration_gateway.wecom_customer_group_client
+      - aicrm_next.channels.integration_gateway.wecom_media_upload_client
   AICRM_WECOM_MEDIA_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.wecom_media_upload_client
+      - aicrm_next.channels.integration_gateway.wecom_media_upload_client
   AICRM_WECOM_OPERATION_MEMBERS_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.wecom_operation_members_client
+      - aicrm_next.channels.integration_gateway.wecom_operation_members_client
   AICRM_WECOM_TAG_AGENT_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.wecom_tag_live_gateway
+      - aicrm_next.channels.integration_gateway.wecom_tag_live_gateway
   DEEPSEEK_API_KEY:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.ai_audience_ops.agent_gateway
+      - aicrm_next.extensions.ai.ai_audience_ops.agent_gateway
   AICRM_SIDEBAR_JSSDK_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.wecom_jssdk_adapter
+      - aicrm_next.channels.integration_gateway.wecom_jssdk_adapter
   SIDEBAR_THIRD_PARTY_API_TOKEN:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.admin_config
+      - aicrm_next.platform.admin_config
   WECOM_CONTACT_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.wecom_tag_live_gateway
-      - aicrm_next.integration_gateway.wecom_operation_members_client
-      - aicrm_next.integration_gateway.wecom_channel_entry_client
-      - aicrm_next.platform_foundation.external_effects.adapters
+      - aicrm_next.channels.integration_gateway.wecom_tag_live_gateway
+      - aicrm_next.channels.integration_gateway.wecom_operation_members_client
+      - aicrm_next.channels.integration_gateway.wecom_channel_entry_client
+      - aicrm_next.platform.platform_foundation.external_effects.adapters
   WECOM_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.auth_wecom.service
-      - aicrm_next.identity_contact.sidebar_jssdk
-      - aicrm_next.integration_gateway.wecom_jssdk_adapter
-      - aicrm_next.integration_gateway.wecom_channel_entry_client
+      - aicrm_next.channels.auth_wecom.service
+      - aicrm_next.crm.identity_contact.sidebar_jssdk
+      - aicrm_next.channels.integration_gateway.wecom_jssdk_adapter
+      - aicrm_next.channels.integration_gateway.wecom_channel_entry_client
   WECOM_ARCHIVE_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.message_archive.sync_service
+      - aicrm_next.extensions.archive.message_archive.sync_service
   WECOM_CALLBACK_TOKEN:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.channel_entry.application
-      - aicrm_next.admin_read_model.projections
+      - aicrm_next.channels.channel_entry.application
+      - aicrm_next.insights.admin_read_model.projections
   WECOM_CALLBACK_AES_KEY:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.channel_entry.application
-      - aicrm_next.channel_entry.wecom_crypto
+      - aicrm_next.channels.channel_entry.application
+      - aicrm_next.channels.channel_entry.wecom_crypto
   WECHAT_MP_APP_SECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.questionnaire_adapters
-      - aicrm_next.questionnaire.application
-      - aicrm_next.public_product.h5_wechat_pay
+      - aicrm_next.channels.integration_gateway.questionnaire_adapters
+      - aicrm_next.extensions.forms.questionnaire.application
+      - aicrm_next.extensions.commerce.public_product.h5_wechat_pay
   WECHAT_PAY_API_V3_KEY:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.wechat_pay_client
-      - aicrm_next.public_product.h5_wechat_pay
+      - aicrm_next.channels.integration_gateway.wechat_pay_client
+      - aicrm_next.extensions.commerce.public_product.h5_wechat_pay
   WECHAT_PAY_CERT_SERIAL_NO:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.wechat_pay_client
-      - aicrm_next.public_product.h5_wechat_pay
+      - aicrm_next.channels.integration_gateway.wechat_pay_client
+      - aicrm_next.extensions.commerce.public_product.h5_wechat_pay
   WECHAT_SHOP_APPSECRET:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.integration_gateway.wechat_shop_client
-      - aicrm_next.commerce.wechat_shop_service
+      - aicrm_next.channels.integration_gateway.wechat_shop_client
+      - aicrm_next.extensions.commerce.commerce.wechat_shop_service
   WECHAT_SHOP_CALLBACK_TOKEN:
     <<: *secret_defaults
     runtime_consumers:
-      - aicrm_next.shared.runtime
-      - aicrm_next.commerce.wechat_shop_signature
-      - aicrm_next.commerce.wechat_shop_service
+      - aicrm_next.platform.shared.runtime
+      - aicrm_next.extensions.commerce.commerce.wechat_shop_signature
+      - aicrm_next.extensions.commerce.commerce.wechat_shop_service
 
 api_client_credential_policy:
   exact_purpose_required: true
@@ -243,23 +251,23 @@ pii_route_overrides:
     raw_payload_allowed: false
 
 outbound_webhook_callers:
-  - source: aicrm_next.platform_foundation.external_effects.adapters.WebhookAdapter
-    dispatch_owner: aicrm_next.external_push.https_transport
+  - source: aicrm_next.platform.platform_foundation.external_effects.adapters.WebhookAdapter
+    dispatch_owner: aicrm_next.platform.external_push.https_transport
     redirect_policy: deny
     dns_policy: resolve_validate_pin
     real_execution_change: none
-  - source: aicrm_next.external_push.service
-    dispatch_owner: aicrm_next.external_push.https_transport
+  - source: aicrm_next.platform.external_push.service
+    dispatch_owner: aicrm_next.platform.external_push.https_transport
     redirect_policy: deny
     dns_policy: resolve_validate_pin
     real_execution_change: none
-  - source: aicrm_next.commerce.external_push_admin
-    dispatch_owner: aicrm_next.external_push.https_transport
+  - source: aicrm_next.extensions.commerce.commerce.external_push_admin
+    dispatch_owner: aicrm_next.platform.external_push.https_transport
     redirect_policy: deny
     dns_policy: resolve_validate_pin
     real_execution_change: none
-  - source: aicrm_next.questionnaire.external_push
-    dispatch_owner: aicrm_next.external_push.https_transport
+  - source: aicrm_next.extensions.forms.questionnaire.external_push
+    dispatch_owner: aicrm_next.platform.external_push.https_transport
     redirect_policy: deny
     dns_policy: resolve_validate_pin
     real_execution_change: none

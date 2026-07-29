@@ -2,7 +2,7 @@ import re
 from pathlib import Path
 
 
-ADMIN_CONSOLE_CSS = Path("aicrm_next/frontend_compat/static/admin_console/admin_console.css")
+ADMIN_CONSOLE_CSS = Path("aicrm_next/app/admin_console/static/admin_console/admin_console.css")
 
 
 def test_primary_admin_buttons_keep_white_text_after_compact_override() -> None:

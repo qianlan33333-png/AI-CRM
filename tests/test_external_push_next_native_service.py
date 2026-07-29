@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from copy import deepcopy
 
-from aicrm_next.platform_foundation.external_effects import ExternalEffectService, WEBHOOK_GENERIC_PUSH, WEBHOOK_ORDER_PAID_PUSH
-from aicrm_next.platform_foundation.external_effects.repo import reset_external_effect_fixture_state
-from aicrm_next.external_push import repo, security, service
+from aicrm_next.platform.platform_foundation.external_effects import ExternalEffectService, WEBHOOK_GENERIC_PUSH, WEBHOOK_ORDER_PAID_PUSH
+from aicrm_next.platform.platform_foundation.external_effects.repo import reset_external_effect_fixture_state
+from aicrm_next.platform.external_push import repo, security, service
 
 
 class FakeExternalPushRepository:

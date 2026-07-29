@@ -11,9 +11,13 @@ from zoneinfo import ZoneInfo
 import pytest
 from sqlalchemy import text
 
-from aicrm_next.ai_audience_ops.event_types import (
+from aicrm_next.extensions.ai.ai_audience_ops.event_types import (
     DAILY_REFRESH_CONSUMER,
     DAILY_TICK_EVENT,
+    HXC_DAILY_PROJECTION_CONSUMER,
+    HXC_DAILY_PROJECTION_REQUESTED_EVENT,
+    HXC_INCREMENTAL_PROJECTION_CONSUMER,
+    HXC_INCREMENTAL_PROJECTION_REQUESTED_EVENT,
     INCREMENTAL_REFRESH_CONSUMER,
     INCREMENTAL_TICK_EVENT,
     MEMBER_EVENT_PREFIX,
@@ -22,16 +26,18 @@ from aicrm_next.ai_audience_ops.event_types import (
     SOURCE_CHANGED_EVENT,
     SOURCE_POKE_CONSUMER,
 )
-from aicrm_next.ai_audience_ops.outbound_service import AudienceOutboundService
-from aicrm_next.ai_audience_ops.repository import build_audience_repository, next_daily_refresh_at
-from aicrm_next.ai_audience_ops.scheduler import ai_audience_event_consumer_pairs, emit_due_ticks
-from aicrm_next.ai_audience_ops.service import AudiencePackageService
-from aicrm_next.ai_audience_ops.sql_catalog import ALLOWED_VIEWS, schema_catalog_payload
-from aicrm_next.ai_audience_ops.sql_linter import lint_sql
-from aicrm_next.ai_audience_ops.test_agent_service import AudienceTestAgentService, TEST_AGENT_MESSAGE_TEXT
-from aicrm_next.platform_foundation.external_effects import ExternalEffectService, WEBHOOK_GENERIC_PUSH, WECOM_MESSAGE_PRIVATE_SEND
-from aicrm_next.platform_foundation.internal_events.worker import InternalEventWorker
-from aicrm_next.shared.db_session import get_session_factory
+from aicrm_next.extensions.ai.ai_audience_ops.outbound_service import AudienceOutboundService
+from aicrm_next.extensions.ai.ai_audience_ops.refresh_intents import AudienceRefreshIntentRepository, AudienceRefreshIntentService
+from aicrm_next.extensions.ai.ai_audience_ops.repository import build_audience_repository, next_daily_refresh_at
+from aicrm_next.extensions.ai.ai_audience_ops.scheduler import ai_audience_event_consumer_pairs, emit_due_ticks
+from aicrm_next.extensions.ai.ai_audience_ops.service import AudiencePackageService, _tick_bucket
+from aicrm_next.extensions.ai.ai_audience_ops.sql_catalog import ALLOWED_VIEWS, schema_catalog_payload
+from aicrm_next.extensions.ai.ai_audience_ops.sql_linter import lint_sql
+from aicrm_next.extensions.ai.ai_audience_ops.test_agent_service import AudienceTestAgentService, TEST_AGENT_MESSAGE_TEXT
+from aicrm_next.extensions.ai.ai_audience_ops.webhook_service import AudienceInboundWebhookService
+from aicrm_next.platform.platform_foundation.external_effects import ExternalEffectService, WEBHOOK_GENERIC_PUSH, WECOM_MESSAGE_PRIVATE_SEND
+from aicrm_next.platform.platform_foundation.internal_events.worker import InternalEventWorker
+from aicrm_next.platform.shared.db_session import get_session_factory
 
 
 TOKEN = "ai-audience-test-token"
@@ -82,6 +88,16 @@ def _external_effect_signature(secret: str, payload: dict) -> str:
     return hmac.new(secret.encode("utf-8"), canonical, hashlib.sha256).hexdigest()
 
 
+def _execute_latest_refresh_intent(package_id: int) -> dict[str, Any]:
+    intent = AudienceRefreshIntentRepository().get(int(package_id))
+    assert intent is not None
+    assert intent["status"] in {"waiting", "retry_wait"}
+    return AudienceRefreshIntentService().process_requested(
+        package_id=int(package_id),
+        signal_generation=int(intent["signal_generation"]),
+    )
+
+
 def test_sql_linter_blocks_dangerous_and_non_catalog_sql() -> None:
     assert "keyword_forbidden:drop" in lint_sql("DROP TABLE users").errors
     assert "select_star_forbidden" in lint_sql("SELECT * FROM audience_read.orders_v1").errors
@@ -122,50 +138,121 @@ def test_next_daily_refresh_uses_package_timezone_and_time() -> None:
 
 def test_ai_audience_scheduler_emits_incremental_every_run_and_daily_only_in_2am_window() -> None:
     class Service:
-        def emit_tick(self, tick_type):
-            return {"ok": True, "tick_type": tick_type}
+        def emit_tick(self, tick_type, **kwargs):
+            return {"ok": True, "tick_type": tick_type, "kwargs": kwargs}
+
+    class ProjectionIntents:
+        def request(self, refresh_kind, *, bucket):
+            return {"ok": True, "refresh_kind": refresh_kind, "bucket": bucket}
+
+        def daily_refresh_due(self, **_kwargs):
+            return False
 
     inside_window = datetime(2026, 6, 24, 2, 1, tzinfo=ZoneInfo("Asia/Shanghai"))
     outside_window = datetime(2026, 6, 24, 1, 59, tzinfo=ZoneInfo("Asia/Shanghai"))
 
-    from aicrm_next.ai_audience_ops import scheduler as scheduler_module
+    from aicrm_next.extensions.ai.ai_audience_ops import scheduler as scheduler_module
 
     original = scheduler_module.AudiencePackageService
+    original_projection_intents = scheduler_module.HxcProjectionRefreshIntentService
     scheduler_module.AudiencePackageService = lambda: Service()
+    scheduler_module.HxcProjectionRefreshIntentService = lambda: ProjectionIntents()
     try:
         due = emit_due_ticks(now=inside_window, daily_refresh_time="02:00", daily_window_minutes=60)
         not_due = emit_due_ticks(now=outside_window, daily_refresh_time="02:00", daily_window_minutes=60)
     finally:
         scheduler_module.AudiencePackageService = original
+        scheduler_module.HxcProjectionRefreshIntentService = original_projection_intents
 
     assert [item["tick_type"] for item in due["items"]] == ["incremental", "daily"]
     assert due["daily_tick_due"] is True
+    assert due["items"][0]["hxc_projection_intent"]["refresh_kind"] == "incremental"
+    assert due["items"][1]["hxc_projection_intent"]["refresh_kind"] == "daily"
     assert [item["tick_type"] for item in not_due["items"]] == ["incremental"]
     assert not_due["daily_tick_due"] is False
 
 
-def test_ai_audience_scheduler_emits_daily_for_launch_refresh_due_outside_2am_window() -> None:
+def test_ai_audience_scheduler_catches_up_overdue_daily_refresh_outside_2am_window() -> None:
     class Service:
-        def emit_tick(self, tick_type):
-            return {"ok": True, "tick_type": tick_type}
+        def emit_tick(self, tick_type, **kwargs):
+            return {"ok": True, "tick_type": tick_type, "kwargs": kwargs}
 
-        def has_launch_refresh_due(self, refresh_kind):
+        def has_refresh_due(self, refresh_kind):
             return refresh_kind == "daily"
+
+    class ProjectionIntents:
+        def request(self, refresh_kind, *, bucket):
+            return {"ok": True, "refresh_kind": refresh_kind, "bucket": bucket}
+
+        def daily_refresh_due(self, **_kwargs):
+            return False
 
     outside_window = datetime(2026, 6, 24, 1, 30, tzinfo=ZoneInfo("Asia/Shanghai"))
 
-    from aicrm_next.ai_audience_ops import scheduler as scheduler_module
+    from aicrm_next.extensions.ai.ai_audience_ops import scheduler as scheduler_module
 
     original = scheduler_module.AudiencePackageService
+    original_projection_intents = scheduler_module.HxcProjectionRefreshIntentService
     scheduler_module.AudiencePackageService = lambda: Service()
+    scheduler_module.HxcProjectionRefreshIntentService = lambda: ProjectionIntents()
     try:
         due = emit_due_ticks(now=outside_window, daily_refresh_time="02:00", daily_window_minutes=60)
     finally:
         scheduler_module.AudiencePackageService = original
+        scheduler_module.HxcProjectionRefreshIntentService = original_projection_intents
 
     assert [item["tick_type"] for item in due["items"]] == ["incremental", "daily"]
     assert due["daily_tick_due"] is True
     assert due["daily_tick_window_due"] is False
+    assert due["items"][1]["result"]["kwargs"] == {
+        "now": outside_window,
+        "daily_refresh_time": "02:00",
+    }
+
+
+def test_ai_audience_scheduler_catches_up_hxc_projection_daily_refresh() -> None:
+    class Service:
+        def emit_tick(self, tick_type, **kwargs):
+            return {"ok": True, "tick_type": tick_type, "kwargs": kwargs}
+
+        def has_refresh_due(self, _refresh_kind):
+            return False
+
+    class ProjectionIntents:
+        def request(self, refresh_kind, *, bucket):
+            return {"ok": True, "refresh_kind": refresh_kind, "bucket": bucket}
+
+        def daily_refresh_due(self, **_kwargs):
+            return True
+
+    outside_window = datetime(2026, 6, 24, 6, 30, tzinfo=ZoneInfo("Asia/Shanghai"))
+    from aicrm_next.extensions.ai.ai_audience_ops import scheduler as scheduler_module
+
+    original = scheduler_module.AudiencePackageService
+    original_projection_intents = scheduler_module.HxcProjectionRefreshIntentService
+    scheduler_module.AudiencePackageService = lambda: Service()
+    scheduler_module.HxcProjectionRefreshIntentService = lambda: ProjectionIntents()
+    try:
+        due = emit_due_ticks(
+            now=outside_window,
+            daily_refresh_time="02:00",
+            daily_window_minutes=60,
+        )
+    finally:
+        scheduler_module.AudiencePackageService = original
+        scheduler_module.HxcProjectionRefreshIntentService = original_projection_intents
+
+    assert [item["tick_type"] for item in due["items"]] == ["incremental", "daily"]
+    assert due["daily_tick_due"] is True
+    assert due["daily_tick_window_due"] is False
+
+
+def test_daily_tick_bucket_uses_the_latest_scheduled_boundary_not_calendar_midnight() -> None:
+    before_schedule = datetime(2026, 7, 25, 0, 3, tzinfo=ZoneInfo("Asia/Shanghai"))
+    after_schedule = datetime(2026, 7, 25, 2, 3, tzinfo=ZoneInfo("Asia/Shanghai"))
+
+    assert _tick_bucket("daily", now=before_schedule, daily_refresh_time="02:00") == "2026-07-24"
+    assert _tick_bucket("daily", now=after_schedule, daily_refresh_time="02:00") == "2026-07-25"
 
 
 def test_ai_audience_scheduler_consumer_pairs_cover_source_refresh_and_outbound() -> None:
@@ -173,7 +260,9 @@ def test_ai_audience_scheduler_consumer_pairs_cover_source_refresh_and_outbound(
 
     assert f"{SOURCE_CHANGED_EVENT}:{SOURCE_POKE_CONSUMER}" in pairs
     assert f"{INCREMENTAL_TICK_EVENT}:{INCREMENTAL_REFRESH_CONSUMER}" in pairs
+    assert f"{HXC_INCREMENTAL_PROJECTION_REQUESTED_EVENT}:{HXC_INCREMENTAL_PROJECTION_CONSUMER}" in pairs
     assert f"{DAILY_TICK_EVENT}:{DAILY_REFRESH_CONSUMER}" in pairs
+    assert f"{HXC_DAILY_PROJECTION_REQUESTED_EVENT}:{HXC_DAILY_PROJECTION_CONSUMER}" in pairs
     assert f"{RUN_REFRESHED_EVENT}:{OUTBOUND_EFFECT_CONSUMER}" in pairs
     assert f"{MEMBER_EVENT_PREFIX}entered:{OUTBOUND_EFFECT_CONSUMER}" not in pairs
     assert f"{MEMBER_EVENT_PREFIX}updated:{OUTBOUND_EFFECT_CONSUMER}" not in pairs
@@ -409,7 +498,8 @@ def test_daily_snapshot_publish_latest_version_can_exit_member(next_client, monk
         json={"run_type": "daily", "params": {"test_external_userid": test_user}},
     )
     assert entered_resp.status_code == 200
-    assert entered_resp.json()["entered_count"] == 1
+    assert entered_resp.json()["accepted"] is True
+    assert _execute_latest_refresh_intent(package_id)["entered_count"] == 1
 
     v2_resp = next_client.post(
         f"/api/ai/audience/packages/{package_id}/versions",
@@ -428,7 +518,8 @@ def test_daily_snapshot_publish_latest_version_can_exit_member(next_client, monk
         json={"run_type": "daily", "params": {"test_external_userid": test_user}},
     )
     assert exited_resp.status_code == 200
-    assert exited_resp.json()["exited_count"] == 1
+    assert exited_resp.json()["accepted"] is True
+    assert _execute_latest_refresh_intent(package_id)["exited_count"] == 1
 
     repeat_resp = next_client.post(
         f"/api/ai/audience/packages/{package_id}/refresh",
@@ -436,7 +527,8 @@ def test_daily_snapshot_publish_latest_version_can_exit_member(next_client, monk
         json={"run_type": "daily", "params": {"test_external_userid": test_user}},
     )
     assert repeat_resp.status_code == 200
-    assert repeat_resp.json()["exited_count"] == 0
+    assert repeat_resp.json()["accepted"] is True
+    assert _execute_latest_refresh_intent(package_id)["exited_count"] == 0
 
     with session_factory() as session:
         package_row = (
@@ -523,8 +615,9 @@ def test_publish_auto_refreshes_package_on_first_launch(next_client, monkeypatch
     assert body["launch_refresh"]["ok"] is True
     assert body["launch_refresh"]["trigger"] == "package_launch"
     assert body["launch_refresh"]["run_type"] == "incremental"
-    assert body["launch_refresh"]["entered_count"] == 1
+    assert body["launch_refresh"]["signal_created"] is True
     assert body["launch_refresh"]["real_external_call_executed"] is False
+    assert _execute_latest_refresh_intent(package_id)["entered_count"] == 1
 
     with session_factory() as session:
         member_row = (
@@ -611,6 +704,7 @@ def test_publish_does_not_repeat_launch_refresh_for_active_package(next_client, 
     publish_resp = next_client.post(f"/api/ai/audience/packages/{package_id}/publish", headers=_auth(), json={})
     assert publish_resp.status_code == 200
     assert publish_resp.json()["launch_refresh"]["ok"] is True
+    assert _execute_latest_refresh_intent(package_id)["ok"] is True
 
     version_resp = next_client.post(
         f"/api/ai/audience/packages/{package_id}/versions",
@@ -788,8 +882,15 @@ def test_ai_audience_test_agent_webhook_business_guards_and_plans_private_messag
     assert body["external_userid"] == "wm_test_agent"
     assert body["sender_userid"] == "HuangYouCan"
     assert body["simulated_message"] == TEST_AGENT_MESSAGE_TEXT
-    assert body["record_only"] is False
-    assert body["external_effect_job_id"]
+    assert body["record_only"] is True
+    assert body["external_effect_job_id"] is None
+    planned = AudienceInboundWebhookService().process_record(
+        int(body["inbound_result"]["recorded"]["id"]),
+        parent_execution_id=body["inbound_result"]["execution_id"],
+    )
+    assert planned["ok"] is True
+    assert planned["external_effect_job_id"]
+    external_effect_job_id = int(planned["external_effect_job_id"])
 
     jobs, total = ExternalEffectService().list_jobs(
         {
@@ -801,7 +902,7 @@ def test_ai_audience_test_agent_webhook_business_guards_and_plans_private_messag
     )
     assert total == 1
     assert len(jobs) == 1
-    assert jobs[0].id == body["external_effect_job_id"]
+    assert jobs[0].id == external_effect_job_id
     assert jobs[0].target_id == "wm_test_agent"
     assert jobs[0].payload_json["owner_userid"] == "HuangYouCan"
     assert jobs[0].payload_json["content_text"] == TEST_AGENT_MESSAGE_TEXT
@@ -811,7 +912,7 @@ def test_ai_audience_test_agent_webhook_business_guards_and_plans_private_messag
         json=payload,
     )
     assert duplicate_resp.status_code == 200
-    assert duplicate_resp.json()["external_effect_job_id"] == body["external_effect_job_id"]
+    assert duplicate_resp.json()["external_effect_job_id"] == external_effect_job_id
     duplicate_jobs, duplicate_total = ExternalEffectService().list_jobs(
         {
             "effect_type": WECOM_MESSAGE_PRIVATE_SEND,
@@ -821,7 +922,7 @@ def test_ai_audience_test_agent_webhook_business_guards_and_plans_private_messag
         limit=10,
     )
     assert duplicate_total == 1
-    assert duplicate_jobs[0].id == body["external_effect_job_id"]
+    assert duplicate_jobs[0].id == external_effect_job_id
 
 
 @pytest.mark.usefixtures("next_pg_schema")
@@ -1008,9 +1109,22 @@ def test_package_refresh_uses_internal_event_and_external_effect_queue(next_clie
     assert refresh_resp.status_code == 200
     body = refresh_resp.json()
     assert body["ok"] is True
+    assert body["accepted"] is True
+    body = _execute_latest_refresh_intent(package_id)
     assert body["entered_count"] == 2
     assert body["member_event_count"] == 2
-    run_event_id = body["run_event"]["event"]["event_id"]
+    completion_outbox = body["completion"]["completion_event"]
+    from aicrm_next.platform.platform_foundation.internal_events.outbox import InternalEventOutboxRelay
+
+    relay = InternalEventOutboxRelay(
+        consumer_registry=next_client.app.state.internal_event_consumer_registry,
+    )
+    relayed = relay.relay_due(limit=100)
+    run_event_id = next(
+        item["event_id"]
+        for item in relayed["items"]
+        if item.get("outbox_id") == completion_outbox["outbox_id"]
+    )
 
     with session_factory() as session:
         member_events = (
@@ -1064,6 +1178,8 @@ def test_package_refresh_uses_internal_event_and_external_effect_queue(next_clie
     assert len(jobs) == 1
     assert jobs[0]["effect_type"] == WEBHOOK_GENERIC_PUSH
     assert jobs[0]["business_type"] == "ai_audience_package_run"
+    assert jobs[0]["parent_execution_id"] == completion_outbox["execution_id"]
+    assert jobs[0]["lane"] == "outbound_webhook"
     assert jobs[0]["payload_json"]["body"] == ["wm_ai_audience_001", "wm_ai_audience_002"]
     assert jobs[0]["payload_json"]["headers"]["X-AICRM-Package-Key"] == "q101_submitted_added_wecom"
     assert jobs[0]["payload_json"]["headers"]["X-AICRM-Event-Type"] == "audience.incremental.entered"
@@ -1071,6 +1187,7 @@ def test_package_refresh_uses_internal_event_and_external_effect_queue(next_clie
     assert jobs[0]["payload_json"]["headers"]["X-AICRM-Idempotency-Key"]
     assert "X-AICRM-Signature" not in jobs[0]["payload_json"]["headers"]
     assert "package_key" not in jobs[0]["payload_json"]["body"]
+    assert ExternalEffectService().list_attempts(int(jobs[0]["id"])) == []
 
 
 @pytest.mark.usefixtures("next_pg_schema")
@@ -1122,6 +1239,8 @@ def test_refresh_run_compensates_questionnaire_member_after_late_wecom_identity(
         headers=_auth(),
         json={"run_type": "incremental", "params": {"questionnaire_id": 991}},
     ).json()
+    assert first_refresh["accepted"] is True
+    first_refresh = _execute_latest_refresh_intent(package_id)
     assert first_refresh["entered_count"] == 1
     first_run_id = int(first_refresh["run"]["id"])
     repo = build_audience_repository()
@@ -1159,6 +1278,8 @@ def test_refresh_run_compensates_questionnaire_member_after_late_wecom_identity(
         headers=_auth(),
         json={"run_type": "incremental", "params": {"questionnaire_id": 991}},
     ).json()
+    assert second_refresh["accepted"] is True
+    second_refresh = _execute_latest_refresh_intent(package_id)
     assert second_refresh["entered_count"] == 0
     second_run_id = int(second_refresh["run"]["id"])
 
@@ -1208,76 +1329,6 @@ def test_source_dirty_emits_existing_internal_event_queue(next_client, monkeypat
     )
     assert response.status_code == 200
     assert response.json()["event"]["event_type"] == "ai_audience.source.changed"
-
-
-@pytest.mark.usefixtures("next_pg_schema")
-def test_questionnaire_continuation_rewind_waits_for_active_package_lease(next_client) -> None:
-    create_resp = next_client.post(
-        "/api/ai/audience/packages",
-        headers=_auth(),
-        json={
-            "package_key": "continuation_lease_pkg",
-            "name": "问卷续接租约测试",
-            "incremental_sql_text": _valid_incremental_sql(),
-        },
-    )
-    assert create_resp.status_code == 200
-    package_id = int(create_resp.json()["package"]["id"])
-    assert next_client.post(f"/api/ai/audience/packages/{package_id}/publish", headers=_auth(), json={}).status_code == 200
-
-    session_factory = get_session_factory()
-    with session_factory() as session:
-        session.execute(
-            text(
-                """
-                UPDATE ai_audience_package
-                SET lease_token = 'active-questionnaire-refresh',
-                    lease_expires_at = CURRENT_TIMESTAMP + interval '10 minutes',
-                    next_incremental_refresh_at = CURRENT_TIMESTAMP + interval '1 hour',
-                    last_incremental_watermark_at = CURRENT_TIMESTAMP
-                WHERE id = :package_id
-                """
-            ),
-            {"package_id": package_id},
-        )
-        session.commit()
-
-    repo = build_audience_repository()
-    assert repo.poke_dependencies(
-        source_type="questionnaire_submission",
-        source_key="questionnaire:991",
-    ) == 1
-    rewind_at = datetime(2026, 7, 20, 8, 0, tzinfo=timezone.utc)
-    assert repo.poke_dependencies_since(
-        source_type="questionnaire_submission",
-        source_key="questionnaire:991",
-        since_at=rewind_at,
-    ) == 0
-
-    with session_factory() as session:
-        session.execute(
-            text(
-                """
-                UPDATE ai_audience_package
-                SET lease_token = '', lease_expires_at = NULL
-                WHERE id = :package_id
-                """
-            ),
-            {"package_id": package_id},
-        )
-        session.commit()
-
-    assert repo.poke_dependencies_since(
-        source_type="questionnaire_submission",
-        source_key="questionnaire:991",
-        since_at=rewind_at,
-    ) == 1
-    with session_factory() as session:
-        watermark = session.execute(
-            text("SELECT last_incremental_watermark_at FROM ai_audience_package WHERE id = :package_id"),
-            {"package_id": package_id},
-        ).scalar_one()
-    assert watermark == rewind_at
 
 
 @pytest.mark.usefixtures("next_pg_schema")

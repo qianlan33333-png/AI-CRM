@@ -1,1934 +1,2554 @@
 {
-  "fallback_seconds_per_item": 3.090868,
+  "fallback_seconds_per_item": 2.539319,
   "files": {
     "tests/test_active_automation_run_due_guardrails.py": {
-      "duration_seconds": 16.444,
+      "duration_seconds": 18.777,
       "items": 6
     },
     "tests/test_active_automation_scheduled_safe_mode.py": {
-      "duration_seconds": 38.166,
+      "duration_seconds": 23.194,
       "items": 8
     },
     "tests/test_active_deploy_services_next_native.py": {
-      "duration_seconds": 5.435,
+      "duration_seconds": 6.095,
       "items": 3
     },
     "tests/test_admin_action_token_binding.py": {
-      "duration_seconds": 64.131,
-      "items": 12
+      "duration_seconds": 65.646,
+      "items": 13
     },
     "tests/test_admin_alipay_exact_routes.py": {
-      "duration_seconds": 12.602,
+      "duration_seconds": 16.44,
       "items": 3
     },
     "tests/test_admin_auth_frontend_contract.py": {
-      "duration_seconds": 8.814,
+      "duration_seconds": 6.151,
       "items": 2
     },
     "tests/test_admin_auth_login_inventory.py": {
-      "duration_seconds": 0.573,
+      "duration_seconds": 0.776,
       "items": 1
     },
     "tests/test_admin_auth_login_pages.py": {
-      "duration_seconds": 14.492,
+      "duration_seconds": 14.197,
       "items": 3
     },
     "tests/test_admin_auth_login_submit.py": {
-      "duration_seconds": 18.902,
-      "items": 4
+      "duration_seconds": 4.978,
+      "items": 1
     },
     "tests/test_admin_auth_logout.py": {
-      "duration_seconds": 9.726,
+      "duration_seconds": 10.927,
       "items": 2
     },
     "tests/test_admin_auth_no_real_external_calls.py": {
-      "duration_seconds": 7.583,
+      "duration_seconds": 8.399,
       "items": 2
     },
     "tests/test_admin_config_next.py": {
-      "duration_seconds": 93.859,
+      "duration_seconds": 88.784,
       "items": 19
     },
     "tests/test_admin_config_secret_references.py": {
-      "duration_seconds": 6.232,
+      "duration_seconds": 5.927,
       "items": 9
     },
     "tests/test_admin_console_button_styles.py": {
-      "duration_seconds": 0.746,
+      "duration_seconds": 0.655,
       "items": 1
     },
     "tests/test_admin_customer_profile_console.py": {
-      "duration_seconds": 4.598,
+      "duration_seconds": 4.961,
       "items": 1
     },
     "tests/test_admin_customers_live_source_fallback.py": {
-      "duration_seconds": 0.907,
+      "duration_seconds": 1.717,
+      "items": 2
+    },
+    "tests/test_admin_heading_deduplication.py": {
+      "duration_seconds": 1.704,
       "items": 2
     },
     "tests/test_admin_hxc_dashboard_request_helpers.py": {
-      "duration_seconds": 1.23,
+      "duration_seconds": 1.634,
       "items": 2
     },
+    "tests/test_admin_jobs_archive_sync_gateway.py": {
+      "duration_seconds": 2.28,
+      "items": 3
+    },
     "tests/test_admin_mcp_console.py": {
-      "duration_seconds": 5.014,
+      "duration_seconds": 3.432,
       "items": 1
     },
     "tests/test_admin_p0_commerce_api.py": {
-      "duration_seconds": 30.564,
+      "duration_seconds": 33.82,
       "items": 9
     },
     "tests/test_admin_pages_real_data_binding.py": {
-      "duration_seconds": 140.174,
+      "duration_seconds": 146.268,
       "items": 24
     },
+    "tests/test_admin_queue_command_api.py": {
+      "duration_seconds": 112.897,
+      "items": 15
+    },
+    "tests/test_admin_queue_command_boundary.py": {
+      "duration_seconds": 1.866,
+      "items": 2
+    },
     "tests/test_admin_read_model_boundary.py": {
-      "duration_seconds": 9.665,
-      "items": 3
+      "duration_seconds": 12.386,
+      "items": 4
     },
     "tests/test_admin_read_pages_smoke.py": {
-      "duration_seconds": 27.66,
-      "items": 5
+      "duration_seconds": 9.842,
+      "items": 12
     },
     "tests/test_admin_routes_require_auth.py": {
-      "duration_seconds": 40.831,
+      "duration_seconds": 51.487,
       "items": 10
     },
     "tests/test_admin_session_revocation.py": {
-      "duration_seconds": 3.869,
-      "items": 7
+      "duration_seconds": 1.238,
+      "items": 2
     },
     "tests/test_admin_shell_native.py": {
-      "duration_seconds": 96.106,
+      "duration_seconds": 45.172,
       "items": 10
     },
     "tests/test_admin_ui_data_parity_checker.py": {
-      "duration_seconds": 5.978,
+      "duration_seconds": 1.67,
       "items": 2
     },
     "tests/test_admin_wechat_pay_exact_routes.py": {
-      "duration_seconds": 14.763,
+      "duration_seconds": 15.67,
       "items": 4
     },
     "tests/test_admin_wecom_directory_members_migration.py": {
-      "duration_seconds": 0.911,
+      "duration_seconds": 1.17,
       "items": 2
     },
     "tests/test_admin_wecom_tags_management.py": {
-      "duration_seconds": 5.401,
+      "duration_seconds": 6.364,
       "items": 2
     },
     "tests/test_ai_assist_external_campaigns.py": {
-      "duration_seconds": 12.373,
+      "duration_seconds": 11.208,
       "items": 20
     },
     "tests/test_ai_assist_external_effect_queue.py": {
-      "duration_seconds": 23.494,
+      "duration_seconds": 32.884,
       "items": 11
     },
+    "tests/test_ai_assist_review_plans.py": {
+      "duration_seconds": 1.733,
+      "items": 2
+    },
     "tests/test_ai_audience_admin_pages.py": {
-      "duration_seconds": 103.998,
+      "duration_seconds": 120.282,
       "items": 13
     },
     "tests/test_ai_audience_agent_copywriting.py": {
-      "duration_seconds": 4.005,
+      "duration_seconds": 24.936,
+      "items": 5
+    },
+    "tests/test_ai_audience_e2e_composition.py": {
+      "duration_seconds": 12.375,
       "items": 5
     },
     "tests/test_ai_audience_external_api.py": {
-      "duration_seconds": 68.659,
+      "duration_seconds": 79.309,
       "items": 15
     },
     "tests/test_ai_audience_huangxiaocan_member_usage_view.py": {
-      "duration_seconds": 2.037,
+      "duration_seconds": 1.991,
       "items": 3
     },
     "tests/test_ai_audience_ops.py": {
-      "duration_seconds": 83.393,
-      "items": 21
+      "duration_seconds": 79.249,
+      "items": 22
     },
     "tests/test_ai_audience_package_spec.py": {
-      "duration_seconds": 4.386,
+      "duration_seconds": 6.481,
       "items": 8
     },
     "tests/test_ai_audience_real_e2e_runner.py": {
-      "duration_seconds": 35.985,
+      "duration_seconds": 11.334,
       "items": 8
     },
+    "tests/test_ai_audience_refresh_intents_postgres.py": {
+      "duration_seconds": 30.354,
+      "items": 14
+    },
     "tests/test_ai_audience_runtime_hotfixes.py": {
-      "duration_seconds": 14.554,
+      "duration_seconds": 3.705,
       "items": 6
     },
     "tests/test_alembic_revision_chain.py": {
-      "duration_seconds": 9.77,
-      "items": 17
+      "duration_seconds": 20.92,
+      "items": 18
     },
     "tests/test_alipay_pay_h5.py": {
-      "duration_seconds": 18.862,
+      "duration_seconds": 17.952,
       "items": 4
     },
     "tests/test_api.py": {
-      "duration_seconds": 15.821,
+      "duration_seconds": 12.21,
       "items": 2
     },
     "tests/test_app_setting_secret_migration.py": {
-      "duration_seconds": 5.013,
-      "items": 10
+      "duration_seconds": 5.095,
+      "items": 13
     },
     "tests/test_architecture_boundaries.py": {
-      "duration_seconds": 4.926,
+      "duration_seconds": 5.488,
       "items": 7
     },
     "tests/test_architecture_size_budgets.py": {
-      "duration_seconds": 0.955,
-      "items": 2
+      "duration_seconds": 2.78,
+      "items": 3
+    },
+    "tests/test_archive_sdk_isolation.py": {
+      "duration_seconds": 2.113,
+      "items": 3
     },
     "tests/test_archive_sync_next.py": {
-      "duration_seconds": 14.962,
+      "duration_seconds": 20.487,
+      "items": 9
+    },
+    "tests/test_arm_wecom_callback_canary.py": {
+      "duration_seconds": 18.206,
+      "items": 11
+    },
+    "tests/test_attest_queue_runtime_validation.py": {
+      "duration_seconds": 3.249,
       "items": 4
     },
+    "tests/test_auth_client_bootstrap_readiness.py": {
+      "duration_seconds": 5.225,
+      "items": 1
+    },
+    "tests/test_auth_client_ops.py": {
+      "duration_seconds": 2.091,
+      "items": 2
+    },
+    "tests/test_auth_platform_client_authentication.py": {
+      "duration_seconds": 1.667,
+      "items": 2
+    },
+    "tests/test_auth_platform_context.py": {
+      "duration_seconds": 2.555,
+      "items": 3
+    },
+    "tests/test_auth_platform_credentials.py": {
+      "duration_seconds": 1.733,
+      "items": 2
+    },
+    "tests/test_auth_platform_fastapi_protocol.py": {
+      "duration_seconds": 14.984,
+      "items": 3
+    },
+    "tests/test_auth_platform_migration.py": {
+      "duration_seconds": 1.092,
+      "items": 2
+    },
+    "tests/test_auth_platform_postgres_repository.py": {
+      "duration_seconds": 1.744,
+      "items": 2
+    },
+    "tests/test_auth_platform_postgres_sessions.py": {
+      "duration_seconds": 0.807,
+      "items": 1
+    },
+    "tests/test_auth_platform_service.py": {
+      "duration_seconds": 4.045,
+      "items": 4
+    },
+    "tests/test_auth_platform_sessions.py": {
+      "duration_seconds": 1.44,
+      "items": 2
+    },
+    "tests/test_auth_platform_webhook_hmac.py": {
+      "duration_seconds": 1.127,
+      "items": 2
+    },
+    "tests/test_auth_platform_webhook_routes.py": {
+      "duration_seconds": 11.367,
+      "items": 2
+    },
     "tests/test_auth_wecom_deprecated_routes.py": {
-      "duration_seconds": 14.63,
+      "duration_seconds": 14.528,
       "items": 3
     },
     "tests/test_auth_wecom_exact_routes.py": {
-      "duration_seconds": 15.405,
+      "duration_seconds": 16.108,
       "items": 3
     },
     "tests/test_auth_wecom_no_real_external_calls.py": {
-      "duration_seconds": 5.332,
+      "duration_seconds": 5.273,
       "items": 2
     },
     "tests/test_auth_wecom_real_flow.py": {
-      "duration_seconds": 14.046,
+      "duration_seconds": 9.619,
       "items": 2
     },
     "tests/test_auth_wecom_route_inventory.py": {
-      "duration_seconds": 0.99,
+      "duration_seconds": 1.596,
+      "items": 2
+    },
+    "tests/test_authorize_wecom_canary_execution.py": {
+      "duration_seconds": 1.822,
       "items": 2
     },
     "tests/test_automation_admin_pages_next_native.py": {
-      "duration_seconds": 45.571,
+      "duration_seconds": 42.892,
       "items": 7
     },
+    "tests/test_automation_agent_internal_webhook_adapter.py": {
+      "duration_seconds": 2.397,
+      "items": 3
+    },
     "tests/test_automation_agent_output_guard.py": {
-      "duration_seconds": 1.397,
+      "duration_seconds": 1.866,
       "items": 2
     },
     "tests/test_automation_agents_admin_api.py": {
-      "duration_seconds": 31.2,
+      "duration_seconds": 28.268,
       "items": 5
     },
     "tests/test_automation_agents_admin_pages.py": {
-      "duration_seconds": 61.203,
+      "duration_seconds": 56.644,
       "items": 8
     },
     "tests/test_automation_agents_webhook_execution.py": {
-      "duration_seconds": 44.856,
+      "duration_seconds": 38.506,
       "items": 11
     },
     "tests/test_automation_engine_application_contract.py": {
-      "duration_seconds": 4.048,
+      "duration_seconds": 22.464,
       "items": 7
     },
     "tests/test_automation_facade_guards.py": {
-      "duration_seconds": 4.219,
+      "duration_seconds": 1.231,
       "items": 2
     },
     "tests/test_automation_gateway_retirement.py": {
-      "duration_seconds": 1.106,
+      "duration_seconds": 1.304,
       "items": 2
     },
     "tests/test_automation_legacy_test_stub_cleanup.py": {
-      "duration_seconds": 1.824,
+      "duration_seconds": 2.242,
       "items": 3
     },
     "tests/test_automation_ops_scheduler.py": {
-      "duration_seconds": 1.925,
+      "duration_seconds": 12.372,
       "items": 3
     },
     "tests/test_background_job_contract.py": {
-      "duration_seconds": 7.713,
+      "duration_seconds": 11.389,
       "items": 11
     },
     "tests/test_background_jobs_next_native.py": {
-      "duration_seconds": 3.399,
+      "duration_seconds": 3.893,
       "items": 6
     },
+    "tests/test_broadcast_delivery_state_machine_migration.py": {
+      "duration_seconds": 4.908,
+      "items": 2
+    },
+    "tests/test_broadcast_external_effect_delegation.py": {
+      "duration_seconds": 3.648,
+      "items": 3
+    },
     "tests/test_broadcast_jobs_platform_contract.py": {
-      "duration_seconds": 7.034,
+      "duration_seconds": 8.85,
       "items": 3
     },
     "tests/test_broadcast_jobs_service.py": {
-      "duration_seconds": 2.513,
-      "items": 5
+      "duration_seconds": 5.292,
+      "items": 6
     },
     "tests/test_broadcast_jobs_wecom_private_dispatch.py": {
-      "duration_seconds": 11.834,
-      "items": 18
+      "duration_seconds": 11.329,
+      "items": 21
+    },
+    "tests/test_broadcast_queue_worker_postgres_faults.py": {
+      "duration_seconds": 4.491,
+      "items": 6
+    },
+    "tests/test_broadcast_queue_worker_postgres_state_machine.py": {
+      "duration_seconds": 4.065,
+      "items": 6
     },
     "tests/test_business_closure_acceptance_diagnostics.py": {
-      "duration_seconds": 82.77,
+      "duration_seconds": 25.845,
       "items": 24
     },
     "tests/test_campaign_automation_table_boundary.py": {
-      "duration_seconds": 19.31,
+      "duration_seconds": 5.274,
       "items": 4
     },
     "tests/test_campaign_hard_delete.py": {
-      "duration_seconds": 8.981,
+      "duration_seconds": 4.941,
       "items": 1
     },
     "tests/test_campaign_payload_helpers.py": {
-      "duration_seconds": 1.185,
+      "duration_seconds": 1.571,
       "items": 2
     },
     "tests/test_campaign_reply_owner_scope.py": {
-      "duration_seconds": 4.868,
+      "duration_seconds": 5.614,
       "items": 1
     },
     "tests/test_campaign_send_content_frontend_contract.py": {
-      "duration_seconds": 2.134,
+      "duration_seconds": 3.134,
       "items": 4
     },
     "tests/test_campaigns_due_calc.py": {
-      "duration_seconds": 0.62,
+      "duration_seconds": 0.97,
       "items": 1
     },
     "tests/test_channel_entry_identity_best_effort_contract.py": {
-      "duration_seconds": 3.096,
+      "duration_seconds": 4.369,
       "items": 4
     },
     "tests/test_channel_entry_next_retirement_contract.py": {
-      "duration_seconds": 11.291,
+      "duration_seconds": 5.169,
       "items": 2
     },
     "tests/test_channel_identity_bridge_native_service.py": {
-      "duration_seconds": 5.412,
-      "items": 12
+      "duration_seconds": 8.58,
+      "items": 13
     },
     "tests/test_channel_multi_staff_backend.py": {
-      "duration_seconds": 48.727,
+      "duration_seconds": 53.972,
       "items": 11
     },
     "tests/test_channel_multi_staff_frontend_contract.py": {
-      "duration_seconds": 22.602,
+      "duration_seconds": 8.713,
       "items": 11
     },
     "tests/test_channel_radar_tag_admin_pages_next_native.py": {
-      "duration_seconds": 41.411,
-      "items": 7
+      "duration_seconds": 49.206,
+      "items": 10
     },
     "tests/test_channel_runtime_diagnosis.py": {
-      "duration_seconds": 9.904,
+      "duration_seconds": 3.503,
       "items": 1
     },
+    "tests/test_channel_welcome_media_dependencies_postgres.py": {
+      "duration_seconds": 4.573,
+      "items": 5
+    },
     "tests/test_channels_api_production_guard.py": {
-      "duration_seconds": 2.235,
+      "duration_seconds": 2.016,
       "items": 3
     },
     "tests/test_checkout_api_contract.py": {
-      "duration_seconds": 13.211,
-      "items": 3
+      "duration_seconds": 27.235,
+      "items": 5
     },
     "tests/test_checkout_no_real_payment.py": {
-      "duration_seconds": 5.279,
+      "duration_seconds": 5.562,
       "items": 2
     },
     "tests/test_checkout_orders_frontend_contract.py": {
-      "duration_seconds": 5.689,
+      "duration_seconds": 6.39,
       "items": 2
     },
     "tests/test_checkout_orders_inventory.py": {
-      "duration_seconds": 4.048,
+      "duration_seconds": 1.623,
       "items": 2
     },
     "tests/test_checkout_orders_unknown_paths.py": {
-      "duration_seconds": 19.199,
+      "duration_seconds": 14.432,
       "items": 3
     },
     "tests/test_ci_workflow_contract.py": {
-      "duration_seconds": 16.944,
-      "items": 6
+      "duration_seconds": 12.215,
+      "items": 11
     },
     "tests/test_class_user_management_export.py": {
-      "duration_seconds": 9.229,
+      "duration_seconds": 10.914,
       "items": 2
     },
     "tests/test_cloud_orchestrator_admin_pages_native.py": {
-      "duration_seconds": 31.86,
+      "duration_seconds": 31.755,
       "items": 3
     },
     "tests/test_cloud_orchestrator_campaign_conflict_guard_removed.py": {
-      "duration_seconds": 0.513,
+      "duration_seconds": 0.687,
       "items": 1
     },
     "tests/test_cloud_orchestrator_campaign_write_commands.py": {
-      "duration_seconds": 23.723,
+      "duration_seconds": 22.514,
       "items": 4
     },
     "tests/test_cloud_orchestrator_campaign_write_frontend_contract.py": {
-      "duration_seconds": 1.253,
+      "duration_seconds": 1.375,
       "items": 2
     },
     "tests/test_cloud_orchestrator_campaign_write_idempotency.py": {
-      "duration_seconds": 4.847,
-      "items": 1
-    },
-    "tests/test_cloud_orchestrator_campaign_write_inventory.py": {
-      "duration_seconds": 8.805,
-      "items": 2
-    },
-    "tests/test_cloud_orchestrator_campaign_write_no_real_side_effects.py": {
-      "duration_seconds": 5.174,
-      "items": 2
-    },
-    "tests/test_cloud_orchestrator_campaigns_frontend_contract.py": {
-      "duration_seconds": 1.911,
-      "items": 3
-    },
-    "tests/test_cloud_orchestrator_campaigns_inventory.py": {
-      "duration_seconds": 1.418,
-      "items": 2
-    },
-    "tests/test_cloud_orchestrator_campaigns_no_real_side_effects.py": {
-      "duration_seconds": 17.113,
-      "items": 3
-    },
-    "tests/test_cloud_orchestrator_campaigns_read_routes.py": {
-      "duration_seconds": 18.625,
-      "items": 4
-    },
-    "tests/test_cloud_orchestrator_external_agent.py": {
-      "duration_seconds": 7.285,
-      "items": 1
-    },
-    "tests/test_cloud_orchestrator_media.py": {
-      "duration_seconds": 4.594,
-      "items": 1
-    },
-    "tests/test_cloud_orchestrator_media_upload_adapter.py": {
-      "duration_seconds": 34.432,
-      "items": 8
-    },
-    "tests/test_cloud_orchestrator_media_upload_frontend_contract.py": {
-      "duration_seconds": 2.176,
-      "items": 3
-    },
-    "tests/test_cloud_orchestrator_media_upload_inventory.py": {
-      "duration_seconds": 1.838,
-      "items": 3
-    },
-    "tests/test_cloud_orchestrator_media_upload_no_real_external_calls.py": {
-      "duration_seconds": 2.476,
-      "items": 4
-    },
-    "tests/test_cloud_orchestrator_observability_api.py": {
-      "duration_seconds": 8.701,
-      "items": 2
-    },
-    "tests/test_cloud_orchestrator_plan_recipients.py": {
-      "duration_seconds": 4.685,
-      "items": 1
-    },
-    "tests/test_cloud_orchestrator_run_due_commands.py": {
-      "duration_seconds": 9.499,
-      "items": 2
-    },
-    "tests/test_cloud_orchestrator_run_due_idempotency.py": {
-      "duration_seconds": 6.613,
-      "items": 1
-    },
-    "tests/test_cloud_orchestrator_run_due_inventory.py": {
-      "duration_seconds": 1.418,
-      "items": 2
-    },
-    "tests/test_cloud_orchestrator_run_due_no_real_side_effects.py": {
-      "duration_seconds": 7.246,
-      "items": 2
-    },
-    "tests/test_cloud_orchestrator_run_due_preview.py": {
-      "duration_seconds": 20.788,
-      "items": 3
-    },
-    "tests/test_cloud_orchestrator_time_helpers.py": {
-      "duration_seconds": 3.792,
-      "items": 7
-    },
-    "tests/test_cloud_plan_review_frontend_contract.py": {
-      "duration_seconds": 12.043,
-      "items": 3
-    },
-    "tests/test_cloud_run_due_gating.py": {
-      "duration_seconds": 22.545,
-      "items": 4
-    },
-    "tests/test_commerce_admin_transaction_detail.py": {
-      "duration_seconds": 34.912,
-      "items": 10
-    },
-    "tests/test_customer_360_profile.py": {
-      "duration_seconds": 6.216,
-      "items": 3
-    },
-    "tests/test_customer_admin_list_pages_native.py": {
-      "duration_seconds": 25.893,
-      "items": 3
-    },
-    "tests/test_customer_automation_activation_webhook.py": {
-      "duration_seconds": 9.223,
-      "items": 2
-    },
-    "tests/test_customer_automation_webhook_idempotency.py": {
-      "duration_seconds": 4.27,
-      "items": 1
-    },
-    "tests/test_customer_automation_webhook_inventory.py": {
-      "duration_seconds": 0.632,
-      "items": 1
-    },
-    "tests/test_customer_automation_webhook_no_real_side_effects.py": {
-      "duration_seconds": 7.736,
-      "items": 3
-    },
-    "tests/test_customer_automation_webhook_retry.py": {
-      "duration_seconds": 9.256,
-      "items": 2
-    },
-    "tests/test_customer_automation_webhook_retry_due.py": {
-      "duration_seconds": 8.576,
-      "items": 2
-    },
-    "tests/test_customer_center_api.py": {
-      "duration_seconds": 9.2,
-      "items": 2
-    },
-    "tests/test_customer_context_read_model_unification.py": {
-      "duration_seconds": 15.703,
-      "items": 6
-    },
-    "tests/test_customer_detail_admin_page_native.py": {
-      "duration_seconds": 54.898,
-      "items": 10
-    },
-    "tests/test_customer_live_source_repository.py": {
-      "duration_seconds": 1.324,
-      "items": 2
-    },
-    "tests/test_customer_read_model_backfill.py": {
-      "duration_seconds": 2.099,
-      "items": 4
-    },
-    "tests/test_customer_read_model_backfill_cli_safety.py": {
-      "duration_seconds": 5.145,
-      "items": 4
-    },
-    "tests/test_customer_read_model_db_session_lifecycle.py": {
-      "duration_seconds": 24.272,
-      "items": 4
-    },
-    "tests/test_customer_read_model_list_pagination.py": {
-      "duration_seconds": 13.605,
-      "items": 2
-    },
-    "tests/test_customer_read_model_next_primary.py": {
-      "duration_seconds": 13.439,
-      "items": 19
-    },
-    "tests/test_customer_read_model_no_fixture_production.py": {
-      "duration_seconds": 1.029,
-      "items": 2
-    },
-    "tests/test_customer_read_model_reconciliation.py": {
-      "duration_seconds": 3.883,
-      "items": 1
-    },
-    "tests/test_customer_read_model_request_scope.py": {
-      "duration_seconds": 9.786,
-      "items": 3
-    },
-    "tests/test_customer_timeline_api.py": {
-      "duration_seconds": 4.665,
-      "items": 1
-    },
-    "tests/test_data_health_checks.py": {
-      "duration_seconds": 68.719,
-      "items": 8
-    },
-    "tests/test_data_quality_registry.py": {
-      "duration_seconds": 16.459,
-      "items": 8
-    },
-    "tests/test_data_quality_snapshot_job.py": {
-      "duration_seconds": 2.423,
-      "items": 4
-    },
-    "tests/test_data_table_lifecycle_guard.py": {
-      "duration_seconds": 48.005,
-      "items": 4
-    },
-    "tests/test_db_access_boundary.py": {
-      "duration_seconds": 95.347,
-      "items": 27
-    },
-    "tests/test_db_session_runtime_audit.py": {
-      "duration_seconds": 1.675,
-      "items": 2
-    },
-    "tests/test_delivery_lineage_api.py": {
-      "duration_seconds": 9.628,
-      "items": 3
-    },
-    "tests/test_dependency_security_contract.py": {
-      "duration_seconds": 1.421,
-      "items": 3
-    },
-    "tests/test_deploy_workflow_contract.py": {
-      "duration_seconds": 24.718,
-      "items": 40
-    },
-    "tests/test_event_effect_table_lineage.py": {
-      "duration_seconds": 14.706,
-      "items": 2
-    },
-    "tests/test_experiments_inventory_report.py": {
-      "duration_seconds": 23.75,
-      "items": 4
-    },
-    "tests/test_external_chat_records_api.py": {
-      "duration_seconds": 29.243,
-      "items": 5
-    },
-    "tests/test_external_effect_scheduler.py": {
-      "duration_seconds": 2.791,
-      "items": 4
-    },
-    "tests/test_external_effects_admin_redaction.py": {
-      "duration_seconds": 15.989,
-      "items": 3
-    },
-    "tests/test_external_effects_boundary.py": {
-      "duration_seconds": 13.876,
-      "items": 18
-    },
-    "tests/test_external_effects_mvp.py": {
-      "duration_seconds": 112.433,
-      "items": 43
-    },
-    "tests/test_external_effects_realtime.py": {
-      "duration_seconds": 22.383,
-      "items": 9
-    },
-    "tests/test_external_effects_wecom_welcome.py": {
-      "duration_seconds": 3.27,
-      "items": 4
-    },
-    "tests/test_external_orders_api.py": {
-      "duration_seconds": 48.977,
-      "items": 9
-    },
-    "tests/test_external_orders_blocker_diagnostics.py": {
-      "duration_seconds": 4.81,
-      "items": 7
-    },
-    "tests/test_external_orders_consumer_run_due_diagnostics.py": {
-      "duration_seconds": 5.3,
-      "items": 9
-    },
-    "tests/test_external_orders_customer_projection.py": {
-      "duration_seconds": 9.818,
-      "items": 3
-    },
-    "tests/test_external_push_next_native_service.py": {
-      "duration_seconds": 17.731,
-      "items": 9
-    },
-    "tests/test_external_push_ssrf_transport.py": {
-      "duration_seconds": 87.366,
-      "items": 18
-    },
-    "tests/test_external_push_worker_next_native.py": {
-      "duration_seconds": 18.118,
-      "items": 4
-    },
-    "tests/test_external_questionnaire_submissions_api.py": {
-      "duration_seconds": 29.209,
-      "items": 5
-    },
-    "tests/test_fixture_reset_registry.py": {
-      "duration_seconds": 10.338,
-      "items": 4
-    },
-    "tests/test_group_ops_admin_pages_next_native.py": {
-      "duration_seconds": 5.206,
-      "items": 2
-    },
-    "tests/test_group_ops_domain.py": {
-      "duration_seconds": 8.366,
-      "items": 16
-    },
-    "tests/test_group_ops_external_effect_queue.py": {
-      "duration_seconds": 73.888,
-      "items": 13
-    },
-    "tests/test_group_ops_frontend_contract.py": {
-      "duration_seconds": 65.426,
-      "items": 16
-    },
-    "tests/test_group_ops_material_resolver.py": {
-      "duration_seconds": 6.056,
-      "items": 13
-    },
-    "tests/test_group_ops_plans_api.py": {
-      "duration_seconds": 108.273,
-      "items": 19
-    },
-    "tests/test_group_ops_postgres_repository.py": {
-      "duration_seconds": 6.26,
-      "items": 3
-    },
-    "tests/test_group_ops_prod_schema_bootstrap.py": {
-      "duration_seconds": 2.967,
-      "items": 5
-    },
-    "tests/test_group_ops_queue_contract.py": {
-      "duration_seconds": 1.8,
-      "items": 3
-    },
-    "tests/test_group_ops_run_due_api.py": {
-      "duration_seconds": 16.198,
-      "items": 3
-    },
-    "tests/test_group_ops_scheduler.py": {
-      "duration_seconds": 9.937,
-      "items": 20
-    },
-    "tests/test_group_ops_sync_api.py": {
-      "duration_seconds": 29.124,
-      "items": 8
-    },
-    "tests/test_group_ops_token_broadcast_api.py": {
-      "duration_seconds": 44.666,
-      "items": 9
-    },
-    "tests/test_group_ops_webhook_api.py": {
-      "duration_seconds": 23.72,
-      "items": 5
-    },
-    "tests/test_group_ops_webhook_rules_api.py": {
-      "duration_seconds": 23.15,
-      "items": 12
-    },
-    "tests/test_group_ops_workspace_draft_migration.py": {
-      "duration_seconds": 3.98,
-      "items": 6
-    },
-    "tests/test_group_ops_workspace_governance_migration.py": {
-      "duration_seconds": 17.154,
-      "items": 5
-    },
-    "tests/test_growth_orchestration_programs.py": {
-      "duration_seconds": 6.996,
-      "items": 5
-    },
-    "tests/test_h5_payment_unknown_paths.py": {
-      "duration_seconds": 13.949,
-      "items": 3
-    },
-    "tests/test_h5_wechat_pay_mobile_projection.py": {
-      "duration_seconds": 3.42,
-      "items": 5
-    },
-    "tests/test_high_risk_contract_inventory.py": {
-      "duration_seconds": 24.854,
-      "items": 5
-    },
-    "tests/test_huangyoucan_unregistered_ai_audience.py": {
-      "duration_seconds": 6.015,
-      "items": 3
-    },
-    "tests/test_hxc_dashboard_api_contract.py": {
-      "duration_seconds": 15.547,
-      "items": 3
-    },
-    "tests/test_hxc_dashboard_broadcast_plan.py": {
-      "duration_seconds": 8.975,
-      "items": 2
-    },
-    "tests/test_hxc_dashboard_frontend_contract.py": {
-      "duration_seconds": 8.309,
-      "items": 2
-    },
-    "tests/test_hxc_dashboard_inventory.py": {
-      "duration_seconds": 0.656,
-      "items": 1
-    },
-    "tests/test_hxc_dashboard_no_real_side_effects.py": {
-      "duration_seconds": 5.047,
-      "items": 2
-    },
-    "tests/test_hxc_dashboard_pages.py": {
-      "duration_seconds": 9.658,
-      "items": 2
-    },
-    "tests/test_hxc_dashboard_send_config.py": {
-      "duration_seconds": 14.46,
-      "items": 3
-    },
-    "tests/test_identity_application_contract.py": {
-      "duration_seconds": 2.556,
-      "items": 5
-    },
-    "tests/test_identity_resolution_backfill_worker.py": {
-      "duration_seconds": 43.728,
-      "items": 6
-    },
-    "tests/test_image_library.py": {
-      "duration_seconds": 11.088,
-      "items": 3
-    },
-    "tests/test_image_library_hard_delete.py": {
-      "duration_seconds": 6.552,
-      "items": 1
-    },
-    "tests/test_image_library_mcp_tools.py": {
-      "duration_seconds": 16.167,
-      "items": 3
-    },
-    "tests/test_image_library_skill_docs.py": {
-      "duration_seconds": 2.674,
-      "items": 4
-    },
-    "tests/test_image_library_template.py": {
-      "duration_seconds": 31.783,
-      "items": 43
-    },
-    "tests/test_image_upload_client_static.py": {
-      "duration_seconds": 3.007,
-      "items": 6
-    },
-    "tests/test_internal_event_admin_api.py": {
-      "duration_seconds": 20.8,
-      "items": 2
-    },
-    "tests/test_internal_event_admin_page.py": {
-      "duration_seconds": 9.335,
-      "items": 2
-    },
-    "tests/test_internal_event_gray_runbook_contract.py": {
-      "duration_seconds": 1.517,
-      "items": 3
-    },
-    "tests/test_internal_event_legacy_path_markers.py": {
-      "duration_seconds": 18.168,
-      "items": 4
-    },
-    "tests/test_internal_events_ai_campaign_slice.py": {
-      "duration_seconds": 28.49,
-      "items": 6
-    },
-    "tests/test_internal_events_broadcast_task_slice.py": {
-      "duration_seconds": 53.033,
-      "items": 11
-    },
-    "tests/test_internal_events_customer_identity_slice.py": {
-      "duration_seconds": 37.264,
-      "items": 13
-    },
-    "tests/test_internal_events_customer_tags_slice.py": {
-      "duration_seconds": 28.033,
-      "items": 8
-    },
-    "tests/test_internal_events_mvp.py": {
-      "duration_seconds": 21.121,
-      "items": 6
-    },
-    "tests/test_internal_events_ops_plan_slice.py": {
-      "duration_seconds": 43.737,
-      "items": 9
-    },
-    "tests/test_internal_events_ops_shadow.py": {
-      "duration_seconds": 1.705,
-      "items": 3
-    },
-    "tests/test_internal_events_owner_migration_slice.py": {
-      "duration_seconds": 58.876,
-      "items": 12
-    },
-    "tests/test_internal_events_payment_slice.py": {
-      "duration_seconds": 3.09,
-      "items": 6
-    },
-    "tests/test_internal_events_questionnaire_slice.py": {
-      "duration_seconds": 24.077,
-      "items": 11
-    },
-    "tests/test_internal_events_shadow_emit.py": {
-      "duration_seconds": 6.2,
-      "items": 4
-    },
-    "tests/test_internal_events_single_consumer_run.py": {
-      "duration_seconds": 8.234,
-      "items": 7
-    },
-    "tests/test_internal_events_worker_allowlist.py": {
-      "duration_seconds": 4.658,
-      "items": 10
-    },
-    "tests/test_internal_events_worker_pair_allowlist.py": {
-      "duration_seconds": 20.444,
-      "items": 9
-    },
-    "tests/test_internal_service_token_purpose.py": {
-      "duration_seconds": 14.24,
-      "items": 5
-    },
-    "tests/test_legacy_automation_static_retirement.py": {
-      "duration_seconds": 18.478,
-      "items": 10
-    },
-    "tests/test_legacy_webhook_cleanup.py": {
-      "duration_seconds": 18.657,
-      "items": 11
-    },
-    "tests/test_marketing_automation.py": {
       "duration_seconds": 4.738,
       "items": 1
     },
-    "tests/test_marketing_router_dispatch_helpers.py": {
-      "duration_seconds": 0.729,
-      "items": 1
-    },
-    "tests/test_marketing_schema_init.py": {
-      "duration_seconds": 4.279,
-      "items": 1
-    },
-    "tests/test_material_library_table_boundary.py": {
-      "duration_seconds": 9.019,
-      "items": 3
-    },
-    "tests/test_mcp_business_tools.py": {
-      "duration_seconds": 18.729,
-      "items": 4
-    },
-    "tests/test_mcp_dispatch_sender_helpers.py": {
-      "duration_seconds": 1.507,
-      "items": 3
-    },
-    "tests/test_mcp_recent_chat_dump.py": {
-      "duration_seconds": 10.232,
-      "items": 3
-    },
-    "tests/test_media_library_admin_pages_native.py": {
-      "duration_seconds": 30.408,
+    "tests/test_cloud_orchestrator_campaign_write_inventory.py": {
+      "duration_seconds": 1.5,
       "items": 2
     },
-    "tests/test_media_library_next_contract.py": {
-      "duration_seconds": 29.666,
-      "items": 7
-    },
-    "tests/test_media_library_no_real_external_calls.py": {
-      "duration_seconds": 20.041,
-      "items": 4
-    },
-    "tests/test_media_library_variants.py": {
-      "duration_seconds": 18.239,
-      "items": 4
-    },
-    "tests/test_message_batch_legacy_physical_drop.py": {
-      "duration_seconds": 15.443,
+    "tests/test_cloud_orchestrator_campaign_write_no_real_side_effects.py": {
+      "duration_seconds": 6.668,
       "items": 2
     },
-    "tests/test_messages_exact_routes.py": {
-      "duration_seconds": 18.877,
-      "items": 4
-    },
-    "tests/test_messages_no_real_side_effects.py": {
-      "duration_seconds": 5.167,
-      "items": 2
-    },
-    "tests/test_messages_route_inventory.py": {
-      "duration_seconds": 1.506,
-      "items": 2
-    },
-    "tests/test_miniprogram_library.py": {
-      "duration_seconds": 14.761,
+    "tests/test_cloud_orchestrator_campaigns_frontend_contract.py": {
+      "duration_seconds": 1.536,
       "items": 3
     },
-    "tests/test_miniprogram_library_template.py": {
-      "duration_seconds": 22.087,
-      "items": 29
-    },
-    "tests/test_navigation_target_url_link_resolver.py": {
-      "duration_seconds": 5.694,
-      "items": 3
-    },
-    "tests/test_next_admin_jobs_native.py": {
-      "duration_seconds": 68.796,
-      "items": 18
-    },
-    "tests/test_next_api_docs_page.py": {
-      "duration_seconds": 13.934,
-      "items": 2
-    },
-    "tests/test_next_automation_task_send_content.py": {
-      "duration_seconds": 50.885,
-      "items": 11
-    },
-    "tests/test_next_channel_entry_callback_owner.py": {
-      "duration_seconds": 5.573,
-      "items": 2
-    },
-    "tests/test_next_channel_entry_orchestrator.py": {
-      "duration_seconds": 28.042,
-      "items": 5
-    },
-    "tests/test_next_channel_entry_real_adapter_contract.py": {
-      "duration_seconds": 0.621,
-      "items": 1
-    },
-    "tests/test_next_channel_identity_bridge.py": {
-      "duration_seconds": 16.435,
-      "items": 6
-    },
-    "tests/test_next_channel_no_live_historical_vote.py": {
-      "duration_seconds": 1.261,
-      "items": 2
-    },
-    "tests/test_next_channel_qrcode_asset_consistency.py": {
-      "duration_seconds": 26.593,
-      "items": 4
-    },
-    "tests/test_next_channel_qrcode_download_consistency.py": {
-      "duration_seconds": 14.024,
-      "items": 3
-    },
-    "tests/test_next_channel_qrcode_generate.py": {
-      "duration_seconds": 9.673,
-      "items": 3
-    },
-    "tests/test_next_channel_realistic_flows.py": {
-      "duration_seconds": 11.917,
-      "items": 18
-    },
-    "tests/test_next_channel_runtime.py": {
-      "duration_seconds": 17.298,
-      "items": 2
-    },
-    "tests/test_next_channel_runtime_diagnosis.py": {
-      "duration_seconds": 9.733,
-      "items": 3
-    },
-    "tests/test_next_channel_scene_alias.py": {
-      "duration_seconds": 2.24,
-      "items": 3
-    },
-    "tests/test_next_channel_scene_conflict_quarantine.py": {
-      "duration_seconds": 1.082,
-      "items": 2
-    },
-    "tests/test_next_channel_wecom_adapter.py": {
-      "duration_seconds": 2.622,
-      "items": 4
-    },
-    "tests/test_next_channel_welcome_attachments.py": {
-      "duration_seconds": 2.481,
-      "items": 4
-    },
-    "tests/test_next_channel_welcome_send_content_composer.py": {
-      "duration_seconds": 18.205,
-      "items": 7
-    },
-    "tests/test_next_h5_wechat_pay_external_push_outbox.py": {
-      "duration_seconds": 8.005,
-      "items": 3
-    },
-    "tests/test_next_hxc_broadcast_api.py": {
-      "duration_seconds": 33.946,
-      "items": 7
-    },
-    "tests/test_next_hxc_broadcast_frontend_contract.py": {
-      "duration_seconds": 1.308,
-      "items": 3
-    },
-    "tests/test_next_hxc_broadcast_repo.py": {
-      "duration_seconds": 1.796,
-      "items": 3
-    },
-    "tests/test_next_material_picker_api.py": {
-      "duration_seconds": 114.397,
-      "items": 24
-    },
-    "tests/test_next_miniprogram_thumb_binding.py": {
+    "tests/test_cloud_orchestrator_campaigns_inventory.py": {
       "duration_seconds": 1.419,
       "items": 2
     },
-    "tests/test_next_questionnaire_external_push_logs.py": {
-      "duration_seconds": 25.281,
+    "tests/test_cloud_orchestrator_campaigns_no_real_side_effects.py": {
+      "duration_seconds": 11.634,
+      "items": 3
+    },
+    "tests/test_cloud_orchestrator_campaigns_read_routes.py": {
+      "duration_seconds": 21.246,
       "items": 4
     },
+    "tests/test_cloud_orchestrator_external_agent.py": {
+      "duration_seconds": 0.776,
+      "items": 1
+    },
+    "tests/test_cloud_orchestrator_media.py": {
+      "duration_seconds": 5.587,
+      "items": 1
+    },
+    "tests/test_cloud_orchestrator_media_upload_adapter.py": {
+      "duration_seconds": 48.628,
+      "items": 8
+    },
+    "tests/test_cloud_orchestrator_media_upload_frontend_contract.py": {
+      "duration_seconds": 7.848,
+      "items": 3
+    },
+    "tests/test_cloud_orchestrator_media_upload_inventory.py": {
+      "duration_seconds": 1.986,
+      "items": 3
+    },
+    "tests/test_cloud_orchestrator_media_upload_no_real_external_calls.py": {
+      "duration_seconds": 3.713,
+      "items": 4
+    },
+    "tests/test_cloud_orchestrator_observability_api.py": {
+      "duration_seconds": 9.254,
+      "items": 2
+    },
+    "tests/test_cloud_orchestrator_plan_recipients.py": {
+      "duration_seconds": 6.569,
+      "items": 2
+    },
+    "tests/test_cloud_orchestrator_run_due_commands.py": {
+      "duration_seconds": 10.897,
+      "items": 2
+    },
+    "tests/test_cloud_orchestrator_run_due_idempotency.py": {
+      "duration_seconds": 4.714,
+      "items": 1
+    },
+    "tests/test_cloud_orchestrator_run_due_inventory.py": {
+      "duration_seconds": 1.431,
+      "items": 2
+    },
+    "tests/test_cloud_orchestrator_run_due_no_real_side_effects.py": {
+      "duration_seconds": 6.066,
+      "items": 2
+    },
+    "tests/test_cloud_orchestrator_run_due_preview.py": {
+      "duration_seconds": 16.597,
+      "items": 3
+    },
+    "tests/test_cloud_orchestrator_time_helpers.py": {
+      "duration_seconds": 3.391,
+      "items": 7
+    },
+    "tests/test_cloud_plan_review_frontend_contract.py": {
+      "duration_seconds": 9.503,
+      "items": 3
+    },
+    "tests/test_cloud_run_due_gating.py": {
+      "duration_seconds": 3.728,
+      "items": 4
+    },
+    "tests/test_commerce_admin_transaction_detail.py": {
+      "duration_seconds": 42.107,
+      "items": 10
+    },
+    "tests/test_commerce_coupon_application.py": {
+      "duration_seconds": 17.202,
+      "items": 18
+    },
+    "tests/test_commerce_coupon_concurrency_postgres.py": {
+      "duration_seconds": 6.49,
+      "items": 7
+    },
+    "tests/test_commerce_coupon_domain.py": {
+      "duration_seconds": 25.329,
+      "items": 20
+    },
+    "tests/test_commerce_coupon_migration.py": {
+      "duration_seconds": 4.43,
+      "items": 5
+    },
+    "tests/test_commerce_fulfillment_reconciliation.py": {
+      "duration_seconds": 4.359,
+      "items": 4
+    },
+    "tests/test_convention_test_scope.py": {
+      "duration_seconds": 32.753,
+      "items": 17
+    },
+    "tests/test_coupon_admin_frontend_contract.py": {
+      "duration_seconds": 28.326,
+      "items": 8
+    },
+    "tests/test_coupon_architecture_governance.py": {
+      "duration_seconds": 7.03,
+      "items": 3
+    },
+    "tests/test_coupon_direct_entry.py": {
+      "duration_seconds": 3.351,
+      "items": 4
+    },
+    "tests/test_coupon_v1_checkout_contract.py": {
+      "duration_seconds": 8.391,
+      "items": 7
+    },
+    "tests/test_critical_read_performance_contracts.py": {
+      "duration_seconds": 5.6,
+      "items": 8
+    },
+    "tests/test_critical_read_performance_runner.py": {
+      "duration_seconds": 2.963,
+      "items": 5
+    },
+    "tests/test_customer_360_profile.py": {
+      "duration_seconds": 6.298,
+      "items": 3
+    },
+    "tests/test_customer_admin_list_pages_native.py": {
+      "duration_seconds": 29.468,
+      "items": 3
+    },
+    "tests/test_customer_automation_activation_webhook.py": {
+      "duration_seconds": 10.153,
+      "items": 2
+    },
+    "tests/test_customer_automation_webhook_idempotency.py": {
+      "duration_seconds": 5.647,
+      "items": 1
+    },
+    "tests/test_customer_automation_webhook_inventory.py": {
+      "duration_seconds": 0.786,
+      "items": 1
+    },
+    "tests/test_customer_automation_webhook_no_real_side_effects.py": {
+      "duration_seconds": 7.793,
+      "items": 3
+    },
+    "tests/test_customer_automation_webhook_retry.py": {
+      "duration_seconds": 9.943,
+      "items": 2
+    },
+    "tests/test_customer_automation_webhook_retry_due.py": {
+      "duration_seconds": 10.388,
+      "items": 2
+    },
+    "tests/test_customer_center_api.py": {
+      "duration_seconds": 10.253,
+      "items": 2
+    },
+    "tests/test_customer_context_read_model_unification.py": {
+      "duration_seconds": 29.01,
+      "items": 6
+    },
+    "tests/test_customer_detail_admin_page_native.py": {
+      "duration_seconds": 51.154,
+      "items": 12
+    },
+    "tests/test_customer_live_source_repository.py": {
+      "duration_seconds": 3.336,
+      "items": 4
+    },
+    "tests/test_customer_read_model_backfill.py": {
+      "duration_seconds": 2.547,
+      "items": 4
+    },
+    "tests/test_customer_read_model_backfill_cli_safety.py": {
+      "duration_seconds": 6.273,
+      "items": 4
+    },
+    "tests/test_customer_read_model_db_session_lifecycle.py": {
+      "duration_seconds": 16.737,
+      "items": 4
+    },
+    "tests/test_customer_read_model_list_pagination.py": {
+      "duration_seconds": 1.578,
+      "items": 2
+    },
+    "tests/test_customer_read_model_next_primary.py": {
+      "duration_seconds": 27.538,
+      "items": 19
+    },
+    "tests/test_customer_read_model_no_fixture_production.py": {
+      "duration_seconds": 1.729,
+      "items": 2
+    },
+    "tests/test_customer_read_model_reconciliation.py": {
+      "duration_seconds": 0.583,
+      "items": 1
+    },
+    "tests/test_customer_read_model_refresh.py": {
+      "duration_seconds": 5.623,
+      "items": 9
+    },
+    "tests/test_customer_read_model_request_scope.py": {
+      "duration_seconds": 32.426,
+      "items": 8
+    },
+    "tests/test_customer_timeline_api.py": {
+      "duration_seconds": 4.381,
+      "items": 1
+    },
+    "tests/test_customer_timeline_projection.py": {
+      "duration_seconds": 16.46,
+      "items": 13
+    },
+    "tests/test_data_health_checks.py": {
+      "duration_seconds": 46.365,
+      "items": 25
+    },
+    "tests/test_data_quality_registry.py": {
+      "duration_seconds": 19.124,
+      "items": 8
+    },
+    "tests/test_data_quality_snapshot_job.py": {
+      "duration_seconds": 25.178,
+      "items": 4
+    },
+    "tests/test_data_table_lifecycle_guard.py": {
+      "duration_seconds": 7.597,
+      "items": 5
+    },
+    "tests/test_database_bootstrap.py": {
+      "duration_seconds": 71.998,
+      "items": 18
+    },
+    "tests/test_db_access_boundary.py": {
+      "duration_seconds": 33.277,
+      "items": 27
+    },
+    "tests/test_db_session_runtime_audit.py": {
+      "duration_seconds": 2.3,
+      "items": 2
+    },
+    "tests/test_delivery_lineage_api.py": {
+      "duration_seconds": 7.244,
+      "items": 3
+    },
+    "tests/test_dependency_security_contract.py": {
+      "duration_seconds": 7.758,
+      "items": 3
+    },
+    "tests/test_deploy_workflow_contract.py": {
+      "duration_seconds": 187.127,
+      "items": 88
+    },
+    "tests/test_event_effect_table_lineage.py": {
+      "duration_seconds": 2.771,
+      "items": 2
+    },
+    "tests/test_execution_runtime_api.py": {
+      "duration_seconds": 4.025,
+      "items": 5
+    },
+    "tests/test_execution_runtime_heartbeat.py": {
+      "duration_seconds": 1.671,
+      "items": 2
+    },
+    "tests/test_execution_runtime_listener.py": {
+      "duration_seconds": 5.895,
+      "items": 8
+    },
+    "tests/test_execution_runtime_postgres.py": {
+      "duration_seconds": 19.055,
+      "items": 22
+    },
+    "tests/test_execution_runtime_push_center_postgres.py": {
+      "duration_seconds": 0.644,
+      "items": 1
+    },
+    "tests/test_execution_runtime_service.py": {
+      "duration_seconds": 9.354,
+      "items": 3
+    },
+    "tests/test_execution_runtime_worker_loop.py": {
+      "duration_seconds": 5.791,
+      "items": 6
+    },
+    "tests/test_execution_timeline_graph_postgres.py": {
+      "duration_seconds": 1.964,
+      "items": 2
+    },
+    "tests/test_experiments_inventory_report.py": {
+      "duration_seconds": 3.078,
+      "items": 4
+    },
+    "tests/test_external_chat_records_api.py": {
+      "duration_seconds": 34.373,
+      "items": 6
+    },
+    "tests/test_external_effect_completion_event.py": {
+      "duration_seconds": 7.213,
+      "items": 8
+    },
+    "tests/test_external_effect_continuation_composition.py": {
+      "duration_seconds": 31.404,
+      "items": 5
+    },
+    "tests/test_external_effect_delivery_lease.py": {
+      "duration_seconds": 18.597,
+      "items": 20
+    },
+    "tests/test_external_effect_reconciliation.py": {
+      "duration_seconds": 4.192,
+      "items": 6
+    },
+    "tests/test_external_effect_scheduler.py": {
+      "duration_seconds": 7.629,
+      "items": 7
+    },
+    "tests/test_external_effect_transactional_create.py": {
+      "duration_seconds": 1.831,
+      "items": 2
+    },
+    "tests/test_external_effects_admin_redaction.py": {
+      "duration_seconds": 23.938,
+      "items": 3
+    },
+    "tests/test_external_effects_boundary.py": {
+      "duration_seconds": 26.655,
+      "items": 18
+    },
+    "tests/test_external_effects_mvp.py": {
+      "duration_seconds": 191.134,
+      "items": 47
+    },
+    "tests/test_external_effects_realtime.py": {
+      "duration_seconds": 3.429,
+      "items": 5
+    },
+    "tests/test_external_effects_wecom_welcome.py": {
+      "duration_seconds": 11.247,
+      "items": 7
+    },
+    "tests/test_external_orders_api.py": {
+      "duration_seconds": 47.799,
+      "items": 9
+    },
+    "tests/test_external_orders_blocker_diagnostics.py": {
+      "duration_seconds": 6.165,
+      "items": 7
+    },
+    "tests/test_external_orders_consumer_run_due_diagnostics.py": {
+      "duration_seconds": 6.493,
+      "items": 9
+    },
+    "tests/test_external_orders_customer_projection.py": {
+      "duration_seconds": 1.816,
+      "items": 3
+    },
+    "tests/test_external_push_effect_continuation.py": {
+      "duration_seconds": 5.157,
+      "items": 2
+    },
+    "tests/test_external_push_next_native_service.py": {
+      "duration_seconds": 5.689,
+      "items": 9
+    },
+    "tests/test_external_push_ssrf_transport.py": {
+      "duration_seconds": 15.897,
+      "items": 18
+    },
+    "tests/test_external_push_worker_next_native.py": {
+      "duration_seconds": 2.971,
+      "items": 4
+    },
+    "tests/test_external_questionnaire_submissions_api.py": {
+      "duration_seconds": 38.946,
+      "items": 5
+    },
+    "tests/test_external_radar_api.py": {
+      "duration_seconds": 56.392,
+      "items": 10
+    },
+    "tests/test_fde_bundle_quarter_member_sync_migration.py": {
+      "duration_seconds": 0.803,
+      "items": 1
+    },
+    "tests/test_fixture_reset_registry.py": {
+      "duration_seconds": 11.127,
+      "items": 4
+    },
+    "tests/test_github_action_pins.py": {
+      "duration_seconds": 2.093,
+      "items": 3
+    },
+    "tests/test_github_actions_expression_length.py": {
+      "duration_seconds": 5.869,
+      "items": 9
+    },
+    "tests/test_group_chat_picker_direct_select.py": {
+      "duration_seconds": 2.65,
+      "items": 4
+    },
+    "tests/test_group_invite_all_surfaces.py": {
+      "duration_seconds": 3.746,
+      "items": 4
+    },
+    "tests/test_group_invite_library.py": {
+      "duration_seconds": 14.029,
+      "items": 5
+    },
+    "tests/test_group_ops_admin_pages_next_native.py": {
+      "duration_seconds": 5.626,
+      "items": 2
+    },
+    "tests/test_group_ops_broadcast_reconciliation.py": {
+      "duration_seconds": 4.756,
+      "items": 3
+    },
+    "tests/test_group_ops_control_plane_retirement.py": {
+      "duration_seconds": 15.658,
+      "items": 5
+    },
+    "tests/test_group_ops_domain.py": {
+      "duration_seconds": 8.864,
+      "items": 16
+    },
+    "tests/test_group_ops_durable_effect_graph.py": {
+      "duration_seconds": 10.935,
+      "items": 7
+    },
+    "tests/test_group_ops_durable_effect_graph_postgres.py": {
+      "duration_seconds": 4.469,
+      "items": 5
+    },
+    "tests/test_group_ops_effect_ownership_checker.py": {
+      "duration_seconds": 0.479,
+      "items": 1
+    },
+    "tests/test_group_ops_external_effect_queue.py": {
+      "duration_seconds": 70.134,
+      "items": 13
+    },
+    "tests/test_group_ops_frontend_contract.py": {
+      "duration_seconds": 16.82,
+      "items": 16
+    },
+    "tests/test_group_ops_material_resolver.py": {
+      "duration_seconds": 10.069,
+      "items": 14
+    },
+    "tests/test_group_ops_plans_api.py": {
+      "duration_seconds": 98.188,
+      "items": 19
+    },
+    "tests/test_group_ops_postgres_repository.py": {
+      "duration_seconds": 7.327,
+      "items": 3
+    },
+    "tests/test_group_ops_prod_schema_bootstrap.py": {
+      "duration_seconds": 5.802,
+      "items": 6
+    },
+    "tests/test_group_ops_queue_contract.py": {
+      "duration_seconds": 2.172,
+      "items": 3
+    },
+    "tests/test_group_ops_run_due_api.py": {
+      "duration_seconds": 16.13,
+      "items": 3
+    },
+    "tests/test_group_ops_scheduler.py": {
+      "duration_seconds": 24.659,
+      "items": 20
+    },
+    "tests/test_group_ops_scheduler_postgres_concurrency.py": {
+      "duration_seconds": 0.902,
+      "items": 1
+    },
+    "tests/test_group_ops_single_path_planning.py": {
+      "duration_seconds": 5.949,
+      "items": 6
+    },
+    "tests/test_group_ops_sync_api.py": {
+      "duration_seconds": 38.596,
+      "items": 10
+    },
+    "tests/test_group_ops_token_broadcast_api.py": {
+      "duration_seconds": 56.714,
+      "items": 9
+    },
+    "tests/test_group_ops_webhook_api.py": {
+      "duration_seconds": 28.869,
+      "items": 5
+    },
+    "tests/test_group_ops_webhook_rules_api.py": {
+      "duration_seconds": 28.816,
+      "items": 9
+    },
+    "tests/test_group_ops_workspace_draft_migration.py": {
+      "duration_seconds": 4.245,
+      "items": 6
+    },
+    "tests/test_group_ops_workspace_governance_migration.py": {
+      "duration_seconds": 6.602,
+      "items": 5
+    },
+    "tests/test_growth_orchestration_programs.py": {
+      "duration_seconds": 8.06,
+      "items": 5
+    },
+    "tests/test_h5_payment_unknown_paths.py": {
+      "duration_seconds": 18.593,
+      "items": 3
+    },
+    "tests/test_h5_wechat_pay_mobile_projection.py": {
+      "duration_seconds": 6.896,
+      "items": 8
+    },
+    "tests/test_high_risk_contract_inventory.py": {
+      "duration_seconds": 6.035,
+      "items": 5
+    },
+    "tests/test_huangyoucan_unregistered_ai_audience.py": {
+      "duration_seconds": 7.23,
+      "items": 3
+    },
+    "tests/test_huangyoucan_usage_sync.py": {
+      "duration_seconds": 6.607,
+      "items": 9
+    },
+    "tests/test_hxc_dashboard_api_contract.py": {
+      "duration_seconds": 16.435,
+      "items": 3
+    },
+    "tests/test_hxc_dashboard_broadcast_plan.py": {
+      "duration_seconds": 7.371,
+      "items": 2
+    },
+    "tests/test_hxc_dashboard_frontend_contract.py": {
+      "duration_seconds": 1.413,
+      "items": 2
+    },
+    "tests/test_hxc_dashboard_inventory.py": {
+      "duration_seconds": 0.592,
+      "items": 1
+    },
+    "tests/test_hxc_dashboard_no_real_side_effects.py": {
+      "duration_seconds": 6.189,
+      "items": 2
+    },
+    "tests/test_hxc_dashboard_pages.py": {
+      "duration_seconds": 9.454,
+      "items": 2
+    },
+    "tests/test_hxc_dashboard_send_config.py": {
+      "duration_seconds": 16.073,
+      "items": 3
+    },
+    "tests/test_id_validation_admin_config_lock.py": {
+      "duration_seconds": 1.554,
+      "items": 3
+    },
+    "tests/test_id_validation_promotion_manifest.py": {
+      "duration_seconds": 3.812,
+      "items": 4
+    },
+    "tests/test_id_validation_provenance_recovery.py": {
+      "duration_seconds": 9.91,
+      "items": 11
+    },
+    "tests/test_id_validation_release_base_capture.py": {
+      "duration_seconds": 37.803,
+      "items": 16
+    },
+    "tests/test_id_validation_release_base_resolver.py": {
+      "duration_seconds": 15.861,
+      "items": 13
+    },
+    "tests/test_id_validation_release_readiness.py": {
+      "duration_seconds": 14.53,
+      "items": 11
+    },
+    "tests/test_identity_application_contract.py": {
+      "duration_seconds": 19.466,
+      "items": 6
+    },
+    "tests/test_identity_customer_event_driven_postgres.py": {
+      "duration_seconds": 5.563,
+      "items": 8
+    },
+    "tests/test_identity_cutover_reconciliation_contract.py": {
+      "duration_seconds": 0.77,
+      "items": 1
+    },
+    "tests/test_identity_resolution_backfill_worker.py": {
+      "duration_seconds": 11.634,
+      "items": 10
+    },
+    "tests/test_identity_resolution_worker_deadlock_recovery.py": {
+      "duration_seconds": 3.249,
+      "items": 4
+    },
+    "tests/test_identity_resolver_contract.py": {
+      "duration_seconds": 17.51,
+      "items": 10
+    },
+    "tests/test_identity_resolver_postgres.py": {
+      "duration_seconds": 6.528,
+      "items": 9
+    },
+    "tests/test_image_library.py": {
+      "duration_seconds": 11.461,
+      "items": 3
+    },
+    "tests/test_image_library_hard_delete.py": {
+      "duration_seconds": 5.647,
+      "items": 1
+    },
+    "tests/test_image_library_mcp_tools.py": {
+      "duration_seconds": 12.05,
+      "items": 3
+    },
+    "tests/test_image_library_skill_docs.py": {
+      "duration_seconds": 2.767,
+      "items": 4
+    },
+    "tests/test_image_library_template.py": {
+      "duration_seconds": 50.566,
+      "items": 43
+    },
+    "tests/test_image_upload_client_static.py": {
+      "duration_seconds": 5.764,
+      "items": 6
+    },
+    "tests/test_import_graph_guard.py": {
+      "duration_seconds": 42.66,
+      "items": 15
+    },
+    "tests/test_import_wecom_canary_media_asset.py": {
+      "duration_seconds": 4.394,
+      "items": 6
+    },
+    "tests/test_internal_event_admin_api.py": {
+      "duration_seconds": 12.294,
+      "items": 2
+    },
+    "tests/test_internal_event_admin_page.py": {
+      "duration_seconds": 15.165,
+      "items": 4
+    },
+    "tests/test_internal_event_gray_runbook_contract.py": {
+      "duration_seconds": 1.886,
+      "items": 3
+    },
+    "tests/test_internal_event_legacy_path_markers.py": {
+      "duration_seconds": 7.75,
+      "items": 4
+    },
+    "tests/test_internal_event_outbox.py": {
+      "duration_seconds": 22.75,
+      "items": 19
+    },
+    "tests/test_internal_event_registry_composition.py": {
+      "duration_seconds": 19.756,
+      "items": 5
+    },
+    "tests/test_internal_event_worker_exit.py": {
+      "duration_seconds": 3.906,
+      "items": 5
+    },
+    "tests/test_internal_events_ai_campaign_slice.py": {
+      "duration_seconds": 29.163,
+      "items": 6
+    },
+    "tests/test_internal_events_broadcast_task_slice.py": {
+      "duration_seconds": 57.396,
+      "items": 11
+    },
+    "tests/test_internal_events_customer_identity_slice.py": {
+      "duration_seconds": 44.234,
+      "items": 13
+    },
+    "tests/test_internal_events_customer_tags_slice.py": {
+      "duration_seconds": 11.84,
+      "items": 8
+    },
+    "tests/test_internal_events_mvp.py": {
+      "duration_seconds": 10.01,
+      "items": 6
+    },
+    "tests/test_internal_events_ops_plan_slice.py": {
+      "duration_seconds": 47.825,
+      "items": 9
+    },
+    "tests/test_internal_events_ops_shadow.py": {
+      "duration_seconds": 2.915,
+      "items": 3
+    },
+    "tests/test_internal_events_owner_migration_slice.py": {
+      "duration_seconds": 71.074,
+      "items": 12
+    },
+    "tests/test_internal_events_payment_slice.py": {
+      "duration_seconds": 5.327,
+      "items": 6
+    },
+    "tests/test_internal_events_questionnaire_slice.py": {
+      "duration_seconds": 28.584,
+      "items": 11
+    },
+    "tests/test_internal_events_refund_slice.py": {
+      "duration_seconds": 3.672,
+      "items": 4
+    },
+    "tests/test_internal_events_shadow_emit.py": {
+      "duration_seconds": 8.539,
+      "items": 4
+    },
+    "tests/test_internal_events_single_consumer_run.py": {
+      "duration_seconds": 11.891,
+      "items": 7
+    },
+    "tests/test_internal_events_worker_allowlist.py": {
+      "duration_seconds": 17.264,
+      "items": 11
+    },
+    "tests/test_internal_events_worker_pair_allowlist.py": {
+      "duration_seconds": 7.499,
+      "items": 9
+    },
+    "tests/test_internal_oauth_client_purpose.py": {
+      "duration_seconds": 4.507,
+      "items": 3
+    },
+    "tests/test_legacy_automation_static_retirement.py": {
+      "duration_seconds": 19.554,
+      "items": 10
+    },
+    "tests/test_live_runtime_readiness.py": {
+      "duration_seconds": 5.919,
+      "items": 7
+    },
+    "tests/test_marketing_automation.py": {
+      "duration_seconds": 5.385,
+      "items": 1
+    },
+    "tests/test_marketing_router_dispatch_helpers.py": {
+      "duration_seconds": 2.865,
+      "items": 1
+    },
+    "tests/test_marketing_schema_init.py": {
+      "duration_seconds": 0.504,
+      "items": 1
+    },
+    "tests/test_material_library_table_boundary.py": {
+      "duration_seconds": 14.117,
+      "items": 3
+    },
+    "tests/test_mcp_business_tools.py": {
+      "duration_seconds": 21.182,
+      "items": 4
+    },
+    "tests/test_mcp_dispatch_sender_helpers.py": {
+      "duration_seconds": 11.161,
+      "items": 3
+    },
+    "tests/test_mcp_recent_chat_dump.py": {
+      "duration_seconds": 11.649,
+      "items": 3
+    },
+    "tests/test_media_library_admin_pages_native.py": {
+      "duration_seconds": 31.61,
+      "items": 2
+    },
+    "tests/test_media_library_next_contract.py": {
+      "duration_seconds": 35.875,
+      "items": 7
+    },
+    "tests/test_media_library_no_real_external_calls.py": {
+      "duration_seconds": 12.767,
+      "items": 4
+    },
+    "tests/test_media_library_variants.py": {
+      "duration_seconds": 22.296,
+      "items": 4
+    },
+    "tests/test_message_batch_legacy_physical_drop.py": {
+      "duration_seconds": 1.916,
+      "items": 2
+    },
+    "tests/test_messages_exact_routes.py": {
+      "duration_seconds": 19.202,
+      "items": 4
+    },
+    "tests/test_messages_no_real_side_effects.py": {
+      "duration_seconds": 6.477,
+      "items": 2
+    },
+    "tests/test_messages_route_inventory.py": {
+      "duration_seconds": 1.649,
+      "items": 2
+    },
+    "tests/test_miniprogram_library.py": {
+      "duration_seconds": 16.921,
+      "items": 3
+    },
+    "tests/test_miniprogram_library_template.py": {
+      "duration_seconds": 28.725,
+      "items": 29
+    },
+    "tests/test_navigation_target_url_link_resolver.py": {
+      "duration_seconds": 7.01,
+      "items": 3
+    },
+    "tests/test_next_admin_jobs_native.py": {
+      "duration_seconds": 205.084,
+      "items": 20
+    },
+    "tests/test_next_api_docs_page.py": {
+      "duration_seconds": 5.764,
+      "items": 2
+    },
+    "tests/test_next_automation_task_send_content.py": {
+      "duration_seconds": 60.756,
+      "items": 11
+    },
+    "tests/test_next_channel_entry_callback_owner.py": {
+      "duration_seconds": 6.016,
+      "items": 2
+    },
+    "tests/test_next_channel_entry_orchestrator.py": {
+      "duration_seconds": 8.814,
+      "items": 6
+    },
+    "tests/test_next_channel_entry_real_adapter_contract.py": {
+      "duration_seconds": 3.909,
+      "items": 1
+    },
+    "tests/test_next_channel_identity_bridge.py": {
+      "duration_seconds": 13.783,
+      "items": 6
+    },
+    "tests/test_next_channel_no_live_historical_vote.py": {
+      "duration_seconds": 1.604,
+      "items": 2
+    },
+    "tests/test_next_channel_qrcode_asset_consistency.py": {
+      "duration_seconds": 22.184,
+      "items": 4
+    },
+    "tests/test_next_channel_qrcode_download_consistency.py": {
+      "duration_seconds": 15.824,
+      "items": 3
+    },
+    "tests/test_next_channel_qrcode_generate.py": {
+      "duration_seconds": 6.666,
+      "items": 3
+    },
+    "tests/test_next_channel_realistic_flows.py": {
+      "duration_seconds": 27.722,
+      "items": 18
+    },
+    "tests/test_next_channel_runtime.py": {
+      "duration_seconds": 11.021,
+      "items": 2
+    },
+    "tests/test_next_channel_runtime_diagnosis.py": {
+      "duration_seconds": 12.451,
+      "items": 3
+    },
+    "tests/test_next_channel_scene_alias.py": {
+      "duration_seconds": 2.613,
+      "items": 3
+    },
+    "tests/test_next_channel_scene_conflict_quarantine.py": {
+      "duration_seconds": 1.308,
+      "items": 2
+    },
+    "tests/test_next_channel_wecom_adapter.py": {
+      "duration_seconds": 7.519,
+      "items": 4
+    },
+    "tests/test_next_channel_welcome_attachments.py": {
+      "duration_seconds": 3.752,
+      "items": 4
+    },
+    "tests/test_next_channel_welcome_send_content_composer.py": {
+      "duration_seconds": 5.473,
+      "items": 7
+    },
+    "tests/test_next_h5_wechat_pay_external_push_outbox.py": {
+      "duration_seconds": 2.175,
+      "items": 3
+    },
+    "tests/test_next_hxc_broadcast_api.py": {
+      "duration_seconds": 33.018,
+      "items": 7
+    },
+    "tests/test_next_hxc_broadcast_frontend_contract.py": {
+      "duration_seconds": 1.631,
+      "items": 3
+    },
+    "tests/test_next_hxc_broadcast_repo.py": {
+      "duration_seconds": 7.372,
+      "items": 3
+    },
+    "tests/test_next_material_picker_api.py": {
+      "duration_seconds": 137.055,
+      "items": 25
+    },
+    "tests/test_next_miniprogram_thumb_binding.py": {
+      "duration_seconds": 1.545,
+      "items": 2
+    },
+    "tests/test_next_questionnaire_external_push_logs.py": {
+      "duration_seconds": 22.957,
+      "items": 6
+    },
     "tests/test_next_questionnaire_preflight.py": {
-      "duration_seconds": 9.691,
+      "duration_seconds": 5.7,
       "items": 2
     },
     "tests/test_next_questionnaire_share.py": {
-      "duration_seconds": 43.833,
+      "duration_seconds": 50.59,
       "items": 9
     },
     "tests/test_next_send_content_frontend_contract.py": {
-      "duration_seconds": 35.732,
+      "duration_seconds": 14.804,
       "items": 13
     },
     "tests/test_next_send_content_package_contract.py": {
-      "duration_seconds": 53.614,
-      "items": 10
+      "duration_seconds": 5.763,
+      "items": 11
     },
     "tests/test_next_sidebar_workbench_routes.py": {
-      "duration_seconds": 29.49,
+      "duration_seconds": 29.856,
       "items": 7
     },
     "tests/test_next_source_consolidation.py": {
-      "duration_seconds": 18.359,
+      "duration_seconds": 11.12,
       "items": 7
     },
     "tests/test_next_wechat_pay_refunds.py": {
-      "duration_seconds": 21.209,
+      "duration_seconds": 7.892,
       "items": 6
     },
     "tests/test_next_wecom_tags_management_contract.py": {
-      "duration_seconds": 5.102,
+      "duration_seconds": 5.715,
       "items": 2
     },
+    "tests/test_operation_cycles_api.py": {
+      "duration_seconds": 34.806,
+      "items": 6
+    },
+    "tests/test_operation_cycles_domain.py": {
+      "duration_seconds": 17.225,
+      "items": 23
+    },
+    "tests/test_operation_cycles_frontend_contract.py": {
+      "duration_seconds": 15.443,
+      "items": 7
+    },
+    "tests/test_operation_cycles_hxc_backfill.py": {
+      "duration_seconds": 7.476,
+      "items": 9
+    },
+    "tests/test_operation_cycles_markdown.py": {
+      "duration_seconds": 5.137,
+      "items": 9
+    },
+    "tests/test_operation_cycles_migration.py": {
+      "duration_seconds": 3.755,
+      "items": 4
+    },
+    "tests/test_operation_cycles_repository.py": {
+      "duration_seconds": 7.897,
+      "items": 11
+    },
     "tests/test_operation_member_picker_frontend.py": {
-      "duration_seconds": 3.091,
+      "duration_seconds": 5.23,
       "items": 6
     },
     "tests/test_ops_enrollment_db_session_lifecycle.py": {
-      "duration_seconds": 5.674,
+      "duration_seconds": 6.774,
       "items": 9
     },
     "tests/test_ops_plan_broadcast_blocker_diagnostics.py": {
-      "duration_seconds": 67.176,
+      "duration_seconds": 51.89,
       "items": 17
     },
     "tests/test_ops_plan_broadcast_planner_consumer.py": {
-      "duration_seconds": 33.57,
-      "items": 7
+      "duration_seconds": 38.507,
+      "items": 8
     },
     "tests/test_order_reconciliation_worker.py": {
-      "duration_seconds": 2.3,
-      "items": 4
+      "duration_seconds": 23.056,
+      "items": 13
     },
     "tests/test_orders_api_contract.py": {
-      "duration_seconds": 15.308,
+      "duration_seconds": 16.365,
       "items": 3
     },
     "tests/test_owner_migration.py": {
-      "duration_seconds": 21.428,
+      "duration_seconds": 23.636,
       "items": 7
     },
     "tests/test_owner_migration_execute.py": {
-      "duration_seconds": 0.601,
+      "duration_seconds": 0.698,
       "items": 1
     },
     "tests/test_owner_migration_import.py": {
-      "duration_seconds": 6.504,
+      "duration_seconds": 7.658,
       "items": 4
     },
     "tests/test_p0_1_test_targets_manifest.py": {
-      "duration_seconds": 4.627,
+      "duration_seconds": 26.876,
       "items": 8
     },
     "tests/test_p1_callback_threadpool_guard.py": {
-      "duration_seconds": 1.342,
+      "duration_seconds": 2.109,
       "items": 3
     },
     "tests/test_p1_diagnostics_removal_contract.py": {
-      "duration_seconds": 10.912,
+      "duration_seconds": 13.472,
       "items": 5
     },
     "tests/test_p1_error_handling_guard.py": {
-      "duration_seconds": 21.21,
+      "duration_seconds": 12.671,
       "items": 4
     },
     "tests/test_p1_runtime_security.py": {
-      "duration_seconds": 1.617,
-      "items": 3
+      "duration_seconds": 28.043,
+      "items": 4
     },
     "tests/test_pii_audit_contract.py": {
-      "duration_seconds": 13.679,
+      "duration_seconds": 16.128,
       "items": 9
     },
     "tests/test_pii_log_scanner.py": {
-      "duration_seconds": 10.538,
+      "duration_seconds": 11.648,
       "items": 8
     },
+    "tests/test_plan_wecom_canary.py": {
+      "duration_seconds": 3.855,
+      "items": 2
+    },
     "tests/test_platform_foundation_write_primitives.py": {
-      "duration_seconds": 3.927,
+      "duration_seconds": 4.919,
       "items": 7
     },
     "tests/test_product_external_push.py": {
-      "duration_seconds": 25.723,
+      "duration_seconds": 11.558,
       "items": 8
     },
+    "tests/test_product_paid_wecom_tagging.py": {
+      "duration_seconds": 23.75,
+      "items": 4
+    },
+    "tests/test_production_public_release_route.py": {
+      "duration_seconds": 7.869,
+      "items": 11
+    },
     "tests/test_provider_payment_frontend_contract.py": {
-      "duration_seconds": 5.066,
+      "duration_seconds": 6.149,
       "items": 1
     },
     "tests/test_provider_payment_no_real_provider_calls.py": {
-      "duration_seconds": 5.329,
+      "duration_seconds": 6.018,
       "items": 2
     },
     "tests/test_provider_payment_notify_contract.py": {
-      "duration_seconds": 20.003,
+      "duration_seconds": 13.684,
       "items": 3
     },
     "tests/test_provider_payment_notify_inventory.py": {
-      "duration_seconds": 8.221,
+      "duration_seconds": 1.167,
       "items": 2
     },
     "tests/test_provider_payment_return_contract.py": {
-      "duration_seconds": 13.887,
+      "duration_seconds": 16.079,
       "items": 3
     },
     "tests/test_provider_payment_unknown_paths.py": {
-      "duration_seconds": 14.671,
+      "duration_seconds": 15.941,
       "items": 3
     },
     "tests/test_public_pay_landing.py": {
-      "duration_seconds": 19.311,
+      "duration_seconds": 15.428,
       "items": 3
     },
     "tests/test_public_product_alias_redirect.py": {
-      "duration_seconds": 4.069,
+      "duration_seconds": 4.704,
       "items": 1
     },
     "tests/test_public_product_api_contract.py": {
-      "duration_seconds": 45.634,
+      "duration_seconds": 26.917,
       "items": 5
     },
     "tests/test_public_product_frontend_contract.py": {
-      "duration_seconds": 42.039,
-      "items": 13
+      "duration_seconds": 62.847,
+      "items": 19
     },
     "tests/test_public_product_h5_pay_oauth_native.py": {
-      "duration_seconds": 43.082,
-      "items": 10
+      "duration_seconds": 128.124,
+      "items": 24
     },
     "tests/test_public_product_h5_pay_sidebar_context_native.py": {
-      "duration_seconds": 1.03,
+      "duration_seconds": 1.214,
       "items": 2
     },
     "tests/test_public_product_no_real_payment.py": {
-      "duration_seconds": 15.013,
+      "duration_seconds": 14.95,
       "items": 4
     },
     "tests/test_public_product_pages.py": {
-      "duration_seconds": 22.796,
+      "duration_seconds": 24.321,
       "items": 5
     },
     "tests/test_public_product_pay_inventory.py": {
-      "duration_seconds": 0.528,
+      "duration_seconds": 0.785,
       "items": 1
     },
     "tests/test_public_product_sidebar_order_context.py": {
-      "duration_seconds": 3.756,
-      "items": 5
+      "duration_seconds": 4.564,
+      "items": 8
     },
     "tests/test_public_product_signed_context.py": {
-      "duration_seconds": 18.602,
+      "duration_seconds": 5.243,
       "items": 6
     },
     "tests/test_push_capabilities_config.py": {
-      "duration_seconds": 32.49,
-      "items": 9
+      "duration_seconds": 104.398,
+      "items": 14
     },
     "tests/test_push_center.py": {
-      "duration_seconds": 45.65,
-      "items": 9
+      "duration_seconds": 60.969,
+      "items": 18
+    },
+    "tests/test_pytest_duration_baseline_builder.py": {
+      "duration_seconds": 4.357,
+      "items": 2
+    },
+    "tests/test_pytest_duration_baseline_pr_validation.py": {
+      "duration_seconds": 5.253,
+      "items": 7
     },
     "tests/test_pytest_shard_selector.py": {
-      "duration_seconds": 6.191,
-      "items": 10
+      "duration_seconds": 10.699,
+      "items": 13
     },
     "tests/test_questionnaire_adapters_native_oauth.py": {
-      "duration_seconds": 55.155,
+      "duration_seconds": 19.843,
       "items": 10
     },
     "tests/test_questionnaire_admin_pages_next_native.py": {
-      "duration_seconds": 26.612,
-      "items": 8
+      "duration_seconds": 54.424,
+      "items": 9
     },
     "tests/test_questionnaire_admin_read_inventory.py": {
-      "duration_seconds": 3.241,
+      "duration_seconds": 0.68,
       "items": 1
     },
     "tests/test_questionnaire_admin_read_next_native.py": {
-      "duration_seconds": 13.964,
+      "duration_seconds": 14.504,
       "items": 3
     },
     "tests/test_questionnaire_admin_read_no_fixture_production.py": {
-      "duration_seconds": 9.843,
+      "duration_seconds": 8.738,
       "items": 2
     },
     "tests/test_questionnaire_admin_read_no_real_side_effects.py": {
-      "duration_seconds": 9.564,
+      "duration_seconds": 6.71,
       "items": 2
     },
     "tests/test_questionnaire_admin_write_commands.py": {
-      "duration_seconds": 34.422,
+      "duration_seconds": 41.511,
       "items": 7
     },
     "tests/test_questionnaire_admin_write_export_preview.py": {
-      "duration_seconds": 9.249,
+      "duration_seconds": 10.134,
       "items": 2
     },
     "tests/test_questionnaire_admin_write_idempotency.py": {
-      "duration_seconds": 4.486,
+      "duration_seconds": 4.145,
       "items": 1
     },
     "tests/test_questionnaire_admin_write_inventory.py": {
-      "duration_seconds": 0.615,
+      "duration_seconds": 0.658,
       "items": 1
     },
     "tests/test_questionnaire_admin_write_no_real_side_effects.py": {
-      "duration_seconds": 5.655,
+      "duration_seconds": 6.435,
       "items": 2
     },
     "tests/test_questionnaire_application_contract.py": {
-      "duration_seconds": 1.891,
+      "duration_seconds": 1.909,
+      "items": 3
+    },
+    "tests/test_questionnaire_auto_execute_cutover.py": {
+      "duration_seconds": 2.643,
+      "items": 3
+    },
+    "tests/test_questionnaire_editor_asset_split.py": {
+      "duration_seconds": 9.827,
       "items": 3
     },
     "tests/test_questionnaire_external_push_contract.py": {
-      "duration_seconds": 18.596,
+      "duration_seconds": 10.624,
       "items": 2
     },
     "tests/test_questionnaire_h5_client_diagnostics.py": {
-      "duration_seconds": 9.317,
+      "duration_seconds": 9.783,
       "items": 2
     },
     "tests/test_questionnaire_h5_external_push.py": {
-      "duration_seconds": 7.98,
+      "duration_seconds": 4.565,
       "items": 1
     },
     "tests/test_questionnaire_h5_final_tags_real_wecom.py": {
-      "duration_seconds": 37.1,
+      "duration_seconds": 39.805,
       "items": 7
     },
     "tests/test_questionnaire_h5_oauth_readiness.py": {
-      "duration_seconds": 23.671,
-      "items": 8
+      "duration_seconds": 26.326,
+      "items": 9
     },
     "tests/test_questionnaire_h5_submit_commands.py": {
-      "duration_seconds": 43.344,
+      "duration_seconds": 50.895,
       "items": 9
     },
     "tests/test_questionnaire_h5_submit_idempotency.py": {
-      "duration_seconds": 7.229,
+      "duration_seconds": 10.49,
       "items": 2
     },
     "tests/test_questionnaire_h5_submit_inventory.py": {
-      "duration_seconds": 0.451,
+      "duration_seconds": 0.994,
       "items": 1
     },
     "tests/test_questionnaire_h5_submit_no_fixture_production.py": {
-      "duration_seconds": 10.633,
+      "duration_seconds": 10.122,
       "items": 2
     },
     "tests/test_questionnaire_h5_submit_no_real_side_effects.py": {
-      "duration_seconds": 6.103,
+      "duration_seconds": 7.11,
       "items": 4
     },
     "tests/test_questionnaire_h5_submit_validation.py": {
-      "duration_seconds": 52.106,
-      "items": 11
+      "duration_seconds": 71.035,
+      "items": 15
     },
     "tests/test_questionnaire_h5_support.py": {
-      "duration_seconds": 1.138,
+      "duration_seconds": 1.414,
       "items": 2
     },
     "tests/test_questionnaire_identity_resolution.py": {
-      "duration_seconds": 9.539,
+      "duration_seconds": 11.763,
       "items": 2
     },
     "tests/test_questionnaire_mobile_normalization.py": {
-      "duration_seconds": 0.678,
-      "items": 1
+      "duration_seconds": 1.541,
+      "items": 2
     },
     "tests/test_questionnaire_oauth_browser_redirect.py": {
-      "duration_seconds": 50.158,
+      "duration_seconds": 49.962,
       "items": 11
     },
     "tests/test_questionnaire_oauth_callback_adapter.py": {
-      "duration_seconds": 18.702,
+      "duration_seconds": 10.198,
       "items": 2
     },
     "tests/test_questionnaire_oauth_inventory.py": {
-      "duration_seconds": 3.267,
+      "duration_seconds": 0.455,
       "items": 1
     },
     "tests/test_questionnaire_oauth_no_real_external_calls.py": {
-      "duration_seconds": 9.453,
+      "duration_seconds": 9.837,
       "items": 2
     },
     "tests/test_questionnaire_oauth_session_cookie.py": {
-      "duration_seconds": 3.426,
+      "duration_seconds": 3.458,
       "items": 1
     },
     "tests/test_questionnaire_oauth_start_adapter.py": {
-      "duration_seconds": 9.66,
+      "duration_seconds": 10.517,
       "items": 2
     },
     "tests/test_questionnaire_oauth_state_security.py": {
-      "duration_seconds": 25.068,
+      "duration_seconds": 23.089,
       "items": 4
     },
+    "tests/test_questionnaire_operations_config.py": {
+      "duration_seconds": 57.618,
+      "items": 11
+    },
+    "tests/test_questionnaire_operations_migration.py": {
+      "duration_seconds": 0.628,
+      "items": 1
+    },
     "tests/test_questionnaire_other_option_backend.py": {
-      "duration_seconds": 68.904,
+      "duration_seconds": 57.061,
       "items": 15
     },
     "tests/test_questionnaire_postgres_submit_repository.py": {
-      "duration_seconds": 0.657,
+      "duration_seconds": 0.564,
       "items": 1
     },
-    "tests/test_questionnaire_submission_identity_backfill.py": {
-      "duration_seconds": 14.698,
-      "items": 2
-    },
-    "tests/test_r02_sensitive_data_inventory.py": {
-      "duration_seconds": 34.95,
-      "items": 5
-    },
-    "tests/test_radar_links.py": {
-      "duration_seconds": 183.08,
-      "items": 39
-    },
-    "tests/test_refactor_line_growth_report.py": {
-      "duration_seconds": 7.458,
+    "tests/test_questionnaire_radar_reconciliation.py": {
+      "duration_seconds": 2.183,
       "items": 3
     },
+    "tests/test_questionnaire_result_access.py": {
+      "duration_seconds": 2.053,
+      "items": 2
+    },
+    "tests/test_questionnaire_submission_identity_backfill.py": {
+      "duration_seconds": 1.902,
+      "items": 2
+    },
+    "tests/test_queue_history_freeze.py": {
+      "duration_seconds": 3.124,
+      "items": 4
+    },
+    "tests/test_queue_runtime_cutover.py": {
+      "duration_seconds": 17.149,
+      "items": 19
+    },
+    "tests/test_queue_runtime_cutover_postgres.py": {
+      "duration_seconds": 16.507,
+      "items": 17
+    },
+    "tests/test_queue_runtime_fault_drill.py": {
+      "duration_seconds": 1.638,
+      "items": 3
+    },
+    "tests/test_queue_runtime_operations_workflow.py": {
+      "duration_seconds": 5.546,
+      "items": 7
+    },
+    "tests/test_queue_runtime_systemd.py": {
+      "duration_seconds": 2.338,
+      "items": 3
+    },
+    "tests/test_queue_runtime_validation.py": {
+      "duration_seconds": 6.282,
+      "items": 10
+    },
+    "tests/test_r02_sensitive_data_inventory.py": {
+      "duration_seconds": 8.234,
+      "items": 5
+    },
+    "tests/test_r05_wecom_callback_architecture.py": {
+      "duration_seconds": 15.431,
+      "items": 13
+    },
+    "tests/test_r08_commerce_fulfillment_postgres.py": {
+      "duration_seconds": 8.645,
+      "items": 11
+    },
+    "tests/test_r09_questionnaire_consumers_postgres.py": {
+      "duration_seconds": 1.562,
+      "items": 2
+    },
+    "tests/test_r09_questionnaire_transaction_postgres.py": {
+      "duration_seconds": 5.587,
+      "items": 7
+    },
+    "tests/test_r09_radar_ownership.py": {
+      "duration_seconds": 4.183,
+      "items": 3
+    },
+    "tests/test_radar_links.py": {
+      "duration_seconds": 216.038,
+      "items": 47
+    },
+    "tests/test_refactor_line_growth_report.py": {
+      "duration_seconds": 2.618,
+      "items": 3
+    },
+    "tests/test_relay_wecom_canary_callback.py": {
+      "duration_seconds": 17.695,
+      "items": 6
+    },
     "tests/test_repo_hygiene_audit.py": {
-      "duration_seconds": 8.679,
+      "duration_seconds": 9.381,
       "items": 16
     },
     "tests/test_repository_ownership_guard.py": {
-      "duration_seconds": 17.985,
-      "items": 8
+      "duration_seconds": 14.146,
+      "items": 15
     },
     "tests/test_repository_provider_hardening.py": {
-      "duration_seconds": 28.082,
+      "duration_seconds": 32.923,
       "items": 6
     },
     "tests/test_retired_automation_artifacts_cleanup.py": {
-      "duration_seconds": 4.476,
+      "duration_seconds": 8.189,
       "items": 10
     },
     "tests/test_retired_automation_member_read_models.py": {
-      "duration_seconds": 1.323,
+      "duration_seconds": 2.365,
       "items": 3
     },
     "tests/test_retired_automation_member_writes.py": {
-      "duration_seconds": 6.932,
+      "duration_seconds": 14.116,
       "items": 4
     },
     "tests/test_retired_automation_precheck_script.py": {
-      "duration_seconds": 3.477,
+      "duration_seconds": 4.352,
       "items": 7
     },
     "tests/test_retired_automation_repo_is_agent_only.py": {
-      "duration_seconds": 10.929,
+      "duration_seconds": 13.048,
       "items": 5
     },
     "tests/test_retired_autonomous_member_track.py": {
-      "duration_seconds": 0.939,
+      "duration_seconds": 4.191,
       "items": 2
     },
     "tests/test_retired_channel_program_availability.py": {
-      "duration_seconds": 1.221,
+      "duration_seconds": 1.605,
       "items": 2
     },
     "tests/test_retired_cloud_campaign_automation_member_read.py": {
-      "duration_seconds": 6.297,
+      "duration_seconds": 0.788,
       "items": 1
     },
     "tests/test_retired_experiment_tool_wrappers_cleanup.py": {
-      "duration_seconds": 2.191,
+      "duration_seconds": 7.299,
       "items": 3
     },
     "tests/test_retired_operation_task_contract.py": {
-      "duration_seconds": 3.169,
+      "duration_seconds": 2.723,
       "items": 5
     },
     "tests/test_retired_profile_segment_backend.py": {
-      "duration_seconds": 17.228,
+      "duration_seconds": 12.205,
       "items": 3
     },
     "tests/test_retired_program_read_joins.py": {
-      "duration_seconds": 1.467,
+      "duration_seconds": 2.613,
       "items": 3
     },
-    "tests/test_retired_runtime_gap_timer_report.py": {
-      "duration_seconds": 37.011,
-      "items": 2
+    "tests/test_retired_runtime_contract.py": {
+      "duration_seconds": 9.21,
+      "items": 5
     },
-    "tests/test_retired_timer_readiness_cleanup.py": {
-      "duration_seconds": 1.078,
-      "items": 2
+    "tests/test_retired_runtime_reference_scanner.py": {
+      "duration_seconds": 3.032,
+      "items": 3
     },
     "tests/test_route_inventory_consolidation_report.py": {
-      "duration_seconds": 2.118,
+      "duration_seconds": 2.705,
       "items": 3
     },
     "tests/test_route_ownership_manifest.py": {
-      "duration_seconds": 8.703,
-      "items": 8
+      "duration_seconds": 8.129,
+      "items": 7
     },
     "tests/test_route_policy_contract.py": {
-      "duration_seconds": 25.253,
-      "items": 4
+      "duration_seconds": 46.06,
+      "items": 5
     },
     "tests/test_route_policy_enforcement.py": {
-      "duration_seconds": 61.762,
-      "items": 11
+      "duration_seconds": 135.862,
+      "items": 22
     },
     "tests/test_router_registry_contract.py": {
-      "duration_seconds": 16.53,
+      "duration_seconds": 8.129,
       "items": 4
     },
     "tests/test_run_broadcast_hourly_feishu_report_script.py": {
-      "duration_seconds": 1.229,
+      "duration_seconds": 1.383,
       "items": 2
     },
     "tests/test_run_broadcast_queue_worker.py": {
-      "duration_seconds": 1.976,
+      "duration_seconds": 2.887,
       "items": 4
     },
+    "tests/test_run_execution_runtime.py": {
+      "duration_seconds": 3.29,
+      "items": 6
+    },
     "tests/test_run_incremental_archive_sync_script.py": {
-      "duration_seconds": 27.137,
+      "duration_seconds": 0.965,
       "items": 2
     },
     "tests/test_run_lint.py": {
-      "duration_seconds": 3.712,
+      "duration_seconds": 4.422,
       "items": 6
     },
     "tests/test_run_message_activity_sync_script.py": {
-      "duration_seconds": 0.969,
+      "duration_seconds": 1.195,
       "items": 2
     },
+    "tests/test_run_test_loopback_canary.py": {
+      "duration_seconds": 4.929,
+      "items": 6
+    },
+    "tests/test_runtime_browser_security.py": {
+      "duration_seconds": 5.951,
+      "items": 3
+    },
     "tests/test_runtime_contract_inventory.py": {
-      "duration_seconds": 76.954,
+      "duration_seconds": 67.518,
       "items": 4
+    },
+    "tests/test_runtime_module_size_guard.py": {
+      "duration_seconds": 4.708,
+      "items": 5
+    },
+    "tests/test_runtime_module_split_contract.py": {
+      "duration_seconds": 29.363,
+      "items": 11
+    },
+    "tests/test_runtime_readiness.py": {
+      "duration_seconds": 12.914,
+      "items": 7
+    },
+    "tests/test_runtime_secret_readiness.py": {
+      "duration_seconds": 18.934,
+      "items": 21
     },
     "tests/test_runtime_units_autostart.py": {
-      "duration_seconds": 13.608,
-      "items": 4
+      "duration_seconds": 40.625,
+      "items": 40
     },
     "tests/test_schema_change_templates.py": {
-      "duration_seconds": 1.389,
+      "duration_seconds": 1.613,
       "items": 2
     },
     "tests/test_secret_store.py": {
-      "duration_seconds": 14.621,
+      "duration_seconds": 41.609,
       "items": 22
     },
     "tests/test_select_test_scope.py": {
-      "duration_seconds": 22.637,
-      "items": 29
+      "duration_seconds": 106.955,
+      "items": 81
     },
     "tests/test_send_content_cleanup_guardrails.py": {
-      "duration_seconds": 27.11,
+      "duration_seconds": 3.686,
       "items": 5
     },
     "tests/test_send_content_global_guardrails.py": {
-      "duration_seconds": 5.478,
+      "duration_seconds": 3.866,
       "items": 8
     },
+    "tests/test_send_content_media_gateway.py": {
+      "duration_seconds": 0.816,
+      "items": 1
+    },
     "tests/test_send_content_next_native.py": {
-      "duration_seconds": 56.358,
+      "duration_seconds": 67.53,
       "items": 12
     },
     "tests/test_send_task.py": {
-      "duration_seconds": 0.523,
+      "duration_seconds": 0.862,
       "items": 1
     },
     "tests/test_sensitive_data_redaction.py": {
-      "duration_seconds": 8.098,
+      "duration_seconds": 10.116,
       "items": 13
     },
     "tests/test_server_readonly_evidence_pack.py": {
-      "duration_seconds": 4.536,
+      "duration_seconds": 6.865,
       "items": 5
     },
     "tests/test_service_period_application.py": {
-      "duration_seconds": 43.869,
-      "items": 12
+      "duration_seconds": 36.854,
+      "items": 19
     },
     "tests/test_service_period_frontend_contract.py": {
-      "duration_seconds": 44.097,
-      "items": 9
+      "duration_seconds": 57.817,
+      "items": 10
     },
     "tests/test_service_period_h5_payment.py": {
-      "duration_seconds": 16.436,
-      "items": 3
+      "duration_seconds": 17.334,
+      "items": 4
     },
-    "tests/test_service_period_schema.py": {
-      "duration_seconds": 27.039,
+    "tests/test_service_period_member_grid.py": {
+      "duration_seconds": 44.635,
+      "items": 11
+    },
+    "tests/test_service_period_member_grid_sharing.py": {
+      "duration_seconds": 15.01,
+      "items": 6
+    },
+    "tests/test_service_period_payment_consumer.py": {
+      "duration_seconds": 1.871,
+      "items": 1
+    },
+    "tests/test_service_period_payment_consumer_r08.py": {
+      "duration_seconds": 1.065,
       "items": 2
     },
+    "tests/test_service_period_schema.py": {
+      "duration_seconds": 7.101,
+      "items": 5
+    },
     "tests/test_shared_db_session.py": {
-      "duration_seconds": 6.941,
+      "duration_seconds": 6.88,
       "items": 10
     },
     "tests/test_shared_flask_config_retirement.py": {
-      "duration_seconds": 4.925,
+      "duration_seconds": 6.261,
       "items": 7
     },
+    "tests/test_sidebar_access_postgres.py": {
+      "duration_seconds": 1.679,
+      "items": 2
+    },
+    "tests/test_sidebar_access_reconciliation.py": {
+      "duration_seconds": 0.6,
+      "items": 1
+    },
     "tests/test_sidebar_bind_mobile_native_page.py": {
-      "duration_seconds": 38.847,
+      "duration_seconds": 36.894,
       "items": 6
     },
+    "tests/test_sidebar_capability_optimization.py": {
+      "duration_seconds": 17.603,
+      "items": 7
+    },
     "tests/test_sidebar_jssdk_adapter.py": {
-      "duration_seconds": 72.544,
+      "duration_seconds": 63.103,
       "items": 15
     },
     "tests/test_sidebar_jssdk_frontend_contract.py": {
-      "duration_seconds": 5.753,
+      "duration_seconds": 8.821,
       "items": 3
     },
     "tests/test_sidebar_jssdk_inventory.py": {
-      "duration_seconds": 0.572,
+      "duration_seconds": 1.089,
       "items": 1
     },
     "tests/test_sidebar_jssdk_no_real_external_calls.py": {
-      "duration_seconds": 5.245,
+      "duration_seconds": 5.87,
       "items": 2
     },
+    "tests/test_sidebar_owner_context_security.py": {
+      "duration_seconds": 7.729,
+      "items": 3
+    },
     "tests/test_sidebar_profile_next_owner_readiness.py": {
-      "duration_seconds": 11.296,
+      "duration_seconds": 12.139,
       "items": 4
     },
+    "tests/test_sidebar_questionnaire_access_contract.py": {
+      "duration_seconds": 1.053,
+      "items": 1
+    },
     "tests/test_sidebar_readonly_inventory.py": {
-      "duration_seconds": 1.173,
+      "duration_seconds": 1.443,
       "items": 2
     },
     "tests/test_sidebar_readonly_next_native.py": {
-      "duration_seconds": 28.374,
+      "duration_seconds": 41.734,
       "items": 6
     },
     "tests/test_sidebar_v2_api.py": {
-      "duration_seconds": 50.755,
-      "items": 25
+      "duration_seconds": 65.674,
+      "items": 28
     },
     "tests/test_sidebar_workbench_frontend.py": {
-      "duration_seconds": 8.976,
+      "duration_seconds": 7.258,
       "items": 4
     },
     "tests/test_sidebar_write_commands.py": {
-      "duration_seconds": 68.776,
+      "duration_seconds": 81.812,
       "items": 15
     },
     "tests/test_sidebar_write_idempotency.py": {
-      "duration_seconds": 4.167,
+      "duration_seconds": 3.57,
       "items": 1
     },
     "tests/test_sidebar_write_inventory.py": {
-      "duration_seconds": 28.22,
+      "duration_seconds": 1.902,
       "items": 2
     },
     "tests/test_sidebar_write_no_real_side_effects.py": {
-      "duration_seconds": 9.706,
+      "duration_seconds": 12.191,
       "items": 3
     },
     "tests/test_smoke_questionnaire_real_wecom_tag.py": {
-      "duration_seconds": 6.604,
-      "items": 3
+      "duration_seconds": 3.542,
+      "items": 4
     },
     "tests/test_sql_static_guard.py": {
-      "duration_seconds": 18.241,
-      "items": 16
+      "duration_seconds": 24.559,
+      "items": 17
     },
     "tests/test_startup_entrypoint_next_only.py": {
-      "duration_seconds": 48.374,
+      "duration_seconds": 42.543,
       "items": 9
     },
     "tests/test_support_admin_pages_native.py": {
-      "duration_seconds": 23.333,
+      "duration_seconds": 26.284,
       "items": 4
     },
     "tests/test_test_fixture_boundaries.py": {
-      "duration_seconds": 1.942,
+      "duration_seconds": 3.45,
       "items": 4
     },
+    "tests/test_test_inventory_audit.py": {
+      "duration_seconds": 0.935,
+      "items": 2
+    },
+    "tests/test_test_scope_shadow_summary.py": {
+      "duration_seconds": 18.965,
+      "items": 6
+    },
     "tests/test_unionid_final_schema_guard.py": {
-      "duration_seconds": 0.555,
+      "duration_seconds": 2.442,
+      "items": 1
+    },
+    "tests/test_unionid_identity_contract_gate.py": {
+      "duration_seconds": 0.872,
       "items": 1
     },
     "tests/test_unionid_identity_refactor_schema.py": {
-      "duration_seconds": 100.2,
+      "duration_seconds": 31.236,
       "items": 32
     },
     "tests/test_unionid_runtime_breakage_hotfix.py": {
-      "duration_seconds": 9.181,
+      "duration_seconds": 10.947,
       "items": 15
     },
     "tests/test_user_ops_admin_pages_native.py": {
-      "duration_seconds": 33.912,
+      "duration_seconds": 37.616,
       "items": 6
     },
     "tests/test_user_ops_api.py": {
-      "duration_seconds": 43.263,
+      "duration_seconds": 45.523,
       "items": 6
     },
     "tests/test_user_ops_application_contract.py": {
-      "duration_seconds": 0.682,
+      "duration_seconds": 1.807,
       "items": 1
     },
     "tests/test_user_ops_broadcast_preview.py": {
-      "duration_seconds": 9.613,
+      "duration_seconds": 9.93,
       "items": 2
     },
     "tests/test_user_ops_cards_next_native.py": {
-      "duration_seconds": 8.38,
+      "duration_seconds": 4.443,
       "items": 1
     },
     "tests/test_user_ops_drawer_next_native.py": {
-      "duration_seconds": 3.396,
+      "duration_seconds": 4.879,
       "items": 1
     },
     "tests/test_user_ops_export_preview.py": {
-      "duration_seconds": 10.237,
+      "duration_seconds": 11.106,
       "items": 2
     },
     "tests/test_user_ops_external_effect_enqueue.py": {
-      "duration_seconds": 10.587,
+      "duration_seconds": 2.886,
       "items": 2
     },
     "tests/test_user_ops_import_parsers.py": {
-      "duration_seconds": 1.119,
+      "duration_seconds": 1.437,
       "items": 2
     },
     "tests/test_user_ops_lead_pool_helpers.py": {
-      "duration_seconds": 1.203,
+      "duration_seconds": 2.573,
       "items": 3
     },
     "tests/test_user_ops_legacy_physical_drop.py": {
-      "duration_seconds": 1.257,
+      "duration_seconds": 1.253,
       "items": 2
     },
     "tests/test_user_ops_next_queries.py": {
-      "duration_seconds": 16.416,
+      "duration_seconds": 9.576,
       "items": 2
     },
     "tests/test_user_ops_no_real_side_effects.py": {
-      "duration_seconds": 5.176,
+      "duration_seconds": 5.391,
       "items": 2
     },
     "tests/test_user_ops_page_service_helpers.py": {
-      "duration_seconds": 3.411,
+      "duration_seconds": 4.809,
       "items": 1
     },
     "tests/test_user_ops_production_repository_selection.py": {
-      "duration_seconds": 7.359,
+      "duration_seconds": 8.173,
       "items": 4
     },
     "tests/test_user_ops_production_tables_migration.py": {
-      "duration_seconds": 1.964,
+      "duration_seconds": 2.077,
       "items": 3
     },
     "tests/test_user_ops_read_facade.py": {
-      "duration_seconds": 5.979,
+      "duration_seconds": 0.561,
       "items": 1
     },
     "tests/test_user_ops_route_inventory.py": {
-      "duration_seconds": 0.471,
+      "duration_seconds": 2.475,
       "items": 1
     },
     "tests/test_user_ops_send_record_projection.py": {
-      "duration_seconds": 0.711,
+      "duration_seconds": 2.145,
       "items": 1
     },
     "tests/test_webhook_inbox_admin_api.py": {
-      "duration_seconds": 47.423,
+      "duration_seconds": 54.238,
       "items": 8
     },
     "tests/test_webhook_inbox_migration_contract.py": {
-      "duration_seconds": 9.06,
+      "duration_seconds": 2.978,
       "items": 4
     },
     "tests/test_webhook_inbox_repository.py": {
-      "duration_seconds": 17.582,
+      "duration_seconds": 21.536,
       "items": 7
     },
+    "tests/test_wechat_domain_verification_files.py": {
+      "duration_seconds": 14.186,
+      "items": 3
+    },
     "tests/test_wechat_oauth_client.py": {
-      "duration_seconds": 2.975,
+      "duration_seconds": 4.055,
       "items": 6
     },
+    "tests/test_wechat_oauth_coupon_identity_postgres.py": {
+      "duration_seconds": 10.591,
+      "items": 2
+    },
     "tests/test_wechat_pay_admin_transactions.py": {
-      "duration_seconds": 20.126,
+      "duration_seconds": 19.828,
       "items": 7
     },
     "tests/test_wechat_pay_h5.py": {
-      "duration_seconds": 15.434,
-      "items": 11
+      "duration_seconds": 19.465,
+      "items": 13
+    },
+    "tests/test_wechat_pay_mobile_projection_migration.py": {
+      "duration_seconds": 1.789,
+      "items": 2
     },
     "tests/test_wechat_pay_order_identity_repair.py": {
-      "duration_seconds": 10.894,
-      "items": 4
+      "duration_seconds": 14.19,
+      "items": 5
     },
     "tests/test_wechat_pay_product_editor_toggle_contract.py": {
-      "duration_seconds": 1.04,
+      "duration_seconds": 1.257,
       "items": 2
     },
     "tests/test_wechat_pay_products.py": {
-      "duration_seconds": 13.398,
+      "duration_seconds": 16.87,
       "items": 9
     },
     "tests/test_wechat_products_admin_page_contract.py": {
-      "duration_seconds": 28.719,
+      "duration_seconds": 45.555,
       "items": 6
     },
     "tests/test_wechat_shop_backend.py": {
-      "duration_seconds": 112.265,
+      "duration_seconds": 104.302,
       "items": 20
     },
+    "tests/test_wechat_shop_mobile_projection.py": {
+      "duration_seconds": 2.556,
+      "items": 3
+    },
+    "tests/test_wechat_shop_mobile_projection_migration.py": {
+      "duration_seconds": 0.634,
+      "items": 1
+    },
+    "tests/test_wechat_unionid_access_guard.py": {
+      "duration_seconds": 23.693,
+      "items": 5
+    },
     "tests/test_wecom_callback_cutover_plan.py": {
-      "duration_seconds": 11.363,
+      "duration_seconds": 1.461,
       "items": 2
     },
     "tests/test_wecom_callback_deploy_smoke.py": {
-      "duration_seconds": 32.604,
+      "duration_seconds": 6.558,
       "items": 10
     },
     "tests/test_wecom_callback_external_effect_boundary.py": {
-      "duration_seconds": 4.567,
+      "duration_seconds": 2.183,
       "items": 4
     },
     "tests/test_wecom_callback_inbox.py": {
-      "duration_seconds": 27.735,
+      "duration_seconds": 27.244,
       "items": 18
     },
     "tests/test_wecom_callback_ingestion_evidence.py": {
-      "duration_seconds": 6.294,
+      "duration_seconds": 2.729,
       "items": 3
     },
     "tests/test_wecom_callback_ingress_runtime.py": {
-      "duration_seconds": 10.8,
+      "duration_seconds": 60.034,
       "items": 17
     },
     "tests/test_wecom_callback_objective_coverage.py": {
-      "duration_seconds": 51.445,
+      "duration_seconds": 13.35,
       "items": 16
     },
     "tests/test_wecom_callback_permanent_fix_readiness.py": {
-      "duration_seconds": 163.896,
+      "duration_seconds": 36.32,
       "items": 58
     },
     "tests/test_wecom_callback_pressure_probe.py": {
-      "duration_seconds": 30.317,
+      "duration_seconds": 4.771,
       "items": 6
     },
     "tests/test_wecom_callback_processing_evidence.py": {
-      "duration_seconds": 3.648,
+      "duration_seconds": 3.823,
       "items": 5
     },
     "tests/test_wecom_callback_public_state.py": {
-      "duration_seconds": 5.763,
+      "duration_seconds": 37.037,
       "items": 9
     },
     "tests/test_wecom_callback_rollback_evidence.py": {
-      "duration_seconds": 1.452,
+      "duration_seconds": 1.434,
       "items": 3
     },
     "tests/test_wecom_callback_sample_generator.py": {
-      "duration_seconds": 1.988,
+      "duration_seconds": 2.863,
       "items": 3
     },
+    "tests/test_wecom_canary_channel_transcript.py": {
+      "duration_seconds": 1.887,
+      "items": 4
+    },
+    "tests/test_wecom_canary_configuration.py": {
+      "duration_seconds": 5.883,
+      "items": 8
+    },
+    "tests/test_wecom_canary_policy.py": {
+      "duration_seconds": 13.451,
+      "items": 14
+    },
     "tests/test_wecom_customer_acquisition_links.py": {
-      "duration_seconds": 9.02,
+      "duration_seconds": 10.631,
       "items": 2
     },
     "tests/test_wecom_customer_group_client.py": {
-      "duration_seconds": 27.114,
+      "duration_seconds": 4.536,
       "items": 5
     },
     "tests/test_wecom_frontend_contract.py": {
-      "duration_seconds": 10.535,
+      "duration_seconds": 12.969,
       "items": 5
+    },
+    "tests/test_wecom_group_provider_diagnostics.py": {
+      "duration_seconds": 4.262,
+      "items": 5
+    },
+    "tests/test_wecom_media_lease.py": {
+      "duration_seconds": 14.518,
+      "items": 11
     },
     "tests/test_wecom_media_upload_client.py": {
-      "duration_seconds": 3.758,
-      "items": 6
+      "duration_seconds": 6.449,
+      "items": 7
     },
     "tests/test_wecom_operation_members_sync.py": {
-      "duration_seconds": 8.068,
+      "duration_seconds": 8.32,
       "items": 5
     },
+    "tests/test_wecom_payload_contract.py": {
+      "duration_seconds": 2.769,
+      "items": 3
+    },
     "tests/test_wecom_tag_live_mutation_callers_contract.py": {
-      "duration_seconds": 38.986,
+      "duration_seconds": 21.425,
       "items": 5
     },
     "tests/test_wecom_tag_live_mutation_commands.py": {
-      "duration_seconds": 18.383,
+      "duration_seconds": 15.95,
       "items": 4
     },
     "tests/test_wecom_tag_live_mutation_idempotency.py": {
-      "duration_seconds": 4.643,
+      "duration_seconds": 5.617,
       "items": 1
     },
     "tests/test_wecom_tag_live_mutation_inventory.py": {
-      "duration_seconds": 0.319,
+      "duration_seconds": 0.506,
       "items": 1
     },
     "tests/test_wecom_tag_live_mutation_no_real_side_effects.py": {
-      "duration_seconds": 5.282,
+      "duration_seconds": 6.473,
       "items": 2
     },
     "tests/test_wecom_tag_next_sync.py": {
-      "duration_seconds": 12.617,
+      "duration_seconds": 13.94,
       "items": 6
     },
     "tests/test_wecom_tag_read_inventory.py": {
-      "duration_seconds": 10.724,
+      "duration_seconds": 2.514,
       "items": 3
     },
     "tests/test_wecom_tag_read_next_native.py": {
-      "duration_seconds": 13.857,
+      "duration_seconds": 12.498,
       "items": 3
     },
     "tests/test_wecom_tag_read_no_fixture_production.py": {
-      "duration_seconds": 14.596,
+      "duration_seconds": 6.449,
       "items": 2
     },
     "tests/test_wecom_tag_read_no_real_side_effects.py": {
-      "duration_seconds": 5.231,
+      "duration_seconds": 5.789,
       "items": 2
     },
     "tests/test_wecom_tag_read_selectors.py": {
-      "duration_seconds": 36.537,
+      "duration_seconds": 39.824,
       "items": 10
     },
     "tests/test_wecom_tag_write_commands.py": {
-      "duration_seconds": 13.918,
+      "duration_seconds": 12.494,
       "items": 3
     },
     "tests/test_wecom_tag_write_frontend_contract.py": {
-      "duration_seconds": 1.287,
+      "duration_seconds": 1.085,
       "items": 2
     },
     "tests/test_wecom_tag_write_idempotency.py": {
-      "duration_seconds": 3.551,
+      "duration_seconds": 5.754,
       "items": 1
     },
     "tests/test_wecom_tag_write_inventory.py": {
-      "duration_seconds": 14.86,
+      "duration_seconds": 1.741,
       "items": 2
     },
     "tests/test_wecom_tag_write_no_real_side_effects.py": {
-      "duration_seconds": 16.059,
+      "duration_seconds": 15.415,
       "items": 4
+    },
+    "tests/test_zero_runtime_import_scc.py": {
+      "duration_seconds": 7.93,
+      "items": 1
     }
   },
-  "source_run_id": 29104632060,
-  "source_sha": "f5905e36f74e9f34d811499b7bd5f88b206f13d0",
-  "total_duration_seconds": 8787.338,
-  "total_items": 2843,
+  "source_run_id": 29720345351,
+  "source_sha": "c8d2849debc39f493bb12da2b6553125cbdd9707",
+  "total_duration_seconds": 10467.071,
+  "total_items": 4122,
   "version": 1
 }

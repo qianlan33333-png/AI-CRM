@@ -1,32 +1,37 @@
 # AI Audience Scheduler
 
-`scripts/run_ai_audience_scheduler.py` is the system scheduler for AI audience packages.
+`scripts/run_ai_audience_scheduler.py` is the clock-intent writer for AI audience packages.
 
 It follows the queue boundaries:
 
-- emits `ai_audience.refresh.incremental_tick` every scheduler run;
-- emits `ai_audience.refresh.daily_tick` only during the configured daily window, default `Asia/Shanghai 02:00`;
-- dispatches AI audience internal-event consumers for source poke, refresh, and member-event outbound planning;
-- runs with `AICRM_INTERNAL_EVENT_RELAY_ROLE=consumer_only` and therefore cannot acquire or relay global outbox rows;
+- writes one idempotent daily durable intent per active package at `Asia/Shanghai 02:00`;
+- never scans incremental packages on a three-minute interval;
+- never claims, relays, or executes an internal-event consumer;
+- source events advance a package's monotonic dirty generation and coalesce behind its single open intent;
 - never sends webhook or WeCom messages directly.
 
 External side effects remain in `external_effect_job` and are executed only by the External Effect worker.
 
 ## Production Timer
 
-Install the dedicated timer alongside the existing internal-event and external-effect workers:
+Production uses the consolidated versioned scheduler alongside the internal and external workers:
 
 ```bash
-sudo cp deploy/openclaw-ai-audience-scheduler.service /etc/systemd/system/
-sudo cp deploy/openclaw-ai-audience-scheduler.timer /etc/systemd/system/
+sudo cp deploy/aicrm-job-catalog-scheduler.service /etc/systemd/system/
+sudo cp deploy/aicrm-job-catalog-scheduler.timer /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now openclaw-ai-audience-scheduler.timer
+sudo systemctl enable --now aicrm-job-catalog-scheduler.timer
 ```
 
-The timer runs every 3 minutes:
+The catalog evaluates `ai_audience.refresh` every three minutes while preserving the
+daily 02:00 Asia/Shanghai intent rule inside the handler:
 
 ```text
-OnCalendar=*-*-* *:0/3:00
+schedule="*/3 * * * *"
 ```
 
-The service sets a pair allowlist for AI audience consumers only, so it does not execute unrelated internal-event consumers. The pair allowlist is an execution filter, not a relay ownership mechanism: relay is structurally disabled in this scheduler and remains owned only by `scripts/run_internal_event_worker.py`.
+`scripts/ops/check_ai_audience_refresh_owner.py` remains a fail-closed code and
+legacy-unit guard. It verifies that the consolidated scheduler is the declared
+successor and that the intermediate dedicated timer is retired. The PostgreSQL
+internal runtime owns `ai_audience.refresh.requested`; provider continuations remain
+separate external effects. The scheduler has no relay, consumer, or provider ownership.

@@ -14,7 +14,7 @@ class FakeSession:
 
 
 def test_build_customer_read_model_repository_uses_injected_session(monkeypatch) -> None:
-    from aicrm_next.customer_read_model import repo as repo_module
+    from aicrm_next.crm.customer_read_model import repo as repo_module
 
     monkeypatch.setenv("CUSTOMER_READ_MODEL_REPO_BACKEND", "sqlalchemy")
     injected_session = FakeSession()
@@ -30,7 +30,7 @@ def test_build_customer_read_model_repository_uses_injected_session(monkeypatch)
 
 
 def test_build_customer_read_model_repository_uses_shared_session_factory(monkeypatch) -> None:
-    from aicrm_next.customer_read_model import repo as repo_module
+    from aicrm_next.crm.customer_read_model import repo as repo_module
 
     monkeypatch.setenv("CUSTOMER_READ_MODEL_REPO_BACKEND", "sqlalchemy")
     session = FakeSession()
@@ -49,7 +49,7 @@ def test_build_customer_read_model_repository_uses_shared_session_factory(monkey
 
 
 def test_build_customer_live_source_repository_uses_shared_session_factory(monkeypatch) -> None:
-    from aicrm_next.customer_read_model import repo as repo_module
+    from aicrm_next.crm.customer_read_model import repo as repo_module
 
     session = FakeSession()
     calls: list[object] = []
@@ -67,7 +67,7 @@ def test_build_customer_live_source_repository_uses_shared_session_factory(monke
 
 
 def test_customer_sqlalchemy_repository_close_rolls_back_and_closes_session() -> None:
-    from aicrm_next.customer_read_model.repo import SqlAlchemyCustomerReadModelRepository
+    from aicrm_next.crm.customer_read_model.repo import SqlAlchemyCustomerReadModelRepository
 
     session = FakeSession()
 

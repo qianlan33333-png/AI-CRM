@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from aicrm_next.automation_engine import channels_api
-from aicrm_next.shared.repository_provider import RepositoryProviderError
+from aicrm_next.automation.automation_engine import channels_api
+from aicrm_next.platform.shared.repository_provider import RepositoryProviderError
 from tools import check_architecture_boundaries, check_db_access_boundary
 
 

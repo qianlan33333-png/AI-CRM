@@ -4,20 +4,20 @@ import importlib.util
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.automation_engine.repo import build_automation_repository
+from aicrm_next.automation.automation_engine.repo import build_automation_repository
 from aicrm_next.main import create_app
 
 
 def test_retired_task_workflow_profile_modules_are_removed() -> None:
     retired_modules = {
-        "aicrm_next.automation_engine.domain",
-        "aicrm_next.automation_engine.profile_segments",
-        "aicrm_next.automation_engine.state_machine",
-        "aicrm_next.automation_engine.task_groups",
-        "aicrm_next.automation_engine.tasks",
-        "aicrm_next.automation_engine.workflow",
-        "aicrm_next.automation_engine.workflow_nodes",
-        "aicrm_next.automation_engine.workflows",
+        "aicrm_next.automation.automation_engine.domain",
+        "aicrm_next.automation.automation_engine.profile_segments",
+        "aicrm_next.automation.automation_engine.state_machine",
+        "aicrm_next.automation.automation_engine.task_groups",
+        "aicrm_next.automation.automation_engine.tasks",
+        "aicrm_next.automation.automation_engine.workflow",
+        "aicrm_next.automation.automation_engine.workflow_nodes",
+        "aicrm_next.automation.automation_engine.workflows",
     }
 
     for module_name in retired_modules:

@@ -18,20 +18,20 @@ ensure_repo_root_on_path()
 
 REQUIRED_ASSETS = {
     "webhook_inbox_migration": "migrations/versions/0054_webhook_inbox.py",
-    "webhook_inbox_models": "aicrm_next/platform_foundation/webhook_inbox/models.py",
-    "webhook_inbox_repository": "aicrm_next/platform_foundation/webhook_inbox/repository.py",
-    "webhook_inbox_service": "aicrm_next/platform_foundation/webhook_inbox/service.py",
-    "callback_fast_ack_route": "aicrm_next/channel_entry/api.py",
-    "callback_ingress_module": "aicrm_next/channel_entry/callback_ingress.py",
-    "callback_inbox_worker": "aicrm_next/channel_entry/inbox.py",
-    "callback_worker_module": "aicrm_next/channel_entry/callback_worker.py",
-    "callback_processor_module": "aicrm_next/channel_entry/callback_processor.py",
-    "isolated_ingress_runtime": "aicrm_next/channel_entry/ingress_app.py",
+    "webhook_inbox_models": "aicrm_next/platform/platform_foundation/webhook_inbox/models.py",
+    "webhook_inbox_repository": "aicrm_next/platform/platform_foundation/webhook_inbox/repository.py",
+    "webhook_inbox_service": "aicrm_next/platform/platform_foundation/webhook_inbox/service.py",
+    "callback_fast_ack_route": "aicrm_next/channels/channel_entry/api.py",
+    "callback_ingress_module": "aicrm_next/channels/channel_entry/callback_ingress.py",
+    "callback_inbox_worker": "aicrm_next/channels/channel_entry/inbox.py",
+    "callback_worker_module": "aicrm_next/channels/channel_entry/callback_worker.py",
+    "callback_processor_module": "aicrm_next/channels/channel_entry/callback_processor.py",
+    "isolated_ingress_runtime": "aicrm_next/channels/channel_entry/ingress_app.py",
     "callback_worker_entrypoint": "scripts/run_wecom_callback_inbox_worker.py",
     "callback_ingress_entrypoint": "scripts/run_wecom_callback_ingress.py",
     "callback_ingress_systemd_unit": "deploy/openclaw-wecom-callback-ingress.service",
     "callback_worker_systemd_unit": "deploy/openclaw-wecom-callback-inbox-worker.service",
-    "typed_wecom_runtime": "aicrm_next/integration_gateway/wecom_runtime.py",
+    "typed_wecom_runtime": "aicrm_next/channels/integration_gateway/wecom_runtime.py",
     "canonical_web_systemd_unit": "deploy/openclaw-wecom-postgres.service",
     "canonical_wecom_ingress_systemd_unit": "deploy/aicrm-wecom-ingress.service",
     "canonical_callback_worker_systemd_unit": "deploy/aicrm-wecom-callback-worker.service",
@@ -172,13 +172,13 @@ REQUIRED_TEST_PROOFS = {
         "tests/test_next_channel_entry_orchestrator.py",
         "test_active_channel_baseline_emits_only_channel_entry_without_program_admission",
     ),
-    "external_effect_realtime_unknown_quarantine": (
+    "external_effect_realtime_signal_only": (
         "tests/test_external_effects_realtime.py",
-        "test_realtime_adapter_exception_quarantines_job_for_reconciliation",
+        "test_realtime_signal_never_dispatches_provider_or_creates_attempt",
     ),
     "external_effect_stale_dispatching_quarantine": (
-        "tests/test_external_effects_mvp.py",
-        "test_external_effect_due_queue_quarantines_stale_dispatching_jobs",
+        "tests/test_external_effect_delivery_lease.py",
+        "test_stale_post_provider_dispatch_is_quarantined_as_unknown",
     ),
     "schema_contract": ("tests/test_webhook_inbox_migration_contract.py", "test_webhook_inbox_migration_locks_status_and_idempotency_contracts"),
     "webhook_inbox_service_models": (
@@ -191,9 +191,12 @@ REQUIRED_TEST_PROOFS = {
     ),
     "admin_replay_detail": ("tests/test_webhook_inbox_admin_api.py", "test_webhook_inbox_admin_detail_returns_processing_chain"),
     "admin_retry_skip": ("tests/test_webhook_inbox_admin_api.py", "test_webhook_inbox_admin_retry_and_skip_require_token"),
-    "admin_dispatch_one": ("tests/test_webhook_inbox_admin_api.py", "test_webhook_inbox_admin_dispatch_one_requires_token_and_supports_execute"),
+    "admin_dispatch_one": ("tests/test_webhook_inbox_admin_api.py", "test_webhook_inbox_admin_dispatch_one_requires_token_and_versioned_command"),
     "admin_run_due": ("tests/test_webhook_inbox_admin_api.py", "test_webhook_inbox_admin_run_due_defaults_to_dry_run"),
-    "admin_page_hooks": ("tests/test_webhook_inbox_admin_api.py", "test_webhook_inbox_admin_page_renders_shell_and_api_hooks"),
+    "admin_api_only_contract": (
+        "tests/test_monitoring_frontend_retirement.py",
+        "test_monitoring_frontend_and_duplicate_facades_are_absent_from_runtime",
+    ),
     "admin_incident_window_filter": (
         "tests/test_webhook_inbox_admin_api.py",
         "test_webhook_inbox_admin_filters_incident_window_pending_failed_rows",
@@ -271,7 +274,7 @@ OBJECTIVE_REQUIREMENTS = {
         "tests": [
             "external_effect_boundary",
             "channel_entry_effect_realtime_wakeup",
-            "external_effect_realtime_unknown_quarantine",
+            "external_effect_realtime_signal_only",
             "external_effect_stale_dispatching_quarantine",
         ],
         "readiness": ["downstream_worker_isolation_ok"],
@@ -351,7 +354,7 @@ OBJECTIVE_REQUIREMENTS = {
             "admin_retry_skip",
             "admin_dispatch_one",
             "admin_run_due",
-            "admin_page_hooks",
+            "admin_api_only_contract",
             "admin_incident_window_filter",
             "webhook_inbox_metrics_distribution",
             "deploy_smoke_completion_gate",
@@ -362,7 +365,6 @@ OBJECTIVE_REQUIREMENTS = {
         ],
         "readiness": [
             "ready_for_production_completion",
-            "admin_webhook_inbox_ok",
             "admin_webhook_inbox_metrics_ok",
             "admin_webhook_inbox_items_ok",
             "admin_webhook_inbox_reconciliation_ok",
@@ -403,7 +405,6 @@ def _readiness_check(path: str) -> dict[str, Any]:
     webhook_ingestion = payload.get("webhook_ingestion_evidence") if isinstance(payload.get("webhook_ingestion_evidence"), dict) else {}
     webhook_processing = payload.get("webhook_processing_evidence") if isinstance(payload.get("webhook_processing_evidence"), dict) else {}
     same_sample = payload.get("same_sample_evidence") if isinstance(payload.get("same_sample_evidence"), dict) else {}
-    admin_webhook_inbox = payload.get("admin_webhook_inbox") if isinstance(payload.get("admin_webhook_inbox"), dict) else {}
     admin_webhook_inbox_metrics = payload.get("admin_webhook_inbox_metrics") if isinstance(payload.get("admin_webhook_inbox_metrics"), dict) else {}
     admin_webhook_inbox_items = payload.get("admin_webhook_inbox_items") if isinstance(payload.get("admin_webhook_inbox_items"), dict) else {}
     admin_webhook_inbox_reconciliation = (
@@ -424,7 +425,6 @@ def _readiness_check(path: str) -> dict[str, Any]:
         and webhook_ingestion.get("ok") is True
         and webhook_processing.get("ok") is True
         and same_sample.get("ok") is True
-        and admin_webhook_inbox.get("ok") is True
         and admin_webhook_inbox_metrics.get("ok") is True
         and admin_webhook_inbox_items.get("ok") is True
         and admin_webhook_inbox_reconciliation.get("ok") is True
@@ -445,7 +445,6 @@ def _readiness_check(path: str) -> dict[str, Any]:
         "webhook_ingestion_ok": webhook_ingestion.get("ok"),
         "webhook_processing_ok": webhook_processing.get("ok"),
         "same_sample_ok": same_sample.get("ok"),
-        "admin_webhook_inbox_ok": admin_webhook_inbox.get("ok"),
         "admin_webhook_inbox_metrics_ok": admin_webhook_inbox_metrics.get("ok"),
         "admin_webhook_inbox_items_ok": admin_webhook_inbox_items.get("ok"),
         "admin_webhook_inbox_reconciliation_ok": admin_webhook_inbox_reconciliation.get("ok"),

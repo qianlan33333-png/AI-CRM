@@ -6,12 +6,12 @@ from concurrent.futures import ThreadPoolExecutor
 import psycopg
 import pytest
 
-from aicrm_next.identity_contact.repo import PostgresIdentityRepository
-from aicrm_next.sidebar_write.application import (
+from aicrm_next.crm.identity_contact.repo import PostgresIdentityRepository
+from aicrm_next.crm.sidebar_write.application import (
     SidebarWriteForbiddenError,
     _validate_owner_scope,
 )
-from aicrm_next.sidebar_write.commands import BindMobileCommand
+from aicrm_next.crm.sidebar_write.commands import BindMobileCommand
 
 
 def _database_url() -> str:

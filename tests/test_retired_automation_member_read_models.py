@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from aicrm_next.admin_read_model.projections import funnel_payload
+from aicrm_next.insights.admin_read_model.projections import funnel_payload
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,7 +17,7 @@ def test_operation_member_sources_do_not_read_retired_automation_member() -> Non
 
 
 def test_admin_funnel_counts_use_ai_audience_and_platform_queues() -> None:
-    source = (ROOT / "aicrm_next" / "admin_read_model" / "projections.py").read_text(encoding="utf-8")
+    source = (ROOT / "aicrm_next" / "insights" / "admin_read_model" / "projections.py").read_text(encoding="utf-8")
 
     assert "repo.count(\"automation_member\")" not in source
     assert "repo.count(\"automation_operation_task\")" not in source

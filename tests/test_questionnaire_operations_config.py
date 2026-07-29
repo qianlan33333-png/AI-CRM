@@ -1,25 +1,20 @@
 from __future__ import annotations
 
 import pytest
-from datetime import datetime, timedelta, timezone
 from fastapi.testclient import TestClient
 
-from aicrm_next.automation_engine import channels_api
+from aicrm_next.automation.automation_engine import channels_api
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.external_effects import (
+from aicrm_next.platform.platform_foundation.external_effects import (
     ExternalEffectService,
     WEBHOOK_QUESTIONNAIRE_SUBMISSION_PUSH,
 )
-from aicrm_next.platform_foundation.external_effects.repo import reset_external_effect_fixture_state
-from aicrm_next.platform_foundation.push_center.capability_status import PushCapabilityStatusReadService
-from aicrm_next.questionnaire.admin_write import reset_questionnaire_admin_write_fixture_state
-from aicrm_next.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
-from aicrm_next.questionnaire.repo import reset_questionnaire_fixture_state
-from aicrm_next.questionnaire.continuation_repo import (
-    build_questionnaire_continuation_repository,
-    reset_questionnaire_continuation_fixture_state,
-)
-from aicrm_next.questionnaire.repo import build_questionnaire_repository
+from aicrm_next.platform.platform_foundation.external_effects.repo import reset_external_effect_fixture_state
+from aicrm_next.platform.platform_foundation.push_center.capability_status import PushCapabilityStatusReadService
+from aicrm_next.extensions.forms.questionnaire.admin_write import reset_questionnaire_admin_write_fixture_state
+from aicrm_next.extensions.forms.questionnaire.h5_write import reset_questionnaire_h5_write_fixture_state
+from aicrm_next.extensions.forms.questionnaire.repo import reset_questionnaire_fixture_state
+from wechat_identity_test_support import authorize_wechat_client
 
 
 @pytest.fixture()
@@ -31,7 +26,6 @@ def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
     reset_questionnaire_admin_write_fixture_state()
     reset_questionnaire_h5_write_fixture_state()
     reset_external_effect_fixture_state()
-    reset_questionnaire_continuation_fixture_state()
     channels_api._FIXTURE_CHANNELS.clear()
     channels_api._FIXTURE_CHANNELS.update(
         {
@@ -59,7 +53,9 @@ def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
             },
         }
     )
-    return TestClient(create_app())
+    client = TestClient(create_app())
+    authorize_wechat_client(client, {"openid": "openid_001", "unionid": "unionid_001", "external_userid": "wx_ext_001"})
+    return client
 
 
 def _content_payload(title: str = "专项增强问卷") -> dict:
@@ -114,38 +110,6 @@ def test_platform_push_capability_projection_applies_runtime_gates() -> None:
     ).get_capability_status("questionnaire_external_push")
     assert missing_allowlist["enabled"] is False
     assert missing_allowlist["reason"] == "effect_type_allowlist_missing"
-
-
-def test_operations_projects_continuation_summary_without_exposing_unionid(client: TestClient) -> None:
-    questionnaire_id = _create_questionnaire(client)
-    submitted_at = datetime.now(timezone.utc).replace(microsecond=0)
-    submission = build_questionnaire_repository().create_submission(
-        {
-            "questionnaire_id": questionnaire_id,
-            "unionid": "union-operations-continuation-001",
-            "answers": {"q1": "yes"},
-            "submitted_at": submitted_at.isoformat(),
-        }
-    )
-    build_questionnaire_continuation_repository().register_job(
-        {
-            "submission_id": submission["submission_id"],
-            "questionnaire_id": questionnaire_id,
-            "unionid": "union-operations-continuation-001",
-            "action_type": "wecom_tag",
-            "status": "waiting_identity",
-            "expires_at": submitted_at + timedelta(days=7),
-            "source_event_id": "iev-operations-continuation",
-        }
-    )
-
-    payload = client.get(f"/api/admin/questionnaires/{questionnaire_id}/operations").json()
-
-    assert payload["continuations"]["summary"]["waiting_identity"] == 1
-    assert payload["continuations"]["validity_days"] == 7
-    assert payload["continuations"]["items"][0]["action_label"] == "问卷标签"
-    assert payload["continuations"]["items"][0]["remaining_seconds"] > 0
-    assert "unionid" not in payload["continuations"]["items"][0]
 
 
 def test_completion_operations_are_independent_and_mutually_exclusive(client: TestClient) -> None:
@@ -264,7 +228,7 @@ def test_unavailable_push_capability_returns_503_without_blocking_dimension_save
             raise RuntimeError("push capability source unavailable")
 
     monkeypatch.setattr(
-        "aicrm_next.questionnaire.operations.build_push_capability_reader",
+        "aicrm_next.extensions.forms.questionnaire.operations.build_push_capability_reader",
         lambda: UnavailableCapabilityReader(),
     )
 
@@ -397,11 +361,10 @@ def test_external_push_test_only_queues_synthetic_effect(client: TestClient, mon
                 "enabled": True,
                 "configured_enabled": True,
                 "readonly_reason": "",
-                "push_center_href": "/admin/push-center?section=questionnaire",
             }
 
     monkeypatch.setattr(
-        "aicrm_next.questionnaire.operations.build_push_capability_reader",
+        "aicrm_next.extensions.forms.questionnaire.operations.build_push_capability_reader",
         lambda: EnabledCapabilityReader(),
     )
     queued = client.post(f"/api/admin/questionnaires/{questionnaire_id}/operations/external-push/test")

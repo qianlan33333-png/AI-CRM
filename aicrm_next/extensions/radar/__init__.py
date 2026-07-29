@@ -1,0 +1,1 @@
+"""Content radar capability pack."""

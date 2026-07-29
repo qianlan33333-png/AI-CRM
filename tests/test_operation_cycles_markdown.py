@@ -6,7 +6,7 @@ import re
 
 import pytest
 
-from aicrm_next.operation_cycles.markdown_renderer import normalize_chart_spec, render_markdown
+from aicrm_next.extensions.hxc.operation_cycles.markdown_renderer import normalize_chart_spec, render_markdown
 
 
 def test_markdown_renderer_supports_tables_tasks_and_strikethrough() -> None:

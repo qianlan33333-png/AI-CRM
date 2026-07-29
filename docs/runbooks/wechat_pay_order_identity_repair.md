@@ -16,7 +16,7 @@ Alembic revision `0091_retire_wechat_pay_order_identity_repair`.
 
 Paid order customer identity must be handled by the current order/customer
 identity projection path. Do not reintroduce
-`aicrm_next.commerce.order_identity_repair` or schedule a replacement repair job
+`aicrm_next.extensions.commerce.commerce.order_identity_repair` or schedule a replacement repair job
 without a new architecture review.
 
 ## Stale Caller Cleanup

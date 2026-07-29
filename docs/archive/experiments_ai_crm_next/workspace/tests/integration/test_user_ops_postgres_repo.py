@@ -3,9 +3,9 @@ from __future__ import annotations
 import pytest
 from sqlalchemy.orm import Session
 
-from aicrm_next.ops_enrollment.dto import BatchSendRequest, UserOpsFilters
-from aicrm_next.ops_enrollment.repo import SqlAlchemyUserOpsRepository
-from aicrm_next.ops_enrollment.user_ops import apply_filters, build_overview_cards, resolve_batch_targets
+from aicrm_next.automation.ops_enrollment.dto import BatchSendRequest, UserOpsFilters
+from aicrm_next.automation.ops_enrollment.repo import SqlAlchemyUserOpsRepository
+from aicrm_next.automation.ops_enrollment.user_ops import apply_filters, build_overview_cards, resolve_batch_targets
 
 pytestmark = pytest.mark.postgres_integration
 

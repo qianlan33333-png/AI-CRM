@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.commerce.repo import reset_commerce_fixture_state
+from aicrm_next.extensions.commerce.commerce.repo import reset_commerce_fixture_state
 
 
 def _assert_next_payment_response(response) -> dict:

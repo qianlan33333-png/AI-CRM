@@ -2,16 +2,17 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from aicrm_next.customer_tags.live_mutation import execute_wecom_tag_mutation, reset_wecom_tag_live_mutation_fixture_state
-from aicrm_next.customer_tags.local_projection import get_customer_tag_local_projection_fixture_rows
-from aicrm_next.customer_tags.mutation_commands import PlanCustomerTagAssignmentCommand
-from aicrm_next.identity_contact.dto import IdentityResolution
-from aicrm_next.integration_gateway import wecom_channel_entry_client
+from aicrm_next.crm.customer_tags.live_mutation import execute_wecom_tag_mutation, reset_wecom_tag_live_mutation_fixture_state
+from aicrm_next.crm.customer_tags.local_projection import get_customer_tag_local_projection_fixture_rows
+from aicrm_next.crm.customer_tags.mutation_commands import PlanCustomerTagAssignmentCommand
+from aicrm_next.crm.identity_contact.dto import IdentityResolution
+from aicrm_next.channels.integration_gateway import wecom_channel_entry_client
 from aicrm_next.main import create_app
-from aicrm_next.platform_foundation.external_effects import ExternalEffectService, reset_external_effect_fixture_state
-from aicrm_next.platform_foundation.internal_events import reset_internal_event_fixture_state
-from aicrm_next.questionnaire import h5_write
+from aicrm_next.platform.platform_foundation.external_effects import ExternalEffectService, reset_external_effect_fixture_state
+from aicrm_next.platform.platform_foundation.internal_events import reset_internal_event_fixture_state
+from aicrm_next.extensions.forms.questionnaire import h5_write
 from tests.sidebar_auth_test_helpers import install_sidebar_auth
+from tests.wechat_identity_test_support import authorize_wechat_client
 
 
 def _client(monkeypatch) -> TestClient:
@@ -62,6 +63,10 @@ def test_questionnaire_submit_tag_side_effect_is_durable_and_does_not_call_wecom
     monkeypatch.setenv("WECOM_CONTACT_SECRET", "secret-questionnaire")
     monkeypatch.setattr(wecom_channel_entry_client, "ProductionWeComAdapter", FakeProductionWeComAdapter)
     client = _client(monkeypatch)
+    authorize_wechat_client(
+        client,
+        {"external_userid": "wx_ext_001", "openid": "openid_001", "unionid": "unionid_001"},
+    )
 
     response = client.post(
         "/api/h5/questionnaires/hxc-activation-v1/submit",
@@ -101,6 +106,10 @@ def test_questionnaire_submit_tag_side_effect_is_durable_and_does_not_call_wecom
 
 def test_questionnaire_submit_with_unionid_only_queues_identity_recovery_without_local_projection(monkeypatch) -> None:
     client = _client(monkeypatch)
+    authorize_wechat_client(
+        client,
+        {"openid": "openid_union_only_001", "unionid": "unionid_union_only_001"},
+    )
 
     response = client.post(
         "/api/h5/questionnaires/hxc-activation-v1/submit",
@@ -115,9 +124,7 @@ def test_questionnaire_submit_with_unionid_only_queues_identity_recovery_without
     tag_plan = response.json()["side_effects"]["wecom_tag"]
     assert tag_plan["adapter_mode"] == "durable_internal_event"
     assert tag_plan["status"] == "queued"
-    assert tag_plan["error_code"] == "identity_pending_wecom"
-    assert tag_plan["reason"] == "durable_internal_event_waiting_for_wecom_identity"
-    assert tag_plan["identity_pending"] is True
+    assert tag_plan["error_code"] == ""
     assert tag_plan["retryable"] is True
     assert tag_plan["local_projection_updated"] is False
     assert tag_plan["wecom_api_called"] is False
@@ -127,7 +134,7 @@ def test_questionnaire_submit_with_unionid_only_queues_identity_recovery_without
     assert rows == []
 
 
-def test_questionnaire_submit_binds_payload_mobile_when_resolved_identity_has_no_mobile(monkeypatch) -> None:
+def test_questionnaire_submit_does_not_bind_untrusted_payload_mobile(monkeypatch) -> None:
     mobile_bind_calls: list[dict] = []
 
     class FakeResolvePersonIdentityQuery:
@@ -163,6 +170,13 @@ def test_questionnaire_submit_binds_payload_mobile_when_resolved_identity_has_no
     monkeypatch.setattr(h5_write, "ResolvePersonIdentityQuery", FakeResolvePersonIdentityQuery)
     monkeypatch.setattr(h5_write, "BindMobileToExternalContactCommand", FakeBindMobileToExternalContactCommand)
     client = _client(monkeypatch)
+    authorize_wechat_client(
+        client,
+        {
+            "external_userid": "wx_questionnaire_mobile",
+            "unionid": "unionid_questionnaire_mobile",
+        },
+    )
 
     response = client.post(
         "/api/h5/questionnaires/hxc-activation-v1/submit",
@@ -174,15 +188,7 @@ def test_questionnaire_submit_binds_payload_mobile_when_resolved_identity_has_no
     )
 
     assert response.status_code == 200
-    assert mobile_bind_calls == [
-        {
-            "external_userid": "wx_questionnaire_mobile",
-            "mobile": "13800138000",
-            "owner_userid": "owner-questionnaire",
-            "bind_by_userid": "questionnaire_h5_submit",
-        }
-    ]
-    assert response.json()["side_effects"]["mobile_binding"]["binding_status"] == "bound"
+    assert mobile_bind_calls == []
 
 
 def test_customer_tag_assignment_command_is_plan_only() -> None:

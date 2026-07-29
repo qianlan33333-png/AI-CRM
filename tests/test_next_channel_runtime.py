@@ -1,8 +1,13 @@
 from __future__ import annotations
 
-from fastapi.testclient import TestClient
+from io import BytesIO
+from types import SimpleNamespace
 
-from aicrm_next.automation_engine import channels_api
+from fastapi.testclient import TestClient
+from PIL import Image
+
+from aicrm_next.automation.automation_engine import channels_api
+from aicrm_next.channels.integration_gateway.wecom_qrcode_image_client import WeComQrImage
 from aicrm_next.main import create_app
 
 
@@ -73,9 +78,19 @@ def test_next_channel_center_page_and_channel_crud_routes(monkeypatch):
     assert contacts.status_code == 200
     assert contacts.json()["contacts"] == []
 
+    png = BytesIO()
+    Image.new("RGB", (320, 320), "white").save(png, "PNG")
+    monkeypatch.setattr(
+        channels_api,
+        "build_wecom_qrcode_image_client",
+        lambda: SimpleNamespace(download=lambda url: WeComQrImage(file_bytes=png.getvalue(), content_type="image/png")),
+    )
     qrcode = client.get(f"/api/admin/channels/{channel_id}/qrcode/download", follow_redirects=False)
-    assert qrcode.status_code == 302
-    assert qrcode.headers["location"] == "https://wework.qpic.cn/next-runtime-qr"
+    assert qrcode.status_code == 200
+    assert qrcode.headers["content-type"] == "image/jpeg"
+    assert "attachment" in qrcode.headers["content-disposition"]
+    assert "location" not in qrcode.headers
+    assert qrcode.content.startswith(b"\xff\xd8")
     assert qrcode.headers["x-aicrm-qr-scene"] == "aqr_next_runtime"
 
     link_created = client.post(

@@ -3,9 +3,9 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from aicrm_next.platform_foundation.auth_platform.credentials import CredentialHasher
-from aicrm_next.platform_foundation.auth_platform.models import SessionSubject
-from aicrm_next.platform_foundation.auth_platform.sessions import AuthSessionService
+from aicrm_next.platform.platform_foundation.auth_platform.credentials import CredentialHasher
+from aicrm_next.platform.platform_foundation.auth_platform.models import SessionSubject
+from aicrm_next.platform.platform_foundation.auth_platform.sessions import AuthSessionService
 from tests.admin_auth_test_helpers import InMemoryAuthSessionRepository
 
 
@@ -37,7 +37,7 @@ def test_server_side_admin_version_revokes_existing_session() -> None:
 
 
 def test_auth_migration_joins_sessions_to_live_admin_version() -> None:
-    source = (ROOT / "aicrm_next/platform_foundation/auth_platform/repository.py").read_text(encoding="utf-8")
+    source = (ROOT / "aicrm_next/platform/platform_foundation/auth_platform/repository.py").read_text(encoding="utf-8")
     migration = (ROOT / "migrations/versions/0104_auth_platform.py").read_text(encoding="utf-8")
 
     assert "JOIN admin_users a ON a.id = s.admin_user_id" in source

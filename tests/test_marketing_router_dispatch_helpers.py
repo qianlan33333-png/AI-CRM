@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from aicrm_next.ops_enrollment.application import (
+from aicrm_next.automation.ops_enrollment.application import (
     PreviewUserOpsBroadcastCommand,
     get_user_ops_side_effect_plans,
     reset_user_ops_fixture_state,
 )
-from aicrm_next.ops_enrollment.dto import BroadcastPreviewRequest
+from aicrm_next.automation.ops_enrollment.dto import BroadcastPreviewRequest
 
 
 def test_marketing_router_preview_dispatch_is_plan_only() -> None:

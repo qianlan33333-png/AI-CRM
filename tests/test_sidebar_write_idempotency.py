@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.sidebar_write import get_sidebar_write_audit_events, get_sidebar_write_projection_events
+from aicrm_next.crm.sidebar_write import get_sidebar_write_audit_events, get_sidebar_write_projection_events
 from tests.sidebar_auth_test_helpers import install_sidebar_auth
 
 

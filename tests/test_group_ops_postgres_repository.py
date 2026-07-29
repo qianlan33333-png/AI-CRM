@@ -177,7 +177,7 @@ def _create_group_ops_sqlite_db(path: Path) -> str:
 
 
 def test_postgres_group_ops_repository_lists_and_binds_with_sql_backend(tmp_path: Path) -> None:
-    from aicrm_next.automation_engine.group_ops.postgres_repo import PostgresGroupOpsRepository
+    from aicrm_next.automation.automation_engine.group_ops.postgres_repo import PostgresGroupOpsRepository
 
     db_url = _create_group_ops_sqlite_db(tmp_path / "group_ops_repo.db")
     repo = PostgresGroupOpsRepository(create_engine(db_url, future=True))
@@ -270,9 +270,9 @@ def test_postgres_group_ops_repository_lists_and_binds_with_sql_backend(tmp_path
 
 
 def test_group_ops_sync_imports_admin_groups_from_local_group_chat_cache(tmp_path: Path) -> None:
-    from aicrm_next.automation_engine.group_ops.application import SyncGroupOpsOwnerGroupsCommand
-    from aicrm_next.automation_engine.group_ops.dto import GroupOpsGroupSyncRequest
-    from aicrm_next.automation_engine.group_ops.postgres_repo import PostgresGroupOpsRepository
+    from aicrm_next.automation.automation_engine.group_ops.application import SyncGroupOpsOwnerGroupsCommand
+    from aicrm_next.automation.automation_engine.group_ops.dto import GroupOpsGroupSyncRequest
+    from aicrm_next.automation.automation_engine.group_ops.postgres_repo import PostgresGroupOpsRepository
 
     class EmptyOwnerSyncAdapter:
         def list_group_chats(self, *, owner_userid: str, limit: int = 100, cursor: str = "") -> dict:

@@ -3,7 +3,7 @@
 Lifecycle manifest entry:
 - table: service_period_member_views
 - lifecycle: canonical
-- write_owner: aicrm_next.service_period
+- write_owner: aicrm_next.extensions.commerce.service_period
 
 Rollback note:
 - Roll back the application first. The additive view table can remain because older

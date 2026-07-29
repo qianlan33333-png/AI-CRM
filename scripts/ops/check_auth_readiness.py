@@ -13,16 +13,16 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from aicrm_next.platform_foundation.auth_platform.credentials import verify_client_secret  # noqa: E402
-from aicrm_next.platform_foundation.auth_platform.profiles import (  # noqa: E402
+from aicrm_next.platform.platform_foundation.auth_platform.credentials import verify_client_secret  # noqa: E402
+from aicrm_next.platform.platform_foundation.auth_platform.profiles import (  # noqa: E402
     API_CLIENT_PROFILES,
     WEBHOOK_CLIENT_PROFILES,
 )
-from aicrm_next.platform_foundation.auth_platform.repository import PostgresAuthRepository  # noqa: E402
-from aicrm_next.platform_foundation.auth_platform.service import ApiClientService, AuthServiceConfig  # noqa: E402
-from aicrm_next.platform_foundation.auth_platform.webhook_hmac import WebhookHmacSigner  # noqa: E402
-from aicrm_next.shared.route_ownership import load_route_manifest  # noqa: E402
-from aicrm_next.shared.secret_store import FileSecretStore  # noqa: E402
+from aicrm_next.platform.platform_foundation.auth_platform.repository import PostgresAuthRepository  # noqa: E402
+from aicrm_next.platform.platform_foundation.auth_platform.service import ApiClientService, AuthServiceConfig  # noqa: E402
+from aicrm_next.platform.platform_foundation.auth_platform.webhook_hmac import WebhookHmacSigner  # noqa: E402
+from aicrm_next.platform.shared.route_ownership import load_route_manifest  # noqa: E402
+from aicrm_next.platform.shared.secret_store import FileSecretStore  # noqa: E402
 from scripts.ops.bootstrap_auth_clients import (  # noqa: E402
     JWT_KEY_SETTING,
     SESSION_PEPPER_SETTING,

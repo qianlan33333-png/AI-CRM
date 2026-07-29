@@ -18,7 +18,7 @@ def ensure_repo_root_on_path() -> Path:
 
 def print_json(payload: Any, *, indent: int | None = None, sort_keys: bool = False) -> None:
     ensure_repo_root_on_path()
-    from aicrm_next.shared.sensitive_data import redact_sensitive_data
+    from aicrm_next.platform.shared.sensitive_data import redact_sensitive_data
 
     print(dump_json(redact_sensitive_data(payload), indent=indent, sort_keys=sort_keys))
 
@@ -29,7 +29,7 @@ def dump_json(payload: Any, *, indent: int | None = None, sort_keys: bool = Fals
 
 def emit_json(payload: Any, *, indent: int | None = None, sort_keys: bool = False) -> str:
     ensure_repo_root_on_path()
-    from aicrm_next.shared.sensitive_data import redact_sensitive_data
+    from aicrm_next.platform.shared.sensitive_data import redact_sensitive_data
 
     body = dump_json(redact_sensitive_data(payload), indent=indent, sort_keys=sort_keys)
     print(body)
@@ -57,7 +57,7 @@ def read_internal_api_base_url() -> str:
 
 def read_internal_tls_context():
     ensure_repo_root_on_path()
-    from aicrm_next.platform_foundation.auth_platform.access_client import build_tls_ssl_context
+    from aicrm_next.platform.platform_foundation.auth_platform.access_client import build_tls_ssl_context
 
     return build_tls_ssl_context()
 
@@ -69,7 +69,7 @@ def read_internal_access_token(
     scopes: tuple[str, ...] = ("write",),
 ) -> str:
     ensure_repo_root_on_path()
-    from aicrm_next.platform_foundation.auth_platform.access_client import fetch_internal_access_token
+    from aicrm_next.platform.platform_foundation.auth_platform.access_client import fetch_internal_access_token
 
     return fetch_internal_access_token(
         purpose=purpose,

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.identity_contact.dto import IdentityResolution, IdentityResolveResult
+from aicrm_next.crm.identity_contact.dto import IdentityResolution, IdentityResolveResult
 from tests.group_ops_test_helpers import group_ops_api_client  # noqa: F401
 
 
@@ -121,7 +121,7 @@ def test_webhook_enqueue_action_routes_through_next_action_port(group_ops_api_cl
             return {"ok": True, "status": "queued", "action_ref_id": "job_123", "side_effect_executed": False}
 
     monkeypatch.setattr(
-        "aicrm_next.automation_engine.group_ops.action_port.build_group_ops_action_port",
+        "aicrm_next.automation.automation_engine.group_ops.action_port.build_group_ops_action_port",
         lambda: FakeActionPort(),
     )
     created = group_ops_api_client.post(
@@ -185,9 +185,9 @@ def test_rules_segmentation_and_missing_builtin_data_source_are_explicit(group_o
 
 
 def test_action_port_enqueue_uses_next_queue_gateway_and_exact_external_userid():
-    from aicrm_next.automation_engine.group_ops.action_dispatcher import GroupOpsActionDispatcher
-    from aicrm_next.automation_engine.group_ops.action_dispatcher import NextOutboundMessageQueueGateway
-    from aicrm_next.automation_engine.group_ops.action_port import DefaultGroupOpsActionPort
+    from aicrm_next.automation.automation_engine.group_ops.action_dispatcher import GroupOpsActionDispatcher
+    from aicrm_next.automation.automation_engine.group_ops.action_dispatcher import NextOutboundMessageQueueGateway
+    from aicrm_next.automation.automation_engine.group_ops.action_port import DefaultGroupOpsActionPort
 
     captured: dict = {}
 
@@ -219,9 +219,9 @@ def test_action_port_enqueue_uses_next_queue_gateway_and_exact_external_userid()
 
 
 def test_action_port_enqueue_duplicate_does_not_create_second_task():
-    from aicrm_next.automation_engine.group_ops.action_dispatcher import GroupOpsActionDispatcher
-    from aicrm_next.automation_engine.group_ops.action_dispatcher import NextOutboundMessageQueueGateway
-    from aicrm_next.automation_engine.group_ops.action_port import DefaultGroupOpsActionPort
+    from aicrm_next.automation.automation_engine.group_ops.action_dispatcher import GroupOpsActionDispatcher
+    from aicrm_next.automation.automation_engine.group_ops.action_dispatcher import NextOutboundMessageQueueGateway
+    from aicrm_next.automation.automation_engine.group_ops.action_port import DefaultGroupOpsActionPort
 
     seen: set[str] = set()
 
@@ -253,9 +253,9 @@ def test_action_port_enqueue_duplicate_does_not_create_second_task():
 
 
 def test_action_port_publish_task_uses_next_queue_gateway():
-    from aicrm_next.automation_engine.group_ops.action_dispatcher import GroupOpsActionDispatcher
-    from aicrm_next.automation_engine.group_ops.action_dispatcher import NextOutboundMessageQueueGateway
-    from aicrm_next.automation_engine.group_ops.action_port import DefaultGroupOpsActionPort
+    from aicrm_next.automation.automation_engine.group_ops.action_dispatcher import GroupOpsActionDispatcher
+    from aicrm_next.automation.automation_engine.group_ops.action_dispatcher import NextOutboundMessageQueueGateway
+    from aicrm_next.automation.automation_engine.group_ops.action_port import DefaultGroupOpsActionPort
 
     captured: dict = {}
 
@@ -287,7 +287,7 @@ def test_action_port_publish_task_uses_next_queue_gateway():
 
 
 def test_action_port_add_to_audience_records_audit_without_side_effect():
-    from aicrm_next.automation_engine.group_ops.action_port import DefaultGroupOpsActionPort
+    from aicrm_next.automation.automation_engine.group_ops.action_port import DefaultGroupOpsActionPort
 
     result = DefaultGroupOpsActionPort().dispatch(
         {
@@ -308,7 +308,7 @@ def test_action_port_add_to_audience_records_audit_without_side_effect():
 
 
 def test_action_port_missing_external_userid_returns_clear_error():
-    from aicrm_next.automation_engine.group_ops.action_port import DefaultGroupOpsActionPort
+    from aicrm_next.automation.automation_engine.group_ops.action_port import DefaultGroupOpsActionPort
 
     try:
         DefaultGroupOpsActionPort().dispatch(

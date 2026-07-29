@@ -589,7 +589,7 @@ Mini-program item fields: `id`, `title`, `appid`, `page_path`, `thumb_image_id`,
 
 ## Commerce / Media Parity Tooling
 
-- Spec: `aicrm_next/commerce/parity_spec.py`, `aicrm_next/media_library/parity_spec.py`
+- Spec: `aicrm_next/commerce/parity_spec.py`, `aicrm_next/engagement/media_library/parity_spec.py`
 - Fixtures: `tests/fixtures/old_commerce/`, `tests/fixtures/old_media_library/`
 - Tools: `retired experiment wrapper; see docs/archive/experiments_ai_crm_next/retired_tools.md`, `retired experiment wrapper; see docs/archive/experiments_ai_crm_next/retired_tools.md`
 - Commerce `--old-base-url` mode defaults to read-only endpoints and skips checkout writes with `old_write_endpoint_disabled`.

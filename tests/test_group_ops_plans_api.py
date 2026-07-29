@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from aicrm_next.shared.repository_provider import RepositoryProviderError
+from aicrm_next.platform.shared.repository_provider import RepositoryProviderError
 from tests.group_ops_test_helpers import group_ops_api_client
 
 
@@ -97,7 +97,7 @@ def test_plan_list_returns_plan_fields_without_next_action(group_ops_api_client)
 
 
 def test_plan_detail_tolerates_missing_optional_webhook_rule_tables():
-    from aicrm_next.automation_engine.group_ops.application import GetGroupOpsPlanQuery
+    from aicrm_next.automation.automation_engine.group_ops.application import GetGroupOpsPlanQuery
 
     payload = GetGroupOpsPlanQuery(repo=DetailRepoWithMissingOptionalTables())(7)
 
@@ -179,9 +179,9 @@ def test_group_ops_detail_api_regression_keeps_existing_business_endpoints(group
 
 
 def test_plan_list_returns_group_ops_queue_count(group_ops_api_client, monkeypatch):
-    from aicrm_next.integration_gateway import wecom_group_adapter
+    from aicrm_next import integration_ports
 
-    monkeypatch.setattr(wecom_group_adapter, "build_group_ops_queue_stats_gateway", lambda: FixedQueueStatsGateway())
+    monkeypatch.setattr(integration_ports, "build_group_ops_queue_stats_gateway", lambda: FixedQueueStatsGateway())
 
     response = group_ops_api_client.get("/api/admin/automation-conversion/group-ops/plans")
 

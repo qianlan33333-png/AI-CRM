@@ -144,7 +144,7 @@ def _artifact_reference(artifact_type: str, artifact: Mapping[str, Any] | None) 
         "label": labels[artifact_type],
         "source_system": ("ai_crm_production_readonly" if artifact_type == "delivery_metrics" else "codex_local_artifact") if is_available else "source_missing",
         "source_id": PRODUCTION_PLAN_KEY if artifact_type == "delivery_metrics" and is_available else f"hxc_monday_20260713:{artifact_type}",
-        "href": "/admin/broadcast-jobs?source_type=cloud_plan" if artifact_type == "delivery_metrics" and is_available else "",
+        "href": "",
         "evidence_hash": artifact["evidence_hash"] if is_available else "",
         "data_status": "observed" if is_available else "unknown",
     }

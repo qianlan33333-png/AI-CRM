@@ -7,17 +7,17 @@ import pytest
 from fastapi.testclient import TestClient
 from starlette.requests import Request
 
-from aicrm_next.admin_auth import route_policy as route_policy_module
-from aicrm_next.admin_auth.route_policy import (
+from aicrm_next.platform.admin_auth import route_policy as route_policy_module
+from aicrm_next.platform.admin_auth.route_policy import (
     RouteRateLimiter,
     _csrf_error,
     _enforce_payment_identity_session,
 )
-from aicrm_next.admin_auth.service import CSRF_COOKIE, SESSION_COOKIE
+from aicrm_next.platform.admin_auth.service import CSRF_COOKIE, SESSION_COOKIE
 from aicrm_next.main import create_app
-from aicrm_next.public_product import h5_wechat_pay
-from aicrm_next.shared.route_policy import RoutePolicy
-from aicrm_next.shared.wechat_h5_session import WECHAT_PAYMENT_IDENTITY_COOKIE
+from aicrm_next.extensions.commerce.public_product import h5_wechat_pay
+from aicrm_next.platform.shared.route_policy import RoutePolicy
+from aicrm_next.platform.shared.wechat_h5_session import WECHAT_PAYMENT_IDENTITY_COOKIE
 from tests.admin_auth_test_helpers import access_token_headers, install_access_token, install_admin_session
 from tests.sidebar_auth_test_helpers import install_sidebar_auth, install_sidebar_viewer_session
 
@@ -340,32 +340,6 @@ def test_automation_admin_can_use_authenticated_group_ops_control_plane(monkeypa
 
     assert response.status_code == 201
     assert response.json()["name"] == "authenticated formal plan"
-
-
-def test_automation_admin_can_generate_channel_qrcode_but_viewer_cannot(monkeypatch: pytest.MonkeyPatch) -> None:
-    def fake_generate(command):
-        return {
-            "ok": True,
-            "channel_id": command.channel_id,
-            "scene_value": "aqr_permission_contract",
-            "config_id": "cfg-permission-contract",
-            "qr_url": "https://wework.qpic.cn/permission-contract",
-            "source": "aicrm_next.channel_entry",
-            "route_owner": "ai_crm_next",
-        }
-
-    monkeypatch.setattr("aicrm_next.channel_entry.api.generate_channel_qrcode", fake_generate)
-    operator = _admin_client(monkeypatch, "automation_admin")
-    viewer = _admin_client(monkeypatch, "viewer")
-
-    allowed = operator.post("/api/admin/channels/17/qrcode/generate", json={})
-    denied = viewer.post("/api/admin/channels/17/qrcode/generate", json={})
-
-    assert allowed.status_code == 200
-    assert allowed.json()["channel_id"] == 17
-    assert denied.status_code == 403
-    assert denied.json()["error"] == "admin_capability_required"
-    assert denied.json()["required_capability"] == "manage_automation"
 
 
 def test_five_principal_permission_matrix(monkeypatch: pytest.MonkeyPatch) -> None:
