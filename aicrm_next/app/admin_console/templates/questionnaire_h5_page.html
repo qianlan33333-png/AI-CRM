@@ -625,8 +625,22 @@
       const handleCompletionResponse = window.AICRMQuestionnaireCompletionAction.create({ formEl, weappLaunchPanel, submittedUrl, setState, handleCompletionTarget });
       function normalizedErrorMessage(error, fallback) {
         if (!error) return fallback;
-        if (typeof error === 'string') return error;
-        if (error instanceof Error && error.message) return error.message;
+        if (typeof error === 'string') return error === '[object Object]' ? fallback : error;
+        if (Array.isArray(error)) {
+          const messages = error.map((item) => normalizedErrorMessage(item, '')).filter(Boolean);
+          return messages.join('；') || fallback;
+        }
+        if (typeof error === 'object') {
+          if (error.loc && (error.msg || error.message)) {
+            const field = (Array.isArray(error.loc) ? error.loc : [error.loc]).filter((item) => item !== 'body').join('.');
+            return `${field || '提交内容'}：${normalizedErrorMessage(error.msg || error.message, fallback)}`;
+          }
+          for (const key of ['detail', 'message', 'error', 'reason', 'errors', 'msg']) {
+            if (!Object.prototype.hasOwnProperty.call(error, key)) continue;
+            const message = normalizedErrorMessage(error[key], '');
+            if (message) return message;
+          }
+        }
         return fallback;
       }
       function isOAuthRequired(result) {
@@ -1135,7 +1149,7 @@
               startOAuthRedirect(data);
               return;
             }
-            if (!ok || !data.ok) throw new Error(data.error || '问卷不存在');
+            if (!ok || !data.ok) throw data;
             renderQuestionnaire({ ...(data.questionnaire || {}), questions: data.questions || (data.questionnaire || {}).questions || [] });
             setState('');
           })
@@ -1247,7 +1261,7 @@
             return;
           }
           if (!response.ok || !result.success) {
-            throw new Error(result.error || '提交失败');
+            throw result;
           }
           handleCompletionResponse(result);
         } catch (error) {

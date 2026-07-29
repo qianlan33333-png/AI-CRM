@@ -565,18 +565,13 @@
         transaction_id_confirmation: document.getElementById("transactionConfirm").value,
         checked: document.getElementById("refundChecked").checked
       };
-      const response = await fetch(`/api/admin/wechat-pay/orders/${orderId}/refunds`, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(payload)
-      });
-      const data = await response.json();
-      if (!data.ok) {
-        result.textContent = data.error || "退款申请提交失败";
-        return;
+      try {
+        const data = await window.AdminApi.requestJson(`/api/admin/wechat-pay/orders/${orderId}/refunds`, { method: "POST", body: payload });
+        const refundLabel = data.refund ? `，微信退款状态：${data.refund.status_label}` : "";
+        result.textContent = `退款申请已提交${refundLabel}，当前订单状态：${data.order.status_label}，已退款 ¥${data.order.refunded_amount_yuan}`;
+      } catch (error) {
+        result.textContent = window.AdminApi.errorMessage(error, "退款申请提交失败");
       }
-      const refundLabel = data.refund ? `，微信退款状态：${data.refund.status_label}` : "";
-      result.textContent = `退款申请已提交${refundLabel}，当前订单状态：${data.order.status_label}，已退款 ¥${data.order.refunded_amount_yuan}`;
     });
   }
   {% else %}
@@ -637,18 +632,17 @@
 
   async function loadPage(cursor = "", pushHistory = false) {
     document.getElementById("wxpaySummary").textContent = "正在加载订单...";
-    const response = await fetch(`/api/admin/wechat-pay/orders?${filterParams(cursor).toString()}`);
-    const data = await response.json();
-    if (!data.ok) {
-      document.getElementById("wxpaySummary").textContent = data.error || "加载失败";
-      return;
+    try {
+      const data = await window.AdminApi.requestJson(`/api/admin/wechat-pay/orders?${filterParams(cursor).toString()}`);
+      if (pushHistory) state.history.push(state.cursor);
+      state.cursor = cursor;
+      state.nextCursor = data.next_cursor || "";
+      state.hasMore = Boolean(data.has_more);
+      state.items = data.items || [];
+      renderRows(state.items);
+    } catch (error) {
+      document.getElementById("wxpaySummary").textContent = window.AdminApi.errorMessage(error, "订单加载失败，请稍后重试");
     }
-    if (pushHistory) state.history.push(state.cursor);
-    state.cursor = cursor;
-    state.nextCursor = data.next_cursor || "";
-    state.hasMore = Boolean(data.has_more);
-    state.items = data.items || [];
-    renderRows(state.items);
   }
 
   function resetPaging() {
@@ -702,26 +696,21 @@
   document.getElementById("exportCreate").addEventListener("click", async () => {
     const result = document.getElementById("exportJobResult");
     result.textContent = "正在创建导出任务...";
-    const response = await fetch("/api/admin/wechat-pay/order-exports", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
+    try {
+      const data = await window.AdminApi.requestJson("/api/admin/wechat-pay/order-exports", { method: "POST", body: {
         admin_action_token: adminActionToken,
         filters: filters(),
         scope: document.getElementById("exportScope").value,
         format: document.getElementById("exportFormat").value,
         cursor: state.cursor,
         limit: document.getElementById("wxpayLimit").value
-      })
-    });
-    const data = await response.json();
-    if (!data.ok) {
-      result.textContent = data.error || "导出任务创建失败";
-      return;
+      }});
+      const jobId = data.job.job_id;
+      result.innerHTML = `导出任务已创建：<strong>${escapeHtml(jobId)}</strong> · 状态 ${escapeHtml(data.job.status)} · <a class="wxpay-text-link" href="/api/admin/wechat-pay/order-exports/${encodeURIComponent(jobId)}/download">下载</a>`;
+      document.getElementById("exportNotice").textContent = `最近创建的导出任务：${jobId}`;
+    } catch (error) {
+      result.textContent = window.AdminApi.errorMessage(error, "导出任务创建失败");
     }
-    const jobId = data.job.job_id;
-    result.innerHTML = `导出任务已创建：<strong>${escapeHtml(jobId)}</strong> · 状态 ${escapeHtml(data.job.status)} · <a class="wxpay-text-link" href="/api/admin/wechat-pay/order-exports/${encodeURIComponent(jobId)}/download">下载</a>`;
-    document.getElementById("exportNotice").textContent = `最近创建的导出任务：${jobId}`;
   });
 
   loadPage("");

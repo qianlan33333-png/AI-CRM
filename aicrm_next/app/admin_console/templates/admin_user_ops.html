@@ -936,9 +936,7 @@
 
     async function openMiniprogramPicker() {
       try {
-        const resp = await fetch('/api/admin/miniprogram-library', { credentials: 'same-origin' });
-        const data = await resp.json();
-        if (!data.ok) throw new Error(data.error || '加载失败');
+        const data = await window.AdminApi.requestJson('/api/admin/miniprogram-library');
         const items = data.items || [];
         if (!items.length) {
           alert('小程序素材库还是空的，先去 /admin/miniprogram-library 配置一条吧。');
@@ -1045,12 +1043,7 @@
     }
 
     async function fetchJson(url, options) {
-      const response = await fetch(url, options);
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok || payload.ok === false) {
-        throw new Error(payload.error || ('请求失败(' + response.status + ')'));
-      }
-      return payload;
+      return window.AdminApi.requestJson(url, options || {});
     }
 
 

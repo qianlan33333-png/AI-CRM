@@ -267,20 +267,19 @@
   async function load() {
     $("summary").textContent = "正在加载订单...";
     renderLoading();
-    const response = await fetch(`${listApiUrl}?${params().toString()}`);
-    const data = await response.json();
-    if (!data.ok) {
-      $("summary").textContent = data.error || data.detail || "加载失败";
+    try {
+      const data = await window.AdminApi.requestJson(`${listApiUrl}?${params().toString()}`);
+      state.total = data.total || 0;
+      state.limit = data.limit || Number($("limit").value || 20);
+      render(data.items || []);
+      $("summary").textContent = `当前页 ${(data.items || []).length} 条 / 筛选结果 ${state.total} 条`;
+      $("pageHint").textContent = `第 ${Math.floor(state.offset / state.limit) + 1} 页`;
+      $("prevBtn").disabled = state.offset <= 0;
+      $("nextBtn").disabled = !data.has_more;
+    } catch (error) {
+      $("summary").textContent = window.AdminApi.errorMessage(error, "订单加载失败，请稍后重试");
       render([]);
-      return;
     }
-    state.total = data.total || 0;
-    state.limit = data.limit || Number($("limit").value || 20);
-    render(data.items || []);
-    $("summary").textContent = `当前页 ${(data.items || []).length} 条 / 筛选结果 ${state.total} 条`;
-    $("pageHint").textContent = `第 ${Math.floor(state.offset / state.limit) + 1} 页`;
-    $("prevBtn").disabled = state.offset <= 0;
-    $("nextBtn").disabled = !data.has_more;
   }
 
   function resetPage() { state.offset = 0; load(); }
@@ -297,18 +296,18 @@
   $("nextBtn").addEventListener("click", () => { state.offset += state.limit; load(); });
   $("exportBtn").addEventListener("click", async () => {
     $("notice").textContent = "正在生成导出文件...";
-    const response = await fetch(exportApiUrl, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({resource: "orders", filters: filters(), format: "csv"})});
-    if (!response.ok) { $("notice").textContent = "导出失败"; return; }
-    const data = await response.json();
-    if (!data.ok) { $("notice").textContent = data.message || "导出失败"; return; }
-    const result = await fetch(data.job.download_url);
-    const exported = await result.json();
-    const blob = new Blob([exported.content_text || ""], {type: "text/csv;charset=utf-8"});
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url; link.download = "orders.csv"; link.click();
-    URL.revokeObjectURL(url);
-    $("notice").textContent = "导出文件已生成。";
+    try {
+      const data = await window.AdminApi.requestJson(exportApiUrl, {method:"POST", body:{resource: "orders", filters: filters(), format: "csv"}});
+      const exported = await window.AdminApi.requestJson(data.job.download_url);
+      const blob = new Blob([exported.content_text || ""], {type: "text/csv;charset=utf-8"});
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url; link.download = "orders.csv"; link.click();
+      URL.revokeObjectURL(url);
+      $("notice").textContent = "导出文件已生成。";
+    } catch (error) {
+      $("notice").textContent = window.AdminApi.errorMessage(error, "导出失败，请稍后重试");
+    }
   });
   load();
 </script>

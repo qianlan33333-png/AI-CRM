@@ -123,7 +123,6 @@
   const pdfStatusLabels = {pending: "未处理", processing: "处理中", ready: "可预览", failed: "处理失败"};
 
   const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
-  const messageFrom = (payload, fallback) => String(payload?.error || payload?.detail || payload?.message || fallback);
   function formatBytes(value) {
     const size = Number(value || 0);
     if (!size) return "-";
@@ -139,10 +138,7 @@
     toastTimer = setTimeout(() => { toastEl.hidden = true; }, isError ? 5200 : 2600);
   }
   async function fetchJson(url, options = {}) {
-    const response = await fetch(url, {headers: {Accept: "application/json", "Content-Type": "application/json"}, ...options});
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok || payload.ok === false) throw new Error(messageFrom(payload, "请求失败"));
-    return payload;
+    return window.AdminApi.requestJson(url, options);
   }
   function setSelectedMedia(id, detail = {}) {
     form.elements.media_item_id.value = String(id || "");
@@ -192,12 +188,10 @@
     let partNo = 1;
     for (let start = 0; start < file.size; start += partSize) {
       const chunk = file.slice(start, Math.min(file.size, start + partSize));
-      const response = await fetch(`/api/admin/radar-links/pdf-uploads/${encodeURIComponent(initiate.upload_id)}/parts/${partNo}`, {
+      await fetchJson(`/api/admin/radar-links/pdf-uploads/${encodeURIComponent(initiate.upload_id)}/parts/${partNo}`, {
         method: "PUT",
         body: chunk,
       });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok || payload.ok === false) throw new Error(messageFrom(payload, "上传失败"));
       partNo += 1;
     }
     const complete = await fetchJson(`/api/admin/radar-links/pdf-uploads/${encodeURIComponent(initiate.upload_id)}/complete`, {
@@ -214,9 +208,7 @@
     if (type === "image") {
       body.append("image", file);
       body.append("name", title || file.name);
-      const response = await fetch("/api/admin/image-library/upload", {method: "POST", body});
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok || payload.ok === false) throw new Error(messageFrom(payload, "上传失败"));
+      const payload = await fetchJson("/api/admin/image-library/upload", {method: "POST", body});
       return String(payload.item?.id || "");
     }
     if (file.size > 1024 * 1024) {
@@ -224,9 +216,7 @@
     }
     body.append("attachment", file);
     body.append("name", title || file.name);
-    const response = await fetch("/api/admin/attachment-library/upload", {method: "POST", body});
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok || payload.ok === false) throw new Error(messageFrom(payload, "上传失败"));
+    const payload = await fetchJson("/api/admin/attachment-library/upload", {method: "POST", body});
     return String(payload.item?.id || "");
   }
   async function loadOptions() {

@@ -642,21 +642,7 @@
     };
 
     const fetchJson = async (url, options = {}) => {
-      const headers = { "Accept": "application/json", ...(options.headers || {}) };
-      if (options.body && typeof options.body === "string") {
-        headers["Content-Type"] = "application/json";
-      }
-      const response = await fetch(url, {
-        credentials: "same-origin",
-        cache: "no-store",
-        headers,
-        ...options
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok || payload.ok === false) {
-        throw new Error(payload.error || payload.detail || `HTTP ${response.status}`);
-      }
-      return payload;
+      return window.AdminApi.requestJson(url, { cache: "no-store", ...options });
     };
 
     const applyRefreshMode = (mode) => {
@@ -888,7 +874,7 @@
             updateSenderFromInputs();
             await saveSenders(next);
           } catch (error) {
-            setStatus(els.senderStatusLine, error.message || "保存失败", "error");
+            setStatus(els.senderStatusLine, window.AdminApi.errorMessage(error, "保存失败"), "error");
           }
         });
       });
@@ -962,23 +948,26 @@
       button.addEventListener("click", () => showPanel(button.dataset.panel));
     });
     els.savePackageBtn.addEventListener("click", () => {
-      savePackage().catch((error) => setStatus(els.packageStatusLine, error.message || "保存失败", "error"));
+      savePackage().catch((error) => setStatus(els.packageStatusLine, window.AdminApi.errorMessage(error, "保存失败"), "error"));
     });
     els.saveWebhookBtn.addEventListener("click", () => {
-      saveWebhook().catch((error) => setStatus(els.webhookStatusLine, error.message || "保存失败", "error"));
+      saveWebhook().catch((error) => setStatus(els.webhookStatusLine, window.AdminApi.errorMessage(error, "保存失败"), "error"));
     });
     els.addSenderBtn.addEventListener("click", () => {
       addSender();
     });
     els.saveSendersBtn.addEventListener("click", () => {
       updateSenderFromInputs();
-      saveSenders(senderItems).catch((error) => setStatus(els.senderStatusLine, error.message || "保存失败", "error"));
+      saveSenders(senderItems).catch((error) => setStatus(els.senderStatusLine, window.AdminApi.errorMessage(error, "保存失败"), "error"));
     });
     els.refreshMembersBtn.addEventListener("click", () => {
-      loadMembers().catch(() => {});
+      loadMembers().catch((error) => {
+        els.memberTotal.textContent = "加载失败";
+        setStatus(els.packageStatusLine, window.AdminApi.errorMessage(error, "成员列表加载失败"), "error");
+      });
     });
     els.manualRefreshBtn.addEventListener("click", () => {
-      refreshCurrentPanel().catch((error) => setStatus(els.packageStatusLine, error.message || "加载失败", "error"));
+      refreshCurrentPanel().catch((error) => setStatus(els.packageStatusLine, window.AdminApi.errorMessage(error, "加载失败"), "error"));
     });
     els.saveCurrentDimensionBtn.addEventListener("click", () => {
       saveCurrentPanel().catch((error) => {
@@ -987,13 +976,13 @@
           : currentPanel === "senders"
             ? els.senderStatusLine
             : els.packageStatusLine;
-        setStatus(statusEl, error.message || "操作失败", "error");
+        setStatus(statusEl, window.AdminApi.errorMessage(error, "操作失败"), "error");
       });
     });
 
     showPanel("basic");
     Promise.all([loadPackage(), loadWebhook(), loadSenders(), loadMembers()]).catch((error) => {
-      setStatus(els.packageStatusLine, error.message || "加载失败", "error");
+      setStatus(els.packageStatusLine, window.AdminApi.errorMessage(error, "加载失败"), "error");
     });
   })();
 </script>

@@ -300,7 +300,7 @@
     }, options || {}));
     const body = await readJson(response);
     if (!response.ok || body.ok === false) {
-      throw new Error(body.error || body.message || `请求失败：${response.status}`);
+      throw new Error(window.AdminApi.responseErrorMessage(response, body, "请求失败"));
     }
     return body;
   }

@@ -415,11 +415,11 @@
     try {
       const response = await fetch(syncApiUrl, { method: "POST", headers: { Accept: "application/json" }, credentials: "same-origin", cache: "no-store" });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok || data.ok === false) throw new Error(data.message || data.error || "sync_failed");
+      if (!response.ok || data.ok === false) throw new Error(window.AdminApi.responseErrorMessage(response, data, "企微客服刷新失败"));
       await fetchMembers();
     } catch (error) {
       state.items = [];
-      state.errorMessage = "企微客服刷新失败，请检查企微配置后重试";
+      state.errorMessage = window.AdminApi.errorMessage(error, "企微客服刷新失败，请检查企微配置后重试");
     } finally {
       state.loading = false;
       render();

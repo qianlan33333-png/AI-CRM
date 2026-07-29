@@ -458,7 +458,7 @@
             body: JSON.stringify({ group_code: gcode, operator }),
           });
           const d = await resp.json().catch(() => ({}));
-          if (!resp.ok || !d.ok) { alert('批量启动失败：' + (d.error || `HTTP ${resp.status}`)); return; }
+          if (!resp.ok || !d.ok) { alert('批量启动失败：' + window.AdminApi.responseErrorMessage(resp, d, '请稍后重试')); return; }
           alert(`批量启动计划已生成 ✓\n成功：${d.started_count}\n跳过：${d.skipped_count}\n失败：${d.failed_count}\n真实发送：否`);
           loadList();
         } finally {
@@ -623,7 +623,7 @@
           method: 'DELETE', headers: commandHeaders('step-delete'),
         });
         const data = await resp.json().catch(() => ({}));
-        if (!resp.ok || !data.ok) { alert('删除失败：' + (data.error || `HTTP ${resp.status}`)); return; }
+        if (!resp.ok || !data.ok) { alert('删除失败：' + window.AdminApi.responseErrorMessage(resp, data, '请稍后重试')); return; }
         loadDetail(currentCode);
       });
     });
@@ -637,7 +637,7 @@
           body: JSON.stringify({ campaign_segment_id: segId, day_offset: 0, send_time: '10:00', content_text: '', stop_on_reply: true }),
         });
         const data = await resp.json().catch(() => ({}));
-        if (!resp.ok || !data.ok) { alert('新增失败：' + (data.error || `HTTP ${resp.status}`)); return; }
+        if (!resp.ok || !data.ok) { alert('新增失败：' + window.AdminApi.responseErrorMessage(resp, data, '请稍后重试')); return; }
         loadDetail(currentCode);
       });
     });
@@ -666,7 +666,7 @@
       body: JSON.stringify({ operator }),
     });
     const data = await resp.json().catch(() => ({}));
-    if (!resp.ok || !data.ok) { alert('批准失败：' + (data.error || `HTTP ${resp.status}`)); return; }
+    if (!resp.ok || !data.ok) { alert('批准失败：' + window.AdminApi.responseErrorMessage(resp, data, '请稍后重试')); return; }
     alert(`审批已写入 ✓\nCommand：${data.command_id || '-'}\n真实发送：否`);
     loadDetail(currentCode);
     loadList();
@@ -688,7 +688,7 @@
       });
       const d2 = await resp2.json().catch(() => ({}));
       if (!resp2.ok || !d2.ok) {
-        alert(`启动计划失败：${d2.error || `HTTP ${resp2.status}`}`);
+        alert(`启动计划失败：${window.AdminApi.responseErrorMessage(resp2, d2, '请稍后重试')}`);
         return;
       }
       alert(`启动计划已生成 ✓\nCommand：${d2.command_id || '-'}\n真实发送：否\nRuntime 执行：否`);
@@ -746,7 +746,7 @@
     });
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok || !data.ok) {
-      alert('删除失败：' + (data.error || `HTTP ${resp.status}`));
+      alert('删除失败：' + window.AdminApi.responseErrorMessage(resp, data, '请稍后重试'));
       return;
     }
     detailDrawer.hidden = true;
@@ -809,7 +809,7 @@
         body: JSON.stringify(body),
       });
       const data = await resp.json();
-      if (!data.ok) { alert('保存失败：' + (data.error || '')); return; }
+      if (!resp.ok || !data.ok) { alert('保存失败：' + window.AdminApi.responseErrorMessage(resp, data, '请稍后重试')); return; }
       loadDetail(currentCode);
     });
   }

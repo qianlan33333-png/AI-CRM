@@ -102,10 +102,7 @@
     toastTimer = setTimeout(() => { toastEl.hidden = true; }, isError ? 5200 : 2600);
   }
   async function fetchJson(url) {
-    const response = await fetch(url, {headers: {Accept: "application/json"}});
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok || payload.ok === false) throw new Error(String(payload.error || payload.detail || payload.message || "请求失败"));
-    return payload;
+    return window.AdminApi.requestJson(url);
   }
   function formatDate(value) {
     const raw = String(value || "").trim();
@@ -149,7 +146,9 @@
       lastEvents = payload.events || [];
       renderEvents(lastEvents);
     } catch (error) {
-      rowsEl.innerHTML = `<tr><td colspan="3" class="radar-empty">点击记录加载失败，请稍后重试</td></tr>`;
+      const message = window.AdminApi.errorMessage(error, "点击记录加载失败，请稍后重试");
+      rowsEl.innerHTML = `<tr><td colspan="3" class="radar-empty">${escapeHtml(message)}</td></tr>`;
+      toast(message, true);
     }
   }
   function exportEvents() {

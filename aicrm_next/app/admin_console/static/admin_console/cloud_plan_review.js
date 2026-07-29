@@ -36,7 +36,10 @@
       let payload = {};
       try { payload = text ? JSON.parse(text) : {}; } catch (_error) { payload = {}; }
       if (!response.ok || payload.ok === false) {
-        throw new Error(payload.error || payload.detail || response.statusText || "请求失败");
+        const message = api.responseErrorMessage
+          ? api.responseErrorMessage(response, payload, "请求失败")
+          : "请求失败，请刷新页面后重试";
+        throw new Error(message);
       }
       return payload;
     }));

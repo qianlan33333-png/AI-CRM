@@ -106,9 +106,7 @@
   }
 
   function errorMessage(error, fallback) {
-    const detail = error && error.payload && error.payload.detail;
-    if (typeof detail === "string" && detail) return detail;
-    if (detail && typeof detail === "object") return String(detail.message || detail.error || fallback);
+    if (AdminApi && typeof AdminApi.errorMessage === "function") return AdminApi.errorMessage(error, fallback || "操作失败");
     return String((error && error.message) || fallback || "操作失败");
   }
 

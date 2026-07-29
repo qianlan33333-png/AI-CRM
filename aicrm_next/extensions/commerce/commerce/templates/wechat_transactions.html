@@ -389,19 +389,14 @@
           transaction_id_confirmation: $("transactionConfirm").value,
           checked: $("refundChecked").checked
         };
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(body)
-      });
-      const data = await response.json();
-      if (!data.ok) {
-        result.textContent = data.error || "退款申请提交失败";
-        return;
-      }
-      result.textContent = `退款申请已提交，当前订单状态：${data.order.status_label}，退款处理中 ¥${data.order.active_refund_amount_yuan}，已退款 ¥${data.order.refunded_amount_yuan}，可退款 ¥${data.order.refundable_amount_yuan}`;
-      if (Number(data.order.refundable_amount_total || 0) <= 0) {
-        refundForm.querySelectorAll("input, select, button").forEach((node) => { node.disabled = true; });
+      try {
+        const data = await window.AdminApi.requestJson(endpoint, { method: "POST", body });
+        result.textContent = `退款申请已提交，当前订单状态：${data.order.status_label}，退款处理中 ¥${data.order.active_refund_amount_yuan}，已退款 ¥${data.order.refunded_amount_yuan}，可退款 ¥${data.order.refundable_amount_yuan}`;
+        if (Number(data.order.refundable_amount_total || 0) <= 0) {
+          refundForm.querySelectorAll("input, select, button").forEach((node) => { node.disabled = true; });
+        }
+      } catch (error) {
+        result.textContent = window.AdminApi.errorMessage(error, "退款申请提交失败");
       }
     });
   }
@@ -440,20 +435,19 @@
     async function load() {
       $("summary").textContent = "正在加载订单...";
       renderLoading();
-      const response = await fetch(`${listApiUrl}?${params().toString()}`);
-      const data = await response.json();
-      if (!data.ok) {
-        $("summary").textContent = data.error || data.detail || "加载失败";
+      try {
+        const data = await window.AdminApi.requestJson(`${listApiUrl}?${params().toString()}`);
+        state.total = data.total || 0;
+        state.limit = data.limit || Number($("limit").value || 20);
+        render(data.items || []);
+        $("summary").textContent = `当前页 ${(data.items || []).length} 条 / 筛选结果 ${state.total} 条`;
+        $("pageHint").textContent = `第 ${Math.floor(state.offset / state.limit) + 1} 页`;
+        $("prevBtn").disabled = state.offset <= 0;
+        $("nextBtn").disabled = !data.has_more;
+      } catch (error) {
+        $("summary").textContent = window.AdminApi.errorMessage(error, "订单加载失败，请稍后重试");
         render([]);
-        return;
       }
-      state.total = data.total || 0;
-      state.limit = data.limit || Number($("limit").value || 20);
-      render(data.items || []);
-      $("summary").textContent = `当前页 ${(data.items || []).length} 条 / 筛选结果 ${state.total} 条`;
-      $("pageHint").textContent = `第 ${Math.floor(state.offset / state.limit) + 1} 页`;
-      $("prevBtn").disabled = state.offset <= 0;
-      $("nextBtn").disabled = !data.has_more;
     }
     function resetPage() { state.offset = 0; load(); }
     $("searchBtn").addEventListener("click", resetPage);
@@ -467,23 +461,29 @@
     $("nextBtn").addEventListener("click", () => { state.offset += state.limit; load(); });
     if ($("exportBtn") && exportApiUrl) $("exportBtn").addEventListener("click", async () => {
       $("notice").textContent = "正在生成导出文件...";
-      const response = await fetch(exportApiUrl, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({resource: "orders", filters: {...filters(), provider: fixedProvider}, format: "csv"})});
-      if (!response.ok) { $("notice").textContent = "导出失败"; return; }
-      let blob;
-      if (exportApiUrl === "/api/admin/exports") {
-        const data = await response.json();
-        if (!data.ok) { $("notice").textContent = data.message || "导出失败"; return; }
-        const result = await fetch(data.job.download_url);
-        const exported = await result.json();
-        blob = new Blob([exported.content_text || ""], {type: "text/csv;charset=utf-8"});
-      } else {
-        blob = await response.blob();
+      try {
+        const response = await fetch(exportApiUrl, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({resource: "orders", filters: {...filters(), provider: fixedProvider}, format: "csv"})});
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          throw new Error(window.AdminApi.responseErrorMessage(response, payload, "导出失败"));
+        }
+        let blob;
+        if (exportApiUrl === "/api/admin/exports") {
+          const data = await response.json();
+          if (data.ok === false) throw new Error(window.AdminApi.responseErrorMessage(response, data, "导出失败"));
+          const exported = await window.AdminApi.requestJson(data.job.download_url);
+          blob = new Blob([exported.content_text || ""], {type: "text/csv;charset=utf-8"});
+        } else {
+          blob = await response.blob();
+        }
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url; link.download = "wechat-pay-orders.csv"; link.click();
+        URL.revokeObjectURL(url);
+        $("notice").textContent = "导出文件已生成。";
+      } catch (error) {
+        $("notice").textContent = window.AdminApi.errorMessage(error, "导出失败，请稍后重试");
       }
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url; link.download = "wechat-pay-orders.csv"; link.click();
-      URL.revokeObjectURL(url);
-      $("notice").textContent = "导出文件已生成。";
     });
     load();
   }

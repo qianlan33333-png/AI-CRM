@@ -469,7 +469,10 @@
       const text = await response.text();
       const payload = text ? safeJsonParse(text) : null;
       if (!response.ok || (payload && payload.ok === false)) {
-        const error = new Error((payload && payload.error) || "请求失败");
+        const message = window.AdminApi?.responseErrorMessage
+          ? window.AdminApi.responseErrorMessage(response, payload, "请求失败")
+          : (typeof (payload && payload.error) === "string" && payload.error) || "请求失败，请稍后重试";
+        const error = new Error(message);
         error.status = response.status;
         error.payload = payload || {};
         throw error;

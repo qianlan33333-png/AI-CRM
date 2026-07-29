@@ -44,7 +44,7 @@ def test_plan_list_page_contract(monkeypatch):
     assert "查看详情" in html
     assert "data-page-mode=\"list\"" in html
     assert "cloud_plan_review.js" in html
-    assert "admin_api_client.js?v=admin-request-security-v2-20260713" in html
+    assert "admin_api_client.js?v=admin-error-messages-v1-20260729" in html
     assert html.index("admin_api_client.js") < html.index("cloud_plan_review.js")
     for forbidden in ["进入审批", "全部启动", "批量审批", "展开子计划", "加载子计划", "cloud-camp-group-child"]:
         assert forbidden not in html
@@ -76,7 +76,7 @@ def test_plan_detail_page_contract(monkeypatch):
     assert "send_content_composer.css" in html
     assert "material_picker.js" in html
     assert "send_content_composer.js" in html
-    assert "admin_api_client.js?v=admin-request-security-v2-20260713" in html
+    assert "admin_api_client.js?v=admin-error-messages-v1-20260729" in html
     assert html.index("admin_api_client.js") < html.index("cloud_plan_review.js")
     for forbidden in ["进入审批", "全部启动", "批量审批", "展开子计划", "加载子计划", "话术节奏", "cloud-camp-group-child"]:
         assert forbidden not in html

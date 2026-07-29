@@ -842,6 +842,9 @@ function humanizeErrorMessage(rawMessage, fallback = '操作失败，请稍后�
 }
 
 function extractErrorMessage(data) {
+  if (window.AdminApi && typeof window.AdminApi.formatErrorValue === 'function') {
+    return window.AdminApi.formatErrorValue(data);
+  }
   if (!data) return '';
   if (typeof data === 'string') return data;
   const detail = data.detail;

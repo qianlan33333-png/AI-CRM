@@ -92,9 +92,11 @@
           error.responseText = text;
           throw error;
         }
-        if (!response.ok && payload.ok !== false) {
+        if (!response.ok) {
           payload.ok = false;
-          payload.error = payload.error || response.statusText || ("HTTP " + response.status);
+          payload.error = window.AdminApi && window.AdminApi.responseErrorMessage
+            ? window.AdminApi.responseErrorMessage(response, payload, "上传失败")
+            : (typeof payload.error === "string" && payload.error) || buildNonJsonMessage(response);
         }
         return payload;
       });

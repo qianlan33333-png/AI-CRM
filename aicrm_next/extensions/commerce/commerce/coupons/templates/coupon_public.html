@@ -94,6 +94,22 @@
       const message = document.getElementById("claimMessage");
       if (!button || button.disabled) return;
       const slug = document.querySelector("[data-public-slug]").dataset.publicSlug;
+      const formatError = (value) => {
+        if (value == null) return "";
+        if (typeof value === "string") return value.trim();
+        if (Array.isArray(value)) return value.map(formatError).filter(Boolean).join("；");
+        if (typeof value === "object") {
+          if (value.loc && (value.msg || value.message)) {
+            const field = (Array.isArray(value.loc) ? value.loc : [value.loc]).filter(item => item !== "body").join(".");
+            return `${field || "提交内容"}：${formatError(value.msg || value.message)}`;
+          }
+          for (const key of ["detail", "message", "error", "reason", "errors", "msg"]) {
+            const text = formatError(value[key]);
+            if (text) return text;
+          }
+        }
+        return "";
+      };
       const key = (globalThis.crypto && crypto.randomUUID)
         ? crypto.randomUUID()
         : `claim-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -108,12 +124,12 @@
             body: "{}",
             credentials: "same-origin",
           });
-          const payload = await response.json();
-          if (!response.ok || payload.ok === false) throw new Error(payload.detail || payload.error || "领取失败");
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok || payload.ok === false) throw new Error(formatError(payload) || (response.status >= 500 ? "服务暂时不可用，请稍后重试" : "领取失败"));
           message.textContent = "领取成功，正在刷新可用商品…";
           window.location.reload();
         } catch (error) {
-          message.textContent = error && error.message ? error.message : "领取失败，请稍后重试";
+          message.textContent = formatError(error) || "领取失败，请稍后重试";
           message.classList.add("error");
           button.disabled = false;
           button.textContent = "重新领取";

@@ -111,6 +111,7 @@
   }
 
   function apiErrorMessage(data, fallback) {
+    if (window.AdminApi?.formatErrorValue) return window.AdminApi.formatErrorValue(data) || fallback;
     const detail = data && data.detail;
     if (data && typeof data.reason === "string" && data.reason) return data.reason;
     if (data && typeof data.error === "string" && data.error) return data.error;
@@ -235,14 +236,16 @@
     .then((response) => response.json().then((data) => ({ response, data })))
     .then(({ response, data }) => {
       if (!response.ok || data.ok === false) {
-        throw new Error(data.error || data.reason || "channels_load_failed");
+        throw new Error(apiErrorMessage(data, "渠道列表加载失败，请稍后重试"));
       }
       const channels = Array.isArray(data.channels) ? data.channels : [];
       updateMetrics(channels);
       list.innerHTML = channels.length ? channels.map(renderRow).join("") : '<tr><td colspan="6">暂无渠道。</td></tr>';
     })
-    .catch(() => {
-      list.innerHTML = '<tr><td colspan="6">渠道加载失败，请稍后重试。</td></tr>';
+    .catch((error) => {
+      const message = window.AdminApi?.errorMessage(error, "渠道加载失败，请稍后重试") || "渠道加载失败，请稍后重试";
+      list.innerHTML = `<tr><td colspan="6">${escapeHtml(message)}</td></tr>`;
+      toast(message);
     });
 
   search?.addEventListener("input", () => {
@@ -313,7 +316,7 @@
       statusButton.textContent = "处理中";
       patchJson(`/api/admin/channels/${encodeURIComponent(channelId)}`, { status: nextStatus }).then(({ response, data }) => {
         if (!response.ok || data.ok === false) {
-          throw new Error(data.detail || data.error || data.reason || "channel_status_update_failed");
+          throw new Error(apiErrorMessage(data, "渠道状态更新失败"));
         }
         if (row && nextStatus === "archived") {
           row.remove();
