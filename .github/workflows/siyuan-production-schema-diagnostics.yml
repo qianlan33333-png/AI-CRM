@@ -62,8 +62,14 @@ jobs:
             from sqlalchemy import create_engine, text
 
 
+            database_url = os.environ["DATABASE_URL"].strip()
+            if database_url.startswith("postgres://"):
+                database_url = "postgresql+psycopg://" + database_url[len("postgres://") :]
+            elif database_url.startswith("postgresql://"):
+                database_url = "postgresql+psycopg://" + database_url[len("postgresql://") :]
+
             engine = create_engine(
-                os.environ["DATABASE_URL"],
+                database_url,
                 connect_args={
                     "application_name": "siyuan-production-schema-diagnostics",
                     "options": "-c default_transaction_read_only=on -c statement_timeout=30000",

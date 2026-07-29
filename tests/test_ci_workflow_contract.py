@@ -283,6 +283,9 @@ def test_siyuan_production_schema_diagnostics_is_read_only_and_release_pinned() 
     assert "migration_revisions" in source
     assert "contains_column_values" in source
     assert "create_engine" in source
+    assert 'database_url.startswith("postgres://")' in source
+    assert 'database_url.startswith("postgresql://")' in source
+    assert '"postgresql+psycopg://"' in source
     assert "default_transaction_read_only=on" in source
     assert "aicrm_next." not in source
     assert "INSERT " not in source
