@@ -4998,6 +4998,7 @@ tables:
     lifecycle: projection
     write_owner: aicrm_next.extensions.hxc.operation_cycles
     read_owners:
+      - operation cycle admin plan history read model
       - operation cycle context read model
       - operation cycle system fact projector
     replacement: none; aggregate strategy run and reviewed plan link
@@ -5006,11 +5007,13 @@ tables:
     runtime_entrypoints:
       - Campaign commit API
       - internal event operation-cycle projection
+      - operation cycle admin plan history
       - operation cycle retrospective context
     migration_source: 0156_campaign_preparation_context
     pii_level: none
     guard_tests:
       - tests/test_campaign_preparations.py
+      - tests/test_operation_cycles_repository.py
       - tests/test_operation_cycle_strategy_context.py
       - tests/test_data_table_lifecycle_guard.py
 

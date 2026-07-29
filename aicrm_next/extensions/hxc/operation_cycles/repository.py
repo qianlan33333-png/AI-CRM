@@ -983,16 +983,65 @@ class PostgresOperationCycleRepository:
         latest_detail = self.get_run_detail(trend[0].run_key) if trend else None
         assistant_rows = self._all(
             """
-            SELECT ref.*
-            FROM operation_cycle_references ref
-            JOIN operation_cycle_runs r ON r.id = ref.run_id
-            JOIN operation_cycle_strategies s ON s.id = r.strategy_id
-            WHERE s.tenant_id = :tenant_id
-              AND s.strategy_key = :strategy_key
-              AND ref.source_system IN ('ai_assistant_plan', 'cloud_orchestrator_plan')
-              AND ref.source_id <> ''
-            ORDER BY COALESCE(r.first_sent_at, r.intended_send_at, r.started_at, r.updated_at) DESC,
-                     ref.id DESC
+            WITH assistant_plan_references AS (
+                SELECT
+                    ref.reference_key,
+                    ref.reference_type,
+                    ref.label,
+                    ref.source_system,
+                    ref.source_id,
+                    ref.href,
+                    ref.evidence_hash,
+                    ref.data_status,
+                    COALESCE(r.first_sent_at, r.intended_send_at, r.started_at, r.updated_at) AS sort_at,
+                    ref.id AS sort_id
+                FROM operation_cycle_references ref
+                JOIN operation_cycle_runs r ON r.id = ref.run_id
+                JOIN operation_cycle_strategies s ON s.id = r.strategy_id
+                WHERE s.tenant_id = :tenant_id
+                  AND s.strategy_key = :strategy_key
+                  AND ref.source_system IN ('ai_assistant_plan', 'cloud_orchestrator_plan')
+                  AND ref.source_id <> ''
+
+                UNION ALL
+
+                SELECT
+                    'plan-link:' || md5(link.plan_id) AS reference_key,
+                    'other' AS reference_type,
+                    LEFT(link.run_key || ' · AI 助手计划', 240) AS label,
+                    'cloud_orchestrator_plan' AS source_system,
+                    link.plan_id AS source_id,
+                    '' AS href,
+                    '' AS evidence_hash,
+                    'unknown' AS data_status,
+                    link.created_at AS sort_at,
+                    link.id AS sort_id
+                FROM operation_cycle_plan_links link
+                WHERE link.tenant_id = :tenant_id
+                  AND link.strategy_key = :strategy_key
+                  AND link.plan_id <> ''
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM operation_cycle_references ref
+                      JOIN operation_cycle_runs r ON r.id = ref.run_id
+                      JOIN operation_cycle_strategies s ON s.id = r.strategy_id
+                      WHERE s.tenant_id = link.tenant_id
+                        AND s.strategy_key = link.strategy_key
+                        AND ref.source_system IN ('ai_assistant_plan', 'cloud_orchestrator_plan')
+                        AND ref.source_id = link.plan_id
+                  )
+            )
+            SELECT
+                reference_key,
+                reference_type,
+                label,
+                source_system,
+                source_id,
+                href,
+                evidence_hash,
+                data_status
+            FROM assistant_plan_references
+            ORDER BY sort_at DESC NULLS LAST, sort_id DESC
             """,
             {"tenant_id": self._tenant_id, "strategy_key": _text(strategy_key)},
         )
