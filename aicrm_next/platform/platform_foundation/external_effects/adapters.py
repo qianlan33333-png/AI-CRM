@@ -211,11 +211,13 @@ def _target_unionid(payload: dict[str, Any]) -> str:
 
 
 def _wecom_target_mismatch(job: ExternalEffectJob, payload: dict[str, Any], external_userid: str) -> bool:
-    target_unionid = _target_unionid(payload)
-    target_id = str(job.target_id or "").strip()
-    if target_unionid:
-        return target_id != target_unionid
-    return not external_userid or target_id != external_userid
+    target_unionid, target_id, target_type = _target_unionid(payload), str(job.target_id or "").strip(), str(job.target_type or "").strip().lower()
+    if target_type in {"external_contact", "external_user", "external_userid"}:
+        return not external_userid or target_id != external_userid
+    if target_type in {"unionid", "user_ops_customer"}:
+        return not target_unionid or target_id != target_unionid
+    expected_target = target_unionid or external_userid
+    return not expected_target or target_id != expected_target
 
 
 def webhook_execution_settings() -> dict[str, Any]:

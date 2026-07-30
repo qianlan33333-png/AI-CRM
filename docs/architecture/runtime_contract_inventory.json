@@ -653,7 +653,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/platform/platform_foundation/external_effects/adapters.py",
       "key": "AICRM_EXTERNAL_EFFECT_WEBHOOK_TIMEOUT_SECONDS",
-      "line": 360
+      "line": 362
     },
     {
       "accessor": "declared_runtime_setting_key",

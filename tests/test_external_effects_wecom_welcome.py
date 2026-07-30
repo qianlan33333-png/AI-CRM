@@ -46,6 +46,22 @@ class _KnownPrivateProviderFailure:
         }
 
 
+class _SuccessfulPrivateProvider:
+    def __init__(self) -> None:
+        self.payloads: list[dict] = []
+
+    def create_private_message_task(self, payload: dict, *, idempotency_key: str = "") -> dict:
+        self.payloads.append(dict(payload))
+        return {
+            "ok": True,
+            "mode": "production",
+            "side_effect_executed": True,
+            "exact_target_verified": True,
+            "requested_external_userids": list(payload.get("external_userids") or []),
+            "wecom_msgid": "msg-target-contract",
+        }
+
+
 def _context(trace_id: str = "trace-wecom-welcome") -> CommandContext:
     return CommandContext(
         actor_id="pytest",
@@ -98,6 +114,98 @@ def test_private_external_effect_preserves_known_provider_result_without_target_
         "provider_result_received": True,
     }
     assert "wm_test" not in str(result.response_summary)
+
+
+def test_private_external_effect_uses_external_userid_for_external_contact_target(monkeypatch) -> None:
+    monkeypatch.delenv("AICRM_WECOM_PROVIDER_TARGET_POLICY", raising=False)
+    provider = _SuccessfulPrivateProvider()
+    job = ExternalEffectJob(
+        id=71,
+        effect_type=WECOM_MESSAGE_PRIVATE_SEND,
+        adapter_name="wecom_private_message",
+        operation="send_private_message",
+        target_type="external_contact",
+        target_id="wm_test",
+        business_type="broadcast_job",
+        business_id="broadcast-71",
+        idempotency_key="broadcast-71",
+        execution_mode="execute",
+        payload_json={
+            "channel": "wecom_private",
+            "owner_userid": "HuangYouCan",
+            "target_unionid": "union_test",
+            "external_userids": ["wm_test"],
+            "content_text": "hello",
+        },
+    )
+
+    result = WeComPrivateMessageAdapter(adapter_factory=lambda: provider).dispatch(job)
+
+    assert result.status == "succeeded"
+    assert result.real_external_call_executed is True
+    assert provider.payloads[0]["external_userids"] == ["wm_test"]
+
+
+def test_private_external_effect_rejects_external_contact_target_mismatch(monkeypatch) -> None:
+    monkeypatch.delenv("AICRM_WECOM_PROVIDER_TARGET_POLICY", raising=False)
+    provider = _SuccessfulPrivateProvider()
+    job = ExternalEffectJob(
+        id=72,
+        effect_type=WECOM_MESSAGE_PRIVATE_SEND,
+        adapter_name="wecom_private_message",
+        operation="send_private_message",
+        target_type="external_contact",
+        target_id="wm_other",
+        business_type="broadcast_job",
+        business_id="broadcast-72",
+        idempotency_key="broadcast-72",
+        execution_mode="execute",
+        payload_json={
+            "channel": "wecom_private",
+            "owner_userid": "HuangYouCan",
+            "target_unionid": "union_test",
+            "external_userids": ["wm_test"],
+            "content_text": "hello",
+        },
+    )
+
+    result = WeComPrivateMessageAdapter(adapter_factory=lambda: provider).dispatch(job)
+
+    assert result.status == "failed_terminal"
+    assert result.error_code == "target_mismatch"
+    assert result.real_external_call_executed is False
+    assert provider.payloads == []
+
+
+def test_private_external_effect_rejects_unionid_target_mismatch(monkeypatch) -> None:
+    monkeypatch.delenv("AICRM_WECOM_PROVIDER_TARGET_POLICY", raising=False)
+    provider = _SuccessfulPrivateProvider()
+    job = ExternalEffectJob(
+        id=73,
+        effect_type=WECOM_MESSAGE_PRIVATE_SEND,
+        adapter_name="wecom_private_message",
+        operation="send_private_message",
+        target_type="unionid",
+        target_id="union_other",
+        business_type="ai_assist_campaign",
+        business_id="campaign-73",
+        idempotency_key="campaign-73",
+        execution_mode="execute",
+        payload_json={
+            "channel": "wecom_private",
+            "owner_userid": "HuangYouCan",
+            "target_unionid": "union_test",
+            "external_userids": ["wm_test"],
+            "content_text": "hello",
+        },
+    )
+
+    result = WeComPrivateMessageAdapter(adapter_factory=lambda: provider).dispatch(job)
+
+    assert result.status == "failed_terminal"
+    assert result.error_code == "target_mismatch"
+    assert result.real_external_call_executed is False
+    assert provider.payloads == []
 
 
 def test_private_external_effect_rejects_unresolved_material_dependency(monkeypatch) -> None:
@@ -313,7 +421,12 @@ def test_production_welcome_material_translation_uses_wecom_welcome_shapes() -> 
             if package.get("attachment_library_ids"):
                 return [{"msgtype": "file", "file": {"media_id": "file-media"}}], []
             if package.get("group_invite_library_ids"):
-                return [{"msgtype": "link", "link": {"title": "点击入群", "url": "https://work.weixin.qq.com/gm/0123456789abcdef0123456789abcdef", "desc": "欢迎加入"}}], []
+                return [
+                    {
+                        "msgtype": "link",
+                        "link": {"title": "点击入群", "url": "https://work.weixin.qq.com/gm/0123456789abcdef0123456789abcdef", "desc": "欢迎加入"},
+                    }
+                ], []
             return [
                 {
                     "msgtype": "miniprogram",
