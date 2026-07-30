@@ -27,6 +27,9 @@ DEFAULT_MINIMUM_VALIDITY = timedelta(minutes=30)
 REFRESH_LOCK_TTL = timedelta(minutes=2)
 MAX_WAIT_SECONDS = 3.0
 TENANT_ID = "aicrm"
+WECOM_IMAGE_TARGET_BYTES = 1_500_000
+WECOM_IMAGE_MAX_WIDTH = 1_440
+WECOM_IMAGE_JPEG_QUALITIES = (88, 82, 74, 66, 58)
 
 
 def _text(value: Any) -> str:
@@ -681,19 +684,74 @@ class WeComMediaLeaseManager:
             raise WeComMediaLeaseError("material_source_invalid", f"{kind} material {item_id} source payload is invalid") from exc
         if not payload:
             raise WeComMediaLeaseError("material_source_missing", f"{kind} material {item_id} source payload is empty")
-        if kind in {"image", "miniprogram"} and content_type == "image/webp":
-            try:
-                from PIL import Image
-
-                source = Image.open(io.BytesIO(payload)).convert("RGB")
-                output = io.BytesIO()
-                source.save(output, format="JPEG", quality=92, optimize=True)
-                payload = output.getvalue()
-                file_name = file_name.rsplit(".", 1)[0] + ".jpg"
-                content_type = "image/jpeg"
-            except Exception as exc:
-                raise WeComMediaLeaseError("image_conversion_failed", f"{kind} material {item_id} WebP conversion failed") from exc
+        if kind in {"image", "miniprogram"}:
+            file_name, content_type, payload = self._wecom_image_payload(
+                kind=kind,
+                item_id=item_id,
+                file_name=file_name,
+                content_type=content_type,
+                payload=payload,
+            )
         return file_name, content_type, payload
+
+    @staticmethod
+    def _wecom_image_payload(
+        *,
+        kind: str,
+        item_id: int,
+        file_name: str,
+        content_type: str,
+        payload: bytes,
+    ) -> tuple[str, str, bytes]:
+        normalized_type = _text(content_type).split(";", 1)[0].lower()
+        if normalized_type in {"image/jpeg", "image/jpg"}:
+            normalized_name = file_name.rsplit(".", 1)[0] + ".jpg"
+        elif normalized_type == "image/png":
+            normalized_name = file_name.rsplit(".", 1)[0] + ".png"
+        else:
+            normalized_name = file_name
+        if len(payload) <= WECOM_IMAGE_TARGET_BYTES and normalized_type in {"image/jpeg", "image/jpg", "image/png"}:
+            return normalized_name, "image/jpeg" if normalized_type in {"image/jpeg", "image/jpg"} else "image/png", payload
+
+        try:
+            from PIL import Image, ImageOps
+
+            source = ImageOps.exif_transpose(Image.open(io.BytesIO(payload)))
+            if source.mode in {"RGBA", "LA"} or (source.mode == "P" and "transparency" in source.info):
+                rgba = source.convert("RGBA")
+                background = Image.new("RGB", rgba.size, "white")
+                background.paste(rgba, mask=rgba.getchannel("A"))
+                source = background
+            elif source.mode not in {"RGB", "L"}:
+                source = source.convert("RGB")
+            if source.width > WECOM_IMAGE_MAX_WIDTH:
+                height = max(1, round(source.height * WECOM_IMAGE_MAX_WIDTH / source.width))
+                source = source.resize((WECOM_IMAGE_MAX_WIDTH, height), Image.Resampling.LANCZOS)
+
+            encoded = b""
+            working = source
+            for _ in range(8):
+                for quality in WECOM_IMAGE_JPEG_QUALITIES:
+                    output = io.BytesIO()
+                    working.save(output, format="JPEG", quality=quality, optimize=True)
+                    encoded = output.getvalue()
+                    if len(encoded) <= WECOM_IMAGE_TARGET_BYTES:
+                        return file_name.rsplit(".", 1)[0] + ".jpg", "image/jpeg", encoded
+                scale = max(0.6, (WECOM_IMAGE_TARGET_BYTES / max(len(encoded), 1)) ** 0.5 * 0.95)
+                if scale >= 0.99:
+                    break
+                width = max(1, round(working.width * scale))
+                height = max(1, round(working.height * scale))
+                working = working.resize((width, height), Image.Resampling.LANCZOS)
+        except Exception as exc:
+            raise WeComMediaLeaseError(
+                "image_conversion_failed",
+                f"{kind} material {item_id} WeCom send variant conversion failed",
+            ) from exc
+        raise WeComMediaLeaseError(
+            "image_conversion_failed",
+            f"{kind} material {item_id} WeCom send variant conversion failed",
+        )
 
     def _upload(self, upload_kind: str, *, file_name: str, content_type: str, file_bytes: bytes) -> dict[str, Any]:
         if self._uploader is None:
