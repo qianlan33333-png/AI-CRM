@@ -582,15 +582,33 @@ def test_lane_summary_matches_runtime_snapshot_for_selected_lanes() -> None:
     _enable(generation=7, internal_general=4, internal_financial=1)
 
     read_model = ExecutionRuntimeReadModel(_database_url())
+    started = time.monotonic()
     snapshot = read_model.runtime_snapshot()
     summary = read_model.lane_summary(frozenset({"internal_general", "internal_financial"}))
+    elapsed_seconds = time.monotonic() - started
     expected_lanes = [
         lane
         for lane in snapshot["lanes"]
         if lane["lane"] in {"internal_general", "internal_financial"}
     ]
 
-    assert summary["lanes"] == expected_lanes
+    summary_lanes = {lane["lane"]: lane for lane in summary["lanes"]}
+    expected_lanes_by_name = {lane["lane"]: lane for lane in expected_lanes}
+    assert summary_lanes.keys() == expected_lanes_by_name.keys()
+    for lane_name, expected_lane in expected_lanes_by_name.items():
+        actual_lane = summary_lanes[lane_name]
+        assert {
+            key: value
+            for key, value in actual_lane.items()
+            if key != "oldest_eligible_age_seconds"
+        } == {
+            key: value
+            for key, value in expected_lane.items()
+            if key != "oldest_eligible_age_seconds"
+        }
+        expected_age = int(expected_lane["oldest_eligible_age_seconds"])
+        actual_age = int(actual_lane["oldest_eligible_age_seconds"])
+        assert expected_age <= actual_age <= expected_age + int(elapsed_seconds) + 1
     assert summary["active_generation"] == snapshot["control"]["active_generation"]
     assert summary["claim_enabled"] == snapshot["control"]["claim_enabled"]
     assert summary["rollout_mode"] == snapshot["control"]["rollout_mode"]
