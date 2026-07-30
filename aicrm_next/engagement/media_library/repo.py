@@ -68,6 +68,18 @@ def normalize_tags(value: Any) -> list[str]:
     return tags[:50]
 
 
+def normalize_tag_groups(value: Any) -> list[list[str]]:
+    if value in (None, ""):
+        return []
+    raw_groups = value if isinstance(value, list) else [value]
+    groups: list[list[str]] = []
+    for raw_group in raw_groups:
+        tags = normalize_tags(raw_group)
+        if tags and tags not in groups:
+            groups.append(tags)
+    return groups
+
+
 def trusted_https_image_url(value: Any) -> str:
     url = str(value or "").strip()
     if not url:
@@ -202,6 +214,9 @@ class InMemoryMediaLibraryRepository:
             tags = normalize_tags(filters.get("tags"))
             if tags:
                 rows = [item for item in rows if set(normalize_tags(item.get("tags"))) & set(tags)]
+            tag_groups = normalize_tag_groups(filters.get("tag_groups"))
+            for tag_group in tag_groups:
+                rows = [item for item in rows if set(normalize_tags(item.get("tags"))) & set(tag_group)]
             if filters.get("only_unlabeled"):
                 rows = [
                     item
