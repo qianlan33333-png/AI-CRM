@@ -125,6 +125,72 @@ def test_deploy_acknowledges_only_exact_authorized_production_terminal_histories
     assert "send_welcome_msg(" not in orchestrator
 
 
+def test_deploy_history_acknowledgements_support_explicit_non_ai_lineage_configuration() -> None:
+    workflow = PRODUCTION_DEPLOY_WORKFLOW.read_text(encoding="utf-8")
+    orchestrator = TERMINAL_ACKNOWLEDGEMENT_ORCHESTRATOR.read_text(encoding="utf-8")
+
+    assert (
+        "RELEASE_TERMINAL_HISTORY_ACK_MODE: "
+        "${{ vars.RELEASE_TERMINAL_HISTORY_ACK_MODE || 'required' }}"
+        in workflow
+    )
+    assert (
+        "envs: RELEASE_REFRESH_ATTEMPT_KEY,RELEASE_TERMINAL_HISTORY_ACK_MODE"
+        in workflow
+    )
+    acknowledgement_index = workflow.index(
+        "scripts/ops/acknowledge_release_terminal_histories.py",
+    )
+    mode_index = workflow.index(
+        '--mode "$RELEASE_TERMINAL_HISTORY_ACK_MODE"',
+        acknowledgement_index,
+    )
+    apply_index = workflow.index("--apply", mode_index)
+    admin_health_index = workflow.index(
+        "scripts/ops/check_admin_read_pages_smoke.py",
+        apply_index,
+    )
+
+    assert acknowledgement_index < mode_index < apply_index < admin_health_index
+    assert 'ACKNOWLEDGEMENT_MODES = {"required", "disabled"}' in orchestrator
+    assert '"reason": "deployment_configuration_disabled"' in orchestrator
+
+
+def test_release_acknowledgement_disabled_mode_never_queries_or_mutates_ai_history(monkeypatch) -> None:
+    from scripts.ops import acknowledge_release_terminal_histories as release_ack
+
+    calls: list[str] = []
+    monkeypatch.setattr(
+        release_ack,
+        "acknowledge_pre_cutover_welcome",
+        lambda **kwargs: calls.append("pre_cutover"),
+    )
+    monkeypatch.setattr(
+        release_ack,
+        "acknowledge_production_terminal_histories",
+        lambda **kwargs: calls.append("production"),
+    )
+
+    result = release_ack.acknowledge_release_terminal_histories(
+        release_sha="a" * 40,
+        actor="pytest",
+        apply=True,
+        mode="disabled",
+    )
+
+    assert calls == []
+    assert result == {
+        "ok": True,
+        "applied": False,
+        "mode": "disabled",
+        "reason": "deployment_configuration_disabled",
+        "provider_success_claimed": False,
+        "real_external_call_executed": False,
+        "replay_prohibited": True,
+        "target_values_redacted": True,
+    }
+
+
 def test_release_acknowledgement_skips_refunds_now_classified_as_business_outcomes(monkeypatch) -> None:
     from scripts.ops import acknowledge_release_terminal_histories as release_ack
 
