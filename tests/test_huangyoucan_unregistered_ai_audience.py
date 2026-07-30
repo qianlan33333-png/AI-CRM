@@ -13,6 +13,9 @@ from aicrm_next.platform.shared.db_session import get_session_factory
 
 TOKEN = "huangyoucan-unregistered-test-token"
 MIGRATION = importlib.import_module("migrations.versions.0057_huangyoucan_unregistered_ai_audience")
+REPAIR_MIGRATION = importlib.import_module(
+    "migrations.versions.0160_ai_audience_wecom_contacts_view_repair"
+)
 
 
 def _auth() -> dict[str, str]:
@@ -34,6 +37,38 @@ def test_huangyoucan_seed_sql_literal_escapes_runtime_parameter_for_alembic() ->
     statement = text(f"SELECT '{MIGRATION._snapshot_sql_literal()}'")
 
     assert "owner_userid" not in statement._bindparams
+
+
+def test_wecom_contacts_view_refresh_can_reuse_existing_schema(monkeypatch) -> None:
+    statements: list[str] = []
+
+    class Operations:
+        @staticmethod
+        def execute(statement) -> None:
+            statements.append(str(statement))
+
+    monkeypatch.setattr(MIGRATION, "op", Operations())
+
+    MIGRATION._refresh_wecom_contacts_view(ensure_schema=False)
+
+    assert statements
+    assert not any("CREATE SCHEMA" in statement for statement in statements)
+    assert any("CREATE OR REPLACE VIEW audience_read.wecom_contacts_v1" in statement for statement in statements)
+
+
+def test_repair_migration_does_not_require_database_create_privilege(monkeypatch) -> None:
+    calls: list[dict[str, bool]] = []
+
+    class AudienceMigration:
+        @staticmethod
+        def _refresh_wecom_contacts_view(**kwargs) -> None:
+            calls.append(kwargs)
+
+    monkeypatch.setattr(REPAIR_MIGRATION, "import_module", lambda _name: AudienceMigration())
+
+    REPAIR_MIGRATION.upgrade()
+
+    assert calls == [{"ensure_schema": False}]
 
 
 @pytest.mark.usefixtures("next_pg_schema")
