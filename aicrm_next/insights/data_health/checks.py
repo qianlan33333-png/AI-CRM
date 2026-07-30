@@ -19,6 +19,7 @@ from aicrm_next.platform.shared.queue_provenance import (
 from tools.check_data_table_lifecycle import check_data_table_lifecycle
 
 from .dto import DataHealthCheckResult
+from .ai_automation_lane_health import ai_automation_lane_readiness
 from .external_effect_provenance import (
     direct_canary_job_sql,
     external_effect_backlog_sql,
@@ -757,6 +758,16 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
     )
 
 
+def _ai_automation_lane_readiness() -> DataHealthCheckResult:
+    return ai_automation_lane_readiness(
+        schema_available=database_schema_available,
+        session_factory=lambda: get_session_factory()(),
+        unavailable_result=lambda check_id, title, source_tables: _db_unavailable_placeholder(
+            check_id, title, source_tables
+        ),
+    )
+
+
 def _deprecated_execution_settings_present() -> DataHealthCheckResult:
     deprecated = [
         key
@@ -1408,6 +1419,7 @@ _CHECKS: tuple[Callable[[], DataHealthCheckResult], ...] = (
     _projection_freshness_customer_read_model,
     _broadcast_job_blocked_backlog,
     _external_effect_failed_retryable_backlog,
+    _ai_automation_lane_readiness,
     _deprecated_execution_settings_present,
     _fake_stub_route_exposed,
     _external_effect_approved_not_queued,

@@ -101,6 +101,36 @@ def _setting(key: str) -> str:
     return _text(runtime_setting(key, ""))
 
 
+def agent_gateway_configuration_snapshot() -> dict[str, Any]:
+    """Return a secret-free readiness snapshot without calling the provider."""
+
+    mode = _agent_mode()
+    fake_allowed = _fake_allowed()
+    api_key_present = bool(_api_key())
+    base_url_present = bool(_chat_completion_url(_base_url()))
+    model_present = bool(_model())
+    blocking_reasons: list[str] = []
+    if mode not in {"staging", "production"}:
+        blocking_reasons.append("agent_runtime_not_real_execution")
+    if mode == "fake" and not fake_allowed:
+        blocking_reasons.append("agent_fake_mode_not_allowed")
+    if not api_key_present:
+        blocking_reasons.append("agent_api_key_missing")
+    if not base_url_present:
+        blocking_reasons.append("agent_base_url_missing")
+    if not model_present:
+        blocking_reasons.append("agent_model_missing")
+    return {
+        "ready": not blocking_reasons,
+        "mode": mode,
+        "api_key_present": api_key_present,
+        "base_url_present": base_url_present,
+        "model_present": model_present,
+        "fake_allowed": fake_allowed,
+        "blocking_reasons": blocking_reasons,
+    }
+
+
 def generate_agent_reply(
     *,
     agent_code: str,

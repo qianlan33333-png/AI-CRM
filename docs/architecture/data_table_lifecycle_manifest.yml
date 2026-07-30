@@ -2048,6 +2048,47 @@ tables:
       - tests/test_data_table_lifecycle_guard.py
     notes: Append-only evidence for each drained test_loopback to allowlisted transition or rollback. Policy JSON is non-secret and target identifiers are not stored.
 
+  queue_lane_rollout_audit:
+    domain: platform_foundation
+    lifecycle: audit
+    write_owner: aicrm_next.platform.platform_foundation.execution_runtime.lane_rollout
+    read_owners:
+      - AI automation lane rollout operations
+      - execution runtime consistency audit
+    replacement: none; immutable AI automation lane promotion and rollback evidence
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - scripts/ops/promote_ai_automation_lane.py
+    migration_source: 0159_ai_automation_lane_rollout_audit
+    pii_level: none
+    guard_tests:
+      - tests/test_ai_automation_lane_rollout.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Append-only evidence for blocked to canary, canary to execute, and fail-closed rollback transitions on ai_generation and wecom_ai_assistant_bulk. Snapshots contain queue row IDs and aggregate counts but no prompts, generated copy, credentials, or customer identifiers.
+
+  queue_lane_canary_job_authorization:
+    domain: platform_foundation
+    lifecycle: runtime
+    write_owner: aicrm_next.platform.platform_foundation.execution_runtime.lane_rollout
+    read_owners:
+      - execution runtime claim policy
+      - AI automation lane rollout operations
+    replacement: none; durable exact-row authorization for AI automation lane canaries
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - scripts/ops/promote_ai_automation_lane.py
+      - aicrm_next.platform.platform_foundation.execution_runtime.read_model
+    migration_source: 0159_ai_automation_lane_rollout_audit
+    pii_level: none
+    guard_tests:
+      - tests/test_ai_automation_lane_rollout.py
+      - tests/test_database_bootstrap.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Authorization binds one reviewed external-effect job ID and row version to one append-only rollout audit transition. Later rows and later versions remain ineligible until the lane reaches execute. Rows may be removed only with their parent external-effect lifecycle.
+
   queue_runtime_canary_config_audit:
     domain: platform_foundation
     lifecycle: audit
