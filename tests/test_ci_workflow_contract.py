@@ -185,7 +185,9 @@ def test_ai_crm_deploy_is_reusable_production_only_and_has_no_id_validation_acce
     )
     assert session_issue_index < admin_smoke_index < session_revoke_index
     assert '--admin-cookie-file "$deploy_smoke_session_file"' in source
-    assert 'admin_smoke_sidebar_args=(--include-all-sidebar --require-all-data-health-green)' in source
+    assert "admin_smoke_sidebar_args=(" in source
+    assert "--require-all-data-health-green" in source
+    assert "--allow-ai-automation-pre-cutover" in source
     assert "tee /tmp/aicrm-admin-read-pages-smoke.json" in source
 
 

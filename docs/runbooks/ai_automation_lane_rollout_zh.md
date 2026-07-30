@@ -12,6 +12,12 @@
 - `blocked → canary` 必须列出当前 Lane 的全部 open job ID，并设置最大 open 数。
 - 晋级过程不得重新创建人群事件、Agent item 或群发任务；保留原始幂等键续跑。
 
+首次部署晋级工具时，生产发布 smoke 只允许一个非绿项：
+`ai_automation_lane_readiness:fail`。该例外由程序校验为两条 Lane 均由 migration
+保持 `blocked`、`queue_lane_rollout_audit` 仍为 0、且生成积压真实存在；任何人工更新、
+历史晋级/回滚审计或第二个非绿检查都会继续阻断部署。该例外只解决工具先部署、再 canary
+的启动顺序，不代表 Lane 已恢复，也不得作为生产完成证据。
+
 ## 1. AI 生成单任务 canary
 
 先 dry-run：

@@ -41,6 +41,7 @@ REQUIRED_OPENAPI_PATHS = (
 DATA_HEALTH_SUMMARY_PATH = "/api/admin/data-health/summary"
 EXPECTED_DATA_HEALTH_CHECK_COUNT = 16
 DATA_HEALTH_RESPONSE_MAX_BYTES = 65536
+AI_AUTOMATION_PRE_CUTOVER_CHECK_ID = "ai_automation_lane_readiness"
 
 SMOKE_PATHS = (
     "/admin/customers",
@@ -135,7 +136,48 @@ def _fetch(
         return int(exc.code), dict(exc.headers.items()), body
 
 
-def _admin_api_payload_error(path: str, body: str) -> str:
+def _is_exact_ai_automation_pre_cutover(checks: list[Any], counts: dict[str, Any]) -> bool:
+    non_green = [
+        check
+        for check in checks
+        if isinstance(check, dict) and check.get("status") != "ok"
+    ]
+    if counts != {"ok": 15, "warn": 0, "fail": 1, "not_applicable": 0}:
+        return False
+    if len(non_green) != 1:
+        return False
+    check = non_green[0]
+    if check.get("check_id") != AI_AUTOMATION_PRE_CUTOVER_CHECK_ID or check.get("status") != "fail":
+        return False
+    evidence = check.get("evidence")
+    if not isinstance(evidence, dict):
+        return False
+    open_job_counts = evidence.get("open_job_counts")
+    if not isinstance(open_job_counts, dict):
+        return False
+    try:
+        generation_queued_item_count = int(evidence.get("generation_queued_item_count") or 0)
+        generation_open_job_count = int(open_job_counts.get("ai_generation") or 0)
+    except (TypeError, ValueError):
+        return False
+    return bool(
+        evidence.get("pre_cutover_dark_deploy") is True
+        and evidence.get("lane_modes")
+        == {"ai_generation": "blocked", "wecom_ai_assistant_bulk": "blocked"}
+        and evidence.get("lane_updated_by")
+        == {"ai_generation": "migration", "wecom_ai_assistant_bulk": "migration"}
+        and evidence.get("rollout_audit_count") == 0
+        and generation_queued_item_count > 0
+        and generation_open_job_count > 0
+    )
+
+
+def _admin_api_payload_error(
+    path: str,
+    body: str,
+    *,
+    allow_ai_automation_pre_cutover: bool = False,
+) -> str:
     if not path.startswith("/api/admin/"):
         return ""
     try:
@@ -162,13 +204,20 @@ def _admin_api_payload_error(path: str, body: str) -> str:
             "fail": 0,
             "not_applicable": 0,
         }
-        if (
+        not_all_green = (
             payload.get("ok") is not True
             or payload.get("overall_status") != "ok"
             or counts != expected_counts
             or len(checks) != EXPECTED_DATA_HEALTH_CHECK_COUNT
             or any(not isinstance(check, dict) or check.get("status") != "ok" for check in checks)
-        ):
+        )
+        if not_all_green:
+            if (
+                allow_ai_automation_pre_cutover
+                and len(checks) == EXPECTED_DATA_HEALTH_CHECK_COUNT
+                and _is_exact_ai_automation_pre_cutover(checks, counts)
+            ):
+                return ""
             non_green_checks = [
                 f"{str(check.get('check_id') or 'unknown')}:{str(check.get('status') or 'unknown')}"
                 for check in checks
@@ -179,7 +228,14 @@ def _admin_api_payload_error(path: str, body: str) -> str:
     return ""
 
 
-def _probe(base_url: str, path: str, *, timeout: float, cookie_header: str = "") -> ProbeResult:
+def _probe(
+    base_url: str,
+    path: str,
+    *,
+    timeout: float,
+    cookie_header: str = "",
+    allow_ai_automation_pre_cutover: bool = False,
+) -> ProbeResult:
     started = time.monotonic()
     try:
         max_bytes = DATA_HEALTH_RESPONSE_MAX_BYTES if path.split("?", 1)[0] == DATA_HEALTH_SUMMARY_PATH else 4096
@@ -208,7 +264,11 @@ def _probe(base_url: str, path: str, *, timeout: float, cookie_header: str = "")
             ok = False
             error = "admin_login_page_returned"
     if ok:
-        payload_error = _admin_api_payload_error(path, body)
+        payload_error = _admin_api_payload_error(
+            path,
+            body,
+            allow_ai_automation_pre_cutover=allow_ai_automation_pre_cutover,
+        )
         if payload_error:
             ok = False
             error = payload_error
@@ -241,6 +301,7 @@ def run(
     admin_cookie_file: Path | None = None,
     include_all_sidebar: bool = False,
     require_all_data_health_green: bool = False,
+    allow_ai_automation_pre_cutover: bool = False,
 ) -> dict[str, Any]:
     cookie_header, cookie_error = _admin_cookie_header(admin_cookie_file) if require_admin_cookie else ("", "")
     paths = _openapi_paths(base_url, timeout=timeout, cookie_header=cookie_header)
@@ -254,7 +315,16 @@ def run(
             )
         )
     )
-    probes = [_probe(base_url, path, timeout=timeout, cookie_header=cookie_header) for path in probe_paths]
+    probes = [
+        _probe(
+            base_url,
+            path,
+            timeout=timeout,
+            cookie_header=cookie_header,
+            allow_ai_automation_pre_cutover=allow_ai_automation_pre_cutover,
+        )
+        for path in probe_paths
+    ]
     failed_probes = [probe for probe in probes if not probe.ok]
     missing_required_cookie = require_admin_cookie and not cookie_header
     return {
@@ -264,6 +334,7 @@ def run(
         "admin_cookie_error": cookie_error,
         "all_sidebar_required": include_all_sidebar,
         "all_data_health_green_required": require_all_data_health_green,
+        "ai_automation_pre_cutover_allowed": allow_ai_automation_pre_cutover,
         "sidebar_path_count": len(SIDEBAR_PATHS) if include_all_sidebar else 0,
         "base_url": base_url.rstrip("/"),
         "openapi_path_count": len(paths),
@@ -295,7 +366,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--require-all-data-health-green",
         action="store_true",
-        help="Fail unless the production data-health summary contains exactly fifteen green checks.",
+        help="Fail unless the production data-health summary contains exactly sixteen green checks.",
+    )
+    parser.add_argument(
+        "--allow-ai-automation-pre-cutover",
+        action="store_true",
+        help="Allow only the exact unaudited migration-owned dark-deploy AI lane state.",
     )
     args = parser.parse_args(argv)
     payload = run(
@@ -305,6 +381,7 @@ def main(argv: list[str] | None = None) -> int:
         admin_cookie_file=args.admin_cookie_file,
         include_all_sidebar=bool(args.include_all_sidebar),
         require_all_data_health_green=bool(args.require_all_data_health_green),
+        allow_ai_automation_pre_cutover=bool(args.allow_ai_automation_pre_cutover),
     )
     print_json(payload, indent=2, sort_keys=True)
     return 0 if payload["ok"] else 1

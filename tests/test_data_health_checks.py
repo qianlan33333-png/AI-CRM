@@ -272,6 +272,9 @@ def test_ai_automation_lane_readiness_fails_for_stranded_generation(monkeypatch)
             "active_dynamic_agent_count": 1,
             "ai_generation_mode": "blocked",
             "wecom_ai_assistant_bulk_mode": "blocked",
+            "ai_generation_updated_by": "migration",
+            "wecom_ai_assistant_bulk_updated_by": "migration",
+            "rollout_audit_count": 0,
             "generation_queued_item_count": 1,
             "oldest_generation_queued_age_seconds": 7200,
             "ai_generation_open_job_count": 1,
@@ -287,6 +290,7 @@ def test_ai_automation_lane_readiness_fails_for_stranded_generation(monkeypatch)
         "ai_generation": "blocked",
         "wecom_ai_assistant_bulk": "blocked",
     }
+    assert result.evidence["pre_cutover_dark_deploy"] is True
     assert any("automation_agent_webhook_item" in sql for sql in calls)
 
 
