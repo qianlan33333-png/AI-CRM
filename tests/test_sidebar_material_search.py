@@ -6,9 +6,11 @@ import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.crm.customer_read_model import api as customer_read_model_api
+from aicrm_next.crm.customer_read_model import extension_port as sidebar_extension_port
 from aicrm_next.crm.customer_read_model import sidebar_v2
 from aicrm_next.engagement.media_library.postgres_repo import PostgresMediaLibraryRepository
 from aicrm_next.engagement.media_library.repo import InMemoryMediaLibraryRepository
+from aicrm_next.extensions.commerce.service_period import sidebar_extension_adapter
 from aicrm_next.main import create_app
 from aicrm_next.platform.admin_config.application_support import _validate_known_setting
 from aicrm_next.engagement.media_library.application import GetImageThumbnailQuery
@@ -248,6 +250,54 @@ def test_sidebar_thumbnail_read_model_requests_enabled_material_only(monkeypatch
 
     assert captured == {"image_id": "42", "size": 160, "enabled_only": True}
     assert result["body"] == b"image-bytes"
+
+
+def test_sidebar_extension_thumbnail_query_forwards_enabled_only(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, Any] = {}
+
+    class FakePort:
+        def get_image_thumbnail(
+            self,
+            image_id: str,
+            size: int,
+            *,
+            enabled_only: bool = False,
+        ) -> dict[str, Any]:
+            captured.update({"image_id": image_id, "size": size, "enabled_only": enabled_only})
+            return {"thumbnail": {"bytes": b"image-bytes"}}
+
+    monkeypatch.setattr(sidebar_extension_port, "_FACTORY", lambda: FakePort())
+
+    result = sidebar_extension_port.GetImageThumbnailQuery()("42", 160, enabled_only=True)
+
+    assert captured == {"image_id": "42", "size": 160, "enabled_only": True}
+    assert result["thumbnail"]["bytes"] == b"image-bytes"
+
+
+def test_default_sidebar_extension_adapter_forwards_enabled_only(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, Any] = {}
+
+    class FakeGetImageThumbnailQuery:
+        def __call__(
+            self,
+            image_id: str,
+            size: int,
+            *,
+            enabled_only: bool = False,
+        ) -> dict[str, Any]:
+            captured.update({"image_id": image_id, "size": size, "enabled_only": enabled_only})
+            return {"thumbnail": {"bytes": b"image-bytes"}}
+
+    monkeypatch.setattr(sidebar_extension_adapter, "GetImageThumbnailQuery", FakeGetImageThumbnailQuery)
+
+    result = sidebar_extension_adapter.DefaultSidebarExtensionAdapter().get_image_thumbnail(
+        "42",
+        160,
+        enabled_only=True,
+    )
+
+    assert captured == {"image_id": "42", "size": 160, "enabled_only": True}
+    assert result["thumbnail"]["bytes"] == b"image-bytes"
 
 
 def test_sidebar_material_route_forwards_image_query_with_authenticated_context(monkeypatch: pytest.MonkeyPatch) -> None:

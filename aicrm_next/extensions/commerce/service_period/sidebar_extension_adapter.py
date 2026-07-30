@@ -35,8 +35,14 @@ class DefaultSidebarExtensionAdapter:
     ) -> dict[str, Any]:
         return ListMediaItemsQuery(kind)(limit=limit, offset=offset, filters=filters)
 
-    def get_image_thumbnail(self, image_id: str, size: int) -> dict[str, Any]:
-        return GetImageThumbnailQuery()(image_id, size)
+    def get_image_thumbnail(
+        self,
+        image_id: str,
+        size: int,
+        *,
+        enabled_only: bool = False,
+    ) -> dict[str, Any]:
+        return GetImageThumbnailQuery()(image_id, size, enabled_only=enabled_only)
 
     def update_service_period_member_remark(
         self,
