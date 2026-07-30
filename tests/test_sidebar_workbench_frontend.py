@@ -26,7 +26,7 @@ def test_sidebar_workbench_v2_page_is_next_owned(client):
     assert 'data-radar-links-url="/api/sidebar/v2/radar-links"' in html
     assert 'data-timeline-url="/api/sidebar/v2/timeline"' in html
     assert "sidebar_workbench/sidebar_workbench.js" in html
-    assert "sidebar_workbench/sidebar_workbench.js?v=20260730-sidebar-material-search" in html
+    assert "sidebar_workbench/sidebar_workbench.js?v=20260730-public-lazy-thumbnails" in html
     assert "sidebar_workbench/sidebar_workbench.css?v=20260730-sidebar-material-search" in html
     assert "自动化转化操作区" not in html
 
@@ -73,6 +73,7 @@ def test_sidebar_workbench_static_contract_has_next_surface_only():
     assert 'cache: "no-store"' in script
     assert "sidebar_owner_token" in script
     assert "data-material-thumb-img" in script
+    assert 'width="64" height="64" loading="lazy" decoding="async" fetchpriority="low"' in script
     assert "data-material-search-form" in script
     assert "data-material-search-input" in script
     assert "data-material-keyword" in script

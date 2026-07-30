@@ -1077,7 +1077,7 @@ class SidebarMaterialReadModel:
 
     def thumbnail(self, image_id: int) -> dict[str, Any]:
         try:
-            payload = GetImageThumbnailQuery()(str(int(image_id)), 160)
+            payload = GetImageThumbnailQuery()(str(int(image_id)), 160, enabled_only=True)
         except NotFoundError:
             raise LookupError("image not found") from None
         except ContractError as exc:

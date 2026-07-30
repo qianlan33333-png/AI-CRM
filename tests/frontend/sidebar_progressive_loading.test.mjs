@@ -762,6 +762,10 @@ test("image material search keys cache by query and renders quick keywords witho
   const html = nodes.get("content").innerHTML;
   assert.equal(html.includes("internal-file-name.jpg"), false);
   assert.equal(html.includes("图片素材预览"), true);
+  assert.equal(html.includes('width="64" height="64"'), true);
+  assert.equal(html.includes('loading="lazy"'), true);
+  assert.equal(html.includes('decoding="async"'), true);
+  assert.equal(html.includes('fetchpriority="low"'), true);
   assert.equal(html.includes('data-material-keyword="直播"'), true);
 });
 
