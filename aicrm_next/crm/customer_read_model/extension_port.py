@@ -16,7 +16,13 @@ class SidebarExtensionPort(Protocol):
         offset: int,
         filters: dict[str, Any],
     ) -> dict[str, Any]: ...
-    def get_image_thumbnail(self, image_id: str, size: int) -> dict[str, Any]: ...
+    def get_image_thumbnail(
+        self,
+        image_id: str,
+        size: int,
+        *,
+        enabled_only: bool = False,
+    ) -> dict[str, Any]: ...
     def update_service_period_member_remark(
         self,
         service_product_id: str,
@@ -78,8 +84,12 @@ class ListMediaItemsQuery:
 
 
 class GetImageThumbnailQuery:
-    def __call__(self, image_id: str, size: int) -> dict[str, Any]:
-        return build_sidebar_extension_port().get_image_thumbnail(image_id, size)
+    def __call__(self, image_id: str, size: int, *, enabled_only: bool = False) -> dict[str, Any]:
+        return build_sidebar_extension_port().get_image_thumbnail(
+            image_id,
+            size,
+            enabled_only=enabled_only,
+        )
 
 
 class UpdateServicePeriodMemberRemarkCommand:
