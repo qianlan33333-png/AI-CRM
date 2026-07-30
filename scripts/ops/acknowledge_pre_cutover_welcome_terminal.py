@@ -59,7 +59,7 @@ def _load_authorization(path: Path) -> dict[str, Any]:
     if authorization.get("confirmation_sha256") != _sha256(EXPECTED_CONFIRMATION):
         raise ValueError("manifest acknowledgement confirmation hash is invalid")
     if int(authorization.get("maximum_job_count") or 0) != 1:
-        raise ValueError("manifest must authorize exactly one historical job")
+        raise ValueError("manifest must authorize at most one historical job")
     expected = {
         "acknowledgement_type": ACKNOWLEDGEMENT_TYPE,
         "effect_type": WELCOME_EFFECT_TYPE,
@@ -238,10 +238,24 @@ def acknowledge(
                 session,
                 cutoff=authorization["authorization_recorded_at_utc"],
             )
-            if len(rows) != 1:
+            if len(rows) > 1:
                 raise RuntimeError(
-                    f"expected exactly one authorized historical welcome terminal; found {len(rows)}"
+                    f"expected at most one authorized historical welcome terminal; found {len(rows)}"
                 )
+            if not rows:
+                session.rollback()
+                return {
+                    "ok": True,
+                    "applied": False,
+                    "candidate_count": 0,
+                    "acknowledged_count": 0,
+                    "created_count": 0,
+                    "no_op_reason": "authorized_historical_terminal_absent",
+                    "replay_prohibited": True,
+                    "provider_success_claimed": False,
+                    "real_external_call_executed": False,
+                    "target_values_redacted": True,
+                }
             row = rows[0]
             fingerprint = _fingerprint(row)
             acknowledgement_id = f"qta_{fingerprint[:32]}"
@@ -420,7 +434,7 @@ def acknowledge(
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Acknowledge exactly one pre-cutover welcome 41050 as no-replay history.",
+        description="Acknowledge at most one pre-cutover welcome 41050 as no-replay history.",
     )
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--release-sha", required=True)
