@@ -313,6 +313,83 @@ def test_release_refresh_waits_for_a_concurrent_consumer_owner(monkeypatch) -> N
     assert calls[-1][-2:] == ["--wait-seconds", "300"]
 
 
+def test_release_refresh_targets_existing_coalescing_signal_on_deploy_retry(monkeypatch) -> None:
+    monkeypatch.setenv("AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED", "1")
+    calls: list[list[str]] = []
+
+    def runner(command, **kwargs):
+        del kwargs
+        calls.append(list(command))
+        if "--wait-seconds" in command:
+            payload = {
+                "ok": True,
+                "wait": {
+                    "ok": True,
+                    "target_generation": 27,
+                    "dirty_generation": 27,
+                    "completed_generation": 27,
+                    "status": "idle",
+                },
+                "real_external_call_executed": False,
+            }
+        elif "scripts/run_customer_read_model_refresh.py" in command:
+            payload = {
+                "ok": True,
+                "accepted": True,
+                "deduplicated": False,
+                "generation": 27,
+                "intent": {
+                    "dirty_generation": 27,
+                    "completed_generation": 6,
+                    "signal_generation": 7,
+                    "status": "waiting",
+                },
+                "real_external_call_executed": False,
+            }
+        else:
+            payload = {
+                "ok": True,
+                "outbox_relay": {
+                    "targeted": True,
+                    "event_type": REFRESH_EVENT_TYPE,
+                    "counts": {
+                        "candidate_count": 0,
+                        "relayed_count": 0,
+                        "failed_retryable_count": 0,
+                        "failed_terminal_count": 0,
+                        "lost_lease_count": 0,
+                        "unhandled_failure_count": 0,
+                    },
+                },
+                "counts": {
+                    "candidate_count": 1,
+                    "processed_count": 1,
+                    "succeeded_count": 1,
+                    "failed_retryable_count": 0,
+                    "failed_terminal_count": 0,
+                    "blocked_count": 0,
+                    "lost_lease_count": 0,
+                    "unhandled_failure_count": 0,
+                },
+                "real_external_call_executed": False,
+            }
+        return CompletedProcess(command, 0, stdout=json.dumps(payload), stderr="")
+
+    result = run_release_refresh(
+        release_sha="f" * 40,
+        attempt_key="30527981143-1",
+        command_runner=runner,
+    )
+
+    assert result["ok"] is True
+    assert result["request"]["generation"] == 27
+    assert result["request"]["signal_generation"] == 7
+    assert calls[1][-2:] == [
+        "--outbox-idempotency-key",
+        "customer_read_model.refresh.requested:7",
+    ]
+
+
 def test_release_refresh_fails_closed_when_targeted_relay_advances_a_different_shape(monkeypatch) -> None:
     monkeypatch.setenv("AICRM_CUSTOMER_READ_MODEL_RELEASE_REFRESH_AUTHORIZED", "1")
     call_count = 0

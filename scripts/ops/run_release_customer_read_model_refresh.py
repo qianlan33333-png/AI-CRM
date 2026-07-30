@@ -112,14 +112,28 @@ def run_release_refresh(
     target_generation = int(request.get("generation") or request_intent.get("dirty_generation") or 0)
     if target_generation <= 0:
         raise ReleaseRefreshError("release_refresh_generation_missing")
-    target_outbox_key = f"customer_read_model.refresh.requested:{target_generation}"
+    completed_generation = int(request_intent.get("completed_generation") or 0)
     already_completed = (
         bool(request.get("deduplicated"))
         and str(request_intent.get("status") or "") == "idle"
-        and int(request_intent.get("completed_generation") or 0) >= target_generation
-        and int(request_intent.get("completed_generation") or 0)
-        >= int(request_intent.get("dirty_generation") or 0)
+        and completed_generation >= target_generation
+        and completed_generation >= int(request_intent.get("dirty_generation") or 0)
     )
+    target_signal_generation = int(request_intent.get("signal_generation") or target_generation)
+    if not already_completed and not completed_generation < target_signal_generation <= target_generation:
+        raise ReleaseRefreshError(
+            "release_refresh_signal_generation_invalid",
+            diagnostics={
+                "completed_generation": completed_generation,
+                "signal_generation": target_signal_generation,
+                "target_generation": target_generation,
+            },
+        )
+    # A deploy retry can advance dirty_generation while an older coalescing
+    # signal is still pending. Target that durable signal: its consumer claims
+    # the latest dirty generation, whereas targeting the newer generation has
+    # no outbox row and leaves the release waiting until timeout.
+    target_outbox_key = f"customer_read_model.refresh.requested:{target_signal_generation}"
 
     expected_counts = {
         "candidate_count": 0 if already_completed else 1,
@@ -270,6 +284,7 @@ def run_release_refresh(
             "accepted": bool(request.get("accepted")),
             "deduplicated": bool(request.get("deduplicated")),
             "generation": target_generation,
+            "signal_generation": target_signal_generation,
             "already_completed": already_completed,
         },
         "consumer_counts": consumer_counts,
