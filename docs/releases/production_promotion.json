@@ -2,10 +2,10 @@
   "version": 1,
   "source": {
     "repository": "qianlan333/AI-CRM-ID-refactor",
-    "release_sha": "94de2901e19834a24373d9ef0dc5e36f056fc564",
-    "pull_request": 222,
-    "ci_run_id": 29920453143,
-    "deploy_run_id": 29921054745
+    "release_sha": "746a7d106fe2d1cfba4474bbab4655685c1b9a76",
+    "pull_request": 226,
+    "ci_run_id": 30485164471,
+    "deploy_run_id": 30486135978
   },
   "target": {
     "repository": "qianlan333/AI-CRM",
