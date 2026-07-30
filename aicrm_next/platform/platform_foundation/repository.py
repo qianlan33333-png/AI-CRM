@@ -109,6 +109,8 @@ class RuntimeReadinessRepository:
             ), queue_candidates AS (
               SELECT
                 'webhook_inbox'::text AS queue_kind,
+                i.id AS item_id,
+                0::BIGINT AS row_version,
                 i.received_at AS enqueued_at,
                 i.lane, i.status, i.hold_reason, i.available_at,
                 i.lease_expires_at, i.attempt_count, i.max_attempts,
@@ -134,7 +136,7 @@ class RuntimeReadinessRepository:
               UNION ALL
 
               SELECT
-                'internal_event', r.created_at, r.lane, r.status, r.hold_reason,
+                'internal_event', r.id, 0::BIGINT, r.created_at, r.lane, r.status, r.hold_reason,
                 r.available_at, r.lease_expires_at, r.attempt_count, r.max_attempts,
                 r.worker_generation, r.policy_version,
                 r.status IN ('pending', 'failed_retryable'),
@@ -154,7 +156,7 @@ class RuntimeReadinessRepository:
               UNION ALL
 
               SELECT
-                'internal_event_outbox', o.created_at, o.lane, o.status, o.hold_reason,
+                'internal_event_outbox', o.id, 0::BIGINT, o.created_at, o.lane, o.status, o.hold_reason,
                 o.available_at, o.lease_expires_at, o.attempt_count, o.max_attempts,
                 o.worker_generation, o.policy_version,
                 o.status IN ('pending', 'failed_retryable'),
@@ -173,7 +175,7 @@ class RuntimeReadinessRepository:
               UNION ALL
 
               SELECT
-                'external_effect', j.created_at, j.lane, j.status, j.hold_reason,
+                'external_effect', j.id, j.row_version, j.created_at, j.lane, j.status, j.hold_reason,
                 j.available_at, j.lease_expires_at, j.attempt_count, j.max_attempts,
                 j.worker_generation, j.policy_version,
                 j.status IN ('queued', 'failed_retryable'),

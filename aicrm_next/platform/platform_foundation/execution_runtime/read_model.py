@@ -11,6 +11,7 @@ from aicrm_next.platform.shared.runtime import raw_database_url
 from aicrm_next.platform.shared.sensitive_data import redact_sensitive_data
 
 from aicrm_next.platform.platform_foundation.external_effects.claim_policy import (
+    ai_automation_lane_canary_predicate,
     external_canary_authorization_predicate,
     external_claim_scope_predicate,
 )
@@ -30,6 +31,14 @@ def queue_policy_base_eligible_predicate(
 ) -> str:
     """Canonical eligibility gate excluding external execution scope."""
 
+    ai_automation_canary = ai_automation_lane_canary_predicate(
+        row_alias=row_alias,
+        lane_mode_expression=f"{policy_alias}.rollout_mode",
+        policy_version_expression=f"{control_alias}.policy_version",
+        job_id_expression=f"{row_alias}.item_id",
+        row_version_expression=f"{row_alias}.row_version",
+    )
+
     return f"""
         {row_alias}.hold_reason = ''
         AND {row_alias}.ready_state
@@ -42,6 +51,10 @@ def queue_policy_base_eligible_predicate(
         AND {control_alias}.rollout_mode IN ('canary', 'execute')
         AND {policy_alias}.enabled
         AND {policy_alias}.rollout_mode IN ('canary', 'execute')
+        AND (
+            {row_alias}.queue_kind <> 'external_effect'
+            OR {ai_automation_canary}
+        )
         AND ({policy_alias}.blocked_until IS NULL OR {policy_alias}.blocked_until <= CURRENT_TIMESTAMP)
         AND {policy_alias}.policy_version = {control_alias}.policy_version
         AND NOT {row_alias}.in_flight
@@ -412,6 +425,7 @@ class ExecutionRuntimeReadModel:
                 SELECT 'external_effect'::TEXT AS queue_kind,
                        COALESCE(job.payload_json->>'execution_scope', '') AS execution_scope,
                        ({external_canary_authorized}) AS canary_authorized,
+                       job.id AS item_id, job.row_version,
                        job.lane, job.status, job.hold_reason, job.available_at,
                        job.lease_expires_at, job.attempt_count, job.max_attempts,
                        job.worker_generation, job.policy_version,
@@ -443,7 +457,7 @@ class ExecutionRuntimeReadModel:
                 )
                 {external_lane_filter}
                 UNION ALL
-                SELECT 'internal_event', '', TRUE, lane, status, hold_reason, available_at, lease_expires_at,
+                SELECT 'internal_event', '', TRUE, run.id, 0, lane, status, hold_reason, available_at, lease_expires_at,
                        attempt_count, max_attempts, worker_generation, policy_version,
                        status IN ('pending', 'failed_retryable'),
                        status = 'running', FALSE,
@@ -484,7 +498,7 @@ class ExecutionRuntimeReadModel:
                 )
                 {internal_lane_filter}
                 UNION ALL
-                SELECT 'internal_outbox', '', TRUE, lane, status, hold_reason, available_at, lease_expires_at,
+                SELECT 'internal_outbox', '', TRUE, outbox.id, 0, lane, status, hold_reason, available_at, lease_expires_at,
                        attempt_count, max_attempts, worker_generation, policy_version,
                        status IN ('pending', 'failed_retryable'),
                        status = 'running', FALSE,
@@ -505,7 +519,7 @@ class ExecutionRuntimeReadModel:
                 )
                 {outbox_lane_filter}
                 UNION ALL
-                SELECT 'webhook_inbox', '', TRUE, lane, status, hold_reason, available_at, lease_expires_at,
+                SELECT 'webhook_inbox', '', TRUE, inbox.id, 0, lane, status, hold_reason, available_at, lease_expires_at,
                        attempt_count, max_attempts, worker_generation, policy_version,
                        status IN ('received', 'failed_retryable'),
                        status = 'processing', FALSE,
