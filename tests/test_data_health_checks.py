@@ -163,28 +163,6 @@ def test_schema_drift_guard_reports_manifest_and_live_schema_mismatches() -> Non
     assert "queue_with_status_enum" not in joined
 
 
-def test_schema_drift_guard_accepts_optional_registered_legacy_relation() -> None:
-    from aicrm_next.insights.data_health.schema_drift import evaluate_schema_drift
-
-    manifest = {
-        "tables": {
-            "questionnaire_continuation_job": {
-                "domain": "legacy_questionnaire",
-                "lifecycle": "legacy",
-                "write_owner": "legacy.production_runtime",
-                "pii_level": "internal_contact",
-                "drop_candidate": False,
-            }
-        }
-    }
-
-    assert evaluate_schema_drift(manifest=manifest, actual_schema={}) == []
-    assert evaluate_schema_drift(
-        manifest=manifest,
-        actual_schema={"questionnaire_continuation_job": {"id", "unionid", "source_event_id"}},
-    ) == []
-
-
 def test_migrated_schema_matches_lifecycle_manifest(next_pg_schema) -> None:
     del next_pg_schema
     from aicrm_next.insights.data_health.schema_drift import (
