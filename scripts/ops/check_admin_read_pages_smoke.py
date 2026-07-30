@@ -39,7 +39,7 @@ REQUIRED_OPENAPI_PATHS = (
 )
 
 DATA_HEALTH_SUMMARY_PATH = "/api/admin/data-health/summary"
-EXPECTED_DATA_HEALTH_CHECK_COUNT = 16
+EXPECTED_DATA_HEALTH_CHECK_COUNT = 17
 DATA_HEALTH_RESPONSE_MAX_BYTES = 65536
 AI_AUTOMATION_PRE_CUTOVER_CHECK_ID = "ai_automation_lane_readiness"
 
@@ -142,7 +142,12 @@ def _is_exact_ai_automation_pre_cutover(checks: list[Any], counts: dict[str, Any
         for check in checks
         if isinstance(check, dict) and check.get("status") != "ok"
     ]
-    if counts != {"ok": 15, "warn": 0, "fail": 1, "not_applicable": 0}:
+    if counts != {
+        "ok": EXPECTED_DATA_HEALTH_CHECK_COUNT - 1,
+        "warn": 0,
+        "fail": 1,
+        "not_applicable": 0,
+    }:
         return False
     if len(non_green) != 1:
         return False
@@ -366,7 +371,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--require-all-data-health-green",
         action="store_true",
-        help="Fail unless the production data-health summary contains exactly sixteen green checks.",
+        help="Fail unless the production data-health summary contains exactly seventeen green checks.",
     )
     parser.add_argument(
         "--allow-ai-automation-pre-cutover",

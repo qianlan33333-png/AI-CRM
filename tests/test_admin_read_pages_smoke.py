@@ -5,6 +5,7 @@ import os
 
 from sqlalchemy import text
 
+from aicrm_next.insights.data_health import checks as data_health_checks
 from aicrm_next.platform.platform_foundation.auth_platform.credentials import CredentialHasher
 from aicrm_next.platform.platform_foundation.auth_platform.repository import PostgresAuthRepository
 from aicrm_next.platform.platform_foundation.auth_platform.sessions import AuthSessionService
@@ -15,6 +16,10 @@ from scripts.ops import create_deploy_smoke_session as deploy_session
 
 def test_production_smoke_timeout_covers_observed_cold_admin_reads() -> None:
     assert smoke.DEFAULT_TIMEOUT_SECONDS == 45.0
+
+
+def test_production_smoke_check_count_matches_registered_data_health_checks() -> None:
+    assert smoke.EXPECTED_DATA_HEALTH_CHECK_COUNT == len(data_health_checks._CHECKS)
 
 
 def test_full_sidebar_smoke_covers_every_registered_navigation_destination(monkeypatch) -> None:
@@ -282,7 +287,7 @@ def test_probe_rejects_data_health_summary_with_failed_check(monkeypatch) -> Non
     assert result.error == "data_health_checks_not_all_ok:failed_check:fail"
 
 
-def test_probe_accepts_exactly_sixteen_green_data_health_checks(monkeypatch) -> None:
+def test_probe_accepts_exactly_seventeen_green_data_health_checks(monkeypatch) -> None:
     observed_max_bytes: list[int] = []
     checks = [
         {"check_id": f"check_{index}", "status": "ok"}
@@ -298,7 +303,12 @@ def test_probe_accepts_exactly_sixteen_green_data_health_checks(monkeypatch) -> 
                 {
                     "ok": True,
                     "overall_status": "ok",
-                    "counts": {"ok": 16, "warn": 0, "fail": 0, "not_applicable": 0},
+                    "counts": {
+                        "ok": smoke.EXPECTED_DATA_HEALTH_CHECK_COUNT,
+                        "warn": 0,
+                        "fail": 0,
+                        "not_applicable": 0,
+                    },
                     "checks": checks,
                 }
             ),
@@ -319,7 +329,10 @@ def test_probe_accepts_exactly_sixteen_green_data_health_checks(monkeypatch) -> 
 
 
 def test_probe_allows_only_exact_unaudited_ai_automation_pre_cutover(monkeypatch) -> None:
-    checks = [{"check_id": f"check_{index}", "status": "ok"} for index in range(15)]
+    checks = [
+        {"check_id": f"check_{index}", "status": "ok"}
+        for index in range(smoke.EXPECTED_DATA_HEALTH_CHECK_COUNT - 1)
+    ]
     checks.append(
         {
             "check_id": "ai_automation_lane_readiness",
@@ -343,7 +356,12 @@ def test_probe_allows_only_exact_unaudited_ai_automation_pre_cutover(monkeypatch
     payload = {
         "ok": False,
         "overall_status": "fail",
-        "counts": {"ok": 15, "warn": 0, "fail": 1, "not_applicable": 0},
+        "counts": {
+            "ok": smoke.EXPECTED_DATA_HEALTH_CHECK_COUNT - 1,
+            "warn": 0,
+            "fail": 1,
+            "not_applicable": 0,
+        },
         "checks": checks,
     }
     monkeypatch.setattr(
