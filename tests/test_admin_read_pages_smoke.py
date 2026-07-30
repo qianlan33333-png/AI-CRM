@@ -316,3 +316,58 @@ def test_probe_accepts_exactly_sixteen_green_data_health_checks(monkeypatch) -> 
     assert result.ok is True
     assert result.error == ""
     assert observed_max_bytes == [smoke.DATA_HEALTH_RESPONSE_MAX_BYTES]
+
+
+def test_probe_allows_only_exact_unaudited_ai_automation_pre_cutover(monkeypatch) -> None:
+    checks = [{"check_id": f"check_{index}", "status": "ok"} for index in range(15)]
+    checks.append(
+        {
+            "check_id": "ai_automation_lane_readiness",
+            "status": "fail",
+            "evidence": {
+                "pre_cutover_dark_deploy": True,
+                "lane_modes": {
+                    "ai_generation": "blocked",
+                    "wecom_ai_assistant_bulk": "blocked",
+                },
+                "lane_updated_by": {
+                    "ai_generation": "migration",
+                    "wecom_ai_assistant_bulk": "migration",
+                },
+                "rollout_audit_count": 0,
+                "generation_queued_item_count": 1,
+                "open_job_counts": {"ai_generation": 1, "wecom_ai_assistant_bulk": 0},
+            },
+        }
+    )
+    payload = {
+        "ok": False,
+        "overall_status": "fail",
+        "counts": {"ok": 15, "warn": 0, "fail": 1, "not_applicable": 0},
+        "checks": checks,
+    }
+    monkeypatch.setattr(
+        smoke,
+        "_fetch",
+        lambda *args, **kwargs: (200, {}, json.dumps(payload)),
+    )
+
+    accepted = smoke._probe(
+        "http://127.0.0.1:5001",
+        smoke.DATA_HEALTH_SUMMARY_PATH,
+        timeout=1,
+        cookie_header="aicrm_next_admin_session=fake",
+        allow_ai_automation_pre_cutover=True,
+    )
+    assert accepted.ok is True
+
+    checks[-1]["evidence"]["rollout_audit_count"] = 1
+    rejected = smoke._probe(
+        "http://127.0.0.1:5001",
+        smoke.DATA_HEALTH_SUMMARY_PATH,
+        timeout=1,
+        cookie_header="aicrm_next_admin_session=fake",
+        allow_ai_automation_pre_cutover=True,
+    )
+    assert rejected.ok is False
+    assert rejected.error == "data_health_checks_not_all_ok:ai_automation_lane_readiness:fail"

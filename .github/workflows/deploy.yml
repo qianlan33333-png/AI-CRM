@@ -555,7 +555,11 @@ jobs:
               --output-file "$deploy_smoke_session_file" \
               --ttl-seconds 300 \
               | tee /tmp/aicrm-deploy-smoke-session-issue.json
-            admin_smoke_sidebar_args=(--include-all-sidebar --require-all-data-health-green)
+            admin_smoke_sidebar_args=(
+              --include-all-sidebar
+              --require-all-data-health-green
+              --allow-ai-automation-pre-cutover
+            )
             if ! python scripts/ops/check_admin_read_pages_smoke.py \
               --base-url http://127.0.0.1:5001 \
               --require-admin-cookie \
