@@ -43,6 +43,12 @@ def ai_automation_lane_readiness(
                                 AS ai_generation_mode,
                             (SELECT rollout_mode FROM queue_lane_policy WHERE lane = 'wecom_ai_assistant_bulk')
                                 AS wecom_ai_assistant_bulk_mode,
+                            (SELECT updated_by FROM queue_lane_policy WHERE lane = 'ai_generation')
+                                AS ai_generation_updated_by,
+                            (SELECT updated_by FROM queue_lane_policy WHERE lane = 'wecom_ai_assistant_bulk')
+                                AS wecom_ai_assistant_bulk_updated_by,
+                            (SELECT COUNT(*) FROM queue_lane_rollout_audit)::BIGINT
+                                AS rollout_audit_count,
                             (
                                 SELECT COUNT(*) FROM automation_agent_webhook_item item
                                 WHERE item.status = 'generation_queued'
@@ -83,6 +89,9 @@ def ai_automation_lane_readiness(
     active_count = int(row.get("active_dynamic_agent_count") or 0)
     generation_mode = str(row.get("ai_generation_mode") or "missing")
     send_mode = str(row.get("wecom_ai_assistant_bulk_mode") or "missing")
+    generation_updated_by = str(row.get("ai_generation_updated_by") or "")
+    send_updated_by = str(row.get("wecom_ai_assistant_bulk_updated_by") or "")
+    rollout_audit_count = int(row.get("rollout_audit_count") or 0)
     queued_item_count = int(row.get("generation_queued_item_count") or 0)
     generation_job_count = int(row.get("ai_generation_open_job_count") or 0)
     send_job_count = int(row.get("wecom_ai_assistant_bulk_open_job_count") or 0)
@@ -98,12 +107,25 @@ def ai_automation_lane_readiness(
         (generation_mode not in {"canary", "execute"} and (queued_item_count or generation_job_count))
         or (send_mode not in {"canary", "execute"} and send_job_count)
     )
+    pre_cutover_dark_deploy = bool(
+        generation_mode == "blocked"
+        and send_mode == "blocked"
+        and generation_updated_by == "migration"
+        and send_updated_by == "migration"
+        and rollout_audit_count == 0
+    )
     evidence = {
         "active_dynamic_agent_count": active_count,
         "lane_modes": {
             "ai_generation": generation_mode,
             "wecom_ai_assistant_bulk": send_mode,
         },
+        "lane_updated_by": {
+            "ai_generation": generation_updated_by,
+            "wecom_ai_assistant_bulk": send_updated_by,
+        },
+        "rollout_audit_count": rollout_audit_count,
+        "pre_cutover_dark_deploy": pre_cutover_dark_deploy,
         "generation_queued_item_count": queued_item_count,
         "oldest_generation_queued_age_seconds": int(
             float(row.get("oldest_generation_queued_age_seconds") or 0)
