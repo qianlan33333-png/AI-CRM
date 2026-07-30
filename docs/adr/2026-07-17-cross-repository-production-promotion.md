@@ -1,42 +1,40 @@
-# ADR: ID validation evidence and AI-CRM production promotion are separate
+# ADR: AI-CRM main CI directly owns production promotion
 
 Date: 2026-07-17
+Updated: 2026-07-30
 
 ## Decision
 
-`qianlan333/AI-CRM-ID-refactor` remains the sole owner of
-`49.232.57.128` / `id-dev.youcangogogo.com`. AI-CRM does not keep an automatic
-test deployment trigger, `TEST_DEPLOY_*` credentials, or a path that can replace
-the ID validation checkout.
+AI-CRM remains the sole production release source. A successful `CI Fast` run
+for a trusted `push` to `main` automatically invokes the production deploy for
+that run's immutable `head_sha`. The normal release path is therefore:
 
-AI-CRM remains the sole production release source. A manual production promotion
-binds two different immutable commits:
+1. open a PR and pass its required checks and review;
+2. merge the PR into `main`;
+3. pass the `CI Fast` run created by that `main` push; and
+4. deploy the exact successful `main` SHA to production automatically.
 
-1. the current ID-refactor `main` SHA already proven by successful source CI,
-   successful ID deployment, and the public id-dev health header; and
-2. an AI-CRM candidate commit produced by the reviewed cross-repository port and
-   already covered by successful AI-CRM `main` CI.
-
-The binding lives in `docs/releases/production_promotion.json`. Any files added
-after the candidate commit must be limited to the reviewed promotion-control
-allowlist. An unrelated application, schema, dependency, runtime, or deploy
-change invalidates the promotion instead of silently riding the old validation.
+The old manual dispatch inputs (`release_sha`, `validated_id_sha`, and the fixed
+production confirmation text) and the cross-repository/id-dev attestation are no
+longer part of the AI-CRM deployment trigger. Historical promotion manifests and
+their validator remain audit artifacts and are not runtime deployment gates.
 
 ## Production boundary
 
-`.github/workflows/deploy.yml` is reusable only from the guarded manual promotion
-workflow. It is fixed to the `production` environment, production secrets, an
-incremental exact-SHA bundle, and an exact current-production-main check. It has no
-push, `workflow_run`, test credential, full-bundle test recovery, or id-dev
-mutation path.
+`.github/workflows/promote-production.yml` accepts only a completed `CI Fast`
+`workflow_run` whose conclusion is successful, whose head repository is this
+repository, whose head branch is `main`, and whose source event is `push`. It
+passes that run's exact SHA to the reusable `.github/workflows/deploy.yml`.
 
-The manual confirmation text and production environment remain required. The
-promotion validator additionally proves source and target CI evidence before the
-production job can receive credentials.
+The reusable deploy remains fixed to the `production` environment and production
+secrets. It still requires the requested SHA to equal the current repository
+`main`, serializes releases without cancelling an active deployment, transfers a
+verified incremental bundle, runs migrations inside the production transaction,
+and commits only after runtime and public exact-SHA health checks succeed.
 
 ## Rollback
 
 An in-flight deployment failure restores the exact previous production SHA using
-the existing transaction guard. A later rollback is a forward AI-CRM commit that
-reverts the promoted change and receives fresh CI and promotion evidence; schema
-downgrades and unverified backward resets remain forbidden.
+the existing transaction guard. A later rollback is a revert PR merged to
+`main`; after its `CI Fast` succeeds, the same automatic path deploys that new
+exact SHA. Schema downgrades and unverified backward resets remain forbidden.

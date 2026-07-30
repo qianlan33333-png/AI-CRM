@@ -153,6 +153,14 @@ EXTRA_SETTING_DEFINITIONS: dict[str, dict[str, Any]] = {
         "description": "侧边栏 JSSDK 请求超时时间（秒）。",
         "min": 1,
     },
+    "AICRM_SIDEBAR_IMAGE_QUICK_KEYWORDS": {
+        "key": "AICRM_SIDEBAR_IMAGE_QUICK_KEYWORDS",
+        "label": "侧边栏图片素材快捷关键词",
+        "mode": "editable",
+        "input_type": "textarea",
+        "type": "string",
+        "description": "逗号或换行分隔；留空时隐藏快捷词，配置时必须为 3 至 5 个不重复关键词。",
+    },
     "AICRM_QUESTIONNAIRE_EXTERNAL_PUSH_MODE": {
         "key": "AICRM_QUESTIONNAIRE_EXTERNAL_PUSH_MODE",
         "label": "问卷外推模式",
@@ -478,6 +486,16 @@ def _normalize_int(value: Any, *, field_name: str, minimum: int | None = None) -
 
 def _validate_known_setting(key: str, value: str) -> str:
     normalized = _text(value)
+    if key == "AICRM_SIDEBAR_IMAGE_QUICK_KEYWORDS":
+        values: list[str] = []
+        raw_items = normalized.replace("\r", "\n").replace("，", ",").replace("\n", ",").split(",")
+        for item in raw_items:
+            keyword = item.strip()
+            if keyword and keyword not in values:
+                values.append(keyword)
+        if values and not 3 <= len(values) <= 5:
+            raise ValueError(f"{key} 留空或配置 3 至 5 个不重复关键词")
+        return ",".join(values)
     if key in {
         "WECOM_CORP_TAG_LIMIT",
         "WECOM_ARCHIVE_TIMEOUT",

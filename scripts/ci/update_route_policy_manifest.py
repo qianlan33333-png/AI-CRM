@@ -16,6 +16,10 @@ _READ_ONLY_UNSAFE_PATHS = {
     "/api/public/service-period-member-grid/query",
 }
 
+_PUBLIC_SIDEBAR_ASSET_PATHS = {
+    "/api/sidebar/v2/materials/image/{image_id}/thumbnail",
+}
+
 _HYBRID_ADMIN_EXACT_PATHS = {
     "/api/admin/cloud-orchestrator/campaigns/run-due",
     "/api/admin/cloud-orchestrator/campaigns/run-due/preview",
@@ -270,6 +274,8 @@ def _policy_for(entry: dict[str, Any]) -> dict[str, Any]:
             return _policy("sidebar", "provider_oauth_state", "sidebar_read", "self", "none", False, "public_strict")
         if path == "/api/sidebar/jssdk-config":
             return _policy("sidebar", "public", "sidebar_bootstrap", "self", "none", False, "public_strict")
+        if path in _PUBLIC_SIDEBAR_ASSET_PATHS:
+            return _policy("sidebar", "public", "public", "single_resource", "none", False, "public_standard")
         return _policy(
             "sidebar",
             "sidebar_grant",

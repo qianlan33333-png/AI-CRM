@@ -40,5 +40,27 @@
     "window_end": "2026-07-23T11:51:00+08:00",
     "replay_prohibited": true,
     "provider_success_claimed": false
+  },
+  "group_message_40058": {
+    "authorization_base_sha": "237130397711b87e9e13392fd8c884b15d06eee1",
+    "classification_revision": "production_group_message_40058_no_replay_20260730",
+    "classification": "terminal_readonly",
+    "confirmation": "ACKNOWLEDGE AI-CRM GROUP MESSAGE 40058 TERMINAL AS NO-REPLAY HISTORY ON PRODUCTION",
+    "confirmation_sha256": "10c0fbf6f30f9dc61acdd38c121668a6f2d35dd0401311f47a5394df53b0c4fb",
+    "maximum_job_count": 1,
+    "effect_type": "wecom.message.group.send",
+    "adapter_name": "wecom_group_message",
+    "operation": "send_group_message",
+    "business_type": "group_ops_effect_graph",
+    "source_module": "automation_engine.group_ops.token_broadcast",
+    "source_route": "/api/automation/group-ops/broadcast",
+    "error_code": "wecom_error_40058",
+    "provider_error_code": 40058,
+    "expected_policy_version": "queue-v2-production-all-g1",
+    "expected_worker_generation": 1,
+    "window_start": "2026-07-30T08:53:00+08:00",
+    "window_end": "2026-07-30T08:54:00+08:00",
+    "replay_prohibited": true,
+    "provider_success_claimed": false
   }
 }

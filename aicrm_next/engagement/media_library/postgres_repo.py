@@ -10,7 +10,7 @@ from aicrm_next.platform.shared.safe_logging import safe_log_exception
 
 from .campaign_reference_port import build_campaign_media_reference_port
 from .dto import normalize_group_invite_join_url, normalize_http_url
-from .repo import connect_media_library_db, normalize_tags
+from .repo import connect_media_library_db, normalize_tags, trusted_https_image_url
 from .variants import (
     THUMBNAIL_SIZE_TO_VARIANT,
     add_image_variant_urls,
@@ -145,7 +145,13 @@ class PostgresMediaLibraryRepository:
         payload = variant_bytes(variant)
         return {**variant, "bytes": payload, "etag": '"' + str(variant.get("checksum") or "") + '"'}
 
-    def get_image_thumbnail(self, image_id: str, size: int) -> dict[str, Any] | None:
+    def get_image_thumbnail(
+        self,
+        image_id: str,
+        size: int,
+        *,
+        enabled_only: bool = False,
+    ) -> dict[str, Any] | None:
         if size not in THUMBNAIL_SIZE_TO_VARIANT:
             raise ContractError("thumbnail size must be one of 160, 320, 720")
         try:
@@ -155,11 +161,20 @@ class PostgresMediaLibraryRepository:
         with self._connect() as conn:
             with conn.cursor() as cur:
                 if self._image_variants_table_exists(cur):
-                    variant = self._fetch_variant(cur, image_id_int, THUMBNAIL_SIZE_TO_VARIANT[size])
+                    variant = self._fetch_variant(
+                        cur,
+                        image_id_int,
+                        THUMBNAIL_SIZE_TO_VARIANT[size],
+                        enabled_only=enabled_only,
+                    )
                     if variant and str(variant.get("mime_type") or "").split(";")[0] in {"image/png", "image/jpeg"}:
                         payload = variant_bytes(variant)
                         return {**variant, "bytes": payload, "etag": '"' + str(variant.get("checksum") or "") + '"'}
-                cur.execute("SELECT id, data_base64, mime_type, source_url FROM image_library WHERE id = %s", (image_id_int,))
+                enabled_clause = " AND enabled IS TRUE" if enabled_only else ""
+                cur.execute(
+                    f"SELECT id, data_base64, mime_type, source_url FROM image_library WHERE id = %s{enabled_clause}",
+                    (image_id_int,),
+                )
                 image = cur.fetchone()
         if not image:
             return None
@@ -168,6 +183,9 @@ class PostgresMediaLibraryRepository:
         if data_base64:
             data = decode_image_base64(data_base64)
         elif image.get("source_url"):
+            redirect_url = trusted_https_image_url(image.get("source_url"))
+            if redirect_url:
+                return {"redirect_url": redirect_url, "mime_type": mime_type}
             raise ContractError("remote source fetch is disabled in Next media library")
         else:
             data = b""
@@ -333,9 +351,13 @@ class PostgresMediaLibraryRepository:
             where.append("enabled")
         q = str(filters.get("q") or "").strip()
         if q:
-            where.append("(name ILIKE %s OR file_name ILIKE %s OR description ILIKE %s)")
+            where.append(
+                "(name ILIKE %s OR file_name ILIKE %s OR description ILIKE %s "
+                "OR category ILIKE %s OR EXISTS ("
+                "SELECT 1 FROM jsonb_array_elements_text(tags) AS tag WHERE tag ILIKE %s))"
+            )
             like = f"%{q}%"
-            params.extend([like, like, like])
+            params.extend([like, like, like, like, like])
         category = str(filters.get("category") or "").strip()
         if category:
             where.append("category = %s")
@@ -570,9 +592,30 @@ class PostgresMediaLibraryRepository:
             item["width"] = int(variant.get("width") or item.get("width") or 0)
             item["height"] = int(variant.get("height") or item.get("height") or 0)
 
-    def _fetch_variant(self, cur: Any, image_id: int, variant_key: str) -> dict[str, Any] | None:
+    def _fetch_variant(
+        self,
+        cur: Any,
+        image_id: int,
+        variant_key: str,
+        *,
+        enabled_only: bool = False,
+    ) -> dict[str, Any] | None:
         if not self._image_variants_table_exists(cur):
             return None
+        if enabled_only:
+            cur.execute(
+                """
+                SELECT v.image_id, v.variant_key, v.storage_backend, v.storage_key, v.public_url,
+                       v.mime_type, v.width, v.height, v.file_size, v.checksum, v.data_base64,
+                       v.created_at, v.updated_at
+                FROM image_library_variants v
+                JOIN image_library i ON i.id = v.image_id
+                WHERE v.image_id = %s AND v.variant_key = %s AND i.enabled IS TRUE
+                """,
+                (image_id, variant_key),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
         cur.execute(
             """
             SELECT image_id, variant_key, storage_backend, storage_key, public_url,

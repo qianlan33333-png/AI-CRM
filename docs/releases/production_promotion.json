@@ -2,10 +2,10 @@
   "version": 1,
   "source": {
     "repository": "qianlan333/AI-CRM-ID-refactor",
-    "release_sha": "94de2901e19834a24373d9ef0dc5e36f056fc564",
-    "pull_request": 222,
-    "ci_run_id": 29920453143,
-    "deploy_run_id": 29921054745
+    "release_sha": "746a7d106fe2d1cfba4474bbab4655685c1b9a76",
+    "pull_request": 226,
+    "ci_run_id": 30485164471,
+    "deploy_run_id": 30486135978
   },
   "target": {
     "repository": "qianlan333/AI-CRM",
@@ -399,6 +399,7 @@
     "tests/test_operation_cycle_strategy_context.py",
     "tests/test_operation_cycles_api.py",
     "tests/test_operation_cycles_frontend_contract.py",
+    "tests/test_operation_cycles_repository.py",
     "tests/test_p1_diagnostics_removal_contract.py",
     "tests/test_send_content_global_guardrails.py",
     "tests/test_wecom_frontend_contract.py",
@@ -510,6 +511,18 @@
     "tests/frontend/admin_error_messages.test.mjs",
     "tests/frontend/admin_error_rendering_guard.test.mjs",
     "tests/test_questionnaire_oauth_browser_redirect.py",
-    "tests/test_wechat_products_admin_page_contract.py"
+    "tests/test_wechat_products_admin_page_contract.py",
+    "aicrm_next/app/admin_console/static/sidebar_workbench/sidebar_workbench.css",
+    "aicrm_next/app/admin_console/templates/sidebar_customer_workbench.html",
+    "aicrm_next/crm/customer_read_model/extension_port.py",
+    "aicrm_next/crm/customer_read_model/sidebar_v2.py",
+    "aicrm_next/engagement/media_library/postgres_repo.py",
+    "aicrm_next/extensions/commerce/service_period/sidebar_extension_adapter.py",
+    "aicrm_next/platform/admin_config/category_registry.py",
+    "tests/frontend/sidebar_progressive_loading.test.mjs",
+    "tests/test_media_library_no_real_external_calls.py",
+    "tests/test_sidebar_jssdk_frontend_contract.py",
+    "tests/test_sidebar_material_search.py",
+    "tests/test_sidebar_workbench_frontend.py"
   ]
 }

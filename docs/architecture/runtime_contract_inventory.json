@@ -485,13 +485,13 @@
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/channels/integration_gateway/wecom_group_adapter.py",
       "key": "AICRM_ENABLE_REAL_WECOM_GROUP_MESSAGE",
-      "line": 18
+      "line": 21
     },
     {
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/channels/integration_gateway/wecom_private_adapter.py",
       "key": "AICRM_ENABLE_REAL_WECOM_GROUP_MESSAGE",
-      "line": 16
+      "line": 19
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -503,13 +503,13 @@
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/channels/integration_gateway/wecom_group_adapter.py",
       "key": "AICRM_ENABLE_REAL_WECOM_GROUP_SYNC",
-      "line": 18
+      "line": 21
     },
     {
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/channels/integration_gateway/wecom_private_adapter.py",
       "key": "AICRM_ENABLE_REAL_WECOM_PRIVATE_MESSAGE",
-      "line": 16
+      "line": 19
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -2027,25 +2027,25 @@
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/channels/integration_gateway/wecom_group_adapter.py",
       "key": "AICRM_WECOM_GROUP_ADAPTER_MODE",
-      "line": 18
+      "line": 21
     },
     {
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/channels/integration_gateway/wecom_group_adapter.py",
       "key": "AICRM_WECOM_GROUP_ADAPTER_MODE",
-      "line": 30
+      "line": 33
     },
     {
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/channels/integration_gateway/wecom_private_adapter.py",
       "key": "AICRM_WECOM_GROUP_ADAPTER_MODE",
-      "line": 16
+      "line": 19
     },
     {
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/channels/integration_gateway/wecom_private_adapter.py",
       "key": "AICRM_WECOM_GROUP_ADAPTER_MODE",
-      "line": 31
+      "line": 32
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -2159,13 +2159,13 @@
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/channels/integration_gateway/wecom_private_adapter.py",
       "key": "AICRM_WECOM_PRIVATE_ADAPTER_MODE",
-      "line": 16
+      "line": 19
     },
     {
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/channels/integration_gateway/wecom_private_adapter.py",
       "key": "AICRM_WECOM_PRIVATE_ADAPTER_MODE",
-      "line": 30
+      "line": 32
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -45741,6 +45741,16 @@
               "title": "Limit",
               "type": "integer"
             }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Q",
+              "type": "string"
+            }
           }
         ],
         "request_body": null,
@@ -50833,6 +50843,7 @@
       "migration_source": "0156_campaign_preparation_context",
       "pii_level": "none",
       "read_owners": [
+        "operation cycle admin plan history read model",
         "operation cycle context read model",
         "operation cycle system fact projector"
       ],
