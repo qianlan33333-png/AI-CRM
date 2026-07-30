@@ -605,8 +605,6 @@ class WeComPrivateMessageAdapter:
             "errcode": provider_errcode,
             "errmsg_present": bool(str(provider_result.get("errmsg") or result.get("error_message") or "").strip()),
             "provider_error_classification": str(result.get("provider_error_classification") or ""),
-            "provider_outcome_classification": str(result.get("provider_outcome_classification") or ""),
-            "business_reason_code": str(result.get("business_reason_code") or ""),
             **({"retry_after_seconds": _safe_int(result.get("retry_after_seconds"))} if _safe_int(result.get("retry_after_seconds")) > 0 else {}),
             "failed_external_userid_count": _safe_int(
                 result.get("failed_external_userid_count"),
@@ -614,6 +612,13 @@ class WeComPrivateMessageAdapter:
             ),
             "provider_result_received": provider_result_received,
         }
+        for classification_key in (
+            "provider_outcome_classification",
+            "business_reason_code",
+        ):
+            classification_value = str(result.get(classification_key) or "").strip()
+            if classification_value:
+                response_summary[classification_key] = classification_value
         if ok:
             return ExternalEffectDispatchResult(
                 status="succeeded",
@@ -737,14 +742,19 @@ class WeComGroupMessageExternalEffectAdapter:
                 "errcode": _safe_int(result.get("provider_errcode") or provider_result.get("errcode")),
                 "errmsg_present": bool(str(provider_result.get("errmsg") or result.get("error_message") or "").strip()),
                 "provider_error_classification": str(result.get("provider_error_classification") or ""),
-                "provider_outcome_classification": str(result.get("provider_outcome_classification") or ""),
-                "business_reason_code": str(result.get("business_reason_code") or ""),
                 "failed_chat_count": _safe_int(
                     result.get("failed_chat_count"),
                     default=_safe_list_count(provider_result.get("fail_list")),
                 ),
             }
         )
+        for classification_key in (
+            "provider_outcome_classification",
+            "business_reason_code",
+        ):
+            classification_value = str(result.get(classification_key) or "").strip()
+            if classification_value:
+                response_summary[classification_key] = classification_value
         if result.get("ok") and result.get("exact_target_verified") is True:
             return ExternalEffectDispatchResult(
                 status="succeeded",
