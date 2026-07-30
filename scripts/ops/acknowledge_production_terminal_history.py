@@ -937,16 +937,21 @@ def acknowledge(
                 session,
                 authorization=manifest[GROUP_KEY],
             ) or _group_candidates(session, manifest[GROUP_KEY])
-            private_count, private_created = _acknowledge_rows(
-                session,
-                rows=private_rows,
-                authorization=manifest[PRIVATE_KEY],
-                release_sha=release_sha,
-                authorization_base_sha=authorization_base_sha,
-                actor=actor,
-                reason=reason,
-                apply=apply,
-            )
+            if private_rows:
+                private_count, private_created = _acknowledge_rows(
+                    session,
+                    rows=private_rows,
+                    authorization=manifest[PRIVATE_KEY],
+                    release_sha=release_sha,
+                    authorization_base_sha=authorization_base_sha,
+                    actor=actor,
+                    reason=reason,
+                    apply=apply,
+                )
+                private_no_op_reason = ""
+            else:
+                private_count, private_created = 0, 0
+                private_no_op_reason = "authorized_historical_terminal_absent"
             if acknowledge_refund_histories:
                 refund_count, refund_created = _acknowledge_rows(
                     session,
@@ -960,24 +965,31 @@ def acknowledge(
                 )
             else:
                 refund_count, refund_created = 0, 0
-            group_count, group_created = _classify_group_rows(
-                session,
-                rows=group_rows,
-                authorization=manifest[GROUP_KEY],
-                release_sha=release_sha,
-                actor=actor,
-                reason=reason,
-                apply=apply,
-            )
-            if apply:
+            if group_rows:
+                group_count, group_created = _classify_group_rows(
+                    session,
+                    rows=group_rows,
+                    authorization=manifest[GROUP_KEY],
+                    release_sha=release_sha,
+                    actor=actor,
+                    reason=reason,
+                    apply=apply,
+                )
+            else:
+                group_count, group_created = 0, 0
+            has_authorized_histories = bool(private_rows) or bool(
+                acknowledge_refund_histories and refund_rows
+            ) or bool(group_rows)
+            if apply and has_authorized_histories:
                 session.commit()
             else:
                 session.rollback()
             return {
                 "ok": True,
-                "applied": apply,
+                "applied": bool(apply and has_authorized_histories),
                 "private_message_acknowledged_count": private_count,
                 "private_message_created_count": private_created,
+                "private_message_no_op_reason": private_no_op_reason,
                 "refund_acknowledged_count": refund_count,
                 "refund_created_count": refund_created,
                 "refund_acknowledgement_required": bool(acknowledge_refund_histories),

@@ -156,9 +156,9 @@ def _candidate_rows(session, authorization: Mapping[str, Any]) -> list[Mapping[s
             },
         ).mappings()
     )
-    if len(rows) != EXPECTED_COUNT:
+    if rows and len(rows) != EXPECTED_COUNT:
         raise RuntimeError(
-            f"expected exactly {EXPECTED_COUNT} authorized production private-message "
+            f"expected zero or exactly {EXPECTED_COUNT} authorized production private-message "
             f"terminals; found {len(rows)}"
         )
     return rows
@@ -342,6 +342,19 @@ def acknowledge(
         try:
             existing_rows = _existing_rows(session)
             rows = existing_rows or _candidate_rows(session, authorization)
+            if not rows:
+                session.rollback()
+                return {
+                    "ok": True,
+                    "applied": False,
+                    "acknowledged_count": 0,
+                    "created_count": 0,
+                    "no_op_reason": "authorized_historical_terminals_absent",
+                    "replay_prohibited": True,
+                    "provider_success_claimed": False,
+                    "real_external_call_executed": False,
+                    "target_values_redacted": True,
+                }
             if len(rows) != EXPECTED_COUNT:
                 raise RuntimeError(
                     f"expected exactly {EXPECTED_COUNT} authorized production private-message "
@@ -437,8 +450,8 @@ def acknowledge(
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Acknowledge the exact three 2026-07-28 private-message contact-absence "
-            "terminals as immutable no-replay history."
+            "Acknowledge zero or the exact three 2026-07-28 private-message "
+            "contact-absence terminals as immutable no-replay history."
         )
     )
     parser.add_argument("--manifest", type=Path, required=True)
