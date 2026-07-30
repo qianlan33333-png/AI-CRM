@@ -67,6 +67,12 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     heads = set(revisions) - referenced
     repair = VERSIONS / "0123_required_physical_schema_repair.py"
     source = repair.read_text(encoding="utf-8")
+    questionnaire_compatibility = (
+        VERSIONS / "0124_questionnaire_continuation_jobs_compatibility.py"
+    )
+    questionnaire_compatibility_source = questionnaire_compatibility.read_text(
+        encoding="utf-8"
+    )
     audit_repair = VERSIONS / "0124_automation_agent_audit_tables.py"
     audit_source = audit_repair.read_text(encoding="utf-8")
 
@@ -185,8 +191,12 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     assert revisions["0127_group_ops_durable_effect_graph"]["down_revision"] == "0126_postgres_execution_runtime"
     assert revisions["0126_postgres_execution_runtime"]["down_revision"] == "0125_execution_runtime_correctness"
     assert revisions["0125_execution_runtime_correctness"]["down_revision"] == "0124_agent_audit_tables"
-    assert revisions["0124_agent_audit_tables"]["down_revision"] == "0123_required_physical_schema_repair"
+    assert revisions["0124_agent_audit_tables"]["down_revision"] == "0124_questionnaire_continuation_jobs"
+    assert revisions["0124_questionnaire_continuation_jobs"]["down_revision"] == "0123_required_physical_schema_repair"
     assert revisions["0123_required_physical_schema_repair"]["down_revision"] == "0122_internal_event_fanout_manifest"
+    assert "from alembic import op" not in questionnaire_compatibility_source
+    assert "CREATE TABLE" not in questionnaire_compatibility_source
+    assert "ALTER TABLE" not in questionnaire_compatibility_source
     assert "CREATE TABLE IF NOT EXISTS config_releases" in config_release_control_plane_source
     assert "CREATE TABLE IF NOT EXISTS deployment_profile_state" in config_release_control_plane_source
     assert "uq_config_releases_profile_published" in config_release_control_plane_source
