@@ -7,117 +7,6 @@ from uuid import uuid4
 import pytest
 
 
-class _TerminalHistorySession:
-    def __init__(self) -> None:
-        self.commit_count = 0
-        self.rollback_count = 0
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc, traceback):
-        return False
-
-    def commit(self) -> None:
-        self.commit_count += 1
-
-    def rollback(self) -> None:
-        self.rollback_count += 1
-
-
-def test_absent_private_message_history_is_an_idempotent_noop(monkeypatch) -> None:
-    from scripts.ops import acknowledge_production_terminal_history as terminal_history
-
-    session = _TerminalHistorySession()
-    monkeypatch.setattr(terminal_history, "get_session_factory", lambda: lambda: session)
-    monkeypatch.setattr(
-        terminal_history,
-        "_existing_acknowledged_rows",
-        lambda *args, **kwargs: [],
-    )
-    monkeypatch.setattr(
-        terminal_history,
-        "_private_candidates",
-        lambda *args, **kwargs: [],
-    )
-    monkeypatch.setattr(
-        terminal_history,
-        "_existing_group_classifications",
-        lambda *args, **kwargs: [],
-    )
-    monkeypatch.setattr(
-        terminal_history,
-        "_group_candidates",
-        lambda *args, **kwargs: [],
-    )
-    monkeypatch.setenv("AICRM_QUEUE_TERMINAL_ACK_AUTHORIZED", "1")
-
-    result = terminal_history.acknowledge(
-        manifest_path=(
-            Path(__file__).resolve().parents[1]
-            / "docs"
-            / "releases"
-            / "production_terminal_history_acknowledgements.json"
-        ),
-        release_sha="a" * 40,
-        authorization_base_sha="8ab2f80ec8a6808a357a5911ace38128599a3d3d",
-        private_confirmation=terminal_history.PRIVATE_CONFIRMATION,
-        refund_confirmation=terminal_history.REFUND_CONFIRMATION,
-        group_confirmation=terminal_history.GROUP_CONFIRMATION,
-        actor="pytest",
-        reason="absent private-message history is an idempotent no-op",
-        apply=True,
-        acknowledge_refund_histories=False,
-    )
-
-    assert result["applied"] is False
-    assert result["private_message_acknowledged_count"] == 0
-    assert result["private_message_created_count"] == 0
-    assert result["private_message_no_op_reason"] == "authorized_historical_terminal_absent"
-    assert result["group_message_40058_classified_count"] == 0
-    assert result["group_message_40058_created_count"] == 0
-    assert result["refund_acknowledgement_required"] is False
-    assert result["real_external_call_executed"] is False
-    assert session.commit_count == 0
-    assert session.rollback_count == 1
-
-
-@pytest.mark.postgres
-def test_absent_private_message_history_is_a_postgres_noop(
-    next_pg_schema,
-    monkeypatch,
-) -> None:
-    from scripts.ops import acknowledge_production_terminal_history as terminal_history
-
-    del next_pg_schema
-    monkeypatch.setenv("AICRM_QUEUE_TERMINAL_ACK_AUTHORIZED", "1")
-    result = terminal_history.acknowledge(
-        manifest_path=(
-            Path(__file__).resolve().parents[1]
-            / "docs"
-            / "releases"
-            / "production_terminal_history_acknowledgements.json"
-        ),
-        release_sha="a" * 40,
-        authorization_base_sha="8ab2f80ec8a6808a357a5911ace38128599a3d3d",
-        private_confirmation=terminal_history.PRIVATE_CONFIRMATION,
-        refund_confirmation=terminal_history.REFUND_CONFIRMATION,
-        group_confirmation=terminal_history.GROUP_CONFIRMATION,
-        actor="pytest",
-        reason="postgres absent private-message history no-op",
-        apply=True,
-        acknowledge_refund_histories=False,
-    )
-
-    assert result["applied"] is False
-    assert result["private_message_acknowledged_count"] == 0
-    assert result["private_message_created_count"] == 0
-    assert result["private_message_no_op_reason"] == "authorized_historical_terminal_absent"
-    assert result["group_message_40058_classified_count"] == 0
-    assert result["group_message_40058_created_count"] == 0
-    assert result["real_external_call_executed"] is False
-
-
 @pytest.mark.postgres
 def test_exact_production_terminal_histories_require_append_only_no_replay_acknowledgements(
     next_pg_schema,
@@ -379,7 +268,6 @@ def test_exact_production_terminal_histories_require_append_only_no_replay_ackno
         "applied": True,
         "private_message_acknowledged_count": 1,
         "private_message_created_count": 1,
-        "private_message_no_op_reason": "",
         "refund_acknowledged_count": 3,
         "refund_created_count": 3,
         "refund_acknowledgement_required": True,

@@ -28,6 +28,7 @@ jobs:
       PUBLIC_SERVER_NAME: ${{ vars.PUBLIC_SERVER_NAME }}
       NGINX_CONFIG_PATH: ${{ vars.NGINX_CONFIG_PATH }}
       ALLOW_MISSING_WECHAT_SHOP_CALLBACK_TOKEN: ${{ vars.ALLOW_MISSING_WECHAT_SHOP_CALLBACK_TOKEN || '0' }}
+      RELEASE_TERMINAL_HISTORY_ACK_MODE: ${{ vars.RELEASE_TERMINAL_HISTORY_ACK_MODE || 'required' }}
       RELEASE_REFRESH_ATTEMPT_KEY: ${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - name: Checkout verified release
@@ -126,7 +127,7 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          envs: RELEASE_REFRESH_ATTEMPT_KEY
+          envs: RELEASE_REFRESH_ATTEMPT_KEY,RELEASE_TERMINAL_HISTORY_ACK_MODE
           script: |
             set -e
             set -o pipefail
@@ -532,6 +533,7 @@ jobs:
             python3 scripts/ops/acknowledge_release_terminal_histories.py \
               --release-sha "$after_sha" \
               --actor github-actions \
+              --mode "$RELEASE_TERMINAL_HISTORY_ACK_MODE" \
               --apply \
               | tee /tmp/aicrm-release-terminal-history-acknowledgements.json
             unset AICRM_QUEUE_TERMINAL_ACK_AUTHORIZED
