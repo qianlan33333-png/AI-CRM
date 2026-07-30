@@ -935,6 +935,7 @@
         "deploy/openclaw-ai-audience-scheduler.timer",
         "migrations/versions/0128_ai_audience_refresh_intents.py",
         "migrations/versions/0149_ai_audience_hxc_projection_foundation.py",
+        "migrations/versions/0160_ai_audience_wecom_contacts_view_repair.py",
         "migrations/versions/0150_crm_identity_updated_cursor_index.py",
         "migrations/versions/0151_ai_audience_hxc_projection_view.py",
         "docs/ops/ai-audience-hxc-projection.md",
