@@ -184,11 +184,7 @@ class InMemoryExternalEffectRepository(ExternalEffectRepository):
 
     def consume_attempt_provider_result(self, attempt_id: str, *, job_id: int) -> bool:
         for row in self._attempts:
-            if (
-                _text(row.get("attempt_id")) == _text(attempt_id)
-                and int(row.get("job_id") or 0) == int(job_id)
-                and not row.get("provider_result_consumed_at")
-            ):
+            if _text(row.get("attempt_id")) == _text(attempt_id) and int(row.get("job_id") or 0) == int(job_id) and not row.get("provider_result_consumed_at"):
                 row["provider_result_json"] = {}
                 row["provider_result_consumed_at"] = public_datetime(utcnow())
                 return True
@@ -247,25 +243,31 @@ class InMemoryExternalEffectRepository(ExternalEffectRepository):
             "raw_open_count": len(raw_open),
             "held_count": len([row for row in raw_open if _text(row.get("hold_reason"))]),
             "eligible_due_count": len(due_rows),
-            "scheduled_count": len([
-                row for row in rows
-                if not _text(row.get("hold_reason")) and row.get("status") == "queued" and self._dt(row.get("scheduled_at")) > now
-            ]),
-            "retry_wait_count": len([
-                row for row in rows
-                if not _text(row.get("hold_reason")) and row.get("status") == "failed_retryable"
-                and row.get("next_retry_at") and self._dt(row.get("next_retry_at")) > now
-            ]),
+            "scheduled_count": len(
+                [row for row in rows if not _text(row.get("hold_reason")) and row.get("status") == "queued" and self._dt(row.get("scheduled_at")) > now]
+            ),
+            "retry_wait_count": len(
+                [
+                    row
+                    for row in rows
+                    if not _text(row.get("hold_reason"))
+                    and row.get("status") == "failed_retryable"
+                    and row.get("next_retry_at")
+                    and self._dt(row.get("next_retry_at")) > now
+                ]
+            ),
             "rate_limited_count": 0,
-            "in_flight_count": len([
-                row for row in rows
-                if not _text(row.get("hold_reason")) and row.get("status") == "dispatching"
-                and row.get("lease_expires_at") and self._dt(row.get("lease_expires_at")) > now
-            ]),
-            "unknown_count": len([
-                row for row in rows
-                if row.get("status") == "unknown_after_dispatch" or row.get("reconciliation_required")
-            ]),
+            "in_flight_count": len(
+                [
+                    row
+                    for row in rows
+                    if not _text(row.get("hold_reason"))
+                    and row.get("status") == "dispatching"
+                    and row.get("lease_expires_at")
+                    and self._dt(row.get("lease_expires_at")) > now
+                ]
+            ),
+            "unknown_count": len([row for row in rows if row.get("status") == "unknown_after_dispatch" or row.get("reconciliation_required")]),
             "dlq_count": len([row for row in rows if row.get("status") in {"failed_terminal", "blocked"}]),
             "dispatching_count": len([row for row in rows if row.get("status") == "dispatching"]),
             "stale_dispatching_count": len(
@@ -425,8 +427,7 @@ class InMemoryExternalEffectRepository(ExternalEffectRepository):
                                 "lease_expired": True,
                             },
                             "error_code": _text(open_attempt.get("error_code")) or "lease_expired_after_dispatch",
-                            "error_message": _text(open_attempt.get("error_message"))
-                            or "Dispatch lease expired; reconcile provider outcome before retry.",
+                            "error_message": _text(open_attempt.get("error_message")) or "Dispatch lease expired; reconcile provider outcome before retry.",
                             "completed_at": open_attempt.get("completed_at") or now,
                         }
                     )
@@ -653,9 +654,7 @@ class InMemoryExternalEffectRepository(ExternalEffectRepository):
                         ),
                         "response_summary_json": scrub_summary(response_summary),
                         "provider_result_json": dict(result.provider_result or {}),
-                        "provider_result_hash": hashlib.sha256(
-                            _json_dumps(dict(result.provider_result or {})).encode("utf-8")
-                        ).hexdigest()
+                        "provider_result_hash": hashlib.sha256(_json_dumps(dict(result.provider_result or {})).encode("utf-8")).hexdigest()
                         if result.provider_result
                         else "",
                         "provider_result_consumed_at": "",
@@ -963,6 +962,9 @@ class InMemoryExternalEffectRepository(ExternalEffectRepository):
             if extend_attempt_budget:
                 max_attempts = max(max_attempts, int(row.get("attempt_count") or 0) + 1)
             now = public_datetime(utcnow())
+            safe_pre_provider_retry = (
+                not bool(row.get("side_effect_executed")) and not bool(row.get("provider_result_received")) and not bool(row.get("reconciliation_required"))
+            )
             return self._mutate(
                 job_id,
                 status="queued",
@@ -970,6 +972,10 @@ class InMemoryExternalEffectRepository(ExternalEffectRepository):
                 locked_at="",
                 lease_token="",
                 lease_expires_at="",
+                heartbeat_at="",
+                worker_generation=0,
+                dispatch_started_at=("" if safe_pre_provider_retry else row.get("dispatch_started_at")),
+                provider_call_started_at=("" if safe_pre_provider_retry else row.get("provider_call_started_at")),
                 next_retry_at=now,
                 available_at=now,
                 reconciliation_required=False,
