@@ -46,6 +46,10 @@ TERMINAL_CONFIG_ERRCODES = {40001, 40013, 41001}
 TERMINAL_PERMISSION_ERRCODES = {48002, 60011, 301002}
 TERMINAL_TRUST_ERRCODES = {60020}
 TERMINAL_BUSINESS_OUTCOME_ERRCODES = {84061}
+WECOM_PROVIDER_OUTCOME_BUSINESS_REJECTION = "business_rejection"
+WECOM_PROVIDER_OUTCOME_SYSTEM_FAILURE = "system_failure"
+WECOM_BUSINESS_REASON_EXTERNAL_CONTACT_RELATIONSHIP_ABSENT = "external_contact_relationship_absent"
+WECOM_BUSINESS_REASON_MINIPROGRAM_TITLE_TOO_LONG = "miniprogram_title_exceeds_64_bytes"
 
 
 def _text(value: Any) -> str:
@@ -97,10 +101,14 @@ class WeComExecutionConfig:
 
     @property
     def real_calls_enabled(self) -> bool:
-        return self.execution_mode == "execute" and not self.conflict and not {
-            "wecom_corp_id_missing",
-            "wecom_contact_secret_missing",
-        }.intersection(self.blocking_reasons)
+        return (
+            self.execution_mode == "execute"
+            and not self.conflict
+            and not {
+                "wecom_corp_id_missing",
+                "wecom_contact_secret_missing",
+            }.intersection(self.blocking_reasons)
+        )
 
     def diagnostics(self) -> dict[str, Any]:
         return {
@@ -297,6 +305,34 @@ def classify_wecom_provider_error(
     if provider_errcode:
         return f"wecom_error_{provider_errcode}", "terminal"
     return "provider_response_invalid", "terminal"
+
+
+def classify_wecom_provider_outcome(
+    *,
+    provider_errcode: int = 0,
+    errmsg: Any = "",
+) -> tuple[str, str]:
+    """Separate deterministic business rejection from system health failure.
+
+    This deliberately requires a narrow provider code + message match for
+    request-validation outcomes.  A generic 40058 remains a system failure so
+    malformed adapter payloads cannot silently become healthy.  The durable
+    data-health predicate additionally verifies the submitted title length and
+    provider-attempt evidence before excluding the row from system health.
+    """
+
+    normalized_message = " ".join(_text(errmsg).lower().split())
+    if int(provider_errcode or 0) == 84061:
+        return (
+            WECOM_PROVIDER_OUTCOME_BUSINESS_REJECTION,
+            WECOM_BUSINESS_REASON_EXTERNAL_CONTACT_RELATIONSHIP_ABSENT,
+        )
+    if int(provider_errcode or 0) == 40058 and "attachments.miniprogram.title exceed max length 64" in normalized_message:
+        return (
+            WECOM_PROVIDER_OUTCOME_BUSINESS_REJECTION,
+            WECOM_BUSINESS_REASON_MINIPROGRAM_TITLE_TOO_LONG,
+        )
+    return WECOM_PROVIDER_OUTCOME_SYSTEM_FAILURE, ""
 
 
 class SingleFlightAccessTokenProvider:

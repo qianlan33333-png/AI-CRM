@@ -605,6 +605,8 @@ class WeComPrivateMessageAdapter:
             "errcode": provider_errcode,
             "errmsg_present": bool(str(provider_result.get("errmsg") or result.get("error_message") or "").strip()),
             "provider_error_classification": str(result.get("provider_error_classification") or ""),
+            "provider_outcome_classification": str(result.get("provider_outcome_classification") or ""),
+            "business_reason_code": str(result.get("business_reason_code") or ""),
             **({"retry_after_seconds": _safe_int(result.get("retry_after_seconds"))} if _safe_int(result.get("retry_after_seconds")) > 0 else {}),
             "failed_external_userid_count": _safe_int(
                 result.get("failed_external_userid_count"),
@@ -735,6 +737,8 @@ class WeComGroupMessageExternalEffectAdapter:
                 "errcode": _safe_int(result.get("provider_errcode") or provider_result.get("errcode")),
                 "errmsg_present": bool(str(provider_result.get("errmsg") or result.get("error_message") or "").strip()),
                 "provider_error_classification": str(result.get("provider_error_classification") or ""),
+                "provider_outcome_classification": str(result.get("provider_outcome_classification") or ""),
+                "business_reason_code": str(result.get("business_reason_code") or ""),
                 "failed_chat_count": _safe_int(
                     result.get("failed_chat_count"),
                     default=_safe_list_count(provider_result.get("fail_list")),
@@ -1167,9 +1171,7 @@ class WeComExternalContactDetailAdapter:
             "effect_type": job.effect_type,
             "operation": job.operation,
             "target_type": job.target_type,
-            "target_hash": "sha256:" + hashlib.sha256(external_userid.encode("utf-8")).hexdigest()
-            if external_userid
-            else "",
+            "target_hash": "sha256:" + hashlib.sha256(external_userid.encode("utf-8")).hexdigest() if external_userid else "",
             "external_userid_present": bool(external_userid),
             "queue_link_present": int(payload.get("queue_id") or 0) > 0,
             "event_link_present": int(payload.get("event_log_id") or 0) > 0,

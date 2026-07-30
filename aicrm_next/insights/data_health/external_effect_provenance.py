@@ -13,9 +13,7 @@ WELCOME_PROVIDER_WINDOW_MS = 20_000
 WELCOME_EXECUTION_SCOPE = "_".join(("allowlisted", "canary"))
 PRE_CUTOVER_ACKNOWLEDGEMENT_TYPE = "pre_cutover_welcome_41050_no_replay"
 PRE_CUTOVER_AUTHORIZATION_BASE_SHA = "7369fa6c7858165097f25dff26f324d109cf7b80"
-PRE_CUTOVER_AUTHORIZATION_CONFIRMATION_SHA256 = (
-    "23255deb8941ea4a7307fff1c7f45c53721447e3969ad8b7ea58c7306553166e"
-)
+PRE_CUTOVER_AUTHORIZATION_CONFIRMATION_SHA256 = "23255deb8941ea4a7307fff1c7f45c53721447e3969ad8b7ea58c7306553166e"
 PRODUCTION_AUTHORIZATION_BASE_SHA = "8ab2f80ec8a6808a357a5911ace38128599a3d3d"
 PRIVATE_MESSAGE_ACKNOWLEDGEMENT_TYPE = "production_private_message_84061_no_replay"
 PRIVATE_MESSAGE_AUTHORIZATION_CONFIRMATION_SHA256 = (
@@ -38,14 +36,13 @@ PRIVATE_MESSAGE_CONTACT_ABSENCE_AUTHORIZATION_CONFIRMATION_SHA256 = (
     "edcb90948fc6d1d4a06fbc16e370c15d07f81c191fd29e0e194b7baf97513a53"
 )
 REFUND_ACKNOWLEDGEMENT_TYPE = "production_wechat_refund_not_enough_no_replay"
-REFUND_AUTHORIZATION_CONFIRMATION_SHA256 = (
-    "adc4f08542ae86f432c00e6dbe318442b0dd588887ff550d6ee48bd20f2f819b"
-)
+REFUND_AUTHORIZATION_CONFIRMATION_SHA256 = "adc4f08542ae86f432c00e6dbe318442b0dd588887ff550d6ee48bd20f2f819b"
 PRODUCTION_WELCOME_ACKNOWLEDGEMENT_TYPE = "production_welcome_41050_job_2157_no_replay"
 PRODUCTION_WELCOME_AUTHORIZATION_BASE_SHA = "1ccf3a056f21d3d023fcf77ac809d0569cc09820"
-PRODUCTION_WELCOME_AUTHORIZATION_CONFIRMATION_SHA256 = (
-    "e5a4f0fb09cb5d7e64069064139db7cd31ca4d152e5eaa3352f9cf97e2d510d7"
-)
+PRODUCTION_WELCOME_AUTHORIZATION_CONFIRMATION_SHA256 = "e5a4f0fb09cb5d7e64069064139db7cd31ca4d152e5eaa3352f9cf97e2d510d7"
+WECOM_CONTENT_VALIDATION_ERROR_CODE = "wecom_error_40058"
+WECOM_CONTENT_VALIDATION_PROVIDER_ERRCODE = "40058"
+WECOM_MINIPROGRAM_TITLE_MAX_BYTES = 64
 
 
 def direct_canary_job_sql(alias: str) -> str:
@@ -65,6 +62,104 @@ def direct_canary_job_sql(alias: str) -> str:
         AND COALESCE({alias}.risk_level, '') = 'high'
         AND COALESCE({alias}.execution_mode, '') = 'execute'
         AND {alias}.max_attempts = 1
+    """
+
+
+def wecom_message_content_validation_business_rejection_sql(alias: str) -> str:
+    """Return strict proof for a provider-rejected business content package.
+
+    A generic WeCom 40058 is not sufficient: the durable job must contain a
+    mini-program title that actually exceeds the documented UTF-8 byte limit,
+    and its single execute attempt must prove that WeCom returned 40058.  This
+    keeps adapter/config/token failures in system health while allowing an
+    operator-correctable content rejection to remain visible without blocking
+    unrelated production releases.
+    """
+
+    return f"""
+        COALESCE({alias}.status, '') = 'failed_terminal'
+        AND COALESCE({alias}.last_error_code, '') =
+            '{WECOM_CONTENT_VALIDATION_ERROR_CODE}'
+        AND COALESCE({alias}.execution_mode, '') = 'execute'
+        AND (
+            (
+                COALESCE({alias}.effect_type, '') = 'wecom.message.group.send'
+                AND COALESCE({alias}.adapter_name, '') = 'wecom_group_message'
+                AND COALESCE({alias}.operation, '') = 'send_group_message'
+            )
+            OR (
+                COALESCE({alias}.effect_type, '') = 'wecom.message.private.send'
+                AND COALESCE({alias}.adapter_name, '') = 'wecom_private_message'
+                AND COALESCE({alias}.operation, '') = 'send_private_message'
+            )
+        )
+        AND {alias}.attempt_count = 1
+        AND {alias}.side_effect_executed IS TRUE
+        AND {alias}.provider_result_received IS TRUE
+        AND {alias}.provider_call_started_at IS NOT NULL
+        AND {alias}.reconciliation_required IS FALSE
+        AND EXISTS (
+            SELECT 1
+            FROM jsonb_array_elements(
+                CASE
+                    WHEN jsonb_typeof(
+                        {alias}.payload_json -> 'content_payload' -> 'attachments'
+                    ) = 'array'
+                    THEN {alias}.payload_json -> 'content_payload' -> 'attachments'
+                    WHEN jsonb_typeof({alias}.payload_json -> 'attachments') = 'array'
+                    THEN {alias}.payload_json -> 'attachments'
+                    ELSE '[]'::jsonb
+                END
+            ) attachment
+            WHERE LOWER(COALESCE(attachment ->> 'msgtype', '')) = 'miniprogram'
+              AND OCTET_LENGTH(
+                    COALESCE(attachment -> 'miniprogram' ->> 'title', '')
+                  ) > {WECOM_MINIPROGRAM_TITLE_MAX_BYTES}
+        )
+        AND 1 = (
+            SELECT COUNT(*)
+            FROM external_effect_attempt content_validation_attempt_count
+            WHERE content_validation_attempt_count.job_id = {alias}.id
+        )
+        AND EXISTS (
+            SELECT 1
+            FROM external_effect_attempt content_validation_attempt
+            WHERE content_validation_attempt.job_id = {alias}.id
+              AND content_validation_attempt.attempt_id =
+                    COALESCE({alias}.last_attempt_id, '')
+              AND content_validation_attempt.adapter_name = {alias}.adapter_name
+              AND content_validation_attempt.adapter_mode = 'execute'
+              AND content_validation_attempt.operation = {alias}.operation
+              AND content_validation_attempt.status = 'failed_terminal'
+              AND content_validation_attempt.error_code =
+                    '{WECOM_CONTENT_VALIDATION_ERROR_CODE}'
+              AND content_validation_attempt.provider_call_started_at IS NOT NULL
+              AND content_validation_attempt.completed_at IS NOT NULL
+              AND COALESCE(
+                    content_validation_attempt.response_summary_json ->> 'errcode',
+                    ''
+                  ) = '{WECOM_CONTENT_VALIDATION_PROVIDER_ERRCODE}'
+              AND COALESCE(
+                    content_validation_attempt.response_summary_json
+                        ->> 'provider_error_classification',
+                    ''
+                  ) = 'terminal'
+              AND COALESCE(
+                    content_validation_attempt.response_summary_json
+                        ->> 'real_external_call_executed',
+                    'false'
+                  ) = 'true'
+              AND COALESCE(
+                    content_validation_attempt.response_summary_json
+                        ->> 'provider_result_received',
+                    'false'
+                  ) = 'true'
+              AND COALESCE(
+                    content_validation_attempt.response_summary_json
+                        ->> 'wecom_msgid_present',
+                    'false'
+                  ) = 'false'
+        )
     """
 
 
@@ -456,9 +551,7 @@ def acknowledged_group_message_40058_failure_sql(alias: str) -> str:
 def acknowledged_private_message_contact_absence_20260728_sql(alias: str) -> str:
     """Return the exact three operator-authorized 2026-07-28 no-replay rows."""
 
-    strict_business_terminal = private_message_contact_relationship_absent_terminal_sql(
-        job_alias=alias
-    )
+    strict_business_terminal = private_message_contact_relationship_absent_terminal_sql(job_alias=alias)
     return f"""
         ({strict_business_terminal})
         AND {alias}.last_error_code = 'external_contact_relationship_absent'
@@ -863,6 +956,8 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                        AS acknowledged_refund_not_enough,
                    ({refund_not_enough_business_rejection_sql("job")})
                        AS refund_not_enough_business_rejection,
+                   ({wecom_message_content_validation_business_rejection_sql("job")})
+                       AS wecom_content_validation_business_rejection,
                    ({external_contact_relationship_absent_terminal_sql(job_alias="job")})
                        AS expected_contact_absence,
                    ({private_message_contact_relationship_absent_terminal_sql(job_alias="job")})
@@ -875,11 +970,13 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                    EXISTS (
                        SELECT 1
                        FROM crm_user_identity_resolution_queue deferred_identity_queue
-                       WHERE {pre_provider_identity_adoption_predicate_sql(
-                           job_alias="job",
-                           queue_alias="deferred_identity_queue",
-                           require_active_source_control=True,
-                       )}
+                       WHERE {
+        pre_provider_identity_adoption_predicate_sql(
+            job_alias="job",
+            queue_alias="deferred_identity_queue",
+            require_active_source_control=True,
+        )
+    }
                    ) AS pre_cutover_deferred_identity
             FROM external_effect_job job
             WHERE job.status IN ('failed_retryable', 'failed_terminal', 'blocked')
@@ -905,6 +1002,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                   AND NOT acknowledged_private_message_contact_absence_20260728
                   AND NOT acknowledged_refund_not_enough
                   AND NOT refund_not_enough_business_rejection
+                  AND NOT wecom_content_validation_business_rejection
                   AND NOT expected_contact_absence
                   AND NOT private_message_contact_absence
                   AND status = 'failed_terminal'
@@ -933,6 +1031,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                   AND NOT acknowledged_private_message_contact_absence_20260728
                   AND NOT acknowledged_refund_not_enough
                   AND NOT refund_not_enough_business_rejection
+                  AND NOT wecom_content_validation_business_rejection
                   AND status = 'failed_terminal'
             ) AS historical_failed_terminal_count,
             COUNT(*) FILTER (
@@ -1014,6 +1113,10 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                 WHERE refund_not_enough_business_rejection
                   AND status = 'failed_terminal'
             ) AS refund_not_enough_business_rejection_count,
+            COUNT(*) FILTER (
+                WHERE wecom_content_validation_business_rejection
+                  AND status = 'failed_terminal'
+            ) AS wecom_content_validation_business_rejection_count,
             COUNT(*) FILTER (WHERE expected_contact_absence) AS expected_contact_absence_count,
             COUNT(*) FILTER (
                 WHERE private_message_contact_absence

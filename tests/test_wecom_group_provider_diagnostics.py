@@ -10,7 +10,10 @@ from aicrm_next.platform.platform_foundation.external_effects.models import (
     WECOM_EXTERNAL_CONTACT_DETAIL_FETCH,
     WECOM_MESSAGE_GROUP_SEND,
 )
-from aicrm_next.platform.shared.wecom_runtime import classify_wecom_provider_error
+from aicrm_next.platform.shared.wecom_runtime import (
+    classify_wecom_provider_error,
+    classify_wecom_provider_outcome,
+)
 
 
 def _adapter_payload() -> dict:
@@ -78,6 +81,99 @@ def test_external_contact_relationship_absence_is_visible_non_retryable_business
     assert result.provider_result_received is True
     assert result.response_summary["errcode"] == 84061
     assert result.response_summary["provider_result_received"] is True
+
+
+def test_miniprogram_title_limit_is_business_rejection_not_system_failure(
+    monkeypatch,
+) -> None:
+    provider_message = "attachments.miniprogram.title exceed max length 64"
+    assert classify_wecom_provider_outcome(
+        provider_errcode=40058,
+        errmsg=provider_message,
+    ) == ("business_rejection", "miniprogram_title_exceeds_64_bytes")
+    assert classify_wecom_provider_outcome(
+        provider_errcode=40058,
+        errmsg="invalid request parameter",
+    ) == ("system_failure", "")
+    assert classify_wecom_provider_outcome(
+        provider_errcode=40014,
+        errmsg="invalid access token",
+    ) == ("system_failure", "")
+
+    monkeypatch.setenv("AICRM_ENABLE_REAL_WECOM_GROUP_MESSAGE", "true")
+
+    class _Client:
+        def create_group_message_task(self, payload):
+            assert payload["chat_id_list"] == ["chat_canary"]
+            return {"errcode": 40058, "errmsg": provider_message}
+
+    result = WeComGroupMessageAdapter(
+        mode="production",
+        client_factory=lambda: _Client(),
+    ).create_group_message_task(
+        _adapter_payload(),
+        idempotency_key="group-title-business-rejection",
+    )
+
+    assert result["ok"] is False
+    assert result["error_code"] == "wecom_error_40058"
+    assert result["provider_error_classification"] == "terminal"
+    assert result["provider_outcome_classification"] == "business_rejection"
+    assert result["business_reason_code"] == "miniprogram_title_exceeds_64_bytes"
+    assert result["retryable"] is False
+
+
+def test_external_effect_summary_preserves_business_rejection_without_raw_errmsg(
+    monkeypatch,
+) -> None:
+    provider_message = "attachments.miniprogram.title exceed max length 64"
+
+    class _Client:
+        def create_group_message_task(self, payload):
+            return {"errcode": 40058, "errmsg": provider_message}
+
+    monkeypatch.setenv("AICRM_ENABLE_REAL_WECOM_GROUP_MESSAGE", "true")
+    monkeypatch.setattr(effect_adapters, "wecom_canary_job_gate_error", lambda job: "")
+    job = ExternalEffectJob(
+        id=40058,
+        effect_type=WECOM_MESSAGE_GROUP_SEND,
+        adapter_name="wecom_group_message",
+        operation="send_group_message",
+        target_type="group_chat",
+        target_id="chat_canary",
+        idempotency_key="group-title-business-rejection-summary",
+        execution_mode="execute",
+        payload_json={
+            "owner_userid": "owner_canary",
+            "chat_ids": ["chat_canary"],
+            "content_payload": {
+                "attachments": [
+                    {
+                        "msgtype": "miniprogram",
+                        "miniprogram": {
+                            "appid": "wx_test",
+                            "page": "pages/test",
+                            "title": "超" * 22,
+                            "pic_media_id": "media_test",
+                        },
+                    }
+                ]
+            },
+        },
+    )
+
+    result = effect_adapters.WeComGroupMessageExternalEffectAdapter(
+        adapter_factory=lambda: WeComGroupMessageAdapter(
+            mode="production",
+            client_factory=lambda: _Client(),
+        ),
+    ).dispatch(job)
+
+    assert result.status == "failed_terminal"
+    assert result.error_code == "wecom_error_40058"
+    assert result.response_summary["provider_outcome_classification"] == ("business_rejection")
+    assert result.response_summary["business_reason_code"] == ("miniprogram_title_exceeds_64_bytes")
+    assert provider_message not in json.dumps(result.response_summary)
 
 
 def test_group_provider_malformed_diagnostics_do_not_raise_after_boundary(monkeypatch) -> None:

@@ -566,18 +566,7 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
         return _db_unavailable_placeholder(check_id, title, source_tables)
     try:
         with get_session_factory()() as session:
-            row = (
-                session.execute(
-                    text(
-                        external_effect_backlog_sql(
-                            terminal_lookback_hours=EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS
-                        )
-                    )
-                )
-                .mappings()
-                .first()
-                or {}
-            )
+            row = session.execute(text(external_effect_backlog_sql(terminal_lookback_hours=EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS))).mappings().first() or {}
     except Exception as exc:  # pragma: no cover - defensive health endpoint guard
         return DataHealthCheckResult(
             check_id=check_id,
@@ -600,9 +589,7 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
     canary_blocked_count = int(row.get("canary_blocked_count") or 0)
     callback_welcome_failed_terminal_count = int(row.get("callback_welcome_failed_terminal_count") or 0)
     pre_cutover_acknowledged_welcome_count = int(row.get("pre_cutover_acknowledged_welcome_count") or 0)
-    acknowledged_production_welcome_41050_count = int(
-        row.get("acknowledged_production_welcome_41050_count") or 0
-    )
+    acknowledged_production_welcome_41050_count = int(row.get("acknowledged_production_welcome_41050_count") or 0)
     acknowledged_private_message_84061_count = int(row.get("acknowledged_private_message_84061_count") or 0)
     classified_group_message_40058_count = int(
         row.get("classified_group_message_40058_count") or 0
@@ -611,12 +598,14 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
         row.get("acknowledged_private_message_contact_absence_20260728_count") or 0
     )
     acknowledged_refund_not_enough_count = int(row.get("acknowledged_refund_not_enough_count") or 0)
-    refund_not_enough_business_rejection_count = int(
-        row.get("refund_not_enough_business_rejection_count") or 0
-    )
+    refund_not_enough_business_rejection_count = int(row.get("refund_not_enough_business_rejection_count") or 0)
+    wecom_content_validation_business_rejection_count = int(row.get("wecom_content_validation_business_rejection_count") or 0)
     expected_contact_absence_count = int(row.get("expected_contact_absence_count") or 0)
     private_message_contact_absence_count = int(row.get("private_message_contact_absence_count") or 0)
-    pre_cutover_deferred_identity_count, post_cutover_recoverable_identity_count = int(row.get("pre_cutover_deferred_identity_count") or 0), int(row.get("post_cutover_recoverable_identity_count") or 0)
+    pre_cutover_deferred_identity_count, post_cutover_recoverable_identity_count = (
+        int(row.get("pre_cutover_deferred_identity_count") or 0),
+        int(row.get("post_cutover_recoverable_identity_count") or 0),
+    )
     violations = []
     if failed_terminal_count > 0:
         violations.append(f"failed_terminal_count={failed_terminal_count} exceeds 0")
@@ -675,9 +664,7 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
             "strict_provenance_required": True,
         },
         "production_private_message_contact_absence_20260728_acknowledgement": {
-            "acknowledged_count": (
-                acknowledged_private_message_contact_absence_20260728_count
-            ),
+            "acknowledged_count": (acknowledged_private_message_contact_absence_20260728_count),
             "excluded_from_business_health": True,
             "operator_acknowledgement_required": True,
             "provider_success_claimed": False,
@@ -703,7 +690,25 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
             "replay_prohibited": True,
             "strict_provenance_required": True,
         },
-        "external_contact_relationship_absent": {"count": expected_contact_absence_count, "excluded_from_business_health": True, "provider_boundary_crossed": True, "provider_success_claimed": False, "replay_prohibited": True, "strict_provenance_required": True},
+        "wecom_content_validation_business_outcome": {
+            "completed_count": wecom_content_validation_business_rejection_count,
+            "process_outcome": "completed",
+            "business_outcome": "rejected",
+            "business_reason_code": "miniprogram_title_exceeds_64_bytes",
+            "excluded_from_system_health_failures": True,
+            "provider_boundary_crossed": True,
+            "provider_success_claimed": False,
+            "replay_prohibited_until_content_fixed": True,
+            "strict_provenance_required": True,
+        },
+        "external_contact_relationship_absent": {
+            "count": expected_contact_absence_count,
+            "excluded_from_business_health": True,
+            "provider_boundary_crossed": True,
+            "provider_success_claimed": False,
+            "replay_prohibited": True,
+            "strict_provenance_required": True,
+        },
         "private_message_contact_relationship_absent": {
             "count": private_message_contact_absence_count,
             "process_outcome": "completed",
@@ -716,11 +721,16 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
             "strict_provenance_required": True,
         },
         "pre_cutover_deferred_identity_adoption": {
-            "eligible_count": pre_cutover_deferred_identity_count, "excluded_from_business_health": True,
-            "provider_boundary_crossed": False, "pending_generation_1_adoption": True,
-            "predicate_version": PRE_PROVIDER_IDENTITY_ADOPTION_PREDICATE_VERSION, "strict_provenance_required": True},
+            "eligible_count": pre_cutover_deferred_identity_count,
+            "excluded_from_business_health": True,
+            "provider_boundary_crossed": False,
+            "pending_generation_1_adoption": True,
+            "predicate_version": PRE_PROVIDER_IDENTITY_ADOPTION_PREDICATE_VERSION,
+            "strict_provenance_required": True,
+        },
         "post_cutover_identity_recovery": {
-            "eligible_count": post_cutover_recoverable_identity_count, "excluded_from_business_health": True,
+            "eligible_count": post_cutover_recoverable_identity_count,
+            "excluded_from_business_health": True,
             "provider_boundary_crossed": False,
             "predicate_version": POST_CUTOVER_IDENTITY_RECOVERY_PREDICATE_VERSION,
             "strict_provenance_required": True,
@@ -741,10 +751,7 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
         title=title,
         status="ok",
         severity="green",
-        summary=(
-            "External effect delivery health is within threshold; deterministic "
-            "business rejections are reported separately."
-        ),
+        summary=("External effect delivery health is within threshold; deterministic business rejections are reported separately."),
         evidence=evidence,
         remediation="",
     )
