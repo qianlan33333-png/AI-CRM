@@ -200,7 +200,7 @@ def test_ai_crm_deploy_is_reusable_production_only_and_has_no_id_validation_acce
     assert "tee /tmp/aicrm-admin-read-pages-smoke.json" in source
 
 
-def test_successful_trusted_main_ci_automatically_deploys_exact_sha_to_production() -> None:
+def test_upstream_only_successful_trusted_main_ci_automatically_deploys_exact_sha_to_production() -> None:
     source = _source(PROMOTE_PRODUCTION_WORKFLOW)
     deploy_source = _source(DEPLOY_WORKFLOW)
     trigger = source[source.index("on:") : source.index("permissions:")]
@@ -212,6 +212,7 @@ def test_successful_trusted_main_ci_automatically_deploys_exact_sha_to_productio
     assert "workflow_dispatch:" not in trigger
     assert "push:" not in source
     assert "schedule:" not in source
+    assert "github.repository == 'qianlan333/AI-CRM'" in source
     assert "github.event.workflow_run.conclusion == 'success'" in source
     assert "github.event.workflow_run.head_repository.full_name == github.repository" in source
     assert "github.event.workflow_run.head_branch == 'main'" in source
