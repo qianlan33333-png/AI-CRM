@@ -81,6 +81,20 @@ class PostgresExternalEffectRuntimeWriteRepository:
                     locked_by = '', locked_at = NULL,
                     lease_token = '', lease_expires_at = NULL,
                     heartbeat_at = NULL, worker_generation = 0,
+                    dispatch_started_at = CASE
+                        WHEN side_effect_executed IS FALSE
+                         AND provider_result_received IS FALSE
+                         AND reconciliation_required IS FALSE
+                        THEN NULL
+                        ELSE dispatch_started_at
+                    END,
+                    provider_call_started_at = CASE
+                        WHEN side_effect_executed IS FALSE
+                         AND provider_result_received IS FALSE
+                         AND reconciliation_required IS FALSE
+                        THEN NULL
+                        ELSE provider_call_started_at
+                    END,
                     next_retry_at = CURRENT_TIMESTAMP,
                     available_at = CURRENT_TIMESTAMP,
                     reconciliation_required = FALSE,
@@ -346,26 +360,15 @@ class PostgresExternalEffectRuntimeWriteRepository:
         lease_seconds: int,
         test_only: bool,
     ) -> dict[str, Any] | None:
-        test_predicate = (
-            "AND COALESCE(job.payload_json->>'execution_scope', '') = 'test_loopback'"
-            if test_only
-            else ""
-        )
+        test_predicate = "AND COALESCE(job.payload_json->>'execution_scope', '') = 'test_loopback'" if test_only else ""
         scope_predicate = external_claim_scope_predicate(
             row_alias="job",
-            scope_expression=(
-                "(SELECT external_claim_scope FROM queue_runtime_control "
-                "WHERE singleton = TRUE)"
-            ),
+            scope_expression=("(SELECT external_claim_scope FROM queue_runtime_control WHERE singleton = TRUE)"),
         )
         lane_canary_predicate = ai_automation_lane_canary_predicate(
             row_alias="job",
-            lane_mode_expression=(
-                "(SELECT rollout_mode FROM queue_lane_policy WHERE lane = job.lane)"
-            ),
-            policy_version_expression=(
-                "(SELECT policy_version FROM queue_runtime_control WHERE singleton = TRUE)"
-            ),
+            lane_mode_expression=("(SELECT rollout_mode FROM queue_lane_policy WHERE lane = job.lane)"),
+            policy_version_expression=("(SELECT policy_version FROM queue_runtime_control WHERE singleton = TRUE)"),
         )
         claim_order = external_effect_claim_order_sql()
         row = executor.execute(

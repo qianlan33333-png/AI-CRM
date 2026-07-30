@@ -46,6 +46,55 @@ def _connect(*, autocommit: bool = True):
     return psycopg.connect(_database_url(), autocommit=autocommit, row_factory=dict_row)
 
 
+def test_external_effect_retry_clears_stale_pre_provider_boundary() -> None:
+    suffix = uuid4().hex
+    service = ExternalEffectService()
+    job = service.plan_effect(
+        effect_type="test.external.safe_retry",
+        adapter_name="test_adapter",
+        operation="send",
+        target_type="test_target",
+        target_id=f"safe-retry-{suffix}",
+        idempotency_key=f"safe-retry-{suffix}",
+        execution_mode="execute",
+        status="blocked",
+    )
+    with _connect() as connection:
+        connection.execute(
+            """
+            UPDATE external_effect_job
+            SET dispatch_started_at = CURRENT_TIMESTAMP,
+                provider_call_started_at = CURRENT_TIMESTAMP,
+                side_effect_executed = FALSE,
+                provider_result_received = FALSE,
+                reconciliation_required = FALSE
+            WHERE id = %s
+            """,
+            (int(job["id"]),),
+        )
+
+    retried = service.retry(int(job["id"]), actor="pytest", reason="safe pre-provider retry")
+
+    assert retried is not None
+    assert retried.status == "queued"
+    with _connect() as connection:
+        persisted = connection.execute(
+            """
+            SELECT dispatch_started_at, provider_call_started_at,
+                   side_effect_executed, provider_result_received,
+                   reconciliation_required
+            FROM external_effect_job
+            WHERE id = %s
+            """,
+            (int(job["id"]),),
+        ).fetchone()
+    assert persisted["dispatch_started_at"] is None
+    assert persisted["provider_call_started_at"] is None
+    assert persisted["side_effect_executed"] is False
+    assert persisted["provider_result_received"] is False
+    assert persisted["reconciliation_required"] is False
+
+
 def _insert_deferred_identity_effect(
     connection,
     suffix: str,
@@ -186,9 +235,7 @@ def _reset_control_plane_state() -> None:
             "webhook_inbox",
         ):
             connection.execute(f"UPDATE {table} SET policy_version = 'queue-v2-test-loopback'")
-            connection.execute(
-                f"ALTER TABLE {table} ALTER COLUMN policy_version SET DEFAULT 'queue-v2-test-loopback'"
-            )
+            connection.execute(f"ALTER TABLE {table} ALTER COLUMN policy_version SET DEFAULT 'queue-v2-test-loopback'")
         connection.execute(
             """
             UPDATE queue_runtime_control
@@ -268,9 +315,7 @@ def test_generation_cas_failure_does_not_change_lane_policy() -> None:
         )
 
     with _connect() as connection:
-        lane = connection.execute(
-            "SELECT rollout_mode, updated_reason FROM queue_lane_policy WHERE lane = 'internal_general'"
-        ).fetchone()
+        lane = connection.execute("SELECT rollout_mode, updated_reason FROM queue_lane_policy WHERE lane = 'internal_general'").fetchone()
     assert lane["rollout_mode"] == "standby"
     assert lane["updated_reason"] == "cutover test reset"
 
@@ -612,9 +657,7 @@ def test_generation_cutover_freeze_rolls_back_with_failed_final_cas_precondition
             ) RETURNING id
             """
         ).fetchone()
-        connection.execute(
-            "UPDATE queue_lane_policy SET enabled = FALSE WHERE lane = 'wecom_media'"
-        )
+        connection.execute("UPDATE queue_lane_policy SET enabled = FALSE WHERE lane = 'wecom_media'")
 
     with pytest.raises(GenerationCASConflict, match="disabled"):
         RuntimeGenerationRepository(_database_url()).activate_generation(
@@ -631,12 +674,8 @@ def test_generation_cutover_freeze_rolls_back_with_failed_final_cas_precondition
             "SELECT hold_reason FROM external_effect_job WHERE id = %s",
             (job["id"],),
         ).fetchone()
-        audit = connection.execute(
-            "SELECT COUNT(*)::BIGINT AS count FROM queue_history_classification WHERE freeze_revision = 'pr3_generation_73'"
-        ).fetchone()
-        control = connection.execute(
-            "SELECT active_generation, claim_enabled FROM queue_runtime_control WHERE singleton = TRUE"
-        ).fetchone()
+        audit = connection.execute("SELECT COUNT(*)::BIGINT AS count FROM queue_history_classification WHERE freeze_revision = 'pr3_generation_73'").fetchone()
+        control = connection.execute("SELECT active_generation, claim_enabled FROM queue_runtime_control WHERE singleton = TRUE").fetchone()
     assert persisted["hold_reason"] == ""
     assert audit["count"] == 0
     assert control == {"active_generation": 0, "claim_enabled": False}
@@ -870,9 +909,7 @@ def test_invariant_checker_reports_without_changing_queue_rows() -> None:
 
 def test_invariant_checker_rejects_scope_change_without_matching_policy_snapshot() -> None:
     with _connect() as connection:
-        connection.execute(
-            "UPDATE queue_runtime_control SET external_claim_scope = 'allowlisted' WHERE singleton = TRUE"
-        )
+        connection.execute("UPDATE queue_runtime_control SET external_claim_scope = 'allowlisted' WHERE singleton = TRUE")
 
     report = QueueRuntimeInvariantChecker(_database_url()).check()
 
@@ -984,10 +1021,7 @@ def test_scope_transition_requires_closed_drained_gate_and_audits_snapshot_cas()
     assert audit["actor"] == "pytest"
     assert audit["policy_json_before"]["external_claim_scope"] == "test_loopback"
     assert audit["policy_json_after"]["external_claim_scope"] == "allowlisted"
-    assert not any(
-        item.code == "runtime_control_invalid"
-        for item in QueueRuntimeInvariantChecker(_database_url()).check().violations
-    )
+    assert not any(item.code == "runtime_control_invalid" for item in QueueRuntimeInvariantChecker(_database_url()).check().violations)
 
 
 def test_scope_transition_refuses_any_dispatching_external_effect() -> None:
@@ -1420,10 +1454,7 @@ def test_post_cutover_contact_detail_recovery_reopens_exact_one_and_two_attempt_
             policy_version=target_policy,
         )
         assert [int(row["id"]) for row in rows] == [job_id, fresh_job_id]
-        assert {
-            int(row["id"]): int(row["pre_provider_attempt_count"])
-            for row in rows
-        } == {job_id: 2, fresh_job_id: 1}
+        assert {int(row["id"]): int(row["pre_provider_attempt_count"]) for row in rows} == {job_id: 2, fresh_job_id: 1}
         counts = recover_all_scope_contact_detail._reopen_candidates(
             connection,
             rows,
@@ -1561,12 +1592,8 @@ def test_data_health_excludes_only_exact_post_cutover_recovery_candidate() -> No
     )
     repository.disable_claims(expected_generation=1, actor="pytest", reason="drain for health")
     with _connect() as connection:
-        safe_job_id, safe_queue_id = _insert_deferred_identity_effect(
-            connection, "post-cutover-health-safe", with_runtime=True
-        )
-        unsafe_job_id, unsafe_queue_id = _insert_deferred_identity_effect(
-            connection, "post-cutover-health-unsafe", with_runtime=True
-        )
+        safe_job_id, safe_queue_id = _insert_deferred_identity_effect(connection, "post-cutover-health-safe", with_runtime=True)
+        unsafe_job_id, unsafe_queue_id = _insert_deferred_identity_effect(connection, "post-cutover-health-unsafe", with_runtime=True)
     repository.transition_external_claim_scope(
         expected_generation=1,
         expected_policy_version="queue-v2-test-loopback",
@@ -1578,9 +1605,7 @@ def test_data_health_excludes_only_exact_post_cutover_recovery_candidate() -> No
         identity_queue_reopen=build_identity_resolution_queue_port().reopen_pre_provider_dbapi,
     )
     with _connect() as connection:
-        _simulate_post_cutover_contact_detail_gate_block(
-            connection, job_id=safe_job_id, queue_id=safe_queue_id
-        )
+        _simulate_post_cutover_contact_detail_gate_block(connection, job_id=safe_job_id, queue_id=safe_queue_id)
     repository.resume_claims(
         expected_generation=1,
         expected_policy_version=target_policy,
@@ -1727,11 +1752,7 @@ def test_invariant_checker_reports_missing_active_generation_heartbeats() -> Non
 
     report = QueueRuntimeInvariantChecker(_database_url()).check()
 
-    missing = {
-        item.dimensions.get("queue_kind")
-        for item in report.violations
-        if item.code == "missing_active_worker_heartbeat"
-    }
+    missing = {item.dimensions.get("queue_kind") for item in report.violations if item.code == "missing_active_worker_heartbeat"}
     assert missing == {
         "aicrm-internal_event-runtime",
         "aicrm-internal_outbox-runtime",

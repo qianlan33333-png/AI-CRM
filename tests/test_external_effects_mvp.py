@@ -454,9 +454,22 @@ def test_external_effect_service_idempotency_filters_retry_and_cancel() -> None:
     assert total == 1
     assert items[0].payload_summary_json["token"] == "[redacted]"
 
+    row = repo._find(first["id"])
+    assert row is not None
+    row.update(
+        {
+            "dispatch_started_at": "2026-07-30T22:59:04+08:00",
+            "provider_call_started_at": "2026-07-30T22:59:04+08:00",
+            "side_effect_executed": False,
+            "provider_result_received": False,
+            "reconciliation_required": False,
+        }
+    )
     retried = service.retry(first["id"])
     assert retried is not None
     assert retried.status == "queued"
+    assert retried.dispatch_started_at == ""
+    assert retried.provider_call_started_at == ""
     cancelled = service.cancel(first["id"])
     assert cancelled is not None
     assert cancelled.status == "cancelled"
