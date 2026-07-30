@@ -4,7 +4,11 @@ from typing import Any, Sequence
 
 from sqlalchemy import text
 
-from .claim_policy import external_claim_scope_predicate, external_effect_claim_order_sql
+from .claim_policy import (
+    ai_automation_lane_canary_predicate,
+    external_claim_scope_predicate,
+    external_effect_claim_order_sql,
+)
 
 
 def _job_ids(values: Sequence[int]) -> list[int]:
@@ -354,6 +358,15 @@ class PostgresExternalEffectRuntimeWriteRepository:
                 "WHERE singleton = TRUE)"
             ),
         )
+        lane_canary_predicate = ai_automation_lane_canary_predicate(
+            row_alias="job",
+            lane_mode_expression=(
+                "(SELECT rollout_mode FROM queue_lane_policy WHERE lane = job.lane)"
+            ),
+            policy_version_expression=(
+                "(SELECT policy_version FROM queue_runtime_control WHERE singleton = TRUE)"
+            ),
+        )
         claim_order = external_effect_claim_order_sql()
         row = executor.execute(
             f"""
@@ -376,6 +389,7 @@ class PostgresExternalEffectRuntimeWriteRepository:
                   AND job.attempt_count < job.max_attempts
                   AND job.available_at <= CURRENT_TIMESTAMP
                   AND {scope_predicate}
+                  AND {lane_canary_predicate}
                   AND (job.lease_expires_at IS NULL OR job.lease_expires_at <= CURRENT_TIMESTAMP)
                   AND cooldown.rate_scope_key IS NULL
                   AND NOT EXISTS (
