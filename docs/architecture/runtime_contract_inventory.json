@@ -23548,6 +23548,19 @@
           },
           {
             "in": "query",
+            "name": "tag_group",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "title": "Tag Group",
+              "type": "array"
+            }
+          },
+          {
+            "in": "query",
             "name": "only_unlabeled",
             "required": false,
             "schema": {
