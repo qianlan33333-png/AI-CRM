@@ -471,6 +471,7 @@
     "aicrm_next/app/admin_console/static/admin_console/config_center.js",
     "aicrm_next/app/admin_console/static/admin_console/group_chat_picker.js",
     "aicrm_next/app/admin_console/static/admin_console/image_picker.js",
+    "aicrm_next/app/admin_console/static/admin_console/image_library_facets.js",
     "aicrm_next/app/admin_console/static/admin_console/image_upload_client.js",
     "aicrm_next/app/admin_console/static/admin_console/material_picker.js",
     "aicrm_next/app/admin_console/static/admin_console/operation_member_picker.js",
@@ -523,6 +524,8 @@
     "tests/test_media_library_no_real_external_calls.py",
     "tests/test_sidebar_jssdk_frontend_contract.py",
     "tests/test_sidebar_material_search.py",
-    "tests/test_sidebar_workbench_frontend.py"
+    "tests/test_sidebar_workbench_frontend.py",
+    "tests/test_image_library.py",
+    "tests/test_image_library_template.py"
   ]
 }

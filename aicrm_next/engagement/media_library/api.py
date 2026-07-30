@@ -123,6 +123,7 @@ def list_images(
     q: str = "",
     category: str = "",
     tags: str = "",
+    tag_group: list[str] = Query(default=[]),
     only_unlabeled: bool = False,
 ) -> dict:
     return _with_contract(ListMediaItemsQuery("image")(
@@ -133,6 +134,7 @@ def list_images(
             "q": q,
             "category": category,
             "tags": tags,
+            "tag_groups": tag_group,
             "only_unlabeled": only_unlabeled,
         },
     ))

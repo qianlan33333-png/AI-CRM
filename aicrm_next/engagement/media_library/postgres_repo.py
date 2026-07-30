@@ -10,7 +10,7 @@ from aicrm_next.platform.shared.safe_logging import safe_log_exception
 
 from .campaign_reference_port import build_campaign_media_reference_port
 from .dto import normalize_group_invite_join_url, normalize_http_url
-from .repo import connect_media_library_db, normalize_tags, trusted_https_image_url
+from .repo import connect_media_library_db, normalize_tag_groups, normalize_tags, trusted_https_image_url
 from .variants import (
     THUMBNAIL_SIZE_TO_VARIANT,
     add_image_variant_urls,
@@ -366,6 +366,9 @@ class PostgresMediaLibraryRepository:
         if tags:
             where.append("EXISTS (SELECT 1 FROM jsonb_array_elements_text(tags) AS tag WHERE tag = ANY(%s))")
             params.append(tags)
+        for tag_group in normalize_tag_groups(filters.get("tag_groups")):
+            where.append("EXISTS (SELECT 1 FROM jsonb_array_elements_text(tags) AS tag WHERE tag = ANY(%s))")
+            params.append(tag_group)
         if filters.get("only_unlabeled"):
             where.append("(description = '' OR category = '' OR jsonb_array_length(tags) = 0)")
         return self._select_list(
