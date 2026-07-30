@@ -10,7 +10,7 @@ from aicrm_next.platform.shared.safe_logging import safe_log_exception
 
 from .campaign_reference_port import build_campaign_media_reference_port
 from .dto import normalize_group_invite_join_url, normalize_http_url
-from .repo import connect_media_library_db, normalize_tags
+from .repo import connect_media_library_db, normalize_tags, trusted_https_image_url
 from .variants import (
     THUMBNAIL_SIZE_TO_VARIANT,
     add_image_variant_urls,
@@ -168,6 +168,9 @@ class PostgresMediaLibraryRepository:
         if data_base64:
             data = decode_image_base64(data_base64)
         elif image.get("source_url"):
+            redirect_url = trusted_https_image_url(image.get("source_url"))
+            if redirect_url:
+                return {"redirect_url": redirect_url, "mime_type": mime_type}
             raise ContractError("remote source fetch is disabled in Next media library")
         else:
             data = b""
@@ -333,9 +336,13 @@ class PostgresMediaLibraryRepository:
             where.append("enabled")
         q = str(filters.get("q") or "").strip()
         if q:
-            where.append("(name ILIKE %s OR file_name ILIKE %s OR description ILIKE %s)")
+            where.append(
+                "(name ILIKE %s OR file_name ILIKE %s OR description ILIKE %s "
+                "OR category ILIKE %s OR EXISTS ("
+                "SELECT 1 FROM jsonb_array_elements_text(tags) AS tag WHERE tag ILIKE %s))"
+            )
             like = f"%{q}%"
-            params.extend([like, like, like])
+            params.extend([like, like, like, like, like])
         category = str(filters.get("category") or "").strip()
         if category:
             where.append("category = %s")

@@ -5,7 +5,7 @@ import time
 from typing import Any
 
 from fastapi import APIRouter, File, Form, Header, HTTPException, Query, UploadFile
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 
 from aicrm_next.platform.shared.errors import ContractError, NotFoundError
 from aicrm_next.platform.shared.runtime_settings import runtime_setting
@@ -211,6 +211,13 @@ def get_image_thumbnail(
     try:
         result = GetImageThumbnailQuery()(image_id, size)
         thumbnail = result["thumbnail"]
+        redirect_url = str(thumbnail.get("redirect_url") or "").strip()
+        if redirect_url:
+            return RedirectResponse(
+                redirect_url,
+                status_code=302,
+                headers={**_binary_headers(), "Cache-Control": "public, max-age=86400"},
+            )
         etag = str(thumbnail.get("etag") or "")
         headers = {
             **_binary_headers(),

@@ -26,8 +26,8 @@ def test_sidebar_workbench_v2_page_is_next_owned(client):
     assert 'data-radar-links-url="/api/sidebar/v2/radar-links"' in html
     assert 'data-timeline-url="/api/sidebar/v2/timeline"' in html
     assert "sidebar_workbench/sidebar_workbench.js" in html
-    assert "sidebar_workbench/sidebar_workbench.js?v=20260722-timeline-source-navigation" in html
-    assert "sidebar_workbench/sidebar_workbench.css?v=20260722-timeline-source-navigation" in html
+    assert "sidebar_workbench/sidebar_workbench.js?v=20260730-sidebar-material-search" in html
+    assert "sidebar_workbench/sidebar_workbench.css?v=20260730-sidebar-material-search" in html
     assert "自动化转化操作区" not in html
 
 
@@ -73,6 +73,13 @@ def test_sidebar_workbench_static_contract_has_next_surface_only():
     assert 'cache: "no-store"' in script
     assert "sidebar_owner_token" in script
     assert "data-material-thumb-img" in script
+    assert "data-material-search-form" in script
+    assert "data-material-search-input" in script
+    assert "data-material-keyword" in script
+    assert "data-material-search-clear" in script
+    assert "executeMaterialSearch" in script
+    assert "quick_keywords" in script
+    assert "预览不可用" in script
     assert "service_period_products" in script
     assert "data-product-type" in script
     assert "data-product-kind" in script
@@ -147,6 +154,15 @@ def test_sidebar_workbench_static_contract_has_next_surface_only():
     assert "复制商品链接" not in combined
     assert "待确认员工身份" not in combined
     assert "demo" not in combined.lower()
+    image_renderer = script[script.index("function renderMaterials()") : script.index("function renderRadarLinks")]
+    assert "item.title" not in image_renderer
+    assert '<h3 class="material-title">' not in image_renderer
+    assert 'alt="图片素材预览"' in image_renderer
+    assert "material-search" in css
+    assert "material-quick-keywords" in css
+    assert "min-width: 44px" in css
+    assert "width: 44px" in css
+    assert "min-height: 30px" in css
 
 
 def test_sidebar_workbench_query_context_skips_wecom_sdk_path():
