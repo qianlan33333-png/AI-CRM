@@ -604,6 +604,9 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
         row.get("acknowledged_production_welcome_41050_count") or 0
     )
     acknowledged_private_message_84061_count = int(row.get("acknowledged_private_message_84061_count") or 0)
+    classified_group_message_40058_count = int(
+        row.get("classified_group_message_40058_count") or 0
+    )
     acknowledged_private_message_contact_absence_20260728_count = int(
         row.get("acknowledged_private_message_contact_absence_20260728_count") or 0
     )
@@ -657,6 +660,14 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
         },
         "production_private_message_84061_acknowledgement": {
             "acknowledged_count": acknowledged_private_message_84061_count,
+            "excluded_from_business_health": True,
+            "operator_acknowledgement_required": True,
+            "provider_success_claimed": False,
+            "replay_prohibited": True,
+            "strict_provenance_required": True,
+        },
+        "production_group_message_40058_no_replay_classification": {
+            "classified_count": classified_group_message_40058_count,
             "excluded_from_business_health": True,
             "operator_acknowledgement_required": True,
             "provider_success_claimed": False,

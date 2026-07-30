@@ -21,6 +21,13 @@ PRIVATE_MESSAGE_ACKNOWLEDGEMENT_TYPE = "production_private_message_84061_no_repl
 PRIVATE_MESSAGE_AUTHORIZATION_CONFIRMATION_SHA256 = (
     "023361c05331fd999eb7bdfe4117b312f6bb6393bb1efe34226ac52277f23b57"
 )
+GROUP_MESSAGE_40058_CLASSIFICATION_REVISION = (
+    "production_group_message_40058_no_replay_20260730"
+)
+GROUP_MESSAGE_40058_AUTHORIZATION_BASE_SHA = "237130397711b87e9e13392fd8c884b15d06eee1"
+GROUP_MESSAGE_40058_AUTHORIZATION_CONFIRMATION_SHA256 = (
+    "10c0fbf6f30f9dc61acdd38c121668a6f2d35dd0401311f47a5394df53b0c4fb"
+)
 PRIVATE_MESSAGE_CONTACT_ABSENCE_ACKNOWLEDGEMENT_TYPE = (
     "production_private_message_contact_absence_20260728_no_replay"
 )
@@ -306,6 +313,142 @@ def acknowledged_private_message_84061_failure_sql(alias: str) -> str:
               AND acknowledgement.provider_success_claimed IS FALSE
               AND LENGTH(BTRIM(acknowledgement.actor)) > 0
               AND LENGTH(BTRIM(acknowledgement.reason)) > 0
+        )
+    """
+
+
+def acknowledged_group_message_40058_failure_sql(alias: str) -> str:
+    """Return the exact operator-authorized group-message no-replay history."""
+
+    return f"""
+        COALESCE({alias}.effect_type, '') = 'wecom.message.group.send'
+        AND COALESCE({alias}.adapter_name, '') = 'wecom_group_message'
+        AND COALESCE({alias}.operation, '') = 'send_group_message'
+        AND COALESCE({alias}.business_type, '') = 'group_ops_effect_graph'
+        AND COALESCE({alias}.source_module, '') =
+            'automation_engine.group_ops.token_broadcast'
+        AND COALESCE({alias}.source_route, '') = '/api/automation/group-ops/broadcast'
+        AND COALESCE({alias}.status, '') = 'failed_terminal'
+        AND COALESCE({alias}.last_error_code, '') = 'wecom_error_40058'
+        AND COALESCE({alias}.execution_mode, '') = 'execute'
+        AND {alias}.attempt_count = 1
+        AND {alias}.max_attempts = 5
+        AND {alias}.side_effect_executed IS TRUE
+        AND {alias}.provider_result_received IS TRUE
+        AND {alias}.provider_call_started_at IS NOT NULL
+        AND {alias}.worker_generation = 1
+        AND COALESCE({alias}.policy_version, '') = 'queue-v2-production-all-g1'
+        AND {alias}.updated_at >= TIMESTAMPTZ '2026-07-30T08:53:00+08:00'
+        AND {alias}.updated_at < TIMESTAMPTZ '2026-07-30T08:54:00+08:00'
+        AND 1 = (
+            SELECT COUNT(*) FROM external_effect_attempt group_attempt_count
+            WHERE group_attempt_count.job_id = {alias}.id
+        )
+        AND EXISTS (
+            SELECT 1 FROM external_effect_attempt group_attempt
+            WHERE group_attempt.job_id = {alias}.id
+              AND group_attempt.attempt_id = COALESCE({alias}.last_attempt_id, '')
+              AND group_attempt.adapter_name = 'wecom_group_message'
+              AND group_attempt.adapter_mode = 'execute'
+              AND group_attempt.operation = 'send_group_message'
+              AND group_attempt.status = 'failed_terminal'
+              AND group_attempt.error_code = 'wecom_error_40058'
+              AND group_attempt.provider_call_started_at IS NOT NULL
+              AND group_attempt.completed_at IS NOT NULL
+              AND COALESCE(group_attempt.response_summary_json ->> 'errcode', '') = '40058'
+              AND COALESCE(
+                    group_attempt.response_summary_json
+                        ->> 'provider_error_classification', ''
+                  ) = 'terminal'
+              AND COALESCE(
+                    group_attempt.response_summary_json
+                        ->> 'real_external_call_executed', ''
+                  ) = 'true'
+              AND COALESCE(
+                    group_attempt.response_summary_json ->> 'wecom_send_executed', ''
+                  ) = 'true'
+        )
+        AND NOT EXISTS (
+            SELECT 1 FROM external_effect_job group_success
+            WHERE group_success.id <> {alias}.id
+              AND group_success.status = 'succeeded'
+              AND group_success.effect_type = {alias}.effect_type
+              AND COALESCE({alias}.business_id, '') <> ''
+              AND group_success.business_type = {alias}.business_type
+              AND group_success.business_id = {alias}.business_id
+        )
+        AND NOT EXISTS (
+            SELECT 1 FROM external_effect_job group_later_success
+            WHERE group_later_success.id <> {alias}.id
+              AND group_later_success.status = 'succeeded'
+              AND group_later_success.effect_type = {alias}.effect_type
+              AND group_later_success.target_type = {alias}.target_type
+              AND group_later_success.target_id = {alias}.target_id
+              AND group_later_success.updated_at > {alias}.updated_at
+        )
+        AND EXISTS (
+            SELECT 1 FROM queue_history_classification classification
+            WHERE classification.freeze_revision =
+                    '{GROUP_MESSAGE_40058_CLASSIFICATION_REVISION}'
+              AND classification.queue_kind = 'external_effect'
+              AND classification.queue_row_id = {alias}.id
+              AND classification.source_status = 'failed_terminal'
+              AND classification.classification = 'terminal_readonly'
+              AND classification.hold_reason = ''
+              AND COALESCE(
+                    classification.evidence_json ->> 'authorization_base_sha', ''
+                  ) = '{GROUP_MESSAGE_40058_AUTHORIZATION_BASE_SHA}'
+              AND COALESCE(
+                    classification.evidence_json ->> 'confirmation_sha256', ''
+                  ) = '{GROUP_MESSAGE_40058_AUTHORIZATION_CONFIRMATION_SHA256}'
+              AND COALESCE(
+                    classification.evidence_json ->> 'error_code', ''
+                  ) = 'wecom_error_40058'
+              AND COALESCE(
+                    classification.evidence_json ->> 'job_fingerprint_sha256', ''
+                  ) ~ '^[0-9a-f]{{64}}$'
+              AND COALESCE(classification.evidence_json ->> 'release_sha', '') ~
+                    '^[0-9a-f]{{40}}$'
+              AND COALESCE(
+                    classification.evidence_json ->> 'replay_prohibited', ''
+                  ) = 'true'
+              AND COALESCE(
+                    classification.evidence_json ->> 'provider_success_claimed', ''
+                  ) = 'false'
+              AND COALESCE(
+                    classification.evidence_json ->> 'durable_provider_attempt_count', ''
+                  ) = '1'
+              AND COALESCE(
+                    classification.evidence_json ->> 'provider_boundary_recorded', ''
+                  ) = 'true'
+              AND COALESCE(
+                    classification.evidence_json ->> 'provider_errcode', ''
+                  ) = '40058'
+              AND COALESCE(
+                    classification.evidence_json ->> 'provider_result_received', ''
+                  ) = 'true'
+              AND COALESCE(
+                    classification.evidence_json ->> 'real_external_call_executed', ''
+                  ) = 'true'
+              AND COALESCE(
+                    classification.evidence_json
+                        ->> 'real_external_call_executed_by_classification', ''
+                  ) = 'false'
+              AND COALESCE(
+                    classification.evidence_json ->> 'target_values_redacted', ''
+                  ) = 'true'
+              AND COALESCE(
+                    classification.evidence_json ->> 'target_hash_sha256', ''
+                  ) = ENCODE(
+                      SHA256(
+                          CONVERT_TO(COALESCE({alias}.target_type, ''), 'UTF8')
+                          || DECODE('00', 'hex')
+                          || CONVERT_TO(COALESCE({alias}.target_id, ''), 'UTF8')
+                      ),
+                      'hex'
+                  )
+              AND LENGTH(BTRIM(COALESCE(classification.evidence_json ->> 'actor', ''))) > 0
+              AND LENGTH(BTRIM(COALESCE(classification.evidence_json ->> 'reason', ''))) > 0
         )
     """
 
@@ -712,6 +855,8 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                        AS acknowledged_production_welcome_41050,
                    ({acknowledged_private_message_84061_failure_sql("job")})
                        AS acknowledged_private_message_84061,
+                   ({acknowledged_group_message_40058_failure_sql("job")})
+                       AS acknowledged_group_message_40058,
                    ({acknowledged_private_message_contact_absence_20260728_sql("job")})
                        AS acknowledged_private_message_contact_absence_20260728,
                    ({acknowledged_refund_not_enough_failure_sql("job")})
@@ -745,6 +890,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                   AND NOT pre_cutover_acknowledged_welcome
                   AND NOT acknowledged_production_welcome_41050
                   AND NOT acknowledged_private_message_84061
+                  AND NOT acknowledged_group_message_40058
                   AND NOT acknowledged_private_message_contact_absence_20260728
                   AND NOT acknowledged_refund_not_enough
                   AND NOT refund_not_enough_business_rejection
@@ -755,6 +901,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                   AND NOT pre_cutover_acknowledged_welcome
                   AND NOT acknowledged_production_welcome_41050
                   AND NOT acknowledged_private_message_84061
+                  AND NOT acknowledged_group_message_40058
                   AND NOT acknowledged_private_message_contact_absence_20260728
                   AND NOT acknowledged_refund_not_enough
                   AND NOT refund_not_enough_business_rejection
@@ -768,6 +915,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                   AND NOT pre_cutover_acknowledged_welcome
                   AND NOT acknowledged_production_welcome_41050
                   AND NOT acknowledged_private_message_84061
+                  AND NOT acknowledged_group_message_40058
                   AND NOT acknowledged_private_message_contact_absence_20260728
                   AND NOT acknowledged_refund_not_enough
                   AND NOT refund_not_enough_business_rejection
@@ -781,6 +929,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                   AND NOT pre_cutover_acknowledged_welcome
                   AND NOT acknowledged_production_welcome_41050
                   AND NOT acknowledged_private_message_84061
+                  AND NOT acknowledged_group_message_40058
                   AND NOT acknowledged_private_message_contact_absence_20260728
                   AND NOT acknowledged_refund_not_enough
                   AND NOT refund_not_enough_business_rejection
@@ -791,6 +940,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                   AND NOT pre_cutover_acknowledged_welcome
                   AND NOT acknowledged_production_welcome_41050
                   AND NOT acknowledged_private_message_84061
+                  AND NOT acknowledged_group_message_40058
                   AND NOT acknowledged_private_message_contact_absence_20260728
                   AND NOT acknowledged_refund_not_enough
                   AND NOT refund_not_enough_business_rejection
@@ -803,6 +953,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                   AND NOT pre_cutover_acknowledged_welcome
                   AND NOT acknowledged_production_welcome_41050
                   AND NOT acknowledged_private_message_84061
+                  AND NOT acknowledged_group_message_40058
                   AND NOT acknowledged_private_message_contact_absence_20260728
                   AND NOT acknowledged_refund_not_enough
                   AND NOT refund_not_enough_business_rejection
@@ -815,6 +966,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                       AND NOT pre_cutover_acknowledged_welcome
                       AND NOT acknowledged_production_welcome_41050
                       AND NOT acknowledged_private_message_84061
+                      AND NOT acknowledged_group_message_40058
                       AND NOT acknowledged_private_message_contact_absence_20260728
                       AND NOT acknowledged_refund_not_enough
                       AND NOT refund_not_enough_business_rejection
@@ -846,6 +998,10 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                 WHERE acknowledged_private_message_84061
                   AND status = 'failed_terminal'
             ) AS acknowledged_private_message_84061_count,
+            COUNT(*) FILTER (
+                WHERE acknowledged_group_message_40058
+                  AND status = 'failed_terminal'
+            ) AS classified_group_message_40058_count,
             COUNT(*) FILTER (
                 WHERE acknowledged_private_message_contact_absence_20260728
                   AND status = 'failed_terminal'

@@ -16,6 +16,7 @@ def test_exact_production_terminal_histories_require_append_only_no_replay_ackno
 
     from aicrm_next.insights.data_health import checks
     from scripts.ops.acknowledge_production_terminal_history import (
+        GROUP_CONFIRMATION,
         PRIVATE_CONFIRMATION,
         REFUND_CONFIRMATION,
         acknowledge,
@@ -28,8 +29,10 @@ def test_exact_production_terminal_histories_require_append_only_no_replay_ackno
     suffix = uuid4().hex
     private_attempt_id = f"eea-private-84061-{suffix}"
     private_execution_id = f"exe-private-84061-{suffix}"
+    group_attempt_id = f"eea-group-40058-{suffix}"
+    group_execution_id = f"exe-group-40058-{suffix}"
     refund_jobs: list[tuple[int, str]] = []
-    acknowledgement_execution_ids = [private_execution_id]
+    acknowledgement_execution_ids = [private_execution_id, group_execution_id]
 
     with psycopg.connect(database_url) as connection:
         private_job_id = int(
@@ -85,6 +88,66 @@ def test_exact_production_terminal_histories_require_append_only_no_replay_ackno
         connection.execute(
             "UPDATE external_effect_job SET last_attempt_id = %s WHERE id = %s",
             (private_attempt_id, private_job_id),
+        )
+
+        group_job_id = int(
+            connection.execute(
+                """
+                INSERT INTO external_effect_job (
+                    effect_type, adapter_name, operation, target_type, target_id,
+                    business_type, business_id, source_module, source_route,
+                    idempotency_key, execution_mode, status, attempt_count,
+                    max_attempts, last_error_code, last_error_message,
+                    side_effect_executed, provider_result_received,
+                    provider_call_started_at, reconciliation_required,
+                    worker_generation, policy_version, execution_id,
+                    created_at, updated_at, completed_at
+                ) VALUES (
+                    'wecom.message.group.send', 'wecom_group_message',
+                    'send_group_message', 'group_chat', %s,
+                    'group_ops_effect_graph', %s,
+                    'automation_engine.group_ops.token_broadcast',
+                    '/api/automation/group-ops/broadcast', %s,
+                    'execute', 'failed_terminal', 1, 5,
+                    'wecom_error_40058', 'provider rejected group message',
+                    TRUE, TRUE, TIMESTAMPTZ '2026-07-30T08:53:49+08:00',
+                    FALSE, 1, 'queue-v2-production-all-g1', %s,
+                    TIMESTAMPTZ '2026-07-30T08:53:49+08:00',
+                    TIMESTAMPTZ '2026-07-30T08:53:50.547550+08:00',
+                    TIMESTAMPTZ '2026-07-30T08:53:50.547550+08:00'
+                )
+                RETURNING id
+                """,
+                (
+                    f"redacted-group-target-{suffix}",
+                    f"group-effect-graph-{suffix}",
+                    f"group-40058-{suffix}",
+                    group_execution_id,
+                ),
+            ).fetchone()[0]
+        )
+        connection.execute(
+            """
+            INSERT INTO external_effect_attempt (
+                attempt_id, job_id, adapter_name, adapter_mode, operation,
+                status, response_summary_json, error_code, error_message,
+                provider_call_started_at, worker_generation, started_at, completed_at
+            ) VALUES (
+                %s, %s, 'wecom_group_message', 'execute', 'send_group_message',
+                'failed_terminal',
+                '{"errcode":40058,"provider_error_classification":"terminal",'
+                '"real_external_call_executed":true,"wecom_send_executed":true}'::jsonb,
+                'wecom_error_40058', 'provider rejected group message',
+                TIMESTAMPTZ '2026-07-30T08:53:49+08:00', 1,
+                TIMESTAMPTZ '2026-07-30T08:53:49+08:00',
+                TIMESTAMPTZ '2026-07-30T08:53:50.547550+08:00'
+            )
+            """,
+            (group_attempt_id, group_job_id),
+        )
+        connection.execute(
+            "UPDATE external_effect_job SET last_attempt_id = %s WHERE id = %s",
+            (group_attempt_id, group_job_id),
         )
 
         for index, second in enumerate((35, 44, 50), start=1):
@@ -162,7 +225,7 @@ def test_exact_production_terminal_histories_require_append_only_no_replay_ackno
 
     without_acknowledgement = checks._external_effect_failed_retryable_backlog()
     assert without_acknowledgement.status == "fail"
-    assert without_acknowledgement.evidence["failed_terminal_count"] == 4
+    assert without_acknowledgement.evidence["failed_terminal_count"] == 5
 
     manifest_path = (
         Path(__file__).resolve().parents[1]
@@ -176,14 +239,17 @@ def test_exact_production_terminal_histories_require_append_only_no_replay_ackno
         authorization_base_sha="8ab2f80ec8a6808a357a5911ace38128599a3d3d",
         private_confirmation=PRIVATE_CONFIRMATION,
         refund_confirmation=REFUND_CONFIRMATION,
+        group_confirmation=GROUP_CONFIRMATION,
         actor="pytest",
         reason="exact production no-replay history test",
         apply=False,
     )
     assert dry_run["private_message_acknowledged_count"] == 1
     assert dry_run["refund_acknowledged_count"] == 3
+    assert dry_run["group_message_40058_classified_count"] == 1
     assert dry_run["private_message_created_count"] == 0
     assert dry_run["refund_created_count"] == 0
+    assert dry_run["group_message_40058_created_count"] == 0
 
     monkeypatch.setenv("AICRM_QUEUE_TERMINAL_ACK_AUTHORIZED", "1")
     applied = acknowledge(
@@ -192,6 +258,7 @@ def test_exact_production_terminal_histories_require_append_only_no_replay_ackno
         authorization_base_sha="8ab2f80ec8a6808a357a5911ace38128599a3d3d",
         private_confirmation=PRIVATE_CONFIRMATION,
         refund_confirmation=REFUND_CONFIRMATION,
+        group_confirmation=GROUP_CONFIRMATION,
         actor="pytest",
         reason="exact production no-replay history test",
         apply=True,
@@ -205,6 +272,8 @@ def test_exact_production_terminal_histories_require_append_only_no_replay_ackno
         "refund_created_count": 3,
         "refund_acknowledgement_required": True,
         "refund_business_outcome_classified": False,
+        "group_message_40058_classified_count": 1,
+        "group_message_40058_created_count": 1,
         "replay_prohibited": True,
         "provider_success_claimed": False,
         "real_external_call_executed": False,
@@ -217,12 +286,14 @@ def test_exact_production_terminal_histories_require_append_only_no_replay_ackno
         authorization_base_sha="8ab2f80ec8a6808a357a5911ace38128599a3d3d",
         private_confirmation=PRIVATE_CONFIRMATION,
         refund_confirmation=REFUND_CONFIRMATION,
+        group_confirmation=GROUP_CONFIRMATION,
         actor="pytest",
         reason="idempotent production no-replay history test",
         apply=True,
     )
     assert repeated["private_message_created_count"] == 0
     assert repeated["refund_created_count"] == 0
+    assert repeated["group_message_40058_created_count"] == 0
 
     # The acknowledgement is an append-only historical fact.  Later job
     # bookkeeping must not force every deployment to rediscover the original
@@ -244,6 +315,7 @@ def test_exact_production_terminal_histories_require_append_only_no_replay_ackno
         authorization_base_sha="8ab2f80ec8a6808a357a5911ace38128599a3d3d",
         private_confirmation=PRIVATE_CONFIRMATION,
         refund_confirmation=REFUND_CONFIRMATION,
+        group_confirmation=GROUP_CONFIRMATION,
         actor="pytest",
         reason="idempotent acknowledgement after candidate drift",
         apply=True,
@@ -252,6 +324,7 @@ def test_exact_production_terminal_histories_require_append_only_no_replay_ackno
     assert repeated_after_candidate_drift["private_message_created_count"] == 0
     assert repeated_after_candidate_drift["refund_acknowledged_count"] == 3
     assert repeated_after_candidate_drift["refund_created_count"] == 0
+    assert repeated_after_candidate_drift["group_message_40058_created_count"] == 0
 
     with psycopg.connect(database_url) as connection:
         connection.execute(
@@ -273,6 +346,9 @@ def test_exact_production_terminal_histories_require_append_only_no_replay_ackno
     assert health.evidence["production_wechat_refund_not_enough_acknowledgement"][
         "acknowledged_count"
     ] == 3
+    assert health.evidence["production_group_message_40058_no_replay_classification"][
+        "classified_count"
+    ] == 1
 
     with psycopg.connect(database_url) as connection:
         acknowledgements = connection.execute(
@@ -292,13 +368,37 @@ def test_exact_production_terminal_histories_require_append_only_no_replay_ackno
             SELECT COUNT(*) FROM external_effect_job
             WHERE id = ANY(%s) AND status = 'failed_terminal'
             """,
-            ([private_job_id, *(job_id for job_id, _ in refund_jobs)],),
+            ([private_job_id, group_job_id, *(job_id for job_id, _ in refund_jobs)],),
         ).fetchone()[0]
+        group_classification = connection.execute(
+            """
+            SELECT source_status, classification, hold_reason,
+                   evidence_json ->> 'provider_errcode',
+                   evidence_json ->> 'replay_prohibited',
+                   evidence_json ->> 'provider_success_claimed',
+                   evidence_json ->> 'real_external_call_executed_by_classification'
+            FROM queue_history_classification
+            WHERE freeze_revision =
+                'production_group_message_40058_no_replay_20260730'
+              AND queue_kind = 'external_effect'
+              AND queue_row_id = %s
+            """,
+            (group_job_id,),
+        ).fetchone()
     assert acknowledgements == [
         ("production_private_message_84061_no_replay", 1, True, False, True),
         ("production_wechat_refund_not_enough_no_replay", 3, True, False, True),
     ]
-    assert terminal_jobs == 4
+    assert group_classification == (
+        "failed_terminal",
+        "terminal_readonly",
+        "",
+        "40058",
+        "true",
+        "false",
+        "false",
+    )
+    assert terminal_jobs == 5
 
     with psycopg.connect(database_url) as connection:
         replay_attempt_id = f"eea-refund-unexpected-replay-{suffix}"
@@ -329,6 +429,7 @@ def test_exact_production_terminal_histories_require_append_only_no_replay_ackno
             authorization_base_sha="8ab2f80ec8a6808a357a5911ace38128599a3d3d",
             private_confirmation=PRIVATE_CONFIRMATION,
             refund_confirmation=REFUND_CONFIRMATION,
+            group_confirmation=GROUP_CONFIRMATION,
             actor="pytest",
             reason="unexpected replay must fail acknowledgement validation",
             apply=True,

@@ -22,6 +22,7 @@ from scripts.ops.acknowledge_pre_cutover_welcome_terminal import (
     acknowledge as acknowledge_pre_cutover_welcome,
 )
 from scripts.ops.acknowledge_production_terminal_history import (
+    GROUP_CONFIRMATION,
     PRIVATE_CONFIRMATION,
     REFUND_CONFIRMATION,
 )
@@ -74,6 +75,7 @@ def acknowledge_release_terminal_histories(
         authorization_base_sha="8ab2f80ec8a6808a357a5911ace38128599a3d3d",
         private_confirmation=PRIVATE_CONFIRMATION,
         refund_confirmation=REFUND_CONFIRMATION,
+        group_confirmation=GROUP_CONFIRMATION,
         actor=actor,
         reason="operator-authorized production terminal histories; no replay",
         apply=apply,

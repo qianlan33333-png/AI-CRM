@@ -27,14 +27,20 @@ AUTHORIZATION_ENV = "AICRM_QUEUE_TERMINAL_ACK_AUTHORIZED"
 ACKNOWLEDGED_STATUS = "acknowledged_history"
 PRIVATE_KEY = "private_message_84061"
 REFUND_KEY = "wechat_refund_not_enough"
+GROUP_KEY = "group_message_40058"
 PRIVATE_TYPE = "production_private_message_84061_no_replay"
 REFUND_TYPE = "production_wechat_refund_not_enough_no_replay"
+GROUP_FREEZE_REVISION = "production_group_message_40058_no_replay_20260730"
 PRIVATE_CONFIRMATION = (
     "ACKNOWLEDGE AI-CRM PRIVATE MESSAGE 84061 TERMINAL "
     "AS NO-REPLAY HISTORY ON PRODUCTION"
 )
 REFUND_CONFIRMATION = (
     "ACKNOWLEDGE AI-CRM WECHAT REFUND NOT_ENOUGH TERMINALS "
+    "AS NO-REPLAY HISTORY ON PRODUCTION"
+)
+GROUP_CONFIRMATION = (
+    "ACKNOWLEDGE AI-CRM GROUP MESSAGE 40058 TERMINAL "
     "AS NO-REPLAY HISTORY ON PRODUCTION"
 )
 
@@ -102,6 +108,25 @@ def _load_manifest(path: Path) -> dict[str, Any]:
             "replay_prohibited": True,
             "provider_success_claimed": False,
         },
+        GROUP_KEY: {
+            "authorization_base_sha": "237130397711b87e9e13392fd8c884b15d06eee1",
+            "classification_revision": GROUP_FREEZE_REVISION,
+            "classification": "terminal_readonly",
+            "confirmation": GROUP_CONFIRMATION,
+            "maximum_job_count": 1,
+            "effect_type": "wecom.message.group.send",
+            "adapter_name": "wecom_group_message",
+            "operation": "send_group_message",
+            "business_type": "group_ops_effect_graph",
+            "source_module": "automation_engine.group_ops.token_broadcast",
+            "source_route": "/api/automation/group-ops/broadcast",
+            "error_code": "wecom_error_40058",
+            "provider_error_code": 40058,
+            "expected_policy_version": "queue-v2-production-all-g1",
+            "expected_worker_generation": 1,
+            "replay_prohibited": True,
+            "provider_success_claimed": False,
+        },
     }
     for key, exact in expected.items():
         authorization = dict(payload.get(key) or {})
@@ -114,6 +139,11 @@ def _load_manifest(path: Path) -> dict[str, Any]:
             raise ValueError(f"{key} acknowledgement scope mismatch: {sorted(mismatches)}")
         if authorization.get("confirmation_sha256") != _sha256(exact["confirmation"]):
             raise ValueError(f"{key} confirmation hash is invalid")
+        if key == GROUP_KEY:
+            authorization["authorization_base_sha"] = _full_sha(
+                authorization.get("authorization_base_sha"),
+                name=f"{key}.authorization_base_sha",
+            )
         authorization["window_start"] = _timestamp(
             authorization.get("window_start"), name=f"{key}.window_start"
         )
@@ -304,6 +334,314 @@ def _refund_candidates(session, authorization: Mapping[str, Any]) -> list[Mappin
             },
         ).mappings()
     )
+
+
+def _group_candidates(session, authorization: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    return list(
+        session.execute(
+            text(
+                f"""
+                SELECT {_COMMON_SELECT}, 'provider_rejected_wecom_40058' AS provider_error_class
+                FROM external_effect_job job
+                JOIN external_effect_attempt attempt
+                  ON attempt.job_id = job.id
+                 AND attempt.attempt_id = job.last_attempt_id
+                WHERE job.effect_type = :effect_type
+                  AND job.adapter_name = :adapter_name
+                  AND job.operation = :operation
+                  AND job.business_type = :business_type
+                  AND job.source_module = :source_module
+                  AND job.source_route = :source_route
+                  AND job.status = 'failed_terminal'
+                  AND job.last_error_code = :error_code
+                  AND job.execution_mode = 'execute'
+                  AND job.attempt_count = 1
+                  AND job.max_attempts = 5
+                  AND job.side_effect_executed IS TRUE
+                  AND job.provider_result_received IS TRUE
+                  AND job.provider_call_started_at IS NOT NULL
+                  AND job.worker_generation = :worker_generation
+                  AND job.policy_version = :policy_version
+                  AND job.updated_at >= :window_start
+                  AND job.updated_at < :window_end
+                  AND attempt.adapter_name = :adapter_name
+                  AND attempt.adapter_mode = 'execute'
+                  AND attempt.operation = :operation
+                  AND attempt.status = 'failed_terminal'
+                  AND attempt.error_code = :error_code
+                  AND attempt.provider_call_started_at IS NOT NULL
+                  AND attempt.completed_at IS NOT NULL
+                  AND COALESCE(attempt.response_summary_json ->> 'errcode', '') =
+                      CAST(:provider_error_code AS TEXT)
+                  AND COALESCE(
+                        attempt.response_summary_json ->> 'provider_error_classification', ''
+                      ) = 'terminal'
+                  AND COALESCE(
+                        attempt.response_summary_json ->> 'real_external_call_executed', ''
+                      ) = 'true'
+                  AND COALESCE(
+                        attempt.response_summary_json ->> 'wecom_send_executed', ''
+                      ) = 'true'
+                  AND (
+                    SELECT COUNT(*) FROM external_effect_attempt counted
+                    WHERE counted.job_id = job.id
+                  ) = 1
+                  AND NOT EXISTS (
+                    SELECT 1 FROM external_effect_job success
+                    WHERE success.id <> job.id
+                      AND success.status = 'succeeded'
+                      AND success.effect_type = job.effect_type
+                      AND COALESCE(job.business_id, '') <> ''
+                      AND success.business_type = job.business_type
+                      AND success.business_id = job.business_id
+                  )
+                  AND NOT EXISTS (
+                    SELECT 1 FROM external_effect_job later_success
+                    WHERE later_success.id <> job.id
+                      AND later_success.status = 'succeeded'
+                      AND later_success.effect_type = job.effect_type
+                      AND later_success.target_type = job.target_type
+                      AND later_success.target_id = job.target_id
+                      AND later_success.updated_at > job.updated_at
+                  )
+                ORDER BY job.id
+                FOR UPDATE OF job
+                """
+            ),
+            {
+                "effect_type": authorization["effect_type"],
+                "adapter_name": authorization["adapter_name"],
+                "operation": authorization["operation"],
+                "business_type": authorization["business_type"],
+                "source_module": authorization["source_module"],
+                "source_route": authorization["source_route"],
+                "error_code": authorization["error_code"],
+                "provider_error_code": authorization["provider_error_code"],
+                "worker_generation": authorization["expected_worker_generation"],
+                "policy_version": authorization["expected_policy_version"],
+                "window_start": authorization["window_start"],
+                "window_end": authorization["window_end"],
+            },
+        ).mappings()
+    )
+
+
+def _existing_group_classifications(
+    session,
+    *,
+    authorization: Mapping[str, Any],
+) -> list[Mapping[str, Any]]:
+    revision = str(authorization["classification_revision"])
+    total_count = int(
+        session.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM queue_history_classification
+                WHERE freeze_revision = :revision
+                """
+            ),
+            {"revision": revision},
+        ).scalar_one()
+    )
+    if total_count == 0:
+        return []
+    if total_count != 1:
+        raise RuntimeError(f"expected exactly 1 existing {revision} classification; found {total_count}")
+
+    rows = list(
+        session.execute(
+            text(
+                f"""
+                SELECT {_COMMON_SELECT}, 'provider_rejected_wecom_40058' AS provider_error_class
+                FROM queue_history_classification classification
+                JOIN external_effect_job job
+                  ON classification.queue_kind = 'external_effect'
+                 AND classification.queue_row_id = job.id
+                JOIN external_effect_attempt attempt
+                  ON attempt.job_id = job.id
+                 AND attempt.attempt_id = job.last_attempt_id
+                WHERE classification.freeze_revision = :revision
+                  AND classification.source_status = 'failed_terminal'
+                  AND classification.classification = 'terminal_readonly'
+                  AND classification.hold_reason = ''
+                  AND COALESCE(
+                        classification.evidence_json ->> 'authorization_base_sha', ''
+                      ) = :authorization_base_sha
+                  AND COALESCE(
+                        classification.evidence_json ->> 'confirmation_sha256', ''
+                      ) = :confirmation_sha256
+                  AND COALESCE(classification.evidence_json ->> 'error_code', '') =
+                      :error_code
+                  AND COALESCE(
+                        classification.evidence_json ->> 'job_fingerprint_sha256', ''
+                      ) ~ '^[0-9a-f]{{64}}$'
+                  AND COALESCE(classification.evidence_json ->> 'release_sha', '') ~
+                      '^[0-9a-f]{{40}}$'
+                  AND COALESCE(
+                        classification.evidence_json ->> 'replay_prohibited', ''
+                      ) = 'true'
+                  AND COALESCE(
+                        classification.evidence_json ->> 'provider_success_claimed', ''
+                      ) = 'false'
+                  AND COALESCE(
+                        classification.evidence_json
+                            ->> 'real_external_call_executed_by_classification', ''
+                      ) = 'false'
+                  AND LENGTH(BTRIM(COALESCE(classification.evidence_json ->> 'actor', ''))) > 0
+                  AND LENGTH(BTRIM(COALESCE(classification.evidence_json ->> 'reason', ''))) > 0
+                  AND job.effect_type = :effect_type
+                  AND job.adapter_name = :adapter_name
+                  AND job.operation = :operation
+                  AND job.business_type = :business_type
+                  AND job.source_module = :source_module
+                  AND job.source_route = :source_route
+                  AND job.status = 'failed_terminal'
+                  AND job.last_error_code = :error_code
+                  AND job.execution_mode = 'execute'
+                  AND job.attempt_count = 1
+                  AND job.max_attempts = 5
+                  AND job.side_effect_executed IS TRUE
+                  AND job.provider_result_received IS TRUE
+                  AND job.provider_call_started_at IS NOT NULL
+                  AND job.worker_generation = :worker_generation
+                  AND job.policy_version = :policy_version
+                  AND 1 = (
+                      SELECT COUNT(*) FROM external_effect_attempt counted_attempt
+                      WHERE counted_attempt.job_id = job.id
+                  )
+                  AND attempt.adapter_name = :adapter_name
+                  AND attempt.adapter_mode = 'execute'
+                  AND attempt.operation = :operation
+                  AND attempt.status = 'failed_terminal'
+                  AND attempt.error_code = :error_code
+                  AND attempt.provider_call_started_at IS NOT NULL
+                  AND attempt.completed_at IS NOT NULL
+                  AND COALESCE(attempt.response_summary_json ->> 'errcode', '') =
+                      CAST(:provider_error_code AS TEXT)
+                  AND COALESCE(
+                        attempt.response_summary_json ->> 'provider_error_classification', ''
+                      ) = 'terminal'
+                  AND COALESCE(
+                        attempt.response_summary_json ->> 'real_external_call_executed', ''
+                      ) = 'true'
+                  AND COALESCE(
+                        attempt.response_summary_json ->> 'wecom_send_executed', ''
+                      ) = 'true'
+                ORDER BY job.id
+                FOR UPDATE OF classification, job
+                """
+            ),
+            {
+                "revision": revision,
+                "authorization_base_sha": authorization["authorization_base_sha"],
+                "confirmation_sha256": _sha256(str(authorization["confirmation"])),
+                "effect_type": authorization["effect_type"],
+                "adapter_name": authorization["adapter_name"],
+                "operation": authorization["operation"],
+                "business_type": authorization["business_type"],
+                "source_module": authorization["source_module"],
+                "source_route": authorization["source_route"],
+                "error_code": authorization["error_code"],
+                "provider_error_code": authorization["provider_error_code"],
+                "worker_generation": authorization["expected_worker_generation"],
+                "policy_version": authorization["expected_policy_version"],
+            },
+        ).mappings()
+    )
+    if len(rows) != 1:
+        raise RuntimeError(f"existing {revision} classification failed durable linkage validation")
+    row = rows[0]
+    fingerprint = _fingerprint(row, acknowledgement_type=revision)
+    evidence_fingerprint = session.execute(
+        text(
+            """
+            SELECT evidence_json ->> 'job_fingerprint_sha256'
+            FROM queue_history_classification
+            WHERE freeze_revision = :revision
+              AND queue_kind = 'external_effect'
+              AND queue_row_id = :job_id
+            """
+        ),
+        {"revision": revision, "job_id": int(row["job_id"])},
+    ).scalar_one()
+    if evidence_fingerprint != fingerprint:
+        raise RuntimeError(f"existing {revision} classification fingerprint mismatch")
+    return rows
+
+
+def _classify_group_rows(
+    session,
+    *,
+    rows: list[Mapping[str, Any]],
+    authorization: Mapping[str, Any],
+    release_sha: str,
+    actor: str,
+    reason: str,
+    apply: bool,
+) -> tuple[int, int]:
+    if len(rows) != 1:
+        raise RuntimeError(
+            f"expected exactly 1 {authorization['classification_revision']} job; found {len(rows)}"
+        )
+    revision = str(authorization["classification_revision"])
+    row = rows[0]
+    existing = int(
+        session.execute(
+            text(
+                """
+                SELECT COUNT(*) FROM queue_history_classification
+                WHERE freeze_revision = :revision
+                  AND queue_kind = 'external_effect'
+                  AND queue_row_id = :job_id
+                """
+            ),
+            {"revision": revision, "job_id": int(row["job_id"])},
+        ).scalar_one()
+    )
+    if existing:
+        return 1, 0
+    if not apply:
+        return 1, 0
+    evidence = {
+        "actor": actor,
+        "authorization_base_sha": authorization["authorization_base_sha"],
+        "confirmation_sha256": _sha256(str(authorization["confirmation"])),
+        "durable_provider_attempt_count": 1,
+        "error_code": authorization["error_code"],
+        "job_fingerprint_sha256": _fingerprint(row, acknowledgement_type=revision),
+        "provider_boundary_recorded": bool(row["provider_boundary_recorded"]),
+        "provider_errcode": 40058,
+        "provider_error_class": str(row["provider_error_class"]),
+        "provider_result_received": True,
+        "provider_success_claimed": False,
+        "real_external_call_executed": True,
+        "real_external_call_executed_by_classification": False,
+        "release_sha": release_sha,
+        "reason": reason,
+        "replay_prohibited": True,
+        "target_hash_sha256": _sha256(f"{row['target_type']}\0{row['target_id']}"),
+        "target_values_redacted": True,
+    }
+    session.execute(
+        text(
+            """
+            INSERT INTO queue_history_classification (
+                freeze_revision, queue_kind, queue_row_id, source_status,
+                classification, hold_reason, evidence_json
+            ) VALUES (
+                :revision, 'external_effect', :job_id, 'failed_terminal',
+                'terminal_readonly', '', CAST(:evidence_json AS JSONB)
+            )
+            """
+        ),
+        {
+            "revision": revision,
+            "job_id": int(row["job_id"]),
+            "evidence_json": json.dumps(evidence, sort_keys=True),
+        },
+    )
+    return 1, 1
 
 
 def _fingerprint(row: Mapping[str, Any], *, acknowledgement_type: str) -> str:
@@ -554,6 +892,7 @@ def acknowledge(
     authorization_base_sha: str,
     private_confirmation: str,
     refund_confirmation: str,
+    group_confirmation: str,
     actor: str,
     reason: str,
     apply: bool,
@@ -564,7 +903,11 @@ def acknowledge(
     authorization_base_sha = _full_sha(authorization_base_sha, name="authorization_base_sha")
     if authorization_base_sha != manifest["authorization_base_sha"]:
         raise ValueError("authorization base SHA does not match manifest")
-    if private_confirmation != PRIVATE_CONFIRMATION or refund_confirmation != REFUND_CONFIRMATION:
+    if (
+        private_confirmation != PRIVATE_CONFIRMATION
+        or refund_confirmation != REFUND_CONFIRMATION
+        or group_confirmation != GROUP_CONFIRMATION
+    ):
         raise ValueError("confirmation does not match exact production authorization")
     actor = str(actor or "").strip()
     reason = str(reason or "").strip()
@@ -590,6 +933,10 @@ def acknowledge(
                 ) or _refund_candidates(session, manifest[REFUND_KEY])
             else:
                 refund_rows = []
+            group_rows = _existing_group_classifications(
+                session,
+                authorization=manifest[GROUP_KEY],
+            ) or _group_candidates(session, manifest[GROUP_KEY])
             private_count, private_created = _acknowledge_rows(
                 session,
                 rows=private_rows,
@@ -613,6 +960,15 @@ def acknowledge(
                 )
             else:
                 refund_count, refund_created = 0, 0
+            group_count, group_created = _classify_group_rows(
+                session,
+                rows=group_rows,
+                authorization=manifest[GROUP_KEY],
+                release_sha=release_sha,
+                actor=actor,
+                reason=reason,
+                apply=apply,
+            )
             if apply:
                 session.commit()
             else:
@@ -626,6 +982,8 @@ def acknowledge(
                 "refund_created_count": refund_created,
                 "refund_acknowledgement_required": bool(acknowledge_refund_histories),
                 "refund_business_outcome_classified": not acknowledge_refund_histories,
+                "group_message_40058_classified_count": group_count,
+                "group_message_40058_created_count": group_created,
                 "replay_prohibited": True,
                 "provider_success_claimed": False,
                 "real_external_call_executed": False,
@@ -638,13 +996,17 @@ def acknowledge(
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Acknowledge one private-message 84061 and three refund NOT_ENOUGH terminals.",
+        description=(
+            "Acknowledge exact private-message 84061, refund NOT_ENOUGH, and "
+            "group-message 40058 terminal histories."
+        ),
     )
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--release-sha", required=True)
     parser.add_argument("--authorization-base-sha", required=True)
     parser.add_argument("--private-confirmation", required=True)
     parser.add_argument("--refund-confirmation", required=True)
+    parser.add_argument("--group-confirmation", required=True)
     parser.add_argument("--actor", required=True)
     parser.add_argument("--reason", required=True)
     parser.add_argument("--apply", action="store_true")
@@ -659,6 +1021,7 @@ def main(argv: list[str] | None = None) -> int:
         authorization_base_sha=args.authorization_base_sha,
         private_confirmation=args.private_confirmation,
         refund_confirmation=args.refund_confirmation,
+        group_confirmation=args.group_confirmation,
         actor=args.actor,
         reason=args.reason,
         apply=bool(args.apply),
