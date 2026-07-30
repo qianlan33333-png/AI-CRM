@@ -74,6 +74,8 @@
     activeTab: "profile",
     profileView: "basic",
     materialType: "image",
+    materialQuery: "",
+    materialQuickKeywords: [],
     productType: "regular",
     orderType: "regular",
     workbench: null,
@@ -104,6 +106,8 @@
     jssdkConfigRequests: new Map(),
     jssdkConfigCache: new Map(),
     timelineRequestVersion: 0,
+    materialRequestVersion: 0,
+    materialSearchController: null,
   };
 
   const debugEnabled = root && root.dataset.debugEnabled === "true";
@@ -446,7 +450,17 @@
 
   async function requestJsonOnce(url, options) {
     const timeoutMs = Number((options && options.timeoutMs) || DEFAULT_TIMEOUT_MS);
+    const providedSignal = options && options.signal;
     const controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    let detachProvidedAbort = null;
+    if (controller && providedSignal) {
+      const abortFromCaller = () => controller.abort();
+      if (providedSignal.aborted) abortFromCaller();
+      else {
+        providedSignal.addEventListener("abort", abortFromCaller, { once: true });
+        detachProvidedAbort = () => providedSignal.removeEventListener("abort", abortFromCaller);
+      }
+    }
     const timer = controller
       ? window.setTimeout(() => controller.abort(), timeoutMs)
       : null;
@@ -480,13 +494,14 @@
       return payload || { ok: true };
     } catch (error) {
       if (error && error.name === "AbortError") {
-        const timeoutError = new Error("请求超时，请重试");
-        timeoutError.stage = "request_timeout";
-        throw timeoutError;
+        const abortError = new Error(providedSignal && providedSignal.aborted ? "请求已取消" : "请求超时，请重试");
+        abortError.stage = providedSignal && providedSignal.aborted ? "request_cancelled" : "request_timeout";
+        throw abortError;
       }
       throw error;
     } finally {
       if (timer) window.clearTimeout(timer);
+      if (detachProvidedAbort) detachProvidedAbort();
     }
   }
 
@@ -931,10 +946,36 @@
     return segmentedControls(materialTabs, state.materialType, "data-material-type", "material-seg");
   }
 
+  function materialResultKey(query) {
+    return "image:" + String(query || "").trim();
+  }
+
+  function materialSearchControls() {
+    if (state.materialType !== "image") return "";
+    const query = String(state.materialQuery || "").trim();
+    const keywords = (state.materialQuickKeywords || []).slice(0, 5);
+    const clearButton = query
+      ? '<button class="btn ghost material-search-clear" type="button" data-material-search-clear>清空</button>'
+      : "";
+    const keywordControls = keywords.length
+      ? '<div class="material-quick-keywords" aria-label="快捷关键词">' + keywords.map((keyword) => (
+          '<button type="button" class="material-keyword' + (keyword === query ? " active" : "") + '" data-material-keyword="' +
+          escapeHtml(keyword) + '">' + escapeHtml(keyword) + "</button>"
+        )).join("") + "</div>"
+      : "";
+    return (
+      '<form class="material-search" data-material-search-form>' +
+      '<label class="material-search-field"><span class="sr-only">搜索图片素材</span><input type="search" maxlength="100" ' +
+      'placeholder="搜索名称、描述、分类或标签" value="' + escapeHtml(query) + '" data-material-search-input></label>' +
+      '<button class="btn primary material-search-submit" type="submit">搜索</button>' + clearButton + "</form>" + keywordControls
+    );
+  }
+
   function renderMaterialLoadError(type, error) {
     content.innerHTML = panel(
       "素材",
       materialTypeControls() +
+        materialSearchControls() +
         '<div class="status error">' + escapeHtml((error && error.message) || "加载失败") + "</div>" +
         '<div class="row-actions"><button class="btn primary" type="button" data-retry-material-type="' + escapeHtml(type) + '">重试</button></div>'
     );
@@ -946,23 +987,23 @@
       renderRadarLinks(controls);
       return;
     }
-    const rows = state.data.materials.image || [];
+    const searchControls = materialSearchControls();
+    const rows = state.data.materials[materialResultKey(state.materialQuery)] || [];
     if (!rows.length) {
-      content.innerHTML = panel("", controls + empty("暂无图片素材"));
+      content.innerHTML = panel("", controls + searchControls + empty(state.materialQuery ? "没有匹配的图片素材" : "暂无图片素材"));
       return;
     }
     content.innerHTML = panel(
       "",
-      controls +
+      controls + searchControls +
         rows
           .map((item) => {
-            const fallbackLabel = item.thumbnail_label || "图";
             const thumb = item.thumbnail_url
-              ? '<div class="material-thumb thumb image-thumb"><img src="' + escapeHtml(item.thumbnail_url) + '" alt="" data-material-thumb-img data-fallback-label="' + escapeHtml(fallbackLabel) + '"></div>'
-              : '<div class="material-thumb thumb image-thumb">' + escapeHtml(fallbackLabel) + "</div>";
+              ? '<div class="material-thumb thumb image-thumb"><img src="' + escapeHtml(item.thumbnail_url) + '" alt="图片素材预览" width="64" height="64" loading="lazy" decoding="async" fetchpriority="low" data-material-thumb-img></div>'
+              : '<div class="material-thumb thumb image-thumb preview-unavailable">预览不可用</div>';
             return (
               '<article class="card material material--image">' + thumb +
-              '<div class="material-main"><h3 class="material-title">' + escapeHtml(item.title || "未命名素材") + '</h3><div class="material-tags tags">' +
+              '<div class="material-main"><div class="material-tags tags">' +
               (item.tags || []).map((tag) => '<span class="tag">' + escapeHtml(tag) + "</span>").join("") +
               '</div></div><button class="btn primary material-send" type="button" data-material-send="' + escapeHtml(item.id || "") + '">发送</button></article>'
             );
@@ -1140,9 +1181,47 @@
       state.data.radar_links = payload.items || [];
       return;
     }
-    if (state.data.materials.image) return;
-    const payload = await requestPanelJson("materials", queryUrl(endpoint("materialsUrl"), { type: "image", limit: 50 }));
-    state.data.materials.image = payload.materials || [];
+    const query = String(state.materialQuery || "").trim();
+    const resultKey = materialResultKey(query);
+    if (Object.prototype.hasOwnProperty.call(state.data.materials, resultKey)) return true;
+    if (state.materialSearchController) state.materialSearchController.abort();
+    state.materialSearchController = typeof AbortController !== "undefined" ? new AbortController() : null;
+    const requestVersion = ++state.materialRequestVersion;
+    try {
+      const payload = await requestPanelJson(
+        "materials",
+        queryUrl(endpoint("materialsUrl"), { type: "image", limit: 50, q: query }),
+        state.materialSearchController ? { signal: state.materialSearchController.signal } : undefined
+      );
+      if (requestVersion !== state.materialRequestVersion) return false;
+      state.data.materials[resultKey] = payload.materials || [];
+      state.materialQuickKeywords = payload.quick_keywords || [];
+      return true;
+    } catch (error) {
+      if (error && error.stage === "request_cancelled") return false;
+      throw error;
+    } finally {
+      if (requestVersion === state.materialRequestVersion) state.materialSearchController = null;
+    }
+  }
+
+  async function executeMaterialSearch(query, options) {
+    if (state.materialType !== "image") return;
+    state.materialQuery = String(query || "").trim().slice(0, 100);
+    const resultKey = materialResultKey(state.materialQuery);
+    if (options && options.force) {
+      delete state.data.materials[resultKey];
+      clearPanelCache("materials");
+    }
+    content.innerHTML = panel("", materialTypeControls() + materialSearchControls() + '<div class="status">正在搜索图片素材…</div>');
+    try {
+      const applied = await loadMaterials("image");
+      if (!applied || state.activeTab !== "materials" || state.materialType !== "image") return;
+      renderMaterials();
+    } catch (error) {
+      if (state.activeTab !== "materials" || state.materialType !== "image") return;
+      renderMaterialLoadError("image", error);
+    }
   }
 
   async function switchMaterialType(type) {
@@ -1685,6 +1764,14 @@
     saveProfile();
   }, true);
 
+  content.addEventListener("submit", async (event) => {
+    const form = event.target.closest ? event.target.closest("[data-material-search-form]") : null;
+    if (!form) return;
+    event.preventDefault();
+    const input = form.querySelector("[data-material-search-input]");
+    await executeMaterialSearch(input ? input.value : "");
+  });
+
   content.addEventListener("click", async (event) => {
     const retryButton = event.target.closest("[data-retry-boot]");
     if (retryButton) {
@@ -1760,6 +1847,16 @@
       await switchMaterialType(materialTypeButton.dataset.materialType);
       return;
     }
+    const materialKeywordButton = event.target.closest("[data-material-keyword]");
+    if (materialKeywordButton) {
+      await executeMaterialSearch(materialKeywordButton.dataset.materialKeyword || "");
+      return;
+    }
+    const materialSearchClearButton = event.target.closest("[data-material-search-clear]");
+    if (materialSearchClearButton) {
+      await executeMaterialSearch("");
+      return;
+    }
     const orderTypeButton = event.target.closest("[data-order-type]");
     if (orderTypeButton) {
       await switchOrderType(orderTypeButton.dataset.orderType);
@@ -1813,8 +1910,8 @@
     if (!image) return;
     const parent = image.parentElement;
     if (!parent) return;
-    parent.textContent = image.dataset.fallbackLabel || "图";
-    parent.classList.remove("image-thumb");
+    parent.textContent = "预览不可用";
+    parent.classList.add("preview-unavailable");
   }, true);
 
   document.getElementById("change-mobile-button").addEventListener("click", openMobileModal);

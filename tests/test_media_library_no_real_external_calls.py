@@ -3,12 +3,10 @@ from __future__ import annotations
 import base64
 from pathlib import Path
 
-import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
 from aicrm_next.engagement.media_library.repo import InMemoryMediaLibraryRepository
-from aicrm_next.platform.shared.errors import ContractError
 
 
 TINY_PNG_BASE64 = (
@@ -21,7 +19,7 @@ def _client() -> TestClient:
 
 
 def _media_library_source() -> str:
-    root = Path(__file__).resolve().parents[1] / "aicrm_next" / "media_library"
+    root = Path(__file__).resolve().parents[1] / "aicrm_next" / "engagement" / "media_library"
     return "\n".join(path.read_text(encoding="utf-8") for path in root.rglob("*.py"))
 
 
@@ -42,7 +40,7 @@ def test_media_library_source_has_no_direct_external_clients() -> None:
         assert token not in source
 
 
-def test_thumbnail_remote_source_fallback_is_blocked_without_network_fetch() -> None:
+def test_thumbnail_remote_source_fallback_redirects_without_server_fetch() -> None:
     repo = InMemoryMediaLibraryRepository(
         {
             "image": [
@@ -73,8 +71,10 @@ def test_thumbnail_remote_source_fallback_is_blocked_without_network_fetch() -> 
         }
     )
 
-    with pytest.raises(ContractError, match="remote source fetch is disabled"):
-        repo.get_image_thumbnail("image_remote_only", 160)
+    assert repo.get_image_thumbnail("image_remote_only", 160) == {
+        "redirect_url": "https://example.com/remote.png",
+        "mime_type": "image/png",
+    }
 
 
 def test_from_url_uses_guarded_fake_import_and_does_not_fetch_remote_url() -> None:

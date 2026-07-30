@@ -200,34 +200,32 @@ def test_ai_crm_deploy_is_reusable_production_only_and_has_no_id_validation_acce
     assert "tee /tmp/aicrm-admin-read-pages-smoke.json" in source
 
 
-def test_production_promotion_is_manual_cross_repo_verified_and_environment_approved() -> None:
+def test_successful_trusted_main_ci_automatically_deploys_exact_sha_to_production() -> None:
     source = _source(PROMOTE_PRODUCTION_WORKFLOW)
     deploy_source = _source(DEPLOY_WORKFLOW)
+    trigger = source[source.index("on:") : source.index("permissions:")]
 
-    assert "name: Promote to Production (Manual)" in source
-    assert "workflow_dispatch:" in source
-    assert "release_sha:" in source
-    assert "validated_id_sha:" in source
-    assert "confirmation:" in source
-    assert "workflow_run:" not in source
+    assert "name: Deploy Main to Production" in source
+    assert "workflow_run:" in trigger
+    assert 'workflows: ["CI Fast"]' in trigger
+    assert "types: [completed]" in trigger
+    assert "workflow_dispatch:" not in trigger
     assert "push:" not in source
     assert "schedule:" not in source
-    assert "target_environment:" not in source
+    assert "github.event.workflow_run.conclusion == 'success'" in source
+    assert "github.event.workflow_run.head_repository.full_name == github.repository" in source
+    assert "github.event.workflow_run.head_branch == 'main'" in source
+    assert "github.event.workflow_run.event == 'push'" in source
     assert "uses: ./.github/workflows/deploy.yml" in source
-    assert "needs: validate" in source
+    assert "release_sha: ${{ github.event.workflow_run.head_sha }}" in source
     assert "secrets: inherit" in source
     assert "environment: production" in deploy_source
     assert "DEPLOY_TARGET: production" in deploy_source
-    assert "DEPLOY 150.158.82.186" in source
-    assert "https://id-dev.youcangogogo.com/health" in source
-    assert "qianlan333/AI-CRM-ID-refactor.git" in source
-    assert "docs/releases/production_promotion.json" in source
-    assert "scripts/ops/validate_production_promotion.py" in source
-    assert "aicrm_source_ci_run.json" in source
-    assert "aicrm_source_deploy_run.json" in source
-    assert "aicrm_target_ci_runs.json" in source
-    assert "id-dev health must expose exactly one full release SHA" in source
-    assert 'if [ "$(git rev-parse FETCH_HEAD)" != "$requested_sha" ]; then' in source
+    assert "confirmation:" not in source
+    assert "validated_id_sha:" not in source
+    assert "id-dev.youcangogogo.com" not in source
+    assert "AI-CRM-ID-refactor" not in source
+    assert "validate_production_promotion.py" not in source
     assert "secrets.DEPLOY_HOST" in deploy_source
     assert "inputs.release_sha != ''" in deploy_source
     assert "TEST_DEPLOY" not in deploy_source

@@ -31,12 +31,12 @@ def _runtime_units_phase(phase: str) -> str:
 
 def test_deploy_workflows_serialize_without_cancelling_active_release() -> None:
     deploy = PRODUCTION_DEPLOY_WORKFLOW.read_text(encoding="utf-8")
-    promotion = PRODUCTION_PROMOTION_WORKFLOW.read_text(encoding="utf-8")
+    automatic_trigger = PRODUCTION_PROMOTION_WORKFLOW.read_text(encoding="utf-8")
 
     assert "group: aicrm-production-deploy" in deploy
-    assert "group: aicrm-production-promotion" in promotion
+    assert "group: aicrm-production-promotion" in automatic_trigger
     assert "cancel-in-progress: false" in deploy
-    assert "cancel-in-progress: false" in promotion
+    assert "cancel-in-progress: false" in automatic_trigger
 
 
 def test_deploy_acknowledges_only_authorized_pre_cutover_welcome_before_green_health() -> None:
@@ -114,11 +114,14 @@ def test_deploy_acknowledges_only_exact_authorized_production_terminal_histories
     assert "acknowledge_production_private_message_contact_absence" in orchestrator
     assert "operator-authorized production terminal histories; no replay" in orchestrator
     assert "acknowledge_refund_histories=False" in orchestrator
+    assert "GROUP_CONFIRMATION" in orchestrator
+    assert "production_group_message_40058_no_replay_20260730" not in orchestrator
     assert "operator-authorized welcome job 2157 timeout history; no replay" in orchestrator
     assert "requeue" not in acknowledgement_block.lower()
     assert "requeue" not in orchestrator.lower()
     assert "refund_request(" not in orchestrator
     assert "send_private_message(" not in orchestrator
+    assert "send_group_message(" not in orchestrator
     assert "send_welcome_msg(" not in orchestrator
 
 

@@ -80,6 +80,7 @@ CONFIG_CATEGORIES: tuple[ConfigCategory, ...] = (
             field("AICRM_SIDEBAR_JSSDK_REAL_ENABLED", block_title="企微 JSSDK"),
             field("AICRM_SIDEBAR_JSSDK_SECRET", block_title="企微 JSSDK"),
             field("AICRM_SIDEBAR_JSSDK_TIMEOUT_SECONDS", block_title="企微 JSSDK"),
+            field("AICRM_SIDEBAR_IMAGE_QUICK_KEYWORDS", block_title="图片素材"),
         ),
     ),
     ConfigCategory(

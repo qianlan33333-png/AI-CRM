@@ -3,6 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from datetime import datetime, timezone
 from typing import Any, Protocol
+from urllib.parse import urlparse
 
 from aicrm_next.platform.shared.errors import ContractError, NotFoundError
 from aicrm_next.platform.shared.repository_provider import assert_repository_allowed
@@ -34,7 +35,13 @@ class MediaLibraryRepository(Protocol):
     def list_facets(self, kind: str) -> dict[str, list[str]]: ...
     def get_item(self, kind: str, item_id: str, *, include_data: bool = True) -> dict[str, Any] | None: ...
     def get_image_variant(self, image_id: str, variant_key: str) -> dict[str, Any] | None: ...
-    def get_image_thumbnail(self, image_id: str, size: int) -> dict[str, Any] | None: ...
+    def get_image_thumbnail(
+        self,
+        image_id: str,
+        size: int,
+        *,
+        enabled_only: bool = False,
+    ) -> dict[str, Any] | None: ...
     def save_item(self, kind: str, payload: dict[str, Any], item_id: str | None = None) -> dict[str, Any]: ...
     def delete_item(self, kind: str, item_id: str, *, force: bool = False) -> dict[str, Any]: ...
     def ensure_group_invite_binding(self, payload: dict[str, Any]) -> dict[str, Any]: ...
@@ -59,6 +66,16 @@ def normalize_tags(value: Any) -> list[str]:
         if tag and tag not in tags:
             tags.append(tag[:64])
     return tags[:50]
+
+
+def trusted_https_image_url(value: Any) -> str:
+    url = str(value or "").strip()
+    if not url:
+        return ""
+    parsed = urlparse(url)
+    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+        return ""
+    return url
 
 
 def _extract_base64(data_url: str) -> str:
@@ -237,20 +254,27 @@ class InMemoryMediaLibraryRepository:
         payload = variant_bytes(variant)
         return {**variant, "bytes": payload, "etag": '"' + str(variant.get("checksum") or "") + '"'}
 
-    def get_image_thumbnail(self, image_id: str, size: int) -> dict[str, Any] | None:
+    def get_image_thumbnail(
+        self,
+        image_id: str,
+        size: int,
+        *,
+        enabled_only: bool = False,
+    ) -> dict[str, Any] | None:
         item = self.get_item("image", image_id, include_data=True)
-        if not item:
+        if not item or (enabled_only and not bool(item.get("enabled"))):
             return None
-        if item.get("source_url") and not str(item.get("data_base64") or ""):
-            raise ContractError("remote source fetch is disabled in Next media library")
         variant = self.get_image_variant(image_id, THUMBNAIL_SIZE_TO_VARIANT.get(size, ""))
-        if variant and str(variant.get("mime_type") or "").split(";")[0] in {"image/png", "image/jpeg"}:
+        if variant and variant.get("bytes") and str(variant.get("mime_type") or "").split(";")[0] in {"image/png", "image/jpeg"}:
             return variant
         data_base64 = str(item.get("data_base64") or "")
         mime_type = str(item.get("mime_type") or "image/png")
         if data_base64:
             data = decode_image_base64(data_base64)
         elif item.get("source_url"):
+            redirect_url = trusted_https_image_url(item.get("source_url"))
+            if redirect_url:
+                return {"redirect_url": redirect_url, "mime_type": mime_type}
             raise ContractError("remote source fetch is disabled in Next media library")
         else:
             data = b""
