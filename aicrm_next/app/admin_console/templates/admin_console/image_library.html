@@ -19,13 +19,11 @@
   .il-toolbar .il-upload-btn::before { content:"+"; margin-right:6px; font-weight:600; }
 
   .il-filters-inline { display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex:1; }
-  .il-filters-inline input[type=search],
-  .il-filters-inline select {
+  .il-filters-inline input[type=search] {
     padding:6px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:12px;
     background:#fff; color:#1f2937;
   }
   .il-filters-inline input[type=search] { min-width:200px; }
-  .il-filters-inline select { min-width:140px; }
   .il-filters-inline label.checkbox {
     display:inline-flex; align-items:center; gap:4px; font-size:12px;
     color:#5b626f; cursor:pointer;
@@ -36,18 +34,33 @@
   }
   .il-filters-inline .reset-btn:hover { text-decoration:underline; }
 
-  /* tag pool（保留，作为视觉次要的筛选维度） */
-  .il-tag-pool { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; padding:0 4px; }
-  .il-tag-pool .chip {
-    font-size:11px; padding:3px 10px; border:1px solid #d1d5db;
-    border-radius:12px; background:#fff; cursor:pointer; user-select:none;
-    color:#5b626f;
+  /* ========== 分维度筛选 ========== */
+  .il-facet-panel {
+    margin-top:10px; padding:4px 14px;
+    border:1px solid #e5e7eb; border-radius:10px; background:#fff;
   }
-  .il-tag-pool .chip:hover { border-color:#2c5cdb; color:#2c5cdb; }
-  .il-tag-pool .chip.active {
-    background:#2c5cdb; color:#fff; border-color:#2c5cdb;
+  .il-facet-panel .empty { display:block; padding:12px 0; color:#999; font-size:11px; }
+  .il-facet-row {
+    display:grid; grid-template-columns:72px minmax(0,1fr); gap:10px;
+    padding:9px 0;
   }
-  .il-tag-pool .empty { font-size:11px; color:#999; padding:3px 0; }
+  .il-facet-row + .il-facet-row { border-top:1px solid #f1f3f5; }
+  .il-facet-label {
+    padding:4px 0; color:#2c5cdb; font-size:12px; font-weight:700;
+    line-height:20px;
+  }
+  .il-facet-options { display:flex; flex-wrap:wrap; gap:5px 7px; min-width:0; }
+  .il-facet-option {
+    min-height:28px; padding:3px 10px;
+    border:1px solid transparent; border-radius:7px;
+    background:transparent; color:#4b5563;
+    font:inherit; font-size:11px; line-height:18px;
+    cursor:pointer; user-select:none;
+  }
+  .il-facet-option:hover { background:#f3f6ff; color:#2c5cdb; }
+  .il-facet-option.active {
+    border-color:#c7d7ff; background:#eaf0ff; color:#1e4bc4; font-weight:600;
+  }
 
   /* ========== 网格 + 卡片（精简版）========== */
   .il-grid {
@@ -208,6 +221,8 @@
   .il-edit-actions .secondary:hover { background:#f3f4f6; }
 
   @media (max-width: 768px) {
+    .il-facet-row { grid-template-columns:1fr; gap:2px; }
+    .il-facet-label { padding-bottom:1px; }
     .il-edit-layout { grid-template-columns:1fr; grid-template-rows:auto 1fr; }
     .il-edit-image { max-height:40vh; }
     .il-edit-card { height:95vh; }
@@ -225,16 +240,13 @@
     <button class="il-upload-btn" id="il-open-upload" type="button">上传图片</button>
     <div class="il-filters-inline">
       <input type="search" id="il-q" placeholder="搜索名称 / 描述">
-      <select id="il-category-filter">
-        <option value="">全部分类</option>
-      </select>
       <label class="checkbox"><input type="checkbox" id="il-only-unlabeled"> 只看未打标</label>
       <label class="checkbox"><input type="checkbox" id="il-include-disabled"> 含已停用</label>
       <button class="reset-btn" id="il-reset" type="button">重置</button>
     </div>
   </div>
 
-  <div class="il-tag-pool" id="il-tag-pool"></div>
+  <div class="il-facet-panel" id="il-facet-panel" aria-label="图片素材筛选维度"></div>
 
   <div id="il-list-wrap" class="il-grid">
     <p class="il-empty-grid">加载中…</p>
@@ -355,44 +367,85 @@
   var STATE = {
     items: [],
     facets: { categories: [], tags: [] },
-    filters: { q:'', category:'', tags:[], onlyUnlabeled:false, includeDisabled:false },
+    filters: { q:'', category:'', tagGroups:{}, onlyUnlabeled:false, includeDisabled:false },
     thumbObserver: null,  // 当前 IntersectionObserver；renderGrid 重建时先 disconnect
     listController: null,
   };
 
-  // ---------- tag pool ---------- //
-  function renderTagPool() {
-    var wrap = document.getElementById('il-tag-pool');
-    if (!STATE.facets.tags.length) {
-      wrap.innerHTML = '<span class="empty">还没有标签 — 通过编辑或上传时填写</span>';
-      return;
-    }
-    wrap.innerHTML = STATE.facets.tags.map(function (tag) {
-      var active = STATE.filters.tags.indexOf(tag) >= 0 ? ' active' : '';
-      return '<span class="chip' + active + '" data-tag="' + escapeHtml(tag) + '">' + escapeHtml(tag) + '</span>';
-    }).join('');
-    wrap.querySelectorAll('.chip').forEach(function (chip) {
-      chip.addEventListener('click', function () {
-        var tag = chip.dataset.tag;
-        var idx = STATE.filters.tags.indexOf(tag);
-        if (idx >= 0) STATE.filters.tags.splice(idx, 1);
-        else STATE.filters.tags.push(tag);
-        renderTagPool();
+  // ---------- 分维度筛选 ---------- //
+  var TAG_DIMENSION_ORDER = ['主题', '特征', '用途', '行业'];
+
+  function splitTagDimension(tag) {
+    var value = String(tag || '').trim();
+    var matched = value.match(/^([^:：]{1,12})[:：]\s*(.+)$/);
+    if (!matched) return { key:'其他', label:'其他标签', value:value, option:value };
+    return { key:matched[1].trim(), label:matched[1].trim(), value:value, option:matched[2].trim() };
+  }
+
+  function buildTagDimensions(tags) {
+    var grouped = {};
+    (tags || []).forEach(function (tag) {
+      var item = splitTagDimension(tag);
+      if (!item.value || !item.option) return;
+      if (!grouped[item.key]) grouped[item.key] = { key:item.key, label:item.label, options:[] };
+      grouped[item.key].options.push({ value:item.value, label:item.option });
+    });
+    return Object.keys(grouped).sort(function (a, b) {
+      var ai = TAG_DIMENSION_ORDER.indexOf(a);
+      var bi = TAG_DIMENSION_ORDER.indexOf(b);
+      if (ai < 0) ai = TAG_DIMENSION_ORDER.length + (a === '其他' ? 100 : 0);
+      if (bi < 0) bi = TAG_DIMENSION_ORDER.length + (b === '其他' ? 100 : 0);
+      if (ai !== bi) return ai - bi;
+      return a.localeCompare(b, 'zh-CN');
+    }).map(function (key) { return grouped[key]; });
+  }
+
+  function facetRow(key, label, options, selected, kind) {
+    if (!options.length) return '';
+    var unlimitedActive = selected.length ? '' : ' active';
+    var buttons = ['<button type="button" class="il-facet-option' + unlimitedActive + '" data-filter-kind="' + kind + '" data-dimension="' + escapeHtml(key) + '" data-clear="true" aria-pressed="' + String(!selected.length) + '">不限</button>'];
+    options.forEach(function (option) {
+      var active = selected.indexOf(option.value) >= 0;
+      buttons.push('<button type="button" class="il-facet-option' + (active ? ' active' : '') + '" data-filter-kind="' + kind + '" data-dimension="' + escapeHtml(key) + '" data-value="' + escapeHtml(option.value) + '" aria-pressed="' + String(active) + '">' + escapeHtml(option.label) + '</button>');
+    });
+    return '<div class="il-facet-row" data-facet-dimension="' + escapeHtml(key) + '"><div class="il-facet-label">' + escapeHtml(label) + '</div><div class="il-facet-options">' + buttons.join('') + '</div></div>';
+  }
+
+  function renderFacetPanel() {
+    var wrap = document.getElementById('il-facet-panel');
+    var categoryOptions = STATE.facets.categories.map(function (value) { return { value:value, label:value }; });
+    var rows = [facetRow('类型', '类型', categoryOptions, STATE.filters.category ? [STATE.filters.category] : [], 'category')];
+    buildTagDimensions(STATE.facets.tags).forEach(function (dimension) {
+      rows.push(facetRow(dimension.key, dimension.label, dimension.options, STATE.filters.tagGroups[dimension.key] || [], 'tag'));
+    });
+    rows = rows.filter(Boolean);
+    wrap.innerHTML = rows.length ? rows.join('') : '<span class="empty">还没有可筛选的分类或标签 — 通过编辑或上传时填写</span>';
+    wrap.querySelectorAll('.il-facet-option').forEach(function (button) {
+      button.addEventListener('click', function () {
+        var kind = button.dataset.filterKind;
+        var dimension = button.dataset.dimension;
+        var value = button.dataset.value || '';
+        var clear = button.dataset.clear === 'true';
+        if (kind === 'category') {
+          STATE.filters.category = clear || STATE.filters.category === value ? '' : value;
+        } else if (clear) {
+          delete STATE.filters.tagGroups[dimension];
+        } else {
+          var selected = (STATE.filters.tagGroups[dimension] || []).slice();
+          var index = selected.indexOf(value);
+          if (index >= 0) selected.splice(index, 1);
+          else selected.push(value);
+          if (selected.length) STATE.filters.tagGroups[dimension] = selected;
+          else delete STATE.filters.tagGroups[dimension];
+        }
+        renderFacetPanel();
         loadList();
       });
     });
   }
 
-  // ---------- 分类下拉 + datalist ---------- //
-  function renderCategoryOptions() {
-    var sel = document.getElementById('il-category-filter');
-    var current = STATE.filters.category;
-    var opts = ['<option value="">全部分类</option>'];
-    STATE.facets.categories.forEach(function (c) {
-      opts.push('<option value="' + escapeHtml(c) + '"' + (current === c ? ' selected' : '') + '>' + escapeHtml(c) + '</option>');
-    });
-    sel.innerHTML = opts.join('');
-
+  // ---------- 分类 datalist ---------- //
+  function renderCategoryDatalist() {
     var dl = document.getElementById('il-category-options');
     dl.innerHTML = STATE.facets.categories.map(function (c) {
       return '<option value="' + escapeHtml(c) + '">';
@@ -493,7 +546,10 @@
     params.set('enabled_only', STATE.filters.includeDisabled ? 'false' : 'true');
     if (STATE.filters.q) params.set('q', STATE.filters.q);
     if (STATE.filters.category) params.set('category', STATE.filters.category);
-    if (STATE.filters.tags.length) params.set('tags', STATE.filters.tags.join(','));
+    Object.keys(STATE.filters.tagGroups).sort().forEach(function (dimension) {
+      var selectedTags = STATE.filters.tagGroups[dimension] || [];
+      if (selectedTags.length) params.append('tag_group', selectedTags.join(','));
+    });
     if (STATE.filters.onlyUnlabeled) params.set('only_unlabeled', 'true');
     return '/api/admin/image-library?' + params.toString();
   }
@@ -529,8 +585,8 @@
     } catch (e) {
       STATE.facets = { categories: [], tags: [] };
     }
-    renderTagPool();
-    renderCategoryOptions();
+    renderFacetPanel();
+    renderCategoryDatalist();
   }
 
   async function loadAll() {
@@ -754,10 +810,6 @@
       loadList();
     }, 250);
   });
-  document.getElementById('il-category-filter').addEventListener('change', function (e) {
-    STATE.filters.category = e.target.value;
-    loadList();
-  });
   document.getElementById('il-only-unlabeled').addEventListener('change', function (e) {
     STATE.filters.onlyUnlabeled = e.target.checked;
     loadList();
@@ -767,12 +819,11 @@
     loadList();
   });
   document.getElementById('il-reset').addEventListener('click', function () {
-    STATE.filters = { q:'', category:'', tags:[], onlyUnlabeled:false, includeDisabled:false };
+    STATE.filters = { q:'', category:'', tagGroups:{}, onlyUnlabeled:false, includeDisabled:false };
     qInput.value = '';
-    document.getElementById('il-category-filter').value = '';
     document.getElementById('il-only-unlabeled').checked = false;
     document.getElementById('il-include-disabled').checked = false;
-    renderTagPool();
+    renderFacetPanel();
     loadList();
   });
 

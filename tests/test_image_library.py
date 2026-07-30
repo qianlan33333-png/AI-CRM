@@ -6,7 +6,8 @@ from io import BytesIO
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
-from aicrm_next.engagement.media_library.repo import normalize_tags, reset_media_library_fixture_state
+from aicrm_next.engagement.media_library.postgres_repo import PostgresMediaLibraryRepository
+from aicrm_next.engagement.media_library.repo import normalize_tag_groups, normalize_tags, reset_media_library_fixture_state
 
 
 TINY_PNG = (
@@ -40,6 +41,13 @@ def test_normalize_tags_preserves_next_media_contract() -> None:
     assert normalize_tags(None) == []
     assert normalize_tags("x" * 200)[0] == "x" * 64
     assert len(normalize_tags([f"tag-{idx}" for idx in range(80)])) == 50
+
+
+def test_normalize_tag_groups_preserves_dimension_boundaries() -> None:
+    assert normalize_tag_groups(["主题:复盘,主题:直播", "行业:教育", "行业:教育"]) == [
+        ["主题:复盘", "主题:直播"],
+        ["行业:教育"],
+    ]
 
 
 def test_image_library_create_update_filter_facets_and_binary_routes(monkeypatch) -> None:
@@ -95,6 +103,68 @@ def test_image_library_create_update_filter_facets_and_binary_routes(monkeypatch
     assert variant.status_code == 200
     assert variant.headers["X-AICRM-Route-Owner"] == "ai_crm_next"
     assert variant.headers["X-AICRM-Real-External-Call-Executed"] == "false"
+
+
+def test_image_library_dimension_groups_are_or_within_and_across(monkeypatch) -> None:
+    client = make_client(monkeypatch)
+    image_ids: dict[str, str] = {}
+    fixtures = {
+        "review-education": "主题:复盘,行业:教育",
+        "live-education": "主题:直播,行业:教育",
+        "review-healthcare": "主题:复盘,行业:医疗",
+    }
+    for key, tags in fixtures.items():
+        payload = client.post(
+            "/api/admin/image-library/upload",
+            files={"image": (f"{key}.png", BytesIO(TINY_PNG), "image/png")},
+            data={"name": key, "tags": tags},
+            headers={"Idempotency-Key": f"dimension-{key}"},
+        ).json()
+        assert_json_contract(payload)
+        image_ids[key] = payload["item"]["id"]
+
+    grouped = client.get(
+        "/api/admin/image-library",
+        params=[
+            ("tag_group", "主题:复盘,主题:直播"),
+            ("tag_group", "行业:教育"),
+        ],
+    ).json()
+    assert_json_contract(grouped)
+    assert {item["id"] for item in grouped["items"]} == {
+        image_ids["review-education"],
+        image_ids["live-education"],
+    }
+
+    legacy_any = client.get(
+        "/api/admin/image-library",
+        params={"tags": "主题:复盘,行业:教育"},
+    ).json()
+    assert_json_contract(legacy_any)
+    assert {image_ids[key] for key in fixtures} <= {item["id"] for item in legacy_any["items"]}
+
+
+def test_postgres_image_dimension_groups_add_one_clause_per_dimension(monkeypatch) -> None:
+    repo = PostgresMediaLibraryRepository("postgresql://example.invalid/db")
+    captured: dict = {}
+
+    def fake_select_list(kind, table, where, params, order_by, *, limit, offset):
+        captured.update({"where": where, "params": params})
+        return {"items": [], "total": 0, "limit": limit, "offset": offset}
+
+    monkeypatch.setattr(repo, "_select_list", fake_select_list)
+
+    repo._list_images(
+        limit=80,
+        offset=0,
+        filters={
+            "tag_groups": ["主题:复盘,主题:直播", "行业:教育"],
+        },
+    )
+
+    sql = " ".join(captured["where"])
+    assert sql.count("jsonb_array_elements_text(tags)") == 2
+    assert captured["params"] == [["主题:复盘", "主题:直播"], ["行业:教育"]]
 
 
 def test_image_library_import_routes_use_fake_adapters(monkeypatch) -> None:

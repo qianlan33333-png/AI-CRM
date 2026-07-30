@@ -104,8 +104,9 @@ def test_filter_bar_has_keyword_search(source: str):
     assert 'type="search"' in source
 
 
-def test_filter_bar_has_category_dropdown(source: str):
-    assert 'id="il-category-filter"' in source
+def test_filter_panel_has_category_dimension(source: str):
+    assert "facetRow('类型', '类型'" in source
+    assert 'id="il-category-filter"' not in source
 
 
 def test_filter_bar_has_only_unlabeled_checkbox(source: str):
@@ -116,8 +117,17 @@ def test_filter_bar_has_include_disabled_checkbox(source: str):
     assert 'id="il-include-disabled"' in source
 
 
-def test_filter_bar_has_tag_pool(source: str):
-    assert 'id="il-tag-pool"' in source
+def test_filter_bar_has_dimension_panel(source: str):
+    assert 'id="il-facet-panel"' in source
+    assert "TAG_DIMENSION_ORDER = ['主题', '特征', '用途', '行业']" in source
+    assert "function splitTagDimension" in source
+    assert "其他标签" in source
+
+
+def test_dimension_filter_supports_unlimited_and_multi_select(source: str):
+    assert "data-clear=\"true\"" in source
+    assert "STATE.filters.tagGroups[dimension]" in source
+    assert "delete STATE.filters.tagGroups[dimension]" in source
 
 
 def test_filter_bar_has_reset_button(source: str):
@@ -245,9 +255,9 @@ def test_delete_shows_reference_summary_in_second_confirm(source: str):
 # ---------- API 调用 ---------- #
 
 def test_list_request_supports_filter_query_params(source: str):
-    """列表请求必须能传 q / tags / category / only_unlabeled，否则筛选失效。"""
+    """列表请求必须能传 q / tag_group / category / only_unlabeled，否则筛选失效。"""
     assert "params.set('q'" in source
-    assert "params.set('tags'" in source
+    assert "params.append('tag_group'" in source
     assert "params.set('category'" in source
     assert "params.set('only_unlabeled'" in source
 
