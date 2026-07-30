@@ -11,7 +11,8 @@ from aicrm_next.engagement.media_library.postgres_repo import PostgresMediaLibra
 from aicrm_next.engagement.media_library.repo import InMemoryMediaLibraryRepository
 from aicrm_next.main import create_app
 from aicrm_next.platform.admin_config.application_support import _validate_known_setting
-from aicrm_next.platform.shared.errors import ContractError
+from aicrm_next.engagement.media_library.application import GetImageThumbnailQuery
+from aicrm_next.platform.shared.errors import ContractError, NotFoundError
 from tests.sidebar_auth_test_helpers import install_sidebar_auth
 
 
@@ -167,6 +168,88 @@ def test_remote_only_thumbnail_rejects_non_https_source() -> None:
         repo.get_image_thumbnail("remote-http", 160)
 
 
+def test_public_thumbnail_query_rejects_disabled_material() -> None:
+    repo = InMemoryMediaLibraryRepository(
+        {
+            "image": [
+                _image_item(
+                    id="disabled-image",
+                    enabled=False,
+                    source_url="https://cdn.example.com/disabled.png",
+                    data_base64="",
+                    deleted=False,
+                )
+            ],
+            "attachment": [],
+            "miniprogram": [],
+        }
+    )
+
+    with pytest.raises(NotFoundError, match="image item not found"):
+        GetImageThumbnailQuery(repo)("disabled-image", 160, enabled_only=True)
+
+    assert GetImageThumbnailQuery(repo)("disabled-image", 160)["thumbnail"]["redirect_url"] == (
+        "https://cdn.example.com/disabled.png"
+    )
+
+
+def test_postgres_public_thumbnail_filters_disabled_source_and_variant(monkeypatch: pytest.MonkeyPatch) -> None:
+    statements: list[str] = []
+
+    class FakeCursor:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+
+        def execute(self, sql: str, params: tuple[Any, ...]) -> None:
+            statements.append(" ".join(sql.split()))
+
+        def fetchone(self):
+            return None
+
+    class FakeConnection:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+
+        def cursor(self):
+            return FakeCursor()
+
+    repo = PostgresMediaLibraryRepository("postgresql://example.invalid/db")
+    repo._variants_table_available = True
+    monkeypatch.setattr(repo, "_connect", lambda: FakeConnection())
+
+    assert repo.get_image_thumbnail("42", 160, enabled_only=True) is None
+    assert any("JOIN image_library i ON i.id = v.image_id" in sql and "i.enabled IS TRUE" in sql for sql in statements)
+    assert any("FROM image_library WHERE id = %s AND enabled IS TRUE" in sql for sql in statements)
+
+
+def test_sidebar_thumbnail_read_model_requests_enabled_material_only(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, Any] = {}
+
+    class FakeGetImageThumbnailQuery:
+        def __call__(self, image_id: str, size: int, *, enabled_only: bool = False) -> dict[str, Any]:
+            captured.update({"image_id": image_id, "size": size, "enabled_only": enabled_only})
+            return {
+                "thumbnail": {
+                    "bytes": b"image-bytes",
+                    "mime_type": "image/png",
+                    "etag": '"enabled-image"',
+                }
+            }
+
+    monkeypatch.setattr(sidebar_v2, "GetImageThumbnailQuery", FakeGetImageThumbnailQuery)
+
+    result = sidebar_v2.SidebarMaterialReadModel().thumbnail(42)
+
+    assert captured == {"image_id": "42", "size": 160, "enabled_only": True}
+    assert result["body"] == b"image-bytes"
+
+
 def test_sidebar_material_route_forwards_image_query_with_authenticated_context(monkeypatch: pytest.MonkeyPatch) -> None:
     captured: dict[str, Any] = {}
 
@@ -204,13 +287,12 @@ def test_sidebar_thumbnail_route_returns_https_redirect_without_fetch(monkeypatc
 
     monkeypatch.setattr(customer_read_model_api, "SidebarMaterialReadModel", FakeSidebarMaterialReadModel)
     client = TestClient(create_app(), raise_server_exceptions=False)
-    client.headers.update(install_sidebar_auth(client, viewer_userid="owner-1", external_userid="external-1"))
 
-    response = client.get("/api/sidebar/v2/materials/image/42/thumbnail", follow_redirects=False)
+    response = client.get("/api/sidebar/v2/materials/image/42/thumbnail?v=1", follow_redirects=False)
 
     assert response.status_code == 302
     assert response.headers["location"] == "https://cdn.example.com/material.png"
-    assert response.headers["cache-control"] == "public, max-age=86400"
+    assert response.headers["cache-control"] == "public, max-age=31536000, immutable"
 
 
 def test_sidebar_thumbnail_route_honors_etag_for_local_image(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -221,13 +303,29 @@ def test_sidebar_thumbnail_route_honors_etag_for_local_image(monkeypatch: pytest
 
     monkeypatch.setattr(customer_read_model_api, "SidebarMaterialReadModel", FakeSidebarMaterialReadModel)
     client = TestClient(create_app(), raise_server_exceptions=False)
-    client.headers.update(install_sidebar_auth(client, viewer_userid="owner-1", external_userid="external-1"))
 
     response = client.get(
-        "/api/sidebar/v2/materials/image/42/thumbnail",
+        "/api/sidebar/v2/materials/image/42/thumbnail?v=1",
         headers={"If-None-Match": '"image-v1"'},
     )
 
     assert response.status_code == 304
     assert response.headers["etag"] == '"image-v1"'
+    assert response.headers["cache-control"] == "public, max-age=31536000, immutable"
+
+
+def test_sidebar_thumbnail_route_uses_bounded_cache_without_version(monkeypatch: pytest.MonkeyPatch) -> None:
+    class FakeSidebarMaterialReadModel:
+        def thumbnail(self, image_id: int) -> dict[str, Any]:
+            assert image_id == 42
+            return {"body": b"image-bytes", "mime_type": "image/png", "etag": '"image-v1"'}
+
+    monkeypatch.setattr(customer_read_model_api, "SidebarMaterialReadModel", FakeSidebarMaterialReadModel)
+
+    response = TestClient(create_app(), raise_server_exceptions=False).get(
+        "/api/sidebar/v2/materials/image/42/thumbnail"
+    )
+
+    assert response.status_code == 200
+    assert response.content == b"image-bytes"
     assert response.headers["cache-control"] == "public, max-age=86400"

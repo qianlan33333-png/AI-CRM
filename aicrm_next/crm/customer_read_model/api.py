@@ -954,7 +954,6 @@ def get_sidebar_v2_materials(request: Request, type: str = "", limit: int = 50, 
 
 @router.get("/api/sidebar/v2/materials/image/{image_id}/thumbnail")
 def get_sidebar_v2_image_thumbnail(request: Request, image_id: int):
-    _sidebar_owner_context_from_request(request)
     try:
         payload = SidebarMaterialReadModel().thumbnail(image_id)
     except LookupError as exc:
@@ -963,10 +962,12 @@ def get_sidebar_v2_image_thumbnail(request: Request, image_id: int):
         return _sidebar_input_error(str(exc))
     except Exception as exc:
         return _sidebar_read_unavailable(exc)
+    versioned = bool(str(request.query_params.get("v") or "").strip())
+    cache_control = "public, max-age=31536000, immutable" if versioned else "public, max-age=86400"
     redirect_url = str(payload.get("redirect_url") or "").strip()
     if redirect_url:
-        return RedirectResponse(redirect_url, status_code=302, headers={"Cache-Control": "public, max-age=86400"})
-    headers = {"Cache-Control": "public, max-age=86400"}
+        return RedirectResponse(redirect_url, status_code=302, headers={"Cache-Control": cache_control})
+    headers = {"Cache-Control": cache_control}
     etag = str(payload.get("etag") or "").strip()
     if etag:
         headers["ETag"] = etag

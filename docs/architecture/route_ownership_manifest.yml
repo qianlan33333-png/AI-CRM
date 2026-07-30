@@ -4584,17 +4584,17 @@ routes:
   layer: api
   external_effects: none
   data_source: read_model
-  requires_auth: true
+  requires_auth: false
   rollback: previous_release
   audience: sidebar
-  auth_scheme: sidebar_grant
-  capability: sidebar_read
-  access_scope: owner
-  pii_level: sensitive
+  auth_scheme: public
+  capability: public
+  access_scope: single_resource
+  pii_level: none
   csrf: false
-  rate_limit: authenticated
+  rate_limit: public_standard
   principal_types:
-  - human
+  - public
 - path: /api/sidebar/v2/other-staff-messages
   methods:
   - GET

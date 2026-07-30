@@ -35,7 +35,13 @@ class MediaLibraryRepository(Protocol):
     def list_facets(self, kind: str) -> dict[str, list[str]]: ...
     def get_item(self, kind: str, item_id: str, *, include_data: bool = True) -> dict[str, Any] | None: ...
     def get_image_variant(self, image_id: str, variant_key: str) -> dict[str, Any] | None: ...
-    def get_image_thumbnail(self, image_id: str, size: int) -> dict[str, Any] | None: ...
+    def get_image_thumbnail(
+        self,
+        image_id: str,
+        size: int,
+        *,
+        enabled_only: bool = False,
+    ) -> dict[str, Any] | None: ...
     def save_item(self, kind: str, payload: dict[str, Any], item_id: str | None = None) -> dict[str, Any]: ...
     def delete_item(self, kind: str, item_id: str, *, force: bool = False) -> dict[str, Any]: ...
     def ensure_group_invite_binding(self, payload: dict[str, Any]) -> dict[str, Any]: ...
@@ -248,9 +254,15 @@ class InMemoryMediaLibraryRepository:
         payload = variant_bytes(variant)
         return {**variant, "bytes": payload, "etag": '"' + str(variant.get("checksum") or "") + '"'}
 
-    def get_image_thumbnail(self, image_id: str, size: int) -> dict[str, Any] | None:
+    def get_image_thumbnail(
+        self,
+        image_id: str,
+        size: int,
+        *,
+        enabled_only: bool = False,
+    ) -> dict[str, Any] | None:
         item = self.get_item("image", image_id, include_data=True)
-        if not item:
+        if not item or (enabled_only and not bool(item.get("enabled"))):
             return None
         variant = self.get_image_variant(image_id, THUMBNAIL_SIZE_TO_VARIANT.get(size, ""))
         if variant and variant.get("bytes") and str(variant.get("mime_type") or "").split(";")[0] in {"image/png", "image/jpeg"}:

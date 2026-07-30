@@ -305,8 +305,8 @@ class GetImageThumbnailQuery:
     def __init__(self, repo: MediaLibraryRepository | None = None) -> None:
         self._repo = repo or build_media_library_repository()
 
-    def __call__(self, image_id: str, size: int) -> dict[str, Any]:
-        thumbnail = self._repo.get_image_thumbnail(image_id, size)
+    def __call__(self, image_id: str, size: int, *, enabled_only: bool = False) -> dict[str, Any]:
+        thumbnail = self._repo.get_image_thumbnail(image_id, size, enabled_only=enabled_only)
         if not thumbnail:
             from aicrm_next.platform.shared.errors import NotFoundError
 

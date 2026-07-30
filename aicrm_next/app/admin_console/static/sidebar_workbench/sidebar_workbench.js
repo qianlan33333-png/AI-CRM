@@ -999,7 +999,7 @@
         rows
           .map((item) => {
             const thumb = item.thumbnail_url
-              ? '<div class="material-thumb thumb image-thumb"><img src="' + escapeHtml(item.thumbnail_url) + '" alt="图片素材预览" data-material-thumb-img></div>'
+              ? '<div class="material-thumb thumb image-thumb"><img src="' + escapeHtml(item.thumbnail_url) + '" alt="图片素材预览" width="64" height="64" loading="lazy" decoding="async" fetchpriority="low" data-material-thumb-img></div>'
               : '<div class="material-thumb thumb image-thumb preview-unavailable">预览不可用</div>';
             return (
               '<article class="card material material--image">' + thumb +
