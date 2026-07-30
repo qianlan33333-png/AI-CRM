@@ -329,6 +329,7 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     assert "queue_lane_rollout_audit" in ai_automation_lane_rollout_audit_source
     assert "0057_huangyoucan_unregistered_ai_audience" in ai_audience_wecom_contacts_view_repair_source
     assert "_refresh_wecom_contacts_view" in ai_audience_wecom_contacts_view_repair_source
+    assert "ensure_schema=False" in ai_audience_wecom_contacts_view_repair_source
     assert "DROP VIEW" not in ai_audience_wecom_contacts_view_repair_source
     assert "aicrm_reject_queue_runtime_audit_mutation" in ai_automation_lane_rollout_audit_source
     assert "global_max_in_flight = global_max_in_flight +" in welcome_realtime_source

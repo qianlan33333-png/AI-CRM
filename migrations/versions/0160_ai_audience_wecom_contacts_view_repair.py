@@ -22,7 +22,10 @@ def upgrade() -> None:
     audience_migration = import_module(
         "migrations.versions.0057_huangyoucan_unregistered_ai_audience"
     )
-    audience_migration._refresh_wecom_contacts_view()
+    # The schema was created by the original audience migrations. Requiring
+    # database-level CREATE here would break least-privilege deploy roles that
+    # still own the existing view and can safely repair it.
+    audience_migration._refresh_wecom_contacts_view(ensure_schema=False)
 
 
 def downgrade() -> None:
