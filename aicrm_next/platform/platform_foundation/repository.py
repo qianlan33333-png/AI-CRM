@@ -90,7 +90,10 @@ class RuntimeReadinessRepository:
                 predicates.append("r.consumer_name = ANY(%(allowed_consumers)s)")
                 params["allowed_consumers"] = list(allowed_consumers)
             actionable_predicate = " AND ".join(predicates) if predicates else "TRUE"
-        eligible_predicate = queue_policy_eligible_predicate()
+        eligible_predicate = queue_policy_eligible_predicate(
+            job_id_expression="rows.item_id",
+            row_version_expression="rows.row_version",
+        )
         external_canary_authorized = external_canary_authorization_predicate(row_alias="j")
         row = self._execute(
             f"""

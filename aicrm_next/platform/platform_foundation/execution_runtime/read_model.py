@@ -28,6 +28,9 @@ def queue_policy_base_eligible_predicate(
     row_alias: str = "rows",
     control_alias: str = "control",
     policy_alias: str = "policy",
+    *,
+    job_id_expression: str | None = None,
+    row_version_expression: str | None = None,
 ) -> str:
     """Canonical eligibility gate excluding external execution scope."""
 
@@ -35,8 +38,8 @@ def queue_policy_base_eligible_predicate(
         row_alias=row_alias,
         lane_mode_expression=f"{policy_alias}.rollout_mode",
         policy_version_expression=f"{control_alias}.policy_version",
-        job_id_expression=f"{row_alias}.item_id",
-        row_version_expression=f"{row_alias}.row_version",
+        job_id_expression=job_id_expression,
+        row_version_expression=row_version_expression,
     )
 
     return f"""
@@ -84,10 +87,19 @@ def queue_policy_eligible_predicate(
     row_alias: str = "rows",
     control_alias: str = "control",
     policy_alias: str = "policy",
+    *,
+    job_id_expression: str | None = None,
+    row_version_expression: str | None = None,
 ) -> str:
     """Canonical policy gate shared by claims, runtime and system health."""
 
-    base = queue_policy_base_eligible_predicate(row_alias, control_alias, policy_alias)
+    base = queue_policy_base_eligible_predicate(
+        row_alias,
+        control_alias,
+        policy_alias,
+        job_id_expression=job_id_expression,
+        row_version_expression=row_version_expression,
+    )
     scope = queue_policy_external_scope_predicate(row_alias, control_alias)
     return f"({base}) AND ({scope})"
 
@@ -406,7 +418,10 @@ class ExecutionRuntimeReadModel:
 
     @staticmethod
     def _lane_metrics_sql(*, filter_lanes: bool = False) -> str:
-        base_eligible = queue_policy_base_eligible_predicate()
+        base_eligible = queue_policy_base_eligible_predicate(
+            job_id_expression="rows.item_id",
+            row_version_expression="rows.row_version",
+        )
         external_scope = external_claim_scope_predicate(
             row_alias="rows",
             scope_expression="control.external_claim_scope",
@@ -414,7 +429,10 @@ class ExecutionRuntimeReadModel:
             canary_authorized_expression="rows.canary_authorized",
         )
         external_canary_authorized = external_canary_authorization_predicate(row_alias="job")
-        eligible = queue_policy_eligible_predicate()
+        eligible = queue_policy_eligible_predicate(
+            job_id_expression="rows.item_id",
+            row_version_expression="rows.row_version",
+        )
         external_lane_filter = "AND job.lane = ANY(%s::text[])" if filter_lanes else ""
         internal_lane_filter = "AND run.lane = ANY(%s::text[])" if filter_lanes else ""
         outbox_lane_filter = "AND outbox.lane = ANY(%s::text[])" if filter_lanes else ""
