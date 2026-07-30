@@ -941,10 +941,10 @@ def get_sidebar_v2_timeline(
 
 
 @router.get("/api/sidebar/v2/materials")
-def get_sidebar_v2_materials(request: Request, type: str = "", limit: int = 50):
+def get_sidebar_v2_materials(request: Request, type: str = "", limit: int = 50, q: str = ""):
     _sidebar_owner_context_from_request(request)
     try:
-        payload = SidebarMaterialReadModel()(material_type=type, limit=limit)
+        payload = SidebarMaterialReadModel()(material_type=type, limit=limit, q=q)
     except ValueError as exc:
         return _sidebar_input_error(str(exc))
     except Exception as exc:
@@ -965,7 +965,7 @@ def get_sidebar_v2_image_thumbnail(request: Request, image_id: int):
         return _sidebar_read_unavailable(exc)
     redirect_url = str(payload.get("redirect_url") or "").strip()
     if redirect_url:
-        return RedirectResponse(redirect_url, status_code=302)
+        return RedirectResponse(redirect_url, status_code=302, headers={"Cache-Control": "public, max-age=86400"})
     headers = {"Cache-Control": "public, max-age=86400"}
     etag = str(payload.get("etag") or "").strip()
     if etag:

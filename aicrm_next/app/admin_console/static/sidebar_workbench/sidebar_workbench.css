@@ -389,9 +389,79 @@ button[disabled] {
   color: #fff;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.material-search {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 7px;
+}
+
+.material-search-field {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.material-search-field input {
+  width: 100%;
+  height: 34px;
+  padding: 6px 9px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--text);
+  font-size: 12px;
+  outline: none;
+}
+
+.material-search-field input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.material-search-submit,
+.material-search-clear {
+  flex: 0 0 auto;
+  min-height: 34px;
+}
+
+.material-quick-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0 0 8px;
+}
+
+.material-keyword {
+  min-height: 26px;
+  padding: 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--blue-strong);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.material-keyword.active {
+  border-color: var(--blue);
+  background: var(--soft);
+}
+
 .material {
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr) 56px;
+  grid-template-columns: 64px minmax(0, 1fr) 48px;
   gap: 10px;
   align-items: center;
   min-width: 0;
@@ -420,6 +490,14 @@ button[disabled] {
 .thumb.image-thumb {
   padding: 0;
   background: #f8fbff;
+}
+
+.preview-unavailable {
+  padding: 6px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.25;
+  text-align: center;
 }
 
 .material-thumb img,
@@ -469,11 +547,11 @@ button[disabled] {
 }
 
 .material-send {
-  min-width: 52px;
-  width: 52px;
-  min-height: 34px;
+  min-width: 44px;
+  width: 44px;
+  min-height: 30px;
   padding: 0;
-  border-radius: 12px;
+  border-radius: 10px;
 }
 
 .tags {
@@ -483,6 +561,10 @@ button[disabled] {
   margin-top: 7px;
   max-height: 44px;
   overflow: hidden;
+}
+
+.material--image .tags {
+  margin-top: 0;
 }
 
 .tag {
@@ -839,7 +921,7 @@ button[disabled] {
   }
 
   .material {
-    grid-template-columns: 64px minmax(0, 1fr) 52px;
+    grid-template-columns: 64px minmax(0, 1fr) 48px;
   }
 
   .material-thumb,
@@ -852,6 +934,6 @@ button[disabled] {
 
   .material .btn {
     grid-column: auto;
-    width: 52px;
+    width: 44px;
   }
 }

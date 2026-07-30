@@ -128,7 +128,7 @@ function loadHarness(fetchImpl, options = {}) {
   };
   const instrumented = source.replace(
     bootMarker,
-    "  globalThis.__sidebarTestApi = { jssdkConfigUrl, loadWorkbench, requestJssdkConfig, requestPanelJson, switchTab, switchMaterialType, switchOrderType, switchProfileView, loadMoreTimeline, refreshTimeline, copyLink, state, renderProfileTimeline, renderQuestionnaires, formatTimelineTime: typeof formatTimelineTime === 'function' ? formatTimelineTime : undefined, openTimelineSource: typeof openTimelineSource === 'function' ? openTimelineSource : undefined };\n})();",
+    "  globalThis.__sidebarTestApi = { jssdkConfigUrl, loadWorkbench, requestJssdkConfig, requestPanelJson, switchTab, switchMaterialType, executeMaterialSearch, switchOrderType, switchProfileView, loadMoreTimeline, refreshTimeline, copyLink, state, renderMaterials, renderProfileTimeline, renderQuestionnaires, formatTimelineTime: typeof formatTimelineTime === 'function' ? formatTimelineTime : undefined, openTimelineSource: typeof openTimelineSource === 'function' ? openTimelineSource : undefined };\n})();",
   );
   const context = {
     AbortController,
@@ -732,4 +732,68 @@ test("copy link reports a clear failure when both copy mechanisms are unavailabl
   assert.equal(await harness.api.copyLink("/r/unavailable"), false);
   assert.equal(harness.fallbackCopyCalls, 2);
   assert.equal(harness.nodes.get("toast").textContent, "复制失败，请长按链接复制");
+});
+
+test("image material search keys cache by query and renders quick keywords without file names", async () => {
+  const requests = [];
+  const { api, nodes } = loadHarness(async (url) => {
+    const parsed = new URL(url);
+    requests.push(parsed.searchParams.get("q") || "");
+    return jsonResponse({
+      ok: true,
+      quick_keywords: ["每周复盘", "直播", "深度咨询"],
+      materials: [{
+        id: 42,
+        title: "internal-file-name.jpg",
+        thumbnail_url: "/api/sidebar/v2/materials/image/42/thumbnail?v=1",
+        tags: ["每周复盘"],
+      }],
+    });
+  });
+  api.state.activeTab = "materials";
+  api.state.materialType = "image";
+
+  await api.executeMaterialSearch("每周复盘");
+  await api.executeMaterialSearch("每周复盘");
+
+  assert.deepEqual(requests, ["每周复盘"]);
+  assert.equal(api.state.data.materials["image:每周复盘"].length, 1);
+  assert.deepEqual(Array.from(api.state.materialQuickKeywords), ["每周复盘", "直播", "深度咨询"]);
+  const html = nodes.get("content").innerHTML;
+  assert.equal(html.includes("internal-file-name.jpg"), false);
+  assert.equal(html.includes("图片素材预览"), true);
+  assert.equal(html.includes('data-material-keyword="直播"'), true);
+});
+
+test("new image material search cancels an older in-flight query", async () => {
+  const requested = [];
+  const { api, nodes } = loadHarness(async (url, options) => {
+    const query = new URL(url).searchParams.get("q") || "";
+    requested.push(query);
+    if (query === "旧查询") {
+      return await new Promise((resolve, reject) => {
+        options.signal.addEventListener("abort", () => {
+          const error = new Error("aborted");
+          error.name = "AbortError";
+          reject(error);
+        }, { once: true });
+      });
+    }
+    return jsonResponse({
+      ok: true,
+      quick_keywords: [],
+      materials: [{ id: 2, title: "新结果文件名", thumbnail_url: "/thumb/2", tags: ["新结果"] }],
+    });
+  });
+  api.state.activeTab = "materials";
+  api.state.materialType = "image";
+
+  const first = api.executeMaterialSearch("旧查询");
+  await Promise.resolve();
+  const second = api.executeMaterialSearch("新查询");
+  await Promise.all([first, second]);
+
+  assert.deepEqual(requested, ["旧查询", "新查询"]);
+  assert.equal(nodes.get("content").innerHTML.includes("新结果"), true);
+  assert.equal(nodes.get("content").innerHTML.includes("旧查询"), false);
 });

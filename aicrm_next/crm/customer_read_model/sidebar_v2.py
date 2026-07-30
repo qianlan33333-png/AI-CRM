@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
+from urllib.parse import quote
 
 from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
@@ -33,6 +35,7 @@ from aicrm_next.crm.customer_read_model.extension_port import (
 from aicrm_next.platform.shared.db_session import get_engine
 from aicrm_next.platform.shared.errors import ContractError, NotFoundError
 from aicrm_next.platform.shared.runtime import raw_database_url
+from aicrm_next.platform.shared.runtime_settings import runtime_setting
 from aicrm_next.platform.shared.signed_context import append_ctx_fragment, build_sidebar_product_context_token
 
 MODULES = ["profile", "questionnaires", "products", "orders", "periodic_orders", "materials", "other_staff_messages"]
@@ -52,6 +55,7 @@ SERVICE_PERIOD_STATUS_LABELS = {
 _QUESTIONNAIRE_TITLE_PLACEHOLDER_TEXTS = {"questionnaire_title", "title", "name", "submitted_at"}
 _QUESTION_PLACEHOLDER_TEXTS = {"question", "question_title", "question_title_snapshot"}
 _ANSWER_PLACEHOLDER_TEXTS = {"text_value", "selected_option_texts_snapshot", "answer", "value"}
+SIDEBAR_IMAGE_QUICK_KEYWORDS_SETTING = "AICRM_SIDEBAR_IMAGE_QUICK_KEYWORDS"
 
 
 def _text(value: Any) -> str:
@@ -71,6 +75,16 @@ def _int(value: Any, *, default: int = 0) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def _sidebar_image_quick_keywords() -> list[str]:
+    values: list[str] = []
+    raw = runtime_setting(SIDEBAR_IMAGE_QUICK_KEYWORDS_SETTING, "")
+    for item in re.split(r"[,，\r\n]+", raw):
+        keyword = _text(item)
+        if keyword and keyword not in values:
+            values.append(keyword)
+    return values if 3 <= len(values) <= 5 else []
 
 
 def _json(value: Any, default: Any) -> Any:
@@ -1041,15 +1055,25 @@ class SidebarQuestionnaireReadModel:
 
 
 class SidebarMaterialReadModel:
-    def __call__(self, *, material_type: str, limit: int = 50) -> dict[str, Any]:
+    def __call__(self, *, material_type: str, limit: int = 50, q: str = "") -> dict[str, Any]:
         normalized_type = _text(material_type)
         safe_limit = _limit(limit, default=50, maximum=200)
+        normalized_query = _text(q)[:100]
         kind_map = {"image": "image", "mini": "miniprogram", "pdf": "attachment"}
         if normalized_type not in kind_map:
             raise ValueError("type must be image, mini, or pdf")
-        payload = ListMediaItemsQuery(kind_map[normalized_type])(limit=safe_limit, offset=0, filters={"enabled_only": True})
+        filters: dict[str, Any] = {"enabled_only": True}
+        if normalized_type == "image" and normalized_query:
+            filters["q"] = normalized_query
+        payload = ListMediaItemsQuery(kind_map[normalized_type])(limit=safe_limit, offset=0, filters=filters)
         rows = list(payload.get("items") or [])
-        return _with_route_owner({"ok": True, "materials": [self._material_item(dict(item), normalized_type) for item in rows]})
+        return _with_route_owner(
+            {
+                "ok": True,
+                "materials": [self._material_item(dict(item), normalized_type) for item in rows],
+                "quick_keywords": _sidebar_image_quick_keywords() if normalized_type == "image" else [],
+            }
+        )
 
     def thumbnail(self, image_id: int) -> dict[str, Any]:
         try:
@@ -1059,6 +1083,9 @@ class SidebarMaterialReadModel:
         except ContractError as exc:
             raise ValueError("invalid image data") from exc
         thumbnail = dict(payload.get("thumbnail") or {})
+        redirect_url = _text(thumbnail.get("redirect_url"))
+        if redirect_url:
+            return {"redirect_url": redirect_url}
         return {
             "body": thumbnail.get("bytes") or b"",
             "mime_type": _text(thumbnail.get("mime_type")) or "image/png",
@@ -1072,7 +1099,10 @@ class SidebarMaterialReadModel:
             title = _text(item.get("name")) or _text(item.get("file_name")) or "未命名图片素材"
             label = "图"
             if item_id:
+                version = quote(_text(item.get("updated_at")), safe="")
                 thumbnail_url = f"/api/sidebar/v2/materials/image/{item_id}/thumbnail"
+                if version:
+                    thumbnail_url += f"?v={version}"
         elif material_type == "mini":
             title = _text(item.get("title")) or _text(item.get("name")) or "未命名小程序素材"
             label = "小"
