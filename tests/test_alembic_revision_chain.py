@@ -153,8 +153,17 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     ai_automation_lane_rollout_audit_source = (
         ai_automation_lane_rollout_audit.read_text(encoding="utf-8")
     )
+    ai_audience_wecom_contacts_view_repair = (
+        VERSIONS / "0160_ai_audience_wecom_contacts_view_repair.py"
+    )
+    ai_audience_wecom_contacts_view_repair_source = (
+        ai_audience_wecom_contacts_view_repair.read_text(encoding="utf-8")
+    )
 
-    assert heads == {"0159_ai_automation_lane_rollout_audit"}
+    assert heads == {"0160_ai_audience_wecom_contacts_view_repair"}
+    assert revisions["0160_ai_audience_wecom_contacts_view_repair"]["down_revision"] == (
+        "0159_ai_automation_lane_rollout_audit"
+    )
     assert revisions["0159_ai_automation_lane_rollout_audit"]["down_revision"] == (
         "0158_ai_assistant_item_pipeline"
     )
@@ -318,6 +327,9 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     assert "generation_effect_job_id" in ai_assistant_item_pipeline_source
     assert "prevents destructive downgrade" in ai_assistant_item_pipeline_source
     assert "queue_lane_rollout_audit" in ai_automation_lane_rollout_audit_source
+    assert "0057_huangyoucan_unregistered_ai_audience" in ai_audience_wecom_contacts_view_repair_source
+    assert "_refresh_wecom_contacts_view" in ai_audience_wecom_contacts_view_repair_source
+    assert "DROP VIEW" not in ai_audience_wecom_contacts_view_repair_source
     assert "aicrm_reject_queue_runtime_audit_mutation" in ai_automation_lane_rollout_audit_source
     assert "global_max_in_flight = global_max_in_flight +" in welcome_realtime_source
     assert "CREATE INDEX CONCURRENTLY IF NOT EXISTS" in sidebar_recent_message_index_source
