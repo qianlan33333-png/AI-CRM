@@ -1036,6 +1036,7 @@ WITH target AS (
         e.max_attempts,
         e.worker_generation,
         e.policy_version,
+        e.row_version,
         e.status IN ('queued', 'failed_retryable') AS ready_state,
         e.status = 'dispatching' AS in_flight,
         e.status = 'unknown_after_dispatch' AS unknown_state,

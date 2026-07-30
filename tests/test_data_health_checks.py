@@ -40,6 +40,7 @@ def test_data_health_summary_exposes_registered_checks(client) -> None:
         "projection_freshness_customer_read_model",
         "broadcast_job_blocked_backlog",
         "external_effect_failed_retryable_backlog",
+        "ai_automation_lane_readiness",
         "deprecated_execution_settings_present",
         "fake_stub_route_exposed",
         "external_effect_approved_not_queued",
@@ -260,6 +261,53 @@ def test_projection_freshness_probe_uses_live_projection_counts(monkeypatch) -> 
     assert result.evidence["detail_count"] == 0
     assert any("customer_list_index_next" in sql and "customer_detail_snapshot_next" in sql for sql in calls)
     assert "external_userid_value" not in str(result.evidence)
+
+
+def test_ai_automation_lane_readiness_fails_for_stranded_generation(monkeypatch) -> None:
+    from aicrm_next.insights.data_health import checks
+
+    calls = _patch_health_db(
+        monkeypatch,
+        {
+            "active_dynamic_agent_count": 1,
+            "ai_generation_mode": "blocked",
+            "wecom_ai_assistant_bulk_mode": "blocked",
+            "generation_queued_item_count": 1,
+            "oldest_generation_queued_age_seconds": 7200,
+            "ai_generation_open_job_count": 1,
+            "wecom_ai_assistant_bulk_open_job_count": 0,
+        },
+    )
+
+    result = checks._ai_automation_lane_readiness()
+
+    assert result.status == "fail"
+    assert result.evidence["generation_queued_item_count"] == 1
+    assert result.evidence["blocked_lanes"] == {
+        "ai_generation": "blocked",
+        "wecom_ai_assistant_bulk": "blocked",
+    }
+    assert any("automation_agent_webhook_item" in sql for sql in calls)
+
+
+def test_ai_automation_lane_readiness_accepts_live_lanes(monkeypatch) -> None:
+    from aicrm_next.insights.data_health import checks
+
+    _patch_health_db(
+        monkeypatch,
+        {
+            "active_dynamic_agent_count": 2,
+            "ai_generation_mode": "execute",
+            "wecom_ai_assistant_bulk_mode": "execute",
+            "generation_queued_item_count": 0,
+            "ai_generation_open_job_count": 0,
+            "wecom_ai_assistant_bulk_open_job_count": 0,
+        },
+    )
+
+    result = checks._ai_automation_lane_readiness()
+
+    assert result.status == "ok"
 
 
 def test_projection_freshness_probe_accepts_managed_fresh_parity(monkeypatch) -> None:

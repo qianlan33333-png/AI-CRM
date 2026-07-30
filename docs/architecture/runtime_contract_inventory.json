@@ -425,37 +425,37 @@
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/insights/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_BROADCAST_BLOCKED_MAX_COUNT",
-      "line": 41
+      "line": 42
     },
     {
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/insights/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_BROADCAST_RETRYABLE_DUE_MAX_COUNT",
-      "line": 46
+      "line": 47
     },
     {
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/insights/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_BROADCAST_TERMINAL_LOOKBACK_HOURS",
-      "line": 53
+      "line": 54
     },
     {
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/insights/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_RETRYABLE_DUE_MAX_COUNT",
-      "line": 59
+      "line": 60
     },
     {
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/insights/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS",
-      "line": 66
+      "line": 67
     },
     {
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/insights/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_PROJECTION_FRESHNESS_MAX_MINUTES",
-      "line": 36
+      "line": 37
     },
     {
       "accessor": "runtime_setting",
@@ -4793,7 +4793,7 @@
     }
   ],
   "migration_heads": [
-    "0158_ai_assistant_item_pipeline"
+    "0159_ai_automation_lane_rollout_audit"
   ],
   "openapi_components": {
     "schemas": {
@@ -51249,6 +51249,19 @@
     {
       "domain": "platform_foundation",
       "drop_candidate": false,
+      "lifecycle": "runtime",
+      "migration_source": "0159_ai_automation_lane_rollout_audit",
+      "pii_level": "none",
+      "read_owners": [
+        "AI automation lane rollout operations",
+        "execution runtime claim policy"
+      ],
+      "table": "queue_lane_canary_job_authorization",
+      "write_owner": "aicrm_next.platform.platform_foundation.execution_runtime.lane_rollout"
+    },
+    {
+      "domain": "platform_foundation",
+      "drop_candidate": false,
       "lifecycle": "config",
       "migration_source": "0126_postgres_execution_runtime",
       "pii_level": "none",
@@ -51258,6 +51271,19 @@
       ],
       "table": "queue_lane_policy",
       "write_owner": "aicrm_next.platform.platform_foundation.execution_runtime"
+    },
+    {
+      "domain": "platform_foundation",
+      "drop_candidate": false,
+      "lifecycle": "audit",
+      "migration_source": "0159_ai_automation_lane_rollout_audit",
+      "pii_level": "none",
+      "read_owners": [
+        "AI automation lane rollout operations",
+        "execution runtime consistency audit"
+      ],
+      "table": "queue_lane_rollout_audit",
+      "write_owner": "aicrm_next.platform.platform_foundation.execution_runtime.lane_rollout"
     },
     {
       "domain": "platform_foundation",

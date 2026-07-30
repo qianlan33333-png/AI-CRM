@@ -1,6 +1,34 @@
 from __future__ import annotations
 
 
+def ai_automation_lane_canary_predicate(
+    *,
+    row_alias: str = "job",
+    lane_mode_expression: str,
+    policy_version_expression: str,
+    job_id_expression: str | None = None,
+    row_version_expression: str | None = None,
+) -> str:
+    """Restrict AI automation lane canaries to an exact reviewed row version."""
+
+    job_id = job_id_expression or f"{row_alias}.id"
+    row_version = row_version_expression or f"{row_alias}.row_version"
+    return f"""
+        (
+            {lane_mode_expression} <> 'canary'
+            OR {row_alias}.lane NOT IN ('ai_generation', 'wecom_ai_assistant_bulk')
+            OR EXISTS (
+                SELECT 1
+                FROM queue_lane_canary_job_authorization lane_canary
+                WHERE lane_canary.lane = {row_alias}.lane
+                  AND lane_canary.external_effect_job_id = {job_id}
+                  AND lane_canary.authorized_row_version = {row_version}
+                  AND lane_canary.policy_version = {policy_version_expression}
+            )
+        )
+    """
+
+
 def external_canary_authorization_predicate(*, row_alias: str = "job") -> str:
     """Return the durable SQL proof required by an allowlisted canary row."""
 
@@ -88,6 +116,7 @@ def external_effect_claim_order_sql(
 
 
 __all__ = [
+    "ai_automation_lane_canary_predicate",
     "external_canary_authorization_predicate",
     "external_claim_scope_predicate",
     "external_effect_claim_order_sql",
