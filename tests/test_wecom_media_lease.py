@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import io
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -44,6 +45,15 @@ class FakeMediaRepository:
 
     def cache_miniprogram_thumb_media_id(self, item_id: str, media_id: str, expires_at: datetime) -> None:
         self.cache_calls.append(("miniprogram", item_id, media_id, expires_at))
+
+
+def _large_png() -> bytes:
+    from PIL import Image
+
+    image = Image.effect_noise((1800, 1800), 100).convert("RGB")
+    output = io.BytesIO()
+    image.save(output, format="PNG")
+    return output.getvalue()
 
 
 class FakeUploader:
@@ -94,6 +104,43 @@ def test_media_lease_force_refresh_rotates_media_id() -> None:
     assert first["media_id"] == "real-image-1"
     assert second["media_id"] == "real-image-2"
     assert second["lease_version"] == 2
+
+
+def test_large_image_uses_bounded_wecom_send_variant_without_mutating_source() -> None:
+    source = _large_png()
+    media = FakeMediaRepository()
+    media.items[("image", "5")] = {
+        "id": 5,
+        "enabled": True,
+        "file_name": "large-source.png",
+        "mime_type": "image/png",
+        "data_base64": base64.b64encode(source).decode(),
+    }
+    uploader = FakeUploader()
+
+    result = _manager(media, uploader).ensure_ready("image", 5)
+
+    assert result["media_id"] == "real-image-1"
+    _, file_name, uploaded, content_type = uploader.calls[0]
+    assert file_name == "large-source.jpg"
+    assert content_type == "image/jpeg"
+    assert len(uploaded) <= 1_500_000
+    assert base64.b64decode(media.items[("image", "5")]["data_base64"]) == source
+
+
+def test_small_jpeg_normalizes_mismatched_file_extension_without_reencoding() -> None:
+    media = FakeMediaRepository()
+    source = base64.b64decode(media.items[("image", "1")]["data_base64"])
+    media.items[("image", "1")]["file_name"] = "already-optimized.png"
+    media.items[("image", "1")]["mime_type"] = "image/jpeg"
+    uploader = FakeUploader()
+
+    _manager(media, uploader).ensure_ready("image", 1)
+
+    _, file_name, uploaded, content_type = uploader.calls[0]
+    assert file_name == "already-optimized.jpg"
+    assert content_type == "image/jpeg"
+    assert uploaded == source
 
 
 def test_miniprogram_reuses_image_lease_instead_of_uploading_duplicate_thumb() -> None:
