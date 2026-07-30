@@ -31,12 +31,12 @@ def _runtime_units_phase(phase: str) -> str:
 
 def test_deploy_workflows_serialize_without_cancelling_active_release() -> None:
     deploy = PRODUCTION_DEPLOY_WORKFLOW.read_text(encoding="utf-8")
-    promotion = PRODUCTION_PROMOTION_WORKFLOW.read_text(encoding="utf-8")
+    automatic_trigger = PRODUCTION_PROMOTION_WORKFLOW.read_text(encoding="utf-8")
 
     assert "group: aicrm-production-deploy" in deploy
-    assert "group: aicrm-production-promotion" in promotion
+    assert "group: aicrm-production-promotion" in automatic_trigger
     assert "cancel-in-progress: false" in deploy
-    assert "cancel-in-progress: false" in promotion
+    assert "cancel-in-progress: false" in automatic_trigger
 
 
 def test_deploy_acknowledges_only_authorized_pre_cutover_welcome_before_green_health() -> None:
