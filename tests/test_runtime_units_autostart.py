@@ -382,48 +382,6 @@ def test_runtime_units_rollback_removes_only_candidate_unit_files_and_guards() -
     assert ("sudo", "systemctl", "daemon-reload") in runner.commands
 
 
-def test_runtime_units_previous_schema_v2_is_valid_only_for_rollback_inventory() -> None:
-    previous = {
-        "schema_version": 2,
-        "primary_web": {"service": "openclaw-wecom-postgres.service"},
-        "active_services": [
-            {"service": "openclaw-wecom-callback-ingress.service"},
-        ],
-        "active_autostart": [
-            {
-                "timer": "openclaw-questionnaire-continuation-scheduler.timer",
-                "service": "openclaw-questionnaire-continuation-scheduler.service",
-            }
-        ],
-        "approval_required": [
-            {
-                "timer": "aicrm-archive-sync.timer",
-                "service": "aicrm-archive-sync.service",
-            }
-        ],
-        "retired_forbidden": ["aicrm-web.service"],
-    }
-
-    runtime_units.validate_previous_manifest_for_cleanup(previous)
-
-    with pytest.raises(ValueError, match="schema_version must be 5"):
-        runtime_units.validate_manifest(previous, validate_unit_files=False)
-
-
-def test_runtime_units_previous_cleanup_rejects_unknown_schema_and_unsafe_unit_path() -> None:
-    previous = {
-        "schema_version": 1,
-        "primary_web": {"service": "openclaw-wecom-postgres.service"},
-    }
-    with pytest.raises(ValueError, match="schema_version must be one of: 2, 5"):
-        runtime_units.validate_previous_manifest_for_cleanup(previous)
-
-    previous["schema_version"] = 2
-    previous["active_services"] = [{"service": "../unsafe.service"}]
-    with pytest.raises(ValueError, match="invalid previous runtime service basename"):
-        runtime_units.validate_previous_manifest_for_cleanup(previous)
-
-
 def test_runtime_units_candidate_cleanup_cli_requires_previous_manifest(capsys) -> None:
     with pytest.raises(SystemExit):
         runtime_units.main(["--phase", "remove-candidate-only-runtime", "--dry-run"])

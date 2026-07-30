@@ -63,17 +63,6 @@ def test_queue_invariant_timer_is_read_only_and_runs_every_fifteen_minutes() -> 
     assert "--execute" not in service
 
 
-def test_queue_invariant_checker_bootstraps_repo_root_for_direct_execution() -> None:
-    source = (ROOT / "scripts" / "ops" / "check_queue_runtime_invariants.py").read_text(
-        encoding="utf-8"
-    )
-
-    assert "from pathlib import Path" in source
-    assert 'sys.path.insert(0, str(Path(__file__).resolve().parents[2]))' in source
-    assert source.count("from scripts.script_runtime import ensure_repo_root_on_path") == 2
-    assert "from script_runtime import ensure_repo_root_on_path" not in source
-
-
 def test_queue_soak_timer_captures_read_only_evidence_every_fifteen_minutes() -> None:
     timer = (ROOT / "deploy" / "aicrm-queue-soak-snapshot.timer").read_text(encoding="utf-8")
     service = (ROOT / "deploy" / "aicrm-queue-soak-snapshot.service").read_text(encoding="utf-8")

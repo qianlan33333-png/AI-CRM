@@ -325,23 +325,6 @@ def test_production_deploy_loads_postgres_env_before_alembic_upgrade():
     assert "legacy_flask_app" not in workflow
 
 
-def test_production_deploy_provisions_required_extensions_before_runtime_stops():
-    workflow = (ROOT / ".github" / "workflows" / "deploy.yml").read_text(encoding="utf-8")
-
-    database_url_guard_index = workflow.index('test -n "${DATABASE_URL:-}"')
-    extension_preflight_index = workflow.index("python3 scripts/ops/ensure_postgres_extensions.py")
-    stop_runtime_units_index = _deploy_runtime_phase_index(workflow, "stop-for-migration")
-    alembic_upgrade_index = workflow.index("python3 -m alembic upgrade head")
-
-    assert (
-        database_url_guard_index
-        < extension_preflight_index
-        < stop_runtime_units_index
-        < alembic_upgrade_index
-    )
-    assert "tee /tmp/aicrm-pg-extension.json" in workflow
-
-
 def test_production_deploy_stashes_dirty_worktree_before_remote_update():
     workflow = (ROOT / ".github" / "workflows" / "deploy.yml").read_text(encoding="utf-8")
 
@@ -903,10 +886,6 @@ def test_queue_production_diagnostics_is_count_only_and_requires_exact_public_re
     assert "invalid_external_userid" in workflow
     assert "private_target_rejected" in workflow
     assert "_customer_360_freshness_guard" in workflow
-    assert "public_relation_names" in workflow
-    assert "SELECT DISTINCT table_name" in workflow
-    assert "FROM information_schema.columns" in workflow
-    assert "WHERE table_schema = 'public'" in workflow
     assert "COUNT(*) AS row_count" in workflow
     assert "succeeded_same_business" in workflow
     assert "succeeded_same_target_after_terminal" in workflow

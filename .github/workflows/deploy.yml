@@ -418,8 +418,6 @@ jobs:
               --register-existing-conflicts \
               --expected-release-sha "$after_sha" \
               | tee /tmp/aicrm-identity-preflight.json
-            python3 scripts/ops/ensure_postgres_extensions.py \
-              | tee /tmp/aicrm-pg-extension.json
             runtime_mutation_started=1
             runtime_transaction_partial=1
             python3 "$release_control_manager" \

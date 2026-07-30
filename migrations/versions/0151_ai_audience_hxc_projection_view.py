@@ -18,10 +18,7 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # ``audience_read`` is created by the AI Audience foundation migrations.
-    # Repeating CREATE SCHEMA here would require database-level CREATE even
-    # when the schema already exists, which the production app role correctly
-    # does not have.
+    op.execute("CREATE SCHEMA IF NOT EXISTS audience_read")
     op.execute(
         """
         CREATE OR REPLACE VIEW audience_read.huangxiaocan_member_usage_status_v1 AS

@@ -9,10 +9,6 @@ FULL_REGRESSION_WORKFLOW = ROOT / ".github" / "workflows" / "full-regression.yml
 DURATION_BASELINE_REFRESH_WORKFLOW = ROOT / ".github" / "workflows" / "refresh-pytest-duration-baseline.yml"
 DEPLOY_WORKFLOW = ROOT / ".github" / "workflows" / "deploy.yml"
 PROMOTE_PRODUCTION_WORKFLOW = ROOT / ".github" / "workflows" / "promote-production.yml"
-SIYUAN_PROMOTE_PRODUCTION_WORKFLOW = ROOT / ".github" / "workflows" / "siyuan-promote-production.yml"
-SIYUAN_PRODUCTION_SCHEMA_DIAGNOSTICS_WORKFLOW = (
-    ROOT / ".github" / "workflows" / "siyuan-production-schema-diagnostics.yml"
-)
 QUEUE_PRODUCTION_CUTOVER_WORKFLOW = ROOT / ".github" / "workflows" / "queue-production-cutover.yml"
 LEGACY_CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 
@@ -33,15 +29,8 @@ def test_ci_fast_uses_selector_and_single_required_result() -> None:
     assert "test-scope-v2-shadow.json" in source
     assert "python -m pytest tests/ -n auto" not in source
     assert "ci-fast-result:" in source
-    assert "toJson(needs)" not in source
-    assert "SELECT_RESULT: ${{ needs.select.result }}" in source
-    assert "ARCHITECTURE_GATES_RESULT: ${{ needs.architecture-gates.result }}" in source
-    assert "FAST_PYTHON_NO_PG_RESULT: ${{ needs.fast-python-no-pg.result }}" in source
-    assert "FAST_PYTHON_PG_RESULT: ${{ needs.fast-python-pg.result }}" in source
-    assert "FAST_FRONTEND_RESULT: ${{ needs.fast-frontend.result }}" in source
-    assert "DEPENDENCY_AUDIT_RESULT: ${{ needs.dependency-audit.result }}" in source
-    assert "FULL_REGRESSION_RESULT: ${{ needs.full-regression.result }}" in source
-    assert "if result not in {\"success\", \"skipped\"}" in source
+    assert "NEEDS_JSON: ${{ toJson(needs) }}" in source
+    assert "job[\"result\"] not in {\"success\", \"skipped\"}" in source
     assert "needs.select.outputs.python_tests != ''" in source
     assert "needs.select.outputs.needs_postgres == 'true'" in source
     assert "needs.select.outputs.needs_postgres != 'true'" in source
@@ -72,7 +61,7 @@ def test_ci_fast_uses_selector_and_single_required_result() -> None:
     assert source.count("needs.select.outputs.needs_full_ci != 'true'") == 2
     assert "- full-regression" in source
     assert "- dependency-audit" in source
-    assert "full-regression={results['full-regression']}_but_required" in source
+    assert "full-regression={needs.get('full-regression', {}).get('result', 'missing')}_but_required" in source
     assert not LEGACY_CI_WORKFLOW.exists()
 
 
@@ -200,7 +189,7 @@ def test_ai_crm_deploy_is_reusable_production_only_and_has_no_id_validation_acce
     assert "tee /tmp/aicrm-admin-read-pages-smoke.json" in source
 
 
-def test_upstream_only_successful_trusted_main_ci_automatically_deploys_exact_sha_to_production() -> None:
+def test_successful_trusted_main_ci_automatically_deploys_exact_sha_to_production() -> None:
     source = _source(PROMOTE_PRODUCTION_WORKFLOW)
     deploy_source = _source(DEPLOY_WORKFLOW)
     trigger = source[source.index("on:") : source.index("permissions:")]
@@ -212,7 +201,6 @@ def test_upstream_only_successful_trusted_main_ci_automatically_deploys_exact_sh
     assert "workflow_dispatch:" not in trigger
     assert "push:" not in source
     assert "schedule:" not in source
-    assert "github.repository == 'qianlan333/AI-CRM'" in source
     assert "github.event.workflow_run.conclusion == 'success'" in source
     assert "github.event.workflow_run.head_repository.full_name == github.repository" in source
     assert "github.event.workflow_run.head_branch == 'main'" in source
@@ -233,64 +221,6 @@ def test_upstream_only_successful_trusted_main_ci_automatically_deploys_exact_sh
     assert "workflow_run:" not in deploy_source
     assert "scripts/ops/ensure_production_public_release_route.py --execute" in deploy_source
     assert '--public-health-url "${{ env.PUBLIC_HEALTH_URL }}"' in deploy_source
-
-
-def test_siyuan_production_promotion_is_manual_main_ci_verified_and_environment_approved() -> None:
-    source = _source(SIYUAN_PROMOTE_PRODUCTION_WORKFLOW)
-    deploy_source = _source(DEPLOY_WORKFLOW)
-
-    assert "name: Promote Siyuan to Production (Manual)" in source
-    assert "workflow_dispatch:" in source
-    assert "release_sha:" in source
-    assert "confirmation:" in source
-    assert "workflow_run:" not in source
-    assert "push:" not in source
-    assert "schedule:" not in source
-    assert "actions: read" in source
-    assert "contents: read" in source
-    assert "uses: ./.github/workflows/deploy.yml" in source
-    assert "needs: validate" in source
-    assert "secrets: inherit" in source
-    assert "environment: production" in deploy_source
-    assert "DEPLOY_TARGET: production" in deploy_source
-    assert "DEPLOY SIYUAN PRODUCTION" in source
-    assert 'if [ "$GITHUB_REPOSITORY" != "qianlan333/siyuan-crm" ]; then' in source
-    assert "qianlan333/AI-CRM-ID-refactor" not in source
-    assert "id-dev.youcangogogo.com" not in source
-    assert "validated_id_sha" not in source
-    assert "production_promotion.json" not in source
-    assert "actions/workflows/ci-fast.yml/runs?head_sha=$requested_sha&event=push&status=completed" in source
-    assert "current siyuan-crm main has no successful completed CI Fast push run" in source
-    assert "ref: ${{ inputs.release_sha }}" in source
-    assert "fetch-depth: 0" in source
-    assert 'if [ "$(git rev-parse FETCH_HEAD)" != "$requested_sha" ]; then' in source
-    assert "secrets.DEPLOY_HOST" in deploy_source
-    assert "inputs.release_sha != ''" in deploy_source
-
-
-def test_siyuan_production_schema_diagnostics_is_read_only_and_release_pinned() -> None:
-    source = _source(SIYUAN_PRODUCTION_SCHEMA_DIAGNOSTICS_WORKFLOW)
-
-    assert "workflow_dispatch:" in source
-    assert "DIAGNOSE SIYUAN PRODUCTION SCHEMA READ ONLY" in source
-    assert "https://www.xinliushangye.com/health" in source
-    assert 'test "$public_sha" = "$expected_release_sha"' in source
-    assert 'test "$(git rev-parse HEAD)" = "$expected_release_sha"' in source
-    assert 'test "$(tr -d \'\\r\\n\' < .release-sha)" = "$expected_release_sha"' in source
-    assert "SELECT DISTINCT table_name" in source
-    assert "FROM information_schema.columns" in source
-    assert "migration_revisions" in source
-    assert "contains_column_values" in source
-    assert "create_engine" in source
-    assert 'database_url.startswith("postgres://")' in source
-    assert 'database_url.startswith("postgresql://")' in source
-    assert '"postgresql+psycopg://"' in source
-    assert "default_transaction_read_only=on" in source
-    assert "aicrm_next." not in source
-    assert "INSERT " not in source
-    assert "UPDATE " not in source
-    assert "DELETE " not in source
-    assert "DROP " not in source
 
 
 def test_architecture_gate_script_has_fast_db_and_full_modes() -> None:

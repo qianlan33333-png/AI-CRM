@@ -3,13 +3,11 @@ from __future__ import annotations
 
 import json
 import sys
-from pathlib import Path
 
 try:
     from scripts.script_runtime import ensure_repo_root_on_path
 except ModuleNotFoundError:  # pragma: no cover - direct script execution
-    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-    from scripts.script_runtime import ensure_repo_root_on_path
+    from script_runtime import ensure_repo_root_on_path
 
 ensure_repo_root_on_path()
 

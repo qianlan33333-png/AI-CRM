@@ -19,9 +19,9 @@ def test_repository_external_actions_are_immutable_and_trusted() -> None:
 
     assert errors == []
     # AI-CRM owns CI, regression and test-governance workflows plus the guarded
-    # AI-CRM and Siyuan production promotions, Siyuan schema diagnostics,
-    # runtime-config control, and the reusable production deployment workflow.
-    assert workflow_count == 18
+    # production promotion, runtime-config control, and reusable production
+    # deployment workflows.
+    assert workflow_count == 15
     assert external_use_count > 0
     assert TRUSTED_ACTIONS["actions/cache"] == (
         "55cc8345863c7cc4c66a329aec7e433d2d1c52a9",
