@@ -86,6 +86,13 @@ relationship no longer exists, not an infrastructure failure, only when the
 production job and its sole attempt prove the real provider call, exact response,
 settled lease state, and absence of any successful replay.
 
+One operator-authorized WeCom group-message `40058` terminal from 2026-07-30 is
+excluded only through an exact `terminal_readonly` row in the existing immutable
+`queue_history_classification` ledger. The classifier requires the single
+provider attempt, exact source route and one-minute window, provider `errcode`,
+redacted target hash, release SHA, and explicit no-replay/no-success claims. It
+does not change the failed job or attempt and performs no provider request.
+
 Relations imported from the pre-convergence production database use the
 explicit `legacy` lifecycle. They are registered so they cannot appear as
 unmanaged drift, but unlike Next-owned physical lifecycles their absence is not
