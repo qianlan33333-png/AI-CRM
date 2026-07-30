@@ -560,6 +560,7 @@ def test_unknown_dispatch_requires_explicit_duplicate_risk_acknowledgement_to_re
     assert attempts[0].adapter_mode == "manual_retry_authorization"
     assert attempts[0].request_summary_json["confirm_duplicate_risk"] is True
     assert attempts[0].response_summary_json["real_external_call_executed"] is False
+    assert retried.dispatch_started_at
 
 
 @pytest.mark.skipif(not _database_url(), reason="PostgreSQL integration database is not configured")
@@ -618,11 +619,7 @@ def test_postgres_concurrent_claim_has_one_winner_and_lease_cas() -> None:
         FROM internal_event_outbox
         WHERE idempotency_key = :idempotency_key
         """,
-        {
-            "idempotency_key": (
-                f"external_effect.settled:{updated.id}:succeeded:{attempt.attempt_id}"
-            )
-        },
+        {"idempotency_key": (f"external_effect.settled:{updated.id}:succeeded:{attempt.attempt_id}")},
     )
     assert settlement == {
         "event_type": "external_effect.settled",
@@ -668,11 +665,7 @@ def test_postgres_cancel_request_uses_row_version_and_preserves_live_lease_until
         FROM internal_event_outbox
         WHERE idempotency_key = :idempotency_key
         """,
-        {
-            "idempotency_key": (
-                f"external_effect.settled:{settled.id}:cancelled:row-version-{settled.row_version}"
-            )
-        },
+        {"idempotency_key": (f"external_effect.settled:{settled.id}:cancelled:row-version-{settled.row_version}")},
     )
     assert outbox is not None
     assert outbox["event_type"] == "external_effect.settled"

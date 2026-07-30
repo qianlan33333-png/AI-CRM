@@ -237,9 +237,7 @@ def test_internal_manual_actions_are_versioned_commands_with_durable_attempts(
     assert target is not None
     route = f"/api/admin/internal-events/{{event_id}}/consumers/{{consumer_name}}/{action}"
     token = install_admin_action_tokens(next_client, ("POST", route))[("POST", route)]
-    url = route.replace("{event_id}", row["event_id"]).replace(
-        "{consumer_name}", row["consumer_name"]
-    )
+    url = route.replace("{event_id}", row["event_id"]).replace("{consumer_name}", row["consumer_name"])
     headers = {"X-Admin-Action-Token": token}
     payload = {
         "actor": "pytest-operator",
@@ -364,11 +362,7 @@ def test_webhook_execute_routes_accept_commands_without_dispatching_handler(
         "aicrm_next.channels.channel_entry.inbox.WeComCallbackInboxWorker.run_due",
         lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("callback worker is forbidden")),
     )
-    url = (
-        route_template.replace("{inbox_id}", str(row["id"]))
-        if "{inbox_id}" in route_template
-        else route_template
-    )
+    url = route_template.replace("{inbox_id}", str(row["id"])) if "{inbox_id}" in route_template else route_template
 
     headers = {"X-Admin-Action-Token": token}
     payload = {
@@ -433,6 +427,19 @@ def test_external_retry_routes_require_versioned_command_and_never_call_provider
     route_template: str,
 ) -> None:
     job = _seed_external_effect(status="failed_retryable")
+    with _connect() as connection:
+        connection.execute(
+            """
+            UPDATE external_effect_job
+            SET dispatch_started_at = CURRENT_TIMESTAMP,
+                provider_call_started_at = CURRENT_TIMESTAMP,
+                side_effect_executed = FALSE,
+                provider_result_received = FALSE,
+                reconciliation_required = FALSE
+            WHERE id = %s
+            """,
+            (int(job["id"]),),
+        )
     target = QueueRuntimeCommandService().read_target("external_effect", int(job["id"]))
     assert target is not None
     token = install_admin_action_tokens(next_client, ("POST", route_template))[("POST", route_template)]
@@ -456,7 +463,7 @@ def test_external_retry_routes_require_versioned_command_and_never_call_provider
     with _connect() as connection:
         persisted = connection.execute(
             """
-            SELECT status, provider_call_started_at, available_at
+            SELECT status, dispatch_started_at, provider_call_started_at, available_at
             FROM external_effect_job WHERE id = %s
             """,
             (int(job["id"]),),
@@ -466,6 +473,7 @@ def test_external_retry_routes_require_versioned_command_and_never_call_provider
             (int(job["id"]),),
         ).fetchone()["count"]
     assert persisted["status"] == "queued"
+    assert persisted["dispatch_started_at"] is None
     assert persisted["provider_call_started_at"] is None
     assert persisted["available_at"] <= datetime.now(timezone.utc)
     assert attempt_count == 0
@@ -515,10 +523,7 @@ def test_external_cancel_routes_are_strict_cas_commands(
             FROM internal_event_outbox
             WHERE idempotency_key = %s
             """,
-            (
-                f"external_effect.settled:{job['id']}:cancelled:"
-                f"row-version-{persisted['row_version']}",
-            ),
+            (f"external_effect.settled:{job['id']}:cancelled:row-version-{persisted['row_version']}",),
         ).fetchone()
     assert persisted["status"] == "cancelled"
     assert settlement["event_type"] == "external_effect.settled"
