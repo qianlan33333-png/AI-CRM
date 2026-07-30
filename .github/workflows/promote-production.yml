@@ -15,7 +15,6 @@ concurrency:
 jobs:
   deploy-main:
     if: >-
-      github.repository == 'qianlan333/AI-CRM' &&
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_repository.full_name == github.repository &&
       github.event.workflow_run.head_branch == 'main' &&

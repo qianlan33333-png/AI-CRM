@@ -273,41 +273,28 @@ jobs:
     steps:
       - name: Required check result
         env:
-          SELECT_RESULT: ${{ needs.select.result }}
-          ARCHITECTURE_GATES_RESULT: ${{ needs.architecture-gates.result }}
-          FAST_PYTHON_NO_PG_RESULT: ${{ needs.fast-python-no-pg.result }}
-          FAST_PYTHON_PG_RESULT: ${{ needs.fast-python-pg.result }}
-          FAST_FRONTEND_RESULT: ${{ needs.fast-frontend.result }}
-          DEPENDENCY_AUDIT_RESULT: ${{ needs.dependency-audit.result }}
-          FULL_REGRESSION_RESULT: ${{ needs.full-regression.result }}
+          NEEDS_JSON: ${{ toJson(needs) }}
           SCOPES: ${{ needs.select.outputs.scopes }}
           NEEDS_FULL_CI: ${{ needs.select.outputs.needs_full_ci }}
           ARCHITECTURE_GATE: ${{ needs.select.outputs.architecture_gate }}
         run: |
           python - <<'PY'
+          import json
           import os
           import sys
 
-          results = {
-              "select": os.environ.get("SELECT_RESULT", "missing"),
-              "architecture-gates": os.environ.get("ARCHITECTURE_GATES_RESULT", "missing"),
-              "fast-python-no-pg": os.environ.get("FAST_PYTHON_NO_PG_RESULT", "missing"),
-              "fast-python-pg": os.environ.get("FAST_PYTHON_PG_RESULT", "missing"),
-              "fast-frontend": os.environ.get("FAST_FRONTEND_RESULT", "missing"),
-              "dependency-audit": os.environ.get("DEPENDENCY_AUDIT_RESULT", "missing"),
-              "full-regression": os.environ.get("FULL_REGRESSION_RESULT", "missing"),
-          }
+          needs = json.loads(os.environ["NEEDS_JSON"])
           failed = [
-              f"{name}={result}"
-              for name, result in results.items()
-              if result not in {"success", "skipped"}
+              f"{name}={job['result']}"
+              for name, job in needs.items()
+              if job["result"] not in {"success", "skipped"}
           ]
           if (
               os.environ.get("NEEDS_FULL_CI") == "true"
-              and results["full-regression"] != "success"
+              and needs.get("full-regression", {}).get("result") != "success"
               and not any(item.startswith("full-regression=") for item in failed)
           ):
-              failed.append(f"full-regression={results['full-regression']}_but_required")
+              failed.append(f"full-regression={needs.get('full-regression', {}).get('result', 'missing')}_but_required")
           print(f"selected_scopes={os.environ.get('SCOPES') or 'none'}")
           print(f"architecture_gate={os.environ.get('ARCHITECTURE_GATE') or 'none'}")
           print(f"needs_full_ci={os.environ.get('NEEDS_FULL_CI') or 'false'}")

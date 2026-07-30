@@ -2487,12 +2487,6 @@
     },
     {
       "accessor": "os.getenv",
-      "file": "scripts/ops/ensure_postgres_extensions.py",
-      "key": "DATABASE_URL",
-      "line": 178
-    },
-    {
-      "accessor": "os.getenv",
       "file": "scripts/ops/manage_auth_clients.py",
       "key": "DATABASE_URL",
       "line": 131
@@ -51109,18 +51103,6 @@
         "production compatibility and historical audit"
       ],
       "table": "prod_test_backup_ai_audience_full_20260623",
-      "write_owner": "legacy.production_runtime"
-    },
-    {
-      "domain": "legacy_questionnaire",
-      "drop_candidate": false,
-      "lifecycle": "legacy",
-      "migration_source": "historical Siyuan 0124_questionnaire_continuation_jobs",
-      "pii_level": "internal_contact",
-      "read_owners": [
-        "production compatibility and historical audit"
-      ],
-      "table": "questionnaire_continuation_job",
       "write_owner": "legacy.production_runtime"
     },
     {

@@ -163,28 +163,6 @@ def test_schema_drift_guard_reports_manifest_and_live_schema_mismatches() -> Non
     assert "queue_with_status_enum" not in joined
 
 
-def test_schema_drift_guard_accepts_optional_registered_legacy_relation() -> None:
-    from aicrm_next.insights.data_health.schema_drift import evaluate_schema_drift
-
-    manifest = {
-        "tables": {
-            "questionnaire_continuation_job": {
-                "domain": "legacy_questionnaire",
-                "lifecycle": "legacy",
-                "write_owner": "legacy.production_runtime",
-                "pii_level": "internal_contact",
-                "drop_candidate": False,
-            }
-        }
-    }
-
-    assert evaluate_schema_drift(manifest=manifest, actual_schema={}) == []
-    assert evaluate_schema_drift(
-        manifest=manifest,
-        actual_schema={"questionnaire_continuation_job": {"id", "unionid", "source_event_id"}},
-    ) == []
-
-
 def test_migrated_schema_matches_lifecycle_manifest(next_pg_schema) -> None:
     del next_pg_schema
     from aicrm_next.insights.data_health.schema_drift import (
@@ -1486,44 +1464,6 @@ def test_mirrored_welcome_validation_failure_is_excluded_only_with_append_only_p
     assert result.evidence["failed_terminal_count"] == 0
     assert result.evidence["id_validation_canary"]["failed_terminal_count"] == 1
     assert result.evidence["id_validation_canary"]["callback_welcome_failed_terminal_count"] == 1
-
-
-@pytest.mark.postgres
-def test_pre_cutover_welcome_terminal_acknowledgement_is_noop_when_absent(
-    next_pg_schema,
-    monkeypatch,
-) -> None:
-    from scripts.ops.acknowledge_pre_cutover_welcome_terminal import (
-        EXPECTED_CONFIRMATION,
-        acknowledge,
-    )
-
-    del next_pg_schema
-    monkeypatch.setenv("AICRM_QUEUE_TERMINAL_ACK_AUTHORIZED", "1")
-    manifest_path = Path(__file__).resolve().parents[1] / "docs" / "releases" / "queue_all_scope_cutover.json"
-
-    result = acknowledge(
-        manifest_path=manifest_path,
-        release_sha="a" * 40,
-        authorization_base_sha="7369fa6c7858165097f25dff26f324d109cf7b80",
-        confirmation=EXPECTED_CONFIRMATION,
-        actor="pytest",
-        reason="absent authorized history is an idempotent no-op",
-        apply=True,
-    )
-
-    assert result == {
-        "ok": True,
-        "applied": False,
-        "candidate_count": 0,
-        "acknowledged_count": 0,
-        "created_count": 0,
-        "no_op_reason": "authorized_historical_terminal_absent",
-        "replay_prohibited": True,
-        "provider_success_claimed": False,
-        "real_external_call_executed": False,
-        "target_values_redacted": True,
-    }
 
 
 @pytest.mark.postgres
