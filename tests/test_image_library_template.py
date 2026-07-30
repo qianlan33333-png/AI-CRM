@@ -20,11 +20,17 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = ROOT / "aicrm_next" / "app" / "admin_console" / "templates" / "admin_console" / "image_library.html"
+FACETS_SCRIPT = ROOT / "aicrm_next" / "app" / "admin_console" / "static" / "admin_console" / "image_library_facets.js"
 
 
 @pytest.fixture(scope="module")
 def source() -> str:
     return TEMPLATE.read_text(encoding="utf-8")
+
+
+@pytest.fixture(scope="module")
+def facets_source() -> str:
+    return FACETS_SCRIPT.read_text(encoding="utf-8")
 
 
 # ---------- 顶部工具栏 ---------- #
@@ -117,15 +123,26 @@ def test_filter_bar_has_include_disabled_checkbox(source: str):
     assert 'id="il-include-disabled"' in source
 
 
-def test_filter_bar_has_dimension_panel(source: str):
+def test_filter_bar_has_dimension_panel(source: str, facets_source: str):
     assert 'id="il-facet-panel"' in source
-    assert "TAG_DIMENSION_ORDER = ['主题', '特征', '用途', '行业']" in source
-    assert "function splitTagDimension" in source
-    assert "其他标签" in source
+    assert "image_library_facets.js" in source
+    assert 'TAG_DIMENSION_ORDER = ["主题", "特征", "用途", "行业"]' in facets_source
+    assert "function splitTagDimension" in facets_source
+    assert "其他标签" in facets_source
+    assert "window.ImageLibraryFacets" in source
+    assert "root.ImageLibraryFacets" in facets_source
 
 
-def test_dimension_filter_supports_unlimited_and_multi_select(source: str):
-    assert "data-clear=\"true\"" in source
+def test_dimension_helpers_migrated_out_of_inline_script(source: str, facets_source: str):
+    assert "function buildTagDimensions" not in source
+    assert "function facetRow" not in source
+    assert "function buildTagDimensions" in facets_source
+    assert "function facetRow" in facets_source
+    assert "图片素材筛选客户端未加载" in source
+
+
+def test_dimension_filter_supports_unlimited_and_multi_select(source: str, facets_source: str):
+    assert 'data-clear="true"' in facets_source
     assert "STATE.filters.tagGroups[dimension]" in source
     assert "delete STATE.filters.tagGroups[dimension]" in source
 
