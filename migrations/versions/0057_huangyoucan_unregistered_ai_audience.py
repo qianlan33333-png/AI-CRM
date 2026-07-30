@@ -81,8 +81,9 @@ def downgrade() -> None:
     op.execute("DROP VIEW IF EXISTS audience_read.huangyoucan_registered_identities_v1")
 
 
-def _refresh_wecom_contacts_view() -> None:
-    op.execute("CREATE SCHEMA IF NOT EXISTS audience_read")
+def _refresh_wecom_contacts_view(*, ensure_schema: bool = True) -> None:
+    if ensure_schema:
+        op.execute("CREATE SCHEMA IF NOT EXISTS audience_read")
     op.execute(
         """
         CREATE OR REPLACE VIEW audience_read.wecom_contacts_v1 AS
