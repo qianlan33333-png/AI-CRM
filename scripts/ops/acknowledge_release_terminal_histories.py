@@ -50,6 +50,7 @@ from scripts.ops.acknowledge_production_welcome_timeout import (
 
 
 ROOT = Path(__file__).resolve().parents[2]
+ACKNOWLEDGEMENT_MODES = {"required", "disabled"}
 
 
 def acknowledge_release_terminal_histories(
@@ -57,7 +58,27 @@ def acknowledge_release_terminal_histories(
     release_sha: str,
     actor: str,
     apply: bool,
+    mode: str = "required",
 ) -> dict[str, Any]:
+    normalized_mode = str(mode or "").strip().lower()
+    if normalized_mode not in ACKNOWLEDGEMENT_MODES:
+        raise ValueError("mode must be required or disabled")
+    if len(release_sha) != 40 or any(character not in "0123456789abcdef" for character in release_sha):
+        raise ValueError("release_sha must be one full lowercase SHA")
+    if not str(actor or "").strip():
+        raise ValueError("actor is required")
+    if normalized_mode == "disabled":
+        return {
+            "ok": True,
+            "applied": False,
+            "mode": normalized_mode,
+            "reason": "deployment_configuration_disabled",
+            "provider_success_claimed": False,
+            "real_external_call_executed": False,
+            "replay_prohibited": True,
+            "target_values_redacted": True,
+        }
+
     pre_cutover = acknowledge_pre_cutover_welcome(
         manifest_path=ROOT / "docs" / "releases" / "queue_all_scope_cutover.json",
         release_sha=release_sha,
@@ -133,6 +154,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--release-sha", required=True)
     parser.add_argument("--actor", required=True)
+    parser.add_argument("--mode", choices=sorted(ACKNOWLEDGEMENT_MODES), default="required")
     parser.add_argument("--apply", action="store_true")
     return parser.parse_args(argv)
 
@@ -143,6 +165,7 @@ def main(argv: list[str] | None = None) -> int:
         release_sha=args.release_sha,
         actor=args.actor,
         apply=bool(args.apply),
+        mode=args.mode,
     )
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
     return 0
