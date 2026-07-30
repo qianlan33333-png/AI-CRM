@@ -307,12 +307,8 @@ def test_projection_freshness_reads_the_active_shadow_slot_against_postgres(
     database_url = os.environ["DATABASE_URL"]
     with psycopg.connect(database_url) as connection:
         with connection.cursor() as cursor:
-            cursor.execute(
-                "INSERT INTO customer_list_index_next (unionid) VALUES ('primary-only')"
-            )
-            cursor.execute(
-                "INSERT INTO customer_detail_snapshot_next (unionid) VALUES ('primary-only')"
-            )
+            cursor.execute("INSERT INTO customer_list_index_next (unionid) VALUES ('primary-only')")
+            cursor.execute("INSERT INTO customer_detail_snapshot_next (unionid) VALUES ('primary-only')")
             cursor.execute(
                 """
                 INSERT INTO customer_list_index_next_shadow (unionid)
@@ -606,10 +602,7 @@ def test_external_effect_backlog_probe_accepts_small_retryable_queue(monkeypatch
     assert result.evidence["failed_retryable_count"] == 2
     assert result.evidence["oldest_failed_retryable_age_seconds"] == 120
     assert any("FROM external_effect_job" in sql for sql in calls)
-    assert any(
-        "WHERE job.status IN ('failed_retryable', 'failed_terminal', 'blocked')" in sql
-        for sql in calls
-    )
+    assert any("WHERE job.status IN ('failed_retryable', 'failed_terminal', 'blocked')" in sql for sql in calls)
     query = "\n".join(calls)
     assert "aicrm_next.identity_contact.resolution_effects" in query
     assert "aicrm_next.crm.identity_contact.resolution_effects" in query
@@ -737,6 +730,151 @@ def test_external_effect_backlog_keeps_exact_contact_absence_as_no_replay_busine
         "relationship_absent_gate_attempt",
     ):
         assert strict_token in query
+
+
+def test_external_effect_backlog_separates_wecom_content_rejection_from_system_health(
+    monkeypatch,
+) -> None:
+    from aicrm_next.insights.data_health import checks
+
+    calls = _patch_health_db(
+        monkeypatch,
+        {
+            "failed_retryable_count": 0,
+            "recent_failed_terminal_count": 0,
+            "recent_blocked_count": 0,
+            "historical_failed_terminal_count": 0,
+            "historical_blocked_count": 0,
+            "due_retryable_count": 0,
+            "wecom_content_validation_business_rejection_count": 1,
+        },
+    )
+
+    result = checks._external_effect_failed_retryable_backlog()
+
+    assert result.status == "ok"
+    assert result.evidence["failed_terminal_count"] == 0
+    assert result.evidence["wecom_content_validation_business_outcome"] == {
+        "completed_count": 1,
+        "process_outcome": "completed",
+        "business_outcome": "rejected",
+        "business_reason_code": "miniprogram_title_exceeds_64_bytes",
+        "excluded_from_system_health_failures": True,
+        "provider_boundary_crossed": True,
+        "provider_success_claimed": False,
+        "replay_prohibited_until_content_fixed": True,
+        "strict_provenance_required": True,
+    }
+    query = "\n".join(calls)
+    for strict_token in (
+        "wecom_content_validation_business_rejection",
+        "wecom.message.group.send",
+        "wecom.message.private.send",
+        "wecom_error_40058",
+        "OCTET_LENGTH",
+        "content_validation_attempt",
+        "provider_result_received",
+        "wecom_msgid_present",
+    ):
+        assert strict_token in query
+
+
+@pytest.mark.postgres
+def test_wecom_40058_overlong_title_is_business_rejection_fail_closed_against_postgres(
+    next_pg_schema,
+) -> None:
+    import psycopg
+
+    from aicrm_next.insights.data_health import checks
+
+    database_url = os.environ["DATABASE_URL"]
+    business_id = f"pytest-group-title-40058-{uuid4().hex}"
+    attempt_id = f"eea-{uuid4().hex}"
+    payload = {
+        "owner_userid": "redacted",
+        "chat_ids": ["redacted"],
+        "content_payload": {
+            "attachments": [
+                {
+                    "msgtype": "miniprogram",
+                    "miniprogram": {
+                        "appid": "wx_test",
+                        "page": "pages/test",
+                        "title": "超" * 22,
+                        "pic_media_id": "media_test",
+                    },
+                }
+            ]
+        },
+    }
+    with psycopg.connect(database_url) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO external_effect_job (
+                    effect_type, adapter_name, operation, target_type, target_id,
+                    business_type, business_id, source_module, source_route,
+                    idempotency_key, actor_type, risk_level, execution_mode,
+                    payload_json, status, attempt_count, max_attempts,
+                    last_attempt_id, last_error_code, last_error_message, lane,
+                    worker_generation, policy_version, provider_call_started_at,
+                    side_effect_executed, provider_result_received,
+                    reconciliation_required, completed_at
+                ) VALUES (
+                    'wecom.message.group.send', 'wecom_group_message',
+                    'send_group_message', 'group_chat', 'redacted',
+                    'group_ops_effect_graph', %s,
+                    'automation_engine.group_ops.token_broadcast',
+                    '/api/automation/group-ops/broadcast', %s, 'system', 'medium',
+                    'execute', %s::jsonb, 'failed_terminal', 1, 5, %s,
+                    'wecom_error_40058',
+                    'attachments.miniprogram.title exceed max length 64',
+                    'wecom_bulk', 1, 'queue-v2-production-all-g1',
+                    CURRENT_TIMESTAMP, TRUE, TRUE, FALSE, CURRENT_TIMESTAMP
+                )
+                RETURNING id
+                """,
+                (business_id, business_id, json.dumps(payload), attempt_id),
+            )
+            job_id = int(cursor.fetchone()[0])
+            cursor.execute(
+                """
+                INSERT INTO external_effect_attempt (
+                    attempt_id, job_id, adapter_name, adapter_mode, operation,
+                    status, response_summary_json, error_code,
+                    provider_call_started_at, worker_generation, completed_at
+                ) VALUES (
+                    %s, %s, 'wecom_group_message', 'execute',
+                    'send_group_message', 'failed_terminal',
+                    '{"errcode":40058,"provider_error_classification":"terminal",'
+                    '"real_external_call_executed":true,'
+                    '"provider_result_received":true,'
+                    '"wecom_msgid_present":false}'::jsonb,
+                    'wecom_error_40058', CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP
+                )
+                """,
+                (attempt_id, job_id),
+            )
+        connection.commit()
+
+    health = checks._external_effect_failed_retryable_backlog()
+    assert health.status == "ok"
+    assert health.evidence["failed_terminal_count"] == 0
+    assert health.evidence["wecom_content_validation_business_outcome"]["completed_count"] == 1
+
+    payload["content_payload"]["attachments"][0]["miniprogram"]["title"] = "超" * 21
+    with psycopg.connect(database_url) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                "UPDATE external_effect_job SET payload_json = %s::jsonb WHERE id = %s",
+                (json.dumps(payload), job_id),
+            )
+        connection.commit()
+
+    unsafe_health = checks._external_effect_failed_retryable_backlog()
+    assert unsafe_health.status == "fail"
+    assert unsafe_health.evidence["failed_terminal_count"] == 1
+    assert unsafe_health.evidence["wecom_content_validation_business_outcome"]["completed_count"] == 0
 
 
 def test_external_effect_backlog_treats_strict_private_message_84061_as_business_rejection(
@@ -1227,9 +1365,7 @@ def test_refund_not_enough_is_completed_business_outcome_not_system_failure(
     incomplete_process = checks._external_effect_failed_retryable_backlog()
     assert incomplete_process.status == "fail"
     assert incomplete_process.evidence["failed_terminal_count"] == 1
-    assert incomplete_process.evidence["wechat_refund_not_enough_business_outcome"][
-        "completed_count"
-    ] == 0
+    assert incomplete_process.evidence["wechat_refund_not_enough_business_outcome"]["completed_count"] == 0
 
 
 @pytest.mark.postgres

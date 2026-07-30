@@ -6,7 +6,10 @@ from typing import Any, Callable
 from aicrm_next.platform.platform_foundation.external_effects.execution_gates import explicit_wecom_execution_disabled
 from aicrm_next.platform.shared.runtime_settings import managed_runtime_bool, managed_runtime_setting
 from aicrm_next.platform.shared.wecom_payload_contract import normalize_miniprogram_attachment_payload
-from aicrm_next.platform.shared.wecom_runtime import classify_wecom_provider_error
+from aicrm_next.platform.shared.wecom_runtime import (
+    classify_wecom_provider_error,
+    classify_wecom_provider_outcome,
+)
 
 from .audit import record_audit_event
 from .wecom_customer_group_client import WeComCustomerGroupClient, WeComCustomerGroupClientError
@@ -26,10 +29,7 @@ RUNTIME_SETTING_KEYS = frozenset(
 def _mode() -> str:
     if explicit_wecom_execution_disabled():
         return "disabled"
-    value = (
-        managed_runtime_setting("AICRM_WECOM_PRIVATE_ADAPTER_MODE")
-        or managed_runtime_setting("AICRM_WECOM_GROUP_ADAPTER_MODE")
-    ).strip().lower()
+    value = (managed_runtime_setting("AICRM_WECOM_PRIVATE_ADAPTER_MODE") or managed_runtime_setting("AICRM_WECOM_GROUP_ADAPTER_MODE")).strip().lower()
     return value if value in {"disabled", "fake", "staging", "production"} else "disabled"
 
 
@@ -156,10 +156,11 @@ class WeComPrivateMessageAdapter:
             derived_error_code, classification = classify_wecom_provider_error(
                 provider_errcode=provider_errcode,
                 status_code=exc.status_code,
-                transport_error=(
-                    exc.error_code == "wecom_group_client_http_error"
-                    and exc.status_code is None
-                ),
+                transport_error=(exc.error_code == "wecom_group_client_http_error" and exc.status_code is None),
+            )
+            outcome_classification, business_reason_code = classify_wecom_provider_outcome(
+                provider_errcode=provider_errcode,
+                errmsg=(exc.payload or {}).get("errmsg") or str(exc),
             )
             return self._result(
                 ok=False,
@@ -177,17 +178,11 @@ class WeComPrivateMessageAdapter:
                 extra={
                     "provider_errcode": provider_errcode,
                     "provider_error_classification": classification,
+                    "provider_outcome_classification": outcome_classification,
+                    "business_reason_code": business_reason_code,
                     "retryable": classification == "retryable",
-                    **(
-                        {"http_status": exc.status_code}
-                        if exc.status_code is not None
-                        else {}
-                    ),
-                    **(
-                        {"retry_after_seconds": exc.retry_after_seconds}
-                        if exc.retry_after_seconds is not None
-                        else {}
-                    ),
+                    **({"http_status": exc.status_code} if exc.status_code is not None else {}),
+                    **({"retry_after_seconds": exc.retry_after_seconds} if exc.retry_after_seconds is not None else {}),
                 },
             )
         errcode = int(result.get("errcode") or 0) if isinstance(result, dict) else -1
@@ -195,6 +190,10 @@ class WeComPrivateMessageAdapter:
         fail_list = _targets((result or {}).get("fail_list")) if isinstance(result, dict) else []
         if errcode != 0:
             error_code, classification = classify_wecom_provider_error(provider_errcode=errcode)
+            outcome_classification, business_reason_code = classify_wecom_provider_outcome(
+                provider_errcode=errcode,
+                errmsg=(result or {}).get("errmsg"),
+            )
             return self._result(
                 ok=False,
                 operation="create_private_message_task",
@@ -207,6 +206,8 @@ class WeComPrivateMessageAdapter:
                 extra={
                     "provider_errcode": errcode,
                     "provider_error_classification": classification,
+                    "provider_outcome_classification": outcome_classification,
+                    "business_reason_code": business_reason_code,
                     "retryable": classification == "retryable",
                 },
             )
