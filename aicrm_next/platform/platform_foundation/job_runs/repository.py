@@ -23,7 +23,7 @@ class PostgresJobRunLedgerRepository:
             INSERT INTO sync_runs (
                 status, start_time, end_time, owner_userid, cursor, raw_response, created_at
             )
-            VALUES ('running', %s, NULLIF(%s::text, '')::timestamptz, %s, %s, COALESCE(%s::jsonb, '{}'::jsonb), CURRENT_TIMESTAMP)
+            VALUES ('running', %s, NULLIF(%s, '')::timestamptz, %s, %s, COALESCE(%s::jsonb, '{}'::jsonb), CURRENT_TIMESTAMP)
             RETURNING id
             """,
             (
@@ -41,7 +41,7 @@ class PostgresJobRunLedgerRepository:
             """
             UPDATE sync_runs
             SET status = %s,
-                end_time = COALESCE(NULLIF(%s::text, '')::timestamptz, end_time),
+                end_time = COALESCE(NULLIF(%s, '')::timestamptz, end_time),
                 fetched_count = %s,
                 inserted_count = %s,
                 raw_response = COALESCE(%s::jsonb, raw_response),

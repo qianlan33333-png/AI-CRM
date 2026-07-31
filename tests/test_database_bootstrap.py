@@ -27,7 +27,7 @@ from scripts.ops.bootstrap_database import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ALEMBIC_HEAD_REVISION = "0161_reconcile_archive_job_run_ledger"
+ALEMBIC_HEAD_REVISION = "0160_ai_audience_wecom_contacts_view_repair"
 CREATE_TABLE_PATTERN = re.compile(
     r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?([a-zA-Z_][a-zA-Z0-9_]*)",
     re.IGNORECASE,

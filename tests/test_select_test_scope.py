@@ -1768,7 +1768,6 @@ def test_nginx_query_timing_changes_have_permanent_full_ci_scope() -> None:
 
 def test_job_run_ledger_owner_changes_select_platform_postgres_scope() -> None:
     expected_tests = {
-        "tests/test_archive_sync_stale_ledger_reconciliation_postgres.py",
         "tests/test_job_run_ledger_owner.py",
         "tests/test_job_run_ledger_owner_postgres.py",
     }

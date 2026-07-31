@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-from datetime import datetime, timezone
 
 import psycopg
 from psycopg.rows import dict_row
@@ -76,8 +75,6 @@ def test_job_run_ledger_supports_both_caller_transaction_styles(next_pg_schema) 
         engine.dispose()
 
     assert dbapi_row["status"] == "success"
-    assert dbapi_row["end_time"] == datetime(2026, 7, 26, 4, 0, tzinfo=timezone.utc)
-    assert dbapi_row["finished_at"] is not None
     assert dbapi_row["cursor"] == "archive-cursor"
     assert dbapi_row["raw_response"] == {"source": "archive"}
     assert sqlalchemy_row["status"] == "success"

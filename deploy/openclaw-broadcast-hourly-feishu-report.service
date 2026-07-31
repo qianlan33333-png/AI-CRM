@@ -1,5 +1,5 @@
 [Unit]
-Description=AI-CRM operational inspection Feishu hourly report
+Description=OpenClaw Broadcast Queue Feishu hourly report
 After=network.target openclaw-wecom-postgres.service
 Requires=openclaw-wecom-postgres.service
 

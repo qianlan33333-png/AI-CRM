@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import hmac
 import json
 import time
 import uuid
@@ -19,6 +20,7 @@ from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting
 
 
 HttpRequest = Callable[..., Any]
+WECHAT_PAY_SIGNATURE_MAX_SKEW_SECONDS = 300
 
 
 class WeChatPayClientError(RuntimeError):
@@ -103,7 +105,7 @@ def _load_private_key(path: str):
 
 def _load_public_key(path: str):
     if not _normalized_text(path):
-        raise WeChatPayClientError("WECHAT_PAY_PLATFORM_PUBLIC_KEY_PATH is required for notify signature verify")
+        raise WeChatPayClientError("WECHAT_PAY_PLATFORM_PUBLIC_KEY_PATH is required for signature verify")
     try:
         key_bytes = Path(path).read_bytes()
         try:
@@ -166,15 +168,20 @@ class WeChatPayClient:
             )
         except Exception as exc:
             raise WeChatPayClientError(f"wechat_pay request failed: {exc}") from exc
+        response_body = str(response.text or "")
+        self.verify_response_signature(
+            body=response_body,
+            headers=dict(getattr(response, "headers", {}) or {}),
+        )
         try:
-            response_payload = response.json() if response.text else {}
+            response_payload = response.json() if response_body else {}
         except ValueError:
-            response_payload = {"raw": response.text}
+            response_payload = {"raw": response_body}
         if response.status_code >= 300:
             message = str(
                 response_payload.get("message")
                 or response_payload.get("code")
-                or response.text
+                or response_body
                 or "wechat_pay_http_error"
             )
             raise WeChatPayClientError(message, status_code=response.status_code, payload=response_payload)
@@ -226,27 +233,45 @@ class WeChatPayClient:
             "paySign": self._merchant_signature(message),
         }
 
-    def verify_notification_signature(self, *, body: str, headers: dict[str, Any]) -> None:
+    def _verify_platform_signature(
+        self,
+        *,
+        body: str,
+        headers: dict[str, Any],
+        context: str,
+    ) -> None:
         timestamp = _normalized_text(headers.get("Wechatpay-Timestamp") or headers.get("wechatpay-timestamp"))
         nonce = _normalized_text(headers.get("Wechatpay-Nonce") or headers.get("wechatpay-nonce"))
         signature = _normalized_text(headers.get("Wechatpay-Signature") or headers.get("wechatpay-signature"))
         serial_no = _normalized_text(headers.get("Wechatpay-Serial") or headers.get("wechatpay-serial"))
-        if not timestamp or not nonce or not signature:
-            raise WeChatPayClientError("missing WeChat Pay notify signature headers")
+        if not timestamp or not nonce or not signature or not serial_no:
+            raise WeChatPayClientError(f"missing WeChat Pay {context} signature headers")
+        try:
+            signature_timestamp = int(timestamp)
+        except ValueError as exc:
+            raise WeChatPayClientError(f"invalid WeChat Pay {context} signature timestamp") from exc
+        if abs(int(time.time()) - signature_timestamp) > WECHAT_PAY_SIGNATURE_MAX_SKEW_SECONDS:
+            raise WeChatPayClientError(f"stale WeChat Pay {context} signature timestamp")
         expected_serial = _normalized_text(self.config.platform_serial_no)
-        if expected_serial and serial_no and serial_no != expected_serial:
+        if expected_serial and not hmac.compare_digest(serial_no, expected_serial):
             raise WeChatPayClientError("unexpected WeChat Pay platform certificate serial")
         message = f"{timestamp}\n{nonce}\n{body}\n".encode("utf-8")
         public_key = _load_public_key(self.config.platform_public_key_path)
         try:
             public_key.verify(
-                base64.b64decode(signature),
+                base64.b64decode(signature, validate=True),
                 message,
                 padding.PKCS1v15(),
                 hashes.SHA256(),
             )
-        except (InvalidSignature, ValueError) as exc:
-            raise WeChatPayClientError("invalid WeChat Pay notify signature") from exc
+        except (InvalidSignature, ValueError, TypeError) as exc:
+            raise WeChatPayClientError(f"invalid WeChat Pay {context} signature") from exc
+
+    def verify_response_signature(self, *, body: str, headers: dict[str, Any]) -> None:
+        self._verify_platform_signature(body=body, headers=headers, context="response")
+
+    def verify_notification_signature(self, *, body: str, headers: dict[str, Any]) -> None:
+        self._verify_platform_signature(body=body, headers=headers, context="notify")
 
     def decrypt_resource(self, resource: dict[str, Any]) -> dict[str, Any]:
         key = _normalized_text(self.config.api_v3_key).encode("utf-8")
