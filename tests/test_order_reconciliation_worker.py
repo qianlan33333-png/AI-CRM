@@ -595,6 +595,7 @@ def test_wechat_pay_client_close_order_and_trade_bill_request_shapes() -> None:
         http_request=fake_request,
     )
     client._merchant_signature = lambda message: "signature"  # type: ignore[method-assign]
+    client.verify_response_signature = lambda **_kwargs: None  # type: ignore[method-assign]
 
     client.close_order_by_out_trade_no("WXP_CLOSE")
     client.request_trade_bill(bill_date="2026-07-04")

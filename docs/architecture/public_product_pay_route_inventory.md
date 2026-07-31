@@ -16,7 +16,7 @@ Legacy Exit Group 27 closes the public product and pay landing rollback for `/p/
 | unknown child path | bad URL/manual probes | controlled not found | `/api/products/{unknown}` | GET/HEAD | `public_product_api` | product lookup only | none | locked | 404 controlled |
 | production_compat exact rollback | legacy fallback | removed | `/p/*`, `/pay/*`, `/api/products/*` | all | removed from `router` | none | production_compat rollback removed | grep clean |
 | production_compat wildcard rollback | broad fallback | removed | `/p/*`, `/pay/*`, `/api/products/*` | all | removed from `wildcard_router` | none | wildcard_router rollback removed | grep clean |
-| H5 WeChat Pay | public pay page | OAuth, JSAPI order create, order status, notify | `/api/h5/wechat-pay/*` | mixed | `aicrm_next.extensions.commerce.public_product.api` + `h5_wechat_pay` | Next-owned WeChat Pay client | guarded live WeChat Pay; requires WeChat browser, identity, payment env, and production database | locked, no production_compat rollback | smoke checks route ownership and controlled failure outside WeChat |
+| H5 WeChat Pay | public pay page | OAuth, JSAPI order create, order status, notify | `/api/h5/wechat-pay/*` | mixed | `aicrm_next.extensions.commerce.public_product.api` + `h5_wechat_pay` | Next-owned WeChat Pay client | guarded live WeChat Pay; APIv3 responses and notifications require RSA signature verification, matching platform public-key ID/certificate serial, and a ±300-second timestamp window | locked, no production_compat rollback | smoke checks route ownership and controlled failure outside WeChat |
 | payment/admin/alipay/checkout/orders/provider | out-of-scope | later groups own remaining payment APIs | `/api/admin/wechat-pay/*`, `/api/admin/alipay/*`, `/api/h5/alipay/*`, `/api/orders/*`, `/api/checkout/*`, `/api/wechat-pay/*`, `/api/alipay/*` | all | later group owners unchanged | guarded/blocked by separate groups | checkout/orders locked in group 28; public provider notify/return locked in group 29; admin/alipay remain out-of-scope | smoke retained families |
 
 ## Boundary Decisions
@@ -28,5 +28,6 @@ Legacy Exit Group 27 closes the public product and pay landing rollback for `/p/
 - Known child APIs in this group: detail by slug/code, list, blocked checkout/payment/order child path, unknown path.
 - Lead channel and completion redirect fields may be present in the product projection; H5 WeChat Pay may return paid-order lead QR state after a confirmed paid order.
 - Next-owned H5 WeChat Pay may create JSAPI orders through `/api/h5/wechat-pay/*` after WeChat identity, payment configuration, and production database checks pass.
+- The Next-owned WeChat Pay client rejects unsigned, stale/future-dated, serial-mismatched, or cryptographically invalid APIv3 responses and notifications before parsing provider payloads.
 - Do not process real Alipay in this group.
 - Do not change admin/alipay/checkout/orders/provider ownership in this group; checkout/orders and public provider notify/return remain separate route families.

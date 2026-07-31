@@ -4,7 +4,9 @@ import base64
 from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
+import time
 
+import pytest
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
@@ -13,7 +15,11 @@ from cryptography.x509.oid import NameOID
 from aicrm_next.platform.admin_config.settings import mask_value
 from aicrm_next.extensions.commerce.commerce.order_expiration import close_expired_wechat_pay_orders
 from aicrm_next.extensions.commerce.commerce.repo import reset_commerce_fixture_state
-from aicrm_next.extensions.commerce.commerce.wechat_pay_client import WeChatPayClient, WeChatPayClientConfig
+from aicrm_next.extensions.commerce.commerce.wechat_pay_client import (
+    WeChatPayClient,
+    WeChatPayClientConfig,
+    WeChatPayClientError,
+)
 
 
 def _wechat_checkout_payload(product_code: str = "test-product") -> dict:
@@ -22,6 +28,20 @@ def _wechat_checkout_payload(product_code: str = "test-product") -> dict:
         "quantity": 1,
         "buyer_identity": {"mobile": "13800138000", "external_userid": "wx_ext_001"},
         "return_url": f"/pay/{product_code}",
+    }
+
+
+def _platform_signature_headers(*, private_key, body: str, timestamp: str, serial_no: str) -> dict[str, str]:
+    nonce = "wechat-pay-test-nonce"
+    message = f"{timestamp}\n{nonce}\n{body}\n".encode("utf-8")
+    signature = base64.b64encode(
+        private_key.sign(message, padding.PKCS1v15(), hashes.SHA256())
+    ).decode("ascii")
+    return {
+        "Wechatpay-Timestamp": timestamp,
+        "Wechatpay-Nonce": nonce,
+        "Wechatpay-Signature": signature,
+        "Wechatpay-Serial": serial_no,
     }
 
 
@@ -59,6 +79,7 @@ def test_next_wechat_pay_client_sends_platform_public_key_id_header():
         http_request=fake_request,
     )
     pay_client._merchant_signature = lambda message: "signed"  # type: ignore[method-assign]
+    pay_client.verify_response_signature = lambda **_kwargs: None  # type: ignore[method-assign]
 
     pay_client.query_order_by_out_trade_no("WXPTEST0001")
 
@@ -96,6 +117,7 @@ def test_next_wechat_pay_client_does_not_send_certificate_serial_header():
         http_request=fake_request,
     )
     pay_client._merchant_signature = lambda message: "signed"  # type: ignore[method-assign]
+    pay_client.verify_response_signature = lambda **_kwargs: None  # type: ignore[method-assign]
 
     pay_client.query_order_by_out_trade_no("WXPTEST0001")
 
@@ -131,6 +153,7 @@ def test_next_wechat_pay_client_creates_refund_request_without_real_http():
         http_request=fake_request,
     )
     pay_client._merchant_signature = lambda message: "signed"  # type: ignore[method-assign]
+    pay_client.verify_response_signature = lambda **_kwargs: None  # type: ignore[method-assign]
 
     result = pay_client.create_refund(
         {
@@ -171,10 +194,7 @@ def test_next_wechat_pay_client_verifies_notify_signature_with_platform_certific
     certificate_path.write_bytes(certificate.public_bytes(serialization.Encoding.PEM))
 
     body = '{"id":"notify-id"}'
-    timestamp = "1778888888"
-    nonce = "notify-nonce"
-    message = f"{timestamp}\n{nonce}\n{body}\n".encode("utf-8")
-    signature = base64.b64encode(private_key.sign(message, padding.PKCS1v15(), hashes.SHA256())).decode("ascii")
+    timestamp = str(int(time.time()))
 
     pay_client = WeChatPayClient(
         WeChatPayClientConfig(
@@ -190,13 +210,127 @@ def test_next_wechat_pay_client_verifies_notify_signature_with_platform_certific
 
     pay_client.verify_notification_signature(
         body=body,
-        headers={
-            "Wechatpay-Timestamp": timestamp,
-            "Wechatpay-Nonce": nonce,
-            "Wechatpay-Signature": signature,
-            "Wechatpay-Serial": "1234567890",
-        },
+        headers=_platform_signature_headers(
+            private_key=private_key,
+            body=body,
+            timestamp=timestamp,
+            serial_no="1234567890",
+        ),
     )
+
+
+def test_next_wechat_pay_client_verifies_response_before_parsing_json(tmp_path):
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    public_key_path = tmp_path / "wechatpay_public_key.pem"
+    public_key_path.write_bytes(
+        private_key.public_key().public_bytes(
+            serialization.Encoding.PEM,
+            serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+    )
+    body = '{"trade_state":"SUCCESS"}'
+    serial_no = "PUB_KEY_ID_0116571234562024052000123400000000"
+
+    class FakeResponse:
+        status_code = 200
+        text = body
+        headers = _platform_signature_headers(
+            private_key=private_key,
+            body=body,
+            timestamp=str(int(time.time())),
+            serial_no=serial_no,
+        )
+
+        def json(self):
+            return json.loads(self.text)
+
+    pay_client = WeChatPayClient(
+        WeChatPayClientConfig(
+            app_id="wx-app",
+            mch_id="1900000001",
+            api_v3_key="12345678901234567890123456789012",
+            private_key_path="",
+            merchant_serial_no="merchant-serial",
+            platform_public_key_path=str(public_key_path),
+            platform_serial_no=serial_no,
+        ),
+        http_request=lambda *_args, **_kwargs: FakeResponse(),
+    )
+    pay_client._merchant_signature = lambda message: "signed"  # type: ignore[method-assign]
+
+    assert pay_client.query_order_by_out_trade_no("WXPTEST0001") == {"trade_state": "SUCCESS"}
+
+
+def test_next_wechat_pay_client_rejects_unsigned_response_before_json_parsing():
+    class FakeResponse:
+        status_code = 200
+        text = '{"trade_state":"SUCCESS"}'
+        headers: dict[str, str] = {}
+
+        def json(self):
+            raise AssertionError("unsigned response must not be parsed")
+
+    pay_client = WeChatPayClient(
+        WeChatPayClientConfig(
+            app_id="wx-app",
+            mch_id="1900000001",
+            api_v3_key="12345678901234567890123456789012",
+            private_key_path="",
+            merchant_serial_no="merchant-serial",
+        ),
+        http_request=lambda *_args, **_kwargs: FakeResponse(),
+    )
+    pay_client._merchant_signature = lambda message: "signed"  # type: ignore[method-assign]
+
+    with pytest.raises(WeChatPayClientError, match="missing WeChat Pay response signature headers"):
+        pay_client.query_order_by_out_trade_no("WXPTEST0001")
+
+
+@pytest.mark.parametrize("context", ["response", "notify"])
+@pytest.mark.parametrize("offset_seconds", [-301, 301])
+def test_next_wechat_pay_client_rejects_stale_or_future_platform_signature(
+    tmp_path,
+    context,
+    offset_seconds,
+):
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    public_key_path = tmp_path / "wechatpay_public_key.pem"
+    public_key_path.write_bytes(
+        private_key.public_key().public_bytes(
+            serialization.Encoding.PEM,
+            serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+    )
+    body = '{"id":"signed-body"}'
+    serial_no = "PUB_KEY_ID_0116571234562024052000123400000000"
+    timestamp = str(int(time.time()) + offset_seconds)
+    pay_client = WeChatPayClient(
+        WeChatPayClientConfig(
+            app_id="wx-app",
+            mch_id="1900000001",
+            api_v3_key="12345678901234567890123456789012",
+            private_key_path="",
+            merchant_serial_no="merchant-serial",
+            platform_public_key_path=str(public_key_path),
+            platform_serial_no=serial_no,
+        )
+    )
+    verifier = (
+        pay_client.verify_response_signature
+        if context == "response"
+        else pay_client.verify_notification_signature
+    )
+
+    with pytest.raises(WeChatPayClientError, match=f"stale WeChat Pay {context} signature timestamp"):
+        verifier(
+            body=body,
+            headers=_platform_signature_headers(
+                private_key=private_key,
+                body=body,
+                timestamp=timestamp,
+                serial_no=serial_no,
+            ),
+        )
 
 
 def test_commerce_wechat_pay_client_facade_has_no_direct_http_call() -> None:
