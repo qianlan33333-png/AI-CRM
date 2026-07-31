@@ -105,22 +105,6 @@ def test_route_policy_inventory_uses_all_required_audiences() -> None:
     }
 
 
-def test_yuanqi_official_site_is_public_read_only() -> None:
-    _assert_policy(
-        "/",
-        "GET",
-        {
-            "audience": "public_h5",
-            "auth_scheme": "public",
-            "capability": "public",
-            "access_scope": "public",
-            "pii_level": "none",
-            "csrf": False,
-            "rate_limit": "public_standard",
-        },
-    )
-
-
 def test_external_radar_routes_use_existing_read_client_and_explicit_pii_levels() -> None:
     _assert_policy(
         "/api/external/radar-clicks",

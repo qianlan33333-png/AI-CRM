@@ -28,7 +28,6 @@ from .h5_wechat_pay import (
     payment_oauth_start,
     sidebar_product_context_status,
 )
-from .official_site import render_yuanqi_official_site
 from .service import (
     blocked_action_payload,
     diagnostics_payload,
@@ -47,11 +46,6 @@ from .service import (
 
 
 router = APIRouter()
-
-
-@router.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse, name="api.yuanqi_official_site")
-def yuanqi_official_site() -> HTMLResponse:
-    return HTMLResponse(render_yuanqi_official_site(), headers=route_headers())
 
 
 def _public_product_alias_redirect(request: Request, path: str) -> Response | None:
