@@ -176,6 +176,40 @@ def test_group_ops_broadcast_accepts_card_and_combined_content(group_ops_api_cli
     ]
 
 
+def test_group_ops_broadcast_accepts_observation_card_with_uploaded_cover(group_ops_api_client):
+    response = group_ops_api_client.post(
+        "/api/automation/group-ops/broadcast",
+        headers=_machine_headers(group_ops_api_client, idempotency_key="observation-card"),
+        data={
+            "text": "本周行业观察已更新",
+            "card_path": "pages/observation-issue/observation-issue?id=03a49b92-19f5-4f74-976b-f539fbe901d6",
+            "card_title": "《AI + OPC/OPT · 每周行业观察》第5期",
+        },
+        files={"card_cover": ("observation-cover.png", PNG_BYTES, "image/png")},
+    )
+
+    assert response.status_code == 202
+    body = response.json()
+    assert body["ok"] is True
+    assert body["status"] == "waiting_dependencies"
+    assert len(body["upload_effect_job_ids"]) == 1
+    assert body["content"]["card_attached"] is True
+    assert body["content"]["card_cover_uploaded"] is True
+    assert body["content"]["card_title"] == "《AI + OPC/OPT · 每周行业观察》第5期"
+    assert body["content"]["uploaded_image_count"] == 0
+
+
+def test_group_ops_broadcast_requires_cover_for_observation_card(group_ops_api_client):
+    response = _post_json(
+        group_ops_api_client,
+        {"card_path": "pages/observation-issue/observation-issue?id=03a49b92-19f5-4f74-976b-f539fbe901d6"},
+        idempotency_key="observation-card-without-cover",
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error"] == "card_cover_required"
+
+
 def test_group_ops_broadcast_rejects_invalid_card_path_and_image(group_ops_api_client):
     invalid_card = _post_json(
         group_ops_api_client,
@@ -192,6 +226,14 @@ def test_group_ops_broadcast_rejects_invalid_card_path_and_image(group_ops_api_c
     assert invalid_card.json()["error"] == "invalid_card_path"
     assert invalid_image.status_code == 400
     assert invalid_image.json()["error"] == "invalid_image_content"
+
+
+def test_group_ops_broadcast_card_title_stays_within_wecom_limit():
+    from aicrm_next.automation.automation_engine.group_ops.broadcast import derive_card_title
+
+    title = derive_card_title("", "《这是一个会超过企微小程序卡片标题字节限制的超长标题，需要在进入队列前安全截断》")
+
+    assert len(title.encode("utf-8")) <= 64
 
 
 def test_group_ops_broadcast_rejects_invalid_existing_media_id(group_ops_api_client):

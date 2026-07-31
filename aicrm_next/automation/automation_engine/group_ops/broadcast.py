@@ -37,7 +37,8 @@ MAX_TEXT_LENGTH = 4000
 MAX_IMAGES = 3
 MAX_IMAGE_BYTES = 10 * 1024 * 1024
 MAX_TOTAL_IMAGE_BYTES = MAX_IMAGES * MAX_IMAGE_BYTES
-_CARD_PATH = "pages/article/article"
+_ARTICLE_CARD_PATH = "pages/article/article"
+_OBSERVATION_CARD_PATH = "pages/observation-issue/observation-issue"
 _TITLE_PATTERN = re.compile(r"《([^》]+)》")
 
 
@@ -58,29 +59,43 @@ class BroadcastImage:
 @dataclass(frozen=True)
 class ParsedCardPath:
     normalized_path: str
-    lesson_id: str
+    content_id: str
+    kind: str
 
 
 def parse_card_path(value: str) -> ParsedCardPath:
     raw = clean_text(value)
     parsed = urlsplit(raw)
-    if parsed.scheme or parsed.netloc or parsed.path != _CARD_PATH or parsed.fragment:
-        raise GroupOpsBroadcastError("invalid_card_path", "card_path must be a canonical article mini-program path")
+    if parsed.scheme or parsed.netloc or parsed.fragment:
+        raise GroupOpsBroadcastError("invalid_card_path", "card_path must be a supported canonical mini-program path")
     try:
         query = parse_qs(parsed.query, keep_blank_values=True, strict_parsing=True)
     except ValueError as exc:
         raise GroupOpsBroadcastError("invalid_card_path", "card_path query is invalid") from exc
-    lesson_values = query.get("lesson_id") or []
-    from_values = query.get("from") or []
-    if len(lesson_values) != 1 or from_values != ["learn"] or set(query) != {"lesson_id", "from"}:
-        raise GroupOpsBroadcastError("invalid_card_path", "card_path must include lesson_id and from=learn")
+
+    if parsed.path == _ARTICLE_CARD_PATH:
+        id_values = query.get("lesson_id") or []
+        if len(id_values) != 1 or query.get("from") != ["learn"] or set(query) != {"lesson_id", "from"}:
+            raise GroupOpsBroadcastError("invalid_card_path", "article card_path must include lesson_id and from=learn")
+        kind = "lesson"
+        normalized_path = f"{_ARTICLE_CARD_PATH}?lesson_id={{content_id}}&from=learn"
+    elif parsed.path == _OBSERVATION_CARD_PATH:
+        id_values = query.get("id") or []
+        if len(id_values) != 1 or set(query) != {"id"}:
+            raise GroupOpsBroadcastError("invalid_card_path", "observation card_path must include exactly one id")
+        kind = "observation_issue"
+        normalized_path = f"{_OBSERVATION_CARD_PATH}?id={{content_id}}"
+    else:
+        raise GroupOpsBroadcastError("invalid_card_path", "card_path must be a supported canonical mini-program path")
+
     try:
-        lesson_id = str(UUID(clean_text(lesson_values[0])))
+        content_id = str(UUID(clean_text(id_values[0])))
     except (ValueError, AttributeError) as exc:
-        raise GroupOpsBroadcastError("invalid_card_path", "card_path lesson_id must be a UUID") from exc
+        raise GroupOpsBroadcastError("invalid_card_path", "card_path content id must be a UUID") from exc
     return ParsedCardPath(
-        normalized_path=f"{_CARD_PATH}?lesson_id={lesson_id}&from=learn",
-        lesson_id=lesson_id,
+        normalized_path=normalized_path.format(content_id=content_id),
+        content_id=content_id,
+        kind=kind,
     )
 
 
@@ -99,7 +114,7 @@ def derive_card_title(text: str, explicit_title: str = "") -> str:
     if not title:
         match = _TITLE_PATTERN.search(clean_text(text))
         title = clean_text(match.group(1)) if match else "黄小璨 AI 日课"
-    return _bounded_utf8(title, max_bytes=128) or "黄小璨 AI 日课"
+    return _bounded_utf8(title, max_bytes=64) or "黄小璨 AI 日课"
 
 
 def _detected_image_type(file_bytes: bytes) -> str:
@@ -158,6 +173,7 @@ class ExecuteGroupOpsTokenBroadcastCommand:
         *,
         idempotency_key: str,
         images: list[BroadcastImage] | None = None,
+        card_cover: BroadcastImage | None = None,
         actor_id: str = "external_group_ops_api",
     ) -> dict[str, Any]:
         key = clean_text(idempotency_key or request.idempotency_key)
@@ -175,10 +191,16 @@ class ExecuteGroupOpsTokenBroadcastCommand:
             raise GroupOpsBroadcastError("invalid_image_media_id", "image media ids must be non-whitespace values up to 255 characters")
         if len(uploaded_images) + len(existing_media_ids) > MAX_IMAGES:
             raise GroupOpsBroadcastError("too_many_images", f"at most {MAX_IMAGES} images are allowed")
-        if sum(len(item.file_bytes or b"") for item in uploaded_images) > MAX_TOTAL_IMAGE_BYTES:
+        total_uploaded_bytes = sum(len(item.file_bytes or b"") for item in uploaded_images)
+        total_uploaded_bytes += len(card_cover.file_bytes or b"") if card_cover else 0
+        if total_uploaded_bytes > MAX_TOTAL_IMAGE_BYTES + MAX_IMAGE_BYTES:
             raise GroupOpsBroadcastError("images_too_large", "total uploaded images are too large")
 
         parsed_card = parse_card_path(request.card_path) if clean_text(request.card_path) else None
+        if card_cover and not parsed_card:
+            raise GroupOpsBroadcastError("card_path_required", "card_cover requires card_path")
+        if parsed_card and parsed_card.kind == "observation_issue" and not card_cover:
+            raise GroupOpsBroadcastError("card_cover_required", "observation card_path requires multipart card_cover")
         if not text and not parsed_card and not uploaded_images and not existing_media_ids:
             raise GroupOpsBroadcastError("broadcast_content_required", "text, images, or card_path is required")
 
@@ -208,7 +230,11 @@ class ExecuteGroupOpsTokenBroadcastCommand:
 
         card_title = ""
         if parsed_card:
-            card_image = self._download_lesson_cover(parsed_card.lesson_id)
+            card_image = (
+                validate_image(card_cover)
+                if card_cover
+                else self._download_lesson_cover(parsed_card.content_id)
+            )
             card_title = derive_card_title(text, request.card_title)
             materials.append(
                 GroupOpsEffectMaterial(
@@ -261,6 +287,7 @@ class ExecuteGroupOpsTokenBroadcastCommand:
                 "uploaded_image_count": len(uploaded_images),
                 "card_attached": bool(parsed_card),
                 "card_title": card_title,
+                "card_cover_uploaded": bool(card_cover),
             },
             "route_owner": ROUTE_OWNER,
         }

@@ -677,13 +677,13 @@
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/automation/automation_engine/group_ops/broadcast.py",
       "key": "AICRM_GROUP_OPS_BROADCAST_PLAN_ID",
-      "line": 270
+      "line": 297
     },
     {
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/automation/automation_engine/group_ops/broadcast.py",
       "key": "AICRM_GROUP_OPS_MINIPROGRAM_APPID",
-      "line": 283
+      "line": 310
     },
     {
       "accessor": "managed_runtime_setting",
