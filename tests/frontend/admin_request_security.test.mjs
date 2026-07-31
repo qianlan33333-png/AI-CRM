@@ -37,6 +37,7 @@ const window = {
 vm.runInNewContext(source, {
   window,
   document,
+  fetch: (...args) => window.fetch(...args),
   URL,
   URLSearchParams,
   FormData,
@@ -68,6 +69,18 @@ assert.equal(
 await window.fetch("https://outside.example.test/write", { method: "POST" });
 assert.equal(captured[1].options.headers["X-CSRF-Token"], undefined);
 assert.equal(captured[1].options.headers["X-Admin-Action-Token"], undefined);
+
+await window.AdminApi.requestJson("/api/admin/ai-audience/packages/30/senders", {
+  method: "PUT",
+  body: { items: [{ sender_userid: "HuangYouCan", priority: 1, status: "active" }] },
+});
+const audienceContentType = Object.entries(captured[2].options.headers)
+  .find(([name]) => name.toLowerCase() === "content-type")?.[1];
+assert.equal(audienceContentType, "application/json");
+assert.deepEqual(
+  JSON.parse(captured[2].options.body),
+  { items: [{ sender_userid: "HuangYouCan", priority: 1, status: "active" }] },
+);
 
 const inputs = {};
 const form = {

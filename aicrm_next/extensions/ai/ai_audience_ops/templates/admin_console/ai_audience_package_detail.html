@@ -684,11 +684,11 @@
       setStatus(els.packageStatusLine, "保存中...");
       const payload = await fetchJson(packageApiUrl, {
         method: "PATCH",
-        body: JSON.stringify({
+        body: {
           name: els.packageNameInput.value.trim(),
           natural_language_definition: els.packageDefinitionInput.value.trim(),
           refresh_mode: selectedRefreshMode()
-        })
+        }
       });
       renderPackage(payload.package || {});
       setStatus(els.packageStatusLine, "基础配置已保存", "success");
@@ -709,10 +709,10 @@
       setStatus(els.webhookStatusLine, "保存中...");
       const payload = await fetchJson(webhooksApiUrl, {
         method: "PATCH",
-        body: JSON.stringify({
+        body: {
           outbound_enabled: Boolean(outboundUrl),
           outbound_webhook_url: outboundUrl
-        })
+        }
       });
       renderWebhook(payload.webhook || {});
       setStatus(els.webhookStatusLine, "Webhook 已保存", "success");
@@ -741,7 +741,7 @@
       setStatus(els.senderStatusLine, "保存中...");
       const payload = await fetchJson(sendersApiUrl, {
         method: "PUT",
-        body: JSON.stringify({ items: normalized })
+        body: { items: normalized }
       });
       senderItems = payload.items || [];
       renderSenders();

@@ -677,13 +677,13 @@
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/automation/automation_engine/group_ops/broadcast.py",
       "key": "AICRM_GROUP_OPS_BROADCAST_PLAN_ID",
-      "line": 270
+      "line": 297
     },
     {
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/automation/automation_engine/group_ops/broadcast.py",
       "key": "AICRM_GROUP_OPS_MINIPROGRAM_APPID",
-      "line": 283
+      "line": 310
     },
     {
       "accessor": "managed_runtime_setting",
@@ -749,7 +749,7 @@
       "accessor": "os.getenv",
       "file": "scripts/script_runtime.py",
       "key": "AICRM_INTERNAL_API_BASE_URL",
-      "line": 52
+      "line": 57
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -2303,13 +2303,13 @@
       "accessor": "os.getenv",
       "file": "scripts/script_runtime.py",
       "key": "APP_HOST",
-      "line": 44
+      "line": 49
     },
     {
       "accessor": "os.getenv",
       "file": "scripts/script_runtime.py",
       "key": "APP_PORT",
-      "line": 48
+      "line": 53
     },
     {
       "accessor": "managed_runtime_setting",

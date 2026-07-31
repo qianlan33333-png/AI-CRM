@@ -71,7 +71,7 @@ def test_ai_and_commerce_runtime_catalog_is_complete_owned_and_gated() -> None:
 
 def test_repository_wide_domain_runtime_catalog_is_complete_owned_and_gated() -> None:
     assert len(DOMAIN_RUNTIME_SETTING_KEYS) == 62
-    assert len(STARTUP_ENVIRONMENT_SETTING_KEYS) == 32
+    assert len(STARTUP_ENVIRONMENT_SETTING_KEYS) == 34
     assert DOMAIN_RUNTIME_SETTING_KEYS <= MANAGED_RUNTIME_SETTING_KEYS
     assert DOMAIN_RUNTIME_SETTING_KEYS <= set(CONFIG_DEFINITIONS_BY_KEY)
     expected_owners = {

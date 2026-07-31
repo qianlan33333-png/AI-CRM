@@ -507,6 +507,9 @@ def test_admin_ai_audience_detail_page_has_required_sections_without_top_actions
         "/api/admin/ai-audience/packages/123/webhooks",
         "/api/admin/ai-audience/packages/123/senders",
         "operation_member_picker.js",
+        'body: { items: normalized }',
+        'body: {\n          name:',
+        'body: {\n          outbound_enabled:',
     ):
         assert expected in html
     for forbidden in (
@@ -533,6 +536,7 @@ def test_admin_ai_audience_detail_page_has_required_sections_without_top_actions
         "固定逻辑：不提供 5/15/30 分钟。",
         "外部 Agent 生成内容后回调；地址不可编辑，可重置 secret。",
         "每 3 分钟增量刷新后，如果有新增用户，则外推。",
+        "body: JSON.stringify",
         "请求 body 仅为 external_userid 数组，包信息、签名、幂等键走 Header。",
         "用户被多个客服添加时，只在白名单里选；多个命中按优先级取第一个；无命中则跳过。",
         "名称、筛选逻辑、刷新策略",

@@ -13,13 +13,18 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 def ensure_repo_root_on_path() -> Path:
     if str(REPO_ROOT) not in sys.path:
         sys.path.insert(0, str(REPO_ROOT))
+    from aicrm_next.platform.platform_foundation.error_reporting import install_process_error_reporting
+
+    install_process_error_reporting(component=Path(sys.argv[0] or "python_process").name)
     return REPO_ROOT
 
 
 def print_json(payload: Any, *, indent: int | None = None, sort_keys: bool = False) -> None:
     ensure_repo_root_on_path()
+    from aicrm_next.platform.platform_foundation.error_reporting import report_failed_result
     from aicrm_next.platform.shared.sensitive_data import redact_sensitive_data
 
+    report_failed_result(payload, component=Path(sys.argv[0] or "python_process").name)
     print(dump_json(redact_sensitive_data(payload), indent=indent, sort_keys=sort_keys))
 
 

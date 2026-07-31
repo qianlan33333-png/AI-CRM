@@ -1518,6 +1518,7 @@
         "tests/test_archive_sdk_isolation.py",
         "tests/test_runtime_browser_security.py",
         "tests/test_external_chat_records_api.py",
+        "tests/test_global_error_reporting.py",
         "tests/test_run_incremental_archive_sync_script.py",
         "tests/test_webhook_inbox_admin_api.py"
       ],
@@ -1545,6 +1546,7 @@
         "tests/test_external_effects_mvp.py",
         "tests/test_admin_config_next.py",
         "tests/test_external_push_worker_next_native.py",
+        "tests/test_global_error_reporting.py",
         "tests/test_run_message_activity_sync_script.py"
       ],
       "needs_postgres": true,
