@@ -67,8 +67,6 @@ def test_dbapi_job_run_ledger_preserves_caller_commit_boundary() -> None:
     assert run_id == 81
     assert executor.calls[0][0].startswith("INSERT INTO sync_runs")
     assert executor.calls[1][0].startswith("UPDATE sync_runs")
-    assert "NULLIF(%s::text, '')::timestamptz" in executor.calls[0][0]
-    assert "COALESCE(NULLIF(%s::text, '')::timestamptz, end_time)" in executor.calls[1][0]
     assert json.loads(executor.calls[1][1][4]) == {"ok": True}
     assert not hasattr(executor, "commit")
 

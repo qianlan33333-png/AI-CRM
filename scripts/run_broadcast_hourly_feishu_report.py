@@ -1,6 +1,6 @@
-"""系统运营巡检飞书小时报触发脚本。
+"""群发队列飞书小时报触发脚本。
 
-沿用既有 systemd unit 名称以保证平滑升级；报告覆盖 timer、外部推送和内部消费。
+定时任务通过 systemd/cron 拉起本脚本；脚本只调用服务端小时报逻辑，不在前端做轮询。
 """
 from __future__ import annotations
 
