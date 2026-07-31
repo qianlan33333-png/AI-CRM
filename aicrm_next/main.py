@@ -6,8 +6,11 @@ from pathlib import Path
 from time import perf_counter
 
 from fastapi import FastAPI
+from fastapi.exception_handlers import http_exception_handler
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.background import BackgroundTask, BackgroundTasks
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .extensions.ai.ai_audience_e2e_composition import build_ai_audience_e2e_runner_factory
 from .extensions.ai.ai_audience_ops.target_provider import AiAudienceTargetProvider
@@ -37,6 +40,12 @@ from .mcp_composition import build_mcp_jsonrpc_application
 from .automation.ops_enrollment.application import reset_user_ops_fixture_state
 from .automation.ops_enrollment.audience_target_port import configure_audience_target_query
 from .platform.platform_foundation.internal_events import internal_event_consumer_registry_scope
+from .platform.platform_foundation.error_reporting import (
+    FeishuErrorReporter,
+    build_http_error_event,
+    get_default_error_reporter,
+    install_logging_error_reporting,
+)
 from .extensions.forms.questionnaire.repo import reset_questionnaire_fixture_state
 from .read_model_composition import build_sidebar_contact_binding_status_query, get_customer_detail
 from .extensions.radar.radar_links.repo import reset_radar_links_fixture_state
@@ -80,6 +89,7 @@ def create_app(
     *,
     pii_audit_repository: PiiAuditRepository | None = None,
     deployment_profile: DeploymentProfile | None = None,
+    error_reporter: FeishuErrorReporter | None = None,
 ) -> FastAPI:
     assert_required_runtime_secrets()
     profile = deployment_profile or deployment_profile_from_environment()
@@ -89,6 +99,9 @@ def create_app(
     configure_campaign_media_reference_port(PostgresCampaignStepMediaReferenceRepository)
     configure_sidebar_extension_port(DefaultSidebarExtensionAdapter)
     app = FastAPI(title="AI-CRM Next", version="0.1.0")
+    app.state.error_reporter = error_reporter or get_default_error_reporter()
+    if error_reporter is None:
+        install_logging_error_reporting(reporter=app.state.error_reporter)
     app.state.deployment_profile = profile
     app.state.admin_action_token_bundle_builder = build_admin_action_token_bundle
     app.state.admin_action_token_validator = validate_action_token_for_request
@@ -114,6 +127,14 @@ def create_app(
 
     @app.exception_handler(RepositoryProviderError)
     async def repository_provider_error_handler(request, exc):
+        event = build_http_error_event(
+            request=request,
+            category="repository_error",
+            status_code=exc.status_code,
+            error_code="fixture_repository_blocked_in_production",
+            exc=exc,
+        )
+        request.state.error_report_scheduled = True
         return JSONResponse(
             status_code=exc.status_code,
             content={
@@ -123,22 +144,59 @@ def create_app(
                 "error_code": "fixture_repository_blocked_in_production",
                 "detail": str(exc),
             },
+            background=BackgroundTask(app.state.error_reporter.report, event),
         )
 
     @app.exception_handler(ApplicationError)
     async def application_error_handler(request, exc):
+        status_code = int(getattr(exc, "status_code", 400) or 400)
+        error_code = _application_error_code(exc)
+        event = build_http_error_event(
+            request=request,
+            category="business_error",
+            status_code=status_code,
+            error_code=error_code,
+            exc=exc,
+        )
+        request.state.error_report_scheduled = True
         return JSONResponse(
-            status_code=int(getattr(exc, "status_code", 400) or 400),
+            status_code=status_code,
             content={
                 "ok": False,
-                "error_code": _application_error_code(exc),
+                "error_code": error_code,
                 "detail": str(exc),
             },
+            background=BackgroundTask(app.state.error_reporter.report, event),
         )
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_error_handler(request, exc):
+        response = await http_exception_handler(request, exc)
+        if int(exc.status_code) >= 500:
+            request.state.error_report_scheduled = True
+            response.background = BackgroundTask(
+                app.state.error_reporter.report,
+                build_http_error_event(
+                    request=request,
+                    category="http_error",
+                    status_code=int(exc.status_code),
+                    error_code="http_service_error",
+                    exc=exc,
+                ),
+            )
+        return response
 
     @app.exception_handler(Exception)
     async def unhandled_error_handler(request, exc):
         safe_log_exception(logger, "unhandled ai-crm next exception", exc)
+        event = build_http_error_event(
+            request=request,
+            category="system_error",
+            status_code=500,
+            error_code="internal_server_error",
+            exc=exc,
+        )
+        request.state.error_report_scheduled = True
         return JSONResponse(
             status_code=500,
             content={
@@ -146,6 +204,7 @@ def create_app(
                 "error_code": "internal_server_error",
                 "detail": "internal server error",
             },
+            background=BackgroundTask(app.state.error_reporter.report, event),
         )
 
     @app.middleware("http")
@@ -179,6 +238,21 @@ def create_app(
                         response.headers.setdefault("Cache-Control", "no-store, max-age=0")
                         response.headers.setdefault("Pragma", "no-cache")
                         response.headers.setdefault("Expires", "0")
+                    if int(response.status_code) >= 500 and not getattr(request.state, "error_report_scheduled", False):
+                        event = build_http_error_event(
+                            request=request,
+                            category="http_error",
+                            status_code=int(response.status_code),
+                            error_code="http_error_response",
+                            exc=RuntimeError(f"HTTP {int(response.status_code)} response returned"),
+                        )
+                        notification_task = BackgroundTask(app.state.error_reporter.report, event)
+                        response.background = (
+                            BackgroundTasks(tasks=[response.background, notification_task])
+                            if response.background is not None
+                            else notification_task
+                        )
+                        request.state.error_report_scheduled = True
             except Exception:
                 request_failed = True
                 raise

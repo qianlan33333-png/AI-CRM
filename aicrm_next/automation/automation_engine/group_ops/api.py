@@ -145,7 +145,9 @@ def _broadcast_json(payload: dict, *, status_code: int = 200) -> JSONResponse:
     return JSONResponse(jsonable_encoder(payload), status_code=status_code, headers=headers)
 
 
-async def _parse_token_broadcast_request(request: Request) -> tuple[GroupOpsTokenBroadcastRequest, list[BroadcastImage]]:
+async def _parse_token_broadcast_request(
+    request: Request,
+) -> tuple[GroupOpsTokenBroadcastRequest, list[BroadcastImage], BroadcastImage | None]:
     content_type = str(request.headers.get("Content-Type") or "").split(";", 1)[0].strip().lower()
     try:
         content_length = int(str(request.headers.get("Content-Length") or "0"))
@@ -161,11 +163,11 @@ async def _parse_token_broadcast_request(request: Request) -> tuple[GroupOpsToke
         if not isinstance(raw, dict):
             raise GroupOpsBroadcastError("invalid_request", "request body must be a JSON object")
         try:
-            return GroupOpsTokenBroadcastRequest.model_validate(raw), []
+            return GroupOpsTokenBroadcastRequest.model_validate(raw), [], None
         except ValidationError as exc:
             raise GroupOpsBroadcastError("invalid_request", "request body contains unsupported fields") from exc
     if content_type == "multipart/form-data":
-        if content_length > MAX_TOTAL_IMAGE_BYTES + 1024 * 1024:
+        if content_length > MAX_TOTAL_IMAGE_BYTES + MAX_IMAGE_BYTES + 1024 * 1024:
             raise GroupOpsBroadcastError("request_too_large", "multipart request is too large", status_code=413)
         try:
             form = await request.form()
@@ -196,8 +198,22 @@ async def _parse_token_broadcast_request(request: Request) -> tuple[GroupOpsToke
                     file_bytes=file_bytes,
                 )
             )
+        card_cover: BroadcastImage | None = None
+        card_cover_item = form.get("card_cover")
+        if card_cover_item is not None:
+            if not isinstance(card_cover_item, StarletteUploadFile):
+                raise GroupOpsBroadcastError("invalid_card_cover", "card_cover must be an uploaded file")
+            try:
+                card_cover_bytes = await card_cover_item.read(MAX_IMAGE_BYTES + 1)
+            except Exception as exc:
+                raise GroupOpsBroadcastError("invalid_card_cover", "card_cover could not be read") from exc
+            card_cover = BroadcastImage(
+                file_name=str(card_cover_item.filename or "card-cover"),
+                content_type=str(card_cover_item.content_type or ""),
+                file_bytes=card_cover_bytes,
+            )
         try:
-            return GroupOpsTokenBroadcastRequest.model_validate(raw), images
+            return GroupOpsTokenBroadcastRequest.model_validate(raw), images, card_cover
         except ValidationError as exc:
             raise GroupOpsBroadcastError("invalid_request", "multipart fields are invalid") from exc
     raise GroupOpsBroadcastError("unsupported_content_type", "Content-Type must be application/json or multipart/form-data", status_code=415)
@@ -631,7 +647,7 @@ def receive_group_ops_webhook(
 @router.post("/api/automation/group-ops/broadcast")
 async def execute_group_ops_token_broadcast(request: Request) -> JSONResponse:
     try:
-        payload, images = await _parse_token_broadcast_request(request)
+        payload, images, card_cover = await _parse_token_broadcast_request(request)
         context = getattr(request.state, "auth_context", None)
         result = ExecuteGroupOpsTokenBroadcastCommand(
             external_effect_adapter_registry=getattr(
@@ -643,6 +659,7 @@ async def execute_group_ops_token_broadcast(request: Request) -> JSONResponse:
             payload,
             idempotency_key=str(request.headers.get("Idempotency-Key") or payload.idempotency_key or ""),
             images=images,
+            card_cover=card_cover,
             actor_id=context.sub if isinstance(context, AuthContext) else "external_group_ops_api",
         )
     except GroupOpsBroadcastError as exc:
