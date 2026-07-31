@@ -7822,6 +7822,36 @@
   "production_data_accessed": false,
   "routes": [
     {
+      "capability_owner": "public_product",
+      "contract": {
+        "parameters": [],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.extensions.commerce.public_product.api.yuanqi_official_site",
+      "include_in_schema": true,
+      "kind": "page",
+      "logical_capability_id": "extension.commerce",
+      "methods": [
+        "GET"
+      ],
+      "name": "api.yuanqi_official_site",
+      "operation_id": "api.yuanqi_official_site:GET:/",
+      "path": "/",
+      "route_group": "public_product"
+    },
+    {
       "capability_owner": "admin_shell",
       "contract": {
         "parameters": [],

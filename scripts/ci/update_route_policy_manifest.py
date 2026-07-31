@@ -292,6 +292,9 @@ def _policy_for(entry: dict[str, Any]) -> dict[str, Any]:
     if path == "/shared/service-period-member-grid":
         return _policy("public_h5", "public", "public", "public", "none", False, "public_standard")
 
+    if path == "/" and entry.get("route_name") == "api.yuanqi_official_site":
+        return _policy("public_h5", "public", "public", "public", "none", False, "public_standard")
+
     if _starts(path, "/api/public/service-period-member-grid"):
         return _policy(
             "public_h5",

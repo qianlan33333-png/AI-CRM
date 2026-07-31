@@ -1,4 +1,24 @@
 routes:
+- path: /
+  methods:
+  - GET
+  route_name: api.yuanqi_official_site
+  capability_owner: public_product
+  runtime_owner: ai_crm_next
+  layer: h5
+  external_effects: none
+  data_source: static
+  requires_auth: false
+  rollback: previous_release
+  audience: public_h5
+  auth_scheme: public
+  capability: public
+  access_scope: public
+  pii_level: none
+  csrf: false
+  rate_limit: public_standard
+  principal_types:
+  - public
 - path: /{filename}
   methods:
   - GET
