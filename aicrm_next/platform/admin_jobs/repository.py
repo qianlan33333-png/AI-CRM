@@ -32,6 +32,54 @@ def _json_load(value: Any, *, default: Any) -> Any:
         return default
 
 
+def read_operational_inspection_rows(
+    *,
+    external_flow_query: str,
+    external_flow_params: tuple[Any, ...],
+    external_health_query: str,
+    internal_flow_query: str,
+    internal_flow_params: tuple[Any, ...],
+    external_issue_types_query: str,
+    internal_issue_types_query: str,
+) -> dict[str, Any]:
+    """Execute the operational inspection bundle in one read-only transaction."""
+
+    import psycopg
+    from psycopg.rows import dict_row
+
+    database_url = raw_database_url()
+    if not database_url.startswith(("postgresql://", "postgres://")):
+        raise RuntimeError("PostgreSQL DATABASE_URL is required for operational inspection")
+    with psycopg.connect(database_url, row_factory=dict_row) as connection:
+        with connection.transaction():
+            connection.execute("SET TRANSACTION READ ONLY")
+            return {
+                "external_flow": dict(
+                    connection.execute(
+                        external_flow_query,
+                        external_flow_params,
+                    ).fetchone()
+                    or {}
+                ),
+                "external_health_snapshot": dict(
+                    connection.execute(external_health_query).fetchone() or {}
+                ),
+                "internal": dict(
+                    connection.execute(
+                        internal_flow_query,
+                        internal_flow_params,
+                    ).fetchone()
+                    or {}
+                ),
+                "external_types": [
+                    dict(row)
+                    for row in connection.execute(external_issue_types_query).fetchall()
+                ],
+                "internal_types": [
+                    dict(row)
+                    for row in connection.execute(internal_issue_types_query).fetchall()
+                ],
+            }
 class AdminJobsRepository(Protocol):
     source_status: str
 

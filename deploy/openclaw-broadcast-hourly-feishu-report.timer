@@ -1,5 +1,5 @@
 [Unit]
-Description=Run OpenClaw Broadcast Queue Feishu hourly report at minute 5
+Description=Run AI-CRM operational inspection Feishu hourly report at minute 5
 
 [Timer]
 OnCalendar=*-*-* *:05:00

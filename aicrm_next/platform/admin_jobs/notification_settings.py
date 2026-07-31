@@ -8,14 +8,29 @@ from urllib.parse import urlsplit
 
 from aicrm_next.platform.platform_foundation.command_bus import CommandContext
 from aicrm_next.platform.platform_foundation.external_effects import ExternalEffectService, FEISHU_WEBHOOK_NOTIFY
+from aicrm_next.platform.shared.outbound_https.security import (
+    Resolver,
+    WebhookUrlValidationError,
+    resolve_and_validate_public_https_target,
+)
+from aicrm_next.platform.shared.outbound_https.transport import (
+    HttpsTransport,
+    HttpsTransportError,
+    HttpsTransportTimeout,
+    PinnedHttpsTransport,
+)
 from zoneinfo import ZoneInfo
 
 from .domain import normalized_bool, normalized_text
+from .operational_inspection import (
+    build_operational_report_message,
+    collect_operational_inspection,
+)
 from .repository import AdminJobsRepository, build_admin_jobs_repository
 
 FEISHU_CHANNEL = "feishu"
 FEISHU_VALIDATION_MESSAGE = "【群发队列监控验证】\n这是一条飞书 webhook 验证消息。收到此消息表示群发队列小时报配置成功。"
-FEISHU_HOURLY_REPORT_TITLE = "【群发队列小时报】"
+FEISHU_HOURLY_REPORT_TITLE = "【系统运营巡检小时报】"
 FEISHU_WEBHOOK_ERROR = "飞书 webhook 验证失败，请检查地址或机器人配置"
 FEISHU_HOURLY_REPORT_ERROR = "飞书小时报发送失败，请检查 webhook 或机器人配置"
 FEISHU_VALIDATION_STATUSES = {"unverified", "valid", "invalid"}
@@ -28,6 +43,7 @@ class FeishuWebhookValidationError(ValueError):
 
 
 HourlyReportSender = Callable[[str, str], dict[str, Any]]
+OperationalInspectionCollector = Callable[..., dict[str, Any]]
 
 
 def validate_feishu_webhook_url(webhook_url: str) -> None:
@@ -281,6 +297,49 @@ def send_feishu_webhook_message(webhook_url: str, text: str) -> dict[str, Any]:
     }
 
 
+def send_feishu_operational_webhook_message(
+    webhook_url: str,
+    text: str,
+    *,
+    transport: HttpsTransport | None = None,
+    resolver: Resolver | None = None,
+) -> dict[str, Any]:
+    """Send out-of-band operational telemetry without depending on business queues."""
+
+    try:
+        validate_feishu_webhook_url(webhook_url)
+        target = resolve_and_validate_public_https_target(webhook_url, resolver=resolver)
+        body = json.dumps(
+            {
+                "msg_type": "text",
+                "content": {"text": normalized_text(text)},
+            },
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        response = (transport or PinnedHttpsTransport()).post(
+            target,
+            body=body,
+            headers={"Content-Type": "application/json; charset=utf-8"},
+            timeout=3.0,
+        )
+        payload = json.loads(response.text or "{}")
+        provider_code = payload.get("code", payload.get("StatusCode"))
+        ok = 200 <= int(response.status_code) < 300 and provider_code in {0, "0"}
+        return {"ok": ok, "providerStatusCode": int(response.status_code)}
+    except (
+        FeishuWebhookValidationError,
+        WebhookUrlValidationError,
+        HttpsTransportTimeout,
+        HttpsTransportError,
+        OSError,
+        TypeError,
+        ValueError,
+        json.JSONDecodeError,
+    ):
+        return {"ok": False}
+
+
 def get_previous_hour_window(time_zone: str = "Asia/Shanghai", now: datetime | None = None) -> dict[str, Any]:
     tz = ZoneInfo(time_zone)
     current = now or datetime.now(tz)
@@ -330,7 +389,7 @@ def build_broadcast_job_hourly_report_message(
 
 def build_hourly_report_key(*, channel: str = FEISHU_CHANNEL, window_start: datetime) -> str:
     start = _as_shanghai(window_start)
-    return f"broadcast_jobs:{channel}:{start.isoformat(timespec='seconds')}"
+    return f"ops_inspection:{channel}:{start.isoformat(timespec='seconds')}"
 
 
 def create_hourly_report_pending(
@@ -360,6 +419,7 @@ def send_broadcast_job_hourly_feishu_report(
     now: datetime | None = None,
     repo: AdminJobsRepository | None = None,
     sender: HourlyReportSender | None = None,
+    inspection_collector: OperationalInspectionCollector | None = None,
 ) -> dict[str, Any]:
     repo = repo or build_admin_jobs_repository()
     setting = repo.get_broadcast_notification_setting(FEISHU_CHANNEL)
@@ -375,22 +435,24 @@ def send_broadcast_job_hourly_feishu_report(
     window_end = window["windowEnd"]
     summary = get_broadcast_job_hourly_summary(window_start=window_start, window_end=window_end, repo=repo)
     public_summary = _public_summary(summary)
-    if public_summary["totalJobs"] <= 0:
-        return {"status": "skipped_no_jobs", "summary": public_summary}
+
+    collect = inspection_collector or collect_operational_inspection
+    try:
+        inspection = collect(window_start=window_start, window_end=window_end)
+    except Exception as exc:
+        inspection = _unavailable_operational_inspection(exc)
 
     report_key = build_hourly_report_key(channel=FEISHU_CHANNEL, window_start=window_start)
     created = create_hourly_report_pending(report_key=report_key, window_start=window_start, window_end=window_end, channel=FEISHU_CHANNEL, repo=repo)
     if created == "duplicate":
         return {"status": "skipped_duplicate", "summary": public_summary}
 
-    message = build_broadcast_job_hourly_report_message(
+    message = build_operational_report_message(
         window_start=window_start,
         window_end=window_end,
-        total_jobs=public_summary["totalJobs"],
-        success_jobs=public_summary["successJobs"],
-        failed_jobs=public_summary["failedJobs"],
+        inspection=inspection,
     )
-    send = sender or send_feishu_webhook_message
+    send = sender or send_feishu_operational_webhook_message
     try:
         result = send(normalized_text(setting.get("webhook_url")), message)
     except Exception:
@@ -412,13 +474,62 @@ def send_broadcast_job_hourly_feishu_report(
                 "channel": FEISHU_CHANNEL,
                 "message": message,
                 "summary": public_summary,
+                "inspection": inspection,
                 "windowStart": window_start.isoformat(),
                 "windowEnd": window_end.isoformat(),
             },
         )
         return {"status": "sent", "summary": public_summary}
     mark_hourly_report_failed(report_key=report_key, error_message=FEISHU_HOURLY_REPORT_ERROR, repo=repo)
-    return {"status": "failed", "summary": public_summary, "message": FEISHU_HOURLY_REPORT_ERROR}
+    return {
+        "status": "failed",
+        "summary": public_summary,
+        "message": FEISHU_HOURLY_REPORT_ERROR,
+    }
+
+
+def _unavailable_operational_inspection(exc: Exception) -> dict[str, Any]:
+    error_type = type(exc).__name__
+    return {
+        "status": "异常",
+        "issueCount": 1,
+        "readOnly": True,
+        "timer": {
+            "managedCount": 0,
+            "monitoredCount": 0,
+            "expectedExecutions": 0,
+            "actualExecutions": 0,
+            "issueCount": 1,
+            "issues": [
+                {
+                    "timer": "运营巡检器",
+                    "issues": [f"巡检数据采集失败（{error_type}）"],
+                }
+            ],
+            "details": [],
+        },
+        "external": {
+            "created": 0,
+            "succeeded": 0,
+            "overdue": 0,
+            "stalled": 0,
+            "unknown": 0,
+            "terminal": 0,
+            "issueCount": 0,
+            "issueTypes": [],
+            "businessExcluded": 0,
+        },
+        "internal": {
+            "outboxCreated": 0,
+            "outboxRelayed": 0,
+            "consumerSucceeded": 0,
+            "outboxBreaks": 0,
+            "consumerBreaks": 0,
+            "missingConsumers": 0,
+            "issueCount": 0,
+            "issueTypes": [],
+        },
+    }
 
 
 def _short_error(value: Any) -> str | None:

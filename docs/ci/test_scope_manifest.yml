@@ -2413,6 +2413,7 @@
         "aicrm_next/platform_foundation/**",
         "aicrm_next/shared/**",
         "aicrm_next/platform/admin_jobs/__init__.py",
+        "aicrm_next/platform/admin_jobs/operational_inspection.py",
         "aicrm_next/platform/navigation_target/service.py",
         "aicrm_next/platform/shared/config.py",
         "aicrm_next/platform/shared/database.py",
@@ -2441,6 +2442,8 @@
         "tests/test_internal_events_worker_pair_allowlist.py",
         "tests/test_media_library_no_real_external_calls.py",
         "tests/test_navigation_target_url_link_resolver.py",
+        "tests/test_operational_inspection.py",
+        "tests/test_operational_inspection_postgres.py",
         "tests/test_webhook_inbox_repository.py"
       ],
       "python_tests": [
@@ -2455,6 +2458,8 @@
         "tests/test_admin_auth_login_submit.py",
         "tests/test_config_releases.py",
         "tests/test_next_admin_jobs_native.py",
+        "tests/test_operational_inspection.py",
+        "tests/test_operational_inspection_postgres.py",
         "tests/test_external_effects_mvp.py",
         "tests/test_webhook_inbox_repository.py"
       ],
