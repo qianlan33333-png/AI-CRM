@@ -58,7 +58,8 @@ def test_queue_invariant_timer_is_read_only_and_runs_every_fifteen_minutes() -> 
 
     assert "OnCalendar=*:0/15" in timer
     assert "Persistent=true" in timer
-    assert "scripts/ops/check_queue_runtime_invariants.py" in service
+    assert "python -m scripts.ops.check_queue_runtime_invariants" in service
+    assert "python scripts/ops/check_queue_runtime_invariants.py" not in service
     assert "run_execution_runtime.py" not in service
     assert "--execute" not in service
 

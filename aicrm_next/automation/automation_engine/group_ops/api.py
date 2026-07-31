@@ -80,6 +80,8 @@ from .dto import (
 
 router = APIRouter()
 
+_EXPECTED_OBSERVATION_CONTRACT_PROBE_PREFIX = "observation-contract-probe-no-side-effect-"
+
 
 def _json_result(payload: dict) -> JSONResponse:
     return JSONResponse(jsonable_encoder(payload), status_code=int(payload.get("status_code") or 200))
@@ -143,6 +145,16 @@ def _broadcast_json(payload: dict, *, status_code: int = 200) -> JSONResponse:
         "X-AICRM-Real-External-Call-Executed": "true" if payload.get("real_external_call_executed") else "false",
     }
     return JSONResponse(jsonable_encoder(payload), status_code=status_code, headers=headers)
+
+
+def _is_expected_contract_probe(*, request: Request, error_code: str) -> bool:
+    """Recognize the narrowly scoped, no-side-effect observation-card probe."""
+
+    idempotency_key = str(request.headers.get("Idempotency-Key") or "").strip()
+    return (
+        error_code == "card_cover_required"
+        and idempotency_key.startswith(_EXPECTED_OBSERVATION_CONTRACT_PROBE_PREFIX)
+    )
 
 
 async def _parse_token_broadcast_request(
@@ -663,11 +675,21 @@ async def execute_group_ops_token_broadcast(request: Request) -> JSONResponse:
             actor_id=context.sub if isinstance(context, AuthContext) else "external_group_ops_api",
         )
     except GroupOpsBroadcastError as exc:
+        expected_contract_probe = _is_expected_contract_probe(
+            request=request,
+            error_code=exc.error_code,
+        )
         return _broadcast_json(
             {
                 "ok": False,
                 "error": exc.error_code,
                 "message": str(exc),
+                "failure_classification": (
+                    "expected_contract_rejection"
+                    if expected_contract_probe
+                    else "business_request_rejected"
+                ),
+                "business_failure": not expected_contract_probe,
                 "route_owner": "ai_crm_next",
                 "real_external_call_executed": False,
             },

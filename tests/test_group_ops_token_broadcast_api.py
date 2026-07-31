@@ -208,6 +208,27 @@ def test_group_ops_broadcast_requires_cover_for_observation_card(group_ops_api_c
 
     assert response.status_code == 400
     assert response.json()["error"] == "card_cover_required"
+    assert response.json()["failure_classification"] == "business_request_rejected"
+    assert response.json()["business_failure"] is True
+
+
+def test_observation_contract_probe_is_explicitly_excluded_from_business_failures(group_ops_api_client):
+    class _FailIfReported:
+        def report(self, _event):
+            raise AssertionError("expected contract probes must not be reported as failures")
+
+    group_ops_api_client.app.state.error_reporter = _FailIfReported()
+    response = _post_json(
+        group_ops_api_client,
+        {"card_path": "pages/observation-issue/observation-issue?id=03a49b92-19f5-4f74-976b-f539fbe901d6"},
+        idempotency_key="observation-contract-probe-no-side-effect-pytest",
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error"] == "card_cover_required"
+    assert response.json()["failure_classification"] == "expected_contract_rejection"
+    assert response.json()["business_failure"] is False
+    assert response.headers["X-AICRM-Real-External-Call-Executed"] == "false"
 
 
 def test_group_ops_broadcast_rejects_invalid_card_path_and_image(group_ops_api_client):
