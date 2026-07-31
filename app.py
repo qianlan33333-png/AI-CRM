@@ -46,7 +46,9 @@ def _workers() -> int:
 
 def run_next() -> None:
     import uvicorn
+    from aicrm_next.platform.platform_foundation.error_reporting import install_process_error_reporting
 
+    install_process_error_reporting(component="aicrm_next_web")
     uvicorn.run(NEXT_APP_IMPORT, host=_host(), port=_port(), workers=_workers())
 
 

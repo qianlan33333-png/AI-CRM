@@ -749,7 +749,7 @@
       "accessor": "os.getenv",
       "file": "scripts/script_runtime.py",
       "key": "AICRM_INTERNAL_API_BASE_URL",
-      "line": 52
+      "line": 57
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -2303,13 +2303,13 @@
       "accessor": "os.getenv",
       "file": "scripts/script_runtime.py",
       "key": "APP_HOST",
-      "line": 44
+      "line": 49
     },
     {
       "accessor": "os.getenv",
       "file": "scripts/script_runtime.py",
       "key": "APP_PORT",
-      "line": 48
+      "line": 53
     },
     {
       "accessor": "managed_runtime_setting",
