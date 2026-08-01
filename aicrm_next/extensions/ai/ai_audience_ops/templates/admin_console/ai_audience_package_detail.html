@@ -3,6 +3,7 @@
 {% block head_extra %}
 <link rel="stylesheet" href="{{ url_for('static', filename='admin_console/automation_capability_selector.css') }}?v=20260801">
 <link rel="stylesheet" href="{{ url_for('static', filename='admin_console/send_content_readonly_detail.css') }}?v=20260801-send-records">
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/ai_audience_send_records.css') }}?v=20260801-send-records">
 <style>
   :root {
     --ai-bg: #f6f8fb;
@@ -400,108 +401,6 @@
     color: var(--ai-danger);
   }
 
-  .ai-record-name {
-    display: grid;
-    gap: 3px;
-    min-width: 130px;
-  }
-
-  .ai-record-id,
-  .ai-record-failure {
-    max-width: 260px;
-    overflow-wrap: anywhere;
-  }
-
-  .ai-record-status {
-    display: inline-flex;
-    min-height: 28px;
-    align-items: center;
-    border-radius: 999px;
-    background: #f2f4f7;
-    color: #475467;
-    font-size: 12px;
-    font-weight: 850;
-    padding: 4px 10px;
-    white-space: nowrap;
-  }
-
-  .ai-record-status.sent { background: #ecfdf3; color: #067647; }
-  .ai-record-status.failed { background: #fff1f3; color: #c01048; }
-  .ai-record-status.retrying,
-  .ai-record-status.unknown_after_dispatch { background: #fffaeb; color: #b54708; }
-  .ai-record-status.sending { background: #eef4ff; color: #175cd3; }
-
-  .ai-pagination {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-top: 16px;
-    color: var(--ai-muted);
-    font-size: 13px;
-    font-weight: 750;
-  }
-
-  .ai-drawer-mask {
-    position: fixed;
-    z-index: 1100;
-    inset: 0;
-    display: none;
-    background: rgba(16, 24, 40, .34);
-  }
-
-  .ai-drawer-mask.open { display: block; }
-
-  .ai-record-drawer {
-    position: fixed;
-    z-index: 1110;
-    top: 0;
-    right: 0;
-    width: min(560px, 92vw);
-    height: 100vh;
-    overflow-y: auto;
-    border-left: 1px solid var(--ai-line);
-    background: #fff;
-    box-shadow: -18px 0 42px rgba(16, 24, 40, .14);
-    padding: 22px;
-    transform: translateX(105%);
-    transition: transform .2s ease;
-  }
-
-  .ai-record-drawer.open { transform: translateX(0); }
-
-  .ai-drawer-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 14px;
-    margin-bottom: 18px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--ai-line2);
-  }
-
-  .ai-drawer-head h3 { margin: 0 0 4px; font-size: 20px; }
-  .ai-drawer-head p { margin: 0; color: var(--ai-muted); font-size: 13px; }
-
-  .ai-detail-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-
-  .ai-detail-cell {
-    min-width: 0;
-    overflow-wrap: anywhere;
-    border: 1px solid var(--ai-line2);
-    border-radius: 11px;
-    padding: 11px;
-  }
-
-  .ai-detail-cell .label { color: var(--ai-muted); font-size: 12px; font-weight: 800; }
-  .ai-detail-cell .value { margin-top: 5px; color: var(--ai-text); font-weight: 800; }
-  .ai-detail-cell.full { grid-column: 1 / -1; }
-
   @media (max-width: 960px) {
     .ai-page {
       min-width: 0;
@@ -653,7 +552,7 @@
         </div>
       </section>
 
-      <section class="ai-panel" id="panel-records">
+      <section class="ai-panel" id="panel-records" data-send-records-api-url="{{ ai_audience_package_send_records_api_url }}">
         <div class="ai-panel-title-row">
           <h3>发送记录</h3>
           <span class="ai-pill gray" id="sendRecordTotal">尚未加载</span>
@@ -705,13 +604,13 @@
 
 {% block scripts_extra %}
 <script src="{{ url_for('static', filename='admin_console/send_content_readonly_detail.js') }}?v=20260801-send-records"></script>
+<script src="{{ url_for('static', filename='admin_console/ai_audience_send_records.js') }}?v=20260801-send-records"></script>
 <script src="{{ url_for('static', filename='admin_console/automation_capability_selector.js') }}?v=20260801"></script>
 <script>
   (() => {
     const packageApiUrl = {{ ai_audience_package_api_url | tojson }};
     const groupsApiUrl = {{ ai_audience_package_groups_api_url | tojson }};
     const membersApiUrl = {{ ai_audience_package_members_api_url | tojson }};
-    const sendRecordsApiUrl = {{ ai_audience_package_send_records_api_url | tojson }};
     const bindingApiUrl = {{ ai_audience_package_automation_binding_api_url | tojson }};
     const automationAgentsApiUrl = {{ automation_agents_api_url | tojson }};
     const sendersApiUrl = {{ ai_audience_package_senders_api_url | tojson }};
@@ -740,18 +639,6 @@
       memberRows: document.getElementById("memberRows"),
       memberTotal: document.getElementById("memberTotal"),
       refreshMembersBtn: document.getElementById("refreshMembersBtn"),
-      sendRecordRows: document.getElementById("sendRecordRows"),
-      sendRecordTotal: document.getElementById("sendRecordTotal"),
-      sendRecordPageLabel: document.getElementById("sendRecordPageLabel"),
-      sendRecordPrevBtn: document.getElementById("sendRecordPrevBtn"),
-      sendRecordNextBtn: document.getElementById("sendRecordNextBtn"),
-      sendRecordStatusLine: document.getElementById("sendRecordStatusLine"),
-      sendRecordDrawerMask: document.getElementById("sendRecordDrawerMask"),
-      sendRecordDrawer: document.getElementById("sendRecordDrawer"),
-      closeSendRecordDrawerBtn: document.getElementById("closeSendRecordDrawerBtn"),
-      sendRecordDrawerSubtitle: document.getElementById("sendRecordDrawerSubtitle"),
-      sendRecordMeta: document.getElementById("sendRecordMeta"),
-      sendRecordContentDetail: document.getElementById("sendRecordContentDetail"),
       manualRefreshBtn: document.getElementById("manualRefreshBtn"),
       saveCurrentDimensionBtn: document.getElementById("saveCurrentDimensionBtn")
     };
@@ -760,12 +647,6 @@
     let currentPanel = "basic";
     let currentPackage = null;
     let automationBindingController = null;
-    const sendRecordPageSize = 20;
-    let sendRecordOffset = 0;
-    let sendRecordTotal = 0;
-    let sendRecordsLoaded = false;
-    let sendRecordReturnFocus = null;
-    let bodyOverflowBeforeDrawer = "";
 
     const escapeHtml = (value) => String(value ?? "")
       .replaceAll("&", "&amp;")
@@ -1079,117 +960,8 @@
       renderMembers(payload);
     };
 
-    const sendRecordTone = (status) => ["sent", "failed", "retrying", "sending", "unknown_after_dispatch"].includes(status)
-      ? status
-      : "";
-
-    const renderSendRecords = (payload) => {
-      const items = payload.items || [];
-      sendRecordTotal = Number(payload.total || 0);
-      sendRecordOffset = Number(payload.offset || 0);
-      const currentPage = sendRecordTotal ? Math.floor(sendRecordOffset / sendRecordPageSize) + 1 : 0;
-      const totalPages = sendRecordTotal ? Math.ceil(sendRecordTotal / sendRecordPageSize) : 0;
-      els.sendRecordTotal.textContent = `共 ${formatNumber(sendRecordTotal)} 条`;
-      els.sendRecordPageLabel.textContent = `第 ${currentPage} / ${totalPages} 页`;
-      els.sendRecordPrevBtn.disabled = sendRecordOffset <= 0;
-      els.sendRecordNextBtn.disabled = sendRecordOffset + items.length >= sendRecordTotal;
-      if (!items.length) {
-        els.sendRecordRows.innerHTML = '<tr><td class="ai-empty" colspan="7">暂无可准确追溯的发送记录</td></tr>';
-        return;
-      }
-      els.sendRecordRows.innerHTML = items.map((item) => `
-        <tr>
-          <td><div class="ai-record-name"><strong>${escapeHtml(item.nickname || "未命名客户")}</strong></div></td>
-          <td class="ai-mono ai-record-id">${escapeHtml(item.external_userid || "—")}</td>
-          <td>${escapeHtml(item.source_label || "自动化话术")}</td>
-          <td><span class="ai-record-status ${sendRecordTone(item.status)}">${escapeHtml(item.status_label || "—")}</span></td>
-          <td>${item.send_time ? formatTime(item.send_time) : "—"}</td>
-          <td class="ai-record-failure" title="${escapeHtml(item.failure_reason || "")}">${escapeHtml(item.failure_reason || "—")}</td>
-          <td><button class="ai-btn soft" type="button" data-send-record-detail="${escapeHtml(item.record_id)}" ${item.detail_available ? "" : "disabled"}>查看详情</button></td>
-        </tr>
-      `).join("");
-      els.sendRecordRows.querySelectorAll("[data-send-record-detail]").forEach((button) => {
-        button.addEventListener("click", () => {
-          openSendRecordDetail(button.dataset.sendRecordDetail, button).catch((error) => {
-            els.sendRecordContentDetail.innerHTML = `<div class="ai-empty">${escapeHtml(window.AdminApi.errorMessage(error, "发送明细加载失败"))}</div>`;
-          });
-        });
-      });
-    };
-
-    const loadSendRecords = async (offset = sendRecordOffset) => {
-      const safeOffset = Math.max(0, Number(offset || 0));
-      els.sendRecordRows.innerHTML = '<tr><td class="ai-empty" colspan="7">发送记录加载中</td></tr>';
-      setStatus(els.sendRecordStatusLine, "加载中...");
-      try {
-        const payload = await fetchJson(`${sendRecordsApiUrl}?limit=${sendRecordPageSize}&offset=${safeOffset}&_=${Date.now()}`);
-        sendRecordsLoaded = true;
-        renderSendRecords(payload);
-        setStatus(els.sendRecordStatusLine, "");
-        return payload;
-      } catch (error) {
-        els.sendRecordRows.innerHTML = '<tr><td class="ai-empty" colspan="7">发送记录加载失败，请稍后重试</td></tr>';
-        els.sendRecordTotal.textContent = "加载失败";
-        setStatus(els.sendRecordStatusLine, window.AdminApi.errorMessage(error, "发送记录加载失败"), "error");
-        throw error;
-      }
-    };
-
-    const drawerMetaCell = (label, value, full = false) => `
-      <div class="ai-detail-cell${full ? " full" : ""}">
-        <div class="label">${escapeHtml(label)}</div>
-        <div class="value">${escapeHtml(value || "—")}</div>
-      </div>
-    `;
-
-    const closeSendRecordDrawer = () => {
-      const wasOpen = els.sendRecordDrawer.getAttribute("aria-hidden") === "false";
-      els.sendRecordDrawerMask.classList.remove("open");
-      els.sendRecordDrawer.classList.remove("open");
-      els.sendRecordDrawer.setAttribute("aria-hidden", "true");
-      if (!wasOpen) return;
-      document.body.style.overflow = bodyOverflowBeforeDrawer;
-      if (sendRecordReturnFocus && typeof sendRecordReturnFocus.focus === "function") {
-        sendRecordReturnFocus.focus();
-      }
-      sendRecordReturnFocus = null;
-    };
-
-    const openSendRecordDrawer = (trigger) => {
-      sendRecordReturnFocus = trigger || document.activeElement;
-      bodyOverflowBeforeDrawer = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      els.sendRecordDrawerMask.classList.add("open");
-      els.sendRecordDrawer.classList.add("open");
-      els.sendRecordDrawer.setAttribute("aria-hidden", "false");
-      els.closeSendRecordDrawerBtn.focus();
-    };
-
-    const openSendRecordDetail = async (recordId, trigger) => {
-      if (!recordId) return;
-      openSendRecordDrawer(trigger);
-      els.sendRecordDrawerSubtitle.textContent = "发送明细加载中";
-      els.sendRecordMeta.innerHTML = "";
-      els.sendRecordContentDetail.innerHTML = '<div class="ai-empty">加载中</div>';
-      const payload = await fetchJson(`${sendRecordsApiUrl}/${encodeURIComponent(recordId)}?_=${Date.now()}`);
-      const record = payload.record || {};
-      els.sendRecordDrawerSubtitle.textContent = `${record.source_label || "发送"} · ${record.status_label || "—"}`;
-      els.sendRecordMeta.innerHTML = [
-        drawerMetaCell("联系人", record.nickname || "未命名客户"),
-        drawerMetaCell("外部联系人 ID", record.external_userid || "—"),
-        drawerMetaCell("发送来源", record.source_label || "—"),
-        drawerMetaCell("发送状态", record.status_label || "—"),
-        drawerMetaCell("发送时间", record.send_time ? formatTime(record.send_time) : "—"),
-        drawerMetaCell("技术尝试次数", String(Number(record.technical_attempt_count || 0))),
-        ...(record.failure_reason ? [drawerMetaCell("失败原因", record.failure_reason, true)] : [])
-      ].join("");
-      if (!window.AICRMSendContentReadonlyDetail) throw new Error("只读发送内容组件加载失败");
-      els.sendRecordContentDetail.innerHTML = window.AICRMSendContentReadonlyDetail.renderFull(record);
-    };
-
     const updateCurrentAction = () => {
-      els.saveCurrentDimensionBtn.textContent = ["members", "records"].includes(currentPanel) ? "刷新列表" : "保存当前维度";
-      els.manualRefreshBtn.hidden = currentPanel === "records";
+      els.saveCurrentDimensionBtn.textContent = ["members", "records"].includes(currentPanel) ? "刷新列表" : "保存当前维度"; els.manualRefreshBtn.hidden = currentPanel === "records";
     };
 
     const showPanel = (key) => {
@@ -1200,20 +972,14 @@
       document.querySelectorAll(".ai-panel").forEach((panel) => {
         panel.classList.toggle("active", panel.id === `panel-${key}`);
       });
-      updateCurrentAction();
-      if (key === "records" && !sendRecordsLoaded) {
-        loadSendRecords(0).catch((error) => {
-          setStatus(els.sendRecordStatusLine, window.AdminApi.errorMessage(error, "发送记录加载失败"), "error");
-        });
-      }
+      updateCurrentAction(); if (key === "records") window.AICRMAudienceSendRecords.enter();
     };
 
     const refreshCurrentPanel = async () => {
       if (currentPanel === "basic") return loadPackage();
       if (currentPanel === "automation") return loadAutomationBinding();
       if (currentPanel === "senders") return loadSenders();
-      if (currentPanel === "records") return loadSendRecords(sendRecordOffset);
-      return loadMembers();
+      return currentPanel === "records" ? window.AICRMAudienceSendRecords.refresh() : loadMembers();
     };
 
     const saveCurrentPanel = async () => {
@@ -1223,8 +989,7 @@
         updateSenderFromInputs();
         return saveSenders(senderItems);
       }
-      if (currentPanel === "records") return loadSendRecords(sendRecordOffset);
-      return loadMembers();
+      return currentPanel === "records" ? window.AICRMAudienceSendRecords.refresh() : loadMembers();
     };
 
     document.querySelectorAll("[data-panel]").forEach((button) => {
@@ -1252,32 +1017,8 @@
         setStatus(els.packageStatusLine, window.AdminApi.errorMessage(error, "成员列表加载失败"), "error");
       });
     });
-    els.sendRecordPrevBtn.addEventListener("click", () => {
-      loadSendRecords(Math.max(0, sendRecordOffset - sendRecordPageSize)).catch((error) => {
-        setStatus(els.sendRecordStatusLine, window.AdminApi.errorMessage(error, "发送记录加载失败"), "error");
-      });
-    });
-    els.sendRecordNextBtn.addEventListener("click", () => {
-      loadSendRecords(sendRecordOffset + sendRecordPageSize).catch((error) => {
-        setStatus(els.sendRecordStatusLine, window.AdminApi.errorMessage(error, "发送记录加载失败"), "error");
-      });
-    });
-    els.closeSendRecordDrawerBtn.addEventListener("click", closeSendRecordDrawer);
-    els.sendRecordDrawerMask.addEventListener("click", closeSendRecordDrawer);
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") closeSendRecordDrawer();
-    });
     els.manualRefreshBtn.addEventListener("click", () => {
-      refreshCurrentPanel().catch((error) => {
-        const statusEl = currentPanel === "automation"
-          ? els.automationStatusLine
-          : currentPanel === "senders"
-            ? els.senderStatusLine
-            : currentPanel === "records"
-              ? els.sendRecordStatusLine
-              : els.packageStatusLine;
-        setStatus(statusEl, window.AdminApi.errorMessage(error, "加载失败"), "error");
-      });
+      refreshCurrentPanel().catch((error) => setStatus(els.packageStatusLine, window.AdminApi.errorMessage(error, "加载失败"), "error"));
     });
     els.saveCurrentDimensionBtn.addEventListener("click", () => {
       saveCurrentPanel().catch((error) => {
@@ -1285,9 +1026,7 @@
           ? els.automationStatusLine
           : currentPanel === "senders"
             ? els.senderStatusLine
-            : currentPanel === "records"
-              ? els.sendRecordStatusLine
-              : els.packageStatusLine;
+            : els.packageStatusLine;
         setStatus(statusEl, window.AdminApi.errorMessage(error, "操作失败"), "error");
       });
     });

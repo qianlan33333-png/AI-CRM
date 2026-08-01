@@ -2427,6 +2427,12 @@
     },
     {
       "accessor": "os.getenv",
+      "file": "scripts/ops/check_ai_audience_send_records_release.py",
+      "key": "DATABASE_URL",
+      "line": 22
+    },
+    {
+      "accessor": "os.getenv",
       "file": "scripts/ops/check_auth_readiness.py",
       "key": "DATABASE_URL",
       "line": 177

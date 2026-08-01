@@ -11,6 +11,10 @@ const detailTemplate = await readFile(
   new URL("../../aicrm_next/extensions/ai/ai_audience_ops/templates/admin_console/ai_audience_package_detail.html", import.meta.url),
   "utf8",
 );
+const audienceRecordsSource = await readFile(
+  new URL("../../aicrm_next/app/admin_console/static/admin_console/ai_audience_send_records.js", import.meta.url),
+  "utf8",
+);
 const assistantTemplate = await readFile(
   new URL("../../aicrm_next/app/admin_console/templates/admin_console/cloud_plan_review.html", import.meta.url),
   "utf8",
@@ -93,17 +97,24 @@ test("audience records are lazy loaded and render the shared full-detail drawer"
   for (const marker of [
     'data-panel="records"',
     'id="panel-records"',
-    "sendRecordsApiUrl",
-    'key === "records" && !sendRecordsLoaded',
-    "AICRMSendContentReadonlyDetail.renderFull(record)",
+    "data-send-records-api-url",
+    "ai_audience_send_records.js",
     'role="dialog"',
     'els.manualRefreshBtn.hidden = currentPanel === "records"',
-    "暂无可准确追溯的发送记录",
-    "发送记录加载失败",
   ]) {
     assert.match(detailTemplate, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
+  for (const marker of [
+    "const pageSize = 20",
+    "function enter()",
+    "AICRMSendContentReadonlyDetail.renderFull(record)",
+    "暂无可准确追溯的发送记录",
+    "发送记录加载失败",
+  ]) {
+    assert.match(audienceRecordsSource, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
   assert.doesNotMatch(detailTemplate, /refreshSendRecordsBtn/);
+  assert.doesNotThrow(() => new vm.Script(audienceRecordsSource));
 });
 
 test("audience detail inline controller remains valid JavaScript after Jinja rendering", () => {
