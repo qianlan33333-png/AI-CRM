@@ -1475,8 +1475,22 @@ def test_frontend_static_change_runs_all_frontend_tests_without_build() -> None:
         "tests/frontend/sidebar_progressive_loading.test.mjs",
         "tests/frontend/service_period_member_grid.test.mjs",
         "tests/frontend/service_period_member_grid_sharing.test.mjs",
+        "tests/frontend/send_content_readonly_detail.test.mjs",
     ]
     assert "needs_frontend_build" not in result
+
+
+def test_ai_audience_send_record_release_check_routes_to_production_scopes() -> None:
+    result = _select("scripts/ops/check_ai_audience_send_records_release.py")
+
+    assert result["matched_scopes"] == ["ai_audience_ops", "ci_deploy"]
+    assert "tests/test_ai_audience_send_records.py" in result["python_tests"]
+    assert "tests/test_ai_audience_send_record_release_check.py" in result["python_tests"]
+    assert "tests/frontend/send_content_readonly_detail.test.mjs" in result["frontend_tests"]
+    assert result["unmatched_files"] == []
+    assert result["needs_postgres"] is True
+    assert result["architecture_gate"] == "full"
+    assert result["needs_full_ci"] is True
 
 
 def test_sidebar_workbench_change_selects_progressive_loading_behavior_test() -> None:

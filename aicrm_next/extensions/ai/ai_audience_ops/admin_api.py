@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from fastapi import APIRouter, Body, Request
@@ -8,11 +9,14 @@ from fastapi.responses import JSONResponse
 
 from aicrm_next.platform.admin_auth.guards import admin_api_auth_error, current_auth_context
 from aicrm_next.platform.shared.admin_read_fallback import admin_read_unavailable_payload
+from aicrm_next.platform.shared.pii_audit import set_pii_audit_result_count
 from aicrm_next.extensions.ai.ai_audience_ops.automation_binding import AudienceAutomationBindingService
 
+from .send_records import GetAudienceSendRecordQuery, ListAudienceSendRecordsQuery
 from .service import AudiencePackageService
 
 router = APIRouter()
+LOGGER = logging.getLogger(__name__)
 
 _HEADERS = {
     "X-AICRM-Route-Owner": "ai_crm_next",
@@ -74,7 +78,7 @@ def _operator(request: Request) -> str:
 def _response(payload: dict[str, Any], *, status_code: int = 200) -> JSONResponse:
     if not payload.get("ok", True):
         error = str(payload.get("error") or "")
-        if error in {"package_not_found", "group_not_found", "automation_not_found"}:
+        if error in {"package_not_found", "group_not_found", "automation_not_found", "send_record_not_found"}:
             status_code = 404
         elif error in {"group_not_empty", "group_name_exists", "automation_already_bound", "automation_not_active", "automation_binding_exists", "automation_binding_state_invalid"}:
             status_code = 409
@@ -181,6 +185,49 @@ def admin_ai_audience_package_members(package_id: int, request: Request, limit: 
     if auth := admin_api_auth_error(request):
         return auth
     return _response(AudiencePackageService().list_admin_members(package_id, limit=limit, offset=offset))
+
+
+@router.get(
+    "/api/admin/ai-audience/packages/{package_id}/send-records",
+    name="api.admin_ai_audience_package_send_records",
+)
+def admin_ai_audience_package_send_records(
+    package_id: int,
+    request: Request,
+    limit: int = 20,
+    offset: int = 0,
+) -> JSONResponse:
+    if auth := admin_api_auth_error(request):
+        return auth
+    try:
+        payload = ListAudienceSendRecordsQuery()(package_id, limit=limit, offset=offset)
+    except Exception as exc:
+        LOGGER.warning("AI Audience send-record list unavailable error_type=%s", type(exc).__name__)
+        set_pii_audit_result_count(request, 0)
+        return _response({"ok": False, "error": "send_records_unavailable"}, status_code=503)
+    set_pii_audit_result_count(request, len(payload.get("items") or []))
+    return _response(payload)
+
+
+@router.get(
+    "/api/admin/ai-audience/packages/{package_id}/send-records/{record_id}",
+    name="api.admin_ai_audience_package_send_record_detail",
+)
+def admin_ai_audience_package_send_record_detail(
+    package_id: int,
+    record_id: str,
+    request: Request,
+) -> JSONResponse:
+    if auth := admin_api_auth_error(request):
+        return auth
+    try:
+        payload = GetAudienceSendRecordQuery()(package_id, record_id)
+    except Exception as exc:
+        LOGGER.warning("AI Audience send-record detail unavailable error_type=%s", type(exc).__name__)
+        set_pii_audit_result_count(request, 0)
+        return _response({"ok": False, "error": "send_records_unavailable"}, status_code=503)
+    set_pii_audit_result_count(request, 1 if payload.get("ok") else 0)
+    return _response(payload)
 
 
 @router.get("/api/admin/ai-audience/packages/{package_id}/webhooks", name="api.admin_ai_audience_package_webhooks")

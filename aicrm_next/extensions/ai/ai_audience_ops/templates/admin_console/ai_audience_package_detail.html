@@ -2,6 +2,8 @@
 
 {% block head_extra %}
 <link rel="stylesheet" href="{{ url_for('static', filename='admin_console/automation_capability_selector.css') }}?v=20260801">
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/send_content_readonly_detail.css') }}?v=20260801-send-records">
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/ai_audience_send_records.css') }}?v=20260801-send-records">
 <style>
   :root {
     --ai-bg: #f6f8fb;
@@ -442,6 +444,7 @@
       <button type="button" data-panel="automation"><span class="ai-index">2</span><span class="ai-nav-label">自动化话术能力</span></button>
       <button type="button" data-panel="senders"><span class="ai-index">3</span><span class="ai-nav-label">发送人白名单</span></button>
       <button type="button" data-panel="members"><span class="ai-index">4</span><span class="ai-nav-label">成员列表</span></button>
+      <button type="button" data-panel="records"><span class="ai-index">5</span><span class="ai-nav-label">发送记录</span></button>
     </nav>
 
     <div class="ai-card">
@@ -548,12 +551,60 @@
           </table>
         </div>
       </section>
+
+      <section class="ai-panel" id="panel-records" data-send-records-api-url="{{ ai_audience_package_send_records_api_url }}">
+        <div class="ai-panel-title-row">
+          <h3>发送记录</h3>
+          <span class="ai-pill gray" id="sendRecordTotal">尚未加载</span>
+        </div>
+        <div class="ai-table-wrap">
+          <table class="ai-table" style="min-width:1080px">
+            <thead>
+              <tr>
+                <th>昵称</th>
+                <th>外部联系人 ID</th>
+                <th>发送来源</th>
+                <th>发送状态</th>
+                <th>发送时间</th>
+                <th>失败原因</th>
+                <th>发送明细</th>
+              </tr>
+            </thead>
+            <tbody id="sendRecordRows">
+              <tr><td class="ai-empty" colspan="7">进入本板块后加载发送记录</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="ai-pagination">
+          <span id="sendRecordPageLabel">第 0 / 0 页</span>
+          <div class="ai-btns">
+            <button class="ai-btn" id="sendRecordPrevBtn" type="button" disabled>上一页</button>
+            <button class="ai-btn" id="sendRecordNextBtn" type="button" disabled>下一页</button>
+          </div>
+        </div>
+        <div class="ai-status-line" id="sendRecordStatusLine"></div>
+      </section>
     </div>
   </section>
 </main>
+
+<div class="ai-drawer-mask" id="sendRecordDrawerMask"></div>
+<aside class="ai-record-drawer" id="sendRecordDrawer" role="dialog" aria-modal="true" aria-label="发送明细" aria-hidden="true" tabindex="-1">
+  <div class="ai-drawer-head">
+    <div>
+      <h3>发送明细</h3>
+      <p id="sendRecordDrawerSubtitle">加载中</p>
+    </div>
+    <button class="ai-btn" id="closeSendRecordDrawerBtn" type="button">关闭</button>
+  </div>
+  <div class="ai-detail-grid" id="sendRecordMeta"></div>
+  <div id="sendRecordContentDetail"><div class="ai-empty">加载中</div></div>
+</aside>
 {% endblock %}
 
 {% block scripts_extra %}
+<script src="{{ url_for('static', filename='admin_console/send_content_readonly_detail.js') }}?v=20260801-send-records"></script>
+<script src="{{ url_for('static', filename='admin_console/ai_audience_send_records.js') }}?v=20260801-send-records"></script>
 <script src="{{ url_for('static', filename='admin_console/automation_capability_selector.js') }}?v=20260801"></script>
 <script>
   (() => {
@@ -910,7 +961,7 @@
     };
 
     const updateCurrentAction = () => {
-      els.saveCurrentDimensionBtn.textContent = currentPanel === "members" ? "刷新列表" : "保存当前维度";
+      els.saveCurrentDimensionBtn.textContent = ["members", "records"].includes(currentPanel) ? "刷新列表" : "保存当前维度"; els.manualRefreshBtn.hidden = currentPanel === "records";
     };
 
     const showPanel = (key) => {
@@ -921,14 +972,14 @@
       document.querySelectorAll(".ai-panel").forEach((panel) => {
         panel.classList.toggle("active", panel.id === `panel-${key}`);
       });
-      updateCurrentAction();
+      updateCurrentAction(); if (key === "records") window.AICRMAudienceSendRecords.enter();
     };
 
     const refreshCurrentPanel = async () => {
       if (currentPanel === "basic") return loadPackage();
       if (currentPanel === "automation") return loadAutomationBinding();
       if (currentPanel === "senders") return loadSenders();
-      return loadMembers();
+      return currentPanel === "records" ? window.AICRMAudienceSendRecords.refresh() : loadMembers();
     };
 
     const saveCurrentPanel = async () => {
@@ -938,7 +989,7 @@
         updateSenderFromInputs();
         return saveSenders(senderItems);
       }
-      return loadMembers();
+      return currentPanel === "records" ? window.AICRMAudienceSendRecords.refresh() : loadMembers();
     };
 
     document.querySelectorAll("[data-panel]").forEach((button) => {

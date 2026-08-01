@@ -1,0 +1,101 @@
+.ai-record-name {
+  display: grid;
+  gap: 3px;
+  min-width: 130px;
+}
+
+.ai-record-id,
+.ai-record-failure {
+  max-width: 260px;
+  overflow-wrap: anywhere;
+}
+
+.ai-record-status {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  border-radius: 999px;
+  background: #f2f4f7;
+  color: #475467;
+  font-size: 12px;
+  font-weight: 850;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+.ai-record-status.sent { background: #ecfdf3; color: #067647; }
+.ai-record-status.failed { background: #fff1f3; color: #c01048; }
+.ai-record-status.retrying,
+.ai-record-status.unknown_after_dispatch { background: #fffaeb; color: #b54708; }
+.ai-record-status.sending { background: #eef4ff; color: #175cd3; }
+
+.ai-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  color: var(--ai-muted);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.ai-drawer-mask {
+  position: fixed;
+  z-index: 1100;
+  inset: 0;
+  display: none;
+  background: rgba(16, 24, 40, .34);
+}
+
+.ai-drawer-mask.open { display: block; }
+
+.ai-record-drawer {
+  position: fixed;
+  z-index: 1110;
+  top: 0;
+  right: 0;
+  width: min(560px, 92vw);
+  height: 100vh;
+  overflow-y: auto;
+  border-left: 1px solid var(--ai-line);
+  background: #fff;
+  box-shadow: -18px 0 42px rgba(16, 24, 40, .14);
+  padding: 22px;
+  transform: translateX(105%);
+  transition: transform .2s ease;
+}
+
+.ai-record-drawer.open { transform: translateX(0); }
+
+.ai-drawer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--ai-line2);
+}
+
+.ai-drawer-head h3 { margin: 0 0 4px; font-size: 20px; }
+.ai-drawer-head p { margin: 0; color: var(--ai-muted); font-size: 13px; }
+
+.ai-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.ai-detail-cell {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--ai-line2);
+  border-radius: 11px;
+  padding: 11px;
+}
+
+.ai-detail-cell .label { color: var(--ai-muted); font-size: 12px; font-weight: 800; }
+.ai-detail-cell .value { margin-top: 5px; color: var(--ai-text); font-weight: 800; }
+.ai-detail-cell.full { grid-column: 1 / -1; }

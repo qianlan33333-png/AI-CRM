@@ -15,6 +15,7 @@ def test_user_ops_external_effect_gateway_creates_single_target_private_message_
                 "unionid": "union_ops_001",
                 "external_userid": "wx_ext_001",
                 "owner_userid": "ZhaoYanFang",
+                "customer_name": "张小蓝",
             }
         ],
         content="欢迎继续了解黄小璨课程",
@@ -51,6 +52,7 @@ def test_user_ops_external_effect_gateway_creates_single_target_private_message_
     assert job.requires_approval is True
     assert job.payload_json["channel"] == "wecom_private"
     assert job.payload_json["target_unionid"] == "union_ops_001"
+    assert job.payload_json["target_display_name"] == "张小蓝"
     assert job.payload_json["external_userids"] == ["wx_ext_001"]
     assert len(job.payload_json["external_userids"]) == 1
     assert job.payload_json["owner_userid"] == "ZhaoYanFang"

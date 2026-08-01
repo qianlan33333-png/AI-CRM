@@ -104,7 +104,7 @@ def _pii_level(entry: dict[str, Any]) -> str:
     owner = str(entry["capability_owner"])
     if path == "/api/external/radar-clicks":
         return "sensitive"
-    if any(marker in path for marker in ("message", "archive", "questionnaire", "identity", "customer", "user", "sidebar")):
+    if any(marker in path for marker in ("message", "send-records", "archive", "questionnaire", "identity", "customer", "user", "sidebar")):
         return "sensitive"
     if any(marker in path for marker in ("order", "payment", "refund", "wechat-pay", "alipay", "service-period", "coupon")):
         return "financial"

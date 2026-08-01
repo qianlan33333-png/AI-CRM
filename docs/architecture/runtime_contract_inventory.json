@@ -1619,7 +1619,7 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/platform/shared/pii_audit.py",
       "key": "AICRM_PII_AUDIT_ENABLED",
-      "line": 92
+      "line": 96
     },
     {
       "accessor": "declared_runtime_environment_key",
@@ -2424,6 +2424,12 @@
       "file": "scripts/ops/check_ai_audience_refresh_owner.py",
       "key": "DATABASE_URL",
       "line": 163
+    },
+    {
+      "accessor": "os.getenv",
+      "file": "scripts/ops/check_ai_audience_send_records_release.py",
+      "key": "DATABASE_URL",
+      "line": 22
     },
     {
       "accessor": "os.getenv",
@@ -4793,7 +4799,7 @@
     }
   ],
   "migration_heads": [
-    "0163_ai_audience_admin_member_read_indexes"
+    "0164_ai_audience_send_record_read_index"
   ],
   "openapi_components": {
     "schemas": {
@@ -11580,6 +11586,131 @@
       "name": "api.admin_ai_audience_package_publish",
       "operation_id": "api.admin_ai_audience_package_publish:POST:/api/admin/ai-audience/packages/{package_id}/publish",
       "path": "/api/admin/ai-audience/packages/{package_id}/publish",
+      "route_group": "ai_audience_admin_api"
+    },
+    {
+      "capability_owner": "ai_audience_ops",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "package_id",
+            "required": true,
+            "schema": {
+              "title": "Package Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.extensions.ai.ai_audience_ops.admin_api.admin_ai_audience_package_send_records",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "extension.ai",
+      "methods": [
+        "GET"
+      ],
+      "name": "api.admin_ai_audience_package_send_records",
+      "operation_id": "api.admin_ai_audience_package_send_records:GET:/api/admin/ai-audience/packages/{package_id}/send-records",
+      "path": "/api/admin/ai-audience/packages/{package_id}/send-records",
+      "route_group": "ai_audience_admin_api"
+    },
+    {
+      "capability_owner": "ai_audience_ops",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "package_id",
+            "required": true,
+            "schema": {
+              "title": "Package Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "record_id",
+            "required": true,
+            "schema": {
+              "title": "Record Id",
+              "type": "string"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.extensions.ai.ai_audience_ops.admin_api.admin_ai_audience_package_send_record_detail",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "extension.ai",
+      "methods": [
+        "GET"
+      ],
+      "name": "api.admin_ai_audience_package_send_record_detail",
+      "operation_id": "api.admin_ai_audience_package_send_record_detail:GET:/api/admin/ai-audience/packages/{package_id}/send-records/{record_id}",
+      "path": "/api/admin/ai-audience/packages/{package_id}/send-records/{record_id}",
       "route_group": "ai_audience_admin_api"
     },
     {

@@ -300,3 +300,20 @@ def test_user_ops_batch_send_preview_supports_ai_audience_package_source(next_cl
     assert jobs[0].payload_json["target_unionid"] == "union_ai_priority"
     assert jobs[0].payload_json["external_userids"] == ["wm_priority"]
     assert jobs[0].payload_json["owner_userid"] == "QianLan"
+    with get_session_factory()() as session:
+        ownership = (
+            session.execute(
+                text(
+                    """
+                    SELECT target_source, target_source_id
+                    FROM user_ops_send_records_next
+                    WHERE record_key = :record_key
+                    """
+                ),
+                {"record_key": body["record_id"]},
+            )
+            .mappings()
+            .one()
+        )
+    assert ownership["target_source"] == "ai_audience_package"
+    assert ownership["target_source_id"] == package_id

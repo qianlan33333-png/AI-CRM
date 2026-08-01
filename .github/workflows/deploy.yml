@@ -485,14 +485,12 @@ jobs:
               --register-existing-conflicts \
               --expected-release-sha "$after_sha" \
               | tee /tmp/aicrm-identity-preflight.json
+            python3 scripts/ops/check_ai_audience_send_records_release.py --phase preflight --sha "$after_sha"
             runtime_mutation_started=1
             runtime_transaction_partial=1
             python3 "$release_control_manager" \
               --manifest "$release_control_manifest" \
               --phase begin-transaction --execute
-            # Previous identity worker held its claim transaction open while
-            # re-enqueueing the same source from another connection. Recover only
-            # that aged self-deadlock while the deploy guard blocks restarts.
             python3 scripts/ops/recover_identity_resolution_worker_deadlock.py \
               --execute \
               | tee /tmp/aicrm-identity-worker-deadlock-recovery.json
@@ -524,8 +522,8 @@ jobs:
               sudo ss -ltnp 'sport = :5001' || true
               exit 1
             fi
-            # 1) AI-CRM Next schema migrations
             python3 -m alembic upgrade head
+            python3 scripts/ops/check_ai_audience_send_records_release.py --phase post-migration --sha "$after_sha"
             export AICRM_SECRET_STORE_DIR="${AICRM_SECRET_STORE_DIR:-/home/ubuntu/.aicrm-secrets}"
             python3 scripts/ops/migrate_app_setting_secrets.py --execute \
               --secret-store-dir "$AICRM_SECRET_STORE_DIR" \

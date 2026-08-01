@@ -64,6 +64,7 @@ def admin_ai_audience_package_detail_page(request: Request, package_id: int):
             "ai_audience_package_api_url": f"/api/admin/ai-audience/packages/{package_id}",
             "ai_audience_package_groups_api_url": "/api/admin/ai-audience/package-groups",
             "ai_audience_package_members_api_url": f"/api/admin/ai-audience/packages/{package_id}/members",
+            "ai_audience_package_send_records_api_url": f"/api/admin/ai-audience/packages/{package_id}/send-records",
             "ai_audience_package_automation_binding_api_url": f"/api/admin/ai-audience/packages/{package_id}/automation-binding",
             "automation_agents_api_url": "/api/admin/automation-agents",
             "ai_audience_package_senders_api_url": f"/api/admin/ai-audience/packages/{package_id}/senders",

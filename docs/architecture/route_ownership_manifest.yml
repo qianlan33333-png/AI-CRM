@@ -7832,6 +7832,46 @@ routes:
   rate_limit: authenticated
   principal_types:
   - human
+- path: /api/admin/ai-audience/packages/{package_id}/send-records
+  methods:
+  - GET
+  route_name: api.admin_ai_audience_package_send_records
+  capability_owner: ai_audience_ops
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: admin_read
+  access_scope: global
+  pii_level: sensitive
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/ai-audience/packages/{package_id}/send-records/{record_id}
+  methods:
+  - GET
+  route_name: api.admin_ai_audience_package_send_record_detail
+  capability_owner: ai_audience_ops
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: admin_read
+  access_scope: global
+  pii_level: sensitive
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
 - path: /api/admin/ai-audience/packages/{package_id}/webhooks
   methods:
   - GET

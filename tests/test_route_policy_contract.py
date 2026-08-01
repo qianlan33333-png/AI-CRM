@@ -132,6 +132,24 @@ def test_external_radar_routes_use_existing_read_client_and_explicit_pii_levels(
     )
 
 
+def test_ai_audience_send_record_routes_are_sensitive_human_session_reads() -> None:
+    for path in (
+        "/api/admin/ai-audience/packages/{package_id}/send-records",
+        "/api/admin/ai-audience/packages/{package_id}/send-records/{record_id}",
+    ):
+        _assert_policy(
+            path,
+            "GET",
+            {
+                "audience": "admin",
+                "auth_scheme": "human_session",
+                "capability": "admin_read",
+                "pii_level": "sensitive",
+                "requires_auth": True,
+            },
+        )
+
+
 def test_known_unsafe_routes_have_explicit_deny_by_default_policies() -> None:
     _assert_policy(
         "/mcp",

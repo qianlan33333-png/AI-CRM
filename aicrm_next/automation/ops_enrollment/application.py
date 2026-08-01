@@ -762,6 +762,8 @@ class ExecuteUserOpsBatchSendCommand:
             record_payload = {
                 "idempotency_key": execute_idempotency_key,
                 "execution_backend": "external_effect_queue",
+                "target_source": str(request.target_source or "").strip(),
+                "target_source_id": request.target_source_id,
                 "selected_count": preview["selected_count"],
                 "eligible_count": preview["eligible_count"],
                 "sent_count": 0,

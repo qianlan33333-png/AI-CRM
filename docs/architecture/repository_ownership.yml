@@ -153,6 +153,24 @@ repositories:
       - ai_audience_package_run
       - ai_audience_package_sender
       - ai_audience_package_version
+  aicrm_next/extensions/ai/ai_audience_ops/send_records/repository.py:
+    capability_owner: aicrm_next.extensions.ai.ai_audience_ops
+    table_reads:
+      - ai_audience_package
+      - automation_agent_webhook_batch
+      - automation_agent_webhook_item
+      - broadcast_jobs
+      - cloud_broadcast_plan_recipient_messages
+      - cloud_broadcast_plan_recipients
+      - cloud_broadcast_plans
+      - crm_user_identity
+      - external_effect_attempt
+      - external_effect_job
+      - records
+      - user_ops_send_records_next
+    table_writes: []
+    non_table_relations:
+      - records
   aicrm_next/extensions/ai/automation_agents/repository.py:
     capability_owner: aicrm_next.extensions.ai.automation_agents
     table_reads:
