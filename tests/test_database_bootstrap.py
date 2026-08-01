@@ -27,7 +27,7 @@ from scripts.ops.bootstrap_database import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ALEMBIC_HEAD_REVISION = "0162_ai_audience_groups_binding"
+ALEMBIC_HEAD_REVISION = "0163_ai_audience_admin_member_read_indexes"
 CREATE_TABLE_PATTERN = re.compile(
     r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?([a-zA-Z_][a-zA-Z0-9_]*)",
     re.IGNORECASE,

@@ -131,6 +131,7 @@ def test_operational_report_timer_is_mandatory_and_kicked_after_release() -> Non
         "service": "openclaw-broadcast-hourly-feishu-report.service",
         "kick_after_timer_restart": True,
         "kick_failure_fatal": True,
+        "inspection_allow_additional_invocations": True,
     }
     assert manifest["database_application_names"][timer_entry["service"]] == "aicrm-next-cron-ops-report"
     assert "Environment=DB_APPLICATION_NAME=aicrm-next-cron-ops-report" in service

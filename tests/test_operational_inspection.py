@@ -102,6 +102,86 @@ def test_systemd_timer_inspection_compares_expected_with_distinct_invocations(tm
     assert report["issues"][0]["issues"] == ["少执行 1 次"]
 
 
+def test_timer_inspection_excludes_deploy_pause_and_declared_kick_from_failures(tmp_path):
+    manifest = {
+        "active_autostart": [
+            {
+                "timer": "scheduler.timer",
+                "service": "scheduler.service",
+                "inspection_allowed_missed_executions": 2,
+            },
+            {
+                "timer": "report.timer",
+                "service": "report.service",
+                "kick_after_timer_restart": True,
+                "inspection_allow_additional_invocations": True,
+            },
+        ]
+    }
+    manifest_path = tmp_path / "production_runtime_units.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    (tmp_path / "scheduler.timer").write_text("[Timer]\nOnCalendar=*-*-* *:*:40\n", encoding="utf-8")
+    (tmp_path / "report.timer").write_text("[Timer]\nOnCalendar=*-*-* *:05:00\n", encoding="utf-8")
+
+    def run(args):
+        if args[0] == "systemctl":
+            return subprocess.CompletedProcess(args, 0, "UnitFileState=enabled\nActiveState=active\n", "")
+        service = args[args.index("-u") + 1]
+        count = 58 if service == "scheduler.service" else 2
+        rows = "\n".join(
+            json.dumps({"_SYSTEMD_INVOCATION_ID": f"{service}-{index}"})
+            for index in range(count)
+        )
+        return subprocess.CompletedProcess(args, 0, rows, "")
+
+    start, end = _window()
+    report = inspect_systemd_timers(
+        window_start=start,
+        window_end=end,
+        manifest_path=manifest_path,
+        command_runner=run,
+    )
+
+    assert report["expectedExecutions"] == 61
+    assert report["actualExecutions"] == 60
+    assert report["issueCount"] == 0
+    assert report["calibratedDifferenceCount"] == 2
+    scheduler, reporter = report["details"]
+    assert scheduler["allowedMissedExecutions"] == 2
+    assert reporter["allowAdditionalInvocations"] is True
+    message = build_operational_report_message(
+        window_start=start,
+        window_end=end,
+        inspection={
+            "status": "正常",
+            "issueCount": 0,
+            "timer": report,
+            "external": {
+                "created": 0,
+                "succeeded": 0,
+                "overdue": 0,
+                "stalled": 0,
+                "unknown": 0,
+                "terminal": 0,
+                "issueCount": 0,
+                "issueTypes": [],
+            },
+            "internal": {
+                "outboxCreated": 0,
+                "outboxRelayed": 0,
+                "consumerSucceeded": 0,
+                "outboxBreaks": 0,
+                "consumerBreaks": 0,
+                "missingConsumers": 0,
+                "issueCount": 0,
+                "issueTypes": [],
+            },
+        },
+    )
+    assert "发布停顿或上线主动补跑" in message
+    assert "保留原始次数但不计为业务断点" in message
+
+
 def test_operational_report_explains_breakpoints_in_business_language():
     start, end = _window()
     inspection = {
