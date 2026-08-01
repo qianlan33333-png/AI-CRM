@@ -167,8 +167,20 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     )
     audience_groups_binding = VERSIONS / "0162_ai_audience_groups_automation_binding.py"
     audience_groups_binding_source = audience_groups_binding.read_text(encoding="utf-8")
+    audience_admin_member_indexes = (
+        VERSIONS / "0163_ai_audience_admin_member_read_indexes.py"
+    )
+    audience_admin_member_indexes_source = audience_admin_member_indexes.read_text(
+        encoding="utf-8"
+    )
 
-    assert heads == {"0162_ai_audience_groups_binding"}
+    assert heads == {"0163_ai_audience_admin_member_read_indexes"}
+    assert revisions["0163_ai_audience_admin_member_read_indexes"]["down_revision"] == (
+        "0162_ai_audience_groups_binding"
+    )
+    assert "CREATE INDEX CONCURRENTLY IF NOT EXISTS" in audience_admin_member_indexes_source
+    assert "idx_ai_audience_member_current_admin_page" in audience_admin_member_indexes_source
+    assert "idx_wecom_identity_map_external_updated" in audience_admin_member_indexes_source
     assert revisions["0162_ai_audience_groups_binding"]["down_revision"] == (
         "0161_reconcile_archive_job_run_ledger"
     )

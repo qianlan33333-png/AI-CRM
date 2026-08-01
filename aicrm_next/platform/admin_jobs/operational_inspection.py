@@ -23,6 +23,8 @@ class TimerSpec:
     timer: str
     service: str
     required: bool
+    allowed_missed_executions: int = 0
+    allow_additional_invocations: bool = False
 
 
 def collect_operational_inspection(
@@ -101,9 +103,18 @@ def inspect_systemd_timers(
             issues.append("生产必需 timer 未运行")
         if monitored and reason:
             issues.append(reason)
-        if monitored and expected is not None and actual < expected:
+        if (
+            monitored
+            and expected is not None
+            and actual < max(0, expected - spec.allowed_missed_executions)
+        ):
             issues.append(f"少执行 {expected - actual} 次")
-        if monitored and expected is not None and actual > expected:
+        if (
+            monitored
+            and expected is not None
+            and actual > expected
+            and not spec.allow_additional_invocations
+        ):
             issues.append(f"多执行 {actual - expected} 次")
         details.append(
             {
@@ -116,17 +127,28 @@ def inspect_systemd_timers(
                 "schedule": schedule,
                 "expected": expected,
                 "actual": actual,
+                "allowedMissedExecutions": spec.allowed_missed_executions,
+                "allowAdditionalInvocations": spec.allow_additional_invocations,
                 "issues": issues,
             }
         )
 
     issue_details = [item for item in details if item["issues"]]
+    calibrated_differences = [
+        item
+        for item in details
+        if item["monitored"]
+        and item["expected"] is not None
+        and item["actual"] != item["expected"]
+        and not item["issues"]
+    ]
     return {
         "managedCount": len(timer_specs),
         "monitoredCount": sum(1 for item in details if item["monitored"]),
         "expectedExecutions": expected_total,
         "actualExecutions": actual_total,
         "issueCount": len(issue_details),
+        "calibratedDifferenceCount": len(calibrated_differences),
         "issues": issue_details,
         "details": details,
     }
@@ -143,7 +165,20 @@ def load_timer_specs(manifest_path: Path = PRODUCTION_RUNTIME_MANIFEST) -> list[
             if not timer or not service or timer in seen:
                 continue
             seen.add(timer)
-            specs.append(TimerSpec(timer=timer, service=service, required=required))
+            specs.append(
+                TimerSpec(
+                    timer=timer,
+                    service=service,
+                    required=required,
+                    allowed_missed_executions=max(
+                        0,
+                        int(item.get("inspection_allowed_missed_executions") or 0),
+                    ),
+                    allow_additional_invocations=bool(
+                        item.get("inspection_allow_additional_invocations", False)
+                    ),
+                )
+            )
     return specs
 
 
@@ -289,12 +324,22 @@ def build_operational_report_message(
     external = inspection["external"]
     internal = inspection["internal"]
     status_icon = "🔴" if inspection.get("issueCount") else "🟢"
+    timer_summary = (
+        f"应执行 {timer['expectedExecutions']} 次，实际执行 {timer['actualExecutions']} 次；"
+        f"监控 {timer['monitoredCount']}/{timer['managedCount']} 个 timer，异常 {timer['issueCount']} 个。"
+    )
+    calibrated_timer_count = int(timer.get("calibratedDifferenceCount") or 0)
+    if calibrated_timer_count:
+        timer_summary += (
+            f"其中 {calibrated_timer_count} 个执行次数差异属于发布停顿或上线主动补跑，"
+            "保留原始次数但不计为业务断点。"
+        )
     lines = [
         f"【系统运营巡检小时报】{status_icon} {inspection.get('status', '未知')}",
         f"统计窗口：{window_start.astimezone(ZoneInfo('Asia/Shanghai')):%Y-%m-%d %H:%M} - {window_end.astimezone(ZoneInfo('Asia/Shanghai')):%H:%M}",
         "",
         "1. 定时任务",
-        f"应执行 {timer['expectedExecutions']} 次，实际执行 {timer['actualExecutions']} 次；监控 {timer['monitoredCount']}/{timer['managedCount']} 个 timer，异常 {timer['issueCount']} 个。",
+        timer_summary,
         "",
         "2. 外部推送",
         (

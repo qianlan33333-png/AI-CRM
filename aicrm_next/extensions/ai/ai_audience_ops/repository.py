@@ -1014,47 +1014,72 @@ class SQLAlchemyAudienceRepository(AudiencePackageRepositoryMixin, AudienceRepos
     def list_admin_members(self, package_id: int, *, limit: int = 50, offset: int = 0) -> tuple[list[dict[str, Any]], int]:
         bounded_limit = max(1, min(int(limit or 50), 200))
         bounded_offset = max(0, int(offset or 0))
-        rows = self._all(
-            """
-            WITH active_members AS (
-                SELECT *
-                FROM ai_audience_member_current
-                WHERE package_id = :package_id
-                  AND status = 'active'
-            ),
-            identity_rows AS (
-                SELECT
-                    unionid,
-                    primary_external_userid,
-                    profile_json
-                FROM crm_user_identity
-                WHERE COALESCE(unionid, '') <> ''
-            ),
-            contact_names AS (
-                SELECT DISTINCT ON (external_userid)
-                    external_userid,
-                    customer_name
-                FROM audience_read.wecom_contacts_v1
-                WHERE COALESCE(external_userid, '') <> ''
-                ORDER BY external_userid, updated_at DESC NULLS LAST
+        params = {
+            "package_id": int(package_id),
+            "limit": bounded_limit,
+            "offset": bounded_offset,
+        }
+        # Count only the package-local indexed member rows.  The previous
+        # COUNT(*) OVER query forced PostgreSQL to join and sort the complete
+        # identity/contact population before LIMIT could apply, which made an
+        # ordinary admin page vulnerable to the web statement timeout.
+        with self._session_factory() as session:
+            total = int(
+                session.execute(
+                    text(
+                        """
+                        SELECT COUNT(*)
+                        FROM ai_audience_member_current
+                        WHERE package_id = :package_id
+                          AND status = 'active'
+                        """
+                    ),
+                    params,
+                ).scalar_one()
+                or 0
             )
-            SELECT
-                m.id,
-                COALESCE(NULLIF(c.customer_name, ''), NULLIF(i.profile_json->>'name', ''), '未命名客户') AS nickname,
-                m.unionid,
-                COALESCE(i.primary_external_userid, '') AS external_userid,
-                m.first_entered_at AS entered_at,
-                COUNT(*) OVER () AS total_count
-            FROM active_members m
-            LEFT JOIN identity_rows i ON i.unionid = m.unionid
-            LEFT JOIN contact_names c ON c.external_userid = i.primary_external_userid
-            ORDER BY m.first_entered_at DESC, m.id DESC
-            LIMIT :limit OFFSET :offset
-            """,
-            {"package_id": int(package_id), "limit": bounded_limit, "offset": bounded_offset},
-        )
-        total = int(rows[0].get("total_count") or 0) if rows else 0
-        return rows, total
+            rows = (
+                session.execute(
+                    text(
+                        """
+                        WITH paged_members AS MATERIALIZED (
+                            SELECT id, unionid, first_entered_at
+                            FROM ai_audience_member_current
+                            WHERE package_id = :package_id
+                              AND status = 'active'
+                            ORDER BY first_entered_at DESC, id DESC
+                            LIMIT :limit OFFSET :offset
+                        )
+                        SELECT
+                            m.id,
+                            COALESCE(
+                                NULLIF(c.customer_name, ''),
+                                NULLIF(i.customer_name, ''),
+                                NULLIF(i.profile_json->>'name', ''),
+                                '未命名客户'
+                            ) AS nickname,
+                            m.unionid,
+                            COALESCE(i.primary_external_userid, '') AS external_userid,
+                            m.first_entered_at AS entered_at
+                        FROM paged_members m
+                        LEFT JOIN crm_user_identity i ON i.unionid = m.unionid
+                        LEFT JOIN LATERAL (
+                            SELECT contact.name AS customer_name
+                            FROM wecom_external_contact_identity_map contact
+                            WHERE contact.external_userid = i.primary_external_userid
+                              AND COALESCE(contact.external_userid, '') <> ''
+                            ORDER BY contact.updated_at DESC NULLS LAST, contact.id DESC
+                            LIMIT 1
+                        ) c ON TRUE
+                        ORDER BY m.first_entered_at DESC, m.id DESC
+                        """
+                    ),
+                    params,
+                )
+                .mappings()
+                .fetchall()
+            )
+        return [_public_row(dict(row)) or {} for row in rows], total
 
     def list_senders(self, package_id: int) -> list[dict[str, Any]]:
         return self._all(
