@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "operation_id": "ai_audience_binding_history_20260801",
+  "expected_production_sha": "3b045574ef1b5b322716ee7a62aa86fd3507df43",
+  "automation_id": 6,
+  "expected_issue_count": 28,
+  "expected_issue_kind_counts": {
+    "agent_package_mismatch": 1,
+    "orphan_agent_binding": 1,
+    "orphan_subscription_package": 26
+  },
+  "expected_issue_fingerprint": "c6458353624dd7a2f193ecbe6799de1e518d6cdad270c1867f0cf38f3e2ed57b",
+  "execute_confirmation": "EXECUTE_AI_AUDIENCE_BINDING_HISTORY_20260801"
+}
