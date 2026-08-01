@@ -1,9 +1,9 @@
 {% extends "admin_console/base.html" %}
 
 {% block head_extra %}
-<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/group_chat_picker.css') }}?v=20260801">
-<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/material_picker.css') }}?v=20260801">
-<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/send_content_composer.css') }}?v=20260801">
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/group_chat_picker.css') }}?v=group-chat-direct-select-20260715">
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/material_picker.css') }}?v=group-chat-direct-select-20260715">
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/send_content_composer.css') }}?v=group-chat-selector-20260715">
 <style>
   :root { --aud-blue:#2563eb; --aud-line:#e4e7ec; --aud-muted:#667085; --aud-text:#101828; --aud-danger:#d92d20; }
   .admin-page-summary { display:none; }
@@ -90,10 +90,10 @@
 {% endblock %}
 
 {% block scripts_extra %}
-<script src="{{ url_for('static', filename='admin_console/group_chat_picker.js') }}?v=20260801"></script>
-<script src="{{ url_for('static', filename='admin_console/material_picker.js') }}?v=20260801"></script>
-<script src="{{ url_for('static', filename='admin_console/send_content_composer.js') }}?v=20260801"></script>
-<script src="{{ url_for('static', filename='admin_console/user_ops_batch_send_modal.js') }}?v=20260801"></script>
+<script src="{{ url_for('static', filename='admin_console/group_chat_picker.js') }}?v=group-chat-direct-select-20260715"></script>
+<script src="{{ url_for('static', filename='admin_console/material_picker.js') }}?v=group-chat-direct-select-20260715"></script>
+<script src="{{ url_for('static', filename='admin_console/send_content_composer.js') }}?v=group-chat-selector-20260715"></script>
+<script src="{{ url_for('static', filename='admin_console/user_ops_batch_send_modal.js') }}?v=group-chat-selector-20260715"></script>
 <script>
 (() => {
   const packagesUrl = {{ ai_audience_packages_api_url | tojson }};
