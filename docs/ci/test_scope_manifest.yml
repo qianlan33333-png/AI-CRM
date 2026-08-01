@@ -2444,6 +2444,7 @@
         "tests/test_navigation_target_url_link_resolver.py",
         "tests/test_operational_inspection.py",
         "tests/test_operational_inspection_postgres.py",
+        "tests/test_run_broadcast_hourly_feishu_report_script.py",
         "tests/test_webhook_inbox_repository.py"
       ],
       "python_tests": [
@@ -2460,6 +2461,7 @@
         "tests/test_next_admin_jobs_native.py",
         "tests/test_operational_inspection.py",
         "tests/test_operational_inspection_postgres.py",
+        "tests/test_run_broadcast_hourly_feishu_report_script.py",
         "tests/test_external_effects_mvp.py",
         "tests/test_webhook_inbox_repository.py"
       ],

@@ -48178,9 +48178,11 @@
       "unit": "openclaw-automation-ops-scheduler.timer"
     },
     {
+      "kick_after_timer_restart": true,
+      "kick_failure_fatal": true,
       "kind": "timer",
       "service": "openclaw-broadcast-hourly-feishu-report.service",
-      "state": "approval_required",
+      "state": "active_autostart",
       "unit": "openclaw-broadcast-hourly-feishu-report.timer"
     },
     {

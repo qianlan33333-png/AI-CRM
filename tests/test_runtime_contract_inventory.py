@@ -100,6 +100,14 @@ def test_runtime_contract_inventory_covers_r00_behavior_surfaces() -> None:
         "kick_after_timer_restart": False,
         "kick_failure_fatal": False,
     }
+    assert runtime_units["openclaw-broadcast-hourly-feishu-report.timer"] == {
+        "unit": "openclaw-broadcast-hourly-feishu-report.timer",
+        "kind": "timer",
+        "state": "active_autostart",
+        "service": "openclaw-broadcast-hourly-feishu-report.service",
+        "kick_after_timer_restart": True,
+        "kick_failure_fatal": True,
+    }
     for unit_name in (
         "openclaw-internal-event-worker.timer",
         "openclaw-external-effect-worker.timer",

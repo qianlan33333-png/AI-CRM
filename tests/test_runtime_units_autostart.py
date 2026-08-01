@@ -44,6 +44,8 @@ def test_runtime_units_manifest_classifies_every_deploy_timer() -> None:
     assert "openclaw-wechat-pay-order-reconciliation-worker.timer" in active
     assert "aicrm-data-health-snapshot.timer" in active
     assert "aicrm-job-catalog-scheduler.timer" in active
+    assert "openclaw-broadcast-hourly-feishu-report.timer" in active
+    assert "openclaw-broadcast-hourly-feishu-report.timer" not in approval_required
     assert "aicrm-ai-audience-daily-intent.timer" in retired_forbidden
     assert "aicrm-next-broadcast-delegation.timer" in retired_forbidden
     assert "aicrm-next-group-ops-planning.timer" in retired_forbidden
@@ -112,6 +114,33 @@ def test_data_health_snapshot_timer_is_bounded_and_kicked_after_release() -> Non
     assert "Persistent=true" in timer
     assert "RandomizedDelaySec=120" in timer
     assert "Unit=aicrm-data-health-snapshot.service" in timer
+
+
+def test_operational_report_timer_is_mandatory_and_kicked_after_release() -> None:
+    manifest = _manifest()
+    timer_entry = next(
+        item
+        for item in manifest["active_autostart"]
+        if item["timer"] == "openclaw-broadcast-hourly-feishu-report.timer"
+    )
+    service = (ROOT / "deploy" / timer_entry["service"]).read_text(encoding="utf-8")
+    timer = (ROOT / "deploy" / timer_entry["timer"]).read_text(encoding="utf-8")
+
+    assert timer_entry == {
+        "timer": "openclaw-broadcast-hourly-feishu-report.timer",
+        "service": "openclaw-broadcast-hourly-feishu-report.service",
+        "kick_after_timer_restart": True,
+        "kick_failure_fatal": True,
+    }
+    assert manifest["database_application_names"][timer_entry["service"]] == "aicrm-next-cron-ops-report"
+    assert "Environment=DB_APPLICATION_NAME=aicrm-next-cron-ops-report" in service
+    assert "Environment=PGAPPNAME=aicrm-next-cron-ops-report" in service
+    assert "Environment=DB_POOL_SIZE=1" in service
+    assert "Environment=DB_MAX_OVERFLOW=0" in service
+    assert "TimeoutStartSec=240" in service
+    assert "run_broadcast_hourly_feishu_report.py" in service
+    assert "OnCalendar=*-*-* *:05:00" in timer
+    assert "Persistent=true" in timer
 
 
 def test_runtime_units_manifest_rejects_missing_database_application_name() -> None:

@@ -54,6 +54,7 @@ def test_repository_ownership_targeted_declarations_are_complete() -> None:
     ]
     assert repositories["aicrm_next/platform/admin_jobs/repository.py"]["table_reads"] == [
         "broadcast_job_events",
+        "broadcast_job_hourly_reports",
         "broadcast_jobs",
         "broadcast_queue_notification_settings",
         "outbound_tasks",

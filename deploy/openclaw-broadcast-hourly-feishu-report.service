@@ -8,4 +8,9 @@ Type=oneshot
 User=ubuntu
 WorkingDirectory=/home/ubuntu/极简 crm
 EnvironmentFile=/home/ubuntu/.openclaw-wecom-pg.env
+Environment=DB_APPLICATION_NAME=aicrm-next-cron-ops-report
+Environment=PGAPPNAME=aicrm-next-cron-ops-report
+Environment=DB_POOL_SIZE=1
+Environment=DB_MAX_OVERFLOW=0
 ExecStart=/bin/bash -lc 'source /home/ubuntu/venvs/openclaw/bin/activate && python scripts/run_broadcast_hourly_feishu_report.py'
+TimeoutStartSec=240

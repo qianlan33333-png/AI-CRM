@@ -44,6 +44,7 @@ class FeishuWebhookValidationError(ValueError):
 
 HourlyReportSender = Callable[[str, str], dict[str, Any]]
 OperationalInspectionCollector = Callable[..., dict[str, Any]]
+ErrorReportingConfigLoader = Callable[[], Any]
 
 
 def validate_feishu_webhook_url(webhook_url: str) -> None:
@@ -420,14 +421,19 @@ def send_broadcast_job_hourly_feishu_report(
     repo: AdminJobsRepository | None = None,
     sender: HourlyReportSender | None = None,
     inspection_collector: OperationalInspectionCollector | None = None,
+    error_reporting_config_loader: ErrorReportingConfigLoader | None = None,
 ) -> dict[str, Any]:
     repo = repo or build_admin_jobs_repository()
     setting = repo.get_broadcast_notification_setting(FEISHU_CHANNEL)
-    if not setting or not normalized_text(setting.get("webhook_url")):
-        return {"status": "skipped_no_config"}
-    if not normalized_bool(setting.get("enabled")):
-        return {"status": "skipped_disabled"}
-    if normalized_text(setting.get("validation_status")) != "valid":
+    webhook_url = _operational_report_webhook_url(
+        setting=setting,
+        error_reporting_config_loader=error_reporting_config_loader,
+    )
+    if not webhook_url:
+        if not setting or not normalized_text(setting.get("webhook_url")):
+            return {"status": "skipped_no_config"}
+        if not normalized_bool(setting.get("enabled")):
+            return {"status": "skipped_disabled"}
         return {"status": "skipped_unverified"}
 
     window = get_previous_hour_window(now=now)
@@ -444,8 +450,14 @@ def send_broadcast_job_hourly_feishu_report(
 
     report_key = build_hourly_report_key(channel=FEISHU_CHANNEL, window_start=window_start)
     created = create_hourly_report_pending(report_key=report_key, window_start=window_start, window_end=window_end, channel=FEISHU_CHANNEL, repo=repo)
-    if created == "duplicate":
+    if created == "duplicate_sent":
         return {"status": "skipped_duplicate", "summary": public_summary}
+    if created == "duplicate_pending":
+        return {
+            "status": "failed",
+            "summary": public_summary,
+            "message": FEISHU_HOURLY_REPORT_ERROR,
+        }
 
     message = build_operational_report_message(
         window_start=window_start,
@@ -454,7 +466,7 @@ def send_broadcast_job_hourly_feishu_report(
     )
     send = sender or send_feishu_operational_webhook_message
     try:
-        result = send(normalized_text(setting.get("webhook_url")), message)
+        result = send(webhook_url, message)
     except Exception:
         result = {"ok": False}
     if result.get("ok") is True and result.get("queued") is True:
@@ -486,6 +498,36 @@ def send_broadcast_job_hourly_feishu_report(
         "summary": public_summary,
         "message": FEISHU_HOURLY_REPORT_ERROR,
     }
+
+
+def _operational_report_webhook_url(
+    *,
+    setting: dict[str, Any] | None,
+    error_reporting_config_loader: ErrorReportingConfigLoader | None,
+) -> str:
+    """Resolve an operational webhook without exposing its secret in results or logs."""
+
+    if (
+        setting
+        and normalized_bool(setting.get("enabled"))
+        and normalized_text(setting.get("validation_status")) == "valid"
+        and normalized_text(setting.get("webhook_url"))
+    ):
+        return normalized_text(setting.get("webhook_url"))
+
+    if error_reporting_config_loader is None:
+        from aicrm_next.platform.platform_foundation.error_reporting.reporter import (
+            load_error_reporting_config,
+        )
+
+        error_reporting_config_loader = load_error_reporting_config
+    try:
+        config = error_reporting_config_loader()
+    except Exception:
+        return ""
+    if not bool(getattr(config, "enabled", False)):
+        return ""
+    return normalized_text(getattr(config, "webhook_url", ""))
 
 
 def _unavailable_operational_inspection(exc: Exception) -> dict[str, Any]:
