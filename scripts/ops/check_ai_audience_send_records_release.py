@@ -7,7 +7,7 @@ import os
 from typing import Any
 
 
-EXPECTED_MIGRATION_HEAD = "0163_ai_audience_send_record_read_index"
+EXPECTED_MIGRATION_HEAD = "0164_ai_audience_send_record_read_index"
 MANUAL_INDEX = "idx_user_ops_send_records_ai_audience"
 AUTOMATION_INDEX = "idx_cloud_broadcast_plans_ai_audience_send_records"
 REQUIRED_TABLES = (
