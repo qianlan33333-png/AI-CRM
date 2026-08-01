@@ -4,7 +4,10 @@ from datetime import datetime, timedelta, timezone
 
 from aicrm_next.channels.channel_entry.realtime_contract import (
     WECOM_WELCOME_EFFECT_LANE,
+    WECOM_WELCOME_FALLBACK_SECONDS,
     WECOM_WELCOME_INGRESS_LANE,
+    WECOM_WELCOME_PROVIDER_GUARD_SECONDS,
+    WECOM_WELCOME_PROVIDER_WINDOW_SECONDS,
     welcome_provider_deadline,
 )
 from aicrm_next.channels.channel_entry.inbox import ingest_wecom_callback
@@ -136,6 +139,15 @@ def test_welcome_deadline_keeps_two_seconds_for_provider_round_trip() -> None:
     deadline = welcome_provider_deadline(received_at)
 
     assert deadline == received_at + timedelta(seconds=18)
+
+
+def test_welcome_idle_fallback_preserves_provider_execution_budget() -> None:
+    assert WECOM_WELCOME_FALLBACK_SECONDS == 2.5
+    assert (
+        WECOM_WELCOME_PROVIDER_WINDOW_SECONDS
+        - WECOM_WELCOME_PROVIDER_GUARD_SECONDS
+        - WECOM_WELCOME_FALLBACK_SECONDS
+    ) == 15.5
 
 
 def test_historical_repair_never_replays_welcome_code() -> None:
