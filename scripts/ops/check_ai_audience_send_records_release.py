@@ -243,7 +243,7 @@ def redact_report(payload: dict[str, Any]) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Read-only AI Audience send-record release check")
     parser.add_argument("--phase", choices=("preflight", "post-migration"), required=True)
-    parser.add_argument("--expected-release-sha", default="")
+    parser.add_argument("--expected-release-sha", "--sha", dest="expected_release_sha", default="")
     args = parser.parse_args()
 
     import psycopg
