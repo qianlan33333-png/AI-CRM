@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import Boolean, Column, DateTime, Index, Integer, MetaData, String, Table, Text
+from sqlalchemy import BigInteger, Boolean, Column, DateTime, Index, Integer, MetaData, String, Table, Text
 from sqlalchemy.types import JSON
 
 from aicrm_next.platform.shared.database import Base
@@ -54,6 +54,8 @@ user_ops_send_records_next = Table(
     Column("idempotency_key", Text, nullable=True),
     Column("task_type", String(80), nullable=False, default="user_ops_batch_send"),
     Column("execution_backend", String(40), nullable=False, default="legacy_fake"),
+    Column("target_source", String(64), nullable=False, default=""),
+    Column("target_source_id", BigInteger, nullable=True),
     Column("target_unionids_json", JSON, nullable=False, default=list),
     Column("outbound_task_ids_json", JSON, nullable=False, default=list),
     Column("task_results_json", JSON, nullable=False, default=list),

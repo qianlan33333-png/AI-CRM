@@ -190,6 +190,20 @@ def test_server_declared_export_purpose_fails_closed_when_durable_audit_fails() 
     assert json.loads(response.body)["error"] == "pii_audit_unavailable"
 
 
+def test_ai_audience_send_record_message_content_access_fails_closed() -> None:
+    policy = _policy(
+        path="/api/admin/ai-audience/packages/{package_id}/send-records/{record_id}",
+        route_name="api.admin_ai_audience_package_send_record_detail",
+        pii_level="sensitive",
+        auth_scheme="human_session",
+    )
+
+    rule = pii_audit_rule(policy)
+
+    assert rule.purpose == "message_content_access"
+    assert rule.fail_closed is True
+
+
 def test_non_high_risk_customer_read_remains_available_when_audit_store_fails() -> None:
     policy = _policy()
     request = _request(policy, actor_type="user", actor_id="admin-user-42")

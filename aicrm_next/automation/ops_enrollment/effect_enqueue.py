@@ -123,6 +123,11 @@ class UserOpsExternalEffectEnqueueGateway:
         target_unionid = _text(request.target.get("unionid"))
         external_userid = _text(request.target.get("external_userid"))
         owner_userid = _text(request.target.get("owner_userid"))
+        target_display_name = _text(
+            request.target.get("customer_name")
+            or request.target.get("customer_name_snapshot")
+            or request.target.get("nickname")
+        )
         if not target_unionid:
             return UserOpsSendEffectJobResult(
                 ok=False,
@@ -154,6 +159,7 @@ class UserOpsExternalEffectEnqueueGateway:
             "source": USER_OPS_BATCH_SEND_BUSINESS_TYPE,
             "record_id": request.record_id,
             "target_unionid": target_unionid,
+            "target_display_name": target_display_name,
             "external_userids": [external_userid],
             "owner_userid": owner_userid,
             "content_text": _text(request.content),

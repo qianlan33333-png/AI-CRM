@@ -173,8 +173,17 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     audience_admin_member_indexes_source = audience_admin_member_indexes.read_text(
         encoding="utf-8"
     )
+    audience_send_records = VERSIONS / "0164_ai_audience_send_record_read_index.py"
+    audience_send_records_source = audience_send_records.read_text(encoding="utf-8")
 
-    assert heads == {"0163_ai_audience_admin_member_read_indexes"}
+    assert heads == {"0164_ai_audience_send_record_read_index"}
+    assert revisions["0164_ai_audience_send_record_read_index"]["down_revision"] == (
+        "0163_ai_audience_admin_member_read_indexes"
+    )
+    assert "target_source_id BIGINT" in audience_send_records_source
+    assert "idx_user_ops_send_records_ai_audience" in audience_send_records_source
+    assert "idx_cloud_broadcast_plans_ai_audience_send_records" in audience_send_records_source
+    assert "COALESCE(selection_json ->> 'package_key'" not in audience_send_records_source
     assert revisions["0163_ai_audience_admin_member_read_indexes"]["down_revision"] == (
         "0162_ai_audience_groups_binding"
     )

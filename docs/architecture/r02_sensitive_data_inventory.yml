@@ -249,6 +249,13 @@ pii_route_overrides:
     audit_mode: required_fail_closed
     scope_source: resource_fingerprint
     raw_payload_allowed: false
+  - route_names:
+      - api.admin_ai_audience_package_send_records
+      - api.admin_ai_audience_package_send_record_detail
+    purpose: message_content_access
+    audit_mode: required_fail_closed
+    scope_source: resource_fingerprint
+    raw_payload_allowed: false
 
 outbound_webhook_callers:
   - source: aicrm_next.platform.platform_foundation.external_effects.adapters.WebhookAdapter

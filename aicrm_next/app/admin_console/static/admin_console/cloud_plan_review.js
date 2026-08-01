@@ -170,6 +170,9 @@
   }
 
   function normalizeContentPackage(value) {
+    if (window.AICRMSendContentReadonlyDetail) {
+      return window.AICRMSendContentReadonlyDetail.normalizeContentPackage(value);
+    }
     const data = value && typeof value === "object" ? value : {};
     return {
       content_text: String(data.content_text || "").trim(),
@@ -181,6 +184,9 @@
   }
 
   function taskToContentPackage(task) {
+    if (window.AICRMSendContentReadonlyDetail) {
+      return window.AICRMSendContentReadonlyDetail.taskToContentPackage(task);
+    }
     const current = task || {};
     const payload = parsePayloadObject(current.content_payload || current.content_payload_json);
     const contentPackage = parsePayloadObject(payload.content_package || current.content_package);
@@ -210,6 +216,9 @@
   }
 
   function taskContentSummary(contentPackage) {
+    if (window.AICRMSendContentReadonlyDetail) {
+      return window.AICRMSendContentReadonlyDetail.summary(contentPackage);
+    }
     const normalized = normalizeContentPackage(contentPackage);
     const body = normalized.content_text || "";
     return {
@@ -222,6 +231,9 @@
   }
 
   function renderTaskContentSummary(contentPackage) {
+    if (window.AICRMSendContentReadonlyDetail) {
+      return window.AICRMSendContentReadonlyDetail.renderCompact(contentPackage);
+    }
     const summary = taskContentSummary(contentPackage);
     return `
       <div class="cloud-plan-task-content-summary" data-task-content-summary>
@@ -566,6 +578,9 @@
   }
 
   function materialDetailText(materials, contentPackage) {
+    if (window.AICRMSendContentReadonlyDetail) {
+      return window.AICRMSendContentReadonlyDetail.materialDetailText(materials, contentPackage);
+    }
     const normalized = normalizeContentPackage(contentPackage);
     if (!materials.length) {
       const fallback = [];

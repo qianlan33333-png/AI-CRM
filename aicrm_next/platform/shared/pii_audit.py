@@ -40,6 +40,10 @@ _REPAIR_ROUTE_NAMES = {
     "api_admin_jobs_order_identity_repair_run",
     "repair_entry",
 }
+_MESSAGE_CONTENT_ROUTE_NAMES = {
+    "api.admin_ai_audience_package_send_records",
+    "api.admin_ai_audience_package_send_record_detail",
+}
 _PREFIX_RULES = (
     ("/api/identity", "identity_resolution", True),
     ("/api/messages", "message_content_access", True),
@@ -102,6 +106,8 @@ def pii_audit_rule(policy: RoutePolicy) -> PiiAuditRule:
         return PiiAuditRule(purpose="pii_export", fail_closed=True)
     if policy.route_name in _REPAIR_ROUTE_NAMES:
         return PiiAuditRule(purpose="identity_forced_repair", fail_closed=True)
+    if policy.route_name in _MESSAGE_CONTENT_ROUTE_NAMES:
+        return PiiAuditRule(purpose="message_content_access", fail_closed=True)
     for prefix, purpose, fail_closed in _PREFIX_RULES:
         if policy.path.startswith(prefix):
             return PiiAuditRule(purpose=purpose, fail_closed=fail_closed)

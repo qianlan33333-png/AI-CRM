@@ -469,22 +469,25 @@ def test_admin_ai_audience_detail_page_has_required_sections_without_top_actions
     html = response.text
     assert 'aria-label="人群包基础摘要"' in html
     assert 'aria-label="人群包配置维度"' in html
-    assert html.count('data-panel="') == 4
-    assert html.count('<section class="ai-panel') == 4
+    assert html.count('data-panel="') == 5
+    assert html.count('<section class="ai-panel') == 5
     for expected in (
         'data-panel="basic"',
         'data-panel="automation"',
         'data-panel="senders"',
         'data-panel="members"',
+        'data-panel="records"',
         'id="panel-basic"',
         'id="panel-automation"',
         'id="panel-senders"',
         'id="panel-members"',
+        'id="panel-records"',
         'id="saveCurrentDimensionBtn"',
         'id="packageGroupSelect"',
         'id="automationCapabilitySelector"',
         "自动化话术能力",
         "automation_capability_selector.js",
+        "send_content_readonly_detail.js",
     ):
         assert expected in html
     for expected in (
@@ -492,6 +495,7 @@ def test_admin_ai_audience_detail_page_has_required_sections_without_top_actions
         "自动化话术能力",
         "发送人白名单",
         "成员列表",
+        "发送记录",
         "当前人数",
         "最后一次刷新",
         "刷新方式",
@@ -518,6 +522,7 @@ def test_admin_ai_audience_detail_page_has_required_sections_without_top_actions
         "外部联系人 ID",
         "/api/admin/ai-audience/packages/123",
         "/api/admin/ai-audience/packages/123/members",
+        "/api/admin/ai-audience/packages/123/send-records",
         "/api/admin/ai-audience/packages/123/automation-binding",
         "/api/admin/ai-audience/package-groups",
         "/api/admin/automation-agents",
@@ -526,6 +531,17 @@ def test_admin_ai_audience_detail_page_has_required_sections_without_top_actions
         'body: { items: normalized }',
         'body: {\n          name:',
         "createBindingController",
+        "发送来源",
+        "发送状态",
+        "发送时间",
+        "失败原因",
+        "发送明细",
+        "AICRMSendContentReadonlyDetail.renderFull",
+        "sendRecordPageSize = 20",
+        'key === "records" && !sendRecordsLoaded',
+        "sendRecordPrevBtn",
+        "sendRecordNextBtn",
+        'aria-label="发送明细"',
     ):
         assert expected in html
     for forbidden in (
