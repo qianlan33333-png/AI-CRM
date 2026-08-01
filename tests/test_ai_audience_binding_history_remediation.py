@@ -226,6 +226,10 @@ def test_production_deploy_reconciles_exact_history_before_binding_precheck_and_
 
     assert remediation_index < preview_index < apply_index < binding_precheck_index
     assert binding_precheck_index < identity_preflight_index < runtime_stop_index
+    assert (
+        "if: steps.release.outputs.base_sha == '3b045574ef1b5b322716ee7a62aa86fd3507df43'"
+        in workflow[remediation_index:preview_index]
+    )
     assert '--current-release-sha "$remediation_base_sha"' in workflow[remediation_index:apply_index]
     assert "EXECUTE_AI_AUDIENCE_BINDING_HISTORY_20260801" in workflow[apply_index:binding_precheck_index]
     assert manifest["expected_production_sha"] == "3b045574ef1b5b322716ee7a62aa86fd3507df43"

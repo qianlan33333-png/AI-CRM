@@ -122,6 +122,7 @@ jobs:
           overwrite: true
 
       - name: Reconcile authorized AI Audience binding history
+        if: steps.release.outputs.base_sha == '3b045574ef1b5b322716ee7a62aa86fd3507df43'
         uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
         with:
           host: ${{ secrets.DEPLOY_HOST }}
