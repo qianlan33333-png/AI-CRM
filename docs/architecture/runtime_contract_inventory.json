@@ -29,7 +29,7 @@
       "accessor": "os.getenv",
       "file": "scripts/ai_audience_apply_package_spec.py",
       "key": "AICRM_ADMIN_SESSION_COOKIE",
-      "line": 317
+      "line": 329
     },
     {
       "accessor": "managed_runtime_bool",
@@ -107,19 +107,19 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/extensions/ai/ai_audience_ops/external_api.py",
       "key": "AICRM_AI_AUDIENCE_SPEC_ALLOWED_PREFIXES",
-      "line": 581
+      "line": 596
     },
     {
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/extensions/ai/ai_audience_ops/external_api.py",
       "key": "AICRM_AI_AUDIENCE_SPEC_ALLOW_NON_VERIFY_PREFIX",
-      "line": 587
+      "line": 602
     },
     {
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/extensions/ai/ai_audience_ops/external_api.py",
       "key": "AICRM_AI_AUDIENCE_SPEC_ALLOW_PUBLISH",
-      "line": 562
+      "line": 577
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -233,7 +233,7 @@
       "accessor": "os.getenv",
       "file": "scripts/ai_audience_apply_package_spec.py",
       "key": "AICRM_AUTH_CLI_ACCESS_TOKEN",
-      "line": 318
+      "line": 330
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -2633,7 +2633,7 @@
       "accessor": "os.getenv",
       "file": "scripts/ai_audience_apply_package_spec.py",
       "key": "PRODUCTION_DATA_MODE",
-      "line": 290
+      "line": 302
     },
     {
       "accessor": "declared_runtime_environment_key",
@@ -4793,7 +4793,7 @@
     }
   ],
   "migration_heads": [
-    "0161_reconcile_archive_job_run_ledger"
+    "0162_ai_audience_groups_binding"
   ],
   "openapi_components": {
     "schemas": {
@@ -10663,6 +10663,229 @@
           }
         }
       },
+      "endpoint": "aicrm_next.extensions.ai.ai_audience_ops.admin_api.admin_ai_audience_package_groups",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "extension.ai",
+      "methods": [
+        "GET"
+      ],
+      "name": "api.admin_ai_audience_package_groups",
+      "operation_id": "api.admin_ai_audience_package_groups:GET:/api/admin/ai-audience/package-groups",
+      "path": "/api/admin/ai-audience/package-groups",
+      "route_group": "ai_audience_admin_api"
+    },
+    {
+      "capability_owner": "ai_audience_ops",
+      "contract": {
+        "parameters": [],
+        "request_body": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "title": "Payload",
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.extensions.ai.ai_audience_ops.admin_api.admin_ai_audience_package_group_create",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "extension.ai",
+      "methods": [
+        "POST"
+      ],
+      "name": "api.admin_ai_audience_package_group_create",
+      "operation_id": "api.admin_ai_audience_package_group_create:POST:/api/admin/ai-audience/package-groups",
+      "path": "/api/admin/ai-audience/package-groups",
+      "route_group": "ai_audience_admin_api"
+    },
+    {
+      "capability_owner": "ai_audience_ops",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.extensions.ai.ai_audience_ops.admin_api.admin_ai_audience_package_group_delete",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "extension.ai",
+      "methods": [
+        "DELETE"
+      ],
+      "name": "api.admin_ai_audience_package_group_delete",
+      "operation_id": "api.admin_ai_audience_package_group_delete:DELETE:/api/admin/ai-audience/package-groups/{group_id}",
+      "path": "/api/admin/ai-audience/package-groups/{group_id}",
+      "route_group": "ai_audience_admin_api"
+    },
+    {
+      "capability_owner": "ai_audience_ops",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "request_body": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "title": "Payload",
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.extensions.ai.ai_audience_ops.admin_api.admin_ai_audience_package_group_update",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "extension.ai",
+      "methods": [
+        "PATCH"
+      ],
+      "name": "api.admin_ai_audience_package_group_update",
+      "operation_id": "api.admin_ai_audience_package_group_update:PATCH:/api/admin/ai-audience/package-groups/{group_id}",
+      "path": "/api/admin/ai-audience/package-groups/{group_id}",
+      "route_group": "ai_audience_admin_api"
+    },
+    {
+      "capability_owner": "ai_audience_ops",
+      "contract": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "group_id",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Group Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
       "endpoint": "aicrm_next.extensions.ai.ai_audience_ops.admin_api.admin_ai_audience_packages",
       "include_in_schema": true,
       "kind": "api",
@@ -10923,6 +11146,160 @@
       "name": "api.admin_ai_audience_package_activate",
       "operation_id": "api.admin_ai_audience_package_activate:POST:/api/admin/ai-audience/packages/{package_id}/activate",
       "path": "/api/admin/ai-audience/packages/{package_id}/activate",
+      "route_group": "ai_audience_admin_api"
+    },
+    {
+      "capability_owner": "ai_audience_ops",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "package_id",
+            "required": true,
+            "schema": {
+              "title": "Package Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.extensions.ai.ai_audience_ops.admin_api.admin_ai_audience_package_automation_binding_delete",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "extension.ai",
+      "methods": [
+        "DELETE"
+      ],
+      "name": "api.admin_ai_audience_package_automation_binding_delete",
+      "operation_id": "api.admin_ai_audience_package_automation_binding_delete:DELETE:/api/admin/ai-audience/packages/{package_id}/automation-binding",
+      "path": "/api/admin/ai-audience/packages/{package_id}/automation-binding",
+      "route_group": "ai_audience_admin_api"
+    },
+    {
+      "capability_owner": "ai_audience_ops",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "package_id",
+            "required": true,
+            "schema": {
+              "title": "Package Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.extensions.ai.ai_audience_ops.admin_api.admin_ai_audience_package_automation_binding",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "extension.ai",
+      "methods": [
+        "GET"
+      ],
+      "name": "api.admin_ai_audience_package_automation_binding",
+      "operation_id": "api.admin_ai_audience_package_automation_binding:GET:/api/admin/ai-audience/packages/{package_id}/automation-binding",
+      "path": "/api/admin/ai-audience/packages/{package_id}/automation-binding",
+      "route_group": "ai_audience_admin_api"
+    },
+    {
+      "capability_owner": "ai_audience_ops",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "package_id",
+            "required": true,
+            "schema": {
+              "title": "Package Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "request_body": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "title": "Payload",
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.extensions.ai.ai_audience_ops.admin_api.admin_ai_audience_package_automation_binding_put",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "extension.ai",
+      "methods": [
+        "PUT"
+      ],
+      "name": "api.admin_ai_audience_package_automation_binding_put",
+      "operation_id": "api.admin_ai_audience_package_automation_binding_put:PUT:/api/admin/ai-audience/packages/{package_id}/automation-binding",
+      "path": "/api/admin/ai-audience/packages/{package_id}/automation-binding",
       "route_group": "ai_audience_admin_api"
     },
     {
@@ -12207,7 +12584,18 @@
     {
       "capability_owner": "automation_agents",
       "contract": {
-        "parameters": [],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "automation_type",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Automation Type",
+              "type": "string"
+            }
+          }
+        ],
         "request_body": null,
         "responses": {
           "200": {
@@ -12217,6 +12605,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         }
       },
@@ -48446,6 +48844,18 @@
         "aicrm_next.extensions.ai.ai_audience_ops"
       ],
       "table": "ai_audience_package_dependency",
+      "write_owner": "aicrm_next.extensions.ai.ai_audience_ops"
+    },
+    {
+      "domain": "ai_audience_ops",
+      "drop_candidate": false,
+      "lifecycle": "config",
+      "migration_source": "0162_ai_audience_groups_binding",
+      "pii_level": "none",
+      "read_owners": [
+        "aicrm_next.extensions.ai.ai_audience_ops"
+      ],
+      "table": "ai_audience_package_group",
       "write_owner": "aicrm_next.extensions.ai.ai_audience_ops"
     },
     {

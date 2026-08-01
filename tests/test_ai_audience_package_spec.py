@@ -94,6 +94,19 @@ def test_ai_audience_package_spec_missing_required_sql_fails(tmp_path) -> None:
     assert "snapshot_sql_required" in errors
 
 
+def test_ai_audience_package_spec_retires_webhook_and_validates_agent_code(tmp_path) -> None:
+    legacy = VALID_SPEC.replace(
+        "senders:",
+        "webhook:\n  outbound_enabled: true\n  outbound_webhook_url: https://agent.example.test/audience\nsenders:",
+    )
+    errors, _warnings = validate_spec(parse_markdown_spec(_write_spec(tmp_path, legacy, name="legacy.md")))
+    assert "webhook_configuration_retired" in errors
+
+    missing_code = VALID_SPEC.replace("senders:", "automation_binding: {}\nsenders:")
+    errors, _warnings = validate_spec(parse_markdown_spec(_write_spec(tmp_path, missing_code, name="missing-agent.md")))
+    assert "automation_binding_agent_code_required" in errors
+
+
 def test_ai_audience_package_spec_invalid_sql_fails(tmp_path) -> None:
     broken = VALID_SPEC.replace("FROM audience_read.questionnaire_submissions_v1 qs", "FROM public.users qs").replace(
         "SELECT\n  'external_userid' AS identity_type,",
@@ -138,7 +151,28 @@ def test_ai_audience_package_spec_dry_run_does_not_write_db(tmp_path, next_pg_sc
 
 def test_ai_audience_package_spec_apply_update_and_publish(tmp_path, next_pg_schema) -> None:
     del next_pg_schema
-    spec = parse_markdown_spec(_write_spec(tmp_path, VALID_SPEC))
+    with get_session_factory()() as session:
+        session.execute(
+            text(
+                """
+                INSERT INTO automation_agent_runtime_config (
+                    agent_code, agent_name, automation_type, bound_package_key, status,
+                    draft_role_prompt, draft_task_prompt, published_role_prompt, published_task_prompt,
+                    draft_version, published_version, fixed_content_package_json, send_webhook_url,
+                    created_at, updated_at
+                ) VALUES (
+                    'spec_agent', 'Spec Agent', 'agent', '', 'active', '', '', '', '',
+                    1, 1, '{}'::jsonb, '', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+        session.commit()
+    binding_spec = VALID_SPEC.replace(
+        "senders:",
+        "automation_binding:\n  agent_code: spec_agent\nsenders:",
+    )
+    spec = parse_markdown_spec(_write_spec(tmp_path, binding_spec))
 
     created = apply_spec(spec, apply=True)
 
@@ -149,12 +183,19 @@ def test_ai_audience_package_spec_apply_update_and_publish(tmp_path, next_pg_sch
     with get_session_factory()() as session:
         package = session.execute(text("SELECT status, incremental_enabled, incremental_interval_seconds FROM ai_audience_package WHERE package_key = 'spec_q101'")).mappings().one()
         version_rows = session.execute(text("SELECT version_number, parameters_json FROM ai_audience_package_version WHERE package_id = :package_id ORDER BY version_number"), {"package_id": created["package_id"]}).mappings().all()
+        bound_key = session.execute(text("SELECT bound_package_key FROM automation_agent_runtime_config WHERE agent_code = 'spec_agent'")).scalar_one()
+        subscription_url = session.execute(
+            text("SELECT webhook_url FROM ai_audience_outbound_subscription WHERE package_id = :package_id AND status = 'active'"),
+            {"package_id": created["package_id"]},
+        ).scalar_one()
     assert package["status"] == "paused"
     assert package["incremental_enabled"] is True
     assert package["incremental_interval_seconds"] == 180
     assert version_rows[0]["parameters_json"] == {"questionnaire_id": 101}
+    assert bound_key == "spec_q101"
+    assert subscription_url == "/api/ai/agents/spec_agent/audience-webhook"
 
-    updated_spec = parse_markdown_spec(_write_spec(tmp_path, VALID_SPEC.replace("questionnaire_id: 101", "questionnaire_id: 202"), name="package_v2.md"))
+    updated_spec = parse_markdown_spec(_write_spec(tmp_path, binding_spec.replace("questionnaire_id: 101", "questionnaire_id: 202"), name="package_v2.md"))
     updated = apply_spec(updated_spec, apply=True, publish=True)
 
     assert updated["ok"] is True

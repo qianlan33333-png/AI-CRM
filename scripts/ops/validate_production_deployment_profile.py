@@ -19,12 +19,16 @@ from aicrm_next.deployment_profile import (  # noqa: E402
     DEPLOYMENT_PROFILE_PATH_ENV,
     deployment_profile_from_environment,
 )
+from aicrm_next.extensions.ai.ai_audience_ops.automation_binding.precheck import (  # noqa: E402
+    inspect_runtime_automation_bindings,
+)
 
 
 def validate_production_deployment_profile(
     *,
     environment: Mapping[str, str],
     expected_profile_path: Path,
+    automation_binding_report: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     expected_path = Path(expected_profile_path)
     if not expected_path.is_absolute():
@@ -49,7 +53,7 @@ def validate_production_deployment_profile(
             "production profile must enable the exact current capability registry: "
             f"missing={missing} extra={extra}"
         )
-    return {
+    result = {
         "ok": True,
         "profile_id": profile.profile_id,
         "activation_mode": profile.activation_mode,
@@ -59,18 +63,26 @@ def validate_production_deployment_profile(
         "target_values_redacted": True,
         "real_external_call_executed": False,
     }
+    if automation_binding_report is not None:
+        binding_report = dict(automation_binding_report)
+        result["automation_binding_precheck"] = binding_report
+        result["ok"] = bool(binding_report.get("ok"))
+    return result
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Fail closed before selecting the production Deployment Profile.")
     parser.add_argument("--expected-profile-path", required=True, type=Path)
+    parser.add_argument("--binding-check", action="store_true")
     args = parser.parse_args()
+    binding_report = inspect_runtime_automation_bindings().to_dict() if args.binding_check else None
     result = validate_production_deployment_profile(
         environment=os.environ,
         expected_profile_path=args.expected_profile_path,
+        automation_binding_report=binding_report,
     )
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
-    return 0
+    return 0 if result["ok"] else 2
 
 
 if __name__ == "__main__":

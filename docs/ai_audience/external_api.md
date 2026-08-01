@@ -43,7 +43,7 @@ curl -sS -X POST https://www.youcangogogo.com/api/external/ai-audience/spec/appl
   -d '{"spec_markdown":"...","publish":false,"operator":"codex"}'
 ```
 
-Apply 会创建或更新 package，创建新 version，并执行 preview。默认不 publish、不 activate、不触发真实发送。
+Apply 会创建或更新 package，创建新 version，并执行 preview。若 spec 提供 `automation_binding.agent_code`，会通过同一套一对一绑定用例建立内部订阅。默认不 publish、不 activate、不触发真实发送；旧 `webhook` 字段返回 `webhook_configuration_retired`。
 
 ## Publish
 
@@ -89,3 +89,4 @@ python scripts/ai_audience_apply_package_spec.py docs/ai_audience/examples/quest
 - 不调用 User Ops batch-send execute。
 - 不触发真实私聊发送。
 - 所有调用写入 `admin_operation_logs` 审计。
+- 不接受 `outbound_webhook_url` 或任意外部 Webhook 地址；内部传递由绑定用例管理。

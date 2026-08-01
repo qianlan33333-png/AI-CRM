@@ -7,6 +7,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
 from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting
+from aicrm_next.extensions.ai.ai_audience_ops.automation_binding import AudienceAutomationBindingService
 
 from .package_spec import package_payload_from_spec, parse_markdown_spec_text, validate_spec
 from .repository import build_audience_repository, _text
@@ -202,6 +203,17 @@ def external_ai_audience_simple_preview(request: Request, payload: dict[str, Any
 @router.post("/api/external/ai-audience/simple/apply", name="api.external_ai_audience_simple_apply")
 def external_ai_audience_simple_apply(request: Request, payload: dict[str, Any] = Body(default_factory=dict)) -> JSONResponse:
     repo = build_audience_repository()
+    if "outbound_webhook_url" in payload:
+        result = {"ok": False, "error": "webhook_configuration_retired", "validation_errors": ["webhook_configuration_retired"]}
+        _audit(
+            repo,
+            operator=_operator(payload),
+            action_type="external_simple_apply_rejected",
+            package_key=_text(payload.get("package_key")),
+            before=_audit_before(payload),
+            after=result,
+        )
+        return _response(result, status_code=410)
     preview = _simple_preview(payload, repo=repo)
     if not preview.get("ok"):
         _audit(
@@ -443,7 +455,7 @@ def _simple_apply(payload: dict[str, Any], preview: dict[str, Any], *, repo) -> 
             "error": published.get("error", "publish_failed"),
             "validation_errors": published.get("validation_errors", []),
         }
-    _apply_simple_webhook_and_senders(service, package_id, request)
+    _apply_simple_senders(service, package_id, request)
     return {
         **preview,
         "ok": True,
@@ -496,7 +508,9 @@ def _apply(payload: dict[str, Any], dry: dict[str, Any], *, repo, publish: bool)
     version_id = int(((version.get("version") or {}).get("id")) or 0)
     if not version.get("ok"):
         return {**dry, "ok": False, "package_id": package_id, "version_id": version_id or None, "validation_errors": version.get("validation_errors", [])}
-    _apply_webhook_and_senders(service, package_id, spec)
+    binding_result = _apply_automation_binding_and_senders(service, package_id, spec)
+    if not binding_result.get("ok"):
+        return {**dry, "ok": False, "package_id": package_id, "version_id": version_id or None, "error": binding_result.get("error", "automation_binding_failed")}
     preview = service.preview_admin_package(package_id, {"version_id": version_id, "sql_kind": _preview_sql_kind(spec), "limit": 5})
     response = {
         **dry,
@@ -519,19 +533,20 @@ def _apply(payload: dict[str, Any], dry: dict[str, Any], *, repo, publish: bool)
     return response
 
 
-def _apply_webhook_and_senders(service: AudiencePackageService, package_id: int, spec) -> None:
-    webhook = spec.frontmatter.get("webhook") if isinstance(spec.frontmatter.get("webhook"), dict) else {}
-    if webhook:
-        service.update_admin_webhook(
+def _apply_automation_binding_and_senders(service: AudiencePackageService, package_id: int, spec) -> dict[str, Any]:
+    automation_binding = spec.frontmatter.get("automation_binding") if isinstance(spec.frontmatter.get("automation_binding"), dict) else {}
+    if automation_binding:
+        result = AudienceAutomationBindingService().put_by_agent_code(
             package_id,
-            {
-                "outbound_enabled": bool(webhook.get("outbound_enabled")),
-                "outbound_webhook_url": _text(webhook.get("outbound_webhook_url")),
-            },
+            _text(automation_binding.get("agent_code")),
+            operator="external_package_spec",
         )
+        if not result.get("ok"):
+            return result
     senders = spec.frontmatter.get("senders") if isinstance(spec.frontmatter.get("senders"), list) else []
     if senders:
         service.replace_admin_senders(package_id, {"items": senders})
+    return {"ok": True}
 
 
 def _dependencies_from_spec(spec) -> list[str]:
@@ -588,15 +603,7 @@ def _allow_non_verify_prefix() -> bool:
     ).lower() in {"1", "true", "yes"}
 
 
-def _apply_simple_webhook_and_senders(service: AudiencePackageService, package_id: int, request: SimpleSqlApplyRequest) -> None:
-    webhook_url = _text(request.outbound_webhook_url)
-    service.update_admin_webhook(
-        package_id,
-        {
-            "outbound_enabled": bool(webhook_url),
-            "outbound_webhook_url": webhook_url,
-        },
-    )
+def _apply_simple_senders(service: AudiencePackageService, package_id: int, request: SimpleSqlApplyRequest) -> None:
     service.replace_admin_senders(
         package_id,
         {

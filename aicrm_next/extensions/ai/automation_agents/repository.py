@@ -109,6 +109,7 @@ class AutomationAgentRepository:
         return self._all(
             """
             SELECT a.*,
+                   p.id AS bound_package_id,
                    p.name AS bound_package_name,
                    COUNT(*) OVER () AS total_count
             FROM automation_agent_runtime_config a
@@ -123,7 +124,7 @@ class AutomationAgentRepository:
     def get_agent(self, agent_id: int) -> dict[str, Any] | None:
         return self._one(
             """
-            SELECT a.*, p.name AS bound_package_name
+            SELECT a.*, p.id AS bound_package_id, p.name AS bound_package_name
             FROM automation_agent_runtime_config a
             LEFT JOIN ai_audience_package p ON p.package_key = a.bound_package_key
             WHERE a.id = :agent_id
@@ -135,7 +136,7 @@ class AutomationAgentRepository:
     def get_agent_by_code(self, agent_code: str) -> dict[str, Any] | None:
         return self._one(
             """
-            SELECT a.*, p.name AS bound_package_name
+            SELECT a.*, p.id AS bound_package_id, p.name AS bound_package_name
             FROM automation_agent_runtime_config a
             LEFT JOIN ai_audience_package p ON p.package_key = a.bound_package_key
             WHERE a.agent_code = :agent_code
@@ -355,12 +356,12 @@ class AutomationAgentRepository:
                 "agent_code": _text(payload.get("agent_code")),
                 "agent_name": _text(payload.get("agent_name")),
                 "automation_type": _text(payload.get("automation_type")) or "agent",
-                "bound_package_key": _text(payload.get("bound_package_key")),
+                "bound_package_key": "",
                 "status": _text(payload.get("status")) or "active",
                 "role_prompt": _text(payload.get("role_prompt")),
                 "task_prompt": _text(payload.get("task_prompt")),
                 "fixed_content_package_json": _json_dumps(payload.get("fixed_content_package") or {}),
-                "send_webhook_url": _text(payload.get("send_webhook_url")),
+                "send_webhook_url": "",
             },
         )
         if not row:
@@ -374,11 +375,9 @@ class AutomationAgentRepository:
         merged = {
             "agent_name": _text(payload.get("agent_name")) if "agent_name" in payload else _text(existing.get("agent_name")),
             "automation_type": _text(payload.get("automation_type")) if "automation_type" in payload else _text(existing.get("automation_type") or "agent"),
-            "bound_package_key": _text(payload.get("bound_package_key")) if "bound_package_key" in payload else _text(existing.get("bound_package_key")),
             "status": _text(payload.get("status")) if "status" in payload else _text(existing.get("status")),
             "role_prompt": _text(payload.get("role_prompt")) if "role_prompt" in payload else _text(existing.get("draft_role_prompt")),
             "task_prompt": _text(payload.get("task_prompt")) if "task_prompt" in payload else _text(existing.get("draft_task_prompt")),
-            "send_webhook_url": (_text(payload.get("send_webhook_url")) if "send_webhook_url" in payload else _text(existing.get("send_webhook_url"))),
             "fixed_content_package": (
                 payload.get("fixed_content_package") if "fixed_content_package" in payload else existing.get("fixed_content_package_json") or {}
             ),
@@ -392,13 +391,11 @@ class AutomationAgentRepository:
             UPDATE automation_agent_runtime_config
             SET agent_name = :agent_name,
                 automation_type = :automation_type,
-                bound_package_key = :bound_package_key,
                 status = :status,
                 draft_role_prompt = :role_prompt,
                 draft_task_prompt = :task_prompt,
                 draft_version = CASE WHEN :draft_changed THEN draft_version + 1 ELSE draft_version END,
                 fixed_content_package_json = CAST(:fixed_content_package_json AS jsonb),
-                send_webhook_url = :send_webhook_url,
                 archived_at = CASE WHEN :status = 'archived' THEN COALESCE(archived_at, CURRENT_TIMESTAMP) ELSE archived_at END,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = :agent_id
@@ -408,12 +405,10 @@ class AutomationAgentRepository:
                 "agent_id": int(agent_id),
                 "agent_name": merged["agent_name"],
                 "automation_type": merged["automation_type"] or "agent",
-                "bound_package_key": merged["bound_package_key"],
                 "status": merged["status"] or "active",
                 "role_prompt": merged["role_prompt"],
                 "task_prompt": merged["task_prompt"],
                 "draft_changed": draft_changed,
-                "send_webhook_url": merged["send_webhook_url"],
                 "fixed_content_package_json": _json_dumps(merged["fixed_content_package"]),
             },
         )

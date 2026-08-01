@@ -31,6 +31,17 @@ def test_production_profile_selection_accepts_exact_enforced_full_profile() -> N
     assert result["real_external_call_executed"] is False
 
 
+def test_production_profile_preflight_embeds_binding_report_and_fails_closed() -> None:
+    result = validate_production_deployment_profile(
+        environment={DEPLOYMENT_PROFILE_PATH_ENV: str(PROFILE_PATH)},
+        expected_profile_path=PROFILE_PATH,
+        automation_binding_report={"ok": False, "issue_count": 1, "issues": [{"kind": "orphan_subscription"}]},
+    )
+
+    assert result["ok"] is False
+    assert result["automation_binding_precheck"]["issue_count"] == 1
+
+
 def test_production_profile_preflight_runs_as_direct_script() -> None:
     environment = os.environ.copy()
     environment[DEPLOYMENT_PROFILE_PATH_ENV] = str(PROFILE_PATH)

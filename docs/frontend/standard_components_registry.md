@@ -60,6 +60,26 @@ The picker only reads the Next-native material picker API:
 
 Business pages must not directly fetch image, miniprogram, or attachment library APIs to render their own private material grids.
 
+## AutomationCapabilitySelector
+
+Frontend assets:
+
+- `aicrm_next/app/admin_console/static/admin_console/automation_capability_selector.js`
+- `aicrm_next/app/admin_console/static/admin_console/automation_capability_selector.css`
+
+Global API:
+
+```js
+const selector = window.AutomationCapabilitySelector.mount(container, {
+  items,
+  value,
+  currentPackageId,
+  onChange
+})
+```
+
+The inline selector owns the `Agent 机器人` / `固定话术` type tabs and the one-to-one availability presentation. An active unbound automation, or an active automation already bound to the current package, is selectable. Paused automations and automations bound to another package remain visible but disabled with the reason shown. The outer page owns fetching, PUT/DELETE persistence, warning messages, and the explicit unbind action.
+
 ## Automation Operation Page
 
 The automation operation page owns four outer modes:

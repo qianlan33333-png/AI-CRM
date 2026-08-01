@@ -408,7 +408,7 @@
         <input class="automation-agent-input" id="agentName" value="">
         <label class="automation-agent-label" for="automationType">自动化类类型</label>
         <select class="automation-agent-select" id="automationType">
-          <option value="agent">agent</option>
+          <option value="agent">Agent 机器人</option>
           <option value="fixed_script">固定话术</option>
         </select>
         <label class="automation-agent-label" for="agentStatus">状态</label>
@@ -419,20 +419,10 @@
       </div>
     </section>
 
-    <section class="automation-agent-card automation-agent-section" aria-label="Webhook 地址">
-      <div class="automation-agent-section-head"><h2 class="automation-agent-subtitle">Webhook 地址</h2></div>
-
-      <label class="automation-agent-label" for="receiveUrl">接收地址 <span class="automation-agent-method">POST</span></label>
-      <div class="automation-agent-url-row">
-        <input class="automation-agent-input automation-agent-code" id="receiveUrl" value="" readonly>
-        <button class="automation-agent-copy-btn" type="button" data-copy="#receiveUrl" aria-label="复制接收地址">⧉</button>
-      </div>
-
-      <label class="automation-agent-label" for="sendUrl">发送地址 <span class="automation-agent-method">POST</span></label>
-      <div class="automation-agent-url-row">
-        <input class="automation-agent-input automation-agent-code" id="sendUrl" value="">
-        <button class="automation-agent-copy-btn" type="button" data-copy="#sendUrl" aria-label="复制发送地址">⧉</button>
-      </div>
+    <section class="automation-agent-card automation-agent-section" aria-label="当前绑定人群包">
+      <div class="automation-agent-section-head"><h2 class="automation-agent-subtitle">当前绑定人群包</h2></div>
+      <div class="automation-agent-input" id="boundPackage" aria-live="polite">未绑定</div>
+      <p class="automation-agent-label">绑定关系请在人群包详情的“自动化话术能力”中管理。</p>
     </section>
 
     <section class="automation-agent-card automation-agent-section" id="promptSection" aria-label="Prompt 配置">
@@ -551,8 +541,7 @@
       automationType: document.getElementById("automationType"),
       agentStatus: document.getElementById("agentStatus"),
       statusBadge: document.getElementById("statusBadge"),
-      receiveUrl: document.getElementById("receiveUrl"),
-      sendUrl: document.getElementById("sendUrl"),
+      boundPackage: document.getElementById("boundPackage"),
       rolePrompt: document.getElementById("rolePrompt"),
       taskPrompt: document.getElementById("taskPrompt"),
       fixedScriptText: document.getElementById("fixedScriptText"),
@@ -611,16 +600,6 @@
       window.setTimeout(() => els.toast.classList.remove("show"), isError ? 5200 : 1800);
     };
 
-    const pathOnly = (value) => {
-      const raw = String(value || "");
-      try {
-        const parsed = new URL(raw, window.location.origin);
-        return `${parsed.pathname}${parsed.search}`;
-      } catch (_error) {
-        return raw;
-      }
-    };
-
     const isFixedScript = () => els.automationType.value === "fixed_script";
 
     const contentPackage = () => {
@@ -675,10 +654,6 @@
       const active = els.agentStatus.value === "active";
       els.statusBadge.textContent = active ? "启用中" : "已停止";
       els.statusBadge.className = `automation-agent-pill ${active ? "green" : ""}`;
-    };
-
-    const renderReceiveUrl = () => {
-      els.receiveUrl.value = state.agent && state.agent.receive_webhook_url ? pathOnly(state.agent.receive_webhook_url) : "";
     };
 
     const renderMode = () => {
@@ -780,8 +755,6 @@
     const formPayload = () => ({
       agent_name: els.agentName.value.trim(),
       automation_type: els.automationType.value,
-      bound_package_key: state.agent && state.agent.bound_package_key ? state.agent.bound_package_key : "",
-      send_webhook_url: els.sendUrl.value.trim(),
       status: els.agentStatus.value,
       role_prompt: els.rolePrompt.value,
       task_prompt: els.taskPrompt.value,
@@ -833,9 +806,9 @@
       els.fixedScriptText.value = state.contentPackage.content_text || "";
       state.materialDetails = new Map();
       seedMaterialDetails(state.agent.fixed_content_package_preview && state.agent.fixed_content_package_preview.materials);
-      if (state.agent.receive_webhook_url) els.receiveUrl.value = pathOnly(state.agent.receive_webhook_url);
-      else renderReceiveUrl();
-      els.sendUrl.value = state.agent.send_webhook_url || "";
+      els.boundPackage.textContent = state.agent.bound_package_name
+        ? `${state.agent.bound_package_name}（${state.agent.bound_package_key || "-"}）`
+        : "未绑定";
       renderStatus();
       renderMode();
       renderDeps();

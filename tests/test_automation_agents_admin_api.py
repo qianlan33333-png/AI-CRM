@@ -14,7 +14,6 @@ def _create_payload(**overrides):
     payload = {
         "agent_name": "9.9问卷激活跟进 Agent",
         "agent_code": "questionnaire_activation_agent",
-        "bound_package_key": "prod_channel_9p9_questionnaire_activation_hyc",
         "role_prompt": "你是私域运营助手",
         "task_prompt": "根据{{问卷信息}}生成一条跟进话术",
     }
@@ -33,6 +32,14 @@ def test_admin_automation_agents_requires_admin_session(next_client, monkeypatch
 def test_admin_automation_agent_crud_copy_pause_archive_contract(next_client, next_pg_schema, monkeypatch) -> None:
     monkeypatch.setenv("SECRET_KEY", "automation-agent-admin-test")
 
+    retired_create = next_client.post(
+        "/api/admin/automation-agents",
+        json=_create_payload(agent_code="retired_config_agent", bound_package_key="legacy_package"),
+        cookies=_admin_cookies(next_client),
+    )
+    assert retired_create.status_code == 410
+    assert retired_create.json()["error"] == "webhook_configuration_retired"
+
     created = next_client.post(
         "/api/admin/automation-agents",
         json=_create_payload(),
@@ -41,11 +48,12 @@ def test_admin_automation_agent_crud_copy_pause_archive_contract(next_client, ne
     assert created.status_code == 200
     agent = created.json()["agent"]
     agent_id = agent["id"]
-    assert agent["receive_webhook_url"].endswith("/api/ai/agents/questionnaire_activation_agent/audience-webhook")
-    assert agent["receive_webhook_auth_mode"] == "aicrm_hmac_sha256"
-    assert agent["send_webhook_url"].endswith("/api/ai/audience/packages/prod_channel_9p9_questionnaire_activation_hyc/webhook")
+    assert "receive_webhook_url" not in agent
+    assert "send_webhook_url" not in agent
+    assert agent["bound_package_key"] == ""
+    assert agent["bound_package_id"] is None
     assert agent["automation_type"] == "agent"
-    assert agent["automation_type_label"] == "agent"
+    assert agent["automation_type_label"] == "Agent 机器人"
     assert agent["fixed_material_summary"] == {"image_count": 0, "miniprogram_count": 0, "attachment_count": 0, "group_invite_count": 0}
 
     listed = next_client.get("/api/admin/automation-agents", cookies=_admin_cookies(next_client))
@@ -65,7 +73,6 @@ def test_admin_automation_agent_crud_copy_pause_archive_contract(next_client, ne
         json={
             "agent_name": "更新后的 Agent",
             "task_prompt": "看{{用户标签}}输出话术",
-            "send_webhook_url": "https://www.youcangogogo.com/api/ai/audience/packages/prod_channel_9p9_questionnaire_activation_hyc/webhook",
         },
         cookies=_admin_cookies(next_client),
     )
@@ -76,18 +83,20 @@ def test_admin_automation_agent_crud_copy_pause_archive_contract(next_client, ne
     assert patched.json()["agent"]["draft_version"] == 2
     assert patched.json()["agent"]["published_version"] == 1
     assert patched.json()["agent"]["has_unpublished_changes"] is True
-    assert (
-        patched.json()["agent"]["send_webhook_url"]
-        == "https://www.youcangogogo.com/api/ai/audience/packages/prod_channel_9p9_questionnaire_activation_hyc/webhook"
-    )
-
     invalid_send = next_client.patch(
         f"/api/admin/automation-agents/{agent_id}",
         json={"send_webhook_url": "https://example.com/custom/webhook"},
         cookies=_admin_cookies(next_client),
     )
-    assert invalid_send.status_code == 400
-    assert invalid_send.json()["error"] == "invalid_send_webhook_url"
+    assert invalid_send.status_code == 410
+    assert invalid_send.json()["error"] == "webhook_configuration_retired"
+    invalid_binding_write = next_client.patch(
+        f"/api/admin/automation-agents/{agent_id}",
+        json={"bound_package_key": "legacy_package"},
+        cookies=_admin_cookies(next_client),
+    )
+    assert invalid_binding_write.status_code == 410
+    assert invalid_binding_write.json()["error"] == "webhook_configuration_retired"
 
     published = next_client.post(
         f"/api/admin/automation-agents/{agent_id}/publish",
@@ -114,7 +123,8 @@ def test_admin_automation_agent_crud_copy_pause_archive_contract(next_client, ne
     copied = next_client.post(f"/api/admin/automation-agents/{agent_id}/copy", cookies=_admin_cookies(next_client))
     assert copied.status_code == 200
     assert copied.json()["agent"]["agent_code"] == "questionnaire_activation_agent_copy_001"
-    assert copied.json()["agent"]["receive_webhook_url"] != patched.json()["agent"]["receive_webhook_url"]
+    assert copied.json()["agent"]["bound_package_key"] == ""
+    assert "receive_webhook_url" not in copied.json()["agent"]
 
     paused = next_client.post(f"/api/admin/automation-agents/{agent_id}/pause", cookies=_admin_cookies(next_client))
     assert paused.status_code == 200

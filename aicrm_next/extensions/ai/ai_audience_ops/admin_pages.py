@@ -34,6 +34,7 @@ def admin_ai_audience_automation(request: Request):
     context.update(
         {
             "ai_audience_packages_api_url": "/api/admin/ai-audience/packages",
+            "ai_audience_package_groups_api_url": "/api/admin/ai-audience/package-groups",
         }
     )
     return templates.TemplateResponse(
@@ -61,8 +62,10 @@ def admin_ai_audience_package_detail_page(request: Request, package_id: int):
         {
             "package_id": package_id,
             "ai_audience_package_api_url": f"/api/admin/ai-audience/packages/{package_id}",
+            "ai_audience_package_groups_api_url": "/api/admin/ai-audience/package-groups",
             "ai_audience_package_members_api_url": f"/api/admin/ai-audience/packages/{package_id}/members",
-            "ai_audience_package_webhooks_api_url": f"/api/admin/ai-audience/packages/{package_id}/webhooks",
+            "ai_audience_package_automation_binding_api_url": f"/api/admin/ai-audience/packages/{package_id}/automation-binding",
+            "automation_agents_api_url": "/api/admin/automation-agents",
             "ai_audience_package_senders_api_url": f"/api/admin/ai-audience/packages/{package_id}/senders",
         }
     )

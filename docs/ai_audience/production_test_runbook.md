@@ -54,7 +54,8 @@ curl -sS -X POST \
 
 - Package create/update/preview/publish/archive 通过 External Spec API。
 - Members API 只返回 `nickname/external_userid/entered_at`。
-- Webhook GET 不返回 secret 明文。
+- 旧 Webhook GET/PATCH 返回 `410 webhook_configuration_retired`，管理端不出现地址配置。
+- Automation Binding GET/PUT/DELETE 执行双方一对一约束，并只生成受控第一方内部订阅。
 - Outbound job body 只有 `external_userid[]`。
 - User Ops preview/execute 只调用标准 batch-send 端口。
 - 清理时通过 `DELETE /api/admin/ai-audience/packages/{id}` archive。

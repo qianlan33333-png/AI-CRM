@@ -427,9 +427,6 @@ parameters:
   questionnaire_id: 101
   product_code: e2e_test_product
   channel_id: 0
-webhook:
-  outbound_enabled: true
-  outbound_webhook_url: {_test_agent_url()}
 senders:
   - sender_userid: {TEST_SENDER_USERID}
     display_name: {TEST_SENDER_USERID}

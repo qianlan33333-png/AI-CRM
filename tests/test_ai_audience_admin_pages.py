@@ -384,6 +384,8 @@ def test_admin_ai_audience_packages_api_returns_lightweight_read_model(next_clie
         "last_refreshed_at": None,
         "refresh_mode": "incremental_3m",
         "refresh_mode_label": "每 3 分钟",
+        "group_id": None,
+        "group_name": "未分组",
     }
     assert by_key["admin_counted"] == {
         "id": counted_id,
@@ -394,6 +396,8 @@ def test_admin_ai_audience_packages_api_returns_lightweight_read_model(next_clie
         "last_refreshed_at": "2026-06-24T09:05:12+08:00",
         "refresh_mode": "incremental_3m",
         "refresh_mode_label": "每 3 分钟",
+        "group_id": None,
+        "group_name": "未分组",
     }
     assert by_key["admin_daily"]["id"] == daily_id
     assert by_key["admin_daily"]["refresh_mode"] == "daily_0200"
@@ -433,6 +437,10 @@ def test_admin_ai_audience_list_page_matches_management_contract(next_client, mo
         "最后一次刷新时间",
         "刷新方式",
         "操作",
+        "人群包分组",
+        "新增",
+        "编辑组名",
+        "未分组",
         "编辑",
         "复制",
         "删除",
@@ -440,7 +448,7 @@ def test_admin_ai_audience_list_page_matches_management_contract(next_client, mo
         "/api/admin/ai-audience/packages",
         "/api/admin/user-ops/batch-send/preview",
         "/api/admin/user-ops/batch-send/execute",
-        'targetSource: "ai_audience_package"',
+        'targetSource:"ai_audience_package"',
         "UserOpsBatchSendModal.open",
         "send_content_composer.css",
         "send_content_composer.js",
@@ -465,20 +473,23 @@ def test_admin_ai_audience_detail_page_has_required_sections_without_top_actions
     assert html.count('<section class="ai-panel') == 4
     for expected in (
         'data-panel="basic"',
-        'data-panel="webhook"',
+        'data-panel="automation"',
         'data-panel="senders"',
         'data-panel="members"',
         'id="panel-basic"',
-        'id="panel-webhook"',
+        'id="panel-automation"',
         'id="panel-senders"',
         'id="panel-members"',
         'id="saveCurrentDimensionBtn"',
+        'id="packageGroupSelect"',
+        'id="automationCapabilitySelector"',
+        "自动化话术能力",
+        "automation_capability_selector.js",
     ):
         assert expected in html
     for expected in (
-        "客户管理后台 / 自动化运营 / 人群包详情",
         "基础配置",
-        "Webhook",
+        "自动化话术能力",
         "发送人白名单",
         "成员列表",
         "当前人数",
@@ -490,11 +501,14 @@ def test_admin_ai_audience_detail_page_has_required_sections_without_top_actions
         "保存当前维度",
         "人群包名称",
         "筛选逻辑简述",
+        "所属分组",
+        "未分组",
         "增量刷新",
         "每 3 分钟",
         "每日 2:00",
-        "接收 Webhook 地址（系统生成）",
-        "外推 Webhook 地址（增量刷新后触发）",
+        "从已有自动化列表中选择一个能力",
+        "解除绑定",
+        "保存绑定",
         "OperationMemberPicker.open",
         "选择发送人",
         "已选择发送人，请保存白名单",
@@ -504,12 +518,14 @@ def test_admin_ai_audience_detail_page_has_required_sections_without_top_actions
         "外部联系人 ID",
         "/api/admin/ai-audience/packages/123",
         "/api/admin/ai-audience/packages/123/members",
-        "/api/admin/ai-audience/packages/123/webhooks",
+        "/api/admin/ai-audience/packages/123/automation-binding",
+        "/api/admin/ai-audience/package-groups",
+        "/api/admin/automation-agents",
         "/api/admin/ai-audience/packages/123/senders",
         "operation_member_picker.js",
         'body: { items: normalized }',
         'body: {\n          name:',
-        'body: {\n          outbound_enabled:',
+        "createBindingController",
     ):
         assert expected in html
     for forbidden in (
@@ -525,6 +541,9 @@ def test_admin_ai_audience_detail_page_has_required_sections_without_top_actions
         "owner 明细",
         "推荐发送人",
         "群发状态",
+        "接收 Webhook 地址（系统生成）",
+        "外推 Webhook 地址（增量刷新后触发）",
+        "/api/admin/ai-audience/packages/123/webhooks",
         "/api/ai/audience/packages",
         "inbound_webhook_secret",
         "signing_secret",
@@ -626,6 +645,8 @@ def test_admin_ai_audience_package_detail_requires_admin_and_redacts_sensitive_f
         "refresh_mode": "incremental_3m_plus_daily_0200",
         "refresh_mode_label": "每 3 分钟 + 每日 2:00",
         "natural_language_definition": "近 30 天提交问卷且已加微",
+        "group_id": None,
+        "group_name": "未分组",
     }
     response_text = json.dumps(response.json(), ensure_ascii=False)
     for forbidden in ("sql_text", "inbound_webhook_secret", "signing_secret", "payload_json", "wm_hidden"):
@@ -747,7 +768,7 @@ def test_admin_ai_audience_members_api_returns_active_safe_fields(next_client, n
         assert forbidden not in response_text
 
 
-def test_admin_ai_audience_webhook_api_uses_platform_signature_auth(next_client, next_pg_schema, monkeypatch) -> None:
+def test_admin_ai_audience_webhook_api_is_retired(next_client, next_pg_schema, monkeypatch) -> None:
     del next_pg_schema
     monkeypatch.setenv("SECRET_KEY", "ai-audience-webhook-test")
     monkeypatch.setenv("AICRM_PUBLIC_BASE_URL", "https://www.youcangogogo.com")
@@ -764,14 +785,20 @@ def test_admin_ai_audience_webhook_api_uses_platform_signature_auth(next_client,
             "outbound_webhook_url": "https://agent.example.com/audience/entered",
         },
     )
-    assert patch.status_code == 200
-    webhook = patch.json()["webhook"]
-    assert webhook["outbound_enabled"] is True
-    assert webhook["outbound_webhook_url"] == "https://agent.example.com/audience/entered"
-    assert webhook["inbound_auth_mode"] == "aicrm_hmac_sha256"
-    assert webhook["outbound_auth_mode"] == "aicrm_hmac_sha256"
-    assert webhook["inbound_webhook_url"] == "https://www.youcangogogo.com/api/ai/audience/packages/webhook_pkg/webhook"
-    assert "signing_secret" not in json.dumps(patch.json(), ensure_ascii=False)
+    assert patch.status_code == 410
+    assert patch.json()["error"] == "webhook_configuration_retired"
+
+    get = next_client.get(
+        f"/api/admin/ai-audience/packages/{package_id}/webhooks",
+        cookies=_admin_cookies(next_client),
+    )
+    assert get.status_code == 410
+    assert get.json()["error"] == "webhook_configuration_retired"
+    with session_factory() as session:
+        assert session.execute(
+            text("SELECT COUNT(*) FROM ai_audience_outbound_subscription WHERE package_id = :package_id"),
+            {"package_id": package_id},
+        ).scalar_one() == 0
 
     removed_rotate = next_client.post(
         f"/api/admin/ai-audience/packages/{package_id}/webhooks/rotate-inbound-secret",

@@ -7452,6 +7452,146 @@ routes:
   rate_limit: authenticated
   principal_types:
   - human
+- path: /api/admin/ai-audience/package-groups
+  methods:
+  - GET
+  route_name: api.admin_ai_audience_package_groups
+  capability_owner: ai_audience_ops
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: admin_read
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/ai-audience/package-groups
+  methods:
+  - POST
+  route_name: api.admin_ai_audience_package_group_create
+  capability_owner: ai_audience_ops
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_automation
+  access_scope: global
+  pii_level: internal
+  csrf: true
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/ai-audience/package-groups/{group_id}
+  methods:
+  - PATCH
+  route_name: api.admin_ai_audience_package_group_update
+  capability_owner: ai_audience_ops
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_automation
+  access_scope: global
+  pii_level: internal
+  csrf: true
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/ai-audience/package-groups/{group_id}
+  methods:
+  - DELETE
+  route_name: api.admin_ai_audience_package_group_delete
+  capability_owner: ai_audience_ops
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_automation
+  access_scope: global
+  pii_level: internal
+  csrf: true
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/ai-audience/packages/{package_id}/automation-binding
+  methods:
+  - GET
+  route_name: api.admin_ai_audience_package_automation_binding
+  capability_owner: ai_audience_ops
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: admin_read
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/ai-audience/packages/{package_id}/automation-binding
+  methods:
+  - PUT
+  route_name: api.admin_ai_audience_package_automation_binding_put
+  capability_owner: ai_audience_ops
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_automation
+  access_scope: global
+  pii_level: internal
+  csrf: true
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/ai-audience/packages/{package_id}/automation-binding
+  methods:
+  - DELETE
+  route_name: api.admin_ai_audience_package_automation_binding_delete
+  capability_owner: ai_audience_ops
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_automation
+  access_scope: global
+  pii_level: internal
+  csrf: true
+  rate_limit: authenticated
+  principal_types:
+  - human
 - path: /api/admin/ai-audience/packages
   methods:
   - GET

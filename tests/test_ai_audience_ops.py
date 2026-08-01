@@ -35,6 +35,8 @@ from aicrm_next.extensions.ai.ai_audience_ops.sql_catalog import ALLOWED_VIEWS, 
 from aicrm_next.extensions.ai.ai_audience_ops.sql_linter import lint_sql
 from aicrm_next.extensions.ai.ai_audience_ops.test_agent_service import AudienceTestAgentService, TEST_AGENT_MESSAGE_TEXT
 from aicrm_next.extensions.ai.ai_audience_ops.webhook_service import AudienceInboundWebhookService
+from aicrm_next.extensions.ai.ai_audience_ops.automation_binding import AudienceAutomationBindingService
+from aicrm_next.extensions.ai.automation_agents.repository import build_automation_agent_repository
 from aicrm_next.platform.platform_foundation.external_effects import ExternalEffectService, WEBHOOK_GENERIC_PUSH, WECOM_MESSAGE_PRIVATE_SEND
 from aicrm_next.platform.platform_foundation.internal_events.worker import InternalEventWorker
 from aicrm_next.platform.shared.db_session import get_session_factory
@@ -45,6 +47,21 @@ TOKEN = "ai-audience-test-token"
 
 def _auth() -> dict[str, str]:
     return {"Authorization": f"Bearer {TOKEN}"}
+
+
+def _bind_test_automation(package_id: int, *, agent_code: str = "pytest_audience_agent") -> dict[str, Any]:
+    agent = build_automation_agent_repository().create_agent(
+        {
+            "agent_code": agent_code,
+            "agent_name": "Pytest Audience Agent",
+            "automation_type": "fixed_script",
+            "status": "active",
+            "fixed_content_package": {"content_text": "测试话术"},
+        }
+    )
+    result = AudienceAutomationBindingService().put(package_id, int(agent["id"]), operator="pytest")
+    assert result["ok"] is True
+    return result
 
 
 def _valid_incremental_sql() -> str:
@@ -797,15 +814,14 @@ def test_ai_audience_test_agent_webhook_business_guards_and_plans_private_messag
     assert create_resp.status_code == 200
     package_id = create_resp.json()["package"]["id"]
 
-    sub_resp = next_client.post(
-        f"/api/ai/audience/packages/{package_id}/outbound-subscriptions",
-        headers=_auth(),
-        json={
+    sub_result = AudiencePackageService().create_subscription(
+        package_id,
+        {
             "trigger_event_type": "entered",
             "webhook_url": "https://www.youcangogogo.com/api/ai/audience/test-agent/webhook",
         },
     )
-    assert sub_resp.status_code == 200
+    assert sub_result["ok"] is True
     session_factory = get_session_factory()
     with session_factory() as session:
         session.execute(
@@ -926,7 +942,7 @@ def test_ai_audience_test_agent_webhook_business_guards_and_plans_private_messag
 
 
 @pytest.mark.usefixtures("next_pg_schema")
-def test_create_outbound_subscription_deduplicates_active_target(next_client, monkeypatch) -> None:
+def test_outbound_subscription_management_routes_are_retired(next_client, monkeypatch) -> None:
     create_resp = next_client.post(
         "/api/ai/audience/packages",
         headers=_auth(),
@@ -934,59 +950,32 @@ def test_create_outbound_subscription_deduplicates_active_target(next_client, mo
     )
     assert create_resp.status_code == 200
     package_id = create_resp.json()["package"]["id"]
-    webhook_url = "https://agent.example.test/audience"
-
     first_resp = next_client.post(
         f"/api/ai/audience/packages/{package_id}/outbound-subscriptions",
         headers=_auth(),
         json={
             "trigger_event_type": "entered",
-            "webhook_url": webhook_url,
+            "webhook_url": "https://agent.example.test/audience",
             "headers": {"X-Test": "v1"},
         },
     )
-    assert first_resp.status_code == 200
-    assert first_resp.json()["deduplicated"] is False
-    first_id = first_resp.json()["subscription"]["id"]
+    assert first_resp.status_code == 410
+    assert first_resp.json()["error"] == "webhook_configuration_retired"
 
-    second_resp = next_client.post(
+    listed = next_client.get(
         f"/api/ai/audience/packages/{package_id}/outbound-subscriptions",
         headers=_auth(),
-        json={
-            "trigger_event_type": "entered",
-            "webhook_url": webhook_url,
-            "headers": {"X-Test": "v2"},
-            "max_attempts": 7,
-        },
     )
-    assert second_resp.status_code == 200
-    assert second_resp.json()["deduplicated"] is True
-    assert second_resp.json()["subscription"]["id"] == first_id
-    assert "signing_secret" not in second_resp.json()["subscription"]
-    assert second_resp.json()["subscription"]["headers_json"] == {"X-Test": "v2"}
-    assert second_resp.json()["subscription"]["max_attempts"] == 7
+    assert listed.status_code == 410
+    assert listed.json()["error"] == "webhook_configuration_retired"
 
     session_factory = get_session_factory()
     with session_factory() as session:
-        active_count = (
-            session.execute(
-                text(
-                    """
-                SELECT COUNT(*) AS count
-                FROM ai_audience_outbound_subscription
-                WHERE package_id = :package_id
-                  AND status = 'active'
-                  AND trigger_event_type = 'entered'
-                  AND target_type = 'webhook'
-                  AND webhook_url = :webhook_url
-                """
-                ),
-                {"package_id": package_id, "webhook_url": webhook_url},
-            )
-            .mappings()
-            .one()["count"]
-        )
-    assert active_count == 1
+        active_count = session.execute(
+            text("SELECT COUNT(*) FROM ai_audience_outbound_subscription WHERE package_id = :package_id"),
+            {"package_id": package_id},
+        ).scalar_one()
+    assert active_count == 0
 
 
 def test_outbound_planner_deduplicates_historical_duplicate_subscriptions() -> None:
@@ -1094,12 +1083,7 @@ def test_package_refresh_uses_internal_event_and_external_effect_queue(next_clie
     assert publish_resp.status_code == 200
     assert publish_resp.json()["ok"] is True
 
-    sub_resp = next_client.post(
-        f"/api/ai/audience/packages/{package_id}/outbound-subscriptions",
-        headers=_auth(),
-        json={"trigger_event_type": "entered", "webhook_url": "https://agent.example.test/audience", "signing_secret": "outbound-secret"},
-    )
-    assert sub_resp.status_code == 200
+    _bind_test_automation(package_id, agent_code="q101_refresh_agent")
 
     refresh_resp = next_client.post(
         f"/api/ai/audience/packages/{package_id}/refresh",
@@ -1225,14 +1209,7 @@ def test_refresh_run_compensates_questionnaire_member_after_late_wecom_identity(
     assert create_resp.status_code == 200
     package_id = int(create_resp.json()["package"]["id"])
     assert next_client.post(f"/api/ai/audience/packages/{package_id}/publish", headers=_auth(), json={}).status_code == 200
-    assert (
-        next_client.post(
-            f"/api/ai/audience/packages/{package_id}/outbound-subscriptions",
-            headers=_auth(),
-            json={"trigger_event_type": "entered", "webhook_url": "https://agent.example.test/audience"},
-        ).status_code
-        == 200
-    )
+    _bind_test_automation(package_id, agent_code="late_identity_agent")
 
     first_refresh = next_client.post(
         f"/api/ai/audience/packages/{package_id}/refresh",

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 from typing import Any
-from urllib.parse import unquote, urlparse
 
 from aicrm_next.engagement.send_content.application import normalize_send_content_package
 from aicrm_next.extensions.ai.ai_audience_ops.webhook_service import AudienceInboundWebhookService
@@ -11,19 +10,6 @@ from aicrm_next.platform.shared.llm_output_guard import looks_like_prompt_output
 
 from .context_builder import build_agent_context, referenced_context_keys, render_chinese_placeholders
 from .repository import AutomationAgentRepository, _safe_int, _text, build_automation_agent_repository
-
-
-def _package_key_from_send_webhook_url(value: str) -> str:
-    raw = _text(value)
-    if not raw:
-        return ""
-    parsed = urlparse(raw)
-    path = parsed.path if parsed.scheme else raw.split("?", 1)[0]
-    prefix = "/api/ai/audience/packages/"
-    suffix = "/webhook"
-    if not path.startswith(prefix) or not path.endswith(suffix):
-        return ""
-    return unquote(path[len(prefix) : -len(suffix)].strip("/"))
 
 
 class AutomationAgentWorker:
@@ -368,23 +354,12 @@ class AutomationAgentWorker:
                 "sender_userid": owner_userid,
             },
         }
-        configured_send_url = _text(agent.get("send_webhook_url"))
-        callback_package_key = _package_key_from_send_webhook_url(configured_send_url)
-        if configured_send_url and not callback_package_key:
-            return self._fail(
-                item_id,
-                "unsupported_send_webhook_url",
-                "send_webhook_url must target an AI Audience package webhook path",
-                context=context,
-                owner_userid=owner_userid,
-                prompt_preview=prompt_preview,
-            )
-        callback_package_key = callback_package_key or _text(agent.get("bound_package_key"))
+        callback_package_key = _text(agent.get("bound_package_key"))
         if not callback_package_key:
             return self._fail(
                 item_id,
-                "send_webhook_url_missing",
-                "send_webhook_url is required",
+                "automation_not_bound",
+                "automation binding is required",
                 context=context,
                 owner_userid=owner_userid,
                 prompt_preview=prompt_preview,

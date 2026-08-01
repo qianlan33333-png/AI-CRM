@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 from typing import Any
-from urllib.parse import urlparse
 from uuid import uuid4
 
 from pydantic import ValidationError
@@ -11,6 +10,7 @@ from aicrm_next.engagement.send_content.application import PreviewSendContentPac
 from aicrm_next.engagement.send_content.dto import SendContentPackage, SendContentPreviewRequest
 from aicrm_next.engagement.send_content.repo import build_send_content_repository
 from aicrm_next.platform.shared.errors import ContractError
+from aicrm_next.extensions.ai.ai_audience_ops.automation_binding import AudienceAutomationBindingService
 
 from .dto import AutomationAgentCreateRequest, AutomationAgentUpdateRequest
 from .repository import AutomationAgentRepository, build_automation_agent_repository, _text
@@ -21,53 +21,13 @@ ALLOWED_AUTOMATION_TYPES = {"agent", "fixed_script"}
 MAX_WEBHOOK_USERS = 5000
 
 
-def _base_url(request_base_url: str = "") -> str:
-    return _text(request_base_url).rstrip("/")
-
-
-def _receive_webhook_url(agent_code: str, request_base_url: str = "") -> str:
-    path = f"/api/ai/agents/{_text(agent_code)}/audience-webhook"
-    return f"{_base_url(request_base_url)}{path}" if _base_url(request_base_url) else path
-
-
-def _default_send_webhook_url(package_key: str) -> str:
-    return f"/api/ai/audience/packages/{_text(package_key)}/webhook"
-
-
-def _send_webhook_package_key(value: str) -> str:
-    raw = _text(value)
-    if not raw:
-        return ""
-    parsed = urlparse(raw)
-    path = parsed.path if parsed.scheme else raw.split("?", 1)[0]
-    prefix = "/api/ai/audience/packages/"
-    suffix = "/webhook"
-    if not path.startswith(prefix) or not path.endswith(suffix):
-        return ""
-    return path[len(prefix) : -len(suffix)].strip("/")
-
-
-def _normalize_send_webhook_url(value: str, *, package_key: str = "") -> str:
-    normalized = _text(value) or _default_send_webhook_url(package_key)
-    if not normalized:
-        raise ContractError("发送地址不能为空")
-    if not _send_webhook_package_key(normalized):
-        raise ContractError("发送地址必须指向 AI Audience package webhook")
-    if normalized.startswith("/"):
-        return normalized
-    parsed = urlparse(normalized)
-    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-        raise ContractError("发送地址必须是 / 开头路径或 http(s) URL")
-    return normalized
-
-
 def _automation_type(value: Any) -> str:
     normalized = _text(value) or "agent"
     return normalized if normalized in ALLOWED_AUTOMATION_TYPES else ""
 
 
 def _automation_type_label(value: Any) -> str:
-    return "固定话术" if _automation_type(value) == "fixed_script" else "agent"
+    return "固定话术" if _automation_type(value) == "fixed_script" else "Agent 机器人"
 
 
 def _normalize_fixed_content(value: Any, *, automation_type: str = "agent") -> dict[str, Any]:
@@ -118,6 +78,7 @@ def _agent_payload(row: dict[str, Any], *, request_base_url: str = "", include_d
         "agent_code": _text(row.get("agent_code")),
         "agent_name": _text(row.get("agent_name")),
         "bound_package_key": _text(row.get("bound_package_key")),
+        "bound_package_id": int(row.get("bound_package_id") or 0) or None,
         "bound_package_name": _text(row.get("bound_package_name")),
         "fixed_material_summary": _summary(content_package),
         "status": _text(row.get("status")),
@@ -133,13 +94,6 @@ def _agent_payload(row: dict[str, Any], *, request_base_url: str = "", include_d
         )
         item.update(
             {
-                "receive_webhook_url": _receive_webhook_url(
-                    item["agent_code"],
-                    request_base_url,
-                ),
-                "receive_webhook_auth_mode": "aicrm_hmac_sha256",
-                "receive_webhook_capability": "automation_agent_webhook_receive",
-                "send_webhook_url": _text(row.get("send_webhook_url")) or _default_send_webhook_url(item["bound_package_key"]),
                 "draft_role_prompt": _text(row.get("draft_role_prompt")),
                 "draft_task_prompt": _text(row.get("draft_task_prompt")),
                 "published_role_prompt": _text(row.get("published_role_prompt")),
@@ -162,27 +116,30 @@ class AutomationAgentAdminService:
     def __init__(self, repository: AutomationAgentRepository | None = None) -> None:
         self._repo = repository or build_automation_agent_repository()
 
-    def list_agents(self) -> dict[str, Any]:
+    def list_agents(self, *, automation_type: str = "") -> dict[str, Any]:
         rows = self._repo.list_agents()
-        return {"ok": True, "items": [_agent_payload(row) for row in rows], "total": int(rows[0].get("total_count") or 0) if rows else 0}
+        normalized_type = _text(automation_type)
+        if normalized_type:
+            if normalized_type not in ALLOWED_AUTOMATION_TYPES:
+                return {"ok": False, "error": "invalid_automation_type", "items": [], "total": 0}
+            rows = [row for row in rows if _automation_type(row.get("automation_type")) == normalized_type]
+        items = [_agent_payload(row) for row in rows]
+        return {"ok": True, "items": items, "total": len(items)}
 
     def create_agent(self, payload: dict[str, Any], *, request_base_url: str = "") -> dict[str, Any]:
+        if any(key in payload for key in ("bound_package_key", "send_webhook_url")):
+            return {"ok": False, "error": "webhook_configuration_retired"}
         try:
             request = AutomationAgentCreateRequest.model_validate(payload)
             automation_type = _automation_type(request.automation_type)
             if not automation_type:
                 return {"ok": False, "error": "invalid_automation_type"}
             content_package = _normalize_fixed_content(request.fixed_content_package, automation_type=automation_type)
-            send_webhook_url = _normalize_send_webhook_url(
-                request.send_webhook_url or "",
-                package_key=request.bound_package_key,
-            )
         except (ValidationError, ContractError) as exc:
             return {"ok": False, "error": "invalid_agent_payload", "detail": str(exc)}
         required = {
             "agent_name": request.agent_name,
             "agent_code": request.agent_code,
-            "bound_package_key": request.bound_package_key,
         }
         if automation_type == "agent":
             required.update({"role_prompt": request.role_prompt, "task_prompt": request.task_prompt})
@@ -196,7 +153,6 @@ class AutomationAgentAdminService:
                 **request.model_dump(exclude={"fixed_content_package"}),
                 "automation_type": automation_type,
                 "fixed_content_package": content_package,
-                "send_webhook_url": send_webhook_url,
             }
         )
         detail = self._repo.get_agent(int(row["id"])) or row
@@ -209,6 +165,8 @@ class AutomationAgentAdminService:
         return {"ok": True, "agent": _agent_payload(row, request_base_url=request_base_url, include_detail=True)}
 
     def update_agent(self, agent_id: int, payload: dict[str, Any], *, request_base_url: str = "") -> dict[str, Any]:
+        if any(key in payload for key in ("bound_package_key", "send_webhook_url")):
+            return {"ok": False, "error": "webhook_configuration_retired"}
         try:
             request = AutomationAgentUpdateRequest.model_validate(payload)
         except ValidationError as exc:
@@ -228,19 +186,16 @@ class AutomationAgentAdminService:
                 )
             except (ValidationError, ContractError) as exc:
                 return {"ok": False, "error": "invalid_fixed_content_package", "detail": str(exc)}
-        if "send_webhook_url" in updates:
-            try:
-                updates["send_webhook_url"] = _normalize_send_webhook_url(
-                    updates.get("send_webhook_url") or "",
-                    package_key=updates.get("bound_package_key") or _text((self._repo.get_agent(agent_id) or {}).get("bound_package_key")),
-                )
-            except ContractError as exc:
-                return {"ok": False, "error": "invalid_send_webhook_url", "detail": str(exc)}
         if "status" in updates and _text(updates["status"]) not in ALLOWED_STATUSES:
             return {"ok": False, "error": "invalid_status"}
+        requested_status = _text(updates.pop("status", ""))
         row = self._repo.update_agent(agent_id, updates)
         if not row:
             return {"ok": False, "error": "agent_not_found"}
+        if requested_status and requested_status != _text(existing.get("status")):
+            status_result = self.set_status(agent_id, requested_status, request_base_url=request_base_url)
+            if not status_result.get("ok"):
+                return status_result
         detail = self._repo.get_agent(agent_id) or row
         return {"ok": True, "agent": _agent_payload(detail, request_base_url=request_base_url, include_detail=True)}
 
@@ -253,12 +208,10 @@ class AutomationAgentAdminService:
                 "agent_code": self._repo.next_copy_code(_text(source.get("agent_code"))),
                 "agent_name": f"{_text(source.get('agent_name'))} 副本".strip(),
                 "automation_type": _automation_type(source.get("automation_type")) or "agent",
-                "bound_package_key": _text(source.get("bound_package_key")),
                 "status": _text(source.get("status")) or "active",
                 "role_prompt": _text(source.get("draft_role_prompt")),
                 "task_prompt": _text(source.get("draft_task_prompt")),
                 "fixed_content_package": source.get("fixed_content_package_json") or {},
-                "send_webhook_url": _text(source.get("send_webhook_url")) or _default_send_webhook_url(_text(source.get("bound_package_key"))),
             }
         )
         detail = self._repo.get_agent(int(copied["id"])) or copied
@@ -287,7 +240,16 @@ class AutomationAgentAdminService:
                 assert_group_invite_bindings_ready(existing.get("fixed_content_package_json") or {})
             except ContractError as exc:
                 return {"ok": False, "error": "group_invite_not_ready", "detail": str(exc)}
-        row = self._repo.set_status(agent_id, status)
+        binding_service = AudienceAutomationBindingService()
+        if status == "archived" and binding_service.automation_has_binding(agent_id):
+            return {"ok": False, "error": "automation_binding_exists"}
+        if status in {"active", "paused"}:
+            binding_result = binding_service.set_automation_status(agent_id, status)
+            if not binding_result.get("ok"):
+                return binding_result
+            row = binding_result.get("automation")
+        else:
+            row = self._repo.set_status(agent_id, status)
         if not row:
             return {"ok": False, "error": "agent_not_found"}
         if status == "archived":
@@ -353,6 +315,16 @@ class AutomationAgentWebhookService:
             return {"ok": False, "error": "agent_not_found"}, 404
         if _text(agent.get("status")) != "active":
             return {"ok": False, "error": "agent_not_active"}, 409
+        bound_package_key = _text(agent.get("bound_package_key"))
+        if not bound_package_key:
+            return {"ok": False, "error": "automation_not_bound"}, 409
+        request_package_key = _text(headers.get("X-AICRM-Package-Key") or headers.get("x-aicrm-package-key"))
+        if request_package_key != bound_package_key:
+            return {
+                "ok": False,
+                "error": "automation_package_mismatch",
+                "expected_package_key": bound_package_key,
+            }, 409
         external_userids, received_count = parse_external_userids(payload)
         if len(external_userids) > MAX_WEBHOOK_USERS:
             return {"ok": False, "error": "too_many_external_userids", "limit": MAX_WEBHOOK_USERS}, 400

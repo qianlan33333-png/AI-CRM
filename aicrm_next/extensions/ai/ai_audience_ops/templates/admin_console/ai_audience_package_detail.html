@@ -1,6 +1,7 @@
 {% extends "admin_console/base.html" %}
 
 {% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/automation_capability_selector.css') }}?v=20260801">
 <style>
   :root {
     --ai-bg: #f6f8fb;
@@ -20,9 +21,7 @@
     --ai-r: 16px;
   }
 
-  .admin-topbar {
-    display: none;
-  }
+  .admin-page-summary { display: none; }
 
   .admin-page {
     background: var(--ai-bg);
@@ -420,11 +419,6 @@
 
 {% block content %}
 <main class="ai-page">
-  <header class="ai-topbar">
-    <div class="ai-crumb">客户管理后台 / 自动化运营 / 人群包详情</div>
-    <h1>AI 自动化运营</h1>
-  </header>
-
   <section class="ai-card ai-summary-card" aria-label="人群包基础摘要">
     <div class="ai-summary-head">
       <h2 id="packageTitle">加载中</h2>
@@ -445,7 +439,7 @@
   <section class="ai-workspace">
     <nav class="ai-card ai-side-nav" aria-label="人群包配置维度">
       <button class="active" type="button" data-panel="basic"><span class="ai-index">1</span><span class="ai-nav-label">基础配置</span></button>
-      <button type="button" data-panel="webhook"><span class="ai-index">2</span><span class="ai-nav-label">Webhook</span></button>
+      <button type="button" data-panel="automation"><span class="ai-index">2</span><span class="ai-nav-label">自动化话术能力</span></button>
       <button type="button" data-panel="senders"><span class="ai-index">3</span><span class="ai-nav-label">发送人白名单</span></button>
       <button type="button" data-panel="members"><span class="ai-index">4</span><span class="ai-nav-label">成员列表</span></button>
     </nav>
@@ -464,6 +458,10 @@
           <div class="ai-field full">
             <label class="ai-label" for="packageDefinitionInput">筛选逻辑简述</label>
             <textarea class="ai-textarea" id="packageDefinitionInput"></textarea>
+          </div>
+          <div class="ai-field full">
+            <label class="ai-label" for="packageGroupSelect">所属分组</label>
+            <select class="ai-select" id="packageGroupSelect"><option value="ungrouped">未分组</option></select>
           </div>
           <div class="ai-field">
             <label class="ai-label" for="incrementalSelect">增量刷新</label>
@@ -486,25 +484,18 @@
         <div class="ai-status-line" id="packageStatusLine"></div>
       </section>
 
-      <section class="ai-panel" id="panel-webhook">
+      <section class="ai-panel" id="panel-automation">
         <div class="ai-panel-title-row">
-          <h3>Webhook</h3>
-          <span class="ai-pill">独立保存</span>
+          <h3>自动化话术能力</h3>
+          <span class="ai-pill">一对一绑定</span>
         </div>
-        <div class="ai-form-grid">
-          <div class="ai-field full">
-            <label class="ai-label">接收 Webhook 地址（系统生成）</label>
-            <div class="ai-codebox" id="inboundWebhookUrl">加载中</div>
-          </div>
-          <div class="ai-field full">
-            <label class="ai-label" for="outboundWebhookInput">外推 Webhook 地址（增量刷新后触发）</label>
-            <input class="ai-input" id="outboundWebhookInput" value="">
-          </div>
-        </div>
+        <p class="ai-label">从已有自动化列表中选择一个能力。已停止或被其他人群包占用的能力不可选。</p>
+        <div id="automationCapabilitySelector"></div>
         <div class="ai-panel-actions">
-          <button class="ai-btn primary" id="saveWebhookBtn" type="button">保存 Webhook</button>
+          <button class="ai-btn danger" id="unbindAutomationBtn" type="button">解除绑定</button>
+          <button class="ai-btn primary" id="saveAutomationBtn" type="button">保存绑定</button>
         </div>
-        <div class="ai-status-line" id="webhookStatusLine"></div>
+        <div class="ai-status-line" id="automationStatusLine"></div>
       </section>
 
       <section class="ai-panel" id="panel-senders">
@@ -563,11 +554,14 @@
 {% endblock %}
 
 {% block scripts_extra %}
+<script src="{{ url_for('static', filename='admin_console/automation_capability_selector.js') }}?v=20260801"></script>
 <script>
   (() => {
     const packageApiUrl = {{ ai_audience_package_api_url | tojson }};
+    const groupsApiUrl = {{ ai_audience_package_groups_api_url | tojson }};
     const membersApiUrl = {{ ai_audience_package_members_api_url | tojson }};
-    const webhooksApiUrl = {{ ai_audience_package_webhooks_api_url | tojson }};
+    const bindingApiUrl = {{ ai_audience_package_automation_binding_api_url | tojson }};
+    const automationAgentsApiUrl = {{ automation_agents_api_url | tojson }};
     const sendersApiUrl = {{ ai_audience_package_senders_api_url | tojson }};
 
     const els = {
@@ -578,14 +572,15 @@
       summaryStatus: document.getElementById("summaryStatus"),
       packageNameInput: document.getElementById("packageNameInput"),
       packageDefinitionInput: document.getElementById("packageDefinitionInput"),
+      packageGroupSelect: document.getElementById("packageGroupSelect"),
       incrementalSelect: document.getElementById("incrementalSelect"),
       dailySelect: document.getElementById("dailySelect"),
       savePackageBtn: document.getElementById("savePackageBtn"),
       packageStatusLine: document.getElementById("packageStatusLine"),
-      inboundWebhookUrl: document.getElementById("inboundWebhookUrl"),
-      outboundWebhookInput: document.getElementById("outboundWebhookInput"),
-      saveWebhookBtn: document.getElementById("saveWebhookBtn"),
-      webhookStatusLine: document.getElementById("webhookStatusLine"),
+      automationCapabilitySelector: document.getElementById("automationCapabilitySelector"),
+      saveAutomationBtn: document.getElementById("saveAutomationBtn"),
+      unbindAutomationBtn: document.getElementById("unbindAutomationBtn"),
+      automationStatusLine: document.getElementById("automationStatusLine"),
       addSenderBtn: document.getElementById("addSenderBtn"),
       saveSendersBtn: document.getElementById("saveSendersBtn"),
       senderRows: document.getElementById("senderRows"),
@@ -599,6 +594,8 @@
 
     let senderItems = [];
     let currentPanel = "basic";
+    let currentPackage = null;
+    let automationBindingController = null;
 
     const escapeHtml = (value) => String(value ?? "")
       .replaceAll("&", "&amp;")
@@ -664,6 +661,7 @@
     };
 
     const renderPackage = (packageInfo) => {
+      currentPackage = packageInfo;
       const name = packageInfo.name || "未命名人群包";
       els.packageTitle.textContent = name;
       els.summaryCount.textContent = formatNumber(packageInfo.member_count);
@@ -672,7 +670,15 @@
       els.summaryStatus.textContent = statusLabel(packageInfo.status);
       els.packageNameInput.value = name;
       els.packageDefinitionInput.value = packageInfo.natural_language_definition || "";
+      els.packageGroupSelect.value = packageInfo.group_id == null ? "ungrouped" : String(packageInfo.group_id);
       applyRefreshMode(packageInfo.refresh_mode || "manual");
+    };
+
+    const loadGroups = async () => {
+      const payload = await fetchJson(`${groupsApiUrl}?_=${Date.now()}`);
+      const groups = (payload.items || []).filter((item) => !item.is_virtual);
+      els.packageGroupSelect.innerHTML = '<option value="ungrouped">未分组</option>' + groups.map((item) => `<option value="${Number(item.id)}">${escapeHtml(item.name)}</option>`).join("");
+      if (currentPackage) els.packageGroupSelect.value = currentPackage.group_id == null ? "ungrouped" : String(currentPackage.group_id);
     };
 
     const loadPackage = async () => {
@@ -687,36 +693,27 @@
         body: {
           name: els.packageNameInput.value.trim(),
           natural_language_definition: els.packageDefinitionInput.value.trim(),
-          refresh_mode: selectedRefreshMode()
+          refresh_mode: selectedRefreshMode(),
+          group_id: els.packageGroupSelect.value === "ungrouped" ? null : Number(els.packageGroupSelect.value)
         }
       });
       renderPackage(payload.package || {});
       setStatus(els.packageStatusLine, "基础配置已保存", "success");
     };
 
-    const renderWebhook = (webhook) => {
-      els.inboundWebhookUrl.textContent = `POST ${webhook.inbound_webhook_url || "-"}`;
-      els.outboundWebhookInput.value = webhook.outbound_webhook_url || "";
-    };
-
-    const loadWebhook = async () => {
-      const payload = await fetchJson(`${webhooksApiUrl}?_=${Date.now()}`);
-      renderWebhook(payload.webhook || {});
-    };
-
-    const saveWebhook = async () => {
-      const outboundUrl = els.outboundWebhookInput.value.trim();
-      setStatus(els.webhookStatusLine, "保存中...");
-      const payload = await fetchJson(webhooksApiUrl, {
-        method: "PATCH",
-        body: {
-          outbound_enabled: Boolean(outboundUrl),
-          outbound_webhook_url: outboundUrl
-        }
+    const getAutomationBindingController = () => {
+      if (!window.AutomationCapabilitySelector) throw new Error("自动化能力选择器加载失败");
+      if (!automationBindingController) automationBindingController = window.AutomationCapabilitySelector.createBindingController(els.automationCapabilitySelector, {
+        bindingApiUrl, automationAgentsApiUrl, fetchJson,
+        currentPackageId: {{ package_id | tojson }},
+        unbindButton: els.unbindAutomationBtn,
+        setStatus: (message, tone) => setStatus(els.automationStatusLine, message, tone)
       });
-      renderWebhook(payload.webhook || {});
-      setStatus(els.webhookStatusLine, "Webhook 已保存", "success");
+      return automationBindingController;
     };
+    const loadAutomationBinding = () => getAutomationBindingController().load();
+    const saveAutomationBinding = () => getAutomationBindingController().save();
+    const unbindAutomation = () => getAutomationBindingController().unbind();
 
     const normalizeSenders = (items) => items.map((item, index) => ({
       sender_userid: (item.sender_userid || "").trim(),
@@ -929,14 +926,14 @@
 
     const refreshCurrentPanel = async () => {
       if (currentPanel === "basic") return loadPackage();
-      if (currentPanel === "webhook") return loadWebhook();
+      if (currentPanel === "automation") return loadAutomationBinding();
       if (currentPanel === "senders") return loadSenders();
       return loadMembers();
     };
 
     const saveCurrentPanel = async () => {
       if (currentPanel === "basic") return savePackage();
-      if (currentPanel === "webhook") return saveWebhook();
+      if (currentPanel === "automation") return saveAutomationBinding();
       if (currentPanel === "senders") {
         updateSenderFromInputs();
         return saveSenders(senderItems);
@@ -950,8 +947,11 @@
     els.savePackageBtn.addEventListener("click", () => {
       savePackage().catch((error) => setStatus(els.packageStatusLine, window.AdminApi.errorMessage(error, "保存失败"), "error"));
     });
-    els.saveWebhookBtn.addEventListener("click", () => {
-      saveWebhook().catch((error) => setStatus(els.webhookStatusLine, window.AdminApi.errorMessage(error, "保存失败"), "error"));
+    els.saveAutomationBtn.addEventListener("click", () => {
+      saveAutomationBinding().catch((error) => setStatus(els.automationStatusLine, window.AdminApi.errorMessage(error, "保存失败"), "error"));
+    });
+    els.unbindAutomationBtn.addEventListener("click", () => {
+      unbindAutomation().catch((error) => setStatus(els.automationStatusLine, window.AdminApi.errorMessage(error, "解除失败"), "error"));
     });
     els.addSenderBtn.addEventListener("click", () => {
       addSender();
@@ -971,8 +971,8 @@
     });
     els.saveCurrentDimensionBtn.addEventListener("click", () => {
       saveCurrentPanel().catch((error) => {
-        const statusEl = currentPanel === "webhook"
-          ? els.webhookStatusLine
+        const statusEl = currentPanel === "automation"
+          ? els.automationStatusLine
           : currentPanel === "senders"
             ? els.senderStatusLine
             : els.packageStatusLine;
@@ -981,7 +981,7 @@
     });
 
     showPanel("basic");
-    Promise.all([loadPackage(), loadWebhook(), loadSenders(), loadMembers()]).catch((error) => {
+    Promise.all([loadGroups().then(loadPackage), loadAutomationBinding(), loadSenders(), loadMembers()]).catch((error) => {
       setStatus(els.packageStatusLine, window.AdminApi.errorMessage(error, "加载失败"), "error");
     });
   })();

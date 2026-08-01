@@ -8,8 +8,10 @@ from zoneinfo import ZoneInfo
 from aicrm_next.platform.platform_foundation.external_effects import ExternalEffectService
 from aicrm_next.platform.platform_foundation.internal_events import InternalEventService
 from aicrm_next.platform.shared.runtime_settings import startup_environment_setting
+from aicrm_next.extensions.ai.ai_audience_ops.automation_binding import AudienceAutomationBindingService
 
 from .repository import AudienceRepository, build_audience_repository, default_refresh_started_at, previous_watermark, _text
+from .repository_packages import AudienceGroupNameConflictError, AudienceGroupNotEmptyError
 from .schemas import PackageCreateRequest, PackageVersionCreateRequest, PreviewRequest
 from .sql_executor import build_execution_plan
 
@@ -26,19 +28,114 @@ class AudiencePackageService:
     def list_packages(self) -> dict[str, Any]:
         return {"ok": True, "packages": self._repo.list_packages()}
 
-    def list_admin_package_summaries(self, *, limit: int = 200) -> dict[str, Any]:
-        rows = self._repo.list_package_summaries(limit=limit)
+    def list_admin_package_summaries(
+        self,
+        *,
+        limit: int = 20,
+        offset: int = 0,
+        group_id: int | None = None,
+        ungrouped: bool = False,
+    ) -> dict[str, Any]:
+        safe_limit = max(1, min(int(limit or 20), 200))
+        safe_offset = max(0, int(offset or 0))
+        if group_id is not None and not self._repo.get_package_group(int(group_id)):
+            return {"ok": False, "error": "group_not_found", "items": [], "total": 0, "limit": safe_limit, "offset": safe_offset}
+        rows = self._repo.list_package_summaries(
+            limit=safe_limit,
+            offset=safe_offset,
+            group_id=group_id,
+            ungrouped=ungrouped,
+        )
         items = [_admin_package_item(row) for row in rows]
-        total = int(rows[0].get("total_count") or len(items)) if rows else 0
+        total = (
+            int(rows[0].get("total_count") or len(items))
+            if rows
+            else self._repo.count_package_summaries(group_id=group_id, ungrouped=ungrouped)
+        )
         return {
             "ok": True,
             "items": items,
             "total": total,
+            "limit": safe_limit,
+            "offset": safe_offset,
             "generated_at": _admin_datetime(datetime.now(timezone.utc)),
         }
 
     def list_admin_packages(self, *, limit: int = 200) -> dict[str, Any]:
         return self.list_admin_package_summaries(limit=limit)
+
+    def list_admin_package_groups(self) -> dict[str, Any]:
+        groups = [
+            {
+                "id": int(row.get("id") or 0),
+                "name": _text(row.get("name")),
+                "package_count": int(row.get("package_count") or 0),
+                "is_virtual": False,
+            }
+            for row in self._repo.list_package_groups()
+        ]
+        ungrouped = {
+            "id": "ungrouped",
+            "name": "未分组",
+            "package_count": self._repo.count_ungrouped_packages(),
+            "is_virtual": True,
+        }
+        return {"ok": True, "items": [ungrouped, *groups], "total": len(groups) + 1}
+
+    @staticmethod
+    def _group_name(payload: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+        name = _text(payload.get("name"))
+        if not name:
+            return "", {"ok": False, "error": "group_name_required"}
+        if len(name) > 80:
+            return "", {"ok": False, "error": "group_name_too_long", "max_length": 80}
+        return name, None
+
+    def create_admin_package_group(self, payload: dict[str, Any], *, operator: str = "admin") -> dict[str, Any]:
+        name, error = self._group_name(payload)
+        if error:
+            return error
+        try:
+            group = self._repo.create_package_group(name, operator=operator)
+        except AudienceGroupNameConflictError:
+            return {"ok": False, "error": "group_name_exists"}
+        return {"ok": True, "group": {**group, "package_count": 0, "is_virtual": False}, "created": True}
+
+    def update_admin_package_group(self, group_id: int, payload: dict[str, Any], *, operator: str = "admin") -> dict[str, Any]:
+        name, error = self._group_name(payload)
+        if error:
+            return error
+        try:
+            group = self._repo.update_package_group(int(group_id), name, operator=operator)
+        except AudienceGroupNameConflictError:
+            return {"ok": False, "error": "group_name_exists"}
+        if not group:
+            return {"ok": False, "error": "group_not_found"}
+        return {"ok": True, "group": {**group, "is_virtual": False}}
+
+    def delete_admin_package_group(self, group_id: int, *, operator: str = "admin") -> dict[str, Any]:
+        try:
+            group = self._repo.delete_package_group(int(group_id), operator=operator)
+        except AudienceGroupNotEmptyError:
+            return {"ok": False, "error": "group_not_empty"}
+        if not group:
+            return {"ok": False, "error": "group_not_found"}
+        return {"ok": True, "deleted": {**group, "is_virtual": False}}
+
+    def _validated_group_id(self, payload: dict[str, Any], *, current: dict[str, Any] | None = None) -> tuple[int | None, dict[str, Any] | None]:
+        if "group_id" not in payload:
+            raw = (current or {}).get("group_id")
+            return (int(raw) if raw is not None else None), None
+        raw = payload.get("group_id")
+        if raw is None or raw == "" or raw == "ungrouped":
+            return None, None
+        try:
+            group_id = int(raw)
+        except (TypeError, ValueError):
+            return None, {"ok": False, "error": "invalid_group_id"}
+        if group_id <= 0 or not self._repo.get_package_group(group_id):
+            return None, {"ok": False, "error": "group_not_found"}
+        return group_id, None
 
     def get_admin_package_detail(self, package_id: int) -> dict[str, Any]:
         row = self._repo.get_package_detail(int(package_id))
@@ -62,6 +159,9 @@ class AudiencePackageService:
         status = _text(payload.get("status")) or "draft"
         if status not in {"draft", "paused"}:
             return {"ok": False, "error": "invalid_initial_status"}
+        group_id, group_error = self._validated_group_id(payload)
+        if group_error:
+            return group_error
 
         parameters = payload.get("parameters") if isinstance(payload.get("parameters"), dict) else {}
         incremental_sql = _text(payload.get("incremental_sql_text"))
@@ -86,6 +186,7 @@ class AudiencePackageService:
             "package_key": package_key,
             "name": name,
             "status": status,
+            "group_id": group_id,
             "parameters": parameters,
         }
         package = self._repo.create_package(package_payload)
@@ -117,12 +218,16 @@ class AudiencePackageService:
         refresh_config = refresh_mode_config(refresh_mode)
         if refresh_config is None:
             return {"ok": False, "error": "invalid_refresh_mode"}
+        group_id, group_error = self._validated_group_id(payload, current=current)
+        if group_error:
+            return group_error
         update_payload = {
             "name": _text(payload.get("name")) or _text(current.get("name")),
             "natural_language_definition": _text(payload.get("natural_language_definition"))
             if "natural_language_definition" in payload
             else _text(current.get("natural_language_definition")),
             "timezone": _text(current.get("timezone")) or "Asia/Shanghai",
+            "group_id": group_id,
             **refresh_config,
         }
         updated = self._repo.update_package_config(int(package_id), update_payload)
@@ -169,6 +274,8 @@ class AudiencePackageService:
         }
 
     def archive_admin_package(self, package_id: int) -> dict[str, Any]:
+        if AudienceAutomationBindingService().package_has_binding(int(package_id)):
+            return {"ok": False, "error": "automation_binding_exists"}
         package = self._repo.update_package_status(int(package_id), "archived", reason="admin_archived")
         return {
             "ok": bool(package),
@@ -587,6 +694,8 @@ def _admin_package_item(row: dict[str, Any]) -> dict[str, Any]:
         "last_refreshed_at": _admin_datetime(row.get("last_refreshed_at")) if row.get("last_refreshed_at") else None,
         "refresh_mode": refresh_mode,
         "refresh_mode_label": refresh_mode_label(refresh_mode),
+        "group_id": int(row.get("group_id")) if row.get("group_id") is not None else None,
+        "group_name": _text(row.get("group_name")) or "未分组",
     }
 
 

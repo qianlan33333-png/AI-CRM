@@ -108,7 +108,35 @@ class AudienceRepository:
     def list_packages(self) -> list[dict[str, Any]]:
         raise NotImplementedError
 
-    def list_package_summaries(self, *, limit: int = 200) -> list[dict[str, Any]]:
+    def list_package_summaries(
+        self,
+        *,
+        limit: int = 200,
+        offset: int = 0,
+        group_id: int | None = None,
+        ungrouped: bool = False,
+    ) -> list[dict[str, Any]]:
+        raise NotImplementedError
+
+    def list_package_groups(self) -> list[dict[str, Any]]:
+        raise NotImplementedError
+
+    def count_package_summaries(self, *, group_id: int | None = None, ungrouped: bool = False) -> int:
+        raise NotImplementedError
+
+    def count_ungrouped_packages(self) -> int:
+        raise NotImplementedError
+
+    def get_package_group(self, group_id: int) -> dict[str, Any] | None:
+        raise NotImplementedError
+
+    def create_package_group(self, name: str, *, operator: str = "admin") -> dict[str, Any]:
+        raise NotImplementedError
+
+    def update_package_group(self, group_id: int, name: str, *, operator: str = "admin") -> dict[str, Any] | None:
+        raise NotImplementedError
+
+    def delete_package_group(self, group_id: int, *, operator: str = "admin") -> dict[str, Any] | None:
         raise NotImplementedError
 
     def get_package_detail(self, package_id: int) -> dict[str, Any] | None:
