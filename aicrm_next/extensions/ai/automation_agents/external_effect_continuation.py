@@ -10,7 +10,7 @@ from aicrm_next.platform.platform_foundation.external_effects.models import (
     ExternalEffectDispatchResult,
     ExternalEffectJob,
 )
-from aicrm_next.platform.shared.safe_logging import safe_log_exception
+from aicrm_next.platform.shared.safe_logging import safe_exception_summary, safe_log_exception
 
 from .worker import AutomationAgentWorker
 from .internal_webhook_adapter import automation_agent_code_from_webhook_url
@@ -57,12 +57,21 @@ def _continue_automation_agent_audience_webhook(
     except Exception as exc:
         safe_log_exception(
             LOGGER,
-            "automation agent post-success continuation failed",
+            (
+                "automation agent post-success continuation failed; "
+                f"batch_id={batch_id}; external_effect_job_id={int(job.id or 0)}; "
+                "recovery=durable_internal_event_retry"
+            ),
             exc,
             external_effect_job_id=int(job.id or 0),
             batch_id=batch_id,
         )
-        return {"ok": False, "batch_id": batch_id, "error": str(exc)[:500]}
+        return {
+            "ok": False,
+            "batch_id": batch_id,
+            "error": safe_exception_summary(exc, limit=500),
+            "recovery": "durable_internal_event_retry",
+        }
     return dict(result)
 
 

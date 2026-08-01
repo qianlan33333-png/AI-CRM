@@ -229,10 +229,23 @@ jobs:
             active_generation = int(control["active_generation"])
             assert active_generation > 0
             assert control["claim_enabled"] is True
-            owner_counts = {
-                str(row["service_name"]): int(row["heartbeat_count"])
-                for row in owner_rows
+            owner_counts = {}
+            for row in owner_rows:
+                service_name = str(row["service_name"])
+                owner_counts[service_name] = owner_counts.get(service_name, 0) + int(row["heartbeat_count"])
+            evidence = {
+                "runtime_control": control,
+                "owner_heartbeat_groups": owner_rows,
+                "owner_heartbeat_counts": owner_counts,
+                "expected_heartbeat_counts": expected_counts,
+                "competing_heartbeat_groups": competing_rows,
+                "active_claim_groups": claim_rows,
+                "backlog_counts": backlog,
+                "target_values_redacted": True,
+                "real_external_call_executed": False,
+                "read_only": True,
             }
+            print(json.dumps(evidence, ensure_ascii=False, sort_keys=True, default=str))
             assert owner_counts == expected_counts
             assert all(int(row["generation"]) == active_generation for row in owner_rows)
             assert all(row["rollout_mode"] in {"canary", "execute"} for row in owner_rows)
@@ -243,17 +256,10 @@ jobs:
             print(
                 json.dumps(
                     {
-                        "runtime_control": control,
-                        "owner_heartbeat_groups": owner_rows,
-                        "competing_heartbeat_groups": competing_rows,
-                        "active_claim_groups": claim_rows,
-                        "backlog_counts": backlog,
+                        **evidence,
                         "single_internal_worker_owner": True,
                         "predecessor_units_retired": True,
                         "external_worker_unchanged": True,
-                        "target_values_redacted": True,
-                        "real_external_call_executed": False,
-                        "read_only": True,
                     },
                     ensure_ascii=False,
                     sort_keys=True,

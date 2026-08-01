@@ -106,6 +106,13 @@ def test_sensitive_text_scrubs_credentials_and_pii_from_exception_messages() -> 
     assert PII_MASK in redacted
 
 
+def test_sensitive_text_preserves_operational_words_that_only_share_wecom_prefixes() -> None:
+    operational = "worker_error would_call workflow_execution workspace_tabs"
+
+    assert redact_sensitive_text(operational) == operational
+    assert redact_sensitive_text("wmRuntimeSentinel001") == PII_MASK
+
+
 def test_ai_audience_cli_report_uses_shared_secret_and_pii_redaction() -> None:
     report = json.loads(
         redact_report(

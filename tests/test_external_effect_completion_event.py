@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import logging
+from types import SimpleNamespace
+
 import pytest
+from sqlalchemy.exc import OperationalError
 
 from aicrm_next.extensions.ai.automation_agents import external_effect_continuation as automation_continuation
 from aicrm_next.external_effect_composition import (
@@ -403,6 +407,55 @@ def test_real_external_push_and_automation_predicates_both_execute(monkeypatch) 
         planned["id"],
         completed["attempt"]["attempt_id"],
     ) == ("succeeded", "succeeded")
+
+
+def test_automation_continuation_failure_exposes_batch_and_durable_retry(monkeypatch) -> None:
+    class _FailingAutomationWorker:
+        def run_batch_and_enqueue_broadcast_jobs(self, *_args, **_kwargs):
+            raise OperationalError(
+                "SELECT hidden",
+                {},
+                RuntimeError("remaining connection slots are reserved for superuser roles"),
+            )
+
+    monkeypatch.setattr(automation_continuation, "AutomationAgentWorker", _FailingAutomationWorker)
+    dispatch = ExternalEffectDispatchResult(
+        status="succeeded",
+        adapter_mode="execute",
+        response_summary={"automation_agent_batch_id": "agent_batch_retry_001"},
+    )
+
+    records: list[logging.LogRecord] = []
+
+    class _RecordHandler(logging.Handler):
+        def emit(self, record: logging.LogRecord) -> None:
+            records.append(record)
+
+    logger = automation_continuation.LOGGER
+    handler = _RecordHandler()
+    previous_level = logger.level
+    previous_disabled = logger.disabled
+    logger.addHandler(handler)
+    logger.setLevel(logging.ERROR)
+    logger.disabled = False
+    try:
+        result = automation_continuation._continue_automation_agent_audience_webhook(
+            SimpleNamespace(id=41, execution_id="exe_41"),
+            dispatch,
+        )
+    finally:
+        logger.removeHandler(handler)
+        logger.setLevel(previous_level)
+        logger.disabled = previous_disabled
+
+    assert result["ok"] is False
+    assert result["batch_id"] == "agent_batch_retry_001"
+    assert result["recovery"] == "durable_internal_event_retry"
+    assert "SELECT hidden" not in result["error"]
+    assert "remaining connection slots" in result["error"]
+    assert "batch_id=agent_batch_retry_001" in records[-1].getMessage()
+    assert records[-1].error_type == "OperationalError"
+    assert "remaining connection slots" in records[-1].error_detail
 
 
 def test_failing_overlap_does_not_block_sibling_and_only_failed_run_retries(monkeypatch) -> None:

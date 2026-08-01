@@ -360,11 +360,15 @@ class ErrorReportingLogHandler(logging.Handler):
             error_type = str(getattr(record, "error_type", "") or "")
             if not error_type and record.exc_info and record.exc_info[0] is not None:
                 error_type = record.exc_info[0].__name__
+            summary = record.getMessage()
+            error_detail = str(getattr(record, "error_detail", "") or "").strip()
+            if error_detail and error_detail not in summary:
+                summary = f"{summary}: {error_detail}"
             self.reporter.report(
                 ErrorReportEvent(
                     category="system_error",
                     component=record.name,
-                    summary=record.getMessage(),
+                    summary=summary,
                     severity=record.levelname,
                     error_code=str(getattr(record, "error_code", "") or ""),
                     error_type=error_type,

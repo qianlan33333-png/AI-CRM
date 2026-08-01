@@ -140,12 +140,29 @@ def _worker_identity(args: argparse.Namespace, *, queue_kind: str) -> str:
     return f"{hostname}:{queue_kind}"
 
 
-def _install_signal_handlers(stop_event: threading.Event) -> None:
+def _install_signal_handlers(
+    stop_event: threading.Event,
+    shutdown_requested: threading.Event | None = None,
+) -> None:
     def stop(_signum, _frame) -> None:
+        if shutdown_requested is not None:
+            shutdown_requested.set()
         stop_event.set()
 
     signal.signal(signal.SIGINT, stop)
     signal.signal(signal.SIGTERM, stop)
+
+
+def _graceful_shutdown_payload(payload: dict[str, Any], *, shutdown_requested: bool) -> dict[str, Any]:
+    if not shutdown_requested:
+        return payload
+    return {
+        **payload,
+        "ok": True,
+        "shutdown_requested": True,
+        "shutdown_errors": list(payload.get("errors") or []),
+        "errors": [],
+    }
 
 
 def _lane(policy: LanePolicy, *, claimless: bool) -> QueueLane:
@@ -345,7 +362,8 @@ def run(args: argparse.Namespace, *, stop_event: threading.Event) -> dict[str, A
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
     stop_event = threading.Event()
-    _install_signal_handlers(stop_event)
+    shutdown_requested = threading.Event()
+    _install_signal_handlers(stop_event, shutdown_requested)
     try:
         payload = run(args, stop_event=stop_event)
     except Exception as exc:
@@ -358,6 +376,10 @@ def main(argv: list[str] | None = None) -> int:
             "error_class": exc.__class__.__name__,
             "real_external_call_executed": False,
         }
+    payload = _graceful_shutdown_payload(
+        payload,
+        shutdown_requested=shutdown_requested.is_set(),
+    )
     print_json(payload)
     return 0 if payload.get("ok") else 1
 

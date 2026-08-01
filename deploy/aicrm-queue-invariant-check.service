@@ -10,4 +10,4 @@ WorkingDirectory=/home/ubuntu/极简 crm
 EnvironmentFile=/home/ubuntu/.openclaw-wecom-pg.env
 Environment=DB_APPLICATION_NAME=aicrm-next-cron-queue-invariant
 Environment=PGAPPNAME=aicrm-next-cron-queue-invariant
-ExecStart=/bin/bash -lc 'source /home/ubuntu/venvs/openclaw/bin/activate; exec python scripts/ops/check_queue_runtime_invariants.py'
+ExecStart=/bin/bash -lc 'source /home/ubuntu/venvs/openclaw/bin/activate; exec python -m scripts.ops.check_queue_runtime_invariants'

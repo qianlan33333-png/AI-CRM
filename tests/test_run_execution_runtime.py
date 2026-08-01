@@ -382,3 +382,29 @@ def test_external_execute_accepts_only_exclusive_all_scope_marker(monkeypatch) -
         run_execution_runtime._parse_args(
             ["--queue-kind", "external", "--generation", "1", "--execute"]
         )
+
+
+def test_graceful_shutdown_does_not_turn_systemd_stop_into_process_failure() -> None:
+    payload = run_execution_runtime._graceful_shutdown_payload(
+        {
+            "ok": False,
+            "queue_kind": "internal+webhook",
+            "errors": ["OperationalError"],
+            "real_external_call_executed": False,
+        },
+        shutdown_requested=True,
+    )
+
+    assert payload["ok"] is True
+    assert payload["shutdown_requested"] is True
+    assert payload["shutdown_errors"] == ["OperationalError"]
+    assert payload["errors"] == []
+
+
+def test_runtime_failure_remains_reportable_without_shutdown_signal() -> None:
+    original = {"ok": False, "errors": ["OperationalError"]}
+
+    assert run_execution_runtime._graceful_shutdown_payload(
+        original,
+        shutdown_requested=False,
+    ) is original

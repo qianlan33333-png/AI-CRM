@@ -254,8 +254,14 @@ def collect_errors(root: Path = ROOT) -> list[str]:
     for token in ("OnCalendar=*:0/15", "Persistent=true", f"Unit={INVARIANT_SERVICE}"):
         if token not in timer:
             errors.append(f"deploy/{INVARIANT_TIMER}: missing 15-minute timer token: {token}")
-    if "scripts/ops/check_queue_runtime_invariants.py" not in service:
-        errors.append(f"deploy/{INVARIANT_SERVICE}: must run the invariant reporter")
+    if "python -m scripts.ops.check_queue_runtime_invariants" not in service:
+        errors.append(
+            f"deploy/{INVARIANT_SERVICE}: must run the invariant reporter as an import-safe module"
+        )
+    if "python scripts/ops/check_queue_runtime_invariants.py" in service:
+        errors.append(
+            f"deploy/{INVARIANT_SERVICE}: direct script execution cannot resolve the repository runtime imports"
+        )
     for token in ("run_execution_runtime.py", "--execute", "--claim", "dispatch_one", "run_due"):
         if token in service:
             errors.append(f"deploy/{INVARIANT_SERVICE}: invariant service may only report: {token}")

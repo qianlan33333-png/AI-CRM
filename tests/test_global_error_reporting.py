@@ -200,6 +200,45 @@ def test_error_log_and_failed_worker_result_share_the_reporter() -> None:
     assert collector.events[1].summary == "mobile=[pii]"
 
 
+def test_worker_category_is_rendered_as_background_failure_instead_of_pii() -> None:
+    transport = _FakeTransport()
+    reporter = FeishuErrorReporter(_config(), transport=transport, resolver=_resolver)
+
+    reporter.report(
+        ErrorReportEvent(
+            category="worker_error",
+            component="run_execution_runtime.py",
+            summary="process_failed",
+            error_code="process_failed",
+        )
+    )
+
+    text = json.loads(transport.calls[0]["body"])["content"]["text"]
+    assert "类别：后台任务异常" in text
+    assert "类别：[pii]" not in text
+
+
+def test_error_log_handler_includes_redacted_safe_exception_detail() -> None:
+    collector = _CollectingReporter()
+    handler = ErrorReportingLogHandler(collector)  # type: ignore[arg-type]
+    record = logging.LogRecord(
+        name="aicrm_next.worker",
+        level=logging.ERROR,
+        pathname=__file__,
+        lineno=1,
+        msg="continuation failed",
+        args=(),
+        exc_info=None,
+    )
+    record.error_type = "OperationalError"
+    record.error_detail = "connection failed mobile=[pii]"
+
+    handler.emit(record)
+
+    assert collector.events[0].error_type == "OperationalError"
+    assert collector.events[0].summary == "continuation failed: connection failed mobile=[pii]"
+
+
 def test_fastapi_handlers_report_business_system_and_http_5xx_only(monkeypatch) -> None:
     from aicrm_next.main import create_app
 

@@ -35,6 +35,44 @@ def _jobs_action_token(client: TestClient, method: str, path: str) -> str:
     return install_admin_action_tokens(client, (method, path))[(method.upper(), path)]
 
 
+def _healthy_inspection(**_kwargs):
+    return {
+        "status": "正常",
+        "issueCount": 0,
+        "readOnly": True,
+        "timer": {
+            "managedCount": 11,
+            "monitoredCount": 11,
+            "expectedExecutions": 96,
+            "actualExecutions": 96,
+            "issueCount": 0,
+            "issues": [],
+            "details": [],
+        },
+        "external": {
+            "created": 2,
+            "succeeded": 2,
+            "overdue": 0,
+            "stalled": 0,
+            "unknown": 0,
+            "terminal": 0,
+            "issueCount": 0,
+            "issueTypes": [],
+            "businessExcluded": 0,
+        },
+        "internal": {
+            "outboxCreated": 3,
+            "outboxRelayed": 3,
+            "consumerSucceeded": 4,
+            "outboxBreaks": 0,
+            "consumerBreaks": 0,
+            "missingConsumers": 0,
+            "issueCount": 0,
+            "issueTypes": [],
+        },
+    }
+
+
 def test_admin_jobs_monitoring_pages_and_retired_runners_are_removed(monkeypatch):
     client = _client(monkeypatch)
 
@@ -353,10 +391,10 @@ def test_broadcast_queue_hourly_report_message_and_key_are_count_only():
         failed_jobs=2,
     )
 
-    assert message == "【群发队列小时报】\n统计窗口：2026-05-27 13:00 - 14:00\n\n任务总数：18\n成功：16\n失败：2"
+    assert message == "【系统运营巡检小时报】\n统计窗口：2026-05-27 13:00 - 14:00\n\n任务总数：18\n成功：16\n失败：2"
     assert "trace" not in message.lower()
     assert "webhook" not in message.lower()
-    assert build_hourly_report_key(channel="feishu", window_start=start) == "broadcast_jobs:feishu:2026-05-27T13:00:00+08:00"
+    assert build_hourly_report_key(channel="feishu", window_start=start) == "ops_inspection:feishu:2026-05-27T13:00:00+08:00"
 
 
 def test_broadcast_queue_hourly_report_skips_when_config_missing_disabled_or_unverified(monkeypatch):
@@ -387,7 +425,7 @@ def test_broadcast_queue_hourly_report_skips_when_config_missing_disabled_or_unv
     assert send_broadcast_job_hourly_feishu_report(repo=repo)["status"] == "skipped_unverified"
 
 
-def test_broadcast_queue_hourly_report_skips_no_jobs_sends_once_and_records_failure(monkeypatch):
+def test_operational_hourly_report_sends_without_jobs_deduplicates_and_records_failure(monkeypatch):
     _client(monkeypatch)
     repo = build_admin_jobs_repository()
     tz = ZoneInfo("Asia/Shanghai")
@@ -409,21 +447,29 @@ def test_broadcast_queue_hourly_report_skips_no_jobs_sends_once_and_records_fail
         sent_messages.append({"url": url, "text": text})
         return {"ok": True}
 
-    no_jobs = send_broadcast_job_hourly_feishu_report(now=now, repo=repo, sender=fake_send)
-    assert no_jobs == {"status": "skipped_no_jobs", "summary": {"totalJobs": 0, "successJobs": 0, "failedJobs": 0}}
-    assert sent_messages == []
+    no_jobs = send_broadcast_job_hourly_feishu_report(
+        now=now,
+        repo=repo,
+        sender=fake_send,
+        inspection_collector=_healthy_inspection,
+    )
+    assert no_jobs == {"status": "sent", "summary": {"totalJobs": 0, "successJobs": 0, "failedJobs": 0}}
+    assert len(sent_messages) == 1
+    assert "应执行 96 次，实际执行 96 次" in sent_messages[0]["text"]
 
+    now = now + timedelta(hours=1)
+    window = get_previous_hour_window(now=now)
     repo.broadcast_jobs = [
         {"id": 201, "scheduled_for": window["windowStart"], "status": "sent"},
         {"id": 202, "scheduled_for": window["windowStart"] + timedelta(minutes=10), "status": "failed"},
     ]
-    first = send_broadcast_job_hourly_feishu_report(now=now, repo=repo, sender=fake_send)
-    duplicate = send_broadcast_job_hourly_feishu_report(now=now, repo=repo, sender=fake_send)
+    first = send_broadcast_job_hourly_feishu_report(now=now, repo=repo, sender=fake_send, inspection_collector=_healthy_inspection)
+    duplicate = send_broadcast_job_hourly_feishu_report(now=now, repo=repo, sender=fake_send, inspection_collector=_healthy_inspection)
     assert first == {"status": "sent", "summary": {"totalJobs": 2, "successJobs": 1, "failedJobs": 1}}
     assert duplicate == {"status": "skipped_duplicate", "summary": {"totalJobs": 2, "successJobs": 1, "failedJobs": 1}}
-    assert len(sent_messages) == 1
+    assert len(sent_messages) == 2
     assert sent_messages[0]["url"] == webhook
-    assert "任务总数：2" in sent_messages[0]["text"]
+    assert "外部推送" in sent_messages[1]["text"]
 
     next_now = now + timedelta(hours=1)
     next_window = get_previous_hour_window(now=next_now)
@@ -432,7 +478,12 @@ def test_broadcast_queue_hourly_report_skips_no_jobs_sends_once_and_records_fail
     def failing_send(url: str, text: str) -> dict[str, object]:
         return {"ok": False, "raw": {"webhook": url, "detail": "external failure body"}}
 
-    failed = send_broadcast_job_hourly_feishu_report(now=next_now, repo=repo, sender=failing_send)
+    failed = send_broadcast_job_hourly_feishu_report(
+        now=next_now,
+        repo=repo,
+        sender=failing_send,
+        inspection_collector=_healthy_inspection,
+    )
     report_key = build_hourly_report_key(channel="feishu", window_start=next_window["windowStart"])
     assert failed["status"] == "failed"
     assert failed["summary"] == {"totalJobs": 1, "successJobs": 0, "failedJobs": 1}
@@ -501,7 +552,7 @@ def test_broadcast_queue_hourly_report_run_api_requires_route_bound_action_grant
     assert authorized.json() == {"ok": True, "status": "sent", "summary": {"totalJobs": 1, "successJobs": 1, "failedJobs": 0}}
 
 
-def test_broadcast_queue_hourly_report_run_api_real_no_jobs_duplicate_and_no_webhook_leak(monkeypatch):
+def test_operational_hourly_report_api_sends_without_jobs_duplicate_and_no_webhook_leak(monkeypatch):
     client = _client(monkeypatch)
     token = _jobs_action_token(client, "POST", "/api/admin/broadcast-jobs/feishu-hourly-report/run")
     repo = build_admin_jobs_repository()
@@ -516,36 +567,31 @@ def test_broadcast_queue_hourly_report_run_api_real_no_jobs_duplicate_and_no_web
     )
     repo.broadcast_jobs = []
 
+    calls: list[str] = []
+    monkeypatch.setattr(
+        "aicrm_next.platform.admin_jobs.notification_settings.collect_operational_inspection",
+        _healthy_inspection,
+    )
+    monkeypatch.setattr(
+        "aicrm_next.platform.admin_jobs.notification_settings.send_feishu_operational_webhook_message",
+        lambda url, text: calls.append(url) or {"ok": True},
+    )
     no_jobs = client.post(
         "/api/admin/broadcast-jobs/feishu-hourly-report/run",
         headers={"X-Admin-Action-Token": token},
         json={"admin_action_token": token},
     )
     assert no_jobs.status_code == 200
-    assert no_jobs.json()["status"] == "skipped_no_jobs"
+    assert no_jobs.json()["status"] == "sent"
     assert "api-secret" not in no_jobs.text
 
-    now_window = get_previous_hour_window()
-    repo.broadcast_jobs = [{"id": 301, "scheduled_for": now_window["windowStart"], "status": "sent"}]
-    calls: list[str] = []
-    monkeypatch.setattr(
-        "aicrm_next.platform.admin_jobs.notification_settings.send_feishu_webhook_message",
-        lambda url, text: calls.append(url) or {"ok": True},
-    )
-    sent = client.post(
-        "/api/admin/broadcast-jobs/feishu-hourly-report/run",
-        headers={"X-Admin-Action-Token": token},
-        json={"admin_action_token": token},
-    )
     duplicate = client.post(
         "/api/admin/broadcast-jobs/feishu-hourly-report/run",
         headers={"X-Admin-Action-Token": token},
         json={"admin_action_token": token},
     )
-    assert sent.json()["status"] == "sent"
     assert duplicate.json()["status"] == "skipped_duplicate"
     assert calls == [webhook]
-    assert "api-secret" not in sent.text
     assert "api-secret" not in duplicate.text
 
 

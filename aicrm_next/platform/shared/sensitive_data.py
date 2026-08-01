@@ -67,7 +67,9 @@ _PEM_PRIVATE_KEY_PATTERN = re.compile(
     re.DOTALL,
 )
 _MOBILE_PATTERN = re.compile(r"(?<!\d)1[3-9]\d{9}(?!\d)")
-_WECOM_IDENTIFIER_PATTERN = re.compile(r"\b(?:wm|wo|wx)[A-Za-z0-9_-]{6,}\b", re.IGNORECASE)
+_WECOM_IDENTIFIER_PATTERN = re.compile(
+    r"\b(?:wm|wo|wx)(?=[A-Za-z0-9_-]{10,}\b)(?=[A-Za-z0-9_-]*[A-Z0-9])[A-Za-z0-9_-]+\b"
+)
 _NAMED_IDENTIFIER_PATTERN = re.compile(
     r"(?i)\b(external_userid|externaluserid|unionid|openid)\s*([:=])\s*[^\s,;]+"
 )

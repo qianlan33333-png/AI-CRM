@@ -159,8 +159,17 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     ai_audience_wecom_contacts_view_repair_source = (
         ai_audience_wecom_contacts_view_repair.read_text(encoding="utf-8")
     )
+    archive_ledger_reconciliation = (
+        VERSIONS / "0161_reconcile_archive_job_run_ledger.py"
+    )
+    archive_ledger_reconciliation_source = archive_ledger_reconciliation.read_text(
+        encoding="utf-8"
+    )
 
-    assert heads == {"0160_ai_audience_wecom_contacts_view_repair"}
+    assert heads == {"0161_reconcile_archive_job_run_ledger"}
+    assert revisions["0161_reconcile_archive_job_run_ledger"]["down_revision"] == (
+        "0160_ai_audience_wecom_contacts_view_repair"
+    )
     assert revisions["0160_ai_audience_wecom_contacts_view_repair"]["down_revision"] == (
         "0159_ai_automation_lane_rollout_audit"
     )
@@ -331,6 +340,11 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     assert "_refresh_wecom_contacts_view" in ai_audience_wecom_contacts_view_repair_source
     assert "ensure_schema=False" in ai_audience_wecom_contacts_view_repair_source
     assert "DROP VIEW" not in ai_audience_wecom_contacts_view_repair_source
+    assert "job_run_ledger_finish_failed_reconciled" in archive_ledger_reconciliation_source
+    assert "job_run_finish_timestamptz_parameter_type_mismatch" in archive_ledger_reconciliation_source
+    assert "core_sync_outcome', 'unknown'" in archive_ledger_reconciliation_source
+    assert "created_at < CURRENT_TIMESTAMP - INTERVAL '2 minutes'" in archive_ledger_reconciliation_source
+    assert "Reopening reconciled audit records as running" in archive_ledger_reconciliation_source
     assert "aicrm_reject_queue_runtime_audit_mutation" in ai_automation_lane_rollout_audit_source
     assert "global_max_in_flight = global_max_in_flight +" in welcome_realtime_source
     assert "CREATE INDEX CONCURRENTLY IF NOT EXISTS" in sidebar_recent_message_index_source

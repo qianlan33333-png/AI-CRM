@@ -41,6 +41,9 @@ def test_internal_worker_owner_diagnostics_proves_one_role_owner() -> None:
     assert '"aicrm-internal_event-runtime": 2' in source
     assert '"aicrm-internal_outbox-runtime": 2' in source
     assert '"aicrm-webhook_inbox-runtime": 2' in source
+    assert 'owner_counts.get(service_name, 0) + int(row["heartbeat_count"])' in source
+    assert '"owner_heartbeat_counts": owner_counts' in source
+    assert '"expected_heartbeat_counts": expected_counts' in source
     assert "competing_rows == []" in source
     assert 'row["owner_kind"] == "internal_worker"' in source
     assert '"single_internal_worker_owner": True' in source
