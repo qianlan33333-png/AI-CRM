@@ -47,7 +47,7 @@ def _seed_agent_and_package(*, agent_code: str = "pipeline_agent") -> None:
                     :agent_code, 'Pipeline Agent', 'agent', 'pipeline_pkg', 'active',
                     '旧角色 {{用户标签}}', '旧任务 {{最近20条聊天信息}}',
                     '旧角色 {{用户标签}}', '旧任务 {{最近20条聊天信息}}',
-                    1, 1, '{}'::jsonb, '/api/ai/audience/packages/pipeline_pkg/webhook',
+                    1, 1, '{}'::jsonb, '',
                     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
                 )
                 """
@@ -203,7 +203,10 @@ def test_webhook_bulk_persists_3000_items_and_prepare_events_without_model_call(
         "pipeline_agent",
         payload,
         raw_body=raw,
-        headers={"X-AICRM-Idempotency-Key": "pipeline-3000"},
+        headers={
+            "X-AICRM-Idempotency-Key": "pipeline-3000",
+            "X-AICRM-Package-Key": "pipeline_pkg",
+        },
     )
     elapsed = time.perf_counter() - started
 
@@ -243,7 +246,10 @@ def test_prepare_uses_frozen_agent_snapshot_and_generation_effect_is_idempotent(
         "pipeline_agent",
         payload,
         raw_body=raw,
-        headers={"X-AICRM-Idempotency-Key": "pipeline-snapshot"},
+        headers={
+            "X-AICRM-Idempotency-Key": "pipeline-snapshot",
+            "X-AICRM-Package-Key": "pipeline_pkg",
+        },
     )
     assert status_code == 200
     with get_session_factory()() as session:
@@ -316,7 +322,10 @@ def test_generation_completion_durably_creates_one_send_plan(next_pg_schema, mon
         "pipeline_agent",
         payload,
         raw_body=json.dumps(payload, separators=(",", ":")).encode(),
-        headers={"X-AICRM-Idempotency-Key": "pipeline-durable-completion"},
+        headers={
+            "X-AICRM-Idempotency-Key": "pipeline-durable-completion",
+            "X-AICRM-Package-Key": "pipeline_pkg",
+        },
     )
     assert status_code == 200
 
