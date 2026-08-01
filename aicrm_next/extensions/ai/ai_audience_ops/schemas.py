@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from .constants import (
     AI_AUDIENCE_REFRESH_DEFAULT_ROW_LIMIT,
@@ -127,4 +127,31 @@ class SimpleSqlApplyRequest(BaseModel):
     sql: str
     parameters: dict[str, Any] = Field(default_factory=dict)
     senders: list[SimpleSenderRequest] = Field(default_factory=list)
+    operator: str = ""
+
+
+class TemplateSenderRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    sender_userid: str
+    display_name: str = ""
+    priority: int = Field(default=100, ge=1, le=10000)
+    status: str = "active"
+
+
+class TemplatePackageRequest(BaseModel):
+    """Strict public contract shared by template Preview and Apply."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    package_key: str
+    name: str
+    template_key: str
+    template_version: int | None = Field(default=None, ge=1)
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    refresh_mode: str | None = None
+    senders: list[TemplateSenderRequest] = Field(default_factory=list, max_length=5)
+    group_name: str | None = None
+    automation_agent_code: str | None = None
+    allow_empty: bool = False
     operator: str = ""

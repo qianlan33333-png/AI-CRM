@@ -190,6 +190,18 @@ class AudienceRepository:
     def get_package_by_key(self, package_key: str) -> dict[str, Any] | None:
         raise NotImplementedError
 
+    def resolve_template_reference(
+        self,
+        reference_type: str,
+        value: Any,
+        *,
+        parent_id: int | None = None,
+    ) -> list[dict[str, Any]]:
+        raise NotImplementedError
+
+    def apply_template_package(self, payload: dict[str, Any]) -> dict[str, Any]:
+        raise NotImplementedError
+
     def create_version(self, package_id: int, payload: dict[str, Any]) -> dict[str, Any]:
         raise NotImplementedError
 

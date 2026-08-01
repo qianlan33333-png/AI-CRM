@@ -18,6 +18,13 @@ from .repository import (
     next_daily_refresh_at,
     text,
 )
+from .automation_binding.repository import (
+    AudienceAutomationBindingRepository,
+    AutomationAlreadyBoundError,
+    AutomationNotActiveError,
+    AutomationNotFoundError,
+    BindingStateInvalidError,
+)
 
 
 class AudienceGroupNameConflictError(RuntimeError):
@@ -25,6 +32,14 @@ class AudienceGroupNameConflictError(RuntimeError):
 
 
 class AudienceGroupNotEmptyError(RuntimeError):
+    pass
+
+
+class ActivePackageTemplateUpdateError(RuntimeError):
+    pass
+
+
+class ArchivedPackageTemplateUpdateError(RuntimeError):
     pass
 
 
@@ -89,8 +104,11 @@ class AudiencePackageRepositoryMixin:
                 p.group_id,
                 g.name AS group_name,
                 p.updated_at,
+                v.template_key,
+                v.template_version,
                 COUNT(*) OVER () AS total_count
             FROM ai_audience_package p
+            LEFT JOIN ai_audience_package_version v ON v.id = p.current_version_id
             LEFT JOIN ai_audience_package_group g ON g.id = p.group_id
             LEFT JOIN member_counts mc ON mc.package_id = p.id
             LEFT JOIN latest_runs lr ON lr.package_id = p.id
@@ -300,9 +318,16 @@ class AudiencePackageRepositoryMixin:
                 p.natural_language_definition,
                 p.timezone,
                 p.group_id,
-                g.name AS group_name
+                g.name AS group_name,
+                v.id AS current_version_id,
+                v.version_number AS current_version_number,
+                v.template_key,
+                v.template_version,
+                v.template_params_json,
+                v.template_fingerprint
             FROM ai_audience_package p
             LEFT JOIN ai_audience_package_group g ON g.id = p.group_id
+            LEFT JOIN ai_audience_package_version v ON v.id = p.current_version_id
             LEFT JOIN member_counts mc ON mc.package_id = p.id
             LEFT JOIN latest_runs lr ON lr.package_id = p.id
             WHERE p.id = :package_id
@@ -414,13 +439,16 @@ class AudiencePackageRepositoryMixin:
                             package_id, version_number, status, incremental_sql_text, snapshot_sql_text,
                             simple_sql_text, simple_compiled_sql_text,
                             ai_prompt, ai_rationale, natural_language_explanation, parameters_json, dependencies_json,
-                            explain_json, sample_rows_json, validation_errors_json, created_at
+                            explain_json, sample_rows_json, validation_errors_json,
+                            template_key, template_version, template_params_json, template_fingerprint,
+                            created_at
                         )
                         VALUES (
                             :package_id, 1, 'draft', :incremental_sql_text, :snapshot_sql_text,
                             :simple_sql_text, :simple_compiled_sql_text,
                             :ai_prompt, :ai_rationale, :natural_language_explanation, CAST(:parameters_json AS jsonb), CAST(:dependencies_json AS jsonb),
                             CAST(:explain_json AS jsonb), CAST(:sample_rows_json AS jsonb), CAST(:validation_errors_json AS jsonb),
+                            :template_key, :template_version, CAST(:template_params_json AS jsonb), :template_fingerprint,
                             CURRENT_TIMESTAMP
                         )
                         RETURNING *
@@ -440,6 +468,10 @@ class AudiencePackageRepositoryMixin:
                         "explain_json": _json_dumps(version.get("explain_json") or {}),
                         "sample_rows_json": _json_dumps(version.get("sample_rows_json") or []),
                         "validation_errors_json": _json_dumps(version.get("validation_errors_json") or []),
+                        "template_key": _text(version.get("template_key")),
+                        "template_version": int(version.get("template_version")) if version.get("template_version") is not None else None,
+                        "template_params_json": _json_dumps(version.get("template_params_json") or {}),
+                        "template_fingerprint": _text(version.get("template_fingerprint")),
                     },
                 ).mappings().one()
                 session.execute(
@@ -562,6 +594,411 @@ class AudiencePackageRepositoryMixin:
 
     def get_package_by_key(self, package_key: str) -> dict[str, Any] | None:
         return self._one("SELECT * FROM ai_audience_package WHERE package_key = :package_key LIMIT 1", {"package_key": _text(package_key)})
+
+    def resolve_template_reference(
+        self,
+        reference_type: str,
+        value: Any,
+        *,
+        parent_id: int | None = None,
+    ) -> list[dict[str, Any]]:
+        raw = _text(value)
+        numeric_id = int(raw) if raw.isdigit() else -1
+        queries: dict[str, tuple[str, dict[str, Any]]] = {
+            "questionnaire": (
+                """
+                SELECT id, slug AS code, COALESCE(NULLIF(title, ''), name) AS title
+                FROM questionnaires
+                WHERE is_disabled = FALSE
+                  AND (id = :numeric_id OR slug = :raw OR title = :raw OR name = :raw)
+                ORDER BY id ASC
+                LIMIT 11
+                """,
+                {"numeric_id": numeric_id, "raw": raw},
+            ),
+            "question": (
+                """
+                SELECT id, ''::text AS code, title, type
+                FROM questionnaire_questions
+                WHERE questionnaire_id = :parent_id
+                  AND (id = :numeric_id OR title = :raw)
+                ORDER BY sort_order ASC, id ASC
+                LIMIT 11
+                """,
+                {"parent_id": int(parent_id or 0), "numeric_id": numeric_id, "raw": raw},
+            ),
+            "option": (
+                """
+                SELECT id, ''::text AS code, option_text AS title
+                FROM questionnaire_options
+                WHERE question_id = :parent_id
+                  AND (id = :numeric_id OR option_text = :raw)
+                ORDER BY sort_order ASC, id ASC
+                LIMIT 11
+                """,
+                {"parent_id": int(parent_id or 0), "numeric_id": numeric_id, "raw": raw},
+            ),
+            "product": (
+                """
+                SELECT id, product_code AS code, name AS title
+                FROM wechat_pay_products
+                WHERE product_code = :raw OR name = :raw OR id = :numeric_id
+                ORDER BY id ASC
+                LIMIT 11
+                """,
+                {"numeric_id": numeric_id, "raw": raw},
+            ),
+            "channel": (
+                """
+                SELECT DISTINCT channel_id AS id, channel_code AS code, channel_name AS title
+                FROM audience_read.channel_entries_v1
+                WHERE channel_code = :raw OR channel_name = :raw OR channel_id = :numeric_id
+                ORDER BY channel_id ASC
+                LIMIT 11
+                """,
+                {"numeric_id": numeric_id, "raw": raw},
+            ),
+            "radar": (
+                """
+                SELECT id, code, title
+                FROM radar_links
+                WHERE deleted_at IS NULL
+                  AND (code = :raw OR title = :raw OR id = :numeric_id)
+                ORDER BY id ASC
+                LIMIT 11
+                """,
+                {"numeric_id": numeric_id, "raw": raw},
+            ),
+            "group": (
+                """
+                SELECT id, ''::text AS code, name AS title
+                FROM ai_audience_package_group
+                WHERE name = :raw
+                ORDER BY id ASC
+                LIMIT 11
+                """,
+                {"raw": raw},
+            ),
+            "automation": (
+                """
+                SELECT id, agent_code AS code, agent_name AS title, status, bound_package_key
+                FROM automation_agent_runtime_config
+                WHERE agent_code = :raw
+                  AND status <> 'archived'
+                ORDER BY id ASC
+                LIMIT 11
+                """,
+                {"raw": raw},
+            ),
+        }
+        query = queries.get(_text(reference_type))
+        if not query:
+            return []
+        statement, params = query
+        return self._all(statement, params)
+
+    def apply_template_package(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Apply a fully resolved template request in one database transaction."""
+
+        package_key = _text(payload.get("package_key"))
+        fingerprint = _text(payload.get("template_fingerprint"))
+        refresh = dict(payload.get("refresh_config") or {})
+        senders = list(payload.get("senders") or [])
+        dependencies = list(payload.get("dependencies") or [])
+        compiled_sql = _text(payload.get("compiled_sql"))
+        refresh_mode = _text(payload.get("refresh_mode"))
+        incremental_sql = compiled_sql if refresh_mode in {"every_3m", "every_3m_plus_daily_0200"} else ""
+        snapshot_sql = compiled_sql if refresh_mode in {"manual", "daily_0200", "every_3m_plus_daily_0200"} else ""
+        with self._session_factory() as session:
+            session.execute(text("SELECT pg_advisory_xact_lock(hashtext(:package_key))"), {"package_key": package_key})
+            package_row = session.execute(
+                text("SELECT * FROM ai_audience_package WHERE package_key = :package_key LIMIT 1 FOR UPDATE"),
+                {"package_key": package_key},
+            ).mappings().fetchone()
+            package = dict(package_row) if package_row else None
+            current_version = None
+            if package and package.get("current_version_id"):
+                row = session.execute(
+                    text("SELECT * FROM ai_audience_package_version WHERE id = :version_id LIMIT 1 FOR UPDATE"),
+                    {"version_id": int(package["current_version_id"])},
+                ).mappings().fetchone()
+                current_version = dict(row) if row else None
+            if package and _text(package.get("status")) == "archived":
+                raise ArchivedPackageTemplateUpdateError()
+            if package and _text(package.get("status")) == "active":
+                if _text((current_version or {}).get("template_fingerprint")) != fingerprint:
+                    raise ActivePackageTemplateUpdateError()
+                session.rollback()
+                return {
+                    "package": _public_row(package) or {},
+                    "version": _public_row(current_version) or {},
+                    "created": False,
+                    "updated": False,
+                    "idempotent": True,
+                }
+
+            group_id = int(payload["group_id"]) if payload.get("group_id") is not None else None
+            package_values = {
+                "package_key": package_key,
+                "name": _text(payload.get("name")),
+                "natural_language_definition": _text(payload.get("natural_language_definition")),
+                "incremental_enabled": bool(refresh.get("incremental_enabled")),
+                "incremental_interval_seconds": int(refresh.get("incremental_interval_seconds") or 180),
+                "daily_enabled": bool(refresh.get("daily_enabled")),
+                "daily_refresh_time": _text(refresh.get("daily_refresh_time")) or "02:00",
+                "group_id": group_id,
+            }
+            created = package is None
+            if created:
+                package_row = session.execute(
+                    text(
+                        """
+                        INSERT INTO ai_audience_package (
+                            package_key, name, natural_language_definition, status, query_mode,
+                            identity_policy, incremental_enabled, incremental_interval_seconds,
+                            daily_enabled, daily_refresh_time, timezone, lookback_seconds,
+                            group_id, next_incremental_refresh_at, next_daily_refresh_at,
+                            created_at, updated_at
+                        )
+                        VALUES (
+                            :package_key, :name, :natural_language_definition, 'paused', 'template',
+                            'external_userid', :incremental_enabled, :incremental_interval_seconds,
+                            :daily_enabled, :daily_refresh_time, 'Asia/Shanghai', 600,
+                            :group_id, NULL, NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                        )
+                        RETURNING *
+                        """
+                    ),
+                    package_values,
+                ).mappings().one()
+            else:
+                package_row = session.execute(
+                    text(
+                        """
+                        UPDATE ai_audience_package
+                        SET name = :name,
+                            natural_language_definition = :natural_language_definition,
+                            status = 'paused',
+                            query_mode = 'template',
+                            incremental_enabled = :incremental_enabled,
+                            incremental_interval_seconds = :incremental_interval_seconds,
+                            daily_enabled = :daily_enabled,
+                            daily_refresh_time = :daily_refresh_time,
+                            group_id = :group_id,
+                            next_incremental_refresh_at = NULL,
+                            next_daily_refresh_at = NULL,
+                            paused_reason = 'template_apply',
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = :package_id
+                        RETURNING *
+                        """
+                    ),
+                    {**package_values, "package_id": int(package["id"])},
+                ).mappings().one()
+            package = dict(package_row)
+            package_id = int(package["id"])
+
+            version_row = session.execute(
+                text(
+                    """
+                    SELECT *
+                    FROM ai_audience_package_version
+                    WHERE package_id = :package_id
+                      AND template_fingerprint = :template_fingerprint
+                    ORDER BY version_number DESC, id DESC
+                    LIMIT 1
+                    FOR UPDATE
+                    """
+                ),
+                {"package_id": package_id, "template_fingerprint": fingerprint},
+            ).mappings().fetchone()
+            reused_version = bool(version_row)
+            if version_row:
+                version = dict(version_row)
+                version_id = int(version["id"])
+            else:
+                version_row = session.execute(
+                    text(
+                        """
+                        INSERT INTO ai_audience_package_version (
+                            package_id, version_number, status,
+                            incremental_sql_text, snapshot_sql_text,
+                            simple_sql_text, simple_compiled_sql_text,
+                            parameters_json, dependencies_json,
+                            natural_language_explanation, validation_errors_json,
+                            template_key, template_version, template_params_json,
+                            template_fingerprint, created_at, published_at
+                        )
+                        SELECT
+                            :package_id, COALESCE(MAX(version_number), 0) + 1, 'published',
+                            :incremental_sql_text, :snapshot_sql_text,
+                            '', :simple_compiled_sql_text,
+                            CAST(:parameters_json AS jsonb), CAST(:dependencies_json AS jsonb),
+                            :natural_language_explanation, '[]'::jsonb,
+                            :template_key, :template_version, CAST(:template_params_json AS jsonb),
+                            :template_fingerprint, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                        FROM ai_audience_package_version
+                        WHERE package_id = :package_id
+                        RETURNING *
+                        """
+                    ),
+                    {
+                        "package_id": package_id,
+                        "incremental_sql_text": incremental_sql,
+                        "snapshot_sql_text": snapshot_sql,
+                        "simple_compiled_sql_text": compiled_sql,
+                        "parameters_json": _json_dumps(payload.get("execution_parameters") or {}),
+                        "dependencies_json": _json_dumps(dependencies),
+                        "natural_language_explanation": _text(payload.get("natural_language_definition")),
+                        "template_key": _text(payload.get("template_key")),
+                        "template_version": int(payload.get("template_version") or 1),
+                        "template_params_json": _json_dumps(payload.get("template_parameters") or {}),
+                        "template_fingerprint": fingerprint,
+                    },
+                ).mappings().one()
+                version = dict(version_row)
+                version_id = int(version["id"])
+
+            session.execute(
+                text("UPDATE ai_audience_package_version SET status = 'archived' WHERE package_id = :package_id AND id <> :version_id"),
+                {"package_id": package_id, "version_id": version_id},
+            )
+            session.execute(
+                text(
+                    """
+                    UPDATE ai_audience_package_version
+                    SET status = 'published', published_at = COALESCE(published_at, CURRENT_TIMESTAMP)
+                    WHERE id = :version_id
+                    """
+                ),
+                {"version_id": version_id},
+            )
+            package_row = session.execute(
+                text(
+                    """
+                    UPDATE ai_audience_package
+                    SET current_version_id = :version_id,
+                        status = 'paused',
+                        next_incremental_refresh_at = NULL,
+                        next_daily_refresh_at = NULL,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = :package_id
+                    RETURNING *
+                    """
+                ),
+                {"package_id": package_id, "version_id": version_id},
+            ).mappings().one()
+            package = dict(package_row)
+
+            session.execute(
+                text("DELETE FROM ai_audience_package_dependency WHERE package_id = :package_id AND version_id = :version_id"),
+                {"package_id": package_id, "version_id": version_id},
+            )
+            for dependency in dependencies:
+                session.execute(
+                    text(
+                        """
+                        INSERT INTO ai_audience_package_dependency (
+                            package_id, version_id, source_type, source_key, view_name, created_at
+                        )
+                        VALUES (:package_id, :version_id, :source_type, '', :view_name, CURRENT_TIMESTAMP)
+                        ON CONFLICT DO NOTHING
+                        """
+                    ),
+                    {
+                        "package_id": package_id,
+                        "version_id": version_id,
+                        "source_type": _dependency_source_type(dependency),
+                        "view_name": dependency,
+                    },
+                )
+
+            session.execute(text("DELETE FROM ai_audience_package_sender WHERE package_id = :package_id"), {"package_id": package_id})
+            for sender in senders:
+                session.execute(
+                    text(
+                        """
+                        INSERT INTO ai_audience_package_sender (
+                            package_id, sender_userid, display_name, priority, status, created_at, updated_at
+                        )
+                        VALUES (
+                            :package_id, :sender_userid, :display_name, :priority, :status,
+                            CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                        )
+                        """
+                    ),
+                    {
+                        "package_id": package_id,
+                        "sender_userid": _text(sender.get("sender_userid")),
+                        "display_name": _text(sender.get("display_name")) or _text(sender.get("sender_userid")),
+                        "priority": int(sender.get("priority") or 100),
+                        "status": _text(sender.get("status")) or "active",
+                    },
+                )
+
+            agent_code = _text(payload.get("automation_agent_code"))
+            if agent_code:
+                automation_row = session.execute(
+                    text(
+                        """
+                        SELECT id, agent_code, agent_name, automation_type, bound_package_key, status, updated_at
+                        FROM automation_agent_runtime_config
+                        WHERE agent_code = :agent_code AND status <> 'archived'
+                        LIMIT 1 FOR UPDATE
+                        """
+                    ),
+                    {"agent_code": agent_code},
+                ).mappings().fetchone()
+                if not automation_row:
+                    raise AutomationNotFoundError()
+                automation = dict(automation_row)
+                bound_key = _text(automation.get("bound_package_key"))
+                if bound_key and bound_key != package_key:
+                    raise AutomationAlreadyBoundError()
+                current = AudienceAutomationBindingRepository._bound_automations_in_session(session, package_key, lock=True)
+                if len(current) > 1:
+                    raise BindingStateInvalidError()
+                same_binding = bool(current and int(current[0]["id"]) == int(automation["id"]))
+                if _text(automation.get("status")) != "active" and not same_binding:
+                    raise AutomationNotActiveError()
+                if current and not same_binding:
+                    session.execute(
+                        text("UPDATE automation_agent_runtime_config SET bound_package_key = '', updated_at = CURRENT_TIMESTAMP WHERE id = :id"),
+                        {"id": int(current[0]["id"])},
+                    )
+                session.execute(
+                    text("UPDATE automation_agent_runtime_config SET bound_package_key = :package_key, updated_at = CURRENT_TIMESTAMP WHERE id = :id"),
+                    {"package_key": package_key, "id": int(automation["id"])},
+                )
+                automation["bound_package_key"] = package_key
+                AudienceAutomationBindingRepository._sync_subscription(session, package_id=package_id, automation=automation)
+
+            build_admin_audit_port().append_sqlalchemy(
+                session,
+                dialect_name=session.get_bind().dialect.name,
+                record=AdminAuditRecord(
+                    operator=_text(payload.get("operator")) or "external",
+                    action_type="ai_audience_template_applied",
+                    target_type="ai_audience_package",
+                    target_id=str(package_id),
+                    before={"template_fingerprint": _text((current_version or {}).get("template_fingerprint"))},
+                    after={
+                        "package_key": package_key,
+                        "template_key": _text(payload.get("template_key")),
+                        "template_version": int(payload.get("template_version") or 1),
+                        "template_fingerprint": fingerprint,
+                        "status": "paused",
+                    },
+                ),
+            )
+            session.commit()
+            return {
+                "package": _public_row(package) or {},
+                "version": _public_row(version) or {},
+                "created": created,
+                "updated": not created,
+                "idempotent": reused_version,
+            }
 
     def create_version(self, package_id: int, payload: dict[str, Any]) -> dict[str, Any]:
         row = self._write_one(

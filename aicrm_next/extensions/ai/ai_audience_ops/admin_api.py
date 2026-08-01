@@ -14,6 +14,8 @@ from aicrm_next.extensions.ai.ai_audience_ops.automation_binding import Audience
 
 from .send_records import GetAudienceSendRecordQuery, ListAudienceSendRecordsQuery
 from .service import AudiencePackageService
+from .repository import build_audience_repository, _text
+from .template_service import AudienceTemplateService
 
 router = APIRouter()
 LOGGER = logging.getLogger(__name__)
@@ -25,6 +27,70 @@ _HEADERS = {
     "Cache-Control": "no-store, max-age=0",
     "Pragma": "no-cache",
 }
+
+
+@router.get("/api/admin/ai-audience/templates", name="api.admin_ai_audience_templates")
+def admin_ai_audience_templates(request: Request) -> JSONResponse:
+    if auth := admin_api_auth_error(request):
+        return auth
+    return _response(AudienceTemplateService.list_templates())
+
+
+def _admin_template_payload(package_id: int, request: Request, payload: dict[str, Any]) -> tuple[Any, dict[str, Any] | None]:
+    repo = build_audience_repository()
+    package = repo.get_package_detail(int(package_id))
+    if not package:
+        return repo, None
+    normalized = dict(payload or {})
+    normalized["package_key"] = _text(package.get("package_key"))
+    normalized.setdefault("name", _text(package.get("name")))
+    normalized.setdefault("senders", repo.list_senders(int(package_id)))
+    if package.get("group_name") and "group_name" not in normalized:
+        normalized["group_name"] = _text(package.get("group_name"))
+    if "automation_agent_code" not in normalized:
+        binding_result = AudienceAutomationBindingService().get(int(package_id))
+        binding = binding_result.get("binding") if binding_result.get("ok") else None
+        if binding:
+            normalized["automation_agent_code"] = _text(binding.get("agent_code"))
+    normalized["operator"] = _operator(request)
+    return repo, normalized
+
+
+@router.post(
+    "/api/admin/ai-audience/packages/{package_id}/template-preview",
+    name="api.admin_ai_audience_package_template_preview",
+)
+def admin_ai_audience_package_template_preview(
+    package_id: int,
+    request: Request,
+    payload: dict[str, Any] = Body(default_factory=dict),
+) -> JSONResponse:
+    if auth := admin_api_auth_error(request):
+        return auth
+    repo, normalized = _admin_template_payload(package_id, request, payload)
+    if normalized is None:
+        return _response({"ok": False, "error": "package_not_found"})
+    return _response(AudienceTemplateService(repository=repo).preview(normalized))
+
+
+@router.put(
+    "/api/admin/ai-audience/packages/{package_id}/template-config",
+    name="api.admin_ai_audience_package_template_config",
+)
+def admin_ai_audience_package_template_config(
+    package_id: int,
+    request: Request,
+    payload: dict[str, Any] = Body(default_factory=dict),
+) -> JSONResponse:
+    if auth := admin_api_auth_error(request):
+        return auth
+    repo, normalized = _admin_template_payload(package_id, request, payload)
+    if normalized is None:
+        return _response({"ok": False, "error": "package_not_found"})
+    result = AudienceTemplateService(repository=repo).apply(normalized)
+    if result.get("ok"):
+        result["package"] = (AudiencePackageService(repository=repo).get_admin_package_detail(package_id).get("package") or {})
+    return _response(result)
 
 
 @router.get("/api/admin/ai-audience/packages", name="api.admin_ai_audience_packages")
@@ -80,8 +146,20 @@ def _response(payload: dict[str, Any], *, status_code: int = 200) -> JSONRespons
         error = str(payload.get("error") or "")
         if error in {"package_not_found", "group_not_found", "automation_not_found", "send_record_not_found"}:
             status_code = 404
-        elif error in {"group_not_empty", "group_name_exists", "automation_already_bound", "automation_not_active", "automation_binding_exists", "automation_binding_state_invalid"}:
+        elif error in {
+            "group_not_empty",
+            "group_name_exists",
+            "automation_already_bound",
+            "automation_not_active",
+            "automation_binding_exists",
+            "automation_binding_state_invalid",
+            "active_package_update_requires_pause",
+            "reference_ambiguous",
+            "empty_audience_requires_confirmation",
+        }:
             status_code = 409
+        elif error == "preview_timeout":
+            status_code = 408
         elif error == "webhook_configuration_retired":
             status_code = 410
         elif status_code == 200:
