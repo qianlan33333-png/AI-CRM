@@ -595,9 +595,7 @@
     let senderItems = [];
     let currentPanel = "basic";
     let currentPackage = null;
-    let currentBinding = null;
-    let selectedAutomationId = null;
-    let automationSelector = null;
+    let automationBindingController = null;
 
     const escapeHtml = (value) => String(value ?? "")
       .replaceAll("&", "&amp;")
@@ -703,53 +701,19 @@
       setStatus(els.packageStatusLine, "基础配置已保存", "success");
     };
 
-    const renderAutomationSelector = (items) => {
+    const getAutomationBindingController = () => {
       if (!window.AutomationCapabilitySelector) throw new Error("自动化能力选择器加载失败");
-      if (automationSelector) automationSelector.destroy();
-      automationSelector = window.AutomationCapabilitySelector.mount(els.automationCapabilitySelector, {
-        items,
-        value: selectedAutomationId,
+      if (!automationBindingController) automationBindingController = window.AutomationCapabilitySelector.createBindingController(els.automationCapabilitySelector, {
+        bindingApiUrl, automationAgentsApiUrl, fetchJson,
         currentPackageId: {{ package_id | tojson }},
-        onChange: (value) => { selectedAutomationId = value; }
+        unbindButton: els.unbindAutomationBtn,
+        setStatus: (message, tone) => setStatus(els.automationStatusLine, message, tone)
       });
-      els.unbindAutomationBtn.disabled = !currentBinding;
-      if (currentBinding && currentBinding.warning === "automation_paused") {
-        setStatus(els.automationStatusLine, "当前绑定能力已停止，关系保留但不会继续接收新增成员。", "error");
-      } else if (currentBinding) {
-        setStatus(els.automationStatusLine, `当前绑定：${currentBinding.automation_name || currentBinding.agent_code}`, "success");
-      } else {
-        setStatus(els.automationStatusLine, "当前未绑定自动化话术能力");
-      }
+      return automationBindingController;
     };
-
-    const loadAutomationBinding = async () => {
-      const [agentsPayload, bindingPayload] = await Promise.all([
-        fetchJson(`${automationAgentsApiUrl}?_=${Date.now()}`),
-        fetchJson(`${bindingApiUrl}?_=${Date.now()}`)
-      ]);
-      currentBinding = bindingPayload.binding || null;
-      selectedAutomationId = currentBinding ? Number(currentBinding.automation_id) : null;
-      renderAutomationSelector(agentsPayload.items || []);
-    };
-
-    const saveAutomationBinding = async () => {
-      if (!selectedAutomationId) throw new Error("请先选择自动化名称");
-      setStatus(els.automationStatusLine, "保存中...");
-      const payload = await fetchJson(bindingApiUrl, { method:"PUT", body:{ automation_id:selectedAutomationId } });
-      currentBinding = payload.binding || null;
-      await loadAutomationBinding();
-      setStatus(els.automationStatusLine, "自动化话术能力已绑定", "success");
-    };
-
-    const unbindAutomation = async () => {
-      if (!currentBinding || !window.confirm(`确认解除与「${currentBinding.automation_name || currentBinding.agent_code}」的绑定？`)) return;
-      setStatus(els.automationStatusLine, "解除中...");
-      await fetchJson(bindingApiUrl, { method:"DELETE" });
-      currentBinding = null;
-      selectedAutomationId = null;
-      await loadAutomationBinding();
-      setStatus(els.automationStatusLine, "绑定已解除", "success");
-    };
+    const loadAutomationBinding = () => getAutomationBindingController().load();
+    const saveAutomationBinding = () => getAutomationBindingController().save();
+    const unbindAutomation = () => getAutomationBindingController().unbind();
 
     const normalizeSenders = (items) => items.map((item, index) => ({
       sender_userid: (item.sender_userid || "").trim(),

@@ -85,5 +85,64 @@
     };
   }
 
-  global.AutomationCapabilitySelector = { mount };
+  function createBindingController(container, options) {
+    if (!options || typeof options.fetchJson !== "function") {
+      throw new Error("AutomationCapabilitySelector fetchJson is required");
+    }
+    const state = { binding: null, selectedAutomationId: null, selector: null };
+    const setStatus = (message, tone = "") => {
+      if (typeof options.setStatus === "function") options.setStatus(message, tone);
+    };
+    const render = (items) => {
+      if (state.selector) state.selector.destroy();
+      state.selector = mount(container, {
+        items,
+        value: state.selectedAutomationId,
+        currentPackageId: options.currentPackageId,
+        onChange: (value) => { state.selectedAutomationId = value; }
+      });
+      if (options.unbindButton) options.unbindButton.disabled = !state.binding;
+      if (state.binding && state.binding.warning === "automation_paused") {
+        setStatus("当前绑定能力已停止，关系保留但不会继续接收新增成员。", "error");
+      } else if (state.binding) {
+        setStatus(`当前绑定：${state.binding.automation_name || state.binding.agent_code}`, "success");
+      } else {
+        setStatus("当前未绑定自动化话术能力");
+      }
+    };
+    const load = async () => {
+      const [agentsPayload, bindingPayload] = await Promise.all([
+        options.fetchJson(`${options.automationAgentsApiUrl}?_=${Date.now()}`),
+        options.fetchJson(`${options.bindingApiUrl}?_=${Date.now()}`)
+      ]);
+      state.binding = bindingPayload.binding || null;
+      state.selectedAutomationId = state.binding ? Number(state.binding.automation_id) : null;
+      render(agentsPayload.items || []);
+      return state.binding;
+    };
+    const save = async () => {
+      if (!state.selectedAutomationId) throw new Error("请先选择自动化名称");
+      setStatus("保存中...");
+      await options.fetchJson(options.bindingApiUrl, {
+        method: "PUT",
+        body: { automation_id: state.selectedAutomationId }
+      });
+      await load();
+      setStatus("自动化话术能力已绑定", "success");
+      return state.binding;
+    };
+    const unbind = async () => {
+      if (!state.binding) return null;
+      const confirmAction = typeof options.confirm === "function" ? options.confirm : global.confirm;
+      if (!confirmAction(`确认解除与「${state.binding.automation_name || state.binding.agent_code}」的绑定？`)) return state.binding;
+      setStatus("解除中...");
+      await options.fetchJson(options.bindingApiUrl, { method: "DELETE" });
+      await load();
+      setStatus("绑定已解除", "success");
+      return state.binding;
+    };
+    return { load, save, unbind, getBinding: () => state.binding };
+  }
+
+  global.AutomationCapabilitySelector = { mount, createBindingController };
 })(window);

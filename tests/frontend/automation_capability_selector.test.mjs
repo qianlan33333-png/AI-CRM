@@ -105,3 +105,45 @@ test("selector opens on the type of the current fixed-script binding", () => {
   assert.match(container.innerHTML, /当前固定话术/);
   assert.doesNotMatch(container.innerHTML, /普通 Agent/);
 });
+
+test("binding controller loads, saves, and unbinds through the internal binding API", async () => {
+  const container = createContainer();
+  const requests = [];
+  const statuses = [];
+  const unbindButton = { disabled: true };
+  let binding = { automation_id: 4, automation_name: "当前 Agent", agent_code: "agent_4" };
+  const fetchJson = async (url, options = {}) => {
+    requests.push({ url, method: options.method || "GET", body: options.body });
+    if (url.startsWith("/agents")) {
+      return { items: [{ id: 4, agent_name: "当前 Agent", automation_type: "agent", status: "active", bound_package_id: binding ? 10 : null }] };
+    }
+    if (options.method === "PUT") {
+      assert.equal(options.body.automation_id, 4);
+      assert.deepEqual(Object.keys(options.body), ["automation_id"]);
+      binding = { automation_id: 4, automation_name: "当前 Agent", agent_code: "agent_4" };
+    } else if (options.method === "DELETE") {
+      binding = null;
+    }
+    return { binding };
+  };
+  const controller = loadSelector().createBindingController(container, {
+    automationAgentsApiUrl: "/agents",
+    bindingApiUrl: "/binding",
+    currentPackageId: 10,
+    fetchJson,
+    confirm: () => true,
+    unbindButton,
+    setStatus: (message, tone) => statuses.push({ message, tone }),
+  });
+
+  await controller.load();
+  assert.equal(controller.getBinding().automation_id, 4);
+  assert.equal(unbindButton.disabled, false);
+  await controller.save();
+  await controller.unbind();
+
+  assert.equal(controller.getBinding(), null);
+  assert.equal(unbindButton.disabled, true);
+  assert.deepEqual(requests.filter((item) => item.method !== "GET").map((item) => item.method), ["PUT", "DELETE"]);
+  assert.deepEqual(statuses.at(-1), { message: "绑定已解除", tone: "success" });
+});
