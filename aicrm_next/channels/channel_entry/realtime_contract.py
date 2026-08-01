@@ -17,7 +17,9 @@ WECOM_WELCOME_PROVIDER_WINDOW_SECONDS = 20
 WECOM_WELCOME_PROVIDER_GUARD_SECONDS = 2
 WECOM_WELCOME_INGRESS_LANE = "wecom_welcome_ingress"
 WECOM_WELCOME_EFFECT_LANE = "wecom_welcome"
-WECOM_WELCOME_FALLBACK_SECONDS = 0.25
+# LISTEN/NOTIFY is the primary wake-up path. This interval only bounds the
+# safety scan when a notification is missed or the listener reconnects.
+WECOM_WELCOME_FALLBACK_SECONDS = 2.5
 
 
 def utc_datetime(value: Any) -> datetime | None:
