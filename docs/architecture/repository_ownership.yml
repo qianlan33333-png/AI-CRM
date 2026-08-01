@@ -42,6 +42,7 @@ repositories:
     capability_owner: aicrm_next.platform.admin_jobs
     table_reads:
       - broadcast_job_events
+      - broadcast_job_hourly_reports
       - broadcast_jobs
       - broadcast_queue_notification_settings
       - outbound_tasks

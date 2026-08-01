@@ -538,12 +538,22 @@ class PostgresAdminJobsRepository:
                 created_at, updated_at
             )
             VALUES (%s, %s, %s, %s, 'pending', '{}'::jsonb, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-            ON CONFLICT(report_key) DO NOTHING
-            RETURNING report_key
+            ON CONFLICT(report_key) DO UPDATE
+            SET status = 'pending',
+                error_message = NULL,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE broadcast_job_hourly_reports.status = 'failed'
+            RETURNING report_key, status
             """,
             (report_key, window_start, window_end, channel),
         )
-        return "created" if row else "duplicate"
+        if row:
+            return "created"
+        existing = self._one(
+            "SELECT status FROM broadcast_job_hourly_reports WHERE report_key = %s",
+            (report_key,),
+        )
+        return "duplicate_sent" if str((existing or {}).get("status") or "") == "sent" else "duplicate_pending"
 
     def mark_broadcast_hourly_report_sent(self, *, report_key: str, payload_json: dict[str, Any]) -> None:
         self._execute(
@@ -839,8 +849,12 @@ class FixtureAdminJobsRepository:
         return copy.deepcopy(self.broadcast_notification_settings.get(str(channel)))
 
     def create_broadcast_hourly_report_pending(self, *, report_key: str, window_start: datetime, window_end: datetime, channel: str) -> str:
-        if report_key in self.broadcast_hourly_reports:
-            return "duplicate"
+        existing = self.broadcast_hourly_reports.get(report_key)
+        if existing:
+            if existing.get("status") == "failed":
+                existing.update({"status": "pending", "error_message": None, "updated_at": _now_text()})
+                return "created"
+            return "duplicate_sent" if existing.get("status") == "sent" else "duplicate_pending"
         self.broadcast_hourly_reports[report_key] = {
             "report_key": report_key,
             "window_start": window_start,

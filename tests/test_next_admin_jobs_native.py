@@ -401,8 +401,16 @@ def test_broadcast_queue_hourly_report_skips_when_config_missing_disabled_or_unv
     _client(monkeypatch)
     repo = build_admin_jobs_repository()
     webhook = "https://open.feishu.cn/open-apis/bot/v2/hook/hourly-secret-abcd"
+    disabled_runtime_config = lambda: type(
+        "RuntimeConfig",
+        (),
+        {"enabled": False, "webhook_url": ""},
+    )()
 
-    assert send_broadcast_job_hourly_feishu_report(repo=repo)["status"] == "skipped_no_config"
+    assert send_broadcast_job_hourly_feishu_report(
+        repo=repo,
+        error_reporting_config_loader=disabled_runtime_config,
+    )["status"] == "skipped_no_config"
 
     repo.upsert_broadcast_notification_setting(
         channel="feishu",
@@ -412,7 +420,10 @@ def test_broadcast_queue_hourly_report_skips_when_config_missing_disabled_or_unv
         validated_at=datetime.now(tz=ZoneInfo("Asia/Shanghai")),
         last_validation_error=None,
     )
-    assert send_broadcast_job_hourly_feishu_report(repo=repo)["status"] == "skipped_disabled"
+    assert send_broadcast_job_hourly_feishu_report(
+        repo=repo,
+        error_reporting_config_loader=disabled_runtime_config,
+    )["status"] == "skipped_disabled"
 
     repo.upsert_broadcast_notification_setting(
         channel="feishu",
@@ -422,7 +433,37 @@ def test_broadcast_queue_hourly_report_skips_when_config_missing_disabled_or_unv
         validated_at=None,
         last_validation_error=None,
     )
-    assert send_broadcast_job_hourly_feishu_report(repo=repo)["status"] == "skipped_unverified"
+    assert send_broadcast_job_hourly_feishu_report(
+        repo=repo,
+        error_reporting_config_loader=disabled_runtime_config,
+    )["status"] == "skipped_unverified"
+
+
+def test_operational_hourly_report_reuses_managed_error_reporting_webhook(monkeypatch):
+    _client(monkeypatch)
+    repo = build_admin_jobs_repository()
+    now = datetime(2026, 5, 27, 14, 5, tzinfo=ZoneInfo("Asia/Shanghai"))
+    managed_webhook = "https://open.feishu.cn/open-apis/bot/v2/hook/managed-secret-abcd"
+    calls: list[str] = []
+
+    result = send_broadcast_job_hourly_feishu_report(
+        now=now,
+        repo=repo,
+        sender=lambda url, _text: calls.append(url) or {"ok": True},
+        inspection_collector=_healthy_inspection,
+        error_reporting_config_loader=lambda: type(
+            "RuntimeConfig",
+            (),
+            {"enabled": True, "webhook_url": managed_webhook},
+        )(),
+    )
+
+    assert result == {
+        "status": "sent",
+        "summary": {"totalJobs": 0, "successJobs": 0, "failedJobs": 0},
+    }
+    assert calls == [managed_webhook]
+    assert "managed-secret" not in str(result)
 
 
 def test_operational_hourly_report_sends_without_jobs_deduplicates_and_records_failure(monkeypatch):
@@ -491,6 +532,18 @@ def test_operational_hourly_report_sends_without_jobs_deduplicates_and_records_f
     assert "external failure body" not in str(failed)
     assert repo.broadcast_hourly_reports[report_key]["status"] == "failed"
     assert "hourly-secret" not in str(repo.broadcast_hourly_reports[report_key]["error_message"])
+
+    retried = send_broadcast_job_hourly_feishu_report(
+        now=next_now,
+        repo=repo,
+        sender=fake_send,
+        inspection_collector=_healthy_inspection,
+    )
+    assert retried == {
+        "status": "sent",
+        "summary": {"totalJobs": 1, "successJobs": 0, "failedJobs": 1},
+    }
+    assert repo.broadcast_hourly_reports[report_key]["status"] == "sent"
 
 
 def test_broadcast_queue_hourly_report_does_not_mark_queue_acceptance_as_sent(monkeypatch):

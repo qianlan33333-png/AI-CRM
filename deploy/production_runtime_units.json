@@ -10,7 +10,8 @@
     "aicrm-queue-soak-snapshot.service": "aicrm-next-cron-queue-soak",
     "aicrm-data-health-snapshot.service": "aicrm-next-cron-data-health",
     "aicrm-job-catalog-scheduler.service": "aicrm-next-cron-job-catalog",
-    "openclaw-wechat-pay-order-reconciliation-worker.service": "aicrm-next-cron-payment-reconcile"
+    "openclaw-wechat-pay-order-reconciliation-worker.service": "aicrm-next-cron-payment-reconcile",
+    "openclaw-broadcast-hourly-feishu-report.service": "aicrm-next-cron-ops-report"
   },
   "primary_web": {
     "service": "openclaw-wecom-postgres.service"
@@ -51,6 +52,12 @@
     {
       "timer": "openclaw-wechat-pay-order-reconciliation-worker.timer",
       "service": "openclaw-wechat-pay-order-reconciliation-worker.service"
+    },
+    {
+      "timer": "openclaw-broadcast-hourly-feishu-report.timer",
+      "service": "openclaw-broadcast-hourly-feishu-report.service",
+      "kick_after_timer_restart": true,
+      "kick_failure_fatal": true
     }
   ],
   "cutover_replacement_autostart": {
@@ -176,10 +183,6 @@
     {
       "timer": "aicrm-archive-sync.timer",
       "service": "aicrm-archive-sync.service"
-    },
-    {
-      "timer": "openclaw-broadcast-hourly-feishu-report.timer",
-      "service": "openclaw-broadcast-hourly-feishu-report.service"
     },
     {
       "timer": "openclaw-external-contact-full-sync.timer",
