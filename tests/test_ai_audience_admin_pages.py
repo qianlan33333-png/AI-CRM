@@ -525,7 +525,7 @@ def test_admin_ai_audience_detail_page_has_required_sections_without_top_actions
         "operation_member_picker.js",
         'body: { items: normalized }',
         'body: {\n          name:',
-        'body:{ automation_id:selectedAutomationId }',
+        "createBindingController",
     ):
         assert expected in html
     for forbidden in (
@@ -642,12 +642,12 @@ def test_admin_ai_audience_package_detail_requires_admin_and_redacts_sensitive_f
         "status": "active",
         "member_count": 1,
         "last_refreshed_at": None,
-            "refresh_mode": "incremental_3m_plus_daily_0200",
-            "refresh_mode_label": "每 3 分钟 + 每日 2:00",
-            "natural_language_definition": "近 30 天提交问卷且已加微",
-            "group_id": None,
-            "group_name": "未分组",
-        }
+        "refresh_mode": "incremental_3m_plus_daily_0200",
+        "refresh_mode_label": "每 3 分钟 + 每日 2:00",
+        "natural_language_definition": "近 30 天提交问卷且已加微",
+        "group_id": None,
+        "group_name": "未分组",
+    }
     response_text = json.dumps(response.json(), ensure_ascii=False)
     for forbidden in ("sql_text", "inbound_webhook_secret", "signing_secret", "payload_json", "wm_hidden"):
         assert forbidden not in response_text
