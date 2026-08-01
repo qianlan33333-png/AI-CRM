@@ -7452,6 +7452,66 @@ routes:
   rate_limit: authenticated
   principal_types:
   - human
+- path: /api/admin/ai-audience/templates
+  methods:
+  - GET
+  route_name: api.admin_ai_audience_templates
+  capability_owner: ai_audience_ops
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: admin_read
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/ai-audience/packages/{package_id}/template-preview
+  methods:
+  - POST
+  route_name: api.admin_ai_audience_package_template_preview
+  capability_owner: ai_audience_ops
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_automation
+  access_scope: global
+  pii_level: internal
+  csrf: true
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/ai-audience/packages/{package_id}/template-config
+  methods:
+  - PUT
+  route_name: api.admin_ai_audience_package_template_config
+  capability_owner: ai_audience_ops
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_automation
+  access_scope: global
+  pii_level: internal
+  csrf: true
+  rate_limit: authenticated
+  principal_types:
+  - human
 - path: /api/admin/ai-audience/package-groups
   methods:
   - GET
@@ -8031,6 +8091,48 @@ routes:
   capability: external_write
   access_scope: service
   pii_level: sensitive
+  csrf: false
+  rate_limit: integration
+  principal_types:
+  - api_client
+  - service
+- path: /api/external/ai-audience/templates/preview
+  methods:
+  - POST
+  route_name: api.external_ai_audience_template_preview
+  capability_owner: ai_audience_ops
+  runtime_owner: ai_crm_next
+  layer: integration
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: external_integration
+  auth_scheme: api_client_jwt
+  capability: external_write
+  access_scope: service
+  pii_level: none
+  csrf: false
+  rate_limit: integration
+  principal_types:
+  - api_client
+  - service
+- path: /api/external/ai-audience/templates/apply
+  methods:
+  - POST
+  route_name: api.external_ai_audience_template_apply
+  capability_owner: ai_audience_ops
+  runtime_owner: ai_crm_next
+  layer: integration
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: previous_release
+  audience: external_integration
+  auth_scheme: api_client_jwt
+  capability: external_write
+  access_scope: service
+  pii_level: none
   csrf: false
   rate_limit: integration
   principal_types:

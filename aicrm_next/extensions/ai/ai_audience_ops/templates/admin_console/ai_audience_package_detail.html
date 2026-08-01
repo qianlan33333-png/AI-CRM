@@ -401,6 +401,38 @@
     color: var(--ai-danger);
   }
 
+  .template-config-card {
+    display: grid;
+    gap: 16px;
+    margin-top: 22px;
+    padding: 18px;
+    border: 1px solid #dbe5f3;
+    border-radius: 14px;
+    background: #f8fbff;
+  }
+
+  .template-config-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .template-config-head h4 { margin: 0; font-size: 17px; }
+  .template-parameter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .template-parameter-field:has(.template-condition-list),
+  .template-parameter-field:has(.template-list-input) { grid-column: 1 / -1; }
+  .template-parameter-help { color: var(--ai-muted); font-size: 12px; }
+  .template-list-input { min-height: 76px; }
+  .template-multi-select { min-height: 92px; }
+  .template-condition-list, .template-condition-rows { display: grid; gap: 10px; }
+  .template-condition-row { display: grid; grid-template-columns: minmax(180px,.8fr) minmax(260px,1.2fr) auto; gap: 10px; align-items: start; padding: 12px; border: 1px solid var(--ai-line); border-radius: 12px; background: #fff; }
+  .template-condition-row .ai-textarea { min-height: 72px; }
+  .template-switch { display: inline-flex; min-height: 42px; align-items: center; gap: 6px; color: #344054; font-weight: 800; }
+  .template-history-note { border: 1px solid #fedf89; border-radius: 10px; background: #fffaeb; color: #93370d; padding: 11px 13px; font-size: 13px; font-weight: 750; }
+  .template-preview-box { display: grid; gap: 6px; border: 1px solid var(--ai-line); border-radius: 10px; background: #fff; color: #344054; padding: 12px 14px; }
+  .template-preview-box[hidden], .template-history-note[hidden] { display: none; }
+
   @media (max-width: 960px) {
     .ai-page {
       min-width: 0;
@@ -408,9 +440,12 @@
 
     .ai-summary-grid,
     .ai-workspace,
-    .ai-form-grid {
+    .ai-form-grid,
+    .template-parameter-grid {
       grid-template-columns: 1fr;
     }
+
+    .template-condition-row { grid-template-columns: 1fr; }
 
     .ai-side-nav {
       position: static;
@@ -481,6 +516,25 @@
             </select>
           </div>
         </div>
+        <section class="template-config-card" aria-label="模板筛选条件">
+          <div class="template-config-head">
+            <h4>模板与筛选条件</h4>
+            <span class="ai-pill gray" id="templateVersionBadge">历史配置</span>
+          </div>
+          <div class="template-history-note" id="templateHistoryNote" hidden>这是由旧 SQL/Markdown 创建的历史人群包。停止后可选择模板保存为新版本；原版本仍可回看和运行。</div>
+          <div class="ai-field">
+            <label class="ai-label" for="templateSelect">人群模板</label>
+            <select class="ai-select" id="templateSelect"><option value="">请选择模板</option></select>
+          </div>
+          <div class="template-parameter-grid" id="templateParameterForm"></div>
+          <label class="template-switch"><input id="templateAllowEmpty" type="checkbox"> 允许创建 0 人结果（仅在确认业务需要时勾选）</label>
+          <div class="template-preview-box" id="templatePreviewBox" hidden></div>
+          <div class="ai-btns">
+            <button class="ai-btn soft" id="templatePreviewBtn" type="button">重新预览</button>
+            <button class="ai-btn primary" id="templateSaveBtn" type="button">保存新版本</button>
+          </div>
+          <div class="ai-status-line" id="templateStatusLine"></div>
+        </section>
         <div class="ai-panel-actions">
           <button class="ai-btn primary" id="savePackageBtn" type="button">保存基础配置</button>
         </div>
@@ -606,6 +660,7 @@
 <script src="{{ url_for('static', filename='admin_console/send_content_readonly_detail.js') }}?v=20260801-send-records"></script>
 <script src="{{ url_for('static', filename='admin_console/ai_audience_send_records.js') }}?v=20260801-send-records"></script>
 <script src="{{ url_for('static', filename='admin_console/automation_capability_selector.js') }}?v=20260801"></script>
+<script src="{{ url_for('static', filename='admin_console/template_parameter_form.js') }}?v=20260801"></script>
 <script>
   (() => {
     const packageApiUrl = {{ ai_audience_package_api_url | tojson }};
@@ -614,6 +669,9 @@
     const bindingApiUrl = {{ ai_audience_package_automation_binding_api_url | tojson }};
     const automationAgentsApiUrl = {{ automation_agents_api_url | tojson }};
     const sendersApiUrl = {{ ai_audience_package_senders_api_url | tojson }};
+    const templatesApiUrl = "/api/admin/ai-audience/templates";
+    const templatePreviewApiUrl = `${packageApiUrl}/template-preview`;
+    const templateConfigApiUrl = `${packageApiUrl}/template-config`;
 
     const els = {
       packageTitle: document.getElementById("packageTitle"),
@@ -640,13 +698,23 @@
       memberTotal: document.getElementById("memberTotal"),
       refreshMembersBtn: document.getElementById("refreshMembersBtn"),
       manualRefreshBtn: document.getElementById("manualRefreshBtn"),
-      saveCurrentDimensionBtn: document.getElementById("saveCurrentDimensionBtn")
+      saveCurrentDimensionBtn: document.getElementById("saveCurrentDimensionBtn"),
+      templateSelect: document.getElementById("templateSelect"),
+      templateVersionBadge: document.getElementById("templateVersionBadge"),
+      templateHistoryNote: document.getElementById("templateHistoryNote"),
+      templateParameterForm: document.getElementById("templateParameterForm"),
+      templateAllowEmpty: document.getElementById("templateAllowEmpty"),
+      templatePreviewBox: document.getElementById("templatePreviewBox"),
+      templatePreviewBtn: document.getElementById("templatePreviewBtn"),
+      templateSaveBtn: document.getElementById("templateSaveBtn"),
+      templateStatusLine: document.getElementById("templateStatusLine")
     };
 
     let senderItems = [];
     let currentPanel = "basic";
     let currentPackage = null;
     let automationBindingController = null;
+    let templateConfigController = null;
 
     const escapeHtml = (value) => String(value ?? "")
       .replaceAll("&", "&amp;")
@@ -723,6 +791,7 @@
       els.packageDefinitionInput.value = packageInfo.natural_language_definition || "";
       els.packageGroupSelect.value = packageInfo.group_id == null ? "ungrouped" : String(packageInfo.group_id);
       applyRefreshMode(packageInfo.refresh_mode || "manual");
+      if (templateConfigController?.hasTemplates()) templateConfigController.render(packageInfo);
     };
 
     const loadGroups = async () => {
@@ -1030,9 +1099,11 @@
         setStatus(statusEl, window.AdminApi.errorMessage(error, "操作失败"), "error");
       });
     });
+    templateConfigController = window.TemplateParameterForm.createPackageController({ elements: els, fetchJson, templatesApiUrl, templatePreviewApiUrl, templateConfigApiUrl, setStatus, getPackage: () => currentPackage, getRefreshMode: selectedRefreshMode, renderPackage });
+    templateConfigController.bind();
 
     showPanel("basic");
-    Promise.all([loadGroups().then(loadPackage), loadAutomationBinding(), loadSenders(), loadMembers()]).catch((error) => {
+    Promise.all([templateConfigController.loadTemplates().then(loadGroups).then(loadPackage), loadAutomationBinding(), loadSenders(), loadMembers()]).catch((error) => {
       setStatus(els.packageStatusLine, window.AdminApi.errorMessage(error, "加载失败"), "error");
     });
   })();

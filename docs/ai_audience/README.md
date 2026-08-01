@@ -1,6 +1,6 @@
 # AI Audience 人群包
 
-AI Audience 是 AI-CRM Next 内的运行时 SQL 人群包能力，用于把运营自然语言需求转换成可刷新、可预览、可绑定自动化话术、可群发复用的标准目标集合。它不恢复旧 automation program / Runtime V2，也不新增私信群发发送器。
+AI Audience 是 AI-CRM Next 内的模板化运行时人群包能力，用于把运营自然语言需求转换成可刷新、可预览、可绑定自动化话术、可群发复用的标准目标集合。新建业务包由固定模板编译，Agent 和运营都只需要阅读 [`agent_package_configuration_guide.md`](agent_package_configuration_guide.md)，不读取 schema、不生成 SQL。它不恢复旧 automation program / Runtime V2，也不新增私信群发发送器。
 
 ## 产品边界
 
@@ -12,19 +12,19 @@ PR 只用于平台能力变更，包括：
 - 新增 AI Audience 平台 API、刷新、内部自动化传递、安全或审计能力。
 - 修改 SQL 安全边界、鉴权、prefix gate、运行时存储结构。
 
-普通业务包上线不需要提交 repo 文件。Codex 可以根据自然语言和 schema catalog 生成 Markdown spec 或 simple SQL，但生成物是运行时输入，不提交到仓库。`docs/ai_audience/examples/` 里的文件只是模板，不代表每个业务包都要新增一个 `.md`。
+普通业务包上线不需要提交 repo 文件。Agent 从不可变模板注册表选择 `template_key` 并填写业务字段，服务端负责引用解析、参数化编译、校验和预览。`docs/ai_audience/examples/` 里的旧文件只用于兼容说明，不代表每个业务包都要新增一个 `.md`。
 
 ## 运行时创建流程
 
-优先使用 Simple SQL Package：
+统一使用 Template Package：
 
-1. Codex 读取 schema catalog，生成只返回 `external_userid` 的 simple SQL。
-2. 调 `POST /api/external/ai-audience/simple/preview` 做 dry-run。
-3. 调 `POST /api/external/ai-audience/simple/apply` 创建或更新 package/version/senders，默认 `paused`。
-4. 页面确认后调 `POST /api/external/ai-audience/simple/{package_key}/activate` 启用。
-5. 不再使用时调 `POST /api/external/ai-audience/simple/{package_key}/archive` 归档。
+1. Agent 阅读唯一说明书并选择六类固定模板之一。
+2. 调 `POST /api/external/ai-audience/templates/preview` 做只读预览。
+3. 用户没有明确要求“只预览”时，Preview 成功且人数非零后调 `POST /api/external/ai-audience/templates/apply`。
+4. Apply 原子创建 package/version/senders/group/binding，结果固定为 `paused`。
+5. 运营在详情页复核、修正、绑定并人工启用。
 
-高级 Markdown spec 仍保留给复杂包：
+旧 Simple SQL 和 Markdown spec 仅保留底层兼容，不用于新 Agent 配置。兼容路由包括：
 
 - `POST /api/external/ai-audience/spec/dry-run`
 - `POST /api/external/ai-audience/spec/apply`
@@ -33,7 +33,9 @@ PR 只用于平台能力变更，包括：
 
 两条链路都使用注册 `external_agent` 换取的短期 JWT（`external_integration` audience、`write` scope、`external_write` capability；见 [`../auth_client_credentials.md`](../auth_client_credentials.md)），并由服务端强制执行 `AICRM_AI_AUDIENCE_SPEC_ALLOWED_PREFIXES`、`AICRM_AI_AUDIENCE_SPEC_ALLOW_NON_VERIFY_PREFIX` 和 `AICRM_AI_AUDIENCE_SPEC_ALLOW_PUBLISH`。
 
-## Simple SQL Package
+## Simple SQL Package（底层兼容）
+
+以下内容只用于维护存量包，不是 Agent 新建人群包的操作指南。新建配置不得回退到 SQL。
 
 Simple SQL 只需要返回 `external_userid`：
 

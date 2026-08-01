@@ -176,7 +176,17 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     audience_send_records = VERSIONS / "0164_ai_audience_send_record_read_index.py"
     audience_send_records_source = audience_send_records.read_text(encoding="utf-8")
 
-    assert heads == {"0164_ai_audience_send_record_read_index"}
+    audience_template_registry = (
+        VERSIONS / "0165_ai_audience_template_registry.py"
+    )
+    audience_template_registry_source = audience_template_registry.read_text(
+        encoding="utf-8"
+    )
+
+    assert heads == {"0165_ai_audience_template_registry"}
+    assert revisions["0165_ai_audience_template_registry"]["down_revision"] == (
+        "0164_ai_audience_send_record_read_index"
+    )
     assert revisions["0164_ai_audience_send_record_read_index"]["down_revision"] == (
         "0163_ai_audience_admin_member_read_indexes"
     )
@@ -190,6 +200,8 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     assert "CREATE INDEX CONCURRENTLY IF NOT EXISTS" in audience_admin_member_indexes_source
     assert "idx_ai_audience_member_current_admin_page" in audience_admin_member_indexes_source
     assert "idx_wecom_identity_map_external_updated" in audience_admin_member_indexes_source
+    assert "audience_read.questionnaire_answers_v1" in audience_template_registry_source
+    assert "audience_read.radar_clicks_v1" in audience_template_registry_source
     assert revisions["0162_ai_audience_groups_binding"]["down_revision"] == (
         "0161_reconcile_archive_job_run_ledger"
     )

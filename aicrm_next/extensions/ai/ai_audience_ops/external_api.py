@@ -14,6 +14,7 @@ from .repository import build_audience_repository, _text
 from .schemas import SimpleSqlApplyRequest, SimpleSqlPreviewRequest
 from .service import AudiencePackageService
 from .simple_sql import compile_simple_sql, simple_refresh_mode_config, validate_simple_sql
+from .template_service import AudienceTemplateService
 
 router = APIRouter()
 
@@ -23,6 +24,50 @@ _HEADERS = {
     "Cache-Control": "no-store, max-age=0",
     "Pragma": "no-cache",
 }
+
+
+@router.post(
+    "/api/external/ai-audience/templates/preview",
+    name="api.external_ai_audience_template_preview",
+)
+def external_ai_audience_template_preview(
+    request: Request,
+    payload: dict[str, Any] = Body(default_factory=dict),
+) -> JSONResponse:
+    del request
+    repo = build_audience_repository()
+    result = AudienceTemplateService(repository=repo).preview(payload, prefix_gate=_prefix_gate_error)
+    _audit(
+        repo,
+        operator=_operator(payload),
+        action_type="external_template_preview",
+        package_key=_text(payload.get("package_key")),
+        before=_audit_before(payload),
+        after=result,
+    )
+    return _template_response(result)
+
+
+@router.post(
+    "/api/external/ai-audience/templates/apply",
+    name="api.external_ai_audience_template_apply",
+)
+def external_ai_audience_template_apply(
+    request: Request,
+    payload: dict[str, Any] = Body(default_factory=dict),
+) -> JSONResponse:
+    del request
+    repo = build_audience_repository()
+    result = AudienceTemplateService(repository=repo).apply(payload, prefix_gate=_prefix_gate_error)
+    _audit(
+        repo,
+        operator=_operator(payload),
+        action_type="external_template_apply" if result.get("ok") else "external_template_apply_rejected",
+        package_key=_text(payload.get("package_key")),
+        before=_audit_before(payload),
+        after=result,
+    )
+    return _template_response(result)
 
 
 @router.post("/api/external/ai-audience/spec/dry-run", name="api.external_ai_audience_spec_dry_run")
@@ -655,3 +700,27 @@ def _response(payload: dict[str, Any], *, status_code: int = 200) -> JSONRespons
     if not payload.get("ok", True) and status_code == 200:
         status_code = 400
     return JSONResponse(jsonable_encoder(_redact_payload(payload)), status_code=status_code, headers=_HEADERS)
+
+
+def _template_response(payload: dict[str, Any]) -> JSONResponse:
+    error = _text(payload.get("error"))
+    status_code = 200
+    if not payload.get("ok", True):
+        if error == "unsafe_package_key_prefix":
+            status_code = 403
+        elif error in {
+            "active_package_update_requires_pause",
+            "automation_already_bound",
+            "reference_ambiguous",
+            "empty_audience_requires_confirmation",
+            "automation_not_active",
+            "archived_package_cannot_update",
+        }:
+            status_code = 409
+        elif error in {"template_not_found", "template_version_not_found", "group_not_found", "automation_not_found", "reference_not_found"}:
+            status_code = 404
+        elif error == "preview_timeout":
+            status_code = 408
+        else:
+            status_code = 400
+    return _response(payload, status_code=status_code)

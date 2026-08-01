@@ -386,6 +386,9 @@ def test_admin_ai_audience_packages_api_returns_lightweight_read_model(next_clie
         "refresh_mode_label": "每 3 分钟",
         "group_id": None,
         "group_name": "未分组",
+        "template_key": "",
+        "template_version": None,
+        "template_label": "历史配置",
     }
     assert by_key["admin_counted"] == {
         "id": counted_id,
@@ -398,6 +401,9 @@ def test_admin_ai_audience_packages_api_returns_lightweight_read_model(next_clie
         "refresh_mode_label": "每 3 分钟",
         "group_id": None,
         "group_name": "未分组",
+        "template_key": "",
+        "template_version": None,
+        "template_label": "历史配置",
     }
     assert by_key["admin_daily"]["id"] == daily_id
     assert by_key["admin_daily"]["refresh_mode"] == "daily_0200"
@@ -663,6 +669,13 @@ def test_admin_ai_audience_package_detail_requires_admin_and_redacts_sensitive_f
         "natural_language_definition": "近 30 天提交问卷且已加微",
         "group_id": None,
         "group_name": "未分组",
+        "template_key": "",
+        "template_version": None,
+        "template_label": "历史配置",
+        "current_version_id": None,
+        "current_version_number": None,
+        "template_parameters": {},
+        "is_historical_config": True,
     }
     response_text = json.dumps(response.json(), ensure_ascii=False)
     for forbidden in ("sql_text", "inbound_webhook_secret", "signing_secret", "payload_json", "wm_hidden"):

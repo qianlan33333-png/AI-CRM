@@ -13,6 +13,7 @@
     "test:frontend:service-period-sharing": "node tests/frontend/service_period_member_grid_sharing.test.mjs",
     "test:frontend:automation-capability": "node tests/frontend/automation_capability_selector.test.mjs",
     "test:frontend:send-content-readonly": "node tests/frontend/send_content_readonly_detail.test.mjs",
-    "test:frontend:all": "npm run test:frontend:security && npm run test:frontend:errors && npm run test:frontend:error-guard && npm run test:frontend:coupons && npm run test:frontend:sidebar && npm run test:frontend:service-period && npm run test:frontend:service-period-sharing && npm run test:frontend:automation-capability && npm run test:frontend:send-content-readonly"
+    "test:frontend:audience-template": "node tests/frontend/template_parameter_form.test.mjs",
+    "test:frontend:all": "npm run test:frontend:security && npm run test:frontend:errors && npm run test:frontend:error-guard && npm run test:frontend:coupons && npm run test:frontend:sidebar && npm run test:frontend:service-period && npm run test:frontend:service-period-sharing && npm run test:frontend:automation-capability && npm run test:frontend:send-content-readonly && npm run test:frontend:audience-template"
   }
 }

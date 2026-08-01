@@ -14,6 +14,7 @@ from .repository import AudienceRepository, build_audience_repository, default_r
 from .repository_packages import AudienceGroupNameConflictError, AudienceGroupNotEmptyError
 from .schemas import PackageCreateRequest, PackageVersionCreateRequest, PreviewRequest
 from .sql_executor import build_execution_plan
+from .template_registry import get_template
 
 
 class AudiencePackageService:
@@ -685,6 +686,8 @@ def _parse_tick_hhmm(value: str) -> tuple[int, int]:
 
 def _admin_package_item(row: dict[str, Any]) -> dict[str, Any]:
     refresh_mode = refresh_mode_from_row(row)
+    template_key = _text(row.get("template_key"))
+    template = get_template(template_key, int(row.get("template_version") or 0) or None) if template_key else None
     return {
         "id": int(row.get("id") or 0),
         "package_key": _text(row.get("package_key")),
@@ -696,12 +699,19 @@ def _admin_package_item(row: dict[str, Any]) -> dict[str, Any]:
         "refresh_mode_label": refresh_mode_label(refresh_mode),
         "group_id": int(row.get("group_id")) if row.get("group_id") is not None else None,
         "group_name": _text(row.get("group_name")) or "未分组",
+        "template_key": template_key,
+        "template_version": int(row.get("template_version") or 0) or None,
+        "template_label": template.label if template else ("历史配置" if not template_key else template_key),
     }
 
 
 def _admin_package_detail(row: dict[str, Any]) -> dict[str, Any]:
     item = _admin_package_item(row)
     item["natural_language_definition"] = _text(row.get("natural_language_definition"))
+    item["current_version_id"] = int(row.get("current_version_id") or 0) or None
+    item["current_version_number"] = int(row.get("current_version_number") or 0) or None
+    item["template_parameters"] = dict(row.get("template_params_json") or {})
+    item["is_historical_config"] = not bool(item["template_key"])
     return item
 
 
@@ -817,6 +827,9 @@ def _safe_version(row: dict[str, Any] | None) -> dict[str, Any] | None:
         "parameters": dict(row.get("parameters_json") or {}),
         "created_at": _admin_datetime(row.get("created_at")) if row.get("created_at") else "",
         "published_at": _admin_datetime(row.get("published_at")) if row.get("published_at") else "",
+        "template_key": _text(row.get("template_key")),
+        "template_version": int(row.get("template_version") or 0) or None,
+        "template_parameters": dict(row.get("template_params_json") or {}),
     }
 
 
