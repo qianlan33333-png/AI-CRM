@@ -111,6 +111,7 @@ _TABLES_TO_TRUNCATE = [
     "ai_audience_package_dependency",
     "ai_audience_package_version",
     "ai_audience_package",
+    "ai_audience_package_group",
     # — automation / campaign domain
     "automation_touch_delivery_log",
     "automation_frequency_consumption",

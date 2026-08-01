@@ -33,17 +33,21 @@ def _response(payload: dict[str, Any], *, status_code: int = 200) -> JSONRespons
         error = payload.get("error")
         if error == "agent_not_found":
             status_code = 404
+        elif error in {"automation_binding_exists", "automation_binding_state_invalid"}:
+            status_code = 409
+        elif error == "webhook_configuration_retired":
+            status_code = 410
         elif status_code == 200:
             status_code = 400
     return JSONResponse(jsonable_encoder(payload), status_code=status_code, headers=_HEADERS)
 
 
 @router.get("/api/admin/automation-agents", name="api.admin_automation_agents")
-def list_automation_agents(request: Request) -> JSONResponse:
+def list_automation_agents(request: Request, automation_type: str = "") -> JSONResponse:
     if auth := admin_api_auth_error(request):
         return auth
     try:
-        payload = AutomationAgentAdminService().list_agents()
+        payload = AutomationAgentAdminService().list_agents(automation_type=automation_type)
     except Exception as exc:
         payload = admin_read_unavailable_payload(
             capability_owner="aicrm_next/extensions/ai/automation_agents",

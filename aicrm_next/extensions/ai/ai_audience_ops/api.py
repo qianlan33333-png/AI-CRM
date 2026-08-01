@@ -12,8 +12,6 @@ from aicrm_next.platform.shared.sync_request import read_request_body
 from .refresh_intents import AudienceRefreshIntentService
 from .schemas import (
     InboundWebhookRequest,
-    OutboundSubscriptionCreateRequest,
-    OutboundSubscriptionUpdateRequest,
     PackageCreateRequest,
     PackagePublishRequest,
     PackageVersionCreateRequest,
@@ -164,29 +162,26 @@ async def source_dirty(request: Request) -> JSONResponse:
 
 @router.get("/api/ai/audience/packages/{package_id}/outbound-subscriptions", name="api.ai_audience_list_outbound_subscriptions")
 async def list_subscriptions(package_id: int, request: Request) -> JSONResponse:
-    return _json(AudiencePackageService().list_subscriptions(package_id))
+    del package_id, request
+    return _json({"ok": False, "error": "webhook_configuration_retired"}, status_code=410)
 
 
 @router.post("/api/ai/audience/packages/{package_id}/outbound-subscriptions", name="api.ai_audience_create_outbound_subscription")
 async def create_subscription(package_id: int, request: Request) -> JSONResponse:
-    try:
-        payload = OutboundSubscriptionCreateRequest(**await _body(request))
-        return _json(AudiencePackageService().create_subscription(package_id, payload.model_dump()))
-    except Exception as exc:
-        return _json({"ok": False, "error": str(exc)}, status_code=400)
+    del package_id, request
+    return _json({"ok": False, "error": "webhook_configuration_retired"}, status_code=410)
 
 
 @router.patch("/api/ai/audience/outbound-subscriptions/{subscription_id}", name="api.ai_audience_update_outbound_subscription")
 async def update_subscription(subscription_id: int, request: Request) -> JSONResponse:
-    payload = OutboundSubscriptionUpdateRequest(**await _body(request))
-    result = AudiencePackageService().update_subscription(subscription_id, payload.model_dump(exclude_none=True))
-    return _json(result, status_code=200 if result.get("ok") else 404)
+    del subscription_id, request
+    return _json({"ok": False, "error": "webhook_configuration_retired"}, status_code=410)
 
 
 @router.post("/api/ai/audience/outbound-subscriptions/{subscription_id}/pause", name="api.ai_audience_pause_outbound_subscription")
 async def pause_subscription(subscription_id: int, request: Request) -> JSONResponse:
-    result = AudiencePackageService().update_subscription(subscription_id, {"status": "paused"})
-    return _json(result, status_code=200 if result.get("ok") else 404)
+    del subscription_id, request
+    return _json({"ok": False, "error": "webhook_configuration_retired"}, status_code=410)
 
 
 @router.post("/api/ai/audience/packages/{package_key}/webhook", name="api.ai_audience_inbound_webhook")

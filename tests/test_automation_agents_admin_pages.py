@@ -126,9 +126,9 @@ def test_automation_agent_edit_page_contract(next_client, monkeypatch) -> None:
         "Agent 名称",
         "自动化类类型",
         "fixed_script",
-        "接收地址",
-        "发送地址",
-        "receive_webhook_url",
+        "当前绑定人群包",
+        "绑定关系请在人群包详情的“自动化话术能力”中管理",
+        "boundPackage",
         "role_prompt",
         "task_prompt",
         "插入 {{问卷信息}}",
@@ -151,8 +151,6 @@ def test_automation_agent_edit_page_contract(next_client, monkeypatch) -> None:
         "/api/admin/automation-agents/123/fixed-content",
         "`${agentApiUrl}/publish`",
         'method: "POST"',
-        "send_webhook_url: els.sendUrl.value.trim()",
-        'id="sendUrl" value=""',
     ):
         assert expected in html
     for forbidden in (
@@ -172,9 +170,13 @@ def test_automation_agent_edit_page_contract(next_client, monkeypatch) -> None:
         'id="packageKey"',
         "重置 token",
         "/api/admin/automation-agents/123/reset-token",
+        "接收地址",
+        "发送地址",
+        "receive_webhook_url",
+        "send_webhook_url",
+        'id="sendUrl"',
     ):
         assert forbidden not in html
-    assert 'id="sendUrl" value="" readonly' not in html
 
 
 def test_automation_agent_edit_bottom_bar_only_has_save_button() -> None:

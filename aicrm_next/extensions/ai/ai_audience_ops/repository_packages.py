@@ -2,6 +2,13 @@ from __future__ import annotations
 
 from typing import Any
 
+from sqlalchemy.exc import IntegrityError
+
+from aicrm_next.platform.platform_foundation.admin_audit import (
+    AdminAuditRecord,
+    build_admin_audit_port,
+)
+
 from .repository import (
     _dependency_source_type,
     _json_dumps,
@@ -11,6 +18,14 @@ from .repository import (
     next_daily_refresh_at,
     text,
 )
+
+
+class AudienceGroupNameConflictError(RuntimeError):
+    pass
+
+
+class AudienceGroupNotEmptyError(RuntimeError):
+    pass
 
 
 class AudiencePackageRepositoryMixin:
@@ -24,9 +39,26 @@ class AudiencePackageRepositoryMixin:
             """
         )
 
-    def list_package_summaries(self, *, limit: int = 200) -> list[dict[str, Any]]:
+    def list_package_summaries(
+        self,
+        *,
+        limit: int = 200,
+        offset: int = 0,
+        group_id: int | None = None,
+        ungrouped: bool = False,
+    ) -> list[dict[str, Any]]:
+        group_clause = ""
+        params: dict[str, Any] = {
+            "limit": max(1, min(int(limit or 200), 200)),
+            "offset": max(0, int(offset or 0)),
+        }
+        if ungrouped:
+            group_clause = "AND p.group_id IS NULL"
+        elif group_id is not None:
+            group_clause = "AND p.group_id = :group_id"
+            params["group_id"] = int(group_id)
         return self._all(
-            """
+            f"""
             WITH member_counts AS (
                 SELECT
                     package_id,
@@ -54,17 +86,187 @@ class AudiencePackageRepositoryMixin:
                 p.incremental_interval_seconds,
                 p.daily_enabled,
                 p.daily_refresh_time,
+                p.group_id,
+                g.name AS group_name,
                 p.updated_at,
                 COUNT(*) OVER () AS total_count
             FROM ai_audience_package p
+            LEFT JOIN ai_audience_package_group g ON g.id = p.group_id
             LEFT JOIN member_counts mc ON mc.package_id = p.id
             LEFT JOIN latest_runs lr ON lr.package_id = p.id
             WHERE p.status <> 'archived'
+              {group_clause}
             ORDER BY p.updated_at DESC, p.id DESC
             LIMIT :limit
+            OFFSET :offset
             """,
-            {"limit": max(1, min(int(limit or 200), 200))},
+            params,
         )
+
+    def list_package_groups(self) -> list[dict[str, Any]]:
+        return self._all(
+            """
+            SELECT
+                g.id,
+                g.name,
+                COUNT(p.id) FILTER (WHERE p.status <> 'archived') AS package_count,
+                g.created_at,
+                g.updated_at
+            FROM ai_audience_package_group g
+            LEFT JOIN ai_audience_package p ON p.group_id = g.id
+            GROUP BY g.id, g.name, g.created_at, g.updated_at
+            ORDER BY LOWER(g.name) ASC, g.id ASC
+            """
+        )
+
+    def count_package_summaries(self, *, group_id: int | None = None, ungrouped: bool = False) -> int:
+        group_clause = ""
+        params: dict[str, Any] = {}
+        if ungrouped:
+            group_clause = "AND group_id IS NULL"
+        elif group_id is not None:
+            group_clause = "AND group_id = :group_id"
+            params["group_id"] = int(group_id)
+        row = self._one(
+            f"""
+            SELECT COUNT(*) AS package_count
+            FROM ai_audience_package
+            WHERE status <> 'archived'
+              {group_clause}
+            """,
+            params,
+        )
+        return int((row or {}).get("package_count") or 0)
+
+    def count_ungrouped_packages(self) -> int:
+        return self.count_package_summaries(ungrouped=True)
+
+    def get_package_group(self, group_id: int) -> dict[str, Any] | None:
+        return self._one(
+            "SELECT id, name, created_at, updated_at FROM ai_audience_package_group WHERE id = :group_id LIMIT 1",
+            {"group_id": int(group_id)},
+        )
+
+    @staticmethod
+    def _append_group_audit(
+        session,
+        *,
+        operator: str,
+        action_type: str,
+        group_id: int,
+        before: dict[str, Any] | None,
+        after: dict[str, Any] | None,
+    ) -> None:
+        build_admin_audit_port().append_sqlalchemy(
+            session,
+            dialect_name=session.get_bind().dialect.name,
+            record=AdminAuditRecord(
+                operator=_text(operator) or "admin",
+                action_type=action_type,
+                target_type="ai_audience_package_group",
+                target_id=str(int(group_id)),
+                before=before or {},
+                after=after or {},
+            ),
+        )
+
+    def create_package_group(self, name: str, *, operator: str = "admin") -> dict[str, Any]:
+        try:
+            with self._session_factory() as session:
+                row = session.execute(
+                    text(
+                        """
+                        INSERT INTO ai_audience_package_group (name, created_at, updated_at)
+                        VALUES (:name, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                        RETURNING id, name, created_at, updated_at
+                        """
+                    ),
+                    {"name": _text(name)},
+                ).mappings().one()
+                payload = _public_row(dict(row)) or {}
+                self._append_group_audit(
+                    session,
+                    operator=operator,
+                    action_type="ai_audience_group_created",
+                    group_id=int(row["id"]),
+                    before={},
+                    after=payload,
+                )
+                session.commit()
+                return payload
+        except IntegrityError as exc:
+            raise AudienceGroupNameConflictError() from exc
+
+    def update_package_group(self, group_id: int, name: str, *, operator: str = "admin") -> dict[str, Any] | None:
+        try:
+            with self._session_factory() as session:
+                before_row = session.execute(
+                    text("SELECT id, name, created_at, updated_at FROM ai_audience_package_group WHERE id = :group_id FOR UPDATE"),
+                    {"group_id": int(group_id)},
+                ).mappings().fetchone()
+                if not before_row:
+                    session.rollback()
+                    return None
+                row = session.execute(
+                    text(
+                        """
+                        UPDATE ai_audience_package_group
+                        SET name = :name, updated_at = CURRENT_TIMESTAMP
+                        WHERE id = :group_id
+                        RETURNING id, name, created_at, updated_at
+                        """
+                    ),
+                    {"group_id": int(group_id), "name": _text(name)},
+                ).mappings().one()
+                before = _public_row(dict(before_row)) or {}
+                after = _public_row(dict(row)) or {}
+                self._append_group_audit(
+                    session,
+                    operator=operator,
+                    action_type="ai_audience_group_renamed",
+                    group_id=int(group_id),
+                    before=before,
+                    after=after,
+                )
+                session.commit()
+                return after
+        except IntegrityError as exc:
+            raise AudienceGroupNameConflictError() from exc
+
+    def delete_package_group(self, group_id: int, *, operator: str = "admin") -> dict[str, Any] | None:
+        with self._session_factory() as session:
+            row = session.execute(
+                text("SELECT id, name, created_at, updated_at FROM ai_audience_package_group WHERE id = :group_id FOR UPDATE"),
+                {"group_id": int(group_id)},
+            ).mappings().fetchone()
+            if not row:
+                session.rollback()
+                return None
+            package_count = int(
+                session.execute(
+                    text("SELECT COUNT(*) FROM ai_audience_package WHERE group_id = :group_id"),
+                    {"group_id": int(group_id)},
+                ).scalar_one()
+                or 0
+            )
+            if package_count > 0:
+                session.rollback()
+                raise AudienceGroupNotEmptyError()
+            before = _public_row(dict(row)) or {}
+            session.execute(
+                text("DELETE FROM ai_audience_package_group WHERE id = :group_id"),
+                {"group_id": int(group_id)},
+            )
+            self._append_group_audit(
+                session,
+                operator=operator,
+                action_type="ai_audience_group_deleted",
+                group_id=int(group_id),
+                before=before,
+                after={},
+            )
+            session.commit()
+            return before
 
     def get_package_detail(self, package_id: int) -> dict[str, Any] | None:
         return self._one(
@@ -96,8 +298,11 @@ class AudiencePackageRepositoryMixin:
                 p.daily_enabled,
                 p.daily_refresh_time,
                 p.natural_language_definition,
-                p.timezone
+                p.timezone,
+                p.group_id,
+                g.name AS group_name
             FROM ai_audience_package p
+            LEFT JOIN ai_audience_package_group g ON g.id = p.group_id
             LEFT JOIN member_counts mc ON mc.package_id = p.id
             LEFT JOIN latest_runs lr ON lr.package_id = p.id
             WHERE p.id = :package_id
@@ -116,6 +321,7 @@ class AudiencePackageRepositoryMixin:
                 incremental_interval_seconds = :incremental_interval_seconds,
                 daily_enabled = :daily_enabled,
                 daily_refresh_time = :daily_refresh_time,
+                group_id = :group_id,
                 next_incremental_refresh_at = CASE
                     WHEN :incremental_enabled THEN COALESCE(next_incremental_refresh_at, CURRENT_TIMESTAMP)
                     ELSE NULL
@@ -136,6 +342,7 @@ class AudiencePackageRepositoryMixin:
                 "incremental_interval_seconds": int(payload.get("incremental_interval_seconds") or 180),
                 "daily_enabled": bool(payload.get("daily_enabled")),
                 "daily_refresh_time": _text(payload.get("daily_refresh_time")) or "02:00",
+                "group_id": int(payload.get("group_id")) if payload.get("group_id") is not None else None,
                 "next_daily_refresh_at": next_daily_refresh_at(
                     _text(payload.get("daily_refresh_time")) or "02:00",
                     _text(payload.get("timezone")) or "Asia/Shanghai",
@@ -157,13 +364,13 @@ class AudiencePackageRepositoryMixin:
                     INSERT INTO ai_audience_package (
                         package_key, name, natural_language_definition, status, query_mode, identity_policy,
                         incremental_enabled, daily_enabled, incremental_interval_seconds, daily_refresh_time,
-                        timezone, lookback_seconds,
+                        timezone, lookback_seconds, group_id,
                         next_incremental_refresh_at, next_daily_refresh_at, created_at, updated_at
                     )
                     VALUES (
                         :package_key, :name, :natural_language_definition, 'draft', :query_mode, :identity_policy,
                         :incremental_enabled, :daily_enabled, :incremental_interval_seconds, :daily_refresh_time,
-                        :timezone, :lookback_seconds,
+                        :timezone, :lookback_seconds, :group_id,
                         NULL, NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
                     )
                     RETURNING *
@@ -181,6 +388,7 @@ class AudiencePackageRepositoryMixin:
                         "daily_refresh_time": _text(source.get("daily_refresh_time")) or "02:00",
                         "timezone": _text(source.get("timezone")) or "Asia/Shanghai",
                         "lookback_seconds": int(source.get("lookback_seconds") or 600),
+                        "group_id": int(source.get("group_id")) if source.get("group_id") is not None else None,
                     },
                 )
                 .mappings()
@@ -259,24 +467,6 @@ class AudiencePackageRepositoryMixin:
                         "source_version_id": int(version["id"]),
                     },
                 )
-            session.execute(
-                text(
-                    """
-                    INSERT INTO ai_audience_outbound_subscription (
-                        package_id, status, trigger_event_type, dispatch_mode, target_type, webhook_url,
-                        headers_json, payload_template_json, execution_mode,
-                        requires_approval, max_attempts, created_at, updated_at
-                    )
-                    SELECT
-                        :new_package_id, status, trigger_event_type, dispatch_mode, target_type, webhook_url,
-                        headers_json, payload_template_json, execution_mode,
-                        requires_approval, max_attempts, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-                    FROM ai_audience_outbound_subscription
-                    WHERE package_id = :package_id
-                    """
-                ),
-                {"new_package_id": new_package_id, "package_id": int(package_id)},
-            )
             if self._table_exists("ai_audience_package_sender"):
                 session.execute(
                     text(
@@ -333,13 +523,13 @@ class AudiencePackageRepositoryMixin:
             INSERT INTO ai_audience_package (
                 package_key, name, natural_language_definition, status, query_mode, identity_policy,
                 incremental_enabled, daily_enabled, incremental_interval_seconds, daily_refresh_time,
-                timezone, lookback_seconds,
+                timezone, lookback_seconds, group_id,
                 next_incremental_refresh_at, next_daily_refresh_at, created_at, updated_at
             )
             VALUES (
                 :package_key, :name, :natural_language_definition, :status, :query_mode, :identity_policy,
                 :incremental_enabled, :daily_enabled, :incremental_interval_seconds, :daily_refresh_time,
-                :timezone, :lookback_seconds,
+                :timezone, :lookback_seconds, :group_id,
                 :next_incremental_refresh_at, :next_daily_refresh_at,
                 CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
             )
@@ -358,6 +548,7 @@ class AudiencePackageRepositoryMixin:
                 "daily_refresh_time": daily_refresh_time,
                 "timezone": timezone_name,
                 "lookback_seconds": max(0, int(payload.get("lookback_seconds") or 600)),
+                "group_id": int(payload.get("group_id")) if payload.get("group_id") is not None else None,
                 "next_incremental_refresh_at": default_refresh_started_at() if status == "active" and bool(payload.get("incremental_enabled", True)) else None,
                 "next_daily_refresh_at": next_daily_refresh_at(daily_refresh_time, timezone_name) if status == "active" and daily_enabled else None,
             },
@@ -585,6 +776,7 @@ class AudiencePackageRepositoryMixin:
             UPDATE ai_audience_package
             SET status = :status,
                 paused_reason = :paused_reason,
+                group_id = CASE WHEN :status = 'archived' THEN NULL ELSE group_id END,
                 next_incremental_refresh_at = CASE
                     WHEN :status = 'active' AND incremental_enabled THEN COALESCE(next_incremental_refresh_at, CURRENT_TIMESTAMP)
                     WHEN :status = 'active' THEN NULL

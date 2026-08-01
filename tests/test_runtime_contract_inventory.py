@@ -32,7 +32,7 @@ def test_runtime_contract_inventory_covers_r00_behavior_surfaces() -> None:
     assert all("responses" in route["contract"] for route in routes)
 
     assert inventory["migration_heads"] == [
-        "0161_reconcile_archive_job_run_ledger"
+        "0162_ai_audience_groups_binding"
     ]
     assert len(inventory["tables"]) >= 150
     owned_lifecycles = {"canonical", "read_model", "event", "queue", "config"}

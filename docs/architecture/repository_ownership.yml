@@ -171,6 +171,15 @@ repositories:
       - automation_agent_runtime_config
       - automation_agent_webhook_batch
       - automation_agent_webhook_item
+  aicrm_next/extensions/ai/ai_audience_ops/automation_binding/repository.py:
+    capability_owner: aicrm_next.extensions.ai.ai_audience_ops
+    table_reads:
+      - ai_audience_outbound_subscription
+      - ai_audience_package
+      - automation_agent_runtime_config
+    table_writes:
+      - ai_audience_outbound_subscription
+      - automation_agent_runtime_config
   aicrm_next/automation/automation_engine/agent_output_sqlalchemy_repository.py:
     capability_owner: aicrm_next.automation.automation_engine
     access_scope: test_staging

@@ -127,5 +127,4 @@ class SimpleSqlApplyRequest(BaseModel):
     sql: str
     parameters: dict[str, Any] = Field(default_factory=dict)
     senders: list[SimpleSenderRequest] = Field(default_factory=list)
-    outbound_webhook_url: str = ""
     operator: str = ""

@@ -71,9 +71,15 @@ def validate_spec(spec: PackageSpec) -> tuple[list[str], list[str]]:
         undeclared = [item for item in extract_params(sql_text) if item not in parameters and item not in SYSTEM_SQL_PARAMS]
         errors.extend(f"{kind}:parameter_not_declared:{item}" for item in undeclared)
 
-    webhook = metadata.get("webhook") if isinstance(metadata.get("webhook"), dict) else {}
-    if webhook.get("payload_template") or webhook.get("headers"):
-        errors.append("webhook_payload_or_headers_not_allowed")
+    if "webhook" in metadata:
+        errors.append("webhook_configuration_retired")
+
+    if "automation_binding" in metadata:
+        automation_binding = metadata.get("automation_binding")
+        if not isinstance(automation_binding, dict):
+            errors.append("automation_binding_invalid")
+        elif not str(automation_binding.get("agent_code") or "").strip():
+            errors.append("automation_binding_agent_code_required")
 
     senders = metadata.get("senders") if isinstance(metadata.get("senders"), list) else []
     priorities: list[int] = []

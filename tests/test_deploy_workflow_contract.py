@@ -391,6 +391,18 @@ def test_production_deploy_loads_postgres_env_before_alembic_upgrade():
     assert "legacy_flask_app" not in workflow
 
 
+def test_production_deploy_checks_audience_bindings_before_runtime_mutation_and_migration() -> None:
+    workflow = (ROOT / ".github" / "workflows" / "deploy.yml").read_text(encoding="utf-8")
+
+    env_source_index = workflow.index("source /home/ubuntu/.openclaw-wecom-pg.env")
+    precheck_index = workflow.index("--binding-check", env_source_index)
+    mutation_index = workflow.index("runtime_mutation_started=1", precheck_index)
+    alembic_upgrade_index = workflow.index("python3 -m alembic upgrade head", mutation_index)
+
+    assert env_source_index < precheck_index < mutation_index < alembic_upgrade_index
+    assert "/tmp/aicrm-deployment-profile-preflight.json" in workflow
+
+
 def test_production_deploy_stashes_dirty_worktree_before_remote_update():
     workflow = (ROOT / ".github" / "workflows" / "deploy.yml").read_text(encoding="utf-8")
 
@@ -1562,5 +1574,6 @@ def test_deploy_runs_runtime_environment_as_repository_module():
     )
     assert "python3 scripts/ops/validate_production_deployment_profile.py" not in workflow
     runtime_mutation_index = workflow.index("runtime_mutation_started=1", persistence_index)
+    assert "--binding-check" in workflow[profile_preflight_index:runtime_mutation_index]
     assert persistence_index < profile_preflight_index < runtime_mutation_index < runtime_start_index
     assert '"${runtime_environment_args[@]}"' in workflow[persistence_index:runtime_start_index]

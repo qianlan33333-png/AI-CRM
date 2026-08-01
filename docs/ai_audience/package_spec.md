@@ -29,9 +29,8 @@ refresh_mode: incremental_3m
 natural_language_definition: 提交了 101 问卷，且已经添加企业微信的用户。
 parameters:
   questionnaire_id: 101
-webhook:
-  outbound_enabled: true
-  outbound_webhook_url: https://agent.example.com/audience/entered
+automation_binding:
+  agent_code: questionnaire_activation_agent
 senders:
   - sender_userid: HuangYouCan
     display_name: HuangYouCan
@@ -68,6 +67,8 @@ WHERE qs.questionnaire_id = :questionnaire_id
 - `name`
 - `refresh_mode`
 - `natural_language_definition`
+
+可选的 `automation_binding.agent_code` 使用自动化列表里的稳定 Agent code 建立一对一绑定。旧 `webhook`、地址、headers 与 payload template 配置均已退役，校验会明确返回 `webhook_configuration_retired`。
 
 ## Refresh Mode
 

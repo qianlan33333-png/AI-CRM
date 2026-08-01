@@ -1,6 +1,6 @@
 # AI Audience 人群包
 
-AI Audience 是 AI-CRM Next 内的运行时 SQL 人群包能力，用于把运营自然语言需求转换成可刷新、可预览、可外推、可群发复用的标准目标集合。它不恢复旧 automation program / Runtime V2，也不新增私信群发发送器。
+AI Audience 是 AI-CRM Next 内的运行时 SQL 人群包能力，用于把运营自然语言需求转换成可刷新、可预览、可绑定自动化话术、可群发复用的标准目标集合。它不恢复旧 automation program / Runtime V2，也不新增私信群发发送器。
 
 ## 产品边界
 
@@ -9,7 +9,7 @@ AI Audience 是 AI-CRM Next 内的运行时 SQL 人群包能力，用于把运�
 PR 只用于平台能力变更，包括：
 
 - 新增或修正底层 `audience_read.*` 数据源 view。
-- 新增 AI Audience 平台 API、刷新、外推、安全或审计能力。
+- 新增 AI Audience 平台 API、刷新、内部自动化传递、安全或审计能力。
 - 修改 SQL 安全边界、鉴权、prefix gate、运行时存储结构。
 
 普通业务包上线不需要提交 repo 文件。Codex 可以根据自然语言和 schema catalog 生成 Markdown spec 或 simple SQL，但生成物是运行时输入，不提交到仓库。`docs/ai_audience/examples/` 里的文件只是模板，不代表每个业务包都要新增一个 `.md`。
@@ -20,7 +20,7 @@ PR 只用于平台能力变更，包括：
 
 1. Codex 读取 schema catalog，生成只返回 `external_userid` 的 simple SQL。
 2. 调 `POST /api/external/ai-audience/simple/preview` 做 dry-run。
-3. 调 `POST /api/external/ai-audience/simple/apply` 创建或更新 package/version/webhook/senders，默认 `paused`。
+3. 调 `POST /api/external/ai-audience/simple/apply` 创建或更新 package/version/senders，默认 `paused`。
 4. 页面确认后调 `POST /api/external/ai-audience/simple/{package_key}/activate` 启用。
 5. 不再使用时调 `POST /api/external/ai-audience/simple/{package_key}/archive` 归档。
 
@@ -53,8 +53,7 @@ Simple SQL 只需要返回 `external_userid`：
       "priority": 1,
       "status": "active"
     }
-  ],
-  "outbound_webhook_url": ""
+  ]
 }
 ```
 
@@ -64,7 +63,8 @@ Simple SQL 规则：
 - 禁止 `SELECT *`、DML/DDL、`public.*`、`pg_sleep` 等危险函数。
 - SQL 用到的业务参数必须在 `parameters` 声明。
 - 系统参数由平台自动注入：`package_key`、`package_id`、`refresh_started_at`、`last_watermark_at`、`lookback_seconds`。
-- 平台会把 simple SQL 编译成 AI Audience 标准 SQL，并继续复用现有 package/version/refresh/member/outbound 表。
+- 平台会把 simple SQL 编译成 AI Audience 标准 SQL，并继续复用现有 package/version/refresh/member/internal-effect 表。
+- Simple SQL Apply 不接受 `outbound_webhook_url`；自动化话术绑定通过管理端或高级 spec 的 `automation_binding.agent_code` 完成。
 
 Simple refresh mode 只允许：
 

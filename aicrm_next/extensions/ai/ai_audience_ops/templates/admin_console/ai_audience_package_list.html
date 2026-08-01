@@ -1,400 +1,186 @@
 {% extends "admin_console/base.html" %}
 
 {% block head_extra %}
-<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/group_chat_picker.css') }}?v=group-chat-direct-select-20260715">
-<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/material_picker.css') }}?v=group-chat-direct-select-20260715">
-<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/send_content_composer.css') }}?v=group-chat-selector-20260715">
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/group_chat_picker.css') }}?v=20260801">
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/material_picker.css') }}?v=20260801">
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/send_content_composer.css') }}?v=20260801">
 <style>
-  :root {
-    --ai-bg: #f6f8fb;
-    --ai-panel: #fff;
-    --ai-line: #e7ebf2;
-    --ai-line2: #eef2f7;
-    --ai-text: #101828;
-    --ai-muted: #667085;
-    --ai-muted2: #98a2b3;
-    --ai-blue: #2563eb;
-    --ai-blue2: #eff6ff;
-    --ai-danger: #d92d20;
-    --ai-danger2: #fff1f3;
-    --ai-green: #079455;
-    --ai-green2: #ecfdf3;
-    --ai-warn: #b54708;
-    --ai-warn2: #fffaeb;
-    --ai-shadow: 0 12px 32px rgba(16, 24, 40, .07);
-    --ai-r: 16px;
-  }
-
-  .admin-page-summary {
-    display: none;
-  }
-
-  .ai-audience-card {
-    background: var(--ai-panel);
-    border: 1px solid var(--ai-line);
-    border-radius: var(--ai-r);
-    box-shadow: var(--ai-shadow);
-  }
-
-  .ai-audience-card-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 20px 22px;
-    border-bottom: 1px solid var(--ai-line2);
-  }
-
-  .ai-audience-card-head h2 {
-    margin: 0;
-    color: var(--ai-text);
-    font-size: 20px;
-    font-weight: 850;
-  }
-
-  .ai-audience-count {
-    color: #475467;
-    font-weight: 750;
-    white-space: nowrap;
-  }
-  .ai-audience-notice { margin: 0 20px 16px; border: 1px solid #d6e4ff; border-radius: 10px; background: #f5f8ff; color: #1849a9; padding: 10px 12px; font-weight: 750; }
-  .ai-audience-notice.is-error { border-color: #fecdca; background: #fff1f3; color: #b42318; }
-
-  .ai-audience-table-wrap {
-    overflow-x: auto;
-  }
-
-  .ai-audience-table {
-    width: 100%;
-    min-width: 960px;
-    border-collapse: separate;
-    border-spacing: 0;
-  }
-
-  .ai-audience-table th,
-  .ai-audience-table td {
-    padding: 15px 18px;
-    border-bottom: 1px solid var(--ai-line2);
-    text-align: left;
-    vertical-align: middle;
-  }
-
-  .ai-audience-table th {
-    background: #fafbfc;
-    color: #8993a4;
-    font-size: 13px;
-    font-weight: 800;
-  }
-
-  .ai-audience-table tr:last-child td {
-    border-bottom: 0;
-  }
-
-  .ai-audience-name-cell {
-    display: inline-flex;
-    align-items: center;
-    max-width: 100%;
-    gap: 10px;
-    border: 0;
-    background: transparent;
-    color: #1849a9;
-    cursor: pointer;
-    font-weight: 850;
-    padding: 0;
-  }
-
-  .ai-audience-name-text {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .ai-audience-dot {
-    width: 10px;
-    height: 10px;
-    flex: 0 0 auto;
-    border-radius: 50%;
-    background: var(--ai-blue);
-    box-shadow: 0 0 0 4px var(--ai-blue2);
-  }
-
-  .ai-audience-dot.is-muted {
-    background: #98a2b3;
-    box-shadow: 0 0 0 4px #f2f4f7;
-  }
-
-  .ai-audience-pill {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 5px 10px;
-    border: 1px solid #dbeafe;
-    border-radius: 999px;
-    background: var(--ai-blue2);
-    color: #1d4ed8;
-    font-size: 12px;
-    font-weight: 800;
-    white-space: nowrap;
-  }
-
-  .ai-audience-pill.gray {
-    border-color: #eaecf0;
-    background: #f2f4f7;
-    color: #475467;
-  }
-
-  .ai-audience-btns {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 8px;
-  }
-
-  .ai-audience-btn {
-    min-height: 36px;
-    border: 1px solid #d0d5dd;
-    border-radius: 10px;
-    background: #fff;
-    color: #344054;
-    cursor: pointer;
-    font: inherit;
-    font-weight: 800;
-    padding: 8px 12px;
-  }
-
-  .ai-audience-btn:hover {
-    border-color: #98a2b3;
-  }
-
-  .ai-audience-btn.primary {
-    border-color: var(--ai-blue);
-    background: var(--ai-blue);
-    color: #fff;
-  }
-
-  .ai-audience-btn.soft {
-    border-color: #d6e4ff;
-    background: #f5f8ff;
-    color: #1849a9;
-  }
-
-  .ai-audience-btn.danger {
-    border-color: #fecdca;
-    background: var(--ai-danger2);
-    color: var(--ai-danger);
-  }
-
-  .ai-audience-empty {
-    padding: 42px 12px;
-    color: var(--ai-muted);
-    text-align: center;
-  }
-
-  .ai-audience-strong {
-    color: var(--ai-text);
-    font-weight: 850;
-  }
-
-  @media (max-width: 960px) {
-    .ai-audience-table th,
-    .ai-audience-table td {
-      padding: 12px;
-    }
-  }
+  :root { --aud-blue:#2563eb; --aud-line:#e4e7ec; --aud-muted:#667085; --aud-text:#101828; --aud-danger:#d92d20; }
+  .admin-page-summary { display:none; }
+  .aud-layout { display:grid; grid-template-columns:270px minmax(0,1fr); gap:16px; align-items:start; }
+  .aud-card { border:1px solid var(--aud-line); border-radius:16px; background:#fff; box-shadow:0 12px 30px rgba(16,24,40,.06); }
+  .aud-groups { position:sticky; top:18px; padding:18px; }
+  .aud-group-head,.aud-detail-head,.aud-actions,.aud-pagination { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .aud-group-head h2,.aud-detail-head h2 { margin:0; color:var(--aud-text); font-size:18px; font-weight:850; }
+  .aud-group-note { margin:6px 0 14px; color:var(--aud-muted); font-size:12px; }
+  .aud-group-list { display:grid; gap:8px; }
+  .aud-group-item { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; width:100%; min-height:46px; align-items:center; border:1px solid var(--aud-line); border-radius:10px; background:#fff; color:#344054; cursor:pointer; font:inherit; padding:10px 12px; text-align:left; }
+  .aud-group-item strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .aud-group-item span { color:#98a2b3; font-size:12px; }
+  .aud-group-item.active { border-color:#528bff; background:#eef4ff; color:#1849a9; }
+  .aud-detail-head { min-height:72px; padding:16px 20px; border-bottom:1px solid #eef2f6; }
+  .aud-detail-copy { display:grid; gap:4px; }
+  .aud-detail-copy p { margin:0; color:var(--aud-muted); font-size:12px; }
+  .aud-btn { min-height:36px; border:1px solid #d0d5dd; border-radius:9px; background:#fff; color:#344054; cursor:pointer; font:inherit; font-weight:800; padding:7px 12px; }
+  .aud-btn.primary { border-color:var(--aud-blue); background:var(--aud-blue); color:#fff; }
+  .aud-btn.soft { border-color:#d6e4ff; background:#f5f8ff; color:#1849a9; }
+  .aud-btn.danger { border-color:#fecdca; background:#fff1f3; color:var(--aud-danger); }
+  .aud-btn:disabled { cursor:not-allowed; opacity:.55; }
+  .aud-table-wrap { overflow:auto; }
+  .aud-table { width:100%; min-width:980px; border-collapse:collapse; }
+  .aud-table th,.aud-table td { padding:14px 16px; border-bottom:1px solid #eef2f6; text-align:left; vertical-align:middle; }
+  .aud-table th { background:#fafbfc; color:#8993a4; font-size:12px; font-weight:800; }
+  .aud-name { display:inline-flex; align-items:center; gap:9px; border:0; background:transparent; color:#1849a9; cursor:pointer; font:inherit; font-weight:850; padding:0; }
+  .aud-dot { width:9px; height:9px; border-radius:50%; background:var(--aud-blue); box-shadow:0 0 0 4px #eff6ff; }
+  .aud-dot.muted { background:#98a2b3; box-shadow:0 0 0 4px #f2f4f7; }
+  .aud-pill { display:inline-flex; border:1px solid #dbeafe; border-radius:999px; background:#eff6ff; color:#1d4ed8; font-size:12px; font-weight:800; padding:4px 9px; }
+  .aud-pill.gray { border-color:#eaecf0; background:#f2f4f7; color:#475467; }
+  .aud-strong { color:var(--aud-text); font-weight:850; }
+  .aud-empty { padding:44px 16px !important; color:var(--aud-muted); text-align:center !important; }
+  .aud-pagination { min-height:64px; padding:12px 18px; color:var(--aud-muted); font-size:13px; }
+  .aud-notice { margin:14px 18px 0; border:1px solid #d6e4ff; border-radius:9px; background:#f5f8ff; color:#1849a9; padding:9px 11px; font-weight:700; }
+  .aud-notice.error { border-color:#fecdca; background:#fff1f3; color:#b42318; }
+  .aud-modal { position:fixed; inset:0; z-index:1000; display:grid; place-items:center; background:rgba(16,24,40,.38); padding:20px; }
+  .aud-modal[hidden] { display:none; }
+  .aud-dialog { width:min(420px,100%); border-radius:16px; background:#fff; box-shadow:0 24px 70px rgba(16,24,40,.24); padding:22px; }
+  .aud-dialog h3 { margin:0 0 16px; font-size:18px; }
+  .aud-dialog input { width:100%; border:1px solid #d0d5dd; border-radius:9px; font:inherit; padding:11px 12px; }
+  .aud-dialog .aud-actions { margin-top:18px; justify-content:flex-end; }
+  @media(max-width:900px){ .aud-layout{grid-template-columns:1fr}.aud-groups{position:static}.aud-group-list{grid-template-columns:repeat(2,minmax(0,1fr))} }
 </style>
 {% endblock %}
 
 {% block content %}
-<section class="ai-audience-card" aria-label="AI 自动化运营人群包列表">
-  <div class="ai-audience-card-head">
-    <h2>人群包列表</h2>
-    <div class="ai-audience-count" id="aiAudienceTotal">加载中</div>
-  </div>
-  <div class="ai-audience-notice" id="aiAudienceNotice" role="status" aria-live="polite" aria-atomic="true" hidden></div>
-  <div class="ai-audience-table-wrap">
-    <table class="ai-audience-table">
-      <thead>
-        <tr>
-          <th style="width:34%">人群包名称</th>
-          <th style="width:10%">人数</th>
-          <th style="width:17%">最后一次刷新时间</th>
-          <th style="width:13%">刷新方式</th>
-          <th style="width:26%;text-align:right">操作</th>
-        </tr>
-      </thead>
-      <tbody id="aiAudienceRows">
-        <tr><td class="ai-audience-empty" colspan="5">加载中</td></tr>
-      </tbody>
-    </table>
+<section class="aud-layout" aria-label="AI 自动化运营人群包分组">
+  <aside class="aud-card aud-groups">
+    <div class="aud-group-head"><h2>人群包分组</h2><button class="aud-btn soft" id="createGroupBtn" type="button">新增</button></div>
+    <p class="aud-group-note" id="groupSummary">加载中</p>
+    <div class="aud-group-list" id="groupList"><div class="aud-empty">加载中</div></div>
+  </aside>
+  <div class="aud-card">
+    <header class="aud-detail-head">
+      <div class="aud-detail-copy"><h2 id="selectedGroupName">加载中</h2><p id="selectedGroupMeta">正在读取人群包</p></div>
+      <div class="aud-actions" id="groupActions" hidden>
+        <button class="aud-btn" id="renameGroupBtn" type="button">编辑组名</button>
+        <button class="aud-btn danger" id="deleteGroupBtn" type="button">删除组</button>
+      </div>
+    </header>
+    <div class="aud-notice" id="audNotice" role="status" aria-live="polite" hidden></div>
+    <div class="aud-table-wrap">
+      <table class="aud-table">
+        <thead><tr><th style="width:30%">人群包名称</th><th>人数</th><th>最后一次刷新时间</th><th>刷新方式</th><th style="text-align:right">操作</th></tr></thead>
+        <tbody id="audRows"><tr><td class="aud-empty" colspan="5">加载中</td></tr></tbody>
+      </table>
+    </div>
+    <footer class="aud-pagination">
+      <span id="pageMeta">第 1 / 1 页</span>
+      <div class="aud-actions"><button class="aud-btn" id="prevBtn" type="button">上一页</button><button class="aud-btn" id="nextBtn" type="button">下一页</button></div>
+    </footer>
   </div>
 </section>
+
+<div class="aud-modal" id="groupModal" hidden>
+  <form class="aud-dialog" id="groupForm">
+    <h3 id="groupModalTitle">新增分组</h3>
+    <label for="groupNameInput" class="aud-group-note">分组名称</label>
+    <input id="groupNameInput" maxlength="80" autocomplete="off" required>
+    <div class="aud-actions"><button class="aud-btn" id="cancelGroupBtn" type="button">取消</button><button class="aud-btn primary" type="submit">保存</button></div>
+  </form>
+</div>
 {% endblock %}
 
 {% block scripts_extra %}
-<script src="{{ url_for('static', filename='admin_console/group_chat_picker.js') }}?v=group-chat-direct-select-20260715"></script>
-<script src="{{ url_for('static', filename='admin_console/material_picker.js') }}?v=group-chat-direct-select-20260715"></script>
-<script src="{{ url_for('static', filename='admin_console/send_content_composer.js') }}?v=group-chat-selector-20260715"></script>
-<script src="{{ url_for('static', filename='admin_console/user_ops_batch_send_modal.js') }}?v=group-chat-selector-20260715"></script>
+<script src="{{ url_for('static', filename='admin_console/group_chat_picker.js') }}?v=20260801"></script>
+<script src="{{ url_for('static', filename='admin_console/material_picker.js') }}?v=20260801"></script>
+<script src="{{ url_for('static', filename='admin_console/send_content_composer.js') }}?v=20260801"></script>
+<script src="{{ url_for('static', filename='admin_console/user_ops_batch_send_modal.js') }}?v=20260801"></script>
 <script>
-  (() => {
-    const apiUrl = {{ ai_audience_packages_api_url | tojson }};
-    const previewUrl = "/api/admin/user-ops/batch-send/preview";
-    const executeUrl = "/api/admin/user-ops/batch-send/execute";
-    const totalEl = document.getElementById("aiAudienceTotal");
-    const rowsEl = document.getElementById("aiAudienceRows");
-    const noticeEl = document.getElementById("aiAudienceNotice");
+(() => {
+  const packagesUrl = {{ ai_audience_packages_api_url | tojson }};
+  const groupsUrl = {{ ai_audience_package_groups_api_url | tojson }};
+  const pageSize = 20;
+  const state = { groups:[], selectedId:"ungrouped", page:1, total:0, items:[], editing:null };
+  const el = (id) => document.getElementById(id);
+  const escapeHtml = (value) => String(value ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  const number = (value) => new Intl.NumberFormat("zh-CN").format(Number(value || 0));
+  const time = (value) => { if(!value) return "-"; const date=new Date(value); return Number.isNaN(date.getTime())?escapeHtml(value):new Intl.DateTimeFormat("zh-CN",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false}).format(date).replaceAll("/","-"); };
+  const request = (url, options={}) => window.AdminApi.requestJson(url,{cache:"no-store",...options});
+  const selectedGroup = () => state.groups.find((item) => String(item.id) === String(state.selectedId));
+  const notice = (message, error=false) => { el("audNotice").textContent=message||""; el("audNotice").hidden=!message; el("audNotice").classList.toggle("error",error); };
 
-    const notice = (message, isError = false) => {
-      noticeEl.textContent = String(message || "");
-      noticeEl.hidden = !message;
-      noticeEl.classList.toggle("is-error", isError);
-      noticeEl.setAttribute("role", isError ? "alert" : "status");
-      noticeEl.setAttribute("aria-live", isError ? "assertive" : "polite");
-    };
+  function renderGroups(){
+    el("groupSummary").textContent=`共 ${Math.max(0,state.groups.length-1)} 个自定义分组`;
+    el("groupList").innerHTML=state.groups.map((group)=>`<button class="aud-group-item${String(group.id)===String(state.selectedId)?" active":""}" type="button" data-group-id="${escapeHtml(group.id)}"><strong title="${escapeHtml(group.name)}">${escapeHtml(group.name)}</strong><span>${number(group.package_count)}</span></button>`).join("")||'<div class="aud-empty">暂无分组</div>';
+    el("groupList").querySelectorAll("[data-group-id]").forEach((button)=>button.addEventListener("click",()=>{ state.selectedId=button.dataset.groupId; state.page=1; renderGroups(); loadPackages(); }));
+    const group=selectedGroup();
+    el("selectedGroupName").textContent=group?group.name:"未分组";
+    el("groupActions").hidden=!group||Boolean(group.is_virtual);
+  }
 
-    const escapeHtml = (value) => String(value ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll("\"", "&quot;")
-      .replaceAll("'", "&#039;");
+  async function loadGroups(){
+    const payload=await request(`${groupsUrl}?_=${Date.now()}`);
+    state.groups=Array.isArray(payload.items)?payload.items:[];
+    if(!state.groups.some((item)=>String(item.id)===String(state.selectedId))) state.selectedId="ungrouped";
+    renderGroups();
+  }
 
-    const formatNumber = (value) => new Intl.NumberFormat("zh-CN").format(Number(value || 0));
+  function openGroupModal(group=null){ state.editing=group; el("groupModalTitle").textContent=group?"编辑分组":"新增分组"; el("groupNameInput").value=group?group.name:""; el("groupModal").hidden=false; requestAnimationFrame(()=>el("groupNameInput").focus()); }
+  function closeGroupModal(){ el("groupModal").hidden=true; state.editing=null; }
 
-    const formatTime = (value) => {
-      if (!value) return "-";
-      const date = new Date(value);
-      if (Number.isNaN(date.getTime())) return escapeHtml(value);
-      const parts = new Intl.DateTimeFormat("zh-CN", {
-        timeZone: "Asia/Shanghai",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false
-      }).formatToParts(date).reduce((acc, item) => {
-        acc[item.type] = item.value;
-        return acc;
-      }, {});
-      return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
-    };
+  async function saveGroup(){
+    const name=el("groupNameInput").value.trim();
+    if(!name) return;
+    const url=state.editing?`${groupsUrl}/${encodeURIComponent(state.editing.id)}`:groupsUrl;
+    const payload=await request(url,{method:state.editing?"PATCH":"POST",body:{name}});
+    if(!state.editing && payload.group) state.selectedId=String(payload.group.id);
+    closeGroupModal(); notice("分组已保存"); await loadGroups(); state.page=1; await loadPackages();
+  }
 
-    const fetchJson = async (url, options = {}) => {
-      return window.AdminApi.requestJson(url, { cache: "no-store", ...options });
-    };
+  async function deleteGroup(){
+    const group=selectedGroup(); if(!group||group.is_virtual) return;
+    if(!window.confirm(`确认删除分组「${group.name}」？非空分组不会被删除。`)) return;
+    await request(`${groupsUrl}/${encodeURIComponent(group.id)}`,{method:"DELETE"});
+    state.selectedId="ungrouped"; state.page=1; notice("分组已删除"); await loadGroups(); await loadPackages();
+  }
 
-    const packageDetailPath = (id) => `/admin/automation-conversion/packages/${encodeURIComponent(id)}`;
+  function renderPackages(){
+    const group=selectedGroup();
+    el("selectedGroupName").textContent=group?group.name:"未分组";
+    el("selectedGroupMeta").textContent=`${number(state.total)} 个人群包 · 每页 ${pageSize} 个`;
+    el("audRows").innerHTML=state.items.length?state.items.map((item,index)=>{
+      const active=item.status==="active"; const toggle=active?"pause":"activate";
+      return `<tr><td><button class="aud-name" type="button" data-action="edit" data-index="${index}"><span class="aud-dot${active?"":" muted"}"></span><span>${escapeHtml(item.name||"未命名人群包")}</span></button></td><td><span class="aud-strong">${number(item.member_count)}</span></td><td>${time(item.last_refreshed_at)}</td><td><span class="aud-pill${item.refresh_mode==="manual"?" gray":""}">${escapeHtml(item.refresh_mode_label||"手动")}</span></td><td><div class="aud-actions"><button class="aud-btn soft" data-action="edit" data-index="${index}">编辑</button><button class="aud-btn" data-action="copy" data-index="${index}">复制</button><button class="aud-btn" data-action="${toggle}" data-index="${index}">${active?"停止":"启用"}</button><button class="aud-btn danger" data-action="delete" data-index="${index}">删除</button><button class="aud-btn primary" data-action="send" data-index="${index}">群发</button></div></td></tr>`;
+    }).join(""):'<tr><td class="aud-empty" colspan="5">当前分组暂无人群包</td></tr>';
+    el("audRows").querySelectorAll("[data-action]").forEach((button)=>button.addEventListener("click",()=>runAction(button)));
+    const pages=Math.max(1,Math.ceil(state.total/pageSize)); el("pageMeta").textContent=`第 ${state.page} / ${pages} 页，共 ${number(state.total)} 个`; el("prevBtn").disabled=state.page<=1; el("nextBtn").disabled=state.page>=pages;
+  }
 
-    const runPackageAction = async (item, action) => {
-      const id = item.id;
-      if (action === "delete" && !window.confirm(`确认删除「${item.name || "未命名人群包"}」？`)) {
-        return;
-      }
-      const actionUrls = {
-        copy: `${apiUrl}/${encodeURIComponent(id)}/copy`,
-        pause: `${apiUrl}/${encodeURIComponent(id)}/pause`,
-        activate: `${apiUrl}/${encodeURIComponent(id)}/activate`,
-        delete: `${apiUrl}/${encodeURIComponent(id)}`
-      };
-      await fetchJson(actionUrls[action], { method: action === "delete" ? "DELETE" : "POST" });
-      await loadPackages();
-    };
+  async function loadPackages(){
+    el("audRows").innerHTML='<tr><td class="aud-empty" colspan="5">加载中</td></tr>';
+    const query=new URLSearchParams({group_id:String(state.selectedId),limit:String(pageSize),offset:String((state.page-1)*pageSize),_:String(Date.now())});
+    try{ const payload=await request(`${packagesUrl}?${query}`); state.items=payload.items||[]; state.total=Number(payload.total||0); notice(""); renderPackages(); }
+    catch(error){ const message=window.AdminApi.errorMessage(error,"加载失败"); notice(message,true); el("audRows").innerHTML=`<tr><td class="aud-empty" colspan="5">${escapeHtml(message)}</td></tr>`; }
+  }
 
-    const openBatchSend = (item) => {
-      if (!window.UserOpsBatchSendModal) {
-        notice("标准群发组件加载失败，请刷新页面后重试", true);
-        return;
-      }
-      window.UserOpsBatchSendModal.open({
-        targetSource: "ai_audience_package",
-        targetSourceId: item.id,
-        targetLabel: `AI 人群包：${item.name || "未命名人群包"}（当前 ${formatNumber(item.member_count)} 人）`,
-        previewUrl,
-        executeUrl,
-        operator: "admin"
-      });
-    };
+  async function runAction(button){
+    const item=state.items[Number(button.dataset.index)]; const action=button.dataset.action; if(!item) return;
+    if(action==="edit"){ window.location.href=`/admin/automation-conversion/packages/${encodeURIComponent(item.id)}`; return; }
+    if(action==="send"){ if(!window.UserOpsBatchSendModal){notice("标准群发组件加载失败",true);return;} window.UserOpsBatchSendModal.open({targetSource:"ai_audience_package",targetSourceId:item.id,targetLabel:`AI 人群包：${item.name}（当前 ${number(item.member_count)} 人）`,previewUrl:"/api/admin/user-ops/batch-send/preview",executeUrl:"/api/admin/user-ops/batch-send/execute",operator:"admin"}); return; }
+    if(action==="delete"&&!window.confirm(`确认删除「${item.name}」？`)) return;
+    button.disabled=true;
+    try{ const suffix={copy:"copy",pause:"pause",activate:"activate"}[action]; await request(suffix?`${packagesUrl}/${item.id}/${suffix}`:`${packagesUrl}/${item.id}`,{method:action==="delete"?"DELETE":"POST"}); notice("操作已完成"); await loadGroups(); await loadPackages(); }
+    catch(error){ notice(window.AdminApi.errorMessage(error,"操作失败"),true); }
+    finally{ button.disabled=false; }
+  }
 
-    const render = (payload) => {
-      const items = Array.isArray(payload.items) ? payload.items : [];
-      totalEl.textContent = `共 ${Number(payload.total ?? items.length)} 个`;
-      if (!items.length) {
-        rowsEl.innerHTML = '<tr><td class="ai-audience-empty" colspan="5">暂无人群包</td></tr>';
-        return;
-      }
-      rowsEl.innerHTML = items.map((item, index) => {
-        const name = item.name || "未命名人群包";
-        const isActive = item.status === "active";
-        const toggleLabel = isActive ? "停止" : "启用";
-        const toggleAction = isActive ? "pause" : "activate";
-        const dotClass = isActive ? "ai-audience-dot" : "ai-audience-dot is-muted";
-        const pillClass = item.refresh_mode === "manual" ? "ai-audience-pill gray" : "ai-audience-pill";
-        return `
-          <tr>
-            <td>
-              <button class="ai-audience-name-cell" type="button" data-action="edit" data-index="${index}">
-                <span class="${dotClass}" aria-hidden="true"></span>
-                <span class="ai-audience-name-text" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
-              </button>
-            </td>
-            <td><span class="ai-audience-strong">${formatNumber(item.member_count)}</span></td>
-            <td>${formatTime(item.last_refreshed_at)}</td>
-            <td><span class="${pillClass}">${escapeHtml(item.refresh_mode_label || "手动")}</span></td>
-            <td>
-              <div class="ai-audience-btns">
-                <button class="ai-audience-btn soft" type="button" data-action="edit" data-index="${index}">编辑</button>
-                <button class="ai-audience-btn" type="button" data-action="copy" data-index="${index}">复制</button>
-                <button class="ai-audience-btn" type="button" data-action="${toggleAction}" data-index="${index}">${toggleLabel}</button>
-                <button class="ai-audience-btn danger" type="button" data-action="delete" data-index="${index}">删除</button>
-                <button class="ai-audience-btn primary" type="button" data-action="send" data-index="${index}">群发</button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join("");
-
-      rowsEl.querySelectorAll("[data-action]").forEach((button) => {
-        button.addEventListener("click", async () => {
-          const item = items[Number(button.dataset.index)];
-          const action = button.dataset.action;
-          try {
-            if (action === "edit") {
-              window.location.href = packageDetailPath(item.id);
-              return;
-            }
-            if (action === "send") {
-              openBatchSend(item);
-              return;
-            }
-            button.disabled = true;
-            await runPackageAction(item, action);
-          } catch (error) {
-            notice(window.AdminApi.errorMessage(error, "操作失败"), true);
-          } finally {
-            button.disabled = false;
-          }
-        });
-      });
-    };
-
-    async function loadPackages() {
-      totalEl.textContent = "加载中";
-      rowsEl.innerHTML = '<tr><td class="ai-audience-empty" colspan="5">加载中</td></tr>';
-      try {
-        const requestUrl = `${apiUrl}${apiUrl.includes("?") ? "&" : "?"}_=${Date.now()}`;
-        const payload = await fetchJson(requestUrl);
-        notice("");
-        render(payload);
-      } catch (error) {
-        const message = window.AdminApi.errorMessage(error, "加载失败，请稍后重试");
-        totalEl.textContent = "加载失败";
-        rowsEl.innerHTML = `<tr><td class="ai-audience-empty" colspan="5">${escapeHtml(message)}</td></tr>`;
-        notice(message, true);
-      }
-    }
-
-    loadPackages();
-  })();
+  el("createGroupBtn").addEventListener("click",()=>openGroupModal());
+  el("renameGroupBtn").addEventListener("click",()=>openGroupModal(selectedGroup()));
+  el("deleteGroupBtn").addEventListener("click",()=>deleteGroup().catch((error)=>notice(window.AdminApi.errorMessage(error,"删除失败"),true)));
+  el("cancelGroupBtn").addEventListener("click",closeGroupModal);
+  el("groupForm").addEventListener("submit",(event)=>{event.preventDefault();saveGroup().catch((error)=>notice(window.AdminApi.errorMessage(error,"保存失败"),true));});
+  el("prevBtn").addEventListener("click",()=>{if(state.page>1){state.page-=1;loadPackages();}});
+  el("nextBtn").addEventListener("click",()=>{if(state.page*pageSize<state.total){state.page+=1;loadPackages();}});
+  Promise.resolve().then(loadGroups).then(loadPackages).catch((error)=>notice(window.AdminApi.errorMessage(error,"加载失败"),true));
+})();
 </script>
 {% endblock %}

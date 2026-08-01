@@ -2564,6 +2564,23 @@ tables:
       - tests/test_data_health_checks.py::test_schema_drift_guard_reports_manifest_and_live_schema_mismatches
     notes: Registered from the formal production public schema so schema_drift_guard can fail closed on future unmanaged table changes.
 
+  ai_audience_package_group:
+    domain: ai_audience_ops
+    lifecycle: config
+    write_owner: aicrm_next.extensions.ai.ai_audience_ops
+    read_owners:
+      - aicrm_next.extensions.ai.ai_audience_ops
+    replacement: none
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - AI automation operations group master-detail page
+    migration_source: 0162_ai_audience_groups_binding
+    pii_level: none
+    guard_tests:
+      - tests/test_data_table_lifecycle_guard.py
+      - tests/test_ai_audience_group_binding.py
+
   ai_audience_package:
     domain: ai_audience_ops
     lifecycle: canonical
@@ -2820,6 +2837,8 @@ tables:
     domain: automation_agents
     lifecycle: config
     write_owner: aicrm_next.extensions.ai.automation_agents
+    write_owners:
+      - aicrm_next.extensions.ai.ai_audience_ops.automation_binding
     read_owners:
       - historical schema drift guard
     replacement: none; active production schema table registered during schema drift closeout

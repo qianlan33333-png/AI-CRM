@@ -23,6 +23,7 @@ from aicrm_next.extensions.ai.ai_audience_ops.package_spec import (  # noqa: E40
 )
 from aicrm_next.extensions.ai.ai_audience_ops.repository import build_audience_repository  # noqa: E402
 from aicrm_next.extensions.ai.ai_audience_ops.service import AudiencePackageService  # noqa: E402
+from aicrm_next.extensions.ai.ai_audience_ops.automation_binding import AudienceAutomationBindingService  # noqa: E402
 
 
 def apply_spec(
@@ -106,7 +107,9 @@ def _apply_direct(spec: PackageSpec, report: dict[str, Any], *, package_key: str
     if not version.get("ok"):
         return {**report, "ok": False, "validation_errors": version.get("validation_errors", [])}
 
-    _apply_webhook_and_senders(service, int(report["package_id"]), spec)
+    binding = _apply_automation_binding_and_senders(service, int(report["package_id"]), spec, operator="package_spec_cli")
+    if not binding.get("ok"):
+        return {**report, "ok": False, "validation_errors": [str(binding.get("error") or "automation_binding_failed")]}
     preview = service.preview_admin_package(int(report["package_id"]), {"version_id": version_id, "sql_kind": _preview_sql_kind(spec), "limit": 5})
     report["preview_ok"] = bool(preview.get("ok"))
     if publish:
@@ -156,7 +159,7 @@ def _apply_via_admin_api(
 
     version_id = int(((version.get("version") or {}).get("id")) or 0)
     report["version_id"] = version_id or None
-    _apply_admin_webhook_and_senders(base, admin_session_cookie, int(report["package_id"]), spec)
+    _apply_admin_automation_binding_and_senders(base, admin_session_cookie, int(report["package_id"]), spec)
     preview = _http_json(
         "POST",
         f"{base}/api/admin/ai-audience/packages/{report['package_id']}/preview",
@@ -231,32 +234,41 @@ def _preview_sql_kind(spec: PackageSpec) -> str:
     return "incremental" if str(spec.incremental_sql or "").strip() else "snapshot"
 
 
-def _apply_webhook_and_senders(service: AudiencePackageService, package_id: int, spec: PackageSpec) -> None:
-    webhook = spec.frontmatter.get("webhook") if isinstance(spec.frontmatter.get("webhook"), dict) else {}
-    if webhook:
-        service.update_admin_webhook(
+def _apply_automation_binding_and_senders(
+    service: AudiencePackageService,
+    package_id: int,
+    spec: PackageSpec,
+    *,
+    operator: str,
+) -> dict[str, Any]:
+    automation_binding = spec.frontmatter.get("automation_binding") if isinstance(spec.frontmatter.get("automation_binding"), dict) else {}
+    if automation_binding:
+        result = AudienceAutomationBindingService().put_by_agent_code(
             package_id,
-            {
-                "outbound_enabled": bool(webhook.get("outbound_enabled")),
-                "outbound_webhook_url": str(webhook.get("outbound_webhook_url") or ""),
-            },
+            str(automation_binding.get("agent_code") or ""),
+            operator=operator,
         )
+        if not result.get("ok"):
+            return result
     senders = spec.frontmatter.get("senders") if isinstance(spec.frontmatter.get("senders"), list) else []
     if senders:
         service.replace_admin_senders(package_id, {"items": senders})
+    return {"ok": True}
 
 
-def _apply_admin_webhook_and_senders(base: str, cookie: str, package_id: int, spec: PackageSpec) -> None:
-    webhook = spec.frontmatter.get("webhook") if isinstance(spec.frontmatter.get("webhook"), dict) else {}
-    if webhook:
+def _apply_admin_automation_binding_and_senders(base: str, cookie: str, package_id: int, spec: PackageSpec) -> None:
+    automation_binding = spec.frontmatter.get("automation_binding") if isinstance(spec.frontmatter.get("automation_binding"), dict) else {}
+    if automation_binding:
+        agents = _http_json("GET", f"{base}/api/admin/automation-agents", cookie=cookie)
+        agent_code = str(automation_binding.get("agent_code") or "").strip()
+        automation = next((item for item in agents.get("items", []) if str(item.get("agent_code") or "").strip() == agent_code), None)
+        if not automation:
+            raise RuntimeError(f"automation_not_found:{agent_code}")
         _http_json(
-            "PATCH",
-            f"{base}/api/admin/ai-audience/packages/{package_id}/webhooks",
+            "PUT",
+            f"{base}/api/admin/ai-audience/packages/{package_id}/automation-binding",
             cookie=cookie,
-            payload={
-                "outbound_enabled": bool(webhook.get("outbound_enabled")),
-                "outbound_webhook_url": str(webhook.get("outbound_webhook_url") or ""),
-            },
+            payload={"automation_id": int(automation.get("id") or 0)},
         )
     senders = spec.frontmatter.get("senders") if isinstance(spec.frontmatter.get("senders"), list) else []
     if senders:

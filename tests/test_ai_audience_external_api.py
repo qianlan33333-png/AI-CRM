@@ -6,7 +6,6 @@ from pathlib import Path
 
 from sqlalchemy import text
 
-from aicrm_next.extensions.ai.ai_audience_ops.outbound_service import AudienceOutboundService
 from aicrm_next.extensions.ai.ai_audience_ops.refresh_service import AudienceRefreshService, _refresh_sql
 from aicrm_next.extensions.ai.ai_audience_ops.repository import build_audience_repository
 from aicrm_next.platform.shared.db_session import get_session_factory
@@ -322,7 +321,6 @@ def _simple_payload(package_key: str = "audience_simple_hyc") -> dict:
         """,
         "parameters": {"owner_userid": "HuangYouCan"},
         "senders": [{"sender_userid": "HuangYouCan", "priority": 1, "status": "active"}],
-        "outbound_webhook_url": "",
         "operator": "codex",
     }
 
@@ -584,33 +582,15 @@ def test_legacy_daily_simple_package_uses_canonical_compiled_sql(next_client, ne
     assert result["run"]["status"] == "succeeded"
 
 
-def test_external_simple_outbound_plan_keeps_external_userids_array_body(next_client, next_pg_schema, monkeypatch) -> None:
+def test_external_simple_rejects_retired_outbound_webhook_url(next_client, next_pg_schema, monkeypatch) -> None:
     del next_pg_schema
     _ready_env(monkeypatch, next_client)
     payload = _simple_payload("audience_outbound_simple")
     payload["outbound_webhook_url"] = "https://agent.example.test/audience"
-    with get_session_factory()() as session:
-        _insert_identities(session, "wm_simple_out_001", "wm_simple_out_002")
-        session.execute(
-            text(
-                """
-                INSERT INTO wecom_external_contact_identity_map (external_userid, follow_user_userid, status, updated_at)
-                VALUES
-                    ('wm_simple_out_001', 'HuangYouCan', 'active', CURRENT_TIMESTAMP),
-                    ('wm_simple_out_002', 'HuangYouCan', 'active', CURRENT_TIMESTAMP)
-                """
-            )
-        )
-        session.commit()
-    applied = next_client.post("/api/external/ai-audience/simple/apply", headers=_headers(), json=payload).json()
-    repo = build_audience_repository()
-    run = AudienceRefreshService(repository=repo).refresh_package(applied["package_id"], run_type="daily", package=repo.get_package(applied["package_id"]), row_limit=1000)["run"]
+    response = next_client.post("/api/external/ai-audience/simple/apply", headers=_headers(), json=payload)
 
-    outbound = AudienceOutboundService(repository=repo).plan_for_run(int(run["id"]))
-
-    assert outbound["ok"] is True
-    assert outbound["planned_count"] == 1
-    assert outbound["external_effect_jobs"][0]["payload_json"]["body"] == ["wm_simple_out_001", "wm_simple_out_002"]
+    assert response.status_code == 410
+    assert response.json()["error"] == "webhook_configuration_retired"
 
 
 def test_external_simple_prefix_gate_rejects_unsafe_keys(next_client, next_pg_schema, monkeypatch) -> None:

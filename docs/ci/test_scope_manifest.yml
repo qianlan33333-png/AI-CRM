@@ -928,6 +928,8 @@
       "name": "ai_audience_ops",
       "paths": [
         ".github/workflows/ai-audience-production-diagnostics.yml",
+        "aicrm_next/app/admin_console/static/admin_console/automation_capability_selector.css",
+        "aicrm_next/app/admin_console/static/admin_console/automation_capability_selector.js",
         "aicrm_next/extensions/ai/ai_audience_ops/**",
         "deploy/aicrm-ai-audience-daily-intent.service",
         "deploy/aicrm-ai-audience-daily-intent.timer",
@@ -936,12 +938,15 @@
         "migrations/versions/0128_ai_audience_refresh_intents.py",
         "migrations/versions/0149_ai_audience_hxc_projection_foundation.py",
         "migrations/versions/0160_ai_audience_wecom_contacts_view_repair.py",
+        "migrations/versions/0162_ai_audience_groups_automation_binding.py",
         "migrations/versions/0150_crm_identity_updated_cursor_index.py",
         "migrations/versions/0151_ai_audience_hxc_projection_view.py",
         "docs/ops/ai-audience-hxc-projection.md",
         "scripts/ops/refresh_ai_audience_hxc_projection.py",
         "scripts/ops/check_ai_audience_refresh_owner.py",
+        "scripts/precheck_ai_audience_automation_bindings.py",
         "scripts/run_ai_audience_scheduler.py",
+        "tests/frontend/automation_capability_selector.test.mjs",
         "tests/test_ai_audience_*.py",
         "tests/test_huangyoucan_unregistered_ai_audience.py"
       ],
@@ -954,7 +959,15 @@
         "tests/test_ai_audience_hxc_projection_cursor_index.py",
         "tests/test_ai_audience_hxc_projection_view.py",
         "tests/test_ai_audience_runtime_hotfixes.py",
-        "tests/test_ai_audience_external_api.py"
+        "tests/test_ai_audience_external_api.py",
+        "tests/test_ai_audience_group_binding.py",
+        "tests/test_automation_agent_internal_webhook_adapter.py",
+        "tests/test_automation_agents_admin_api.py",
+        "tests/test_automation_agents_admin_pages.py",
+        "tests/test_automation_agents_webhook_execution.py"
+      ],
+      "frontend_tests": [
+        "tests/frontend/automation_capability_selector.test.mjs"
       ],
       "needs_postgres": true,
       "needs_full_ci": true,

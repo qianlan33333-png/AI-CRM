@@ -165,11 +165,21 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     archive_ledger_reconciliation_source = archive_ledger_reconciliation.read_text(
         encoding="utf-8"
     )
+    audience_groups_binding = VERSIONS / "0162_ai_audience_groups_automation_binding.py"
+    audience_groups_binding_source = audience_groups_binding.read_text(encoding="utf-8")
 
-    assert heads == {"0161_reconcile_archive_job_run_ledger"}
+    assert heads == {"0162_ai_audience_groups_binding"}
+    assert revisions["0162_ai_audience_groups_binding"]["down_revision"] == (
+        "0161_reconcile_archive_job_run_ledger"
+    )
     assert revisions["0161_reconcile_archive_job_run_ledger"]["down_revision"] == (
         "0160_ai_audience_wecom_contacts_view_repair"
     )
+    assert "automation_binding_precheck_failed" in audience_groups_binding_source
+    assert "CREATE TABLE IF NOT EXISTS ai_audience_package_group" in audience_groups_binding_source
+    assert "uq_ai_audience_package_group_name_ci" in audience_groups_binding_source
+    assert "ON DELETE RESTRICT" in audience_groups_binding_source
+    assert "uq_automation_agent_runtime_bound_package" in audience_groups_binding_source
     assert revisions["0160_ai_audience_wecom_contacts_view_repair"]["down_revision"] == (
         "0159_ai_automation_lane_rollout_audit"
     )

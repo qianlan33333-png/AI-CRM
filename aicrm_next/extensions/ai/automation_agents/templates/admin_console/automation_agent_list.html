@@ -434,7 +434,6 @@
             agent_name: fixedScript ? "新建固定话术" : "新建 Agent",
             agent_code: fixedScript ? `fixed_script_${suffix}` : `new_agent_${suffix}`,
             automation_type: fixedScript ? "fixed_script" : "agent",
-            bound_package_key: "new_package_key",
             role_prompt: fixedScript ? "" : "你是一个克制、自然、面向私域转化的跟进 Agent。",
             task_prompt: fixedScript ? "" : `请根据{{ '{{问卷信息}}' }}，生成一条适合在用户填完问卷后直接发送的跟进话术。
 
