@@ -1073,7 +1073,7 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/platform/admin_config/application.py",
       "key": "AICRM_NEXT_ALIPAY_MODE",
-      "line": 968
+      "line": 969
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -1427,7 +1427,7 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/platform/admin_config/application.py",
       "key": "AICRM_NEXT_WECHAT_PAY_MODE",
-      "line": 962
+      "line": 963
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -8570,6 +8570,36 @@
       "name": "api.admin_config_api_client_detail",
       "operation_id": "api.admin_config_api_client_detail:GET:/admin/config/api-clients/{client_id}",
       "path": "/admin/config/api-clients/{client_id}",
+      "route_group": "admin_config"
+    },
+    {
+      "capability_owner": "admin_config",
+      "contract": {
+        "parameters": [],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.platform.admin_config.api.admin_config_api_key",
+      "include_in_schema": true,
+      "kind": "page",
+      "logical_capability_id": "core.platform",
+      "methods": [
+        "GET"
+      ],
+      "name": "api.admin_config_api_key",
+      "operation_id": "api.admin_config_api_key:GET:/admin/config/api-key",
+      "path": "/admin/config/api-key",
       "route_group": "admin_config"
     },
     {
@@ -19306,6 +19336,118 @@
       "name": "api.admin_config_api_client_rotate_resource",
       "operation_id": "api.admin_config_api_client_rotate_resource:POST:/api/admin/config/api-clients/{client_id}/rotate-secret",
       "path": "/api/admin/config/api-clients/{client_id}/rotate-secret",
+      "route_group": "admin_config"
+    },
+    {
+      "capability_owner": "admin_config",
+      "contract": {
+        "parameters": [],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.platform.admin_config.direct_api_key_api.api_admin_config_api_key_resource",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "core.platform",
+      "methods": [
+        "GET"
+      ],
+      "name": "api.admin_config_api_key_resource",
+      "operation_id": "api.admin_config_api_key_resource:GET:/api/admin/config/api-key",
+      "path": "/api/admin/config/api-key",
+      "route_group": "admin_config"
+    },
+    {
+      "capability_owner": "admin_config",
+      "contract": {
+        "parameters": [],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.platform.admin_config.direct_api_key_api.api_admin_config_api_key_enabled_resource",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "core.platform",
+      "methods": [
+        "PUT"
+      ],
+      "name": "api.admin_config_api_key_enabled_resource",
+      "operation_id": "api.admin_config_api_key_enabled_resource:PUT:/api/admin/config/api-key/enabled",
+      "path": "/api/admin/config/api-key/enabled",
+      "route_group": "admin_config"
+    },
+    {
+      "capability_owner": "admin_config",
+      "contract": {
+        "parameters": [],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.platform.admin_config.direct_api_key_api.api_admin_config_api_key_generate_resource",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "core.platform",
+      "methods": [
+        "POST"
+      ],
+      "name": "api.admin_config_api_key_generate_resource",
+      "operation_id": "api.admin_config_api_key_generate_resource:POST:/api/admin/config/api-key/generate",
+      "path": "/api/admin/config/api-key/generate",
+      "route_group": "admin_config"
+    },
+    {
+      "capability_owner": "admin_config",
+      "contract": {
+        "parameters": [],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.platform.admin_config.direct_api_key_api.api_admin_config_api_key_rotate_resource",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "core.platform",
+      "methods": [
+        "POST"
+      ],
+      "name": "api.admin_config_api_key_rotate_resource",
+      "operation_id": "api.admin_config_api_key_rotate_resource:POST:/api/admin/config/api-key/rotate",
+      "path": "/api/admin/config/api-key/rotate",
       "route_group": "admin_config"
     },
     {

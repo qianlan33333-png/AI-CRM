@@ -11,39 +11,18 @@
 
 ## 鉴权
 
-复用现有外部只读接口的 `external_agent` 客户端。调用方先通过 TLS `POST /oauth/token` 使用以下参数换取短期 JWT：
-
-| 参数 | 值 |
-|---|---|
-| `grant_type` | `client_credentials` |
-| `audience` | `external_integration` |
-| `scope` | `read` |
-| 客户端 capability | `external_read` |
-
-换 Token 示例：
+复用系统唯一的 CRM 开放 API Key。超级管理员在「系统配置 → CRM 开放 API Key」（`/admin/config/api-key`）生成后，调用方只需要保存这一个值：
 
 ```bash
-export AICRM_CLIENT_ID='<external_agent client id>'
-export AICRM_TOKEN_URL='https://www.youcangogogo.com/oauth/token'
-
-TOKEN_RESPONSE="$(
-  curl --fail-with-body --silent --show-error \
-    --user "$AICRM_CLIENT_ID" \
-    -H 'Content-Type: application/x-www-form-urlencoded' \
-    --data-urlencode 'grant_type=client_credentials' \
-    --data-urlencode 'audience=external_integration' \
-    --data-urlencode 'scope=read' \
-    "$AICRM_TOKEN_URL"
-)"
-export AICRM_ACCESS_TOKEN="$(jq -er '.access_token' <<<"$TOKEN_RESPONSE")"
+export CRM_API_KEY='<后台仅展示一次的唯一 API Key>'
 ```
 
-`curl --user "$AICRM_CLIENT_ID"` 会交互式要求输入客户端 secret，避免 secret 出现在命令行参数中。完整的客户端注册、轮换和失效规则见 [auth_client_credentials.md](auth_client_credentials.md)。
+该 Key 固定只有 `read` scope 与 `external_read` capability。完整的生成、重新生成、停用和失效规则见 [auth_client_credentials.md](auth_client_credentials.md)。
 
 业务请求统一携带：
 
 ```http
-Authorization: Bearer <short-lived-client-credentials-jwt>
+Authorization: Bearer <CRM_API_KEY>
 ```
 
 ## 查询逻辑点击
@@ -73,7 +52,7 @@ GET https://www.youcangogogo.com/api/external/radar-clicks
 
 ```bash
 curl --fail-with-body --silent --show-error \
-  -H "Authorization: Bearer $AICRM_ACCESS_TOKEN" \
+  -H "Authorization: Bearer $CRM_API_KEY" \
   'https://www.youcangogogo.com/api/external/radar-clicks?mobile=13800138000&clicked_from=1784044800&limit=100'
 ```
 
@@ -138,7 +117,7 @@ GET https://www.youcangogogo.com/api/external/radar-links
 
 ```bash
 curl --fail-with-body --silent --show-error \
-  -H "Authorization: Bearer $AICRM_ACCESS_TOKEN" \
+  -H "Authorization: Bearer $CRM_API_KEY" \
   'https://www.youcangogogo.com/api/external/radar-links?limit=100'
 ```
 
@@ -169,7 +148,7 @@ curl --fail-with-body --silent --show-error \
 |---|---:|---|
 | 未携带 Token | `401` | `error=access_token_required` |
 | Token 无效或签名错误 | `401` | `error=invalid_access_token` |
-| Token 已过期 | `401` | `error=access_token_expired` |
+| Key 已停用 | `401` | `error=client_disabled` |
 | audience、scope 或 capability 不满足 | `403` | `error=invalid_target` 或 `scope_or_capability_required` |
 | 参数、时间戳或 cursor 非法 | `400` | `error_code=invalid_request` |
 | 生产读模型不可用 | `503` | `error_code=production_unavailable` |

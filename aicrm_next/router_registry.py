@@ -25,6 +25,7 @@ from .extensions.ai.ai_audience_ops.api import router as ai_audience_ops_router
 from .extensions.ai.ai_audience_ops.external_api import router as ai_audience_external_api_router
 from .platform.admin_auth.api import router as admin_auth_router
 from .platform.admin_config.api import router as admin_config_router
+from .platform.admin_config.direct_api_key_api import router as direct_api_key_router
 from .platform.admin_jobs.routes import router as admin_jobs_router
 from .app.admin_console.routes import router as admin_shell_router
 from .extensions.ai.automation_agents.admin_api import router as automation_agents_admin_router
@@ -116,6 +117,7 @@ ROUTER_SPECS: tuple[RouterSpec, ...] = (
     RouterSpec("operation_cycles", "operation_cycles_admin_pages", operation_cycles_admin_pages_router, "operation cycle read-only admin pages"),
     RouterSpec("operation_cycles", "operation_cycles", operation_cycles_router, "operation cycle report and admin read APIs"),
     RouterSpec("admin_config", "admin_config", admin_config_router, "admin config pages and APIs"),
+    RouterSpec("admin_config", "admin_config", direct_api_key_router, "single CRM external read API key management"),
     RouterSpec("class_user_management", "class_user_management", class_user_management_router),
     RouterSpec("platform_foundation", "common_operation_members", common_operation_members_router),
     RouterSpec("channel_entry", "channel_entry", channel_entry_router),

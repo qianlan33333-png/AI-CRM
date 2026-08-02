@@ -105,6 +105,22 @@ class InMemoryAuthSessionRepository:
         self._append_api_client_audit(audit)
         return updated.auth_version
 
+    def rotate_api_client_secret_and_enable(
+        self,
+        client_id: str,
+        secret_hash: str,
+        *,
+        audit: AdminAuditRecord | None = None,
+    ) -> int | None:
+        current = self.api_clients.get(client_id)
+        if current is None:
+            return None
+        self._check_api_client_audit(audit)
+        updated = replace(current, secret_hash=secret_hash, enabled=True, auth_version=current.auth_version + 1)
+        self.api_clients[client_id] = updated
+        self._append_api_client_audit(audit)
+        return updated.auth_version
+
     def set_api_client_enabled(
         self,
         client_id: str,

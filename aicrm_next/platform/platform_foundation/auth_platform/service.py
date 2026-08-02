@@ -13,8 +13,9 @@ import jwt
 from aicrm_next.platform.platform_foundation.admin_audit import AdminAuditRecord
 
 from .context import AuthContext, PrincipalType
-from .credentials import hash_client_secret, issue_client_secret, verify_client_secret
+from .credentials import CLIENT_SECRET_PREFIX, hash_client_secret, issue_client_secret, verify_client_secret
 from .models import ApiClientRecord, IssuedAccessToken
+from .profiles import DIRECT_EXTERNAL_API_KEY_CLIENT_ID
 
 
 DEFAULT_TOKEN_TTL_SECONDS = 30 * 60
@@ -32,6 +33,14 @@ class ApiClientRepository(Protocol):
     def rotate_api_client_secret(self, client_id: str, secret_hash: str) -> int | None: ...
 
     def rotate_api_client_secret_and_disable(
+        self,
+        client_id: str,
+        secret_hash: str,
+        *,
+        audit: AdminAuditRecord | None = None,
+    ) -> int | None: ...
+
+    def rotate_api_client_secret_and_enable(
         self,
         client_id: str,
         secret_hash: str,
@@ -197,6 +206,30 @@ class ApiClientService:
             client_secret=secret,
         )
 
+    def rotate_secret_and_enable(
+        self,
+        client_id: str,
+        *,
+        audit: AdminAuditRecord | None = None,
+    ) -> IssuedClientSecret:
+        current = self.repository.api_client(_required(client_id, "client_id"))
+        if current is None:
+            raise ValueError("client_not_found")
+        secret = issue_client_secret()
+        secret_hash = hash_client_secret(secret)
+        auth_version = (
+            self.repository.rotate_api_client_secret_and_enable(current.client_id, secret_hash)
+            if audit is None
+            else self.repository.rotate_api_client_secret_and_enable(current.client_id, secret_hash, audit=audit)
+        )
+        if auth_version is None:
+            raise ValueError("client_not_found")
+        self.invalidate(current.client_id)
+        return IssuedClientSecret(
+            client=replace(current, secret_hash="", auth_version=auth_version, enabled=True),
+            client_secret=secret,
+        )
+
     def set_enabled(
         self,
         client_id: str,
@@ -273,10 +306,19 @@ class ApiClientService:
         client_purpose: str = "",
         now: datetime | None = None,
     ) -> AuthContext:
+        raw_token = str(token or "").strip()
+        if raw_token.startswith(CLIENT_SECRET_PREFIX):
+            return self._verify_direct_external_api_key(
+                raw_token,
+                audience=audience,
+                source_ip=source_ip,
+                request_id=request_id,
+                client_purpose=client_purpose,
+            )
         current = _utc(now or datetime.now(timezone.utc))
         try:
             claims = jwt.decode(
-                str(token or ""),
+                raw_token,
                 self.config.signing_key,
                 algorithms=[self.config.algorithm],
                 issuer=self.config.issuer.rstrip("/"),
@@ -336,6 +378,39 @@ class ApiClientService:
             owner_scope=client.owner_scope,
             auth_version=client.auth_version,
             request_id=str(request_id or claims.get("jti") or ""),
+        )
+
+    def _verify_direct_external_api_key(
+        self,
+        api_key: str,
+        *,
+        audience: str,
+        source_ip: str,
+        request_id: str,
+        client_purpose: str,
+    ) -> AuthContext:
+        required_audience = _required(audience, "audience")
+        client = self.repository.api_client(DIRECT_EXTERNAL_API_KEY_CLIENT_ID)
+        if client is None or not verify_client_secret(api_key, client.secret_hash):
+            raise AuthError("invalid_access_token")
+        if not client.enabled:
+            raise AuthError("client_disabled")
+        if required_audience not in client.audiences:
+            raise AuthError("invalid_target", status_code=403)
+        if client_purpose and client.purpose != str(client_purpose).strip():
+            raise AuthError("client_purpose_forbidden", status_code=403)
+        if not _ip_allowed(source_ip, client.allowed_cidrs):
+            raise AuthError("client_ip_not_allowed", status_code=403)
+        return AuthContext(
+            principal_type=client.principal_type,
+            principal_id=client.principal_id,
+            client_id=client.client_id,
+            corp_id=client.corp_id,
+            scopes=client.scopes,
+            capabilities=client.capabilities,
+            owner_scope=client.owner_scope,
+            auth_version=client.auth_version,
+            request_id=str(request_id or ""),
         )
 
     def invalidate(self, client_id: str) -> None:

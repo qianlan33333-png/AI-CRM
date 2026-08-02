@@ -58,6 +58,11 @@ def test_postgres_api_client_round_trip_rotation_and_disable(next_pg_schema) -> 
     assert repository.rotate_api_client_secret(client_id, hash_client_secret(issue_client_secret())) == 2
     assert repository.set_api_client_enabled(client_id, False) == 3
     assert repository.api_client(client_id).enabled is False
+    assert repository.rotate_api_client_secret_and_enable(
+        client_id,
+        hash_client_secret(issue_client_secret()),
+    ) == 4
+    assert repository.api_client(client_id).enabled is True
 
 
 def test_postgres_api_client_admin_audit_is_atomic_and_metadata_is_secret_free(next_pg_schema) -> None:

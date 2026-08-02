@@ -1,0 +1,92 @@
+{% extends "admin_console/config_base.html" %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/api_client_config.css') }}?v=direct-api-key-v1">
+{% endblock %}
+
+{% block config_content %}
+<section
+  class="api-client-page"
+  data-direct-api-key-page
+  data-configured="{{ 'true' if api_key_status.configured else 'false' }}"
+  data-enabled="{{ 'true' if api_key_status.enabled else 'false' }}"
+  data-can-manage="{{ 'true' if can_manage_api_clients else 'false' }}"
+>
+  <div class="admin-alert admin-alert--error" data-api-key-alert hidden></div>
+
+  <section class="admin-card-grid">
+    <article class="admin-card admin-stat-card admin-stat-card--nested">
+      <div class="admin-card-label">当前状态</div>
+      <div class="admin-card-value" data-status-label>{{ api_key_status.status_label }}</div>
+      <p class="admin-card-copy">系统内只保留一个 CRM 开放 API Key。</p>
+    </article>
+    <article class="admin-card admin-stat-card admin-stat-card--nested">
+      <div class="admin-card-label">权限</div>
+      <div class="admin-card-value">只读</div>
+      <p class="admin-card-copy">可查询开放接口，不允许调用写操作。</p>
+    </article>
+    <article class="admin-card admin-stat-card admin-stat-card--nested">
+      <div class="admin-card-label">版本</div>
+      <div class="admin-card-value">v<span data-auth-version>{{ api_key_status.auth_version }}</span></div>
+      <p class="admin-card-copy">轮换后旧 Key 立即失效。</p>
+    </article>
+  </section>
+
+  <section class="admin-card">
+    <div class="admin-card-head">
+      <div>
+        <h2>调用方式</h2>
+        <p>把唯一 Key 直接放在 Bearer Header 中，不需要 Client ID，也不需要请求 <code>/oauth/token</code>。</p>
+      </div>
+    </div>
+    <dl class="api-client-values">
+      <div><dt>Base URL</dt><dd><code>{{ api_key_status.base_url }}</code></dd></div>
+      <div><dt>开放接口地址</dt><dd><code>{{ api_key_status.resource_url }}</code></dd></div>
+      <div><dt>请求 Header</dt><dd><code>{{ api_key_status.authorization_header }}</code></dd></div>
+      <div><dt>最近轮换</dt><dd>{{ api_key_status.last_rotated_at or "尚未轮换" }}</dd></div>
+    </dl>
+  </section>
+
+  {% if can_manage_api_clients %}
+  <section class="admin-card">
+    <div class="admin-card-head">
+      <div>
+        <h2>Key 管理</h2>
+        <p>Key 只在生成或轮换成功后展示一次。页面刷新后无法找回，只能重新轮换。</p>
+      </div>
+    </div>
+    <div class="api-client-actions">
+      {% if not api_key_status.configured %}
+      <button class="admin-button admin-button--primary" type="button" data-generate-api-key>生成并启用 API Key</button>
+      {% else %}
+      <button class="admin-button admin-button--primary" type="button" data-rotate-api-key>重新生成 API Key</button>
+      {% if api_key_status.enabled %}
+      <button class="admin-button admin-button--danger" type="button" data-disable-api-key>停用当前 Key</button>
+      {% endif %}
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="admin-card api-client-secret-card" data-api-key-secret-panel hidden>
+    <div class="admin-card-head">
+      <div>
+        <h2>请立即复制 API Key</h2>
+        <p>这是唯一一次展示机会。离开或刷新本页后无法恢复。</p>
+      </div>
+    </div>
+    <div class="api-client-secret-body">
+      <label>
+        <span>CRM_API_KEY</span>
+        <input type="password" readonly autocomplete="off" spellcheck="false" data-api-key-value>
+      </label>
+      <button class="admin-button admin-button--primary" type="button" data-copy-api-key>复制 Key</button>
+      <button class="admin-button admin-button--ghost" type="button" data-toggle-api-key>显示 Key</button>
+    </div>
+  </section>
+</section>
+{% endblock %}
+
+{% block scripts_extra %}
+<script defer src="{{ url_for('static', filename='admin_console/direct_api_key_config.js') }}?v=direct-api-key-v1"></script>
+{% endblock %}

@@ -205,6 +205,37 @@ class PostgresAuthRepository:
                 _append_admin_audit(session, audit)
         return int(row["auth_version"]) if row else None
 
+    def rotate_api_client_secret_and_enable(
+        self,
+        client_id: str,
+        secret_hash: str,
+        *,
+        audit: AdminAuditRecord | None = None,
+    ) -> int | None:
+        with self._session_factory.begin() as session:
+            row = (
+                session.execute(
+                    text(
+                        """
+                        UPDATE auth_api_clients
+                        SET secret_hash = :secret_hash,
+                            enabled = TRUE,
+                            auth_version = auth_version + 1,
+                            last_rotated_at = CURRENT_TIMESTAMP,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE client_id = :client_id
+                        RETURNING auth_version
+                        """
+                    ),
+                    {"client_id": str(client_id or "").strip(), "secret_hash": secret_hash},
+                )
+                .mappings()
+                .first()
+            )
+            if row:
+                _append_admin_audit(session, audit)
+        return int(row["auth_version"]) if row else None
+
     def set_api_client_enabled(
         self,
         client_id: str,

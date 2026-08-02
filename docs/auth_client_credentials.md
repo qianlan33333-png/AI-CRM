@@ -1,11 +1,12 @@
 # AI-CRM 统一认证与切换手册
 
-本文是 single-tenant 私有化部署的现行认证契约。旧共享 Bearer、URL Token、业务路由内凭据比较和 fallback 均已停用，不得继续配置或调用。
+本文是 single-tenant 私有化部署的现行认证契约。CRM 开放只读接口支持后台生成的唯一 API Key；旧的运行环境共享 Bearer、URL Token、业务路由内凭据比较和 fallback 仍保持停用。
 
 ## 身份类型
 
 - 人员：只通过企微 OAuth 登录，服务端签发不透明 Session Cookie；RBAC、`session_version`、CSRF 和敏感操作 action grant 继续生效。
-- API Client / 独立 Worker：使用独立 `client_id/client_secret`，通过 TLS `POST /oauth/token` 获取默认 30 分钟、最长 60 分钟的 JWT；不签发 refresh token。
+- CRM 开放只读 API：使用后台生成的唯一 `CRM_API_KEY`，直接通过 `Authorization: Bearer` 调用，不需要 Client ID 或 `/oauth/token`。
+- API Client / 独立 Worker / MCP：继续使用独立 `client_id/client_secret`，通过 TLS `POST /oauth/token` 获取默认 30 分钟、最长 60 分钟的 JWT；不签发 refresh token。
 - 同进程 Worker：直接传入受控 `AuthContext` 调用 application service，不经 HTTP 给自己换 Token。
 - AI-CRM 自有 Webhook：使用 raw-body HMAC；供应商 OAuth、支付和 callback 继续按供应商官方协议处理。
 
@@ -24,9 +25,31 @@
 
 每个 purpose 使用独立客户端和 secret reference。`campaign_agent` 不具备审批、启动、直接发送、退款、密钥管理或 PII 导出能力。
 
-## 后台自助配置（首选）
+## 唯一 CRM 开放 API Key（最简只读方式）
 
-外部 API 与 MCP 调用方优先由超级管理员在「系统配置 → API 接入与 Token」中维护，无需登录服务器：
+超级管理员进入「系统配置 → CRM 开放 API Key」（`/admin/config/api-key`），点击“生成并启用 API Key”即可。系统内只有一个该类型 Key：
+
+- Key 只在生成或重新生成成功后显示一次，服务端只保存 scrypt 哈希。
+- 生成后立即启用；重新生成会提升 `auth_version`，旧 Key 在下一次请求立即失效。
+- 停用后当前 Key 立即失效；停用状态不能直接恢复，必须重新生成一个新 Key。
+- 固定权限为 `read` / `external_read`，只允许 CRM 开放只读接口，不允许写操作、MCP、内部 Worker、企微、支付或供应商密钥访问。
+- `config_admin` 只能查看配置状态；生成、重新生成和停用仅允许 `super_admin`。
+
+调用时只需要这一个值：
+
+```bash
+export CRM_API_KEY='<后台仅展示一次的值>'
+
+curl --fail-with-body --silent --show-error \
+  -H "Authorization: Bearer $CRM_API_KEY" \
+  'https://www.youcangogogo.com/api/external/orders?limit=20'
+```
+
+不得将 Key 放入 URL、Git、普通配置、日志或工单。页面刷新后不能查看旧值；遗失时直接重新生成。
+
+## API Client 与 MCP 后台自助配置（高级兼容方式）
+
+需要短期 JWT、CIDR 白名单、独立客户端身份或 MCP 的调用方，可继续由超级管理员在「系统配置 → API 接入与 Token」中维护，无需登录服务器：
 
 1. 打开 `/admin/config/api-clients`，选择“新建客户端”。
 2. 选择固定类型 `External API` 或 `MCP`，填写显示名称、Client ID、15/30/60 分钟有效期和可选 CIDR 白名单。

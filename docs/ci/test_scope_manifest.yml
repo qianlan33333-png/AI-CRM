@@ -1731,6 +1731,7 @@
         "aicrm_next/app/admin_console/static/admin_console/admin_download.js",
         "aicrm_next/app/admin_console/static/admin_console/api_client_config.css",
         "aicrm_next/app/admin_console/static/admin_console/api_client_config.js",
+        "aicrm_next/app/admin_console/static/admin_console/direct_api_key_config.js",
         "aicrm_next/app/admin_console/static/admin_console/config_center.css",
         "aicrm_next/app/admin_console/static/admin_console/config_center.js",
         "aicrm_next/app/admin_console/static/admin_console/operation_member_picker.js",
@@ -1740,7 +1741,9 @@
         "aicrm_next/app/admin_console/templates/admin_console/setup_wizard.html",
         "tests/test_admin_config_next.py",
         "tests/test_admin_api_clients.py",
+        "tests/test_admin_direct_api_key.py",
         "tests/frontend/api_client_config.test.mjs",
+        "tests/frontend/direct_api_key_config.test.mjs",
         "tests/test_support_admin_pages_native.py",
         "tests/test_push_capabilities_config.py",
         "tests/test_operation_member_picker_frontend.py",
@@ -1753,6 +1756,7 @@
       "python_tests": [
         "tests/test_admin_download_frontend_contract.py",
         "tests/test_admin_api_clients.py",
+        "tests/test_admin_direct_api_key.py",
         "tests/test_admin_config_next.py",
         "tests/test_push_capabilities_config.py",
         "tests/test_operation_member_picker_frontend.py",
@@ -1805,7 +1809,8 @@
         "tests/frontend/service_period_member_grid.test.mjs",
         "tests/frontend/service_period_member_grid_sharing.test.mjs",
         "tests/frontend/send_content_readonly_detail.test.mjs",
-        "tests/frontend/api_client_config.test.mjs"
+        "tests/frontend/api_client_config.test.mjs",
+        "tests/frontend/direct_api_key_config.test.mjs"
       ],
       "needs_postgres": false,
       "architecture_gate": "none"

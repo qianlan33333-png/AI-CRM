@@ -12,7 +12,10 @@ from aicrm_next.platform.platform_foundation.admin_audit import AdminAuditRecord
 from aicrm_next.platform.platform_foundation.auth_platform.context import PrincipalType
 from aicrm_next.platform.platform_foundation.auth_platform.credentials import verify_client_secret
 from aicrm_next.platform.platform_foundation.auth_platform.models import ApiClientRecord
-from aicrm_next.platform.platform_foundation.auth_platform.profiles import API_CLIENT_PROFILES
+from aicrm_next.platform.platform_foundation.auth_platform.profiles import (
+    API_CLIENT_PROFILES,
+    DIRECT_EXTERNAL_API_KEY_CLIENT_ID,
+)
 from aicrm_next.platform.platform_foundation.auth_platform.service import ApiClientService, AuthServiceConfig
 
 
@@ -52,7 +55,10 @@ API_CLIENT_TEMPLATES = {
 }
 
 SYSTEM_MANAGED_CLIENT_IDS = frozenset(
-    profile.client_id for profile in API_CLIENT_PROFILES if profile.purpose in {"external_agent", "mcp"}
+    {
+        *(profile.client_id for profile in API_CLIENT_PROFILES if profile.purpose in {"external_agent", "mcp"}),
+        DIRECT_EXTERNAL_API_KEY_CLIENT_ID,
+    }
 )
 
 
@@ -298,9 +304,17 @@ class ApiClientAdminService:
     def _metadata_rows(self) -> list[dict[str, Any]]:
         method = getattr(self.repository, "list_api_client_metadata", None)
         if callable(method):
-            return [dict(row) for row in method()]
+            return [
+                dict(row)
+                for row in method()
+                if str(row.get("client_id") or "") != DIRECT_EXTERNAL_API_KEY_CLIENT_ID
+            ]
         records = getattr(self.repository, "list_api_clients")()
-        return [_metadata_from_record(record) for record in records]
+        return [
+            _metadata_from_record(record)
+            for record in records
+            if record.client_id != DIRECT_EXTERNAL_API_KEY_CLIENT_ID
+        ]
 
     def _metadata(self, client_id: str) -> dict[str, Any]:
         normalized = str(client_id or "").strip()
