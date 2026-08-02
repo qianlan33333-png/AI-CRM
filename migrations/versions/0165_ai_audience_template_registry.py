@@ -7,6 +7,7 @@ Revises: 0164_ai_audience_send_record_read_index
 from __future__ import annotations
 
 from alembic import op
+from sqlalchemy import inspect
 
 
 revision = "0165_ai_audience_template_registry"
@@ -16,7 +17,7 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.execute("CREATE SCHEMA IF NOT EXISTS audience_read")
+    _ensure_audience_read_schema()
     op.execute(
         "ALTER TABLE ai_audience_package_version ADD COLUMN IF NOT EXISTS template_key TEXT NOT NULL DEFAULT ''"
     )
@@ -39,6 +40,15 @@ def upgrade() -> None:
     _create_questionnaire_answers_view()
     _create_radar_clicks_view()
     _create_concurrent_indexes()
+
+
+def _ensure_audience_read_schema() -> None:
+    # PostgreSQL checks database-level CREATE privilege for
+    # ``CREATE SCHEMA IF NOT EXISTS`` even when the schema already exists.
+    # Existing installations only need a read-only catalog lookup here.
+    if inspect(op.get_bind()).has_schema("audience_read"):
+        return
+    op.execute("CREATE SCHEMA audience_read")
 
 
 def _create_questionnaire_answers_view() -> None:
