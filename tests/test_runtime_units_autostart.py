@@ -140,6 +140,7 @@ def test_operational_report_timer_is_mandatory_and_kicked_after_release() -> Non
     assert "Environment=DB_MAX_OVERFLOW=0" in service
     assert "TimeoutStartSec=240" in service
     assert "run_broadcast_hourly_feishu_report.py" in service
+    assert "SuccessExitStatus=2" in service
     assert "OnCalendar=*-*-* *:05:00" in timer
     assert "Persistent=true" in timer
 

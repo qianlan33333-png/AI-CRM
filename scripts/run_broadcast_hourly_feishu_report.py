@@ -25,7 +25,12 @@ def main() -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     result = run()
     print_json(result)
-    return 0 if result.get("status") in {"sent", "skipped_duplicate"} else 1
+    status = result.get("status")
+    if status in {"sent", "skipped_duplicate"}:
+        return 0
+    if status in {"skipped_no_config", "skipped_disabled"}:
+        return 2
+    return 1
 
 
 if __name__ == "__main__":
