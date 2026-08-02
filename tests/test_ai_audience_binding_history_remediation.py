@@ -15,6 +15,7 @@ from scripts.ops.remediate_ai_audience_binding_history import (
     RemediationError,
     issue_fingerprint,
     issue_kind_counts,
+    load_manifest,
     run_remediation,
 )
 
@@ -94,6 +95,39 @@ def _seed_history_anomaly() -> tuple[int, int, str]:
         )
         session.commit()
     return automation_id, subscription_id, target_key
+
+
+def _seed_retired_binding_anomaly() -> tuple[int, str, str]:
+    session_factory = get_session_factory()
+    agent_code = "new_agent_1784189809857"
+    package_key = "new_package_key"
+    with session_factory() as session:
+        automation_id = int(
+            session.execute(
+                text(
+                    """
+                    INSERT INTO automation_agent_runtime_config (
+                        agent_code, agent_name, automation_type, bound_package_key, status,
+                        draft_role_prompt, draft_task_prompt, published_role_prompt, published_task_prompt,
+                        draft_version, published_version, fixed_content_package_json, send_webhook_url,
+                        created_at, updated_at
+                    ) VALUES (
+                        :agent_code, '新建 Agent', 'agent', :package_key, 'active',
+                        'role', 'task', 'role', 'task', 1, 1, '{}'::jsonb,
+                        :send_webhook_url, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                    )
+                    RETURNING id
+                    """
+                ),
+                {
+                    "agent_code": agent_code,
+                    "package_key": package_key,
+                    "send_webhook_url": f"/api/ai/audience/packages/{package_key}/webhook",
+                },
+            ).scalar_one()
+        )
+        session.commit()
+    return automation_id, agent_code, package_key
 
 
 def test_binding_history_remediation_previews_snapshots_applies_and_is_idempotent(next_pg_schema, tmp_path) -> None:
@@ -207,9 +241,114 @@ def test_binding_history_remediation_rejects_release_or_issue_drift(next_pg_sche
         )
 
 
+def test_retired_binding_remediation_clears_only_legacy_binding_and_is_idempotent(next_pg_schema, tmp_path) -> None:
+    del next_pg_schema
+    session_factory = get_session_factory()
+    automation_id, agent_code, package_key = _seed_retired_binding_anomaly()
+    with session_factory() as session:
+        report = inspect_automation_bindings(session.connection())
+    assert issue_kind_counts(report.issues) == {
+        "orphan_agent_binding": 1,
+        "orphan_send_url": 1,
+    }
+    manifest = {
+        **_manifest(report, automation_id),
+        "remediation_action": "clear_retired_webhook_binding",
+        "expected_agent_code": agent_code,
+        "expected_package_key": package_key,
+        "execute_confirmation": "EXECUTE_RETIRED_BINDING_PYTEST",
+    }
+    backup_dir = tmp_path / "retired-binding-backups"
+
+    preview = run_remediation(
+        manifest,
+        mode="preview",
+        confirmation="",
+        backup_dir=backup_dir,
+        current_release_sha=PRODUCTION_SHA,
+        session_factory=session_factory,
+    )
+    assert preview["status"] == "ready"
+    assert preview["database_write_executed"] is False
+    assert not backup_dir.exists()
+
+    applied = run_remediation(
+        manifest,
+        mode="apply",
+        confirmation=manifest["execute_confirmation"],
+        backup_dir=backup_dir,
+        current_release_sha=PRODUCTION_SHA,
+        session_factory=session_factory,
+    )
+    assert applied["status"] == "applied"
+    assert applied["database_write_executed"] is True
+    assert applied["real_external_call_executed"] is False
+    backup_path = backup_dir / Path(applied["backup_path"]).name
+    backup = json.loads(backup_path.read_text(encoding="utf-8"))
+    assert backup["automation_row"]["bound_package_key"] == package_key
+    assert backup["automation_row"]["send_webhook_url"].endswith(f"/{package_key}/webhook")
+
+    with session_factory() as session:
+        row = (
+            session.execute(
+                text(
+                    """
+                    SELECT agent_code, status, bound_package_key, send_webhook_url,
+                           draft_role_prompt, draft_task_prompt
+                    FROM automation_agent_runtime_config
+                    WHERE id = :automation_id
+                    """
+                ),
+                {"automation_id": automation_id},
+            )
+            .mappings()
+            .one()
+        )
+        post_report = inspect_automation_bindings(session.connection())
+    assert dict(row) == {
+        "agent_code": agent_code,
+        "status": "active",
+        "bound_package_key": "",
+        "send_webhook_url": "",
+        "draft_role_prompt": "role",
+        "draft_task_prompt": "task",
+    }
+    assert post_report.ok is True
+
+    repeated = run_remediation(
+        manifest,
+        mode="apply",
+        confirmation=manifest["execute_confirmation"],
+        backup_dir=backup_dir,
+        current_release_sha=PRODUCTION_SHA,
+        session_factory=session_factory,
+    )
+    assert repeated["status"] == "already_applied"
+    assert repeated["database_write_executed"] is False
+
+
+def test_retired_binding_manifest_matches_observed_production_envelope() -> None:
+    manifest = load_manifest(ROOT / "deploy/retired_ai_audience_binding_remediation.json")
+    assert manifest["expected_production_sha"] == "fd03cc53b094044d9ae798aa214606155b925f22"
+    assert manifest["expected_agent_code"] == "new_agent_1784189809857"
+    assert manifest["expected_package_key"] == "new_package_key"
+    assert manifest["expected_issue_kind_counts"] == {
+        "orphan_agent_binding": 1,
+        "orphan_send_url": 1,
+    }
+    assert manifest["expected_issue_fingerprint"] == (
+        "32d134df09ee872d9a6a5bd21e56d4fdb3d18af376f790f3b63ed56cfbe6747e"
+    )
+
+
 def test_production_deploy_reconciles_exact_history_before_binding_precheck_and_runtime_stop() -> None:
     workflow = (ROOT / ".github/workflows/deploy.yml").read_text(encoding="utf-8")
-    manifest = json.loads((ROOT / "deploy/ai_audience_binding_history_remediation.json").read_text(encoding="utf-8"))
+    history_manifest = json.loads(
+        (ROOT / "deploy/ai_audience_binding_history_remediation.json").read_text(encoding="utf-8")
+    )
+    retired_manifest = json.loads(
+        (ROOT / "deploy/retired_ai_audience_binding_remediation.json").read_text(encoding="utf-8")
+    )
 
     remediation_index = workflow.index("- name: Reconcile authorized AI Audience binding history")
     preview_index = workflow.index("--mode preview", remediation_index)
@@ -226,11 +365,13 @@ def test_production_deploy_reconciles_exact_history_before_binding_precheck_and_
 
     assert remediation_index < preview_index < apply_index < binding_precheck_index
     assert binding_precheck_index < identity_preflight_index < runtime_stop_index
-    assert (
-        "if: steps.release.outputs.base_sha == '3b045574ef1b5b322716ee7a62aa86fd3507df43'"
-        in workflow[remediation_index:preview_index]
-    )
+    assert "3b045574ef1b5b322716ee7a62aa86fd3507df43" in workflow[remediation_index:preview_index]
+    assert "fd03cc53b094044d9ae798aa214606155b925f22" in workflow[remediation_index:preview_index]
     assert '--current-release-sha "$remediation_base_sha"' in workflow[remediation_index:apply_index]
-    assert "EXECUTE_AI_AUDIENCE_BINDING_HISTORY_20260801" in workflow[apply_index:binding_precheck_index]
-    assert manifest["expected_production_sha"] == "3b045574ef1b5b322716ee7a62aa86fd3507df43"
-    assert manifest["expected_issue_fingerprint"] == ("c6458353624dd7a2f193ecbe6799de1e518d6cdad270c1867f0cf38f3e2ed57b")
+    assert "EXECUTE_AI_AUDIENCE_BINDING_HISTORY_20260801" in workflow[remediation_index:binding_precheck_index]
+    assert "EXECUTE_RETIRED_AI_AUDIENCE_BINDING_20260802" in workflow[remediation_index:binding_precheck_index]
+    assert history_manifest["expected_production_sha"] == "3b045574ef1b5b322716ee7a62aa86fd3507df43"
+    assert history_manifest["expected_issue_fingerprint"] == (
+        "c6458353624dd7a2f193ecbe6799de1e518d6cdad270c1867f0cf38f3e2ed57b"
+    )
+    assert retired_manifest["expected_production_sha"] == "fd03cc53b094044d9ae798aa214606155b925f22"

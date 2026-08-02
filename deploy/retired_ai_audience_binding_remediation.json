@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "operation_id": "retired_ai_audience_binding_20260802",
+  "remediation_action": "clear_retired_webhook_binding",
+  "expected_production_sha": "fd03cc53b094044d9ae798aa214606155b925f22",
+  "automation_id": 1,
+  "expected_agent_code": "new_agent_1784189809857",
+  "expected_package_key": "new_package_key",
+  "expected_issue_count": 2,
+  "expected_issue_kind_counts": {
+    "orphan_agent_binding": 1,
+    "orphan_send_url": 1
+  },
+  "expected_issue_fingerprint": "32d134df09ee872d9a6a5bd21e56d4fdb3d18af376f790f3b63ed56cfbe6747e",
+  "execute_confirmation": "EXECUTE_RETIRED_AI_AUDIENCE_BINDING_20260802"
+}
