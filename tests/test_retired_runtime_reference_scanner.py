@@ -43,6 +43,11 @@ def test_registry_is_json_compatible_and_runtime_units_only_allow_enforcement_pa
     registry = load_registry(DEFAULT_REGISTRY)
     units = next(item for item in registry["artifacts"] if item["id"] == "retired_runtime_units")
 
+    assert {
+        "openclaw-questionnaire-continuation-scheduler.timer",
+        "openclaw-questionnaire-continuation-scheduler.service",
+        "run_questionnaire_continuation_scheduler.py",
+    }.issubset(set(units["patterns"]))
     assert units["allowed_paths"] == [
         "deploy/production_runtime_units.json",
         "scripts/ops/prepare_wecom_callback_ingress_cutover.py",

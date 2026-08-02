@@ -59,6 +59,9 @@ def test_runtime_units_manifest_classifies_every_deploy_timer() -> None:
     assert "openclaw-wecom-callback-inbox-worker.timer" not in deploy_timers
     assert "aicrm-automation-jobs-run-due.timer" in retired_forbidden
     assert "aicrm-web.service" in retired_forbidden
+    assert "openclaw-questionnaire-continuation-scheduler.timer" in retired_forbidden
+    assert "openclaw-questionnaire-continuation-scheduler.service" in retired_forbidden
+    assert "openclaw-questionnaire-continuation-scheduler.timer" not in deploy_timers
     assert "openclaw-automation-conversion-due-runner.timer" in retired_forbidden
     assert set(manifest["retired_unit_files"]) == retired_forbidden
 
