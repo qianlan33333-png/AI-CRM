@@ -104,6 +104,7 @@ class AdminConfigReadService:
         items = [
             {"key": "overview", "label": "概览", "href": "/admin/config"},
             {"key": "app_settings", "label": "系统设置", "href": "/admin/config/app-settings"},
+            {"key": "api_clients", "label": "API 接入与 Token", "href": "/admin/config/api-clients"},
             {"key": "releases", "label": "配置发布", "href": "/admin/config/releases"},
             {"key": "login_access", "label": "后台访问", "href": "/admin/config/detail/admin_access"},
             {"key": "checklist", "label": "配置检查清单", "href": "/admin/config/checklist"},

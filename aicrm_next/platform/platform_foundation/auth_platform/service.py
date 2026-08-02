@@ -10,6 +10,8 @@ from uuid import uuid4
 
 import jwt
 
+from aicrm_next.platform.platform_foundation.admin_audit import AdminAuditRecord
+
 from .context import AuthContext, PrincipalType
 from .credentials import hash_client_secret, issue_client_secret, verify_client_secret
 from .models import ApiClientRecord, IssuedAccessToken
@@ -23,13 +25,27 @@ CLIENT_CACHE_TTL_SECONDS = 30
 class ApiClientRepository(Protocol):
     def api_client(self, client_id: str) -> ApiClientRecord | None: ...
 
-    def insert_api_client(self, client: ApiClientRecord) -> None: ...
+    def insert_api_client(self, client: ApiClientRecord, *, audit: AdminAuditRecord | None = None) -> None: ...
 
-    def update_api_client_definition(self, client: ApiClientRecord) -> bool: ...
+    def update_api_client_definition(self, client: ApiClientRecord, *, audit: AdminAuditRecord | None = None) -> bool: ...
 
     def rotate_api_client_secret(self, client_id: str, secret_hash: str) -> int | None: ...
 
-    def set_api_client_enabled(self, client_id: str, enabled: bool) -> int | None: ...
+    def rotate_api_client_secret_and_disable(
+        self,
+        client_id: str,
+        secret_hash: str,
+        *,
+        audit: AdminAuditRecord | None = None,
+    ) -> int | None: ...
+
+    def set_api_client_enabled(
+        self,
+        client_id: str,
+        enabled: bool,
+        *,
+        audit: AdminAuditRecord | None = None,
+    ) -> int | None: ...
 
 
 class AuthError(ValueError):
@@ -83,6 +99,7 @@ class ApiClientService:
         owner_scope: dict[str, Any] | None = None,
         token_ttl_seconds: int = DEFAULT_TOKEN_TTL_SECONDS,
         enabled: bool = True,
+        audit: AdminAuditRecord | None = None,
     ) -> IssuedClientSecret:
         normalized_client_id = _required(client_id, "client_id")
         if principal_type not in {PrincipalType.API_CLIENT, PrincipalType.SERVICE}:
@@ -109,26 +126,35 @@ class ApiClientService:
         )
         if not record.audiences or not record.scopes or not record.capabilities:
             raise ValueError("API client audiences, scopes, and capabilities are required")
-        self.repository.insert_api_client(record)
+        if audit is None:
+            self.repository.insert_api_client(record)
+        else:
+            self.repository.insert_api_client(record, audit=audit)
         self.invalidate(normalized_client_id)
         return IssuedClientSecret(client=record, client_secret=secret)
 
-    def reconcile_client(self, desired: ApiClientRecord) -> bool:
+    def reconcile_client(self, desired: ApiClientRecord, *, audit: AdminAuditRecord | None = None) -> bool:
         current = self.repository.api_client(desired.client_id)
         if current is None:
-            self.repository.insert_api_client(desired)
+            if audit is None:
+                self.repository.insert_api_client(desired)
+            else:
+                self.repository.insert_api_client(desired, audit=audit)
             self.invalidate(desired.client_id)
             return True
         immutable = (current.principal_id, current.principal_type)
         if immutable != (desired.principal_id, desired.principal_type):
             raise ValueError("client principal identity is immutable")
-        changed = self.repository.update_api_client_definition(
-            replace(
-                desired,
-                secret_hash=current.secret_hash,
-                auth_version=current.auth_version,
-                enabled=current.enabled,
-            )
+        reconciled = replace(
+            desired,
+            secret_hash=current.secret_hash,
+            auth_version=current.auth_version,
+            enabled=current.enabled,
+        )
+        changed = (
+            self.repository.update_api_client_definition(reconciled)
+            if audit is None
+            else self.repository.update_api_client_definition(reconciled, audit=audit)
         )
         if current.enabled != desired.enabled:
             self.repository.set_api_client_enabled(desired.client_id, desired.enabled)
@@ -147,11 +173,46 @@ class ApiClientService:
         self.invalidate(current.client_id)
         return IssuedClientSecret(client=replace(current, secret_hash="", auth_version=auth_version), client_secret=secret)
 
-    def set_enabled(self, client_id: str, enabled: bool) -> int:
-        auth_version = self.repository.set_api_client_enabled(_required(client_id, "client_id"), bool(enabled))
+    def rotate_secret_and_disable(
+        self,
+        client_id: str,
+        *,
+        audit: AdminAuditRecord | None = None,
+    ) -> IssuedClientSecret:
+        current = self.repository.api_client(_required(client_id, "client_id"))
+        if current is None:
+            raise ValueError("client_not_found")
+        secret = issue_client_secret()
+        secret_hash = hash_client_secret(secret)
+        auth_version = (
+            self.repository.rotate_api_client_secret_and_disable(current.client_id, secret_hash)
+            if audit is None
+            else self.repository.rotate_api_client_secret_and_disable(current.client_id, secret_hash, audit=audit)
+        )
         if auth_version is None:
             raise ValueError("client_not_found")
-        self.invalidate(client_id)
+        self.invalidate(current.client_id)
+        return IssuedClientSecret(
+            client=replace(current, secret_hash="", auth_version=auth_version, enabled=False),
+            client_secret=secret,
+        )
+
+    def set_enabled(
+        self,
+        client_id: str,
+        enabled: bool,
+        *,
+        audit: AdminAuditRecord | None = None,
+    ) -> int:
+        normalized_client_id = _required(client_id, "client_id")
+        auth_version = (
+            self.repository.set_api_client_enabled(normalized_client_id, bool(enabled))
+            if audit is None
+            else self.repository.set_api_client_enabled(normalized_client_id, bool(enabled), audit=audit)
+        )
+        if auth_version is None:
+            raise ValueError("client_not_found")
+        self.invalidate(normalized_client_id)
         return auth_version
 
     def issue_client_credentials_token(
@@ -241,7 +302,14 @@ class ApiClientService:
         if required_audience not in normalized_token_audiences:
             raise AuthError("invalid_target", status_code=403)
         client_id = str(claims.get("client_id") or "").strip()
-        client = self._cached_client(client_id)
+        # External integrations are operator-managed credentials. Always read
+        # their current enabled/auth_version state from PostgreSQL so a rotate
+        # or disable action takes effect on the next request in every process.
+        client = (
+            self.repository.api_client(client_id)
+            if required_audience == "external_integration"
+            else self._cached_client(client_id)
+        )
         if client is None or not client.enabled:
             raise AuthError("client_disabled")
         if required_audience not in client.audiences or not normalized_token_audiences.issubset(client.audiences):

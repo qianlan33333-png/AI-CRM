@@ -1073,7 +1073,7 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/platform/admin_config/application.py",
       "key": "AICRM_NEXT_ALIPAY_MODE",
-      "line": 967
+      "line": 968
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -1427,7 +1427,7 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/platform/admin_config/application.py",
       "key": "AICRM_NEXT_WECHAT_PAY_MODE",
-      "line": 961
+      "line": 962
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -8460,6 +8460,116 @@
       "name": "api.admin_config",
       "operation_id": "api.admin_config:GET:/admin/config",
       "path": "/admin/config",
+      "route_group": "admin_config"
+    },
+    {
+      "capability_owner": "admin_config",
+      "contract": {
+        "parameters": [],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.platform.admin_config.api.admin_config_api_clients",
+      "include_in_schema": true,
+      "kind": "page",
+      "logical_capability_id": "core.platform",
+      "methods": [
+        "GET"
+      ],
+      "name": "api.admin_config_api_clients",
+      "operation_id": "api.admin_config_api_clients:GET:/admin/config/api-clients",
+      "path": "/admin/config/api-clients",
+      "route_group": "admin_config"
+    },
+    {
+      "capability_owner": "admin_config",
+      "contract": {
+        "parameters": [],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.platform.admin_config.api.admin_config_api_client_new",
+      "include_in_schema": true,
+      "kind": "page",
+      "logical_capability_id": "core.platform",
+      "methods": [
+        "GET"
+      ],
+      "name": "api.admin_config_api_client_new",
+      "operation_id": "api.admin_config_api_client_new:GET:/admin/config/api-clients/new",
+      "path": "/admin/config/api-clients/new",
+      "route_group": "admin_config"
+    },
+    {
+      "capability_owner": "admin_config",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "title": "Client Id",
+              "type": "string"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.platform.admin_config.api.admin_config_api_client_detail",
+      "include_in_schema": true,
+      "kind": "page",
+      "logical_capability_id": "core.platform",
+      "methods": [
+        "GET"
+      ],
+      "name": "api.admin_config_api_client_detail",
+      "operation_id": "api.admin_config_api_client_detail:GET:/admin/config/api-clients/{client_id}",
+      "path": "/admin/config/api-clients/{client_id}",
       "route_group": "admin_config"
     },
     {
@@ -18901,6 +19011,302 @@
       "operation_id": "api_operation_members_sync:POST:/api/admin/common/operation-members/sync",
       "path": "/api/admin/common/operation-members/sync",
       "route_group": "common_operation_members"
+    },
+    {
+      "capability_owner": "admin_config",
+      "contract": {
+        "parameters": [],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_api_clients_resource",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "core.platform",
+      "methods": [
+        "GET"
+      ],
+      "name": "api.admin_config_api_clients_resource",
+      "operation_id": "api.admin_config_api_clients_resource:GET:/api/admin/config/api-clients",
+      "path": "/api/admin/config/api-clients",
+      "route_group": "admin_config"
+    },
+    {
+      "capability_owner": "admin_config",
+      "contract": {
+        "parameters": [],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_api_client_create_resource",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "core.platform",
+      "methods": [
+        "POST"
+      ],
+      "name": "api.admin_config_api_client_create_resource",
+      "operation_id": "api.admin_config_api_client_create_resource:POST:/api/admin/config/api-clients",
+      "path": "/api/admin/config/api-clients",
+      "route_group": "admin_config"
+    },
+    {
+      "capability_owner": "admin_config",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "title": "Client Id",
+              "type": "string"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_api_client_resource",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "core.platform",
+      "methods": [
+        "GET"
+      ],
+      "name": "api.admin_config_api_client_resource",
+      "operation_id": "api.admin_config_api_client_resource:GET:/api/admin/config/api-clients/{client_id}",
+      "path": "/api/admin/config/api-clients/{client_id}",
+      "route_group": "admin_config"
+    },
+    {
+      "capability_owner": "admin_config",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "title": "Client Id",
+              "type": "string"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_api_client_update_resource",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "core.platform",
+      "methods": [
+        "PUT"
+      ],
+      "name": "api.admin_config_api_client_update_resource",
+      "operation_id": "api.admin_config_api_client_update_resource:PUT:/api/admin/config/api-clients/{client_id}",
+      "path": "/api/admin/config/api-clients/{client_id}",
+      "route_group": "admin_config"
+    },
+    {
+      "capability_owner": "admin_config",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "title": "Client Id",
+              "type": "string"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_api_client_activate_resource",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "core.platform",
+      "methods": [
+        "POST"
+      ],
+      "name": "api.admin_config_api_client_activate_resource",
+      "operation_id": "api.admin_config_api_client_activate_resource:POST:/api/admin/config/api-clients/{client_id}/activate",
+      "path": "/api/admin/config/api-clients/{client_id}/activate",
+      "route_group": "admin_config"
+    },
+    {
+      "capability_owner": "admin_config",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "title": "Client Id",
+              "type": "string"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_api_client_enabled_resource",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "core.platform",
+      "methods": [
+        "PUT"
+      ],
+      "name": "api.admin_config_api_client_enabled_resource",
+      "operation_id": "api.admin_config_api_client_enabled_resource:PUT:/api/admin/config/api-clients/{client_id}/enabled",
+      "path": "/api/admin/config/api-clients/{client_id}/enabled",
+      "route_group": "admin_config"
+    },
+    {
+      "capability_owner": "admin_config",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "title": "Client Id",
+              "type": "string"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.platform.admin_config.api.api_admin_config_api_client_rotate_resource",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "core.platform",
+      "methods": [
+        "POST"
+      ],
+      "name": "api.admin_config_api_client_rotate_resource",
+      "operation_id": "api.admin_config_api_client_rotate_resource:POST:/api/admin/config/api-clients/{client_id}/rotate-secret",
+      "path": "/api/admin/config/api-clients/{client_id}/rotate-secret",
+      "route_group": "admin_config"
     },
     {
       "capability_owner": "admin_config",

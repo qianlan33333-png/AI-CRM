@@ -33,6 +33,12 @@ AICRM_ACCESS_TOKEN="<short-lived-client-credentials-jwt>"
 
 ## 鉴权
 
+### 获取 Client ID 与 Client Secret
+
+首选流程是由超级管理员进入后台「系统配置 → API 接入与 Token」（`/admin/config/api-clients`），新建 `External API` 客户端。创建后客户端默认停用；Client Secret 只显示一次，复制确认并通过页面自检后才启用。无需 SSH 登录服务器，也不要配置固定 Access Token。
+
+新建 External API 客户端固定拥有 `read write` scope 与 `external_read external_write` capability；实际调用仍应按最小权限只申请本次需要的 scope。历史 `aicrm-external-reader-qianlan` 保持 `read` / `external_read`，不会因纳入后台管理而增加写权限。
+
 所有请求都必须携带由注册 `external_agent` 客户端通过 TLS `POST /oauth/token` 换取的短期 JWT：
 
 ```http

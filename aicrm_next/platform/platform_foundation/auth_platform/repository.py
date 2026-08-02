@@ -8,6 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
+from aicrm_next.platform.platform_foundation.admin_audit import AdminAuditRecord, build_admin_audit_port
 from aicrm_next.platform.shared.db_session import get_session_factory
 
 from .context import PrincipalType
@@ -63,7 +64,45 @@ class PostgresAuthRepository:
             rows = session.execute(text("SELECT * FROM auth_api_clients ORDER BY client_id")).mappings().all()
         return [_api_client(dict(row)) for row in rows]
 
-    def insert_api_client(self, client: ApiClientRecord) -> None:
+    def api_client_metadata(self, client_id: str) -> dict[str, Any] | None:
+        with self._session_factory() as session:
+            row = (
+                session.execute(
+                    text(
+                        """
+                        SELECT client_id, principal_id, principal_type, purpose, display_name,
+                               audiences_json, scopes_json, capabilities_json, allowed_cidrs_json,
+                               corp_id, owner_scope_json, auth_version, token_ttl_seconds, enabled,
+                               last_rotated_at, created_at, updated_at
+                        FROM auth_api_clients
+                        WHERE client_id = :client_id
+                        LIMIT 1
+                        """
+                    ),
+                    {"client_id": str(client_id or "").strip()},
+                )
+                .mappings()
+                .first()
+            )
+        return _public_api_client_metadata(dict(row)) if row else None
+
+    def list_api_client_metadata(self) -> list[dict[str, Any]]:
+        with self._session_factory() as session:
+            rows = session.execute(
+                text(
+                    """
+                    SELECT client_id, principal_id, principal_type, purpose, display_name,
+                           audiences_json, scopes_json, capabilities_json, allowed_cidrs_json,
+                           corp_id, owner_scope_json, auth_version, token_ttl_seconds, enabled,
+                           last_rotated_at, created_at, updated_at
+                    FROM auth_api_clients
+                    ORDER BY client_id
+                    """
+                )
+            ).mappings().all()
+        return [_public_api_client_metadata(dict(row)) for row in rows]
+
+    def insert_api_client(self, client: ApiClientRecord, *, audit: AdminAuditRecord | None = None) -> None:
         with self._session_factory.begin() as session:
             session.execute(
                 text(
@@ -83,8 +122,9 @@ class PostgresAuthRepository:
                 ),
                 _api_client_params(client),
             )
+            _append_admin_audit(session, audit)
 
-    def update_api_client_definition(self, client: ApiClientRecord) -> bool:
+    def update_api_client_definition(self, client: ApiClientRecord, *, audit: AdminAuditRecord | None = None) -> bool:
         with self._session_factory.begin() as session:
             result = session.execute(
                 text(
@@ -107,7 +147,10 @@ class PostgresAuthRepository:
                 ),
                 _api_client_params(client),
             )
-            return bool(result.rowcount)
+            changed = bool(result.rowcount)
+            if changed:
+                _append_admin_audit(session, audit)
+            return changed
 
     def rotate_api_client_secret(self, client_id: str, secret_hash: str) -> int | None:
         with self._session_factory.begin() as session:
@@ -131,7 +174,44 @@ class PostgresAuthRepository:
             )
         return int(row["auth_version"]) if row else None
 
-    def set_api_client_enabled(self, client_id: str, enabled: bool) -> int | None:
+    def rotate_api_client_secret_and_disable(
+        self,
+        client_id: str,
+        secret_hash: str,
+        *,
+        audit: AdminAuditRecord | None = None,
+    ) -> int | None:
+        with self._session_factory.begin() as session:
+            row = (
+                session.execute(
+                    text(
+                        """
+                        UPDATE auth_api_clients
+                        SET secret_hash = :secret_hash,
+                            enabled = FALSE,
+                            auth_version = auth_version + 1,
+                            last_rotated_at = CURRENT_TIMESTAMP,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE client_id = :client_id
+                        RETURNING auth_version
+                        """
+                    ),
+                    {"client_id": str(client_id or "").strip(), "secret_hash": secret_hash},
+                )
+                .mappings()
+                .first()
+            )
+            if row:
+                _append_admin_audit(session, audit)
+        return int(row["auth_version"]) if row else None
+
+    def set_api_client_enabled(
+        self,
+        client_id: str,
+        enabled: bool,
+        *,
+        audit: AdminAuditRecord | None = None,
+    ) -> int | None:
         with self._session_factory.begin() as session:
             row = (
                 session.execute(
@@ -150,6 +230,8 @@ class PostgresAuthRepository:
                 .mappings()
                 .first()
             )
+            if row:
+                _append_admin_audit(session, audit)
         return int(row["auth_version"]) if row else None
 
     def webhook_client(self, client_id: str) -> WebhookClientRecord | None:
@@ -358,6 +440,16 @@ def _api_client_params(client: ApiClientRecord) -> dict[str, Any]:
     }
 
 
+def _append_admin_audit(session: Session, audit: AdminAuditRecord | None) -> None:
+    if audit is None:
+        return
+    build_admin_audit_port().append_sqlalchemy(
+        session,
+        dialect_name=str(session.get_bind().dialect.name),
+        record=audit,
+    )
+
+
 def _api_client(row: dict[str, Any]) -> ApiClientRecord:
     return ApiClientRecord(
         client_id=str(row.get("client_id") or ""),
@@ -376,6 +468,28 @@ def _api_client(row: dict[str, Any]) -> ApiClientRecord:
         token_ttl_seconds=int(row.get("token_ttl_seconds") or 1800),
         enabled=bool(row.get("enabled")),
     )
+
+
+def _public_api_client_metadata(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "client_id": str(row.get("client_id") or ""),
+        "principal_id": str(row.get("principal_id") or ""),
+        "principal_type": str(row.get("principal_type") or ""),
+        "purpose": str(row.get("purpose") or ""),
+        "display_name": str(row.get("display_name") or ""),
+        "audiences": list(_json(row.get("audiences_json"), [])),
+        "scopes": list(_json(row.get("scopes_json"), [])),
+        "capabilities": list(_json(row.get("capabilities_json"), [])),
+        "allowed_cidrs": list(_json(row.get("allowed_cidrs_json"), [])),
+        "corp_id": str(row.get("corp_id") or ""),
+        "owner_scope": dict(_json(row.get("owner_scope_json"), {})),
+        "auth_version": int(row.get("auth_version") or 1),
+        "token_ttl_seconds": int(row.get("token_ttl_seconds") or 1800),
+        "enabled": bool(row.get("enabled")),
+        "last_rotated_at": row.get("last_rotated_at"),
+        "created_at": row.get("created_at"),
+        "updated_at": row.get("updated_at"),
+    }
 
 
 def _webhook_client(row: dict[str, Any]) -> WebhookClientRecord:

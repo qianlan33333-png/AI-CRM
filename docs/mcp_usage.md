@@ -18,7 +18,7 @@ using a registered MCP client and short-lived JWT.
 Authorization: Bearer <short-lived-client-credentials-jwt>
 ```
 
-The caller must use the dedicated `mcp` client with `audience=external_integration`; `GET` requires `read`/`mcp_read`, while `POST` requires `write`/`mcp_execute`. Token exchange and rotation follow [`auth_client_credentials.md`](auth_client_credentials.md). Missing, invalid, or expired JWTs return `401`; scope or capability violations return `403`. Shared Bearer and fallback credentials are not accepted.
+The caller must use the dedicated `mcp` client with `audience=external_integration`; `GET` requires `read`/`mcp_read`, while `POST` requires `write`/`mcp_execute`. A super administrator should create and rotate self-service MCP clients from `/admin/config/api-clients`; the one-time Client Secret must pass the page's local token self-check before the client is enabled. Token exchange and rotation follow [`auth_client_credentials.md`](auth_client_credentials.md). Missing, invalid, or expired JWTs return `401`; scope or capability violations return `403`. Shared Bearer and fallback credentials are not accepted.
 
 ## Customer Reference Rules
 

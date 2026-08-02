@@ -1476,6 +1476,7 @@ def test_frontend_static_change_runs_all_frontend_tests_without_build() -> None:
         "tests/frontend/service_period_member_grid.test.mjs",
         "tests/frontend/service_period_member_grid_sharing.test.mjs",
         "tests/frontend/send_content_readonly_detail.test.mjs",
+        "tests/frontend/api_client_config.test.mjs",
     ]
     assert "needs_frontend_build" not in result
 

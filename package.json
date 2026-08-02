@@ -14,6 +14,7 @@
     "test:frontend:automation-capability": "node tests/frontend/automation_capability_selector.test.mjs",
     "test:frontend:send-content-readonly": "node tests/frontend/send_content_readonly_detail.test.mjs",
     "test:frontend:audience-template": "node tests/frontend/template_parameter_form.test.mjs",
-    "test:frontend:all": "npm run test:frontend:security && npm run test:frontend:errors && npm run test:frontend:error-guard && npm run test:frontend:coupons && npm run test:frontend:sidebar && npm run test:frontend:service-period && npm run test:frontend:service-period-sharing && npm run test:frontend:automation-capability && npm run test:frontend:send-content-readonly && npm run test:frontend:audience-template"
+    "test:frontend:api-clients": "node tests/frontend/api_client_config.test.mjs",
+    "test:frontend:all": "npm run test:frontend:security && npm run test:frontend:errors && npm run test:frontend:error-guard && npm run test:frontend:coupons && npm run test:frontend:sidebar && npm run test:frontend:service-period && npm run test:frontend:service-period-sharing && npm run test:frontend:automation-capability && npm run test:frontend:send-content-readonly && npm run test:frontend:audience-template && npm run test:frontend:api-clients"
   }
 }
