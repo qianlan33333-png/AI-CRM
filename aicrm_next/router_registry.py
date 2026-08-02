@@ -117,7 +117,7 @@ ROUTER_SPECS: tuple[RouterSpec, ...] = (
     RouterSpec("operation_cycles", "operation_cycles_admin_pages", operation_cycles_admin_pages_router, "operation cycle read-only admin pages"),
     RouterSpec("operation_cycles", "operation_cycles", operation_cycles_router, "operation cycle report and admin read APIs"),
     RouterSpec("admin_config", "admin_config", admin_config_router, "admin config pages and APIs"),
-    RouterSpec("admin_config", "admin_config", direct_api_key_router, "single CRM external read API key management"),
+    RouterSpec("admin_config", "admin_config_api_key", direct_api_key_router, "single CRM external read API key management"),
     RouterSpec("class_user_management", "class_user_management", class_user_management_router),
     RouterSpec("platform_foundation", "common_operation_members", common_operation_members_router),
     RouterSpec("channel_entry", "channel_entry", channel_entry_router),

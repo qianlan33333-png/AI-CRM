@@ -19364,7 +19364,7 @@
       "name": "api.admin_config_api_key_resource",
       "operation_id": "api.admin_config_api_key_resource:GET:/api/admin/config/api-key",
       "path": "/api/admin/config/api-key",
-      "route_group": "admin_config"
+      "route_group": "admin_config_api_key"
     },
     {
       "capability_owner": "admin_config",
@@ -19392,7 +19392,7 @@
       "name": "api.admin_config_api_key_enabled_resource",
       "operation_id": "api.admin_config_api_key_enabled_resource:PUT:/api/admin/config/api-key/enabled",
       "path": "/api/admin/config/api-key/enabled",
-      "route_group": "admin_config"
+      "route_group": "admin_config_api_key"
     },
     {
       "capability_owner": "admin_config",
@@ -19420,7 +19420,7 @@
       "name": "api.admin_config_api_key_generate_resource",
       "operation_id": "api.admin_config_api_key_generate_resource:POST:/api/admin/config/api-key/generate",
       "path": "/api/admin/config/api-key/generate",
-      "route_group": "admin_config"
+      "route_group": "admin_config_api_key"
     },
     {
       "capability_owner": "admin_config",
@@ -19448,7 +19448,7 @@
       "name": "api.admin_config_api_key_rotate_resource",
       "operation_id": "api.admin_config_api_key_rotate_resource:POST:/api/admin/config/api-key/rotate",
       "path": "/api/admin/config/api-key/rotate",
-      "route_group": "admin_config"
+      "route_group": "admin_config_api_key"
     },
     {
       "capability_owner": "admin_config",
