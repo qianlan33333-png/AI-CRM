@@ -247,6 +247,7 @@ def test_failed_media_lease_manifest_and_deploy_gate_match_observed_envelope() -
     block = workflow[remediation_index:deploy_index]
     assert "fd03cc53b094044d9ae798aa214606155b925f22" in block
     assert "scripts/ops/remediate_failed_wecom_media_lease.py" in block
+    assert "\n              tools " in block
     assert "EXECUTE_FAILED_WECOM_MEDIA_LEASE_20260802" in block
     assert 'assert data["candidate_count"] in {0, 1}' in block
     assert 'assert data["contains_raw_material_identifier"] is False' in block

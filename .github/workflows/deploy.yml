@@ -248,6 +248,7 @@ jobs:
             trap cleanup_remediation EXIT
             git archive "$candidate_sha" \
               aicrm_next \
+              tools \
               scripts/ops/remediate_failed_wecom_media_lease.py \
               "$remediation_manifest" \
               | tar -x -C "$remediation_dir"
