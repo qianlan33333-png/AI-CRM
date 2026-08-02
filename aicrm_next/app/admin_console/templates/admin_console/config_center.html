@@ -31,10 +31,11 @@
             </td>
             <td>
               <span class="cc-state{% if category.enabled %} is-on{% endif %}" data-category-status>
-                {{ "已生效" if category.enabled else "未生效" }}
+                {{ category.status_label or ("已生效" if category.enabled else "未生效") }}
               </span>
             </td>
             <td>
+              {% if category.toggleable is not defined or category.toggleable %}
               <label class="cc-switch">
                 <input
                   type="checkbox"
@@ -44,6 +45,9 @@
                 >
                 <span class="cc-slider"></span>
               </label>
+              {% else %}
+              <span class="admin-muted">—</span>
+              {% endif %}
             </td>
             <td>
               <a class="cc-btn" href="{{ category.detail_href }}">配置</a>

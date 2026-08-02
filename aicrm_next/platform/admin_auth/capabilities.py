@@ -14,6 +14,7 @@ ALL_CAPABILITIES = frozenset(
     {
         "admin_read",
         "manage_admin",
+        "manage_api_clients",
         "manage_automation",
         "manage_commerce",
         "manage_config",

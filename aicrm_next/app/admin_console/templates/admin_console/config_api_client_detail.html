@@ -1,0 +1,136 @@
+{% extends "admin_console/config_base.html" %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/api_client_config.css') }}?v=api-client-config-v1">
+{% endblock %}
+
+{% block config_content %}
+<section
+  class="api-client-page"
+  data-api-client-page
+  data-mode="{{ mode }}"
+  data-client-id="{{ client.client_id if client else '' }}"
+  data-can-manage="{{ 'true' if can_manage_api_clients else 'false' }}"
+>
+  <div class="admin-alert admin-alert--error" data-api-client-alert hidden></div>
+
+  {% if client and client.system_managed %}
+  <div class="admin-alert">这是系统预置客户端。页面只展示状态，修改仍由部署 bootstrap 与运行环境 Secret 管理。</div>
+  {% elif client and client.enabled %}
+  <div class="admin-alert">客户端正在使用中。名称、Token 有效期和 CIDR 白名单需先停用后才能修改。</div>
+  {% endif %}
+
+  <section class="admin-card">
+    <div class="admin-card-head">
+      <div>
+        <h2>{{ "接入配置" if mode == "create" else "基础配置" }}</h2>
+        <p>权限只能从固定模板选择；Client ID、类型和权限在创建后不可修改。</p>
+      </div>
+      <a class="admin-button admin-button--ghost" href="/admin/config/api-clients">返回列表</a>
+    </div>
+    <form class="admin-form-grid api-client-form" data-api-client-form>
+      <label>
+        <span>显示名称</span>
+        <input name="display_name" maxlength="120" value="{{ client.display_name if client else '' }}" required {% if not can_manage_api_clients or (client and (client.enabled or client.system_managed)) %}disabled{% endif %}>
+      </label>
+      <label>
+        <span>Client ID</span>
+        <input name="client_id" value="{{ client.client_id if client else '' }}" pattern="[a-z][a-z0-9._-]{2,63}" required {% if mode != "create" or not can_manage_api_clients %}disabled{% endif %}>
+        <small>3–64 位，以小写字母开头，仅允许小写字母、数字、点、下划线和短横线。</small>
+      </label>
+      <label>
+        <span>客户端类型</span>
+        {% if mode == "create" %}
+        <select name="client_type" data-client-type required {% if not can_manage_api_clients %}disabled{% endif %}>
+          {% for item in templates %}
+          <option
+            value="{{ item.key }}"
+            data-purpose="{{ item.purpose }}"
+            data-audience="{{ item.audience }}"
+            data-scopes="{{ item.scopes | join(' ') }}"
+            data-capabilities="{{ item.capabilities | join(' ') }}"
+            data-base-url="{{ item.base_url }}"
+            data-token-url="{{ item.token_url }}"
+            data-resource-url="{{ item.resource_url }}"
+          >{{ item.label }}</option>
+          {% endfor %}
+        </select>
+        {% else %}
+        <input value="{{ client.type_label }} · {{ client.permission_label }}" disabled>
+        {% endif %}
+      </label>
+      <label>
+        <span>Token 有效期</span>
+        <select name="token_ttl_minutes" {% if not can_manage_api_clients or (client and (client.enabled or client.system_managed)) %}disabled{% endif %}>
+          {% for minutes in [15, 30, 60] %}
+          <option value="{{ minutes }}" {% if (client and client.token_ttl_minutes == minutes) or (not client and minutes == 30) %}selected{% endif %}>{{ minutes }} 分钟</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="api-client-form-wide">
+        <span>CIDR 白名单（可选）</span>
+        <textarea name="allowed_cidrs" rows="4" placeholder="每行一个，例如 203.0.113.10/32" {% if not can_manage_api_clients or (client and (client.enabled or client.system_managed)) %}disabled{% endif %}>{{ client.allowed_cidrs | join('\n') if client else '' }}</textarea>
+        <small>留空表示不限制来源 IP；最多 20 条。</small>
+      </label>
+      {% if can_manage_api_clients and (mode == "create" or (client and not client.enabled and not client.system_managed)) %}
+      <label class="admin-check-line api-client-form-wide">
+        <input type="checkbox" name="confirm" value="1" required>
+        <span>我确认本次配置及固定权限模板</span>
+      </label>
+      <div class="admin-form-actions api-client-form-wide">
+        <button class="admin-button admin-button--primary" type="submit">{{ "创建并生成 Secret" if mode == "create" else "保存配置" }}</button>
+      </div>
+      {% endif %}
+    </form>
+  </section>
+
+  <section class="admin-card">
+    <div class="admin-card-head"><div><h2>认证参数</h2><p>这些是客户端接入时使用的固定值，不包含任何 Secret 或 Access Token。</p></div></div>
+    <dl class="api-client-values" data-auth-values>
+      <div><dt>Base URL</dt><dd data-value="base_url">{{ client.base_url if client else (templates[0].base_url if templates else '') }}</dd></div>
+      <div><dt>Token URL</dt><dd data-value="token_url">{{ client.token_url if client else (templates[0].token_url if templates else '') }}</dd></div>
+      <div><dt>API / MCP 地址</dt><dd data-value="resource_url">{{ client.resource_url if client else (templates[0].resource_url if templates else '') }}</dd></div>
+      <div><dt>grant type</dt><dd>client_credentials</dd></div>
+      <div><dt>audience</dt><dd data-value="audience">{{ client.audience if client else (templates[0].audience if templates else '') }}</dd></div>
+      <div><dt>scope</dt><dd data-value="scopes">{{ client.scopes | join(' ') if client else (templates[0].scopes | join(' ') if templates else '') }}</dd></div>
+      <div><dt>capability</dt><dd data-value="capabilities">{{ client.capabilities | join(' ') if client else (templates[0].capabilities | join(' ') if templates else '') }}</dd></div>
+      {% if client %}
+      <div><dt>状态</dt><dd>{{ client.status_label }}</dd></div>
+      <div><dt>认证版本</dt><dd>v{{ client.auth_version }}</dd></div>
+      <div><dt>最后轮换</dt><dd>{{ client.last_rotated_at or "尚未轮换" }}</dd></div>
+      {% endif %}
+    </dl>
+  </section>
+
+  <section class="admin-card api-client-secret-card" data-secret-panel hidden>
+    <div class="admin-card-head"><div><h2>一次性 Client Secret</h2><p>请立即复制并妥善保存。刷新或离开页面后无法恢复，只能重新轮换。</p></div></div>
+    <div class="api-client-secret-body">
+      <label><span>Client Secret</span><input data-secret-value type="password" readonly autocomplete="off"></label>
+      <button class="admin-button admin-button--ghost" type="button" data-toggle-secret>显示 Secret</button>
+      <button class="admin-button admin-button--ghost" type="button" data-copy-secret>复制 Secret</button>
+      <label class="admin-check-line"><input type="checkbox" data-secret-copied><span>我确认已复制并保存 Secret</span></label>
+      <button class="admin-button admin-button--primary" type="button" data-activate-secret disabled>自检并启用</button>
+    </div>
+  </section>
+
+  {% if client and can_manage_api_clients and client.mutable %}
+  <section class="admin-card">
+    <div class="admin-card-head"><div><h2>生命周期操作</h2><p>不支持删除；停用会保留审计记录，轮换会立即使旧 JWT 失效。</p></div></div>
+    <div class="api-client-actions">
+      {% if client.enabled %}
+      <button class="admin-button admin-button--ghost" type="button" data-disable-client>停用客户端</button>
+      {% else %}
+      <label class="api-client-existing-secret"><span>已有 Client Secret</span><input type="password" data-existing-secret autocomplete="off" placeholder="输入后仅用于本次内存自检"></label>
+      <label class="admin-check-line"><input type="checkbox" data-existing-secret-confirm><span>我确认已安全持有此 Secret</span></label>
+      <button class="admin-button admin-button--primary" type="button" data-activate-existing>自检并启用</button>
+      {% endif %}
+      <button class="admin-button admin-button--danger" type="button" data-rotate-secret>轮换 Secret 并停用</button>
+    </div>
+  </section>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts_extra %}
+<script defer src="{{ url_for('static', filename='admin_console/api_client_config.js') }}?v=api-client-config-v1"></script>
+{% endblock %}

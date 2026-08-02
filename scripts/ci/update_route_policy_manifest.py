@@ -79,6 +79,8 @@ def _admin_capability(entry: dict[str, Any]) -> str:
             return "read_customer"
         return "admin_read"
     if owner == "admin_config":
+        if "/config/api-clients" in path:
+            return "manage_api_clients"
         if "login-access" in path or "admin-user" in path:
             return "manage_admin"
         return "manage_config"

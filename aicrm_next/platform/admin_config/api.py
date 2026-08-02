@@ -2,17 +2,23 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qsl, urlencode
+from urllib.parse import parse_qsl, urlencode, urlsplit
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from aicrm_next.admin_shell_contract import admin_path_for, shell_context
+from aicrm_next.platform.admin_auth.capabilities import context_can
+from aicrm_next.platform.admin_auth.guards import current_auth_context
+from aicrm_next.platform.platform_foundation.auth_platform.api import auth_client_service
 from aicrm_next.platform.shared.admin_action_runtime import ensure_admin_action_token, validate_admin_action_token
+from aicrm_next.platform.shared.errors import ContractError
+from aicrm_next.platform.shared.public_url import canonical_public_base_url
 from aicrm_next.capability_registry import registry_summary
 
 from .api_docs_view_model import build_api_docs_view_model
+from .api_clients import API_CLIENT_TEMPLATES, ApiClientAdminService
 from .config_definitions import config_definition_summary
 from .config_releases import ConfigReleaseService
 from .runtime_view_model import GetAdminConfigPageQuery, page_row_count
@@ -33,6 +39,7 @@ _TEMPLATES_DIR = Path(__file__).resolve().parents[2] / "app" / "admin_console" /
 templates = Jinja2Templates(directory=_TEMPLATES_DIR)
 ADMIN_ACCESS_DETAIL_PATH = "/admin/config/detail/admin_access"
 CONFIG_RELEASE_ROWS = 8
+API_CLIENT_NO_STORE_HEADERS = {"Cache-Control": "no-store", "Pragma": "no-cache"}
 
 
 def _operator_from_request(request: Request, payload: dict[str, Any] | None = None, form: Any | None = None) -> str:
@@ -46,6 +53,42 @@ def _operator_from_request(request: Request, payload: dict[str, Any] | None = No
 
 def _config_release_service(request: Request) -> ConfigReleaseService:
     return ConfigReleaseService(profile=getattr(request.app.state, "deployment_profile", None))
+
+
+def _api_client_admin_service(request: Request) -> ApiClientAdminService:
+    return ApiClientAdminService(auth_client_service(request))
+
+
+def _api_client_base_url(request: Request) -> str:
+    try:
+        return canonical_public_base_url(request)
+    except ContractError:
+        # Keep the configuration console available while a deployment is being
+        # repaired, without falling back to a production Host header.
+        issuer = str(auth_client_service(request).config.issuer or "").strip()
+        parsed = urlsplit(issuer)
+        if parsed.scheme in {"http", "https"} and parsed.netloc:
+            path = parsed.path.rstrip("/")
+            if path.endswith("/oauth"):
+                path = path[: -len("/oauth")]
+            return f"{parsed.scheme}://{parsed.netloc}{path}"
+        return ""
+
+
+def _api_client_category(request: Request) -> dict[str, Any]:
+    payload = _api_client_admin_service(request).list_clients(base_url=_api_client_base_url(request))
+    summary = payload["summary"]
+    return {
+        "key": "api_clients",
+        "label": "API 接入与 Token",
+        "group_label": "外部集成",
+        "enabled": bool(summary["configured_count"]),
+        "status_label": summary["status_label"],
+        "detail_href": "/admin/config/api-clients",
+        "check_supported": False,
+        "sort_order": 45,
+        "toggleable": False,
+    }
 
 
 def _config_context(
@@ -177,6 +220,46 @@ def _token_error_from_payload(request: Request, payload: dict[str, Any]) -> str:
     return validate_admin_action_token(token, request=request)
 
 
+def _strict_payload(payload: Any, allowed_fields: set[str]) -> dict[str, Any]:
+    if not isinstance(payload, dict):
+        raise ValueError("payload_must_be_object")
+    unknown = sorted(set(payload) - allowed_fields)
+    if unknown:
+        raise ValueError(f"unknown_fields:{','.join(unknown)}")
+    return payload
+
+
+def _api_client_error(exc: Exception) -> JSONResponse:
+    error = str(exc) or "api_client_operation_failed"
+    if isinstance(exc, KeyError):
+        error = str(exc.args[0] if exc.args else "api_client_not_found")
+        return JSONResponse({"ok": False, "error": error}, status_code=404)
+    if isinstance(exc, PermissionError):
+        return JSONResponse({"ok": False, "error": error}, status_code=409)
+    status_code = 409 if error in {"client_id_already_exists", "client_already_enabled"} else 400
+    return JSONResponse({"ok": False, "error": error}, status_code=status_code)
+
+
+def _api_client_operator(request: Request) -> str:
+    context = current_auth_context(request)
+    return _text(getattr(context, "principal_id", "")) or "crm_console"
+
+
+def _api_client_corp_id(request: Request) -> str:
+    context = current_auth_context(request)
+    return _text(getattr(context, "corp_id", ""))
+
+
+def _confirmed(payload: dict[str, Any]) -> bool:
+    return payload.get("confirm") is True
+
+
+def _manage_api_clients_error(request: Request) -> JSONResponse | None:
+    if context_can(current_auth_context(request), "manage_api_clients"):
+        return None
+    return JSONResponse({"ok": False, "error": "manage_api_clients_required"}, status_code=403)
+
+
 def _category_error(exc: Exception) -> JSONResponse:
     if isinstance(exc, KeyError):
         return JSONResponse({"ok": False, "error": "config category not found"}, status_code=404)
@@ -230,6 +313,10 @@ def _config_release_changes_from_form(form: dict[str, Any]) -> dict[str, str | N
 @router.get("/admin/config", name="api.admin_config", response_class=HTMLResponse)
 def admin_config_home(request: Request):
     payload = AdminConfigReadService().build_home_payload()
+    payload["categories"] = sorted(
+        [*payload["categories"], _api_client_category(request)],
+        key=lambda item: int(item.get("sort_order") or 0),
+    )
     return templates.TemplateResponse(
         request,
         "admin_console/config_center.html",
@@ -239,6 +326,89 @@ def admin_config_home(request: Request):
             page_title="系统配置",
             page_summary="查看配置类目的生效状态，进入配置页维护明细。",
             config_categories=payload["categories"],
+        ),
+    )
+
+
+@router.get("/admin/config/api-clients", name="api.admin_config_api_clients", response_class=HTMLResponse)
+def admin_config_api_clients(request: Request):
+    query = _text(request.query_params.get("q"))
+    status = _text(request.query_params.get("status"))
+    try:
+        payload = _api_client_admin_service(request).list_clients(
+            base_url=_api_client_base_url(request),
+            query=query,
+            status=status,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return templates.TemplateResponse(
+        request,
+        "admin_console/config_api_clients.html",
+        _config_context(
+            request,
+            active_tab="api_clients",
+            page_title="API 接入与 Token",
+            page_summary="创建、轮换和停用外部 API 与 MCP 客户端；Access Token 始终按需换取。",
+            clients=payload["rows"],
+            summary=payload["summary"],
+            filters={"q": query, "status": status},
+            can_manage_api_clients=context_can(current_auth_context(request), "manage_api_clients"),
+        ),
+    )
+
+
+@router.get("/admin/config/api-clients/new", name="api.admin_config_api_client_new", response_class=HTMLResponse)
+def admin_config_api_client_new(request: Request):
+    base_url = _api_client_base_url(request)
+    return templates.TemplateResponse(
+        request,
+        "admin_console/config_api_client_detail.html",
+        _config_context(
+            request,
+            active_tab="api_clients",
+            page_title="新建 API 客户端",
+            page_summary="选择固定权限类型，创建后复制一次性 Secret 并完成自检启用。",
+            mode="create",
+            client=None,
+            templates=[
+                {
+                    "key": item.key,
+                    "label": item.label,
+                    "purpose": item.purpose,
+                    "audience": "external_integration",
+                    "scopes": list(item.scopes),
+                    "capabilities": list(item.capabilities),
+                    "base_url": base_url,
+                    "token_url": f"{base_url}/oauth/token",
+                    "resource_url": f"{base_url}{item.resource_path}",
+                    "grant_type": "client_credentials",
+                }
+                for item in API_CLIENT_TEMPLATES.values()
+            ],
+            can_manage_api_clients=context_can(current_auth_context(request), "manage_api_clients"),
+        ),
+    )
+
+
+@router.get("/admin/config/api-clients/{client_id}", name="api.admin_config_api_client_detail", response_class=HTMLResponse)
+def admin_config_api_client_detail(request: Request, client_id: str):
+    try:
+        client = _api_client_admin_service(request).get_client(client_id, base_url=_api_client_base_url(request))
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="api client not found") from exc
+    return templates.TemplateResponse(
+        request,
+        "admin_console/config_api_client_detail.html",
+        _config_context(
+            request,
+            active_tab="api_clients",
+            page_title=client["display_name"],
+            page_summary="查看固定权限、认证地址、版本与轮换状态；活动客户端需先停用再编辑。",
+            mode="detail",
+            client=client,
+            templates=[],
+            can_manage_api_clients=context_can(current_auth_context(request), "manage_api_clients"),
         ),
     )
 
@@ -523,8 +693,239 @@ async def admin_config_release_rollback(request: Request, release_id: int):
 
 
 @router.get("/api/admin/config/overview", name="api.admin_config_overview")
-def api_admin_config_overview() -> dict[str, Any]:
-    return {"ok": True, "overview": AdminConfigReadService().build_home_payload(), "source_status": "next_read_model", "fallback_used": False}
+def api_admin_config_overview(request: Request) -> dict[str, Any]:
+    overview = AdminConfigReadService().build_home_payload()
+    overview["categories"] = sorted(
+        [*overview["categories"], _api_client_category(request)],
+        key=lambda item: int(item.get("sort_order") or 0),
+    )
+    return {"ok": True, "overview": overview, "source_status": "next_read_model", "fallback_used": False}
+
+
+@router.get("/api/admin/config/api-clients", name="api.admin_config_api_clients_resource")
+def api_admin_config_api_clients_resource(request: Request):
+    try:
+        payload = _api_client_admin_service(request).list_clients(
+            base_url=_api_client_base_url(request),
+            query=_text(request.query_params.get("q")),
+            status=_text(request.query_params.get("status")),
+        )
+    except ValueError as exc:
+        return _api_client_error(exc)
+    return {
+        "ok": True,
+        "api_clients": payload,
+        "source_status": "auth_platform_read_model",
+        "fallback_used": False,
+    }
+
+
+@router.get("/api/admin/config/api-clients/{client_id}", name="api.admin_config_api_client_resource")
+def api_admin_config_api_client_resource(client_id: str, request: Request):
+    try:
+        item = _api_client_admin_service(request).get_client(client_id, base_url=_api_client_base_url(request))
+    except KeyError as exc:
+        return _api_client_error(exc)
+    return {
+        "ok": True,
+        "client": item,
+        "source_status": "auth_platform_read_model",
+        "fallback_used": False,
+    }
+
+
+@router.post("/api/admin/config/api-clients", name="api.admin_config_api_client_create_resource")
+async def api_admin_config_api_client_create_resource(request: Request):
+    permission_error = _manage_api_clients_error(request)
+    if permission_error:
+        return permission_error
+    try:
+        payload = _strict_payload(
+            await request.json(),
+            {
+                "display_name",
+                "client_id",
+                "client_type",
+                "token_ttl_minutes",
+                "allowed_cidrs",
+                "confirm",
+                "admin_action_token",
+            },
+        )
+    except (TypeError, ValueError) as exc:
+        return _api_client_error(exc)
+    token_error = _token_error_from_payload(request, payload)
+    if token_error:
+        return JSONResponse({"ok": False, "error": token_error}, status_code=401)
+    if not _confirmed(payload):
+        return JSONResponse({"ok": False, "error": "operation_confirmation_required"}, status_code=400)
+    try:
+        result = _api_client_admin_service(request).create_client(
+            display_name=payload.get("display_name"),
+            client_id=payload.get("client_id"),
+            client_type=payload.get("client_type"),
+            token_ttl_minutes=payload.get("token_ttl_minutes", 30),
+            allowed_cidrs=payload.get("allowed_cidrs"),
+            corp_id=_api_client_corp_id(request),
+            operator=_api_client_operator(request),
+            base_url=_api_client_base_url(request),
+        )
+    except (KeyError, PermissionError, TypeError, ValueError) as exc:
+        return _api_client_error(exc)
+    return JSONResponse(
+        {
+            "ok": True,
+            **result,
+            "source_status": "auth_platform_command",
+            "fallback_used": False,
+            "real_external_call_executed": False,
+        },
+        status_code=201,
+        headers=API_CLIENT_NO_STORE_HEADERS,
+    )
+
+
+@router.put("/api/admin/config/api-clients/{client_id}", name="api.admin_config_api_client_update_resource")
+async def api_admin_config_api_client_update_resource(client_id: str, request: Request):
+    permission_error = _manage_api_clients_error(request)
+    if permission_error:
+        return permission_error
+    try:
+        payload = _strict_payload(
+            await request.json(),
+            {
+                "display_name",
+                "token_ttl_minutes",
+                "allowed_cidrs",
+                "confirm",
+                "admin_action_token",
+            },
+        )
+    except (TypeError, ValueError) as exc:
+        return _api_client_error(exc)
+    token_error = _token_error_from_payload(request, payload)
+    if token_error:
+        return JSONResponse({"ok": False, "error": token_error}, status_code=401)
+    if not _confirmed(payload):
+        return JSONResponse({"ok": False, "error": "operation_confirmation_required"}, status_code=400)
+    try:
+        item = _api_client_admin_service(request).update_client(
+            client_id,
+            display_name=payload.get("display_name"),
+            token_ttl_minutes=payload.get("token_ttl_minutes"),
+            allowed_cidrs=payload.get("allowed_cidrs"),
+            operator=_api_client_operator(request),
+            base_url=_api_client_base_url(request),
+        )
+    except (KeyError, PermissionError, TypeError, ValueError) as exc:
+        return _api_client_error(exc)
+    return {"ok": True, "client": item, "source_status": "auth_platform_command", "fallback_used": False}
+
+
+@router.post("/api/admin/config/api-clients/{client_id}/activate", name="api.admin_config_api_client_activate_resource")
+async def api_admin_config_api_client_activate_resource(client_id: str, request: Request):
+    permission_error = _manage_api_clients_error(request)
+    if permission_error:
+        return permission_error
+    try:
+        payload = _strict_payload(
+            await request.json(),
+            {"client_secret", "copied_confirmed", "confirm", "admin_action_token"},
+        )
+    except (TypeError, ValueError) as exc:
+        return _api_client_error(exc)
+    token_error = _token_error_from_payload(request, payload)
+    if token_error:
+        return JSONResponse({"ok": False, "error": token_error}, status_code=401, headers=API_CLIENT_NO_STORE_HEADERS)
+    if not _confirmed(payload):
+        return JSONResponse(
+            {"ok": False, "error": "operation_confirmation_required"},
+            status_code=400,
+            headers=API_CLIENT_NO_STORE_HEADERS,
+        )
+    try:
+        item = _api_client_admin_service(request).activate(
+            client_id,
+            client_secret=payload.get("client_secret"),
+            copied_confirmed=payload.get("copied_confirmed"),
+            operator=_api_client_operator(request),
+            base_url=_api_client_base_url(request),
+        )
+    except (KeyError, PermissionError, TypeError, ValueError) as exc:
+        response = _api_client_error(exc)
+        response.headers.update(API_CLIENT_NO_STORE_HEADERS)
+        return response
+    return JSONResponse(
+        {"ok": True, "client": item, "source_status": "auth_platform_command", "fallback_used": False},
+        headers=API_CLIENT_NO_STORE_HEADERS,
+    )
+
+
+@router.post("/api/admin/config/api-clients/{client_id}/rotate-secret", name="api.admin_config_api_client_rotate_resource")
+async def api_admin_config_api_client_rotate_resource(client_id: str, request: Request):
+    permission_error = _manage_api_clients_error(request)
+    if permission_error:
+        return permission_error
+    try:
+        payload = _strict_payload(
+            await request.json(),
+            {"confirm", "admin_action_token"},
+        )
+    except (TypeError, ValueError) as exc:
+        return _api_client_error(exc)
+    token_error = _token_error_from_payload(request, payload)
+    if token_error:
+        return JSONResponse({"ok": False, "error": token_error}, status_code=401, headers=API_CLIENT_NO_STORE_HEADERS)
+    if not _confirmed(payload):
+        return JSONResponse(
+            {"ok": False, "error": "operation_confirmation_required"},
+            status_code=400,
+            headers=API_CLIENT_NO_STORE_HEADERS,
+        )
+    try:
+        result = _api_client_admin_service(request).rotate_secret(
+            client_id,
+            operator=_api_client_operator(request),
+            base_url=_api_client_base_url(request),
+        )
+    except (KeyError, PermissionError, TypeError, ValueError) as exc:
+        response = _api_client_error(exc)
+        response.headers.update(API_CLIENT_NO_STORE_HEADERS)
+        return response
+    return JSONResponse(
+        {"ok": True, **result, "source_status": "auth_platform_command", "fallback_used": False},
+        headers=API_CLIENT_NO_STORE_HEADERS,
+    )
+
+
+@router.put("/api/admin/config/api-clients/{client_id}/enabled", name="api.admin_config_api_client_enabled_resource")
+async def api_admin_config_api_client_enabled_resource(client_id: str, request: Request):
+    permission_error = _manage_api_clients_error(request)
+    if permission_error:
+        return permission_error
+    try:
+        payload = _strict_payload(
+            await request.json(),
+            {"enabled", "confirm", "admin_action_token"},
+        )
+    except (TypeError, ValueError) as exc:
+        return _api_client_error(exc)
+    token_error = _token_error_from_payload(request, payload)
+    if token_error:
+        return JSONResponse({"ok": False, "error": token_error}, status_code=401)
+    if not _confirmed(payload):
+        return JSONResponse({"ok": False, "error": "operation_confirmation_required"}, status_code=400)
+    if payload.get("enabled") is not False:
+        return JSONResponse({"ok": False, "error": "activation_requires_secret_self_check"}, status_code=409)
+    try:
+        item = _api_client_admin_service(request).disable(
+            client_id,
+            operator=_api_client_operator(request),
+            base_url=_api_client_base_url(request),
+        )
+    except (KeyError, PermissionError, TypeError, ValueError) as exc:
+        return _api_client_error(exc)
+    return {"ok": True, "client": item, "source_status": "auth_platform_command", "fallback_used": False}
 
 
 @router.get("/api/admin/config/categories", name="api.admin_config_categories")

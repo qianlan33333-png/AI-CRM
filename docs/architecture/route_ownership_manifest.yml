@@ -1225,6 +1225,66 @@ routes:
   rate_limit: authenticated
   principal_types:
   - human
+- path: /admin/config/api-clients
+  methods:
+  - GET
+  route_name: api.admin_config_api_clients
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: admin_page
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /admin/config/api-clients/new
+  methods:
+  - GET
+  route_name: api.admin_config_api_client_new
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: admin_page
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /admin/config/api-clients/{client_id}
+  methods:
+  - GET
+  route_name: api.admin_config_api_client_detail
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: admin_page
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
 - path: /admin/config/app-settings/save
   methods:
   - POST
@@ -1239,6 +1299,146 @@ routes:
   audience: admin
   auth_scheme: human_session
   capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: true
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/config/api-clients
+  methods:
+  - GET
+  route_name: api.admin_config_api_clients_resource
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/config/api-clients
+  methods:
+  - POST
+  route_name: api.admin_config_api_client_create_resource
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_api_clients
+  access_scope: global
+  pii_level: internal
+  csrf: true
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/config/api-clients/{client_id}
+  methods:
+  - GET
+  route_name: api.admin_config_api_client_resource
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/config/api-clients/{client_id}
+  methods:
+  - PUT
+  route_name: api.admin_config_api_client_update_resource
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_api_clients
+  access_scope: global
+  pii_level: internal
+  csrf: true
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/config/api-clients/{client_id}/activate
+  methods:
+  - POST
+  route_name: api.admin_config_api_client_activate_resource
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_api_clients
+  access_scope: global
+  pii_level: internal
+  csrf: true
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/config/api-clients/{client_id}/rotate-secret
+  methods:
+  - POST
+  route_name: api.admin_config_api_client_rotate_resource
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_api_clients
+  access_scope: global
+  pii_level: internal
+  csrf: true
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/config/api-clients/{client_id}/enabled
+  methods:
+  - PUT
+  route_name: api.admin_config_api_client_enabled_resource
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_api_clients
   access_scope: global
   pii_level: internal
   csrf: true

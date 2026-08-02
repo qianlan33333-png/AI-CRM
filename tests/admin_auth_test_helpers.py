@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from aicrm_next.platform.admin_auth.capabilities import capabilities_for_roles
 from aicrm_next.platform.admin_auth.service import CSRF_COOKIE, SESSION_COOKIE
 from aicrm_next.platform.platform_foundation.auth_platform.context import AuthContext, PrincipalType
+from aicrm_next.platform.platform_foundation.admin_audit import AdminAuditRecord
 from aicrm_next.platform.platform_foundation.auth_platform.credentials import (
     CredentialHasher,
     hash_client_secret,
@@ -31,6 +32,8 @@ class InMemoryAuthSessionRepository:
         self.sessions: dict[str, AuthSessionRecord] = {}
         self.session_versions: dict[str, int] = {}
         self.api_clients: dict[str, ApiClientRecord] = {}
+        self.api_client_audits: list[AdminAuditRecord] = []
+        self.fail_api_client_audit = False
 
     def insert_auth_session(self, session: AuthSessionRecord) -> None:
         self.sessions[session.session_secret_hash] = session
@@ -52,16 +55,30 @@ class InMemoryAuthSessionRepository:
     def api_client(self, client_id: str) -> ApiClientRecord | None:
         return self.api_clients.get(client_id)
 
-    def insert_api_client(self, client: ApiClientRecord) -> None:
+    def list_api_clients(self) -> list[ApiClientRecord]:
+        return [self.api_clients[key] for key in sorted(self.api_clients)]
+
+    def api_client_metadata(self, client_id: str) -> dict[str, Any] | None:
+        record = self.api_clients.get(client_id)
+        return self._api_client_metadata(record) if record else None
+
+    def list_api_client_metadata(self) -> list[dict[str, Any]]:
+        return [self._api_client_metadata(record) for record in self.list_api_clients()]
+
+    def insert_api_client(self, client: ApiClientRecord, *, audit: AdminAuditRecord | None = None) -> None:
         if client.client_id in self.api_clients:
             raise ValueError("duplicate client")
+        self._check_api_client_audit(audit)
         self.api_clients[client.client_id] = client
+        self._append_api_client_audit(audit)
 
-    def update_api_client_definition(self, client: ApiClientRecord) -> bool:
+    def update_api_client_definition(self, client: ApiClientRecord, *, audit: AdminAuditRecord | None = None) -> bool:
         current = self.api_clients.get(client.client_id)
         if current is None:
             return False
+        self._check_api_client_audit(audit)
         self.api_clients[client.client_id] = replace(client, secret_hash=current.secret_hash, auth_version=current.auth_version)
+        self._append_api_client_audit(audit)
         return True
 
     def rotate_api_client_secret(self, client_id: str, secret_hash: str) -> int | None:
@@ -72,13 +89,67 @@ class InMemoryAuthSessionRepository:
         self.api_clients[client_id] = updated
         return updated.auth_version
 
-    def set_api_client_enabled(self, client_id: str, enabled: bool) -> int | None:
+    def rotate_api_client_secret_and_disable(
+        self,
+        client_id: str,
+        secret_hash: str,
+        *,
+        audit: AdminAuditRecord | None = None,
+    ) -> int | None:
         current = self.api_clients.get(client_id)
         if current is None:
             return None
+        self._check_api_client_audit(audit)
+        updated = replace(current, secret_hash=secret_hash, enabled=False, auth_version=current.auth_version + 1)
+        self.api_clients[client_id] = updated
+        self._append_api_client_audit(audit)
+        return updated.auth_version
+
+    def set_api_client_enabled(
+        self,
+        client_id: str,
+        enabled: bool,
+        *,
+        audit: AdminAuditRecord | None = None,
+    ) -> int | None:
+        current = self.api_clients.get(client_id)
+        if current is None:
+            return None
+        self._check_api_client_audit(audit)
         updated = replace(current, enabled=enabled, auth_version=current.auth_version + 1)
         self.api_clients[client_id] = updated
+        self._append_api_client_audit(audit)
         return updated.auth_version
+
+    def _check_api_client_audit(self, audit: AdminAuditRecord | None) -> None:
+        if audit is not None and self.fail_api_client_audit:
+            raise RuntimeError("simulated_api_client_audit_failure")
+
+    def _append_api_client_audit(self, audit: AdminAuditRecord | None) -> None:
+        if audit is not None:
+            self.api_client_audits.append(audit)
+
+    @staticmethod
+    def _api_client_metadata(record: ApiClientRecord) -> dict[str, Any]:
+        return {
+            "client_id": record.client_id,
+            "principal_id": record.principal_id,
+            "principal_type": record.principal_type.value,
+            "purpose": record.purpose,
+            "display_name": record.display_name,
+            "audiences": list(record.audiences),
+            "scopes": list(record.scopes),
+            "capabilities": list(record.capabilities),
+            "allowed_cidrs": list(record.allowed_cidrs),
+            "corp_id": record.corp_id,
+            "owner_scope": dict(record.owner_scope),
+            "auth_version": record.auth_version,
+            "token_ttl_seconds": record.token_ttl_seconds,
+            "enabled": record.enabled,
+            "last_rotated_at": None,
+            "created_at": None,
+            "updated_at": None,
+        }
 
 
 def install_admin_auth_service(client: TestClient) -> tuple[AuthSessionService, InMemoryAuthSessionRepository]:

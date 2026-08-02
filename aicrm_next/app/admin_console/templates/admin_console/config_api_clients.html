@@ -1,0 +1,83 @@
+{% extends "admin_console/config_base.html" %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/api_client_config.css') }}?v=api-client-config-v1">
+{% endblock %}
+
+{% block config_content %}
+<section class="admin-card-grid">
+  <article class="admin-card admin-stat-card admin-stat-card--nested">
+    <div class="admin-card-label">配置状态</div>
+    <div class="admin-card-value">{{ summary.status_label }}</div>
+    <p class="admin-card-copy">只统计 External API 与 MCP 客户端。</p>
+  </article>
+  <article class="admin-card admin-stat-card admin-stat-card--nested">
+    <div class="admin-card-label">已启用</div>
+    <div class="admin-card-value">{{ summary.enabled_count }}</div>
+    <p class="admin-card-copy">可按需换取短期 Access Token。</p>
+  </article>
+  <article class="admin-card admin-stat-card admin-stat-card--nested">
+    <div class="admin-card-label">已停用</div>
+    <div class="admin-card-value">{{ summary.disabled_count }}</div>
+    <p class="admin-card-copy">停用后已有 JWT 立即失效。</p>
+  </article>
+</section>
+
+<section class="admin-card">
+  <div class="admin-card-head api-client-list-head">
+    <div>
+      <h2>接入客户端</h2>
+      <p>Client Secret 只在创建或轮换时显示一次，系统不会展示已有 Secret。</p>
+    </div>
+    {% if can_manage_api_clients %}
+    <a class="admin-button admin-button--primary" href="/admin/config/api-clients/new">新建客户端</a>
+    {% endif %}
+  </div>
+  <form class="admin-filter-bar admin-form-grid admin-form-grid--filters" method="get">
+    <label>
+      <span>搜索</span>
+      <input type="text" name="q" value="{{ filters.q }}" placeholder="名称 / Client ID / 类型">
+    </label>
+    <label>
+      <span>状态</span>
+      <select name="status">
+        <option value="" {% if not filters.status %}selected{% endif %}>全部</option>
+        <option value="enabled" {% if filters.status == "enabled" %}selected{% endif %}>已启用</option>
+        <option value="disabled" {% if filters.status == "disabled" %}selected{% endif %}>已停用</option>
+      </select>
+    </label>
+    <div class="admin-form-actions">
+      <button class="admin-button admin-button--primary" type="submit">应用筛选</button>
+      <a class="admin-button admin-button--ghost" href="/admin/config/api-clients">重置</a>
+    </div>
+  </form>
+  <div class="admin-table-wrap">
+    <table class="admin-table api-client-table">
+      <thead>
+        <tr>
+          <th>客户端</th>
+          <th>类型与权限</th>
+          <th>状态</th>
+          <th>Token 有效期</th>
+          <th>版本 / 最近轮换</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for client in clients %}
+        <tr>
+          <td><strong>{{ client.display_name }}</strong><br><code>{{ client.client_id }}</code></td>
+          <td>{{ client.type_label }}<br><span class="admin-muted">{{ client.permission_label }}</span></td>
+          <td><span class="api-status{% if client.enabled %} is-enabled{% endif %}">{{ client.status_label }}</span>{% if client.system_managed %}<br><span class="admin-muted">系统预置</span>{% endif %}</td>
+          <td>{{ client.token_ttl_minutes }} 分钟</td>
+          <td>v{{ client.auth_version }}<br><span class="admin-muted">{{ client.last_rotated_at or "尚未轮换" }}</span></td>
+          <td><a class="admin-button admin-button--ghost" href="/admin/config/api-clients/{{ client.client_id | urlencode }}">查看</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="admin-muted">没有符合条件的 API 客户端。</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
