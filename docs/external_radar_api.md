@@ -11,7 +11,7 @@
 
 ## 鉴权
 
-复用系统唯一的 CRM 开放 API Key。超级管理员在「系统配置 → CRM 开放 API Key」（`/admin/config/api-key`）生成后，调用方只需要保存这一个值：
+复用系统唯一的 CRM 开放 API Key。配置管理员或超级管理员在「系统配置 → CRM 开放 API Key」（`/admin/config/api-key`）生成后，调用方只需要保存这一个值：
 
 ```bash
 export CRM_API_KEY='<后台仅展示一次的唯一 API Key>'

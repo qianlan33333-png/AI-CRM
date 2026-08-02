@@ -133,16 +133,27 @@ def test_read_permissions_unknown_fields_action_tokens_and_audit_rollback(client
     install_admin_session(client, "config_admin")
     page = client.get("/admin/config/api-key")
     assert page.status_code == 200
-    assert "生成并启用 API Key" not in page.text
+    assert "生成并启用 API Key" in page.text
     assert client.get("/api/admin/config/api-key").json()["api_key_status"]["configured"] is False
 
-    rejected = client.post(GENERATE_ROUTE, json={"confirm": True})
+    generated = client.post(
+        GENERATE_ROUTE,
+        headers=_headers(_token(client, "POST", GENERATE_ROUTE, roles=("config_admin",))),
+        json={"confirm": True},
+    )
+    assert generated.status_code == 201
+
+    install_admin_session(client, "viewer")
+    rejected = client.post(
+        ROTATE_ROUTE,
+        json={"confirm": True},
+    )
     assert rejected.status_code == 403
 
     install_admin_session(client, "super_admin")
     unknown = client.post(
-        GENERATE_ROUTE,
-        headers=_headers(_token(client, "POST", GENERATE_ROUTE)),
+        ROTATE_ROUTE,
+        headers=_headers(_token(client, "POST", ROTATE_ROUTE)),
         json={"confirm": True, "scope": "write"},
     )
     assert unknown.status_code == 400
@@ -150,14 +161,18 @@ def test_read_permissions_unknown_fields_action_tokens_and_audit_rollback(client
 
     wrong_route_token = _token(client, "PUT", ENABLED_ROUTE)
     cross_route = client.post(
-        GENERATE_ROUTE,
+        ROTATE_ROUTE,
         headers=_headers(wrong_route_token),
         json={"confirm": True},
     )
     assert cross_route.status_code in {400, 401, 403}
-    assert DIRECT_EXTERNAL_API_KEY_CLIENT_ID not in repository.api_clients
+    assert repository.api_clients[DIRECT_EXTERNAL_API_KEY_CLIENT_ID].auth_version == 1
 
     repository.fail_api_client_audit = True
     with pytest.raises(RuntimeError, match="simulated_api_client_audit_failure"):
-        _generate(client)
-    assert DIRECT_EXTERNAL_API_KEY_CLIENT_ID not in repository.api_clients
+        client.post(
+            ROTATE_ROUTE,
+            headers=_headers(_token(client, "POST", ROTATE_ROUTE)),
+            json={"confirm": True},
+        )
+    assert repository.api_clients[DIRECT_EXTERNAL_API_KEY_CLIENT_ID].auth_version == 1

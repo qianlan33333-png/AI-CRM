@@ -21,7 +21,7 @@
 - `super_admin`：全部后台能力和授权成员管理；独占 `manage_api_clients`，可创建、轮换和启停外部 API/MCP 客户端。
 - `automation_admin`：自动化与运营相关读写能力。
 - `questionnaire_admin`：问卷相关读写能力。
-- `config_admin`：系统配置相关读写能力；可查看 API 客户端状态，但不能创建、编辑、轮换或启停客户端。
+- `config_admin`：系统配置相关读写能力；可生成、轮换和停用系统唯一的 CRM 开放 API Key；可查看其他 API 客户端状态，但不能创建、编辑、轮换或启停 OAuth/MCP 客户端。
 - `viewer`：只读；所有写操作返回 `403`。
 
 最终授权以 route policy 声明的 capability 和 `aicrm_next/platform/admin_auth/capabilities.py` 映射为准。

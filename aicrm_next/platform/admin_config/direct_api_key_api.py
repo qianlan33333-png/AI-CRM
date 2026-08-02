@@ -47,9 +47,9 @@ def _corp_id(request: Request) -> str:
 
 
 def _permission_error(request: Request) -> JSONResponse | None:
-    if context_can(current_auth_context(request), "manage_api_clients"):
+    if context_can(current_auth_context(request), "manage_config"):
         return None
-    return JSONResponse({"ok": False, "error": "manage_api_clients_required"}, status_code=403)
+    return JSONResponse({"ok": False, "error": "manage_config_required"}, status_code=403)
 
 
 def _strict_payload(payload: Any, allowed_fields: set[str]) -> dict[str, Any]:

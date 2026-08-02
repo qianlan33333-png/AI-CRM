@@ -35,7 +35,7 @@ CRM_API_KEY="<后台仅展示一次的唯一 API Key>"
 
 ### 获取唯一 API Key
 
-超级管理员进入后台「系统配置 → CRM 开放 API Key」（`/admin/config/api-key`），点击“生成并启用 API Key”。Key 只显示一次，复制后即可直接调用，无需 SSH、Client ID 或 `/oauth/token`。
+配置管理员或超级管理员进入后台「系统配置 → CRM 开放 API Key」（`/admin/config/api-key`），点击“生成并启用 API Key”。Key 只显示一次，复制后即可直接调用，无需 SSH、Client ID 或 `/oauth/token`。
 
 该唯一 Key 固定只有 `read` scope 与 `external_read` capability，不能调用任何写接口。遗失时重新生成；重新生成后旧 Key 立即失效。
 
