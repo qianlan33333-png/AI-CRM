@@ -37,6 +37,7 @@ class InMemoryQuestionnaireRepository:
                 "respondent_identity": {"mobile": "mobile_masked_fixture"},
                 "person_id": "person_fixture",
                 "external_userid": "external_user_masked_fixture",
+                "customer_name": "小璨同学",
                 "mobile": "mobile_masked_fixture",
                 "score": 10,
                 "final_tags": ["tag_hxc_activated"],

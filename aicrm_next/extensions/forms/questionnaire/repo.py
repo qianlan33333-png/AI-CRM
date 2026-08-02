@@ -307,6 +307,11 @@ class PostgresQuestionnaireReadRepository:
                        COALESCE(identity.primary_openid, '') AS openid,
                        qs.unionid,
                        COALESCE(identity.primary_external_userid, '') AS external_userid,
+                       COALESCE(
+                           NULLIF(NULLIF(identity.customer_name, ''), '问卷提交用户'),
+                           NULLIF(identity.profile_json ->> 'name', ''),
+                           ''
+                       ) AS customer_name,
                        qs.follow_user_userid, '' AS matched_by,
                        COALESCE(identity.mobile, '') AS mobile_snapshot,
                        qs.source_channel, qs.campaign_id,
