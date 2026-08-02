@@ -1,12 +1,12 @@
 {% extends "admin_console/config_base.html" %}
 
 {% block head_extra %}
-<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/api_client_config.css') }}?v=api-client-config-v1">
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/api_client_config.css') }}?v=api-client-secret-status-v2">
 {% endblock %}
 
 {% block config_content %}
 <section
-  class="api-client-page"
+  class="api-client-page direct-api-key-page api-client-credential-page"
   data-api-client-page
   data-mode="{{ mode }}"
   data-client-id="{{ client.client_id if client else '' }}"
@@ -18,6 +18,50 @@
   <div class="admin-alert">这是系统预置客户端。页面只展示状态，修改仍由部署 bootstrap 与运行环境 Secret 管理。</div>
   {% elif client and client.enabled %}
   <div class="admin-alert">客户端正在使用中。名称、Token 有效期和 CIDR 白名单需先停用后才能修改。</div>
+  {% endif %}
+
+  {% if client %}
+  <section class="admin-card api-client-current" data-client-current>
+    <div class="direct-api-key-section-head">
+      <div>
+        <span class="direct-api-key-kicker">当前凭证</span>
+        <h2>当前 Client Secret</h2>
+      </div>
+      <span class="direct-api-key-status{% if client.enabled %} is-enabled{% endif %}" data-client-status-badge>
+        <span aria-hidden="true"></span><b data-client-status-label>{{ "正在使用" if client.enabled else "已停用" }}</b>
+      </span>
+    </div>
+    <div class="direct-api-key-record">
+      <div class="direct-api-key-record__identity">
+        <span class="direct-api-key-record__label">{{ client.display_name }}</span>
+        <code data-client-credential-hint>{{ client.credential_hint }}</code>
+        <span class="direct-api-key-record__note" data-client-hint-note {% if client.credential_hint_available %}hidden{% endif %}>
+          旧 Secret 暂无尾号标识，下次轮换后自动补齐
+        </span>
+      </div>
+      <dl class="direct-api-key-record__meta">
+        <div><dt>认证版本</dt><dd>v<span data-client-auth-version>{{ client.auth_version }}</span></dd></div>
+        <div><dt>最近轮换</dt><dd data-client-rotated-at>{{ client.last_rotated_at or client.created_at or "尚未轮换" }}</dd></div>
+      </dl>
+      {% if can_manage_api_clients and client.mutable %}
+      <div class="direct-api-key-record__actions">
+        <button class="admin-button admin-button--secondary" type="button" data-rotate-secret>轮换 Secret</button>
+        <button class="admin-button admin-button--danger" type="button" data-disable-client {% if not client.enabled %}hidden{% endif %}>停用</button>
+      </div>
+      {% endif %}
+    </div>
+    {% if can_manage_api_clients and client.mutable %}
+    <div class="api-client-reactivate" data-reactivate-panel {% if client.enabled %}hidden{% endif %}>
+      <div>
+        <strong>使用已保存的 Secret 重新启用</strong>
+        <span>Secret 仅用于本次内存自检，不会保存或回显。</span>
+      </div>
+      <label class="api-client-existing-secret"><span>Client Secret</span><input type="password" data-existing-secret autocomplete="off" placeholder="粘贴已保存的 Secret"></label>
+      <label class="admin-check-line"><input type="checkbox" data-existing-secret-confirm><span>我确认已安全持有此 Secret</span></label>
+      <button class="admin-button admin-button--primary" type="button" data-activate-existing>自检并启用</button>
+    </div>
+    {% endif %}
+  </section>
   {% endif %}
 
   <section class="admin-card">
@@ -102,35 +146,51 @@
     </dl>
   </section>
 
-  <section class="admin-card api-client-secret-card" data-secret-panel hidden>
-    <div class="admin-card-head"><div><h2>一次性 Client Secret</h2><p>请立即复制并妥善保存。刷新或离开页面后无法恢复，只能重新轮换。</p></div></div>
-    <div class="api-client-secret-body">
-      <label><span>Client Secret</span><input data-secret-value type="password" readonly autocomplete="off"></label>
-      <button class="admin-button admin-button--ghost" type="button" data-toggle-secret>显示 Secret</button>
-      <button class="admin-button admin-button--ghost" type="button" data-copy-secret>复制 Secret</button>
-      <label class="admin-check-line"><input type="checkbox" data-secret-copied><span>我确认已复制并保存 Secret</span></label>
-      <button class="admin-button admin-button--primary" type="button" data-activate-secret disabled>自检并启用</button>
-    </div>
-  </section>
+  {% if can_manage_api_clients %}
+  <div class="direct-api-key-modal" data-client-secret-modal hidden>
+    <div class="direct-api-key-modal__backdrop" aria-hidden="true"></div>
+    <section class="direct-api-key-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="client-secret-modal-title">
+      <div data-client-confirm-view>
+        <div class="direct-api-key-modal__head">
+          <div>
+            <span class="direct-api-key-kicker">安全确认</span>
+            <h2 id="client-secret-modal-title" data-client-confirm-title>轮换 Client Secret</h2>
+          </div>
+          <button class="direct-api-key-modal__close" type="button" data-client-modal-cancel>关闭</button>
+        </div>
+        <p class="direct-api-key-modal__copy" data-client-confirm-copy></p>
+        <div class="direct-api-key-modal__actions">
+          <button class="admin-button admin-button--secondary" type="button" data-client-modal-cancel>取消</button>
+          <button class="admin-button admin-button--primary" type="button" data-client-modal-confirm>确认轮换</button>
+        </div>
+      </div>
 
-  {% if client and can_manage_api_clients and client.mutable %}
-  <section class="admin-card">
-    <div class="admin-card-head"><div><h2>生命周期操作</h2><p>不支持删除；停用会保留审计记录，轮换会立即使旧 JWT 失效。</p></div></div>
-    <div class="api-client-actions">
-      {% if client.enabled %}
-      <button class="admin-button admin-button--ghost" type="button" data-disable-client>停用客户端</button>
-      {% else %}
-      <label class="api-client-existing-secret"><span>已有 Client Secret</span><input type="password" data-existing-secret autocomplete="off" placeholder="输入后仅用于本次内存自检"></label>
-      <label class="admin-check-line"><input type="checkbox" data-existing-secret-confirm><span>我确认已安全持有此 Secret</span></label>
-      <button class="admin-button admin-button--primary" type="button" data-activate-existing>自检并启用</button>
-      {% endif %}
-      <button class="admin-button admin-button--danger" type="button" data-rotate-secret>轮换 Secret 并停用</button>
-    </div>
-  </section>
+      <div data-client-secret-view hidden>
+        <div class="direct-api-key-modal__head">
+          <div><h2 data-client-secret-title>Client Secret 已生成</h2></div>
+          <button class="direct-api-key-modal__close" type="button" data-client-secret-close>关闭</button>
+        </div>
+        <p class="direct-api-key-modal__copy">请立即保存在安全位置。关闭后无法再次查看完整值，只能重新轮换。</p>
+        <label class="direct-api-key-secret-field">
+          <span>CLIENT_SECRET</span>
+          <input type="text" readonly autocomplete="off" spellcheck="false" data-secret-value>
+        </label>
+        <label class="admin-check-line api-client-secret-confirmation">
+          <input type="checkbox" data-secret-copied><span>我确认已复制并安全保存 Secret</span>
+        </label>
+        <div class="direct-api-key-modal__actions">
+          <button class="admin-button admin-button--secondary" type="button" data-client-secret-close>稍后启用</button>
+          <button class="admin-button admin-button--secondary" type="button" data-copy-secret>复制 Secret</button>
+          <button class="admin-button admin-button--primary" type="button" data-activate-secret disabled>自检并启用</button>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="direct-api-key-toast" role="status" aria-live="polite" data-client-secret-toast></div>
   {% endif %}
 </section>
 {% endblock %}
 
 {% block scripts_extra %}
-<script defer src="{{ url_for('static', filename='admin_console/api_client_config.js') }}?v=api-client-config-v1"></script>
+<script defer src="{{ url_for('static', filename='admin_console/api_client_config.js') }}?v=api-client-secret-status-v2"></script>
 {% endblock %}

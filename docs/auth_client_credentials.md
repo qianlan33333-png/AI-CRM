@@ -56,9 +56,10 @@ curl --fail-with-body --silent --show-error \
 2. 选择固定类型 `External API` 或 `MCP`，填写显示名称、Client ID、15/30/60 分钟有效期和可选 CIDR 白名单。
 3. 创建结果默认停用。页面只显示一次 Client Secret，复制后必须勾选确认。
 4. 页面把 Secret 仅回传本次内存自检；服务端验证 Secret、签发并本地校验短期 JWT，成功后才启用。
-5. 后续停用、编辑或轮换均在客户端详情页完成。轮换会立即提高 `auth_version`、停用客户端，并使旧 Secret 与旧 JWT 失效。
+5. 后续从列表页的“管理 Secret”进入客户端详情页。页面顶部持续展示当前凭据的脱敏标识、启停状态、`auth_version` 和最近轮换时间；完整 Secret 仍不会再次展示。
+6. 点击“轮换 Secret”并确认后，系统会立即提高 `auth_version`、停用客户端，并使旧 Secret 与旧 JWT 失效。新 Secret 只在确认弹窗中展示一次，复制并通过本地 Token 自检后才能重新启用。
 
-页面不保存或展示长期 Access Token，也不能找回已有 Client Secret。刷新或离开一次性凭据页面后，只能重新轮换。`config_admin` 可以查看掩码状态；创建、编辑、轮换与启停仅允许拥有 `manage_api_clients` 的 `super_admin`。
+页面不保存或展示长期 Access Token，也不能找回已有 Client Secret。关闭或刷新一次性凭据弹窗后，页面只保留脱敏标识用于确认当前工作的凭据；完整 Secret 只能重新轮换获得。`config_admin` 可以查看掩码状态；创建、编辑、轮换与启停仅允许拥有 `manage_api_clients` 的 `super_admin`。
 
 后台只允许以下两个权限模板，管理员不能自由拼装 scope/capability：
 

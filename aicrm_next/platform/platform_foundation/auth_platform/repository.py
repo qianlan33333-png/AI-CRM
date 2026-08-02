@@ -541,6 +541,7 @@ def _public_api_client_metadata(row: dict[str, Any]) -> dict[str, Any]:
         "auth_version": int(row.get("auth_version") or 1),
         "token_ttl_seconds": int(row.get("token_ttl_seconds") or 1800),
         "enabled": bool(row.get("enabled")),
+        "credential_hint": str(row.get("credential_hint") or ""),
         "last_rotated_at": row.get("last_rotated_at"),
         "created_at": row.get("created_at"),
         "updated_at": row.get("updated_at"),

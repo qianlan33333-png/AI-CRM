@@ -88,6 +88,45 @@
   align-self: center;
 }
 
+.api-client-reactivate {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(300px, 1.2fr) auto auto;
+  align-items: end;
+  gap: 14px;
+  padding: 20px 26px;
+  border-top: 1px solid #e5e9f0;
+  background: #fbfcfe;
+}
+
+.api-client-reactivate > div:first-child {
+  display: grid;
+  gap: 4px;
+  align-self: center;
+}
+
+.api-client-reactivate strong {
+  color: #162033;
+  font-size: 14px;
+}
+
+.api-client-reactivate > div:first-child span {
+  color: #687386;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.api-client-secret-confirmation {
+  margin-top: 18px;
+}
+
+.api-client-credential-page .direct-api-key-record__actions {
+  min-width: 210px;
+}
+
+.api-client-credential-page .direct-api-key-record__actions .admin-button {
+  white-space: nowrap;
+}
+
 /* Single CRM API Key */
 .direct-api-key-page {
   --key-blue: #346df1;
@@ -486,6 +525,10 @@ body.has-api-key-modal {
     grid-column: 1 / -1;
     grid-row: 2;
   }
+
+  .api-client-reactivate {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 @media (max-width: 800px) {
@@ -500,6 +543,15 @@ body.has-api-key-modal {
 
   .api-client-form-wide {
     grid-column: auto;
+  }
+
+  .api-client-reactivate {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .api-client-reactivate .admin-button {
+    width: 100%;
   }
 
   .direct-api-key-overview {
@@ -561,6 +613,10 @@ body.has-api-key-modal {
 
   .direct-api-key-record__actions {
     justify-content: stretch;
+  }
+
+  .api-client-credential-page .direct-api-key-record__actions {
+    min-width: 0;
   }
 
   .direct-api-key-record__actions .admin-button {

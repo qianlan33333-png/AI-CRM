@@ -91,6 +91,10 @@ def test_super_admin_create_self_check_rotate_and_disable_invalidates_tokens(cli
     secret = created_body["client_secret"]
     assert secret
     assert created_body["client"]["enabled"] is False
+    assert created_body["client"]["credential_hint_available"] is True
+    assert created_body["client"]["credential_hint"].startswith(secret[:9])
+    assert created_body["client"]["credential_hint"].endswith(secret[-4:])
+    assert secret not in created_body["client"]["credential_hint"]
     assert repository.api_clients["prod-operator-api"].enabled is False
     assert "secret_hash" not in created.text
 
@@ -126,6 +130,8 @@ def test_super_admin_create_self_check_rotate_and_disable_invalidates_tokens(cli
     assert rotated.headers["cache-control"] == "no-store"
     assert rotated.json()["client"]["enabled"] is False
     assert rotated.json()["client_secret"] != secret
+    assert rotated.json()["client"]["credential_hint"].endswith(rotated.json()["client_secret"][-4:])
+    assert not rotated.json()["client"]["credential_hint"].endswith(secret[-4:])
     with pytest.raises(AuthError, match="client_disabled"):
         service.verify_access_token(
             issued.access_token,
@@ -158,6 +164,11 @@ def test_super_admin_create_self_check_rotate_and_disable_invalidates_tokens(cli
     ]
     assert secret not in str(audit)
     assert new_secret not in str(audit)
+
+    detail = client.get("/api/admin/config/api-clients/prod-operator-api")
+    assert detail.status_code == 200
+    assert detail.json()["client"]["credential_hint"] == rotated.json()["client"]["credential_hint"]
+    assert new_secret not in detail.text
 
 
 def test_fixed_templates_validation_and_existing_readonly_client_are_preserved(client, api_client_runtime) -> None:

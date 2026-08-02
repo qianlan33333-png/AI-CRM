@@ -159,6 +159,7 @@ class ApiClientAdminService:
                 corp_id=str(corp_id or "").strip(),
                 token_ttl_seconds=ttl_seconds,
                 enabled=False,
+                expose_credential_hint=True,
                 audit=_audit_record(operator, "api_client_created", normalized_id, before={}, after=after_audit),
             )
         except (IntegrityError, ValueError) as exc:
@@ -215,6 +216,7 @@ class ApiClientAdminService:
         predicted = {**_audit_item(before), "enabled": False, "auth_version": before["auth_version"] + 1}
         issued = self.client_service.rotate_secret_and_disable(
             client_id,
+            expose_credential_hint=True,
             audit=_audit_record(
                 operator,
                 "api_client_secret_rotated",
@@ -428,6 +430,8 @@ def _public_item(row: dict[str, Any], *, base_url: str, client_type: str) -> dic
         "status": "enabled" if enabled else "disabled",
         "status_label": "已启用" if enabled else "已停用",
         "auth_version": int(row.get("auth_version") or 1),
+        "credential_hint": str(row.get("credential_hint") or "aics_••••••••••••••••••"),
+        "credential_hint_available": bool(row.get("credential_hint")),
         "last_rotated_at": _time(row.get("last_rotated_at")),
         "created_at": _time(row.get("created_at")),
         "updated_at": _time(row.get("updated_at")),
@@ -471,6 +475,7 @@ def _metadata_from_record(record: ApiClientRecord) -> dict[str, Any]:
         "auth_version": record.auth_version,
         "token_ttl_seconds": record.token_ttl_seconds,
         "enabled": record.enabled,
+        "credential_hint": record.credential_hint,
         "last_rotated_at": None,
         "created_at": None,
         "updated_at": None,

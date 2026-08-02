@@ -1,7 +1,7 @@
 {% extends "admin_console/config_base.html" %}
 
 {% block head_extra %}
-<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/api_client_config.css') }}?v=api-client-config-v1">
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/api_client_config.css') }}?v=api-client-secret-status-v2">
 {% endblock %}
 
 {% block config_content %}
@@ -66,12 +66,12 @@
       <tbody>
         {% for client in clients %}
         <tr>
-          <td><strong>{{ client.display_name }}</strong><br><code>{{ client.client_id }}</code></td>
+          <td><strong>{{ client.display_name }}</strong><br><code>{{ client.client_id }}</code>{% if client.credential_hint_available %}<br><span class="admin-muted">{{ client.credential_hint }}</span>{% endif %}</td>
           <td>{{ client.type_label }}<br><span class="admin-muted">{{ client.permission_label }}</span></td>
           <td><span class="api-status{% if client.enabled %} is-enabled{% endif %}">{{ client.status_label }}</span>{% if client.system_managed %}<br><span class="admin-muted">系统预置</span>{% endif %}</td>
           <td>{{ client.token_ttl_minutes }} 分钟</td>
           <td>v{{ client.auth_version }}<br><span class="admin-muted">{{ client.last_rotated_at or "尚未轮换" }}</span></td>
-          <td><a class="admin-button admin-button--ghost" href="/admin/config/api-clients/{{ client.client_id | urlencode }}">查看</a></td>
+          <td><a class="admin-button admin-button--ghost" href="/admin/config/api-clients/{{ client.client_id | urlencode }}">{{ "查看状态" if client.system_managed else "管理 Secret" }}</a></td>
         </tr>
         {% else %}
         <tr><td colspan="6" class="admin-muted">没有符合条件的 API 客户端。</td></tr>

@@ -10,7 +10,6 @@ const listTemplate = readFileSync(resolve(root, "aicrm_next/app/admin_console/te
 
 const window = {
   AdminApi: { errorMessage: (_error, fallback) => fallback },
-  confirm: () => true,
 };
 const document = {
   addEventListener: () => {},
@@ -28,13 +27,23 @@ assert.match(source, /state\.secret = ""/);
 assert.match(source, /\/activate/);
 assert.match(source, /\/rotate-secret/);
 assert.match(source, /enabled: false/);
+assert.match(source, /openConfirmation\("rotate"/);
+assert.match(source, /data-client-secret-modal/);
+assert.match(source, /credential_hint/);
+assert.doesNotMatch(source, /global\.confirm/);
 
-assert.match(detailTemplate, /data-secret-panel hidden/);
-assert.match(detailTemplate, /刷新或离开页面后无法恢复/);
+assert.match(detailTemplate, /data-client-current/);
+assert.match(detailTemplate, /当前 Client Secret/);
+assert.match(detailTemplate, /data-client-secret-modal hidden/);
+assert.match(detailTemplate, /关闭后无法再次查看完整值/);
+assert.match(detailTemplate, /data-client-credential-hint/);
+assert.match(detailTemplate, /轮换 Secret/);
 assert.match(detailTemplate, /client\.enabled or client\.system_managed/);
 assert.match(detailTemplate, /系统预置客户端/);
 assert.doesNotMatch(detailTemplate, /<h1/i, "页面标题只能由后台统一 PageHeader 输出");
 assert.doesNotMatch(listTemplate, /<h1/i, "列表页标题只能由后台统一 PageHeader 输出");
 assert.match(listTemplate, /新建客户端/);
+assert.match(listTemplate, /管理 Secret/);
+assert.match(listTemplate, /查看状态/);
 
 console.log("api client config frontend contract passed");
