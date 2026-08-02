@@ -31,8 +31,10 @@ jobs:
           confirmation='${{ inputs.confirmation }}'
           test "$confirmation" = 'DIAGNOSE AI-CRM QUEUE PRODUCTION READ ONLY'
           printf '%s' "$expected_release_sha" | grep -Eq '^[0-9a-f]{40}$'
+          public_health_url='${{ vars.PUBLIC_HEALTH_URL }}'
+          printf '%s' "$public_health_url" | grep -Eq '^https://[^/]+/health$'
           curl -sSf -D /tmp/aicrm-production-diagnostic-health.headers \
-            https://www.youcangogogo.com/health \
+            "$public_health_url" \
             -o /tmp/aicrm-production-diagnostic-health.json
           public_sha="$(awk 'tolower($1) == "x-aicrm-release-sha:" {gsub("\\r", "", $2); print $2}' /tmp/aicrm-production-diagnostic-health.headers)"
           test "$public_sha" = "$expected_release_sha"

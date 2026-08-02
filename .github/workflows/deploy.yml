@@ -203,6 +203,75 @@ jobs:
               | tee /tmp/aicrm-binding-remediation-apply.json
             python3 -c 'import json; data=json.load(open("/tmp/aicrm-binding-remediation-apply.json", encoding="utf-8")); assert data["ok"] is True; assert data["status"] in {"applied", "already_applied"}; assert data["real_external_call_executed"] is False; assert data["backup_created"] is (data["status"] == "applied")'
 
+      - name: Repair authorized failed WeCom media lease
+        if: steps.release.outputs.base_sha == 'fd03cc53b094044d9ae798aa214606155b925f22'
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          command_timeout: 5m
+          script: |
+            set -e
+            set -o pipefail
+            cd /home/ubuntu/"极简 crm"
+            candidate_sha='${{ inputs.release_sha }}'
+            remediation_base_sha='${{ steps.release.outputs.base_sha }}'
+            remediation_manifest='deploy/failed_wecom_media_lease_remediation.json'
+            remediation_confirmation='EXECUTE_FAILED_WECOM_MEDIA_LEASE_20260802'
+            test "$remediation_base_sha" = 'fd03cc53b094044d9ae798aa214606155b925f22'
+            test "$(git rev-parse HEAD)" = "$remediation_base_sha"
+            test "$(tr -d '\r\n' < .release-sha)" = "$remediation_base_sha"
+            deploy_lock_file="/tmp/aicrm-deploy-production.lock"
+            exec 9>"$deploy_lock_file"
+            if ! flock -n 9; then
+              echo "another production deployment holds $deploy_lock_file"
+              exit 1
+            fi
+            candidate_bundle_dir="/tmp/aicrm-release-$candidate_sha"
+            candidate_bundle="$candidate_bundle_dir/aicrm-release.bundle"
+            candidate_bundle_checksum="$candidate_bundle_dir/aicrm-release.bundle.sha256"
+            test -r "$candidate_bundle"
+            test -r "$candidate_bundle_checksum"
+            (
+              cd "$candidate_bundle_dir"
+              sha256sum --check aicrm-release.bundle.sha256
+            )
+            git bundle verify "$candidate_bundle"
+            git fetch --no-tags "$candidate_bundle" \
+              "+refs/deploy/release:refs/remotes/deploy/media-lease-remediation"
+            test "$(git rev-parse refs/remotes/deploy/media-lease-remediation)" = "$candidate_sha"
+            remediation_dir="$(mktemp -d /tmp/aicrm-media-lease-remediation.XXXXXX)"
+            cleanup_remediation() {
+              rm -rf -- "$remediation_dir"
+            }
+            trap cleanup_remediation EXIT
+            git archive "$candidate_sha" \
+              aicrm_next \
+              scripts/ops/remediate_failed_wecom_media_lease.py \
+              "$remediation_manifest" \
+              | tar -x -C "$remediation_dir"
+            set -a
+            source /home/ubuntu/.openclaw-wecom-pg.env
+            set +a
+            source /home/ubuntu/venvs/openclaw/bin/activate
+            cd "$remediation_dir"
+            PYTHONPATH="$remediation_dir" python3 \
+              scripts/ops/remediate_failed_wecom_media_lease.py \
+              --manifest "$remediation_manifest" \
+              --mode preview \
+              --current-release-sha "$remediation_base_sha" \
+              | tee /tmp/aicrm-media-lease-remediation-preview.json
+            python3 -c 'import json; data=json.load(open("/tmp/aicrm-media-lease-remediation-preview.json", encoding="utf-8")); assert data["ok"] is True; assert data["status"] in {"ready", "already_applied"}; assert data["candidate_count"] in {0, 1}; assert data["database_write_executed"] is False; assert data["real_external_call_executed"] is False; assert data["contains_raw_material_identifier"] is False'
+            PYTHONPATH="$remediation_dir" python3 \
+              scripts/ops/remediate_failed_wecom_media_lease.py \
+              --manifest "$remediation_manifest" \
+              --mode apply \
+              --confirmation "$remediation_confirmation" \
+              --current-release-sha "$remediation_base_sha" \
+              | tee /tmp/aicrm-media-lease-remediation-apply.json
+            python3 -c 'import json; data=json.load(open("/tmp/aicrm-media-lease-remediation-apply.json", encoding="utf-8")); assert data["ok"] is True; assert data["status"] in {"applied", "already_applied"}; assert data["database_write_executed"] is (data["status"] == "applied"); assert data["real_external_call_executed"] is (data["status"] == "applied"); assert data["backup_created"] is (data["status"] == "applied"); assert data["contains_raw_material_identifier"] is False'
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
         with:
