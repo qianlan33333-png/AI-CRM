@@ -49560,6 +49560,16 @@
       "unit": "openclaw-internal-event-worker.timer"
     },
     {
+      "kind": "service",
+      "state": "retired_forbidden",
+      "unit": "openclaw-questionnaire-continuation-scheduler.service"
+    },
+    {
+      "kind": "timer",
+      "state": "retired_forbidden",
+      "unit": "openclaw-questionnaire-continuation-scheduler.timer"
+    },
+    {
       "kick_after_timer_restart": false,
       "kick_failure_fatal": false,
       "kind": "timer",

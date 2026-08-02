@@ -256,6 +256,8 @@
     "aicrm-automation-jobs-run-due.service",
     "aicrm-campaign-run-due.timer",
     "aicrm-campaign-run-due.service",
+    "openclaw-questionnaire-continuation-scheduler.timer",
+    "openclaw-questionnaire-continuation-scheduler.service",
     "openclaw-automation-conversion-due-runner.service",
     "openclaw-automation-conversion-due-runner.timer"
   ],
@@ -281,6 +283,8 @@
     "aicrm-automation-jobs-run-due.service",
     "aicrm-campaign-run-due.timer",
     "aicrm-campaign-run-due.service",
+    "openclaw-questionnaire-continuation-scheduler.timer",
+    "openclaw-questionnaire-continuation-scheduler.service",
     "openclaw-automation-conversion-due-runner.service",
     "openclaw-automation-conversion-due-runner.timer"
   ],

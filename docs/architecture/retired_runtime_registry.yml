@@ -55,7 +55,10 @@
         "openclaw-external-push-worker.service",
         "aicrm-reply-monitor-run-due.timer",
         "aicrm-reply-monitor-capture.timer",
-        "aicrm-automation-jobs-run-due.timer"
+        "aicrm-automation-jobs-run-due.timer",
+        "openclaw-questionnaire-continuation-scheduler.timer",
+        "openclaw-questionnaire-continuation-scheduler.service",
+        "run_questionnaire_continuation_scheduler.py"
       ],
       "allowed_paths": [
         "deploy/production_runtime_units.json",
