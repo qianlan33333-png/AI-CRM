@@ -31,6 +31,7 @@ assert.match(template, /不需要 Client ID/);
 assert.match(template, /可查询开放接口，不允许调用写操作/);
 assert.match(template, /can_manage_direct_api_key/);
 assert.doesNotMatch(template, /can_manage_api_clients/);
+assert.match(template, /direct-api-key-copy-fix-v2/, "复制修复必须更新静态资源版本，避免浏览器继续使用旧脚本");
 assert.doesNotMatch(template, /<h1/i, "页面标题只能由后台统一 PageHeader 输出");
 
 let resolveClipboardWrite;
