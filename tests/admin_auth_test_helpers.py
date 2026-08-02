@@ -81,11 +81,21 @@ class InMemoryAuthSessionRepository:
         self._append_api_client_audit(audit)
         return True
 
-    def rotate_api_client_secret(self, client_id: str, secret_hash: str) -> int | None:
+    def rotate_api_client_secret(
+        self,
+        client_id: str,
+        secret_hash: str,
+        credential_hint: str | None = None,
+    ) -> int | None:
         current = self.api_clients.get(client_id)
         if current is None:
             return None
-        updated = replace(current, secret_hash=secret_hash, auth_version=current.auth_version + 1)
+        updated = replace(
+            current,
+            secret_hash=secret_hash,
+            auth_version=current.auth_version + 1,
+            credential_hint=credential_hint or current.credential_hint,
+        )
         self.api_clients[client_id] = updated
         return updated.auth_version
 
@@ -93,6 +103,7 @@ class InMemoryAuthSessionRepository:
         self,
         client_id: str,
         secret_hash: str,
+        credential_hint: str | None = None,
         *,
         audit: AdminAuditRecord | None = None,
     ) -> int | None:
@@ -100,7 +111,13 @@ class InMemoryAuthSessionRepository:
         if current is None:
             return None
         self._check_api_client_audit(audit)
-        updated = replace(current, secret_hash=secret_hash, enabled=False, auth_version=current.auth_version + 1)
+        updated = replace(
+            current,
+            secret_hash=secret_hash,
+            enabled=False,
+            auth_version=current.auth_version + 1,
+            credential_hint=credential_hint or current.credential_hint,
+        )
         self.api_clients[client_id] = updated
         self._append_api_client_audit(audit)
         return updated.auth_version
@@ -109,6 +126,7 @@ class InMemoryAuthSessionRepository:
         self,
         client_id: str,
         secret_hash: str,
+        credential_hint: str | None = None,
         *,
         audit: AdminAuditRecord | None = None,
     ) -> int | None:
@@ -116,7 +134,13 @@ class InMemoryAuthSessionRepository:
         if current is None:
             return None
         self._check_api_client_audit(audit)
-        updated = replace(current, secret_hash=secret_hash, enabled=True, auth_version=current.auth_version + 1)
+        updated = replace(
+            current,
+            secret_hash=secret_hash,
+            enabled=True,
+            auth_version=current.auth_version + 1,
+            credential_hint=credential_hint or current.credential_hint,
+        )
         self.api_clients[client_id] = updated
         self._append_api_client_audit(audit)
         return updated.auth_version
@@ -162,6 +186,7 @@ class InMemoryAuthSessionRepository:
             "auth_version": record.auth_version,
             "token_ttl_seconds": record.token_ttl_seconds,
             "enabled": record.enabled,
+            "credential_hint": record.credential_hint,
             "last_rotated_at": None,
             "created_at": None,
             "updated_at": None,

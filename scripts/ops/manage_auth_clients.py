@@ -32,7 +32,12 @@ from scripts.ops.migrate_app_setting_secrets import _persist_environment_values 
 class AuthClientRepository(Protocol):
     def api_client(self, client_id: str) -> ApiClientRecord | None: ...
 
-    def rotate_api_client_secret(self, client_id: str, secret_hash: str) -> int | None: ...
+    def rotate_api_client_secret(
+        self,
+        client_id: str,
+        secret_hash: str,
+        credential_hint: str | None = None,
+    ) -> int | None: ...
 
     def set_api_client_enabled(self, client_id: str, enabled: bool) -> int | None: ...
 

@@ -182,8 +182,14 @@ def test_execution_timeline_graph_indexes_are_the_single_head() -> None:
     audience_template_registry_source = audience_template_registry.read_text(
         encoding="utf-8"
     )
+    api_client_credential_hint = VERSIONS / "0166_auth_api_client_credential_hint.py"
+    api_client_credential_hint_source = api_client_credential_hint.read_text(encoding="utf-8")
 
-    assert heads == {"0165_ai_audience_template_registry"}
+    assert heads == {"0166_auth_api_client_credential_hint"}
+    assert revisions["0166_auth_api_client_credential_hint"]["down_revision"] == (
+        "0165_ai_audience_template_registry"
+    )
+    assert "credential_hint TEXT NOT NULL DEFAULT ''" in api_client_credential_hint_source
     assert revisions["0165_ai_audience_template_registry"]["down_revision"] == (
         "0164_ai_audience_send_record_read_index"
     )

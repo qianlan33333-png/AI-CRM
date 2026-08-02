@@ -30,12 +30,18 @@ class ApiClientRepository(Protocol):
 
     def update_api_client_definition(self, client: ApiClientRecord, *, audit: AdminAuditRecord | None = None) -> bool: ...
 
-    def rotate_api_client_secret(self, client_id: str, secret_hash: str) -> int | None: ...
+    def rotate_api_client_secret(
+        self,
+        client_id: str,
+        secret_hash: str,
+        credential_hint: str | None = None,
+    ) -> int | None: ...
 
     def rotate_api_client_secret_and_disable(
         self,
         client_id: str,
         secret_hash: str,
+        credential_hint: str | None = None,
         *,
         audit: AdminAuditRecord | None = None,
     ) -> int | None: ...
@@ -44,6 +50,7 @@ class ApiClientRepository(Protocol):
         self,
         client_id: str,
         secret_hash: str,
+        credential_hint: str | None = None,
         *,
         audit: AdminAuditRecord | None = None,
     ) -> int | None: ...
@@ -108,6 +115,7 @@ class ApiClientService:
         owner_scope: dict[str, Any] | None = None,
         token_ttl_seconds: int = DEFAULT_TOKEN_TTL_SECONDS,
         enabled: bool = True,
+        expose_credential_hint: bool = False,
         audit: AdminAuditRecord | None = None,
     ) -> IssuedClientSecret:
         normalized_client_id = _required(client_id, "client_id")
@@ -132,6 +140,7 @@ class ApiClientService:
             auth_version=1,
             token_ttl_seconds=_token_ttl(token_ttl_seconds),
             enabled=bool(enabled),
+            credential_hint=_credential_hint(secret) if expose_credential_hint else "",
         )
         if not record.audiences or not record.scopes or not record.capabilities:
             raise ValueError("API client audiences, scopes, and capabilities are required")
@@ -171,21 +180,35 @@ class ApiClientService:
         self.invalidate(desired.client_id)
         return changed
 
-    def rotate_secret(self, client_id: str) -> IssuedClientSecret:
+    def rotate_secret(self, client_id: str, *, expose_credential_hint: bool = False) -> IssuedClientSecret:
         current = self.repository.api_client(_required(client_id, "client_id"))
         if current is None:
             raise ValueError("client_not_found")
         secret = issue_client_secret()
-        auth_version = self.repository.rotate_api_client_secret(current.client_id, hash_client_secret(secret))
+        credential_hint = _credential_hint(secret) if expose_credential_hint else None
+        auth_version = self.repository.rotate_api_client_secret(
+            current.client_id,
+            hash_client_secret(secret),
+            credential_hint,
+        )
         if auth_version is None:
             raise ValueError("client_not_found")
         self.invalidate(current.client_id)
-        return IssuedClientSecret(client=replace(current, secret_hash="", auth_version=auth_version), client_secret=secret)
+        return IssuedClientSecret(
+            client=replace(
+                current,
+                secret_hash="",
+                auth_version=auth_version,
+                credential_hint=credential_hint or current.credential_hint,
+            ),
+            client_secret=secret,
+        )
 
     def rotate_secret_and_disable(
         self,
         client_id: str,
         *,
+        expose_credential_hint: bool = False,
         audit: AdminAuditRecord | None = None,
     ) -> IssuedClientSecret:
         current = self.repository.api_client(_required(client_id, "client_id"))
@@ -193,16 +216,28 @@ class ApiClientService:
             raise ValueError("client_not_found")
         secret = issue_client_secret()
         secret_hash = hash_client_secret(secret)
+        credential_hint = _credential_hint(secret) if expose_credential_hint else None
         auth_version = (
-            self.repository.rotate_api_client_secret_and_disable(current.client_id, secret_hash)
+            self.repository.rotate_api_client_secret_and_disable(current.client_id, secret_hash, credential_hint)
             if audit is None
-            else self.repository.rotate_api_client_secret_and_disable(current.client_id, secret_hash, audit=audit)
+            else self.repository.rotate_api_client_secret_and_disable(
+                current.client_id,
+                secret_hash,
+                credential_hint,
+                audit=audit,
+            )
         )
         if auth_version is None:
             raise ValueError("client_not_found")
         self.invalidate(current.client_id)
         return IssuedClientSecret(
-            client=replace(current, secret_hash="", auth_version=auth_version, enabled=False),
+            client=replace(
+                current,
+                secret_hash="",
+                auth_version=auth_version,
+                enabled=False,
+                credential_hint=credential_hint or current.credential_hint,
+            ),
             client_secret=secret,
         )
 
@@ -210,6 +245,7 @@ class ApiClientService:
         self,
         client_id: str,
         *,
+        expose_credential_hint: bool = False,
         audit: AdminAuditRecord | None = None,
     ) -> IssuedClientSecret:
         current = self.repository.api_client(_required(client_id, "client_id"))
@@ -217,16 +253,28 @@ class ApiClientService:
             raise ValueError("client_not_found")
         secret = issue_client_secret()
         secret_hash = hash_client_secret(secret)
+        credential_hint = _credential_hint(secret) if expose_credential_hint else None
         auth_version = (
-            self.repository.rotate_api_client_secret_and_enable(current.client_id, secret_hash)
+            self.repository.rotate_api_client_secret_and_enable(current.client_id, secret_hash, credential_hint)
             if audit is None
-            else self.repository.rotate_api_client_secret_and_enable(current.client_id, secret_hash, audit=audit)
+            else self.repository.rotate_api_client_secret_and_enable(
+                current.client_id,
+                secret_hash,
+                credential_hint,
+                audit=audit,
+            )
         )
         if auth_version is None:
             raise ValueError("client_not_found")
         self.invalidate(current.client_id)
         return IssuedClientSecret(
-            client=replace(current, secret_hash="", auth_version=auth_version, enabled=True),
+            client=replace(
+                current,
+                secret_hash="",
+                auth_version=auth_version,
+                enabled=True,
+                credential_hint=credential_hint or current.credential_hint,
+            ),
             client_secret=secret,
         )
 
@@ -464,6 +512,13 @@ def _token_ttl(value: int) -> int:
     if ttl < 60 or ttl > MAX_TOKEN_TTL_SECONDS:
         raise ValueError("token TTL must be between 60 and 3600 seconds")
     return ttl
+
+
+def _credential_hint(secret: str) -> str:
+    value = str(secret or "")
+    if not value.startswith(CLIENT_SECRET_PREFIX) or len(value) < 13:
+        raise ValueError("client secret is invalid")
+    return f"{value[:9]}{'•' * 14}{value[-4:]}"
 
 
 def _utc(value: datetime) -> datetime:

@@ -49,6 +49,10 @@ def test_generate_direct_key_is_once_only_hashed_and_read_only(client, direct_ap
     api_key = body["api_key"]
     assert api_key.startswith("aics_")
     assert body["api_key_status"]["enabled"] is True
+    assert body["api_key_status"]["credential_hint_available"] is True
+    assert body["api_key_status"]["credential_hint"].startswith(api_key[:9])
+    assert body["api_key_status"]["credential_hint"].endswith(api_key[-4:])
+    assert api_key not in body["api_key_status"]["credential_hint"]
     assert "secret_hash" not in created.text
     assert api_key not in str(repository.api_client_audits)
 
@@ -64,6 +68,7 @@ def test_generate_direct_key_is_once_only_hashed_and_read_only(client, direct_ap
     assert status_response.status_code == 200
     assert api_key not in status_response.text
     assert "secret_hash" not in status_response.text
+    assert status_response.json()["api_key_status"]["credential_hint"] == body["api_key_status"]["credential_hint"]
 
     context = service.verify_access_token(
         api_key,
@@ -100,6 +105,8 @@ def test_rotate_immediately_invalidates_old_key_and_disable_invalidates_new_key(
     new_key = rotated.json()["api_key"]
     assert new_key != old_key
     assert rotated.json()["api_key_status"]["auth_version"] == 2
+    assert rotated.json()["api_key_status"]["credential_hint"].endswith(new_key[-4:])
+    assert not rotated.json()["api_key_status"]["credential_hint"].endswith(old_key[-4:])
 
     with pytest.raises(AuthError, match="invalid_access_token"):
         service.verify_access_token(old_key, audience="external_integration", client_purpose="external_agent")
@@ -133,7 +140,7 @@ def test_read_permissions_unknown_fields_action_tokens_and_audit_rollback(client
     install_admin_session(client, "config_admin")
     page = client.get("/admin/config/api-key")
     assert page.status_code == 200
-    assert "生成并启用 API Key" in page.text
+    assert "生成 API Key" in page.text
     assert client.get("/api/admin/config/api-key").json()["api_key_status"]["configured"] is False
 
     generated = client.post(

@@ -36,6 +36,8 @@ class DirectExternalApiKeyService:
             "status": "enabled" if enabled else ("disabled" if configured else "unconfigured"),
             "status_label": "已启用" if enabled else ("已停用" if configured else "未配置"),
             "auth_version": int((metadata or {}).get("auth_version") or 0),
+            "credential_hint": str((metadata or {}).get("credential_hint") or "aics_••••••••••••••••••"),
+            "credential_hint_available": bool((metadata or {}).get("credential_hint")),
             "last_rotated_at": _time((metadata or {}).get("last_rotated_at")),
             "created_at": _time((metadata or {}).get("created_at")),
             "base_url": base_url,
@@ -74,6 +76,7 @@ class DirectExternalApiKeyService:
                 corp_id=str(corp_id or "").strip(),
                 token_ttl_seconds=1800,
                 enabled=True,
+                expose_credential_hint=True,
                 audit=_audit(
                     operator,
                     "direct_external_api_key_generated",
@@ -89,6 +92,7 @@ class DirectExternalApiKeyService:
         current = self._record()
         issued = self.client_service.rotate_secret_and_enable(
             DIRECT_EXTERNAL_API_KEY_CLIENT_ID,
+            expose_credential_hint=True,
             audit=_audit(
                 operator,
                 "direct_external_api_key_rotated",
@@ -136,12 +140,13 @@ class DirectExternalApiKeyService:
         if callable(method):
             metadata = method(DIRECT_EXTERNAL_API_KEY_CLIENT_ID)
             if metadata is not None:
-                return dict(metadata)
+                return {**dict(metadata), "credential_hint": record.credential_hint}
         return {
             "enabled": record.enabled,
             "auth_version": record.auth_version,
             "last_rotated_at": None,
             "created_at": None,
+            "credential_hint": record.credential_hint,
         }
 
 

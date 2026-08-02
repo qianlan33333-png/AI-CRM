@@ -25,14 +25,18 @@ assert.match(source, /\/api\/admin\/config\/api-key\/rotate/);
 assert.match(source, /enabled: false/);
 assert.match(source, /payload\.api_key/);
 
-assert.match(template, /data-api-key-secret-panel hidden/);
-assert.match(template, /页面刷新后无法找回/);
-assert.match(template, /不需要 Client ID/);
-assert.match(template, /可查询开放接口，不允许调用写操作/);
+assert.match(template, /data-api-key-modal hidden/);
+assert.match(template, /data-api-key-secret-view hidden/);
+assert.match(template, /data-credential-hint/);
+assert.match(template, /正在工作的 Key/);
+assert.match(template, /关闭后无法再次查看完整值/);
+assert.match(template, /无需 Client ID/);
+assert.match(template, /只读访问/);
 assert.match(template, /can_manage_direct_api_key/);
 assert.doesNotMatch(template, /can_manage_api_clients/);
-assert.match(template, /direct-api-key-copy-fix-v2/, "复制修复必须更新静态资源版本，避免浏览器继续使用旧脚本");
+assert.match(template, /direct-api-key-status-v5/, "状态确认 UI 必须更新静态资源版本，避免浏览器继续使用旧脚本");
 assert.doesNotMatch(template, /<h1/i, "页面标题只能由后台统一 PageHeader 输出");
+assert.doesNotMatch(template, /data-api-key-list/, "单 Key 页面不应演变为多 Key 列表");
 
 let resolveClipboardWrite;
 const clipboardWrite = new Promise((resolve) => {
@@ -50,12 +54,15 @@ const copyButton = {
 const secretInput = { value: "aics_test_key", type: "password" };
 const alertNode = { textContent: "", hidden: true };
 const elements = new Map([
-  ["[data-api-key-secret-panel]", { hidden: true }],
   ["[data-api-key-value]", secretInput],
   ["[data-api-key-alert]", alertNode],
   ["[data-copy-api-key]", copyButton],
 ]);
-window.DirectApiKeyConfig.init({ querySelector: (selector) => elements.get(selector) || null });
+window.DirectApiKeyConfig.init({
+  dataset: {},
+  querySelector: (selector) => elements.get(selector) || null,
+  querySelectorAll: () => [],
+});
 
 const event = { currentTarget: copyButton };
 const copyResult = copyClickHandler(event);
