@@ -7,7 +7,7 @@ import os
 from typing import Any
 
 
-EXPECTED_MIGRATION_HEAD = "0165_ai_audience_template_registry"
+EXPECTED_MIGRATION_HEAD = "0166_auth_api_client_credential_hint"
 MANUAL_INDEX = "idx_user_ops_send_records_ai_audience"
 AUTOMATION_INDEX = "idx_cloud_broadcast_plans_ai_audience_send_records"
 REQUIRED_TABLES = (

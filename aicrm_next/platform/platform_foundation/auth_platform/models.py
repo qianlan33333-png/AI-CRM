@@ -24,6 +24,7 @@ class ApiClientRecord:
     auth_version: int
     token_ttl_seconds: int
     enabled: bool
+    credential_hint: str = ""
 
 
 @dataclass(frozen=True)

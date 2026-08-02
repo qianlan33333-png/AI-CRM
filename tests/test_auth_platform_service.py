@@ -32,11 +32,16 @@ class _Repository:
         self.clients[client.client_id] = replace(client, secret_hash=current.secret_hash, auth_version=current.auth_version)
         return True
 
-    def rotate_api_client_secret(self, client_id: str, secret_hash: str):
+    def rotate_api_client_secret(self, client_id: str, secret_hash: str, credential_hint: str | None = None):
         current = self.clients.get(client_id)
         if current is None:
             return None
-        updated = replace(current, secret_hash=secret_hash, auth_version=current.auth_version + 1)
+        updated = replace(
+            current,
+            secret_hash=secret_hash,
+            auth_version=current.auth_version + 1,
+            credential_hint=credential_hint or current.credential_hint,
+        )
         self.clients[client_id] = updated
         return updated.auth_version
 

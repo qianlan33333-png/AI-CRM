@@ -24,12 +24,18 @@ class _Repository:
     def api_client(self, client_id: str) -> ApiClientRecord | None:
         return self.record if client_id == self.record.client_id else None
 
-    def rotate_api_client_secret(self, client_id: str, secret_hash: str) -> int | None:
+    def rotate_api_client_secret(
+        self,
+        client_id: str,
+        secret_hash: str,
+        credential_hint: str | None = None,
+    ) -> int | None:
         if client_id != self.record.client_id:
             return None
         self.record = replace(
             self.record,
             secret_hash=secret_hash,
+            credential_hint=credential_hint or self.record.credential_hint,
             auth_version=self.record.auth_version + 1,
         )
         return self.record.auth_version

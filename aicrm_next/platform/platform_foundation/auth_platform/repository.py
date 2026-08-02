@@ -109,12 +109,12 @@ class PostgresAuthRepository:
                     """
                     INSERT INTO auth_api_clients (
                         client_id, principal_id, principal_type, purpose, display_name,
-                        secret_hash, audiences_json, scopes_json,
+                        secret_hash, credential_hint, audiences_json, scopes_json,
                         capabilities_json, allowed_cidrs_json, corp_id,
                         owner_scope_json, auth_version, token_ttl_seconds, enabled
                     ) VALUES (
                         :client_id, :principal_id, :principal_type, :purpose, :display_name,
-                        :secret_hash, CAST(:audiences AS JSONB), CAST(:scopes AS JSONB),
+                        :secret_hash, :credential_hint, CAST(:audiences AS JSONB), CAST(:scopes AS JSONB),
                         CAST(:capabilities AS JSONB), CAST(:allowed_cidrs AS JSONB), :corp_id,
                         CAST(:owner_scope AS JSONB), :auth_version, :token_ttl_seconds, :enabled
                     )
@@ -152,7 +152,12 @@ class PostgresAuthRepository:
                 _append_admin_audit(session, audit)
             return changed
 
-    def rotate_api_client_secret(self, client_id: str, secret_hash: str) -> int | None:
+    def rotate_api_client_secret(
+        self,
+        client_id: str,
+        secret_hash: str,
+        credential_hint: str | None = None,
+    ) -> int | None:
         with self._session_factory.begin() as session:
             row = (
                 session.execute(
@@ -160,6 +165,7 @@ class PostgresAuthRepository:
                         """
                         UPDATE auth_api_clients
                         SET secret_hash = :secret_hash,
+                            credential_hint = COALESCE(:credential_hint, credential_hint),
                             auth_version = auth_version + 1,
                             last_rotated_at = CURRENT_TIMESTAMP,
                             updated_at = CURRENT_TIMESTAMP
@@ -167,7 +173,11 @@ class PostgresAuthRepository:
                         RETURNING auth_version
                         """
                     ),
-                    {"client_id": str(client_id or "").strip(), "secret_hash": secret_hash},
+                    {
+                        "client_id": str(client_id or "").strip(),
+                        "secret_hash": secret_hash,
+                        "credential_hint": credential_hint,
+                    },
                 )
                 .mappings()
                 .first()
@@ -178,6 +188,7 @@ class PostgresAuthRepository:
         self,
         client_id: str,
         secret_hash: str,
+        credential_hint: str | None = None,
         *,
         audit: AdminAuditRecord | None = None,
     ) -> int | None:
@@ -188,6 +199,7 @@ class PostgresAuthRepository:
                         """
                         UPDATE auth_api_clients
                         SET secret_hash = :secret_hash,
+                            credential_hint = COALESCE(:credential_hint, credential_hint),
                             enabled = FALSE,
                             auth_version = auth_version + 1,
                             last_rotated_at = CURRENT_TIMESTAMP,
@@ -196,7 +208,11 @@ class PostgresAuthRepository:
                         RETURNING auth_version
                         """
                     ),
-                    {"client_id": str(client_id or "").strip(), "secret_hash": secret_hash},
+                    {
+                        "client_id": str(client_id or "").strip(),
+                        "secret_hash": secret_hash,
+                        "credential_hint": credential_hint,
+                    },
                 )
                 .mappings()
                 .first()
@@ -209,6 +225,7 @@ class PostgresAuthRepository:
         self,
         client_id: str,
         secret_hash: str,
+        credential_hint: str | None = None,
         *,
         audit: AdminAuditRecord | None = None,
     ) -> int | None:
@@ -219,6 +236,7 @@ class PostgresAuthRepository:
                         """
                         UPDATE auth_api_clients
                         SET secret_hash = :secret_hash,
+                            credential_hint = COALESCE(:credential_hint, credential_hint),
                             enabled = TRUE,
                             auth_version = auth_version + 1,
                             last_rotated_at = CURRENT_TIMESTAMP,
@@ -227,7 +245,11 @@ class PostgresAuthRepository:
                         RETURNING auth_version
                         """
                     ),
-                    {"client_id": str(client_id or "").strip(), "secret_hash": secret_hash},
+                    {
+                        "client_id": str(client_id or "").strip(),
+                        "secret_hash": secret_hash,
+                        "credential_hint": credential_hint,
+                    },
                 )
                 .mappings()
                 .first()
@@ -459,6 +481,7 @@ def _api_client_params(client: ApiClientRecord) -> dict[str, Any]:
         "purpose": client.purpose,
         "display_name": client.display_name,
         "secret_hash": client.secret_hash,
+        "credential_hint": client.credential_hint,
         "audiences": _json_text(list(client.audiences)),
         "scopes": _json_text(list(client.scopes)),
         "capabilities": _json_text(list(client.capabilities)),
@@ -498,6 +521,7 @@ def _api_client(row: dict[str, Any]) -> ApiClientRecord:
         auth_version=int(row.get("auth_version") or 1),
         token_ttl_seconds=int(row.get("token_ttl_seconds") or 1800),
         enabled=bool(row.get("enabled")),
+        credential_hint=str(row.get("credential_hint") or ""),
     )
 
 
