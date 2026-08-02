@@ -684,12 +684,20 @@ def phase_authorize_web_start(manifest: dict[str, Any], runner: Runner) -> None:
 
 def phase_authorize_runtime_start(manifest: dict[str, Any], runner: Runner) -> None:
     runner.run(["sudo", "test", "-e", str(DEPLOY_GUARD_FILE)])
-    runner.run(["sudo", "test", "-e", str(WEB_START_AUTHORIZATION_FILE)])
+    # The narrow Web authorization lives under /run and can disappear after the
+    # exact-SHA Web smoke. The broader runtime authorization must never pre-exist.
+    runner.run(["sudo", "test", "!", "-e", str(RUNTIME_START_AUTHORIZATION_FILE)])
     _require_active(
         runner,
         primary_web_service(manifest).service,
         error_prefix="primary Web must be active before runtime authorization",
     )
+    web_authorization = runner.run(
+        ["sudo", "test", "-e", str(WEB_START_AUTHORIZATION_FILE)],
+        check=False,
+    )
+    if runner.execute and web_authorization is not None and web_authorization.returncode != 0:
+        print("web_start_authorization=missing_after_verified_web_smoke action=continue")
     runner.run(["sudo", "touch", str(RUNTIME_START_AUTHORIZATION_FILE)])
     runner.run(["sudo", "chmod", "0644", str(RUNTIME_START_AUTHORIZATION_FILE)])
     runner.run(["sudo", "rm", "-f", str(WEB_START_AUTHORIZATION_FILE)])
