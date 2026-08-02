@@ -954,6 +954,9 @@ def test_queue_production_diagnostics_is_count_only_and_requires_exact_public_re
     workflow = (ROOT / ".github" / "workflows" / "queue-production-diagnostics.yml").read_text(encoding="utf-8")
 
     assert "DIAGNOSE AI-CRM QUEUE PRODUCTION READ ONLY" in workflow
+    assert "public_health_url='${{ vars.PUBLIC_HEALTH_URL }}'" in workflow
+    assert '"$public_health_url"' in workflow
+    assert "https://www.youcangogogo.com/health" not in workflow
     assert 'test "$public_sha" = "$expected_release_sha"' in workflow
     assert 'test "$(git rev-parse HEAD)" = "$expected_release_sha"' in workflow
     source_index = workflow.index("source /home/ubuntu/.openclaw-wecom-pg.env")
