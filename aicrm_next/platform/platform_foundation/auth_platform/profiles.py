@@ -5,6 +5,10 @@ from dataclasses import dataclass
 from .context import PrincipalType
 
 
+DIRECT_EXTERNAL_API_KEY_CLIENT_ID = "aicrm-direct-external-api-key"
+DIRECT_EXTERNAL_API_KEY_PURPOSE = "external_agent"
+
+
 @dataclass(frozen=True)
 class ApiClientProfile:
     purpose: str

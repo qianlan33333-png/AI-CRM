@@ -104,6 +104,7 @@ CAPABILITY_SPECS: tuple[CapabilitySpec, ...] = (
             "webhook_inbox",
             "admin_auth",
             "admin_config",
+            "admin_config_api_key",
             "admin_jobs",
         ),
         config_sections=("admin_auth", "infrastructure", "reliability", "webhooks"),

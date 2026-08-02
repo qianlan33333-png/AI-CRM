@@ -28,24 +28,24 @@ https://www.youcangogogo.com
 
 ```bash
 BASE_URL="https://www.youcangogogo.com"
-AICRM_ACCESS_TOKEN="<short-lived-client-credentials-jwt>"
+CRM_API_KEY="<后台仅展示一次的唯一 API Key>"
 ```
 
 ## 鉴权
 
-### 获取 Client ID 与 Client Secret
+### 获取唯一 API Key
 
-首选流程是由超级管理员进入后台「系统配置 → API 接入与 Token」（`/admin/config/api-clients`），新建 `External API` 客户端。创建后客户端默认停用；Client Secret 只显示一次，复制确认并通过页面自检后才启用。无需 SSH 登录服务器，也不要配置固定 Access Token。
+超级管理员进入后台「系统配置 → CRM 开放 API Key」（`/admin/config/api-key`），点击“生成并启用 API Key”。Key 只显示一次，复制后即可直接调用，无需 SSH、Client ID 或 `/oauth/token`。
 
-新建 External API 客户端固定拥有 `read write` scope 与 `external_read external_write` capability；实际调用仍应按最小权限只申请本次需要的 scope。历史 `aicrm-external-reader-qianlan` 保持 `read` / `external_read`，不会因纳入后台管理而增加写权限。
+该唯一 Key 固定只有 `read` scope 与 `external_read` capability，不能调用任何写接口。遗失时重新生成；重新生成后旧 Key 立即失效。
 
-所有请求都必须携带由注册 `external_agent` 客户端通过 TLS `POST /oauth/token` 换取的短期 JWT：
+所有请求都在 Header 中直接携带唯一 Key：
 
 ```http
-Authorization: Bearer <short-lived-client-credentials-jwt>
+Authorization: Bearer <CRM_API_KEY>
 ```
 
-换取时使用 `audience=external_integration`、`scope=read`；完整流程见 [`auth_client_credentials.md`](auth_client_credentials.md)。聊天、订单、用户和问卷接口均校验 `external_read` capability，不再接受归档或自动化共享 Token。
+完整的生成、轮换与停用规则见 [`auth_client_credentials.md`](auth_client_credentials.md)。聊天、订单、用户和问卷接口均校验 `external_read` capability，不接受运行环境共享 Token。
 
 错误语义：
 
@@ -53,7 +53,7 @@ Authorization: Bearer <short-lived-client-credentials-jwt>
 |---|---:|---|
 | 请求未带 Token | `401` | `access_token_required` |
 | Token 错误或签名无效 | `401` | `invalid_access_token` |
-| Token 已过期 | `401` | `access_token_expired` |
+| Key 已停用 | `401` | `client_disabled` |
 | audience、scope 或 capability 越权 | `403` | `invalid_target` / `scope_or_capability_required` |
 
 ## 查询用户基础信息
@@ -78,7 +78,7 @@ GET /api/external/users/resolve
 ### 请求示例
 
 ```bash
-curl -H "Authorization: Bearer $AICRM_ACCESS_TOKEN" \
+curl -H "Authorization: Bearer $CRM_API_KEY" \
 "https://www.youcangogogo.com/api/external/users/resolve?unionid=orSqJ5iT9UoeYQRVxvAoo_8avkmA"
 ```
 
@@ -148,7 +148,7 @@ curl -H "Authorization: Bearer $AICRM_ACCESS_TOKEN" \
 GET /api/external/chat-records
 ```
 
-按用户身份键查询本地归档聊天记录。该接口使用统一 `external_agent` 短期 JWT，只读本地 `archived_messages`/消息读模型，不会实时调用企微，也不会发送消息或触发自动化。
+按用户身份键查询本地归档聊天记录。该接口使用统一 CRM 开放 API Key，只读本地 `archived_messages`/消息读模型，不会实时调用企微，也不会发送消息或触发自动化。
 
 ### Query 参数
 
@@ -171,28 +171,28 @@ GET /api/external/chat-records
 按手机号查询与 `HuangYouCan` 的私信记录：
 
 ```bash
-curl -H "Authorization: Bearer $AICRM_ACCESS_TOKEN" \
+curl -H "Authorization: Bearer $CRM_API_KEY" \
 "https://www.youcangogogo.com/api/external/chat-records?mobile=13800138000&start_time=1780272000&chat_scene=private"
 ```
 
 按 unionid 查询与指定员工的私信记录：
 
 ```bash
-curl -H "Authorization: Bearer $AICRM_ACCESS_TOKEN" \
+curl -H "Authorization: Bearer $CRM_API_KEY" \
 "https://www.youcangogogo.com/api/external/chat-records?unionid=orSqJ5iT9UoeYQRVxvAoo_8avkmA&start_time=1780272000&chat_scene=private&with_userid=ZhaoYanFang"
 ```
 
 按 external_userid 查询群聊记录：
 
 ```bash
-curl -H "Authorization: Bearer $AICRM_ACCESS_TOKEN" \
+curl -H "Authorization: Bearer $CRM_API_KEY" \
 "https://www.youcangogogo.com/api/external/chat-records?external_userid=wm_xxx&start_time=1780272000&chat_scene=group"
 ```
 
 拉取下一页：
 
 ```bash
-curl -H "Authorization: Bearer $AICRM_ACCESS_TOKEN" \
+curl -H "Authorization: Bearer $CRM_API_KEY" \
 "https://www.youcangogogo.com/api/external/chat-records?mobile=13800138000&start_time=1780272000&chat_scene=private&cursor=xxxx"
 ```
 
@@ -300,7 +300,7 @@ curl -H "Authorization: Bearer $AICRM_ACCESS_TOKEN" \
 GET /api/external/questionnaire-submissions
 ```
 
-按用户身份键查询问卷提交和答案快照。该接口与订单 API 使用同一个 `external_agent` 短期 JWT，只读本地问卷提交读模型，不会触发外部推送、企微打标、支付或自动化动作。
+按用户身份键查询问卷提交和答案快照。该接口与订单 API 使用同一个 CRM 开放 API Key，只读本地问卷提交读模型，不会触发外部推送、企微打标、支付或自动化动作。
 
 ### Query 参数
 
@@ -322,21 +322,21 @@ GET /api/external/questionnaire-submissions
 按真实付费用户手机号查询最近 5 条问卷提交：
 
 ```bash
-curl -H "Authorization: Bearer $AICRM_ACCESS_TOKEN" \
+curl -H "Authorization: Bearer $CRM_API_KEY" \
 "https://www.youcangogogo.com/api/external/questionnaire-submissions?mobile=13800138000&limit=5"
 ```
 
 按 unionid + 指定问卷查询：
 
 ```bash
-curl -H "Authorization: Bearer $AICRM_ACCESS_TOKEN" \
+curl -H "Authorization: Bearer $CRM_API_KEY" \
 "https://www.youcangogogo.com/api/external/questionnaire-submissions?unionid=orSqJ5iT9UoeYQRVxvAoo_8avkmA&questionnaire_id=21&limit=5"
 ```
 
 按时间窗口查询：
 
 ```bash
-curl -H "Authorization: Bearer $AICRM_ACCESS_TOKEN" \
+curl -H "Authorization: Bearer $CRM_API_KEY" \
 "https://www.youcangogogo.com/api/external/questionnaire-submissions?mobile=13800138000&submitted_from=1780272000&submitted_to=1781222399&limit=20"
 ```
 
@@ -480,21 +480,21 @@ GET /api/external/orders
 拉取 2026-06-01 至 2026-06-11 的所有已付款订单：
 
 ```bash
-curl -H "Authorization: Bearer $AICRM_ACCESS_TOKEN" \
+curl -H "Authorization: Bearer $CRM_API_KEY" \
 "https://www.youcangogogo.com/api/external/orders?provider=all&paid_from=1780272000&paid_to=1781222399&is_paid=true&limit=100"
 ```
 
 只拉取订阅版月付：
 
 ```bash
-curl -H "Authorization: Bearer $AICRM_ACCESS_TOKEN" \
+curl -H "Authorization: Bearer $CRM_API_KEY" \
 "https://www.youcangogogo.com/api/external/orders?provider=all&product_code=subscription_monthly&is_paid=true&limit=100"
 ```
 
 只拉取微信小店订单：
 
 ```bash
-curl -H "Authorization: Bearer $AICRM_ACCESS_TOKEN" \
+curl -H "Authorization: Bearer $CRM_API_KEY" \
 "https://www.youcangogogo.com/api/external/orders?provider=wechat_shop&is_paid=true&limit=100"
 ```
 
@@ -581,14 +581,14 @@ GET /api/external/orders/{order_no}
 ### 请求示例
 
 ```bash
-curl -H "Authorization: Bearer $AICRM_ACCESS_TOKEN" \
+curl -H "Authorization: Bearer $CRM_API_KEY" \
 "https://www.youcangogogo.com/api/external/orders/WXP202606110001?provider=wechat"
 ```
 
 微信小店详情：
 
 ```bash
-curl -H "Authorization: Bearer $AICRM_ACCESS_TOKEN" \
+curl -H "Authorization: Bearer $CRM_API_KEY" \
 "https://www.youcangogogo.com/api/external/orders/3705115058471208928?provider=wechat_shop"
 ```
 
@@ -608,7 +608,7 @@ curl -H "Authorization: Bearer $AICRM_ACCESS_TOKEN" \
 下一页请求原筛选条件保持不变，追加 `cursor`：
 
 ```bash
-curl -H "Authorization: Bearer $AICRM_ACCESS_TOKEN" \
+curl -H "Authorization: Bearer $CRM_API_KEY" \
 "https://www.youcangogogo.com/api/external/orders?provider=all&is_paid=true&limit=100&cursor=xxxx"
 ```
 

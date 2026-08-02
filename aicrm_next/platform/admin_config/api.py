@@ -19,6 +19,7 @@ from aicrm_next.capability_registry import registry_summary
 
 from .api_docs_view_model import build_api_docs_view_model
 from .api_clients import API_CLIENT_TEMPLATES, ApiClientAdminService
+from .direct_api_key import DirectExternalApiKeyService
 from .config_definitions import config_definition_summary
 from .config_releases import ConfigReleaseService
 from .runtime_view_model import GetAdminConfigPageQuery, page_row_count
@@ -57,6 +58,10 @@ def _config_release_service(request: Request) -> ConfigReleaseService:
 
 def _api_client_admin_service(request: Request) -> ApiClientAdminService:
     return ApiClientAdminService(auth_client_service(request))
+
+
+def _direct_api_key_service(request: Request) -> DirectExternalApiKeyService:
+    return DirectExternalApiKeyService(auth_client_service(request))
 
 
 def _api_client_base_url(request: Request) -> str:
@@ -236,7 +241,11 @@ def _api_client_error(exc: Exception) -> JSONResponse:
         return JSONResponse({"ok": False, "error": error}, status_code=404)
     if isinstance(exc, PermissionError):
         return JSONResponse({"ok": False, "error": error}, status_code=409)
-    status_code = 409 if error in {"client_id_already_exists", "client_already_enabled"} else 400
+    status_code = 409 if error in {
+        "client_id_already_exists",
+        "client_already_enabled",
+        "direct_api_key_already_configured",
+    } else 400
     return JSONResponse({"ok": False, "error": error}, status_code=status_code)
 
 
@@ -314,7 +323,7 @@ def _config_release_changes_from_form(form: dict[str, Any]) -> dict[str, str | N
 def admin_config_home(request: Request):
     payload = AdminConfigReadService().build_home_payload()
     payload["categories"] = sorted(
-        [*payload["categories"], _api_client_category(request)],
+        [*payload["categories"], _direct_api_key_service(request).category(base_url=_api_client_base_url(request)), _api_client_category(request)],
         key=lambda item: int(item.get("sort_order") or 0),
     )
     return templates.TemplateResponse(
@@ -326,6 +335,23 @@ def admin_config_home(request: Request):
             page_title="系统配置",
             page_summary="查看配置类目的生效状态，进入配置页维护明细。",
             config_categories=payload["categories"],
+        ),
+    )
+
+
+@router.get("/admin/config/api-key", name="api.admin_config_api_key", response_class=HTMLResponse)
+def admin_config_api_key(request: Request):
+    status = _direct_api_key_service(request).status(base_url=_api_client_base_url(request))
+    return templates.TemplateResponse(
+        request,
+        "admin_console/config_api_key.html",
+        _config_context(
+            request,
+            active_tab="api_key",
+            page_title="CRM 开放 API Key",
+            page_summary="生成一个唯一 Key，直接访问 CRM 开放只读接口，无需 Client ID 或换取 Access Token。",
+            api_key_status=status,
+            can_manage_api_clients=context_can(current_auth_context(request), "manage_api_clients"),
         ),
     )
 
@@ -696,7 +722,7 @@ async def admin_config_release_rollback(request: Request, release_id: int):
 def api_admin_config_overview(request: Request) -> dict[str, Any]:
     overview = AdminConfigReadService().build_home_payload()
     overview["categories"] = sorted(
-        [*overview["categories"], _api_client_category(request)],
+        [*overview["categories"], _direct_api_key_service(request).category(base_url=_api_client_base_url(request)), _api_client_category(request)],
         key=lambda item: int(item.get("sort_order") or 0),
     )
     return {"ok": True, "overview": overview, "source_status": "next_read_model", "fallback_used": False}

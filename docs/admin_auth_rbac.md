@@ -43,4 +43,4 @@
 
 ## 机器调用边界
 
-内部 Worker、CLI 和外部 Agent 不使用后台 Cookie，也不接受共享静态 Bearer。独立进程按 workload 使用注册 client 换取短期 JWT；同进程任务直接传受控 `AuthContext`。业务 Handler 不读取 Cookie、Authorization 或 secret，只消费统一 middleware 注入的 `AuthContext`。
+内部 Worker、CLI 和外部 Agent 不使用后台 Cookie。内部 Worker、MCP 与写操作仍按 workload 使用注册 client 换取短期 JWT；CRM 开放只读接口另支持后台生成、数据库哈希存储的单例 API Key，不接受运行环境共享 Bearer。业务 Handler 不读取 Cookie、Authorization 或 secret，只消费统一 middleware 注入的 `AuthContext`。

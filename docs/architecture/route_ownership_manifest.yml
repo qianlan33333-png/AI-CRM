@@ -1245,6 +1245,26 @@ routes:
   rate_limit: authenticated
   principal_types:
   - human
+- path: /admin/config/api-key
+  methods:
+  - GET
+  route_name: api.admin_config_api_key
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: admin_page
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
 - path: /admin/config/api-clients/new
   methods:
   - GET
@@ -1322,6 +1342,86 @@ routes:
   access_scope: global
   pii_level: internal
   csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/config/api-key
+  methods:
+  - GET
+  route_name: api.admin_config_api_key_resource
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/config/api-key/generate
+  methods:
+  - POST
+  route_name: api.admin_config_api_key_generate_resource
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: true
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/config/api-key/rotate
+  methods:
+  - POST
+  route_name: api.admin_config_api_key_rotate_resource
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: true
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/config/api-key/enabled
+  methods:
+  - PUT
+  route_name: api.admin_config_api_key_enabled_resource
+  capability_owner: admin_config
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: previous_release
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_config
+  access_scope: global
+  pii_level: internal
+  csrf: true
   rate_limit: authenticated
   principal_types:
   - human

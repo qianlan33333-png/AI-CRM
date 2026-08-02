@@ -4,6 +4,10 @@ from fastapi.testclient import TestClient
 
 from aicrm_next.extensions.commerce.commerce.repo import reset_commerce_fixture_state
 from aicrm_next.main import create_app
+from aicrm_next.platform.platform_foundation.auth_platform.context import PrincipalType
+from aicrm_next.platform.platform_foundation.auth_platform.credentials import hash_client_secret, issue_client_secret
+from aicrm_next.platform.platform_foundation.auth_platform.models import ApiClientRecord
+from aicrm_next.platform.platform_foundation.auth_platform.profiles import DIRECT_EXTERNAL_API_KEY_CLIENT_ID
 from tests.admin_auth_test_helpers import access_token_headers, install_access_token
 
 
@@ -40,6 +44,41 @@ def test_external_orders_requires_registered_client_access_token(monkeypatch) ->
     invalid = client.get("/api/external/orders", headers={"Authorization": "Bearer wrong-token"})
     assert invalid.status_code == 401
     assert invalid.json()["error"] == "invalid_access_token"
+
+
+def test_external_orders_accepts_single_direct_read_key_and_rejects_external_writes(monkeypatch) -> None:
+    client = _client(monkeypatch, authorized=False)
+    api_key = issue_client_secret()
+    repository = client.app.state.auth_client_service.repository
+    repository.api_clients[DIRECT_EXTERNAL_API_KEY_CLIENT_ID] = ApiClientRecord(
+        client_id=DIRECT_EXTERNAL_API_KEY_CLIENT_ID,
+        principal_id=f"api_client:{DIRECT_EXTERNAL_API_KEY_CLIENT_ID}",
+        principal_type=PrincipalType.API_CLIENT,
+        purpose="external_agent",
+        display_name="CRM 开放 API Key",
+        secret_hash=hash_client_secret(api_key),
+        audiences=("external_integration",),
+        scopes=("read",),
+        capabilities=("external_read",),
+        allowed_cidrs=(),
+        corp_id="corp-pytest",
+        owner_scope={},
+        auth_version=1,
+        token_ttl_seconds=1800,
+        enabled=True,
+    )
+    headers = {"Authorization": f"Bearer {api_key}"}
+
+    readable = client.get("/api/external/orders?limit=1", headers=headers)
+    assert readable.status_code == 200
+
+    write_rejected = client.post(
+        "/api/external/ai-audience/templates/apply",
+        headers=headers,
+        json={},
+    )
+    assert write_rejected.status_code == 403
+    assert write_rejected.json()["error"] == "scope_or_capability_required"
 
 
 def test_external_orders_list_returns_lightweight_contract_and_excludes_unpaid_for_paid_range(monkeypatch) -> None:
