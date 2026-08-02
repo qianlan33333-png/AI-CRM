@@ -2,12 +2,57 @@ from __future__ import annotations
 
 import csv
 from io import StringIO
+from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
+from aicrm_next.extensions.forms.questionnaire.repo import PostgresQuestionnaireReadRepository
 from wechat_identity_test_support import authorize_wechat_client
+
+
+class _RowsResult:
+    def __init__(self, *, row: dict[str, Any] | None = None, rows: list[dict[str, Any]] | None = None) -> None:
+        self._row = row or {}
+        self._rows = rows or []
+
+    def fetchone(self) -> dict[str, Any]:
+        return self._row
+
+    def fetchall(self) -> list[dict[str, Any]]:
+        return self._rows
+
+
+class _QuestionnaireExportConnection:
+    def __init__(self) -> None:
+        self.calls: list[str] = []
+
+    def __enter__(self) -> "_QuestionnaireExportConnection":
+        return self
+
+    def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> bool:
+        return False
+
+    def execute(self, sql: str, params: tuple[Any, ...]) -> _RowsResult:
+        self.calls.append(sql)
+        if "COUNT(*) AS total" in sql:
+            return _RowsResult(row={"total": 1})
+        if "FROM questionnaire_submission_answers" in sql:
+            return _RowsResult(rows=[])
+        return _RowsResult(
+            rows=[
+                {
+                    "id": 42,
+                    "questionnaire_id": 1,
+                    "unionid": "union_nickname_001",
+                    "external_userid": "wm_nickname_001",
+                    "customer_name": "昵称小蓝",
+                    "final_tags": [],
+                    "total_score": 0,
+                }
+            ]
+        )
 
 
 @pytest.fixture()
@@ -70,6 +115,7 @@ def test_existing_get_export_route_downloads_csv_without_storage_file(client: Te
         "submission_id",
         "submitted_at",
         "external_userid",
+        "用户昵称",
         "unionid",
         "mobile",
         "score",
@@ -84,9 +130,29 @@ def test_existing_get_export_route_downloads_csv_without_storage_file(client: Te
     fixture_row = next(row for row in rows if row["submission_id"] == "sub_fixture_001")
     submitted_row = next(row for row in rows if row["unionid"] == "unionid_001")
     assert fixture_row["submitted_at"] == "2026-05-20 18:10:00"
+    assert fixture_row["用户昵称"] == "小璨同学"
     assert "T" not in fixture_row["submitted_at"]
     assert "+" not in fixture_row["submitted_at"]
     assert fixture_row["黄小璨是否已激活？"] == "已激活"
     assert submitted_row["黄小璨是否已激活？"] == "已激活"
     assert submitted_row["你关注哪些能力？"] == "AI 工具"
     assert submitted_row["还有什么想补充？"] == "希望补充运营建议"
+    assert submitted_row["用户昵称"] == ""
+
+
+def test_postgres_submission_projection_reads_canonical_user_nickname() -> None:
+    connection = _QuestionnaireExportConnection()
+    repository = PostgresQuestionnaireReadRepository(database_url="postgresql://example/aicrm")
+    repository._exists = lambda questionnaire_id: True  # type: ignore[method-assign]
+    repository._connect = lambda: connection  # type: ignore[method-assign]
+
+    result = repository.list_submissions(1, limit=20, offset=0)
+
+    assert result is not None
+    rows, total = result
+    assert total == 1
+    assert rows[0]["customer_name"] == "昵称小蓝"
+    projection_sql = next(sql for sql in connection.calls if "AS customer_name" in sql)
+    assert "identity.customer_name" in projection_sql
+    assert "identity.profile_json ->> 'name'" in projection_sql
+    assert "'问卷提交用户'" in projection_sql

@@ -61,7 +61,17 @@ _command_bus = CommandBus()
 
 QUESTIONNAIRE_EXTERNAL_PUSH_TYPES = {"", "subscription", "premium", "trial"}
 _BEIJING_TZ = timezone(timedelta(hours=8))
-_EXPORT_BASE_FIELDS = ["submission_id", "submitted_at", "external_userid", "unionid", "mobile", "score", "final_tags"]
+_EXPORT_NICKNAME_FIELD = "用户昵称"
+_EXPORT_BASE_FIELDS = [
+    "submission_id",
+    "submitted_at",
+    "external_userid",
+    _EXPORT_NICKNAME_FIELD,
+    "unionid",
+    "mobile",
+    "score",
+    "final_tags",
+]
 QUESTIONNAIRE_QUESTION_TYPES = {"single_choice", "multi_choice", "textarea", "mobile"}
 QUESTIONNAIRE_ANSWER_DISPLAY_MODES = {"all_in_one", "one_by_one"}
 
@@ -645,7 +655,7 @@ def _handle_export_download(command: Command) -> dict[str, Any]:
     fields = [
         str(item)
         for item in requested.get("fields")
-        or ["submission_id", "submitted_at", "external_userid", "mobile", "matched_by", "score", "final_tags", "answers"]
+        or [*_EXPORT_BASE_FIELDS, "answers"]
     ]
     limit = int(requested.get("limit") or 10000)
     limit = max(1, min(limit, 50000))
@@ -707,6 +717,8 @@ def _export_rows(
 
 
 def _export_base_value(submission: dict[str, Any], field: str) -> Any:
+    if field == _EXPORT_NICKNAME_FIELD:
+        return submission.get("customer_name") or ""
     if field == "submitted_at":
         return _format_beijing_time(submission.get("submitted_at") or submission.get("created_at"))
     if field == "final_tags":
