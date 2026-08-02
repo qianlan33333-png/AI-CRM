@@ -58,7 +58,6 @@ jobs:
             set +a
             source /home/ubuntu/venvs/openclaw/bin/activate
             python3 - <<'PY'
-            import hashlib
             import json
 
             from sqlalchemy import text
@@ -441,92 +440,6 @@ jobs:
                         )
                     ).mappings()
                 ]
-                failed_media_lease_rows = [
-                    dict(row)
-                    for row in session.execute(
-                        text(
-                            f"""
-                            WITH classified_leases AS (
-                                SELECT
-                                    lease.tenant_id,
-                                    lease.corp_id,
-                                    lease.material_kind,
-                                    lease.material_id,
-                                    lease.upload_kind,
-                                    lease.status,
-                                    lease.last_error_code,
-                                    lease.attempt_count,
-                                    lease.lease_version,
-                                    CASE lease.material_kind
-                                        WHEN 'image' THEN EXISTS (
-                                            SELECT 1 FROM image_library material
-                                            WHERE material.id = lease.material_id
-                                              AND material.enabled IS TRUE
-                                              AND COALESCE(material.data_base64, '') <> ''
-                                        )
-                                        WHEN 'attachment' THEN EXISTS (
-                                            SELECT 1 FROM attachment_library material
-                                            WHERE material.id = lease.material_id
-                                              AND material.enabled IS TRUE
-                                              AND COALESCE(material.data_base64, '') <> ''
-                                        )
-                                        WHEN 'miniprogram' THEN EXISTS (
-                                            SELECT 1 FROM miniprogram_library material
-                                            WHERE material.id = lease.material_id
-                                              AND material.enabled IS TRUE
-                                              AND (
-                                                  material.thumb_image_id IS NOT NULL
-                                                  OR COALESCE(material.thumb_image_base64, '') <> ''
-                                              )
-                                        )
-                                        ELSE FALSE
-                                    END AS durable_source_available
-                                FROM wecom_media_leases lease
-                                WHERE lease.tenant_id = 'aicrm'
-                                  AND lease.status = 'failed'
-                            )
-                            SELECT
-                                tenant_id,
-                                corp_id,
-                                material_kind,
-                                material_id,
-                                upload_kind,
-                                status,
-                                last_error_code,
-                                attempt_count,
-                                lease_version,
-                                durable_source_available
-                            FROM classified_leases
-                            ORDER BY tenant_id, corp_id, material_kind, material_id, upload_kind
-                            """
-                        )
-                    ).mappings()
-                ]
-                failed_media_lease_payload = json.dumps(
-                    failed_media_lease_rows,
-                    ensure_ascii=False,
-                    sort_keys=True,
-                    separators=(",", ":"),
-                    default=str,
-                )
-                failed_media_lease_envelope = {
-                    "candidate_count": len(failed_media_lease_rows),
-                    "candidate_fingerprint": hashlib.sha256(
-                        failed_media_lease_payload.encode("utf-8")
-                    ).hexdigest(),
-                    "durable_source_available_count": sum(
-                        1 for row in failed_media_lease_rows if row["durable_source_available"]
-                    ),
-                    "material_kind_counts": {
-                        kind: sum(1 for row in failed_media_lease_rows if row["material_kind"] == kind)
-                        for kind in sorted({str(row["material_kind"]) for row in failed_media_lease_rows})
-                    },
-                    "last_error_code_counts": {
-                        code: sum(1 for row in failed_media_lease_rows if row["last_error_code"] == code)
-                        for code in sorted({str(row["last_error_code"]) for row in failed_media_lease_rows})
-                    },
-                    "contains_raw_material_identifier": False,
-                }
             print(
                 json.dumps(
                     {
@@ -539,7 +452,6 @@ jobs:
                         "preprovider_identity_history": preprovider_identity_history,
                         "contact_absence_terminal_history": contact_absence_terminal_history,
                         "welcome_graph_terminal": welcome_graph_terminal,
-                        "failed_media_lease_envelope": failed_media_lease_envelope,
                         "contains_raw_target_or_payload": False,
                         "read_only": True,
                     },

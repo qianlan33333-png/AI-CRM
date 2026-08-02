@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "operation_id": "failed_wecom_media_lease_20260802",
+  "expected_production_sha": "fd03cc53b094044d9ae798aa214606155b925f22",
+  "expected_candidate_count": 1,
+  "expected_health_evidence": {
+    "total_count": 791,
+    "ready_count": 789,
+    "refresh_due_count": 789,
+    "refreshing_count": 0,
+    "failed_count": 1,
+    "invalid_source_count": 0,
+    "canary_failed_count": 0,
+    "canary_invalid_source_count": 0,
+    "expired_count": 1,
+    "source_gap_count": 0
+  },
+  "execute_confirmation": "EXECUTE_FAILED_WECOM_MEDIA_LEASE_20260802"
+}

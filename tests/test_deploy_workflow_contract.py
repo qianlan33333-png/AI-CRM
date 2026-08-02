@@ -976,9 +976,6 @@ def test_queue_production_diagnostics_is_count_only_and_requires_exact_public_re
     assert "deferred_identity_projection" in workflow
     assert "provider_boundary_attempt_count" in workflow
     assert "welcome_graph_terminal" in workflow
-    assert "failed_media_lease_envelope" in workflow
-    assert "candidate_fingerprint" in workflow
-    assert '"contains_raw_material_identifier": False' in workflow
     assert "payment_refund_terminal_history" in workflow
     assert "merchant_balance_insufficient" in workflow
     assert "merchant_refund_permission_denied" in workflow
