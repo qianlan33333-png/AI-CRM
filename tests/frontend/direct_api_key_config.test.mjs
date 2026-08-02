@@ -28,6 +28,8 @@ assert.match(template, /data-api-key-secret-panel hidden/);
 assert.match(template, /页面刷新后无法找回/);
 assert.match(template, /不需要 Client ID/);
 assert.match(template, /可查询开放接口，不允许调用写操作/);
+assert.match(template, /can_manage_direct_api_key/);
+assert.doesNotMatch(template, /can_manage_api_clients/);
 assert.doesNotMatch(template, /<h1/i, "页面标题只能由后台统一 PageHeader 输出");
 
 console.log("direct api key config frontend contract passed");

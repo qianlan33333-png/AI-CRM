@@ -5,7 +5,7 @@
     direct_api_key_already_configured: "API Key 已存在，请使用重新生成功能。",
     direct_api_key_definition_conflict: "现有 API Key 配置与系统契约冲突，请联系管理员处理。",
     direct_api_key_not_configured: "尚未配置 API Key。",
-    manage_api_clients_required: "只有超级管理员可以执行此操作。",
+    manage_config_required: "只有配置管理员或超级管理员可以执行此操作。",
     operation_confirmation_required: "请确认本次操作。",
     unknown_fields: "提交中包含不受支持的字段。",
   };

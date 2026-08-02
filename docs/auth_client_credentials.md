@@ -27,13 +27,14 @@
 
 ## 唯一 CRM 开放 API Key（最简只读方式）
 
-超级管理员进入「系统配置 → CRM 开放 API Key」（`/admin/config/api-key`），点击“生成并启用 API Key”即可。系统内只有一个该类型 Key：
+配置管理员或超级管理员进入「系统配置 → CRM 开放 API Key」（`/admin/config/api-key`），点击“生成并启用 API Key”即可。系统内只有一个该类型 Key：
 
 - Key 只在生成或重新生成成功后显示一次，服务端只保存 scrypt 哈希。
 - 生成后立即启用；重新生成会提升 `auth_version`，旧 Key 在下一次请求立即失效。
 - 停用后当前 Key 立即失效；停用状态不能直接恢复，必须重新生成一个新 Key。
 - 固定权限为 `read` / `external_read`，只允许 CRM 开放只读接口，不允许写操作、MCP、内部 Worker、企微、支付或供应商密钥访问。
-- `config_admin` 只能查看配置状态；生成、重新生成和停用仅允许 `super_admin`。
+- `config_admin` 和 `super_admin` 均可生成、重新生成和停用这个系统唯一 Key。
+- 多客户端 OAuth/MCP 的创建、编辑、轮换与启停仍仅允许 `super_admin`。
 
 调用时只需要这一个值：
 

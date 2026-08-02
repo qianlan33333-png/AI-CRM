@@ -10,7 +10,7 @@
   data-direct-api-key-page
   data-configured="{{ 'true' if api_key_status.configured else 'false' }}"
   data-enabled="{{ 'true' if api_key_status.enabled else 'false' }}"
-  data-can-manage="{{ 'true' if can_manage_api_clients else 'false' }}"
+  data-can-manage="{{ 'true' if can_manage_direct_api_key else 'false' }}"
 >
   <div class="admin-alert admin-alert--error" data-api-key-alert hidden></div>
 
@@ -47,7 +47,7 @@
     </dl>
   </section>
 
-  {% if can_manage_api_clients %}
+  {% if can_manage_direct_api_key %}
   <section class="admin-card">
     <div class="admin-card-head">
       <div>

@@ -351,7 +351,7 @@ def admin_config_api_key(request: Request):
             page_title="CRM 开放 API Key",
             page_summary="生成一个唯一 Key，直接访问 CRM 开放只读接口，无需 Client ID 或换取 Access Token。",
             api_key_status=status,
-            can_manage_api_clients=context_can(current_auth_context(request), "manage_api_clients"),
+            can_manage_direct_api_key=context_can(current_auth_context(request), "manage_config"),
         ),
     )
 
