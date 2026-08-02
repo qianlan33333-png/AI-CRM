@@ -628,6 +628,8 @@ def test_runtime_units_transaction_guard_authorizes_only_web_before_release(caps
     runtime_authorize_output = capsys.readouterr().out
 
     assert f"sudo test -e {guard_file}" in runtime_authorize_output
+    assert f"sudo test '!' -e {runtime_authorization}" in runtime_authorize_output
+    assert f"sudo test -e {web_authorization}" in runtime_authorize_output
     assert f"sudo touch {runtime_authorization}" in runtime_authorize_output
     assert f"sudo rm -f {web_authorization}" in runtime_authorize_output
     assert f"sudo test -e {runtime_authorization}" in runtime_authorize_output
@@ -642,6 +644,71 @@ def test_runtime_units_transaction_guard_authorizes_only_web_before_release(caps
     assert f"sudo test '!' -e {runtime_authorization}" in release_output
     assert f"sudo test '!' -e {guard_file}" in release_output
     assert f"sudo test -f {guard_dropin}" in release_output
+
+
+def test_runtime_authorization_continues_when_web_start_authorization_expired(capsys) -> None:
+    primary_web = "openclaw-wecom-postgres.service"
+    manifest = {
+        "primary_web": {"service": primary_web},
+        "active_services": [],
+        "active_autostart": [],
+        "approval_required": [],
+        "retired_forbidden": [],
+    }
+
+    class _ExpiredWebAuthorizationRunner(_RecordingRunner):
+        def run(self, command: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
+            self.commands.append(tuple(command))
+            if command == ["sudo", "test", "-e", str(runtime_units.WEB_START_AUTHORIZATION_FILE)]:
+                assert check is False
+                return subprocess.CompletedProcess(command, 1, stdout="", stderr="")
+            return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+    runner = _ExpiredWebAuthorizationRunner(
+        enabled_units={primary_web},
+        active_units={primary_web},
+    )
+
+    runtime_units.phase_authorize_runtime_start(manifest, runner)
+
+    assert (
+        "sudo",
+        "test",
+        "!",
+        "-e",
+        str(runtime_units.RUNTIME_START_AUTHORIZATION_FILE),
+    ) in runner.commands
+    assert ("sudo", "touch", str(runtime_units.RUNTIME_START_AUTHORIZATION_FILE)) in runner.commands
+    assert ("sudo", "rm", "-f", str(runtime_units.WEB_START_AUTHORIZATION_FILE)) in runner.commands
+    assert "web_start_authorization=missing_after_verified_web_smoke action=continue" in capsys.readouterr().out
+
+
+def test_runtime_authorization_fails_closed_when_runtime_was_already_authorized() -> None:
+    primary_web = "openclaw-wecom-postgres.service"
+    manifest = {
+        "primary_web": {"service": primary_web},
+        "active_services": [],
+        "active_autostart": [],
+        "approval_required": [],
+        "retired_forbidden": [],
+    }
+
+    class _PrematureRuntimeAuthorizationRunner(_RecordingRunner):
+        def run(self, command: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
+            self.commands.append(tuple(command))
+            if command == ["sudo", "test", "!", "-e", str(runtime_units.RUNTIME_START_AUTHORIZATION_FILE)]:
+                raise subprocess.CalledProcessError(1, command)
+            return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+    runner = _PrematureRuntimeAuthorizationRunner(
+        enabled_units={primary_web},
+        active_units={primary_web},
+    )
+
+    with pytest.raises(subprocess.CalledProcessError):
+        runtime_units.phase_authorize_runtime_start(manifest, runner)
+
+    assert ("sudo", "touch", str(runtime_units.RUNTIME_START_AUTHORIZATION_FILE)) not in runner.commands
 
 
 def test_runtime_units_stop_and_verify_dry_runs_are_manifest_driven(capsys) -> None:
