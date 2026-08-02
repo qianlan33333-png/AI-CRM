@@ -28,7 +28,7 @@ def test_hourly_feishu_report_script_returns_zero_only_after_delivery(monkeypatc
 
 @pytest.mark.parametrize(
     "status",
-    ["failed", "queued", "skipped_no_config", "skipped_disabled", "skipped_unverified", "unknown"],
+    ["failed", "queued", "skipped_unverified", "unknown"],
 )
 def test_hourly_feishu_report_script_returns_nonzero_without_delivery(monkeypatch, capsys, status):
     monkeypatch.setattr(
@@ -38,6 +38,19 @@ def test_hourly_feishu_report_script_returns_nonzero_without_delivery(monkeypatc
     )
 
     assert runner.main() == 1
+    output = capsys.readouterr().out
+    assert f'"status": "{status}"' in output
+
+
+@pytest.mark.parametrize("status", ["skipped_no_config", "skipped_disabled"])
+def test_hourly_feishu_report_script_returns_optional_skip_exit_code(monkeypatch, capsys, status):
+    monkeypatch.setattr(
+        runner,
+        "run",
+        lambda: {"status": status, "summary": {"totalJobs": 1, "successJobs": 0, "failedJobs": 0}},
+    )
+
+    assert runner.main() == 2
     output = capsys.readouterr().out
     assert f'"status": "{status}"' in output
 
