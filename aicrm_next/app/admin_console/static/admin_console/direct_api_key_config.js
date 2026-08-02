@@ -93,9 +93,10 @@
     });
 
     root.querySelector("[data-copy-api-key]")?.addEventListener("click", async (event) => {
+      const button = event.currentTarget;
       try {
         await copyText(secretInput);
-        event.currentTarget.textContent = "已复制";
+        button.textContent = "已复制";
       } catch (error) {
         setAlert(root, errorMessage(error, "复制失败，请手动复制"));
       }
