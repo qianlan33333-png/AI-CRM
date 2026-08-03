@@ -24,6 +24,11 @@
   box-shadow: 0 12px 36px rgba(31, 35, 41, 0.24);
 }
 
+.aicrm-tag-picker--wide .aicrm-tag-picker__panel {
+  width: min(920px, calc(100vw - 32px));
+  height: min(600px, calc(100vh - 32px));
+}
+
 .aicrm-tag-picker__head {
   display: flex;
   align-items: center;
@@ -86,6 +91,10 @@
   background: #f5f6f7;
 }
 
+.aicrm-tag-picker--wide .aicrm-tag-picker__body {
+  grid-template-columns: 270px minmax(0, 1fr);
+}
+
 .aicrm-tag-picker__groups,
 .aicrm-tag-picker__tags {
   min-height: 0;
@@ -112,6 +121,30 @@
   font: inherit;
   font-weight: 750;
   text-align: left;
+}
+
+.aicrm-tag-picker__group {
+  display: flex;
+  align-items: center;
+}
+
+.aicrm-tag-picker__group-name {
+  min-width: 0;
+}
+
+.aicrm-tag-picker--wide .aicrm-tag-picker__group {
+  min-height: 48px;
+  padding: 7px 14px;
+  line-height: 1.35;
+}
+
+.aicrm-tag-picker--wide .aicrm-tag-picker__group-name {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .aicrm-tag-picker__tag {
@@ -242,6 +275,10 @@
   }
 
   .aicrm-tag-picker__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .aicrm-tag-picker--wide .aicrm-tag-picker__body {
     grid-template-columns: minmax(0, 1fr);
   }
 

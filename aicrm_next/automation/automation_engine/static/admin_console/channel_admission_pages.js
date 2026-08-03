@@ -844,6 +844,7 @@
         window.AICRMWeComTagPicker.open({
           title: "选择入渠标签",
           mode: "single",
+          layout: "wide",
           value: currentValue,
           catalog,
           allowManual: pickerState.failed,

@@ -210,7 +210,7 @@
         class="aicrm-tag-picker__group${groupKey(group) === state.activeGroupKey ? " is-active" : ""}"
         type="button"
         data-group-key="${escapeHtml(groupKey(group))}"
-      >${escapeHtml(group.group_name || "未分组")}</button>
+      ><span class="aicrm-tag-picker__group-name">${escapeHtml(group.group_name || "未分组")}</span></button>
     `).join("");
   }
 
@@ -364,6 +364,7 @@
     state = {
       title: String((options || {}).title || DEFAULT_TITLE),
       mode: (options || {}).mode === "single" ? "single" : "multiple",
+      layout: (options || {}).layout === "wide" ? "wide" : "default",
       groups,
       selected,
       search: "",
@@ -373,6 +374,7 @@
       onClear: (options || {}).onClear,
     };
     els.title.textContent = state.title;
+    overlay.classList.toggle("aicrm-tag-picker--wide", state.layout === "wide");
     els.search.value = "";
     els.manualInput.value = "";
     render();
