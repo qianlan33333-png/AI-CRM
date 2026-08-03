@@ -220,23 +220,23 @@ def render_lead_qr_modal() -> str:
 def lead_qr_modal_styles() -> str:
     return """
     .qr-modal {
-      position: fixed; inset: 0; background: rgba(16, 32, 58, .48); backdrop-filter: blur(4px);
+      position: fixed; inset: 0; background: rgba(31, 35, 41, .46);
       z-index: 40; display: none; align-items: center; justify-content: center; padding: 22px;
     }
     .qr-modal.show { display: flex; }
     .qr-panel {
-      width: min(100%, 360px); border-radius: 8px; background: #fff; padding: 26px 22px;
-      text-align: center; box-shadow: 0 20px 60px rgba(16, 32, 58, .25);
+      width: min(100%, 360px); border: 1px solid #dee0e3; border-radius: 16px; background: #fff; padding: 26px 22px;
+      text-align: center; box-shadow: 0 12px 36px rgba(31, 35, 41, .24);
     }
     .qr-img {
-      width: min(258px, 100%); aspect-ratio: 1; margin: 18px auto; border-radius: 8px;
+      width: min(206px, 100%); aspect-ratio: 1; margin: 18px auto; border-radius: 10px;
       border: 1px solid #dae4f3; padding: 12px; object-fit: contain; display: block; background: #fff;
     }
-    .modal-title { color: var(--text, #10203a); font-size: 24px; font-weight: 950; }
-    .modal-desc { color: var(--muted, #687891); font-size: 15px; }
+    .modal-title { color: var(--text, #1f2329); font-size: 22px; font-weight: 600; }
+    .modal-desc { color: var(--muted, #646a73); font-size: 14px; }
     .close-button {
-      width: 100%; height: 42px; border: 0; border-radius: 8px; background: var(--blue, #2f6df6); color: #fff;
-      font: inherit; font-weight: 900; margin-top: 14px; cursor: pointer;
+      width: 100%; height: 44px; border: 0; border-radius: 12px; background: var(--blue, #3370ff); color: #fff;
+      font: inherit; font-weight: 600; margin-top: 14px; cursor: pointer;
     }
     """
 
@@ -364,7 +364,7 @@ def render_pay_landing(product: dict[str, Any], page_state: dict[str, Any]) -> s
     </section>
 
     <section class="pay-card success-box" id="successBox">
-      <div class="success-tick">✓</div>
+      <div class="success-tick"><img src="/static/service-period/icons/check-circle.svg" alt="支付成功"></div>
       <div class="success-title">支付成功</div>
       <div class="success-desc" id="successDesc">报名成功</div>
       <div id="weappLaunchPanel" class="weapp-launch-panel" hidden>
@@ -522,16 +522,16 @@ def _pay_page_styles() -> str:
     return """<style>
     :root {
       color-scheme: light;
-      --bg: #f7f9fe;
+      --bg: #f5f6f7;
       --panel: #ffffff;
-      --line: #e4eaf4;
-      --text: #10203a;
-      --muted: #687891;
-      --blue: #2f6df6;
-      --green: #128a45;
-      --green-bg: #e9f8ef;
-      --red: #e23030;
-      --shadow: 0 18px 50px rgba(23, 42, 76, .08);
+      --line: #dee0e3;
+      --text: #1f2329;
+      --muted: #646a73;
+      --blue: #3370ff;
+      --green: #2ea121;
+      --green-bg: #ebf9ec;
+      --red: #d83931;
+      --shadow: none;
     }
     * { box-sizing: border-box; }
     body.product-body {
@@ -539,17 +539,17 @@ def _pay_page_styles() -> str:
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
       letter-spacing: 0;
     }
-    .pay-page { width: min(100%, 520px); min-height: 100vh; margin: 0 auto; padding: 72px 18px 110px; }
-    .pay-card { border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: var(--shadow); padding: 20px; }
-    .pay-title { font-size: 21px; font-weight: 950; margin-bottom: 14px; letter-spacing: 0; }
+    .pay-page { width: min(100%, 520px); min-height: 100vh; margin: 0 auto; padding: 36px 18px 80px; }
+    .pay-card { border: 1px solid var(--line); border-radius: 16px; background: #fff; box-shadow: var(--shadow); padding: 20px; }
+    .pay-title { font-size: 21px; font-weight: 600; margin-bottom: 14px; letter-spacing: 0; }
     .pay-row { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px dashed var(--line); padding: 12px 0; }
-    .pay-label { color: var(--muted); font-weight: 800; }
-    .pay-value { font-weight: 900; text-align: right; overflow-wrap: anywhere; }
+    .pay-label { color: var(--muted); font-weight: 400; }
+    .pay-value { font-weight: 600; text-align: right; overflow-wrap: anywhere; }
     .pay-mobile { margin-top: 18px; }
     .pay-mobile label { display: block; margin-bottom: 7px; }
-    .pay-mobile input { width: 100%; height: 48px; border: 1px solid var(--line); border-radius: 8px; padding: 0 13px; outline: none; font: inherit; }
-    .pay-mobile input:focus { border-color: #9bb8ff; box-shadow: 0 0 0 3px rgba(47, 109, 246, .12); }
-    .coupon-block { margin-top: 14px; padding: 14px; border: 1px solid #dce7ff; border-radius: 8px; background: #f7faff; }
+    .pay-mobile input { width: 100%; height: 48px; border: 1px solid var(--line); border-radius: 10px; padding: 0 13px; outline: none; font: inherit; }
+    .pay-mobile input:focus { border-color: #3370ff; box-shadow: 0 0 0 2px rgba(51,112,255,.12); }
+    .coupon-block { margin-top: 14px; padding: 14px; border: 1px solid #d3e1ff; border-radius: 10px; background: #eff4ff; }
     .coupon-block[hidden], .discount-row[hidden] { display: none; }
     .coupon-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
     .coupon-head strong { font-size: 14px; }
@@ -562,8 +562,8 @@ def _pay_page_styles() -> str:
     .state-line.success { color: var(--green); }
     .error-text { font-size: 12px; color: var(--red); margin-top: 6px; min-height: 18px; }
     .pay-action, .button-link, .qr-reopen-button {
-      width: 100%; height: 52px; border: 0; border-radius: 8px; background: var(--blue); color: #fff;
-      font: inherit; font-weight: 950; margin-top: 12px; cursor: pointer; text-decoration: none;
+      width: 100%; height: 48px; border: 0; border-radius: 12px; background: var(--blue); color: #fff;
+      font: inherit; font-weight: 600; margin-top: 12px; cursor: pointer; text-decoration: none;
       display: inline-flex; align-items: center; justify-content: center;
     }
     .qr-reopen-button {
@@ -574,8 +574,9 @@ def _pay_page_styles() -> str:
     .pay-action[disabled] { opacity: .55; cursor: default; }
     .success-box { display: none; text-align: center; padding-top: 6px; margin-top: 14px; }
     .success-box.show { display: block; }
-    .success-tick { width: 66px; height: 66px; border-radius: 50%; background: var(--green-bg); color: var(--green); display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: 900; margin: 18px auto; }
-    .success-title { font-size: 22px; font-weight: 950; }
+    .success-tick { width: 56px; height: 56px; border-radius: 50%; background: var(--green-bg); display: flex; align-items: center; justify-content: center; margin: 18px auto; }
+    .success-tick img{width:44px;height:44px;filter:invert(50%) sepia(89%) saturate(722%) hue-rotate(69deg) brightness(82%)}
+    .success-title { font-size: 22px; font-weight: 600; }
     .success-desc { color: var(--muted); margin: 8px 0 0; }
     .weapp-launch-panel[hidden] { display: none; }
     .weapp-launch-panel {

@@ -58,7 +58,7 @@
           <td>
             <div class="admin-customer-cell">
               <div class="admin-customer-name">{{ item.customer_name }}</div>
-              <div class="admin-customer-subtext">客户编号：{{ item.external_userid }}</div>
+              <div class="admin-customer-subtext">{{ item.external_userid }}</div>
             </div>
           </td>
           <td>{{ item.owner_display_name or item.owner_userid or "未分配" }}</td>

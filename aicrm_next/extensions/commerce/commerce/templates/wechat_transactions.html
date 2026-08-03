@@ -187,6 +187,15 @@
       grid-template-columns: 1fr;
     }
   }
+  /* Supplied AI-CRM design package: compact transaction filters and table. */
+  .commerce-admin,.commerce-card-body{gap:12px}
+  .commerce-filter-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+  .commerce-field{gap:6px}
+  .commerce-field span,.commerce-kv-label{color:#646a73;font-size:12px;font-weight:400}
+  .commerce-field input,.commerce-field select{min-height:34px;padding:6px 10px;border-color:#dee0e3;border-radius:6px;background:#fff}
+  .commerce-pill{min-height:22px;padding:2px 8px;border-radius:4px;font-weight:500}
+  .commerce-pill.paid{background:#ebf9ec;color:#2ea121}.commerce-pill.pending{background:#fff6e9;color:#d9730d}.commerce-pill.failed{background:#fff5f5;color:#d83931}
+  @media(max-width:1200px){.commerce-filter-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 </style>
 {% endblock %}
 

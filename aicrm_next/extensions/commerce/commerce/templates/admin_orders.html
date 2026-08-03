@@ -144,6 +144,15 @@
       align-items: stretch;
     }
   }
+  /* Supplied AI-CRM design package: compact order filters and table. */
+  .orders-admin,.orders-card-body{gap:12px}
+  .orders-filter-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+  .orders-field{gap:6px}
+  .orders-field span{color:#646a73;font-size:12px;font-weight:400}
+  .orders-field input,.orders-field select{min-height:34px;padding:6px 10px;border-color:#dee0e3;border-radius:6px;background:#fff}
+  .orders-pill{min-height:22px;padding:2px 8px;border-radius:4px;font-weight:500}
+  .orders-pill.paid{background:#ebf9ec;color:#2ea121}.orders-pill.pending{background:#fff6e9;color:#d9730d}
+  @media(max-width:1200px){.orders-filter-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 </style>
 {% endblock %}
 

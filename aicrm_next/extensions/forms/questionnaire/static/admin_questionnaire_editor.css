@@ -203,7 +203,7 @@ button:disabled { opacity: 0.52; cursor: not-allowed; transform: none; box-shado
 }
 .btn.primary {
   color: #fff;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
+  background: #3370ff;
   box-shadow: 0 12px 24px rgba(115, 67, 26, 0.18);
 }
 .btn.secondary {
@@ -212,7 +212,7 @@ button:disabled { opacity: 0.52; cursor: not-allowed; transform: none; box-shado
 }
 .btn.ghost {
   color: var(--text);
-  background: #fffdf8;
+  background: #ffffff;
   border: 1px solid var(--line);
 }
 .btn.danger {
@@ -871,7 +871,7 @@ details.config-advanced > *:last-child {
   margin-top: 10px;
   padding: 12px 14px;
   border-radius: 16px;
-  background: #fbf8f2;
+  background: #f5f6f7;
   color: var(--muted);
   font-size: 13px;
   line-height: 1.6;
@@ -1076,7 +1076,7 @@ details.config-advanced > *:last-child {
 }
 .btn.primary,
 .action-primary {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
+  background: #3370ff;
   box-shadow: 0 10px 24px rgba(20, 86, 240, 0.18);
 }
 .btn.secondary,
@@ -1153,8 +1153,8 @@ body.assessment-template-mode {
   --text: #17202a;
   --muted: #667085;
   --soft: #eaf1ff;
-  --primary: #2563eb;
-  --primary-strong: #2563eb;
+  --primary: #3370ff;
+  --primary-strong: #3370ff;
   --shadow: 0 18px 45px rgba(15, 23, 42, 0.09);
   background: var(--bg);
   font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
@@ -1475,7 +1475,7 @@ body.assessment-template-mode {
   flex: none;
 }
 .assessment-template-mode .template-step.active .template-step-num {
-  background: #2563eb;
+  background: #3370ff;
   color: #fff;
 }
 .assessment-template-mode .template-page {
@@ -1680,8 +1680,8 @@ body.assessment-template-mode {
   margin-bottom: 14px;
 }
 .assessment-template-mode .result-tabs-v2 button.active {
-  background: #2563eb;
-  border-color: #2563eb;
+  background: #3370ff;
+  border-color: #3370ff;
   color: #fff;
 }
 .assessment-template-mode .phone-preview-v2 {
@@ -1757,4 +1757,123 @@ body.assessment-template-mode {
     position: static;
     max-height: none;
   }
+}
+
+/* Supplied AI-CRM design package: compact Lark-style editor shell. */
+:root {
+  --bg: #f5f6f7;
+  --panel: #ffffff;
+  --line: #dee0e3;
+  --line-strong: #d3e1ff;
+  --text: #1f2329;
+  --muted: #646a73;
+  --soft: #eff4ff;
+  --primary: #3370ff;
+  --primary-strong: #245bdb;
+  --danger: #d83931;
+  --warning-bg: #fff6e9;
+  --warning-text: #d9730d;
+  --shadow: none;
+  --shadow-soft: none;
+  --radius-xl: 12px;
+  --radius-lg: 10px;
+  --radius-md: 8px;
+  --radius-sm: 6px;
+}
+
+body {
+  font-family: "PingFang SC", "HarmonyOS Sans SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: #f5f6f7;
+}
+
+button { transition: background-color .15s ease, border-color .15s ease, color .15s ease; }
+button:hover { transform: none; }
+.shell { padding: 0; background: #f5f6f7; }
+.topbar {
+  max-width: none;
+  min-height: 52px;
+  margin: 0;
+  padding: 8px 16px;
+  border: 0;
+  border-bottom: 1px solid #dee0e3;
+  border-radius: 0;
+  background: #fff;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.topbar h1 { font-size: 18px; letter-spacing: 0; }
+.topbar-copy { gap: 4px; }
+.draft-indicator { padding: 3px 8px; background: #eff4ff; color: #3370ff; font-size: 11px; }
+.workspace {
+  max-width: 1600px;
+  grid-template-columns: 270px minmax(420px, 1fr) 340px;
+  gap: 12px;
+  padding: 12px;
+}
+.sidebar-column,
+.editor-column,
+.inspector-column { gap: 12px; }
+.section-card,
+.tool-card,
+.inspector-card,
+.question-card,
+.target-card,
+.assessment-template-mode .h5-card-v2,
+.assessment-template-mode .h5-question-v2,
+.assessment-template-mode .h5-result-card-v2 {
+  border-color: #dee0e3;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: none;
+}
+.section-card,
+.inspector-card { padding: 14px; }
+.tool-card { min-height: 44px; padding: 8px 10px; }
+.tool-card:hover { border-color: #3370ff; background: #f7faff; transform: none; box-shadow: none; }
+.tool-card .tool-icon,
+.tool-card .mark { width: 28px; height: 28px; border-radius: 8px; background: #eff4ff; color: #3370ff; }
+.primary-button,
+.secondary-button,
+.danger-button,
+.ghost-button,
+.topbar button {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 6px;
+  box-shadow: none;
+}
+.primary-button { background: #3370ff; }
+.primary-button:hover { background: #245bdb; box-shadow: none; }
+input,
+textarea,
+select,
+.field input,
+.field textarea,
+.field select { border-color: #dee0e3; border-radius: 6px; background: #fff; }
+input:focus,
+textarea:focus,
+select:focus,
+.field input:focus,
+.field textarea:focus,
+.field select:focus { border-color: #3370ff; box-shadow: 0 0 0 2px rgba(51, 112, 255, .12); }
+.question-card.is-selected,
+.question-card.selected { border-color: #3370ff; box-shadow: 0 0 0 2px rgba(51, 112, 255, .12); }
+.phone-frame,
+.assessment-template-mode .phone-preview-v2 {
+  width: 372px;
+  border-radius: 24px;
+  background: #1f2329;
+  padding: 10px;
+  box-shadow: none;
+}
+.phone-screen,
+.assessment-template-mode .phone-screen-v2 { border-radius: 18px; background: #f5f6f7; }
+.assessment-template-mode .phone-notch-v2 { background: #1f2329; }
+.assessment-template-mode .h5-option-v2 { border-color: #dee0e3; border-radius: 8px; background: #f7f8fa; }
+.drawer { border-color: #dee0e3; background: #fff; box-shadow: none; }
+.toast { border-radius: 6px; background: #1f2329; box-shadow: none; }
+
+@media (max-width: 1220px) {
+  .workspace,
+  .assessment-template-mode .workspace { grid-template-columns: 240px minmax(420px, 1fr); }
 }

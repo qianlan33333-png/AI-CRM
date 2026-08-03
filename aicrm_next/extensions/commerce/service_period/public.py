@@ -32,6 +32,8 @@ def render_service_period_public_page(service_product: dict[str, Any], state: di
     price_yuan = escape(_price_yuan(product))
     entitlement = state.get("entitlement") if isinstance(state.get("entitlement"), dict) else {}
     status = str(entitlement.get("status") or "none")
+    remaining_days = max(0, int(entitlement.get("remaining_days") or 0))
+    remaining_pct = min(100, round((remaining_days / duration_days) * 100)) if duration_days else 0
     lead_qr = state.get("lead_qr") if isinstance(state.get("lead_qr"), dict) else {}
     show_wecom_action = status == "active" and bool(str(lead_qr.get("qr_url") or "").strip())
     cta_text = escape(str(state.get("cta_text") or ("立即报名" if status == "none" else "")) or "立即报名")
@@ -45,12 +47,13 @@ def render_service_period_public_page(service_product: dict[str, Any], state: di
       <div class="service-period-line"><span class="service-period-muted">有效期</span><strong>{duration_days} 天</strong></div>
       <p class="service-period-tip">该周期商品尚未上架，暂不可购买。</p>"""
     elif status == "active":
-        tag_text = ""
+        tag_text = "服务中"
         hero_text = ""
         bar_meta = f"剩余 {int(entitlement.get('remaining_days') or 0)} 天"
         card_html = f"""
       <div class="service-period-muted">剩余有效期</div>
-      <div class="service-period-state-big">{int(entitlement.get('remaining_days') or 0)} 天</div>
+      <div class="service-period-state-big">{remaining_days} 天</div>
+      <div class="service-period-progress" aria-label="剩余服务期"><span style="width:{remaining_pct}%"></span></div>
       <div class="service-period-line"><span class="service-period-muted">到期日</span><strong>{escape(_end_date(entitlement.get('end_at')))}</strong></div>
       <div class="service-period-line"><span class="service-period-muted">续费价格 / 有效期</span><strong>¥{price_yuan} / {duration_days} 天</strong></div>"""
     elif status == "expired":
@@ -103,11 +106,12 @@ def render_service_period_public_page(service_product: dict[str, Any], state: di
       min-height: 100vh;
       margin: 0 auto;
       padding-bottom: 92px;
-      background: #fff;
+      background: #f5f6f7;
     }}
     .service-period-hero {{
-      padding: 20px 18px 16px;
-      background: linear-gradient(135deg, #121a2b, #2e3851);
+      min-height: 154px;
+      padding: 28px 20px 34px;
+      background: linear-gradient(135deg, #3370ff, #245bdb);
       color: #fff;
     }}
     .service-period-tag {{
@@ -115,16 +119,17 @@ def render_service_period_public_page(service_product: dict[str, Any], state: di
       align-items: center;
       min-height: 24px;
       padding: 3px 9px;
-      border-radius: 999px;
+      border-radius: 4px;
       background: rgba(255, 255, 255, .14);
       font-size: 12px;
-      font-weight: 800;
+      font-weight: 500;
       margin-bottom: 14px;
     }}
     .service-period-tag[hidden],
     .service-period-hero p[hidden] {{
       display: none;
     }}
+    .service-period-tag::before {{ content: ""; width: 6px; height: 6px; margin-right: 5px; border-radius: 50%; background: #67c23a; }}
     .service-period-hero h1 {{
       margin: 0;
       font-size: 24px;
@@ -136,11 +141,13 @@ def render_service_period_public_page(service_product: dict[str, Any], state: di
       color: rgba(255, 255, 255, .72);
     }}
     .service-period-card {{
-      margin: 12px 14px;
-      padding: 14px 16px;
-      border: 1px solid #f0f1f2;
-      border-radius: 12px;
+      position: relative;
+      margin: -16px 14px 12px;
+      padding: 18px 16px;
+      border: 1px solid #dee0e3;
+      border-radius: 16px;
       background: #fff;
+      box-shadow: 0 8px 24px rgba(31,35,41,.10);
     }}
     .service-period-price {{
       font-size: 32px;
@@ -152,7 +159,7 @@ def render_service_period_public_page(service_product: dict[str, Any], state: di
       margin-right: 2px;
     }}
     .service-period-state-big {{
-      font-size: 36px;
+      font-size: 38px;
       line-height: 1.1;
       font-weight: 950;
     }}
@@ -164,6 +171,8 @@ def render_service_period_public_page(service_product: dict[str, Any], state: di
       border-bottom: 1px solid #f0f1f2;
     }}
     .service-period-line:last-child {{ border-bottom: 0; }}
+    .service-period-progress {{ height: 8px; margin: 14px 0 8px; overflow: hidden; border-radius: 999px; background: #eff0f1; }}
+    .service-period-progress span {{ display: block; height: 100%; border-radius: inherit; background: #2ea121; }}
     .service-period-muted {{
       color: #8f959e;
     }}
@@ -183,10 +192,10 @@ def render_service_period_public_page(service_product: dict[str, Any], state: di
       min-height: 44px;
       padding: 10px 18px;
       border: 1px solid #8fb0f8;
-      border-radius: 999px;
+      border-radius: 12px;
       background: #eef4ff;
       color: #285fcf;
-      box-shadow: 0 4px 14px rgba(40, 95, 207, 0.12);
+      box-shadow: none;
       font-size: 16px;
       font-weight: 800;
       line-height: 1.2;
@@ -214,8 +223,7 @@ def render_service_period_public_page(service_product: dict[str, Any], state: di
       padding: 10px 14px 12px;
       border-top: 1px solid #dee0e3;
       background: rgba(255, 255, 255, .96);
-      box-shadow: 0 -10px 34px rgba(26, 32, 48, .1);
-      backdrop-filter: blur(12px);
+      box-shadow: none;
     }}
     .service-period-bar-title {{
       color: #1f2329;
@@ -246,19 +254,20 @@ def render_service_period_public_page(service_product: dict[str, Any], state: di
       opacity: .56;
       cursor: default;
     }}
-    .detail-media {{ background: #fff; }}
+    .detail-media {{ display:grid; gap:8px; padding:0 14px 14px; background:#f5f6f7; }}
     .slice-img {{
       width: 100%;
       display: block;
       min-height: 80px;
       object-fit: cover;
+      border-radius: 12px;
       background: #fff;
     }}
     {lead_qr_modal_styles()}
   </style>
 </head>
 <body>
-  <main class="service-period-page" data-route-owner="ai_crm_next" data-fallback-used="false">
+  <main class="service-period-page is-{escape(status)}" data-route-owner="ai_crm_next" data-fallback-used="false">
     <section class="service-period-hero">
       <span class="service-period-tag" id="servicePeriodTag"{tag_hidden}>{escape(tag_text)}</span>
       <h1>{title}</h1>
@@ -332,9 +341,12 @@ def render_service_period_public_page(service_product: dict[str, Any], state: di
         barMeta.textContent = priceText + " / " + durationDays + " 天";
       }}
       function renderActive(entitlement) {{
-        setHeroDecor("", "");
+        setHeroDecor("服务中", "");
+        const remainingDays = Number(entitlement.remaining_days || 0);
+        const remainingPct = durationDays ? Math.min(100, Math.round((remainingDays / durationDays) * 100)) : 0;
         card.innerHTML = '<div class="service-period-muted">剩余有效期</div>' +
-          '<div class="service-period-state-big">' + Number(entitlement.remaining_days || 0) + ' 天</div>' +
+          '<div class="service-period-state-big">' + remainingDays + ' 天</div>' +
+          '<div class="service-period-progress" aria-label="剩余服务期"><span style="width:' + remainingPct + '%"></span></div>' +
           '<div class="service-period-line"><span class="service-period-muted">到期日</span><strong>' + esc(endDate(entitlement.end_at)) + '</strong></div>' +
           '<div class="service-period-line"><span class="service-period-muted">续费价格 / 有效期</span><strong>' + priceText + ' / ' + durationDays + ' 天</strong></div>';
         barMeta.textContent = "剩余 " + Number(entitlement.remaining_days || 0) + " 天";

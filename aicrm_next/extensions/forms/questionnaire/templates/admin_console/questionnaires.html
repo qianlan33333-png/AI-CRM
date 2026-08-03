@@ -18,7 +18,7 @@
 
   .questionnaire-filter-row {
     align-items: end;
-    margin-bottom: 18px;
+    margin-bottom: 12px;
   }
 
   .questionnaire-filter-row .admin-field {
@@ -31,45 +31,52 @@
   }
 
   .questionnaire-name-main {
-    font-size: 15px;
-    font-weight: 800;
+    font-size: 13px;
+    font-weight: 600;
   }
 
   .questionnaire-type-chip {
     display: inline-flex;
     align-items: center;
-    padding: 4px 8px;
-    border-radius: 999px;
-    background: rgba(51, 112, 255, 0.10);
-    color: #1456f0;
+    min-height: 22px;
+    padding: 0 8px;
+    border-radius: 4px;
+    background: #f4edff;
+    color: #7f3bf5;
     font-size: 12px;
-    font-weight: 800;
+    font-weight: 400;
     white-space: nowrap;
   }
 
   .questionnaire-row-muted {
     color: var(--muted);
-    margin-top: 6px;
+    margin-top: 3px;
+    font-size: 12px;
   }
 
   .questionnaire-row-disabled {
-    color: #9a927f;
-    background: rgba(121, 112, 97, 0.05);
+    color: #a6aab0;
+    background: #fafafb;
   }
 
   .questionnaire-row-disabled .questionnaire-row-muted,
   .questionnaire-row-disabled .questionnaire-name-main {
-    color: #9a927f;
+    color: #a6aab0;
   }
 
   .questionnaire-row-actions {
     justify-content: flex-end;
+    gap: 12px;
   }
 
   .questionnaire-row-actions .admin-button {
-    min-height: 34px;
-    padding: 6px 12px;
-    font-size: 13px;
+    min-height: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    color: #245bdb;
+    background: transparent;
+    font-size: 12px;
   }
 
   .questionnaire-row-actions .admin-button[disabled] {
@@ -93,8 +100,8 @@
     min-width: 220px;
     max-width: 320px;
     padding: 14px 16px;
-    border-radius: 16px;
-    background: rgba(39, 29, 16, 0.92);
+    border-radius: 8px;
+    background: rgba(31, 35, 41, 0.92);
     color: #fff;
     box-shadow: var(--shadow);
   }

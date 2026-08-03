@@ -24,21 +24,17 @@
       place-items: center;
       padding: 24px 16px;
       font-family: "PingFang SC", "Helvetica Neue", -apple-system, BlinkMacSystemFont, sans-serif;
-      background:
-        radial-gradient(circle at top left, rgba(51, 112, 255, 0.08), transparent 28%),
-        radial-gradient(circle at bottom right, rgba(51, 112, 255, 0.06), transparent 24%),
-        var(--bg);
+      background: var(--bg);
       color: var(--text);
     }
     .card {
       width: min(100%, 460px);
       padding: 40px 28px;
       text-align: center;
-      border-radius: 24px;
+      border-radius: 16px;
       border: 1px solid var(--line);
       background: var(--panel);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(14px);
+      box-shadow: none;
     }
     .eyebrow {
       display: inline-flex;
@@ -52,8 +48,8 @@
       letter-spacing: 0.04em;
     }
     h1 {
-      margin: 18px 0 0;
-      font-size: clamp(32px, 8vw, 40px);
+      margin: 14px 0 0;
+      font-size: 26px;
       line-height: 1.08;
       letter-spacing: -0.03em;
     }
@@ -72,19 +68,21 @@
       border-top: 1px solid var(--line);
     }
     .lead-qr img {
-      width: min(260px, 72vw);
+      width: min(200px, 66vw);
       aspect-ratio: 1;
       object-fit: contain;
       border: 1px solid var(--line);
-      border-radius: 18px;
+      border-radius: 10px;
       background: #fff;
       padding: 10px;
     }
     .lead-qr strong { font-size: 17px; }
+    .success-icon{display:block;width:56px;height:56px;margin:0 auto 14px;filter:invert(50%) sepia(89%) saturate(722%) hue-rotate(69deg) brightness(82%)}
   </style>
 </head>
 <body>
   <main class="card">
+    <img class="success-icon" src="/static/service-period/icons/check-circle.svg" alt="提交成功">
     <div class="eyebrow">问卷提交状态</div>
     <h1>已经提交</h1>
     <p>感谢填写</p>
