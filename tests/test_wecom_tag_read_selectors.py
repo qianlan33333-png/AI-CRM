@@ -65,6 +65,8 @@ def test_unified_business_tag_picker_visible_copy_hides_internal_fields() -> Non
 def test_channel_entry_tag_uses_unified_single_picker_and_hidden_save_fields() -> None:
     template = _read("aicrm_next/automation/automation_engine/templates/admin_console/channel_code_form.html")
     script = _read("aicrm_next/automation/automation_engine/static/admin_console/channel_admission_pages.js")
+    picker_script = _read("aicrm_next/app/admin_console/static/admin_console/wecom_tag_picker.js")
+    picker_styles = _read("aicrm_next/app/admin_console/static/admin_console/wecom_tag_picker.css")
 
     assert "wecom_tag_picker.css" in template
     assert "wecom_tag_picker.js" in template
@@ -72,6 +74,13 @@ def test_channel_entry_tag_uses_unified_single_picker_and_hidden_save_fields() -
     assert "channel-resource-picker" not in script
     assert "AICRMWeComTagPicker.open" in script
     assert 'mode: "single"' in script
+    assert 'layout: "wide"' in script
+    assert 'layout: (options || {}).layout === "wide" ? "wide" : "default"' in picker_script
+    assert 'overlay.classList.toggle("aicrm-tag-picker--wide", state.layout === "wide")' in picker_script
+    assert "width: min(920px, calc(100vw - 32px));" in picker_styles
+    assert "grid-template-columns: 270px minmax(0, 1fr);" in picker_styles
+    assert "-webkit-line-clamp: 2;" in picker_styles
+    assert "channel-tag-picker-wide-20260803" in template
     assert 'name="entry_tag_id"' in template
     assert 'name="entry_tag_name"' in template
     assert 'name="entry_tag_group_name"' in template
