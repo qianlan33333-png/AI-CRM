@@ -229,6 +229,29 @@
     .il-edit-card { height:95vh; }
     .il-upload-row { grid-template-columns:1fr; }
   }
+
+  /* Supplied AI-CRM design package: compact four-column material library. */
+  .il-toolbar{min-height:52px;margin-top:0;padding:10px 12px;border-color:#dee0e3;border-radius:8px}
+  .il-toolbar .il-upload-btn{height:32px;padding:0 12px;background:#3370ff;border-radius:6px}
+  .il-toolbar .il-upload-btn:hover{background:#245bdb}
+  .il-filters-inline input[type=search]{height:32px;border-color:#dee0e3;border-radius:6px;color:#1f2329}
+  .il-facet-panel{padding:4px 12px;border-color:#dee0e3;border-radius:8px}
+  .il-facet-label{color:#646a73;font-weight:600}
+  .il-facet-option{border-radius:6px}
+  .il-facet-option.active{border-color:#d3e1ff;background:#eff4ff;color:#245bdb}
+  .il-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
+  .il-card{border-color:#dee0e3;border-radius:8px;transition:border-color .15s ease}
+  .il-card:hover{transform:none;box-shadow:none;border-color:#3370ff}
+  .il-card-chips .cat{background:#fff6e9;color:#d9730d;border-radius:4px}
+  .il-card-chips .tag{background:#eff4ff;color:#245bdb;border-radius:4px}
+  .il-card-chips .tag-more{background:#f2f3f5;color:#646a73;border-radius:4px}
+  .il-card-chips .unlabeled{background:#fff5f5;color:#d83931;border-radius:4px}
+  .il-modal{background:rgba(31,35,41,.46)}
+  .il-modal-card{border:1px solid #dee0e3;border-radius:10px;box-shadow:0 12px 36px rgba(31,35,41,.24)}
+  .il-modal input[type=text],.il-modal input[type=file],.il-modal textarea,.il-modal select{border-color:#dee0e3;border-radius:6px}
+  .il-upload-actions .primary,.il-edit-actions .primary{background:#3370ff;border-color:#3370ff}
+  @media (max-width: 1000px){.il-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @media (max-width: 720px){.il-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 {% endblock %}
 

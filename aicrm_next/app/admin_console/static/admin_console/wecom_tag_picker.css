@@ -9,20 +9,19 @@
   display: grid;
   place-items: center;
   padding: 22px;
-  background: rgba(15, 23, 42, 0.32);
-  backdrop-filter: blur(8px);
+  background: rgba(31, 35, 41, 0.46);
 }
 
 .aicrm-tag-picker__panel {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
-  width: min(980px, calc(100vw - 32px));
-  height: min(680px, calc(100vh - 32px));
+  width: min(720px, calc(100vw - 32px));
+  height: min(520px, calc(100vh - 32px));
   overflow: hidden;
   border: 1px solid rgba(15, 23, 42, 0.10);
-  border-radius: 14px;
+  border-radius: 10px;
   background: #ffffff;
-  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+  box-shadow: 0 12px 36px rgba(31, 35, 41, 0.24);
 }
 
 .aicrm-tag-picker__head {
@@ -30,23 +29,23 @@
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  padding: 18px 20px 14px;
+  padding: 14px 16px;
   border-bottom: 1px solid rgba(15, 23, 42, 0.08);
 }
 
 .aicrm-tag-picker__title {
   margin: 0;
-  color: #111827;
-  font-size: 19px;
+  color: #1f2329;
+  font-size: 17px;
   font-weight: 800;
   line-height: 1.25;
 }
 
 .aicrm-tag-picker__close {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border: 1px solid rgba(15, 23, 42, 0.12);
-  border-radius: 10px;
+  border-radius: 6px;
   background: #ffffff;
   color: #334155;
   font-size: 20px;
@@ -56,17 +55,17 @@
 }
 
 .aicrm-tag-picker__search {
-  padding: 12px 20px;
+  padding: 10px 16px;
   border-bottom: 1px solid rgba(15, 23, 42, 0.08);
-  background: #fbfdff;
+  background: #fafbfc;
 }
 
 .aicrm-tag-picker__search input {
   width: 100%;
-  min-height: 42px;
+  min-height: 34px;
   padding: 0 12px;
   border: 1px solid rgba(15, 23, 42, 0.14);
-  border-radius: 10px;
+  border-radius: 6px;
   outline: none;
   background: #ffffff;
   color: #111827;
@@ -81,10 +80,10 @@
 .aicrm-tag-picker__body {
   min-height: 0;
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
-  gap: 12px;
-  padding: 14px 20px;
-  background: #f8fafc;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 10px;
+  padding: 10px 16px;
+  background: #f5f6f7;
 }
 
 .aicrm-tag-picker__groups,
@@ -96,17 +95,17 @@
   gap: 8px;
   padding: 10px;
   border: 1px solid rgba(15, 23, 42, 0.10);
-  border-radius: 12px;
+  border-radius: 8px;
   background: #ffffff;
 }
 
 .aicrm-tag-picker__group,
 .aicrm-tag-picker__tag {
   width: 100%;
-  min-height: 42px;
+  min-height: 34px;
   padding: 0 12px;
   border: 1px solid rgba(15, 23, 42, 0.10);
-  border-radius: 9px;
+  border-radius: 6px;
   background: #ffffff;
   color: #1f2937;
   cursor: pointer;
@@ -116,7 +115,7 @@
 }
 
 .aicrm-tag-picker__tag {
-  min-height: 46px;
+  min-height: 36px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -140,13 +139,13 @@
   width: 18px;
   height: 18px;
   border: 1.5px solid #cbd5e1;
-  border-radius: 999px;
+  border-radius: 4px;
   background: #ffffff;
 }
 
 .aicrm-tag-picker__tag.is-active .aicrm-tag-picker__mark {
-  border-color: #2563eb;
-  background: radial-gradient(circle at center, #2563eb 0 42%, #ffffff 44% 100%);
+  border-color: #3370ff;
+  background: #3370ff url("./nav-icons/check.svg") center / 12px 12px no-repeat;
 }
 
 .aicrm-tag-picker__tag-name {
@@ -169,7 +168,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  padding: 13px 20px;
+  padding: 10px 16px;
   border-top: 1px solid rgba(15, 23, 42, 0.08);
   background: #ffffff;
 }
@@ -192,10 +191,10 @@
 }
 
 .aicrm-tag-picker__button {
-  min-height: 36px;
+  min-height: 32px;
   padding: 0 13px;
   border: 1px solid rgba(15, 23, 42, 0.12);
-  border-radius: 9px;
+  border-radius: 6px;
   background: #ffffff;
   color: #334155;
   cursor: pointer;
@@ -205,8 +204,8 @@
 }
 
 .aicrm-tag-picker__button--primary {
-  border-color: #2563eb;
-  background: #2563eb;
+  border-color: #3370ff;
+  background: #3370ff;
   color: #ffffff;
 }
 

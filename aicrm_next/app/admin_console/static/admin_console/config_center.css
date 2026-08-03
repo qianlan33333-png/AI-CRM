@@ -464,3 +464,27 @@
     border-bottom:1px solid var(--cc-line-soft);
   }
 }
+
+/* Supplied AI-CRM design package: compact Lark-style configuration pages. */
+.cc-page{
+  --cc-bg:#f5f6f7;
+  --cc-panel:#fff;
+  --cc-line:#dee0e3;
+  --cc-line-soft:#eff0f1;
+  --cc-text:#1f2329;
+  --cc-sub:#646a73;
+  --cc-blue:#3370ff;
+  --cc-green:#2ea121;
+  --cc-green-soft:#ebf9ec;
+  --cc-gray-soft:#f2f3f5;
+  gap:12px;
+}
+.cc-card{border-radius:8px;box-shadow:none}
+.cc-card-h{min-height:44px;background:#fff}
+.cc-table th{height:36px;background:#fafafb;color:#8f959e;font-weight:500}
+.cc-table td{height:48px}
+.cc-table tbody tr:hover td{background:#fafbfc}
+.cc-state{height:22px;min-width:0;border:0;border-radius:4px;padding:0 8px;font-weight:500}
+.cc-switch{width:40px;height:22px}
+.cc-input,.cc-select,.cc-textarea,.cc-page input,.cc-page select,.cc-page textarea{border-color:#dee0e3;border-radius:6px;background:#fff}
+.cc-page input:focus,.cc-page select:focus,.cc-page textarea:focus{border-color:#3370ff;box-shadow:0 0 0 2px rgba(51,112,255,.12)}

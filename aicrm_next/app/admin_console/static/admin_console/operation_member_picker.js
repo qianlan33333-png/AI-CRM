@@ -217,6 +217,21 @@
           max-height: 94vh;
         }
       }
+      /* Supplied AI-CRM design package: compact Lark-style member selector. */
+      .operation-member-picker { padding: 20px; background: rgba(31,35,41,.46); }
+      .operation-member-picker__panel,.member-modal__panel { width:min(760px,100%);max-height:min(560px,92vh);border:1px solid #dee0e3;border-radius:10px;background:#fff;box-shadow:0 12px 36px rgba(31,35,41,.24); }
+      .operation-member-picker__head,.member-modal__head { padding:14px 16px;border-color:#eff0f1;background:#fff; }
+      .operation-member-picker__head h2 { margin:0 0 3px;color:#1f2329;font-size:17px;font-weight:600; }
+      .operation-member-picker__head p { color:#8f959e;font-size:12px;font-weight:400; }
+      .operation-member-picker__search,.member-modal__search { padding:10px 16px;grid-template-columns:1fr auto auto;gap:8px;border-color:#eff0f1;background:#fafbfc; }
+      .operation-member-picker__search input { min-height:34px;border-color:#dee0e3;border-radius:6px; }
+      .operation-member-picker__list,.member-modal__list { gap:0;padding:0 16px;background:#fff; }
+      .operation-member-picker__row,.member-row { min-height:52px;padding:8px 10px;border:0;border-bottom:1px solid #eff0f1;border-radius:0; }
+      .operation-member-picker__row.is-selected { background:#eff4ff; }
+      .operation-member-picker__avatar { width:32px;height:32px; }
+      .operation-member-picker__name { font-weight:600; }
+      .operation-member-picker__user-id { color:#8f959e;font-size:12px; }
+      .operation-member-picker__actions,.member-modal__actions { padding:10px 16px;gap:8px;border-color:#eff0f1; }
     `;
     document.head.appendChild(style);
   }

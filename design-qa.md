@@ -37,3 +37,41 @@
 - 更新静态资源版本，避免浏览器继续加载旧脚本。
 
 final result: passed
+
+---
+
+# AI-CRM 整体视觉重做 Design QA
+
+## 最终结果
+
+final result: passed
+
+## 参考视觉
+
+![压缩包后台参考图](artifacts/design-reference-admin-cropped.png)
+
+来源：`/Users/qianlan/Downloads/Avatar Delivery Platform (1).zip`
+
+## 浏览器实现
+
+![AI-CRM Next 实现图](artifacts/implementation-admin-final.png)
+
+- 预览路由：`http://localhost:5017/admin/customers`
+- 视口：`1440 × 856`
+
+## 同屏比较
+
+![参考图与实现图对比](artifacts/design-qa-comparison-final.png)
+
+## 本次修正记录
+
+1. 第一次对比发现客户筛选按钮换到第二行，将既有 wide-filter 调整为设计稿的四字段加操作区同排结构。
+2. 第二次对比确认 208px 导航、52px 顶栏、Lark 蓝色 token、8px 卡片、6px 输入/按钮、紧凑表格与灰色画布均与参考稿一致。
+3. 实现图使用现有 fixture 客户数据，参考图使用占位行；数据状态不同，但组件几何与客户列表现有行为不变。
+4. 运行态验证 Agent 编辑器显示四个步骤，并可切换到固定素材面板；没有增加路由或 API。
+
+## 范围保护
+
+- 保留现有路由、字段、选择器、API，以及保存、发布和素材选择动作。
+- QA 未执行外部调用、支付请求、订单创建、生产写入或 legacy fallback。
+- 新增内容仅为视觉层样式和来源于设计包/仓库现有资产的展示图标。

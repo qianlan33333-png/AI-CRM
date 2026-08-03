@@ -87,6 +87,37 @@ function bootCopyButtons() {
   });
 }
 
+function bootSidebarToggle() {
+  const button = document.querySelector("[data-admin-sidebar-toggle]");
+  if (!button) {
+    return;
+  }
+  const storageKey = "aicrm-admin-sidebar-collapsed";
+  const applyState = (collapsed) => {
+    document.body.classList.toggle("admin-sidebar-collapsed", collapsed);
+    const label = collapsed ? "展开侧栏" : "收起侧栏";
+    button.setAttribute("aria-label", label);
+    button.setAttribute("title", label);
+    button.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  };
+  let collapsed = false;
+  try {
+    collapsed = window.localStorage.getItem(storageKey) === "1";
+  } catch (error) {
+    collapsed = false;
+  }
+  applyState(collapsed);
+  button.addEventListener("click", () => {
+    collapsed = !document.body.classList.contains("admin-sidebar-collapsed");
+    applyState(collapsed);
+    try {
+      window.localStorage.setItem(storageKey, collapsed ? "1" : "0");
+    } catch (error) {
+      // The visual toggle still works when storage is unavailable.
+    }
+  });
+}
+
 function bootOutputReviewForms() {
   document.querySelectorAll("[data-output-review-reject-form]").forEach((form) => {
     const button = form.querySelector("[data-output-review-reject]");
@@ -168,6 +199,7 @@ window.AdminFmt = Object.assign(window.AdminFmt || {}, {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
+  bootSidebarToggle();
   bootLegacyFrames();
   bootOutputModal();
   bootCopyButtons();

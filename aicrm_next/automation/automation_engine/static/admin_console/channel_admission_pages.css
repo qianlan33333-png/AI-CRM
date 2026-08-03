@@ -85,7 +85,7 @@
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fffdf8;
+  background: #ffffff;
 }
 
 .channel-table {
@@ -143,7 +143,7 @@
   padding: 4px 8px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: #fffdf8;
+  background: #ffffff;
   color: #4e5969;
   font-size: 12px;
   font-weight: 700;
@@ -231,7 +231,7 @@
   padding: 6px 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fffdf8;
+  background: #ffffff;
   color: var(--text);
 }
 
@@ -262,7 +262,7 @@
   --channel-v3-text: #101828;
   --channel-v3-muted: #667085;
   --channel-v3-muted2: #98a2b3;
-  --channel-v3-brand: #2563eb;
+  --channel-v3-brand: #3370ff;
   --channel-v3-brand-soft: #eaf2ff;
   --channel-v3-brand-line: #bfdbfe;
   --channel-v3-success: #079455;
@@ -830,4 +830,42 @@
 .channel-form-v3 [data-link-section][hidden],
 .channel-form-v3 [data-qrcode-section][hidden] {
   display: none !important;
+}
+
+/* Supplied AI-CRM design package: compact Lark-style channel pages. */
+.channel-page { gap: 12px; }
+.channel-section,
+.channel-metric,
+.channel-form-v3 .summary-box,
+.channel-form-v3 .panel,
+.channel-form-v3 .card {
+  border: 1px solid #dee0e3;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: none;
+}
+.channel-metric { gap: 4px; padding: 14px; }
+.channel-metric strong { font-size: 24px; }
+.channel-search { min-height: 32px; padding: 6px 10px; border-color: #dee0e3; border-radius: 6px; background: #fff; }
+.channel-row-actions .admin-button { min-height: 28px; padding: 0 6px; border-color: transparent; background: transparent; color: #3370ff; }
+.channel-row-actions .admin-button:hover { background: #eff4ff; }
+.channel-pill { min-height: 22px; padding: 2px 7px; border-color: #d3e1ff; background: #eff4ff; color: #3370ff; font-weight: 600; }
+.channel-form-v3 { --channel-v3-blue: #3370ff; --channel-v3-blue2: #245bdb; --channel-v3-line: #dee0e3; --channel-v3-line2: #eff0f1; --channel-v3-muted: #646a73; }
+.channel-form-v3 .topbar { min-height: 52px; padding: 8px 16px; border: 0; border-bottom: 1px solid #dee0e3; border-radius: 0; background: #fff; box-shadow: none; }
+.channel-form-v3 .workspace { grid-template-columns: 226px minmax(0, 1fr); gap: 12px; padding: 12px; }
+.channel-form-v3 .side-nav { border: 1px solid #dee0e3; border-radius: 8px; background: #fff; box-shadow: none; padding: 8px; }
+.channel-form-v3 .side-nav button { min-height: 44px; border-radius: 6px; }
+.channel-form-v3 .side-nav button.is-active,
+.channel-form-v3 .side-nav button.active { background: #eff4ff; color: #3370ff; }
+.channel-form-v3 input,
+.channel-form-v3 select,
+.channel-form-v3 textarea { border-color: #dee0e3; border-radius: 6px; background: #fff; }
+.channel-form-v3 input:focus,
+.channel-form-v3 select:focus,
+.channel-form-v3 textarea:focus { border-color: #3370ff; box-shadow: 0 0 0 2px rgba(51, 112, 255, .12); }
+.channel-form-v3 .summary-box { gap: 10px; padding: 14px; }
+.channel-form-v3 .save-feedback { border-color: #b7e6b1; border-radius: 6px; background: #ebf9ec; color: #2ea121; }
+
+@media (max-width: 860px) {
+  .channel-form-v3 .workspace { grid-template-columns: 1fr; }
 }

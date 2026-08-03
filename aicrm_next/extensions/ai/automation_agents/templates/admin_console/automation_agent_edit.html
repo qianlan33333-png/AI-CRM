@@ -11,7 +11,7 @@
     --agent-line2: #d7e1ef;
     --agent-text: #0f172a;
     --agent-muted: #64748b;
-    --agent-blue: #2563eb;
+    --agent-blue: #3370ff;
     --agent-blue2: #eaf2ff;
     --agent-green: #16a34a;
     --agent-green-bg: #dcfce7;
@@ -238,7 +238,7 @@
     border: 1px solid #bfdbfe;
     border-radius: 10px;
     background: #eff6ff;
-    color: #2563eb;
+    color: #3370ff;
     cursor: pointer;
     font: inherit;
     font-weight: 900;
@@ -385,6 +385,55 @@
       grid-template-columns: 1fr;
     }
   }
+
+  /* Supplied AI-CRM design package: summary plus four-step editor. */
+  :root {
+    --agent-bg:#f5f6f7; --agent-line:#dee0e3; --agent-line2:#dee0e3;
+    --agent-text:#1f2329; --agent-muted:#646a73; --agent-blue:#3370ff;
+    --agent-blue2:#eff4ff; --agent-green:#2ea121; --agent-green-bg:#ebf9ec;
+    --agent-red:#d83931; --agent-shadow:none; --agent-radius:8px;
+  }
+  .automation-agent-page{max-width:none;padding:0;display:grid;gap:12px}
+  .automation-agent-page-head{align-items:center;margin:0;padding:12px 16px;border:1px solid #dee0e3;border-radius:8px;background:#fff}
+  .automation-agent-crumb{margin:0 0 3px;color:#8f959e;font-size:12px;font-weight:400}
+  .automation-agent-title{font-size:16px;font-weight:600}
+  .automation-agent-card{border-radius:8px;box-shadow:none}
+  .automation-agent-summary{padding:16px}
+  .automation-agent-summary-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .automation-agent-summary-title{display:flex;align-items:center;gap:10px;min-width:0}
+  .automation-agent-summary-actions{display:flex;gap:8px}
+  .automation-agent-summary-actions .automation-agent-save-bar{margin:0;padding:0;border:0;background:transparent}
+  .automation-agent-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+  .automation-agent-summary-item{border:1px solid #eff0f1;border-radius:8px;padding:12px 14px}
+  .automation-agent-summary-item span{display:block;color:#8f959e;font-size:12px}
+  .automation-agent-summary-item strong{display:block;margin-top:5px;font-size:16px;font-weight:600;overflow-wrap:anywhere}
+  .automation-agent-workspace{display:grid;grid-template-columns:226px minmax(0,1fr);gap:12px;align-items:start}
+  .automation-agent-step-nav{display:grid;gap:2px;padding:8px;border:1px solid #dee0e3;border-radius:8px;background:#fff}
+  .automation-agent-step{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;border:0;border-radius:6px;background:transparent;color:#646a73;cursor:pointer;font:inherit;text-align:left}
+  .automation-agent-step span{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#f2f3f5;color:#646a73;font-size:12px}
+  .automation-agent-step.is-active{background:#eff4ff;color:#245bdb;font-weight:600}
+  .automation-agent-step.is-active span{background:#3370ff;color:#fff}
+  .automation-agent-panel{min-height:420px;overflow:hidden}
+  .automation-agent-panel-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #eff0f1}
+  .automation-agent-panel-head h2{margin:0;font-size:15px;font-weight:600}
+  .automation-agent-section{padding:18px}
+  .automation-agent-form-grid{grid-template-columns:1fr 1fr;gap:16px}
+  .automation-agent-field{display:grid;gap:6px}
+  .automation-agent-label{color:#646a73;font-size:12px;font-weight:400}
+  .automation-agent-input,.automation-agent-select,.automation-agent-textarea{border-color:#dee0e3;border-radius:6px;color:#1f2329;font-size:13px;font-weight:400;padding:8px 12px}
+  .automation-agent-input,.automation-agent-select{min-height:36px}
+  .automation-agent-input:focus,.automation-agent-select:focus,.automation-agent-textarea:focus{border-color:#3370ff;box-shadow:0 0 0 2px rgba(51,112,255,.12)}
+  .automation-agent-subtitle{font-size:14px;font-weight:600}
+  .automation-agent-btn{min-height:32px;padding:0 12px;border-radius:6px;font-size:13px;font-weight:500;box-shadow:none}
+  .automation-agent-btn.primary{box-shadow:none}
+  .automation-agent-token-btn{min-height:30px;border:0;border-radius:6px;background:#eff4ff;color:#245bdb;padding:0 12px;font-weight:500}
+  .automation-agent-pill{height:22px;padding:0 8px;border-radius:4px;font-size:12px;font-weight:500}
+  .automation-agent-material-empty{height:auto;min-height:160px;border-color:#dee0e3;border-radius:8px;background:#fff;color:#8f959e;font-weight:400}
+  .automation-agent-box-icon{width:32px;height:32px;margin:0 auto 8px}
+  .automation-agent-box-icon img{display:block;width:32px;height:32px}
+  .automation-agent-modal{border:1px solid #dee0e3;border-radius:10px;box-shadow:0 12px 36px rgba(31,35,41,.24)}
+  .automation-agent-modal-mask{background:rgba(31,35,41,.46)}
+  @media(max-width:980px){.automation-agent-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.automation-agent-workspace{grid-template-columns:1fr}.automation-agent-step-nav{grid-template-columns:repeat(4,minmax(0,1fr))}}
 </style>
 {% endblock %}
 
@@ -395,38 +444,69 @@
       <div class="automation-agent-crumb">客户管理后台 / 配置及后台 / Agent / 编辑</div>
       <div class="automation-agent-title" id="editTitle">编辑 Agent</div>
     </div>
+    <a class="automation-agent-btn" href="/admin/automation-agents">返回自动化列表</a>
   </div>
 
-  <div class="automation-agent-grid">
-    <section class="automation-agent-card automation-agent-section" aria-label="编辑 Agent">
-      <div class="automation-agent-section-head">
-        <h2 class="automation-agent-subtitle">基本信息</h2>
+  <section class="automation-agent-card automation-agent-summary" aria-label="Agent 摘要">
+    <div class="automation-agent-summary-head">
+      <div class="automation-agent-summary-title">
+        <h2 class="automation-agent-subtitle" id="summaryTitle">编辑 Agent</h2>
         <span class="automation-agent-pill green" id="statusBadge">启用中</span>
       </div>
-      <div class="automation-agent-form-grid">
+      <div class="automation-agent-summary-actions">
+        <a class="automation-agent-btn" href="/admin/automation-agents">返回自动化列表</a>
+        <div class="automation-agent-card automation-agent-save-bar"><button class="automation-agent-btn primary" id="saveCurrent" type="button">保存</button></div>
+      </div>
+    </div>
+    <div class="automation-agent-summary-grid">
+      <div class="automation-agent-summary-item"><span>自动化类型</span><strong id="automationTypeSummary">-</strong></div>
+      <div class="automation-agent-summary-item"><span>状态</span><strong id="statusSummary">-</strong></div>
+      <div class="automation-agent-summary-item"><span>绑定人群包</span><strong id="boundPackageSummary">-</strong></div>
+      <div class="automation-agent-summary-item"><span>Prompt 版本</span><strong id="promptVersionSummary">-</strong></div>
+    </div>
+  </section>
+
+  <div class="automation-agent-workspace">
+    <nav class="automation-agent-step-nav" aria-label="Agent 编辑步骤">
+      <button class="automation-agent-step is-active" type="button" data-agent-step="basic"><span>1</span>基本信息</button>
+      <button class="automation-agent-step" type="button" data-agent-step="audience"><span>2</span>绑定人群包</button>
+      <button class="automation-agent-step" type="button" data-agent-step="prompt"><span>3</span>Prompt 配置</button>
+      <button class="automation-agent-step" type="button" data-agent-step="material"><span>4</span>固定素材</button>
+    </nav>
+
+    <section class="automation-agent-card automation-agent-panel" aria-label="Agent 编辑面板">
+      <div class="automation-agent-panel-head"><h2 id="agentPanelTitle">基本信息</h2><span class="automation-agent-pill green" id="panelStatusBadge">启用中</span></div>
+
+      <section class="automation-agent-section" data-agent-panel="basic" aria-label="编辑 Agent">
+        <div class="automation-agent-form-grid">
+          <div class="automation-agent-field">
         <label class="automation-agent-label" for="agentName">Agent 名称</label>
         <input class="automation-agent-input" id="agentName" value="">
+          </div>
+          <div class="automation-agent-field">
         <label class="automation-agent-label" for="automationType">自动化类类型</label>
         <select class="automation-agent-select" id="automationType">
           <option value="agent">Agent 机器人</option>
           <option value="fixed_script">固定话术</option>
         </select>
+          </div>
+          <div class="automation-agent-field">
         <label class="automation-agent-label" for="agentStatus">状态</label>
         <select class="automation-agent-select" id="agentStatus">
           <option value="active">启用中</option>
           <option value="paused">已停止</option>
         </select>
-      </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="automation-agent-section automation-agent-hidden" data-agent-panel="audience" aria-label="当前绑定人群包">
+        <label class="automation-agent-label">当前绑定人群包</label>
+        <div class="automation-agent-input" id="boundPackage" aria-live="polite">未绑定</div>
+        <p class="automation-agent-label">绑定关系请在人群包详情的“自动化话术能力”中管理。</p>
     </section>
 
-    <section class="automation-agent-card automation-agent-section" aria-label="当前绑定人群包">
-      <div class="automation-agent-section-head"><h2 class="automation-agent-subtitle">当前绑定人群包</h2></div>
-      <div class="automation-agent-input" id="boundPackage" aria-live="polite">未绑定</div>
-      <p class="automation-agent-label">绑定关系请在人群包详情的“自动化话术能力”中管理。</p>
-    </section>
-
-    <section class="automation-agent-card automation-agent-section" id="promptSection" aria-label="Prompt 配置">
-      <div class="automation-agent-section-head"><h2 class="automation-agent-subtitle">Prompt 配置</h2></div>
+    <section class="automation-agent-section automation-agent-hidden" id="promptSection" data-agent-panel="prompt" aria-label="Prompt 配置">
       <label class="automation-agent-label" for="rolePrompt">角色提示词 role_prompt</label>
       <textarea class="automation-agent-textarea" id="rolePrompt"></textarea>
       <div class="automation-agent-prompt-buttons">
@@ -454,31 +534,25 @@
       </div>
     </section>
 
-    <section class="automation-agent-card automation-agent-section automation-agent-hidden" id="fixedScriptSection" aria-label="固定话术">
-      <div class="automation-agent-section-head"><h2 class="automation-agent-subtitle">固定话术</h2></div>
+    <section class="automation-agent-section automation-agent-hidden" id="fixedScriptSection" data-agent-panel="prompt" aria-label="固定话术">
       <label class="automation-agent-label" for="fixedScriptText">话术正文</label>
       <textarea class="automation-agent-textarea" id="fixedScriptText" placeholder="填写固定发送给用户的话术"></textarea>
     </section>
 
-    <div>
-      <section class="automation-agent-card automation-agent-section" aria-label="固定素材">
+      <section class="automation-agent-section automation-agent-hidden" data-agent-panel="material" aria-label="固定素材">
         <div class="automation-agent-section-head">
           <h2 class="automation-agent-subtitle">固定素材</h2>
           <button class="automation-agent-btn primary" id="openMaterial" type="button">配置固定素材</button>
         </div>
         <div class="automation-agent-material-empty" id="materialEmpty">
           <div>
-            <div class="automation-agent-box-icon">▣</div>
+            <div class="automation-agent-box-icon"><img src="{{ url_for('static', filename='admin_console/nav-icons/empty-image.svg') }}" alt=""></div>
             <div>暂无配置固定素材</div>
           </div>
         </div>
         <div id="materialList" class="automation-agent-hidden"></div>
       </section>
-    </div>
-  </div>
-
-  <div class="automation-agent-card automation-agent-save-bar">
-    <button class="automation-agent-btn primary" id="saveCurrent" type="button">保存</button>
+    </section>
   </div>
 </main>
 
@@ -524,6 +598,7 @@
     const fixedContentApiUrl = {{ automation_agent_fixed_content_api_url | tojson }};
     const state = {
       agent: null,
+      activePanel: "basic",
       focusPrompt: null,
       contentPackage: {
         content_text: "",
@@ -537,10 +612,16 @@
 
     const els = {
       title: document.getElementById("editTitle"),
+      summaryTitle: document.getElementById("summaryTitle"),
       agentName: document.getElementById("agentName"),
       automationType: document.getElementById("automationType"),
       agentStatus: document.getElementById("agentStatus"),
       statusBadge: document.getElementById("statusBadge"),
+      panelStatusBadge: document.getElementById("panelStatusBadge"),
+      automationTypeSummary: document.getElementById("automationTypeSummary"),
+      statusSummary: document.getElementById("statusSummary"),
+      boundPackageSummary: document.getElementById("boundPackageSummary"),
+      promptVersionSummary: document.getElementById("promptVersionSummary"),
       boundPackage: document.getElementById("boundPackage"),
       rolePrompt: document.getElementById("rolePrompt"),
       taskPrompt: document.getElementById("taskPrompt"),
@@ -654,13 +735,17 @@
       const active = els.agentStatus.value === "active";
       els.statusBadge.textContent = active ? "启用中" : "已停止";
       els.statusBadge.className = `automation-agent-pill ${active ? "green" : ""}`;
+      els.panelStatusBadge.textContent = active ? "启用中" : "已停止";
+      els.panelStatusBadge.className = `automation-agent-pill ${active ? "green" : ""}`;
+      els.statusSummary.textContent = active ? "启用中" : "已停止";
     };
 
     const renderMode = () => {
       const fixedScript = isFixedScript();
-      els.promptSection.classList.toggle("automation-agent-hidden", fixedScript);
-      els.fixedScriptSection.classList.toggle("automation-agent-hidden", !fixedScript);
+      els.promptSection.classList.toggle("automation-agent-hidden", state.activePanel !== "prompt" || fixedScript);
+      els.fixedScriptSection.classList.toggle("automation-agent-hidden", state.activePanel !== "prompt" || !fixedScript);
       els.modalTextPreview.textContent = fixedScript ? (els.fixedScriptText.value.trim() || "未填写固定话术") : "AI 文本由 Agent 动态生成";
+      els.automationTypeSummary.textContent = fixedScript ? "固定话术" : "Agent 机器人";
     };
 
     const renderDeps = () => {
@@ -795,6 +880,7 @@
     const applyAgent = (agent) => {
       state.agent = agent || {};
       els.title.textContent = state.agent.agent_name || "编辑 Agent";
+      els.summaryTitle.textContent = state.agent.agent_name || "编辑 Agent";
       els.agentName.value = state.agent.agent_name || "";
       els.automationType.value = state.agent.automation_type === "fixed_script" ? "fixed_script" : "agent";
       els.agentStatus.value = state.agent.status === "paused" ? "paused" : "active";
@@ -802,6 +888,7 @@
       els.taskPrompt.value = state.agent.draft_task_prompt || state.agent.published_task_prompt || "";
       els.draftVersion.textContent = `草稿版本：v${Number(state.agent.draft_version || 0)}`;
       els.publishedVersion.textContent = `已发布版本：v${Number(state.agent.published_version || 0)}`;
+      els.promptVersionSummary.textContent = `草稿 v${Number(state.agent.draft_version || 0)} / 已发布 v${Number(state.agent.published_version || 0)}`;
       state.contentPackage = normalizePackage(state.agent.fixed_content_package || {});
       els.fixedScriptText.value = state.contentPackage.content_text || "";
       state.materialDetails = new Map();
@@ -809,6 +896,7 @@
       els.boundPackage.textContent = state.agent.bound_package_name
         ? `${state.agent.bound_package_name}（${state.agent.bound_package_key || "-"}）`
         : "未绑定";
+      els.boundPackageSummary.textContent = state.agent.bound_package_name ? "已绑定 1 个" : "未绑定";
       renderStatus();
       renderMode();
       renderDeps();
@@ -848,6 +936,21 @@
 
     document.querySelectorAll("[data-add-asset]").forEach((button) => {
       button.addEventListener("click", () => openPicker(button.dataset.addAsset));
+    });
+
+    const panelTitles = { basic: "基本信息", audience: "绑定人群包", prompt: "Prompt 配置", material: "固定素材" };
+    document.querySelectorAll("[data-agent-step]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const activePanel = button.dataset.agentStep;
+        state.activePanel = activePanel;
+        document.querySelectorAll("[data-agent-step]").forEach((item) => item.classList.toggle("is-active", item === button));
+        document.querySelectorAll("[data-agent-panel]").forEach((panel) => {
+          const panelKey = panel.dataset.agentPanel;
+          const show = panelKey === activePanel && (panel !== els.promptSection || !isFixedScript()) && (panel !== els.fixedScriptSection || isFixedScript());
+          panel.classList.toggle("automation-agent-hidden", !show);
+        });
+        document.getElementById("agentPanelTitle").textContent = panelTitles[activePanel];
+      });
     });
 
     els.selectedAssets.addEventListener("click", (event) => {

@@ -90,15 +90,19 @@
     }
     listNode.innerHTML = messages
       .map(
-        (item) => `
-          <article class="admin-profile-message">
+        (item) => {
+          const speaker = String(item.speaker || "").trim();
+          const isStaff = speaker && !["客户", "用户", "顾客"].some((label) => speaker.includes(label));
+          return `
+          <article class="admin-profile-message${isStaff ? " is-staff" : ""}">
             <div class="admin-profile-message-meta">
               <span>${escapeHtml(item.send_time || "未知时间")}</span>
               <span>${escapeHtml(item.speaker || "未知发送方")}</span>
             </div>
             <div class="admin-profile-message-content">${escapeHtml(item.content || "无内容")}</div>
           </article>
-        `,
+        `;
+        },
       )
       .join("");
     stateNode.hidden = true;
