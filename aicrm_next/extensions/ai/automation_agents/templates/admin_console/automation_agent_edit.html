@@ -475,7 +475,7 @@
     </nav>
 
     <section class="automation-agent-card automation-agent-panel" aria-label="Agent 编辑面板">
-      <div class="automation-agent-panel-head"><h2 id="agentPanelTitle">基本信息</h2><span class="automation-agent-pill green" id="panelStatusBadge">启用中</span></div>
+      <div class="automation-agent-panel-head"><h2 class="automation-agent-subtitle">基本信息</h2><span class="automation-agent-pill green" id="panelStatusBadge">启用中</span></div>
 
       <section class="automation-agent-section" data-agent-panel="basic" aria-label="编辑 Agent">
         <div class="automation-agent-form-grid">
@@ -949,7 +949,7 @@
           const show = panelKey === activePanel && (panel !== els.promptSection || !isFixedScript()) && (panel !== els.fixedScriptSection || isFixedScript());
           panel.classList.toggle("automation-agent-hidden", !show);
         });
-        document.getElementById("agentPanelTitle").textContent = panelTitles[activePanel];
+        document.querySelector(".automation-agent-panel-head .automation-agent-subtitle").textContent = panelTitles[activePanel];
       });
     });
 

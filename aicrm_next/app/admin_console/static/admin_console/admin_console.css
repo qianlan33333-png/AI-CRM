@@ -2868,22 +2868,6 @@ body.admin-shell {
   white-space: nowrap;
 }
 
-.admin-sidebar-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  margin-left: auto;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: #fff;
-  color: var(--text-2);
-  cursor: pointer;
-}
-
-.admin-sidebar-toggle img,
 .admin-nav-icon {
   width: 16px;
   height: 16px;
@@ -3431,36 +3415,6 @@ body.admin-shell {
   line-height: 20px;
 }
 
-body.admin-sidebar-collapsed .admin-layout {
-  grid-template-columns: 56px minmax(0, 1fr);
-}
-
-body.admin-sidebar-collapsed .admin-sidebar {
-  width: 56px;
-}
-
-body.admin-sidebar-collapsed .admin-brand {
-  padding: 0 14px;
-}
-
-body.admin-sidebar-collapsed .admin-brand-copy,
-body.admin-sidebar-collapsed .admin-nav-section-title,
-body.admin-sidebar-collapsed .admin-nav-label,
-body.admin-sidebar-collapsed .admin-sidebar-user__meta,
-body.admin-sidebar-collapsed .admin-sidebar-toggle {
-  display: none;
-}
-
-body.admin-sidebar-collapsed .admin-nav-link {
-  justify-content: center;
-  padding: 0;
-}
-
-body.admin-sidebar-collapsed .admin-sidebar-user {
-  justify-content: center;
-  padding: 9px 0;
-}
-
 @media (max-width: 1100px) {
   .admin-profile-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3476,38 +3430,18 @@ body.admin-sidebar-collapsed .admin-sidebar-user {
 }
 
 @media (max-width: 960px) {
-  .admin-layout,
-  body.admin-sidebar-collapsed .admin-layout {
+  .admin-layout {
     grid-template-columns: 1fr;
   }
 
-  .admin-sidebar,
-  body.admin-sidebar-collapsed .admin-sidebar {
+  .admin-sidebar {
     position: static;
     width: auto;
     min-height: auto;
   }
 
-  .admin-nav,
-  body.admin-sidebar-collapsed .admin-nav {
+  .admin-nav {
     max-height: 40vh;
-  }
-
-  body.admin-sidebar-collapsed .admin-brand-copy,
-  body.admin-sidebar-collapsed .admin-nav-section-title,
-  body.admin-sidebar-collapsed .admin-nav-label,
-  body.admin-sidebar-collapsed .admin-sidebar-user__meta,
-  body.admin-sidebar-collapsed .admin-sidebar-toggle {
-    display: block;
-  }
-
-  body.admin-sidebar-collapsed .admin-sidebar-toggle {
-    display: inline-flex;
-  }
-
-  body.admin-sidebar-collapsed .admin-nav-link {
-    justify-content: flex-start;
-    padding: 0 10px;
   }
 
   .admin-topbar,

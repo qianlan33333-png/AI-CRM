@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ page_title }} · 客户管理后台</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='admin_console/admin_console.css') }}?v=lark-design-package-20260803">
+  <link rel="stylesheet" href="{{ url_for('static', filename='admin_console/admin_console.css') }}?v=operation-member-picker-fix-20260527&amp;design=lark-20260803">
   {% block head_extra %}{% endblock %}
   <script src="{{ url_for('static', filename='admin_console/admin_api_client.js') }}?v=admin-error-messages-v1-20260729"></script>
   <script defer src="{{ url_for('static', filename='admin_console/admin_console.js') }}?v=lark-design-package-20260803"></script>
@@ -19,9 +19,6 @@
           <div class="admin-brand-title">客户管理后台</div>
           <div class="admin-brand-subtitle">ADMIN CONSOLE</div>
         </div>
-        <button class="admin-sidebar-toggle" type="button" data-admin-sidebar-toggle aria-label="收起侧栏" title="收起侧栏">
-          <img src="{{ url_for('static', filename='admin_console/nav-icons/sidebar-collapse.svg') }}" alt="">
-        </button>
       </div>
 
       <nav class="admin-nav" aria-label="客户管理后台导航">
