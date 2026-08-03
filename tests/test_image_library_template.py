@@ -165,6 +165,11 @@ def test_card_renders_tags_and_category_chips(source: str):
     assert 'class="tag"' in source
 
 
+def test_desktop_grid_renders_eight_assets_per_row(source: str):
+    assert "grid-template-columns:repeat(8,minmax(0,1fr))" in source
+    assert "eight assets per desktop row" in source
+
+
 def test_card_does_not_show_description_summary(source: str):
     """需求：描述移到编辑里，卡片不展示摘要。旧版的 il-card-desc 必须移除。"""
     assert "il-card-desc" not in source

@@ -98,6 +98,7 @@ def admin_coupon_new_page(request: Request):
     context["breadcrumbs"].append({"label": "新建优惠券"})
     context.update(
         {
+            "show_page_header": False,
             "coupon_form_mode": "new",
             "coupon_id": 0,
             "initial_coupon": {},
@@ -131,6 +132,7 @@ def admin_coupon_edit_page(request: Request, coupon_id: int):
     context["breadcrumbs"].append({"label": "编辑优惠券"})
     context.update(
         {
+            "show_page_header": False,
             "coupon_form_mode": "edit",
             "coupon_id": int(coupon_id),
             "initial_coupon": jsonable_encoder(coupon),

@@ -1877,3 +1877,235 @@ select:focus,
   .workspace,
   .assessment-template-mode .workspace { grid-template-columns: 240px minmax(420px, 1fr); }
 }
+
+/* Supplied HTML, ordinary questionnaire editor: fixed 270 / phone / 340 workspace. */
+body:not(.assessment-template-mode) {
+  overflow: hidden;
+  background: #f5f6f7;
+}
+body:not(.assessment-template-mode) .shell {
+  min-height: 100vh;
+  padding: 12px;
+  background: #f5f6f7;
+}
+body:not(.assessment-template-mode) .topbar {
+  position: relative;
+  top: auto;
+  max-width: none;
+  min-height: 72px;
+  margin: 0 0 12px;
+  padding: 12px 18px;
+  border: 1px solid #dee0e3;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+body:not(.assessment-template-mode) .topbar-copy { gap: 3px; }
+body:not(.assessment-template-mode) .back-link { color: #3370ff; font-size: 12px; font-weight: 400; }
+body:not(.assessment-template-mode) .topbar h1 { font-size: 20px; font-weight: 600; line-height: 26px; letter-spacing: 0; }
+body:not(.assessment-template-mode) .draft-indicator {
+  min-height: 22px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 4px;
+  background: #fff7e8;
+  color: #d97917;
+  font-size: 12px;
+  font-weight: 400;
+}
+body:not(.assessment-template-mode) .topbar-actions,
+body:not(.assessment-template-mode) .header-actions { gap: 8px; }
+body:not(.assessment-template-mode) .btn {
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid #dee0e3;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 400;
+  box-shadow: none;
+}
+body:not(.assessment-template-mode) .btn.primary { border-color: #3370ff; background: #3370ff; box-shadow: none; }
+body:not(.assessment-template-mode) .btn.secondary { border-color: transparent; background: #eff4ff; color: #245bdb; }
+body:not(.assessment-template-mode) .workspace {
+  width: 100%;
+  max-width: none;
+  height: calc(100vh - 108px);
+  min-height: 620px;
+  margin: 0;
+  padding: 0;
+  grid-template-columns: 270px minmax(420px, 1fr) 340px;
+  gap: 12px;
+  align-items: stretch;
+}
+body:not(.assessment-template-mode) .sidebar,
+body:not(.assessment-template-mode) .inspector-column {
+  position: static;
+  top: auto;
+  display: block;
+  height: 100%;
+  max-height: none;
+  overflow: auto;
+}
+body:not(.assessment-template-mode) .card {
+  border: 1px solid #dee0e3;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+body:not(.assessment-template-mode) .section-card { min-height: 100%; padding: 16px; }
+body:not(.assessment-template-mode) .section-head { margin-bottom: 14px; }
+body:not(.assessment-template-mode) .section-head h3,
+body:not(.assessment-template-mode) .section-head h2 { font-size: 15px; font-weight: 600; }
+body:not(.assessment-template-mode) .section-subtitle { margin-top: 4px; color: #8f959e; font-size: 12px; line-height: 18px; }
+body:not(.assessment-template-mode) .tool-grid { gap: 8px; }
+body:not(.assessment-template-mode) .tool-card {
+  min-height: 58px;
+  padding: 11px 12px;
+  gap: 10px;
+  border: 1px solid #dee0e3;
+  border-radius: 8px;
+  background: #fff;
+}
+body:not(.assessment-template-mode) .tool-card:hover { border-color: #3370ff; background: #fff; }
+body:not(.assessment-template-mode) .tool-card .tool-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: #eff4ff;
+  color: #245bdb;
+  font-size: 13px;
+  font-weight: 600;
+}
+body:not(.assessment-template-mode) .tool-card strong { margin-bottom: 2px; font-size: 13px; font-weight: 600; }
+body:not(.assessment-template-mode) .tool-card span { color: #8f959e; font-size: 12px; line-height: 18px; }
+body:not(.assessment-template-mode) .preview-column { height: 100%; }
+body:not(.assessment-template-mode) .phone-stage {
+  min-height: 0;
+  height: 100%;
+  padding: 16px;
+  place-items: start center;
+  overflow: auto;
+}
+body:not(.assessment-template-mode) .phone-frame {
+  width: 372px;
+  padding: 10px 10px 14px;
+  border: 1px solid #dee0e3;
+  border-radius: 24px;
+  background: #f5f6f7;
+  box-shadow: none;
+}
+body:not(.assessment-template-mode) .phone-topbar { height: 22px; margin: 0 0 6px; align-items: center; }
+body:not(.assessment-template-mode) .phone-notch { width: 96px; height: 6px; border-radius: 999px; background: #c4c7cc; }
+body:not(.assessment-template-mode) .phone-screen {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+body:not(.assessment-template-mode) .preview-head,
+body:not(.assessment-template-mode) .preview-question,
+body:not(.assessment-template-mode) .preview-rule,
+body:not(.assessment-template-mode) .preview-template-group {
+  padding: 14px 16px;
+  border: 1px solid #eff0f1;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: none;
+}
+body:not(.assessment-template-mode) .preview-head.active,
+body:not(.assessment-template-mode) .preview-question.active,
+body:not(.assessment-template-mode) .preview-rule.active,
+body:not(.assessment-template-mode) .preview-template-group.active {
+  border-color: #3370ff;
+  box-shadow: 0 0 0 3px rgba(51,112,255,.08);
+}
+body:not(.assessment-template-mode) .question-type {
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 4px;
+  background: #eff4ff;
+  color: #245bdb;
+  font-size: 12px;
+  font-weight: 400;
+}
+body:not(.assessment-template-mode) .preview-head h2 { margin: 10px 0 6px; font-size: 19px; font-weight: 600; line-height: 26px; letter-spacing: 0; }
+body:not(.assessment-template-mode) .preview-head p { color: #646a73; font-size: 13px; line-height: 20px; }
+body:not(.assessment-template-mode) .preview-stack { gap: 10px; margin-top: 10px; }
+body:not(.assessment-template-mode) .preview-question h4,
+body:not(.assessment-template-mode) .preview-rule h4,
+body:not(.assessment-template-mode) .preview-template-group h4 { margin: 10px 0 6px; font-size: 15px; font-weight: 600; line-height: 22px; }
+body:not(.assessment-template-mode) .preview-options { display: grid; gap: 8px; margin-top: 10px; }
+body:not(.assessment-template-mode) .option-pill { padding: 9px 12px; border: 0; border-radius: 8px; background: #f7f8fa; color: #1f2329; font-size: 13px; }
+body:not(.assessment-template-mode) .preview-footer-note { margin-top: 10px; padding: 4px 0 2px; border-radius: 0; background: transparent; color: #a6aab0; font-size: 12px; text-align: center; }
+body:not(.assessment-template-mode) .inspector-card {
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+}
+body:not(.assessment-template-mode) .inspector-card > .section-head {
+  margin: 0;
+  padding: 16px 16px 12px;
+  border: 1px solid #dee0e3;
+  border-bottom: 0;
+  border-radius: 10px 10px 0 0;
+  background: #fff;
+}
+body:not(.assessment-template-mode) .inspector-card .eyebrow { color: #8f959e; font-size: 12px; }
+body:not(.assessment-template-mode) #inspector-title { margin-top: 6px!important; font-size: 16px!important; font-weight: 600!important; }
+body:not(.assessment-template-mode) #inspector-subtitle { margin: 3px 0 0; }
+body:not(.assessment-template-mode) #inspector-body { display: grid; gap: 12px; }
+body:not(.assessment-template-mode) .config-group {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid #dee0e3;
+  border-radius: 10px;
+  background: #fff;
+}
+body:not(.assessment-template-mode) #inspector-body > .config-group:first-child { border-radius: 0 0 10px 10px; }
+body:not(.assessment-template-mode) .config-group h3 { font-size: 14px; font-weight: 600; }
+body:not(.assessment-template-mode) .config-group p { margin-top: 5px; color: #8f959e; font-size: 12px; line-height: 19px; }
+body:not(.assessment-template-mode) .config-head { align-items: flex-start; margin-bottom: 12px; }
+body:not(.assessment-template-mode) .field { margin-bottom: 12px; color: #646a73; font-size: 12px; font-weight: 400; }
+body:not(.assessment-template-mode) .field input[type="text"],
+body:not(.assessment-template-mode) .field input[type="number"],
+body:not(.assessment-template-mode) .field textarea,
+body:not(.assessment-template-mode) .field select {
+  min-height: 34px;
+  margin-top: 6px;
+  padding: 7px 10px;
+  border: 1px solid #dee0e3;
+  border-radius: 6px;
+  background: #fff;
+  color: #1f2329;
+  font-size: 13px;
+}
+body:not(.assessment-template-mode) .field textarea { min-height: 82px; line-height: 20px; }
+body:not(.assessment-template-mode) .field input:focus,
+body:not(.assessment-template-mode) .field textarea:focus,
+body:not(.assessment-template-mode) .field select:focus { border-color: #3370ff; box-shadow: 0 0 0 2px rgba(51,112,255,.12); }
+body:not(.assessment-template-mode) .field-grid.compact { gap: 12px; }
+body:not(.assessment-template-mode) .helper-note { margin-top: 10px; padding: 10px 12px; border-radius: 8px; background: #fafbfc; color: #8f959e; font-size: 12px; line-height: 19px; }
+body:not(.assessment-template-mode) .config-group.danger-zone { padding: 14px 16px; border: 1px solid #f98e8b; background: #fff; }
+body:not(.assessment-template-mode) .config-group.danger-zone .link-btn { color: #d83931; font-size: 13px; font-weight: 600; }
+body:not(.assessment-template-mode) .option-editor { border-color: #dee0e3; border-radius: 8px; }
+body:not(.assessment-template-mode) .drawer-overlay { background: rgba(31,35,41,.46); backdrop-filter: none; }
+body:not(.assessment-template-mode) .drawer-panel { border-color: #dee0e3; border-radius: 10px; box-shadow: 0 12px 36px rgba(31,35,41,.24); }
+body:not(.assessment-template-mode) .toast { border-radius: 6px; background: #1f2329; box-shadow: 0 8px 24px rgba(31,35,41,.18); }
+@media (max-width: 1180px) {
+  body:not(.assessment-template-mode) { overflow: auto; }
+  body:not(.assessment-template-mode) .workspace { height: auto; min-height: 0; grid-template-columns: 240px minmax(420px,1fr); }
+  body:not(.assessment-template-mode) .inspector-column { grid-column: 1 / -1; height: auto; }
+}
+@media (max-width: 820px) {
+  body:not(.assessment-template-mode) .topbar { align-items: flex-start; flex-direction: column; }
+  body:not(.assessment-template-mode) .topbar-actions { width: 100%; }
+  body:not(.assessment-template-mode) .workspace { grid-template-columns: 1fr; }
+  body:not(.assessment-template-mode) .sidebar { height: auto; }
+  body:not(.assessment-template-mode) .phone-frame { width: min(100%,372px); }
+}

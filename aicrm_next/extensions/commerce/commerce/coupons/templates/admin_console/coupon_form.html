@@ -6,129 +6,123 @@
 
 {% block content %}
 <div class="coupon-admin" data-coupon-form-mode="{{ coupon_form_mode }}" data-coupon-id="{{ coupon_id }}">
+  <header class="coupon-editor-head">
+    <div class="coupon-editor-title">
+      <a class="coupon-back" href="/admin/coupons" aria-label="返回优惠券管理">‹</a>
+      <div>
+        <div class="coupon-editor-breadcrumb">优惠券 / {{ "新建优惠券" if coupon_form_mode == "new" else "编辑优惠券" }}</div>
+        <div class="coupon-editor-title-row">
+          <h2>{{ "新建优惠券" if coupon_form_mode == "new" else "编辑优惠券" }}</h2>
+          <span class="coupon-status draft" id="couponStatusLabel">草稿</span>
+        </div>
+      </div>
+    </div>
+    <div class="coupon-editor-actions">
+      <span class="coupon-toast" id="couponFormToast" role="status"></span>
+      <a class="admin-button admin-button--ghost" href="/admin/coupons">取消</a>
+      <button class="admin-button admin-button--primary" id="saveCoupon" form="couponForm" type="submit">保存优惠券</button>
+    </div>
+  </header>
+
   <div class="coupon-freeze-notice" id="couponFreezeNotice" hidden>
     这张优惠券已经有人领取。减免金额、适用商品、领取与使用时间、有效期模式和每人限领量已冻结；可以修改名称、说明或增加发行量。
   </div>
 
-  <form class="coupon-form" id="couponForm" novalidate>
-    <section class="admin-card coupon-section">
-      <header class="coupon-section-head">
-        <div>
-          <h2>基本信息</h2>
-          <p>V1 固定为无门槛金额减免，每个订单最多使用一张。</p>
-        </div>
-        <span class="coupon-status draft" id="couponStatusLabel">草稿</span>
-      </header>
-      <div class="coupon-form-grid">
-        <div class="coupon-field">
-          <label for="couponName">优惠券名称 <span class="coupon-required">*</span></label>
-          <input id="couponName" maxlength="45" required autocomplete="off" value="{{ initial_coupon.name or '' }}" placeholder="请输入优惠券名称，不超过 45 个字">
-        </div>
-        <div class="coupon-field">
-          <label>优惠券类型</label>
-          <div class="coupon-inline" style="min-height:42px;"><span class="coupon-status active">无门槛固定减免券</span></div>
-        </div>
-        <div class="coupon-field full">
-          <label for="couponAmount">减免金额 <span class="coupon-required">*</span></label>
-          <div class="coupon-money-input">
-            <strong>减</strong>
+  <form class="coupon-form coupon-editor-layout" id="couponForm" novalidate>
+    <div class="coupon-editor-main">
+      <section class="admin-card coupon-section">
+        <header class="coupon-section-head"><h2>基本信息</h2><span class="coupon-help">无门槛固定减免券</span></header>
+        <div class="coupon-form-grid">
+          <div class="coupon-field full">
+            <label for="couponName">优惠券名称 <span class="coupon-required">*</span></label>
+            <input id="couponName" maxlength="45" required autocomplete="off" value="{{ initial_coupon.name or '' }}" placeholder="展示给用户的名称，如「新客立减 100」">
+          </div>
+          <div class="coupon-field">
+            <label for="couponAmount">减免金额（元） <span class="coupon-required">*</span></label>
             <input id="couponAmount" data-rule-field type="number" min="0.01" step="0.01" inputmode="decimal" required placeholder="输入金额">
-            <strong>元</strong>
           </div>
-          <p class="coupon-help">减免金额必须小于所有适用商品的当前售价，不支持零元订单。</p>
+          <div class="coupon-field">
+            <label for="couponIssueLimit">发行总量 <span class="coupon-required">*</span></label>
+            <input id="couponIssueLimit" type="number" min="1" step="1" inputmode="numeric" required>
+            <p class="coupon-help">发布后只允许增加，不允许低于已领取数量。</p>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section class="admin-card coupon-section">
-      <header class="coupon-section-head">
-        <div>
+      <section class="admin-card coupon-section">
+        <header class="coupon-section-head">
           <h2>适用商品</h2>
-          <p>可同时选择普通商品与周期商品，全部通过可视化选择完成。</p>
-        </div>
-        <button class="admin-button admin-button--ghost" id="openProductSelector" data-rule-field type="button">选择商品</button>
-      </header>
-      <div class="coupon-picker-summary">
-        <div class="coupon-inline"><strong id="selectedProductCount">已选 0 个商品</strong><span class="coupon-help">至少选择一个</span></div>
-        <div class="coupon-selected-list" id="selectedProductList">
-          {% for product in initial_coupon.products or [] %}
-          <span class="coupon-selected-item"><span>{{ "周期商品" if product.product_type == "service_period" else "普通商品" }} · {{ product.title or product.name }}</span></span>
-          {% endfor %}
-        </div>
-      </div>
-    </section>
-
-    <section class="admin-card coupon-section">
-      <header class="coupon-section-head">
-        <div>
-          <h2>领取与有效期</h2>
-          <p>领取窗口和使用有效期相互独立，所有时间按北京时间展示。</p>
-        </div>
-      </header>
-      <div class="coupon-form-grid">
-        <div class="coupon-field">
-          <label for="couponClaimStart">领取开始时间 <span class="coupon-required">*</span></label>
-          <input id="couponClaimStart" data-rule-field type="datetime-local" required>
-        </div>
-        <div class="coupon-field">
-          <label for="couponClaimEnd">领取结束时间 <span class="coupon-required">*</span></label>
-          <input id="couponClaimEnd" data-rule-field type="datetime-local" required>
-        </div>
-        <fieldset class="coupon-field full" style="border:0;padding:0;margin:0;">
-          <legend>使用有效期 <span class="coupon-required">*</span></legend>
-          <div class="coupon-radio-row">
-            <label><input data-rule-field type="radio" name="couponValidityMode" value="fixed_range" checked> 固定开始和结束时间</label>
-            <label><input data-rule-field type="radio" name="couponValidityMode" value="relative_days"> 领取后 N 个自然日</label>
+          <button class="admin-button admin-button--ghost" id="openProductSelector" data-rule-field type="button">选择商品</button>
+        </header>
+        <div class="coupon-picker-summary">
+          <div class="coupon-inline coupon-product-summary"><strong id="selectedProductCount">已选 0 个商品</strong><span class="coupon-help">至少选择一个</span></div>
+          <div class="coupon-selected-list" id="selectedProductList">
+            {% for product in initial_coupon.products or [] %}
+            <span class="coupon-selected-item"><span>{{ product.title or product.name }}</span></span>
+            {% endfor %}
           </div>
-        </fieldset>
-        <div class="coupon-field" data-fixed-validity>
-          <label for="couponUseStart">使用开始时间 <span class="coupon-required">*</span></label>
-          <input id="couponUseStart" data-rule-field type="datetime-local">
         </div>
-        <div class="coupon-field" data-fixed-validity>
-          <label for="couponUseEnd">使用结束时间 <span class="coupon-required">*</span></label>
-          <input id="couponUseEnd" data-rule-field type="datetime-local">
-        </div>
-        <div class="coupon-field full" data-relative-validity hidden>
-          <label for="couponRelativeDays">领取后有效天数 <span class="coupon-required">*</span></label>
-          <div class="coupon-money-input">
-            <span>领取当日起</span>
-            <input id="couponRelativeDays" data-rule-field type="number" min="1" max="3650" step="1" inputmode="numeric" value="1">
-            <span>个自然日内可用</span>
+      </section>
+
+      <section class="admin-card coupon-section">
+        <header class="coupon-section-head"><h2>领取与有效期</h2></header>
+        <div class="coupon-form-grid coupon-validity-grid">
+          <div class="coupon-field">
+            <label for="couponClaimStart">领取开始（北京时间） <span class="coupon-required">*</span></label>
+            <input id="couponClaimStart" data-rule-field type="datetime-local" required>
           </div>
-          <p class="coupon-help">领取当天为第 1 天，第 N 天 24:00 失效。</p>
+          <div class="coupon-field">
+            <label for="couponClaimEnd">领取结束（北京时间） <span class="coupon-required">*</span></label>
+            <input id="couponClaimEnd" data-rule-field type="datetime-local" required>
+          </div>
+          <fieldset class="coupon-field full coupon-validity-fieldset">
+            <legend>使用有效期 <span class="coupon-required">*</span></legend>
+            <div class="coupon-radio-row">
+              <label><input data-rule-field type="radio" name="couponValidityMode" value="relative_days"> 领取后 <input id="couponRelativeDays" data-rule-field class="coupon-relative-days" type="number" min="1" max="3650" step="1" inputmode="numeric" value="1"> 天内可用</label>
+              <label><input data-rule-field type="radio" name="couponValidityMode" value="fixed_range" checked> 固定日期区间</label>
+            </div>
+            <div class="coupon-fixed-range" data-fixed-validity>
+              <div class="coupon-field">
+                <label for="couponUseStart">使用开始时间 <span class="coupon-required">*</span></label>
+                <input id="couponUseStart" data-rule-field type="datetime-local">
+              </div>
+              <div class="coupon-field">
+                <label for="couponUseEnd">使用结束时间 <span class="coupon-required">*</span></label>
+                <input id="couponUseEnd" data-rule-field type="datetime-local">
+              </div>
+            </div>
+            <p class="coupon-help" data-relative-validity hidden>领取当天为第 1 天，第 N 天 24:00 失效。</p>
+          </fieldset>
+          <div class="coupon-field">
+            <label for="couponPerUserLimit">每人限领 <span class="coupon-required">*</span></label>
+            <input id="couponPerUserLimit" data-rule-field type="number" min="1" step="1" inputmode="numeric" value="1" required>
+          </div>
         </div>
-        <div class="coupon-field">
-          <label for="couponIssueLimit">发行量 <span class="coupon-required">*</span></label>
-          <input id="couponIssueLimit" type="number" min="1" step="1" inputmode="numeric" required>
-          <p class="coupon-help">发布后只允许增加，不允许低于已领取数量。</p>
-        </div>
-        <div class="coupon-field">
-          <label for="couponPerUserLimit">每人限领 <span class="coupon-required">*</span></label>
-          <input id="couponPerUserLimit" data-rule-field type="number" min="1" step="1" inputmode="numeric" value="1" required>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <section class="admin-card coupon-section">
-      <header class="coupon-section-head">
-        <div>
-          <h2>使用说明</h2>
-          <p>说明会展示在独立领取页，最多 200 字。</p>
+      <section class="admin-card coupon-section">
+        <header class="coupon-section-head"><h2>使用说明</h2></header>
+        <div class="coupon-field">
+          <textarea id="couponInstructions" maxlength="200" placeholder="请输入优惠券使用说明"></textarea>
+          <p class="coupon-help"><span id="couponInstructionsCount">0</span> / 200</p>
         </div>
-      </header>
-      <div class="coupon-field">
-        <label for="couponInstructions">优惠券使用说明</label>
-        <textarea id="couponInstructions" maxlength="200" placeholder="请输入优惠券使用说明"></textarea>
-        <p class="coupon-help"><span id="couponInstructionsCount">0</span> / 200</p>
-      </div>
-    </section>
-
-    <div class="coupon-form-actions">
-      <span class="coupon-toast" id="couponFormToast" role="status"></span>
-      <a class="admin-button admin-button--ghost" href="/admin/coupons">取消</a>
-      <button class="admin-button admin-button--primary" id="saveCoupon" type="submit">保存</button>
+      </section>
     </div>
+
+    <aside class="admin-card coupon-preview-card" aria-label="用户端预览">
+      <header class="coupon-section-head"><h2>用户端预览</h2></header>
+      <div class="coupon-preview-body">
+        <div class="coupon-preview-ticket">
+          <div class="coupon-preview-amount"><span>立减</span><strong id="couponPreviewAmount">¥0</strong></div>
+          <div class="coupon-preview-divider"></div>
+          <div class="coupon-preview-copy">
+            <strong id="couponPreviewName">优惠券名称</strong>
+            <span id="couponPreviewValidity">领取及有效期将在保存后展示</span>
+          </div>
+        </div>
+        <p>用户在报名页与支付落地页看到的样式。名称超过 12 字会自动截断。</p>
+      </div>
+    </aside>
   </form>
 </div>
 
@@ -263,10 +257,31 @@
       }
       list.innerHTML = Array.from(selectedProducts.values()).map((item) => `
         <span class="coupon-selected-item">
-          <span>${window.AdminApi.escapeHtml(typeLabels[item.product_type] || item.product_type)} · ${window.AdminApi.escapeHtml(item.title)} · ${yuan(item.price_cents)}</span>
-          ${frozen ? "" : `<button type="button" data-remove-product="${window.AdminApi.escapeHtml(item.target_ref)}" aria-label="移除 ${window.AdminApi.escapeHtml(item.title)}">×</button>`}
+          <span class="coupon-selected-copy">
+            <strong>${window.AdminApi.escapeHtml(item.title)}</strong>
+            <small>${window.AdminApi.escapeHtml(typeLabels[item.product_type] || item.product_type)} · ${window.AdminApi.escapeHtml(item.target_ref)} · ${yuan(item.price_cents)}</small>
+          </span>
+          ${frozen ? "" : `<button type="button" data-remove-product="${window.AdminApi.escapeHtml(item.target_ref)}" aria-label="移除 ${window.AdminApi.escapeHtml(item.title)}">移除</button>`}
         </span>
       `).join("");
+    }
+
+    function previewDate(value) {
+      const matched = String(value || "").match(/^\d{4}-(\d{2})-(\d{2})/);
+      return matched ? `${matched[1]}-${matched[2]}` : "--";
+    }
+
+    function renderCouponPreview() {
+      const rawName = document.getElementById("couponName").value.trim() || "优惠券名称";
+      const amount = Number(document.getElementById("couponAmount").value || 0);
+      const claimStart = previewDate(document.getElementById("couponClaimStart").value);
+      const claimEnd = previewDate(document.getElementById("couponClaimEnd").value);
+      const validity = validityMode() === "relative_days"
+        ? `领后 ${document.getElementById("couponRelativeDays").value || 1} 天有效`
+        : `${previewDate(document.getElementById("couponUseStart").value)} – ${previewDate(document.getElementById("couponUseEnd").value)} 可用`;
+      document.getElementById("couponPreviewName").textContent = rawName;
+      document.getElementById("couponPreviewAmount").textContent = `¥${Number.isFinite(amount) ? amount.toFixed(amount % 1 ? 2 : 0) : "0"}`;
+      document.getElementById("couponPreviewValidity").textContent = `${claimStart} – ${claimEnd} 可领 · ${validity}`;
     }
 
     function initialize() {
@@ -305,6 +320,7 @@
       if (frozen) document.querySelectorAll("[data-rule-field]").forEach((field) => { field.disabled = true; });
       renderValidityMode();
       renderSelectedProducts();
+      renderCouponPreview();
     }
 
     function pickerSummary() {
@@ -431,7 +447,13 @@
       }
     });
 
-    document.querySelectorAll('input[name="couponValidityMode"]').forEach((radio) => radio.addEventListener("change", renderValidityMode));
+    document.querySelectorAll('input[name="couponValidityMode"]').forEach((radio) => radio.addEventListener("change", () => {
+      renderValidityMode();
+      renderCouponPreview();
+    }));
+    for (const id of ("couponName couponAmount couponClaimStart couponClaimEnd couponUseStart couponUseEnd couponRelativeDays".split(" "))) {
+      document.getElementById(id).addEventListener("input", renderCouponPreview);
+    }
     document.getElementById("couponInstructions").addEventListener("input", (event) => {
       document.getElementById("couponInstructionsCount").textContent = String(event.target.value.length);
     });

@@ -24,7 +24,7 @@ def test_questionnaire_editor_template_is_thin_and_assets_are_jinja_free() -> No
     assert "<style>" not in template
     assert '<script id="questionnaire-editor-config" type="application/json">' in template
     assert '<script src="/static/questionnaire/admin_questionnaire_editor.js?v=20260715-operations-only"></script>' in template
-    assert '<link rel="stylesheet" href="/static/questionnaire/admin_questionnaire_editor.css?v=20260713">' in template
+    assert '<link rel="stylesheet" href="/static/questionnaire/admin_questionnaire_editor.css?v=lark-template-20260803">' in template
     assert "{{" not in stylesheet and "{%" not in stylesheet
     assert "{{" not in script and "{%" not in script
     assert "questionnaire-editor-config" in script
@@ -83,3 +83,16 @@ def test_questionnaire_editor_keeps_key_dom_and_behavior_contracts() -> None:
         "resetDraft",
     ):
         assert contract in script
+
+
+def test_questionnaire_editor_matches_the_supplied_three_column_template() -> None:
+    stylesheet = STYLESHEET.read_text(encoding="utf-8")
+
+    for visual_contract in (
+        "grid-template-columns: 270px minmax(420px, 1fr) 340px",
+        "width: 372px",
+        "border-radius: 24px",
+        "background: #f5f6f7",
+        "body:not(.assessment-template-mode) .tool-card .tool-mark",
+    ):
+        assert visual_contract in stylesheet

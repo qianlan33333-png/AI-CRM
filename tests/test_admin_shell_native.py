@@ -9,6 +9,13 @@ from aicrm_next.main import create_app
 
 
 ROOT = Path(__file__).resolve().parents[1]
+CANONICAL_ADMIN_BASE = ROOT / "aicrm_next/app/admin_console/templates/admin_console/base.html"
+DOMAIN_ADMIN_BASES = (
+    ROOT / "aicrm_next/automation/automation_engine/templates/admin_console/base.html",
+    ROOT / "aicrm_next/automation/automation_engine/group_ops/templates/admin_console/base.html",
+    ROOT / "aicrm_next/extensions/radar/radar_links/templates/admin_console/base.html",
+    ROOT / "aicrm_next/crm/customer_tags/templates/admin_console/base.html",
+)
 
 
 def _client(monkeypatch) -> TestClient:
@@ -32,6 +39,28 @@ def _route_owner(client: TestClient, path: str, method: str = "GET") -> str:
                         break
             return getattr(endpoint, "__module__", "")
     return ""
+
+
+def test_domain_admin_bases_match_the_canonical_sidebar_shell() -> None:
+    canonical = CANONICAL_ADMIN_BASE.read_text(encoding="utf-8")
+
+    for domain_base in DOMAIN_ADMIN_BASES:
+        assert domain_base.read_text(encoding="utf-8") == canonical, domain_base
+
+
+def test_canonical_sidebar_keeps_the_approved_visual_contract() -> None:
+    source = CANONICAL_ADMIN_BASE.read_text(encoding="utf-8")
+
+    for contract in (
+        "design=lark-20260803",
+        "admin-brand-copy",
+        "admin-brand-subtitle",
+        "ADMIN CONSOLE",
+        "admin-nav-icon",
+        "nav-icons/",
+        'title="{{ child.label }}"',
+    ):
+        assert contract in source
 
 
 def test_admin_shell_family_routes_resolve_to_native_module(monkeypatch) -> None:
