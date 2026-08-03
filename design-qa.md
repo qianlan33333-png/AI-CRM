@@ -48,20 +48,19 @@ final result: passed
 
 ## 参考视觉
 
-![压缩包后台参考图](artifacts/design-reference-admin-cropped.png)
-
 来源：`/Users/qianlan/Downloads/Avatar Delivery Platform (1).zip`
+
+已按压缩包后台页面作为唯一视觉参考完成同视口验收；本地对照截图不纳入生产发布包。
 
 ## 浏览器实现
 
-![AI-CRM Next 实现图](artifacts/implementation-admin-final.png)
-
 - 预览路由：`http://localhost:5017/admin/customers`
 - 视口：`1440 × 856`
+- 本地浏览器验收截图不纳入生产发布包。
 
 ## 同屏比较
 
-![参考图与实现图对比](artifacts/design-qa-comparison-final.png)
+已在相同视口下完成参考图与实现图的并排比较，并据此修正客户筛选按钮换行问题。
 
 ## 本次修正记录
 
