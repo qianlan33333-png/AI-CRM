@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import re
+import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -21,7 +23,7 @@ RETIRED_AGENT_TEMPLATE_JS = STATIC / "automation_agent_config_templates.js"
 MATERIAL_PICKER_CSS = STATIC / "material_picker.css"
 SEND_CONTENT_ASSET_VERSION = "group-chat-selector-20260715"
 GROUP_CHAT_ASSET_VERSION = "group-chat-direct-select-20260715"
-CHANNEL_INLINE_ASSET_VERSION = "inline-channel-welcome-20260729"
+CHANNEL_INLINE_ASSET_VERSION = "channel-welcome-cursor-20260803"
 
 
 def _read(path: Path) -> str:
@@ -48,6 +50,112 @@ def test_send_content_composer_inline_mode_auto_grows_and_emits_changes() -> Non
     assert ".aicrm-send-composer--inline" in css
     assert "overflow-y: hidden" in css
     assert "grid-template-columns: 1fr" in css
+
+
+def test_send_content_composer_inserts_customer_name_at_current_selection() -> None:
+    script = f"""
+const fs = require("fs");
+const vm = require("vm");
+const source = fs.readFileSync({json.dumps(str(STATIC / "send_content_composer.js"))}, "utf8");
+const listeners = {{}};
+let changedText = "";
+const textField = {{
+  value: "你好，朋友",
+  selectionStart: 3,
+  selectionEnd: 3,
+  scrollHeight: 180,
+  style: {{}},
+  focused: false,
+  addEventListener() {{}},
+  focus() {{ this.focused = true; }},
+  setSelectionRange(start, end) {{ this.selectionStart = start; this.selectionEnd = end; }},
+}};
+const elements = {{
+  "[data-composer-body]": {{ innerHTML: "" }},
+  "[data-composer-text]": textField,
+  "[data-selected-list]": {{ innerHTML: "" }},
+  "[data-composer-summary]": {{ textContent: "" }},
+  "[data-composer-error]": {{ textContent: "" }},
+  "[data-preview-text]": {{ textContent: "" }},
+  "[data-preview-materials]": {{ innerHTML: "" }},
+}};
+const composer = {{
+  querySelector(selector) {{ return elements[selector] || null; }},
+  addEventListener(type, handler) {{ listeners[type] = handler; }},
+  remove() {{}},
+}};
+const target = {{
+  innerHTML: "",
+  querySelector(selector) {{ return selector === "[data-send-content-composer-inline]" ? composer : null; }},
+}};
+const sandbox = {{
+  window: {{
+    AdminApi: {{ async requestJson() {{ return {{ preview: {{ materials: [] }} }}; }} }},
+    alert() {{}},
+  }},
+  document: {{ querySelector() {{ return null; }} }},
+  console,
+}};
+vm.createContext(sandbox);
+vm.runInContext(source, sandbox);
+sandbox.window.AICRMSendContentComposer.mount(target, {{
+  value: {{ content_text: textField.value }},
+  onChange(value) {{ changedText = value.content_text; }},
+}});
+const insertButton = {{
+  closest(selector) {{ return selector === "[data-insert-customer-name]" ? this : null; }},
+}};
+let mouseDownPrevented = false;
+listeners.mousedown({{ target: insertButton, preventDefault() {{ mouseDownPrevented = true; }} }});
+listeners.click({{ target: insertButton }});
+const middle = {{
+  value: textField.value,
+  selectionStart: textField.selectionStart,
+  selectionEnd: textField.selectionEnd,
+  focused: textField.focused,
+  changedText,
+}};
+textField.value = "你好";
+textField.selectionStart = 0;
+textField.selectionEnd = 0;
+listeners.click({{ target: insertButton }});
+const beginning = {{
+  value: textField.value,
+  selectionStart: textField.selectionStart,
+  selectionEnd: textField.selectionEnd,
+}};
+textField.value = "欢迎客户";
+textField.selectionStart = 2;
+textField.selectionEnd = 4;
+listeners.click({{ target: insertButton }});
+const replacement = {{
+  value: textField.value,
+  selectionStart: textField.selectionStart,
+  selectionEnd: textField.selectionEnd,
+}};
+console.log(JSON.stringify({{ mouseDownPrevented, middle, beginning, replacement }}));
+"""
+    result = subprocess.run(["node", "-e", script], check=True, capture_output=True, text=True)
+    payload = json.loads(result.stdout)
+
+    assert payload["mouseDownPrevented"] is True
+    assert payload["middle"] == {
+        "value": "你好，{{客户名}}朋友",
+        "selectionStart": 10,
+        "selectionEnd": 10,
+        "focused": True,
+        "changedText": "你好，{{客户名}}朋友",
+    }
+    assert payload["beginning"] == {
+        "value": "{{客户名}}你好",
+        "selectionStart": 7,
+        "selectionEnd": 7,
+    }
+    assert payload["replacement"] == {
+        "value": "欢迎{{客户名}}",
+        "selectionStart": 9,
+        "selectionEnd": 9,
+    }
 
 
 def test_material_picker_exists_and_exposes_global_api() -> None:

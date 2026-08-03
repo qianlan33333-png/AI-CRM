@@ -136,7 +136,7 @@ def test_channel_form_hides_shell_header_and_busts_static_cache() -> None:
 
     assert '"show_page_header": False' in pages
     assert "channel_admission_pages.css?v=group-chat-selector-20260715" in html
-    assert "channel_admission_pages.js?v=inline-channel-welcome-20260729" in html
+    assert "channel_admission_pages.js?v=channel-welcome-cursor-20260803" in html
     assert "operation_member_picker.js') }}?v=operation-member-picker-wecom-sync-20260709" in base
 
 

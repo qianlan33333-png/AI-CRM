@@ -50,6 +50,20 @@
       + normalizeIds(value.group_invite_library_ids).length;
   }
 
+  function insertAtTextSelection(textField, text) {
+    const value = String(textField.value || "");
+    const rawStart = Number.isInteger(textField.selectionStart) ? textField.selectionStart : value.length;
+    const rawEnd = Number.isInteger(textField.selectionEnd) ? textField.selectionEnd : rawStart;
+    const start = Math.max(0, Math.min(rawStart, value.length));
+    const end = Math.max(start, Math.min(rawEnd, value.length));
+    const nextCursor = start + text.length;
+    textField.value = `${value.slice(0, start)}${text}${value.slice(end)}`;
+    textField.focus();
+    if (typeof textField.setSelectionRange === "function") {
+      textField.setSelectionRange(nextCursor, nextCursor);
+    }
+  }
+
   async function previewPackage(contentPackage, textEnabled) {
     if (!window.AdminApi?.requestJson) throw new Error("页面请求组件加载失败，请刷新页面后重试");
     const data = await window.AdminApi.requestJson("/api/admin/send-content/preview", {
@@ -243,6 +257,12 @@
       }
     }
 
+    composer.addEventListener("mousedown", (event) => {
+      if (event.target.closest("[data-insert-customer-name]") && textField) {
+        event.preventDefault();
+      }
+    });
+
     composer.addEventListener("click", (event) => {
       if (event.target.closest("[data-composer-cancel]")) {
         if (typeof options.close === "function") options.close(true);
@@ -250,10 +270,7 @@
         return;
       }
       if (event.target.closest("[data-insert-customer-name]") && textField) {
-        const start = textField.selectionStart || textField.value.length;
-        const end = textField.selectionEnd || start;
-        textField.value = `${textField.value.slice(0, start)}{{客户名}}${textField.value.slice(end)}`;
-        textField.focus();
+        insertAtTextSelection(textField, "{{客户名}}");
         autoGrowTextarea();
         renderPreview(true);
         return;
