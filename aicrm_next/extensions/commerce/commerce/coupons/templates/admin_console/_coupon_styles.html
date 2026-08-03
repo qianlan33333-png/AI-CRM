@@ -255,4 +255,66 @@
   .coupon-dialog-panel{border-radius:10px;box-shadow:0 12px 36px rgba(31,35,41,.24)}
   .coupon-tab{min-height:32px;padding:0 12px;border-radius:6px;font-weight:500}
   .coupon-option{padding:10px 12px;border-radius:8px}
+
+  /* Supplied HTML: coupon editor is an independent two-column secondary page. */
+  .coupon-editor-head{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    min-height:54px;padding:10px 14px;border:1px solid #dee0e3;border-radius:8px;background:#fff
+  }
+  .coupon-editor-title,.coupon-editor-title-row,.coupon-editor-actions{display:flex;align-items:center;gap:8px;min-width:0}
+  .coupon-editor-title-row{margin-top:2px}
+  .coupon-editor-title-row h2{margin:0;color:#1f2329;font-size:16px;font-weight:600;line-height:22px}
+  .coupon-editor-breadcrumb{color:#8f959e;font-size:11px;line-height:14px}
+  .coupon-back{display:grid;place-items:center;width:30px;height:30px;border:1px solid #dee0e3;border-radius:6px;color:#646a73;font-size:23px;line-height:1;text-decoration:none}
+  .coupon-editor-actions{justify-content:flex-end;flex:none}
+  .coupon-editor-actions .admin-button{min-height:32px;padding:0 12px}
+  .coupon-editor-actions .coupon-toast:empty{display:none}
+  .coupon-editor-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px;align-items:start}
+  .coupon-editor-main{display:grid;gap:12px;min-width:0}
+  .coupon-editor-main .coupon-section,.coupon-preview-card{padding:0;overflow:hidden;border-color:#dee0e3;border-radius:8px;box-shadow:none}
+  .coupon-editor-main .coupon-section-head,.coupon-preview-card .coupon-section-head{
+    min-height:44px;margin:0;padding:11px 16px;border-bottom:1px solid #eff0f1
+  }
+  .coupon-editor-main .coupon-section-head h2,.coupon-preview-card .coupon-section-head h2{font-size:14px;font-weight:600}
+  .coupon-editor-main .coupon-form-grid{padding:16px;gap:14px}
+  .coupon-editor-main .coupon-field{gap:6px}
+  .coupon-editor-main .coupon-field input,.coupon-editor-main .coupon-field textarea{min-height:34px}
+  .coupon-editor-main .coupon-field textarea{min-height:88px;line-height:20px}
+  .coupon-picker-summary{min-height:0;padding:14px 16px;border:0;border-radius:0;background:#fff}
+  .coupon-product-summary{justify-content:space-between}
+  .coupon-selected-list{display:grid;gap:8px}
+  .coupon-selected-item{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;
+    min-height:42px;padding:8px 12px;border:1px solid #dee0e3;border-radius:8px;background:#fff;color:#1f2329;font-weight:400
+  }
+  .coupon-selected-copy{display:grid;gap:2px;min-width:0}
+  .coupon-selected-copy strong{overflow:hidden;font-size:13px;font-weight:500;text-overflow:ellipsis;white-space:nowrap}
+  .coupon-selected-copy small{overflow:hidden;color:#a6aab0;font:11px ui-monospace,SFMono-Regular,Menlo,monospace;text-overflow:ellipsis;white-space:nowrap}
+  .coupon-selected-item button{flex:none;color:#8f959e;font-size:12px}
+  .coupon-validity-fieldset{padding:10px 14px 14px!important;border:1px solid #dee0e3!important;border-radius:8px}
+  .coupon-validity-fieldset legend{padding:0 6px}
+  .coupon-validity-fieldset .coupon-radio-row{display:grid;gap:10px}
+  .coupon-validity-fieldset .coupon-radio-row label{min-height:30px;font-weight:400}
+  .coupon-validity-fieldset .coupon-relative-days{width:58px;min-height:28px;padding:4px 8px;text-align:center}
+  .coupon-fixed-range{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+  .coupon-preview-card{position:sticky;top:12px}
+  .coupon-preview-body{padding:16px}
+  .coupon-preview-ticket{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:10px;background:linear-gradient(135deg,#3370ff,#245bdb);color:#fff}
+  .coupon-preview-amount{display:grid;justify-items:center;flex:none}
+  .coupon-preview-amount span{font-size:12px;opacity:.85}
+  .coupon-preview-amount strong{font-size:28px;font-weight:700;line-height:32px}
+  .coupon-preview-divider{width:1px;height:44px;background:rgba(255,255,255,.3)}
+  .coupon-preview-copy{display:grid;gap:4px;min-width:0}
+  .coupon-preview-copy strong{overflow:hidden;font-size:14px;font-weight:600;text-overflow:ellipsis;white-space:nowrap}
+  .coupon-preview-copy span{font-size:11px;line-height:17px;opacity:.85}
+  .coupon-preview-body>p{margin:12px 0 0;color:#8f959e;font-size:12px;line-height:19px}
+  @media (max-width:1100px){
+    .coupon-editor-layout{grid-template-columns:1fr}
+    .coupon-preview-card{position:static;grid-row:1}
+  }
+  @media (max-width:720px){
+    .coupon-editor-head{align-items:flex-start;flex-direction:column}
+    .coupon-editor-actions{width:100%;justify-content:flex-end}
+    .coupon-fixed-range{grid-template-columns:1fr}
+  }
 </style>

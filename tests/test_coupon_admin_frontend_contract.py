@@ -198,6 +198,16 @@ def test_coupon_admin_pages_are_split_and_follow_frontend_contract(next_client, 
 
     for label in ("基本信息", "适用商品", "领取与有效期", "使用说明"):
         assert label in new_page.text
+    for visual_contract in (
+        'class="coupon-editor-head"',
+        'class="coupon-form coupon-editor-layout"',
+        'class="admin-card coupon-preview-card"',
+        'id="couponPreviewAmount"',
+        'id="couponPreviewName"',
+        'id="couponPreviewValidity"',
+        "renderCouponPreview",
+    ):
+        assert visual_contract in new_page.text
     assert "无门槛固定减免券" in new_page.text
     assert "使用门槛" not in new_page.text
     assert "商品 ID" not in new_page.text

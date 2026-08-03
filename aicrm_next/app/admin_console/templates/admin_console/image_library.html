@@ -230,7 +230,7 @@
     .il-upload-row { grid-template-columns:1fr; }
   }
 
-  /* Supplied AI-CRM design package: compact four-column material library. */
+  /* Supplied AI-CRM design package, tightened per review: eight assets per desktop row. */
   .il-toolbar{min-height:52px;margin-top:0;padding:10px 12px;border-color:#dee0e3;border-radius:8px}
   .il-toolbar .il-upload-btn{height:32px;padding:0 12px;background:#3370ff;border-radius:6px}
   .il-toolbar .il-upload-btn:hover{background:#245bdb}
@@ -239,7 +239,7 @@
   .il-facet-label{color:#646a73;font-weight:600}
   .il-facet-option{border-radius:6px}
   .il-facet-option.active{border-color:#d3e1ff;background:#eff4ff;color:#245bdb}
-  .il-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px}
+  .il-grid{grid-template-columns:repeat(8,minmax(0,1fr));gap:10px;margin-top:12px}
   .il-card{border-color:#dee0e3;border-radius:8px;transition:border-color .15s ease}
   .il-card:hover{transform:none;box-shadow:none;border-color:#3370ff}
   .il-card-chips .cat{background:#fff6e9;color:#d9730d;border-radius:4px}
@@ -250,7 +250,10 @@
   .il-modal-card{border:1px solid #dee0e3;border-radius:10px;box-shadow:0 12px 36px rgba(31,35,41,.24)}
   .il-modal input[type=text],.il-modal input[type=file],.il-modal textarea,.il-modal select{border-color:#dee0e3;border-radius:6px}
   .il-upload-actions .primary,.il-edit-actions .primary{background:#3370ff;border-color:#3370ff}
-  @media (max-width: 1000px){.il-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  .il-card-body{padding:7px 8px}
+  .il-card-chips{gap:3px;min-height:18px;overflow:hidden}
+  .il-card-chips .cat,.il-card-chips .tag,.il-card-chips .tag-more,.il-card-chips .unlabeled{max-width:100%;padding:1px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  @media (max-width: 1100px){.il-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
   @media (max-width: 720px){.il-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 {% endblock %}
