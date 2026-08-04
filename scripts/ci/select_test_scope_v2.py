@@ -62,9 +62,30 @@ def _read_test_sources(root: Path) -> tuple[dict[str, str], dict[str, str]]:
 
 def _path_context(path: str) -> str:
     parts = _normalize_path(path).split("/")
-    if parts[0] == "aicrm_next" and len(parts) >= 2:
-        return parts[1] if len(parts) >= 3 else Path(parts[1]).stem
-    return ""
+    if parts[0] != "aicrm_next" or len(parts) < 2:
+        return ""
+    if len(parts) >= 4 and parts[1:3] == ["extensions", "forms"]:
+        return parts[3]
+    if len(parts) >= 4 and parts[1:3] == ["extensions", "commerce"]:
+        return parts[3]
+    if len(parts) >= 4 and parts[1:3] == ["extensions", "ai"]:
+        return parts[3]
+    if len(parts) >= 4 and parts[1:3] == ["extensions", "growth"]:
+        return parts[3]
+    if len(parts) >= 4 and parts[1:3] == ["automation", "automation_engine"]:
+        return parts[3]
+    if len(parts) >= 3 and parts[1] in {
+        "app",
+        "channels",
+        "crm",
+        "engagement",
+        "insights",
+        "platform",
+    }:
+        return parts[2]
+    if len(parts) >= 3:
+        return parts[2]
+    return Path(parts[1]).stem
 
 
 def _source_needles(path: str, policy: dict) -> tuple[str, ...]:
@@ -191,10 +212,13 @@ def select_convention_scope(
     ):
         frontend_tests = list(frontend_sources)
     selected_python_source = "\n".join(python_sources.get(path, "") for path in python_tests)
-    if any(
-        str(indicator).casefold() in selected_python_source
+    selected_test_markers = [
+        str(indicator)
         for indicator in policy.get("full_regression_test_indicators", [])
-    ):
+        if str(indicator).casefold() in selected_python_source
+    ]
+    if selected_test_markers:
+        selected_test_markers = _unique(selected_test_markers)
         high_risk_reasons = _unique([*high_risk_reasons, "selected_high_risk_or_slow_test"])
     needs_postgres = any(
         str(indicator).casefold() in selected_python_source
@@ -233,6 +257,7 @@ def select_convention_scope(
         "needs_full_ci": needs_full_ci,
         "architecture_gate": architecture_gate,
         "high_risk_reasons": high_risk_reasons,
+        "selected_test_markers": selected_test_markers,
         "fallback_reasons": fallback_reasons,
         "unclassified_paths": unclassified,
         "runtime_paths_without_test_match": no_test_match,

@@ -22,7 +22,9 @@ def test_ci_fast_uses_selector_and_single_required_result() -> None:
 
     assert "pull_request:" in source
     assert "push:" in source
-    assert "scripts/ci/select_test_scope.py --github-output" in source
+    assert "python scripts/ci/select_test_scope.py" in source
+    assert '--github-output "$GITHUB_OUTPUT"' in source
+    assert "--enforce-budget" in source
     assert "scripts/ci/select_test_scope_v2.py" in source
     assert "Compare convention selector in shadow mode" in source
     assert "continue-on-error: true" in source
@@ -38,29 +40,29 @@ def test_ci_fast_uses_selector_and_single_required_result() -> None:
     assert "needs_frontend_build" not in source
     assert "needs_dependency_audit: ${{ steps.scope.outputs.needs_dependency_audit }}" in source
     assert "bash scripts/ci/run_architecture_gates.sh --mode" in source
-    assert "dependency-audit:" in source
-    assert "github.event_name != 'pull_request' || needs.select.outputs.needs_dependency_audit == 'true'" in source
+    assert "scoped-validation:" in source
+    assert "dependency-audit:" not in source
     assert "python -m pip_audit -r requirements.lock --require-hashes --progress-spinner=off" in source
     assert "npm audit --audit-level=high" in source
-    assert source.count("actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9") == 4
-    assert source.count("key: venv-v1-${{ runner.os }}-${{ runner.arch }}-py3.10.5-${{ hashFiles('requirements.lock') }}") == 4
-    assert source.count("if: steps.python-venv-cache.outputs.cache-hit != 'true'") == 4
-    assert source.count("python -m venv .venv") == 4
-    assert source.count(".venv/bin/python -m pip install --require-hashes -r requirements.lock") == 4
-    assert source.count('echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"') == 4
+    assert source.count("actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9") == 1
+    assert source.count("key: venv-v1-${{ runner.os }}-${{ runner.arch }}-py3.10.5-${{ hashFiles('requirements.lock') }}") == 1
+    assert source.count("steps.python-venv-cache.outputs.cache-hit != 'true'") == 1
+    assert source.count("python -m venv .venv") == 1
+    assert source.count(".venv/bin/python -m pip install --require-hashes -r requirements.lock") == 1
+    assert source.count('echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"') == 1
     assert "restore-keys:" not in source
     assert "cache: pip" not in source
     assert "cache-dependency-path: requirements.lock" not in source
     assert "python -m pytest ${PYTHON_TESTS} -n auto --dist=loadfile -q --tb=short" in source
-    assert "python -m pytest ${PYTHON_TESTS} -n auto --dist=loadfile -q --tb=short --timeout=120" in source
-    assert "timeout-minutes: 8" in source
-    assert "force_full != 'true'" not in source
+    assert "--timeout=120 --timeout-method=thread" in source
+    assert "timeout-minutes: 28" in source
+    assert "needs.select.outputs.force_full != 'true'" in source
     assert "full-regression:" in source
     assert "uses: ./.github/workflows/full-regression.yml" in source
-    assert "needs.select.outputs.needs_full_ci == 'true'" in source
-    assert source.count("needs.select.outputs.needs_full_ci != 'true'") == 2
+    assert "needs.select.outputs.force_full == 'true'" in source
+    assert "needs.select.outputs.needs_full_ci == 'true'" not in source
     assert "- full-regression" in source
-    assert "- dependency-audit" in source
+    assert "- scoped-validation" in source
     assert "full-regression={needs.get('full-regression', {}).get('result', 'missing')}_but_required" in source
     assert not LEGACY_CI_WORKFLOW.exists()
 
@@ -71,9 +73,9 @@ def test_full_regression_owns_full_pytest_and_full_frontend() -> None:
     assert "name: Full Regression" in source
     assert "workflow_dispatch:" in source
     assert "workflow_call:" in source
-    assert 'cron: "0 18 * * *"' in source
+    assert 'cron: "0 18 * * 0"' in source
     assert "full-python-shard:" in source
-    assert "fail-fast: false" in source
+    assert "fail-fast: true" in source
     assert "max-parallel: 8" in source
     assert source.count("shard_index:") == 8
     for shard_index in range(8):
@@ -105,6 +107,10 @@ def test_full_regression_owns_full_pytest_and_full_frontend() -> None:
     assert "cache: pip" not in source
     assert "cache-dependency-path: requirements.lock" not in source
     assert "performance-regression:" in source
+    assert "performance-regression:\n    needs: full-governance" in source
+    assert "full-python-shard:\n    needs: performance-regression" in source
+    assert "full-frontend:\n    needs: full-governance" in source
+    assert source.count("needs.full-governance.result == 'success' || needs.full-governance.result == 'skipped'") == 2
     assert "python scripts/ops/bootstrap_database.py" in source
     assert "python tools/check_critical_read_performance.py" in source
     assert "critical-read-performance.json" in source
@@ -128,7 +134,7 @@ def test_duration_baseline_refresh_is_isolated_to_trusted_successful_main_runs()
     assert "contents: write" in source
     assert "pull-requests: write" in source
     assert "github.event.workflow_run.conclusion == 'success'" in source
-    assert "github.event.workflow_run.head_repository.full_name == 'qianlan333/AI-CRM'" in source
+    assert "github.event.workflow_run.head_repository.full_name == github.repository" in source
     assert "github.event.workflow_run.head_branch == 'main'" in source
     assert "github.event.workflow_run.event == 'schedule'" in source
     assert "github.event.workflow_run.event == 'workflow_dispatch'" in source
@@ -153,7 +159,7 @@ def test_full_regression_runs_governance_once_and_ci_fast_does_not_duplicate_it(
     assert "github.event_name != 'workflow_call'" not in full_source
     assert full_source.count("python scripts/ci/check_dependency_security.py") == 1
     assert full_source.count("bash scripts/ci/run_architecture_gates.sh --mode full") == 1
-    assert "uses: ./.github/workflows/full-regression.yml\n    with:\n      run_governance: false" in ci_fast_source
+    assert "uses: ./.github/workflows/full-regression.yml\n    with:\n      run_governance: true" in ci_fast_source
 
 
 def test_ai_crm_deploy_is_reusable_production_only_and_has_no_id_validation_access() -> None:

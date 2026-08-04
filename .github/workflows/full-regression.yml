@@ -16,8 +16,8 @@ on:
         type: boolean
         default: true
   schedule:
-    # Nightly full regression at 02:00 Asia/Shanghai.
-    - cron: "0 18 * * *"
+    # Weekly at 02:00 Monday Asia/Shanghai; manual dispatch remains available.
+    - cron: "0 18 * * 0"
 
 concurrency:
   group: full-regression-${{ github.ref }}
@@ -80,6 +80,10 @@ jobs:
         run: bash scripts/ci/run_architecture_gates.sh --mode full
 
   performance-regression:
+    needs: full-governance
+    if: >-
+      always() &&
+      (needs.full-governance.result == 'success' || needs.full-governance.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 12
     services:
@@ -151,11 +155,12 @@ jobs:
           retention-days: 14
 
   full-python-shard:
+    needs: performance-regression
     name: full-python shard ${{ matrix.shard_label }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
-      fail-fast: false
+      fail-fast: true
       max-parallel: 8
       matrix:
         include:
@@ -265,6 +270,10 @@ jobs:
           retention-days: 14
 
   full-frontend:
+    needs: full-governance
+    if: >-
+      always() &&
+      (needs.full-governance.result == 'success' || needs.full-governance.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
