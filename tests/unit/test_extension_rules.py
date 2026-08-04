@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from pydantic import ValidationError
 
 from aicrm_next.extensions.commerce.commerce.domain import (
     normalize_status,
@@ -9,6 +10,8 @@ from aicrm_next.extensions.commerce.commerce.domain import (
     validate_product_code,
     validate_quantity,
 )
+from aicrm_next.extensions.commerce.commerce.dto import ProductUpsertRequest
+from aicrm_next.extensions.commerce.commerce.repo import InMemoryCommerceRepository
 from aicrm_next.extensions.forms.questionnaire.domain import (
     score_and_tags,
     validate_required_answers,
@@ -36,6 +39,29 @@ def test_commerce_domain_rejects_invalid_money_quantity_and_redirects() -> None:
         validate_quantity(0)
     with pytest.raises(ContractError):
         validate_completion_redirect(True, "javascript:alert(1)")
+
+
+def test_product_wecom_tagging_config_is_normalized_and_persisted() -> None:
+    request = ProductUpsertRequest(
+        product_code="tagged_product",
+        title="企微标签商品",
+        wecom_tagging={
+            "enabled": True,
+            "tag_ids": [" tag_paid ", "tag_paid", "tag_registered"],
+        },
+    )
+    product = InMemoryCommerceRepository(products=[], orders=[]).save_product(request.model_dump())
+    assert product["wecom_tagging"] == {
+        "enabled": True,
+        "tag_ids": ["tag_paid", "tag_registered"],
+        "owner_userid": "",
+    }
+    with pytest.raises(ValidationError, match="至少选择一个标签"):
+        ProductUpsertRequest(
+            product_code="invalid_tagged_product",
+            title="无标签商品",
+            wecom_tagging={"enabled": True, "tag_ids": []},
+        )
 
 
 def test_questionnaire_required_answers_score_and_tag_current_options() -> None:

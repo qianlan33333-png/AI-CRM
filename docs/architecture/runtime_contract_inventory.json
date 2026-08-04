@@ -4812,7 +4812,7 @@
     }
   ],
   "migration_heads": [
-    "0166_auth_api_client_credential_hint"
+    "0167_product_wecom_tagging_config"
   ],
   "openapi_components": {
     "schemas": {
@@ -7266,6 +7266,9 @@
             "minLength": 1,
             "title": "Title",
             "type": "string"
+          },
+          "wecom_tagging": {
+            "$ref": "#/components/schemas/ProductWeComTaggingConfig"
           }
         },
         "required": [
@@ -7273,6 +7276,30 @@
           "title"
         ],
         "title": "ProductUpsertRequest",
+        "type": "object"
+      },
+      "ProductWeComTaggingConfig": {
+        "properties": {
+          "enabled": {
+            "default": false,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "owner_userid": {
+            "default": "",
+            "title": "Owner Userid",
+            "type": "string"
+          },
+          "tag_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "title": "Tag Ids",
+            "type": "array"
+          }
+        },
+        "title": "ProductWeComTaggingConfig",
         "type": "object"
       },
       "RadarLinkCreateRequest": {

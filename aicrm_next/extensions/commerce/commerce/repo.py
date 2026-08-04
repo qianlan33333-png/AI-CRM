@@ -455,6 +455,7 @@ class InMemoryCommerceRepository:
             "lead_channel_id": _positive_int_or_none(payload.get("lead_channel_id")),
             "slices": slices,
             "slice_count": len(slices),
+            "wecom_tagging": _normalize_product_wecom_tagging(payload.get("wecom_tagging")),
             "completion_target_json": deepcopy(payload.get("completion_target_json") or payload.get("completion_target") or {}),
             **completion_redirect_projection(
                 payload.get("completion_redirect_enabled"),
@@ -479,6 +480,7 @@ class InMemoryCommerceRepository:
             legacy_enabled=completion_redirect.get("completion_redirect_enabled"),
         )
         sales_counts = _product_sales_counts(self._orders, str(item.get("product_code") or ""))
+        wecom_tagging = _normalize_product_wecom_tagging(item.get("wecom_tagging"))
         return {
             **deepcopy(item),
             "title": title,
@@ -494,6 +496,8 @@ class InMemoryCommerceRepository:
             "lead_channel_id": _positive_int_or_none(item.get("lead_channel_id")),
             "slices": slices,
             "slice_count": len(slices),
+            "wecom_tagging_json": deepcopy(wecom_tagging),
+            "wecom_tagging": deepcopy(wecom_tagging),
             **sales_counts,
             **completion_redirect,
             "completion_target_json": completion_target["completion_target_json"],
@@ -594,6 +598,28 @@ def _empty_external_push_config() -> dict[str, Any]:
         "remark": "",
         "custom_params": {},
         "has_secret": False,
+    }
+
+
+def _normalize_product_wecom_tagging(value: Any) -> dict[str, Any]:
+    payload = value if isinstance(value, dict) else {}
+    tag_ids: list[str] = []
+    seen: set[str] = set()
+    for raw in payload.get("tag_ids") or []:
+        tag_id = str(raw or "").strip()
+        if not tag_id or tag_id in seen:
+            continue
+        seen.add(tag_id)
+        tag_ids.append(tag_id)
+    if len(tag_ids) > 100:
+        raise ContractError("企微标签最多选择 100 个")
+    enabled = bool(payload.get("enabled"))
+    if enabled and not tag_ids:
+        raise ContractError("启用企微标签后至少选择一个标签")
+    return {
+        "enabled": enabled,
+        "tag_ids": tag_ids,
+        "owner_userid": str(payload.get("owner_userid") or "").strip(),
     }
 
 
@@ -835,6 +861,7 @@ class PostgresCommerceRepository:
             "completion_redirect_enabled": bool(completion_fields["completion_redirect_enabled"]),
             "completion_redirect_url": str(completion_fields["completion_redirect_url"] or ""),
             "completion_target_json": _jsonb(completion_fields["completion_target_json"]),
+            "wecom_tagging_json": _jsonb(_normalize_product_wecom_tagging(payload.get("wecom_tagging"))),
             "metadata_json": _jsonb(metadata),
         }
         with self._connect() as conn:
@@ -891,6 +918,7 @@ class PostgresCommerceRepository:
                         completion_redirect_enabled = %(completion_redirect_enabled)s,
                         completion_redirect_url = %(completion_redirect_url)s,
                         completion_target_json = %(completion_target_json)s,
+                        wecom_tagging_json = %(wecom_tagging_json)s,
                         metadata_json = %(metadata_json)s,
                         updated_at = CURRENT_TIMESTAMP
                     WHERE id::text = %(product_id)s
@@ -924,6 +952,7 @@ class PostgresCommerceRepository:
                     completion_redirect_enabled,
                     completion_redirect_url,
                     completion_target_json,
+                    wecom_tagging_json,
                     metadata_json,
                     created_at,
                     updated_at
@@ -942,6 +971,7 @@ class PostgresCommerceRepository:
                     %(completion_redirect_enabled)s,
                     %(completion_redirect_url)s,
                     %(completion_target_json)s,
+                    %(wecom_tagging_json)s,
                     %(metadata_json)s,
                     CURRENT_TIMESTAMP,
                     CURRENT_TIMESTAMP
@@ -1190,6 +1220,7 @@ class PostgresCommerceRepository:
             legacy_redirect_url=completion_redirect.get("completion_redirect_url"),
             legacy_enabled=completion_redirect.get("completion_redirect_enabled"),
         )
+        wecom_tagging = _normalize_product_wecom_tagging(row.get("wecom_tagging_json"))
         return {
             "id": str(row.get("id") or ""),
             "product_code": product_code,
@@ -1212,6 +1243,8 @@ class PostgresCommerceRepository:
             "lead_channel_id": _positive_int_or_none(row.get("lead_channel_id")),
             "slices": slices,
             "slice_count": int(row.get("slice_count") or len(slices)),
+            "wecom_tagging_json": wecom_tagging,
+            "wecom_tagging": wecom_tagging,
             "paid_order_count": paid_order_count,
             "refund_order_count": refund_order_count,
             "sold_count": sold_count,

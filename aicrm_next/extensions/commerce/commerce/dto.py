@@ -2,7 +2,38 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+
+class ProductWeComTaggingConfig(BaseModel):
+    enabled: bool = False
+    tag_ids: list[str] = Field(default_factory=list, max_length=100)
+    owner_userid: str = ""
+
+    @field_validator("tag_ids", mode="before")
+    @classmethod
+    def normalize_tag_ids(cls, value: Any) -> list[str]:
+        values = value if isinstance(value, list) else []
+        normalized: list[str] = []
+        seen: set[str] = set()
+        for raw in values:
+            tag_id = str(raw or "").strip()
+            if not tag_id or tag_id in seen:
+                continue
+            seen.add(tag_id)
+            normalized.append(tag_id)
+        return normalized
+
+    @field_validator("owner_userid", mode="before")
+    @classmethod
+    def normalize_owner_userid(cls, value: Any) -> str:
+        return str(value or "").strip()
+
+    @model_validator(mode="after")
+    def require_tags_when_enabled(self) -> "ProductWeComTaggingConfig":
+        if self.enabled and not self.tag_ids:
+            raise ValueError("启用企微标签后至少选择一个标签")
+        return self
 
 
 class ProductUpsertRequest(BaseModel):
@@ -26,6 +57,7 @@ class ProductUpsertRequest(BaseModel):
     lead_program_id: int | None = None
     lead_channel_id: int | None = None
     slices: list[dict[str, Any]] = Field(default_factory=list)
+    wecom_tagging: ProductWeComTaggingConfig = Field(default_factory=ProductWeComTaggingConfig)
 
     @model_validator(mode="before")
     @classmethod
