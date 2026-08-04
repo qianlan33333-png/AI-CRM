@@ -56,6 +56,8 @@ class ProductUpsertRequest(BaseModel):
     require_mobile: bool = False
     lead_program_id: int | None = None
     lead_channel_id: int | None = None
+    lead_qr_title: str = ""
+    lead_qr_subtitle: str = ""
     slices: list[dict[str, Any]] = Field(default_factory=list)
     wecom_tagging: ProductWeComTaggingConfig = Field(default_factory=ProductWeComTaggingConfig)
 

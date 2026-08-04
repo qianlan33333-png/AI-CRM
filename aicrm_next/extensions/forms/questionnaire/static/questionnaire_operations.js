@@ -137,6 +137,8 @@
     const legacyMiniProgram = (completion.completion_target && completion.completion_target.mini_program) || {};
     state.completionMode = completion.mode === "redirect" ? "redirect" : "lead_qr";
     $("qo-completion-enabled").checked = Boolean(completion.enabled);
+    $("qo-lead-qr-title").value = completion.lead_qr_title || "";
+    $("qo-lead-qr-subtitle").value = completion.lead_qr_subtitle || "";
     $("qo-legacy-target").hidden = !completion.legacy_target_readonly;
     $("qo-legacy-appid").textContent = text(legacyMiniProgram.appid) || "未记录";
     $("qo-legacy-username").textContent = text(legacyMiniProgram.username) || "未记录";
@@ -165,7 +167,13 @@
     if (state.completionMode === "lead_qr") {
       const channelId = Number($("qo-lead-channel").value || 0);
       if (!channelId) throw new Error("请选择一个可用渠道码");
-      return { enabled: true, action_type: "lead_qr", lead_channel_id: channelId };
+      return {
+        enabled: true,
+        action_type: "lead_qr",
+        lead_channel_id: channelId,
+        lead_qr_title: text($("qo-lead-qr-title").value),
+        lead_qr_subtitle: text($("qo-lead-qr-subtitle").value),
+      };
     }
     const targetRoot = document.querySelector("[data-completion-target-config]");
     return { enabled: true, action_type: "redirect", completion_target: targetRoot.collectCompletionTarget() };

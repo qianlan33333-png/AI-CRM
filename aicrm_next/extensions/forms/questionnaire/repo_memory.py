@@ -184,6 +184,8 @@ class InMemoryQuestionnaireRepository:
         questionnaire_id: int,
         *,
         lead_channel_id: int | None,
+        lead_qr_title: str,
+        lead_qr_subtitle: str,
         completion_target_json: dict[str, Any],
         redirect_url: str,
     ) -> dict[str, Any] | None:
@@ -191,6 +193,8 @@ class InMemoryQuestionnaireRepository:
         if item is None:
             return None
         item["lead_channel_id"] = int(lead_channel_id or 0) or None
+        item["lead_qr_title"] = str(lead_qr_title or "").strip()
+        item["lead_qr_subtitle"] = str(lead_qr_subtitle or "").strip()
         item["completion_target_json"] = deepcopy(completion_target_json)
         item["redirect_url"] = str(redirect_url or "").strip()
         item["updated_at"] = _now()

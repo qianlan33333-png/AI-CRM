@@ -601,6 +601,16 @@ def _lead_qr_payload(row: dict[str, Any] | None) -> dict[str, Any]:
     }
 
 
+def _lead_qr_with_product_copy(qr: dict[str, Any], product: dict[str, Any]) -> dict[str, Any]:
+    if not qr:
+        return {}
+    return {
+        **qr,
+        "title": _normalized_text(product.get("lead_qr_title")),
+        "subtitle": _normalized_text(product.get("lead_qr_subtitle")),
+    }
+
+
 def _resolve_lead_channel_qr(conn: Any, *, channel_id: int | None = None) -> dict[str, Any]:
     if channel_id:
         row = conn.execute(
@@ -632,7 +642,7 @@ def _resolve_lead_channel_qr(conn: Any, *, channel_id: int | None = None) -> dic
 def _lead_qr_for_product_code(conn: Any, product_code: str) -> dict[str, Any]:
     product = conn.execute(
         """
-        SELECT lead_channel_id
+        SELECT lead_channel_id, lead_qr_title, lead_qr_subtitle
         FROM wechat_pay_products
         WHERE product_code = %s
         LIMIT 1
@@ -642,7 +652,7 @@ def _lead_qr_for_product_code(conn: Any, product_code: str) -> dict[str, Any]:
     if not product:
         return {}
     channel_id = int(product.get("lead_channel_id") or 0) or None
-    return _resolve_lead_channel_qr(conn, channel_id=channel_id)
+    return _lead_qr_with_product_copy(_resolve_lead_channel_qr(conn, channel_id=channel_id), dict(product))
 
 
 def _completion_projection_blocks_lead_qr(completion: dict[str, Any]) -> bool:
@@ -660,7 +670,7 @@ def _lead_qr_for_product(conn: Any, product: dict[str, Any]) -> dict[str, Any]:
     except (TypeError, ValueError):
         channel_id = None
     if channel_id:
-        return _resolve_lead_channel_qr(conn, channel_id=channel_id)
+        return _lead_qr_with_product_copy(_resolve_lead_channel_qr(conn, channel_id=channel_id), product)
     return _lead_qr_for_product_code(conn, _normalized_text(product.get("product_code")))
 
 

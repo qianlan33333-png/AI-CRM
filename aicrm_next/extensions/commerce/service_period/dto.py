@@ -21,6 +21,8 @@ class ServicePeriodProductCreateRequest(BaseModel):
     completion_target: dict[str, Any] | None = None
     require_mobile: bool = False
     lead_channel_id: int | None = None
+    lead_qr_title: str = ""
+    lead_qr_subtitle: str = ""
     metadata_json: dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="before")
@@ -51,6 +53,8 @@ class ServicePeriodProductUpdateRequest(BaseModel):
     completion_target: dict[str, Any] | None = None
     require_mobile: bool | None = None
     lead_channel_id: int | None = None
+    lead_qr_title: str | None = None
+    lead_qr_subtitle: str | None = None
     metadata_json: dict[str, Any] | None = None
 
     @model_validator(mode="before")

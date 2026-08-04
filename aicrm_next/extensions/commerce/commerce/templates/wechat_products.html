@@ -283,6 +283,14 @@
                   <label for="leadChannel">引流渠道码</label>
                   <select id="leadChannel"></select>
                 </div>
+                <div class="field">
+                  <label for="leadQrTitle">二维码主标题</label>
+                  <input id="leadQrTitle" maxlength="40" placeholder="留空沿用：报名成功">
+                </div>
+                <div class="field">
+                  <label for="leadQrSubtitle">二维码副标题</label>
+                  <input id="leadQrSubtitle" maxlength="100" placeholder="留空沿用：扫码添加企微领取后续资料">
+                </div>
               </div>
               <section class="target-card" data-completion-target-config>
                 <input class="product-hidden-toggle" type="checkbox" name="completion_target_enabled" data-target-enabled>
@@ -710,6 +718,8 @@
     $("requireMobile").value = product.require_mobile ? "true" : "false";
     $("productDescription").value = product.description || "";
     $("leadChannel").value = String(product.lead_channel_id || 0);
+    $("leadQrTitle").value = product.lead_qr_title || "";
+    $("leadQrSubtitle").value = product.lead_qr_subtitle || "";
     setAfterActionEnabled(Boolean((product.completion_target && product.completion_target.enabled) || product.completion_redirect_enabled || product.lead_channel_id));
     selectAfterActionMode(((product.completion_target && product.completion_target.enabled) || product.completion_redirect_enabled) ? "redirect" : "lead");
     const targetRoot = document.querySelector("[data-completion-target-config]");
@@ -754,6 +764,8 @@
       buy_button_text: $("buyButtonText").value.trim() || "立即购买",
       require_mobile: $("requireMobile").value === "true",
       lead_channel_id: afterActionEnabled && afterActionMode === "lead" ? (Number($("leadChannel").value || 0) || null) : null,
+      lead_qr_title: $("leadQrTitle").value.trim(),
+      lead_qr_subtitle: $("leadQrSubtitle").value.trim(),
       wecom_tagging: {
         enabled: Boolean(product.wecom_tagging?.enabled),
         tag_ids: product.wecom_tagging?.tag_ids || [],

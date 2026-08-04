@@ -30,6 +30,7 @@
   function create(options) {
     const panel = document.getElementById("lead-qr-panel");
     const title = document.getElementById("lead-qr-title");
+    const subtitle = document.getElementById("lead-qr-subtitle");
     const image = document.getElementById("lead-qr-image");
 
     function renderLeadQr(leadQr) {
@@ -40,7 +41,8 @@
       }
       if (options.formEl) options.formEl.hidden = true;
       options.weappLaunchPanel.hidden = true;
-      title.textContent = String(leadQr.channel_name || "扫码继续");
+      title.textContent = String(leadQr.title || leadQr.channel_name || "扫码继续");
+      if (subtitle) subtitle.textContent = String(leadQr.subtitle || "长按识别二维码，继续后续服务");
       image.onerror = () => {
         image.removeAttribute("src");
         panel.hidden = true;

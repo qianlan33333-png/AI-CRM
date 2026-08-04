@@ -12,6 +12,8 @@ from aicrm_next.extensions.commerce.commerce.domain import (
 )
 from aicrm_next.extensions.commerce.commerce.dto import ProductUpsertRequest
 from aicrm_next.extensions.commerce.commerce.repo import InMemoryCommerceRepository
+from aicrm_next.extensions.commerce.service_period.application import _trade_payload_from_create
+from aicrm_next.extensions.commerce.service_period.dto import ServicePeriodProductCreateRequest
 from aicrm_next.extensions.forms.questionnaire.domain import (
     score_and_tags,
     validate_required_answers,
@@ -22,6 +24,7 @@ from aicrm_next.extensions.radar.radar_links.domain import (
     verify_radar_state,
 )
 from aicrm_next.platform.shared.errors import ContractError
+from aicrm_next.platform.navigation_target import completion_action_with_lead_qr, normalize_lead_qr_copy
 
 
 pytestmark = pytest.mark.unit
@@ -62,6 +65,61 @@ def test_product_wecom_tagging_config_is_normalized_and_persisted() -> None:
             title="无标签商品",
             wecom_tagging={"enabled": True, "tag_ids": []},
         )
+
+
+def test_lead_qr_copy_is_trimmed_validated_and_projected() -> None:
+    assert normalize_lead_qr_copy("  欢迎加入  ", "  长按二维码继续  ") == {
+        "lead_qr_title": "欢迎加入",
+        "lead_qr_subtitle": "长按二维码继续",
+    }
+    assert normalize_lead_qr_copy("", "") == {"lead_qr_title": "", "lead_qr_subtitle": ""}
+    with pytest.raises(ContractError, match="lead_qr_title"):
+        normalize_lead_qr_copy("标" * 41, "")
+    with pytest.raises(ContractError, match="lead_qr_subtitle"):
+        normalize_lead_qr_copy("", "说明" * 51)
+
+    action = completion_action_with_lead_qr(
+        {},
+        lead_qr={
+            "channel_id": 7,
+            "channel_name": "场景渠道",
+            "qr_url": "https://example.com/lead.png",
+            "title": "专属主标题",
+            "subtitle": "专属副标题",
+        },
+    )
+    assert action["lead_qr"]["title"] == "专属主标题"
+    assert action["lead_qr"]["subtitle"] == "专属副标题"
+    blank_action = completion_action_with_lead_qr(
+        {},
+        lead_qr={"channel_id": 8, "qr_url": "https://example.com/blank.png"},
+    )
+    assert blank_action["lead_qr"]["title"] == ""
+    assert blank_action["lead_qr"]["subtitle"] == ""
+
+
+def test_standard_and_service_period_products_keep_independent_lead_qr_copy() -> None:
+    standard = ProductUpsertRequest(
+        product_code="standard_lead_copy",
+        title="普通商品",
+        lead_qr_title="普通商品标题",
+        lead_qr_subtitle="普通商品副标题",
+    )
+    standard_product = InMemoryCommerceRepository(products=[], orders=[]).save_product(standard.model_dump())
+    assert standard_product["lead_qr_title"] == "普通商品标题"
+    assert standard_product["lead_qr_subtitle"] == "普通商品副标题"
+
+    service_request = ServicePeriodProductCreateRequest(
+        product_code="service_lead_copy",
+        title="周期商品",
+        price_cents=999,
+        duration_days=30,
+        lead_qr_title="周期商品标题",
+        lead_qr_subtitle="周期商品副标题",
+    )
+    trade_payload = _trade_payload_from_create(service_request)
+    assert trade_payload.lead_qr_title == "周期商品标题"
+    assert trade_payload.lead_qr_subtitle == "周期商品副标题"
 
 
 def test_questionnaire_required_answers_score_and_tag_current_options() -> None:

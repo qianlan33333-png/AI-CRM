@@ -389,7 +389,7 @@ def render_service_period_public_page(service_product: dict[str, Any], state: di
       }}
       if (addWecomButton) {{
         addWecomButton.addEventListener("click", function () {{
-          if (activeLeadQr.qr_url && leadQrController) leadQrController.open(activeLeadQr.qr_url);
+          if (activeLeadQr.qr_url && leadQrController) leadQrController.open(activeLeadQr);
         }});
       }}
       applyState(initialState);
