@@ -104,6 +104,7 @@ def inspect_automation_bindings(connection: Any) -> BindingPrecheckReport:
                 """
                 SELECT id, package_id, status, trigger_event_type, target_type, webhook_url
                 FROM ai_audience_outbound_subscription
+                WHERE status <> 'archived'
                 ORDER BY id ASC
                 """
             )

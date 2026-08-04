@@ -1208,8 +1208,7 @@ class AudiencePackageRepositoryMixin:
             return _public_row(dict(row))
 
     def update_package_status(self, package_id: int, status: str, *, reason: str = "") -> dict[str, Any] | None:
-        return self._write_one(
-            """
+        statement = """
             UPDATE ai_audience_package
             SET status = :status,
                 paused_reason = :paused_reason,
@@ -1227,9 +1226,25 @@ class AudiencePackageRepositoryMixin:
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = :package_id
             RETURNING *
-            """,
-            {"package_id": int(package_id), "status": _text(status), "paused_reason": _text(reason)},
-        )
+            """
+        params = {"package_id": int(package_id), "status": _text(status), "paused_reason": _text(reason)}
+        if params["status"] != "archived":
+            return self._write_one(statement, params)
+        with self._session_factory() as session:
+            session.execute(
+                text(
+                    """
+                    UPDATE ai_audience_outbound_subscription
+                    SET status = 'archived', updated_at = CURRENT_TIMESTAMP
+                    WHERE package_id = :package_id
+                      AND status <> 'archived'
+                    """
+                ),
+                {"package_id": int(package_id)},
+            )
+            row = session.execute(text(statement), params).mappings().fetchone()
+            session.commit()
+            return _public_row(dict(row)) if row else None
 
     def replace_dependencies(self, package_id: int, version_id: int, dependencies: list[str]) -> None:
         with self._session_factory() as session:

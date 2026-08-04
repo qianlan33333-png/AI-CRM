@@ -69,8 +69,6 @@ def load_manifest(path: str | Path) -> dict[str, Any]:
         raise RemediationError("manifest_operation_id_invalid")
     if not re.fullmatch(r"[0-9a-f]{64}", str(manifest.get("expected_issue_fingerprint") or "")):
         raise RemediationError("manifest_fingerprint_invalid")
-    if int(manifest.get("automation_id") or 0) <= 0:
-        raise RemediationError("manifest_automation_id_invalid")
     if int(manifest.get("expected_issue_count") or 0) <= 0:
         raise RemediationError("manifest_issue_count_invalid")
     if not re.fullmatch(r"[0-9a-f]{40}", str(manifest.get("expected_production_sha") or "")):
@@ -81,9 +79,39 @@ def load_manifest(path: str | Path) -> dict[str, Any]:
     if any(not str(key) or int(value) <= 0 for key, value in expected_counts.items()):
         raise RemediationError("manifest_issue_kind_counts_invalid")
     action = str(manifest.get("remediation_action") or "reconcile_binding_history")
-    if action not in {"reconcile_binding_history", "clear_retired_webhook_binding"}:
+    if action not in {
+        "reconcile_binding_history",
+        "clear_retired_webhook_binding",
+        "archive_e2e_subscription_residue",
+    }:
         raise RemediationError("manifest_remediation_action_invalid")
     manifest["remediation_action"] = action
+    if action == "archive_e2e_subscription_residue":
+        subscription_ids = manifest.get("expected_subscription_ids")
+        packages = manifest.get("expected_packages")
+        if not isinstance(subscription_ids, list) or not subscription_ids or any(int(value or 0) <= 0 for value in subscription_ids):
+            raise RemediationError("manifest_expected_subscription_ids_invalid")
+        if len(set(int(value) for value in subscription_ids)) != len(subscription_ids):
+            raise RemediationError("manifest_expected_subscription_ids_invalid")
+        if not isinstance(packages, list) or not packages:
+            raise RemediationError("manifest_expected_packages_invalid")
+        for package in packages:
+            if (
+                not isinstance(package, dict)
+                or int(package.get("id") or 0) <= 0
+                or int(package.get("subscription_id") or 0) not in {int(value) for value in subscription_ids}
+                or not str(package.get("package_key") or "").startswith("prod_e2e_")
+            ):
+                raise RemediationError("manifest_expected_packages_invalid")
+        if len({int(package["id"]) for package in packages}) != len(packages):
+            raise RemediationError("manifest_expected_packages_invalid")
+        if {int(package["subscription_id"]) for package in packages} != {int(value) for value in subscription_ids}:
+            raise RemediationError("manifest_expected_packages_invalid")
+        if str(manifest.get("expected_webhook_url") or "") != ("https://www.youcangogogo.com/api/ai/audience/test-agent/webhook"):
+            raise RemediationError("manifest_expected_webhook_url_invalid")
+    else:
+        if int(manifest.get("automation_id") or 0) <= 0:
+            raise RemediationError("manifest_automation_id_invalid")
     if action == "clear_retired_webhook_binding":
         if not re.fullmatch(r"[A-Za-z0-9_.:-]{8,160}", str(manifest.get("expected_agent_code") or "")):
             raise RemediationError("manifest_expected_agent_code_invalid")
@@ -134,6 +162,10 @@ def _package_rows(session: Session, package_ids: list[int], package_keys: list[s
 
 
 def _already_applied(session: Session, manifest: dict[str, Any]) -> bool:
+    if manifest.get("remediation_action") == "archive_e2e_subscription_residue":
+        subscription_ids = sorted(int(value) for value in manifest["expected_subscription_ids"])
+        rows = _select_by_ids(session, "ai_audience_outbound_subscription", subscription_ids, lock=False)
+        return len(rows) == len(subscription_ids) and all(str(row.get("status") or "") == "archived" for row in rows)
     agent = (
         session.execute(
             text(
@@ -153,9 +185,7 @@ def _already_applied(session: Session, manifest: dict[str, Any]) -> bool:
     if not agent:
         return False
     if manifest.get("remediation_action") == "clear_retired_webhook_binding":
-        return not str(agent.get("bound_package_key") or "").strip() and not str(
-            agent.get("send_webhook_url") or ""
-        ).strip()
+        return not str(agent.get("bound_package_key") or "").strip() and not str(agent.get("send_webhook_url") or "").strip()
     target_key = audience_package_key_from_webhook_url(agent.get("send_webhook_url"))
     return bool(target_key and str(agent.get("bound_package_key") or "").strip() == target_key)
 
@@ -184,18 +214,50 @@ def _build_plan(session: Session, manifest: dict[str, Any], *, lock: bool) -> di
             },
         )
 
+    if manifest.get("remediation_action") == "archive_e2e_subscription_residue":
+        if any(item.get("kind") != "orphan_subscription_package" for item in report.issues):
+            raise RemediationError("authorized_e2e_residue_issue_shape_invalid")
+        expected_subscription_ids = sorted(int(value) for value in manifest["expected_subscription_ids"])
+        issue_pairs = sorted((int(item.get("subscription_id") or 0), int(item.get("package_id") or 0)) for item in report.issues)
+        expected_packages = {int(item["id"]): str(item["package_key"]) for item in manifest["expected_packages"]}
+        expected_pairs = sorted((int(item["subscription_id"]), int(item["id"])) for item in manifest["expected_packages"])
+        if issue_pairs != expected_pairs:
+            raise RemediationError("authorized_e2e_residue_issue_shape_invalid")
+        subscriptions = _select_by_ids(
+            session,
+            "ai_audience_outbound_subscription",
+            expected_subscription_ids,
+            lock=lock,
+        )
+        if len(subscriptions) != len(expected_subscription_ids):
+            raise RemediationError("authorized_subscription_state_changed")
+        expected_webhook_url = str(manifest["expected_webhook_url"])
+        if any(
+            str(item.get("status") or "") != "active"
+            or str(item.get("webhook_url") or "") != expected_webhook_url
+            or int(item.get("package_id") or 0) not in expected_packages
+            for item in subscriptions
+        ):
+            raise RemediationError("authorized_e2e_subscription_state_changed")
+        package_rows = _package_rows(session, sorted(expected_packages), [])
+        actual_packages = {int(item["id"]): str(item.get("package_key") or "") for item in package_rows if str(item.get("status") or "") == "archived"}
+        if actual_packages != expected_packages:
+            raise RemediationError("authorized_e2e_package_state_changed")
+        return {
+            "status": "ready",
+            "report": report,
+            "fingerprint": actual_fingerprint,
+            "agent": {},
+            "target_package_key": "",
+            "subscriptions": subscriptions,
+            "package_rows": package_rows,
+            "subscription_ids": expected_subscription_ids,
+        }
+
     automation_id = int(manifest["automation_id"])
     if manifest.get("remediation_action") == "clear_retired_webhook_binding":
-        orphan_agent = [
-            item
-            for item in report.issues
-            if item.get("kind") == "orphan_agent_binding" and int(item.get("automation_id") or 0) == automation_id
-        ]
-        orphan_send = [
-            item
-            for item in report.issues
-            if item.get("kind") == "orphan_send_url" and int(item.get("automation_id") or 0) == automation_id
-        ]
+        orphan_agent = [item for item in report.issues if item.get("kind") == "orphan_agent_binding" and int(item.get("automation_id") or 0) == automation_id]
+        orphan_send = [item for item in report.issues if item.get("kind") == "orphan_send_url" and int(item.get("automation_id") or 0) == automation_id]
         if len(orphan_agent) != 1 or len(orphan_send) != 1:
             raise RemediationError("authorized_retired_binding_issue_shape_invalid")
         agent_rows = _select_by_ids(session, "automation_agent_runtime_config", [automation_id], lock=lock)
@@ -407,7 +469,26 @@ def run_remediation(
                 database_write_executed=False,
             )
         backup = _secure_backup(Path(backup_dir), manifest, plan)
-        if manifest.get("remediation_action") == "clear_retired_webhook_binding":
+        if manifest.get("remediation_action") == "archive_e2e_subscription_residue":
+            parameters = {f"subscription_id_{index}": int(subscription_id) for index, subscription_id in enumerate(plan["subscription_ids"])}
+            placeholders = ", ".join(f":{key}" for key in parameters)
+            updated_count = int(
+                session.execute(
+                    text(
+                        f"""
+                        UPDATE ai_audience_outbound_subscription
+                        SET status = 'archived', updated_at = CURRENT_TIMESTAMP
+                        WHERE id IN ({placeholders})
+                          AND status <> 'archived'
+                        """
+                    ),
+                    parameters,
+                ).rowcount
+                or 0
+            )
+            if updated_count != len(plan["subscription_ids"]):
+                raise RemediationError("authorized_subscription_update_count_changed")
+        elif manifest.get("remediation_action") == "clear_retired_webhook_binding":
             updated_count = int(
                 session.execute(
                     text(
@@ -440,10 +521,7 @@ def run_remediation(
                     "package_key": plan["target_package_key"],
                 },
             )
-            parameters = {
-                f"subscription_id_{index}": int(subscription_id)
-                for index, subscription_id in enumerate(plan["subscription_ids"])
-            }
+            parameters = {f"subscription_id_{index}": int(subscription_id) for index, subscription_id in enumerate(plan["subscription_ids"])}
             placeholders = ", ".join(f":{key}" for key in parameters)
             deleted_count = int(
                 session.execute(
@@ -460,12 +538,14 @@ def run_remediation(
                 "post_remediation_precheck_failed",
                 details={"post_issue_count": len(post_report.issues)},
             )
-        if manifest.get("remediation_action") == "clear_retired_webhook_binding":
+        if manifest.get("remediation_action") == "archive_e2e_subscription_residue":
+            if not _already_applied(session, manifest):
+                raise RemediationError("post_remediation_e2e_residue_not_archived")
+        elif manifest.get("remediation_action") == "clear_retired_webhook_binding":
             if not _already_applied(session, manifest):
                 raise RemediationError("post_remediation_retired_binding_not_cleared")
         elif not any(
-            int(item.get("automation_id") or 0) == int(manifest["automation_id"])
-            and str(item.get("package_key") or "") == plan["target_package_key"]
+            int(item.get("automation_id") or 0) == int(manifest["automation_id"]) and str(item.get("package_key") or "") == plan["target_package_key"]
             for item in post_report.bindings
         ):
             raise RemediationError("post_remediation_binding_missing")

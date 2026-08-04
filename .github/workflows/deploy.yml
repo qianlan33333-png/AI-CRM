@@ -124,7 +124,8 @@ jobs:
       - name: Reconcile authorized AI Audience binding history
         if: >-
           steps.release.outputs.base_sha == '3b045574ef1b5b322716ee7a62aa86fd3507df43' ||
-          steps.release.outputs.base_sha == 'fd03cc53b094044d9ae798aa214606155b925f22'
+          steps.release.outputs.base_sha == 'fd03cc53b094044d9ae798aa214606155b925f22' ||
+          steps.release.outputs.base_sha == 'b290bada598c76a1e12bb2ade8c020dcfd8849e5'
         uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -145,6 +146,10 @@ jobs:
               fd03cc53b094044d9ae798aa214606155b925f22)
                 remediation_manifest='deploy/retired_ai_audience_binding_remediation.json'
                 remediation_confirmation='EXECUTE_RETIRED_AI_AUDIENCE_BINDING_20260802'
+                ;;
+              b290bada598c76a1e12bb2ade8c020dcfd8849e5)
+                remediation_manifest='deploy/ai_audience_e2e_subscription_residue_20260804.json'
+                remediation_confirmation='EXECUTE_AI_AUDIENCE_E2E_RESIDUE_20260804'
                 ;;
               *)
                 echo "unsupported remediation base sha: $remediation_base_sha"

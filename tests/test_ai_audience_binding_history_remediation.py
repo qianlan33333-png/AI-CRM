@@ -130,6 +130,47 @@ def _seed_retired_binding_anomaly() -> tuple[int, str, str]:
     return automation_id, agent_code, package_key
 
 
+def _seed_e2e_subscription_residue() -> tuple[list[int], list[dict[str, object]]]:
+    session_factory = get_session_factory()
+    subscription_ids: list[int] = []
+    packages: list[dict[str, object]] = []
+    with session_factory() as session:
+        for index in range(3):
+            package_key = f"prod_e2e_residue_{index}"
+            package_id = int(
+                session.execute(
+                    text(
+                        """
+                        INSERT INTO ai_audience_package (package_key, name, status, created_at, updated_at)
+                        VALUES (:package_key, 'E2E residue', 'archived', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                        RETURNING id
+                        """
+                    ),
+                    {"package_key": package_key},
+                ).scalar_one()
+            )
+            subscription_id = int(
+                session.execute(
+                    text(
+                        """
+                        INSERT INTO ai_audience_outbound_subscription (package_id, status, webhook_url)
+                        VALUES (
+                            :package_id,
+                            'active',
+                            'https://www.youcangogogo.com/api/ai/audience/test-agent/webhook'
+                        )
+                        RETURNING id
+                        """
+                    ),
+                    {"package_id": package_id},
+                ).scalar_one()
+            )
+            subscription_ids.append(subscription_id)
+            packages.append({"id": package_id, "subscription_id": subscription_id, "package_key": package_key})
+        session.commit()
+    return subscription_ids, packages
+
+
 def test_binding_history_remediation_previews_snapshots_applies_and_is_idempotent(next_pg_schema, tmp_path) -> None:
     del next_pg_schema
     session_factory = get_session_factory()
@@ -204,6 +245,85 @@ def test_binding_history_remediation_previews_snapshots_applies_and_is_idempoten
         mode="apply",
         confirmation=manifest["execute_confirmation"],
         backup_dir=backup_dir,
+        current_release_sha=PRODUCTION_SHA,
+        session_factory=session_factory,
+    )
+    assert repeated["status"] == "already_applied"
+    assert repeated["database_write_executed"] is False
+
+
+def test_e2e_subscription_residue_remediation_archives_exact_rows_and_is_idempotent(
+    next_pg_schema,
+    tmp_path,
+) -> None:
+    del next_pg_schema
+    session_factory = get_session_factory()
+    subscription_ids, packages = _seed_e2e_subscription_residue()
+    with session_factory() as session:
+        report = inspect_automation_bindings(session.connection())
+    assert issue_kind_counts(report.issues) == {"orphan_subscription_package": 3}
+    manifest = {
+        "schema_version": 1,
+        "operation_id": "pytest_e2e_subscription_residue",
+        "remediation_action": "archive_e2e_subscription_residue",
+        "expected_production_sha": PRODUCTION_SHA,
+        "expected_issue_count": 3,
+        "expected_issue_kind_counts": {"orphan_subscription_package": 3},
+        "expected_issue_fingerprint": issue_fingerprint(report.issues),
+        "expected_subscription_ids": subscription_ids,
+        "expected_packages": packages,
+        "expected_webhook_url": "https://www.youcangogogo.com/api/ai/audience/test-agent/webhook",
+        "execute_confirmation": "EXECUTE_PYTEST_E2E_RESIDUE",
+    }
+
+    preview = run_remediation(
+        manifest,
+        mode="preview",
+        confirmation="",
+        backup_dir=tmp_path,
+        current_release_sha=PRODUCTION_SHA,
+        session_factory=session_factory,
+    )
+    assert preview["status"] == "ready"
+    assert preview["database_write_executed"] is False
+
+    applied = run_remediation(
+        manifest,
+        mode="apply",
+        confirmation=manifest["execute_confirmation"],
+        backup_dir=tmp_path,
+        current_release_sha=PRODUCTION_SHA,
+        session_factory=session_factory,
+    )
+    assert applied["status"] == "applied"
+    assert applied["database_write_executed"] is True
+    assert applied["backup_created"] is True
+
+    with session_factory() as session:
+        statuses = (
+            session.execute(
+                text(
+                    """
+                SELECT status
+                FROM ai_audience_outbound_subscription
+                WHERE id = ANY(:subscription_ids)
+                ORDER BY id
+                """
+                ),
+                {"subscription_ids": subscription_ids},
+            )
+            .scalars()
+            .all()
+        )
+        post_report = inspect_automation_bindings(session.connection())
+    assert statuses == ["archived", "archived", "archived"]
+    assert post_report.ok is True
+
+    repeated = run_remediation(
+        manifest,
+        mode="apply",
+        confirmation=manifest["execute_confirmation"],
+        backup_dir=tmp_path,
         current_release_sha=PRODUCTION_SHA,
         session_factory=session_factory,
     )
@@ -336,19 +456,20 @@ def test_retired_binding_manifest_matches_observed_production_envelope() -> None
         "orphan_agent_binding": 1,
         "orphan_send_url": 1,
     }
-    assert manifest["expected_issue_fingerprint"] == (
-        "32d134df09ee872d9a6a5bd21e56d4fdb3d18af376f790f3b63ed56cfbe6747e"
-    )
+    assert manifest["expected_issue_fingerprint"] == ("32d134df09ee872d9a6a5bd21e56d4fdb3d18af376f790f3b63ed56cfbe6747e")
+
+
+def test_e2e_residue_manifest_matches_observed_production_envelope() -> None:
+    manifest = load_manifest(ROOT / "deploy/ai_audience_e2e_subscription_residue_20260804.json")
+    assert manifest["expected_production_sha"] == "b290bada598c76a1e12bb2ade8c020dcfd8849e5"
+    assert manifest["expected_issue_kind_counts"] == {"orphan_subscription_package": 3}
+    assert manifest["expected_issue_fingerprint"] == ("695f12cfd9b7e82313d51fc5ab0443dae8337e1cbd45893b08ab54176a56de30")
 
 
 def test_production_deploy_reconciles_exact_history_before_binding_precheck_and_runtime_stop() -> None:
     workflow = (ROOT / ".github/workflows/deploy.yml").read_text(encoding="utf-8")
-    history_manifest = json.loads(
-        (ROOT / "deploy/ai_audience_binding_history_remediation.json").read_text(encoding="utf-8")
-    )
-    retired_manifest = json.loads(
-        (ROOT / "deploy/retired_ai_audience_binding_remediation.json").read_text(encoding="utf-8")
-    )
+    history_manifest = json.loads((ROOT / "deploy/ai_audience_binding_history_remediation.json").read_text(encoding="utf-8"))
+    retired_manifest = json.loads((ROOT / "deploy/retired_ai_audience_binding_remediation.json").read_text(encoding="utf-8"))
 
     remediation_index = workflow.index("- name: Reconcile authorized AI Audience binding history")
     preview_index = workflow.index("--mode preview", remediation_index)
@@ -370,8 +491,8 @@ def test_production_deploy_reconciles_exact_history_before_binding_precheck_and_
     assert '--current-release-sha "$remediation_base_sha"' in workflow[remediation_index:apply_index]
     assert "EXECUTE_AI_AUDIENCE_BINDING_HISTORY_20260801" in workflow[remediation_index:binding_precheck_index]
     assert "EXECUTE_RETIRED_AI_AUDIENCE_BINDING_20260802" in workflow[remediation_index:binding_precheck_index]
+    assert "b290bada598c76a1e12bb2ade8c020dcfd8849e5" in workflow[remediation_index:preview_index]
+    assert "EXECUTE_AI_AUDIENCE_E2E_RESIDUE_20260804" in workflow[remediation_index:binding_precheck_index]
     assert history_manifest["expected_production_sha"] == "3b045574ef1b5b322716ee7a62aa86fd3507df43"
-    assert history_manifest["expected_issue_fingerprint"] == (
-        "c6458353624dd7a2f193ecbe6799de1e518d6cdad270c1867f0cf38f3e2ed57b"
-    )
+    assert history_manifest["expected_issue_fingerprint"] == ("c6458353624dd7a2f193ecbe6799de1e518d6cdad270c1867f0cf38f3e2ed57b")
     assert retired_manifest["expected_production_sha"] == "fd03cc53b094044d9ae798aa214606155b925f22"
