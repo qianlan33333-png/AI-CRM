@@ -86,6 +86,12 @@ relationship no longer exists, not an infrastructure failure, only when the
 production job and its sole attempt prove the real provider call, exact response,
 settled lease state, and absence of any successful replay.
 
+A WeCom welcome-message `41051` result is treated as a completed, not-sent
+business outcome only when one durable execute attempt proves the provider call,
+the exact `41051` response, an already-closed one-time welcome window, and no
+send or reconciliation requirement. It remains auditable and must never be
+replayed; incomplete or contradictory evidence remains a health failure.
+
 One operator-authorized WeCom group-message `40058` terminal from 2026-07-30 is
 excluded only through an exact `terminal_readonly` row in the existing immutable
 `queue_history_classification` ledger. The classifier requires the single

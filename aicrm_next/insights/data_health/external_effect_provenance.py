@@ -43,6 +43,8 @@ PRODUCTION_WELCOME_AUTHORIZATION_CONFIRMATION_SHA256 = "e5a4f0fb09cb5d7e64069064
 WECOM_CONTENT_VALIDATION_ERROR_CODE = "wecom_error_40058"
 WECOM_CONTENT_VALIDATION_PROVIDER_ERRCODE = "40058"
 WECOM_MINIPROGRAM_TITLE_MAX_BYTES = 64
+WECOM_WELCOME_WINDOW_CLOSED_ERROR_CODE = "wecom_error_41051"
+WECOM_WELCOME_WINDOW_CLOSED_PROVIDER_ERRCODE = "41051"
 
 
 def direct_canary_job_sql(alias: str) -> str:
@@ -158,6 +160,89 @@ def wecom_message_content_validation_business_rejection_sql(alias: str) -> str:
                     content_validation_attempt.response_summary_json
                         ->> 'wecom_msgid_present',
                     'false'
+                  ) = 'false'
+        )
+    """
+
+
+def wecom_welcome_window_closed_business_rejection_sql(alias: str) -> str:
+    """Return strict proof that the one-time welcome window already closed.
+
+    WeCom 41051 means the external contact has already started chatting, so the
+    one-time welcome code can no longer be used.  Only a single, durable,
+    provider-crossing welcome attempt with an explicit no-send result is
+    classified as a completed business rejection.  Any incomplete or
+    contradictory provenance remains a system-health failure.
+    """
+
+    return f"""
+        COALESCE({alias}.status, '') = 'failed_terminal'
+        AND COALESCE({alias}.last_error_code, '') =
+            '{WECOM_WELCOME_WINDOW_CLOSED_ERROR_CODE}'
+        AND COALESCE({alias}.execution_mode, '') = 'execute'
+        AND COALESCE({alias}.effect_type, '') = 'wecom.welcome_message.send'
+        AND COALESCE({alias}.adapter_name, '') = 'wecom_welcome_message'
+        AND COALESCE({alias}.operation, '') = 'send'
+        AND COALESCE({alias}.business_type, '') = 'channel_welcome_effect_graph'
+        AND COALESCE({alias}.source_module, '') = 'channel_entry.application'
+        AND COALESCE({alias}.source_route, '') =
+            'channel_entry.process_channel_entry'
+        AND {alias}.attempt_count = 1
+        AND {alias}.max_attempts = 1
+        AND {alias}.side_effect_executed IS TRUE
+        AND {alias}.provider_result_received IS TRUE
+        AND {alias}.provider_call_started_at IS NOT NULL
+        AND {alias}.reconciliation_required IS FALSE
+        AND COALESCE(
+              {alias}.payload_summary_json ->> 'welcome_code_present',
+              'false'
+            ) = 'true'
+        AND COALESCE(
+              {alias}.payload_summary_json ->> 'external_userid_present',
+              'false'
+            ) = 'true'
+        AND 1 = (
+            SELECT COUNT(*)
+            FROM external_effect_attempt welcome_window_attempt_count
+            WHERE welcome_window_attempt_count.job_id = {alias}.id
+        )
+        AND EXISTS (
+            SELECT 1
+            FROM external_effect_attempt welcome_window_attempt
+            WHERE welcome_window_attempt.job_id = {alias}.id
+              AND welcome_window_attempt.attempt_id =
+                    COALESCE({alias}.last_attempt_id, '')
+              AND welcome_window_attempt.adapter_name = {alias}.adapter_name
+              AND welcome_window_attempt.adapter_mode = 'execute'
+              AND welcome_window_attempt.operation = {alias}.operation
+              AND welcome_window_attempt.status = 'failed_terminal'
+              AND welcome_window_attempt.error_code =
+                    '{WECOM_WELCOME_WINDOW_CLOSED_ERROR_CODE}'
+              AND welcome_window_attempt.provider_call_started_at IS NOT NULL
+              AND welcome_window_attempt.completed_at IS NOT NULL
+              AND COALESCE(
+                    welcome_window_attempt.response_summary_json ->> 'errcode',
+                    ''
+                  ) = '{WECOM_WELCOME_WINDOW_CLOSED_PROVIDER_ERRCODE}'
+              AND COALESCE(
+                    welcome_window_attempt.response_summary_json
+                        ->> 'provider_error_classification',
+                    ''
+                  ) = 'terminal'
+              AND COALESCE(
+                    welcome_window_attempt.response_summary_json
+                        ->> 'real_external_call_executed',
+                    'false'
+                  ) = 'true'
+              AND COALESCE(
+                    welcome_window_attempt.response_summary_json
+                        ->> 'provider_result_received',
+                    'false'
+                  ) = 'true'
+              AND COALESCE(
+                    welcome_window_attempt.response_summary_json
+                        ->> 'wecom_send_executed',
+                    'true'
                   ) = 'false'
         )
     """
@@ -958,6 +1043,8 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                        AS refund_not_enough_business_rejection,
                    ({wecom_message_content_validation_business_rejection_sql("job")})
                        AS wecom_content_validation_business_rejection,
+                   ({wecom_welcome_window_closed_business_rejection_sql("job")})
+                       AS wecom_welcome_window_closed_business_rejection,
                    ({external_contact_relationship_absent_terminal_sql(job_alias="job")})
                        AS expected_contact_absence,
                    ({private_message_contact_relationship_absent_terminal_sql(job_alias="job")})
@@ -1003,6 +1090,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                   AND NOT acknowledged_refund_not_enough
                   AND NOT refund_not_enough_business_rejection
                   AND NOT wecom_content_validation_business_rejection
+                  AND NOT wecom_welcome_window_closed_business_rejection
                   AND NOT expected_contact_absence
                   AND NOT private_message_contact_absence
                   AND status = 'failed_terminal'
@@ -1032,6 +1120,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                   AND NOT acknowledged_refund_not_enough
                   AND NOT refund_not_enough_business_rejection
                   AND NOT wecom_content_validation_business_rejection
+                  AND NOT wecom_welcome_window_closed_business_rejection
                   AND status = 'failed_terminal'
             ) AS historical_failed_terminal_count,
             COUNT(*) FILTER (
@@ -1117,6 +1206,10 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                 WHERE wecom_content_validation_business_rejection
                   AND status = 'failed_terminal'
             ) AS wecom_content_validation_business_rejection_count,
+            COUNT(*) FILTER (
+                WHERE wecom_welcome_window_closed_business_rejection
+                  AND status = 'failed_terminal'
+            ) AS wecom_welcome_window_closed_business_rejection_count,
             COUNT(*) FILTER (WHERE expected_contact_absence) AS expected_contact_absence_count,
             COUNT(*) FILTER (
                 WHERE private_message_contact_absence
