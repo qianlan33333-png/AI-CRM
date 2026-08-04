@@ -2,6 +2,8 @@ import importlib
 from pathlib import Path
 
 import pytest
+from alembic.config import Config
+from alembic.script import ScriptDirectory
 from fastapi.testclient import TestClient
 
 from aicrm_next.extensions.hxc.operation_cycles.action_dto import OperationCycleSkillV1
@@ -11,6 +13,7 @@ from aicrm_next.platform.platform_foundation.auth_platform.access_client import 
 )
 from aicrm_next.platform.platform_foundation.auth_platform.profiles import API_CLIENT_PROFILES
 from aicrm_next.platform.shared.route_ownership import load_route_manifest
+from scripts.ops.check_ai_audience_send_records_release import EXPECTED_MIGRATION_HEAD
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -28,6 +31,12 @@ def test_action_migration_is_additive_and_preserves_audit_on_rollback() -> None:
     assert "operation_cycle_action_request_events" in source
     assert "DROP TABLE" not in source
     assert "hxc_monday_full_activation" in source
+
+
+def test_ai_audience_release_guard_tracks_current_migration_head() -> None:
+    config = Config(str(ROOT / "alembic.ini"))
+    script = ScriptDirectory.from_config(config)
+    assert script.get_heads() == [EXPECTED_MIGRATION_HEAD]
 
 
 def test_seeded_pilot_skill_hash_matches_runtime_contract() -> None:
