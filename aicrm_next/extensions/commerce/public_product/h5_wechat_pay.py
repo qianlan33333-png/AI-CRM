@@ -46,7 +46,7 @@ from aicrm_next.platform.shared.runtime import (
 )
 from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting
 from aicrm_next.platform.shared.safe_logging import safe_log_exception, safe_log_fields
-from aicrm_next.platform.shared.wechat_identity_page import wechat_identity_failure_response
+from aicrm_next.platform.shared.wechat_identity_page import wechat_full_service_required_response, wechat_identity_failure_response
 from aicrm_next.platform.shared.wechat_h5_session import (
     WECHAT_PAYMENT_IDENTITY_COOKIE,
     WECHAT_PAYMENT_IDENTITY_TTL_SECONDS,
@@ -236,7 +236,7 @@ def payment_oauth_callback(request: Request) -> Response:
         return JSONResponse({"ok": False, "error": "state_invalid"}, status_code=400, headers=route_headers())
     state_cookie = _normalized_text(request.cookies.get(OAUTH_STATE_COOKIE_NAME))
     if not state_cookie:
-        return JSONResponse({"ok": False, "error": "oauth_state_cookie_missing"}, status_code=400, headers=route_headers())
+        return wechat_full_service_required_response(headers=route_headers())
     state_payload = _load_signed_blob(state_cookie)
     if not state_payload:
         return JSONResponse({"ok": False, "error": "oauth_state_cookie_invalid"}, status_code=400, headers=route_headers())
