@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "operation_id": "ai_audience_e2e_subscription_residue_20260804",
+  "remediation_action": "archive_e2e_subscription_residue",
+  "expected_production_sha": "b290bada598c76a1e12bb2ade8c020dcfd8849e5",
+  "expected_issue_count": 3,
+  "expected_issue_kind_counts": {
+    "orphan_subscription_package": 3
+  },
+  "expected_issue_fingerprint": "695f12cfd9b7e82313d51fc5ab0443dae8337e1cbd45893b08ab54176a56de30",
+  "expected_subscription_ids": [29, 30, 31],
+  "expected_packages": [
+    {
+      "id": 34,
+      "subscription_id": 29,
+      "package_key": "prod_e2e_questionnaire_added_wecom_auto_send_e2e_20260803_155248_audit"
+    },
+    {
+      "id": 35,
+      "subscription_id": 30,
+      "package_key": "prod_e2e_questionnaire_added_wecom_auto_send_e2e_20260803_155426_audit2"
+    },
+    {
+      "id": 36,
+      "subscription_id": 31,
+      "package_key": "prod_e2e_questionnaire_added_wecom_auto_send_e2e_20260803_155549_audit3"
+    }
+  ],
+  "expected_webhook_url": "https://www.youcangogogo.com/api/ai/audience/test-agent/webhook",
+  "execute_confirmation": "EXECUTE_AI_AUDIENCE_E2E_RESIDUE_20260804"
+}

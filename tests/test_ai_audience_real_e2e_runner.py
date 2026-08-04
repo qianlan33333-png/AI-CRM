@@ -9,10 +9,14 @@ from aicrm_next.extensions.ai.ai_audience_ops.e2e_runner import (
     _skipped_count,
     _webhook_job_guard,
 )
+from aicrm_next.extensions.ai.ai_audience_ops.automation_binding.precheck import inspect_automation_bindings
+from aicrm_next.extensions.ai.ai_audience_ops.service import AudiencePackageService
+from aicrm_next.platform.shared.db_session import get_session_factory
 from aicrm_next.extensions.ai.ai_audience_ops.package_spec import parse_markdown_spec_text, validate_spec
 from aicrm_next.extensions.ai.ai_audience_ops.test_agent_service import AudienceTestAgentService
 from aicrm_next.platform.platform_foundation.external_effects import WEBHOOK_GENERIC_PUSH, WECOM_MESSAGE_PRIVATE_SEND
 from aicrm_next.platform.platform_foundation.external_effects.models import ExternalEffectJob
+from sqlalchemy import text
 
 
 def test_external_e2e_route_is_removed(next_client, next_pg_schema, monkeypatch) -> None:
@@ -216,8 +220,64 @@ def test_e2e_job_guards_require_array_body_and_exact_private_target() -> None:
 
 def test_e2e_skipped_count_accepts_user_ops_summary_formats() -> None:
     assert _skipped_count({"no_allowed_sender": 2}, "no_allowed_sender") == 2
-    assert _skipped_count(
-        [{"reason": "do_not_disturb", "count": 1}, {"reason": "no_allowed_sender", "reason_label": "无可用发送人", "count": 3}],
-        "no_allowed_sender",
-    ) == 3
+    assert (
+        _skipped_count(
+            [{"reason": "do_not_disturb", "count": 1}, {"reason": "no_allowed_sender", "reason_label": "无可用发送人", "count": 3}],
+            "no_allowed_sender",
+        )
+        == 3
+    )
     assert _skipped_count([], "no_allowed_sender") == 0
+
+
+def test_archiving_e2e_package_archives_subscriptions_and_keeps_binding_precheck_clean(next_pg_schema) -> None:
+    del next_pg_schema
+    session_factory = get_session_factory()
+    with session_factory() as session:
+        package_id = int(
+            session.execute(
+                text(
+                    """
+                    INSERT INTO ai_audience_package (package_key, name, status, created_at, updated_at)
+                    VALUES ('prod_e2e_cleanup_test', 'E2E cleanup test', 'active', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    RETURNING id
+                    """
+                )
+            ).scalar_one()
+        )
+        subscription_id = int(
+            session.execute(
+                text(
+                    """
+                    INSERT INTO ai_audience_outbound_subscription (package_id, status, webhook_url)
+                    VALUES (:package_id, 'active', 'https://www.youcangogogo.com/api/ai/audience/test-agent/webhook')
+                    RETURNING id
+                    """
+                ),
+                {"package_id": package_id},
+            ).scalar_one()
+        )
+        session.commit()
+
+    result = AudiencePackageService().archive_admin_package(package_id)
+
+    assert result["ok"] is True
+    with session_factory() as session:
+        states = (
+            session.execute(
+                text(
+                    """
+                SELECT p.status AS package_status, s.status AS subscription_status
+                FROM ai_audience_package p
+                JOIN ai_audience_outbound_subscription s ON s.package_id = p.id
+                WHERE p.id = :package_id AND s.id = :subscription_id
+                """
+                ),
+                {"package_id": package_id, "subscription_id": subscription_id},
+            )
+            .mappings()
+            .one()
+        )
+        report = inspect_automation_bindings(session.connection())
+    assert dict(states) == {"package_status": "archived", "subscription_status": "archived"}
+    assert report.ok is True
