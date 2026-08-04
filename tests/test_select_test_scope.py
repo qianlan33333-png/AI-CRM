@@ -1970,13 +1970,23 @@ def test_over_budget_scope_requires_explicit_full_ci(tmp_path: Path) -> None:
         "--enforce-budget",
         "--json",
     ]
-    blocked = subprocess.run(command, cwd=ROOT, text=True, capture_output=True)
+    isolated_env = os.environ.copy()
+    isolated_env.pop("GITHUB_EVENT_NAME", None)
+    isolated_env.pop("GITHUB_EVENT_PATH", None)
+    isolated_env.pop("AICRM_FORCE_FULL_CI", None)
+    blocked = subprocess.run(
+        command,
+        cwd=ROOT,
+        env=isolated_env,
+        text=True,
+        capture_output=True,
+    )
 
     assert blocked.returncode == 3
     assert "exceeds the large-PR budget" in blocked.stderr
     assert json.loads(blocked.stdout)["budget_exceeded"] is True
 
-    explicit_full_env = os.environ.copy()
+    explicit_full_env = isolated_env.copy()
     explicit_full_env["AICRM_FORCE_FULL_CI"] = "1"
     explicit_full = subprocess.run(
         command,
