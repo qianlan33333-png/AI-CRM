@@ -4,7 +4,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from aicrm_next.main import create_app
+from aicrm_next.extensions.forms.questionnaire import api as questionnaire_api
 from aicrm_next.extensions.forms.questionnaire.h5_write import (
+    QuestionnaireH5WriteInputError,
     get_questionnaire_h5_side_effect_plans,
     reset_questionnaire_h5_write_fixture_state,
 )
@@ -112,6 +114,32 @@ def test_h5_submit_accepts_legal_minimal_answers_and_writes_submission(client: T
     assert body["real_external_call_executed"] is False
     assert body["submission_id"]
     assert _submission_count() == before + 1
+
+
+def test_h5_submit_identity_conflict_returns_actionable_public_message(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def raise_identity_conflict(_command) -> None:
+        raise QuestionnaireH5WriteInputError("identity_conflict")
+
+    monkeypatch.setattr(questionnaire_api, "execute_questionnaire_h5_submit", raise_identity_conflict)
+
+    response = client.post(
+        "/api/h5/questionnaires/hxc-activation-v1/submit",
+        json={"answers": {"q_activation": "activated"}},
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["ok"] is False
+    assert body["error_code"] == "identity_conflict"
+    assert body["source_status"] == "conflict"
+    assert body["write_model_status"] == "blocked"
+    assert body["error"] == ("该手机号已绑定其他账号，当前无法完成提交。请确认手机号是否填写正确；如需继续使用该手机号，请联系工作人员处理。")
+    assert body["route_owner"] == "ai_crm_next"
+    assert body["fallback_used"] is False
+    assert body["real_external_call_executed"] is False
 
 
 @pytest.mark.parametrize("mobile", ["1861094741", "186109474111", "12610947411"])

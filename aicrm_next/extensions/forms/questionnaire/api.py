@@ -83,6 +83,7 @@ _QUESTIONNAIRE_SOURCE_PARAM_FIELDS = (
     "staff_id",
 )
 _QUESTIONNAIRE_META_FIELDS = _QUESTIONNAIRE_SOURCE_PARAM_FIELDS
+_IDENTITY_CONFLICT_PUBLIC_MESSAGE = "该手机号已绑定其他账号，当前无法完成提交。请确认手机号是否填写正确；如需继续使用该手机号，请联系工作人员处理。"
 
 
 def _completion_target_redirect_url(slug: str, completion_target: Any, *, fallback_url: Any = "") -> str:
@@ -598,6 +599,14 @@ async def _execute_h5_submit(request: Request, slug: str) -> Response:
             )
         return _with_identity_cookie(response, submission_identity_result)
     except QuestionnaireH5WriteInputError as exc:
+        if str(exc).strip() == "identity_conflict":
+            return _h5_write_error(
+                _IDENTITY_CONFLICT_PUBLIC_MESSAGE,
+                status_code=409,
+                source_status="conflict",
+                write_model_status="blocked",
+                error_code="identity_conflict",
+            )
         return _h5_write_error(
             str(exc),
             status_code=400,
