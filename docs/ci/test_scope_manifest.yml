@@ -106,6 +106,17 @@
   "exclusive_scope_overrides": [
     {
       "paths": [
+        "requirements.txt",
+        "requirements-dev.txt",
+        "requirements.lock",
+        "docs/security/dependency_risk_acceptance.yml"
+      ],
+      "scopes": [
+        "dependency_lock_update"
+      ]
+    },
+    {
+      "paths": [
         "docs/architecture/runtime_contract_inventory.json"
       ],
       "scopes": [
@@ -250,6 +261,30 @@
     }
   ],
   "scopes": [
+    {
+      "name": "dependency_lock_update",
+      "paths": [
+        "requirements.txt",
+        "requirements-dev.txt",
+        "requirements.lock",
+        "docs/security/dependency_risk_acceptance.yml"
+      ],
+      "python_tests": [
+        "tests/test_dependency_security_contract.py",
+        "tests/test_p1_runtime_security.py",
+        "tests/test_auth_platform_service.py",
+        "tests/test_auth_platform_fastapi_protocol.py",
+        "tests/test_r05_wecom_callback_architecture.py",
+        "tests/test_wechat_pay_h5.py",
+        "tests/test_archive_sdk_isolation.py",
+        "tests/test_commerce_coupon_domain.py",
+        "tests/test_router_registry_contract.py"
+      ],
+      "frontend_tests": [],
+      "needs_postgres": true,
+      "needs_full_ci": true,
+      "architecture_gate": "full"
+    },
     {
       "name": "runtime_contract_inventory_manifest",
       "paths": [
