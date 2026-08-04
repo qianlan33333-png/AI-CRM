@@ -2,7 +2,7 @@
 
 ## 目标
 
-当支付 OAuth 回调因微信“部分服务”模式隔离 Cookie 而缺少 state Cookie 时，不再把 `oauth_state_cookie_missing` JSON 暴露给用户，改为返回醒目的移动端全屏引导页，明确提示用户点击微信浏览器底部的“使用完整服务”。
+当支付 OAuth 回调因微信“部分服务”模式隔离 Cookie 而缺少 state Cookie 时，不再把 `oauth_state_cookie_missing` JSON 暴露给用户，改为返回克制、清晰的移动端全屏引导页，明确提示用户点击微信浏览器底部的“使用完整服务”。
 
 ## 方案
 
@@ -10,7 +10,8 @@
 - 影响 route：`GET /api/h5/wechat-pay/oauth/callback`，当前由 AI-CRM Next 原生实现持有。
 - 仅替换“state Cookie 缺失”这一分支的呈现；非法 state、篡改 Cookie、state 不匹配等安全错误继续保留原有拒绝逻辑。
 - 复用 `aicrm_next.platform.shared.wechat_identity_page` 的共享页面边界，新增无脚本、无可点击假按钮的专用 HTML 响应。
-- 页面只包含一个主标题、原因说明和一条操作指令，使用大字号、高对比度提示与向下箭头指向微信原生入口。
+- 页面以“新流商业”为顶部信任锚点，只保留“还差一步”主标题、原因说明、引导轨和向下箭头，使用微信绿指向原生入口，不渲染警告图标或大面积提示卡。
+- 8 秒后使用纯 CSS 显示“右上角刷新”兜底提示；不引入 JavaScript Cookie 探测或自动跳转。普通 Cookie 可写不能证明原 HttpOnly OAuth state Cookie 已恢复，自动跳转还可能误入无关登录路由或形成授权循环。
 - 响应保持 HTTP 400，并增加 `no-store`、CSP、`nosniff` 等静态错误页安全头。
 
 ## 安全与验证

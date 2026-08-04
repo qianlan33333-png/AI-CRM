@@ -20,28 +20,39 @@ def wechat_full_service_required_response(
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-  <title>请使用完整服务</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="format-detection" content="telephone=no">
+  <title>还差一步</title>
   <style>
-    * { box-sizing: border-box; }
-    html, body { margin: 0; min-height: 100%; background: #fff; }
-    body { color: #17221b; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
-    main { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; justify-content: center; padding: max(40px, env(safe-area-inset-top)) 28px max(48px, env(safe-area-inset-bottom)); text-align: center; }
-    .icon { width: 76px; height: 76px; display: grid; place-items: center; margin: 0 auto 28px; border-radius: 50%; background: #e9f9ef; color: #07a944; font-size: 42px; font-weight: 900; line-height: 1; }
-    h1 { max-width: 680px; margin: 0 auto; font-size: clamp(32px, 8.5vw, 44px); font-weight: 900; line-height: 1.28; letter-spacing: -.02em; }
-    .reason { max-width: 620px; margin: 24px auto 0; color: #59645d; font-size: clamp(18px, 4.8vw, 22px); line-height: 1.65; }
-    .instruction { max-width: 620px; margin: 32px auto 0; padding: 22px 20px; border: 2px solid #8bd8a7; border-radius: 18px; background: #effbf3; color: #123c22; font-size: clamp(22px, 5.8vw, 28px); font-weight: 850; line-height: 1.5; }
-    .service-name { color: #078b38; font-weight: 950; white-space: nowrap; }
-    .arrow { margin-top: 18px; color: #07a944; font-size: 42px; font-weight: 900; line-height: 1; }
+    :root { --paper: #fff; --ink: #0f1114; --ink-2: #71757c; --hint: #b4b8bf; --hair: #eceef1; --accent: #07c160; }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { min-height: 100%; }
+    body { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; padding: calc(env(safe-area-inset-top) + 20px) 28px calc(env(safe-area-inset-bottom) + 18px); background: var(--paper); color: var(--ink); font: 400 15px/1.7 -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; -webkit-font-smoothing: antialiased; text-align: center; }
+    .brand { font-size: 13px; letter-spacing: .08em; color: var(--hint); }
+    .stage { width: 100%; flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; }
+    h1 { font-size: 27px; font-weight: 700; letter-spacing: -.01em; line-height: 1.3; }
+    .sub { max-width: 15em; margin-top: 10px; color: var(--ink-2); font-size: 15px; }
+    .rail { width: 1px; height: 60px; margin: 26px 0 14px; background: linear-gradient(to bottom, var(--hair), var(--accent)); }
+    .cue { font-size: 15px; font-weight: 500; }
+    .cue b { color: var(--accent); font-weight: 600; }
+    .chev { margin-top: 10px; color: var(--accent); animation: dip 1.6s ease-in-out infinite; }
+    .fallback { margin-top: 22px; color: var(--hint); font-size: 12px; opacity: 0; animation: reveal-fallback 0s linear 8s forwards; }
+    @keyframes dip { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+    @keyframes reveal-fallback { to { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { .chev { animation: none; } }
   </style>
 </head>
 <body>
-  <main role="alert" aria-labelledby="full-service-title" data-route-owner="ai_crm_next" data-identity-status="full_service_required">
-    <div class="icon" aria-hidden="true">!</div>
-    <h1 id="full-service-title">请点击下方的<br>“使用完整服务”<br>才能正常进行服务</h1>
-    <p class="reason">当前处于微信的“部分服务”模式，登录授权信息无法保存，因此暂时不能继续支付。</p>
-    <div class="instruction">请点击页面下方微信提供的<br><span class="service-name">“使用完整服务”</span></div>
-    <div class="arrow" aria-hidden="true">↓</div>
+  <div class="brand">新流商业</div>
+  <main class="stage" role="alert" aria-labelledby="full-service-title" data-route-owner="ai_crm_next" data-identity-status="full_service_required">
+    <h1 id="full-service-title">还差一步</h1>
+    <p class="sub">微信当前是「部分服务」模式，登录状态无法保存</p>
+    <div class="rail" aria-hidden="true"></div>
+    <p class="cue">点击屏幕底部的 <b>使用完整服务</b></p>
+    <svg class="chev" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+      <path d="M6 9l6 6 6-6"></path>
+    </svg>
+    <p class="fallback">没看到底部提示？点右上角 ··· 刷新后重试</p>
   </main>
 </body>
 </html>"""
