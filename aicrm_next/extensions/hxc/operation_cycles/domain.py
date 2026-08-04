@@ -124,7 +124,9 @@ _JWT_CREDENTIAL_PATTERN = re.compile(
 )
 _EMAIL_PATTERN = re.compile(r"(?i)(?<![\w.+-])[\w.+-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)+(?![\w.-])")
 _WECOM_EXTERNAL_ID_PATTERN = re.compile(r"(?<![A-Za-z0-9])wm[A-Za-z0-9_-]{6,}(?![A-Za-z0-9])")
-_LOCAL_PATH_PATTERN = re.compile(r"^(?:file://|/Users/|/home/|[A-Za-z]:\\)")
+_LOCAL_PATH_PATTERN = re.compile(
+    r"(?<![A-Za-z0-9])(?:file://|/Users/|/home/|/tmp/|/private/|/Volumes/|/var/folders/|[A-Za-z]:\\)"
+)
 
 
 def _canonical_private_key(value: Any) -> str:

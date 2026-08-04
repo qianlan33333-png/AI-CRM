@@ -29,6 +29,7 @@ from .strategy_context_dto import (
     StrategyMarkdownDocumentV1,
     StrategyVersionContextView,
 )
+from .action_dto import OperationCycleSkillV1
 
 
 def _text(value: Any) -> str:
@@ -143,6 +144,7 @@ class InMemoryStrategyContextRepository:
             definition=version.definition if version else {},
             governance_status="legacy_confirmed",
             document_pack=_empty_pack(),
+            operation_skill=None,
             confirmed_at=version.created_at if version else None,
         )
 
@@ -279,6 +281,8 @@ class InMemoryStrategyContextRepository:
             if decision == "accept":
                 applied = view.base_strategy_version + 1
                 target = view.proposal.target_version
+                operation_skill = target.operation_skill or (execution.operation_skill if execution else None)
+                effective_target = target.model_copy(update={"operation_skill": operation_skill})
                 self._confirmed[view.strategy_key] = StrategyVersionContextView(
                     strategy_key=view.strategy_key,
                     version=applied,
@@ -287,7 +291,8 @@ class InMemoryStrategyContextRepository:
                     definition=target.definition,
                     governance_status="confirmed",
                     document_pack=target.document_pack,
-                    version_hash=compute_snapshot_hash(target),
+                    operation_skill=operation_skill,
+                    version_hash=compute_snapshot_hash(effective_target),
                     confirmed_by=_text(decided_by),
                     confirmed_at=now,
                     confirmation_note=_text(note),
@@ -337,6 +342,8 @@ class PostgresStrategyContextRepository:
             measurement_guide=self._document("measurement_guide", row),
             execution_contract=_json(row.get("execution_contract_json"), {}),
         )
+        raw_skill = _json(row.get("operation_skill_json"), {})
+        operation_skill = OperationCycleSkillV1.model_validate(raw_skill) if raw_skill else None
         return StrategyVersionContextView(
             strategy_key=_text(row.get("strategy_key")),
             version=int(row.get("version") or 1),
@@ -345,6 +352,7 @@ class PostgresStrategyContextRepository:
             definition=_json(row.get("definition_json"), {}),
             governance_status=_text(row.get("governance_status")) or "legacy_confirmed",
             document_pack=pack,
+            operation_skill=operation_skill,
             version_hash=_text(row.get("version_hash")),
             confirmed_by=_text(row.get("confirmed_by")),
             confirmed_at=row.get("confirmed_at"),
@@ -723,17 +731,38 @@ class PostgresStrategyContextRepository:
                     ).scalar_one()
                     applied_version = max(int(max_version or 0), proposal.base_strategy_version) + 1
                     target = proposal.target_version
-                    version_hash = compute_snapshot_hash(target)
+                    previous_skill_row = session.execute(
+                        text(
+                            "SELECT operation_skill_json FROM operation_cycle_strategy_versions "
+                            "WHERE strategy_id = :strategy_id AND version = :version"
+                        ),
+                        {
+                            "strategy_id": row["strategy_id"],
+                            "version": proposal.base_strategy_version,
+                        },
+                    ).mappings().fetchone()
+                    previous_skill_json = _json(
+                        previous_skill_row.get("operation_skill_json") if previous_skill_row else None,
+                        {},
+                    )
+                    operation_skill = target.operation_skill
+                    if operation_skill is None and previous_skill_json:
+                        operation_skill = OperationCycleSkillV1.model_validate(previous_skill_json)
+                    version_hash = compute_snapshot_hash(
+                        target.model_copy(update={"operation_skill": operation_skill})
+                    )
                     version_row = session.execute(
                         text(
                             """
                             INSERT INTO operation_cycle_strategy_versions (
                                 strategy_id, version, label, objective, definition_json,
+                                operation_skill_json, operation_skill_hash,
                                 version_hash, effective_from, governance_status,
                                 confirmed_by, confirmed_at, confirmation_note, created_at
                             ) VALUES (
                                 :strategy_id, :version, :label, :objective,
-                                CAST(:definition_json AS jsonb), :version_hash,
+                                CAST(:definition_json AS jsonb), CAST(:operation_skill_json AS jsonb),
+                                :operation_skill_hash, :version_hash,
                                 CURRENT_TIMESTAMP, 'confirmed', :confirmed_by,
                                 CURRENT_TIMESTAMP, :confirmation_note, CURRENT_TIMESTAMP
                             ) RETURNING id
@@ -745,6 +774,8 @@ class PostgresStrategyContextRepository:
                             "label": target.version_label,
                             "objective": target.objective,
                             "definition_json": _json_dump(target.definition),
+                            "operation_skill_json": _json_dump(operation_skill) if operation_skill else "{}",
+                            "operation_skill_hash": operation_skill.skill_hash if operation_skill else "",
                             "version_hash": version_hash,
                             "confirmed_by": _text(decided_by),
                             "confirmation_note": _text(note),
@@ -801,6 +832,8 @@ SELECT
     v.label,
     v.objective,
     v.definition_json,
+    COALESCE(v.operation_skill_json, '{}'::jsonb) AS operation_skill_json,
+    COALESCE(v.operation_skill_hash, '') AS operation_skill_hash,
     v.version_hash,
     v.governance_status,
     v.confirmed_by,

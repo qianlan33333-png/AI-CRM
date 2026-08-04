@@ -161,19 +161,19 @@
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_ARCHIVE_WORKER_CLIENT_ID",
-      "line": 33
+      "line": 34
     },
     {
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_ARCHIVE_WORKER_CLIENT_SECRET_REF",
-      "line": 33
+      "line": 34
     },
     {
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_AUTOMATION_WORKER_CLIENT_ID",
-      "line": 33
+      "line": 34
     },
     {
       "accessor": "os.getenv",
@@ -203,31 +203,31 @@
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_AUTOMATION_WORKER_CLIENT_SECRET_REF",
-      "line": 33
+      "line": 34
     },
     {
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_CALLBACK_WORKER_CLIENT_ID",
-      "line": 33
+      "line": 34
     },
     {
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_CALLBACK_WORKER_CLIENT_SECRET_REF",
-      "line": 33
+      "line": 34
     },
     {
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_CAMPAIGN_AGENT_CLIENT_ID",
-      "line": 33
+      "line": 34
     },
     {
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_CAMPAIGN_AGENT_CLIENT_SECRET_REF",
-      "line": 33
+      "line": 34
     },
     {
       "accessor": "os.getenv",
@@ -239,43 +239,43 @@
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_EXTERNAL_AGENT_CLIENT_ID",
-      "line": 33
+      "line": 34
     },
     {
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_EXTERNAL_AGENT_CLIENT_SECRET_REF",
-      "line": 33
+      "line": 34
     },
     {
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_GROUP_BROADCAST_CLIENT_ID",
-      "line": 33
+      "line": 34
     },
     {
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_GROUP_BROADCAST_CLIENT_SECRET_REF",
-      "line": 33
+      "line": 34
     },
     {
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_IDENTITY_CLIENT_ID",
-      "line": 33
+      "line": 34
     },
     {
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_IDENTITY_CLIENT_SECRET_REF",
-      "line": 33
+      "line": 34
     },
     {
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_ISSUER",
-      "line": 33
+      "line": 34
     },
     {
       "accessor": "runtime_setting",
@@ -317,25 +317,37 @@
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_MCP_CLIENT_ID",
-      "line": 33
+      "line": 34
     },
     {
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_MCP_CLIENT_SECRET_REF",
-      "line": 33
+      "line": 34
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
+      "key": "AICRM_AUTH_OPERATION_RUNNER_CLIENT_ID",
+      "line": 34
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
+      "key": "AICRM_AUTH_OPERATION_RUNNER_CLIENT_SECRET_REF",
+      "line": 34
     },
     {
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_OPS_REPORTER_CLIENT_ID",
-      "line": 33
+      "line": 34
     },
     {
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform/platform_foundation/auth_platform/access_client.py",
       "key": "AICRM_AUTH_OPS_REPORTER_CLIENT_SECRET_REF",
-      "line": 33
+      "line": 34
     },
     {
       "accessor": "runtime_setting",
@@ -993,6 +1005,12 @@
     },
     {
       "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/extensions/hxc/operation_cycles/feature_flags.py",
+      "key": "AICRM_LOCAL_CODEX_CONNECTOR_V1_ENABLED",
+      "line": 10
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/platform/shared/resource_admission.py",
       "key": "AICRM_MEDIA_ADMISSION_ENABLED",
       "line": 14
@@ -1594,14 +1612,20 @@
     {
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/extensions/hxc/operation_cycles/feature_flags.py",
+      "key": "AICRM_OPERATION_ACTIONS_V1_ENABLED",
+      "line": 10
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/extensions/hxc/operation_cycles/feature_flags.py",
       "key": "AICRM_OPERATION_CONTEXT_V1_ENABLED",
-      "line": 8
+      "line": 10
     },
     {
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/extensions/hxc/operation_cycles/feature_flags.py",
       "key": "AICRM_OPERATION_FACT_PROJECTION_V1_ENABLED",
-      "line": 8
+      "line": 10
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -3630,6 +3654,8 @@
     "AICRM_AUTH_JWT_SIGNING_KEY",
     "AICRM_AUTH_MCP_CLIENT_ID",
     "AICRM_AUTH_MCP_CLIENT_SECRET_REF",
+    "AICRM_AUTH_OPERATION_RUNNER_CLIENT_ID",
+    "AICRM_AUTH_OPERATION_RUNNER_CLIENT_SECRET_REF",
     "AICRM_AUTH_OPS_REPORTER_CLIENT_ID",
     "AICRM_AUTH_OPS_REPORTER_CLIENT_SECRET_REF",
     "AICRM_AUTH_OUTBOUND_WEBHOOK_CLIENT_ID",
@@ -3699,6 +3725,7 @@
     "AICRM_INTERNAL_EVENTS_WORKER_BATCH_SIZE",
     "AICRM_INTERNAL_EVENT_WORKER_BATCH_SIZE",
     "AICRM_LISTENER_DATABASE_URL",
+    "AICRM_LOCAL_CODEX_CONNECTOR_V1_ENABLED",
     "AICRM_MEDIA_ADMISSION_ENABLED",
     "AICRM_MEDIA_ADMISSION_ROLLOUT_PERCENT",
     "AICRM_MEDIA_READ_MAX_CONCURRENCY",
@@ -3769,6 +3796,7 @@
     "AICRM_OPENCLAW_MCP_AI_ASSIST_NO_AUTOMATION_EXECUTION_CONFIRMED",
     "AICRM_OPENCLAW_MCP_AI_ASSIST_NO_OUTBOUND_SEND_CONFIRMED",
     "AICRM_OPENCLAW_MCP_AI_ASSIST_PROMPT_REDACTION_CONFIRMED",
+    "AICRM_OPERATION_ACTIONS_V1_ENABLED",
     "AICRM_OPERATION_CONTEXT_V1_ENABLED",
     "AICRM_OPERATION_FACT_PROJECTION_V1_ENABLED",
     "AICRM_PAYMENT_COMMERCE_LIVE_ADAPTER_ENABLED",
@@ -4866,7 +4894,7 @@
     }
   ],
   "migration_heads": [
-    "0168_lead_qr_copy_config"
+    "0169_operation_cycle_codex_actions"
   ],
   "openapi_components": {
     "schemas": {
@@ -27200,6 +27228,54 @@
         "parameters": [
           {
             "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.extensions.hxc.operation_cycles.api.get_operation_cycle_action_request_result",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "extension.hxc",
+      "methods": [
+        "GET"
+      ],
+      "name": "get_operation_cycle_action_request_result",
+      "operation_id": "get_operation_cycle_action_request_result:GET:/api/admin/operation-cycles/action-requests/{request_id}/result",
+      "path": "/api/admin/operation-cycles/action-requests/{request_id}/result",
+      "route_group": "operation_cycles"
+    },
+    {
+      "capability_owner": "operation_cycles",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
             "name": "run_key",
             "required": true,
             "schema": {
@@ -27347,6 +27423,152 @@
       "name": "get_operation_cycle_strategy",
       "operation_id": "get_operation_cycle_strategy:GET:/api/admin/operation-cycles/strategies/{strategy_key}",
       "path": "/api/admin/operation-cycles/strategies/{strategy_key}",
+      "route_group": "operation_cycles"
+    },
+    {
+      "capability_owner": "operation_cycles",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "strategy_key",
+            "required": true,
+            "schema": {
+              "title": "Strategy Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "action_key",
+            "required": true,
+            "schema": {
+              "title": "Action Key",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          }
+        ],
+        "request_body": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "parent_request_id": {
+                    "default": "",
+                    "maxLength": 160,
+                    "title": "Parent Request Id",
+                    "type": "string"
+                  },
+                  "run_key": {
+                    "default": "",
+                    "maxLength": 160,
+                    "pattern": "^[A-Za-z0-9_.:-]*$",
+                    "title": "Run Key",
+                    "type": "string"
+                  },
+                  "schema_version": {
+                    "const": "operation_cycle_action_start.v1",
+                    "default": "operation_cycle_action_start.v1",
+                    "title": "Schema Version",
+                    "type": "string"
+                  }
+                },
+                "title": "OperationCycleActionStartV1",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.extensions.hxc.operation_cycles.api.start_operation_cycle_action",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "extension.hxc",
+      "methods": [
+        "POST"
+      ],
+      "name": "start_operation_cycle_action",
+      "operation_id": "start_operation_cycle_action:POST:/api/admin/operation-cycles/strategies/{strategy_key}/actions/{action_key}/start",
+      "path": "/api/admin/operation-cycles/strategies/{strategy_key}/actions/{action_key}/start",
+      "route_group": "operation_cycles"
+    },
+    {
+      "capability_owner": "operation_cycles",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "strategy_key",
+            "required": true,
+            "schema": {
+              "title": "Strategy Key",
+              "type": "string"
+            }
+          }
+        ],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.extensions.hxc.operation_cycles.api.get_operation_cycle_current_action",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "extension.hxc",
+      "methods": [
+        "GET"
+      ],
+      "name": "get_operation_cycle_current_action",
+      "operation_id": "get_operation_cycle_current_action:GET:/api/admin/operation-cycles/strategies/{strategy_key}/current-action",
+      "path": "/api/admin/operation-cycles/strategies/{strategy_key}/current-action",
       "route_group": "operation_cycles"
     },
     {
@@ -44653,6 +44875,358 @@
     {
       "capability_owner": "operation_cycles",
       "contract": {
+        "parameters": [],
+        "request_body": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "runner_id": {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "title": "Runner Id",
+                    "type": "string"
+                  },
+                  "schema_version": {
+                    "const": "operation_cycle_action_claim.v1",
+                    "default": "operation_cycle_action_claim.v1",
+                    "title": "Schema Version",
+                    "type": "string"
+                  },
+                  "wait_seconds": {
+                    "default": 25,
+                    "maximum": 25.0,
+                    "minimum": 0.0,
+                    "title": "Wait Seconds",
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "runner_id"
+                ],
+                "title": "OperationCycleActionClaimV1",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.extensions.hxc.operation_cycles.api.claim_operation_cycle_action_request",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "extension.hxc",
+      "methods": [
+        "POST"
+      ],
+      "name": "claim_operation_cycle_action_request",
+      "operation_id": "claim_operation_cycle_action_request:POST:/api/operation-cycles/action-requests/claim",
+      "path": "/api/operation-cycles/action-requests/claim",
+      "route_group": "operation_cycles"
+    },
+    {
+      "capability_owner": "operation_cycles",
+      "contract": {
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          }
+        ],
+        "request_body": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$defs": {
+                  "PostSendReviewActionResultV1": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "action_key": {
+                        "const": "post_send_review",
+                        "default": "post_send_review",
+                        "title": "Action Key",
+                        "type": "string"
+                      },
+                      "conclusion": {
+                        "maxLength": 6000,
+                        "minLength": 1,
+                        "title": "Conclusion",
+                        "type": "string"
+                      },
+                      "failed_count": {
+                        "maximum": 1000000,
+                        "minimum": 0,
+                        "title": "Failed Count",
+                        "type": "integer"
+                      },
+                      "proposal_id": {
+                        "default": "",
+                        "maxLength": 160,
+                        "pattern": "^$|^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+                        "title": "Proposal Id",
+                        "type": "string"
+                      },
+                      "proposed_skill_hash": {
+                        "default": "",
+                        "maxLength": 64,
+                        "pattern": "^$|^[0-9a-fA-F]{64}$",
+                        "title": "Proposed Skill Hash",
+                        "type": "string"
+                      },
+                      "schema_version": {
+                        "const": "operation_cycle_action_result.v1",
+                        "default": "operation_cycle_action_result.v1",
+                        "title": "Schema Version",
+                        "type": "string"
+                      },
+                      "sent_count": {
+                        "maximum": 1000000,
+                        "minimum": 0,
+                        "title": "Sent Count",
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "conclusion",
+                      "sent_count",
+                      "failed_count"
+                    ],
+                    "title": "PostSendReviewActionResultV1",
+                    "type": "object"
+                  },
+                  "PrepareBroadcastActionResultV1": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "action_key": {
+                        "const": "prepare_broadcast",
+                        "default": "prepare_broadcast",
+                        "title": "Action Key",
+                        "type": "string"
+                      },
+                      "ai_assistant_href": {
+                        "default": "",
+                        "maxLength": 500,
+                        "title": "Ai Assistant Href",
+                        "type": "string"
+                      },
+                      "broadcast_jobs": {
+                        "const": 0,
+                        "default": 0,
+                        "title": "Broadcast Jobs",
+                        "type": "integer"
+                      },
+                      "conclusion": {
+                        "maxLength": 6000,
+                        "minLength": 1,
+                        "title": "Conclusion",
+                        "type": "string"
+                      },
+                      "excel_sha256": {
+                        "maxLength": 64,
+                        "minLength": 64,
+                        "pattern": "^[0-9a-fA-F]{64}$",
+                        "title": "Excel Sha256",
+                        "type": "string"
+                      },
+                      "plan_id": {
+                        "maxLength": 200,
+                        "minLength": 1,
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+                        "title": "Plan Id",
+                        "type": "string"
+                      },
+                      "plan_review_status": {
+                        "const": "pending_review",
+                        "default": "pending_review",
+                        "title": "Plan Review Status",
+                        "type": "string"
+                      },
+                      "plan_run_status": {
+                        "const": "draft",
+                        "default": "draft",
+                        "title": "Plan Run Status",
+                        "type": "string"
+                      },
+                      "preparation_id": {
+                        "maxLength": 160,
+                        "minLength": 1,
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+                        "title": "Preparation Id",
+                        "type": "string"
+                      },
+                      "schema_version": {
+                        "const": "operation_cycle_action_result.v1",
+                        "default": "operation_cycle_action_result.v1",
+                        "title": "Schema Version",
+                        "type": "string"
+                      },
+                      "segment_counts": {
+                        "additionalProperties": {
+                          "type": "integer"
+                        },
+                        "maxProperties": 50,
+                        "title": "Segment Counts",
+                        "type": "object"
+                      },
+                      "total_count": {
+                        "maximum": 1000000,
+                        "minimum": 0,
+                        "title": "Total Count",
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "conclusion",
+                      "total_count",
+                      "excel_sha256",
+                      "preparation_id",
+                      "plan_id"
+                    ],
+                    "title": "PrepareBroadcastActionResultV1",
+                    "type": "object"
+                  }
+                },
+                "additionalProperties": false,
+                "properties": {
+                  "event_type": {
+                    "enum": [
+                      "thread_bound",
+                      "turn_started",
+                      "completed",
+                      "failed"
+                    ],
+                    "title": "Event Type",
+                    "type": "string"
+                  },
+                  "failure_code": {
+                    "default": "",
+                    "maxLength": 160,
+                    "pattern": "^$|^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+                    "title": "Failure Code",
+                    "type": "string"
+                  },
+                  "lease_token": {
+                    "maxLength": 200,
+                    "minLength": 16,
+                    "title": "Lease Token",
+                    "type": "string"
+                  },
+                  "result": {
+                    "anyOf": [
+                      {
+                        "discriminator": {
+                          "mapping": {
+                            "post_send_review": "#/$defs/PostSendReviewActionResultV1",
+                            "prepare_broadcast": "#/$defs/PrepareBroadcastActionResultV1"
+                          },
+                          "propertyName": "action_key"
+                        },
+                        "oneOf": [
+                          {
+                            "$ref": "#/$defs/PrepareBroadcastActionResultV1"
+                          },
+                          {
+                            "$ref": "#/$defs/PostSendReviewActionResultV1"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "title": "Result"
+                  },
+                  "schema_version": {
+                    "const": "operation_cycle_action_event.v1",
+                    "default": "operation_cycle_action_event.v1",
+                    "title": "Schema Version",
+                    "type": "string"
+                  },
+                  "thread_id": {
+                    "default": "",
+                    "maxLength": 240,
+                    "title": "Thread Id",
+                    "type": "string"
+                  },
+                  "turn_id": {
+                    "default": "",
+                    "maxLength": 240,
+                    "title": "Turn Id",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "event_type",
+                  "lease_token"
+                ],
+                "title": "OperationCycleActionEventV1",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.extensions.hxc.operation_cycles.api.record_operation_cycle_action_request_event",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "extension.hxc",
+      "methods": [
+        "POST"
+      ],
+      "name": "record_operation_cycle_action_request_event",
+      "operation_id": "record_operation_cycle_action_request_event:POST:/api/operation-cycles/action-requests/{request_id}/events",
+      "path": "/api/operation-cycles/action-requests/{request_id}/events",
+      "route_group": "operation_cycles"
+    },
+    {
+      "capability_owner": "operation_cycles",
+      "contract": {
         "parameters": [
           {
             "in": "query",
@@ -45710,6 +46284,107 @@
       "name": "report_operation_cycle_snapshot",
       "operation_id": "report_operation_cycle_snapshot:POST:/api/operation-cycles/reports",
       "path": "/api/operation-cycles/reports",
+      "route_group": "operation_cycles"
+    },
+    {
+      "capability_owner": "operation_cycles",
+      "contract": {
+        "parameters": [],
+        "request_body": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "app_server_protocol": {
+                    "const": "codex_app_server_jsonrpc_v2",
+                    "default": "codex_app_server_jsonrpc_v2",
+                    "title": "App Server Protocol",
+                    "type": "string"
+                  },
+                  "binding_keys": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "maxItems": 100,
+                    "title": "Binding Keys",
+                    "type": "array"
+                  },
+                  "codex_version": {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "title": "Codex Version",
+                    "type": "string"
+                  },
+                  "compatibility_status": {
+                    "enum": [
+                      "ready",
+                      "incompatible",
+                      "unavailable"
+                    ],
+                    "title": "Compatibility Status",
+                    "type": "string"
+                  },
+                  "connector_version": {
+                    "maxLength": 120,
+                    "minLength": 1,
+                    "title": "Connector Version",
+                    "type": "string"
+                  },
+                  "max_concurrency": {
+                    "const": 1,
+                    "default": 1,
+                    "title": "Max Concurrency",
+                    "type": "integer"
+                  },
+                  "runner_id": {
+                    "maxLength": 160,
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$",
+                    "title": "Runner Id",
+                    "type": "string"
+                  },
+                  "schema_version": {
+                    "const": "operation_cycle_runner_heartbeat.v1",
+                    "default": "operation_cycle_runner_heartbeat.v1",
+                    "title": "Schema Version",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "runner_id",
+                  "connector_version",
+                  "codex_version",
+                  "compatibility_status"
+                ],
+                "title": "OperationRunnerHeartbeatV1",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.extensions.hxc.operation_cycles.api.heartbeat_operation_cycle_runner",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "extension.hxc",
+      "methods": [
+        "POST"
+      ],
+      "name": "heartbeat_operation_cycle_runner",
+      "operation_id": "heartbeat_operation_cycle_runner:POST:/api/operation-cycles/runner/heartbeat",
+      "path": "/api/operation-cycles/runner/heartbeat",
       "route_group": "operation_cycles"
     },
     {
@@ -52336,6 +53011,33 @@
     {
       "domain": "operation_cycles",
       "drop_candidate": false,
+      "lifecycle": "event",
+      "migration_source": "0169_operation_cycle_codex_actions",
+      "pii_level": "aggregate_only",
+      "read_owners": [
+        "operation cycle incident reconstruction",
+        "operation runner idempotency and audit"
+      ],
+      "table": "operation_cycle_action_request_events",
+      "write_owner": "aicrm_next.extensions.hxc.operation_cycles"
+    },
+    {
+      "domain": "operation_cycles",
+      "drop_candidate": false,
+      "lifecycle": "canonical",
+      "migration_source": "0169_operation_cycle_codex_actions",
+      "pii_level": "aggregate_only",
+      "read_owners": [
+        "operation cycle admin result card",
+        "operation cycle current action read model",
+        "operation runner claim API"
+      ],
+      "table": "operation_cycle_action_requests",
+      "write_owner": "aicrm_next.extensions.hxc.operation_cycles"
+    },
+    {
+      "domain": "operation_cycles",
+      "drop_candidate": false,
       "lifecycle": "canonical",
       "migration_source": "0113_operation_cycles",
       "pii_level": "none",
@@ -52382,6 +53084,19 @@
         "operation cycle admin evidence links"
       ],
       "table": "operation_cycle_references",
+      "write_owner": "aicrm_next.extensions.hxc.operation_cycles"
+    },
+    {
+      "domain": "operation_cycles",
+      "drop_candidate": false,
+      "lifecycle": "canonical",
+      "migration_source": "0169_operation_cycle_codex_actions",
+      "pii_level": "internal",
+      "read_owners": [
+        "operation cycle current action availability",
+        "operation runner claim API"
+      ],
+      "table": "operation_cycle_runners",
       "write_owner": "aicrm_next.extensions.hxc.operation_cycles"
     },
     {

@@ -14,8 +14,8 @@
   },
   "migration_contract": {
     "directory": "migrations/versions",
-    "expected_file_count": 178,
-    "expected_head": "0168_lead_qr_copy_config"
+    "expected_file_count": 179,
+    "expected_head": "0169_operation_cycle_codex_actions"
   },
   "allowed_test_side_effects": [
     "none",
@@ -256,8 +256,13 @@
       ],
       "tests": [
         {"path": "tests/unit/test_extension_rules.py", "layer": "unit"},
+        {"path": "tests/unit/test_operation_cycle_actions.py", "layer": "unit"},
+        {"path": "tests/unit/test_operation_cycle_local_connector.py", "layer": "unit"},
         {"path": "tests/contracts/test_runtime_and_capabilities.py", "layer": "contracts"},
-        {"path": "tests/postgres/test_current_schema.py", "layer": "postgres"}
+        {"path": "tests/contracts/test_operation_cycle_action_contracts.py", "layer": "contracts"},
+        {"path": "tests/postgres/test_current_schema.py", "layer": "postgres"},
+        {"path": "tests/postgres/test_operation_cycle_actions.py", "layer": "postgres"},
+        {"path": "tests/frontend/operation_cycle_actions.test.mjs", "layer": "frontend"}
       ],
       "expected_side_effects": ["none", "test_postgres"]
     },

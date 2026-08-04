@@ -14753,6 +14753,132 @@ routes:
   principal_types:
   - api_client
   - service
+- path: /api/operation-cycles/runner/heartbeat
+  methods:
+  - POST
+  route_name: heartbeat_operation_cycle_runner
+  capability_owner: operation_cycles
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: disable_AICRM_OPERATION_ACTIONS_V1_ENABLED_and_AICRM_LOCAL_CODEX_CONNECTOR_V1_ENABLED
+  audience: external_integration
+  auth_scheme: api_client_jwt
+  capability: operation_cycle_runner_heartbeat
+  access_scope: service
+  pii_level: internal
+  csrf: false
+  rate_limit: integration
+  client_purpose: operation_runner
+  principal_types:
+  - api_client
+  - service
+- path: /api/operation-cycles/action-requests/claim
+  methods:
+  - POST
+  route_name: claim_operation_cycle_action_request
+  capability_owner: operation_cycles
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: disable_AICRM_OPERATION_ACTIONS_V1_ENABLED_and_AICRM_LOCAL_CODEX_CONNECTOR_V1_ENABLED
+  audience: external_integration
+  auth_scheme: api_client_jwt
+  capability: operation_cycle_action_claim
+  access_scope: service
+  pii_level: internal
+  csrf: false
+  rate_limit: integration
+  client_purpose: operation_runner
+  principal_types:
+  - api_client
+  - service
+- path: /api/operation-cycles/action-requests/{request_id}/events
+  methods:
+  - POST
+  route_name: record_operation_cycle_action_request_event
+  capability_owner: operation_cycles
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: disable_AICRM_OPERATION_ACTIONS_V1_ENABLED_and_AICRM_LOCAL_CODEX_CONNECTOR_V1_ENABLED
+  audience: external_integration
+  auth_scheme: api_client_jwt
+  capability: operation_cycle_action_event_write
+  access_scope: service
+  pii_level: internal
+  csrf: false
+  rate_limit: integration
+  client_purpose: operation_runner
+  principal_types:
+  - api_client
+  - service
+- path: /api/admin/operation-cycles/strategies/{strategy_key}/current-action
+  methods:
+  - GET
+  route_name: get_operation_cycle_current_action
+  capability_owner: operation_cycles
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: disable_AICRM_OPERATION_ACTIONS_V1_ENABLED
+  audience: admin
+  auth_scheme: human_session
+  capability: admin_read
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/operation-cycles/strategies/{strategy_key}/actions/{action_key}/start
+  methods:
+  - POST
+  route_name: start_operation_cycle_action
+  capability_owner: operation_cycles
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: command
+  requires_auth: true
+  rollback: disable_AICRM_OPERATION_ACTIONS_V1_ENABLED_and_AICRM_LOCAL_CODEX_CONNECTOR_V1_ENABLED
+  audience: admin
+  auth_scheme: human_session
+  capability: manage_operations
+  access_scope: global
+  pii_level: internal
+  csrf: true
+  rate_limit: authenticated
+  principal_types:
+  - human
+- path: /api/admin/operation-cycles/action-requests/{request_id}/result
+  methods:
+  - GET
+  route_name: get_operation_cycle_action_request_result
+  capability_owner: operation_cycles
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: disable_AICRM_OPERATION_ACTIONS_V1_ENABLED
+  audience: admin
+  auth_scheme: human_session
+  capability: admin_read
+  access_scope: global
+  pii_level: internal
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
 - path: /api/operation-cycles/context-index
   methods:
   - GET

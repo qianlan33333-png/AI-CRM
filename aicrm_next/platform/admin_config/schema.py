@@ -361,6 +361,7 @@ CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
                     ("AICRM_AUTH_EXTERNAL_AGENT_CLIENT_ID", "外部 Agent Client ID"),
                     ("AICRM_AUTH_CAMPAIGN_AGENT_CLIENT_ID", "Campaign Agent Client ID"),
                     ("AICRM_AUTH_OPS_REPORTER_CLIENT_ID", "运营闭环上报 Client ID"),
+                    ("AICRM_AUTH_OPERATION_RUNNER_CLIENT_ID", "本地运营执行器 Client ID"),
                 )
             },
             **{
@@ -379,6 +380,7 @@ CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
                     ("AICRM_AUTH_EXTERNAL_AGENT_CLIENT_ID", "外部 Agent Client ID"),
                     ("AICRM_AUTH_CAMPAIGN_AGENT_CLIENT_ID", "Campaign Agent Client ID"),
                     ("AICRM_AUTH_OPS_REPORTER_CLIENT_ID", "运营闭环上报 Client ID"),
+                    ("AICRM_AUTH_OPERATION_RUNNER_CLIENT_ID", "本地运营执行器 Client ID"),
                 )
             },
             "AICRM_AUTH_OUTBOUND_WEBHOOK_CLIENT_ID": {

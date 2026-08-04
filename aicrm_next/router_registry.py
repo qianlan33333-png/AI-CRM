@@ -9,8 +9,10 @@ from fastapi.routing import APIRoute
 from .capability_registry import capability_for_route_group
 from .deployment_profile import DeploymentProfile
 from .campaign_preparation_composition import configure_campaign_preparation_dependencies
+from .operation_cycle_action_composition import configure_operation_cycle_action_dependencies
 
 configure_campaign_preparation_dependencies()
+configure_operation_cycle_action_dependencies()
 
 try:  # FastAPI 0.139 keeps included router routes behind include contexts.
     from fastapi.routing import _iter_routes_with_context
@@ -114,8 +116,8 @@ ROUTER_SPECS: tuple[RouterSpec, ...] = (
     RouterSpec("admin_shell", "admin_shell", admin_shell_router, "admin shell pages"),
     RouterSpec("data_health", "data_health", data_health_router, "data health check APIs"),
     RouterSpec("delivery_lineage", "delivery_lineage", delivery_lineage_router, "delivery lineage read APIs"),
-    RouterSpec("operation_cycles", "operation_cycles_admin_pages", operation_cycles_admin_pages_router, "operation cycle read-only admin pages"),
-    RouterSpec("operation_cycles", "operation_cycles", operation_cycles_router, "operation cycle report and admin read APIs"),
+    RouterSpec("operation_cycles", "operation_cycles_admin_pages", operation_cycles_admin_pages_router, "operation cycle admin pages and current-action launch surface"),
+    RouterSpec("operation_cycles", "operation_cycles", operation_cycles_router, "operation cycle reports, action requests, runner and admin APIs"),
     RouterSpec("admin_config", "admin_config", admin_config_router, "admin config pages and APIs"),
     RouterSpec("admin_config", "admin_config_api_key", direct_api_key_router, "single CRM external read API key management"),
     RouterSpec("class_user_management", "class_user_management", class_user_management_router),

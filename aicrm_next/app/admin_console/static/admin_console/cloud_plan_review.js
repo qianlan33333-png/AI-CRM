@@ -367,14 +367,13 @@
     if (approveButton) {
       const running = ["active", "running"].includes(String(plan.run_status || ""));
       const rejected = String(plan.review_status || "") === "rejected";
-      const approved = String(plan.review_status || "") === "approved";
       approveButton.disabled = running || rejected;
-      approveButton.textContent = running ? "已开始执行" : (approved ? "开始执行" : "批准并开始执行");
+      approveButton.textContent = running ? "已开始发送" : "确认并发送";
     }
   }
 
   async function approvePlan(event) {
-    const restore = setButtonLoading(event.currentTarget, "启动中");
+    const restore = setButtonLoading(event.currentTarget, "发送中");
     try {
       const payload = await requestJson(`/api/admin/cloud-orchestrator/plans/${encodeURIComponent(planId)}/approve`, {
         method: "POST",
@@ -382,7 +381,7 @@
         body: writePayload(),
       });
       updatePlan(payload.plan);
-      toast("计划已批准并开始执行");
+      toast("计划已确认并开始发送");
     } catch (error) {
       toast(errorMessage(error));
     } finally {

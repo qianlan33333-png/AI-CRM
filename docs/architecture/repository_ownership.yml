@@ -978,6 +978,16 @@ repositories:
     table_writes: []
     non_literal_table_reads:
       - crm_user_identity
+  aicrm_next/extensions/hxc/operation_cycles/action_repository.py:
+    capability_owner: aicrm_next.extensions.hxc.operation_cycles
+    table_reads:
+      - operation_cycle_action_request_events
+      - operation_cycle_action_requests
+      - operation_cycle_runners
+    table_writes:
+      - operation_cycle_action_request_events
+      - operation_cycle_action_requests
+      - operation_cycle_runners
   aicrm_next/extensions/hxc/operation_cycles/repository.py:
     capability_owner: aicrm_next.extensions.hxc.operation_cycles
     table_reads:

@@ -1,7 +1,7 @@
 {% extends "admin_shell/operation_cycles_base.html" %}
 
 {% block content %}
-<div class="operation-cycle operation-cycle--list" data-operation-cycle-surface="strategy-list" data-readonly="true">
+<div class="operation-cycle operation-cycle--list" data-operation-cycle-surface="strategy-list" data-readonly="false">
   <section class="operation-cycle-task-list" aria-label="运营任务列表">
     <header class="operation-cycle-task-list__head">
       <h2>任务列表</h2>
@@ -20,6 +20,7 @@
         <tbody>
           {% for item in strategy_summaries %}
           {% set progress = item.get("weekly_progress") or {} %}
+          {% set current_action = item.get("current_action") or {} %}
           <tr>
             <td>
               <div class="operation-cycle-task-name">
@@ -42,10 +43,24 @@
             </td>
             <td>
               <div class="operation-cycle-task-actions">
-                <button type="button" class="operation-cycle-task-button" disabled aria-disabled="true" title="任务由 Agent 外部管理，暂未开放暂停操作">暂停</button>
-                <button type="button" class="operation-cycle-task-button operation-cycle-task-button--danger" disabled aria-disabled="true" title="任务由 Agent 外部管理，暂未开放删除操作">删除</button>
+                {% if current_action.get("action_kind") == "ai_assistant" and current_action.get("href") %}
+                <a class="operation-cycle-task-button operation-cycle-task-button--primary" href="{{ current_action.get('href') }}">{{ current_action.get("title") }}</a>
+                {% elif current_action.get("action_key") %}
+                <button
+                  type="button"
+                  class="operation-cycle-task-button operation-cycle-task-button--primary"
+                  data-operation-action-start
+                  data-strategy-key="{{ item.get('strategy_key') }}"
+                  data-action-key="{{ current_action.get('action_key') }}"
+                  data-run-key="{{ current_action.get('run_key') }}"
+                  data-parent-request-id="{{ current_action.get('retry_parent_request_id') or '' }}"
+                  {% if not current_action.get("enabled") %}disabled aria-disabled="true" title="{{ current_action.get('disabled_reason') }}"{% endif %}
+                >{{ current_action.get("title") }}</button>
+                {% else %}
+                <button type="button" class="operation-cycle-task-button operation-cycle-task-button--primary" disabled aria-disabled="true" title="{{ current_action.get('disabled_reason') }}">{{ current_action.get("title") or "当前动作不可用" }}</button>
+                {% endif %}
                 {% if item.get("detail_href") %}
-                <a class="operation-cycle-task-button operation-cycle-task-button--primary" href="{{ item.get('detail_href') }}">明细数据</a>
+                <a class="operation-cycle-task-detail-link" href="{{ item.get('detail_href') }}">查看详情</a>
                 {% endif %}
               </div>
             </td>
@@ -54,7 +69,7 @@
           <tr>
             <td class="operation-cycle-task-empty" colspan="3">
               <strong>暂无运营任务</strong>
-              <span>Agent 创建并上报任务后会显示在这里。</span>
+              <span>策略完成首次上报后会显示在这里。</span>
             </td>
           </tr>
           {% endfor %}
@@ -62,5 +77,11 @@
       </table>
     </div>
   </section>
+  <div class="operation-cycle-action-notice" data-operation-cycle-action-notice role="status" aria-live="polite" hidden></div>
 </div>
+{% endblock %}
+
+{% block scripts_extra %}
+{{ super() }}
+<script defer src="/static/operation-cycles/operation_cycles_actions.js?v=20260804-v1"></script>
 {% endblock %}

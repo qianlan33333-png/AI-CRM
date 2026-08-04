@@ -143,6 +143,17 @@ API_CLIENT_PROFILES = (
         capabilities=("operation_cycle_report_write",),
         principal_type=PrincipalType.API_CLIENT,
     ),
+    _api_profile(
+        "operation_runner",
+        audiences=("external_integration",),
+        scopes=("read", "write"),
+        capabilities=(
+            "operation_cycle_action_claim",
+            "operation_cycle_action_event_write",
+            "operation_cycle_runner_heartbeat",
+        ),
+        principal_type=PrincipalType.API_CLIENT,
+    ),
 )
 
 
