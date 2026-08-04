@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       full:
-        description: "Force full regression outside required CI"
+        description: "Force full regression outside budgeted CI"
         required: false
         default: "false"
 
@@ -29,15 +29,21 @@ jobs:
       needs_full_ci: ${{ steps.scope.outputs.needs_full_ci }}
       force_full: ${{ steps.scope.outputs.force_full }}
       architecture_gate: ${{ steps.scope.outputs.architecture_gate }}
+      ci_tier: ${{ steps.scope.outputs.ci_tier }}
+      estimated_python_work_seconds: ${{ steps.scope.outputs.estimated_python_work_seconds }}
+      budget_exceeded: ${{ steps.scope.outputs.budget_exceeded }}
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0 (Node 24)
         with:
           fetch-depth: 0
 
-      - name: Select scoped tests
+      - name: Select budgeted test scope
         id: scope
-        run: python scripts/ci/select_test_scope.py --github-output "$GITHUB_OUTPUT"
+        run: >-
+          python scripts/ci/select_test_scope.py
+          --github-output "$GITHUB_OUTPUT"
+          --enforce-budget
 
       - name: Compare convention selector in shadow mode
         continue-on-error: true
@@ -55,81 +61,16 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-  architecture-gates:
+  scoped-validation:
     needs: select
-    if: needs.select.outputs.architecture_gate != 'none'
+    if: >-
+      needs.select.outputs.force_full != 'true' &&
+      (needs.select.outputs.architecture_gate != 'none' ||
+       needs.select.outputs.python_tests != '' ||
+       needs.select.outputs.frontend_tests != '' ||
+       needs.select.outputs.needs_dependency_audit == 'true')
     runs-on: ubuntu-latest
-    timeout-minutes: 8
-    steps:
-      - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0 (Node 24)
-        with:
-          fetch-depth: 0
-
-      - name: Setup Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0 (Node 24)
-        with:
-          python-version: "3.10.5"
-
-      - name: Restore hashed Python environment
-        id: python-venv-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .venv
-          key: venv-v1-${{ runner.os }}-${{ runner.arch }}-py3.10.5-${{ hashFiles('requirements.lock') }}
-
-      - name: Install dependencies on cache miss
-        if: steps.python-venv-cache.outputs.cache-hit != 'true'
-        run: |
-          python -m venv .venv
-          .venv/bin/python -m pip install --require-hashes -r requirements.lock
-
-      - name: Activate hashed Python environment
-        run: echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
-
-      - name: Run selected architecture gates
-        run: bash scripts/ci/run_architecture_gates.sh --mode "${{ needs.select.outputs.architecture_gate }}"
-
-  fast-python-no-pg:
-    needs: select
-    if: needs.select.outputs.needs_full_ci != 'true' && needs.select.outputs.python_tests != '' && needs.select.outputs.needs_postgres != 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 8
-    steps:
-      - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0 (Node 24)
-
-      - name: Setup Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0 (Node 24)
-        with:
-          python-version: "3.10.5"
-
-      - name: Restore hashed Python environment
-        id: python-venv-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .venv
-          key: venv-v1-${{ runner.os }}-${{ runner.arch }}-py3.10.5-${{ hashFiles('requirements.lock') }}
-
-      - name: Install dependencies on cache miss
-        if: steps.python-venv-cache.outputs.cache-hit != 'true'
-        run: |
-          python -m venv .venv
-          .venv/bin/python -m pip install --require-hashes -r requirements.lock
-
-      - name: Activate hashed Python environment
-        run: echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
-
-      - name: Run scoped Python tests
-        env:
-          PYTHON_TESTS: ${{ needs.select.outputs.python_tests }}
-        run: python -m pytest ${PYTHON_TESTS} -n auto --dist=loadfile -q --tb=short
-
-  fast-python-pg:
-    needs: select
-    if: needs.select.outputs.needs_full_ci != 'true' && needs.select.outputs.python_tests != '' && needs.select.outputs.needs_postgres == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 28
     services:
       postgres:
         image: postgres:16
@@ -147,45 +88,71 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0 (Node 24)
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
+        if: >-
+          needs.select.outputs.architecture_gate != 'none' ||
+          needs.select.outputs.python_tests != '' ||
+          needs.select.outputs.needs_dependency_audit == 'true'
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0 (Node 24)
         with:
           python-version: "3.10.5"
 
       - name: Restore hashed Python environment
         id: python-venv-cache
+        if: >-
+          needs.select.outputs.architecture_gate != 'none' ||
+          needs.select.outputs.python_tests != '' ||
+          needs.select.outputs.needs_dependency_audit == 'true'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .venv
           key: venv-v1-${{ runner.os }}-${{ runner.arch }}-py3.10.5-${{ hashFiles('requirements.lock') }}
 
       - name: Install dependencies on cache miss
-        if: steps.python-venv-cache.outputs.cache-hit != 'true'
+        if: >-
+          steps.python-venv-cache.outputs.cache-hit != 'true' &&
+          (needs.select.outputs.architecture_gate != 'none' ||
+           needs.select.outputs.python_tests != '' ||
+           needs.select.outputs.needs_dependency_audit == 'true')
         run: |
           python -m venv .venv
           .venv/bin/python -m pip install --require-hashes -r requirements.lock
 
       - name: Activate hashed Python environment
+        if: >-
+          needs.select.outputs.architecture_gate != 'none' ||
+          needs.select.outputs.python_tests != '' ||
+          needs.select.outputs.needs_dependency_audit == 'true'
         run: echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
 
+      - name: Run selected architecture gates
+        if: needs.select.outputs.architecture_gate != 'none'
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
+          AICRM_PYTEST_FIXTURE_DEFAULT: "1"
+        run: bash scripts/ci/run_architecture_gates.sh --mode "${{ needs.select.outputs.architecture_gate }}"
+
+      - name: Run scoped Python tests without PostgreSQL
+        if: needs.select.outputs.python_tests != '' && needs.select.outputs.needs_postgres != 'true'
+        env:
+          PYTHON_TESTS: ${{ needs.select.outputs.python_tests }}
+        run: python -m pytest ${PYTHON_TESTS} -n auto --dist=loadfile -q --tb=short
+
       - name: Run scoped PostgreSQL Python tests
+        if: needs.select.outputs.python_tests != '' && needs.select.outputs.needs_postgres == 'true'
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/test
           AICRM_PYTEST_FIXTURE_DEFAULT: "1"
           PYTHON_TESTS: ${{ needs.select.outputs.python_tests }}
-        run: python -m pytest ${PYTHON_TESTS} -n auto --dist=loadfile -q --tb=short --timeout=120 --timeout-method=thread
-
-  fast-frontend:
-    needs: select
-    if: needs.select.outputs.frontend_tests != ''
-    runs-on: ubuntu-latest
-    timeout-minutes: 3
-    steps:
-      - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0 (Node 24)
+        run: >-
+          python -m pytest ${PYTHON_TESTS} -n auto --dist=loadfile -q --tb=short
+          --timeout=120 --timeout-method=thread
 
       - name: Setup Node
+        if: needs.select.outputs.frontend_tests != '' || needs.select.outputs.needs_dependency_audit == 'true'
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0 (Node 24)
         with:
           node-version: "24"
@@ -193,6 +160,7 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Install frontend dependencies
+        if: needs.select.outputs.frontend_tests != '' || needs.select.outputs.needs_dependency_audit == 'true'
         run: npm ci
 
       - name: Run scoped frontend tests
@@ -204,69 +172,29 @@ jobs:
             node "$test_file"
           done
 
-  dependency-audit:
-    needs: select
-    if: github.event_name != 'pull_request' || needs.select.outputs.needs_dependency_audit == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0 (Node 24)
-
-      - name: Setup Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0 (Node 24)
-        with:
-          python-version: "3.10.5"
-
-      - name: Restore hashed Python environment
-        id: python-venv-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .venv
-          key: venv-v1-${{ runner.os }}-${{ runner.arch }}-py3.10.5-${{ hashFiles('requirements.lock') }}
-
-      - name: Install hashed Python lock on cache miss
-        if: steps.python-venv-cache.outputs.cache-hit != 'true'
-        run: |
-          python -m venv .venv
-          .venv/bin/python -m pip install --require-hashes -r requirements.lock
-
-      - name: Activate hashed Python environment
-        run: echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
-
-      - name: Setup Node
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0 (Node 24)
-        with:
-          node-version: "24"
-          cache: npm
-          cache-dependency-path: package-lock.json
-
       - name: Validate dependency governance
+        if: needs.select.outputs.needs_dependency_audit == 'true'
         run: python scripts/ci/check_dependency_security.py
 
       - name: Audit Python dependencies
+        if: needs.select.outputs.needs_dependency_audit == 'true'
         run: python -m pip_audit -r requirements.lock --require-hashes --progress-spinner=off
 
       - name: Audit Node dependencies
-        run: |
-          npm ci
-          npm audit --audit-level=high
+        if: needs.select.outputs.needs_dependency_audit == 'true'
+        run: npm audit --audit-level=high
 
   full-regression:
     needs: select
-    if: needs.select.outputs.needs_full_ci == 'true'
+    if: needs.select.outputs.force_full == 'true'
     uses: ./.github/workflows/full-regression.yml
     with:
-      run_governance: false
+      run_governance: true
 
   ci-fast-result:
     needs:
       - select
-      - architecture-gates
-      - fast-python-no-pg
-      - fast-python-pg
-      - fast-frontend
-      - dependency-audit
+      - scoped-validation
       - full-regression
     if: always()
     runs-on: ubuntu-latest
@@ -275,8 +203,9 @@ jobs:
         env:
           NEEDS_JSON: ${{ toJson(needs) }}
           SCOPES: ${{ needs.select.outputs.scopes }}
-          NEEDS_FULL_CI: ${{ needs.select.outputs.needs_full_ci }}
-          ARCHITECTURE_GATE: ${{ needs.select.outputs.architecture_gate }}
+          CI_TIER: ${{ needs.select.outputs.ci_tier }}
+          FORCE_FULL: ${{ needs.select.outputs.force_full }}
+          ESTIMATED_PYTHON_WORK_SECONDS: ${{ needs.select.outputs.estimated_python_work_seconds }}
         run: |
           python - <<'PY'
           import json
@@ -290,15 +219,15 @@ jobs:
               if job["result"] not in {"success", "skipped"}
           ]
           if (
-              os.environ.get("NEEDS_FULL_CI") == "true"
+              os.environ.get("FORCE_FULL") == "true"
               and needs.get("full-regression", {}).get("result") != "success"
               and not any(item.startswith("full-regression=") for item in failed)
           ):
               failed.append(f"full-regression={needs.get('full-regression', {}).get('result', 'missing')}_but_required")
           print(f"selected_scopes={os.environ.get('SCOPES') or 'none'}")
-          print(f"architecture_gate={os.environ.get('ARCHITECTURE_GATE') or 'none'}")
-          print(f"needs_full_ci={os.environ.get('NEEDS_FULL_CI') or 'false'}")
+          print(f"ci_tier={os.environ.get('CI_TIER') or 'unknown'}")
+          print(f"estimated_python_work_seconds={os.environ.get('ESTIMATED_PYTHON_WORK_SECONDS') or '0'}")
           if failed:
-              print("Scoped CI failed: " + ", ".join(failed))
+              print("Budgeted CI failed: " + ", ".join(failed))
               sys.exit(1)
           PY

@@ -90,7 +90,94 @@
     "scripts/ci/check_github_action_pins.py",
     "docs/security/dependency_risk_acceptance.yml"
   ],
+  "direct_test_paths": [
+    "tests/frontend/**",
+    "tests/test_*_frontend_contract.py",
+    "tests/test_questionnaire_h5_submit_validation.py",
+    "tests/test_questionnaire_oauth_browser_redirect.py"
+  ],
+  "ci_budget": {
+    "small_max_python_seconds": 180,
+    "large_max_python_seconds": 1800,
+    "unknown_test_seconds": 60,
+    "target_small_billed_minutes": 5,
+    "target_large_billed_minutes": 30
+  },
   "exclusive_scope_overrides": [
+    {
+      "paths": [
+        "docs/architecture/runtime_contract_inventory.json"
+      ],
+      "scopes": [
+        "runtime_contract_inventory_manifest"
+      ]
+    },
+    {
+      "paths": [
+        "aicrm_next/app/admin_console/static/admin_console/admin_api_client.js",
+        "aicrm_next/app/admin_console/static/admin_console/admin_download.js",
+        "aicrm_next/app/admin_console/static/admin_console/image_upload_client.js",
+        "aicrm_next/app/admin_console/templates/admin_console/owner_migration.html"
+      ],
+      "scopes": [
+        "admin_presentation"
+      ]
+    },
+    {
+      "paths": [
+        "aicrm_next/extensions/forms/questionnaire/api.py"
+      ],
+      "scopes": [
+        "questionnaire_http_contract"
+      ]
+    },
+    {
+      "paths": [
+        "aicrm_next/extensions/forms/questionnaire/static/**",
+        "aicrm_next/extensions/forms/questionnaire/templates/**",
+        "aicrm_next/app/admin_console/templates/questionnaire_h5_page.html",
+        "aicrm_next/app/admin_console/templates/questionnaire_h5_submitted.html"
+      ],
+      "scopes": [
+        "questionnaire_presentation"
+      ]
+    },
+    {
+      "paths": [
+        "aicrm_next/automation/automation_engine/group_ops/static/**",
+        "aicrm_next/automation/automation_engine/group_ops/templates/**"
+      ],
+      "scopes": [
+        "group_ops_presentation"
+      ]
+    },
+    {
+      "paths": [
+        "aicrm_next/automation/automation_engine/static/admin_console/channel_admission_pages.js",
+        "aicrm_next/automation/automation_engine/static/admin_console/channel_code_center_next.js"
+      ],
+      "scopes": [
+        "automation_presentation"
+      ]
+    },
+    {
+      "paths": [
+        "aicrm_next/extensions/commerce/service_period/static/**",
+        "aicrm_next/extensions/commerce/service_period/templates/**"
+      ],
+      "scopes": [
+        "service_period_presentation"
+      ]
+    },
+    {
+      "paths": [
+        "aicrm_next/extensions/commerce/commerce/coupons/templates/**",
+        "aicrm_next/extensions/commerce/commerce/coupons/static/**"
+      ],
+      "scopes": [
+        "commerce_presentation"
+      ]
+    },
     {
       "paths": [
         "docs/ci/pytest_duration_baseline.json"
@@ -163,6 +250,139 @@
     }
   ],
   "scopes": [
+    {
+      "name": "runtime_contract_inventory_manifest",
+      "paths": [
+        "docs/architecture/runtime_contract_inventory.json"
+      ],
+      "python_tests": [
+        "tests/test_runtime_contract_inventory.py"
+      ],
+      "frontend_tests": [],
+      "needs_postgres": false,
+      "needs_full_ci": true,
+      "architecture_gate": "full"
+    },
+    {
+      "name": "admin_presentation",
+      "paths": [
+        "aicrm_next/app/admin_console/static/admin_console/admin_api_client.js",
+        "aicrm_next/app/admin_console/static/admin_console/admin_download.js",
+        "aicrm_next/app/admin_console/static/admin_console/image_upload_client.js",
+        "aicrm_next/app/admin_console/templates/admin_console/owner_migration.html"
+      ],
+      "python_tests": [
+        "tests/test_admin_download_frontend_contract.py",
+        "tests/test_admin_pages_real_data_binding.py",
+        "tests/test_admin_heading_deduplication.py"
+      ],
+      "frontend_tests": [
+        "tests/frontend/admin_request_security.test.mjs",
+        "tests/frontend/admin_error_messages.test.mjs",
+        "tests/frontend/admin_error_rendering_guard.test.mjs"
+      ],
+      "needs_postgres": false,
+      "architecture_gate": "fast"
+    },
+    {
+      "name": "questionnaire_http_contract",
+      "paths": [
+        "aicrm_next/extensions/forms/questionnaire/api.py"
+      ],
+      "python_tests": [
+        "tests/test_questionnaire_h5_submit_validation.py",
+        "tests/test_questionnaire_oauth_browser_redirect.py",
+        "tests/test_questionnaire_application_contract.py",
+        "tests/test_questionnaire_h5_submit_no_real_side_effects.py"
+      ],
+      "needs_postgres": false,
+      "architecture_gate": "fast"
+    },
+    {
+      "name": "questionnaire_presentation",
+      "paths": [
+        "aicrm_next/extensions/forms/questionnaire/static/**",
+        "aicrm_next/extensions/forms/questionnaire/templates/**",
+        "aicrm_next/app/admin_console/templates/questionnaire_h5_page.html",
+        "aicrm_next/app/admin_console/templates/questionnaire_h5_submitted.html"
+      ],
+      "python_tests": [
+        "tests/test_questionnaire_editor_asset_split.py",
+        "tests/test_questionnaire_admin_pages_next_native.py",
+        "tests/test_questionnaire_h5_submit_validation.py",
+        "tests/test_questionnaire_oauth_browser_redirect.py"
+      ],
+      "frontend_tests": [
+        "tests/frontend/admin_error_messages.test.mjs",
+        "tests/frontend/admin_error_rendering_guard.test.mjs"
+      ],
+      "needs_postgres": false,
+      "architecture_gate": "fast"
+    },
+    {
+      "name": "group_ops_presentation",
+      "paths": [
+        "aicrm_next/automation/automation_engine/group_ops/static/**",
+        "aicrm_next/automation/automation_engine/group_ops/templates/**"
+      ],
+      "python_tests": [
+        "tests/test_group_ops_frontend_contract.py",
+        "tests/test_group_ops_admin_pages_next_native.py"
+      ],
+      "frontend_tests": [
+        "tests/frontend/admin_error_messages.test.mjs",
+        "tests/frontend/admin_error_rendering_guard.test.mjs"
+      ],
+      "needs_postgres": false,
+      "architecture_gate": "fast"
+    },
+    {
+      "name": "automation_presentation",
+      "paths": [
+        "aicrm_next/automation/automation_engine/static/admin_console/channel_admission_pages.js",
+        "aicrm_next/automation/automation_engine/static/admin_console/channel_code_center_next.js"
+      ],
+      "python_tests": [
+        "tests/test_channel_radar_tag_admin_pages_next_native.py",
+        "tests/test_wecom_frontend_contract.py"
+      ],
+      "needs_postgres": false,
+      "architecture_gate": "fast"
+    },
+    {
+      "name": "service_period_presentation",
+      "paths": [
+        "aicrm_next/extensions/commerce/service_period/static/**",
+        "aicrm_next/extensions/commerce/service_period/templates/**"
+      ],
+      "python_tests": [
+        "tests/test_service_period_frontend_contract.py",
+        "tests/test_service_period_member_grid.py",
+        "tests/test_service_period_member_grid_sharing.py"
+      ],
+      "frontend_tests": [
+        "tests/frontend/service_period_member_grid.test.mjs",
+        "tests/frontend/service_period_member_grid_sharing.test.mjs"
+      ],
+      "needs_postgres": false,
+      "architecture_gate": "fast"
+    },
+    {
+      "name": "commerce_presentation",
+      "paths": [
+        "aicrm_next/extensions/commerce/commerce/coupons/templates/**",
+        "aicrm_next/extensions/commerce/commerce/coupons/static/**"
+      ],
+      "python_tests": [
+        "tests/test_coupon_admin_frontend_contract.py",
+        "tests/test_coupon_direct_entry.py"
+      ],
+      "frontend_tests": [
+        "tests/frontend/coupon_inline_scripts_syntax.test.mjs"
+      ],
+      "needs_postgres": false,
+      "architecture_gate": "fast"
+    },
     {
       "name": "pytest_duration_baseline",
       "paths": [

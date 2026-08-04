@@ -11,6 +11,31 @@ ROOT = Path(__file__).resolve().parents[1]
 SELECTOR = ROOT / "scripts" / "ci" / "select_test_scope.py"
 MANIFEST = ROOT / "docs" / "ci" / "test_scope_manifest.yml"
 
+PR_1_CHANGED_FILES = (
+    "aicrm_next/app/admin_console/static/admin_console/admin_api_client.js",
+    "aicrm_next/app/admin_console/static/admin_console/admin_download.js",
+    "aicrm_next/app/admin_console/static/admin_console/image_upload_client.js",
+    "aicrm_next/app/admin_console/templates/admin_console/owner_migration.html",
+    "aicrm_next/app/admin_console/templates/questionnaire_h5_page.html",
+    "aicrm_next/automation/automation_engine/group_ops/static/admin_console/group_ops.js",
+    "aicrm_next/automation/automation_engine/static/admin_console/channel_admission_pages.js",
+    "aicrm_next/automation/automation_engine/static/admin_console/channel_code_center_next.js",
+    "aicrm_next/extensions/commerce/commerce/coupons/templates/coupon_public.html",
+    "aicrm_next/extensions/commerce/public_product/service.py",
+    "aicrm_next/extensions/commerce/service_period/static/admin_console/member_grid_share.js",
+    "aicrm_next/extensions/commerce/service_period/templates/service_period_products.html",
+    "aicrm_next/extensions/forms/questionnaire/api.py",
+    "aicrm_next/extensions/forms/questionnaire/static/admin_questionnaire_editor.js",
+    "tests/frontend/admin_error_messages.test.mjs",
+    "tests/frontend/admin_error_rendering_guard.test.mjs",
+    "tests/frontend/coupon_inline_scripts_syntax.test.mjs",
+    "tests/test_admin_download_frontend_contract.py",
+    "tests/test_group_ops_frontend_contract.py",
+    "tests/test_questionnaire_h5_submit_validation.py",
+    "tests/test_questionnaire_oauth_browser_redirect.py",
+    "tests/test_service_period_frontend_contract.py",
+)
+
 
 def _select(
     *changed_files: str,
@@ -411,7 +436,7 @@ def test_service_period_change_selects_service_period_slice() -> None:
         "tests/test_service_period_frontend_contract.py",
     )
 
-    assert result["matched_scopes"] == ["service_period"]
+    assert result["matched_scopes"] == ["service_period", "service_period_presentation"]
     assert "tests/test_service_period_application.py" in result["python_tests"]
     assert "tests/test_service_period_h5_payment.py" in result["python_tests"]
     assert "tests/test_service_period_frontend_contract.py" in result["python_tests"]
@@ -1345,6 +1370,20 @@ def test_workflow_dispatch_with_null_inputs_does_not_break_selector(tmp_path: Pa
     assert result["needs_full_ci"] is True
 
 
+def test_pr_1_stays_inside_large_pr_budget_without_automatic_full_regression() -> None:
+    result = _select(*PR_1_CHANGED_FILES)
+
+    assert result["unmatched_files"] == []
+    assert result["architecture_gate"] == "full"
+    assert result["needs_full_ci"] is True
+    assert result["force_full"] is False
+    assert result["ci_tier"] == "large"
+    assert result["budget_exceeded"] is False
+    assert result["estimated_python_work_seconds"] <= result["large_budget_seconds"]
+    assert len(result["python_tests"]) <= 40
+    assert len(result["frontend_tests"]) <= 10
+
+
 def test_runtime_units_change_selects_deploy_contract_tests() -> None:
     result = _select(
         "deploy/production_runtime_units.json",
@@ -1435,6 +1474,16 @@ def test_ci_selector_governance_change_selects_both_selector_contracts() -> None
         "tests/test_ci_workflow_contract.py",
     ]
     assert result["unmatched_files"] == []
+    assert result["needs_postgres"] is False
+    assert result["architecture_gate"] == "full"
+    assert result["needs_full_ci"] is True
+
+
+def test_generated_runtime_inventory_selects_only_its_contract_suite() -> None:
+    result = _select("docs/architecture/runtime_contract_inventory.json")
+
+    assert result["matched_scopes"] == ["runtime_contract_inventory_manifest"]
+    assert result["python_tests"] == ["tests/test_runtime_contract_inventory.py"]
     assert result["needs_postgres"] is False
     assert result["architecture_gate"] == "full"
     assert result["needs_full_ci"] is True
@@ -1867,3 +1916,77 @@ def test_unmapped_path_fails_instead_of_falling_back_to_full_regression() -> Non
     assert completed.returncode == 2
     assert "No CI test scope matched" in completed.stderr
     assert "aicrm_next/new_context/api.py" in completed.stderr
+
+
+def test_over_budget_scope_requires_explicit_full_ci(tmp_path: Path) -> None:
+    manifest_path = tmp_path / "manifest.json"
+    baseline_path = tmp_path / "baseline.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "ci_budget": {
+                    "small_max_python_seconds": 180,
+                    "large_max_python_seconds": 1800,
+                    "unknown_test_seconds": 60,
+                },
+                "scopes": [
+                    {
+                        "name": "demo",
+                        "paths": ["aicrm_next/demo.py"],
+                        "python_tests": ["tests/test_slow.py"],
+                        "frontend_tests": [],
+                        "needs_postgres": False,
+                        "needs_full_ci": False,
+                        "architecture_gate": "fast",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    baseline_path.write_text(
+        json.dumps(
+            {
+                "files": {
+                    "tests/test_slow.py": {
+                        "duration_seconds": 1800.001,
+                        "items": 1,
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    command = [
+        sys.executable,
+        str(SELECTOR),
+        "--manifest",
+        str(manifest_path),
+        "--duration-baseline",
+        str(baseline_path),
+        "--changed-file",
+        "aicrm_next/demo.py",
+        "--enforce-budget",
+        "--json",
+    ]
+    blocked = subprocess.run(command, cwd=ROOT, text=True, capture_output=True)
+
+    assert blocked.returncode == 3
+    assert "exceeds the large-PR budget" in blocked.stderr
+    assert json.loads(blocked.stdout)["budget_exceeded"] is True
+
+    explicit_full_env = os.environ.copy()
+    explicit_full_env["AICRM_FORCE_FULL_CI"] = "1"
+    explicit_full = subprocess.run(
+        command,
+        cwd=ROOT,
+        env=explicit_full_env,
+        text=True,
+        check=True,
+        capture_output=True,
+    )
+    explicit_result = json.loads(explicit_full.stdout)
+    assert explicit_result["force_full"] is True
+    assert explicit_result["ci_tier"] == "full"
+    assert explicit_result["budget_exceeded"] is False

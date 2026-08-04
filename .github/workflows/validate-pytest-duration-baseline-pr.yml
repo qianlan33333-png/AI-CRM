@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 6
     env:
-      EXPECTED_REPOSITORY: qianlan333/AI-CRM-ID-refactor
+      EXPECTED_REPOSITORY: ${{ github.repository }}
       EXPECTED_HEAD_BRANCH: automation/pytest-duration-baseline
       BASE_SHA: ${{ github.event.pull_request.base.sha }}
       HEAD_SHA: ${{ github.event.pull_request.head.sha }}

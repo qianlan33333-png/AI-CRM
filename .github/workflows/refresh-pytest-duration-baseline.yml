@@ -14,7 +14,7 @@ jobs:
   refresh:
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.head_repository.full_name == 'qianlan333/AI-CRM' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
       github.event.workflow_run.head_branch == 'main' &&
       (github.event.workflow_run.event == 'schedule' || github.event.workflow_run.event == 'workflow_dispatch')
     runs-on: ubuntu-latest
@@ -51,7 +51,7 @@ jobs:
           while IFS= read -r junit_file; do
             junit_args+=(--junit-xml "$junit_file")
           done < <(find "$RUNNER_TEMP/pytest-junit" -type f -name 'python-shard-*.xml' -print | sort)
-          if [ "${#junit_args[@]}" -ne 16 ]; then
+          if [ "${#junit_args[@]}" -ne 8 ]; then
             echo "expected eight JUnit files"
             exit 1
           fi
