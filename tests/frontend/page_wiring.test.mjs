@@ -43,3 +43,22 @@ test("current templates reference existing shared scripts without duplicate page
   }
   assert.ok(localReferenceCount > 20);
 });
+
+
+test("product editor wires configurable WeCom tagging through the shared picker", () => {
+  const template = path.join(
+    root,
+    "aicrm_next/extensions/commerce/commerce/templates/wechat_products.html",
+  );
+  const source = readFileSync(template, "utf8");
+  assert.match(source, /admin_console\/wecom_tag_picker\.js/);
+  assert.match(source, /data-product-panel="tags"/);
+  assert.match(source, /id="panel-tags" data-product-panel-content="tags"/);
+  assert.match(source, /api\("\/api\/admin\/wecom\/tags"\)/);
+  assert.match(source, /window\.AICRMWeComTagPicker\.open/);
+  assert.match(source, /没有外部联系人 ID/);
+  assert.match(source, /直接跳过且不进入重试队列/);
+  const inlineScripts = [...source.matchAll(/<script>([\s\S]*?)<\/script>/g)];
+  assert.ok(inlineScripts.length > 0);
+  Function(inlineScripts.at(-1)[1]);
+});

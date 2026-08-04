@@ -8,6 +8,7 @@ from .extensions.commerce.commerce.repo import execute_commerce_transaction
 from .extensions.commerce.commerce.payment_tagging import (
     product_paid_wecom_tag_consumer,
     resolve_payment_tag_identity,
+    resolve_product_wecom_tagging_config,
 )
 from .crm.identity_contact.payment_projection import project_payment_order_mobile
 from .external_effect_composition import (
@@ -87,6 +88,12 @@ def _resolve_payment_tag_identity_from_db(order: dict, owner_userid: str) -> dic
     return execute_commerce_transaction(lambda conn: resolve_payment_tag_identity(conn, order, owner_userid))
 
 
+def _resolve_product_wecom_tagging_config_from_db(product_code: str) -> dict:
+    if not production_data_ready():
+        return {"enabled": False, "tag_ids": [], "owner_userid": ""}
+    return execute_commerce_transaction(lambda conn: resolve_product_wecom_tagging_config(conn, product_code))
+
+
 from .platform.platform_foundation.internal_events import (
     InternalEventConsumerRegistry,
     current_internal_event_consumer_registry,
@@ -105,6 +112,7 @@ def register_payment_succeeded_consumers(registry: InternalEventConsumerRegistry
         service_period_consumer=service_period_entitlement_consumer,
         product_paid_tag_consumer=partial(
             product_paid_wecom_tag_consumer,
+            config_resolver=_resolve_product_wecom_tagging_config_from_db,
             identity_resolver=_resolve_payment_tag_identity_from_db,
         ),
         webhook_order_paid_handler=partial(

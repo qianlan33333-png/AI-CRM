@@ -3,6 +3,8 @@
 {% block head_extra %}
 <script src="{{ url_for('static', filename='admin_console/image_upload_client.js') }}"></script>
 <script src="/static/navigation-target/completion_target_config.js?v=20260714"></script>
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_console/wecom_tag_picker.css') }}?v=product-tag-picker-20260804">
+<script src="{{ url_for('static', filename='admin_console/wecom_tag_picker.js') }}?v=product-tag-picker-20260804"></script>
 <style>
   .product-admin { display: grid; gap: 18px; }
   .product-toolbar { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
@@ -25,7 +27,7 @@
   .btn.soft { border-color:#d6e4ff; background:#f5f8ff; color:#1849a9; }
   .btn.danger { border-color:#fecdca; background:var(--danger2); color:var(--danger); }
   .btn:disabled { opacity:.45; cursor:not-allowed; }
-  .summary-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+  .summary-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; }
   .mini { min-height:84px; padding:16px 18px; border:1px solid var(--line); border-radius:14px; background:#fff; display:grid; align-content:center; gap:6px; }
   .mini .label { color:#8a94a6; font-size:13px; font-weight:850; }
   .mini .value { color:var(--text); font-size:20px; font-weight:900; overflow-wrap:anywhere; }
@@ -56,6 +58,11 @@
   .field.has-error input, .field.has-error select, .field.has-error textarea { border-color:var(--danger); box-shadow:0 0 0 3px rgba(217,45,32,.1); }
   .field-error { min-height:18px; color:var(--danger); font-size:12px; font-weight:750; }
   .field textarea, .product-field textarea { min-height:110px; resize:vertical; }
+  .product-tag-selection { display:grid; gap:12px; padding:18px; border:1px solid var(--line); border-radius:14px; background:#fff; }
+  .product-tag-list { display:flex; flex-wrap:wrap; gap:8px; min-height:30px; align-items:center; color:var(--muted); }
+  .product-tag-chip { display:inline-flex; align-items:center; gap:8px; min-height:32px; padding:5px 10px; border:1px solid #d6e4ff; border-radius:999px; background:#f5f8ff; color:#1849a9; font-weight:850; }
+  .product-tag-chip button { border:0; background:transparent; color:inherit; cursor:pointer; font:inherit; padding:0; }
+  .product-tag-note { margin:0; color:var(--muted); line-height:1.7; }
   .panel-actions { display:flex; justify-content:flex-end; gap:8px; padding-top:20px; margin-top:20px; border-top:1px solid var(--line2); }
   .upload-card, .product-upload-row { border:1px dashed #d0d5dd; border-radius:14px; background:#fff; padding:18px; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:18px; align-items:center; margin-bottom:16px; }
   .upload-card strong, .product-upload-copy strong { font-size:17px; color:var(--text); }
@@ -167,6 +174,7 @@
         <div class="mini"><div class="label">价格</div><div class="value" id="summaryPrice">0.00</div></div>
         <div class="mini"><div class="label">商品状态</div><div class="value" id="summaryStatus">草稿</div></div>
         <div class="mini"><div class="label">页面素材</div><div class="value" id="summarySliceCount">0 / 10</div></div>
+        <div class="mini"><div class="label">企微标签</div><div class="value" id="summaryWeComTagging">未启用</div></div>
         <div class="mini"><div class="label">外部推送</div><div class="value" id="summaryExternalPush">未启用</div></div>
       </div>
       <span class="product-toast" id="productToast" role="status" aria-live="polite" aria-atomic="true"></span>
@@ -178,7 +186,8 @@
           <button class="active" data-product-panel="sale" type="button"><span class="index">1</span><span class="nav-label">售卖信息</span></button>
           <button data-product-panel="media" type="button"><span class="index">2</span><span class="nav-label">页面素材</span></button>
           <button data-product-panel="after" type="button"><span class="index">3</span><span class="nav-label">购买后动作</span></button>
-          <button data-product-panel="push" type="button"><span class="index">4</span><span class="nav-label">外部推送</span></button>
+          <button data-product-panel="tags" type="button"><span class="index">4</span><span class="nav-label">企微标签</span></button>
+          <button data-product-panel="push" type="button"><span class="index">5</span><span class="nav-label">外部推送</span></button>
         </nav>
 
         <div class="card">
@@ -308,6 +317,29 @@
             </div>
           </section>
 
+          <section class="panel" id="panel-tags" data-product-panel-content="tags">
+            <div class="panel-title-row">
+              <h3>企微标签</h3>
+              <div class="switch-line">
+                <span id="wecomTaggingStateText">未启用</span>
+                <button class="product-switch" id="wecomTaggingExpand" type="button" role="switch" aria-checked="false" aria-label="启用报名用户企微标签"></button>
+              </div>
+            </div>
+            <div class="product-panel-body" id="wecomTaggingPanel" hidden>
+              <div class="product-tag-selection">
+                <div class="product-tag-list" id="wecomTaggingSelected">暂未选择标签</div>
+                <div class="btns" style="justify-content:flex-start">
+                  <button class="btn primary" id="chooseWeComTagsBtn" type="button">选择企微标签</button>
+                  <button class="btn" id="clearWeComTagsBtn" type="button">清空</button>
+                </div>
+                <p class="product-tag-note">用户报名并支付成功后，系统会给其企微外部联系人打上所选标签。用户未在企微中、没有外部联系人 ID 或没有有效跟进关系时，会直接跳过且不进入重试队列。</p>
+              </div>
+            </div>
+            <div class="panel-actions">
+              <button class="btn primary" data-save-panel="tags" type="button">保存企微标签</button>
+            </div>
+          </section>
+
           <section class="panel" id="panel-push" data-product-panel-content="push">
             <div class="panel-title-row">
               <h3>外部推送</h3>
@@ -406,9 +438,12 @@
     completion_redirect_enabled: false,
     completion_redirect_url: "",
     completion_target: null,
+    wecom_tagging: { enabled: false, tag_ids: [], owner_userid: "" },
     slices: []
   }, initialProduct);
   let externalPush = { enabled: false, webhook_url: "", push_type: "", expires_at_ts: "", day: "", frequency: "", remark: "", custom_params: {} };
+  let wecomTagCatalog = { groups: [], items: [] };
+  let wecomTagCatalogFailed = false;
   let leadChannels = [{ channel_id: 0, channel_name: "不配置引流渠道码", selectable: true }];
   let dragId = "";
   let activeShareUrl = "";
@@ -455,11 +490,13 @@
     if (status) status.textContent = statusLabel($("productStatus")?.value || product.status || "draft");
     const sliceCount = $("summarySliceCount");
     if (sliceCount) sliceCount.textContent = `${(product.slices || []).length} / 10`;
+    const taggingStatus = $("summaryWeComTagging");
+    if (taggingStatus) taggingStatus.textContent = product.wecom_tagging?.enabled ? `已启用 · ${(product.wecom_tagging.tag_ids || []).length}` : "未启用";
     const pushStatus = $("summaryExternalPush");
     if (pushStatus) pushStatus.textContent = externalPush.enabled ? "已启用" : "未启用";
   }
   function switchProductPanel(panel) {
-    activeProductPanel = ["sale", "media", "after", "push"].includes(panel) ? panel : "sale";
+    activeProductPanel = ["sale", "media", "after", "tags", "push"].includes(panel) ? panel : "sale";
     document.querySelectorAll("[data-product-panel]").forEach(button => {
       button.classList.toggle("active", button.dataset.productPanel === activeProductPanel);
     });
@@ -503,6 +540,11 @@
   function setExternalPushActive(enabled) {
     externalPush.enabled = Boolean(enabled);
     setPanelSwitch("externalPushExpand", "externalPushPanel", externalPush.enabled, "externalPushStateText");
+    updateProductSummary();
+  }
+  function setWeComTaggingActive(enabled) {
+    product.wecom_tagging = Object.assign({ enabled: false, tag_ids: [], owner_userid: "" }, product.wecom_tagging || {}, { enabled: Boolean(enabled) });
+    setPanelSwitch("wecomTaggingExpand", "wecomTaggingPanel", product.wecom_tagging.enabled, "wecomTaggingStateText");
     updateProductSummary();
   }
   function selectAfterActionMode(modeName) {
@@ -602,6 +644,61 @@
     renderRows(payload.items || []);
   }
 
+  function catalogTag(tagId) {
+    const id = String(tagId || "").trim();
+    const direct = [...(wecomTagCatalog.items || []), ...(wecomTagCatalog.tags || [])]
+      .find(tag => String(tag?.tag_id || "").trim() === id);
+    if (direct) return direct;
+    for (const group of wecomTagCatalog.groups || []) {
+      const found = (group.tags || []).find(tag => String(tag?.tag_id || "").trim() === id);
+      if (found) return Object.assign({}, found, { group_name: found.group_name || group.group_name || "" });
+    }
+    return { tag_id: id, tag_name: id, group_name: "" };
+  }
+
+  function renderWeComTagging() {
+    product.wecom_tagging = Object.assign({ enabled: false, tag_ids: [], owner_userid: "" }, product.wecom_tagging || {});
+    product.wecom_tagging.tag_ids = Array.from(new Set((product.wecom_tagging.tag_ids || []).map(tagId => String(tagId || "").trim()).filter(Boolean)));
+    setPanelSwitch("wecomTaggingExpand", "wecomTaggingPanel", Boolean(product.wecom_tagging.enabled), "wecomTaggingStateText");
+    const target = $("wecomTaggingSelected");
+    if (!target) return;
+    if (!product.wecom_tagging.tag_ids.length) {
+      target.textContent = "暂未选择标签";
+      updateProductSummary();
+      return;
+    }
+    target.innerHTML = product.wecom_tagging.tag_ids.map(tagId => {
+      const tag = catalogTag(tagId);
+      const label = `${tag.group_name ? `${tag.group_name} / ` : ""}${tag.tag_name || tagId}`;
+      return `<span class="product-tag-chip">${esc(label)}<button type="button" data-remove-wecom-tag="${esc(tagId)}" aria-label="移除 ${esc(label)}">×</button></span>`;
+    }).join("");
+    updateProductSummary();
+  }
+
+  function openWeComTagPicker() {
+    if (!window.AICRMWeComTagPicker) {
+      showToast("标签选择器加载失败，请刷新页面后重试", "error");
+      return;
+    }
+    window.AICRMWeComTagPicker.open({
+      title: "选择报名后企微标签",
+      mode: "multiple",
+      layout: "wide",
+      value: (product.wecom_tagging?.tag_ids || []).map(catalogTag),
+      catalog: wecomTagCatalog,
+      allowManual: wecomTagCatalogFailed,
+      onConfirm(tags) {
+        product.wecom_tagging.tag_ids = (tags || []).map(tag => String(tag?.tag_id || "").trim()).filter(Boolean);
+        renderWeComTagging();
+      },
+      onClear() {
+        product.wecom_tagging.tag_ids = [];
+        setWeComTaggingActive(false);
+        renderWeComTagging();
+      },
+    });
+  }
+
   function fillForm() {
     if (!$("productForm")) return;
     $("productCode").value = product.product_code || "";
@@ -619,6 +716,7 @@
     if (targetRoot) mountCompletionTargetConfig(targetRoot, product.completion_target || defaultCompletionTarget(product.completion_redirect_url || ""));
     syncCompletionTargetEnabled();
     renderSlices();
+    renderWeComTagging();
     updateProductSummary();
   }
 
@@ -641,6 +739,10 @@
 
   function readProductBody() {
     const productCode = $("productCode").value.trim();
+    if (product.wecom_tagging?.enabled && !(product.wecom_tagging.tag_ids || []).length) {
+      switchProductPanel("tags");
+      throw new Error("启用企微标签后至少选择一个标签");
+    }
     return {
       product_code: productCode,
       product: { code: productCode },
@@ -652,6 +754,11 @@
       buy_button_text: $("buyButtonText").value.trim() || "立即购买",
       require_mobile: $("requireMobile").value === "true",
       lead_channel_id: afterActionEnabled && afterActionMode === "lead" ? (Number($("leadChannel").value || 0) || null) : null,
+      wecom_tagging: {
+        enabled: Boolean(product.wecom_tagging?.enabled),
+        tag_ids: product.wecom_tagging?.tag_ids || [],
+        owner_userid: product.wecom_tagging?.owner_userid || ""
+      },
       ...completionRedirectPayload(),
       slices: (product.slices || []).map((slice, index) => ({ image_library_id: Number(slice.image_library_id), sort_order: index + 1 }))
     };
@@ -839,26 +946,43 @@
 
   async function initEditor() {
     if (!$("productForm")) return;
-    const [channelsResult, pushConfigResult] = await Promise.allSettled([
+    const [channelsResult, pushConfigResult, tagCatalogResult] = await Promise.allSettled([
       api("/api/admin/wechat-pay/products/lead-channels"),
       mode === "edit" && product.id
         ? api(`/api/admin/wechat-pay/products/${encodeURIComponent(product.id)}/external-push`)
-        : Promise.resolve({ config: externalPush })
+        : Promise.resolve({ config: externalPush }),
+      api("/api/admin/wecom/tags")
     ]);
     const channels = channelsResult.status === "fulfilled" ? channelsResult.value : { items: leadChannels };
     const pushConfig = pushConfigResult.status === "fulfilled" ? pushConfigResult.value : { config: externalPush };
     leadChannels = channels.items || leadChannels;
     renderLeadChannels();
     externalPush = pushConfig.config || externalPush;
+    wecomTagCatalogFailed = tagCatalogResult.status === "rejected";
+    wecomTagCatalog = tagCatalogResult.status === "fulfilled"
+      ? {
+          groups: tagCatalogResult.value.groups || [],
+          items: tagCatalogResult.value.items || tagCatalogResult.value.tags || [],
+          tags: tagCatalogResult.value.tags || tagCatalogResult.value.items || []
+        }
+      : { groups: [], items: [], tags: [] };
     fillForm();
     fillExternalPush();
-    const loadErrors = [channelsResult, pushConfigResult]
+    const loadErrors = [channelsResult, pushConfigResult, tagCatalogResult]
       .filter(result => result.status === "rejected")
       .map(result => window.AdminApi?.errorMessage(result.reason, "请求失败") || "请求失败");
     if (loadErrors.length) showToast(`部分配置加载失败：${Array.from(new Set(loadErrors)).join("；")}`, "error");
   }
 
   document.addEventListener("click", async event => {
+    const removeTagButton = event.target.closest("[data-remove-wecom-tag]");
+    if (removeTagButton) {
+      const tagId = removeTagButton.dataset.removeWecomTag || "";
+      product.wecom_tagging.tag_ids = (product.wecom_tagging.tag_ids || []).filter(item => item !== tagId);
+      if (!product.wecom_tagging.tag_ids.length) setWeComTaggingActive(false);
+      renderWeComTagging();
+      return;
+    }
     const button = event.target.closest("button");
     if (!button) return;
     const action = button.dataset.action || "";
@@ -910,6 +1034,13 @@
   });
 
   $("afterActionExpand")?.addEventListener("click", () => setAfterActionEnabled(!afterActionEnabled));
+  $("wecomTaggingExpand")?.addEventListener("click", () => setWeComTaggingActive(!product.wecom_tagging?.enabled));
+  $("chooseWeComTagsBtn")?.addEventListener("click", openWeComTagPicker);
+  $("clearWeComTagsBtn")?.addEventListener("click", () => {
+    product.wecom_tagging.tag_ids = [];
+    setWeComTaggingActive(false);
+    renderWeComTagging();
+  });
   $("externalPushExpand")?.addEventListener("click", () => setExternalPushActive(!externalPush.enabled));
   document.querySelectorAll("[data-after-mode]").forEach(option => {
     option.addEventListener("click", () => selectAfterActionMode(option.dataset.afterMode));

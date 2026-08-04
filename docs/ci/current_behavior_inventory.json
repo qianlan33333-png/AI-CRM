@@ -14,8 +14,8 @@
   },
   "migration_contract": {
     "directory": "migrations/versions",
-    "expected_file_count": 176,
-    "expected_head": "0166_auth_api_client_credential_hint"
+    "expected_file_count": 177,
+    "expected_head": "0167_product_wecom_tagging_config"
   },
   "allowed_test_side_effects": [
     "none",
