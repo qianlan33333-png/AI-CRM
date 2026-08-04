@@ -26,6 +26,7 @@ from aicrm_next.platform.shared.route_policy import RoutePolicy, RoutePolicyInde
 from aicrm_next.platform.shared.runtime import test_environment
 from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting
 from aicrm_next.platform.shared.signed_context import SIDEBAR_VIEWER_SESSION_COOKIE, validate_sidebar_owner_context
+from aicrm_next.platform.shared.signed_session import verify_session_payload
 
 from .capabilities import context_can, viewer_only
 from .guards import admin_auth_required_response, admin_page_auth_redirect, current_admin_introspection, current_auth_context
@@ -121,6 +122,8 @@ async def route_policy_required_response(
         return await _enforce_webhook_hmac(request, policy)
     if policy.auth_scheme == "sidebar_grant":
         return await _enforce_sidebar_grant(request, policy)
+    if policy.auth_scheme == "sidebar_session":
+        return _enforce_sidebar_session(request, policy)
     if policy.auth_scheme == "public_result_grant":
         return _enforce_public_result_grant(request, policy)
     if policy.auth_scheme == "payment_identity_session":
@@ -275,6 +278,34 @@ async def _enforce_sidebar_grant(request: Request, policy: RoutePolicy) -> Respo
     return None
 
 
+def _enforce_sidebar_session(request: Request, policy: RoutePolicy) -> Response | None:
+    session = verify_session_payload(normalize_text(request.cookies.get(SIDEBAR_VIEWER_SESSION_COOKIE)))
+    if not session or normalize_text(session.get("auth_source")) != "wecom_sidebar_oauth":
+        return _error("sidebar_viewer_session_required", status_code=401)
+    viewer_userid = normalize_text(session.get("wecom_userid"))
+    corp_id = normalize_text(session.get("corp_id"))
+    session_id = normalize_text(session.get("session_id"))
+    if not viewer_userid or not corp_id or not session_id:
+        return _error("sidebar_viewer_session_invalid", status_code=401)
+    configured_corp = normalize_text(managed_runtime_setting("WECOM_CORP_ID"))
+    if configured_corp and not hmac.compare_digest(corp_id, configured_corp):
+        return _error("sidebar_corp_scope_forbidden", status_code=403)
+    context = AuthContext(
+        principal_type=PrincipalType.HUMAN,
+        principal_id=f"wecom-user:{viewer_userid}",
+        corp_id=corp_id,
+        capabilities=(policy.capability,),
+        scopes=("session_exchange",),
+        owner_scope={"owner_userid": viewer_userid},
+        request_id=request_id(request),
+    )
+    if not _principal_allowed(context, policy):
+        return _error("principal_type_forbidden", status_code=403)
+    request.state.sidebar_viewer_session = dict(session)
+    _install_context(request, context, policy)
+    return None
+
+
 def _enforce_public_result_grant(request: Request, policy: RoutePolicy) -> Response | None:
     from .public_result_grant import (
         RESULT_GRANT_COOKIE_NAME,
@@ -423,6 +454,10 @@ def _rate_limit_principal(request: Request, policy: RoutePolicy) -> str:
         token = normalize_text(request.headers.get(SIDEBAR_OWNER_TOKEN_HEADER))
         if token:
             return f"sidebar:{hashlib.sha256(token.encode()).hexdigest()[:24]}"
+    if policy.auth_scheme == "sidebar_session":
+        token = normalize_text(request.cookies.get(SIDEBAR_VIEWER_SESSION_COOKIE))
+        if token:
+            return f"sidebar-session:{hashlib.sha256(token.encode()).hexdigest()[:24]}"
     if policy.auth_scheme == "payment_identity_session":
         from aicrm_next.platform.shared.wechat_h5_session import WECHAT_PAYMENT_IDENTITY_COOKIE
 

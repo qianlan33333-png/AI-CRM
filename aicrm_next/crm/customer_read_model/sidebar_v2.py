@@ -1055,23 +1055,29 @@ class SidebarQuestionnaireReadModel:
 
 
 class SidebarMaterialReadModel:
-    def __call__(self, *, material_type: str, limit: int = 50, q: str = "") -> dict[str, Any]:
+    def __call__(self, *, material_type: str, limit: int = 50, offset: int = 0, q: str = "") -> dict[str, Any]:
         normalized_type = _text(material_type)
         safe_limit = _limit(limit, default=50, maximum=200)
-        normalized_query = _text(q)[:100]
+        safe_offset, normalized_query = max(0, _int(offset)), _text(q)[:100]
         kind_map = {"image": "image", "mini": "miniprogram", "pdf": "attachment"}
         if normalized_type not in kind_map:
             raise ValueError("type must be image, mini, or pdf")
         filters: dict[str, Any] = {"enabled_only": True}
         if normalized_type == "image" and normalized_query:
             filters["q"] = normalized_query
-        payload = ListMediaItemsQuery(kind_map[normalized_type])(limit=safe_limit, offset=0, filters=filters)
+        payload = ListMediaItemsQuery(kind_map[normalized_type])(limit=safe_limit, offset=safe_offset, filters=filters)
         rows = list(payload.get("items") or [])
+        total, next_offset = max(0, _int(payload.get("total"))), safe_offset + len(rows)
         return _with_route_owner(
             {
                 "ok": True,
                 "materials": [self._material_item(dict(item), normalized_type) for item in rows],
                 "quick_keywords": _sidebar_image_quick_keywords() if normalized_type == "image" else [],
+                "total": total,
+                "limit": safe_limit,
+                "offset": safe_offset,
+                "has_more": next_offset < total,
+                "next_offset": next_offset if next_offset < total else None,
             }
         )
 
@@ -1090,6 +1096,7 @@ class SidebarMaterialReadModel:
             "body": thumbnail.get("bytes") or b"",
             "mime_type": _text(thumbnail.get("mime_type")) or "image/png",
             "etag": _text(thumbnail.get("etag")),
+            "generation_required": bool(thumbnail.get("generation_required")),
         }
 
     def _material_item(self, item: dict[str, Any], material_type: str) -> dict[str, Any]:

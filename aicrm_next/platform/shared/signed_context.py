@@ -227,16 +227,17 @@ def validate_sidebar_owner_context(
     viewer_userid = _text(session.get("wecom_userid"))
     session_external = _text(session.get("external_userid"))
     session_fingerprint = sidebar_session_fingerprint(session.get("session_id"))
-    if not viewer_userid or not session_external or not session_fingerprint:
+    if not viewer_userid or not session_fingerprint:
         return {"ok": False, "status": "viewer_session_invalid", "context": {}}
     if viewer_userid != _text(context.get("viewer_userid")):
         return {"ok": False, "status": "viewer_session_mismatch", "context": {}}
-    if session_external != _text(context.get("external_userid")):
+    token_external = _text(context.get("external_userid"))
+    if session_external and session_external != token_external:
         return {"ok": False, "status": "viewer_customer_mismatch", "context": {}}
     if session_fingerprint != _text(context.get("session_fingerprint")):
         return {"ok": False, "status": "viewer_session_mismatch", "context": {}}
     requested_external = _text(external_userid)
-    if requested_external and requested_external != session_external:
+    if requested_external and requested_external != token_external:
         return {"ok": False, "status": "sidebar_customer_scope_forbidden", "context": {}}
     configured_corp = _text(expected_corp_id)
     token_corp = _text(context.get("corp_id"))

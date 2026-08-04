@@ -3,6 +3,7 @@
 {% block head_extra %}
 <script src="{{ url_for('static', filename='admin_console/image_upload_client.js') }}"></script>
 <script src="{{ url_for('static', filename='admin_console/image_library_facets.js') }}?v=image-library-facets-v1-20260730"></script>
+<script src="{{ url_for('static', filename='admin_console/image_library_grid.js') }}?v=resource-governance-v1"></script>
 <style>
   /* ========== 顶部工具栏 ========== */
   .il-toolbar {
@@ -116,6 +117,10 @@
     background:#fee2e2; color:#991b1b;
   }
   .il-empty-grid { padding:32px 14px; text-align:center; color:#9ca3af; font-size:13px; }
+  .il-load-more-sentinel {
+    grid-column:1/-1; min-height:34px; padding:8px;
+    text-align:center; color:#8a94a6; font-size:12px;
+  }
 
   /* ========== Modal 通用 ========== */
   .il-modal[hidden] { display:none; }
@@ -395,8 +400,9 @@
     items: [],
     facets: { categories: [], tags: [] },
     filters: { q:'', category:'', tagGroups:{}, onlyUnlabeled:false, includeDisabled:false },
-    thumbObserver: null,  // 当前 IntersectionObserver；renderGrid 重建时先 disconnect
-    listController: null,
+    thumbObserver: null,
+    imageController: null,
+    pager: null,
   };
 
   var facetHelpers = window.ImageLibraryFacets;
@@ -458,80 +464,19 @@
     if (item.source === 'url' && item.source_url) return item.source_url;
     return '';
   }
-  function imageSrcset(item, fallbackUrl) {
-    var small = item.thumb_160_url || fallbackThumbnailUrl(item, 160) || fallbackUrl;
-    var medium = item.thumb_320_url || fallbackThumbnailUrl(item, 320) || fallbackUrl;
-    if (!small || !medium) return '';
-    return escapeHtml(small) + ' 160w, ' + escapeHtml(medium) + ' 320w';
-  }
-
-  // ---------- 网格渲染（精简：只缩略图 + 分类 + 标签） ---------- //
-  function renderGrid() {
-    var wrap = document.getElementById('il-list-wrap');
-    if (!STATE.items.length) {
-      wrap.innerHTML = '<p class="il-empty-grid">没有匹配的素材。可以试试重置筛选条件，或上传一张新图。</p>';
-      return;
-    }
-    wrap.innerHTML = STATE.items.map(function (it) {
-      var chips = [];
-      if (it.category) {
-        chips.push('<span class="cat">' + escapeHtml(it.category) + '</span>');
-      }
-      var tagsArr = it.tags || [];
-      tagsArr.slice(0, 4).forEach(function (t) {
-        chips.push('<span class="tag">' + escapeHtml(t) + '</span>');
-      });
-      if (tagsArr.length > 4) {
-        chips.push('<span class="tag-more">+' + (tagsArr.length - 4) + '</span>');
-      }
-      var unlabeled = !it.description && !tagsArr.length && !it.category;
-      if (unlabeled) chips.push('<span class="unlabeled">未打标</span>');
-
-      var disabledCls = it.enabled ? '' : ' disabled';
-      var nameAttr = escapeHtml(it.name || it.file_name || ('#' + it.id));
-
-      return '<div class="il-card' + disabledCls + '" data-id="' + it.id + '" title="' + nameAttr + '">'
-        + '<div class="il-thumb">…</div>'
-        + '<div class="il-card-body">'
-        + '<div class="il-card-chips">' + (chips.length ? chips.join('') : '<span style="color:#bbb;font-size:11px;">（无分类无标签）</span>') + '</div>'
-        + '</div></div>';
-    }).join('');
-
-    // 缩略图懒加载：IntersectionObserver 视口内才触发
-    // 重建前先 disconnect 旧 observer，避免对已 detach 的 DOM 节点继续触发
-    if (STATE.thumbObserver) {
-      try { STATE.thumbObserver.disconnect(); } catch (e) {}
-    }
-    STATE.thumbObserver = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (!entry.isIntersecting) return;
-        var card = entry.target;
-        var id = String(card.dataset.id);
-        var item = STATE.items.find(function (x) { return String(x.id) === id; });
-        if (!item) return;
-        STATE.thumbObserver.unobserve(card);  // 加载一次就停止观察这张卡片
-        var url = thumbnailUrl(item);
-        var cell = card.querySelector('.il-thumb');
-        var fallbackUrl = fallbackThumbnailUrl(item, 320);
-        if (cell && url) cell.innerHTML = '<img src="' + escapeHtml(url) + '" srcset="' + imageSrcset(item, fallbackUrl || url) + '" sizes="180px" loading="lazy" decoding="async" width="180" height="180" alt="" onerror="this.onerror=null;this.removeAttribute(\'srcset\');this.src=\'' + escapeHtml(fallbackUrl || url) + '\'">';
-      });
-    }, { rootMargin: '300px 0px' });  // 视口上下 300px 缓冲，提前加载减少滚动 jank
-
-    // 卡片绑定 observer + 点击事件
-    wrap.querySelectorAll('.il-card').forEach(function (card) {
-      STATE.thumbObserver.observe(card);
-      var id = String(card.dataset.id);
-      card.addEventListener('click', function () {
-        var item = STATE.items.find(function (x) { return String(x.id) === id; });
-        if (item) openEditModal(item);
-      });
-    });
-  }
+  var imageGrid = window.ImageLibraryGrid.create({
+    container: document.getElementById('il-list-wrap'),
+    state: STATE,
+    escapeHtml: escapeHtml,
+    thumbnailUrl: thumbnailUrl,
+    openItem: openEditModal,
+  });
 
   // ---------- 数据加载 ---------- //
-  function buildListUrl() {
+  function buildListUrl(offset) {
     var params = new URLSearchParams();
-    params.set('limit', '80');
+    params.set('limit', '5');
+    params.set('offset', String(Number(offset) || 0));
     params.set('enabled_only', STATE.filters.includeDisabled ? 'false' : 'true');
     if (STATE.filters.q) params.set('q', STATE.filters.q);
     if (STATE.filters.category) params.set('category', STATE.filters.category);
@@ -546,22 +491,28 @@
   async function loadList() {
     var wrap = document.getElementById('il-list-wrap');
     wrap.innerHTML = '<p class="il-empty-grid">加载中…</p>';
-    if (STATE.listController) {
-      try { STATE.listController.abort(); } catch (e) {}
-    }
-    STATE.listController = new AbortController();
-    try {
-      var d = await getJSON(buildListUrl(), { signal: STATE.listController.signal });
-      if (!d.ok) {
-        wrap.innerHTML = '<p class="il-empty-grid">加载失败：' + escapeHtml(errorText(d, '请稍后重试')) + '</p>';
-        return;
-      }
-      STATE.items = d.items || [];
-      renderGrid();
-    } catch (e) {
-      if (e && e.name === 'AbortError') return;
-      wrap.innerHTML = '<p class="il-empty-grid">加载失败：' + escapeHtml(window.AdminApi.errorMessage(e, '请稍后重试')) + '</p>';
-    }
+    STATE.items = [];
+    if (STATE.pager) STATE.pager.destroy();
+    STATE.pager = window.ImageResourceLoader.createPager({
+      container: wrap,
+      pageSize: 5,
+      cooldownMs: 300,
+      sentinelClass: 'il-load-more-sentinel',
+      fetchPage: async function (page) {
+        var d = await getJSON(buildListUrl(page.offset), { signal: page.signal });
+        if (!d.ok) throw new Error(errorText(d, '请稍后重试'));
+        return d;
+      },
+      onPage: function (items, payload, append) {
+        STATE.items = append ? STATE.items.concat(items) : items.slice();
+        imageGrid.render(items, append);
+      },
+      onError: function (error, append) {
+        if (append) return;
+        wrap.innerHTML = '<p class="il-empty-grid">加载失败：' + escapeHtml(window.AdminApi.errorMessage(error, '请稍后重试')) + '</p>';
+      },
+    });
+    await STATE.pager.loadInitial();
   }
 
   async function loadFacets() {

@@ -14,9 +14,8 @@ from .repo import connect_media_library_db, normalize_tag_groups, normalize_tags
 from .variants import (
     THUMBNAIL_SIZE_TO_VARIANT,
     add_image_variant_urls,
-    decode_image_base64,
     generate_image_variants,
-    make_thumbnail_bytes,
+    pending_image_placeholder,
     variant_bytes,
 )
 
@@ -127,21 +126,26 @@ class PostgresMediaLibraryRepository:
         if variant_key not in {"original", "thumb_160", "thumb_320", "preview_720", "mobile_1080", "large_1440"}:
             return None
         image_id_int = int(image_id)
+        image = None
         with self._connect() as conn:
             with conn.cursor() as cur:
                 if not self._image_variants_table_exists(cur):
                     return None
                 variant = self._fetch_variant(cur, image_id_int, variant_key)
                 if not variant:
-                    cur.execute("SELECT * FROM image_library WHERE id = %s", (image_id_int,))
+                    cur.execute(
+                        "SELECT id, data_base64, source_url FROM image_library WHERE id = %s",
+                        (image_id_int,),
+                    )
                     image = cur.fetchone()
-                    if not image:
-                        return None
-                    self._ensure_image_variants(cur, dict(image))
-                    variant = self._fetch_variant(cur, image_id_int, variant_key)
-                conn.commit()
         if not variant:
-            return None
+            if not image:
+                return None
+            redirect_url = trusted_https_image_url(image.get("source_url"))
+            if redirect_url:
+                return {"redirect_url": redirect_url, "mime_type": "image/*", "generation_required": False}
+            size = 160 if variant_key in {"original", "thumb_160"} else 320 if variant_key == "thumb_320" else 720
+            return pending_image_placeholder(image_id=image_id_int, size=size)
         payload = variant_bytes(variant)
         return {**variant, "bytes": payload, "etag": '"' + str(variant.get("checksum") or "") + '"'}
 
@@ -181,20 +185,28 @@ class PostgresMediaLibraryRepository:
         data_base64 = str(image.get("data_base64") or "")
         mime_type = str(image.get("mime_type") or "image/png")
         if data_base64:
-            data = decode_image_base64(data_base64)
+            return pending_image_placeholder(image_id=image_id_int, size=size)
         elif image.get("source_url"):
             redirect_url = trusted_https_image_url(image.get("source_url"))
             if redirect_url:
                 return {"redirect_url": redirect_url, "mime_type": mime_type}
             raise ContractError("remote source fetch is disabled in Next media library")
-        else:
-            data = b""
-        return make_thumbnail_bytes(
-            image_id=image_id_int,
-            data=data,
-            mime_type=mime_type,
-            size=size,
-        )
+        return pending_image_placeholder(image_id=image_id_int, size=size)
+
+    def generate_image_variants(self, image_id: str) -> bool:
+        try:
+            image_id_int = int(image_id)
+        except (TypeError, ValueError):
+            return False
+        with self._connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT * FROM image_library WHERE id = %s", (image_id_int,))
+                image = cur.fetchone()
+                if not image:
+                    return False
+                self._ensure_image_variants(cur, dict(image))
+            conn.commit()
+        return True
 
     def save_item(self, kind: str, payload: dict[str, Any], item_id: str | None = None) -> dict[str, Any]:
         if kind == "image":

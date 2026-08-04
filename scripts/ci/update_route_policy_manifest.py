@@ -276,6 +276,16 @@ def _policy_for(entry: dict[str, Any]) -> dict[str, Any]:
             return _policy("sidebar", "provider_oauth_state", "sidebar_read", "self", "none", False, "public_strict")
         if path == "/api/sidebar/jssdk-config":
             return _policy("sidebar", "public", "sidebar_bootstrap", "self", "none", False, "public_strict")
+        if path == "/api/sidebar/context-token":
+            return _policy(
+                "sidebar",
+                "sidebar_session",
+                "sidebar_bootstrap",
+                "self",
+                "sensitive",
+                False,
+                "authenticated",
+            )
         if path in _PUBLIC_SIDEBAR_ASSET_PATHS:
             return _policy("sidebar", "public", "public", "single_resource", "none", False, "public_standard")
         return _policy(
@@ -552,6 +562,7 @@ def _policy(
         "public": ["public"],
         "public_result_grant": ["public"],
         "sidebar_grant": ["human"],
+        "sidebar_session": ["human"],
         "webhook_hmac": ["api_client"],
     }[auth_scheme]
     policy = {

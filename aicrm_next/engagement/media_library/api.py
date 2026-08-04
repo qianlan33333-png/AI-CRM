@@ -4,12 +4,16 @@ import logging
 import time
 from typing import Any
 
-from fastapi import APIRouter, File, Form, Header, HTTPException, Query, UploadFile
+from fastapi import APIRouter, BackgroundTasks, File, Form, Header, HTTPException, Query, UploadFile
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 
 from aicrm_next.platform.shared.errors import ContractError, NotFoundError
 from aicrm_next.platform.shared.runtime_settings import runtime_setting
 from aicrm_next.platform.shared.safe_logging import safe_log_exception
+from aicrm_next.platform.shared.resource_admission import (
+    ResourceCapacityExhausted,
+    media_binary_admission,
+)
 
 from .application import (
     DeleteMediaItemCommand,
@@ -37,6 +41,7 @@ from .dto import (
     ImageUpsertRequest,
     MiniprogramUpsertRequest,
 )
+from .variant_generation import generate_missing_image_variants
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -77,6 +82,11 @@ def _with_contract(payload: dict[str, Any], *, source_status: str = "next_media_
     result.setdefault("ok", True)
     if isinstance(result.get("items"), list):
         result.setdefault("count", len(result["items"]))
+        total = int(result.get("total") or 0)
+        offset = max(0, int(result.get("offset") or 0))
+        next_offset = offset + len(result["items"])
+        result.setdefault("has_more", next_offset < total)
+        result.setdefault("next_offset", next_offset if next_offset < total else None)
     result.setdefault("source_status", source_status)
     result.setdefault("route_owner", "ai_crm_next")
     result.setdefault("fallback_used", False)
@@ -112,6 +122,30 @@ def _error_response(exc: Exception, status_code: int = 400, *, headers: dict[str
         status_code=status_code,
         content=_with_contract({"ok": False, "error": str(exc)}, source_status="next_media_library_error"),
         headers=headers or {},
+    )
+
+
+def _media_capacity_response(exc: ResourceCapacityExhausted) -> JSONResponse:
+    policy = exc.policy
+    return JSONResponse(
+        status_code=429,
+        content=_with_contract(
+            {
+                "ok": False,
+                "error": "图片加载繁忙，请稍后重试",
+                "error_code": "media_capacity_exhausted",
+                "resource_class": policy.resource_class,
+                "priority": policy.priority,
+                "retryable": True,
+                "reason": exc.reason,
+            },
+            source_status="media_capacity_exhausted",
+        ),
+        headers={
+            "Retry-After": str(policy.retry_after_seconds),
+            "X-AICRM-Resource-Class": policy.resource_class,
+            "X-AICRM-Resource-Priority": policy.priority,
+        },
     )
 
 
@@ -198,6 +232,7 @@ def get_image(image_id: str, include_data: bool = False, variant: str = "") -> d
 
 @router.get("/api/admin/image-library/{image_id}/thumbnail")
 def get_image_thumbnail(
+    background_tasks: BackgroundTasks,
     image_id: str,
     size: int = Query(160),
     if_none_match: str | None = Header(default=None, alias="If-None-Match"),
@@ -211,8 +246,11 @@ def get_image_thumbnail(
             ),
         )
     try:
-        result = GetImageThumbnailQuery()(image_id, size)
+        with media_binary_admission(rollout_key=f"thumbnail:{image_id}"):
+            result = GetImageThumbnailQuery()(image_id, size)
         thumbnail = result["thumbnail"]
+        if thumbnail.get("generation_required"):
+            background_tasks.add_task(generate_missing_image_variants, image_id)
         redirect_url = str(thumbnail.get("redirect_url") or "").strip()
         if redirect_url:
             return RedirectResponse(
@@ -223,30 +261,53 @@ def get_image_thumbnail(
         etag = str(thumbnail.get("etag") or "")
         headers = {
             **_binary_headers(),
-            "Cache-Control": "public, max-age=31536000, immutable",
+            "Cache-Control": "no-store" if thumbnail.get("generation_required") else "public, max-age=31536000, immutable",
             "ETag": etag,
         }
+        if thumbnail.get("generation_required"):
+            headers["X-AICRM-Media-Generation"] = "pending"
         if if_none_match and etag and if_none_match == etag:
             return Response(status_code=304, headers=headers)
         return Response(content=thumbnail.get("bytes") or b"", media_type=str(thumbnail.get("mime_type") or "image/png"), headers=headers)
+    except ResourceCapacityExhausted as exc:
+        return _media_capacity_response(exc)
     except Exception as exc:
         return _error_response(exc)
 
 
 @router.get("/api/admin/image-library/{image_id}/variants/{variant_key}")
-def get_image_variant(image_id: str, variant_key: str, if_none_match: str | None = Header(default=None, alias="If-None-Match")) -> Response:
+def get_image_variant(
+    background_tasks: BackgroundTasks,
+    image_id: str,
+    variant_key: str,
+    if_none_match: str | None = Header(default=None, alias="If-None-Match"),
+) -> Response:
     try:
-        result = GetImageVariantQuery()(image_id, variant_key)
+        with media_binary_admission(rollout_key=f"variant:{image_id}:{variant_key}"):
+            result = GetImageVariantQuery()(image_id, variant_key)
         variant = result["variant"]
+        if variant.get("generation_required"):
+            background_tasks.add_task(generate_missing_image_variants, image_id)
+        redirect_url = str(variant.get("redirect_url") or "").strip()
+        if redirect_url:
+            return RedirectResponse(
+                redirect_url,
+                status_code=302,
+                headers={**_binary_headers(), "Cache-Control": "public, max-age=86400"},
+            )
         etag = str(variant.get("etag") or "")
         headers = {
             **_binary_headers(),
-            "Cache-Control": "public, max-age=31536000, immutable",
+            "Cache-Control": "no-store" if variant.get("generation_required") else "public, max-age=31536000, immutable",
             "ETag": etag,
         }
+        if variant.get("generation_required"):
+            headers["X-AICRM-Media-Generation"] = "pending"
         if if_none_match and etag and if_none_match == etag:
             return Response(status_code=304, headers=headers)
         return Response(content=variant.get("bytes") or b"", media_type=str(variant.get("mime_type") or "image/png"), headers=headers)
+    except ResourceCapacityExhausted as exc:
+        return _media_capacity_response(exc)
     except Exception as exc:
         return _error_response(exc)
 

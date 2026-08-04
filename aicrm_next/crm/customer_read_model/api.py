@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Path, Query, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 from sqlalchemy.orm import Session
@@ -10,11 +10,15 @@ from sqlalchemy.orm import Session
 from aicrm_next.platform.shared.config import get_settings
 from aicrm_next.platform.shared.db_session import get_db
 from aicrm_next.platform.shared.errors import NotFoundError
+from aicrm_next.platform.shared.resource_admission import (
+    ResourceCapacityExhausted,
+    media_binary_admission,
+)
 from aicrm_next.platform.shared.runtime import database_mode, production_data_ready
 from aicrm_next.platform.shared.runtime_settings import startup_environment_setting
 from aicrm_next.platform.shared.sidebar_access import sidebar_owner_context_from_request as _sidebar_owner_context_from_request
 from . import application as customer_application
-from .extension_port import UpdateServicePeriodMemberRemarkCommand
+from .extension_port import UpdateServicePeriodMemberRemarkCommand, generate_missing_image_variants
 from .application import (
     GetAdminCustomerProfileQuery,
     GetAdminCustomerProfileTagsQuery,
@@ -941,10 +945,10 @@ def get_sidebar_v2_timeline(
 
 
 @router.get("/api/sidebar/v2/materials")
-def get_sidebar_v2_materials(request: Request, type: str = "", limit: int = 50, q: str = ""):
+def get_sidebar_v2_materials(request: Request, type: str = "", limit: int = 50, offset: int = 0, q: str = ""):
     _sidebar_owner_context_from_request(request)
     try:
-        payload = SidebarMaterialReadModel()(material_type=type, limit=limit, q=q)
+        payload = SidebarMaterialReadModel()(material_type=type, limit=limit, offset=offset, q=q)
     except ValueError as exc:
         return _sidebar_input_error(str(exc))
     except Exception as exc:
@@ -953,17 +957,36 @@ def get_sidebar_v2_materials(request: Request, type: str = "", limit: int = 50, 
 
 
 @router.get("/api/sidebar/v2/materials/image/{image_id}/thumbnail")
-def get_sidebar_v2_image_thumbnail(request: Request, image_id: int):
+def get_sidebar_v2_image_thumbnail(request: Request, background_tasks: BackgroundTasks, image_id: int):
     try:
-        payload = SidebarMaterialReadModel().thumbnail(image_id)
+        with media_binary_admission(rollout_key=f"sidebar-thumbnail:{image_id}"):
+            payload = SidebarMaterialReadModel().thumbnail(image_id)
+    except ResourceCapacityExhausted as exc:
+        return JSONResponse(
+            status_code=429,
+            content={
+                "ok": False,
+                "error": "图片加载繁忙，请稍后重试",
+                "error_code": "media_capacity_exhausted",
+                "retryable": True,
+                "route_owner": "ai_crm_next",
+            },
+            headers={"Retry-After": str(exc.policy.retry_after_seconds)},
+        )
     except LookupError as exc:
         return _sidebar_lookup_error(str(exc) or "image not found")
     except ValueError as exc:
         return _sidebar_input_error(str(exc))
     except Exception as exc:
         return _sidebar_read_unavailable(exc)
+    if payload.get("generation_required"):
+        background_tasks.add_task(generate_missing_image_variants, str(image_id))
     versioned = bool(str(request.query_params.get("v") or "").strip())
-    cache_control = "public, max-age=31536000, immutable" if versioned else "public, max-age=86400"
+    cache_control = (
+        "no-store"
+        if payload.get("generation_required")
+        else "public, max-age=31536000, immutable" if versioned else "public, max-age=86400"
+    )
     redirect_url = str(payload.get("redirect_url") or "").strip()
     if redirect_url:
         return RedirectResponse(redirect_url, status_code=302, headers={"Cache-Control": cache_control})
@@ -971,6 +994,8 @@ def get_sidebar_v2_image_thumbnail(request: Request, image_id: int):
     etag = str(payload.get("etag") or "").strip()
     if etag:
         headers["ETag"] = etag
+    if payload.get("generation_required"):
+        headers["X-AICRM-Media-Generation"] = "pending"
     if etag and str(request.headers.get("if-none-match") or "").strip() == etag:
         return Response(status_code=304, headers=headers)
     response = Response(payload.get("body") or b"", media_type=str(payload.get("mime_type") or "image/png"), headers=headers)

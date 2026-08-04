@@ -35,6 +35,8 @@ from aicrm_next.platform.shared.signed_session import (
     verify_state_payload,
 )
 
+from .sidebar_authorization import build_sidebar_authorization_service
+
 router = APIRouter()
 DEFAULT_SIDEBAR_JSSDK_ALLOWED_HOSTS = {"youcangogogo.com", "www.youcangogogo.com"}
 SIDEBAR_OAUTH_ENABLE_ENV = "AICRM_SIDEBAR_WECOM_OAUTH_ENABLE_REAL"
@@ -104,6 +106,97 @@ async def sidebar_jssdk_config(request: Request) -> Response:
             status_code=502,
         )
     return JSONResponse(jsonable_encoder(payload), status_code=200)
+
+
+@router.post("/api/sidebar/context-token")
+async def sidebar_context_token(request: Request) -> Response:
+    try:
+        body = await request.json()
+    except (TypeError, ValueError):
+        body = {}
+    external_userid = str((body or {}).get("external_userid") or "").strip()
+    if not external_userid:
+        return JSONResponse(
+            {
+                "ok": False,
+                "error_code": "external_userid_missing",
+                "sidebar_owner_token": "",
+                "sidebar_owner_token_status": "external_userid_missing",
+                "route_owner": "ai_crm_next",
+            },
+            status_code=400,
+        )
+    viewer_session = _viewer_session_from_request(request)
+    viewer_userid = str(viewer_session.get("wecom_userid") or "").strip()
+    if not viewer_userid:
+        return JSONResponse(
+            _without_sidebar_owner_token(
+                request,
+                {"ok": True, "route_owner": "ai_crm_next"},
+                status="viewer_session_required",
+                external_userid=external_userid,
+                source="sidebar_context_token_viewer_required",
+            ),
+            status_code=200,
+        )
+    corp_id = str(viewer_session.get("corp_id") or "").strip()
+    configured_corp_id = str(managed_runtime_setting("WECOM_CORP_ID") or "").strip()
+    if not corp_id or (configured_corp_id and corp_id != configured_corp_id):
+        return JSONResponse(
+            {
+                "ok": False,
+                "error_code": "sidebar_corp_scope_forbidden",
+                "sidebar_owner_token": "",
+                "sidebar_owner_token_status": "sidebar_corp_scope_forbidden",
+                "route_owner": "ai_crm_next",
+            },
+            status_code=403,
+        )
+    allowed = build_sidebar_authorization_service().authorize(
+        corp_id=corp_id,
+        user_id=viewer_userid,
+        external_userid=external_userid,
+    )
+    if not allowed:
+        return JSONResponse(
+            {
+                "ok": False,
+                "error_code": "sidebar_customer_scope_forbidden",
+                "sidebar_owner_token": "",
+                "sidebar_owner_token_status": "sidebar_customer_scope_forbidden",
+                "route_owner": "ai_crm_next",
+                "authorization_source": "wecom_active_follow_relation",
+                "real_external_call_executed": False,
+            },
+            status_code=403,
+        )
+    ttl_seconds = sidebar_owner_context_ttl_seconds()
+    token = build_sidebar_owner_context_token(
+        viewer_userid=viewer_userid,
+        external_userid=external_userid,
+        session_id=str(viewer_session.get("session_id") or ""),
+        corp_id=corp_id,
+        ttl_seconds=ttl_seconds,
+    )
+    return JSONResponse(
+        {
+            "ok": True,
+            "sidebar_owner_token": token,
+            "sidebar_owner_token_status": "issued",
+            "sidebar_owner_context": {
+                "viewer_userid": viewer_userid,
+                "owner_userid": viewer_userid,
+                "bind_by_userid": viewer_userid,
+                "corp_id": corp_id,
+                "external_userid": external_userid,
+                "expires_in": ttl_seconds,
+                "source": "wecom_active_follow_relation",
+            },
+            "route_owner": "ai_crm_next",
+            "real_external_call_executed": False,
+        },
+        status_code=200,
+    )
 
 
 @router.api_route("/api/sidebar/oauth/start", methods=["GET", "OPTIONS"])
@@ -208,8 +301,29 @@ def sidebar_oauth_callback(request: Request) -> Response:
     if not viewer_userid:
         return _sidebar_oauth_error_redirect(next_path, "wecom_userid_missing")
 
+    previous_session = _viewer_session_from_request(request)
+    same_employee_session = (
+        str(previous_session.get("wecom_userid") or "").strip() == viewer_userid
+        and str(previous_session.get("corp_id") or "").strip() == oauth["corp_id"]
+    )
+    try:
+        previous_oauth_count = int(previous_session.get("oauth_count") or 0) if same_employee_session else 0
+    except (TypeError, ValueError):
+        previous_oauth_count = 0
+    oauth_count = previous_oauth_count + 1
+    session_id = (
+        str(previous_session.get("session_id") or "").strip()
+        if same_employee_session
+        else secrets.token_urlsafe(24)
+    )
+    build_sidebar_authorization_service().record_oauth_callback(repeated=oauth_count > 1)
+
+    clean_next_path = _remove_query_keys(
+        next_path,
+        {"external_userid", "externalUserid", "externalUserId", "user_id", "userId", "sidebar_oauth_error"},
+    )
     response = RedirectResponse(
-        _append_query(next_path, {"sidebar_oauth": "1"}),
+        _append_query(clean_next_path, {"sidebar_oauth": "1"}),
         status_code=302,
         headers=_sidebar_oauth_headers(real_external_call_executed=True),
     )
@@ -219,9 +333,9 @@ def sidebar_oauth_callback(request: Request) -> Response:
             {
                 "auth_source": "wecom_sidebar_oauth",
                 "wecom_userid": viewer_userid,
-                "external_userid": external_userid,
                 "corp_id": oauth["corp_id"],
-                "session_id": secrets.token_urlsafe(24),
+                "session_id": session_id,
+                "oauth_count": oauth_count,
                 "iat": int(time()),
             }
         ),
@@ -249,7 +363,16 @@ def _with_sidebar_owner_context(request: Request, payload: dict) -> dict:
             external_userid=external_userid,
             source="sidebar_jssdk_viewer_required",
         )
-    if str(viewer_session.get("external_userid") or "").strip() != external_userid:
+    session_external = str(viewer_session.get("external_userid") or "").strip()
+    if not session_external:
+        return _without_sidebar_owner_token(
+            request,
+            result,
+            status="context_token_required",
+            external_userid=external_userid,
+            source="sidebar_context_token_required",
+        )
+    if session_external != external_userid:
         return _without_sidebar_owner_token(
             request,
             result,
@@ -292,11 +415,12 @@ def _without_sidebar_owner_token(
     context = {"source": source}
     if external_userid:
         context["external_userid"] = external_userid
-    oauth = _sidebar_oauth_metadata(request, external_userid)
-    if oauth["status"]:
-        context["sidebar_oauth_status"] = oauth["status"]
-    if oauth["url"]:
-        result["sidebar_oauth_url"] = oauth["url"]
+    if status != "context_token_required":
+        oauth = _sidebar_oauth_metadata(request, external_userid)
+        if oauth["status"]:
+            context["sidebar_oauth_status"] = oauth["status"]
+        if oauth["url"]:
+            result["sidebar_oauth_url"] = oauth["url"]
     result["sidebar_owner_context"] = context
     return result
 
@@ -305,7 +429,7 @@ def _viewer_session_from_request(request: Request) -> dict[str, Any]:
     session = verify_session_payload(request.cookies.get(SIDEBAR_VIEWER_SESSION_COOKIE))
     if not session or str(session.get("auth_source") or "").strip() != "wecom_sidebar_oauth":
         return {}
-    required = ("wecom_userid", "external_userid", "corp_id", "session_id")
+    required = ("wecom_userid", "corp_id", "session_id")
     if any(not str(session.get(field) or "").strip() for field in required):
         return {}
     return dict(session)
@@ -439,6 +563,12 @@ def _append_query(path: str, params: dict[str, str]) -> str:
         normalized = str(value or "").strip()
         if normalized:
             query.append((key, normalized))
+    return urlunparse(("", "", parsed.path or "/sidebar/bind-mobile", "", urlencode(query), ""))
+
+
+def _remove_query_keys(path: str, keys: set[str]) -> str:
+    parsed = urlparse(str(path or "/sidebar/bind-mobile"))
+    query = [(key, value) for key, value in parse_qsl(parsed.query, keep_blank_values=True) if key not in keys]
     return urlunparse(("", "", parsed.path or "/sidebar/bind-mobile", "", urlencode(query), ""))
 
 

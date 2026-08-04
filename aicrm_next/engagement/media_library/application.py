@@ -314,6 +314,15 @@ class GetImageThumbnailQuery:
         return {"ok": True, "thumbnail": thumbnail}
 
 
+class GenerateImageVariantsCommand:
+    def __init__(self, repo: MediaLibraryRepository | None = None) -> None:
+        self._repo = repo or build_media_library_repository()
+
+    def __call__(self, image_id: str) -> dict[str, Any]:
+        generated = bool(self._repo.generate_image_variants(image_id))
+        return {"ok": generated, "image_id": str(image_id), "generated": generated}
+
+
 class UpsertMediaItemCommand:
     def __init__(self, kind: str, repo: MediaLibraryRepository | None = None) -> None:
         self._kind = kind

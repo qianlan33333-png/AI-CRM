@@ -3475,6 +3475,26 @@ routes:
   rate_limit: public_strict
   principal_types:
   - public
+- path: /api/sidebar/context-token
+  methods:
+  - POST
+  route_name: sidebar_context_token
+  capability_owner: identity_contact
+  runtime_owner: ai_crm_next
+  layer: api
+  external_effects: none
+  data_source: read_model
+  requires_auth: true
+  rollback: previous_release
+  audience: sidebar
+  auth_scheme: sidebar_session
+  capability: sidebar_bootstrap
+  access_scope: self
+  pii_level: sensitive
+  csrf: false
+  rate_limit: authenticated
+  principal_types:
+  - human
 - path: /api/sidebar/oauth/start
   methods:
   - GET
