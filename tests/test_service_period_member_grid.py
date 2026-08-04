@@ -16,6 +16,7 @@ from aicrm_next.extensions.commerce.service_period.application import (
 )
 from aicrm_next.extensions.commerce.service_period.dto import ServicePeriodProductCreateRequest
 from aicrm_next.extensions.commerce.service_period.huangyoucan_usage import huangyoucan_usage_match_joins
+from aicrm_next.extensions.commerce.service_period import member_grid as member_grid_module
 from aicrm_next.extensions.commerce.service_period.member_grid import (
     MemberViewConflictError,
     empty_view_config,
@@ -199,6 +200,7 @@ def test_member_grid_rejects_unknown_fields_operators_and_duplicate_ordering(mut
 def test_member_grid_and_or_filter_sort_two_level_group_and_progress_semantics(monkeypatch) -> None:
     monkeypatch.setenv("AICRM_NEXT_ENV", "test")
     now = datetime(2026, 7, 15, 4, 0, tzinfo=timezone.utc)
+    monkeypatch.setattr(member_grid_module, "utcnow", lambda: now)
     members = [_member(index, now=now) for index in range(1, 61)]
     config = empty_view_config()
     config["filter"] = {
