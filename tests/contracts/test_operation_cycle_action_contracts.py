@@ -13,7 +13,7 @@ from aicrm_next.platform.platform_foundation.auth_platform.access_client import 
 )
 from aicrm_next.platform.platform_foundation.auth_platform.profiles import API_CLIENT_PROFILES
 from aicrm_next.platform.shared.route_ownership import load_route_manifest
-from scripts.ops.check_ai_audience_send_records_release import EXPECTED_MIGRATION_HEAD
+from scripts.ci.select_test_scope import load_inventory
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -36,7 +36,7 @@ def test_action_migration_is_additive_and_preserves_audit_on_rollback() -> None:
 def test_ai_audience_release_guard_tracks_current_migration_head() -> None:
     config = Config(str(ROOT / "alembic.ini"))
     script = ScriptDirectory.from_config(config)
-    assert script.get_heads() == [EXPECTED_MIGRATION_HEAD]
+    assert script.get_heads() == [load_inventory()["migration_contract"]["expected_head"]]
 
 
 def test_seeded_pilot_skill_hash_matches_runtime_contract() -> None:

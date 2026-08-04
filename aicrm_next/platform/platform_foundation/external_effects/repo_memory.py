@@ -29,6 +29,7 @@ from .repo import (
     ExternalEffectRepository,
     _execution_lane,
     _idempotency_key,
+    _health_classification_code,
     _initial_status,
     _json_dumps,
     _payload_summary,
@@ -36,6 +37,7 @@ from .repo import (
     _public_job,
     _public_receipt,
     _rate_scope_key,
+    _release_sha,
     _safe_error_message,
     _text,
 )
@@ -131,6 +133,9 @@ class InMemoryExternalEffectRepository(ExternalEffectRepository):
             "cancel_reason": "",
             "hold_reason": "",
             "hold_at": "",
+            "created_release_sha": _release_sha(),
+            "processed_release_sha": "unknown",
+            "health_classification_code": "",
         }
         self._next_id += 1
         self._jobs.append(row)
@@ -660,6 +665,7 @@ class InMemoryExternalEffectRepository(ExternalEffectRepository):
                         "provider_result_consumed_at": "",
                         "error_code": _text(result.error_code),
                         "error_message": _safe_error_message(result.error_message),
+                        "processed_release_sha": _release_sha(),
                         "completed_at": now,
                     }
                 )
@@ -687,6 +693,12 @@ class InMemoryExternalEffectRepository(ExternalEffectRepository):
                     "last_attempt_id": attempt.attempt_id,
                     "last_error_code": _text(result.error_code),
                     "last_error_message": _safe_error_message(result.error_message),
+                    "processed_release_sha": _release_sha(),
+                    "health_classification_code": _health_classification_code(
+                        status,
+                        _text(result.error_code),
+                        response_summary,
+                    ),
                     "side_effect_executed": bool(result.real_external_call_executed),
                     "provider_result_received": bool(result.provider_result_received),
                     "result_summary_json": scrub_summary(response_summary),
@@ -748,6 +760,8 @@ class InMemoryExternalEffectRepository(ExternalEffectRepository):
                     "provider_result_received": bool(provider_result_received),
                     "last_error_code": _text(error_code) or "result_persistence_failed",
                     "last_error_message": _safe_error_message(error_message),
+                    "processed_release_sha": _release_sha(),
+                    "health_classification_code": "unknown_after_dispatch",
                     "lease_token": "",
                     "lease_expires_at": "",
                     "locked_by": "",
@@ -770,6 +784,8 @@ class InMemoryExternalEffectRepository(ExternalEffectRepository):
             job_id,
             status="succeeded",
             last_attempt_id=_text(attempt_id),
+            processed_release_sha=_release_sha(),
+            health_classification_code="",
             locked_by="",
             locked_at="",
             lease_token="",
@@ -788,6 +804,8 @@ class InMemoryExternalEffectRepository(ExternalEffectRepository):
             job_id,
             status="simulated",
             last_attempt_id=_text(attempt_id),
+            processed_release_sha=_release_sha(),
+            health_classification_code="",
             side_effect_executed=False,
             provider_result_received=False,
             result_summary_json=scrub_summary(result_summary or {}),
@@ -813,6 +831,8 @@ class InMemoryExternalEffectRepository(ExternalEffectRepository):
             last_attempt_id=_text(attempt_id),
             last_error_code=_text(error_code),
             last_error_message=_safe_error_message(error_message),
+            processed_release_sha=_release_sha(),
+            health_classification_code="retryable",
             locked_by="",
             locked_at="",
             lease_token="",
@@ -829,6 +849,8 @@ class InMemoryExternalEffectRepository(ExternalEffectRepository):
             last_attempt_id=_text(attempt_id),
             last_error_code=_text(error_code),
             last_error_message=_safe_error_message(error_message),
+            processed_release_sha=_release_sha(),
+            health_classification_code="unclassified_terminal",
             locked_by="",
             locked_at="",
             lease_token="",
@@ -848,6 +870,8 @@ class InMemoryExternalEffectRepository(ExternalEffectRepository):
             last_attempt_id=_text(attempt_id),
             last_error_code=_text(error_code),
             last_error_message=_safe_error_message(error_message),
+            processed_release_sha=_release_sha(),
+            health_classification_code="unclassified_blocked",
             locked_by="",
             locked_at="",
             lease_token="",
@@ -968,6 +992,8 @@ class InMemoryExternalEffectRepository(ExternalEffectRepository):
             return self._mutate(
                 job_id,
                 status="queued",
+                processed_release_sha="unknown",
+                health_classification_code="",
                 locked_by="",
                 locked_at="",
                 lease_token="",
@@ -992,6 +1018,8 @@ class InMemoryExternalEffectRepository(ExternalEffectRepository):
             job_id,
             status="queued",
             approved_at=now,
+            processed_release_sha=_release_sha(),
+            health_classification_code="",
             locked_by="",
             locked_at="",
             lease_token="",
@@ -1074,6 +1102,7 @@ class InMemoryExternalEffectRepository(ExternalEffectRepository):
             "error_message": _safe_error_message(error_message),
             "started_at": now,
             "completed_at": "" if _text(status) == "dispatching" else now,
+            "processed_release_sha": _release_sha(),
         }
         self._next_attempt_id += 1
         self._attempts.append(row)

@@ -14,8 +14,8 @@
   },
   "migration_contract": {
     "directory": "migrations/versions",
-    "expected_file_count": 179,
-    "expected_head": "0169_operation_cycle_codex_actions"
+    "expected_file_count": 180,
+    "expected_head": "0170_release_governance_foundation"
   },
   "allowed_test_side_effects": [
     "none",
@@ -261,7 +261,7 @@
         {"path": "tests/contracts/test_runtime_and_capabilities.py", "layer": "contracts"},
         {"path": "tests/contracts/test_operation_cycle_action_contracts.py", "layer": "contracts"},
         {"path": "tests/postgres/test_current_schema.py", "layer": "postgres"},
-        {"path": "tests/postgres/test_operation_cycle_actions.py", "layer": "postgres"},
+        {"path": "tests/postgres/test_operation_cycle_actions_postgres.py", "layer": "postgres"},
         {"path": "tests/frontend/operation_cycle_actions.test.mjs", "layer": "frontend"}
       ],
       "expected_side_effects": ["none", "test_postgres"]
@@ -295,7 +295,7 @@
       "tests": [
         {"path": "tests/postgres/test_migration_head.py", "layer": "postgres"},
         {"path": "tests/postgres/test_current_schema.py", "layer": "postgres"},
-        {"path": "tests/release/test_migration_head.py", "layer": "release"}
+        {"path": "tests/release/test_migration_readiness.py", "layer": "release"}
       ],
       "expected_side_effects": ["test_postgres"]
     },

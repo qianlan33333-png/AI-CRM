@@ -1,0 +1,16 @@
+{
+  "schema_version": "migration_compatibility.v1",
+  "baseline_revision": "0169_operation_cycle_codex_actions",
+  "current_head": "0170_release_governance_foundation",
+  "compatibility_epoch": 1,
+  "migrations": [
+    {
+      "revision": "0170_release_governance_foundation",
+      "parent_revision": "0169_operation_cycle_codex_actions",
+      "change_kind": "expand",
+      "previous_runtime_compatible": true,
+      "downgrade_policy": "forward_only",
+      "compatibility_epoch": 1
+    }
+  ]
+}

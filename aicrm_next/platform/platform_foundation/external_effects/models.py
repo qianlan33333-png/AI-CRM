@@ -199,6 +199,9 @@ class ExternalEffectJob:
     cancel_reason: str = ""
     hold_reason: str = ""
     hold_at: str = ""
+    created_release_sha: str = "unknown"
+    processed_release_sha: str = "unknown"
+    health_classification_code: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -225,6 +228,7 @@ class ExternalEffectAttempt:
     error_message: str = ""
     started_at: str = ""
     completed_at: str = ""
+    processed_release_sha: str = "unknown"
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

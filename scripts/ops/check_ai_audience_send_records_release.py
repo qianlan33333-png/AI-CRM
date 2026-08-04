@@ -7,7 +7,6 @@ import os
 from typing import Any
 
 
-EXPECTED_MIGRATION_HEAD = "0169_operation_cycle_codex_actions"
 MANUAL_INDEX = "idx_user_ops_send_records_ai_audience"
 AUTOMATION_INDEX = "idx_cloud_broadcast_plans_ai_audience_send_records"
 REQUIRED_TABLES = (
@@ -194,7 +193,7 @@ def collect(conn: Any, *, phase: str, release_sha: str = "") -> dict[str, Any]:
         plans = _query_plans(conn)
 
     post_migration_ready = (
-        heads == [EXPECTED_MIGRATION_HEAD]
+        len(heads) == 1
         and columns_ready
         and indexes.get(MANUAL_INDEX) == {"valid": True, "ready": True}
         and indexes.get(AUTOMATION_INDEX) == {"valid": True, "ready": True}

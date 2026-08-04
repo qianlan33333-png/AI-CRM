@@ -864,6 +864,7 @@ repositories:
       - queue_lane_policy
       - queue_rate_scope_cooldown
       - queue_runtime_control
+      - schema_release_compatibility
       - webhook_inbox
     table_writes: []
   aicrm_next/platform/platform_foundation/webhook_inbox/repository.py:

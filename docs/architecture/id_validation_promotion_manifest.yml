@@ -107,7 +107,7 @@ mixed_review_required:
     - scripts/run_execution_runtime.py
     - tests/test_admin_config_next.py
     - tests/test_ai_assist_external_effect_queue.py
-    - tests/test_alembic_revision_chain.py
+    - tests/postgres/test_migration_head.py
     - tests/test_channel_welcome_media_dependencies_postgres.py
     - tests/test_database_bootstrap.py
     - tests/test_execution_runtime_postgres.py

@@ -32,11 +32,11 @@ back independently.
 
 The third slice moves all three online APIs to one indexed singleton snapshot
 read per request. Their successful JSON bodies remain unchanged. Production
-never falls back to running the 16 live checks inline: a missing, invalid, or
+never falls back to running the manifest-declared 19 live checks inline: a missing, invalid, or
 older-than-25-minutes snapshot returns a privacy-safe `503` error so a stopped
 timer is visible instead of silently restoring the original high-cost path.
 Offline fixture/test runtimes without a production repository keep the direct
-check runner for local contract tests only. Detail lookup scans only the 16
+check runner for local contract tests only. Detail lookup scans only the 19
 already-loaded aggregate results and does not execute check prefixes eagerly.
 
 ## Initial Checks
@@ -57,7 +57,9 @@ Registered runtime data probes:
 - `identity_resolution_queue_backlog`
 - `projection_freshness_customer_read_model`
 - `broadcast_job_blocked_backlog`
-- `external_effect_failed_retryable_backlog`
+- `external_effect_due_retryable_backlog`
+- `external_effect_unclassified_terminal_recent`
+- `external_effect_unclassified_blocked_recent`
 - `deprecated_execution_settings_present`
 - `fake_stub_route_exposed`
 - `external_effect_approved_not_queued`
@@ -73,8 +75,11 @@ declared physical tables, unregistered live tables, retired physical tables,
 missing canonical owners, missing PII levels, or missing queue status enum
 metadata.
 
-`external_effect_failed_retryable_backlog` separates delivery failures from
-deterministic business outcomes.  A WeChat refund `NOT_ENOUGH` result is reported
+The three `external_effect_*` release checks separate retry progress, unknown
+terminal or blocked states, and classified deterministic business outcomes.
+Due work inside its retry SLA is a warning; work beyond the SLA, an unknown
+terminal outcome, or an unknown blocked state fails closed. A WeChat refund
+`NOT_ENOUGH` result is reported
 as a completed business rejection, not a system failure, only when strict
 cross-table evidence proves one provider call, a received provider result, no
 refund execution, a synchronized local refund record, and no replay.  Missing

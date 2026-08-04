@@ -9,6 +9,7 @@ from .claim_policy import (
     external_claim_scope_predicate,
     external_effect_claim_order_sql,
 )
+from .repo_contract import _release_sha
 
 
 def _job_ids(values: Sequence[int]) -> list[int]:
@@ -78,6 +79,8 @@ class PostgresExternalEffectRuntimeWriteRepository:
             statement = """
                 UPDATE external_effect_job
                 SET status = 'queued',
+                    processed_release_sha = 'unknown',
+                    health_classification_code = '',
                     locked_by = '', locked_at = NULL,
                     lease_token = '', lease_expires_at = NULL,
                     heartbeat_at = NULL, worker_generation = 0,
@@ -296,6 +299,8 @@ class PostgresExternalEffectRuntimeWriteRepository:
                 SET payload_json = CAST(:payload_json AS jsonb),
                     payload_summary_json = CAST(:payload_summary_json AS jsonb),
                     status = 'queued', available_at = {available_at},
+                    processed_release_sha = 'unknown',
+                    health_classification_code = '',
                     hold_reason = '', hold_at = NULL,
                     row_version = row_version + 1,
                     updated_at = CURRENT_TIMESTAMP
@@ -329,6 +334,8 @@ class PostgresExternalEffectRuntimeWriteRepository:
                     SET status = 'blocked',
                         last_error_code = :error_code,
                         last_error_message = :error_message,
+                        processed_release_sha = :processed_release_sha,
+                        health_classification_code = 'unclassified_blocked',
                         completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP),
                         row_version = row_version + 1,
                         updated_at = CURRENT_TIMESTAMP
@@ -342,6 +349,7 @@ class PostgresExternalEffectRuntimeWriteRepository:
                     "job_id": int(job_id),
                     "error_code": str(error_code or "").strip()[:200],
                     "error_message": str(error_message or "").strip()[:1000],
+                    "processed_release_sha": _release_sha(),
                 },
             )
             .mappings()
@@ -498,6 +506,8 @@ class PostgresExternalEffectRuntimeWriteRepository:
             """
             UPDATE external_effect_job
             SET status = 'queued',
+                processed_release_sha = 'unknown',
+                health_classification_code = '',
                 available_at = CURRENT_TIMESTAMP,
                 next_retry_at = CURRENT_TIMESTAMP,
                 worker_generation = 0,
@@ -564,6 +574,8 @@ class PostgresExternalEffectRuntimeWriteRepository:
             """
             UPDATE external_effect_job
             SET status = 'queued',
+                processed_release_sha = 'unknown',
+                health_classification_code = '',
                 worker_generation = %s,
                 policy_version = %s,
                 available_at = CURRENT_TIMESTAMP,

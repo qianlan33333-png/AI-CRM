@@ -18,6 +18,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from aicrm_next.app.admin_console.navigation import ADMIN_NAV_GROUPS, admin_path_for  # noqa: E402
+from aicrm_next.platform.release_governance.manifest import load_release_gate_manifest  # noqa: E402
 from scripts.script_runtime import print_json  # noqa: E402
 
 REQUIRED_OPENAPI_PATHS = (
@@ -39,7 +40,6 @@ REQUIRED_OPENAPI_PATHS = (
 )
 
 DATA_HEALTH_SUMMARY_PATH = "/api/admin/data-health/summary"
-EXPECTED_DATA_HEALTH_CHECK_COUNT = 17
 DATA_HEALTH_RESPONSE_MAX_BYTES = 65536
 AI_AUTOMATION_PRE_CUTOVER_CHECK_ID = "ai_automation_lane_readiness"
 
@@ -143,7 +143,7 @@ def _is_exact_ai_automation_pre_cutover(checks: list[Any], counts: dict[str, Any
         if isinstance(check, dict) and check.get("status") != "ok"
     ]
     if counts != {
-        "ok": EXPECTED_DATA_HEALTH_CHECK_COUNT - 1,
+        "ok": len(checks) - 1,
         "warn": 0,
         "fail": 1,
         "not_applicable": 0,
@@ -203,33 +203,34 @@ def _admin_api_payload_error(
         checks = payload.get("checks")
         if not isinstance(counts, dict) or not isinstance(checks, list):
             return "data_health_summary_invalid"
-        expected_counts = {
-            "ok": EXPECTED_DATA_HEALTH_CHECK_COUNT,
-            "warn": 0,
-            "fail": 0,
-            "not_applicable": 0,
+        expected_ids = set(load_release_gate_manifest().data_health_check_ids)
+        actual_ids = {
+            str(check.get("check_id") or "")
+            for check in checks
+            if isinstance(check, dict)
         }
-        not_all_green = (
-            payload.get("ok") is not True
-            or payload.get("overall_status") != "ok"
-            or counts != expected_counts
-            or len(checks) != EXPECTED_DATA_HEALTH_CHECK_COUNT
-            or any(not isinstance(check, dict) or check.get("status") != "ok" for check in checks)
-        )
-        if not_all_green:
+        if actual_ids != expected_ids or len(actual_ids) != len(checks) or payload.get("registry_matches_manifest") is not True:
+            return "data_health_registry_mismatch"
+        if sum(int(counts.get(key) or 0) for key in ("ok", "warn", "fail", "not_applicable")) != len(checks):
+            return "data_health_count_mismatch"
+        blocking_checks = [
+            check
+            for check in checks
+            if isinstance(check, dict)
+            and str(check.get("gate_decision") or ("block" if check.get("status") == "fail" else "pass")) == "block"
+        ]
+        if blocking_checks or payload.get("ok") is not True:
             if (
                 allow_ai_automation_pre_cutover
-                and len(checks) == EXPECTED_DATA_HEALTH_CHECK_COUNT
                 and _is_exact_ai_automation_pre_cutover(checks, counts)
             ):
                 return ""
             non_green_checks = [
-                f"{str(check.get('check_id') or 'unknown')}:{str(check.get('status') or 'unknown')}"
-                for check in checks
-                if isinstance(check, dict) and check.get("status") != "ok"
+                f"{str(check.get('check_id') or 'unknown')}:{str(check.get('reason_code') or check.get('status') or 'unknown')}"
+                for check in blocking_checks
             ]
             diagnostic = ",".join(non_green_checks) or "count_mismatch"
-            return f"data_health_checks_not_all_ok:{diagnostic}"
+            return f"data_health_release_blocked:{diagnostic}"
     return ""
 
 

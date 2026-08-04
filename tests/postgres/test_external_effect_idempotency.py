@@ -36,3 +36,17 @@ def test_repository_concurrent_create_returns_one_durable_job(migrated_database_
     persisted = repository.get_job(jobs[0].id)
     assert persisted is not None
     assert persisted.idempotency_key == key
+    assert len(persisted.created_release_sha) == 40
+    assert set(persisted.created_release_sha) <= set("0123456789abcdef")
+    assert persisted.processed_release_sha == "unknown"
+    assert persisted.health_classification_code == ""
+
+    blocked = repository.mark_blocked(
+        persisted.id,
+        attempt_id="",
+        error_code="policy_blocked",
+        error_message="fixture gate",
+    )
+    assert blocked is not None
+    assert blocked.processed_release_sha == persisted.created_release_sha
+    assert blocked.health_classification_code == "unclassified_blocked"

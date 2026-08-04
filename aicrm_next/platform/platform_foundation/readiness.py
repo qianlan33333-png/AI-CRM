@@ -56,15 +56,53 @@ def _probe_database(repository: RuntimeReadinessRepository) -> dict[str, Any]:
     return _component("ok", critical=True, ping=True, driver="psycopg")
 
 
+def _compatible_ahead(
+    current_revision: str,
+    expected_revision: str,
+    rows: tuple[dict[str, Any], ...],
+) -> bool:
+    by_revision = {str(row.get("revision") or ""): row for row in rows}
+    expected = by_revision.get(expected_revision)
+    if expected is None:
+        return False
+    expected_epoch = int(expected.get("compatibility_epoch") or 0)
+    cursor = current_revision
+    seen: set[str] = set()
+    while cursor and cursor not in seen:
+        seen.add(cursor)
+        row = by_revision.get(cursor)
+        if row is None:
+            return False
+        if cursor == expected_revision:
+            return True
+        if (
+            int(row.get("compatibility_epoch") or 0) != expected_epoch
+            or row.get("previous_runtime_compatible") is not True
+            or str(row.get("change_kind") or "") == "contract"
+        ):
+            return False
+        cursor = str(row.get("parent_revision") or "")
+    return False
+
+
 def _probe_migration(repository: RuntimeReadinessRepository, expected_heads: tuple[str, ...]) -> dict[str, Any]:
     current = repository.migration_revisions()
     matches = current == tuple(sorted(expected_heads))
+    compatibility = "exact" if matches else "incompatible"
+    if not matches and len(current) == 1 and len(expected_heads) == 1:
+        try:
+            rows = repository.migration_compatibility_rows()
+        except Exception:
+            rows = ()
+        if _compatible_ahead(current[0], expected_heads[0], rows):
+            compatibility = "compatible_ahead"
     return _component(
-        "ok" if matches else "failed",
+        "ok" if matches else "warning" if compatibility == "compatible_ahead" else "failed",
         critical=True,
         current_revisions=list(current),
         expected_heads=list(sorted(expected_heads)),
         matches_head=matches,
+        compatibility=compatibility,
     )
 
 
@@ -155,7 +193,7 @@ def runtime_readiness_payload(
     if not url:
         missing_status = "failed" if is_production else "fixture"
         components["database"] = _component(missing_status, critical=True, configured=False, ping=False)
-        components["migration"] = _component(missing_status, critical=True, matches_head=False)
+        components["migration"] = _component(missing_status, critical=True, matches_head=False, compatibility="incompatible")
         components["queues"] = _component(missing_status, critical=True, metrics={}, warnings=[])
     else:
         try:
@@ -168,7 +206,9 @@ def runtime_readiness_payload(
                     heads = tuple(expected_heads) if expected_heads is not None else _expected_migration_heads()
                     components["migration"] = _probe_migration(repository, heads)
                 except Exception as exc:
-                    components["migration"] = _component("failed", critical=True, matches_head=False, error_class=_safe_error(exc))
+                    components["migration"] = _component(
+                        "failed", critical=True, matches_head=False, compatibility="incompatible", error_class=_safe_error(exc)
+                    )
                 try:
                     components["queues"] = _probe_queues(repository)
                 except Exception as exc:
@@ -176,7 +216,7 @@ def runtime_readiness_payload(
         except Exception as exc:
             failure = _component("failed", critical=True, error_class=_safe_error(exc))
             components["database"] = dict(failure, ping=False)
-            components["migration"] = dict(failure, matches_head=False)
+            components["migration"] = dict(failure, matches_head=False, compatibility="incompatible")
             components["queues"] = dict(failure, metrics={}, warnings=[])
 
     failed_components = sorted(

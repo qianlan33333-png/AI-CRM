@@ -4853,7 +4853,7 @@ tables:
     guard_tests:
       - tests/unit/test_operation_cycle_actions.py
       - tests/contracts/test_operation_cycle_action_contracts.py
-      - tests/postgres/test_operation_cycle_actions.py
+      - tests/postgres/test_operation_cycle_actions_postgres.py
       - tests/test_data_table_lifecycle_guard.py
     notes: Payloads reject identities, local paths, Excel contents, credentials, and raw conversation.
 
@@ -4877,7 +4877,7 @@ tables:
     guard_tests:
       - tests/unit/test_operation_cycle_actions.py
       - tests/contracts/test_operation_cycle_action_contracts.py
-      - tests/postgres/test_operation_cycle_actions.py
+      - tests/postgres/test_operation_cycle_actions_postgres.py
       - tests/test_data_table_lifecycle_guard.py
     notes: Stores hashes, aggregate counts, plan links, and Codex thread identifiers only; no local artifact or recipient data.
 
@@ -4954,7 +4954,7 @@ tables:
     guard_tests:
       - tests/unit/test_operation_cycle_actions.py
       - tests/contracts/test_operation_cycle_action_contracts.py
-      - tests/postgres/test_operation_cycle_actions.py
+      - tests/postgres/test_operation_cycle_actions_postgres.py
       - tests/test_data_table_lifecycle_guard.py
     notes: Binding values and credentials remain local; CRM stores logical binding keys only.
 
@@ -5287,3 +5287,25 @@ tables:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_data_health_checks.py::test_migrated_schema_matches_lifecycle_manifest
     notes: CAS-updated dependency state. The final welcome effect is released only after every prerequisite succeeds and is never released by cancelled or failed graphs.
+
+  schema_release_compatibility:
+    domain: platform_foundation
+    lifecycle: audit
+    write_owner: migrations.versions
+    read_owners:
+      - aicrm_next.platform.platform_foundation.readiness
+      - trusted release governance
+    replacement: none; canonical forward-compatible schema rollback ledger
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - /api/system/health migration readiness
+      - production pre-mutation gate
+      - rollback compatibility verification
+    migration_source: 0170_release_governance_foundation
+    pii_level: none
+    guard_tests:
+      - tests/postgres/test_migration_compatibility.py
+      - tests/postgres/test_current_schema.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: The current 0169 history is represented by one baseline row. Future expand or contract migrations append compatibility metadata; no production business data is stored.

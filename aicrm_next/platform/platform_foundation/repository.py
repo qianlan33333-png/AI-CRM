@@ -66,6 +66,17 @@ class RuntimeReadinessRepository:
         rows = self._execute("SELECT version_num FROM alembic_version ORDER BY version_num").fetchall()
         return tuple(sorted(str(row.get("version_num") or "").strip() for row in rows if row.get("version_num")))
 
+    def migration_compatibility_rows(self) -> tuple[dict[str, Any], ...]:
+        rows = self._execute(
+            """
+            SELECT revision, parent_revision, change_kind, compatibility_epoch,
+                   previous_runtime_compatible, downgrade_policy
+            FROM schema_release_compatibility
+            ORDER BY applied_at ASC, revision ASC
+            """
+        ).fetchall()
+        return tuple(dict(row) for row in rows)
+
     def queue_metrics(
         self,
         *,

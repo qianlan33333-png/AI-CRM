@@ -34,6 +34,7 @@ from .repo_contract import (
     _execution_lane,
     _idempotency_key,
     _initial_status,
+    _health_classification_code,
     _json_dumps,
     _json_obj,
     _payload_summary,
@@ -41,6 +42,7 @@ from .repo_contract import (
     _public_job,
     _public_receipt,
     _rate_scope_key,
+    _release_sha,
     _safe_error_message,
     _text,
 )
@@ -92,7 +94,8 @@ class SQLAlchemyExternalEffectRepository(
                 ordering_key, fairness_key, rate_scope_key, policy_version,
                 actor_id, actor_type, risk_level, requires_approval, execution_mode,
                 payload_json, payload_summary_json, status, priority, scheduled_at,
-                attempt_count, max_attempts, created_at, updated_at
+                attempt_count, max_attempts, created_release_sha, processed_release_sha,
+                created_at, updated_at
             )
             VALUES (
                 :tenant_id, :effect_type, :adapter_name, :operation, :target_type, :target_id,
@@ -103,6 +106,7 @@ class SQLAlchemyExternalEffectRepository(
                 :actor_id, :actor_type, :risk_level, :requires_approval, :execution_mode,
                 CAST(:payload_json AS jsonb), CAST(:payload_summary_json AS jsonb), :status,
                 :priority, CAST(:scheduled_at AS timestamptz), 0, :max_attempts,
+                :created_release_sha, 'unknown',
                 CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
             )
             ON CONFLICT (tenant_id, idempotency_key) DO NOTHING
@@ -143,6 +147,7 @@ class SQLAlchemyExternalEffectRepository(
                 "priority": int(request.priority or 100),
                 "scheduled_at": public_datetime(scheduled_at),
                 "max_attempts": int(request.max_attempts or 5),
+                "created_release_sha": _release_sha(),
             },
         )
         if row:
@@ -669,6 +674,7 @@ class SQLAlchemyExternalEffectRepository(
                                 provider_result_consumed_at = NULL,
                                 error_code = :error_code,
                                 error_message = :error_message,
+                                processed_release_sha = :processed_release_sha,
                                 completed_at = CURRENT_TIMESTAMP
                             WHERE attempt_id = :attempt_id
                               AND job_id = :job_id
@@ -687,6 +693,7 @@ class SQLAlchemyExternalEffectRepository(
                             "provider_result_hash": provider_result_hash,
                             "error_code": _text(result.error_code),
                             "error_message": _safe_error_message(result.error_message),
+                            "processed_release_sha": _release_sha(),
                         },
                     )
                     .mappings()
@@ -705,12 +712,13 @@ class SQLAlchemyExternalEffectRepository(
                                 attempt_id, job_id, adapter_name, adapter_mode, operation, trace_id,
                                 request_id, status, request_summary_json, response_summary_json,
                                 provider_result_json, provider_result_hash,
-                                error_code, error_message, worker_generation, started_at, completed_at
+                                error_code, error_message, worker_generation, processed_release_sha,
+                                started_at, completed_at
                             ) VALUES (
                                 :attempt_id, :job_id, :adapter_name, :adapter_mode, :operation, :trace_id,
                                 :request_id, :status, CAST(:request_summary AS jsonb),
                                 CAST(:response_summary AS jsonb), CAST(:provider_result AS jsonb), :provider_result_hash,
-                                :error_code, :error_message, :worker_generation,
+                                :error_code, :error_message, :worker_generation, :processed_release_sha,
                                 CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
                             )
                             RETURNING *
@@ -732,6 +740,7 @@ class SQLAlchemyExternalEffectRepository(
                             "error_code": _text(result.error_code),
                             "error_message": _safe_error_message(result.error_message),
                             "worker_generation": int(current.get("worker_generation") or job.worker_generation or 0),
+                            "processed_release_sha": _release_sha(),
                         },
                     )
                     .mappings()
@@ -757,6 +766,8 @@ class SQLAlchemyExternalEffectRepository(
                         last_attempt_id = :attempt_id,
                         last_error_code = :error_code,
                         last_error_message = :error_message,
+                        processed_release_sha = :processed_release_sha,
+                        health_classification_code = :health_classification_code,
                         side_effect_executed = :side_effect_executed,
                         provider_result_received = :provider_result_received,
                         result_summary_json = CAST(:result_summary AS jsonb),
@@ -788,6 +799,12 @@ class SQLAlchemyExternalEffectRepository(
                         "attempt_id": attempt_id,
                         "error_code": _text(result.error_code),
                         "error_message": _safe_error_message(result.error_message),
+                        "processed_release_sha": _release_sha(),
+                        "health_classification_code": _health_classification_code(
+                            status,
+                            _text(result.error_code),
+                            response_summary,
+                        ),
                         "side_effect_executed": bool(result.real_external_call_executed),
                         "provider_result_received": bool(result.provider_result_received),
                         "result_summary": _json_dumps(response_summary),
@@ -857,6 +874,7 @@ class SQLAlchemyExternalEffectRepository(
                                 CAST(:response_summary AS jsonb),
                             error_code = :error_code,
                             error_message = :error_message,
+                            processed_release_sha = :processed_release_sha,
                             completed_at = COALESCE(completed_at, CURRENT_TIMESTAMP)
                         WHERE attempt_id = :attempt_id
                           AND job_id = :job_id
@@ -874,6 +892,7 @@ class SQLAlchemyExternalEffectRepository(
                         ),
                         "error_code": normalized_error_code,
                         "error_message": normalized_error_message,
+                        "processed_release_sha": _release_sha(),
                     },
                 )
             updated_row = (
@@ -888,6 +907,8 @@ class SQLAlchemyExternalEffectRepository(
                             provider_result_received = :provider_result_received,
                             last_error_code = :error_code,
                             last_error_message = :error_message,
+                            processed_release_sha = :processed_release_sha,
+                            health_classification_code = 'unknown_after_dispatch',
                             lease_token = '', lease_expires_at = NULL,
                             locked_by = '', locked_at = NULL,
                             completed_at = CURRENT_TIMESTAMP,
@@ -906,6 +927,7 @@ class SQLAlchemyExternalEffectRepository(
                         "provider_result_received": bool(provider_result_received),
                         "error_code": normalized_error_code,
                         "error_message": normalized_error_message,
+                        "processed_release_sha": _release_sha(),
                     },
                 )
                 .mappings()
@@ -943,41 +965,42 @@ class SQLAlchemyExternalEffectRepository(
     def mark_succeeded(self, job_id: int, *, attempt_id: str) -> ExternalEffectJob | None:
         return self._update_terminal(
             job_id,
-            "status = 'succeeded', last_attempt_id = :attempt_id, locked_by = '', locked_at = NULL, lease_token = '', lease_expires_at = NULL, executed_at = CURRENT_TIMESTAMP, completed_at = CURRENT_TIMESTAMP",
-            {"attempt_id": _text(attempt_id)},
+            "status = 'succeeded', last_attempt_id = :attempt_id, processed_release_sha = :processed_release_sha, health_classification_code = '', locked_by = '', locked_at = NULL, lease_token = '', lease_expires_at = NULL, executed_at = CURRENT_TIMESTAMP, completed_at = CURRENT_TIMESTAMP",
+            {"attempt_id": _text(attempt_id), "processed_release_sha": _release_sha()},
         )
 
     def mark_simulated(self, job_id: int, *, attempt_id: str, result_summary: dict[str, Any]) -> ExternalEffectJob | None:
         return self._update_terminal(
             job_id,
-            "status = 'simulated', attempt_count = attempt_count + 1, last_attempt_id = :attempt_id, side_effect_executed = FALSE, provider_result_received = FALSE, result_summary_json = CAST(:result_summary AS jsonb), reconciliation_required = FALSE, locked_by = '', locked_at = NULL, lease_token = '', lease_expires_at = NULL, completed_at = CURRENT_TIMESTAMP",
-            {"attempt_id": _text(attempt_id), "result_summary": _json_dumps(scrub_summary(result_summary or {}))},
+            "status = 'simulated', attempt_count = attempt_count + 1, last_attempt_id = :attempt_id, processed_release_sha = :processed_release_sha, health_classification_code = '', side_effect_executed = FALSE, provider_result_received = FALSE, result_summary_json = CAST(:result_summary AS jsonb), reconciliation_required = FALSE, locked_by = '', locked_at = NULL, lease_token = '', lease_expires_at = NULL, completed_at = CURRENT_TIMESTAMP",
+            {"attempt_id": _text(attempt_id), "result_summary": _json_dumps(scrub_summary(result_summary or {})), "processed_release_sha": _release_sha()},
         )
 
     def mark_failed_retryable(self, job_id: int, *, attempt_id: str, error_code: str, error_message: str, next_retry_at: datetime) -> ExternalEffectJob | None:
         return self._update(
             job_id,
-            "status = 'failed_retryable', attempt_count = attempt_count + 1, next_retry_at = CAST(:next_retry_at AS timestamptz), available_at = CAST(:next_retry_at AS timestamptz), last_attempt_id = :attempt_id, last_error_code = :error_code, last_error_message = :error_message, locked_by = '', locked_at = NULL, lease_token = '', lease_expires_at = NULL",
+            "status = 'failed_retryable', attempt_count = attempt_count + 1, next_retry_at = CAST(:next_retry_at AS timestamptz), available_at = CAST(:next_retry_at AS timestamptz), last_attempt_id = :attempt_id, last_error_code = :error_code, last_error_message = :error_message, processed_release_sha = :processed_release_sha, health_classification_code = 'retryable', locked_by = '', locked_at = NULL, lease_token = '', lease_expires_at = NULL",
             {
                 "attempt_id": _text(attempt_id),
                 "error_code": _text(error_code),
                 "error_message": _safe_error_message(error_message),
                 "next_retry_at": public_datetime(next_retry_at),
+                "processed_release_sha": _release_sha(),
             },
         )
 
     def mark_failed_terminal(self, job_id: int, *, attempt_id: str, error_code: str, error_message: str) -> ExternalEffectJob | None:
         return self._update_terminal(
             job_id,
-            "status = 'failed_terminal', attempt_count = attempt_count + 1, last_attempt_id = :attempt_id, last_error_code = :error_code, last_error_message = :error_message, locked_by = '', locked_at = NULL, lease_token = '', lease_expires_at = NULL, completed_at = CURRENT_TIMESTAMP",
-            {"attempt_id": _text(attempt_id), "error_code": _text(error_code), "error_message": _safe_error_message(error_message)},
+            "status = 'failed_terminal', attempt_count = attempt_count + 1, last_attempt_id = :attempt_id, last_error_code = :error_code, last_error_message = :error_message, processed_release_sha = :processed_release_sha, health_classification_code = 'unclassified_terminal', locked_by = '', locked_at = NULL, lease_token = '', lease_expires_at = NULL, completed_at = CURRENT_TIMESTAMP",
+            {"attempt_id": _text(attempt_id), "error_code": _text(error_code), "error_message": _safe_error_message(error_message), "processed_release_sha": _release_sha()},
         )
 
     def mark_blocked(self, job_id: int, *, attempt_id: str, error_code: str, error_message: str) -> ExternalEffectJob | None:
         return self._update_terminal(
             job_id,
-            "status = 'blocked', attempt_count = attempt_count + 1, last_attempt_id = :attempt_id, last_error_code = :error_code, last_error_message = :error_message, locked_by = '', locked_at = NULL, lease_token = '', lease_expires_at = NULL, completed_at = CURRENT_TIMESTAMP",
-            {"attempt_id": _text(attempt_id), "error_code": _text(error_code), "error_message": _safe_error_message(error_message)},
+            "status = 'blocked', attempt_count = attempt_count + 1, last_attempt_id = :attempt_id, last_error_code = :error_code, last_error_message = :error_message, processed_release_sha = :processed_release_sha, health_classification_code = 'unclassified_blocked', locked_by = '', locked_at = NULL, lease_token = '', lease_expires_at = NULL, completed_at = CURRENT_TIMESTAMP",
+            {"attempt_id": _text(attempt_id), "error_code": _text(error_code), "error_message": _safe_error_message(error_message), "processed_release_sha": _release_sha()},
         )
 
     def request_cancel(
@@ -1104,6 +1127,8 @@ class SQLAlchemyExternalEffectRepository(
                 f"""
                 UPDATE external_effect_job
                 SET status = 'queued',
+                    processed_release_sha = 'unknown',
+                    health_classification_code = '',
                     locked_by = '', locked_at = NULL,
                     lease_token = '', lease_expires_at = NULL,
                     heartbeat_at = NULL,
@@ -1149,8 +1174,8 @@ class SQLAlchemyExternalEffectRepository(
     def approve_job(self, job_id: int) -> ExternalEffectJob | None:
         return self._update(
             job_id,
-            "status = 'queued', approved_at = CURRENT_TIMESTAMP, locked_by = '', locked_at = NULL, lease_token = '', lease_expires_at = NULL, heartbeat_at = NULL, worker_generation = 0, next_retry_at = CURRENT_TIMESTAMP, available_at = CURRENT_TIMESTAMP, reconciliation_required = FALSE",
-            {},
+            "status = 'queued', approved_at = CURRENT_TIMESTAMP, processed_release_sha = :processed_release_sha, health_classification_code = '', locked_by = '', locked_at = NULL, lease_token = '', lease_expires_at = NULL, heartbeat_at = NULL, worker_generation = 0, next_retry_at = CURRENT_TIMESTAMP, available_at = CURRENT_TIMESTAMP, reconciliation_required = FALSE",
+            {"processed_release_sha": _release_sha()},
         )
 
     def record_attempt(
@@ -1170,12 +1195,12 @@ class SQLAlchemyExternalEffectRepository(
             INSERT INTO external_effect_attempt (
                 attempt_id, job_id, adapter_name, adapter_mode, operation, trace_id,
                 request_id, status, request_summary_json, response_summary_json,
-                error_code, error_message, started_at, completed_at
+                error_code, error_message, processed_release_sha, started_at, completed_at
             )
             VALUES (
                 :attempt_id, :job_id, :adapter_name, :adapter_mode, :operation, :trace_id,
                 :request_id, :status, CAST(:request_summary AS jsonb), CAST(:response_summary AS jsonb),
-                :error_code, :error_message, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                :error_code, :error_message, :processed_release_sha, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
             )
             RETURNING *
             """,
@@ -1192,6 +1217,7 @@ class SQLAlchemyExternalEffectRepository(
                 "response_summary": _json_dumps(scrub_summary(response_summary or {})),
                 "error_code": _text(error_code),
                 "error_message": _safe_error_message(error_message),
+                "processed_release_sha": _release_sha(),
             },
         )
         attempt = _public_attempt(row)

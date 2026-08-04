@@ -209,14 +209,15 @@ jobs:
             from aicrm_next.insights.data_health.application import data_health_summary
 
             summary = data_health_summary()
-            external = next(
-                item for item in summary['checks']
-                if item['check_id'] == 'external_effect_failed_retryable_backlog'
-            )
-            assert summary['counts']['fail'] == 0
-            assert external['status'] == 'ok'
-            assert external['severity'] == 'green'
-            absence = external['evidence']['external_contact_relationship_absent']
+            external = {
+                item['check_id']: item for item in summary['checks']
+                if item['check_id'].startswith('external_effect_')
+            }
+            assert summary['registry_matches_manifest'] is True
+            assert summary['gate_counts']['block'] == 0
+            assert all(item['gate_decision'] != 'block' for item in external.values())
+            terminal = external['external_effect_unclassified_terminal_recent']
+            absence = terminal['evidence']['external_contact_relationship_absent']
             assert 3 <= absence['count'] <= 12
             assert absence['replay_prohibited'] is True
             assert absence['provider_success_claimed'] is False

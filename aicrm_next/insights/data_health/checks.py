@@ -12,10 +12,6 @@ from aicrm_next.platform.shared.release_cutovers import (
 )
 from aicrm_next.platform.shared.db_session import get_session_factory
 from aicrm_next.platform.shared.runtime_settings import environment_contains, managed_runtime_int
-from aicrm_next.platform.shared.queue_provenance import (
-    POST_CUTOVER_IDENTITY_RECOVERY_PREDICATE_VERSION,
-    PRE_PROVIDER_IDENTITY_ADOPTION_PREDICATE_VERSION,
-)
 from tools.check_data_table_lifecycle import check_data_table_lifecycle
 
 from .dto import DataHealthCheckResult
@@ -24,6 +20,7 @@ from .external_effect_provenance import (
     direct_canary_job_sql,
     external_effect_backlog_sql,
 )
+from .external_effect_health import classified_terminal_evidence
 from .projection_health import projection_freshness_customer_read_model
 from .schema_drift import (
     database_schema_available,
@@ -62,6 +59,11 @@ EXTERNAL_EFFECT_RETRYABLE_DUE_MAX_COUNT = managed_runtime_int(
     100,
     minimum=0,
 )
+EXTERNAL_EFFECT_RETRYABLE_SLA_SECONDS = managed_runtime_int(
+    "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_RETRYABLE_SLA_SECONDS",
+    900,
+    minimum=60,
+)
 EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS = max(
     1,
     managed_runtime_int(
@@ -75,12 +77,18 @@ COMMERCE_CONTINUATION_CUTOVER_SQL = "TIMESTAMPTZ '2026-07-13 09:46:09+00'"
 
 
 def run_all_checks() -> list[DataHealthCheckResult]:
-    return [check() for check in _CHECKS]
+    results: list[DataHealthCheckResult] = []
+    for check in _CHECKS:
+        value = check()
+        if isinstance(value, DataHealthCheckResult):
+            results.append(value)
+        else:
+            results.extend(value)
+    return results
 
 
 def run_check(check_id: str) -> DataHealthCheckResult | None:
-    for check in _CHECKS:
-        result = check()
+    for result in run_all_checks():
         if result.check_id == check_id:
             return result
     return None
@@ -551,8 +559,12 @@ def _broadcast_job_blocked_backlog() -> DataHealthCheckResult:
     )
 
 
-def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
-    check_id = "external_effect_failed_retryable_backlog"
+def _external_effect_delivery_checks() -> tuple[DataHealthCheckResult, ...]:
+    check_ids = (
+        "external_effect_due_retryable_backlog",
+        "external_effect_unclassified_terminal_recent",
+        "external_effect_unclassified_blocked_recent",
+    )
     title = "External effect delivery health"
     source_tables = [
         "external_effect_job",
@@ -563,19 +575,25 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
         "wechat_pay_refunds",
     ]
     if not database_schema_available():
-        return _db_unavailable_placeholder(check_id, title, source_tables)
+        return tuple(_db_unavailable_placeholder(check_id, title, source_tables) for check_id in check_ids)
     try:
         with get_session_factory()() as session:
             row = session.execute(text(external_effect_backlog_sql(terminal_lookback_hours=EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS))).mappings().first() or {}
     except Exception as exc:  # pragma: no cover - defensive health endpoint guard
-        return DataHealthCheckResult(
-            check_id=check_id,
-            title=title,
-            status="fail",
-            severity="red",
-            summary="External effect backlog check could not read the live queue.",
-            evidence={"error": type(exc).__name__, "message": str(exc)[:300]},
-            remediation="Verify external_effect_job migrations and DATABASE_URL read access.",
+        return tuple(
+            DataHealthCheckResult(
+                check_id=check_id,
+                title=title,
+                status="fail",
+                severity="red",
+                summary="External effect backlog check could not read the live queue.",
+                evidence={"error": type(exc).__name__, "message": str(exc)[:300]},
+                remediation="Verify external_effect_job migrations and DATABASE_URL read access.",
+                gate_decision="block",
+                reason_code="external_effect_health_query_failed",
+                candidate_related="unknown",
+            )
+            for check_id in check_ids
         )
     failed_retryable_count = int(row.get("failed_retryable_count") or 0)
     failed_terminal_count = int(row.get("recent_failed_terminal_count", row.get("failed_terminal_count")) or 0)
@@ -584,38 +602,7 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
     historical_blocked_count = int(row.get("historical_blocked_count") or blocked_count)
     due_retryable_count = int(row.get("due_retryable_count") or 0)
     oldest_failed_retryable_age_seconds = int(float(row.get("oldest_failed_retryable_age_seconds") or 0))
-    canary_failed_retryable_count = int(row.get("canary_failed_retryable_count") or 0)
-    canary_failed_terminal_count = int(row.get("canary_failed_terminal_count") or 0)
-    canary_blocked_count = int(row.get("canary_blocked_count") or 0)
-    callback_welcome_failed_terminal_count = int(row.get("callback_welcome_failed_terminal_count") or 0)
-    pre_cutover_acknowledged_welcome_count = int(row.get("pre_cutover_acknowledged_welcome_count") or 0)
-    acknowledged_production_welcome_41050_count = int(row.get("acknowledged_production_welcome_41050_count") or 0)
-    acknowledged_private_message_84061_count = int(row.get("acknowledged_private_message_84061_count") or 0)
-    classified_group_message_40058_count = int(
-        row.get("classified_group_message_40058_count") or 0
-    )
-    acknowledged_private_message_contact_absence_20260728_count = int(
-        row.get("acknowledged_private_message_contact_absence_20260728_count") or 0
-    )
-    acknowledged_refund_not_enough_count = int(row.get("acknowledged_refund_not_enough_count") or 0)
-    refund_not_enough_business_rejection_count = int(row.get("refund_not_enough_business_rejection_count") or 0)
-    wecom_content_validation_business_rejection_count = int(row.get("wecom_content_validation_business_rejection_count") or 0)
-    wecom_welcome_window_closed_business_rejection_count = int(
-        row.get("wecom_welcome_window_closed_business_rejection_count") or 0
-    )
-    expected_contact_absence_count = int(row.get("expected_contact_absence_count") or 0)
-    private_message_contact_absence_count = int(row.get("private_message_contact_absence_count") or 0)
-    pre_cutover_deferred_identity_count, post_cutover_recoverable_identity_count = (
-        int(row.get("pre_cutover_deferred_identity_count") or 0),
-        int(row.get("post_cutover_recoverable_identity_count") or 0),
-    )
-    violations = []
-    if failed_terminal_count > 0:
-        violations.append(f"failed_terminal_count={failed_terminal_count} exceeds 0")
-    if blocked_count > 0:
-        violations.append(f"blocked_count={blocked_count} exceeds 0")
-    if due_retryable_count > EXTERNAL_EFFECT_RETRYABLE_DUE_MAX_COUNT:
-        violations.append(f"due_retryable_count={due_retryable_count} exceeds {EXTERNAL_EFFECT_RETRYABLE_DUE_MAX_COUNT}")
+    classified_evidence, known_terminal_count = classified_terminal_evidence(row)
     evidence = {
         "failed_retryable_count": failed_retryable_count,
         "failed_terminal_count": failed_terminal_count,
@@ -626,149 +613,97 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
         "due_retryable_count": due_retryable_count,
         "oldest_failed_retryable_age_seconds": oldest_failed_retryable_age_seconds,
         "due_retryable_threshold": EXTERNAL_EFFECT_RETRYABLE_DUE_MAX_COUNT,
-        "id_validation_canary": {
-            "failed_retryable_count": canary_failed_retryable_count,
-            "failed_terminal_count": canary_failed_terminal_count,
-            "blocked_count": canary_blocked_count,
-            "callback_welcome_failed_terminal_count": callback_welcome_failed_terminal_count,
-            "excluded_from_business_health": True,
-            "strict_provenance_required": True,
-        },
-        "pre_cutover_welcome_terminal_acknowledgement": {
-            "acknowledged_count": pre_cutover_acknowledged_welcome_count,
-            "excluded_from_business_health": True,
-            "operator_acknowledgement_required": True,
-            "provider_success_claimed": False,
-            "replay_prohibited": True,
-            "strict_provenance_required": True,
-        },
-        "production_welcome_41050_acknowledgement": {
-            "acknowledged_count": acknowledged_production_welcome_41050_count,
-            "excluded_from_business_health": True,
-            "operator_acknowledgement_required": True,
-            "provider_success_claimed": False,
-            "replay_prohibited": True,
-            "strict_provenance_required": True,
-        },
-        "production_private_message_84061_acknowledgement": {
-            "acknowledged_count": acknowledged_private_message_84061_count,
-            "excluded_from_business_health": True,
-            "operator_acknowledgement_required": True,
-            "provider_success_claimed": False,
-            "replay_prohibited": True,
-            "strict_provenance_required": True,
-        },
-        "production_group_message_40058_no_replay_classification": {
-            "classified_count": classified_group_message_40058_count,
-            "excluded_from_business_health": True,
-            "operator_acknowledgement_required": True,
-            "provider_success_claimed": False,
-            "replay_prohibited": True,
-            "strict_provenance_required": True,
-        },
-        "production_private_message_contact_absence_20260728_acknowledgement": {
-            "acknowledged_count": (acknowledged_private_message_contact_absence_20260728_count),
-            "excluded_from_business_health": True,
-            "operator_acknowledgement_required": True,
-            "provider_success_claimed": False,
-            "replay_prohibited": True,
-            "strict_provenance_required": True,
-        },
-        "production_wechat_refund_not_enough_acknowledgement": {
-            "acknowledged_count": acknowledged_refund_not_enough_count,
-            "excluded_from_business_health": True,
-            "operator_acknowledgement_required": True,
-            "provider_success_claimed": False,
-            "replay_prohibited": True,
-            "strict_provenance_required": True,
-        },
-        "wechat_refund_not_enough_business_outcome": {
-            "completed_count": refund_not_enough_business_rejection_count,
-            "process_outcome": "completed",
-            "business_outcome": "rejected",
-            "business_reason_code": "insufficient_refund_balance",
-            "excluded_from_system_health_failures": True,
-            "refund_executed": False,
-            "provider_success_claimed": False,
-            "replay_prohibited": True,
-            "strict_provenance_required": True,
-        },
-        "wecom_content_validation_business_outcome": {
-            "completed_count": wecom_content_validation_business_rejection_count,
-            "process_outcome": "completed",
-            "business_outcome": "rejected",
-            "business_reason_code": "miniprogram_title_exceeds_64_bytes",
-            "excluded_from_system_health_failures": True,
-            "provider_boundary_crossed": True,
-            "provider_success_claimed": False,
-            "replay_prohibited_until_content_fixed": True,
-            "strict_provenance_required": True,
-        },
-        "wecom_welcome_window_closed_business_outcome": {
-            "completed_count": wecom_welcome_window_closed_business_rejection_count,
-            "process_outcome": "completed",
-            "business_outcome": "not_sent",
-            "business_reason_code": "welcome_window_already_closed",
-            "excluded_from_system_health_failures": True,
-            "provider_boundary_crossed": True,
-            "provider_success_claimed": False,
-            "replay_prohibited": True,
-            "strict_provenance_required": True,
-        },
-        "external_contact_relationship_absent": {
-            "count": expected_contact_absence_count,
-            "excluded_from_business_health": True,
-            "provider_boundary_crossed": True,
-            "provider_success_claimed": False,
-            "replay_prohibited": True,
-            "strict_provenance_required": True,
-        },
-        "private_message_contact_relationship_absent": {
-            "count": private_message_contact_absence_count,
-            "process_outcome": "completed",
-            "business_outcome": "rejected",
-            "business_reason_code": "external_contact_relationship_absent",
-            "excluded_from_system_health_failures": True,
-            "provider_boundary_crossed": True,
-            "provider_success_claimed": False,
-            "replay_prohibited": True,
-            "strict_provenance_required": True,
-        },
-        "pre_cutover_deferred_identity_adoption": {
-            "eligible_count": pre_cutover_deferred_identity_count,
-            "excluded_from_business_health": True,
-            "provider_boundary_crossed": False,
-            "pending_generation_1_adoption": True,
-            "predicate_version": PRE_PROVIDER_IDENTITY_ADOPTION_PREDICATE_VERSION,
-            "strict_provenance_required": True,
-        },
-        "post_cutover_identity_recovery": {
-            "eligible_count": post_cutover_recoverable_identity_count,
-            "excluded_from_business_health": True,
-            "provider_boundary_crossed": False,
-            "predicate_version": POST_CUTOVER_IDENTITY_RECOVERY_PREDICATE_VERSION,
-            "strict_provenance_required": True,
-        },
+        "retryable_sla_seconds": EXTERNAL_EFFECT_RETRYABLE_SLA_SECONDS,
+        **classified_evidence,
     }
-    if violations:
-        return DataHealthCheckResult(
-            check_id=check_id,
-            title=title,
-            status="fail",
-            severity="red",
-            summary="External effect queue has blocked, terminal, or excessive due retryable jobs.",
-            evidence={**evidence, "violations": violations},
-            remediation="Inspect external_effect_attempt, repair adapter/runtime failures, and requeue explicitly.",
+    retryable_violations = []
+    if due_retryable_count > EXTERNAL_EFFECT_RETRYABLE_DUE_MAX_COUNT:
+        retryable_violations.append(
+            f"due_retryable_count={due_retryable_count} exceeds {EXTERNAL_EFFECT_RETRYABLE_DUE_MAX_COUNT}"
         )
-    return DataHealthCheckResult(
-        check_id=check_id,
-        title=title,
-        status="ok",
-        severity="green",
-        summary=("External effect delivery health is within threshold; deterministic business rejections are reported separately."),
-        evidence=evidence,
-        remediation="",
+    if due_retryable_count and oldest_failed_retryable_age_seconds > EXTERNAL_EFFECT_RETRYABLE_SLA_SECONDS:
+        retryable_violations.append(
+            f"oldest_failed_retryable_age_seconds={oldest_failed_retryable_age_seconds} exceeds {EXTERNAL_EFFECT_RETRYABLE_SLA_SECONDS}"
+        )
+    retryable_status = "fail" if retryable_violations else "warn" if due_retryable_count else "ok"
+    retryable = DataHealthCheckResult(
+        check_id=check_ids[0],
+        title="External effect due-retryable progress",
+        status=retryable_status,
+        severity="red" if retryable_violations else "yellow" if due_retryable_count else "green",
+        summary=(
+            "External effect retry work exceeded its release SLA."
+            if retryable_violations
+            else "External effect retry work is due but remains within its release SLA."
+            if due_retryable_count
+            else "External effect retry work is not overdue."
+        ),
+        evidence={**evidence, "violations": retryable_violations},
+        remediation="Inspect worker progress and repair the adapter before an explicit retry." if retryable_violations else "",
+        gate_decision="block" if retryable_violations else "warn" if due_retryable_count else "pass",
+        reason_code=(
+            "external_effect_retry_sla_exceeded"
+            if retryable_violations
+            else "external_effect_retry_within_sla"
+            if due_retryable_count
+            else "external_effect_retry_clear"
+        ),
+        candidate_related="unknown",
+        replay_policy="rerun_after_worker_progress",
     )
+
+    terminal = DataHealthCheckResult(
+        check_id=check_ids[1],
+        title="External effect unclassified terminal outcomes",
+        status="fail" if failed_terminal_count else "warn" if historical_failed_terminal_count or known_terminal_count else "ok",
+        severity="red" if failed_terminal_count else "yellow" if historical_failed_terminal_count or known_terminal_count else "green",
+        summary=(
+            "External effect queue contains recent unclassified terminal outcomes."
+            if failed_terminal_count
+            else "Classified business terminal history is retained for audit and does not block releases."
+            if historical_failed_terminal_count or known_terminal_count
+            else "External effect queue has no unclassified terminal outcome."
+        ),
+        evidence={**evidence, "known_terminal_count": known_terminal_count},
+        remediation="Classify the provider outcome with strict provenance; never auto-replay it." if failed_terminal_count else "",
+        gate_decision="block" if failed_terminal_count else "warn" if historical_failed_terminal_count or known_terminal_count else "pass",
+        reason_code=(
+            "external_effect_unclassified_terminal_recent"
+            if failed_terminal_count
+            else "external_effect_classified_terminal_history"
+            if historical_failed_terminal_count or known_terminal_count
+            else "external_effect_terminal_clear"
+        ),
+        candidate_related="unknown",
+        replay_policy="manual_classification_no_auto_replay",
+    )
+
+    blocked = DataHealthCheckResult(
+        check_id=check_ids[2],
+        title="External effect unclassified blocked outcomes",
+        status="fail" if blocked_count else "warn" if historical_blocked_count else "ok",
+        severity="red" if blocked_count else "yellow" if historical_blocked_count else "green",
+        summary=(
+            "External effect queue contains recent unclassified blocked outcomes."
+            if blocked_count
+            else "Historical blocked outcomes are retained for audit and do not block releases."
+            if historical_blocked_count
+            else "External effect queue has no unclassified blocked outcome."
+        ),
+        evidence=evidence,
+        remediation="Repair the execution gate or classify the business outcome before retrying." if blocked_count else "",
+        gate_decision="block" if blocked_count else "warn" if historical_blocked_count else "pass",
+        reason_code=(
+            "external_effect_unclassified_blocked_recent"
+            if blocked_count
+            else "external_effect_blocked_history"
+            if historical_blocked_count
+            else "external_effect_blocked_clear"
+        ),
+        candidate_related="unknown",
+        replay_policy="manual_after_gate_repair",
+    )
+    return retryable, terminal, blocked
 
 
 def _ai_automation_lane_readiness() -> DataHealthCheckResult:
@@ -1422,7 +1357,7 @@ def _wecom_media_lease_health() -> DataHealthCheckResult:
     )
 
 
-_CHECKS: tuple[Callable[[], DataHealthCheckResult], ...] = (
+_CHECKS: tuple[Callable[[], DataHealthCheckResult | tuple[DataHealthCheckResult, ...]], ...] = (
     _identity_legacy_column_guard,
     _table_lifecycle_manifest_guard,
     _retired_table_runtime_reference_guard,
@@ -1431,7 +1366,7 @@ _CHECKS: tuple[Callable[[], DataHealthCheckResult], ...] = (
     _identity_resolution_queue_backlog,
     _projection_freshness_customer_read_model,
     _broadcast_job_blocked_backlog,
-    _external_effect_failed_retryable_backlog,
+    _external_effect_delivery_checks,
     _ai_automation_lane_readiness,
     _deprecated_execution_settings_present,
     _fake_stub_route_exposed,
