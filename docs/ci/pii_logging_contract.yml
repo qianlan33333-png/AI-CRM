@@ -1,0 +1,5 @@
+schema_version: 1
+description: >-
+  Current-code exceptions for the static PII logging gate. Entries must identify
+  one reviewed finding, carry an owner and reason, and expire automatically.
+pii_logging_allowlist: []

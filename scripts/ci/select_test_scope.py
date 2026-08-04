@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+"""Fail-closed selector for the current AI-CRM test system.
+
+The selector has five and only five public outputs. It uses the current behavior
+inventory for normal changes and escalates deleted or unknown runtime paths to a
+full high-risk pull-request gate.
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -6,476 +13,491 @@ import fnmatch
 import json
 import os
 import subprocess
-import sys
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Literal
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_MANIFEST = ROOT / "docs" / "ci" / "test_scope_manifest.yml"
-DEFAULT_DURATION_BASELINE = ROOT / "docs" / "ci" / "pytest_duration_baseline.json"
-ARCHITECTURE_ORDER = {"none": 0, "fast": 1, "db": 2, "full": 3}
+INVENTORY_PATH = ROOT / "docs" / "ci" / "current_behavior_inventory.json"
+
+Tier = Literal["fast", "high_risk", "release", "full"]
+
+PUBLIC_OUTPUT_FIELDS = (
+    "tier",
+    "python_targets",
+    "frontend_targets",
+    "requires_postgres",
+    "reason",
+)
+
+CORE_FAST_TESTS = (
+    "tests/contracts/test_behavior_inventory.py",
+    "tests/contracts/test_test_system_budget.py",
+    "tests/contracts/test_ci_selector.py",
+    "tests/contracts/test_architecture_checkers.py",
+)
+
+ALL_PYTHON_TARGETS = (
+    "tests/unit",
+    "tests/contracts",
+    "tests/postgres",
+    "tests/high_risk",
+    "tests/release",
+)
+
+ALL_FRONTEND_TARGETS = ("tests/frontend",)
+
+HIGH_RISK_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
+    (
+        "migration_or_schema",
+        (
+            "migrations/**",
+            "alembic.ini",
+            "scripts/ops/bootstrap_database.py",
+            "docs/architecture/data_table_lifecycle_manifest.yml",
+            "docs/architecture/db_access_boundary.yml",
+        ),
+    ),
+    (
+        "authentication_or_identity",
+        (
+            "aicrm_next/platform/admin_auth/**",
+            "aicrm_next/platform/platform_foundation/auth_platform/**",
+            "aicrm_next/channels/auth_wecom/**",
+            "aicrm_next/crm/identity_contact/**",
+        ),
+    ),
+    (
+        "payment_refund_or_entitlement",
+        (
+            "aicrm_next/extensions/commerce/**/*payment*",
+            "aicrm_next/extensions/commerce/**/*pay*",
+            "aicrm_next/extensions/commerce/**/*refund*",
+            "aicrm_next/extensions/commerce/**/*order*",
+            "aicrm_next/extensions/commerce/**/service_period/**",
+            "aicrm_next/channels/integration_gateway/payment_*",
+            "aicrm_next/channels/integration_gateway/wechat_pay_client.py",
+        ),
+    ),
+    (
+        "callback_or_external_effect",
+        (
+            "aicrm_next/channels/channel_entry/**",
+            "aicrm_next/channels/integration_gateway/**",
+            "aicrm_next/platform/platform_foundation/external_effects/**",
+            "aicrm_next/platform/platform_foundation/webhook_inbox/**",
+            "aicrm_next/platform/external_push/**",
+            "aicrm_next/external_effect_composition.py",
+        ),
+    ),
+    (
+        "approved_high_risk_business_flow",
+        (
+            "aicrm_next/extensions/forms/questionnaire/**",
+            "aicrm_next/automation/automation_engine/group_ops/**",
+        ),
+    ),
+    (
+        "production_or_deploy",
+        (
+            "deploy/**",
+            "scripts/prod.sh",
+            "scripts/ops/*deploy*",
+            "scripts/ops/*production*",
+            ".github/workflows/deploy.yml",
+            ".github/workflows/promote-production.yml",
+        ),
+    ),
+    (
+        "ci_or_dependency_control_plane",
+        (
+            ".github/**",
+            "scripts/ci/**",
+            "docs/ci/**",
+            "Makefile",
+            "pyproject.toml",
+            "requirements*.txt",
+            "requirements.lock",
+            "package.json",
+            "package-lock.json",
+            "tests/conftest.py",
+        ),
+    ),
+)
+
+DEPENDENCY_AUDIT_PATTERNS = (
+    "requirements*.txt",
+    "requirements.lock",
+    "pyproject.toml",
+    "package.json",
+    "package-lock.json",
+    ".github/**",
+    "scripts/ci/check_dependency_security.py",
+    "scripts/ci/check_github_action_pins.py",
+    "docs/security/dependency_risk_acceptance.yml",
+)
 
 
-def _load_manifest(path: Path) -> dict:
-    text = path.read_text(encoding="utf-8")
-    try:
-        data = json.loads(text)
-    except json.JSONDecodeError:
-        try:
-            import yaml  # type: ignore
-        except ModuleNotFoundError as exc:
-            raise SystemExit(
-                f"{path} is not JSON-compatible and PyYAML is not installed. "
-                "Keep the CI scope manifest JSON-compatible so selector can run before pip install."
-            ) from exc
-        data = yaml.safe_load(text)
-    if not isinstance(data, dict):
-        raise SystemExit(f"{path} must contain a mapping")
-    return data
+@dataclass(frozen=True)
+class Selection:
+    tier: Tier
+    python_targets: tuple[str, ...]
+    frontend_targets: tuple[str, ...]
+    requires_postgres: bool
+    reason: str
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "tier": self.tier,
+            "python_targets": list(self.python_targets),
+            "frontend_targets": list(self.frontend_targets),
+            "requires_postgres": self.requires_postgres,
+            "reason": self.reason,
+        }
 
 
-def _normalize_path(path: str) -> str:
-    normalized = path.strip().replace("\\", "/")
-    if normalized.startswith("./"):
-        normalized = normalized[2:]
-    while normalized.startswith("/"):
-        normalized = normalized[1:]
-    return normalized
-
-
-def _matches(path: str, pattern: str) -> bool:
-    path = _normalize_path(path)
-    pattern = _normalize_path(pattern)
-    if pattern.endswith("/**"):
-        prefix = pattern[:-3]
-        return path == prefix or path.startswith(f"{prefix}/")
-    return fnmatch.fnmatchcase(path, pattern)
-
-
-def _unique(items: Iterable[str]) -> list[str]:
-    seen: set[str] = set()
-    result: list[str] = []
-    for item in items:
-        if item and item not in seen:
-            seen.add(item)
-            result.append(item)
-    return result
-
-
-def _is_direct_test_path(path: str) -> bool:
-    normalized = _normalize_path(path)
-    return (
-        normalized.startswith("tests/test_")
-        and normalized.endswith(".py")
-    ) or (
-        normalized.startswith("tests/frontend/")
-        and normalized.endswith(".mjs")
-    )
-
-
-def _load_duration_baseline(path: Path) -> dict:
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        raise SystemExit(f"Unable to load pytest duration baseline: {path}") from exc
-    if not isinstance(payload, dict) or not isinstance(payload.get("files"), dict):
-        raise SystemExit(f"{path} must contain a files duration mapping")
+def load_inventory(path: Path = INVENTORY_PATH) -> dict[str, object]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict) or payload.get("truth_source") != "current_ai_crm_next":
+        raise ValueError(f"invalid current behavior inventory: {path}")
+    if not isinstance(payload.get("behaviors"), list):
+        raise ValueError(f"behavior inventory has no behaviors: {path}")
     return payload
 
 
-def _estimated_python_work_seconds(
-    python_tests: Iterable[str],
-    baseline: dict,
-    *,
-    unknown_test_seconds: float,
-) -> float:
-    files = baseline.get("files", {})
-    total = 0.0
-    for test_path in python_tests:
-        entry = files.get(test_path)
-        duration = entry.get("duration_seconds") if isinstance(entry, dict) else None
-        if isinstance(duration, (int, float)) and not isinstance(duration, bool) and duration >= 0:
-            total += float(duration)
-        else:
-            total += unknown_test_seconds
-    return round(total, 3)
+def normalize_path(value: str) -> str:
+    normalized = str(value or "").strip().replace("\\", "/")
+    while normalized.startswith("./"):
+        normalized = normalized[2:]
+    return normalized.lstrip("/")
 
 
-def _exclusive_scope_override_matches(
-    manifest: dict,
-    scopes_by_name: dict[str, dict],
-    path: str,
-) -> list[dict] | None:
-    overrides = manifest.get("exclusive_scope_overrides", [])
-    if not isinstance(overrides, list):
-        raise SystemExit("manifest.exclusive_scope_overrides must be a list")
-    for override in overrides:
-        patterns = override.get("paths", [])
-        if not any(_matches(path, pattern) for pattern in patterns):
-            continue
-        selected_scopes: list[dict] = []
-        missing_names: list[str] = []
-        for name in override.get("scopes", []):
-            scope = scopes_by_name.get(str(name))
-            if scope is None:
-                missing_names.append(str(name))
-                continue
-            selected_scopes.append(scope)
-        if missing_names:
-            raise SystemExit(f"Unknown override scope(s) for {path}: {', '.join(missing_names)}")
-        return selected_scopes
-    return None
+def matches(path: str, pattern: str) -> bool:
+    path = normalize_path(path)
+    pattern = normalize_path(pattern)
+    if pattern.endswith("/**"):
+        prefix = pattern[:-3].rstrip("/")
+        if any(marker in prefix for marker in ("*", "?", "[")):
+            return fnmatch.fnmatchcase(path, pattern)
+        return path == prefix or path.startswith(prefix + "/")
+    return fnmatch.fnmatchcase(path, pattern)
 
 
-def _git_diff_changes(*args: str) -> tuple[list[str], list[str]]:
-    completed = subprocess.run(
-        ["git", "diff", "--name-status", "--no-renames", *args],
-        cwd=ROOT,
-        text=True,
-        check=True,
-        capture_output=True,
+def unique(values: Iterable[str]) -> tuple[str, ...]:
+    return tuple(dict.fromkeys(value for value in values if value))
+
+
+def _high_risk_reasons(paths: Iterable[str]) -> list[str]:
+    reasons: list[str] = []
+    for name, patterns in HIGH_RISK_RULES:
+        if any(matches(path, pattern) for path in paths for pattern in patterns):
+            reasons.append(name)
+    return list(dict.fromkeys(reasons))
+
+
+def _is_known_direct_test(path: str) -> bool:
+    return any(
+        path.startswith(prefix)
+        for prefix in (
+            "tests/unit/",
+            "tests/contracts/",
+            "tests/postgres/",
+            "tests/high_risk/",
+            "tests/release/",
+            "tests/frontend/",
+        )
     )
-    changed_files: list[str] = []
-    deleted_files: list[str] = []
-    for line in completed.stdout.splitlines():
-        if not line.strip():
-            continue
-        status, separator, raw_path = line.partition("\t")
-        if not separator or not raw_path.strip():
-            raise SystemExit(f"Unable to parse git diff status line: {line!r}")
-        path = _normalize_path(raw_path)
-        changed_files.append(path)
-        if status == "D":
-            deleted_files.append(path)
-    return _unique(changed_files), _unique(deleted_files)
 
 
-def _changed_files_from_event() -> tuple[list[str], list[str]]:
-    event_path = os.environ.get("GITHUB_EVENT_PATH")
-    if not event_path:
-        return _git_diff_changes("HEAD^", "HEAD")
-
-    payload = json.loads(Path(event_path).read_text(encoding="utf-8"))
-    event_name = os.environ.get("GITHUB_EVENT_NAME", "")
-
-    if event_name == "pull_request" and "pull_request" in payload:
-        base_sha = payload["pull_request"]["base"]["sha"]
-        head_sha = payload["pull_request"]["head"]["sha"]
-        return _git_diff_changes(f"{base_sha}...{head_sha}")
-
-    if event_name == "push":
-        before = payload.get("before")
-        after = payload.get("after") or "HEAD"
-        if before and set(before) != {"0"}:
-            return _git_diff_changes(before, after)
-        return _git_diff_changes("HEAD^", after)
-
-    return [], []
+def _is_test_layer_target(path: str, layer: str) -> bool:
+    return path == layer or path.startswith(layer + "/")
 
 
-def _full_ci_requested() -> bool:
-    if os.environ.get("AICRM_FORCE_FULL_CI", "").lower() in {"1", "true", "yes"}:
-        return True
-
-    event_path = os.environ.get("GITHUB_EVENT_PATH")
-    if not event_path:
+def _is_runtime_candidate(path: str) -> bool:
+    if path.startswith("docs/") and path not in {
+        "docs/architecture/route_ownership_manifest.yml",
+        "docs/architecture/data_table_lifecycle_manifest.yml",
+    }:
         return False
-
-    payload = json.loads(Path(event_path).read_text(encoding="utf-8"))
-    if os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch":
-        inputs = payload.get("inputs") or {}
-        value = inputs.get("full", "") if isinstance(inputs, dict) else ""
-        return str(value).lower() in {"1", "true", "yes"}
-
-    pull_request = payload.get("pull_request") or {}
-    label_names = {
-        str(label.get("name", "")).lower()
-        for label in pull_request.get("labels", [])
-        if isinstance(label, dict)
+    if _is_known_direct_test(path):
+        return False
+    if path.startswith(("aicrm_next/", "scripts/", "tools/", "deploy/", "migrations/", ".github/")):
+        return True
+    return path in {
+        "app.py",
+        "alembic.ini",
+        "Makefile",
+        "pyproject.toml",
+        "requirements.txt",
+        "requirements-dev.txt",
+        "requirements.lock",
+        "package.json",
+        "package-lock.json",
     }
-    body = str(pull_request.get("body") or "").lower()
-    title = str(pull_request.get("title") or "").lower()
-    return "full-ci" in label_names or "[full-ci]" in body or "[full-ci]" in title
 
 
-def _select(
-    manifest: dict,
-    changed_files: list[str],
+def _matched_tests(inventory: dict[str, object], changed_files: Iterable[str]) -> tuple[list[str], set[str]]:
+    selected: list[str] = []
+    matched_paths: set[str] = set()
+    for behavior in inventory["behaviors"]:  # type: ignore[index]
+        if not isinstance(behavior, dict):
+            continue
+        patterns = [str(value) for value in behavior.get("source_paths", [])]
+        matching = {path for path in changed_files if any(matches(path, pattern) for pattern in patterns)}
+        if not matching:
+            continue
+        matched_paths.update(matching)
+        for target in behavior.get("tests", []):
+            if isinstance(target, dict) and str(target.get("path") or ""):
+                selected.append(str(target["path"]))
+    return selected, matched_paths
+
+
+def classify(
+    changed_files: Iterable[str],
     *,
     deleted_files: Iterable[str] = (),
-    duration_baseline: dict | None = None,
-) -> dict:
-    scopes = manifest.get("scopes", [])
-    if not isinstance(scopes, list):
-        raise SystemExit("manifest.scopes must be a list")
+    event_name: str = "pull_request",
+    main_push: bool = False,
+    force_full: bool = False,
+    local: bool = False,
+    inventory: dict[str, object] | None = None,
+) -> Selection:
+    changed = unique(normalize_path(path) for path in changed_files)
+    deleted = unique(normalize_path(path) for path in deleted_files)
+    inventory = inventory or load_inventory()
 
-    changed_files = _unique(_normalize_path(path) for path in changed_files if path.strip())
-    deleted_file_set = {
-        _normalize_path(path)
-        for path in deleted_files
-        if path.strip()
-    }
-    high_risk_paths = manifest.get("high_risk_paths", [])
-    dependency_audit_paths = manifest.get("dependency_audit_paths", [])
-    scopes_by_name = {str(scope.get("name")): scope for scope in scopes}
+    if force_full or event_name in {"workflow_call", "workflow_dispatch"}:
+        return _full_selection("manual_or_reusable_full_regression", local=local)
+    if main_push or (event_name == "push" and os.environ.get("GITHUB_REF") == "refs/heads/main"):
+        return Selection(
+            tier="release",
+            python_targets=tuple() if local else ("tests/release",),
+            frontend_targets=(),
+            requires_postgres=not local,
+            reason="main_push_exact_sha_release_gate",
+        )
 
-    matched_scopes: list[dict] = []
-    matched_scope_names: set[str] = set()
-    reported_scope_names: list[str] = []
-    reported_scope_name_set: set[str] = set()
-    direct_python_tests: list[str] = []
-    direct_frontend_tests: list[str] = []
-    direct_test_needs_postgres = False
-    unmatched: list[str] = []
-    unmapped_deleted: list[str] = []
-    direct_test_patterns = manifest.get("direct_test_paths", [])
-    if not isinstance(direct_test_patterns, list):
-        raise SystemExit("manifest.direct_test_paths must be a list")
-
-    for path in changed_files:
-        override_matches = _exclusive_scope_override_matches(manifest, scopes_by_name, path)
-        if override_matches is None:
-            path_matches: list[dict] = []
-            for scope in scopes:
-                patterns = scope.get("paths", [])
-                if any(_matches(path, pattern) for pattern in patterns):
-                    path_matches.append(scope)
-        else:
-            path_matches = override_matches
-        if _is_direct_test_path(path) and any(
-            _matches(path, str(pattern)) for pattern in direct_test_patterns
-        ):
-            for scope in path_matches:
-                name = str(scope.get("name"))
-                if name not in reported_scope_name_set:
-                    reported_scope_name_set.add(name)
-                    reported_scope_names.append(name)
-            if path.endswith(".py"):
-                direct_python_tests.append(path)
-                direct_test_needs_postgres = direct_test_needs_postgres or any(
-                    bool(scope.get("needs_postgres")) for scope in path_matches
-                )
-            else:
-                direct_frontend_tests.append(path)
+    direct_tests: list[str] = []
+    deleted_set = set(deleted)
+    for path in changed:
+        if path in deleted_set or not _is_known_direct_test(path) or not (ROOT / path).exists():
             continue
-        if not path_matches:
-            if path in deleted_file_set:
-                unmapped_deleted.append(path)
-            else:
-                unmatched.append(path)
+        if path.endswith("conftest.py"):
+            direct_tests.append(str(Path(path).parent).replace("\\", "/"))
+        elif Path(path).name.startswith("test_") and path.endswith(".py"):
+            direct_tests.append(path)
+        elif path.endswith(".test.mjs"):
+            direct_tests.append(path)
+    direct_high_risk = any(
+        path in {"tests/high_risk", "tests/release"}
+        or path.startswith(("tests/high_risk/", "tests/release/"))
+        for path in direct_tests
+    )
+    risk_reasons = _high_risk_reasons(changed)
+    selected_tests, matched_paths = _matched_tests(inventory, changed)
+    unknown_runtime = sorted(path for path in changed if _is_runtime_candidate(path) and path not in matched_paths)
+
+    if deleted or direct_high_risk or risk_reasons or unknown_runtime:
+        reasons: list[str] = []
+        if deleted:
+            reasons.append("deleted_file")
+        if direct_high_risk:
+            reasons.append("high_risk_test_change")
+        reasons.extend(risk_reasons)
+        if unknown_runtime:
+            reasons.append("unknown_runtime_path")
+        if local:
+            return _local_selection(
+                selected_tests,
+                direct_tests,
+                reason="cloud_escalation:" + ",".join(dict.fromkeys(reasons)),
+            )
+        return Selection(
+            tier="high_risk",
+            python_targets=ALL_PYTHON_TARGETS,
+            frontend_targets=ALL_FRONTEND_TARGETS,
+            requires_postgres=True,
+            reason=",".join(dict.fromkeys(reasons)),
+        )
+
+    selected_tests.extend(direct_tests)
+    selected_tests.extend(CORE_FAST_TESTS)
+    python_targets = unique(
+        path
+        for path in selected_tests
+        if (path.endswith(".py") or path in {"tests/unit", "tests/contracts", "tests/postgres"})
+        and not path.startswith(("tests/high_risk/", "tests/release/"))
+    )
+    frontend_targets = unique(path for path in selected_tests if path.endswith(".mjs"))
+    if any(path.startswith("tests/frontend/") for path in direct_tests) and not frontend_targets:
+        frontend_targets = ALL_FRONTEND_TARGETS
+    requires_postgres = any(_is_test_layer_target(path, "tests/postgres") for path in python_targets)
+
+    if local:
+        python_targets = tuple(
+            path for path in python_targets if not _is_test_layer_target(path, "tests/postgres")
+        )
+        requires_postgres = False
+
+    reason = "current_behavior_match" if matched_paths else "documentation_or_no_runtime_change"
+    return Selection(
+        tier="fast",
+        python_targets=python_targets,
+        frontend_targets=frontend_targets,
+        requires_postgres=requires_postgres,
+        reason=reason,
+    )
+
+
+def _full_selection(reason: str, *, local: bool) -> Selection:
+    if local:
+        return _local_selection([], [], reason=f"cloud_escalation:{reason}")
+    return Selection(
+        tier="full",
+        python_targets=ALL_PYTHON_TARGETS,
+        frontend_targets=ALL_FRONTEND_TARGETS,
+        requires_postgres=True,
+        reason=reason,
+    )
+
+
+def _local_selection(selected_tests: Iterable[str], direct_tests: Iterable[str], *, reason: str) -> Selection:
+    candidates = [*selected_tests, *direct_tests, *CORE_FAST_TESTS]
+    python_targets = unique(
+        path
+        for path in candidates
+        if (path.endswith(".py") and path.startswith(("tests/unit/", "tests/contracts/")))
+        or path in {"tests/unit", "tests/contracts"}
+    )
+    frontend_targets = unique(path for path in candidates if path.endswith(".mjs"))
+    return Selection(
+        tier="high_risk",
+        python_targets=python_targets,
+        frontend_targets=frontend_targets,
+        requires_postgres=False,
+        reason=reason,
+    )
+
+
+def dependency_audit_required(changed_files: Iterable[str]) -> bool:
+    return any(matches(normalize_path(path), pattern) for path in changed_files for pattern in DEPENDENCY_AUDIT_PATTERNS)
+
+
+def _parse_name_status(output: str) -> tuple[list[str], list[str]]:
+    changed: list[str] = []
+    deleted: list[str] = []
+    for line in output.splitlines():
+        if not line.strip():
             continue
-        for scope in path_matches:
-            name = str(scope.get("name"))
-            if name not in reported_scope_name_set:
-                reported_scope_name_set.add(name)
-                reported_scope_names.append(name)
-            if name not in matched_scope_names:
-                matched_scope_names.add(name)
-                matched_scopes.append(scope)
+        status, separator, path = line.partition("\t")
+        if not separator:
+            raise ValueError(f"cannot parse git name-status line: {line!r}")
+        normalized = normalize_path(path)
+        changed.append(normalized)
+        if status.startswith("D"):
+            deleted.append(normalized)
+    return changed, deleted
 
-    high_risk = any(
-        _matches(path, pattern)
-        for path in changed_files
-        for pattern in high_risk_paths
+
+def _git(*args: str) -> str:
+    completed = subprocess.run(
+        ["git", *args],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
     )
-    needs_dependency_audit = any(
-        _matches(path, pattern)
-        for path in changed_files
-        for pattern in dependency_audit_paths
-    )
-    python_tests = _unique(
-        [
-            *direct_python_tests,
-            *(
-                test
-                for scope in matched_scopes
-                for test in scope.get("python_tests", [])
-            ),
-        ]
-    )
-    frontend_tests = _unique(
-        [
-            *direct_frontend_tests,
-            *(
-                test
-                for scope in matched_scopes
-                for test in scope.get("frontend_tests", [])
-            ),
-        ]
-    )
-    needs_postgres = direct_test_needs_postgres or any(bool(scope.get("needs_postgres")) for scope in matched_scopes)
-    scope_forces_full = any(bool(scope.get("needs_full_ci")) for scope in matched_scopes)
-
-    gate = "none"
-    for scope in matched_scopes:
-        candidate = str(scope.get("architecture_gate", "none"))
-        if candidate not in ARCHITECTURE_ORDER:
-            raise SystemExit(f"Unknown architecture_gate={candidate!r} in scope {scope.get('name')!r}")
-        if ARCHITECTURE_ORDER[candidate] > ARCHITECTURE_ORDER[gate]:
-            gate = candidate
-    minimum_gate_rules = manifest.get("minimum_architecture_gate_rules", [])
-    if not isinstance(minimum_gate_rules, list):
-        raise SystemExit("manifest.minimum_architecture_gate_rules must be a list")
-    for index, rule in enumerate(minimum_gate_rules):
-        if not isinstance(rule, dict):
-            raise SystemExit(f"minimum architecture gate rule {index} must be a mapping")
-        patterns = rule.get("paths", [])
-        if not isinstance(patterns, list):
-            raise SystemExit(f"minimum architecture gate rule {index}.paths must be a list")
-        candidate = str(rule.get("architecture_gate", "none"))
-        if candidate not in ARCHITECTURE_ORDER:
-            raise SystemExit(f"Unknown architecture_gate={candidate!r} in minimum gate rule {index}")
-        if not any(_matches(path, pattern) for path in changed_files for pattern in patterns):
-            continue
-        if ARCHITECTURE_ORDER[candidate] > ARCHITECTURE_ORDER[gate]:
-            gate = candidate
-    if direct_test_needs_postgres and ARCHITECTURE_ORDER[gate] < ARCHITECTURE_ORDER["db"]:
-        gate = "db"
-    elif (direct_python_tests or direct_frontend_tests) and gate == "none":
-        gate = "fast"
-    if high_risk:
-        gate = "full" if ARCHITECTURE_ORDER[gate] < ARCHITECTURE_ORDER["full"] else gate
-    if unmapped_deleted:
-        gate = "full"
-
-    force_full = _full_ci_requested()
-    budget = manifest.get("ci_budget", {})
-    if not isinstance(budget, dict):
-        raise SystemExit("manifest.ci_budget must be a mapping")
-    unknown_test_seconds = float(budget.get("unknown_test_seconds", 60))
-    small_max_seconds = float(budget.get("small_max_python_seconds", 180))
-    large_max_seconds = float(budget.get("large_max_python_seconds", 1500))
-    if duration_baseline is None:
-        duration_baseline = _load_duration_baseline(DEFAULT_DURATION_BASELINE)
-    estimated_seconds = _estimated_python_work_seconds(
-        python_tests,
-        duration_baseline,
-        unknown_test_seconds=unknown_test_seconds,
-    )
-    budget_exceeded = not force_full and estimated_seconds > large_max_seconds
-    if budget_exceeded and os.environ.get("GITHUB_EVENT_NAME") == "push":
-        force_full = True
-        budget_exceeded = False
-    if force_full:
-        ci_tier = "full"
-    elif needs_dependency_audit or high_risk or scope_forces_full or estimated_seconds > small_max_seconds:
-        ci_tier = "large"
-    else:
-        ci_tier = "small"
-    return {
-        "changed_files": changed_files,
-        "matched_scopes": reported_scope_names,
-        "unmatched_files": unmatched,
-        "unmapped_deleted_files": unmapped_deleted,
-        "python_tests": python_tests,
-        "frontend_tests": frontend_tests,
-        "needs_postgres": needs_postgres,
-        "needs_dependency_audit": needs_dependency_audit,
-        "needs_full_ci": high_risk or scope_forces_full or force_full or bool(unmapped_deleted),
-        "force_full": force_full,
-        "architecture_gate": gate,
-        "ci_tier": ci_tier,
-        "estimated_python_work_seconds": estimated_seconds,
-        "budget_exceeded": budget_exceeded,
-        "large_budget_seconds": large_max_seconds,
-    }
+    return completed.stdout
 
 
-def _write_github_output(path: str, result: dict) -> None:
-    outputs = {
-        "changed_files": " ".join(result["changed_files"]),
-        "unmapped_deleted_files": " ".join(result["unmapped_deleted_files"]),
-        "scopes": ",".join(result["matched_scopes"]),
-        "python_tests": " ".join(result["python_tests"]),
-        "frontend_tests": " ".join(result["frontend_tests"]),
-        "needs_postgres": str(result["needs_postgres"]).lower(),
-        "needs_dependency_audit": str(result["needs_dependency_audit"]).lower(),
-        "needs_full_ci": str(result["needs_full_ci"]).lower(),
-        "force_full": str(result["force_full"]).lower(),
-        "architecture_gate": result["architecture_gate"],
-        "ci_tier": result["ci_tier"],
-        "estimated_python_work_seconds": str(result["estimated_python_work_seconds"]),
-        "budget_exceeded": str(result["budget_exceeded"]).lower(),
-    }
-    with Path(path).open("a", encoding="utf-8") as handle:
-        for key, value in outputs.items():
-            handle.write(f"{key}={value}\n")
+def local_changes(base_ref: str) -> tuple[list[str], list[str]]:
+    outputs = [
+        _git("diff", "--name-status", "--no-renames", f"{base_ref}...HEAD"),
+        _git("diff", "--name-status", "--no-renames", "HEAD"),
+    ]
+    changed: list[str] = []
+    deleted: list[str] = []
+    for output in outputs:
+        current_changed, current_deleted = _parse_name_status(output)
+        changed.extend(current_changed)
+        deleted.extend(current_deleted)
+    untracked = [normalize_path(path) for path in _git("ls-files", "--others", "--exclude-standard").splitlines() if path.strip()]
+    changed.extend(untracked)
+    return list(unique(changed)), list(unique(deleted))
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+def event_changes() -> tuple[list[str], list[str], bool]:
+    event_path = os.environ.get("GITHUB_EVENT_PATH", "")
+    event_name = os.environ.get("GITHUB_EVENT_NAME", "")
+    if not event_path:
+        changed, deleted = _parse_name_status(_git("diff", "--name-status", "--no-renames", "HEAD^", "HEAD"))
+        return changed, deleted, event_name == "push" and os.environ.get("GITHUB_REF") == "refs/heads/main"
+    payload = json.loads(Path(event_path).read_text(encoding="utf-8"))
+    if event_name == "pull_request":
+        base = str(payload["pull_request"]["base"]["sha"])
+        head = str(payload["pull_request"]["head"]["sha"])
+        changed, deleted = _parse_name_status(_git("diff", "--name-status", "--no-renames", f"{base}...{head}"))
+        return changed, deleted, False
+    if event_name == "push":
+        before = str(payload.get("before") or "")
+        after = str(payload.get("after") or "HEAD")
+        base = before if before and set(before) != {"0"} else f"{after}^"
+        changed, deleted = _parse_name_status(_git("diff", "--name-status", "--no-renames", base, after))
+        return changed, deleted, os.environ.get("GITHUB_REF") == "refs/heads/main"
+    return [], [], False
+
+
+def _write_github_output(path: Path, selection: Selection) -> None:
+    payload = selection.to_dict()
+    with path.open("a", encoding="utf-8") as handle:
+        for field in PUBLIC_OUTPUT_FIELDS:
+            value = payload[field]
+            rendered = json.dumps(value, ensure_ascii=False, separators=(",", ":")) if isinstance(value, (list, bool)) else str(value)
+            handle.write(f"{field}={rendered}\n")
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
     parser.add_argument("--changed-file", action="append", default=[])
     parser.add_argument("--deleted-file", action="append", default=[])
-    parser.add_argument("--changed-files-from", type=Path)
-    parser.add_argument("--github-output")
-    parser.add_argument("--duration-baseline", type=Path, default=DEFAULT_DURATION_BASELINE)
-    parser.add_argument("--enforce-budget", action="store_true")
-    parser.add_argument("--json", action="store_true", help="Print selected scope as JSON for tests and debugging.")
-    args = parser.parse_args(argv)
+    parser.add_argument("--base-ref", default="origin/main")
+    parser.add_argument("--local", action="store_true")
+    parser.add_argument("--force-tier", choices=("full",), default="")
+    parser.add_argument("--github-output", type=Path)
+    parser.add_argument("--json-output", type=Path)
+    return parser.parse_args()
 
-    changed_files = [_normalize_path(path) for path in args.changed_file]
-    deleted_files = [_normalize_path(path) for path in args.deleted_file]
-    if args.changed_files_from:
-        changed_files.extend(
-            _normalize_path(line)
-            for line in args.changed_files_from.read_text(encoding="utf-8").splitlines()
-            if line.strip()
-        )
-    explicit_paths = bool(changed_files or deleted_files or args.changed_files_from)
-    changed_files.extend(deleted_files)
-    if not explicit_paths:
-        changed_files, deleted_files = _changed_files_from_event()
 
-    manifest = _load_manifest(args.manifest)
-    duration_baseline = _load_duration_baseline(args.duration_baseline)
-    result = _select(
-        manifest,
-        changed_files,
-        deleted_files=deleted_files,
-        duration_baseline=duration_baseline,
+def main() -> int:
+    args = parse_args()
+    event_name = os.environ.get("GITHUB_EVENT_NAME", "pull_request")
+    if args.changed_file or args.deleted_file:
+        changed = list(args.changed_file) + list(args.deleted_file)
+        deleted = list(args.deleted_file)
+        main_push = False
+    elif args.local:
+        changed, deleted = local_changes(args.base_ref)
+        main_push = False
+    else:
+        changed, deleted, main_push = event_changes()
+    selection = classify(
+        changed,
+        deleted_files=deleted,
+        event_name=event_name,
+        main_push=main_push,
+        force_full=args.force_tier == "full",
+        local=args.local,
     )
-
+    payload = selection.to_dict()
+    rendered = json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True)
+    print(rendered)
+    if args.json_output:
+        args.json_output.parent.mkdir(parents=True, exist_ok=True)
+        args.json_output.write_text(rendered + "\n", encoding="utf-8")
     if args.github_output:
-        _write_github_output(args.github_output, result)
-
-    if result["unmatched_files"]:
-        if args.json:
-            print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
-        message = manifest.get("unmapped_path_message", "Unmatched changed files")
-        print(message, file=sys.stderr)
-        for path in result["unmatched_files"]:
-            print(f"- {path}", file=sys.stderr)
-        return 2
-
-    if result["budget_exceeded"] and args.enforce_budget:
-        if args.json:
-            print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
-        print(
-            "Selected CI scope exceeds the large-PR budget: "
-            f"estimated_python_work_seconds={result['estimated_python_work_seconds']}; "
-            f"limit={result['large_budget_seconds']}. Refine the scope or explicitly request full-ci.",
-            file=sys.stderr,
-        )
-        return 3
-
-    if args.json:
-        print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
-        return 0
-
-    print(
-        "Selected CI scopes: "
-        f"{','.join(result['matched_scopes']) or 'none'}; "
-        f"python_tests={len(result['python_tests'])}; "
-        f"frontend_tests={len(result['frontend_tests'])}; "
-        f"needs_postgres={str(result['needs_postgres']).lower()}; "
-        f"needs_dependency_audit={str(result['needs_dependency_audit']).lower()}; "
-        f"architecture_gate={result['architecture_gate']}; "
-        f"needs_full_ci={str(result['needs_full_ci']).lower()}; "
-        f"ci_tier={result['ci_tier']}; "
-        f"estimated_python_work_seconds={result['estimated_python_work_seconds']}"
-    )
+        _write_github_output(args.github_output, selection)
     return 0
 
 

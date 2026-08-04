@@ -2,184 +2,19 @@ name: Full Regression
 
 on:
   workflow_call:
-    inputs:
-      run_governance:
-        description: "Run dependency and architecture governance inside this workflow"
-        required: false
-        type: boolean
-        default: true
   workflow_dispatch:
-    inputs:
-      run_governance:
-        description: "Run dependency and architecture governance"
-        required: false
-        type: boolean
-        default: true
-  schedule:
-    # Weekly at 02:00 Monday Asia/Shanghai; manual dispatch remains available.
-    - cron: "0 18 * * 0"
+
+permissions:
+  contents: read
 
 concurrency:
   group: full-regression-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  full-governance:
-    if: github.event_name == 'schedule' || inputs.run_governance == true
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 5s
-          --health-timeout 3s
-          --health-retries 10
-    steps:
-      - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0 (Node 24)
-        with:
-          fetch-depth: 0
-
-      - name: Setup Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0 (Node 24)
-        with:
-          python-version: "3.10.5"
-
-      - name: Restore hashed Python environment
-        id: python-venv-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .venv
-          key: venv-v1-${{ runner.os }}-${{ runner.arch }}-py3.10.5-${{ hashFiles('requirements.lock') }}
-
-      - name: Install dependencies on cache miss
-        if: steps.python-venv-cache.outputs.cache-hit != 'true'
-        run: |
-          python -m venv .venv
-          .venv/bin/python -m pip install --require-hashes -r requirements.lock
-
-      - name: Activate hashed Python environment
-        run: echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
-
-      - name: Audit Python dependencies
-        run: |
-          python scripts/ci/check_dependency_security.py
-          python -m pip_audit -r requirements.lock --require-hashes --progress-spinner=off
-
-      - name: Run full architecture gates
-        env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/test
-        run: bash scripts/ci/run_architecture_gates.sh --mode full
-
-  performance-regression:
-    needs: full-governance
-    if: >-
-      always() &&
-      (needs.full-governance.result == 'success' || needs.full-governance.result == 'skipped')
-    runs-on: ubuntu-latest
-    timeout-minutes: 12
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 5s
-          --health-timeout 3s
-          --health-retries 10
-    steps:
-      - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0 (Node 24)
-
-      - name: Setup Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0 (Node 24)
-        with:
-          python-version: "3.10.5"
-
-      - name: Restore hashed Python environment
-        id: python-venv-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .venv
-          key: venv-v1-${{ runner.os }}-${{ runner.arch }}-py3.10.5-${{ hashFiles('requirements.lock') }}
-
-      - name: Install dependencies on cache miss
-        if: steps.python-venv-cache.outputs.cache-hit != 'true'
-        run: |
-          python -m venv .venv
-          .venv/bin/python -m pip install --require-hashes -r requirements.lock
-
-      - name: Activate hashed Python environment
-        run: echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
-
-      - name: Install migrated benchmark database
-        env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/test
-        run: python scripts/ops/bootstrap_database.py
-
-      - name: Run critical read-path performance regression
-        env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/test
-        run: >-
-          python tools/check_critical_read_performance.py
-          --report test-results/critical-read-performance.json
-
-      - name: Verify AI assistant 3000-recipient admission SLA
-        env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/test
-        run: >-
-          python -m pytest
-          tests/test_automation_agent_item_pipeline.py::test_webhook_bulk_persists_3000_items_and_prepare_events_without_model_call
-          -q --tb=short
-
-      - name: Upload critical read-path evidence
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1 (Node 24)
-        with:
-          name: critical-read-performance
-          path: test-results/critical-read-performance.json
-          if-no-files-found: error
-          retention-days: 14
-
-  full-python-shard:
-    needs: performance-regression
-    name: full-python shard ${{ matrix.shard_label }}
+  full-regression:
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    strategy:
-      fail-fast: true
-      max-parallel: 8
-      matrix:
-        include:
-          - shard_index: 0
-            shard_label: 1-of-8
-          - shard_index: 1
-            shard_label: 2-of-8
-          - shard_index: 2
-            shard_label: 3-of-8
-          - shard_index: 3
-            shard_label: 4-of-8
-          - shard_index: 4
-            shard_label: 5-of-8
-          - shard_index: 5
-            shard_label: 6-of-8
-          - shard_index: 6
-            shard_label: 7-of-8
-          - shard_index: 7
-            shard_label: 8-of-8
     services:
       postgres:
         image: postgres:16
@@ -210,75 +45,16 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .venv
-          key: venv-v1-${{ runner.os }}-${{ runner.arch }}-py3.10.5-${{ hashFiles('requirements.lock') }}
+          key: current-tests-${{ runner.os }}-${{ runner.arch }}-py3.10.5-${{ hashFiles('requirements.lock') }}
 
-      - name: Install dependencies on cache miss
+      - name: Install locked dependencies on cache miss
         if: steps.python-venv-cache.outputs.cache-hit != 'true'
         run: |
           python -m venv .venv
           .venv/bin/python -m pip install --require-hashes -r requirements.lock
 
-      - name: Activate hashed Python environment
+      - name: Activate Python environment
         run: echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
-
-      - name: Select balanced pytest shard
-        env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/test
-          AICRM_PYTEST_FIXTURE_DEFAULT: "1"
-          SHARD_INDEX: ${{ matrix.shard_index }}
-        run: |
-          set -o pipefail
-          python scripts/ci/select_pytest_shard.py \
-            --shard-index "$SHARD_INDEX" \
-            --shard-total 8 \
-            --duration-baseline docs/ci/pytest_duration_baseline.json \
-            --output-file "$RUNNER_TEMP/pytest-shard-files.txt" \
-            | tee "$RUNNER_TEMP/pytest-shard-summary.json"
-
-      - name: Run full pytest shard
-        env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/test
-          AICRM_PYTEST_FIXTURE_DEFAULT: "1"
-          SHARD_INDEX: ${{ matrix.shard_index }}
-        run: |
-          pytest_files=()
-          while IFS= read -r test_file; do
-            pytest_files+=("$test_file")
-          done < "$RUNNER_TEMP/pytest-shard-files.txt"
-          if [ "${#pytest_files[@]}" -eq 0 ]; then
-            echo "selected pytest shard is empty"
-            exit 1
-          fi
-          mkdir -p test-results
-          python -m pytest "${pytest_files[@]}" -n auto --dist=loadfile -q \
-            --tb=short \
-            --timeout=120 \
-            --timeout-method=thread \
-            --junitxml="test-results/python-shard-${SHARD_INDEX}.xml" \
-            --durations=25 \
-            --durations-min=1.0
-
-      - name: Upload pytest shard evidence
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1 (Node 24)
-        with:
-          name: full-python-shard-${{ matrix.shard_label }}
-          path: |
-            test-results/python-shard-${{ matrix.shard_index }}.xml
-            ${{ runner.temp }}/pytest-shard-summary.json
-          if-no-files-found: warn
-          retention-days: 14
-
-  full-frontend:
-    needs: full-governance
-    if: >-
-      always() &&
-      (needs.full-governance.result == 'success' || needs.full-governance.result == 'skipped')
-    runs-on: ubuntu-latest
-    timeout-minutes: 8
-    steps:
-      - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0 (Node 24)
 
       - name: Setup Node
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0 (Node 24)
@@ -287,8 +63,17 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
 
-      - name: Run full frontend regression
-        run: |
-          npm ci
-          npm audit --audit-level=high
-          npm run test:frontend:all
+      - name: Run the complete current suite on this runner
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
+          AICRM_TEST_DATABASE_URL: postgresql://test:test@localhost:5432/test
+        run: python scripts/ci/run_ci.py --tier full
+
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1 (Node 24)
+        with:
+          name: full-regression-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: test-results/ci
+          if-no-files-found: warn
+          retention-days: 3

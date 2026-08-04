@@ -1,0 +1,358 @@
+{
+  "version": 1,
+  "truth_source": "current_ai_crm_next",
+  "description": "Executable inventory for the current AI-CRM Next source tree. It intentionally contains no historical PR, retired SHA, or deleted-file contracts.",
+  "test_budgets": {
+    "max_python_test_files": 160,
+    "max_python_test_lines": 35000,
+    "local_hot_cache_seconds": 180,
+    "local_hard_timeout_seconds": 300,
+    "fast_ci_target_seconds": 300,
+    "fast_ci_hard_timeout_seconds": 420,
+    "release_ci_target_seconds": 180,
+    "high_risk_ci_hard_timeout_seconds": 1500
+  },
+  "migration_contract": {
+    "directory": "migrations/versions",
+    "expected_file_count": 176,
+    "expected_head": "0166_auth_api_client_credential_hint"
+  },
+  "allowed_test_side_effects": [
+    "none",
+    "fake_adapter",
+    "test_postgres",
+    "temporary_files"
+  ],
+  "behaviors": [
+    {
+      "id": "platform_runtime_and_jobs",
+      "area": "platform",
+      "capability_owner": "platform_foundation",
+      "source_paths": [
+        "aicrm_next/main.py",
+        "aicrm_next/router_registry.py",
+        "aicrm_next/platform/platform_foundation/**",
+        "aicrm_next/platform/shared/**",
+        "aicrm_next/platform/admin_jobs/**",
+        "aicrm_next/app/admin_console/routes.py"
+      ],
+      "route_groups": [
+        "platform",
+        "auth_platform",
+        "execution_runtime",
+        "internal_events",
+        "push_center",
+        "webhook_inbox",
+        "common_operation_members",
+        "admin_jobs",
+        "verification_files"
+      ],
+      "tests": [
+        {"path": "tests/unit/test_platform_rules.py", "layer": "unit"},
+        {"path": "tests/contracts/test_runtime_and_capabilities.py", "layer": "contracts"},
+        {"path": "tests/postgres/test_repository_transactions.py", "layer": "postgres"},
+        {"path": "tests/release/test_application_startup.py", "layer": "release"}
+      ],
+      "expected_side_effects": ["none", "test_postgres"]
+    },
+    {
+      "id": "platform_admin_auth_and_config",
+      "area": "platform",
+      "capability_owner": "admin_auth",
+      "source_paths": [
+        "aicrm_next/platform/admin_auth/**",
+        "aicrm_next/platform/admin_config/**",
+        "aicrm_next/app/admin_console/**",
+        "aicrm_next/extensions/hxc/class_user_management/**"
+      ],
+      "route_groups": [
+        "admin_auth",
+        "admin_shell",
+        "admin_config",
+        "admin_config_api_key",
+        "class_user_management"
+      ],
+      "tests": [
+        {"path": "tests/unit/test_platform_rules.py", "layer": "unit"},
+        {"path": "tests/contracts/test_routes_and_auth.py", "layer": "contracts"},
+        {"path": "tests/high_risk/test_admin_auth.py", "layer": "high_risk"}
+      ],
+      "expected_side_effects": ["none"]
+    },
+    {
+      "id": "platform_external_effect_queue",
+      "area": "platform",
+      "capability_owner": "platform_foundation",
+      "source_paths": [
+        "aicrm_next/platform/platform_foundation/external_effects/**",
+        "aicrm_next/platform/external_push/**",
+        "aicrm_next/external_effect_composition.py"
+      ],
+      "route_groups": ["external_effects"],
+      "tests": [
+        {"path": "tests/high_risk/test_external_effects.py", "layer": "high_risk"},
+        {"path": "tests/postgres/test_external_effect_idempotency.py", "layer": "postgres"}
+      ],
+      "expected_side_effects": ["fake_adapter", "test_postgres"]
+    },
+    {
+      "id": "insights_health_audit_and_lineage",
+      "area": "insights",
+      "capability_owner": "data_health",
+      "source_paths": [
+        "aicrm_next/insights/**",
+        "docs/architecture/data_health_checks.md"
+      ],
+      "route_groups": ["data_health", "delivery_lineage"],
+      "tests": [
+        {"path": "tests/unit/test_insights_rules.py", "layer": "unit"},
+        {"path": "tests/contracts/test_architecture_checkers.py", "layer": "contracts"},
+        {"path": "tests/contracts/test_identity_health_guard.py", "layer": "contracts"}
+      ],
+      "expected_side_effects": ["none"]
+    },
+    {
+      "id": "crm_customer_identity_tags_and_sidebar",
+      "area": "crm",
+      "capability_owner": "customer_read_model",
+      "source_paths": ["aicrm_next/crm/**"],
+      "route_groups": [
+        "sidebar_write",
+        "sidebar_jssdk",
+        "customer_tags_read",
+        "customer_tags_write",
+        "customer_read_model",
+        "customer_admin_pages",
+        "customer_tags",
+        "identity",
+        "identity_admin_pages",
+        "customer_tags_admin_pages",
+        "owner_migration"
+      ],
+      "tests": [
+        {"path": "tests/unit/test_crm_rules.py", "layer": "unit"},
+        {"path": "tests/contracts/test_routes_and_auth.py", "layer": "contracts"},
+        {"path": "tests/postgres/test_repository_transactions.py", "layer": "postgres"}
+      ],
+      "expected_side_effects": ["none", "test_postgres"]
+    },
+    {
+      "id": "automation_tasks_queues_and_group_operations",
+      "area": "automation",
+      "capability_owner": "automation_engine",
+      "source_paths": [
+        "aicrm_next/automation/**",
+        "aicrm_next/extensions/ai/automation_agents/**"
+      ],
+      "route_groups": [
+        "automation_channels",
+        "automation_agents_admin_pages",
+        "automation_agents_admin_api",
+        "automation_agents_api",
+        "user_ops",
+        "user_ops_admin_pages",
+        "group_ops_admin_pages",
+        "channel_admin_pages",
+        "automation"
+      ],
+      "tests": [
+        {"path": "tests/unit/test_automation_rules.py", "layer": "unit"},
+        {"path": "tests/high_risk/test_group_ops.py", "layer": "high_risk"},
+        {"path": "tests/postgres/test_repository_transactions.py", "layer": "postgres"}
+      ],
+      "expected_side_effects": ["fake_adapter", "test_postgres"]
+    },
+    {
+      "id": "channels_wecom_callback_welcome_and_gateway",
+      "area": "channels",
+      "capability_owner": "channel_entry",
+      "source_paths": [
+        "aicrm_next/channels/**",
+        "aicrm_next/channel_entry_composition.py"
+      ],
+      "route_groups": ["channel_entry", "auth_wecom", "mcp"],
+      "tests": [
+        {"path": "tests/unit/test_channel_rules.py", "layer": "unit"},
+        {"path": "tests/high_risk/test_wecom_callback.py", "layer": "high_risk"},
+        {"path": "tests/contracts/test_provider_boundaries.py", "layer": "contracts"},
+        {"path": "tests/contracts/test_wecom_callback_objective.py", "layer": "contracts"}
+      ],
+      "expected_side_effects": ["fake_adapter"]
+    },
+    {
+      "id": "engagement_media_content_and_targets",
+      "area": "engagement",
+      "capability_owner": "media_library",
+      "source_paths": ["aicrm_next/engagement/**"],
+      "route_groups": ["media_library", "media_library_admin_pages", "send_content"],
+      "tests": [
+        {"path": "tests/unit/test_engagement_rules.py", "layer": "unit"},
+        {"path": "tests/frontend/shared_interactions.test.mjs", "layer": "frontend"}
+      ],
+      "expected_side_effects": ["none"]
+    },
+    {
+      "id": "commerce_orders_payments_refunds_and_entitlements",
+      "area": "extensions",
+      "capability_owner": "commerce",
+      "source_paths": [
+        "aicrm_next/extensions/commerce/**",
+        "aicrm_next/channels/integration_gateway/payment_*",
+        "aicrm_next/channels/integration_gateway/wechat_pay_client.py"
+      ],
+      "route_groups": [
+        "public_product",
+        "service_period",
+        "commerce",
+        "coupons_admin_pages",
+        "coupons_admin_api",
+        "coupons_public",
+        "coupons_sidebar"
+      ],
+      "tests": [
+        {"path": "tests/unit/test_extension_rules.py", "layer": "unit"},
+        {"path": "tests/high_risk/test_payment_adapters.py", "layer": "high_risk"},
+        {"path": "tests/postgres/test_current_schema.py", "layer": "postgres"}
+      ],
+      "expected_side_effects": ["fake_adapter", "test_postgres"]
+    },
+    {
+      "id": "questionnaire_submission_and_side_effects",
+      "area": "extensions",
+      "capability_owner": "questionnaire",
+      "source_paths": ["aicrm_next/extensions/forms/questionnaire/**"],
+      "route_groups": ["questionnaire_admin_pages", "questionnaire"],
+      "tests": [
+        {"path": "tests/unit/test_extension_rules.py", "layer": "unit"},
+        {"path": "tests/high_risk/test_questionnaire.py", "layer": "high_risk"},
+        {"path": "tests/postgres/test_current_schema.py", "layer": "postgres"}
+      ],
+      "expected_side_effects": ["fake_adapter", "test_postgres"]
+    },
+    {
+      "id": "archive_radar_growth_hxc_and_ai_extensions",
+      "area": "extensions",
+      "capability_owner": "extensions",
+      "source_paths": [
+        "aicrm_next/extensions/archive/**",
+        "aicrm_next/extensions/radar/**",
+        "aicrm_next/extensions/growth/**",
+        "aicrm_next/extensions/hxc/**",
+        "aicrm_next/extensions/ai/**"
+      ],
+      "route_groups": [
+        "message_archive",
+        "radar_links_admin_pages",
+        "radar_links",
+        "operation_cycles_admin_pages",
+        "operation_cycles",
+        "hxc_dashboard",
+        "cloud_orchestrator",
+        "ai_audience_admin_pages",
+        "ai_audience_admin_api",
+        "ai_audience_external_api",
+        "ai_assist",
+        "ai_audience_ops"
+      ],
+      "tests": [
+        {"path": "tests/unit/test_extension_rules.py", "layer": "unit"},
+        {"path": "tests/contracts/test_runtime_and_capabilities.py", "layer": "contracts"},
+        {"path": "tests/postgres/test_current_schema.py", "layer": "postgres"}
+      ],
+      "expected_side_effects": ["none", "test_postgres"]
+    },
+    {
+      "id": "route_ownership_and_api_contracts",
+      "area": "contracts",
+      "capability_owner": "platform_foundation",
+      "source_paths": [
+        "docs/architecture/route_ownership_manifest.yml",
+        "aicrm_next/capability_registry.py",
+        "aicrm_next/deployment_profile.py"
+      ],
+      "route_groups": [],
+      "tests": [
+        {"path": "tests/contracts/test_routes_and_auth.py", "layer": "contracts"},
+        {"path": "tests/contracts/test_runtime_and_capabilities.py", "layer": "contracts"}
+      ],
+      "expected_side_effects": ["none"]
+    },
+    {
+      "id": "empty_postgres_to_current_schema",
+      "area": "database",
+      "capability_owner": "platform_foundation",
+      "source_paths": [
+        "migrations/**",
+        "alembic.ini",
+        "scripts/ops/bootstrap_database.py"
+      ],
+      "route_groups": [],
+      "tests": [
+        {"path": "tests/postgres/test_migration_head.py", "layer": "postgres"},
+        {"path": "tests/postgres/test_current_schema.py", "layer": "postgres"},
+        {"path": "tests/release/test_migration_head.py", "layer": "release"}
+      ],
+      "expected_side_effects": ["test_postgres"]
+    },
+    {
+      "id": "frontend_shared_behavior_and_page_wiring",
+      "area": "frontend",
+      "capability_owner": "admin_shell",
+      "source_paths": [
+        "aicrm_next/**/static/**",
+        "aicrm_next/**/templates/**",
+        "package.json",
+        "package-lock.json"
+      ],
+      "route_groups": [],
+      "tests": [
+        {"path": "tests/frontend/module_syntax.test.mjs", "layer": "frontend"},
+        {"path": "tests/frontend/shared_api_client.test.mjs", "layer": "frontend"},
+        {"path": "tests/frontend/shared_interactions.test.mjs", "layer": "frontend"},
+        {"path": "tests/frontend/page_wiring.test.mjs", "layer": "frontend"}
+      ],
+      "expected_side_effects": ["none"]
+    },
+    {
+      "id": "ci_selection_and_test_governance",
+      "area": "delivery",
+      "capability_owner": "platform_foundation",
+      "source_paths": [
+        "scripts/ci/**",
+        "docs/ci/**",
+        "Makefile",
+        "pyproject.toml",
+        "requirements*.txt",
+        "requirements.lock",
+        ".github/workflows/ci-fast.yml",
+        ".github/workflows/full-regression.yml"
+      ],
+      "route_groups": [],
+      "tests": [
+        {"path": "tests/contracts/test_ci_selector.py", "layer": "contracts"},
+        {"path": "tests/contracts/test_test_system_budget.py", "layer": "contracts"},
+        {"path": "tests/release/test_workflow_contract.py", "layer": "release"}
+      ],
+      "expected_side_effects": ["temporary_files"]
+    },
+    {
+      "id": "exact_sha_health_lock_and_rollback",
+      "area": "delivery",
+      "capability_owner": "platform_foundation",
+      "source_paths": [
+        ".github/workflows/promote-production.yml",
+        ".github/workflows/deploy.yml",
+        "deploy/**",
+        "scripts/prod.sh",
+        "scripts/ops/validate_production_promotion.py",
+        "aicrm_next/platform/shared/release.py"
+      ],
+      "route_groups": [],
+      "tests": [
+        {"path": "tests/release/test_application_startup.py", "layer": "release"},
+        {"path": "tests/release/test_workflow_contract.py", "layer": "release"}
+      ],
+      "expected_side_effects": ["none"]
+    }
+  ]
+}

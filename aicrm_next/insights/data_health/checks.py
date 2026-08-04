@@ -149,21 +149,20 @@ def _lifecycle_violations() -> tuple[str, ...]:
 
 
 def _identity_legacy_column_guard() -> DataHealthCheckResult:
-    guard_path = ROOT / "tests" / "test_unionid_final_schema_guard.py"
-    source = guard_path.read_text(encoding="utf-8") if guard_path.exists() else ""
-    required_tokens = (
-        "LEGACY_IDENTITY_COLUMN_NAMES",
-        "ALLOWED_FINAL_LEGACY_IDENTITY_COLUMNS",
-        "BOUNDARY_PREFIXES",
-    )
-    missing = [token for token in required_tokens if token not in source]
     return _static_guard_result(
         check_id="identity_legacy_column_guard",
         title="Legacy identity column guard",
-        violations=[f"{guard_path.relative_to(ROOT)} missing {token}" for token in missing],
-        ok_summary="Final schema guard restricts legacy identity columns to approved identity boundaries.",
-        remediation="Restore tests/test_unionid_final_schema_guard.py allowed-boundary assertions.",
+        violations=list(_current_identity_contract_violations()),
+        ok_summary="Current identity resolver, writers, and retry boundaries satisfy the canonical identity contract.",
+        remediation="Run scripts/ci/check_unionid_identity_contract.py and repair the reported current-code boundary.",
     )
+
+
+@lru_cache(maxsize=1)
+def _current_identity_contract_violations() -> tuple[str, ...]:
+    from scripts.ci.check_unionid_identity_contract import check as check_identity_contract
+
+    return tuple(check_identity_contract())
 
 
 def _static_guard_result(
