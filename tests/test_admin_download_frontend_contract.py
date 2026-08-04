@@ -34,6 +34,9 @@ def test_channel_list_and_form_use_shared_blob_download_without_navigation() -> 
     assert "URL.createObjectURL(blob)" in helper
     assert "anchor.download = filename" in helper
     assert 'redirect: "error"' in helper
+    assert "window.AdminApi.responseErrorMessage" in helper
+    assert "return data.error" not in helper
+    assert "return data.reason" not in helper
     assert "window.open" not in helper
     assert "window.location" not in helper
 

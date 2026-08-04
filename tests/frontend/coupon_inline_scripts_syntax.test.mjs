@@ -38,6 +38,14 @@ for (const relativePath of TEMPLATE_FILES) {
   });
 }
 
+const publicCoupon = fs.readFileSync(
+  path.join(ROOT, "aicrm_next/extensions/commerce/commerce/coupons/templates/coupon_public.html"),
+  "utf8",
+);
+assert.match(publicCoupon, /coupon_unavailable:\s*"当前优惠券暂不可领取"/);
+assert.match(publicCoupon, /per-user coupon claim limit reached/);
+assert.match(publicCoupon, /\^\[a-z\]\[a-z0-9\]\*_\[a-z0-9_\]\+\$/);
+
 const paymentRenderer = fs.readFileSync(
   path.join(ROOT, "aicrm_next/extensions/commerce/public_product/service.py"),
   "utf8",
@@ -45,5 +53,8 @@ const paymentRenderer = fs.readFileSync(
 assert.match(paymentRenderer, /coupon_choice:\s*couponChoice\(\)/);
 assert.match(paymentRenderer, /clearCompletedClientOrderRef\(\)/);
 assert.match(paymentRenderer, /sessionStorage\.removeItem\(clientOrderStorageKey\)/);
+assert.match(paymentRenderer, /const publicErrorMessages/);
+assert.match(paymentRenderer, /identity_conflict:\s*"当前微信身份存在冲突，请联系客服处理。"/);
+assert.match(paymentRenderer, /wechat_pay_order_refresh_failed/);
 
 console.log("coupon admin and claim inline JavaScript syntax; checkout contracts OK");

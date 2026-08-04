@@ -267,6 +267,14 @@
     const maxLength = text.match(/String should have at most (\d+) characters?/i);
     if (maxLength) return `最多填写 ${maxLength[1]} 个字符`;
     if (/input should be a valid/i.test(text) || /value is not a valid/i.test(text)) return "格式不正确";
+    if (/\bnot found\b|\bdoes not exist\b/i.test(text)) return "请求的数据不存在或已被删除";
+    if (/\balready exists\b|\bmust be unique\b|\bduplicate\b/i.test(text)) return "相同数据已存在，请检查后重试";
+    if (/\bnot configured\b|configuration .* required/i.test(text)) return "相关配置尚未完成，请联系管理员处理";
+    if (/\bnot available\b|\bunavailable\b/i.test(text)) return "当前服务暂不可用，请稍后重试";
+    if (!/[一-龥]/.test(text) && /\b(not allowed|cannot|unsupported|invalid|must be|required for)\b/i.test(text)) {
+      return "提交内容不符合要求，请检查后重试";
+    }
+    if (!/[一-龥]/.test(text) && /[a-z]/i.test(text)) return "";
     return text;
   }
 

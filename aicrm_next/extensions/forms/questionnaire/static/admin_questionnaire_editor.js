@@ -845,18 +845,7 @@ function extractErrorMessage(data) {
   if (window.AdminApi && typeof window.AdminApi.formatErrorValue === 'function') {
     return window.AdminApi.formatErrorValue(data);
   }
-  if (!data) return '';
-  if (typeof data === 'string') return data;
-  const detail = data.detail;
-  if (typeof detail === 'string') return detail;
-  if (detail && typeof detail === 'object' && !Array.isArray(detail)) {
-    return detail.message || detail.error || detail.detail || detail.page_error || '';
-  }
-  if (Array.isArray(detail) && detail.length) {
-    const first = detail[0] || {};
-    return first.msg || first.message || first.error || '';
-  }
-  return data.message || data.error || data.page_error || '';
+  return '';
 }
 
 function showToast(message, isError = false) {

@@ -6,6 +6,10 @@ const source = await readFile(
   new URL("../../aicrm_next/app/admin_console/static/admin_console/admin_api_client.js", import.meta.url),
   "utf8",
 );
+const questionnaireSource = await readFile(
+  new URL("../../aicrm_next/extensions/forms/questionnaire/static/questionnaire_completion_action.js", import.meta.url),
+  "utf8",
+);
 
 const responses = [];
 const nodes = new Map();
@@ -38,8 +42,14 @@ const context = {
 };
 context.fetch = (...args) => context.window.fetch(...args);
 vm.runInNewContext(source, context);
+vm.runInNewContext(questionnaireSource, context);
 
 const { AdminApi } = window;
+const questionnaireErrorMessage = window.AICRMQuestionnaireCompletionAction.errorMessage;
+assert.equal(questionnaireErrorMessage("identity_conflict", "提交失败"), "该手机号已绑定其他账号，不能提交");
+assert.equal(questionnaireErrorMessage({ detail: { error_code: "opaque_provider_failure" } }, "提交失败"), "提交失败");
+assert.equal(questionnaireErrorMessage("missing required answer: phone", "提交失败"), "请完成所有必填项后再提交");
+assert.equal(questionnaireErrorMessage("服务繁忙，请稍后重试", "提交失败"), "服务繁忙，请稍后重试");
 const pydanticPayload = {
   detail: [
     { type: "missing", loc: ["body", "title"], msg: "Field required", input: {} },
@@ -76,6 +86,14 @@ assert.equal(
 assert.equal(
   AdminApi.normalizeApiError(null, { ok: false, error: "unknown_internal_code" }, { fallback: "保存失败" }).message,
   "保存失败",
+);
+assert.equal(
+  AdminApi.errorMessage(new Error("order not found"), "读取失败"),
+  "请求的数据不存在或已被删除",
+);
+assert.equal(
+  AdminApi.errorMessage(new Error("opaque provider failure"), "操作失败"),
+  "操作失败",
 );
 
 let focusedInput = "";

@@ -778,17 +778,7 @@
   const money = (value) => (Number(value || 0) / 100).toFixed(2);
   const statusLabel = (value) => ({active: "已上架", draft: "草稿", disabled: "已下架"}[value] || value || "草稿");
   function formatApiError(value) {
-    if (!value) return "";
-    if (typeof value === "string") return value;
-    if (Array.isArray(value)) return value.map(formatApiError).filter(Boolean).join("；");
-    if (typeof value === "object") {
-      const loc = Array.isArray(value.loc) ? `${value.loc.join(".")}: ` : "";
-      if (value.msg) return `${loc}${value.msg}`;
-      if (value.detail) return formatApiError(value.detail);
-      if (value.error) return formatApiError(value.error);
-      try { return JSON.stringify(value); } catch (_error) { return String(value); }
-    }
-    return String(value);
+    return window.AdminApi?.formatErrorValue(value) || "";
   }
   const api = async (url, options) => {
     const response = await fetch(url, Object.assign({credentials: "same-origin"}, options || {}));
@@ -919,17 +909,7 @@
   const money = (value) => (Number(value || 0) / 100).toFixed(2);
   const statusLabel = (value) => ({active: "已上架", draft: "草稿", disabled: "已下架"}[value] || value || "草稿");
   function formatApiError(value) {
-    if (!value) return "";
-    if (typeof value === "string") return value;
-    if (Array.isArray(value)) return value.map(formatApiError).filter(Boolean).join("；");
-    if (typeof value === "object") {
-      const loc = Array.isArray(value.loc) ? `${value.loc.join(".")}: ` : "";
-      if (value.msg) return `${loc}${value.msg}`;
-      if (value.detail) return formatApiError(value.detail);
-      if (value.error) return formatApiError(value.error);
-      try { return JSON.stringify(value); } catch (_error) { return String(value); }
-    }
-    return String(value);
+    return window.AdminApi?.formatErrorValue(value) || "";
   }
   const api = async (url, options) => {
     const response = await fetch(url, Object.assign({credentials: "same-origin"}, options || {}));

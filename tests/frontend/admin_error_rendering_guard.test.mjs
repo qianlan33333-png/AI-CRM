@@ -17,6 +17,16 @@ const unsafePatterns = [
   new RegExp(`(?:textContent\\s*=|innerHTML\\s*=|alert\\s*\\(|showToast\\s*\\(|showError\\s*\\()[^\\n]*${payloadReference}`),
   new RegExp(`\\$\\{[^\\n]*${payloadReference}`),
 ];
+const rawMachineErrorPatterns = [
+  /return\s+(?:data|payload|result|body|json)\.(?:error|reason|error_code)\b/,
+  /return\s+detail\.(?:error|reason|message|error_code)\b/,
+  /return\s+detail\.(?:reason|error|message|error_code)\s*\|\|/,
+  /return\s+JSON\.stringify\(value\)/,
+  /payload\.error_code\s*\?\s*`/,
+  /detail\.error_code/,
+  /:\s*\(typeof payload\.error === ["']string["'][^\n]*payload\.error\)/,
+  /if\s*\(typeof value === ["']string["']\)\s*return value(?:\.trim\(\))?/,
+];
 
 async function walk(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -36,6 +46,10 @@ for (const file of await walk(sourceRoot)) {
   lines.forEach((line, index) => {
     if (unsafePatterns.some((pattern) => pattern.test(line)) && !safeFormatter.test(line)) {
       violations.push(`${relative}:${index + 1}: ${line.trim()}`);
+    }
+    if (relative !== "aicrm_next/app/admin_console/static/admin_console/admin_api_client.js"
+      && rawMachineErrorPatterns.some((pattern) => pattern.test(line))) {
+      violations.push(`${relative}:${index + 1}: raw machine error bypass`);
     }
     if (/\.catch\(\s*\(\)\s*=>\s*\{\s*\}\s*\)/.test(line)
       && relative !== "aicrm_next/app/admin_console/templates/questionnaire_h5_page.html") {

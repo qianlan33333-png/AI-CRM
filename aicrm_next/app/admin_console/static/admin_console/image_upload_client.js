@@ -96,7 +96,7 @@
           payload.ok = false;
           payload.error = window.AdminApi && window.AdminApi.responseErrorMessage
             ? window.AdminApi.responseErrorMessage(response, payload, "上传失败")
-            : (typeof payload.error === "string" && payload.error) || buildNonJsonMessage(response);
+            : "上传失败，请检查图片后重试";
         }
         return payload;
       });

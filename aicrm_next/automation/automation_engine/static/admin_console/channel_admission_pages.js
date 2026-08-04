@@ -107,13 +107,6 @@
 
   function apiErrorMessage(data, fallback) {
     if (window.AdminApi?.formatErrorValue) return window.AdminApi.formatErrorValue(data) || fallback;
-    const detail = data && data.detail;
-    if (typeof detail === "string" && detail) return detail;
-    if (detail && typeof detail === "object") {
-      return detail.reason || detail.error || detail.message || detail.error_code || fallback;
-    }
-    if (data && typeof data.error === "string" && data.error) return data.error;
-    if (data && typeof data.reason === "string" && data.reason) return data.reason;
     return fallback;
   }
 

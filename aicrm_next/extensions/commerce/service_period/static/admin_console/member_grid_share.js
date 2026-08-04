@@ -41,8 +41,7 @@
   }
 
   function errorMessage(error, fallback) {
-    const detail = error && error.payload && error.payload.detail;
-    return String((typeof detail === "string" && detail) || (error && error.message) || fallback || "操作失败");
+    return AdminApi.errorMessage(error, fallback || "操作失败");
   }
 
   function request(path, options) {
