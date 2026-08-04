@@ -600,6 +600,9 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
     acknowledged_refund_not_enough_count = int(row.get("acknowledged_refund_not_enough_count") or 0)
     refund_not_enough_business_rejection_count = int(row.get("refund_not_enough_business_rejection_count") or 0)
     wecom_content_validation_business_rejection_count = int(row.get("wecom_content_validation_business_rejection_count") or 0)
+    welcome_chat_started_business_rejection_count = int(
+        row.get("welcome_chat_started_business_rejection_count") or 0
+    )
     expected_contact_absence_count = int(row.get("expected_contact_absence_count") or 0)
     private_message_contact_absence_count = int(row.get("private_message_contact_absence_count") or 0)
     pre_cutover_deferred_identity_count, post_cutover_recoverable_identity_count = (
@@ -699,6 +702,17 @@ def _external_effect_failed_retryable_backlog() -> DataHealthCheckResult:
             "provider_boundary_crossed": True,
             "provider_success_claimed": False,
             "replay_prohibited_until_content_fixed": True,
+            "strict_provenance_required": True,
+        },
+        "wecom_welcome_chat_started_business_outcome": {
+            "completed_count": welcome_chat_started_business_rejection_count,
+            "process_outcome": "completed",
+            "business_outcome": "rejected",
+            "business_reason_code": "customer_service_chat_already_started",
+            "excluded_from_system_health_failures": True,
+            "provider_boundary_crossed": True,
+            "provider_success_claimed": False,
+            "replay_prohibited": True,
             "strict_provenance_required": True,
         },
         "external_contact_relationship_absent": {
