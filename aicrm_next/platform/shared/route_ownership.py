@@ -44,6 +44,7 @@ ALLOWED_AUTH_SCHEMES = {
     "public",
     "public_result_grant",
     "sidebar_grant",
+    "sidebar_session",
     "webhook_hmac",
 }
 ALLOWED_PRINCIPAL_TYPES = {"human", "api_client", "service", "public", "provider_callback"}

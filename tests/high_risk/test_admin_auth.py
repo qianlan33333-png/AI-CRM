@@ -1,10 +1,23 @@
 from __future__ import annotations
 
-import pytest
+from concurrent.futures import ThreadPoolExecutor
+from threading import Event, Lock
+from time import time
+from urllib.parse import urlparse
 
+import pytest
+from fastapi.testclient import TestClient
+
+from aicrm_next.channels.integration_gateway.wecom_jssdk_adapter import (
+    build_sidebar_jssdk_config,
+    reset_sidebar_jssdk_attempts,
+)
+from aicrm_next.crm.identity_contact.sidebar_jssdk import SIDEBAR_VIEWER_COOKIE
+from aicrm_next.main import create_app
 from aicrm_next.platform.admin_auth.action_token import issue_action_token, validate_action_token
 from aicrm_next.platform.admin_auth.capabilities import capabilities_for_roles
 from aicrm_next.platform.platform_foundation.auth_platform.context import AuthContext, PrincipalType
+from aicrm_next.platform.shared.signed_session import sign_session_payload, sign_state_payload, verify_session_payload
 
 
 pytestmark = pytest.mark.high_risk
@@ -102,3 +115,124 @@ def test_action_token_rejects_expiry_tampering_and_safe_methods() -> None:
             action="read_customer",
             target="/api/admin/customers/1",
         )
+
+
+def test_sidebar_context_token_uses_http_only_viewer_identity_and_follow_relation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("WECOM_CORP_ID", "corp-a")
+    captured: list[dict[str, str]] = []
+
+    class RelationService:
+        def authorize(self, **kwargs) -> bool:
+            captured.append(dict(kwargs))
+            return kwargs["external_userid"] == "external-a"
+
+    monkeypatch.setattr(
+        "aicrm_next.crm.identity_contact.sidebar_jssdk.build_sidebar_authorization_service",
+        lambda: RelationService(),
+    )
+    client = TestClient(create_app(), raise_server_exceptions=False)
+    client.cookies.set(
+        SIDEBAR_VIEWER_COOKIE,
+        sign_session_payload(
+            {
+                "auth_source": "wecom_sidebar_oauth",
+                "wecom_userid": "staff-a",
+                "corp_id": "corp-a",
+                "session_id": "session-a",
+                "iat": int(time()),
+            }
+        ),
+    )
+    issued = client.post("/api/sidebar/context-token", json={"external_userid": "external-a"})
+    denied = client.post("/api/sidebar/context-token", json={"external_userid": "external-b"})
+    assert issued.status_code == 200
+    assert issued.json()["sidebar_owner_token_status"] == "issued"
+    assert denied.status_code == 403
+    assert denied.json()["error_code"] == "sidebar_customer_scope_forbidden"
+    assert captured[0] == {"corp_id": "corp-a", "user_id": "staff-a", "external_userid": "external-a"}
+
+
+def test_sidebar_oauth_cookie_is_employee_scoped_and_callback_url_is_clean(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("AICRM_SIDEBAR_WECOM_OAUTH_ENABLE_REAL", "1")
+    monkeypatch.setenv("WECOM_CORP_ID", "corp-a")
+    monkeypatch.setenv("WECOM_SECRET", "secret")
+    monkeypatch.setenv("AICRM_SIDEBAR_OAUTH_REDIRECT_URI", "https://www.youcangogogo.com/api/sidebar/oauth/callback")
+
+    class AuthClient:
+        def fetch_access_token(self, **_kwargs) -> dict:
+            return {"errcode": 0, "access_token": "token"}
+
+        def fetch_user_info(self, **_kwargs) -> dict:
+            return {"errcode": 0, "UserId": "staff-a"}
+
+    class RelationService:
+        def record_oauth_callback(self, *, repeated: bool) -> None:
+            assert repeated is False
+
+    monkeypatch.setattr(
+        "aicrm_next.crm.identity_contact.sidebar_jssdk.build_wecom_admin_auth_client",
+        lambda: AuthClient(),
+    )
+    monkeypatch.setattr(
+        "aicrm_next.crm.identity_contact.sidebar_jssdk.build_sidebar_authorization_service",
+        lambda: RelationService(),
+    )
+    client = TestClient(create_app(), base_url="https://www.youcangogogo.com", raise_server_exceptions=False)
+    state = sign_state_payload(
+        {
+            "next": "/sidebar/bind-mobile?external_userid=external-a",
+            "external_userid": "external-a",
+            "nonce": "test",
+        }
+    )
+    response = client.get(
+        "/api/sidebar/oauth/callback",
+        params={"code": "code", "state": state},
+        follow_redirects=False,
+    )
+    session = verify_session_payload(client.cookies.get(SIDEBAR_VIEWER_COOKIE))
+    assert response.status_code == 302
+    assert response.headers["location"] == "/sidebar/bind-mobile?sidebar_oauth=1"
+    assert session and session["wecom_userid"] == "staff-a"
+    assert "external_userid" not in session
+
+
+def test_jssdk_signing_material_refresh_is_singleflight(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("WECOM_CORP_ID", "corp-a")
+    monkeypatch.setenv("WECOM_AGENT_ID", "1000002")
+    monkeypatch.setenv("WECOM_SECRET", "secret")
+    reset_sidebar_jssdk_attempts()
+    calls: list[str] = []
+    lock = Lock()
+    release = Event()
+
+    def fake_get_json(url: str, *, timeout: int) -> dict:
+        with lock:
+            calls.append(urlparse(url).path)
+            first = len(calls) == 1
+        if first:
+            release.wait(timeout=2)
+        path = urlparse(url).path
+        if path == "/cgi-bin/gettoken":
+            return {"errcode": 0, "access_token": "token", "expires_in": 7200}
+        return {"errcode": 0, "ticket": "ticket", "expires_in": 7200}
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        futures = [
+            pool.submit(
+                build_sidebar_jssdk_config,
+                url=f"https://www.youcangogogo.com/sidebar/bind-mobile?request={index}",
+                adapter_mode="real_enabled",
+                http_get_json=fake_get_json,
+            )
+            for index in range(8)
+        ]
+        release.set()
+        assert all(future.result(timeout=15)["ok"] for future in futures)
+    assert calls.count("/cgi-bin/gettoken") == 1
+    assert calls.count("/cgi-bin/get_jsapi_ticket") == 1
+    assert calls.count("/cgi-bin/ticket/get") == 1

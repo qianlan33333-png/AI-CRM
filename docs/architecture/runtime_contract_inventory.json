@@ -17,13 +17,13 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/platform/admin_auth/guards.py",
       "key": "AICRM_ADMIN_AUTH_ENFORCED",
-      "line": 72
+      "line": 73
     },
     {
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/platform/admin_auth/route_policy.py",
       "key": "AICRM_ADMIN_AUTH_ENFORCED",
-      "line": 77
+      "line": 78
     },
     {
       "accessor": "os.getenv",
@@ -993,6 +993,42 @@
     },
     {
       "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform/shared/resource_admission.py",
+      "key": "AICRM_MEDIA_ADMISSION_ENABLED",
+      "line": 14
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform/shared/resource_admission.py",
+      "key": "AICRM_MEDIA_ADMISSION_ROLLOUT_PERCENT",
+      "line": 14
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform/shared/resource_admission.py",
+      "key": "AICRM_MEDIA_READ_MAX_CONCURRENCY",
+      "line": 14
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform/shared/resource_admission.py",
+      "key": "AICRM_MEDIA_READ_QUEUE_LIMIT",
+      "line": 14
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform/shared/resource_admission.py",
+      "key": "AICRM_MEDIA_READ_RETRY_AFTER_SECONDS",
+      "line": 14
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
+      "file": "aicrm_next/platform/shared/resource_admission.py",
+      "key": "AICRM_MEDIA_READ_WAIT_TIMEOUT_MS",
+      "line": 14
+    },
+    {
+      "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/channels/integration_gateway/media_live_adapter.py",
       "key": "AICRM_MEDIA_UPLOAD_CONFIG_REVIEWED",
       "line": 21
@@ -1277,7 +1313,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/engagement/media_library/api.py",
       "key": "AICRM_NEXT_MEDIA_STORAGE_MODE",
-      "line": 46
+      "line": 51
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -1445,7 +1481,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/engagement/media_library/api.py",
       "key": "AICRM_NEXT_WECOM_MEDIA_MODE",
-      "line": 47
+      "line": 52
     },
     {
       "accessor": "runtime_setting",
@@ -1811,7 +1847,7 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/platform/admin_auth/route_policy.py",
       "key": "AICRM_ROUTE_POLICY_ENFORCED",
-      "line": 75
+      "line": 76
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -1877,37 +1913,37 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/channels/integration_gateway/wecom_jssdk_adapter.py",
       "key": "AICRM_SIDEBAR_JSSDK_ADAPTER_MODE",
-      "line": 59
+      "line": 65
     },
     {
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/crm/identity_contact/sidebar_jssdk.py",
       "key": "AICRM_SIDEBAR_JSSDK_ALLOWED_HOSTS",
-      "line": 472
+      "line": 602
     },
     {
       "accessor": "declared_runtime_setting_key",
       "file": "aicrm_next/channels/integration_gateway/wecom_jssdk_adapter.py",
       "key": "AICRM_SIDEBAR_JSSDK_REAL_ENABLED",
-      "line": 19
+      "line": 20
     },
     {
       "accessor": "_env_flag",
       "file": "aicrm_next/channels/integration_gateway/wecom_jssdk_adapter.py",
       "key": "AICRM_SIDEBAR_JSSDK_REAL_ENABLED",
-      "line": 62
+      "line": 68
     },
     {
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/channels/integration_gateway/wecom_jssdk_adapter.py",
       "key": "AICRM_SIDEBAR_JSSDK_SECRET",
-      "line": 214
+      "line": 220
     },
     {
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/channels/integration_gateway/wecom_jssdk_adapter.py",
       "key": "AICRM_SIDEBAR_JSSDK_TIMEOUT_SECONDS",
-      "line": 227
+      "line": 233
     },
     {
       "accessor": "runtime_bool",
@@ -3101,7 +3137,7 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/channels/integration_gateway/wecom_jssdk_adapter.py",
       "key": "WECOM_AGENT_ID",
-      "line": 88
+      "line": 94
     },
     {
       "accessor": "managed_runtime_setting",
@@ -3137,7 +3173,7 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/channels/integration_gateway/wecom_jssdk_adapter.py",
       "key": "WECOM_API_BASE",
-      "line": 225
+      "line": 231
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -3305,7 +3341,7 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/automation/background_jobs/external_contact_sync.py",
       "key": "WECOM_CORP_ID",
-      "line": 159
+      "line": 166
     },
     {
       "accessor": "managed_runtime_setting",
@@ -3335,7 +3371,7 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/channels/integration_gateway/wecom_jssdk_adapter.py",
       "key": "WECOM_CORP_ID",
-      "line": 83
+      "line": 89
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -3371,7 +3407,13 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/crm/identity_contact/sidebar_jssdk.py",
       "key": "WECOM_CORP_ID",
-      "line": 356
+      "line": 143
+    },
+    {
+      "accessor": "managed_runtime_setting",
+      "file": "aicrm_next/crm/identity_contact/sidebar_jssdk.py",
+      "key": "WECOM_CORP_ID",
+      "line": 480
     },
     {
       "accessor": "managed_runtime_setting",
@@ -3401,7 +3443,13 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/platform/admin_auth/route_policy.py",
       "key": "WECOM_CORP_ID",
-      "line": 251
+      "line": 254
+    },
+    {
+      "accessor": "managed_runtime_setting",
+      "file": "aicrm_next/platform/admin_auth/route_policy.py",
+      "key": "WECOM_CORP_ID",
+      "line": 290
     },
     {
       "accessor": "managed_runtime_setting",
@@ -3491,7 +3539,7 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/channels/integration_gateway/wecom_jssdk_adapter.py",
       "key": "WECOM_SECRET",
-      "line": 214
+      "line": 220
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -3515,7 +3563,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/crm/identity_contact/sidebar_jssdk.py",
       "key": "WECOM_SECRET",
-      "line": 357
+      "line": 481
     },
     {
       "accessor": "runtime_setting",
@@ -3651,6 +3699,12 @@
     "AICRM_INTERNAL_EVENTS_WORKER_BATCH_SIZE",
     "AICRM_INTERNAL_EVENT_WORKER_BATCH_SIZE",
     "AICRM_LISTENER_DATABASE_URL",
+    "AICRM_MEDIA_ADMISSION_ENABLED",
+    "AICRM_MEDIA_ADMISSION_ROLLOUT_PERCENT",
+    "AICRM_MEDIA_READ_MAX_CONCURRENCY",
+    "AICRM_MEDIA_READ_QUEUE_LIMIT",
+    "AICRM_MEDIA_READ_RETRY_AFTER_SECONDS",
+    "AICRM_MEDIA_READ_WAIT_TIMEOUT_MS",
     "AICRM_MEDIA_UPLOAD_CONFIG_REVIEWED",
     "AICRM_MEDIA_UPLOAD_LIVE_ADAPTER_ENABLED",
     "AICRM_MEDIA_UPLOAD_LIVE_UPLOAD_APPROVED",
@@ -46357,6 +46411,34 @@
       "route_group": "identity"
     },
     {
+      "capability_owner": "identity_contact",
+      "contract": {
+        "parameters": [],
+        "request_body": null,
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        }
+      },
+      "endpoint": "aicrm_next.crm.identity_contact.sidebar_jssdk.sidebar_context_token",
+      "include_in_schema": true,
+      "kind": "api",
+      "logical_capability_id": "core.channels",
+      "methods": [
+        "POST"
+      ],
+      "name": "sidebar_context_token",
+      "operation_id": "sidebar_context_token:POST:/api/sidebar/context-token",
+      "path": "/api/sidebar/context-token",
+      "route_group": "sidebar_jssdk"
+    },
+    {
       "capability_owner": "customer_read_model",
       "contract": {
         "parameters": [
@@ -47103,6 +47185,16 @@
             "schema": {
               "default": 50,
               "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "title": "Offset",
               "type": "integer"
             }
           },

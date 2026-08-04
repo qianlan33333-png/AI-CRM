@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
+from threading import Event, Lock
+from time import sleep
+
 import pytest
 
 from aicrm_next.capability_registry import (
@@ -22,6 +26,16 @@ from aicrm_next.platform.shared.product_code_aliases import (
     product_code_filter_values,
 )
 from aicrm_next.platform.shared.runtime import runtime_health_state, runtime_route_map_state
+from aicrm_next.platform.shared.resource_admission import (
+    RequestPriorityMetrics,
+    ResourceAdmissionController,
+    ResourceCapacityExhausted,
+    ResourcePolicy,
+    media_binary_admission,
+    request_priority_for_path,
+    reset_resource_admission_controllers,
+    resource_admission_snapshot,
+)
 
 
 pytestmark = pytest.mark.unit
@@ -87,3 +101,80 @@ def test_runtime_state_declares_next_as_the_only_owner(monkeypatch: pytest.Monke
     assert health["legacy_runtime_enabled"] is False
     assert route_map["route_owner"] == "ai_crm_next"
     assert route_map["legacy_callback_fallback_enabled"] is False
+
+
+def test_media_resource_admission_caps_concurrency_and_queue() -> None:
+    controller = ResourceAdmissionController(
+        ResourcePolicy("media_binary", "P2", max_in_flight=2, max_queued=10, wait_timeout_ms=500)
+    )
+    current = 0
+    observed = 0
+    lock = Lock()
+
+    def run(_: int) -> None:
+        nonlocal current, observed
+        with controller.admit():
+            with lock:
+                current += 1
+                observed = max(observed, current)
+            sleep(0.01)
+            with lock:
+                current -= 1
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(run, range(50)))
+    snapshot = controller.snapshot()
+    assert observed == 2
+    assert snapshot["observed"]["max_queued"] <= 10
+    assert snapshot["totals"]["completed"] == 50
+
+
+def test_media_resource_admission_rejects_a_full_queue() -> None:
+    controller = ResourceAdmissionController(
+        ResourcePolicy("media_binary", "P2", max_in_flight=1, max_queued=1, wait_timeout_ms=200)
+    )
+    entered = Event()
+    release = Event()
+
+    def hold() -> None:
+        with controller.admit():
+            entered.set()
+            release.wait(timeout=1)
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first = pool.submit(hold)
+        assert entered.wait(timeout=1)
+        waiting = pool.submit(lambda: _admit_once(controller))
+        sleep(0.02)
+        with pytest.raises(ResourceCapacityExhausted, match="capacity exhausted"):
+            with controller.admit():
+                pass
+        release.set()
+        first.result(timeout=1)
+        waiting.result(timeout=1)
+
+
+def _admit_once(controller: ResourceAdmissionController) -> None:
+    with controller.admit():
+        pass
+
+
+def test_resource_priority_metrics_and_rollout_are_low_cardinality(monkeypatch: pytest.MonkeyPatch) -> None:
+    metrics = RequestPriorityMetrics()
+    for priority, status in (("P0", 504), ("P1", 500), ("P2", 429)):
+        metrics.begin(priority)
+        metrics.complete(priority, duration_ms=20, status_code=status)
+    assert metrics.snapshot()["P0"]["totals"]["timeouts"] == 1
+    assert request_priority_for_path("/api/sidebar/v2/workbench") == "P0"
+    assert request_priority_for_path("/api/sidebar/v2/materials/image/1/thumbnail") == "P2"
+
+    reset_resource_admission_controllers()
+    monkeypatch.setenv("AICRM_MEDIA_ADMISSION_ENABLED", "false")
+    monkeypatch.setenv("AICRM_MEDIA_ADMISSION_ROLLOUT_PERCENT", "100")
+    with media_binary_admission(rollout_key="image:1"):
+        pass
+    assert resource_admission_snapshot()["media_rollout"]["bypassed"] == 1
+    monkeypatch.setenv("AICRM_MEDIA_ADMISSION_ENABLED", "true")
+    with media_binary_admission(rollout_key="image:1"):
+        pass
+    assert resource_admission_snapshot()["media_binary"]["totals"]["completed"] == 1

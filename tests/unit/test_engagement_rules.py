@@ -4,7 +4,12 @@ from dataclasses import dataclass
 
 import pytest
 
-from aicrm_next.engagement.media_library.variants import add_image_variant_urls, thumbnail_url, variant_url
+from aicrm_next.engagement.media_library.variants import (
+    add_image_variant_urls,
+    pending_image_placeholder,
+    thumbnail_url,
+    variant_url,
+)
 from aicrm_next.engagement.send_targets.dto import SendTargetRequest
 from aicrm_next.engagement.send_targets.resolver import SendTargetError, SendTargetResolver
 
@@ -57,3 +62,10 @@ def test_media_variant_urls_are_derived_from_current_image_id() -> None:
     projected = add_image_variant_urls({"id": 12, "updated_at": "2026-08-04T00:00:00Z"})
     assert projected["thumb_320_url"] == variant_url(12, "thumb_320")
     assert projected["preview_url"] == variant_url(12, "mobile_1080")
+
+
+def test_missing_thumbnail_uses_a_non_persistent_placeholder_contract() -> None:
+    placeholder = pending_image_placeholder(image_id="42", size=160)
+    assert placeholder["generation_required"] is True
+    assert placeholder["mime_type"] == "image/svg+xml"
+    assert placeholder["bytes"].startswith(b"<svg")

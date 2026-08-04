@@ -15,6 +15,29 @@ THUMBNAIL_SIZE_TO_VARIANT = {160: "thumb_160", 320: "thumb_320", 720: "preview_7
 ALLOWED_THUMBNAIL_SIZES = set(THUMBNAIL_SIZE_TO_VARIANT)
 
 
+def pending_image_placeholder(*, image_id: int | str, size: int = 160) -> dict[str, Any]:
+    safe_size = max(1, min(int(size or 160), 720))
+    body = (
+        '<svg xmlns="http://www.w3.org/2000/svg" width="{0}" height="{0}" viewBox="0 0 {0} {0}">'
+        '<rect width="100%" height="100%" fill="#f3f4f6"/>'
+        '<text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" '
+        'font-family="sans-serif" font-size="12" fill="#9ca3af">图片处理中</text></svg>'
+    ).format(safe_size).encode("utf-8")
+    checksum = hashlib.sha256(body).hexdigest()
+    return {
+        "image_id": image_id,
+        "variant_key": f"pending_{safe_size}",
+        "bytes": body,
+        "mime_type": "image/svg+xml",
+        "width": safe_size,
+        "height": safe_size,
+        "file_size": len(body),
+        "checksum": checksum,
+        "etag": f'"{checksum}"',
+        "generation_required": True,
+    }
+
+
 @dataclass(frozen=True)
 class ImageVariant:
     image_id: int | str

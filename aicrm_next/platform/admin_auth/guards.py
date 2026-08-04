@@ -40,6 +40,7 @@ PUBLIC_EXACT_ROUTES = {
     "/login",
     "/logout",
     "/api/sidebar/jssdk-config",
+    "/api/sidebar/context-token",
     "/sidebar/bind-mobile",
 }
 

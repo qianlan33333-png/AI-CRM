@@ -61,6 +61,10 @@ from .platform.shared.route_policy import default_route_policy_index
 from .platform.shared.runtime import assert_required_runtime_secrets, fixture_mode, public_https_environment, require_signing_secret
 from .platform.shared.runtime_settings import runtime_settings_request_scope
 from .platform.shared.safe_logging import safe_log_exception
+from .platform.shared.resource_admission import request_priority_for_path, request_priority_metrics
+from .platform.shared.runtime_metrics import configure_runtime_metric_provider
+from .crm.identity_contact.sidebar_authorization import sidebar_authorization_snapshot
+from .engagement.media_library.variant_generation import variant_generation_snapshot
 
 __all__ = [
     "app",
@@ -98,6 +102,8 @@ def create_app(
     configure_audience_target_query(AiAudienceTargetProvider)
     configure_campaign_media_reference_port(PostgresCampaignStepMediaReferenceRepository)
     configure_sidebar_extension_port(DefaultSidebarExtensionAdapter)
+    configure_runtime_metric_provider("sidebar_authorization", sidebar_authorization_snapshot)
+    configure_runtime_metric_provider("media_variant_generation", variant_generation_snapshot)
     app = FastAPI(title="AI-CRM Next", version="0.1.0")
     app.state.error_reporter = error_reporter or get_default_error_reporter()
     if error_reporter is None:
@@ -210,6 +216,8 @@ def create_app(
     @app.middleware("http")
     async def write_route_owner_headers(request, call_next):
         request_started_at = perf_counter()
+        request_priority = request_priority_for_path(request.url.path)
+        request_priority_metrics().begin(request_priority)
         response = None
         request_failed = False
         with request_query_telemetry_scope() as query_telemetry:
@@ -232,6 +240,7 @@ def create_app(
                     response.headers.setdefault("X-AICRM-Fallback-Used", "false")
                     response.headers.setdefault("X-AICRM-App", "ai_crm_next")
                     response.headers.setdefault("X-AICRM-Release-SHA", current_release_sha())
+                    response.headers.setdefault("X-AICRM-Request-Priority", request_priority)
                     if public_https_environment():
                         response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
                     if request.url.path == "/sidebar/bind-mobile" or request.url.path.startswith("/api/sidebar/"):
@@ -257,10 +266,16 @@ def create_app(
                 request_failed = True
                 raise
             finally:
+                request_duration_ms = (perf_counter() - request_started_at) * 1000.0
+                request_priority_metrics().complete(
+                    request_priority,
+                    duration_ms=request_duration_ms,
+                    status_code=500 if request_failed or response is None else int(response.status_code),
+                )
                 _log_request_query_summary(
                     request=request,
                     status_code=500 if request_failed or response is None else int(response.status_code),
-                    request_duration_ms=(perf_counter() - request_started_at) * 1000.0,
+                    request_duration_ms=request_duration_ms,
                     query_telemetry=query_telemetry,
                 )
         return response

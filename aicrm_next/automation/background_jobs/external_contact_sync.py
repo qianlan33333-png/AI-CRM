@@ -76,6 +76,13 @@ class PostgresExternalContactSyncRepository:
                 """,
                 (corp_id, external_userid, owner_userid, Jsonb({"owner_userid": owner_userid, "source": "next_native_sync"})),
             )
+        from aicrm_next.crm.identity_contact.sidebar_authorization import build_sidebar_authorization_service
+
+        build_sidebar_authorization_service().invalidate(
+            corp_id=corp_id,
+            user_id=owner_userid,
+            external_userid=external_userid,
+        )
         return {"ok": True, "status": "upsert", "external_userid": external_userid, "dry_run": False}
 
     def counts(self) -> dict[str, int]:

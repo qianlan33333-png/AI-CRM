@@ -5,6 +5,7 @@ from typing import Any
 from aicrm_next.extensions.commerce.commerce.application import ListProductsQuery
 from aicrm_next.extensions.commerce.commerce.repo import build_commerce_repository
 from aicrm_next.engagement.media_library.application import GetImageThumbnailQuery, ListMediaItemsQuery
+from aicrm_next.engagement.media_library.variant_generation import generate_missing_image_variants
 
 from .application import ListServicePeriodProductsQuery, UpdateServicePeriodMemberRemarkCommand
 from .domain import entitlement_status, isoformat, remaining_days
@@ -43,6 +44,9 @@ class DefaultSidebarExtensionAdapter:
         enabled_only: bool = False,
     ) -> dict[str, Any]:
         return GetImageThumbnailQuery()(image_id, size, enabled_only=enabled_only)
+
+    def generate_missing_image_variants(self, image_id: str) -> None:
+        generate_missing_image_variants(image_id)
 
     def update_service_period_member_remark(
         self,

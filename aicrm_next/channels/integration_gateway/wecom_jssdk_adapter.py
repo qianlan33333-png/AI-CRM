@@ -5,6 +5,7 @@ import json
 import secrets
 import time
 from dataclasses import asdict, dataclass
+from threading import Condition
 from typing import Any
 from urllib.error import URLError
 from urllib.parse import urlencode, urlparse
@@ -15,10 +16,12 @@ from aicrm_next.platform.shared.runtime import production_environment
 from aicrm_next.platform.shared.runtime_settings import managed_runtime_bool, managed_runtime_setting
 
 
-DEFAULT_JS_API_LIST = ("getContext", "getCurExternalContact", "sendChatMessage")
+DEFAULT_JS_API_LIST = ("getCurExternalContact", "sendChatMessage")
 RUNTIME_SETTING_KEYS = frozenset({"AICRM_SIDEBAR_JSSDK_REAL_ENABLED"})
 _audit_ledger = InMemoryAuditLedger()
 _REAL_CACHE: dict[str, tuple[str, float]] = {}
+_REAL_CACHE_CONDITION = Condition()
+_REAL_CACHE_INFLIGHT: set[str] = set()
 
 
 @dataclass(frozen=True)
@@ -46,7 +49,10 @@ class SidebarJSSDKConfigError(RuntimeError):
 
 
 def reset_sidebar_jssdk_attempts() -> None:
-    _REAL_CACHE.clear()
+    with _REAL_CACHE_CONDITION:
+        _REAL_CACHE.clear()
+        _REAL_CACHE_INFLIGHT.clear()
+        _REAL_CACHE_CONDITION.notify_all()
     global _audit_ledger
     _audit_ledger = InMemoryAuditLedger()
 
@@ -263,12 +269,28 @@ def _build_real_jssdk_config(
 
 
 def _cached_value(cache_key: str, factory: Any) -> str:
-    value, expires_at = _REAL_CACHE.get(cache_key, ("", 0.0))
-    if value and expires_at > time.time():
+    with _REAL_CACHE_CONDITION:
+        while True:
+            value, expires_at = _REAL_CACHE.get(cache_key, ("", 0.0))
+            if value and expires_at > time.time():
+                return value
+            if cache_key not in _REAL_CACHE_INFLIGHT:
+                _REAL_CACHE_INFLIGHT.add(cache_key)
+                break
+            _REAL_CACHE_CONDITION.wait(timeout=10.0)
+    try:
+        payload = factory()
+        value = str(payload["value"])
+        with _REAL_CACHE_CONDITION:
+            _REAL_CACHE[cache_key] = (
+                value,
+                time.time() + max(int(payload["expires_in"]) - 60, 60),
+            )
         return value
-    payload = factory()
-    _REAL_CACHE[cache_key] = (payload["value"], time.time() + max(int(payload["expires_in"]) - 60, 60))
-    return payload["value"]
+    finally:
+        with _REAL_CACHE_CONDITION:
+            _REAL_CACHE_INFLIGHT.discard(cache_key)
+            _REAL_CACHE_CONDITION.notify_all()
 
 
 def _fetch_access_token(*, getter: Any, api_base: str, timeout: int, corp_id: str, secret: str) -> dict[str, Any]:

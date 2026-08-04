@@ -42,6 +42,7 @@ class MediaLibraryRepository(Protocol):
         *,
         enabled_only: bool = False,
     ) -> dict[str, Any] | None: ...
+    def generate_image_variants(self, image_id: str) -> bool: ...
     def save_item(self, kind: str, payload: dict[str, Any], item_id: str | None = None) -> dict[str, Any]: ...
     def delete_item(self, kind: str, item_id: str, *, force: bool = False) -> dict[str, Any]: ...
     def ensure_group_invite_binding(self, payload: dict[str, Any]) -> dict[str, Any]: ...
@@ -299,6 +300,13 @@ class InMemoryMediaLibraryRepository:
             mime_type=mime_type,
             size=size,
         )
+
+    def generate_image_variants(self, image_id: str) -> bool:
+        item = self.get_item("image", image_id, include_data=True)
+        if not item:
+            return False
+        self._ensure_image_variants(item)
+        return True
 
     def save_item(self, kind: str, payload: dict[str, Any], item_id: str | None = None) -> dict[str, Any]:
         now = now_iso()

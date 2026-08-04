@@ -45,6 +45,7 @@
   };
   const DEFAULT_TIMEOUT_MS = 8000;
   const SDK_TIMEOUT_MS = 5000;
+  const STARTUP_BUDGET_MS = 5000;
   const PANEL_TIMEOUT_MS = {
     workbench: 6500,
     questionnaires: 9000,
@@ -58,7 +59,6 @@
     other_staff_messages: 9000,
   };
   const PANEL_CACHE_TTL_MS = 2 * 60 * 1000;
-  const JSSDK_CONFIG_CACHE_SAFETY_MS = 30 * 1000;
   const JSSDK_CONFIG_CACHE_MAX_TTL_MS = 5 * 60 * 1000;
   const PRODUCT_CARD_IMAGE_PATH = "/static/sidebar_workbench/product-card-cover.png";
 
@@ -105,9 +105,14 @@
     panelRequests: new Map(),
     jssdkConfigRequests: new Map(),
     jssdkConfigCache: new Map(),
+    contextTokenRequests: new Map(),
+    bootDeadline: 0,
     timelineRequestVersion: 0,
     materialRequestVersion: 0,
     materialSearchController: null,
+    materialPager: null,
+    materialThumbObserver: null,
+    materialImageController: null,
   };
 
   const debugEnabled = root && root.dataset.debugEnabled === "true";
@@ -304,37 +309,60 @@
   }
 
   function jssdkConfigUrl() {
-    const currentUrl = window.location.href.split("#")[0];
+    const signedPageUrl = new URL(window.location.href.split("#")[0]);
+    signedPageUrl.searchParams.delete("sidebar_oauth");
+    signedPageUrl.searchParams.delete("sidebar_oauth_error");
     const url = new URL(endpoint("jssdkConfigUrl"), window.location.origin);
-    url.searchParams.set("url", currentUrl);
-    if (state.external_userid) url.searchParams.set("external_userid", state.external_userid);
+    url.searchParams.set("url", signedPageUrl.toString());
     return url.toString();
   }
 
-  function jssdkConfigCacheTtlMs(payload) {
-    const context = (payload && payload.sidebar_owner_context) || {};
-    const expiresInMs = Number(context.expires_in) * 1000;
-    if (!Number.isFinite(expiresInMs) || expiresInMs <= JSSDK_CONFIG_CACHE_SAFETY_MS) return 0;
-    return Math.min(JSSDK_CONFIG_CACHE_MAX_TTL_MS, expiresInMs - JSSDK_CONFIG_CACHE_SAFETY_MS);
+  function jssdkStorageKey(url) {
+    return "aicrm_sidebar_jssdk_config:" + url;
+  }
+
+  function publicJssdkPayload(payload) {
+    const copy = Object.assign({}, payload || {});
+    delete copy.sidebar_owner_token;
+    delete copy.sidebar_owner_token_status;
+    delete copy.sidebar_owner_context;
+    delete copy.sidebar_oauth_url;
+    return copy;
   }
 
   function readJssdkConfigCache(url) {
-    const cached = state.jssdkConfigCache.get(url);
+    let cached = state.jssdkConfigCache.get(url);
+    if (!cached && window.sessionStorage) {
+      try {
+        cached = safeJsonParse(window.sessionStorage.getItem(jssdkStorageKey(url)) || "");
+      } catch (_error) {
+        cached = null;
+      }
+    }
     if (!cached) return null;
     if (cached.expiresAt <= Date.now()) {
       state.jssdkConfigCache.delete(url);
+      if (window.sessionStorage) window.sessionStorage.removeItem(jssdkStorageKey(url));
       return null;
     }
+    state.jssdkConfigCache.set(url, cached);
     return cached.payload;
   }
 
   function writeJssdkConfigCache(url, payload) {
-    const ttlMs = jssdkConfigCacheTtlMs(payload);
-    if (ttlMs <= 0) return;
-    state.jssdkConfigCache.set(url, {
-      payload,
-      expiresAt: Date.now() + ttlMs,
-    });
+    const cached = {
+      payload: publicJssdkPayload(payload),
+      expiresAt: Date.now() + JSSDK_CONFIG_CACHE_MAX_TTL_MS,
+    };
+    state.jssdkConfigCache.set(url, cached);
+    if (window.sessionStorage) {
+      try { window.sessionStorage.setItem(jssdkStorageKey(url), JSON.stringify(cached)); } catch (_error) {}
+    }
+  }
+
+  function remainingStartupBudget(fallbackMs) {
+    if (!state.bootDeadline) return fallbackMs || SDK_TIMEOUT_MS;
+    return Math.max(1, Math.min(fallbackMs || SDK_TIMEOUT_MS, state.bootDeadline - Date.now()));
   }
 
   async function requestJssdkConfig() {
@@ -343,7 +371,7 @@
     if (cached) return cached;
     const pending = state.jssdkConfigRequests.get(url);
     if (pending) return pending;
-    const request = requestJson(url, { timeoutMs: SDK_TIMEOUT_MS, retryCount: 1, retryDelayMs: 300 })
+    const request = requestJson(url, { timeoutMs: remainingStartupBudget(SDK_TIMEOUT_MS), retryCount: 0 })
       .then((payload) => {
         writeJssdkConfigCache(url, payload);
         return payload;
@@ -354,16 +382,29 @@
   }
 
   async function refreshSidebarOwnerToken() {
-    if (!state.owner_userid && !state.external_userid) return false;
+    if (!state.external_userid) return false;
+    const key = String(state.external_userid);
+    const pending = state.contextTokenRequests.get(key);
+    if (pending) return pending;
+    const request = (async () => {
     try {
-      const payload = await requestJssdkConfig();
+      const payload = await requestJson(endpoint("contextTokenUrl"), {
+        method: "POST",
+        body: JSON.stringify({ external_userid: state.external_userid }),
+        timeoutMs: remainingStartupBudget(SDK_TIMEOUT_MS),
+        retryCount: 0,
+      });
       applySidebarOwnerToken(payload);
       writeDebug("sidebar owner token refreshed", { status: state.sidebar_owner_token_status, has_token: Boolean(state.sidebar_owner_token) });
       return Boolean(state.sidebar_owner_token);
     } catch (error) {
+      applySidebarOwnerToken((error && error.payload) || {});
       writeDebug("sidebar owner token refresh failed", { message: error.message || String(error) });
       return false;
     }
+    })().finally(() => state.contextTokenRequests.delete(key));
+    state.contextTokenRequests.set(key, request);
+    return request;
   }
 
   function sidebarOAuthAttemptKey() {
@@ -377,6 +418,15 @@
     return window.location.pathname + (query ? "?" + query : "");
   }
 
+  function cleanupSidebarOAuthUrl() {
+    const url = new URL(window.location.href);
+    const hadTransient = url.searchParams.has("sidebar_oauth");
+    url.searchParams.delete("sidebar_oauth");
+    if (hadTransient && window.history && window.history.replaceState) {
+      window.history.replaceState({}, document.title, url.pathname + url.search + url.hash);
+    }
+  }
+
   async function maybeStartSidebarOAuth(reason) {
     if (state.sidebar_owner_token || state.sidebar_oauth_started || !state.external_userid) return false;
     const params = new URLSearchParams(window.location.search);
@@ -387,6 +437,12 @@
     }
     if (!state.sidebar_oauth_url) {
       await refreshSidebarOwnerToken();
+    }
+    if (
+      !state.sidebar_oauth_url &&
+      ["", "viewer_session_required", "context_token_required"].indexOf(state.sidebar_owner_token_status) >= 0
+    ) {
+      state.sidebar_oauth_url = "/api/sidebar/oauth/start";
     }
     if (!state.sidebar_oauth_url) {
       writeDebug("sidebar oauth unavailable", { reason: reason || "", owner_token_status: state.sidebar_owner_token_status });
@@ -972,6 +1028,7 @@
   }
 
   function renderMaterialLoadError(type, error) {
+    destroyMaterialResources();
     content.innerHTML = panel(
       "素材",
       materialTypeControls() +
@@ -981,14 +1038,110 @@
     );
   }
 
+  function destroyMaterialResources() {
+    if (state.materialPager) state.materialPager.destroy();
+    state.materialPager = null;
+    if (state.materialThumbObserver) state.materialThumbObserver.disconnect();
+    state.materialThumbObserver = null;
+    if (state.materialImageController) state.materialImageController.abort();
+    state.materialImageController = null;
+  }
+
+  function materialCardHtml(item) {
+    const thumb = item.thumbnail_url
+      ? '<div class="material-thumb thumb image-thumb"><span class="material-thumb-placeholder">…</span></div>'
+      : '<div class="material-thumb thumb image-thumb preview-unavailable">预览不可用</div>';
+    return (
+      '<article class="card material material--image" data-material-card data-material-id="' + escapeHtml(item.id || "") + '" data-material-thumb-url="' + escapeHtml(item.thumbnail_url || "") + '">' + thumb +
+      '<div class="material-main"><div class="material-tags tags">' +
+      (item.tags || []).map((tag) => '<span class="tag">' + escapeHtml(tag) + "</span>").join("") +
+      '</div></div><button class="btn primary material-send" type="button" data-material-send="' + escapeHtml(item.id || "") + '">发送</button></article>'
+    );
+  }
+
+  function bindMaterialThumbnails(items) {
+    if (!state.materialImageController && typeof AbortController !== "undefined") {
+      state.materialImageController = new AbortController();
+    }
+    if (!state.materialThumbObserver && typeof IntersectionObserver !== "undefined") {
+      state.materialThumbObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const card = entry.target;
+          state.materialThumbObserver.unobserve(card);
+          const thumbnailUrl = String(card.dataset.materialThumbUrl || "");
+          if (!thumbnailUrl) return;
+          const cell = card.querySelector(".material-thumb");
+          if (!cell) return;
+          const image = document.createElement("img");
+          image.alt = "图片素材预览";
+          image.width = 64;
+          image.height = 64;
+          image.loading = "lazy";
+          image.decoding = "async";
+          image.fetchPriority = "low";
+          cell.textContent = "";
+          cell.appendChild(image);
+          window.ImageResourceLoader.loadInto(image, thumbnailUrl, {
+            signal: state.materialImageController ? state.materialImageController.signal : undefined,
+            cancelOutsideViewport: true,
+          }).catch((error) => {
+            if (!(error && error.name === "AbortError")) cell.textContent = "稍后重试";
+          });
+        });
+      }, { rootMargin: "60px 0px" });
+    }
+    content.querySelectorAll("[data-material-card]:not([data-material-bound])").forEach((card) => {
+      card.setAttribute("data-material-bound", "true");
+      if (state.materialThumbObserver) state.materialThumbObserver.observe(card);
+    });
+  }
+
+  function setupMaterialPager(entry, query) {
+    const list = content.querySelector("[data-material-list]");
+    if (!list || !entry.has_more || !window.ImageResourceLoader) return;
+    let pager = null;
+    pager = window.ImageResourceLoader.createPager({
+      container: list,
+      pageSize: 5,
+      cooldownMs: 300,
+      initialOffset: entry.next_offset,
+      initialHasMore: entry.has_more,
+      sentinelClass: "material-page-sentinel",
+      fetchPage: async (page) => {
+        const payload = await requestPanelJson(
+          "materials:" + page.offset,
+          queryUrl(endpoint("materialsUrl"), { type: "image", limit: 5, offset: page.offset, q: query }),
+          { signal: page.signal }
+        );
+        return Object.assign({}, payload, { items: payload.materials || [] });
+      },
+      onPage: (items, payload) => {
+        entry.items = entry.items.concat(items);
+        entry.total = Number(payload.total || entry.total || entry.items.length);
+        entry.has_more = Boolean(payload.has_more);
+        entry.next_offset = Number(payload.next_offset == null ? entry.items.length : payload.next_offset);
+        const holder = document.createElement("div");
+        holder.innerHTML = items.map(materialCardHtml).join("");
+        Array.from(holder.children).forEach((node) => list.insertBefore(node, pager.sentinel));
+        bindMaterialThumbnails(items);
+      },
+    });
+    pager.sentinel.style.cssText = "grid-column:1/-1;text-align:center;color:#888;padding:10px 0;font-size:12px;";
+    state.materialPager = pager;
+  }
+
   function renderMaterials() {
+    destroyMaterialResources();
     const controls = materialTypeControls();
     if (state.materialType === "radar") {
       renderRadarLinks(controls);
       return;
     }
     const searchControls = materialSearchControls();
-    const rows = state.data.materials[materialResultKey(state.materialQuery)] || [];
+    const query = String(state.materialQuery || "").trim();
+    const entry = state.data.materials[materialResultKey(query)] || { items: [], has_more: false, next_offset: 0 };
+    const rows = entry.items || [];
     if (!rows.length) {
       content.innerHTML = panel("", controls + searchControls + empty(state.materialQuery ? "没有匹配的图片素材" : "暂无图片素材"));
       return;
@@ -996,23 +1149,14 @@
     content.innerHTML = panel(
       "",
       controls + searchControls +
-        rows
-          .map((item) => {
-            const thumb = item.thumbnail_url
-              ? '<div class="material-thumb thumb image-thumb"><img src="' + escapeHtml(item.thumbnail_url) + '" alt="图片素材预览" width="64" height="64" loading="lazy" decoding="async" fetchpriority="low" data-material-thumb-img></div>'
-              : '<div class="material-thumb thumb image-thumb preview-unavailable">预览不可用</div>';
-            return (
-              '<article class="card material material--image">' + thumb +
-              '<div class="material-main"><div class="material-tags tags">' +
-              (item.tags || []).map((tag) => '<span class="tag">' + escapeHtml(tag) + "</span>").join("") +
-              '</div></div><button class="btn primary material-send" type="button" data-material-send="' + escapeHtml(item.id || "") + '">发送</button></article>'
-            );
-          })
-          .join("")
+        '<div class="material-list" data-material-list>' + rows.map(materialCardHtml).join("") + "</div>"
     );
+    bindMaterialThumbnails(rows);
+    setupMaterialPager(entry, query);
   }
 
   function renderRadarLinks(controls) {
+    destroyMaterialResources();
     const rows = state.data.radar_links || [];
     if (!rows.length) {
       content.innerHTML = panel("", controls + empty("暂无启用中的雷达链接"));
@@ -1190,11 +1334,16 @@
     try {
       const payload = await requestPanelJson(
         "materials",
-        queryUrl(endpoint("materialsUrl"), { type: "image", limit: 50, q: query }),
+        queryUrl(endpoint("materialsUrl"), { type: "image", limit: 5, offset: 0, q: query }),
         state.materialSearchController ? { signal: state.materialSearchController.signal } : undefined
       );
       if (requestVersion !== state.materialRequestVersion) return false;
-      state.data.materials[resultKey] = payload.materials || [];
+      state.data.materials[resultKey] = {
+        items: payload.materials || [],
+        total: Number(payload.total || 0),
+        has_more: Boolean(payload.has_more),
+        next_offset: Number(payload.next_offset == null ? (payload.materials || []).length : payload.next_offset),
+      };
       state.materialQuickKeywords = payload.quick_keywords || [];
       return true;
     } catch (error) {
@@ -1207,6 +1356,7 @@
 
   async function executeMaterialSearch(query, options) {
     if (state.materialType !== "image") return;
+    destroyMaterialResources();
     state.materialQuery = String(query || "").trim().slice(0, 100);
     const resultKey = materialResultKey(state.materialQuery);
     if (options && options.force) {
@@ -1227,6 +1377,7 @@
   async function switchMaterialType(type) {
     if (!materialTabs.some((item) => item[0] === type)) return;
     state.materialType = type;
+    destroyMaterialResources();
     if (state.activeTab !== "materials") return;
     setPanelLoading("素材");
     try {
@@ -1324,6 +1475,7 @@
 
   async function switchTab(tab) {
     if (tab !== "profile" && !isWorkbenchReady()) return;
+    if (state.activeTab === "materials" && tab !== "materials") destroyMaterialResources();
     state.activeTab = tab;
     renderTabs();
     const label = tabs.find((item) => item[0] === tab)?.[1] || "";
@@ -1587,7 +1739,7 @@
     }
     return await new Promise((resolve) => {
       let resolved = false;
-      const timer = window.setTimeout(() => finish(false, "sdk_timeout"), SDK_TIMEOUT_MS);
+      const timer = window.setTimeout(() => finish(false, "sdk_timeout"), remainingStartupBudget(SDK_TIMEOUT_MS));
       const finish = (ok, reason) => {
         if (!resolved) {
           resolved = true;
@@ -1602,7 +1754,7 @@
         timestamp: Number(configPayload.config.timestamp),
         nonceStr: configPayload.config.nonceStr,
         signature: configPayload.config.signature,
-        jsApiList: ["getContext", "sendChatMessage"],
+        jsApiList: ["sendChatMessage"],
       });
       window.wx.ready(function () {
         writeDebug("wx.config success", { url: configPayload.config.url });
@@ -1616,7 +1768,7 @@
           timestamp: Number(configPayload.agent_config.timestamp),
           nonceStr: configPayload.agent_config.nonceStr,
           signature: configPayload.agent_config.signature,
-          jsApiList: ["getContext", "getCurExternalContact", "sendChatMessage"],
+          jsApiList: ["getCurExternalContact", "sendChatMessage"],
           success: function (res) {
             writeDebug("wx.agentConfig success", res || {});
             applyWeComViewerIdentity(res || {}, "agentConfig", { allowUserId: true });
@@ -1662,14 +1814,7 @@
     const sdkReady = await initWeComSdk();
     if (!sdkReady.ok || !window.wx || typeof window.wx.invoke !== "function") return sdkReady;
     try {
-      const contextPayload = await invokeWeCom("getContext", {}, SDK_TIMEOUT_MS);
-      writeDebug("getContext result", contextPayload || {});
-      applyWeComViewerIdentity(contextPayload || {}, "getContext", { allowUserId: true });
-    } catch (error) {
-      writeDebug("getContext error", { message: error.message || String(error) });
-    }
-    try {
-      const res = await invokeWeCom("getCurExternalContact", {}, SDK_TIMEOUT_MS);
+      const res = await invokeWeCom("getCurExternalContact", {}, remainingStartupBudget(SDK_TIMEOUT_MS));
       writeDebug("getCurExternalContact result", res || {});
       const externalUserid = extractWeComExternalUserid(res || {});
       if (!externalUserid) {
@@ -1692,6 +1837,8 @@
   }
 
   async function boot() {
+    cleanupSidebarOAuthUrl();
+    state.bootDeadline = Date.now() + STARTUP_BUDGET_MS;
     setWorkbenchState(WORKBENCH_STATES.identifying_customer);
     renderTabs();
     setPanelLoading("");

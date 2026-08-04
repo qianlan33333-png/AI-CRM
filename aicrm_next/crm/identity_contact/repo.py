@@ -105,6 +105,9 @@ class FixtureIdentityRepository:
             if owner
         }
 
+    def has_active_follow_relation(self, *, corp_id: str, user_id: str, external_userid: str) -> bool:
+        return _text(user_id) in self.list_external_contact_owner_userids(external_userid)
+
 
 class FixtureIdentityBindingRepository:
     source_status = "fixture_identity_binding"
@@ -225,6 +228,27 @@ class PostgresIdentityRepository:
                 ),
             ).fetchall()
         return {_text(row.get("owner_userid")) for row in rows if _text(row.get("owner_userid"))}
+
+    def has_active_follow_relation(self, *, corp_id: str, user_id: str, external_userid: str) -> bool:
+        normalized_corp = _text(corp_id)
+        normalized_user = _text(user_id)
+        normalized_external = _text(external_userid)
+        if not normalized_corp or not normalized_user or not normalized_external:
+            return False
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                SELECT 1
+                FROM wecom_external_contact_follow_users
+                WHERE corp_id = %s
+                  AND user_id = %s
+                  AND external_userid = %s
+                  AND COALESCE(relation_status, 'active') = 'active'
+                LIMIT 1
+                """,
+                (normalized_corp, normalized_user, normalized_external),
+            ).fetchone()
+        return bool(row)
 
     def _from_user_identity(self, row, *, matched_by: str) -> IdentityResolution:
         external_userid = _text(row.get("external_userid"))

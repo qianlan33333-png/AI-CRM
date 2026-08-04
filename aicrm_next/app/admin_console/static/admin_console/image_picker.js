@@ -36,12 +36,23 @@
     });
   }
 
+  async function fetchLibraryPage(offset, options) {
+    const pageOffset = Math.max(0, Number(offset || 0));
+    const signal = options && options.signal;
+    const data = await requestJson('/api/admin/image-library?enabled_only=true&limit=5&offset=' + pageOffset, {
+      credentials: 'same-origin',
+      signal: signal,
+    });
+    if (!data.ok) throw new Error(window.AdminApi?.formatErrorValue(data) || '素材库加载失败，请稍后重试');
+    return data;
+  }
+
   async function fetchLibrary({ force = false } = {}) {
     if (!force && _libraryCache) return _libraryCache;
     if (_libraryCachePromise) return _libraryCachePromise;
     _libraryCachePromise = (async () => {
       try {
-        const data = await requestJson('/api/admin/image-library?enabled_only=true&limit=80');
+        const data = await fetchLibraryPage(0);
         _libraryCache = data.ok ? (data.items || []) : [];
       } catch (e) {
         _libraryCachePromise = null;
@@ -74,14 +85,7 @@
     return url;
   }
 
-  function srcsetFor(item, fallbackUrl) {
-    const small = item.thumb_160_url || fallbackThumbnailUrl(item, 160) || fallbackUrl;
-    const medium = item.thumb_320_url || fallbackThumbnailUrl(item, 320) || fallbackUrl;
-    if (!small || !medium) return '';
-    return escapeHtml(small) + ' 160w, ' + escapeHtml(medium) + ' 320w';
-  }
-
-  function renderThumbImage(cell, item, size) {
+  function renderThumbImage(cell, item, size, signal) {
     if (!cell) return;
     const firstUrl = thumbnailUrl(item);
     const fallbackUrl = fallbackThumbnailUrl(item, size || 160);
@@ -93,23 +97,19 @@
     img.height = size || 120;
     img.alt = '';
     img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
-    const srcset = srcsetFor(item, fallbackUrl || firstUrl);
-    if (srcset) {
-      img.setAttribute('srcset', srcset);
-      img.setAttribute('sizes', (size || 120) + 'px');
-    }
     img.onerror = function () {
-      if (fallbackUrl && img.src.indexOf(fallbackUrl) < 0) {
-        img.removeAttribute('srcset');
-        img.removeAttribute('sizes');
-        img.src = fallbackUrl;
-        return;
-      }
       cell.textContent = '无图';
     };
     cell.textContent = '';
-    img.src = firstUrl || fallbackUrl;
     cell.appendChild(img);
+    const url = firstUrl || fallbackUrl;
+    if (window.ImageResourceLoader) {
+      window.ImageResourceLoader.loadInto(img, url, { signal: signal, cancelOutsideViewport: true }).catch(function (error) {
+        if (!(error && error.name === 'AbortError')) cell.textContent = '稍后重试';
+      });
+    } else {
+      img.src = url;
+    }
   }
 
   function showLibraryPickerModal({ existing, onConfirm, mode, max }) {
@@ -135,10 +135,16 @@
     document.body.appendChild(wrap);
     const listEl = wrap.querySelector('.img-picker-list');
     const countEl = wrap.querySelector('.img-picker-count');
+    const imageController = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    let pager = null;
 
     let chosen = mode === 'multiple' ? new Set(existing.map(String)) : (existing.length ? String(existing[0]) : '');
 
-    function close() { wrap.remove(); }
+    function close() {
+      if (pager) pager.destroy();
+      if (imageController) imageController.abort();
+      wrap.remove();
+    }
     wrap.querySelector('.img-picker-close').addEventListener('click', close);
     wrap.querySelector('.img-picker-cancel').addEventListener('click', close);
     wrap.querySelector('.img-picker-confirm').addEventListener('click', () => {
@@ -147,13 +153,19 @@
       close();
     });
 
-    fetchLibrary().then(async (items) => {
-      if (!items.length) {
+    function updateCount() {
+      const n = mode === 'multiple' ? chosen.size : (chosen ? 1 : 0);
+      countEl.textContent = mode === 'multiple' ? ('已选 ' + n + (max ? ' / ' + max : '')) : (n ? '已选 1' : '');
+    }
+
+    function appendItems(items, append) {
+      if (!append) listEl.innerHTML = '';
+      if (!items.length && !append) {
         listEl.innerHTML = '<div style="grid-column:1/-1;color:#888;font-size:13px;text-align:center;padding:30px;">素材库还是空的，先去 <a href="/admin/image-library" target="_blank">/admin/image-library</a> 上传一些。</div>';
         return;
       }
-      // 先渲染骨架占位，再填服务端返回的 thumb_160_url，避免批量拉原图详情。
-      listEl.innerHTML = items.map(function (it) {
+      const holder = document.createElement('div');
+      holder.innerHTML = items.map(function (it) {
         const itemId = String(it.id);
         const isSel = mode === 'multiple' ? chosen.has(itemId) : (chosen === itemId);
         return '<label data-id="' + it.id + '" style="border:2px solid ' + (isSel ? '#2c5cdb' : '#e5e7eb') + ';border-radius:6px;padding:6px;cursor:pointer;font-size:11px;display:flex;flex-direction:column;gap:6px;">'
@@ -161,18 +173,11 @@
           + '<div style="display:flex;align-items:center;gap:4px;"><input type="' + (mode === 'multiple' ? 'checkbox' : 'radio') + '" name="img-picker" ' + (isSel ? 'checked' : '') + ' style="margin:0;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(it.name || it.file_name || '#' + it.id) + '</span></div>'
           + '</label>';
       }).join('');
-      function updateCount() {
-        const n = mode === 'multiple' ? chosen.size : (chosen ? 1 : 0);
-        countEl.textContent = mode === 'multiple' ? ('已选 ' + n + (max ? ' / ' + max : '')) : (n ? '已选 1' : '');
-      }
       updateCount();
-      // 填缩略图
-      items.forEach(function (it) {
-        const cell = listEl.querySelector('label[data-id="' + it.id + '"] .img-picker-thumb');
-        renderThumbImage(cell, it, 120);
-      });
-      // 选择交互
-      listEl.querySelectorAll('label[data-id]').forEach(function (lbl) {
+      const labels = Array.from(holder.querySelectorAll('label[data-id]'));
+      labels.forEach(function (lbl) {
+        const item = items.find(function (candidate) { return String(candidate.id) === String(lbl.dataset.id); });
+        if (item) renderThumbImage(lbl.querySelector('.img-picker-thumb'), item, 120, imageController ? imageController.signal : undefined);
         const id = String(lbl.dataset.id);
         lbl.addEventListener('click', function (e) {
           if (e.target.tagName === 'INPUT') return;  // 让 input 自己处理
@@ -203,10 +208,30 @@
           updateCount();
         });
       });
-    }).catch((error) => {
-      const message = window.AdminApi?.errorMessage(error, '素材库加载失败，请稍后重试') || '素材库加载失败，请稍后重试';
-      listEl.innerHTML = '<div style="grid-column:1/-1;color:#b42318;font-size:13px;text-align:center;padding:30px;">' + escapeHtml(message) + '</div>';
+      labels.forEach(function (label) {
+        listEl.insertBefore(label, pager && pager.sentinel && pager.sentinel.parentNode === listEl ? pager.sentinel : null);
+      });
+    }
+
+    listEl.innerHTML = '';
+    pager = window.ImageResourceLoader.createPager({
+      container: listEl,
+      scrollTarget: listEl,
+      pageSize: 5,
+      cooldownMs: 300,
+      sentinelClass: 'img-picker-page-sentinel',
+      fetchPage: function (page) { return fetchLibraryPage(page.offset, { signal: page.signal }); },
+      onPage: function (items, payload, append) {
+        if (!append) _libraryCache = items.slice();
+        appendItems(items, append);
+      },
+      onError: function (error, append) {
+        if (append) return;
+        const message = window.AdminApi?.errorMessage(error, '素材库加载失败，请稍后重试') || '素材库加载失败，请稍后重试';
+        listEl.innerHTML = '<div style="grid-column:1/-1;color:#b42318;font-size:13px;text-align:center;padding:30px;">' + escapeHtml(message) + '</div>';
+      },
     });
+    pager.loadInitial();
   }
 
   /**

@@ -23,6 +23,7 @@ class SidebarExtensionPort(Protocol):
         *,
         enabled_only: bool = False,
     ) -> dict[str, Any]: ...
+    def generate_missing_image_variants(self, image_id: str) -> None: ...
     def update_service_period_member_remark(
         self,
         service_product_id: str,
@@ -92,6 +93,10 @@ class GetImageThumbnailQuery:
         )
 
 
+def generate_missing_image_variants(image_id: str) -> None:
+    build_sidebar_extension_port().generate_missing_image_variants(image_id)
+
+
 class UpdateServicePeriodMemberRemarkCommand:
     def __call__(
         self,
@@ -144,6 +149,7 @@ __all__ = [
     "build_commerce_repository",
     "build_sidebar_extension_port",
     "configure_sidebar_extension_port",
+    "generate_missing_image_variants",
     "huangyoucan_usage_match_joins",
     "huangyoucan_usage_select_fields",
     "public_huangyoucan_usage_fields",
