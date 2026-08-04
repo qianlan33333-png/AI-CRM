@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
+"""Map the current WeCom callback implementation to local and production proof.
+
+Local proof is derived only from the compact current-code test system. Production
+completion remains fail-closed and still requires the readiness, rollback,
+public-state, deploy-smoke, isolation, and same-sample evidence chain.
+"""
+
 from __future__ import annotations
 
 import argparse
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
 from typing import Any
 
 try:
@@ -54,193 +61,83 @@ REQUIRED_ASSETS = {
     "acceptance_audit": "docs/reports/wecom_callback_permanent_fix_acceptance_audit_20260627.md",
 }
 
-REQUIRED_TEST_PROOFS = {
-    "hard_ack_rules": ("tests/test_wecom_callback_inbox.py", "test_callback_post_returns_503_when_inbox_write_fails"),
-    "callback_ingress_module_boundary": ("tests/test_wecom_callback_inbox.py", "test_callback_ingress_decrypts_and_ingests_webhook_inbox"),
-    "callback_worker_processor_boundary": ("tests/test_wecom_callback_inbox.py", "test_wecom_callback_worker_alias_and_processor_boundary"),
-    "duplicate_collapse": ("tests/test_wecom_callback_inbox.py", "test_ingest_wecom_callback_deduplicates_by_event_key"),
-    "worker_retry_dead_letter": ("tests/test_wecom_callback_inbox.py", "test_wecom_callback_inbox_worker_retries_then_dead_letters"),
-    "worker_dry_run_preview_only": (
-        "tests/test_wecom_callback_inbox.py",
-        "test_wecom_callback_inbox_worker_dry_run_only_previews_due_rows",
-    ),
-    "worker_entrypoint_dry_run_gate": (
-        "tests/test_wecom_callback_inbox.py",
-        "test_wecom_callback_worker_entrypoint_defaults_to_dry_run_and_requires_execute",
-    ),
-    "worker_systemd_persistent_service": (
-        "tests/test_deploy_workflow_contract.py",
-        "test_wecom_callback_inbox_worker_systemd_units_are_deployable",
-    ),
-    "stale_processing_reclaim": ("tests/test_wecom_callback_inbox.py", "test_wecom_callback_worker_reclaims_stale_processing_after_crash"),
-    "worker_dispatch_one": ("tests/test_wecom_callback_inbox.py", "test_wecom_callback_inbox_worker_dispatch_one_by_id"),
-    "worker_dispatch_one_replay": ("tests/test_wecom_callback_inbox.py", "test_wecom_callback_inbox_worker_dispatch_one_replays_dead_letter"),
-    "runtime_isolation": ("tests/test_wecom_callback_ingress_runtime.py", "test_wecom_callback_ingress_runtime_only_exposes_callback_and_health_routes"),
-    "nginx_backpressure_gate": ("tests/test_wecom_callback_ingress_runtime.py", "test_wecom_callback_ingress_cutover_check_ignores_commented_backpressure"),
-    "invalid_callback_not_plain_success": ("tests/test_wecom_callback_ingress_runtime.py", "test_wecom_callback_ingress_cutover_probe_rejects_plain_success"),
-    "quick_ack_route_level_detection": (
-        "tests/test_wecom_callback_ingress_runtime.py",
-        "test_callback_quick_ack_state_ignores_comments_and_unrelated_success_returns",
-    ),
-    "quick_ack_dual_probe_detection": (
-        "tests/test_wecom_callback_ingress_runtime.py",
-        "test_callback_quick_ack_state_probes_env_callback_urls",
-    ),
-    "public_state_checker_gate": (
-        "tests/test_wecom_callback_public_state.py",
-        "test_public_state_reports_current_emergency_quick_ack_shape",
-    ),
-    "public_state_admin_server_error_gate": (
-        "tests/test_wecom_callback_public_state.py",
-        "test_public_state_rejects_admin_webhook_inbox_server_error",
-    ),
-    "public_state_invalid_callback_upstream_error_gate": (
-        "tests/test_wecom_callback_public_state.py",
-        "test_public_state_rejects_invalid_callback_upstream_error",
-    ),
-    "public_state_detail_route_gate": (
-        "tests/test_wecom_callback_public_state.py",
-        "test_public_state_rejects_generic_404_for_webhook_inbox_detail_route",
-    ),
-    "public_state_json_api_shape_gate": (
-        "tests/test_wecom_callback_public_state.py",
-        "test_public_state_rejects_json_api_200_without_required_shape",
-    ),
-    "public_state_dual_callback_route_gate": (
-        "tests/test_wecom_callback_public_state.py",
-        "test_public_state_rejects_secondary_callback_route_quick_ack",
-    ),
-    "deploy_smoke_admin_route_gate": (
-        "tests/test_wecom_callback_deploy_smoke.py",
-        "test_deploy_smoke_rejects_missing_webhook_inbox_admin_routes",
-    ),
-    "deploy_smoke_ingress_gate": (
-        "tests/test_wecom_callback_deploy_smoke.py",
-        "test_deploy_smoke_rejects_missing_isolated_ingress_runtime",
-    ),
-    "deploy_smoke_distinct_base_url_gate": (
-        "tests/test_wecom_callback_deploy_smoke.py",
-        "test_deploy_smoke_rejects_same_web_and_ingress_base_url",
-    ),
-    "deploy_smoke_detail_route_gate": (
-        "tests/test_wecom_callback_deploy_smoke.py",
-        "test_deploy_smoke_rejects_missing_webhook_inbox_detail_route",
-    ),
-    "deploy_smoke_json_api_shape_gate": (
-        "tests/test_wecom_callback_deploy_smoke.py",
-        "test_deploy_smoke_rejects_json_api_200_without_required_shape",
-    ),
-    "deploy_smoke_ingress_callback_route_gate": (
-        "tests/test_wecom_callback_deploy_smoke.py",
-        "test_deploy_smoke_rejects_missing_ingress_callback_route",
-    ),
-    "pressure_probe_gate": ("tests/test_wecom_callback_pressure_probe.py", "test_pressure_probe_rejects_page_sample_failures"),
-    "pressure_sample_validation_gate": ("tests/test_wecom_callback_pressure_probe.py", "test_pressure_probe_requires_valid_sample_before_sending_requests"),
-    "callback_sample_generator_gate": ("tests/test_wecom_callback_sample_generator.py", "test_callback_sample_generator_outputs_valid_encrypted_callback"),
-    "generated_sample_worker_roundtrip": ("tests/test_wecom_callback_sample_generator.py", "test_generated_callback_sample_round_trips_through_inbox_worker"),
-    "webhook_ingestion_evidence_gate": ("tests/test_wecom_callback_ingestion_evidence.py", "test_ingestion_evidence_accepts_recent_webhook_inbox_row"),
-    "webhook_processing_evidence_gate": ("tests/test_wecom_callback_processing_evidence.py", "test_processing_evidence_accepts_succeeded_noop_canary_row"),
-    "rollback_evidence_gate": ("tests/test_wecom_callback_rollback_evidence.py", "test_rollback_evidence_accepts_complete_production_drill_payload"),
-    "worker_isolation_canary_gate": ("tests/test_wecom_callback_cutover_plan.py", "worker_isolation_canary"),
-    "downstream_worker_isolation_canary_gate": ("tests/test_wecom_callback_cutover_plan.py", "downstream_worker_isolation_canary"),
-    "internal_event_worker_isolation_canary_gate": ("tests/test_wecom_callback_cutover_plan.py", "internal_event_worker_isolation_canary"),
-    "reapply_cutover_after_rollback_gate": ("tests/test_wecom_callback_cutover_plan.py", "reapply_cutover_after_rollback"),
-    "readiness_completion_gate": ("tests/test_wecom_callback_permanent_fix_readiness.py", "test_readiness_accepts_cutover_state_with_pressure_evidence"),
-    "webhook_inbox_health_gate": ("tests/test_wecom_callback_permanent_fix_readiness.py", "test_readiness_rejects_unhealthy_webhook_inbox_metrics"),
-    "public_state_completion_gate": (
-        "tests/test_wecom_callback_permanent_fix_readiness.py",
-        "test_readiness_rejects_missing_public_state_evidence",
-    ),
-    "deploy_smoke_completion_gate": (
-        "tests/test_wecom_callback_permanent_fix_readiness.py",
-        "test_readiness_rejects_missing_deploy_smoke_evidence",
-    ),
-    "deploy_workflow_callback_services": (
-        "tests/test_deploy_workflow_contract.py",
-        "test_production_deploy_installs_callback_ingress_and_worker_isolated_runtime",
-    ),
-    "deploy_workflow_deploy_smoke_evidence": (
-        "tests/test_deploy_workflow_contract.py",
-        "tee /tmp/wecom-callback-deploy-smoke.json",
-    ),
-    "canonical_runtime_isolation_systemd_units": (
-        "tests/test_deploy_workflow_contract.py",
-        "test_aicrm_canonical_runtime_isolation_systemd_units_are_deployable",
-    ),
-    "external_effect_boundary": ("tests/test_wecom_callback_external_effect_boundary.py", "test_channel_entry_real_wecom_actions_are_planned_as_external_effect_jobs"),
-    "channel_entry_effect_realtime_wakeup": (
-        "tests/test_next_channel_entry_orchestrator.py",
-        "test_active_channel_baseline_emits_only_channel_entry_without_program_admission",
-    ),
-    "external_effect_realtime_signal_only": (
-        "tests/test_external_effects_realtime.py",
-        "test_realtime_signal_never_dispatches_provider_or_creates_attempt",
-    ),
-    "external_effect_stale_dispatching_quarantine": (
-        "tests/test_external_effect_delivery_lease.py",
-        "test_stale_post_provider_dispatch_is_quarantined_as_unknown",
-    ),
-    "schema_contract": ("tests/test_webhook_inbox_migration_contract.py", "test_webhook_inbox_migration_locks_status_and_idempotency_contracts"),
-    "webhook_inbox_service_models": (
-        "tests/test_webhook_inbox_repository.py",
-        "test_webhook_inbox_service_item_model_exposes_operational_fields",
-    ),
-    "webhook_inbox_metrics_distribution": (
-        "tests/test_webhook_inbox_repository.py",
-        "test_webhook_inbox_metrics_include_distribution_and_recent_errors",
-    ),
-    "admin_replay_detail": ("tests/test_webhook_inbox_admin_api.py", "test_webhook_inbox_admin_detail_returns_processing_chain"),
-    "admin_retry_skip": ("tests/test_webhook_inbox_admin_api.py", "test_webhook_inbox_admin_retry_and_skip_require_token"),
-    "admin_dispatch_one": ("tests/test_webhook_inbox_admin_api.py", "test_webhook_inbox_admin_dispatch_one_requires_token_and_versioned_command"),
-    "admin_run_due": ("tests/test_webhook_inbox_admin_api.py", "test_webhook_inbox_admin_run_due_defaults_to_dry_run"),
-    "admin_api_only_contract": (
-        "tests/test_monitoring_frontend_retirement.py",
-        "test_monitoring_frontend_and_duplicate_facades_are_absent_from_runtime",
-    ),
-    "admin_incident_window_filter": (
-        "tests/test_webhook_inbox_admin_api.py",
-        "test_webhook_inbox_admin_filters_incident_window_pending_failed_rows",
-    ),
-    "production_cutover_checklist_rollback_reapply_gate": (
-        "docs/runbooks/wecom_callback_production_cutover_zh.md",
-        "reapply_cutover_after_rollback",
-    ),
-    "production_cutover_checklist_final_readiness_gate": (
-        "docs/runbooks/wecom_callback_production_cutover_zh.md",
-        "ready_for_production_completion=true",
-    ),
-    "production_restore_report_temporary_recovery_gate": (
-        "docs/reports/production_page_restore_investigation_20260627_zh.md",
-        "页面/侧边栏已临时恢复",
-    ),
-    "production_restore_report_permanent_gap_gate": (
-        "docs/reports/production_page_restore_investigation_20260627_zh.md",
-        "企微 callback 永久修复尚未完成",
-    ),
+REQUIRED_TEST_PROOFS: dict[str, dict[str, object]] = {
+    "current_callback_behavior_inventory": {
+        "path": "docs/ci/current_behavior_inventory.json",
+        "markers": ("channels_wecom_callback_welcome_and_gateway", "tests/high_risk/test_wecom_callback.py"),
+    },
+    "callback_crypto_fail_closed": {
+        "path": "tests/unit/test_channel_rules.py",
+        "markers": ("test_callback_timestamp_and_xml_fail_closed", "test_wecom_crypto_round_trip_and_signature"),
+    },
+    "callback_durable_idempotent_ack": {
+        "path": "tests/high_risk/test_wecom_callback.py",
+        "markers": ("test_callback_ack_is_durable_idempotent_and_does_not_process_inline", "durable_inbox_only"),
+    },
+    "callback_retry_dead_letter_recovery": {
+        "path": "tests/high_risk/test_wecom_callback.py",
+        "markers": ("test_callback_worker_retries_dead_letters_and_recovers_without_provider_io", "dead_letter"),
+    },
+    "route_owner_auth_contract": {
+        "path": "tests/contracts/test_routes_and_auth.py",
+        "markers": (
+            "test_route_manifest_is_the_single_auth_and_permission_contract",
+            "test_current_openapi_exposes_request_and_response_contracts",
+        ),
+    },
+    "provider_effect_boundary_contract": {
+        "path": "tests/contracts/test_provider_boundaries.py",
+        "markers": ("test_current_provider_and_effect_boundary_checker", "check_external_effects_boundary.py"),
+    },
+    "webhook_postgres_contract": {
+        "path": "tests/postgres/test_current_schema.py",
+        "markers": ("test_identity_and_queue_columns_match_current_runtime_contract", "webhook_inbox"),
+    },
+    "external_effect_idempotency_contract": {
+        "path": "tests/high_risk/test_external_effects.py",
+        "markers": (
+            "test_effect_planning_is_idempotent_and_approval_gated",
+            "test_unregistered_adapter_records_a_terminal_non_execution",
+        ),
+    },
+    "release_delivery_contract": {
+        "path": "tests/release/test_workflow_contract.py",
+        "markers": ("test_promotion_and_deploy_preserve_exact_sha_lock_health_and_rollback", "x-aicrm-release-sha"),
+    },
+    "runtime_owner_health_contract": {
+        "path": "tests/release/test_application_startup.py",
+        "markers": ("test_current_application_starts_and_exposes_exact_sha_health", "test_runtime_route_map_has_no_legacy_owner"),
+    },
+    "no_real_provider_io_contract": {
+        "path": "tests/high_risk/conftest.py",
+        "markers": ("real network access is forbidden", "AICRM_WECOM_EXECUTION_MODE"),
+    },
+    "production_completion_evidence_contract": {
+        "path": "scripts/ops/check_wecom_callback_permanent_fix_readiness.py",
+        "markers": ("and rollback_ok", "and public_state_ok", "and deploy_smoke_ok"),
+    },
+    "rollback_reapply_runbook_contract": {
+        "path": "docs/runbooks/wecom_callback_production_cutover_zh.md",
+        "markers": ("reapply_cutover_after_rollback", "ready_for_production_completion=true"),
+    },
 }
+
 
 OBJECTIVE_REQUIREMENTS = {
     "generic_webhook_inbox": {
-        "description": "Generic webhook_inbox schema, repository, idempotency, and duplicate collapse exist.",
+        "description": "Current webhook inbox schema, repository, idempotency, and duplicate collapse exist.",
         "assets": ["webhook_inbox_migration", "webhook_inbox_models", "webhook_inbox_repository", "webhook_inbox_service"],
-        "tests": ["schema_contract", "duplicate_collapse", "webhook_inbox_service_models", "webhook_inbox_metrics_distribution"],
+        "tests": ["current_callback_behavior_inventory", "callback_durable_idempotent_ack", "webhook_postgres_contract"],
         "readiness": [],
     },
     "callback_http_ingress_only": {
-        "description": "Callback HTTP route verifies/decrypts/enqueues/ACKs and does not run business processing inline.",
+        "description": "Callback HTTP verifies, decrypts, durably enqueues, and ACKs without inline business processing.",
         "assets": ["callback_fast_ack_route", "callback_ingress_module", "webhook_ingestion_checker", "callback_sample_generator"],
-        "tests": [
-            "hard_ack_rules",
-            "callback_ingress_module_boundary",
-            "pressure_sample_validation_gate",
-            "callback_sample_generator_gate",
-            "generated_sample_worker_roundtrip",
-            "webhook_ingestion_evidence_gate",
-        ],
+        "tests": ["callback_crypto_fail_closed", "callback_durable_idempotent_ack", "route_owner_auth_contract"],
         "readiness": ["webhook_ingestion_ok", "same_sample_ok"],
     },
     "worker_queue_processing": {
-        "description": "Webhook worker claims inbox rows, retries failures, dead-letters terminal rows, and exposes replay detail.",
+        "description": "Current worker previews, retries, dead-letters, and explicitly recovers an inbox item.",
         "assets": [
             "callback_inbox_worker",
             "callback_worker_module",
@@ -250,37 +147,17 @@ OBJECTIVE_REQUIREMENTS = {
             "typed_wecom_runtime",
             "webhook_processing_checker",
         ],
-        "tests": [
-            "worker_retry_dead_letter",
-            "worker_dry_run_preview_only",
-            "worker_entrypoint_dry_run_gate",
-            "worker_systemd_persistent_service",
-            "stale_processing_reclaim",
-            "callback_worker_processor_boundary",
-            "worker_dispatch_one",
-            "worker_dispatch_one_replay",
-            "generated_sample_worker_roundtrip",
-            "webhook_processing_evidence_gate",
-            "admin_replay_detail",
-            "admin_retry_skip",
-            "admin_dispatch_one",
-            "admin_run_due",
-        ],
+        "tests": ["callback_retry_dead_letter_recovery", "webhook_postgres_contract", "route_owner_auth_contract"],
         "readiness": ["worker_isolation_ok", "webhook_processing_ok", "same_sample_ok"],
     },
     "real_outbound_effect_boundary": {
-        "description": "Real outbound effects are planned through external_effect_job and realtime wakeup remains gated.",
+        "description": "Outbound work stays approval-gated and idempotent behind fake or disabled adapters in tests.",
         "assets": [],
-        "tests": [
-            "external_effect_boundary",
-            "channel_entry_effect_realtime_wakeup",
-            "external_effect_realtime_signal_only",
-            "external_effect_stale_dispatching_quarantine",
-        ],
+        "tests": ["provider_effect_boundary_contract", "external_effect_idempotency_contract", "no_real_provider_io_contract"],
         "readiness": ["downstream_worker_isolation_ok"],
     },
     "runtime_isolation_and_backpressure": {
-        "description": "Callback ingress runs separately from web/admin/sidebar runtime with nginx backpressure and pressure evidence.",
+        "description": "Callback ingress is isolated and production completion requires pressure and deploy evidence.",
         "assets": [
             "isolated_ingress_runtime",
             "callback_ingress_entrypoint",
@@ -299,35 +176,10 @@ OBJECTIVE_REQUIREMENTS = {
             "cutover_plan",
         ],
         "tests": [
-            "runtime_isolation",
-            "nginx_backpressure_gate",
-            "invalid_callback_not_plain_success",
-            "quick_ack_route_level_detection",
-            "quick_ack_dual_probe_detection",
-            "public_state_checker_gate",
-            "public_state_admin_server_error_gate",
-            "public_state_invalid_callback_upstream_error_gate",
-            "public_state_detail_route_gate",
-            "public_state_json_api_shape_gate",
-            "public_state_dual_callback_route_gate",
-            "deploy_smoke_admin_route_gate",
-            "deploy_smoke_ingress_gate",
-            "deploy_smoke_distinct_base_url_gate",
-            "deploy_smoke_detail_route_gate",
-            "deploy_smoke_json_api_shape_gate",
-            "deploy_smoke_ingress_callback_route_gate",
-            "pressure_probe_gate",
-            "worker_isolation_canary_gate",
-            "downstream_worker_isolation_canary_gate",
-            "internal_event_worker_isolation_canary_gate",
-            "reapply_cutover_after_rollback_gate",
-            "readiness_completion_gate",
-            "webhook_inbox_health_gate",
-            "public_state_completion_gate",
-            "deploy_smoke_completion_gate",
-            "deploy_workflow_callback_services",
-            "deploy_workflow_deploy_smoke_evidence",
-            "canonical_runtime_isolation_systemd_units",
+            "release_delivery_contract",
+            "runtime_owner_health_contract",
+            "route_owner_auth_contract",
+            "production_completion_evidence_contract",
         ],
         "readiness": [
             "ready_for_production_cutover",
@@ -339,7 +191,7 @@ OBJECTIVE_REQUIREMENTS = {
         ],
     },
     "operator_runbook_and_acceptance_report": {
-        "description": "Runbook and acceptance audit identify rollback, canaries, pressure evidence, and remaining production gaps.",
+        "description": "Current runbook retains rollback, reapply, public-state, deploy-smoke, and completion gates.",
         "assets": [
             "runbook",
             "production_cutover_checklist_zh",
@@ -347,22 +199,7 @@ OBJECTIVE_REQUIREMENTS = {
             "acceptance_audit",
             "rollback_evidence_checker",
         ],
-        "tests": [
-            "rollback_evidence_gate",
-            "reapply_cutover_after_rollback_gate",
-            "quick_ack_dual_probe_detection",
-            "admin_retry_skip",
-            "admin_dispatch_one",
-            "admin_run_due",
-            "admin_api_only_contract",
-            "admin_incident_window_filter",
-            "webhook_inbox_metrics_distribution",
-            "deploy_smoke_completion_gate",
-            "production_cutover_checklist_rollback_reapply_gate",
-            "production_cutover_checklist_final_readiness_gate",
-            "production_restore_report_temporary_recovery_gate",
-            "production_restore_report_permanent_gap_gate",
-        ],
+        "tests": ["release_delivery_contract", "production_completion_evidence_contract", "rollback_reapply_runbook_contract"],
         "readiness": [
             "ready_for_production_completion",
             "admin_webhook_inbox_metrics_ok",
@@ -386,10 +223,16 @@ def _asset_checks() -> dict[str, dict[str, Any]]:
 
 def _test_checks() -> dict[str, dict[str, Any]]:
     checks: dict[str, dict[str, Any]] = {}
-    for key, (relative, marker) in REQUIRED_TEST_PROOFS.items():
+    for key, proof in REQUIRED_TEST_PROOFS.items():
+        relative = str(proof.get("path") or "")
+        markers = tuple(str(marker) for marker in proof.get("markers", ()) if str(marker))
         path = REPO_ROOT / relative
         text = path.read_text(encoding="utf-8", errors="replace") if path.exists() else ""
-        checks[key] = {"path": relative, "marker": marker, "ok": path.exists() and marker in text}
+        checks[key] = {
+            "path": relative,
+            "markers": list(markers),
+            "ok": path.exists() and bool(markers) and all(marker in text for marker in markers),
+        }
     return checks
 
 
@@ -401,23 +244,25 @@ def _readiness_check(path: str) -> dict[str, Any]:
         payload = json.loads(Path(readiness_path).read_text(encoding="utf-8"))
     except Exception as exc:
         return {"checked": True, "ok": False, "path": readiness_path, "error": str(exc)}
-    inbox_health = payload.get("webhook_inbox_health") if isinstance(payload.get("webhook_inbox_health"), dict) else {}
-    webhook_ingestion = payload.get("webhook_ingestion_evidence") if isinstance(payload.get("webhook_ingestion_evidence"), dict) else {}
-    webhook_processing = payload.get("webhook_processing_evidence") if isinstance(payload.get("webhook_processing_evidence"), dict) else {}
-    same_sample = payload.get("same_sample_evidence") if isinstance(payload.get("same_sample_evidence"), dict) else {}
-    admin_webhook_inbox_metrics = payload.get("admin_webhook_inbox_metrics") if isinstance(payload.get("admin_webhook_inbox_metrics"), dict) else {}
-    admin_webhook_inbox_items = payload.get("admin_webhook_inbox_items") if isinstance(payload.get("admin_webhook_inbox_items"), dict) else {}
-    admin_webhook_inbox_reconciliation = (
-        payload.get("admin_webhook_inbox_reconciliation")
-        if isinstance(payload.get("admin_webhook_inbox_reconciliation"), dict)
-        else {}
-    )
-    worker_isolation = payload.get("worker_isolation_evidence") if isinstance(payload.get("worker_isolation_evidence"), dict) else {}
-    internal_event_worker_isolation = payload.get("internal_event_worker_isolation_evidence") if isinstance(payload.get("internal_event_worker_isolation_evidence"), dict) else {}
-    downstream_worker_isolation = payload.get("downstream_worker_isolation_evidence") if isinstance(payload.get("downstream_worker_isolation_evidence"), dict) else {}
-    rollback_evidence = payload.get("rollback_evidence") if isinstance(payload.get("rollback_evidence"), dict) else {}
-    public_state_evidence = payload.get("public_state_evidence") if isinstance(payload.get("public_state_evidence"), dict) else {}
-    deploy_smoke_evidence = payload.get("deploy_smoke_evidence") if isinstance(payload.get("deploy_smoke_evidence"), dict) else {}
+
+    def evidence(name: str) -> dict[str, Any]:
+        value = payload.get(name)
+        return value if isinstance(value, dict) else {}
+
+    inbox_health = evidence("webhook_inbox_health")
+    webhook_ingestion = evidence("webhook_ingestion_evidence")
+    webhook_processing = evidence("webhook_processing_evidence")
+    same_sample = evidence("same_sample_evidence")
+    admin_metrics = evidence("admin_webhook_inbox_metrics")
+    admin_items = evidence("admin_webhook_inbox_items")
+    admin_reconciliation = evidence("admin_webhook_inbox_reconciliation")
+    worker_isolation = evidence("worker_isolation_evidence")
+    internal_event_worker_isolation = evidence("internal_event_worker_isolation_evidence")
+    downstream_worker_isolation = evidence("downstream_worker_isolation_evidence")
+    rollback_evidence = evidence("rollback_evidence")
+    public_state_evidence = evidence("public_state_evidence")
+    deploy_smoke_evidence = evidence("deploy_smoke_evidence")
+
     completion_proven = (
         payload.get("ready_for_production_completion") is True
         and payload.get("ok") is True
@@ -425,9 +270,9 @@ def _readiness_check(path: str) -> dict[str, Any]:
         and webhook_ingestion.get("ok") is True
         and webhook_processing.get("ok") is True
         and same_sample.get("ok") is True
-        and admin_webhook_inbox_metrics.get("ok") is True
-        and admin_webhook_inbox_items.get("ok") is True
-        and admin_webhook_inbox_reconciliation.get("ok") is True
+        and admin_metrics.get("ok") is True
+        and admin_items.get("ok") is True
+        and admin_reconciliation.get("ok") is True
         and worker_isolation.get("ok") is True
         and internal_event_worker_isolation.get("ok") is True
         and downstream_worker_isolation.get("ok") is True
@@ -445,9 +290,9 @@ def _readiness_check(path: str) -> dict[str, Any]:
         "webhook_ingestion_ok": webhook_ingestion.get("ok"),
         "webhook_processing_ok": webhook_processing.get("ok"),
         "same_sample_ok": same_sample.get("ok"),
-        "admin_webhook_inbox_metrics_ok": admin_webhook_inbox_metrics.get("ok"),
-        "admin_webhook_inbox_items_ok": admin_webhook_inbox_items.get("ok"),
-        "admin_webhook_inbox_reconciliation_ok": admin_webhook_inbox_reconciliation.get("ok"),
+        "admin_webhook_inbox_metrics_ok": admin_metrics.get("ok"),
+        "admin_webhook_inbox_items_ok": admin_items.get("ok"),
+        "admin_webhook_inbox_reconciliation_ok": admin_reconciliation.get("ok"),
         "worker_isolation_ok": worker_isolation.get("ok"),
         "internal_event_worker_isolation_ok": internal_event_worker_isolation.get("ok"),
         "downstream_worker_isolation_ok": downstream_worker_isolation.get("ok"),
@@ -522,8 +367,12 @@ def run(argv: list[str] | None = None) -> dict[str, Any]:
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Map the WeCom callback permanent-fix objective to current local and production evidence.")
-    parser.add_argument("--readiness-file", default="", help="JSON output from check_wecom_callback_permanent_fix_readiness.py after production cutover and pressure evidence.")
+    parser = argparse.ArgumentParser(description="Map the current WeCom callback objective to local and production evidence.")
+    parser.add_argument(
+        "--readiness-file",
+        default="",
+        help="JSON from check_wecom_callback_permanent_fix_readiness.py after cutover and pressure evidence.",
+    )
     return parser.parse_args(argv)
 
 

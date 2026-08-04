@@ -46,7 +46,7 @@ run_db() {
   "$PYTHON" tools/check_db_access_boundary.py
   "$PYTHON" tools/check_data_table_lifecycle.py
   "$PYTHON" tools/check_sql_static_guard.py
-  "$PYTHON" -m pytest tests/test_alembic_revision_chain.py -q --tb=short
+  "$PYTHON" -m pytest tests/postgres/test_migration_head.py -q --tb=short
 }
 
 run_full_only() {

@@ -29,7 +29,7 @@ REPORT_ONLY_SCAN_ROOTS = [
     ROOT / "aicrm_next",
 ]
 TEXT_SUFFIXES = {".py", ".js", ".html", ".css", ".md", ".sql", ".toml"}
-SKIP_DIR_NAMES = {".git", ".venv310", "__pycache__", ".pytest_cache", "node_modules"}
+SKIP_DIR_NAMES = {".git", ".venv", "__pycache__", ".pytest_cache", ".ruff_cache", "node_modules", "test-results"}
 
 
 def _iter_text_files(scan_roots: list[Path] | None = None) -> list[Path]:
@@ -66,13 +66,13 @@ def _custom_text_checks(scan_roots: list[Path] | None = None) -> list[str]:
 
 
 def _run_ruff() -> int:
-    ruff_path = ROOT / ".venv310" / "bin" / "ruff"
+    ruff_path = ROOT / ".venv" / "bin" / "ruff"
     command = [str(ruff_path if ruff_path.exists() else "ruff"), "check", "--config", str(ROOT / "pyproject.toml"), *PYTHON_TARGETS]
     return subprocess.run(command, cwd=ROOT).returncode
 
 
 def _run_ruff_report_only() -> int:
-    ruff_path = ROOT / ".venv310" / "bin" / "ruff"
+    ruff_path = ROOT / ".venv" / "bin" / "ruff"
     command = [
         str(ruff_path if ruff_path.exists() else "ruff"),
         "check",

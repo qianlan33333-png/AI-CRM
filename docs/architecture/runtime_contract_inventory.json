@@ -668,12 +668,6 @@
       "line": 19
     },
     {
-      "accessor": "os.environ.get",
-      "file": "scripts/ci/select_test_scope.py",
-      "key": "AICRM_FORCE_FULL_CI",
-      "line": 178
-    },
-    {
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/automation/automation_engine/group_ops/broadcast.py",
       "key": "AICRM_GROUP_OPS_BROADCAST_PLAN_ID",
@@ -2589,33 +2583,45 @@
     },
     {
       "accessor": "os.environ.get",
-      "file": "scripts/ci/select_test_scope.py",
-      "key": "GITHUB_EVENT_NAME",
-      "line": 160
+      "file": "scripts/ci/run_ci.py",
+      "key": "GITHUB_ACTIONS",
+      "line": 197
     },
     {
       "accessor": "os.environ.get",
       "file": "scripts/ci/select_test_scope.py",
       "key": "GITHUB_EVENT_NAME",
-      "line": 186
+      "line": 433
     },
     {
       "accessor": "os.environ.get",
       "file": "scripts/ci/select_test_scope.py",
       "key": "GITHUB_EVENT_NAME",
-      "line": 357
+      "line": 475
     },
     {
       "accessor": "os.environ.get",
       "file": "scripts/ci/select_test_scope.py",
       "key": "GITHUB_EVENT_PATH",
-      "line": 155
+      "line": 432
     },
     {
       "accessor": "os.environ.get",
       "file": "scripts/ci/select_test_scope.py",
-      "key": "GITHUB_EVENT_PATH",
-      "line": 181
+      "key": "GITHUB_REF",
+      "line": 273
+    },
+    {
+      "accessor": "os.environ.get",
+      "file": "scripts/ci/select_test_scope.py",
+      "key": "GITHUB_REF",
+      "line": 436
+    },
+    {
+      "accessor": "os.environ.get",
+      "file": "scripts/ci/select_test_scope.py",
+      "key": "GITHUB_REF",
+      "line": 448
     },
     {
       "accessor": "os.getenv",
@@ -3612,7 +3618,6 @@
     "AICRM_EXTERNAL_EFFECT_WEBHOOK_EXECUTE",
     "AICRM_EXTERNAL_EFFECT_WEBHOOK_TIMEOUT_SECONDS",
     "AICRM_EXTERNAL_EFFECT_WECOM_EXECUTE",
-    "AICRM_FORCE_FULL_CI",
     "AICRM_GROUP_OPS_BROADCAST_PLAN_ID",
     "AICRM_GROUP_OPS_MINIPROGRAM_APPID",
     "AICRM_GROUP_OPS_TIMEZONE",
@@ -3819,8 +3824,10 @@
     "EXTERNAL_BASE_URL",
     "EXTERNAL_PUSH_WEBHOOK_TIMEOUT_SECONDS",
     "FLASK_ENV",
+    "GITHUB_ACTIONS",
     "GITHUB_EVENT_NAME",
     "GITHUB_EVENT_PATH",
+    "GITHUB_REF",
     "GIT_SHA",
     "LOG_LEVEL",
     "NEXT_PUBLIC_BASE_URL",

@@ -12,7 +12,7 @@ from typing import Any, Iterable
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_MANIFEST = ROOT / "docs" / "architecture" / "high_risk_contract_inventory.yml"
+DEFAULT_MANIFEST = ROOT / "docs" / "ci" / "pii_logging_contract.yml"
 LOG_METHODS = {"debug", "info", "warning", "error", "exception", "critical", "log"}
 OUTPUT_FUNCTIONS = {"print"}
 RAW_REQUEST_ATTRIBUTES = {"body", "cookies", "form", "headers", "json", "path_params", "query_params"}

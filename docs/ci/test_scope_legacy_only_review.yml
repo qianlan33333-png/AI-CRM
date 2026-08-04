@@ -1,5 +1,0 @@
-{
-  "version": 1,
-  "description": "Explicit semantic reviews for tests selected only by the legacy CI selector. Use occurrence-ranked sample runs from observability; never bulk-classify entries to satisfy the gate. candidate_includes requires matching selector evidence, while legacy_overcoverage requires a rationale for keeping the contract in full/nightly coverage.",
-  "reviews": []
-}
