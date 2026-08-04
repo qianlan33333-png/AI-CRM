@@ -266,7 +266,8 @@ def test_channel_center_qrcode_generate_has_timeout_and_readable_errors() -> Non
     js = _read(CHANNEL_CENTER_JS)
 
     assert "function apiErrorMessage(data, fallback)" in js
-    assert "detail.reason || detail.error || detail.error_code || detail.message" in js
+    assert "window.AdminApi?.formatErrorValue" in js
+    assert "detail.error_code" not in js
     assert "{ timeoutMs: 30000 }" in js
     assert "controller.abort()" in js
     assert 'error.name === "AbortError"' in js

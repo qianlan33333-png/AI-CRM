@@ -87,13 +87,16 @@ def test_h5_submit_without_wechat_identity_returns_oauth_redirect(client: TestCl
 
 def test_h5_page_handles_oauth_required_submit_without_exposing_raw_error(client: TestClient) -> None:
     response = client.get("/s/hxc-activation-v1", params={"openid": "openid-next-public-001"})
+    error_script_response = client.get("/static/questionnaire/questionnaire_completion_action.js")
 
     assert response.status_code == 200
+    assert error_script_response.status_code == 200
     html = response.text
     assert "function startOAuthRedirect" in html
     assert "oauth_required_redirect" in html
     assert "请先完成微信授权" in html
-    assert "identity_conflict: '该手机号已绑定其他账号，不能提交'" in html
+    assert "AICRMQuestionnaireCompletionAction.errorMessage" in html
+    assert 'identity_conflict: "该手机号已绑定其他账号，不能提交"' in error_script_response.text
     assert html.index("if (isOAuthRequired(result))") < html.index("throw result;")
     assert "normalizedErrorMessage(error, '提交失败，请稍后重试')" in html
     assert "result.error || '提交失败'" not in html
