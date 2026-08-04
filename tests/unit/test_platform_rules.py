@@ -26,6 +26,7 @@ from aicrm_next.platform.shared.product_code_aliases import (
     product_code_filter_values,
 )
 from aicrm_next.platform.shared.runtime import runtime_health_state, runtime_route_map_state
+from aicrm_next.platform.shared.wechat_identity_page import wechat_full_service_required_response
 from aicrm_next.platform.shared.resource_admission import (
     RequestPriorityMetrics,
     ResourceAdmissionController,
@@ -101,6 +102,25 @@ def test_runtime_state_declares_next_as_the_only_owner(monkeypatch: pytest.Monke
     assert health["legacy_runtime_enabled"] is False
     assert route_map["route_owner"] == "ai_crm_next"
     assert route_map["legacy_callback_fallback_enabled"] is False
+
+
+def test_wechat_full_service_page_uses_calm_script_free_guidance() -> None:
+    response = wechat_full_service_required_response()
+    html = response.body.decode("utf-8")
+
+    assert response.status_code == 400
+    assert response.headers["cache-control"] == "no-store"
+    assert response.headers["content-security-policy"].startswith("default-src 'none'")
+    assert '<title>还差一步</title>' in html
+    assert '<div class="brand">新流商业</div>' in html
+    assert '<h1 id="full-service-title">还差一步</h1>' in html
+    assert '点击屏幕底部的 <b>使用完整服务</b>' in html
+    assert "animation: reveal-fallback 0s linear 8s forwards" in html
+    assert 'data-identity-status="full_service_required"' in html
+    assert "oauth_state_cookie_missing" not in html
+    assert "cookieReady" not in html
+    assert "<script" not in html
+    assert "<button" not in html
 
 
 def test_media_resource_admission_caps_concurrency_and_queue() -> None:
