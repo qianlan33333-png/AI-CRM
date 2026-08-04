@@ -26,6 +26,42 @@
     </div>
   </section>
 
+  {% if action_results %}
+  <section class="operation-cycle-final-results" aria-label="最近执行结论">
+    {% for item in action_results %}
+    {% set result = item.get("result") or {} %}
+    <article class="operation-cycle-final-result">
+      <header>
+        <div>
+          <span>{{ item.get("run_key") }}</span>
+          <strong>{{ item.get("action_title") or item.get("action_key") }}</strong>
+        </div>
+        <time>{{ item.get("completed_at") or "" }}</time>
+      </header>
+      <p>{{ result.get("conclusion") }}</p>
+      {% if item.get("action_key") == "prepare_broadcast" %}
+      <dl>
+        <div><dt>计划人数</dt><dd>{{ result.get("total_count") }}</dd></div>
+        {% for segment, count in (result.get("segment_counts") or {}).items() %}
+        <div><dt>{{ segment }} 层</dt><dd>{{ count }}</dd></div>
+        {% endfor %}
+        <div><dt>Excel SHA-256</dt><dd>{{ (result.get("excel_sha256") or "")[:16] }}</dd></div>
+      </dl>
+      {% if result.get("ai_assistant_href") %}
+      <a href="{{ result.get('ai_assistant_href') }}">去 AI 助手确认并发送</a>
+      {% endif %}
+      {% else %}
+      <dl>
+        <div><dt>有效发送</dt><dd>{{ result.get("sent_count") }}</dd></div>
+        <div><dt>失败</dt><dd>{{ result.get("failed_count") }}</dd></div>
+        {% if result.get("proposal_id") %}<div><dt>优化提案</dt><dd>{{ result.get("proposal_id") }}</dd></div>{% endif %}
+      </dl>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </section>
+  {% endif %}
+
   <section class="operation-cycle-detail-shell">
     <nav class="operation-cycle-detail-nav" aria-label="任务明细维度">
       {% for item in detail_nav %}
@@ -82,6 +118,25 @@
           <div><span>确认时间</span><strong>{{ execution.get("confirmed_at") or "—" }}</strong></div>
           <div><span>版本哈希</span><strong>{{ (execution.get("version_hash") or "—")[:16] }}</strong></div>
         </div>
+        {% set operation_skill = execution.get("operation_skill") or {} %}
+        {% if operation_skill %}
+        <section class="operation-cycle-formal-skill" aria-label="正式运营 Skill">
+          <header>
+            <div><span>正式运营 Skill</span><strong>{{ operation_skill.get("skill_key") }}</strong></div>
+            <small>SHA-256 {{ (operation_skill.get("skill_hash") or "")[:16] }}</small>
+          </header>
+          <div>
+            {% for action in operation_skill.get("actions") or [] %}
+            <article>
+              <span>{{ action.get("action_key") }}</span>
+              <strong>{{ action.get("title") }}</strong>
+              <p>{{ action.get("objective") }}</p>
+              <small>本地绑定：{{ (action.get("required_local_bindings") or []) | join("、") or "无" }}</small>
+            </article>
+            {% endfor %}
+          </div>
+        </section>
+        {% endif %}
         <div class="operation-cycle-formal-documents">
           {% for document in formal_documents %}
           <details class="operation-cycle-formal-document"{% if loop.first %} open{% endif %}>
@@ -175,5 +230,5 @@
 
 {% block scripts_extra %}
 {{ super() }}
-<script defer src="/static/operation-cycles/operation_cycles_detail.js?v=20260728-v2"></script>
+<script defer src="/static/operation-cycles/operation_cycles_detail.js?v=20260804-v1"></script>
 {% endblock %}

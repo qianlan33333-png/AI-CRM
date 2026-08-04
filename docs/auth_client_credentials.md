@@ -22,8 +22,10 @@
 | `mcp` | `external_integration` | `read write` | MCP 集成 |
 | `external_agent` | `external_integration` | `read write` | 订单、问卷、聊天与 AI 人群外部 API |
 | `campaign_agent` | `external_integration` | `read write` | 仅客户/素材与 Campaign draft/status |
+| `ops_reporter` | `external_integration` | `write` | 仅上报运营闭环脱敏快照 |
+| `operation_runner` | `external_integration` | `read write` | 仅本地执行器心跳、动作领取与脱敏结果事件 |
 
-每个 purpose 使用独立客户端和 secret reference。`campaign_agent` 不具备审批、启动、直接发送、退款、密钥管理或 PII 导出能力。
+每个 purpose 使用独立客户端和 secret reference。`campaign_agent`、`ops_reporter`、`operation_runner` 不得互换；三者均不具备 AI 助手审批、直接发送、退款、密钥管理或 PII 导出能力。
 
 ## 唯一 CRM 开放 API Key（最简只读方式）
 

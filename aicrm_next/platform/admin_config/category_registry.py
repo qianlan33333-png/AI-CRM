@@ -122,6 +122,8 @@ CONFIG_CATEGORIES: tuple[ConfigCategory, ...] = (
             field("AICRM_AUTH_CAMPAIGN_AGENT_CLIENT_SECRET_REF", block_title="机器身份"),
             field("AICRM_AUTH_OPS_REPORTER_CLIENT_ID", block_title="机器身份"),
             field("AICRM_AUTH_OPS_REPORTER_CLIENT_SECRET_REF", block_title="机器身份"),
+            field("AICRM_AUTH_OPERATION_RUNNER_CLIENT_ID", block_title="机器身份"),
+            field("AICRM_AUTH_OPERATION_RUNNER_CLIENT_SECRET_REF", block_title="机器身份"),
             field("AICRM_AUTH_OUTBOUND_WEBHOOK_CLIENT_ID", block_title="Webhook HMAC"),
         ),
     ),

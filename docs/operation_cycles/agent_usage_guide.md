@@ -2,25 +2,27 @@
 
 本文是所有 Agent 创建、更新或排查 CRM「运营闭环」时的入口文档。
 
-一句话定义：**Agent 在外部完成真实运营工作，CRM 接收每个阶段的完整脱敏快照，并把任务、本周进度、三份 Markdown、历史 AI 助手记录和历次运行展示成只读结果。**
+一句话定义：**人可以在 CRM 发起当前动作，由单机本地连接器创建可对话 Codex 任务；CRM 仍只接收最终聚合结论和完整脱敏快照，真实发送继续由 AI 助手人工批准。**
 
 ## 1. 能力边界
 
 运营闭环属于 AI-CRM Next 的 `operation_cycles` capability owner。
 
-- Agent 或其他业务系统负责取数、判断、人审衔接、发送执行、观察与复盘。
+- 人在 CRM 发起动作；Codex 在本机负责取数、判断、文件生成和反复对话，人负责确认本地最终文件。
 - CRM 只保存结构化快照、证据引用和当前投影，不扫描 Agent 本地目录。
-- CRM 页面不批准、不发送、不重试、不取消、不暂停真实任务，也不编辑 Markdown。
+- CRM 不保存本地 Excel、个人明细、本地路径、凭据或原始对话；动作请求只保存哈希、聚合结论和脱敏失败码。
+- 运营闭环页面只创建本地 Codex 任务，不批准或直接发送。真实发送仍只允许从 AI 助手二级明细点击“确认并发送”。
+- 失败后必须显式重新发起并关联 `parent_request_id`；不能自动重试或退回后台 `codex exec`。
 - 所有报告必须声明 `external_effects="none"`；报告接口本身不会产生真实外部调用。
 - 报告只能包含聚合数据和安全的脱敏说明，不能存逐人名单或原始附件。
 
-如果任务目标是让 CRM 直接执行群发、批准计划或修改模板，不应使用本能力。
+动作发起和 Codex 任务创建的 `external_effects` 仍为 `none`。如果目标是绕过 AI 助手审批、自动发送或把逐人名单托管到 CRM，不应使用本能力。
 
 ## 2. 页面和接口
 
 | 用途 | 路径 | 权限与说明 |
 | --- | --- | --- |
-| 任务列表 | `GET /admin/operation-cycles` | 管理员只读页面 |
+| 任务列表 | `GET /admin/operation-cycles` | 管理员查看进度并发起当前动作 |
 | 任务详情 | `GET /admin/operation-cycles/{strategy_key}` | 管理员只读；展示本周进度和三份 Markdown |
 | 单次运行详情 | `GET /admin/operation-cycles/{strategy_key}/runs/{run_key}` | 管理员只读；展示完整执行证据 |
 | 策略列表数据 | `GET /api/admin/operation-cycles/strategies` | 管理员会话，只读 |
@@ -28,8 +30,27 @@
 | 策略运行列表 | `GET /api/admin/operation-cycles/strategies/{strategy_key}/runs` | 管理员会话，只读 |
 | 单次运行数据 | `GET /api/admin/operation-cycles/runs/{run_key}` | 管理员会话，只读 |
 | Agent 上报 | `POST /api/operation-cycles/reports` | 仅 `ops_reporter` 机器身份可写 |
+| 查询当前动作 | `GET /api/admin/operation-cycles/strategies/{strategy_key}/current-action` | 管理员会话；只返回一个动态动作 |
+| 发起当前动作 | `POST /api/admin/operation-cycles/strategies/{strategy_key}/actions/{action_key}/start` | 管理员会话、CSRF、幂等；只排队本地任务 |
+| 查询最终结论 | `GET /api/admin/operation-cycles/action-requests/{request_id}/result` | 管理员会话；不返回中间对话 |
+| 执行器心跳 | `POST /api/operation-cycles/runner/heartbeat` | 仅 `operation_runner`；只上报逻辑绑定键 |
+| 执行器领取 | `POST /api/operation-cycles/action-requests/claim` | 仅 `operation_runner`；出站长轮询 |
+| 执行器事件 | `POST /api/operation-cycles/action-requests/{request_id}/events` | 仅 `operation_runner`；只允许 thread/turn 绑定、最终结果或失败码 |
 
-`ops_reporter` 只能上报，不能读取管理员接口。不要用管理员会话、其他机器身份或普通业务 token 调用报告接口。
+`ops_reporter` 只能上报快照，`operation_runner` 只能心跳、领取和提交脱敏动作事件，`campaign_agent` 继续负责 Campaign preparation/context/提案。三类身份不能互换或扩大权限。
+
+### 本地 Codex 动作工作流
+
+1. 管理员在列表点击唯一的当前动作按钮。执行器离线、Codex 版本不兼容、缺本地绑定或已有未终结请求时，服务端必须阻断。
+2. CRM 固化 `strategy_version`、`context_hash`、`skill_hash`、`run_key` 和幂等键，并将请求绑定到唯一在线 `runner_id`。
+3. 本地连接器使用 `operation_runner` 长轮询领取，通过 Unix socket 调用固定兼容版本 Codex app-server 的 `thread/start` 与 `turn/start`。
+4. 每个动作只创建一个持久 Codex task；连接器重启后复用已绑定的 `thread_id` / `turn_id`，不得创建第二个任务。
+5. 人与 Codex 在本地反复修改。确认前不得创建 Campaign preparation、AI 助手计划或 `broadcast_jobs`。
+6. `prepare_broadcast` 确认后由 Codex 使用独立 `campaign_agent` 调用现有 preparation/create 与 commit。最终 Excel SHA-256 必须同时作为 preparation `md_source_hash` 和动作结果哈希。
+7. 服务端反查 preparation/plan；只有 `pending_review/draft` 且 `broadcast_jobs=0` 才接受最终结论。随后人到 AI 助手点击“确认并发送”。
+8. 只有关联计划的系统发送事实全部进入终态后，`post_send_review` 才成为当前动作；正式 Skill 提案仍需管理员人工确认。
+
+连接器配置、版本钉住、绑定文件和无发送验收见 [`local_codex_connector_runbook.md`](local_codex_connector_runbook.md)。
 
 ## 3. Agent 的标准工作流
 
@@ -65,6 +86,15 @@ F --> G[管理员只读核对]
 - token endpoint：`POST /oauth/token`
 
 Agent 必须使用运行环境注入的 client id 和 secret reference。不得把 client secret、access token 或 secret store 内容写进代码、日志、Markdown、快照、命令回显或交付文档。
+
+本地连接器另用独立身份：
+
+- client purpose：`operation_runner`
+- audience：`external_integration`
+- scope：`read write`
+- capability：`operation_cycle_runner_heartbeat / operation_cycle_action_claim / operation_cycle_action_event_write`
+
+`operation_runner` 不能读取客户、创建 Campaign、提交运营快照、审批计划或产生发送任务。
 
 示意请求只保留占位符：
 
@@ -328,6 +358,10 @@ Agent 必须在 `references` 中写入精确计划引用：
 - [ ] AI 助手引用使用准确 `plan_id`。
 - [ ] 快照不含个人标识、原始消息、逐人名单、凭据或本地路径。
 - [ ] `external_effects` 固定为 `none`。
+- [ ] 动作请求只保存聚合结论，没有本地路径、Excel 内容或原始对话。
+- [ ] `operation_runner`、`campaign_agent`、`ops_reporter` 使用三个独立 purpose。
+- [ ] `prepare_broadcast` 最终证据为 `pending_review/draft` 且 `broadcast_jobs=0`。
+- [ ] `post_send_review` 只在系统发送事实全部终态后发起。
 - [ ] 保存并交付 receipt，不把本地校验描述成生产已接受。
 
 ## 15. 本地验证

@@ -418,6 +418,23 @@ def _policy_for(entry: dict[str, Any]) -> dict[str, Any]:
             client_purpose="ops_reporter",
         )
 
+    operation_runner_capability = {
+        "/api/operation-cycles/runner/heartbeat": "operation_cycle_runner_heartbeat",
+        "/api/operation-cycles/action-requests/claim": "operation_cycle_action_claim",
+        "/api/operation-cycles/action-requests/{request_id}/events": "operation_cycle_action_event_write",
+    }.get(path)
+    if operation_runner_capability:
+        return _policy(
+            "external_integration",
+            "api_client_jwt",
+            operation_runner_capability,
+            "service",
+            "internal",
+            False,
+            "integration",
+            client_purpose="operation_runner",
+        )
+
     if path == "/api/operation-cycles/context-index" or (
         path.startswith("/api/operation-cycles/strategies/") and path.endswith("/context")
     ):

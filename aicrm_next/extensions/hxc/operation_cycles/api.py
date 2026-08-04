@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import Any
 
@@ -16,8 +17,27 @@ from .application import (
     report_operation_cycle,
 )
 from .domain import OperationCycleConflictError
+from .action_dto import (
+    OperationCycleActionClaimV1,
+    OperationCycleActionEventV1,
+    OperationCycleActionStartV1,
+    OperationRunnerHeartbeatV1,
+)
+from .action_service import (
+    OperationCycleActionError,
+    claim_action,
+    get_action_result,
+    get_current_action,
+    heartbeat_runner,
+    record_action_event,
+    start_action,
+)
 from .dto import OperationCycleSnapshotV1
-from .feature_flags import operation_context_v1_enabled
+from .feature_flags import (
+    local_codex_connector_v1_enabled,
+    operation_actions_v1_enabled,
+    operation_context_v1_enabled,
+)
 from .strategy_context import (
     create_strategy_change_proposal,
     decide_strategy_change_proposal,
@@ -30,6 +50,7 @@ from .strategy_context_dto import StrategyChangeDecisionRequest, StrategyChangeP
 
 router = APIRouter()
 MAX_REPORT_BYTES = 512 * 1024
+MAX_ACTION_EVENT_BYTES = 128 * 1024
 _REPORT_OPENAPI_BODY = {
     "requestBody": {
         "required": True,
@@ -39,6 +60,41 @@ _REPORT_OPENAPI_BODY = {
             }
         },
     }
+}
+
+
+def _openapi_body(model: type) -> dict[str, Any]:
+    return {
+        "requestBody": {
+            "required": True,
+            "content": {"application/json": {"schema": model.model_json_schema()}},
+        }
+    }
+
+
+_ACTION_START_OPENAPI = {
+    **_openapi_body(OperationCycleActionStartV1),
+    "parameters": [
+        {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": True,
+            "schema": {"type": "string", "maxLength": 200},
+        }
+    ],
+}
+_RUNNER_HEARTBEAT_OPENAPI = _openapi_body(OperationRunnerHeartbeatV1)
+_ACTION_CLAIM_OPENAPI = _openapi_body(OperationCycleActionClaimV1)
+_ACTION_EVENT_OPENAPI = {
+    **_openapi_body(OperationCycleActionEventV1),
+    "parameters": [
+        {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": True,
+            "schema": {"type": "string", "maxLength": 200},
+        }
+    ],
 }
 _HEADERS = {
     "X-AICRM-Route-Owner": "ai_crm_next",
@@ -82,6 +138,46 @@ def _context_exception(exc: Exception) -> JSONResponse:
     if isinstance(exc, ValueError):
         return _error(str(exc) or "operation_cycle_context_invalid", status_code=400)
     raise exc
+
+
+def _actions_disabled(*, runner: bool = False) -> JSONResponse | None:
+    if not operation_actions_v1_enabled():
+        return _error("operation_cycle_actions_v1_disabled", status_code=404)
+    if runner and not local_codex_connector_v1_enabled():
+        return _error("local_codex_connector_v1_disabled", status_code=404)
+    return None
+
+
+def _action_exception(exc: Exception) -> JSONResponse:
+    if isinstance(exc, OperationCycleConflictError):
+        return _error(str(getattr(exc, "code", "") or exc), status_code=409)
+    if isinstance(exc, OperationCycleActionError):
+        return _error(exc.code, status_code=exc.status_code)
+    if isinstance(exc, LookupError):
+        return _error(str(exc) or "operation_cycle_action_not_found", status_code=404)
+    if isinstance(exc, ValidationError):
+        return _error(
+            "operation_cycle_action_validation_failed",
+            status_code=422,
+            validation_errors=exc.errors(include_url=False, include_input=False),
+        )
+    status_code = int(getattr(exc, "status_code", 0) or 0)
+    code = str(getattr(exc, "code", "") or "")
+    if status_code and code:
+        return _error(code, status_code=status_code)
+    if isinstance(exc, ValueError):
+        return _error(str(exc) or "operation_cycle_action_invalid", status_code=400)
+    raise exc
+
+
+async def _json_body(request: Request, *, maximum: int) -> Any:
+    body = await request.body()
+    if len(body) > maximum:
+        raise OperationCycleActionError("operation_cycle_action_payload_too_large", status_code=413)
+    try:
+        return json.loads(body.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise OperationCycleActionError("operation_cycle_action_invalid_json", status_code=400) from exc
 
 
 @router.post(
@@ -168,6 +264,143 @@ def get_operation_cycle_run(run_key: str) -> JSONResponse:
     if payload is None:
         return _error("operation_cycle_run_not_found", status_code=404)
     return _json(payload)
+
+
+@router.get(
+    "/api/admin/operation-cycles/strategies/{strategy_key}/current-action",
+    name="get_operation_cycle_current_action",
+)
+def get_operation_cycle_current_action(strategy_key: str) -> JSONResponse:
+    if disabled := _actions_disabled():
+        return disabled
+    try:
+        return _json(get_current_action(strategy_key))
+    except Exception as exc:
+        return _action_exception(exc)
+
+
+@router.post(
+    "/api/admin/operation-cycles/strategies/{strategy_key}/actions/{action_key}/start",
+    name="start_operation_cycle_action",
+    openapi_extra=_ACTION_START_OPENAPI,
+)
+async def start_operation_cycle_action(
+    strategy_key: str,
+    action_key: str,
+    request: Request,
+) -> JSONResponse:
+    if disabled := _actions_disabled(runner=True):
+        return disabled
+    try:
+        model = OperationCycleActionStartV1.model_validate(
+            await _json_body(request, maximum=MAX_ACTION_EVENT_BYTES)
+        )
+        context = getattr(request.state, "auth_context", None)
+        return _json(
+            start_action(
+                strategy_key,
+                action_key,
+                model,
+                idempotency_key=str(request.headers.get("Idempotency-Key") or "").strip(),
+                actor_id=str(getattr(context, "principal_id", "") or "admin").strip(),
+            ),
+            status_code=202,
+        )
+    except Exception as exc:
+        return _action_exception(exc)
+
+
+@router.get(
+    "/api/admin/operation-cycles/action-requests/{request_id}/result",
+    name="get_operation_cycle_action_request_result",
+)
+def get_operation_cycle_action_request_result(request_id: str) -> JSONResponse:
+    if disabled := _actions_disabled():
+        return disabled
+    try:
+        payload = get_action_result(request_id)
+        if payload is None:
+            return _error("operation_cycle_action_request_not_found", status_code=404)
+        return _json(payload)
+    except Exception as exc:
+        return _action_exception(exc)
+
+
+@router.post(
+    "/api/operation-cycles/runner/heartbeat",
+    name="heartbeat_operation_cycle_runner",
+    openapi_extra=_RUNNER_HEARTBEAT_OPENAPI,
+)
+async def heartbeat_operation_cycle_runner(request: Request) -> JSONResponse:
+    if disabled := _actions_disabled(runner=True):
+        return disabled
+    try:
+        model = OperationRunnerHeartbeatV1.model_validate(
+            await _json_body(request, maximum=MAX_ACTION_EVENT_BYTES)
+        )
+        context = getattr(request.state, "auth_context", None)
+        return _json(
+            heartbeat_runner(
+                model,
+                principal_id=str(getattr(context, "principal_id", "") or "").strip(),
+            )
+        )
+    except Exception as exc:
+        return _action_exception(exc)
+
+
+@router.post(
+    "/api/operation-cycles/action-requests/claim",
+    name="claim_operation_cycle_action_request",
+    openapi_extra=_ACTION_CLAIM_OPENAPI,
+)
+async def claim_operation_cycle_action_request(request: Request) -> JSONResponse:
+    if disabled := _actions_disabled(runner=True):
+        return disabled
+    try:
+        model = OperationCycleActionClaimV1.model_validate(
+            await _json_body(request, maximum=MAX_ACTION_EVENT_BYTES)
+        )
+        deadline = asyncio.get_running_loop().time() + model.wait_seconds
+        context = getattr(request.state, "auth_context", None)
+        principal_id = str(getattr(context, "principal_id", "") or "").strip()
+        while True:
+            payload = await asyncio.to_thread(
+                claim_action,
+                model.runner_id,
+                principal_id=principal_id,
+            )
+            if payload.get("claimed") or asyncio.get_running_loop().time() >= deadline:
+                return _json(payload)
+            await asyncio.sleep(1)
+    except Exception as exc:
+        return _action_exception(exc)
+
+
+@router.post(
+    "/api/operation-cycles/action-requests/{request_id}/events",
+    name="record_operation_cycle_action_request_event",
+    openapi_extra=_ACTION_EVENT_OPENAPI,
+)
+async def record_operation_cycle_action_request_event(
+    request_id: str,
+    request: Request,
+) -> JSONResponse:
+    if disabled := _actions_disabled(runner=True):
+        return disabled
+    try:
+        model = OperationCycleActionEventV1.model_validate(
+            await _json_body(request, maximum=MAX_ACTION_EVENT_BYTES)
+        )
+        return _json(
+            record_action_event(
+                request_id,
+                model,
+                event_id=str(request.headers.get("Idempotency-Key") or "").strip(),
+            )
+        )
+    except Exception as exc:
+        return _action_exception(exc)
 
 
 @router.get("/api/operation-cycles/context-index", name="get_operation_cycle_context_index")

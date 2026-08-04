@@ -4835,6 +4835,52 @@ tables:
     <<: *legacy_production_table_defaults
     domain: legacy_commerce
 
+  operation_cycle_action_request_events:
+    domain: operation_cycles
+    lifecycle: event
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
+    read_owners:
+      - operation runner idempotency and audit
+      - operation cycle incident reconstruction
+    replacement: none; immutable aggregate-only local action event ledger
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - operation runner event API
+      - operation action result read
+    migration_source: 0169_operation_cycle_codex_actions
+    pii_level: aggregate_only
+    guard_tests:
+      - tests/unit/test_operation_cycle_actions.py
+      - tests/contracts/test_operation_cycle_action_contracts.py
+      - tests/postgres/test_operation_cycle_actions.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Payloads reject identities, local paths, Excel contents, credentials, and raw conversation.
+
+  operation_cycle_action_requests:
+    domain: operation_cycles
+    lifecycle: canonical
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
+    read_owners:
+      - operation cycle current action read model
+      - operation runner claim API
+      - operation cycle admin result card
+    replacement: none; canonical idempotent local Codex action lifecycle and aggregate result
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - operation cycle action start
+      - operation runner claim and event APIs
+      - operation action result read
+    migration_source: 0169_operation_cycle_codex_actions
+    pii_level: aggregate_only
+    guard_tests:
+      - tests/unit/test_operation_cycle_actions.py
+      - tests/contracts/test_operation_cycle_action_contracts.py
+      - tests/postgres/test_operation_cycle_actions.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Stores hashes, aggregate counts, plan links, and Codex thread identifiers only; no local artifact or recipient data.
+
   operation_cycle_attempts:
     domain: operation_cycles
     lifecycle: canonical
@@ -4889,6 +4935,28 @@ tables:
     guard_tests:
       - tests/test_operation_cycles_migration.py
       - tests/test_data_table_lifecycle_guard.py
+
+  operation_cycle_runners:
+    domain: operation_cycles
+    lifecycle: canonical
+    write_owner: aicrm_next.extensions.hxc.operation_cycles
+    read_owners:
+      - operation cycle current action availability
+      - operation runner claim API
+    replacement: none; single-machine runner compatibility heartbeat and logical binding registry
+    drop_candidate: false
+    drop_after: ""
+    runtime_entrypoints:
+      - operation runner heartbeat
+      - operation cycle action start preflight
+    migration_source: 0169_operation_cycle_codex_actions
+    pii_level: internal
+    guard_tests:
+      - tests/unit/test_operation_cycle_actions.py
+      - tests/contracts/test_operation_cycle_action_contracts.py
+      - tests/postgres/test_operation_cycle_actions.py
+      - tests/test_data_table_lifecycle_guard.py
+    notes: Binding values and credentials remain local; CRM stores logical binding keys only.
 
   operation_cycle_runs:
     domain: operation_cycles

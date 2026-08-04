@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from .domain import validate_private_payload
 from .dto import ReferenceSnapshot, RunDetailView, RunSummary, StrategySummary
+from .action_dto import OperationCycleSkillV1
 
 
 ContextMode = Literal["execution", "retrospective", "optimization", "history"]
@@ -82,6 +83,7 @@ class StrategyTargetVersionV1(StrategyContextModel):
     objective: str = Field(default="", max_length=2000)
     definition: dict[str, Any] = Field(default_factory=dict)
     document_pack: OperationCycleStrategyDocumentPackV1
+    operation_skill: OperationCycleSkillV1 | None = None
 
 
 class StrategyChangeProposalV1(StrategyContextModel):
@@ -120,6 +122,7 @@ class StrategyVersionContextView(StrategyContextModel):
     document_pack: OperationCycleStrategyDocumentPackV1 = Field(
         default_factory=OperationCycleStrategyDocumentPackV1
     )
+    operation_skill: OperationCycleSkillV1 | None = None
     version_hash: str = ""
     confirmed_by: str = ""
     confirmed_at: datetime | None = None

@@ -13,8 +13,13 @@ from fastapi.templating import Jinja2Templates
 from aicrm_next.admin_shell_contract import admin_path_for, shell_context
 
 from .application import get_run, get_strategy, list_strategies
+from .action_service import get_current_action, get_strategy_action_results
 from .markdown_renderer import render_markdown
-from .feature_flags import operation_context_v1_enabled
+from .feature_flags import (
+    local_codex_connector_v1_enabled,
+    operation_actions_v1_enabled,
+    operation_context_v1_enabled,
+)
 from .strategy_context import get_strategy_context
 
 
@@ -121,13 +126,20 @@ def _weekly_progress(item: dict[str, Any], *, now: datetime) -> dict[str, Any]:
     }
 
 
-def _strategy_summaries(payload: dict[str, Any], *, now: datetime | None = None) -> list[dict[str, Any]]:
+def _strategy_summaries(
+    payload: dict[str, Any],
+    *,
+    now: datetime | None = None,
+    current_actions: dict[str, dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
     effective_now = now or _utc_now()
+    actions = current_actions or {}
     return [
         {
             **item,
             "detail_href": _detail_href(item.get("strategy_key")),
             "weekly_progress": _weekly_progress(item, now=effective_now),
+            "current_action": actions.get(str(item.get("strategy_key") or ""), {}),
         }
         for item in _plain(payload.get("items") or [])
         if isinstance(item, dict)
@@ -238,10 +250,38 @@ def _next_iteration_view(payload: dict[str, Any]) -> dict[str, Any]:
 @router.get("/admin/operation-cycles", name="api.admin_operation_cycles_page", response_class=HTMLResponse)
 def admin_operation_cycles_page(request: Request):
     payload = _plain(list_strategies(limit=100, offset=0))
+    actions_enabled = operation_actions_v1_enabled()
+    connector_enabled = local_codex_connector_v1_enabled()
+    current_actions: dict[str, dict[str, Any]] = {}
+    for item in payload.get("items") or []:
+        if not isinstance(item, dict):
+            continue
+        strategy_key = str(item.get("strategy_key") or "")
+        if actions_enabled and connector_enabled:
+            try:
+                current_actions[strategy_key] = _plain(get_current_action(strategy_key))
+            except Exception:
+                current_actions[strategy_key] = {
+                    "action_kind": "none",
+                    "title": "当前动作暂不可用",
+                    "enabled": False,
+                    "disabled_reason": "current_action_unavailable",
+                }
+        else:
+            current_actions[strategy_key] = {
+                "action_kind": "none",
+                "title": "启动当前动作",
+                "enabled": False,
+                "disabled_reason": (
+                    "operation_cycle_actions_v1_disabled"
+                    if not actions_enabled
+                    else "local_codex_connector_v1_disabled"
+                ),
+            }
     context = shell_context(
         request=request,
         page_title="运营闭环",
-        page_summary="查看每项运营任务的本周进度。任务由 Agent 创建。",
+        page_summary="查看本周进度，并由人在 CRM 发起当前运营动作。",
         active_endpoint="api.admin_operation_cycles_page",
     )
     context.update(
@@ -250,7 +290,8 @@ def admin_operation_cycles_page(request: Request):
                 {"label": "客户管理后台", "href": admin_path_for("api.admin_console_dashboard")},
                 {"label": "运营闭环", "href": ""},
             ],
-            "strategy_summaries": _strategy_summaries(payload),
+            "strategy_summaries": _strategy_summaries(payload, current_actions=current_actions),
+            "operation_actions_enabled": actions_enabled and connector_enabled,
         }
     )
     return templates.TemplateResponse(request, "admin_shell/operation_cycles_list.html", context)
@@ -336,6 +377,12 @@ def admin_operation_cycle_strategy_page(request: Request, strategy_key: str):
         active_document = {}
     formal_context: dict[str, Any] = {}
     optimization_context: dict[str, Any] = {}
+    action_results: list[dict[str, Any]] = []
+    if operation_actions_v1_enabled():
+        try:
+            action_results = _plain(get_strategy_action_results(strategy_key))
+        except Exception:
+            action_results = []
     if operation_context_v1_enabled() and section in {"formal_strategy", "optimization_records"}:
         mode = "execution" if section == "formal_strategy" else "optimization"
         formal_payload = get_strategy_context(strategy_key, mode=mode, limit=3) or {}
@@ -363,7 +410,7 @@ def admin_operation_cycle_strategy_page(request: Request, strategy_key: str):
     context = shell_context(
         request=request,
         page_title=str(strategy.get("title") or strategy_key),
-        page_summary="查看本次循环进度、Agent 文档与关联的 AI 助手记录。",
+        page_summary="查看本次循环进度、最终执行结论与关联的 AI 助手记录。",
         active_endpoint="api.admin_operation_cycles_page",
     )
     context.update(
@@ -385,6 +432,7 @@ def admin_operation_cycle_strategy_page(request: Request, strategy_key: str):
             "formal_context": formal_context,
             "formal_documents": formal_documents,
             "optimization_context": optimization_context,
+            "action_results": action_results,
         }
     )
     return templates.TemplateResponse(request, "admin_shell/operation_cycles_strategy.html", context)
