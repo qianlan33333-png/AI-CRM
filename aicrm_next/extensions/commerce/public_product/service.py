@@ -643,9 +643,30 @@ def _pay_page_script(state_json: str) -> str:
         return `¥${{(Number(cents || 0) / 100).toFixed(2)}}`;
       }}
 
+      const publicErrorMessages = {{
+        unionid_oauth_required: "请先完成微信授权后再继续。",
+        wechat_browser_required: "请在微信中打开当前页面后再继续。",
+        identity_resolution_required: "微信身份正在同步，请稍后重试。",
+        identity_conflict: "当前微信身份存在冲突，请联系客服处理。",
+        coupon_choice_invalid: "优惠券选择已失效，请刷新后重新选择。",
+        coupon_unavailable: "所选优惠券状态已变化，请刷新后重新选择。",
+        coupon_amount_invalid: "商品价格已变化，当前优惠券无法使用。",
+        order_reconciliation_pending: "订单状态正在与微信确认，请勿重复下单，稍后刷新查看。",
+        wechat_pay_provider_outcome_unknown: "微信支付订单状态确认中，请勿重复下单，稍后刷新查看。",
+        payment_identity_unresolved: "当前账号身份信息尚未同步完成，请稍后重试。",
+        order_not_found: "未找到对应订单，请返回商品页重新操作。",
+        wechat_pay_order_refresh_failed: "支付结果确认失败，请稍后刷新查看。",
+      }};
       function formatApiError(value, fallback) {{
         if (value == null) return fallback || "";
-        if (typeof value === "string") return value === "[object Object]" ? (fallback || "") : value.trim();
+        if (typeof value === "string") {{
+          const text = value.trim();
+          if (!text || text === "[object Object]") return fallback || "";
+          if (publicErrorMessages[text]) return publicErrorMessages[text];
+          if (/^[a-z][a-z0-9]*_[a-z0-9_]+$/i.test(text)) return fallback || "";
+          if (!/[一-龥]/.test(text) && /[a-z]/i.test(text)) return fallback || "";
+          return text;
+        }}
         if (Array.isArray(value)) {{
           const messages = value.map((item) => formatApiError(item, "")).filter(Boolean);
           return messages.join("；") || fallback || "";
@@ -813,16 +834,7 @@ def _pay_page_script(state_json: str) -> str:
             window.location.href = payload.oauth_start_url;
             return null;
           }}
-          const friendlyErrors = {{
-            identity_resolution_required: "微信身份正在同步，请稍后重试。",
-            identity_conflict: "当前微信身份存在冲突，请联系客服处理。",
-            coupon_unavailable: "所选优惠券状态已变化，请刷新后重新选择。",
-            coupon_amount_invalid: "商品价格已变化，当前优惠券无法使用。",
-            order_reconciliation_pending: "订单状态正在与微信确认，请勿重复下单，稍后刷新查看。",
-            wechat_pay_provider_outcome_unknown: "微信支付订单状态确认中，请勿重复下单，稍后刷新查看。"
-          }};
-          const errorCode = typeof payload.error === "string" ? payload.error : "";
-          throw new Error(friendlyErrors[errorCode] || formatApiError(payload, response.status >= 500 ? "支付服务暂时不可用，请稍后重试" : "下单失败"));
+          throw new Error(formatApiError(payload, response.status >= 500 ? "支付服务暂时不可用，请稍后重试" : "下单失败"));
         }}
         return payload;
       }}

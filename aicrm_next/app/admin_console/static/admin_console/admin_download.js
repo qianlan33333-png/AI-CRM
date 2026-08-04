@@ -17,14 +17,12 @@
 
   async function responseError(response) {
     const data = await response.clone().json().catch(() => null);
-    if (data && typeof data === "object") {
-      const detail = data.detail;
-      if (typeof data.error === "string" && data.error) return data.error;
-      if (typeof data.reason === "string" && data.reason) return data.reason;
-      if (typeof detail === "string" && detail) return detail;
-      if (detail && typeof detail === "object") return detail.error || detail.reason || detail.message || "下载失败";
+    if (data && typeof data === "object" && window.AdminApi && typeof window.AdminApi.responseErrorMessage === "function") {
+      return window.AdminApi.responseErrorMessage(response, data, "下载失败，请稍后重试");
     }
-    return `下载失败（HTTP ${response.status}）`;
+    if (response.status === 401 || response.status === 403) return "登录状态已失效或当前账号没有下载权限";
+    if (response.status >= 500) return "下载服务暂时不可用，请稍后重试";
+    return "下载失败，请稍后重试";
   }
 
   async function download(url, options) {

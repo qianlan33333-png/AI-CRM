@@ -93,6 +93,7 @@ def test_h5_page_handles_oauth_required_submit_without_exposing_raw_error(client
     assert "function startOAuthRedirect" in html
     assert "oauth_required_redirect" in html
     assert "请先完成微信授权" in html
+    assert "identity_conflict: '该手机号已绑定其他账号，不能提交'" in html
     assert html.index("if (isOAuthRequired(result))") < html.index("throw result;")
     assert "normalizedErrorMessage(error, '提交失败，请稍后重试')" in html
     assert "result.error || '提交失败'" not in html

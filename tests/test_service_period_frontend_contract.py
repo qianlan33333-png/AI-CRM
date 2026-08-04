@@ -100,6 +100,8 @@ def test_service_period_edit_page_keeps_four_existing_dimensions_only(next_clien
     assert "prepareImageForUpload(file)" in text
     assert 'if (mode === "new") body.product_code = productCodeValue;' in text
     assert "formatApiError(payload.detail || payload.error)" in text
+    assert 'return window.AdminApi?.formatErrorValue(value) || "";' in text
+    assert "JSON.stringify(value)" not in text
     assert 'require_mobile: $("requireMobile").value === "true"' in text
     assert "product_code: productCodeValue" not in text
     for forbidden in (

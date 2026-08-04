@@ -344,12 +344,11 @@ def test_group_ops_detail_save_plan_only_submits_base_fields():
 
 
 def test_group_ops_detail_refresh_error_uses_backend_sync_reason():
-    source = _source()
     error_source = _function_source("requestErrorMessage")
 
     assert "payload.error_message" in error_source
     assert "detail.detail" in error_source
-    assert "detail.error_code" in error_source
+    assert "detail.error_code" not in error_source
     assert "Conflict" not in error_source
 
 

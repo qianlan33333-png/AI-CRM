@@ -136,7 +136,7 @@ def test_h5_submit_identity_conflict_returns_actionable_public_message(
     assert body["error_code"] == "identity_conflict"
     assert body["source_status"] == "conflict"
     assert body["write_model_status"] == "blocked"
-    assert body["error"] == ("该手机号已绑定其他账号，当前无法完成提交。请确认手机号是否填写正确；如需继续使用该手机号，请联系工作人员处理。")
+    assert body["error"] == "该手机号已绑定其他账号，不能提交"
     assert body["route_owner"] == "ai_crm_next"
     assert body["fallback_used"] is False
     assert body["real_external_call_executed"] is False

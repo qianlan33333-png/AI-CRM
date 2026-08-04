@@ -94,9 +94,27 @@
       const message = document.getElementById("claimMessage");
       if (!button || button.disabled) return;
       const slug = document.querySelector("[data-public-slug]").dataset.publicSlug;
+      const publicErrorMessages = {
+        unionid_oauth_required: "请先完成微信授权后再领取",
+        wechat_browser_required: "请在微信中打开后再领取",
+        idempotency_key_required: "领取请求已失效，请刷新页面后重试",
+        coupon_not_found: "优惠券不存在或已下架",
+        coupon_unavailable: "当前优惠券暂不可领取",
+        "coupon is not claimable": "当前优惠券暂不可领取",
+        "coupon claim has not started": "优惠券还未开始领取",
+        "coupon claim has ended": "优惠券领取已结束",
+        "coupon is sold out": "优惠券已领完",
+        "per-user coupon claim limit reached": "你已达到该优惠券的领取上限",
+      };
       const formatError = (value) => {
         if (value == null) return "";
-        if (typeof value === "string") return value.trim();
+        if (typeof value === "string") {
+          const text = value.trim();
+          if (publicErrorMessages[text]) return publicErrorMessages[text];
+          if (/^[a-z][a-z0-9]*_[a-z0-9_]+$/i.test(text)) return "";
+          if (!/[一-龥]/.test(text) && /[a-z]/i.test(text)) return "";
+          return text;
+        }
         if (Array.isArray(value)) return value.map(formatError).filter(Boolean).join("；");
         if (typeof value === "object") {
           if (value.loc && (value.msg || value.message)) {

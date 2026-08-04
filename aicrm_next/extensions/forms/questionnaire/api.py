@@ -83,7 +83,7 @@ _QUESTIONNAIRE_SOURCE_PARAM_FIELDS = (
     "staff_id",
 )
 _QUESTIONNAIRE_META_FIELDS = _QUESTIONNAIRE_SOURCE_PARAM_FIELDS
-_IDENTITY_CONFLICT_PUBLIC_MESSAGE = "该手机号已绑定其他账号，当前无法完成提交。请确认手机号是否填写正确；如需继续使用该手机号，请联系工作人员处理。"
+_IDENTITY_CONFLICT_PUBLIC_MESSAGE = "该手机号已绑定其他账号，不能提交"
 
 
 def _completion_target_redirect_url(slug: str, completion_target: Any, *, fallback_url: Any = "") -> str:

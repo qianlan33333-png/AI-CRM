@@ -250,16 +250,13 @@
   function requestErrorMessage(error, fallback) {
     const payload = (error && error.payload) || {};
     const detail = payload && typeof payload.detail === "object" ? payload.detail : {};
-    const candidates = [
-      payload.error_message,
-      payload.message,
-      detail.detail,
-      detail.error_message,
-      detail.error_code,
-      error && error.message,
-      fallback,
-    ];
-    return String(candidates.find((item) => String(item || "").trim()) || fallback || "请求失败");
+    const candidate = [payload.error_message, payload.message, detail.detail, detail.error_message, error && error.message]
+      .find((item) => String(item || "").trim());
+    if (api.errorMessage) return api.errorMessage(candidate || error, fallback || "请求失败");
+    const message = String(candidate || "").trim();
+    if (!message || /^[a-z][a-z0-9]*_[a-z0-9_]+$/i.test(message)) return fallback || "请求失败";
+    if (!/[一-龥]/.test(message) && /[a-z]/i.test(message)) return fallback || "请求失败";
+    return message;
   }
 
   function renderShell(content) {

@@ -77,6 +77,14 @@ assert.equal(
   AdminApi.normalizeApiError(null, { ok: false, error: "unknown_internal_code" }, { fallback: "保存失败" }).message,
   "保存失败",
 );
+assert.equal(
+  AdminApi.errorMessage(new Error("order not found"), "读取失败"),
+  "请求的数据不存在或已被删除",
+);
+assert.equal(
+  AdminApi.errorMessage(new Error("opaque provider failure"), "操作失败"),
+  "操作失败",
+);
 
 let focusedInput = "";
 let reportedValidity = 0;
