@@ -27,6 +27,8 @@ def connect_operation_members_db() -> Any | None:
 
 
 ConnectionFactory = Callable[[str], AbstractContextManager[Any]]
+READINESS_STATEMENT_TIMEOUT_MS = 5_000
+READINESS_LOCK_TIMEOUT_MS = 1_000
 
 
 def _connect_readiness_db(database_url: str) -> AbstractContextManager[Any]:
@@ -37,6 +39,10 @@ def _connect_readiness_db(database_url: str) -> AbstractContextManager[Any]:
         _psycopg_url(database_url),
         autocommit=True,
         connect_timeout=3,
+        options=(
+            f"-c statement_timeout={READINESS_STATEMENT_TIMEOUT_MS} "
+            f"-c lock_timeout={READINESS_LOCK_TIMEOUT_MS}"
+        ),
         row_factory=dict_row,
     )
 

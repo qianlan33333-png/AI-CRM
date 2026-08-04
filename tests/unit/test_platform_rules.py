@@ -5,6 +5,7 @@ from threading import Event, Lock
 from time import sleep
 
 import pytest
+import psycopg
 
 from aicrm_next.capability_registry import (
     CAPABILITY_SPECS,
@@ -36,6 +37,11 @@ from aicrm_next.platform.shared.resource_admission import (
     request_priority_for_path,
     reset_resource_admission_controllers,
     resource_admission_snapshot,
+)
+from aicrm_next.platform.platform_foundation.repository import (
+    READINESS_LOCK_TIMEOUT_MS,
+    READINESS_STATEMENT_TIMEOUT_MS,
+    _connect_readiness_db,
 )
 
 
@@ -102,6 +108,25 @@ def test_runtime_state_declares_next_as_the_only_owner(monkeypatch: pytest.Monke
     assert health["legacy_runtime_enabled"] is False
     assert route_map["route_owner"] == "ai_crm_next"
     assert route_map["legacy_callback_fallback_enabled"] is False
+
+
+def test_runtime_readiness_database_probe_has_bounded_query_and_lock_timeouts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+    sentinel = object()
+
+    def fake_connect(database_url: str, **kwargs: object) -> object:
+        captured["database_url"] = database_url
+        captured.update(kwargs)
+        return sentinel
+
+    monkeypatch.setattr(psycopg, "connect", fake_connect)
+    assert _connect_readiness_db("postgresql+psycopg://test@db/current") is sentinel
+    assert captured["database_url"] == "postgresql://test@db/current"
+    assert captured["connect_timeout"] == 3
+    assert f"statement_timeout={READINESS_STATEMENT_TIMEOUT_MS}" in str(captured["options"])
+    assert f"lock_timeout={READINESS_LOCK_TIMEOUT_MS}" in str(captured["options"])
 
 
 def test_wechat_full_service_page_uses_calm_script_free_guidance() -> None:
