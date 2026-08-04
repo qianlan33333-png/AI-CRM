@@ -92,6 +92,11 @@ def test_h5_pay_oauth_start_preserves_userinfo_scope(monkeypatch) -> None:
 
 
 def test_h5_pay_oauth_callback_rejects_state_without_browser_cookie(monkeypatch) -> None:
+    class OAuthClientMustNotRun:
+        def exchange_code(self, *, app_id: str, app_secret: str, code: str):
+            raise AssertionError("missing browser cookie must be rejected before token exchange")
+
+    h5_wechat_pay.set_h5_wechat_pay_oauth_client_factory(lambda: OAuthClientMustNotRun())
     client = _client(monkeypatch)
     nonce = "a" * 48
 
@@ -102,7 +107,17 @@ def test_h5_pay_oauth_callback_rejects_state_without_browser_cookie(monkeypatch)
     )
 
     assert response.status_code == 400
-    assert response.json()["error"] == "oauth_state_cookie_missing"
+    assert response.headers["content-type"].startswith("text/html")
+    assert response.headers["cache-control"] == "no-store"
+    assert response.headers["x-aicrm-real-external-call-executed"] == "false"
+    assert 'data-identity-status="full_service_required"' in response.text
+    assert 'role="alert"' in response.text
+    assert "font-size: clamp(32px, 8.5vw, 44px)" in response.text
+    assert "请点击下方的" in response.text
+    assert "使用完整服务" in response.text
+    assert "才能正常进行服务" in response.text
+    assert "oauth_state_cookie_missing" not in response.text
+    assert "<button" not in response.text
     assert h5_wechat_pay.COOKIE_NAME not in response.headers.get("set-cookie", "")
 
 
@@ -249,7 +264,9 @@ def test_h5_pay_oauth_state_cookie_is_consumed_once(monkeypatch) -> None:
 
     assert first.status_code == 302
     assert second.status_code == 400
-    assert second.json()["error"] == "oauth_state_cookie_missing"
+    assert second.headers["content-type"].startswith("text/html")
+    assert "使用完整服务" in second.text
+    assert "oauth_state_cookie_missing" not in second.text
     assert exchange_calls == ["oauth-code-once"]
 
 
