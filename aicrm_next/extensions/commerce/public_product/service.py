@@ -210,7 +210,7 @@ def render_lead_qr_modal() -> str:
   <div class="qr-modal" id="leadQrModal" aria-hidden="true">
     <div class="qr-panel" role="dialog" aria-modal="true" aria-labelledby="leadQrModalTitle">
       <div class="modal-title" id="leadQrModalTitle">报名成功</div>
-      <div class="modal-desc">扫码添加企微领取后续资料</div>
+      <div class="modal-desc" id="leadQrModalSubtitle">扫码添加企微领取后续资料</div>
       <img class="qr-img" id="leadQrImage" alt="报名后企微渠道二维码">
       <button class="close-button" id="closeQrButton" type="button">关闭</button>
     </div>
@@ -248,6 +248,8 @@ def lead_qr_modal_controller_script() -> str:
         const modal = options && options.modal;
         const image = options && options.image;
         const closeButton = options && options.closeButton;
+        const title = document.getElementById("leadQrModalTitle");
+        const subtitle = document.getElementById("leadQrModalSubtitle");
 
         function close() {
           if (!modal) return;
@@ -261,8 +263,11 @@ def lead_qr_modal_controller_script() -> str:
         }
 
         function open(source) {
-          const normalizedSource = String(source || "").trim();
+          const leadQr = source && typeof source === "object" ? source : { qr_url: source };
+          const normalizedSource = String(leadQr.qr_url || "").trim();
           if (!normalizedSource || !modal || !image) return;
+          if (title) title.textContent = String(leadQr.title || "").trim() || "报名成功";
+          if (subtitle) subtitle.textContent = String(leadQr.subtitle || "").trim() || "扫码添加企微领取后续资料";
           image.src = normalizedSource;
           modal.classList.add("show");
           modal.setAttribute("aria-hidden", "false");
@@ -977,7 +982,7 @@ def _pay_page_script(state_json: str) -> str:
       function showLeadQr(order) {{
         const leadQr = leadQrFromOrder(order);
         if (!leadQr.qr_url || !leadQrController) return;
-        leadQrController.open(leadQr.qr_url);
+        leadQrController.open(leadQr);
       }}
 
       function syncLeadQrButton(order) {{

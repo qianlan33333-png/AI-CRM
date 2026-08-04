@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 import re
 from typing import Any
 
-from aicrm_next.platform.navigation_target import completion_action_for_target, completion_target_projection, normalize_completion_target, safe_completion_url
+from aicrm_next.platform.navigation_target import completion_action_for_target, completion_target_projection, normalize_completion_target, normalize_lead_qr_copy, safe_completion_url
 from aicrm_next.platform.navigation_target.domain import h5_url_for_legacy_fields
 from aicrm_next.platform.shared.errors import ContractError
 
@@ -114,6 +114,7 @@ def preview_product(product: dict[str, Any]) -> dict[str, Any]:
         legacy_redirect_url=completion_redirect.get("completion_redirect_url"),
         legacy_enabled=completion_redirect.get("completion_redirect_enabled"),
     )
+    lead_qr_copy = normalize_product_lead_qr_copy(product)
     return {
         "id": product.get("id", ""),
         "product_code": product["product_code"],
@@ -131,10 +132,15 @@ def preview_product(product: dict[str, Any]) -> dict[str, Any]:
         "buy_button_text": product.get("buy_button_text", "立即购买"),
         "cta_text": product.get("cta_text") or product.get("buy_button_text", "立即购买"),
         "require_mobile": bool(product.get("require_mobile")),
+        **lead_qr_copy,
         **completion_redirect,
         **completion_target,
         "completion_action": completion_action,
     }
+
+
+def normalize_product_lead_qr_copy(payload: dict[str, Any]) -> dict[str, str]:
+    return normalize_lead_qr_copy(payload.get("lead_qr_title"), payload.get("lead_qr_subtitle"))
 
 
 def normalize_product_completion_target(payload: dict[str, Any]) -> dict[str, Any]:

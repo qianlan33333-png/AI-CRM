@@ -83,6 +83,16 @@
               <select id="qo-lead-channel"><option value="">正在加载可用渠道…</option></select>
               <small>仅可选择启用中、二维码载体且已有可用二维码的渠道。</small>
             </label>
+            <div class="qo-field-grid">
+              <label class="qo-field">
+                <span>二维码主标题</span>
+                <input id="qo-lead-qr-title" maxlength="40" placeholder="留空沿用渠道名称或“扫码继续”">
+              </label>
+              <label class="qo-field">
+                <span>二维码副标题</span>
+                <input id="qo-lead-qr-subtitle" maxlength="100" placeholder="留空沿用现有长按识别提示">
+              </label>
+            </div>
             <div id="qo-channel-preview" class="qo-channel-preview" hidden>
               <img id="qo-channel-preview-image" alt="渠道二维码预览">
               <div><strong id="qo-channel-preview-name"></strong><small>展示时实时解析渠道当前二维码</small></div>

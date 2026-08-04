@@ -4866,7 +4866,7 @@
     }
   ],
   "migration_heads": [
-    "0167_product_wecom_tagging_config"
+    "0168_lead_qr_copy_config"
   ],
   "openapi_components": {
     "schemas": {
@@ -7272,6 +7272,16 @@
             ],
             "title": "Lead Program Id"
           },
+          "lead_qr_subtitle": {
+            "default": "",
+            "title": "Lead Qr Subtitle",
+            "type": "string"
+          },
+          "lead_qr_title": {
+            "default": "",
+            "title": "Lead Qr Title",
+            "type": "string"
+          },
           "metadata_json": {
             "additionalProperties": true,
             "title": "Metadata Json",
@@ -7594,6 +7604,16 @@
             ],
             "title": "Lead Channel Id"
           },
+          "lead_qr_subtitle": {
+            "default": "",
+            "title": "Lead Qr Subtitle",
+            "type": "string"
+          },
+          "lead_qr_title": {
+            "default": "",
+            "title": "Lead Qr Title",
+            "type": "string"
+          },
           "membership_config_id": {
             "default": "",
             "title": "Membership Config Id",
@@ -7732,6 +7752,28 @@
               }
             ],
             "title": "Lead Channel Id"
+          },
+          "lead_qr_subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Qr Subtitle"
+          },
+          "lead_qr_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Qr Title"
           },
           "membership_config_id": {
             "anyOf": [
@@ -52683,7 +52725,7 @@
       "domain": "questionnaire",
       "drop_candidate": false,
       "lifecycle": "canonical",
-      "migration_source": "migrations/baselines/0001_post_legacy.sql; list index added by 0106_critical_read_path_indexes; nullable lead channel binding added by 0116_questionnaire_operations_config",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql; list index added by 0106_critical_read_path_indexes; nullable lead channel binding added by 0116_questionnaire_operations_config; lead QR copy added by 0168_lead_qr_copy_config",
       "pii_level": "",
       "read_owners": [
         "aicrm_next.extensions.forms.questionnaire.api",
@@ -53403,7 +53445,7 @@
       "domain": "commerce",
       "drop_candidate": false,
       "lifecycle": "canonical",
-      "migration_source": "migrations/baselines/0001_post_legacy.sql",
+      "migration_source": "migrations/baselines/0001_post_legacy.sql; lead QR copy added by 0168_lead_qr_copy_config",
       "pii_level": "internal_contact",
       "read_owners": [
         "aicrm_next.crm.customer_read_model.sidebar_v2",

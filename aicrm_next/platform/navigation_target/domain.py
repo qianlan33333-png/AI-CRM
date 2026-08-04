@@ -9,6 +9,8 @@ from aicrm_next.platform.shared.errors import ContractError
 TARGET_TYPES = {"h5", "mini_program", "url_link"}
 OPEN_STRATEGIES = {"h5_redirect", "wechat_open_tag", "url_link"}
 ENV_VERSIONS = {"release", "trial", "develop"}
+LEAD_QR_TITLE_MAX_LENGTH = 40
+LEAD_QR_SUBTITLE_MAX_LENGTH = 100
 
 DEFAULT_COMPLETION_TARGET: dict[str, Any] = {
     "enabled": False,
@@ -42,6 +44,19 @@ def _bool(value: Any) -> bool:
     if isinstance(value, bool):
         return value
     return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def normalize_lead_qr_copy(title: Any, subtitle: Any) -> dict[str, str]:
+    normalized_title = _text(title)
+    normalized_subtitle = _text(subtitle)
+    if len(normalized_title) > LEAD_QR_TITLE_MAX_LENGTH:
+        raise ContractError(f"lead_qr_title must be at most {LEAD_QR_TITLE_MAX_LENGTH} characters")
+    if len(normalized_subtitle) > LEAD_QR_SUBTITLE_MAX_LENGTH:
+        raise ContractError(f"lead_qr_subtitle must be at most {LEAD_QR_SUBTITLE_MAX_LENGTH} characters")
+    return {
+        "lead_qr_title": normalized_title,
+        "lead_qr_subtitle": normalized_subtitle,
+    }
 
 
 def safe_completion_url(value: Any) -> str:
@@ -251,6 +266,8 @@ def completion_action_with_lead_qr(
                 "channel_id": int(qr.get("channel_id") or 0),
                 "channel_name": _text(qr.get("channel_name")),
                 "qr_url": qr_url,
+                "title": _text(qr.get("title") or qr.get("lead_qr_title")),
+                "subtitle": _text(qr.get("subtitle") or qr.get("lead_qr_subtitle")),
             },
             "redirect_url": "",
         }

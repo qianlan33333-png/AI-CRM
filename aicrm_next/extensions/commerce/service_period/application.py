@@ -45,6 +45,8 @@ def _trade_payload_from_create(payload: ServicePeriodProductCreateRequest) -> Pr
         metadata_json=_service_period_trade_metadata(),
         require_mobile=payload.require_mobile,
         lead_channel_id=payload.lead_channel_id,
+        lead_qr_title=payload.lead_qr_title,
+        lead_qr_subtitle=payload.lead_qr_subtitle,
         slices=payload.slices or [],
     )
 
@@ -69,6 +71,8 @@ def _trade_payload_from_update(existing: dict[str, Any], payload: ServicePeriodP
         metadata_json=_service_period_trade_metadata(metadata if isinstance(metadata, dict) else {}),
         require_mobile=bool(payload.require_mobile if payload.require_mobile is not None else trade.get("require_mobile")),
         lead_channel_id=payload.lead_channel_id if payload.lead_channel_id is not None else trade.get("lead_channel_id"),
+        lead_qr_title=payload.lead_qr_title if payload.lead_qr_title is not None else trade.get("lead_qr_title") or "",
+        lead_qr_subtitle=payload.lead_qr_subtitle if payload.lead_qr_subtitle is not None else trade.get("lead_qr_subtitle") or "",
         slices=payload.slices if payload.slices is not None else trade.get("slices") or [],
     )
 
@@ -368,6 +372,8 @@ class GetServicePeriodPublicStateQuery:
                         "channel_name": text(resolved_lead_qr.get("channel_name")),
                         "qr_url": text(resolved_lead_qr.get("qr_url")),
                         "status": text(resolved_lead_qr.get("status")),
+                        "title": text(resolved_lead_qr.get("title")),
+                        "subtitle": text(resolved_lead_qr.get("subtitle")),
                     }
             except (TypeError, ValueError, RuntimeError):
                 lead_qr = {}

@@ -12,6 +12,7 @@ from aicrm_next.integration_ports import (
 from aicrm_next.platform.navigation_target import (
     DEFAULT_COMPLETION_TARGET,
     completion_action_with_lead_qr,
+    normalize_lead_qr_copy,
     normalize_completion_target,
 )
 from aicrm_next.platform.navigation_target.domain import h5_url_for_legacy_fields
@@ -112,6 +113,10 @@ class QuestionnaireOperationsService:
         enabled = _bool(payload.get("enabled"))
         lead_channel_id: int | None = None
         lead_channel: dict[str, Any] | None = None
+        try:
+            lead_qr_copy = normalize_lead_qr_copy(payload.get("lead_qr_title"), payload.get("lead_qr_subtitle"))
+        except ContractError as exc:
+            raise QuestionnaireOperationsInputError(str(exc)) from exc
         target = _default_target()
         redirect_url = ""
         if enabled:
@@ -150,6 +155,7 @@ class QuestionnaireOperationsService:
             saved = self._repo.save_completion_operations(
                 int(questionnaire_id),
                 lead_channel_id=lead_channel_id,
+                **lead_qr_copy,
                 completion_target_json=target,
                 redirect_url=redirect_url,
             )
@@ -343,6 +349,8 @@ class QuestionnaireOperationsService:
             "enabled": bool(target.get("enabled") or lead_channel_id),
             "mode": "redirect" if target.get("enabled") else "lead_qr",
             "lead_channel_id": lead_channel_id,
+            "lead_qr_title": questionnaire["lead_qr_title"],
+            "lead_qr_subtitle": questionnaire["lead_qr_subtitle"],
             "lead_channel": lead_channel,
             "completion_target": target,
             "legacy_target_readonly": bool(target.get("enabled") and target.get("target_type") == "mini_program"),
@@ -371,7 +379,11 @@ def resolve_questionnaire_completion_action(
         except Exception:
             candidate = None
         if candidate and candidate.get("selectable"):
-            channel = candidate
+            channel = {
+                **candidate,
+                "title": questionnaire["lead_qr_title"],
+                "subtitle": questionnaire["lead_qr_subtitle"],
+            }
     action = completion_action_with_lead_qr(
         questionnaire["completion_target"],
         lead_qr=channel,

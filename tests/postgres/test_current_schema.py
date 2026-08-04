@@ -78,3 +78,24 @@ def test_product_wecom_tagging_configuration_is_in_current_schema(pg_connection)
     assert row[0] == "jsonb"
     assert row[1] == "NO"
     assert "enabled" in str(row[2])
+
+
+def test_lead_qr_copy_columns_are_owned_by_products_and_questionnaires(pg_connection) -> None:
+    with pg_connection.cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT table_name, column_name, is_nullable, column_default
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name IN ('wechat_pay_products', 'questionnaires')
+              AND column_name IN ('lead_qr_title', 'lead_qr_subtitle')
+            """
+        )
+        rows = cursor.fetchall()
+    assert {(row[0], row[1]) for row in rows} == {
+        ("wechat_pay_products", "lead_qr_title"),
+        ("wechat_pay_products", "lead_qr_subtitle"),
+        ("questionnaires", "lead_qr_title"),
+        ("questionnaires", "lead_qr_subtitle"),
+    }
+    assert all(row[2] == "NO" and "''" in str(row[3]) for row in rows)

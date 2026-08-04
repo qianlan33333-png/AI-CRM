@@ -98,6 +98,8 @@ class PostgresQuestionnaireReadRepository:
             "version": int(row.get("version") or 1),
             "redirect_url": _text(row.get("redirect_url")),
             "lead_channel_id": int(row.get("lead_channel_id") or 0) or None,
+            "lead_qr_title": _text(row.get("lead_qr_title")),
+            "lead_qr_subtitle": _text(row.get("lead_qr_subtitle")),
             "completion_target_json": _json_dict(row.get("completion_target_json")),
             "answer_display_mode": _text(row.get("answer_display_mode") or "all_in_one"),
             "assessment_enabled": bool(row.get("assessment_enabled")),
@@ -608,6 +610,8 @@ class PostgresQuestionnaireReadRepository:
         questionnaire_id: int,
         *,
         lead_channel_id: int | None,
+        lead_qr_title: str,
+        lead_qr_subtitle: str,
         completion_target_json: dict[str, Any],
         redirect_url: str,
     ) -> dict[str, Any] | None:
@@ -617,6 +621,8 @@ class PostgresQuestionnaireReadRepository:
                     """
                     UPDATE questionnaires
                     SET lead_channel_id = %s,
+                        lead_qr_title = %s,
+                        lead_qr_subtitle = %s,
                         completion_target_json = %s,
                         redirect_url = %s,
                         updated_at = NOW()
@@ -625,6 +631,8 @@ class PostgresQuestionnaireReadRepository:
                     """,
                     (
                         int(lead_channel_id or 0) or None,
+                        _text(lead_qr_title).strip(),
+                        _text(lead_qr_subtitle).strip(),
                         _jsonb(completion_target_json),
                         _text(redirect_url),
                         int(questionnaire_id),

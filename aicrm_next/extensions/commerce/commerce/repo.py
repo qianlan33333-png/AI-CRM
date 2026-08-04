@@ -11,7 +11,7 @@ from aicrm_next.platform.shared.errors import ContractError, NotFoundError
 from aicrm_next.platform.shared.repository_provider import assert_repository_allowed
 from aicrm_next.platform.shared.runtime import production_data_ready, raw_database_url
 
-from .domain import completion_redirect_projection, normalize_product_completion_target, normalize_status, now_iso, validate_price_cents
+from .domain import completion_redirect_projection, normalize_product_completion_target, normalize_product_lead_qr_copy, normalize_status, now_iso, validate_price_cents
 from .domain import validate_product_code
 from .refund_status import active_wechat_refund_sql
 
@@ -440,6 +440,7 @@ class InMemoryCommerceRepository:
     def _normalize_product_payload(self, payload: dict[str, Any]) -> dict[str, Any]:
         status = _normalize_product_status(payload.get("status") or ("active" if payload.get("enabled", True) else "disabled"))
         slices = _normalize_slices(payload.get("slices") or [])
+        lead_qr_copy = normalize_product_lead_qr_copy(payload)
         return {
             **payload,
             "title": str(payload.get("title") or payload.get("name") or "").strip(),
@@ -453,6 +454,7 @@ class InMemoryCommerceRepository:
             "require_mobile": bool(payload.get("require_mobile", False)),
             "lead_program_id": None,
             "lead_channel_id": _positive_int_or_none(payload.get("lead_channel_id")),
+            **lead_qr_copy,
             "slices": slices,
             "slice_count": len(slices),
             "wecom_tagging": _normalize_product_wecom_tagging(payload.get("wecom_tagging")),
@@ -474,6 +476,7 @@ class InMemoryCommerceRepository:
             item.get("completion_redirect_url"),
         )
         completion_target = normalize_product_completion_target(item)
+        lead_qr_copy = normalize_product_lead_qr_copy(item)
         completion_action = completion_action_for_target(
             completion_target["completion_target_json"],
             legacy_redirect_url=completion_redirect.get("completion_redirect_url"),
@@ -494,6 +497,7 @@ class InMemoryCommerceRepository:
             "require_mobile": bool(item.get("require_mobile", False)),
             "lead_program_id": None,
             "lead_channel_id": _positive_int_or_none(item.get("lead_channel_id")),
+            **lead_qr_copy,
             "slices": slices,
             "slice_count": len(slices),
             "wecom_tagging_json": deepcopy(wecom_tagging),
@@ -772,6 +776,8 @@ class PostgresCommerceRepository:
                         p.cta_text,
                         p.require_mobile,
                         p.lead_channel_id,
+                        p.lead_qr_title,
+                        p.lead_qr_subtitle,
                         p.completion_redirect_enabled,
                         p.completion_redirect_url,
                         p.completion_target_json,
@@ -847,6 +853,7 @@ class PostgresCommerceRepository:
         enabled = status == "active"
         metadata = self._metadata_from_payload(payload)
         lead_channel_id = _positive_int_or_none(payload.get("lead_channel_id"))
+        lead_qr_copy = normalize_product_lead_qr_copy(payload)
         params = {
             "product_code": code,
             "name": str(payload.get("title") or "").strip(),
@@ -858,6 +865,7 @@ class PostgresCommerceRepository:
             "require_mobile": bool(payload.get("require_mobile", False)),
             "lead_program_id": None,
             "lead_channel_id": lead_channel_id,
+            **lead_qr_copy,
             "completion_redirect_enabled": bool(completion_fields["completion_redirect_enabled"]),
             "completion_redirect_url": str(completion_fields["completion_redirect_url"] or ""),
             "completion_target_json": _jsonb(completion_fields["completion_target_json"]),
@@ -915,6 +923,8 @@ class PostgresCommerceRepository:
                         require_mobile = %(require_mobile)s,
                         lead_program_id = %(lead_program_id)s,
                         lead_channel_id = %(lead_channel_id)s,
+                        lead_qr_title = %(lead_qr_title)s,
+                        lead_qr_subtitle = %(lead_qr_subtitle)s,
                         completion_redirect_enabled = %(completion_redirect_enabled)s,
                         completion_redirect_url = %(completion_redirect_url)s,
                         completion_target_json = %(completion_target_json)s,
@@ -949,6 +959,8 @@ class PostgresCommerceRepository:
                     require_mobile,
                     lead_program_id,
                     lead_channel_id,
+                    lead_qr_title,
+                    lead_qr_subtitle,
                     completion_redirect_enabled,
                     completion_redirect_url,
                     completion_target_json,
@@ -968,6 +980,8 @@ class PostgresCommerceRepository:
                     %(require_mobile)s,
                     %(lead_program_id)s,
                     %(lead_channel_id)s,
+                    %(lead_qr_title)s,
+                    %(lead_qr_subtitle)s,
                     %(completion_redirect_enabled)s,
                     %(completion_redirect_url)s,
                     %(completion_target_json)s,
@@ -1215,6 +1229,7 @@ class PostgresCommerceRepository:
                 "completion_redirect_url": row.get("completion_redirect_url"),
             }
         )
+        lead_qr_copy = normalize_product_lead_qr_copy(row)
         completion_action = completion_action_for_target(
             completion_target["completion_target_json"],
             legacy_redirect_url=completion_redirect.get("completion_redirect_url"),
@@ -1241,6 +1256,7 @@ class PostgresCommerceRepository:
             "require_mobile": bool(row.get("require_mobile")),
             "lead_program_id": None,
             "lead_channel_id": _positive_int_or_none(row.get("lead_channel_id")),
+            **lead_qr_copy,
             "slices": slices,
             "slice_count": int(row.get("slice_count") or len(slices)),
             "wecom_tagging_json": wecom_tagging,

@@ -43,6 +43,8 @@ class QuestionnaireRepository(Protocol):
         questionnaire_id: int,
         *,
         lead_channel_id: int | None,
+        lead_qr_title: str,
+        lead_qr_subtitle: str,
         completion_target_json: dict[str, Any],
         redirect_url: str,
     ) -> dict[str, Any] | None: ...

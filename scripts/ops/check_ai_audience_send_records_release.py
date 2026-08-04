@@ -7,7 +7,7 @@ import os
 from typing import Any
 
 
-EXPECTED_MIGRATION_HEAD = "0167_product_wecom_tagging_config"
+EXPECTED_MIGRATION_HEAD = "0168_lead_qr_copy_config"
 MANUAL_INDEX = "idx_user_ops_send_records_ai_audience"
 AUTOMATION_INDEX = "idx_cloud_broadcast_plans_ai_audience_send_records"
 REQUIRED_TABLES = (

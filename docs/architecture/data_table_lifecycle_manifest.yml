@@ -1561,7 +1561,7 @@ tables:
       - questionnaire operations admin API
       - questionnaire H5 read/submit
       - questionnaire completion action resolution
-    migration_source: migrations/baselines/0001_post_legacy.sql; list index added by 0106_critical_read_path_indexes; nullable lead channel binding added by 0116_questionnaire_operations_config
+    migration_source: migrations/baselines/0001_post_legacy.sql; list index added by 0106_critical_read_path_indexes; nullable lead channel binding added by 0116_questionnaire_operations_config; lead QR copy added by 0168_lead_qr_copy_config
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py
       - tests/test_repository_ownership_guard.py
@@ -4340,7 +4340,7 @@ tables:
     runtime_entrypoints:
       - existing production runtime
       - aicrm_next.crm.customer_read_model.sidebar_v2
-    migration_source: migrations/baselines/0001_post_legacy.sql
+    migration_source: migrations/baselines/0001_post_legacy.sql; lead QR copy added by 0168_lead_qr_copy_config
     pii_level: internal_contact
     guard_tests:
       - tests/test_data_table_lifecycle_guard.py

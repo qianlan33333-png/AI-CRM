@@ -17,7 +17,7 @@ from aicrm_next.integration_ports import (
 from aicrm_next.platform.shared.errors import ContractError, NotFoundError
 from aicrm_next.platform.shared.mobile import MOBILE_VALIDATION_MESSAGE, normalize_mainland_mobile
 
-from .domain import completion_redirect_projection, normalize_product_completion_target, preview_product, validate_quantity
+from .domain import completion_redirect_projection, normalize_product_completion_target, normalize_product_lead_qr_copy, preview_product, validate_quantity
 from .dto import CheckoutRequest, PaymentNotifyRequest, ProductUpsertRequest
 from .repo import CommerceRepository, build_commerce_repository
 
@@ -107,9 +107,11 @@ class UpsertProductCommand:
 
             assert_product_price_allows_coupons(product_id=product_id, new_price=int(payload.price_cents))
         completion_fields = normalize_product_completion_target(payload.model_dump())
+        lead_qr_copy = normalize_product_lead_qr_copy(payload.model_dump())
         product_payload = {
             **payload.model_dump(),
             **completion_fields,
+            **lead_qr_copy,
         }
         gateway_result = (
             self._product_write_gateway.update_product(

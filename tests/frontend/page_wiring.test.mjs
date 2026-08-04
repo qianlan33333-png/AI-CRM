@@ -81,3 +81,44 @@ test("all media entrypoints share five-item lazy loading and bounded image downl
   assert.match(sidebar, /pageSize: 5/);
   assert.match(sidebar, /endpoint\("contextTokenUrl"\)/);
 });
+
+
+test("lead QR copy is wired on standard, questionnaire, and service-period configuration pages", () => {
+  const files = [
+    "aicrm_next/extensions/commerce/commerce/templates/wechat_products.html",
+    "aicrm_next/extensions/forms/questionnaire/templates/admin_console/questionnaire_operations.html",
+    "aicrm_next/extensions/commerce/service_period/templates/service_period_products.html",
+  ];
+  for (const relative of files) {
+    const source = readFileSync(path.join(root, relative), "utf8");
+    assert.match(source, /leadQrTitle|qo-lead-qr-title/);
+    assert.match(source, /leadQrSubtitle|qo-lead-qr-subtitle/);
+  }
+  const wiringSource = files
+    .map((relative) => readFileSync(path.join(root, relative), "utf8"))
+    .join("\n") + readFileSync(
+      path.join(root, "aicrm_next/extensions/forms/questionnaire/static/questionnaire_operations.js"),
+      "utf8",
+    );
+  assert.match(wiringSource, /lead_qr_title/g);
+  assert.match(wiringSource, /lead_qr_subtitle/g);
+});
+
+
+test("public lead QR renderers consume configured copy with legacy fallbacks", () => {
+  const modalSource = readFileSync(
+    path.join(root, "aicrm_next/extensions/commerce/public_product/service.py"),
+    "utf8",
+  );
+  assert.match(modalSource, /id="leadQrModalTitle">报名成功/);
+  assert.match(modalSource, /id="leadQrModalSubtitle">扫码添加企微领取后续资料/);
+  assert.match(modalSource, /leadQr\.title/);
+  assert.match(modalSource, /leadQr\.subtitle/);
+
+  const questionnaireSource = readFileSync(
+    path.join(root, "aicrm_next/extensions/forms/questionnaire/static/questionnaire_completion_action.js"),
+    "utf8",
+  );
+  assert.match(questionnaireSource, /leadQr\.title \|\| leadQr\.channel_name \|\| "扫码继续"/);
+  assert.match(questionnaireSource, /leadQr\.subtitle \|\| "长按识别二维码，继续后续服务"/);
+});

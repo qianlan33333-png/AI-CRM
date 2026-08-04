@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from aicrm_next.platform.navigation_target import completion_target_projection
+from aicrm_next.platform.navigation_target import completion_target_projection, normalize_lead_qr_copy
 from aicrm_next.platform.shared.errors import ContractError
 from aicrm_next.platform.shared.mobile import MOBILE_VALIDATION_MESSAGE, normalize_mainland_mobile
 
@@ -38,6 +38,7 @@ def normalize_questionnaire(item: dict[str, Any]) -> dict[str, Any]:
         item.get("completion_target_json") if item.get("completion_target_json") is not None else item.get("completion_target"),
         legacy_h5_url=item.get("redirect_url"),
     )
+    lead_qr_copy = normalize_lead_qr_copy(item.get("lead_qr_title"), item.get("lead_qr_subtitle"))
     assessment_config = dict(item.get("assessment_config") or item.get("result_config") or {})
     normalized = {
         "id": item["id"],
@@ -51,6 +52,7 @@ def normalize_questionnaire(item: dict[str, Any]) -> dict[str, Any]:
         "version": int(item.get("version") or 1),
         "redirect_url": str(item.get("redirect_url") or "").strip(),
         "lead_channel_id": int(item.get("lead_channel_id") or 0) or None,
+        **lead_qr_copy,
         **completion_target,
         "answer_display_mode": str(item.get("answer_display_mode") or "all_in_one").strip() or "all_in_one",
         "submit_button_text": str(item.get("submit_button_text") or "提交").strip(),
@@ -141,6 +143,8 @@ def summary_projection(item: dict[str, Any]) -> dict[str, Any]:
         "is_disabled",
         "redirect_url",
         "lead_channel_id",
+        "lead_qr_title",
+        "lead_qr_subtitle",
         "completion_target",
         "completion_target_enabled",
         "completion_target_type",

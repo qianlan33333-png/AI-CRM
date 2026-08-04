@@ -14,8 +14,8 @@
   },
   "migration_contract": {
     "directory": "migrations/versions",
-    "expected_file_count": 177,
-    "expected_head": "0167_product_wecom_tagging_config"
+    "expected_file_count": 178,
+    "expected_head": "0168_lead_qr_copy_config"
   },
   "allowed_test_side_effects": [
     "none",
