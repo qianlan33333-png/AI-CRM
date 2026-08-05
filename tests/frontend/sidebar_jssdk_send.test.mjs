@@ -82,6 +82,10 @@ function loadHarness(options = {}) {
         }, 10);
       },
       invoke(method, _payload, callback) {
+        if (method === "getCurExternalContact") {
+          callback(options.externalContactResponse || { external_userid: "external-a" });
+          return;
+        }
         assert.equal(method, "sendChatMessage");
         sendCalls += 1;
         callback({ err_msg: "sendChatMessage:ok" });
@@ -96,7 +100,7 @@ function loadHarness(options = {}) {
   };
   const instrumented = source.replace(
     bootMarker,
-    "  globalThis.__sidebarSendTestApi = { initWeComSdk, sendLinkToCurrentChat, state };\n})();",
+    "  globalThis.__sidebarSendTestApi = { initWeComSdk, resolveContextFromWeCom, sendLinkToCurrentChat, state };\n})();",
   );
   const context = {
     AbortController,
@@ -105,7 +109,7 @@ function loadHarness(options = {}) {
     URLSearchParams,
     document,
     encodeURIComponent,
-    fetch: async () => ({
+    fetch: options.fetchImpl || (async () => ({
       ok: true,
       status: 200,
       async text() {
@@ -117,7 +121,7 @@ function loadHarness(options = {}) {
           agent_config: { timestamp: 1, nonceStr: "agent", signature: "agent-signature" },
         });
       },
-    }),
+    })),
     window,
   };
   vm.runInNewContext(instrumented, context);
@@ -165,8 +169,43 @@ test("product send reports an authorization failure instead of claiming it is ou
 });
 
 
-test("sidebar page invalidates the cached script for the OAuth bootstrap fix", () => {
-  assert.match(templateSource, /sidebar_workbench\.js\?v=20260805-oauth-bootstrap/);
+test("sidebar page invalidates the cached script for the customer-context bootstrap fix", () => {
+  assert.match(templateSource, /sidebar_workbench\.js\?v=20260805-context-bootstrap/);
+});
+
+
+test("customer-aware JSSDK refresh obtains the OAuth entrypoint without a session-token POST", async () => {
+  const jssdkUrls = [];
+  const harness = loadHarness({
+    fetchImpl: async (url) => {
+      jssdkUrls.push(String(url));
+      return {
+        ok: true,
+        status: 200,
+        async text() {
+          return JSON.stringify({
+            ok: true,
+            corp_id: "ww-test",
+            agent_id: "1000001",
+            config: { timestamp: 1, nonceStr: "config", signature: "config-signature" },
+            agent_config: { timestamp: 1, nonceStr: "agent", signature: "agent-signature" },
+            sidebar_owner_token: "",
+            sidebar_owner_token_status: "viewer_session_required",
+            sidebar_oauth_url: "/api/sidebar/oauth/start?external_userid=external-a",
+            sidebar_owner_context: { external_userid: "external-a" },
+          });
+        },
+      };
+    },
+  });
+
+  const result = await harness.api.resolveContextFromWeCom();
+
+  assert.equal(result.ok, true);
+  assert.equal(jssdkUrls.length, 2);
+  assert.equal(new URL(jssdkUrls[0]).searchParams.get("external_userid"), null);
+  assert.equal(new URL(jssdkUrls[1]).searchParams.get("external_userid"), "external-a");
+  assert.match(harness.api.state.sidebar_oauth_url, /external_userid=external-a/);
 });
 
 
