@@ -98,14 +98,33 @@
     img.alt = '';
     img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
     img.onerror = function () {
-      cell.textContent = '无图';
+      cell.textContent = '预览不可用';
     };
     cell.textContent = '';
     cell.appendChild(img);
     const url = firstUrl || fallbackUrl;
     if (window.ImageResourceLoader) {
-      window.ImageResourceLoader.loadInto(img, url, { signal: signal, cancelOutsideViewport: true }).catch(function (error) {
-        if (!(error && error.name === 'AbortError')) cell.textContent = '稍后重试';
+      window.ImageResourceLoader.loadInto(img, url, {
+        signal: signal,
+        onState: function (nextState) {
+          if (nextState === 'pending') cell.dataset.imageState = 'pending';
+          else if (nextState === 'retrying') cell.dataset.imageState = 'retrying';
+        },
+      }).then(function () {
+        delete cell.dataset.imageState;
+      }).catch(function (error) {
+        if (error && error.name === 'AbortError') return;
+        if (!(error && error.retryable)) {
+          cell.textContent = '预览不可用';
+          return;
+        }
+        cell.innerHTML = '<button type="button" data-picker-thumb-retry style="border:0;background:transparent;color:#6b7280;cursor:pointer;font-size:11px;">点击重试</button>';
+        const retryButton = cell.querySelector('[data-picker-thumb-retry]');
+        retryButton.addEventListener('click', function (event) {
+          event.preventDefault();
+          event.stopPropagation();
+          renderThumbImage(cell, item, size, signal);
+        }, { once: true });
       });
     } else {
       img.src = url;

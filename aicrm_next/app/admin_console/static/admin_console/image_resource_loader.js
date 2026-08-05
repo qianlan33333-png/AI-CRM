@@ -4,10 +4,25 @@
   const queue = [];
   let active = 0;
 
-  function abortError() {
+  function abortReason(signal, fallback) {
+    const reason = signal && signal.reason;
+    return typeof reason === "string" && reason ? reason : (fallback || "aborted");
+  }
+
+  function abortError(reason) {
     const error = new Error("图片加载已取消");
     error.name = "AbortError";
+    error.reason = reason || "aborted";
     return error;
+  }
+
+  function emitState(options, state, detail) {
+    if (!options || typeof options.onState !== "function") return;
+    try {
+      options.onState(state, detail || {});
+    } catch (_error) {
+      // Rendering callbacks must never break the shared image pipeline.
+    }
   }
 
   function enqueue(run, signal) {
@@ -21,7 +36,7 @@
     while (active < MAX_CONCURRENT && queue.length) {
       const task = queue.shift();
       if (task.signal && task.signal.aborted) {
-        task.reject(abortError());
+        task.reject(abortError(abortReason(task.signal)));
         continue;
       }
       active += 1;
@@ -38,57 +53,139 @@
   function wait(ms, signal) {
     return new Promise(function (resolve, reject) {
       if (signal && signal.aborted) {
-        reject(abortError());
+        reject(abortError(abortReason(signal)));
         return;
       }
-      const timer = window.setTimeout(resolve, ms);
+      let settled = false;
+      const finish = function (callback) {
+        if (settled) return;
+        settled = true;
+        if (signal) signal.removeEventListener("abort", onAbort);
+        callback();
+      };
+      const timer = window.setTimeout(function () { finish(resolve); }, ms);
+      const onAbort = function () {
+        window.clearTimeout(timer);
+        finish(function () { reject(abortError(abortReason(signal))); });
+      };
       if (signal) {
-        signal.addEventListener("abort", function () {
-          window.clearTimeout(timer);
-          reject(abortError());
-        }, { once: true });
+        signal.addEventListener("abort", onAbort, { once: true });
       }
     });
+  }
+
+  function retryAfterMs(response, fallbackMs) {
+    const seconds = Number(response && response.headers && response.headers.get("Retry-After") || 0);
+    return seconds > 0 ? seconds * 1000 : fallbackMs;
+  }
+
+  function responseError(message, response, retryable, code) {
+    const error = new Error(message || "图片加载失败");
+    error.status = Number(response && response.status || 0);
+    error.retryable = Boolean(retryable);
+    error.code = code || "image_request_failed";
+    return error;
   }
 
   async function fetchImageBlob(url, options) {
     const signal = options && options.signal;
     let lastError = null;
     for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt += 1) {
-      if (signal && signal.aborted) throw abortError();
+      if (signal && signal.aborted) throw abortError(abortReason(signal));
       try {
-        const response = await fetch(url, {
-          credentials: "same-origin",
-          cache: "force-cache",
-          headers: { Accept: "image/avif,image/webp,image/png,image/jpeg,image/*" },
-          signal: signal,
-        });
-        if (response.ok) return await response.blob();
-        const retryable = response.status === 429 || response.status === 503;
-        const error = new Error("图片加载失败");
-        error.status = response.status;
-        error.retryable = retryable;
-        const retryAfter = Number(response.headers.get("Retry-After") || 0);
-        error.retryAfterMs = retryAfter > 0 ? retryAfter * 1000 : 0;
+        emitState(options, "loading", { attempt: attempt + 1 });
+        const result = await enqueue(async function () {
+          const response = await fetch(url, {
+            credentials: "same-origin",
+            cache: attempt === 0 ? "force-cache" : "reload",
+            headers: { Accept: "image/avif,image/webp,image/png,image/jpeg,image/*" },
+            signal: signal,
+          });
+          const pending = String(response.headers.get("X-AICRM-Media-Generation") || "").toLowerCase() === "pending";
+          if (pending && response.body && typeof response.body.cancel === "function") response.body.cancel();
+          const blob = response.ok && !pending ? await response.blob() : null;
+          return { response: response, pending: pending, blob: blob };
+        }, signal);
+        if (result.pending) {
+          const pendingError = responseError("图片仍在生成", result.response, true, "image_generation_pending");
+          pendingError.retryAfterMs = retryAfterMs(result.response, RETRY_DELAYS_MS[attempt]);
+          emitState(options, "pending", { attempt: attempt + 1 });
+          throw pendingError;
+        }
+        if (result.response.ok) {
+          const blob = result.blob;
+          if (!blob || !blob.size || !String(blob.type || "").toLowerCase().startsWith("image/")) {
+            throw responseError("图片响应无效", result.response, false, "image_response_invalid");
+          }
+          return blob;
+        }
+        const retryable = result.response.status === 429 || result.response.status === 503;
+        const error = responseError("图片加载失败", result.response, retryable);
+        error.retryAfterMs = retryAfterMs(result.response, RETRY_DELAYS_MS[attempt]);
         throw error;
       } catch (error) {
         if (error && error.name === "AbortError") throw error;
+        if (error instanceof TypeError) {
+          error.retryable = true;
+          error.code = "image_network_error";
+        }
         lastError = error;
         if (!error.retryable || attempt >= RETRY_DELAYS_MS.length) throw error;
-        await wait(error.retryAfterMs || RETRY_DELAYS_MS[attempt], signal);
+        const delay = error.retryAfterMs || RETRY_DELAYS_MS[attempt];
+        emitState(options, "retrying", { attempt: attempt + 1, delayMs: delay, code: error.code || "" });
+        await wait(delay, signal);
       }
     }
     throw lastError || new Error("图片加载失败");
   }
 
+  function applyBlobToImage(image, blob, signal) {
+    return new Promise(function (resolve, reject) {
+      const objectUrl = URL.createObjectURL(blob);
+      if (signal && signal.aborted) {
+        URL.revokeObjectURL(objectUrl);
+        reject(abortError(abortReason(signal)));
+        return;
+      }
+      let settled = false;
+      const cleanup = function () {
+        image.removeEventListener("load", onLoad);
+        image.removeEventListener("error", onError);
+        if (signal) signal.removeEventListener("abort", onAbort);
+        URL.revokeObjectURL(objectUrl);
+      };
+      const finish = function (callback) {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        callback();
+      };
+      const onLoad = function () { finish(resolve); };
+      const onError = function () {
+        const error = new Error("图片解码失败");
+        error.code = "image_decode_failed";
+        error.retryable = false;
+        finish(function () { reject(error); });
+      };
+      const onAbort = function () {
+        finish(function () { reject(abortError(abortReason(signal))); });
+      };
+      image.addEventListener("load", onLoad, { once: true });
+      image.addEventListener("error", onError, { once: true });
+      if (signal) signal.addEventListener("abort", onAbort, { once: true });
+      image.src = objectUrl;
+    });
+  }
+
   function loadInto(image, url, options) {
     if (!image || !url) return Promise.resolve(false);
+    options = options || {};
     const parentSignal = options && options.signal;
     const localController = typeof AbortController !== "undefined" ? new AbortController() : null;
     const signal = localController ? localController.signal : parentSignal;
     let detachParent = null;
     if (localController && parentSignal) {
-      const abortFromParent = function () { localController.abort(); };
+      const abortFromParent = function () { localController.abort("parent"); };
       if (parentSignal.aborted) abortFromParent();
       else {
         parentSignal.addEventListener("abort", abortFromParent, { once: true });
@@ -102,20 +199,26 @@
       observer = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
           if (entry.isIntersecting) enteredRange = true;
-          else if (enteredRange && !finished) localController.abort();
+          else if (enteredRange && !finished) localController.abort("outside_viewport");
         });
       }, { rootMargin: String(options.rootMargin || "60px 0px") });
       observer.observe(image);
     }
-    return enqueue(async function () {
-      const blob = await fetchImageBlob(url, { signal: signal });
-      if (signal && signal.aborted) throw abortError();
-      const objectUrl = URL.createObjectURL(blob);
-      image.addEventListener("load", function () { URL.revokeObjectURL(objectUrl); }, { once: true });
-      image.src = objectUrl;
+    emitState(options, "queued", {});
+    return fetchImageBlob(url, { signal: signal, onState: options.onState }).then(async function (blob) {
+      if (signal && signal.aborted) throw abortError(abortReason(signal));
+      await applyBlobToImage(image, blob, signal);
       finished = true;
+      emitState(options, "ready", {});
       return true;
-    }, signal).finally(function () {
+    }).catch(function (error) {
+      emitState(options, error && error.name === "AbortError" ? "aborted" : "error", {
+        reason: error && error.reason || "",
+        code: error && error.code || "",
+        retryable: Boolean(error && error.retryable),
+      });
+      throw error;
+    }).finally(function () {
       if (observer) observer.disconnect();
       if (detachParent) detachParent();
     });

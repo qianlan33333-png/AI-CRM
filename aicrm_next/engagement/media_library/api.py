@@ -266,6 +266,7 @@ def get_image_thumbnail(
         }
         if thumbnail.get("generation_required"):
             headers["X-AICRM-Media-Generation"] = "pending"
+            headers["Retry-After"] = "1"
         if if_none_match and etag and if_none_match == etag:
             return Response(status_code=304, headers=headers)
         return Response(content=thumbnail.get("bytes") or b"", media_type=str(thumbnail.get("mime_type") or "image/png"), headers=headers)
@@ -303,6 +304,7 @@ def get_image_variant(
         }
         if variant.get("generation_required"):
             headers["X-AICRM-Media-Generation"] = "pending"
+            headers["Retry-After"] = "1"
         if if_none_match and etag and if_none_match == etag:
             return Response(status_code=304, headers=headers)
         return Response(content=variant.get("bytes") or b"", media_type=str(variant.get("mime_type") or "image/png"), headers=headers)

@@ -67,6 +67,7 @@ test("product editor wires configurable WeCom tagging through the shared picker"
 test("all media entrypoints share five-item lazy loading and bounded image downloads", () => {
   const loader = readFileSync(path.join(root, "aicrm_next/app/admin_console/static/admin_console/image_resource_loader.js"), "utf8");
   const picker = readFileSync(path.join(root, "aicrm_next/app/admin_console/static/admin_console/image_picker.js"), "utf8");
+  const grid = readFileSync(path.join(root, "aicrm_next/app/admin_console/static/admin_console/image_library_grid.js"), "utf8");
   const library = readFileSync(path.join(root, "aicrm_next/app/admin_console/templates/admin_console/image_library.html"), "utf8");
   const sidebar = readFileSync(path.join(root, "aicrm_next/app/admin_console/static/sidebar_workbench/sidebar_workbench.js"), "utf8");
   assert.match(loader, /MAX_CONCURRENT = 2/);
@@ -75,6 +76,11 @@ test("all media entrypoints share five-item lazy loading and bounded image downl
   assert.match(loader, /cancelOutsideViewport/);
   assert.match(picker, /limit=5&offset=/);
   assert.match(picker, /pageSize: 5/);
+  assert.match(picker, /data-picker-thumb-retry/);
+  assert.match(grid, /typeof IntersectionObserver !== 'undefined'/);
+  assert.match(grid, /else loadCardThumbnail\(card\)/);
+  assert.match(grid, /error\.reason === 'outside_viewport'[\s\S]*?state\.thumbObserver\.observe\(card\)/);
+  assert.match(grid, /data-image-thumb-retry/);
   assert.match(library, /params\.set\('limit', '5'\)/);
   assert.match(library, /pageSize: 5/);
   assert.match(sidebar, /limit: 5, offset: 0/);

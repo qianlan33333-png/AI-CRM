@@ -1051,7 +1051,7 @@
 
   function materialCardHtml(item) {
     const thumb = item.thumbnail_url
-      ? '<div class="material-thumb thumb image-thumb"><span class="material-thumb-placeholder">…</span></div>'
+      ? '<div class="material-thumb thumb image-thumb"><span class="material-thumb-placeholder" data-material-thumb-status>等待加载</span></div>'
       : '<div class="material-thumb thumb image-thumb preview-unavailable">预览不可用</div>';
     return (
       '<article class="card material material--image" data-material-card data-material-id="' + escapeHtml(item.id || "") + '" data-material-thumb-url="' + escapeHtml(item.thumbnail_url || "") + '">' + thumb +
@@ -1059,6 +1059,74 @@
       (item.tags || []).map((tag) => '<span class="tag">' + escapeHtml(tag) + "</span>").join("") +
       '</div></div><button class="btn primary material-send" type="button" data-material-send="' + escapeHtml(item.id || "") + '">发送</button></article>'
     );
+  }
+
+  function materialThumbStatus(cell) {
+    return cell ? cell.querySelector("[data-material-thumb-status]") : null;
+  }
+
+  function resetMaterialThumbForRetry(card, message, retryable) {
+    const cell = card && card.querySelector ? card.querySelector(".material-thumb") : null;
+    if (!cell) return;
+    cell.classList.add("preview-unavailable");
+    if (retryable) {
+      cell.innerHTML = '<button class="material-thumb-retry" type="button" data-material-thumb-retry>' + escapeHtml(message || "点击重试") + "</button>";
+      return;
+    }
+    cell.textContent = message || "预览不可用";
+  }
+
+  function loadMaterialThumbnail(card) {
+    if (!card || card.dataset.materialLoading === "true") return;
+    const thumbnailUrl = String(card.dataset.materialThumbUrl || "");
+    const cell = card.querySelector(".material-thumb");
+    if (!thumbnailUrl || !cell) return;
+    if (!window.ImageResourceLoader) {
+      resetMaterialThumbForRetry(card, "预览不可用", false);
+      return;
+    }
+    card.dataset.materialLoading = "true";
+    cell.classList.remove("preview-unavailable");
+    cell.innerHTML = '<span class="material-thumb-placeholder" data-material-thumb-status>正在加载</span>';
+    const status = materialThumbStatus(cell);
+    const image = document.createElement("img");
+    image.alt = "图片素材预览";
+    image.width = 64;
+    image.height = 64;
+    image.loading = "lazy";
+    image.decoding = "async";
+    image.fetchPriority = "low";
+    image.style.opacity = "0";
+    image.setAttribute("data-material-thumb-img", "");
+    cell.appendChild(image);
+    window.ImageResourceLoader.loadInto(image, thumbnailUrl, {
+      signal: state.materialImageController ? state.materialImageController.signal : undefined,
+      cancelOutsideViewport: true,
+      onState: function (nextState) {
+        if (!card.isConnected || !status.isConnected) return;
+        if (nextState === "pending") status.textContent = "正在生成";
+        else if (nextState === "retrying") status.textContent = "正在重试";
+        else if (nextState === "loading") status.textContent = "正在加载";
+      },
+    }).then(function () {
+      if (!card.isConnected) return;
+      image.style.opacity = "";
+      if (status.isConnected) status.remove();
+    }).catch(function (error) {
+      if (!card.isConnected) return;
+      const parentAborted = Boolean(state.materialImageController && state.materialImageController.signal.aborted);
+      if (error && error.name === "AbortError") {
+        if (error.reason === "outside_viewport" && !parentAborted && state.materialThumbObserver) {
+          cell.innerHTML = '<span class="material-thumb-placeholder" data-material-thumb-status>等待加载</span>';
+          delete card.dataset.materialLoading;
+          state.materialThumbObserver.observe(card);
+        }
+        return;
+      }
+      resetMaterialThumbForRetry(card, error && error.retryable ? "点击重试" : "预览不可用", Boolean(error && error.retryable));
+    }).finally(function () {
+      delete card.dataset.materialLoading;
+    });
   }
 
   function bindMaterialThumbnails(items) {
@@ -1071,31 +1139,14 @@
           if (!entry.isIntersecting) return;
           const card = entry.target;
           state.materialThumbObserver.unobserve(card);
-          const thumbnailUrl = String(card.dataset.materialThumbUrl || "");
-          if (!thumbnailUrl) return;
-          const cell = card.querySelector(".material-thumb");
-          if (!cell) return;
-          const image = document.createElement("img");
-          image.alt = "图片素材预览";
-          image.width = 64;
-          image.height = 64;
-          image.loading = "lazy";
-          image.decoding = "async";
-          image.fetchPriority = "low";
-          cell.textContent = "";
-          cell.appendChild(image);
-          window.ImageResourceLoader.loadInto(image, thumbnailUrl, {
-            signal: state.materialImageController ? state.materialImageController.signal : undefined,
-            cancelOutsideViewport: true,
-          }).catch((error) => {
-            if (!(error && error.name === "AbortError")) cell.textContent = "稍后重试";
-          });
+          loadMaterialThumbnail(card);
         });
       }, { rootMargin: "60px 0px" });
     }
     content.querySelectorAll("[data-material-card]:not([data-material-bound])").forEach((card) => {
       card.setAttribute("data-material-bound", "true");
       if (state.materialThumbObserver) state.materialThumbObserver.observe(card);
+      else loadMaterialThumbnail(card);
     });
   }
 
@@ -1329,10 +1380,11 @@
     }
     const query = String(state.materialQuery || "").trim();
     const resultKey = materialResultKey(query);
-    if (Object.prototype.hasOwnProperty.call(state.data.materials, resultKey)) return true;
     if (state.materialSearchController) state.materialSearchController.abort();
-    state.materialSearchController = typeof AbortController !== "undefined" ? new AbortController() : null;
     const requestVersion = ++state.materialRequestVersion;
+    state.materialSearchController = null;
+    if (Object.prototype.hasOwnProperty.call(state.data.materials, resultKey)) return true;
+    state.materialSearchController = typeof AbortController !== "undefined" ? new AbortController() : null;
     try {
       const payload = await requestPanelJson(
         "materials",
@@ -1360,6 +1412,7 @@
     if (state.materialType !== "image") return;
     destroyMaterialResources();
     state.materialQuery = String(query || "").trim().slice(0, 100);
+    const requestedQuery = state.materialQuery;
     const resultKey = materialResultKey(state.materialQuery);
     if (options && options.force) {
       delete state.data.materials[resultKey];
@@ -1368,7 +1421,7 @@
     content.innerHTML = panel("", materialTypeControls() + materialSearchControls() + '<div class="status">正在搜索图片素材…</div>');
     try {
       const applied = await loadMaterials("image");
-      if (!applied || state.activeTab !== "materials" || state.materialType !== "image") return;
+      if (!applied || requestedQuery !== state.materialQuery || state.activeTab !== "materials" || state.materialType !== "image") return;
       renderMaterials();
     } catch (error) {
       if (state.activeTab !== "materials" || state.materialType !== "image") return;
@@ -2035,6 +2088,12 @@
     const materialSearchClearButton = event.target.closest("[data-material-search-clear]");
     if (materialSearchClearButton) {
       await executeMaterialSearch("");
+      return;
+    }
+    const materialThumbRetryButton = event.target.closest("[data-material-thumb-retry]");
+    if (materialThumbRetryButton) {
+      const card = materialThumbRetryButton.closest("[data-material-card]");
+      loadMaterialThumbnail(card);
       return;
     }
     const orderTypeButton = event.target.closest("[data-order-type]");

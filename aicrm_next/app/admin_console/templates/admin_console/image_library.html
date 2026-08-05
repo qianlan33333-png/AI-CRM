@@ -3,7 +3,7 @@
 {% block head_extra %}
 <script src="{{ url_for('static', filename='admin_console/image_upload_client.js') }}"></script>
 <script src="{{ url_for('static', filename='admin_console/image_library_facets.js') }}?v=image-library-facets-v1-20260730"></script>
-<script src="{{ url_for('static', filename='admin_console/image_library_grid.js') }}?v=resource-governance-v1"></script>
+<script src="{{ url_for('static', filename='admin_console/image_library_grid.js') }}?v=resource-governance-v2-pending-retry"></script>
 <style>
   /* ========== 顶部工具栏 ========== */
   .il-toolbar {
@@ -91,8 +91,14 @@
   .il-thumb {
     width:100%; aspect-ratio:1;
     background:#f5f6f8;
+    position:relative;
     display:flex; align-items:center; justify-content:center;
     color:#bbb; overflow:hidden;
+  }
+  .il-thumb [data-image-thumb-status] {
+    position:absolute; inset:0; z-index:1;
+    display:flex; align-items:center; justify-content:center;
+    font-size:12px;
   }
   .il-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
   .il-card-body { padding:8px 10px; }
