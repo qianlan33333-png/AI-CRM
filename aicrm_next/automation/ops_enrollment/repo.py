@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import Protocol
 from uuid import uuid4
 
-from sqlalchemy import delete, insert, select, update
+from sqlalchemy import delete, insert, select, text, update
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -62,6 +62,11 @@ def _status_label(status: str) -> str:
 
 def _new_record_key() -> str:
     return f"user_ops_send_{uuid4().hex[:12]}"
+
+
+def _integrity_constraint_name(exc: IntegrityError) -> str:
+    diagnostic = getattr(getattr(exc, "orig", None), "diag", None)
+    return str(getattr(diagnostic, "constraint_name", "") or "")
 
 
 def _job_id_from_result(job: JsonDict) -> int | None:
@@ -611,14 +616,48 @@ class SqlAlchemyUserOpsRepository:
         try:
             self._insert_send_record(record_key=record_key, payload=enriched)
             self._session.commit()
-        except IntegrityError:
+        except IntegrityError as exc:
             self._session.rollback()
             if key:
                 existing = self._get_send_record_by_idempotency(key)
                 if existing is not None:
                     return existing
-            raise
+            if not self._repair_send_record_sequence_after_primary_key_conflict(exc):
+                raise
+            try:
+                self._insert_send_record(record_key=record_key, payload=enriched)
+                self._session.commit()
+            except IntegrityError:
+                self._session.rollback()
+                if key:
+                    existing = self._get_send_record_by_idempotency(key)
+                    if existing is not None:
+                        return existing
+                raise
         return self.get_send_record(record_key) or {}
+
+    def _repair_send_record_sequence_after_primary_key_conflict(self, exc: IntegrityError) -> bool:
+        bind = self._session.get_bind()
+        if bind is None or bind.dialect.name != "postgresql":
+            return False
+        if _integrity_constraint_name(exc) != "user_ops_send_records_next_pkey":
+            return False
+        self._session.execute(text("LOCK TABLE user_ops_send_records_next IN SHARE ROW EXCLUSIVE MODE"))
+        self._session.execute(
+            text(
+                """
+                SELECT setval(
+                    pg_get_serial_sequence('user_ops_send_records_next', 'id')::regclass,
+                    GREATEST(
+                        (SELECT MAX(id) FROM user_ops_send_records_next),
+                        (SELECT last_value FROM user_ops_send_records_next_id_seq)
+                    ),
+                    TRUE
+                )
+                """
+            )
+        )
+        return True
 
     def attach_external_effect_jobs(self, record_id: str, jobs: list[JsonDict]) -> JsonDict:
         record = self.get_send_record(record_id)
