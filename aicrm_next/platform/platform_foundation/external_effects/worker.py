@@ -460,6 +460,7 @@ class ExternalEffectWorker:
             retry_at = next_retry_at(
                 job.attempt_count,
                 retry_after_seconds=retry_after_seconds,
+                error_code=dispatch_result.error_code,
             )
 
         try:

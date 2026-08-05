@@ -41,7 +41,10 @@ _MISSING = "__aicrm_wecom_runtime_missing__"
 _TRUE = {"1", "true", "yes", "y", "on", "enabled", "execute"}
 _FALSE = {"0", "false", "no", "n", "off", "disabled"}
 TOKEN_INVALID_ERRCODES = {40014, 42001, 42007, 42009}
-RETRYABLE_PROVIDER_ERRCODES = {-1, 45009, 45011}
+# 45035 is a short-lived lock while WeCom finalizes an external-contact
+# relationship. It is safe to retry the same idempotent tag job after a
+# small backoff; it is not a tag, permission, or identity configuration error.
+RETRYABLE_PROVIDER_ERRCODES = {-1, 45009, 45011, 45035}
 TERMINAL_CONFIG_ERRCODES = {40001, 40013, 41001}
 TERMINAL_PERMISSION_ERRCODES = {48002, 60011, 301002}
 TERMINAL_TRUST_ERRCODES = {60020}
@@ -293,7 +296,11 @@ def classify_wecom_provider_error(
     if status_code is not None and status_code >= 400:
         return f"http_{status_code}", "terminal"
     if provider_errcode in RETRYABLE_PROVIDER_ERRCODES:
-        return ("rate_limited" if provider_errcode in {45009, 45011} else "provider_busy"), "retryable"
+        if provider_errcode in {45009, 45011}:
+            return "rate_limited", "retryable"
+        if provider_errcode == 45035:
+            return "operation_conflict", "retryable"
+        return "provider_busy", "retryable"
     if provider_errcode in TERMINAL_CONFIG_ERRCODES:
         return "config_invalid", "terminal"
     if provider_errcode in TERMINAL_TRUST_ERRCODES:
