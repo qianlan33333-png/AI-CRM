@@ -215,7 +215,12 @@ def validate_sidebar_owner_context(
     external_userid: str = "",
     expected_corp_id: str = "",
 ) -> dict[str, Any]:
-    """Bind a signed owner token to the current OAuth session and target customer."""
+    """Bind a customer token to the employee OAuth session and requested customer.
+
+    Legacy cookies may still contain the customer that initiated OAuth. The
+    employee session is intentionally customer-agnostic; customer scope is
+    enforced by the signed token and the current request below.
+    """
 
     token_result = load_sidebar_owner_context_token(token)
     if not token_result.get("ok"):
@@ -225,15 +230,12 @@ def validate_sidebar_owner_context(
     if not session or _text(session.get("auth_source")) != "wecom_sidebar_oauth":
         return {"ok": False, "status": "viewer_session_required", "context": {}}
     viewer_userid = _text(session.get("wecom_userid"))
-    session_external = _text(session.get("external_userid"))
     session_fingerprint = sidebar_session_fingerprint(session.get("session_id"))
     if not viewer_userid or not session_fingerprint:
         return {"ok": False, "status": "viewer_session_invalid", "context": {}}
     if viewer_userid != _text(context.get("viewer_userid")):
         return {"ok": False, "status": "viewer_session_mismatch", "context": {}}
     token_external = _text(context.get("external_userid"))
-    if session_external and session_external != token_external:
-        return {"ok": False, "status": "viewer_customer_mismatch", "context": {}}
     if session_fingerprint != _text(context.get("session_fingerprint")):
         return {"ok": False, "status": "viewer_session_mismatch", "context": {}}
     requested_external = _text(external_userid)
