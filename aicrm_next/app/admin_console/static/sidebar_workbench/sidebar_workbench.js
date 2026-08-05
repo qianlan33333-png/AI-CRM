@@ -408,19 +408,24 @@
     return Math.max(1, Math.min(fallbackMs || SDK_TIMEOUT_MS, state.bootDeadline - Date.now()));
   }
 
-  async function requestJssdkConfig(timeoutMs) {
+  async function requestJssdkConfig(timeoutMs, options) {
     const url = jssdkConfigUrl();
-    const cached = readJssdkConfigCache(url);
-    if (cached) return cached;
-    const pending = state.jssdkConfigRequests.get(url);
-    if (pending) return pending;
+    const force = Boolean(options && options.force);
+    if (!force) {
+      const cached = readJssdkConfigCache(url);
+      if (cached) return cached;
+      const pending = state.jssdkConfigRequests.get(url);
+      if (pending) return pending;
+    }
     const request = requestJson(url, { timeoutMs: Math.max(1, Number(timeoutMs) || SDK_TIMEOUT_MS), retryCount: 0 })
       .then((payload) => {
         writeJssdkConfigCache(url, payload);
         return payload;
       })
-      .finally(() => state.jssdkConfigRequests.delete(url));
-    state.jssdkConfigRequests.set(url, request);
+      .finally(() => {
+        if (!force) state.jssdkConfigRequests.delete(url);
+      });
+    if (!force) state.jssdkConfigRequests.set(url, request);
     return request;
   }
 
@@ -487,8 +492,14 @@
       return false;
     }
     if (!state.sidebar_oauth_url) {
-      await refreshSidebarOwnerToken();
+      try {
+        const payload = await requestJssdkConfig(remainingStartupBudget(SDK_TIMEOUT_MS), { force: true });
+        applySidebarOwnerToken(payload, state.external_userid);
+      } catch (error) {
+        writeDebug("sidebar oauth bootstrap refresh failed", { message: error.message || String(error) });
+      }
     }
+    if (state.sidebar_owner_token) return false;
     if (
       !state.sidebar_oauth_url &&
       ["", "viewer_session_required", "context_token_required"].indexOf(state.sidebar_owner_token_status) >= 0
@@ -2021,7 +2032,12 @@
       setExternalUserid(externalUserid);
       applyWeComViewerIdentity(res || {}, "getCurExternalContact");
       if (!state.bind_by_userid) state.bind_by_userid = state.owner_userid;
-      await refreshSidebarOwnerToken();
+      try {
+        const ownerContextPayload = await requestJssdkConfig(remainingStartupBudget(SDK_TIMEOUT_MS), { force: true });
+        applySidebarOwnerToken(ownerContextPayload, state.external_userid);
+      } catch (error) {
+        writeDebug("customer-aware jssdk config failed", { message: error.message || String(error) });
+      }
       writeDebug("getCurExternalContact success", {
         external_userid: state.external_userid,
         owner_userid: state.owner_userid,
@@ -2054,9 +2070,6 @@
         setWorkbenchState(contextResult.status || WORKBENCH_STATES.context_missing, contextResult);
         renderRetryPanel("", contextResult.status === WORKBENCH_STATES.sdk_unavailable ? "企微 SDK 暂不可用，请确认从企微侧边栏打开，或带 external_userid 参数重试。" : "未识别到客户，请从企微客户侧边栏重新打开。");
         return;
-      }
-      if (!state.sidebar_owner_token) {
-        await refreshSidebarOwnerToken();
       }
       if (!state.sidebar_owner_token) {
         if (await maybeStartSidebarOAuth("owner_token_missing", { force: forceSidebarOAuth })) return;
