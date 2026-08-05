@@ -82,6 +82,8 @@ function loadHarness(fetchImpl) {
     },
     setTimeout,
   };
+  const assignedUrls = [];
+  window.location.assign = (url) => assignedUrls.push(String(url));
   const document = {
     body: createNode(),
     createElement: createNode,
@@ -90,7 +92,7 @@ function loadHarness(fetchImpl) {
   };
   const instrumented = source.replace(
     bootMarker,
-    "  globalThis.__sidebarTokenTestApi = { applySidebarOwnerToken, refreshSidebarOwnerToken, requestJson, setExternalUserid, state };\n})();",
+    "  globalThis.__sidebarTokenTestApi = { applySidebarOwnerToken, maybeStartSidebarOAuth, refreshSidebarOwnerToken, requestJson, setExternalUserid, state };\n})();",
   );
   const context = {
     AbortController,
@@ -103,7 +105,10 @@ function loadHarness(fetchImpl) {
     window,
   };
   vm.runInNewContext(instrumented, context);
-  return context.__sidebarTokenTestApi;
+  const api = context.__sidebarTokenTestApi;
+  api.assignedUrls = assignedUrls;
+  api.sessionStorage = sessionStorage;
+  return api;
 }
 
 
@@ -202,4 +207,23 @@ test("a repeated customer-scope 403 stops after one recovery attempt", async () 
   );
   assert.equal(tokenCalls, 1);
   assert.equal(workbenchCalls, 2);
+});
+
+
+test("manual retry restarts OAuth after an earlier incomplete authorization attempt", async () => {
+  const api = loadHarness(async () => {
+    throw new Error("OAuth retry must use the already supplied authorization URL");
+  });
+  api.setExternalUserid("external-b");
+  api.state.sidebar_oauth_url = "/api/sidebar/oauth/start?external_userid=external-b";
+  api.state.sidebar_owner_token_status = "viewer_session_required";
+  api.sessionStorage.set("aicrm_sidebar_oauth:external-b", "1");
+
+  assert.equal(await api.maybeStartSidebarOAuth("owner_token_missing"), false);
+  assert.equal(api.assignedUrls.length, 0);
+
+  assert.equal(await api.maybeStartSidebarOAuth("manual_retry", { force: true }), true);
+  assert.equal(api.assignedUrls.length, 1);
+  assert.match(api.assignedUrls[0], /\/api\/sidebar\/oauth\/start/);
+  assert.match(api.assignedUrls[0], /external_userid=external-b/);
 });

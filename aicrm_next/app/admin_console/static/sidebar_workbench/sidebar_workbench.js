@@ -476,8 +476,9 @@
     }
   }
 
-  async function maybeStartSidebarOAuth(reason) {
+  async function maybeStartSidebarOAuth(reason, options) {
     if (state.sidebar_owner_token || state.sidebar_oauth_started || !state.external_userid) return false;
+    const force = Boolean(options && options.force);
     const params = new URLSearchParams(window.location.search);
     const oauthError = String(params.get("sidebar_oauth_error") || "").trim();
     if (oauthError) {
@@ -500,7 +501,7 @@
     if (window.sessionStorage) {
       try {
         const key = sidebarOAuthAttemptKey();
-        if (window.sessionStorage.getItem(key) === "1") {
+        if (!force && window.sessionStorage.getItem(key) === "1") {
           writeDebug("sidebar oauth skipped after prior attempt", { reason: reason || "" });
           return false;
         }
@@ -2032,7 +2033,8 @@
     }
   }
 
-  async function boot() {
+  async function boot(options) {
+    const forceSidebarOAuth = Boolean(options && options.forceSidebarOAuth);
     cleanupSidebarOAuthUrl();
     state.bootDeadline = Date.now() + STARTUP_BUDGET_MS;
     setWorkbenchState(WORKBENCH_STATES.identifying_customer);
@@ -2047,7 +2049,7 @@
       }
       writeDebug("identity result", contextResult);
       if (!contextResult.ok) {
-        if (!state.sidebar_owner_token && state.external_userid && await maybeStartSidebarOAuth(contextResult.reason || "context_not_ready")) return;
+        if (!state.sidebar_owner_token && state.external_userid && await maybeStartSidebarOAuth(contextResult.reason || "context_not_ready", { force: forceSidebarOAuth })) return;
         setWorkbenchState(contextResult.status || WORKBENCH_STATES.context_missing, contextResult);
         renderRetryPanel("", contextResult.status === WORKBENCH_STATES.sdk_unavailable ? "企微 SDK 暂不可用，请确认从企微侧边栏打开，或带 external_userid 参数重试。" : "未识别到客户，请从企微客户侧边栏重新打开。");
         return;
@@ -2055,7 +2057,12 @@
       if (!state.sidebar_owner_token) {
         await refreshSidebarOwnerToken();
       }
-      if (!state.sidebar_owner_token && await maybeStartSidebarOAuth("owner_token_missing")) return;
+      if (!state.sidebar_owner_token) {
+        if (await maybeStartSidebarOAuth("owner_token_missing", { force: forceSidebarOAuth })) return;
+        setWorkbenchState(WORKBENCH_STATES.error, { message: "sidebar authorization required" });
+        renderRetryPanel("", "侧边栏授权未完成，请点击重试重新授权。");
+        return;
+      }
       await loadWorkbench();
     } catch (error) {
       writeDebug("boot error", { message: error.message || String(error), stage: error.stage || "" });
@@ -2119,7 +2126,7 @@
     const retryButton = event.target.closest("[data-retry-boot]");
     if (retryButton) {
       retryButton.disabled = true;
-      boot();
+      boot({ forceSidebarOAuth: true });
       return;
     }
     const retryTabButton = event.target.closest("[data-retry-tab]");
