@@ -189,6 +189,11 @@ def _customer_owner_candidates(customer: JsonDict) -> set[str]:
 
 
 def _assert_customer_owner_scope(customer: JsonDict, owner_userid: str | None, *, require_owner: bool = False, owner_verified: bool = False) -> None:
+    if owner_verified:
+        # A sidebar grant is already bound to the OAuth employee, corp, customer,
+        # and session. A lagging owner/follow projection is operational metadata,
+        # not a second authorization source for that trusted customer context.
+        return
     requested_owner = str(owner_userid or "").strip()
     candidates = _customer_owner_candidates(customer)
     if requested_owner and requested_owner in candidates:
@@ -1324,6 +1329,7 @@ class GetAdminCustomerProfileQuery:
         user_id: str | None = None,
         owner_userid: str | None = None,
         require_owner_scope: bool = False,
+        owner_verified: bool = False,
     ) -> JsonDict:
         resolved_unionid = str(unionid or "").strip()
         resolved_external_userid = str(external_userid or user_id or "").strip()
@@ -1338,6 +1344,7 @@ class GetAdminCustomerProfileQuery:
             user_id=str(user_id or "").strip() or None,
             owner_userid=str(owner_userid or "").strip() or None,
             require_owner_scope=bool(require_owner_scope),
+            owner_verified=bool(owner_verified),
         )
         try:
             context = self._context_query(request)
@@ -1384,6 +1391,7 @@ class GetAdminCustomerProfileTagsQuery:
         user_id: str | None = None,
         owner_userid: str | None = None,
         require_owner_scope: bool = False,
+        owner_verified: bool = False,
     ) -> JsonDict:
         resolved_unionid = str(unionid or "").strip()
         resolved_external_userid = str(external_userid or user_id or "").strip()
@@ -1398,6 +1406,7 @@ class GetAdminCustomerProfileTagsQuery:
                     user_id=str(user_id or "").strip() or None,
                     owner_userid=str(owner_userid or "").strip() or None,
                     require_owner_scope=bool(require_owner_scope),
+                    owner_verified=bool(owner_verified),
                 )
             )
         except NotFoundError:

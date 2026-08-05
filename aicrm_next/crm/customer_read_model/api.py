@@ -275,6 +275,7 @@ def _context_for_external_userid(
     *,
     owner_userid: str = "",
     require_owner_scope: bool = False,
+    owner_verified: bool = False,
     recent_message_limit: int = 20,
     timeline_limit: int = 20,
     customer_repo: CustomerReadRepository | None = None,
@@ -285,6 +286,7 @@ def _context_for_external_userid(
             external_userid=external_userid,
             owner_userid=owner_userid or None,
             require_owner_scope=require_owner_scope,
+            owner_verified=owner_verified,
             recent_message_limit=recent_message_limit,
             timeline_limit=timeline_limit,
         )
@@ -309,6 +311,7 @@ def _sidebar_context_or_response(
     external_userid: str,
     *,
     owner_userid: str = "",
+    owner_verified: bool = False,
     customer_repo: CustomerReadRepository | None = None,
     live_source_repo: CustomerReadRepository | None = None,
 ) -> tuple[dict | None, JSONResponse | None]:
@@ -317,6 +320,7 @@ def _sidebar_context_or_response(
             external_userid,
             owner_userid=owner_userid,
             require_owner_scope=True,
+            owner_verified=owner_verified,
             customer_repo=customer_repo,
             live_source_repo=live_source_repo,
         )
@@ -585,6 +589,7 @@ def get_sidebar_customer_context(
             resolved_external_userid,
             owner_userid=str(owner_context.get("owner_userid") or "").strip(),
             require_owner_scope=True,
+            owner_verified=bool(owner_context.get("owner_verified")),
             customer_repo=customer_repo,
             live_source_repo=live_source_repo,
         )
@@ -640,6 +645,7 @@ def get_sidebar_profile(
             external_userid=resolved_external_userid,
             owner_userid=str(owner_context.get("owner_userid") or "").strip(),
             require_owner_scope=True,
+            owner_verified=bool(owner_context.get("owner_verified")),
         )
     except CustomerScopeForbiddenError:
         return _sidebar_forbidden_error()
@@ -666,6 +672,7 @@ def get_sidebar_tags(
             external_userid=resolved_external_userid,
             owner_userid=str(owner_context.get("owner_userid") or "").strip(),
             require_owner_scope=True,
+            owner_verified=bool(owner_context.get("owner_verified")),
         )
     except CustomerScopeForbiddenError:
         return _sidebar_forbidden_error()
@@ -692,6 +699,7 @@ def get_sidebar_lead_pool_status(
     context, response = _sidebar_context_or_response(
         resolved_external_userid,
         owner_userid=resolved_owner_userid,
+        owner_verified=bool(owner_context.get("owner_verified")),
         customer_repo=customer_repo,
         live_source_repo=live_source_repo,
     )
@@ -746,6 +754,7 @@ def get_sidebar_signup_tag_status(
     context, response = _sidebar_context_or_response(
         resolved_external_userid,
         owner_userid=resolved_owner_userid,
+        owner_verified=bool(owner_context.get("owner_verified")),
         customer_repo=customer_repo,
         live_source_repo=live_source_repo,
     )
@@ -789,6 +798,7 @@ def get_sidebar_marketing_status(
     context, response = _sidebar_context_or_response(
         resolved_external_userid,
         owner_userid=resolved_owner_userid,
+        owner_verified=bool(owner_context.get("owner_verified")),
         customer_repo=customer_repo,
         live_source_repo=live_source_repo,
     )
@@ -1188,12 +1198,14 @@ async def update_sidebar_v2_periodic_order_remark(
             context_query,
             external_userid=external_userid,
             owner_userid=scoped_owner_userid,
-            owner_verified=bool(owner_context.get("owner_verified")),
+            # This is a mutation. Keep its operation-level owner admission
+            # separate from the trusted-context read boundary.
+            owner_verified=False,
         )
         target = SidebarCommerceReadModel(context_query=context_query, live_source_repo=live_source_repo).periodic_order_remark_target(
             external_userid=external_userid,
             owner_userid=scoped_owner_userid,
-            owner_verified=bool(owner_context.get("owner_verified")),
+            owner_verified=False,
             entitlement_id=entitlement_id,
         )
         result = UpdateServicePeriodMemberRemarkCommand()(

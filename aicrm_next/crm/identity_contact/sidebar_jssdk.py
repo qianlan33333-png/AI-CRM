@@ -152,24 +152,6 @@ async def sidebar_context_token(request: Request) -> Response:
             },
             status_code=403,
         )
-    allowed = build_sidebar_authorization_service().authorize(
-        corp_id=corp_id,
-        user_id=viewer_userid,
-        external_userid=external_userid,
-    )
-    if not allowed:
-        return JSONResponse(
-            {
-                "ok": False,
-                "error_code": "sidebar_customer_scope_forbidden",
-                "sidebar_owner_token": "",
-                "sidebar_owner_token_status": "sidebar_customer_scope_forbidden",
-                "route_owner": "ai_crm_next",
-                "authorization_source": "wecom_active_follow_relation",
-                "real_external_call_executed": False,
-            },
-            status_code=403,
-        )
     ttl_seconds = sidebar_owner_context_ttl_seconds()
     token = build_sidebar_owner_context_token(
         viewer_userid=viewer_userid,
@@ -190,7 +172,7 @@ async def sidebar_context_token(request: Request) -> Response:
                 "corp_id": corp_id,
                 "external_userid": external_userid,
                 "expires_in": ttl_seconds,
-                "source": "wecom_active_follow_relation",
+                "source": "sidebar_context_token_oauth_session",
             },
             "route_owner": "ai_crm_next",
             "real_external_call_executed": False,
