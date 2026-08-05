@@ -16,6 +16,7 @@ from .variants import (
     add_image_variant_urls,
     generate_image_variants,
     pending_image_placeholder,
+    validate_image_source_base64,
     variant_bytes,
 )
 
@@ -144,9 +145,14 @@ class PostgresMediaLibraryRepository:
             redirect_url = trusted_https_image_url(image.get("source_url"))
             if redirect_url:
                 return {"redirect_url": redirect_url, "mime_type": "image/*", "generation_required": False}
+            if not str(image.get("data_base64") or "").strip():
+                raise ContractError("image source is unavailable")
+            validate_image_source_base64(str(image.get("data_base64") or ""))
             size = 160 if variant_key in {"original", "thumb_160"} else 320 if variant_key == "thumb_320" else 720
             return pending_image_placeholder(image_id=image_id_int, size=size)
         payload = variant_bytes(variant)
+        if not payload or not str(variant.get("mime_type") or "").lower().startswith("image/"):
+            raise ContractError("image variant is invalid")
         return {**variant, "bytes": payload, "etag": '"' + str(variant.get("checksum") or "") + '"'}
 
     def get_image_thumbnail(
@@ -171,8 +177,8 @@ class PostgresMediaLibraryRepository:
                         THUMBNAIL_SIZE_TO_VARIANT[size],
                         enabled_only=enabled_only,
                     )
-                    if variant and str(variant.get("mime_type") or "").split(";")[0] in {"image/png", "image/jpeg"}:
-                        payload = variant_bytes(variant)
+                    payload = variant_bytes(variant) if variant else b""
+                    if payload and str(variant.get("mime_type") or "").split(";")[0] in {"image/png", "image/jpeg"}:
                         return {**variant, "bytes": payload, "etag": '"' + str(variant.get("checksum") or "") + '"'}
                 enabled_clause = " AND enabled IS TRUE" if enabled_only else ""
                 cur.execute(
@@ -185,13 +191,14 @@ class PostgresMediaLibraryRepository:
         data_base64 = str(image.get("data_base64") or "")
         mime_type = str(image.get("mime_type") or "image/png")
         if data_base64:
+            validate_image_source_base64(data_base64)
             return pending_image_placeholder(image_id=image_id_int, size=size)
         elif image.get("source_url"):
             redirect_url = trusted_https_image_url(image.get("source_url"))
             if redirect_url:
                 return {"redirect_url": redirect_url, "mime_type": mime_type}
             raise ContractError("remote source fetch is disabled in Next media library")
-        return pending_image_placeholder(image_id=image_id_int, size=size)
+        raise ContractError("image source is unavailable")
 
     def generate_image_variants(self, image_id: str) -> bool:
         try:

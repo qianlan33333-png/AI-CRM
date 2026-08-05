@@ -20,6 +20,83 @@
       state.imageController = new AbortController();
     }
 
+    function renderThumbnailFailure(card, message, retryable) {
+      var cell = card && card.querySelector('.il-thumb');
+      if (!cell) return;
+      if (!retryable) {
+        cell.textContent = message || '预览不可用';
+        return;
+      }
+      cell.innerHTML = '<button type="button" data-image-thumb-retry style="border:0;background:transparent;color:#6b7280;cursor:pointer;font-size:12px;">点击重试</button>';
+      var retryButton = cell.querySelector('[data-image-thumb-retry]');
+      retryButton.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        loadCardThumbnail(card);
+      }, { once: true });
+    }
+
+    function loadCardThumbnail(card) {
+      if (!card || card.dataset.thumbLoading === 'true') return;
+      var item = state.items.find(function (candidate) { return String(candidate.id) === String(card.dataset.id); });
+      if (!item) return;
+      var url = thumbnailUrl(item);
+      var cell = card.querySelector('.il-thumb');
+      if (!cell || !url) {
+        renderThumbnailFailure(card, '预览不可用', false);
+        return;
+      }
+      card.dataset.thumbLoading = 'true';
+      cell.innerHTML = '<span data-image-thumb-status>正在加载</span>';
+      var status = cell.querySelector('[data-image-thumb-status]');
+      var image = document.createElement('img');
+      image.loading = 'lazy';
+      image.decoding = 'async';
+      image.fetchPriority = 'low';
+      image.width = 180;
+      image.height = 180;
+      image.alt = '';
+      image.style.opacity = '0';
+      cell.appendChild(image);
+      if (!window.ImageResourceLoader) {
+        image.addEventListener('load', function () {
+          image.style.opacity = '';
+          if (status.isConnected) status.remove();
+        }, { once: true });
+        image.addEventListener('error', function () { renderThumbnailFailure(card, '预览不可用', false); }, { once: true });
+        image.src = url;
+        delete card.dataset.thumbLoading;
+        return;
+      }
+      window.ImageResourceLoader.loadInto(image, url, {
+        signal: state.imageController ? state.imageController.signal : undefined,
+        cancelOutsideViewport: true,
+        onState: function (nextState) {
+          if (!status.isConnected) return;
+          if (nextState === 'pending') status.textContent = '正在生成';
+          else if (nextState === 'retrying') status.textContent = '正在重试';
+        },
+      }).then(function () {
+        if (!card.isConnected) return;
+        image.style.opacity = '';
+        if (status.isConnected) status.remove();
+      }).catch(function (error) {
+        if (!card.isConnected) return;
+        var parentAborted = Boolean(state.imageController && state.imageController.signal.aborted);
+        if (error && error.name === 'AbortError') {
+          if (error.reason === 'outside_viewport' && !parentAborted && state.thumbObserver) {
+            cell.textContent = '等待加载';
+            delete card.dataset.thumbLoading;
+            state.thumbObserver.observe(card);
+          }
+          return;
+        }
+        renderThumbnailFailure(card, error && error.retryable ? '点击重试' : '预览不可用', Boolean(error && error.retryable));
+      }).finally(function () {
+        delete card.dataset.thumbLoading;
+      });
+    }
+
     function render(items, append) {
       if (!append) resetImages();
       if (!items.length && !state.items.length) {
@@ -49,39 +126,21 @@
         else container.insertAdjacentHTML('beforeend', html);
       }
 
-      if (!state.thumbObserver) {
+      if (!state.thumbObserver && typeof IntersectionObserver !== 'undefined') {
         state.thumbObserver = new IntersectionObserver(function (entries) {
           entries.forEach(function (entry) {
             if (!entry.isIntersecting) return;
             var card = entry.target;
-            var item = state.items.find(function (candidate) { return String(candidate.id) === String(card.dataset.id); });
             state.thumbObserver.unobserve(card);
-            if (!item) return;
-            var url = thumbnailUrl(item);
-            var cell = card.querySelector('.il-thumb');
-            if (!cell || !url) return;
-            var image = document.createElement('img');
-            image.loading = 'lazy';
-            image.decoding = 'async';
-            image.fetchPriority = 'low';
-            image.width = 180;
-            image.height = 180;
-            image.alt = '';
-            cell.textContent = '';
-            cell.appendChild(image);
-            window.ImageResourceLoader.loadInto(image, url, {
-              signal: state.imageController ? state.imageController.signal : undefined,
-              cancelOutsideViewport: true,
-            }).catch(function (error) {
-              if (!(error && error.name === 'AbortError')) cell.textContent = '稍后重试';
-            });
+            loadCardThumbnail(card);
           });
         }, { rootMargin: '60px 0px' });
       }
 
       container.querySelectorAll('.il-card[data-page-unbound="true"]').forEach(function (card) {
         card.removeAttribute('data-page-unbound');
-        state.thumbObserver.observe(card);
+        if (state.thumbObserver) state.thumbObserver.observe(card);
+        else loadCardThumbnail(card);
         card.addEventListener('click', function () {
           var item = state.items.find(function (candidate) { return String(candidate.id) === String(card.dataset.id); });
           if (item) openItem(item);

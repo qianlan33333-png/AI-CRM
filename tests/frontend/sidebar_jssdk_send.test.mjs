@@ -166,5 +166,5 @@ test("product send reports an authorization failure instead of claiming it is ou
 
 
 test("sidebar page invalidates the cached script for the product-send fix", () => {
-  assert.match(templateSource, /sidebar_workbench\.js\?v=20260805-jssdk-send-ready/);
+  assert.match(templateSource, /sidebar_workbench\.js\?v=20260805-material-thumbnails-ready/);
 });

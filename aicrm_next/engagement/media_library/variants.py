@@ -148,42 +148,16 @@ def _encode_thumbnail_image(image: Any, source_mime_type: str) -> tuple[bytes, s
     return output.getvalue(), "image/jpeg"
 
 
-def _fallback_variants(image_id: int | str, raw: bytes, mime_type: str, data_base64: str) -> dict[str, ImageVariant]:
-    payload = data_base64 or base64.b64encode(raw).decode("ascii")
-    size = len(raw)
-    return {
-        key: ImageVariant(
-            image_id=image_id,
-            variant_key=key,
-            storage_backend="db_base64",
-            storage_key=f"image_library/{image_id}/{key}",
-            public_url="",
-            mime_type=mime_type or "image/png",
-            width=0,
-            height=0,
-            file_size=size,
-            checksum=_checksum(raw),
-            data_base64=payload,
-        )
-        for key in VARIANT_KEYS
-    }
-
-
 def generate_image_variants(*, image_id: int | str, data_base64: str, mime_type: str) -> dict[str, ImageVariant]:
-    try:
-        raw = base64.b64decode(data_base64 or "", validate=False)
-    except (binascii.Error, ValueError):
-        raw = b""
-    if not raw:
-        raw = b""
+    raw = validate_image_source_base64(data_base64)
     try:
         from PIL import Image, ImageOps
 
         source = Image.open(BytesIO(raw))
         source = ImageOps.exif_transpose(source)
         source_width, source_height = source.size
-    except Exception:
-        return _fallback_variants(image_id, raw, mime_type or "image/png", data_base64)
+    except Exception as exc:
+        raise ContractError("invalid image data") from exc
 
     variants: dict[str, ImageVariant] = {}
 
@@ -214,7 +188,8 @@ def generate_image_variants(*, image_id: int | str, data_base64: str, mime_type:
             thumb = source.copy()
         else:
             thumb = ImageOps.fit(source, (side, side), method=Image.Resampling.LANCZOS, centering=(0.5, 0.5))
-        add_variant(key, thumb)
+        thumb_payload, thumb_mime = _encode_thumbnail_image(thumb, mime_type)
+        add_variant(key, thumb, thumb_mime, thumb_payload)
 
     preview = source.copy()
     preview.thumbnail((720, 720), Image.Resampling.LANCZOS)
@@ -280,3 +255,19 @@ def decode_image_base64(data_base64: str) -> bytes:
         return base64.b64decode(str(data_base64 or ""), validate=True)
     except (binascii.Error, ValueError) as exc:
         raise ContractError("invalid image data") from exc
+
+
+def validate_image_source_base64(data_base64: str) -> bytes:
+    raw = decode_image_base64(data_base64)
+    if not raw:
+        raise ContractError("image data is empty")
+    try:
+        from PIL import Image, UnidentifiedImageError
+
+        with Image.open(BytesIO(raw)) as image:
+            image.verify()
+    except UnidentifiedImageError as exc:
+        raise ContractError("unsupported image type") from exc
+    except Exception as exc:
+        raise ContractError("invalid image data") from exc
+    return raw

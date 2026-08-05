@@ -996,6 +996,7 @@ def get_sidebar_v2_image_thumbnail(request: Request, background_tasks: Backgroun
         headers["ETag"] = etag
     if payload.get("generation_required"):
         headers["X-AICRM-Media-Generation"] = "pending"
+        headers["Retry-After"] = "1"
     if etag and str(request.headers.get("if-none-match") or "").strip() == etag:
         return Response(status_code=304, headers=headers)
     response = Response(payload.get("body") or b"", media_type=str(payload.get("mime_type") or "image/png"), headers=headers)
