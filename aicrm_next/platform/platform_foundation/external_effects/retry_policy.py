@@ -4,7 +4,16 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-RETRYABLE_ERROR_CODES = {"timeout", "network_error", "rate_limited", "http_408", "http_429", "http_5xx", "adapter_exception"}
+RETRYABLE_ERROR_CODES = {
+    "timeout",
+    "network_error",
+    "rate_limited",
+    "operation_conflict",
+    "http_408",
+    "http_429",
+    "http_5xx",
+    "adapter_exception",
+}
 TERMINAL_ERROR_CODES = {
     "http_400",
     "http_401",
@@ -28,6 +37,8 @@ BLOCKED_ERROR_CODES = {
 
 _BASE_RETRY_SECONDS = 60
 _MAX_RETRY_SECONDS = 3600
+_OPERATION_CONFLICT_BASE_RETRY_SECONDS = 5
+_OPERATION_CONFLICT_MAX_RETRY_SECONDS = 60
 
 
 def classify_error_code(error_code: str, *, status_code: int | None = None) -> str:
@@ -48,8 +59,13 @@ def classify_error_code(error_code: str, *, status_code: int | None = None) -> s
     return "terminal" if code else "blocked"
 
 
-def retry_delay_seconds(attempt_count: int) -> int:
+def retry_delay_seconds(attempt_count: int, *, error_code: str = "") -> int:
     exponent = max(0, min(int(attempt_count or 0), 16))
+    if str(error_code or "").strip() == "operation_conflict":
+        return min(
+            _OPERATION_CONFLICT_MAX_RETRY_SECONDS,
+            _OPERATION_CONFLICT_BASE_RETRY_SECONDS * (2**exponent),
+        )
     return min(_MAX_RETRY_SECONDS, _BASE_RETRY_SECONDS * (2**exponent))
 
 
@@ -59,6 +75,7 @@ def next_retry_at(
     now: datetime | None = None,
     retry_after_seconds: int | float | None = None,
     jitter_ratio: float = 0.2,
+    error_code: str = "",
 ) -> datetime:
     current = now or datetime.now(timezone.utc)
     if current.tzinfo is None:
@@ -70,7 +87,7 @@ def next_retry_at(
             provider_delay = None
         if provider_delay is not None:
             return current + timedelta(seconds=provider_delay)
-    policy_delay = float(retry_delay_seconds(attempt_count))
+    policy_delay = float(retry_delay_seconds(attempt_count, error_code=error_code))
     ratio = max(0.0, min(float(jitter_ratio or 0.0), 0.5))
     if ratio:
         random_unit = secrets.randbelow(2_000_001) / 1_000_000 - 1.0
