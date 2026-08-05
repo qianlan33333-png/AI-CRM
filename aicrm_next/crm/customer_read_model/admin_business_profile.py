@@ -66,7 +66,10 @@ def _questionnaire_answer_text(row: dict[str, Any]) -> str:
         answer = "、".join(str(item) for item in selected if str(item or "").strip())
     else:
         answer = _text(selected)
-    return answer or _text(row.get("text_value"))
+    detail = _text(row.get("text_value"))
+    if answer and detail:
+        return f"{answer}（{detail}）"
+    return answer or detail
 
 
 def _questionnaire_answers_from_submissions(*, external_userid: str, mobile: str = "") -> list[JsonDict]:

@@ -1049,9 +1049,9 @@ class SidebarQuestionnaireReadModel:
 
     def _answer_text(self, row: dict[str, Any]) -> str:
         selected = _json(row.get("selected_option_texts_snapshot"), [])
-        if isinstance(selected, list) and selected:
-            return "、".join(_answer_text_value(item) for item in selected if _answer_text_value(item))
-        return _answer_text_value(row.get("text_value"))
+        selected_text = "、".join(_answer_text_value(item) for item in selected if _answer_text_value(item)) if isinstance(selected, list) else ""
+        detail_text = _answer_text_value(row.get("text_value"))
+        return f"{selected_text}（{detail_text}）" if selected_text and detail_text else selected_text or detail_text
 
 
 class SidebarMaterialReadModel:

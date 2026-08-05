@@ -6,6 +6,7 @@ from time import time
 
 import pytest
 
+from aicrm_next.crm.customer_read_model import admin_business_profile, api as customer_read_api
 from aicrm_next.crm.customer_tags.mutation_commands import PlanWeComTagMarkCommand
 from aicrm_next.crm.identity_contact.domain import (
     normalize_identity_request,
@@ -15,6 +16,7 @@ from aicrm_next.crm.identity_contact.domain import (
 )
 from aicrm_next.crm.identity_contact.dto import BindMobileToExternalContactRequest, ResolvePersonIdentityRequest
 from aicrm_next.crm.identity_contact.sidebar_authorization import SidebarAuthorizationService
+from aicrm_next.crm.customer_read_model.sidebar_v2 import SidebarQuestionnaireReadModel
 from aicrm_next.crm.sidebar_write.commands import BindMobileCommand
 from aicrm_next.platform.shared.errors import ContractError
 from aicrm_next.platform.shared.signed_context import build_sidebar_owner_context_token, validate_sidebar_owner_context
@@ -22,6 +24,35 @@ from aicrm_next.platform.shared.signed_session import sign_session_payload
 
 
 pytestmark = pytest.mark.unit
+
+
+def test_sidebar_questionnaire_other_option_keeps_respondent_detail() -> None:
+    read_model = SidebarQuestionnaireReadModel()
+
+    grouped = read_model._group(
+        [
+            {
+                "submission_id": "submission-1",
+                "questionnaire_id": "questionnaire-1",
+                "questionnaire_title": "来源问卷",
+                "submitted_at": "2026-08-05T10:00:00+08:00",
+                "question": "通过什么渠道了解？",
+                "selected_option_texts_snapshot": ["其他"],
+                "text_value": "线下社群推荐",
+            }
+        ]
+    )
+    assert grouped[0]["answers"] == [{"question": "通过什么渠道了解？", "answer": "其他（线下社群推荐）"}]
+    assert read_model._answer_text(
+        {
+            "selected_option_texts_snapshot": ["公开课", "其他"],
+            "text_value": "朋友转发",
+        }
+    ) == "公开课、其他（朋友转发）"
+    assert read_model._answer_text({"selected_option_texts_snapshot": [], "text_value": "自由填写内容"}) == "自由填写内容"
+    fallback_row = {"selected_option_texts_snapshot": ["其他"], "text_value": "同学推荐"}
+    assert customer_read_api._questionnaire_answer_text(fallback_row) == "其他（同学推荐）"
+    assert admin_business_profile._questionnaire_answer_text(fallback_row) == "其他（同学推荐）"
 
 
 def test_identity_request_normalizes_current_alias_inputs() -> None:
