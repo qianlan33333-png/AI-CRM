@@ -1949,7 +1949,7 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/crm/identity_contact/sidebar_jssdk.py",
       "key": "AICRM_SIDEBAR_JSSDK_ALLOWED_HOSTS",
-      "line": 602
+      "line": 584
     },
     {
       "accessor": "declared_runtime_setting_key",
@@ -3443,7 +3443,7 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/crm/identity_contact/sidebar_jssdk.py",
       "key": "WECOM_CORP_ID",
-      "line": 480
+      "line": 462
     },
     {
       "accessor": "managed_runtime_setting",
@@ -3593,7 +3593,7 @@
       "accessor": "runtime_setting",
       "file": "aicrm_next/crm/identity_contact/sidebar_jssdk.py",
       "key": "WECOM_SECRET",
-      "line": 481
+      "line": 463
     },
     {
       "accessor": "runtime_setting",
