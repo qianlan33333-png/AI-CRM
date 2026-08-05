@@ -63,6 +63,7 @@ function loadHarness(fetchImpl) {
   node("sidebar-workbench-root").dataset = {
     contextTokenUrl: "/api/sidebar/context-token",
     debugEnabled: "false",
+    jssdkConfigUrl: "/api/sidebar/jssdk-config",
     workbenchUrl: "/api/sidebar/v2/workbench",
   };
   const sessionStorage = new Map();
@@ -92,7 +93,7 @@ function loadHarness(fetchImpl) {
   };
   const instrumented = source.replace(
     bootMarker,
-    "  globalThis.__sidebarTokenTestApi = { applySidebarOwnerToken, maybeStartSidebarOAuth, refreshSidebarOwnerToken, requestJson, setExternalUserid, state };\n})();",
+    "  globalThis.__sidebarTokenTestApi = { applySidebarOwnerToken, jssdkConfigUrl, maybeStartSidebarOAuth, refreshSidebarOwnerToken, requestJson, setExternalUserid, state };\n})();",
   );
   const context = {
     AbortController,
@@ -226,4 +227,14 @@ test("manual retry restarts OAuth after an earlier incomplete authorization atte
   assert.equal(api.assignedUrls.length, 1);
   assert.match(api.assignedUrls[0], /\/api\/sidebar\/oauth\/start/);
   assert.match(api.assignedUrls[0], /external_userid=external-b/);
+});
+
+
+test("JSSDK bootstrap declares the identified customer so it can return the OAuth entrypoint", () => {
+  const api = loadHarness(async () => {
+    throw new Error("JSSDK URL construction must not issue a request");
+  });
+  api.setExternalUserid("external-b");
+  const url = new URL(api.jssdkConfigUrl());
+  assert.equal(url.searchParams.get("external_userid"), "external-b");
 });

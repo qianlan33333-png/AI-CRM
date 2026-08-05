@@ -356,6 +356,7 @@
     signedPageUrl.searchParams.delete("sidebar_oauth_error");
     const url = new URL(endpoint("jssdkConfigUrl"), window.location.origin);
     url.searchParams.set("url", signedPageUrl.toString());
+    if (state.external_userid) url.searchParams.set("external_userid", state.external_userid);
     return url.toString();
   }
 

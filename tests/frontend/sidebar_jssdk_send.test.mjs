@@ -165,8 +165,8 @@ test("product send reports an authorization failure instead of claiming it is ou
 });
 
 
-test("sidebar page invalidates the cached script for the OAuth retry fix", () => {
-  assert.match(templateSource, /sidebar_workbench\.js\?v=20260805-oauth-retry/);
+test("sidebar page invalidates the cached script for the OAuth bootstrap fix", () => {
+  assert.match(templateSource, /sidebar_workbench\.js\?v=20260805-oauth-bootstrap/);
 });
 
 
