@@ -3,7 +3,9 @@ from __future__ import annotations
 import psycopg
 import pytest
 
+from aicrm_next.automation.ops_enrollment.repo import SqlAlchemyUserOpsRepository
 from aicrm_next.platform.shared.postgres_connection import PostgresConnection
+from aicrm_next.platform.shared.db_session import get_session_factory, reset_engine_cache_for_tests
 
 
 pytestmark = pytest.mark.postgres
@@ -43,3 +45,36 @@ def test_postgres_connection_commit_is_visible_to_another_session(migrated_datab
         first.commit()
         first.close()
         second.close()
+
+
+def test_user_ops_send_record_repairs_a_sequence_behind_existing_ids(migrated_database_url: str) -> None:
+    with psycopg.connect(migrated_database_url) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute("TRUNCATE user_ops_send_records_next RESTART IDENTITY")
+            cursor.execute(
+                """
+                INSERT INTO user_ops_send_records_next (id, record_key)
+                SELECT value, 'sequence_drift_seed_' || value::text
+                FROM generate_series(1, 100) AS value
+                """
+            )
+            cursor.execute("ALTER SEQUENCE user_ops_send_records_next_id_seq RESTART WITH 1")
+        connection.commit()
+
+    reset_engine_cache_for_tests()
+    session = get_session_factory(migrated_database_url)()
+    try:
+        repository = SqlAlchemyUserOpsRepository(session)
+        created = repository.create_or_get_send_record_by_idempotency(
+            idempotency_key="sequence-drift-recovery",
+            payload={"operator": "current-postgres-test", "content_preview": "sequence recovery"},
+        )
+        assert created["id"] == 101
+        assert created["idempotency_key"] == "sequence-drift-recovery"
+    finally:
+        session.close()
+        reset_engine_cache_for_tests()
+        with psycopg.connect(migrated_database_url) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("TRUNCATE user_ops_send_records_next RESTART IDENTITY")
+            connection.commit()

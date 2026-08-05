@@ -14,8 +14,8 @@
   },
   "migration_contract": {
     "directory": "migrations/versions",
-    "expected_file_count": 180,
-    "expected_head": "0170_release_governance_foundation"
+    "expected_file_count": 181,
+    "expected_head": "0171_user_ops_send_seq"
   },
   "allowed_test_side_effects": [
     "none",

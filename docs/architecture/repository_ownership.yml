@@ -674,6 +674,7 @@ repositories:
       - user_ops_do_not_disturb_next
       - user_ops_pool_current_next
       - user_ops_send_records_next
+      - user_ops_send_records_next_id_seq
     table_writes:
       - user_ops_do_not_disturb_next
       - user_ops_pool_current_next
@@ -681,11 +682,12 @@ repositories:
     non_literal_table_reads:
       - user_ops_do_not_disturb_next
       - user_ops_pool_current_next
-      - user_ops_send_records_next
     non_literal_table_writes:
       - user_ops_do_not_disturb_next
       - user_ops_pool_current_next
       - user_ops_send_records_next
+    non_table_relations:
+      - user_ops_send_records_next_id_seq
   aicrm_next/crm/owner_migration/repo.py:
     capability_owner: aicrm_next.crm.owner_migration
     table_reads:

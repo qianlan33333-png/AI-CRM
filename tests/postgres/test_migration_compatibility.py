@@ -10,7 +10,7 @@ from aicrm_next.platform.release_governance.migration_compatibility import load_
 pytestmark = pytest.mark.postgres
 
 
-def test_current_schema_records_one_forward_compatible_baseline(pg_connection) -> None:
+def test_current_schema_records_the_forward_compatible_migration_chain(pg_connection) -> None:
     manifest = load_migration_compatibility_manifest()
     with pg_connection.cursor() as cursor:
         cursor.execute(
@@ -22,13 +22,17 @@ def test_current_schema_records_one_forward_compatible_baseline(pg_connection) -
             """
         )
         rows = cursor.fetchall()
-    assert [row[0] for row in rows] == [manifest.baseline_revision, manifest.current_head]
-    assert rows[-1][1:] == (
+    assert [row[0] for row in rows] == [
         manifest.baseline_revision,
-        "expand",
-        manifest.compatibility_epoch,
-        True,
-        "forward_only",
+        *(entry.revision for entry in manifest.migrations),
+    ]
+    current = manifest.migrations[-1]
+    assert rows[-1][1:] == (
+        current.parent_revision,
+        current.change_kind,
+        current.compatibility_epoch,
+        current.previous_runtime_compatible,
+        current.downgrade_policy,
     )
 
 
