@@ -504,6 +504,120 @@ class InMemoryCloudPlanRepository:
             "push_center_job_id": f"cloud_plan:{plan_id}",
         }
 
+    def create_or_reuse_batch_send_plan(
+        self,
+        *,
+        external_event_id: str,
+        package_key: str,
+        recipients: list[dict[str, Any]],
+        content_package: dict[str, Any],
+        operator: str,
+        display_name: str,
+    ) -> dict[str, Any]:
+        normalized_event_id = _text(external_event_id)
+        if not normalized_event_id:
+            return {"status": "skipped", "reason": "missing_external_event_id"}
+        plan_id = _agent_plan_id(normalized_event_id)
+        existing = next((item for item in self.plans if item.get("plan_id") == plan_id), None)
+        if existing:
+            return {
+                "status": "reused",
+                "plan_id": plan_id,
+                "review_status": _text(existing.get("review_status")),
+                "run_status": _text(existing.get("run_status")),
+                "recipient_count": sum(1 for item in self.recipients if item.get("plan_id") == plan_id),
+                "message_count": sum(1 for item in self.messages if item.get("plan_id") == plan_id),
+                "broadcast_job_count": sum(
+                    1
+                    for item in self.broadcast_jobs
+                    if _text(item.get("source_id")).startswith(f"{plan_id}:")
+                ),
+            }
+        normalized_recipients: list[dict[str, str]] = []
+        seen_unionids: set[str] = set()
+        for recipient in recipients:
+            unionid = _text(recipient.get("unionid"))
+            owner_userid = _text(recipient.get("owner_userid"))
+            if not unionid or not owner_userid or unionid in seen_unionids:
+                continue
+            seen_unionids.add(unionid)
+            normalized_recipients.append(
+                {
+                    "unionid": unionid,
+                    "owner_userid": owner_userid,
+                    "display_name": _text(recipient.get("customer_name")) or unionid,
+                }
+            )
+        if not normalized_recipients:
+            return {"status": "skipped", "reason": "missing_audience"}
+        now = _now()
+        owner_userids = sorted({item["owner_userid"] for item in normalized_recipients})
+        self.plans.append(
+            {
+                "id": len(self.plans) + len(self.legacy_plans) + 1,
+                "plan_id": plan_id,
+                "display_name": _text(display_name) or f"AI 助手群发审批 · {len(normalized_recipients)} 人",
+                "intent": f"User ops batch review plan {normalized_event_id}",
+                "owner_userid": owner_userids[0] if len(owner_userids) == 1 else "",
+                "candidate_count": len(normalized_recipients),
+                "review_status": "pending_review",
+                "run_status": "draft",
+                "status": "draft",
+                "selection_json": {
+                    "source": "user_ops_batch_send",
+                    "package_key": _text(package_key),
+                    "external_event_id": normalized_event_id,
+                    "owner_userids": owner_userids,
+                },
+                "updated_at": now,
+                "source_type": "cloud_plan",
+            }
+        )
+        content_payload = _content_payload_for_package(content_package)
+        for item in normalized_recipients:
+            recipient_id = len(self.recipients) + 1
+            self.recipients.append(
+                {
+                    "id": recipient_id,
+                    "plan_id": plan_id,
+                    "unionid": item["unionid"],
+                    "owner_userid": item["owner_userid"],
+                    "display_name": item["display_name"],
+                    "planned_message_count": 1,
+                    "approval_status": "pending",
+                    "send_status": "pending",
+                    "updated_at": now,
+                    "source_type": "cloud_plan",
+                }
+            )
+            self.messages.append(
+                {
+                    "id": len(self.messages) + 1,
+                    "plan_id": plan_id,
+                    "recipient_id": recipient_id,
+                    "unionid": item["unionid"],
+                    "sequence_index": 1,
+                    "day_offset": 0,
+                    "send_time": "",
+                    "content_text": _text(content_package.get("content_text")),
+                    "content_payload_json": content_payload,
+                    "attachments_json": [],
+                    "status": "pending",
+                    "source_type": "cloud_plan",
+                }
+            )
+        return {
+            "status": "created",
+            "plan_id": plan_id,
+            "review_status": "pending_review",
+            "run_status": "draft",
+            "recipient_count": len(normalized_recipients),
+            "message_count": len(normalized_recipients),
+            "broadcast_job_count": 0,
+            "downstream_status": "review_plan_pending",
+            "push_center_job_id": f"cloud_plan:{plan_id}",
+        }
+
     def approve_recipient(self, plan_id: str, recipient_id: int, *, operator: str) -> dict[str, Any]:
         plan = self.get_plan(plan_id)
         if not plan:

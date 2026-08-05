@@ -7,6 +7,10 @@ contexts import only this app-level surface so provider implementation modules
 can evolve without creating context-to-context dependencies.
 """
 
+from typing import Protocol
+
+from aicrm_next.platform.shared.typing import JsonDict
+
 from aicrm_next.channels.integration_gateway.channel_completion_client import (
     ChannelCompletionClient,
     ChannelCompletionReadPort,
@@ -118,6 +122,56 @@ from aicrm_next.channels.integration_gateway.wecom_tag_live_gateway import (
     build_wecom_tag_live_gateway,
 )
 
+
+class UserOpsReviewPlanGateway(Protocol):
+    def create_pending_review_plan(
+        self,
+        *,
+        idempotency_key: str,
+        target_source: str,
+        target_source_id: int | None,
+        targets: list[JsonDict],
+        content_package: JsonDict,
+        operator: str,
+    ) -> JsonDict: ...
+
+
+class CloudOrchestratorUserOpsReviewPlanGateway:
+    def create_pending_review_plan(
+        self,
+        *,
+        idempotency_key: str,
+        target_source: str,
+        target_source_id: int | None,
+        targets: list[JsonDict],
+        content_package: JsonDict,
+        operator: str,
+    ) -> JsonDict:
+        from aicrm_next.extensions.growth.cloud_orchestrator.review_plans import (
+            create_ai_assist_batch_review_plan,
+        )
+
+        return create_ai_assist_batch_review_plan(
+            {
+                "external_event_id": idempotency_key,
+                "package_key": (
+                    f"{str(target_source or '').strip()}:{int(target_source_id)}"
+                    if target_source_id is not None
+                    else str(target_source or "user_ops_batch_send").strip()
+                ),
+                "target_source": str(target_source or "").strip(),
+                "target_source_id": target_source_id,
+                "recipients": targets,
+                "content_package": content_package,
+                "operator": str(operator or "admin").strip(),
+                "display_name": f"AI 人群包群发审批 · {len(targets)} 人",
+            }
+        )
+
+
+def build_user_ops_review_plan_gateway() -> UserOpsReviewPlanGateway:
+    return CloudOrchestratorUserOpsReviewPlanGateway()
+
 __all__ = [
     "AlipayAdapter",
     "ChannelCompletionClient",
@@ -135,6 +189,7 @@ __all__ = [
     "UserOpsBatchSendGateway",
     "UserOpsDeferredJobGateway",
     "UserOpsDndWriteGateway",
+    "UserOpsReviewPlanGateway",
     "WeChatOAuthAdapter",
     "WeChatOAuthClientError",
     "WeChatPayAdapter",
@@ -171,6 +226,7 @@ __all__ = [
     "build_user_ops_batch_send_gateway",
     "build_user_ops_deferred_job_gateway",
     "build_user_ops_dnd_gateway",
+    "build_user_ops_review_plan_gateway",
     "build_wechat_oauth_adapter",
     "build_wechat_oauth_client",
     "build_wechat_pay_adapter",

@@ -1438,13 +1438,13 @@
       if (els.includeDndToggle.checked && !els.includeDndConfirmToggle.checked) {
         throw new Error('包含免打扰用户时，需要再次确认');
       }
-      els.batchSendStatus.textContent = '群发执行中...';
+      els.batchSendStatus.textContent = '正在提交 AI 助手审批...';
       els.batchSendStatus.className = 'status-line';
       const result = await fetchJson('/api/admin/user-ops/batch-send/execute', {
         method: 'POST',
         body: buildBatchSendRequestBody({ confirm: true }),
       });
-      els.batchSendStatus.textContent = '群发完成，记录 #' + result.record_id;
+      els.batchSendStatus.textContent = '已提交 AI 助手审批，审批通过后才会发送';
       els.batchSendStatus.className = 'status-line success';
       revokeBatchImageUrls();
       state.batchImages = [];
@@ -1452,6 +1452,9 @@
       clearSelection();
       await loadOverviewAndList();
       await loadSendRecords();
+      if (result.review_status === 'pending_review' && result.plan_url) {
+        window.location.assign(result.plan_url);
+      }
     }
 
     async function loadSendRecordDetail(recordId) {

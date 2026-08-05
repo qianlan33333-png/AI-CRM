@@ -107,6 +107,11 @@
       return;
     }
     const result = await postJson(state.executeUrl, buildRequest(contentPackage, true));
+    if (result.review_status === "pending_review" && result.plan_url) {
+      window.alert(`已提交 AI 助手审批，共 ${Number(result.eligible_count || 0)} 人。审批通过后才会发送。`);
+      window.location.assign(result.plan_url);
+      return;
+    }
     window.alert(`群发任务已创建，记录 #${result.record_id || "-"}`);
   }
 

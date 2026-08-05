@@ -9,9 +9,11 @@ from aicrm_next.integration_ports import (
     UserOpsBatchSendGateway,
     UserOpsDeferredJobGateway,
     UserOpsDndWriteGateway,
+    UserOpsReviewPlanGateway,
     build_user_ops_batch_send_gateway,
     build_user_ops_deferred_job_gateway,
     build_user_ops_dnd_gateway,
+    build_user_ops_review_plan_gateway,
     build_wecom_message_dispatch_adapter,
 )
 from aicrm_next.platform.platform_foundation.audit_ledger import InMemoryAuditLedger
@@ -25,15 +27,7 @@ from aicrm_next.platform.shared.typing import JsonDict
 
 from .dto import BatchSendRequest, BroadcastPreviewRequest, DoNotDisturbRequest, ExportPreviewRequest, UserOpsListRequest
 from .audience_target_port import build_audience_target_query
-from .effect_enqueue import (
-    USER_OPS_BATCH_SEND_ROUTE,
-    build_user_ops_external_effect_gateway,
-    user_ops_send_disabled,
-    user_ops_send_execution_mode,
-    user_ops_send_requires_approval,
-    user_ops_send_risk_level,
-    UserOpsExternalEffectEnqueueGateway,
-)
+from .effect_enqueue import user_ops_send_disabled
 from .repo import UserOpsRepository, build_user_ops_repository, resolve_user_ops_repo_backend
 from .send_record_projection import build_send_record_external_effect_projection
 from .user_ops import apply_filters, build_overview_cards, normalize_filters, resolve_batch_targets
@@ -126,6 +120,34 @@ def _media_refs_from_batch_request(request: BatchSendRequest) -> list[JsonDict]:
             }
         )
     return refs
+
+
+def _content_package_from_batch_request(request: BatchSendRequest) -> JsonDict:
+    package: JsonDict = {
+        "content_text": str(request.content or "").strip(),
+        "image_library_ids": [],
+        "miniprogram_library_ids": [],
+        "attachment_library_ids": [],
+        "group_invite_library_ids": [],
+    }
+    for image in request.images:
+        item = image if isinstance(image, dict) else {}
+        if item.get("library_id"):
+            package["image_library_ids"].append(item["library_id"])
+    attachment_field = {
+        "miniprogram": "miniprogram_library_ids",
+        "file": "attachment_library_ids",
+        "link": "group_invite_library_ids",
+    }
+    for attachment in request.attachments:
+        item = attachment if isinstance(attachment, dict) else {}
+        msgtype = str(item.get("msgtype") or "").strip().lower()
+        payload = item.get(msgtype) if isinstance(item.get(msgtype), dict) else {}
+        library_id = payload.get("library_id") or item.get("library_id")
+        field = attachment_field.get(msgtype)
+        if field and library_id:
+            package[field].append(library_id)
+    return package
 
 
 def _generated_batch_send_idempotency_key(request: BatchSendRequest, preview: JsonDict) -> str:
@@ -734,11 +756,11 @@ class ExecuteUserOpsBatchSendCommand:
         self,
         repo: UserOpsRepository | None = None,
         batch_gateway: UserOpsBatchSendGateway | None = None,
-        effect_gateway: UserOpsExternalEffectEnqueueGateway | None = None,
+        review_plan_gateway: UserOpsReviewPlanGateway | None = None,
     ) -> None:
         self._repo = repo
         self._batch_gateway = batch_gateway or build_user_ops_batch_send_gateway()
-        self._effect_gateway = effect_gateway or build_user_ops_external_effect_gateway()
+        self._review_plan_gateway = review_plan_gateway or build_user_ops_review_plan_gateway()
 
     def execute(self, request: BatchSendRequest, *, idempotency_key: str = "") -> JsonDict:
         repo = self._repo or _default_repo()
@@ -753,15 +775,38 @@ class ExecuteUserOpsBatchSendCommand:
             if int(preview["eligible_count"] or 0) <= 0:
                 raise ContractError("no eligible targets")
 
-            media_refs = _media_refs_from_batch_request(request)
             execute_idempotency_key = str(idempotency_key or "").strip() or _generated_batch_send_idempotency_key(request, preview)
-            requires_approval = user_ops_send_requires_approval()
-            execution_mode = user_ops_send_execution_mode()
-            risk_level = user_ops_send_risk_level()
-            initial_status = "planned" if requires_approval else "queued"
+            plan_result = self._review_plan_gateway.create_pending_review_plan(
+                idempotency_key=execute_idempotency_key,
+                target_source=str(request.target_source or "").strip(),
+                target_source_id=request.target_source_id,
+                targets=preview["final_targets"],
+                content_package=_content_package_from_batch_request(request),
+                operator=request.operator,
+            )
+            if not plan_result.get("ok"):
+                raise ContractError(str(plan_result.get("error") or "review plan create failed"))
+            plan_id = str(plan_result.get("plan_id") or "").strip()
+            if not plan_id:
+                raise ContractError("review plan id is required")
+            if str(plan_result.get("review_status") or "") != "pending_review":
+                raise ContractError("review plan must remain pending review")
+            if str(plan_result.get("run_status") or "") != "draft":
+                raise ContractError("review plan must remain draft")
+            if int(plan_result.get("broadcast_job_count") or 0) != 0:
+                raise ContractError("review plan created send jobs before approval")
+            review_task = {
+                "task_id": f"cloud_plan:{plan_id}",
+                "task_type": "ai_assist_review_plan",
+                "status": "pending_review",
+                "plan_id": plan_id,
+                "plan_url": str(plan_result.get("plan_url") or f"/admin/cloud-orchestrator/plans/{plan_id}"),
+                "recipient_count": int(plan_result.get("recipient_count") or 0),
+                "message_count": int(plan_result.get("message_count") or 0),
+            }
             record_payload = {
                 "idempotency_key": execute_idempotency_key,
-                "execution_backend": "external_effect_queue",
+                "execution_backend": "ai_assist_review_plan",
                 "target_source": str(request.target_source or "").strip(),
                 "target_source_id": request.target_source_id,
                 "selected_count": preview["selected_count"],
@@ -779,78 +824,57 @@ class ExecuteUserOpsBatchSendCommand:
                 "target_unionids": preview["target_unionids"],
                 "filter_snapshot": preview["filters"],
                 "operator": request.operator,
-                "status": initial_status,
-                "status_label": "待审批" if requires_approval else "排队中",
-                "planned_count": preview["eligible_count"] if requires_approval else 0,
-                "queued_count": 0 if requires_approval else preview["eligible_count"],
+                "status": "planned",
+                "status_label": "AI 助手待审批",
+                "planned_count": preview["eligible_count"],
+                "queued_count": 0,
                 "external_effect_status_summary": {},
-                "task_results": [],
+                "task_results": [review_task],
             }
             record = repo.create_or_get_send_record_by_idempotency(
                 idempotency_key=execute_idempotency_key,
                 payload=record_payload,
             )
-            command_id = hashlib.sha256(execute_idempotency_key.encode("utf-8")).hexdigest()[:32]
-            job_results = self._effect_gateway.enqueue_wecom_private_message_jobs(
-                record_id=record["record_id"],
-                targets=preview["final_targets"],
-                content=request.content,
-                media_refs=media_refs,
-                operator=request.operator,
-                source_route=USER_OPS_BATCH_SEND_ROUTE,
-                idempotency_key=execute_idempotency_key,
-                command_id=command_id,
-                requires_approval=requires_approval,
-                execution_mode=execution_mode,
-                risk_level=risk_level,
-            )
-            failed_jobs = [job for job in job_results if not job.get("ok")]
-            if failed_jobs:
-                first = failed_jobs[0]
-                raise ContractError(first.get("error_message") or first.get("error_code") or "external effect enqueue failed")
-            updated_record = repo.attach_external_effect_jobs(record["record_id"], job_results)
-            external_effect_job_ids = [int(job["job_id"]) for job in job_results if int(job.get("job_id") or 0) > 0]
-            planned_count = int(updated_record.get("planned_count") or 0)
-            queued_count = int(updated_record.get("queued_count") or 0)
-            blocked_count = int(updated_record.get("blocked_count") or 0)
-            next_step = "requires_approval" if planned_count else ("blocked" if blocked_count else "external_effect_worker")
             execution_summary = {
-                "backend": "external_effect_queue",
-                "external_effect_job_count": len(external_effect_job_ids),
-                "task_count": len(external_effect_job_ids),
-                "sent_count": int(updated_record.get("succeeded_count") or 0),
-                "planned_count": planned_count,
-                "queued_count": queued_count,
-                "blocked_count": blocked_count,
-                "external_effect_status_supported": True,
+                "backend": "ai_assist_review_plan",
+                "external_effect_job_count": 0,
+                "broadcast_job_count": 0,
+                "task_count": 1,
+                "sent_count": 0,
+                "planned_count": int(preview["eligible_count"] or 0),
+                "queued_count": 0,
+                "blocked_count": 0,
+                "external_effect_status_supported": False,
                 "wecom_delivery_status_supported": False,
                 "delivery_status_supported": False,
-                "requires_approval": requires_approval,
-                "execution_mode": execution_mode,
-                "next_step": next_step,
+                "requires_approval": True,
+                "execution_mode": "approval_gated",
+                "next_step": "ai_assist_review",
                 "side_effect_safety": _user_ops_side_effect_safety(),
             }
             return {
                 "ok": True,
                 **preview,
-                "record_id": updated_record["record_id"],
-                "execution_backend": "external_effect_queue",
-                "external_effect_job_ids": external_effect_job_ids,
-                "external_effect_jobs": job_results,
-                "sent_count": int(updated_record.get("succeeded_count") or 0),
-                "planned_count": planned_count,
-                "queued_count": queued_count,
-                "blocked_count": blocked_count,
+                "record_id": record["record_id"],
+                "execution_backend": "ai_assist_review_plan",
+                "plan_id": plan_id,
+                "plan_url": review_task["plan_url"],
+                "review_status": "pending_review",
+                "run_status": "draft",
+                "external_effect_job_ids": [],
+                "external_effect_jobs": [],
+                "broadcast_job_count": 0,
+                "sent_count": 0,
+                "planned_count": int(preview["eligible_count"] or 0),
+                "queued_count": 0,
+                "blocked_count": 0,
                 "execution_summary": execution_summary,
-                "task_results": job_results,
+                "task_results": [review_task],
                 "real_external_call_executed": False,
-                "next_step": next_step,
-                "send_record_url": f"/api/admin/user-ops/send-records/{updated_record['record_id']}",
-                "external_effect_jobs_url": (
-                    "/api/admin/external-effects/jobs"
-                    f"?business_type=user_ops_batch_send&business_id={updated_record['record_id']}"
-                ),
-                "external_effect_status_supported": True,
+                "next_step": "ai_assist_review",
+                "send_record_url": f"/api/admin/user-ops/send-records/{record['record_id']}",
+                "external_effect_jobs_url": "",
+                "external_effect_status_supported": False,
                 "wecom_delivery_status_supported": False,
                 "delivery_status_supported": False,
                 "side_effect_safety": _user_ops_side_effect_safety(),
@@ -921,7 +945,11 @@ class GetUserOpsSendRecordQuery:
                 "status_note": (
                     "当前支持 external_effect_job 执行状态投影，暂不支持企微终端送达状态。"
                     if external_effect_supported
-                    else "旧发送记录只保留 legacy fake 任务创建结果，不轮询企业微信送达状态。"
+                    else (
+                        "该任务已进入 AI 助手待审批；审批通过前不会创建发送任务。"
+                        if record.get("execution_backend") == "ai_assist_review_plan"
+                        else "旧发送记录只保留 legacy fake 任务创建结果，不轮询企业微信送达状态。"
+                    )
                 ),
             }
         finally:
