@@ -709,10 +709,7 @@ def _assert_snapshot_owner_scope(
     identity: dict[str, Any],
     binding: dict[str, Any],
 ) -> None:
-    if owner_verified:
-        # Trusted sidebar context already binds the viewer, corp, customer, and
-        # OAuth session; owner snapshots remain display/operations metadata only.
-        return
+    if owner_verified: return
     owner_candidates = _snapshot_owner_candidates(
         repo=repo,
         external_userid=external_userid,
@@ -927,7 +924,6 @@ class SidebarWorkbenchReadModel:
         except Exception:
             if _text(owner_userid) and not owner_verified:
                 raise
-            pass
         repo = self._live_source_repo
         owned_repo = repo is None
         try:

@@ -189,11 +189,7 @@ def _customer_owner_candidates(customer: JsonDict) -> set[str]:
 
 
 def _assert_customer_owner_scope(customer: JsonDict, owner_userid: str | None, *, require_owner: bool = False, owner_verified: bool = False) -> None:
-    if owner_verified:
-        # A sidebar grant is already bound to the OAuth employee, corp, customer,
-        # and session. A lagging owner/follow projection is operational metadata,
-        # not a second authorization source for that trusted customer context.
-        return
+    if owner_verified: return
     requested_owner = str(owner_userid or "").strip()
     candidates = _customer_owner_candidates(customer)
     if requested_owner and requested_owner in candidates:
