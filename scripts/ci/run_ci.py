@@ -175,6 +175,13 @@ def main() -> int:
     deadline = started_at + TIER_TIMEOUTS[selection.tier]
     print(json.dumps(selection.to_dict(), ensure_ascii=False, sort_keys=True))
 
+    _run(
+        [sys.executable, "scripts/ci/check_release_gate_manifest.py"],
+        name="release-gate-manifest",
+        deadline=deadline,
+        environment=_environment(postgres=False),
+    )
+
     if selection.tier in {"high_risk", "full"}:
         _run(
             ["bash", "scripts/ci/run_architecture_gates.sh", "--mode", "full"],

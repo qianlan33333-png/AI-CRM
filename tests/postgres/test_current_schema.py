@@ -19,6 +19,7 @@ CRITICAL_CURRENT_TABLES = {
     "wechat_pay_orders",
     "service_period_entitlements",
     "data_health_snapshot",
+    "schema_release_compatibility",
     "config_releases",
     "ai_audience_package",
 }
@@ -45,7 +46,16 @@ def test_identity_and_queue_columns_match_current_runtime_contract(pg_connection
         for table_name, column_name in cursor.fetchall():
             columns.setdefault(table_name, set()).add(column_name)
     assert {"unionid", "primary_external_userid", "primary_openid"} <= columns["crm_user_identity"]
-    assert {"tenant_id", "idempotency_key", "lane", "lease_token", "status"} <= columns["external_effect_job"]
+    assert {
+        "tenant_id",
+        "idempotency_key",
+        "lane",
+        "lease_token",
+        "status",
+        "created_release_sha",
+        "processed_release_sha",
+        "health_classification_code",
+    } <= columns["external_effect_job"]
     assert {"idempotency_key", "status", "attempt_count"} <= columns["webhook_inbox"]
 
 

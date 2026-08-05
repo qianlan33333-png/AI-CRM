@@ -7,6 +7,7 @@ from typing import Any
 
 from aicrm_next.platform.platform_foundation.external_calls import scrub_summary
 from aicrm_next.platform.shared.runtime_settings import managed_runtime_setting
+from aicrm_next.platform.shared.release import current_release_sha
 from aicrm_next.platform.shared.sensitive_data import redact_sensitive_text
 
 from .models import (
@@ -43,6 +44,30 @@ def _safe_error_message(value: Any) -> str:
 
 def _json_dumps(value: Any) -> str:
     return json.dumps(value if value is not None else {}, ensure_ascii=False, default=str, separators=(",", ":"))
+
+
+def _release_sha() -> str:
+    value = _text(current_release_sha()).lower()
+    return value if len(value) == 40 and all(character in "0123456789abcdef" for character in value) else "unknown"
+
+
+def _health_classification_code(status: str, error_code: str, response_summary: dict[str, Any]) -> str:
+    normalized_status = _text(status)
+    normalized_error = _text(error_code)
+    if (
+        normalized_status == "failed_terminal"
+        and normalized_error == "wecom_error_41051"
+        and _text(response_summary.get("errcode")) == "41051"
+        and response_summary.get("wecom_send_executed") is False
+    ):
+        return "known_business_terminal_wecom_welcome_window_closed"
+    if normalized_status == "failed_terminal":
+        return "unclassified_terminal"
+    if normalized_status == "blocked":
+        return "unclassified_blocked"
+    if normalized_status == "failed_retryable":
+        return "retryable"
+    return ""
 
 
 def _json_obj(value: Any) -> dict[str, Any]:

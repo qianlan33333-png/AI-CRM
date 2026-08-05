@@ -12,7 +12,7 @@ PostgreSQL 16 回归只在 GitHub Actions 的单 runner 中运行，或由维护
 - `tests/postgres/test_current_schema.py`：验证当前领域表、身份字段、队列字段、索引和数据库约束。
 - `tests/postgres/test_repository_transactions.py`：验证事务 rollback、commit 可见性和参数转换。
 - `tests/postgres/test_external_effect_idempotency.py`：验证并发创建只留下一个 durable external effect。
-- `tests/release/test_migration_head.py`：main exact-SHA release gate 再次确认数据库处于行为清单声明的 head。
+- `tests/release/test_migration_readiness.py`：main exact-SHA release gate 再次确认数据库处于行为清单声明的 head。
 
 新增数据库行为时，测试必须放在 `tests/postgres/`，使用真实 PostgreSQL 语义和当前 repository，不得增加 SQLite 替代路径。
 

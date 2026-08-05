@@ -437,37 +437,43 @@
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/insights/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_BROADCAST_BLOCKED_MAX_COUNT",
-      "line": 42
+      "line": 39
     },
     {
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/insights/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_BROADCAST_RETRYABLE_DUE_MAX_COUNT",
-      "line": 47
+      "line": 44
     },
     {
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/insights/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_BROADCAST_TERMINAL_LOOKBACK_HOURS",
-      "line": 54
+      "line": 51
     },
     {
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/insights/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_RETRYABLE_DUE_MAX_COUNT",
-      "line": 60
+      "line": 57
+    },
+    {
+      "accessor": "managed_runtime_int",
+      "file": "aicrm_next/insights/data_health/checks.py",
+      "key": "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_RETRYABLE_SLA_SECONDS",
+      "line": 62
     },
     {
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/insights/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS",
-      "line": 67
+      "line": 69
     },
     {
       "accessor": "managed_runtime_int",
       "file": "aicrm_next/insights/data_health/checks.py",
       "key": "AICRM_DATA_HEALTH_PROJECTION_FRESHNESS_MAX_MINUTES",
-      "line": 37
+      "line": 34
     },
     {
       "accessor": "runtime_setting",
@@ -2483,7 +2489,7 @@
       "accessor": "os.getenv",
       "file": "scripts/ops/check_ai_audience_send_records_release.py",
       "key": "DATABASE_URL",
-      "line": 22
+      "line": 21
     },
     {
       "accessor": "os.getenv",
@@ -2645,7 +2651,7 @@
       "accessor": "os.environ.get",
       "file": "scripts/ci/run_ci.py",
       "key": "GITHUB_ACTIONS",
-      "line": 197
+      "line": 204
     },
     {
       "accessor": "os.environ.get",
@@ -3179,7 +3185,7 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/platform/platform_foundation/external_effects/repo_contract.py",
       "key": "WECOM_AGENT_ID",
-      "line": 210
+      "line": 235
     },
     {
       "accessor": "managed_runtime_setting",
@@ -3491,7 +3497,7 @@
       "accessor": "managed_runtime_setting",
       "file": "aicrm_next/platform/platform_foundation/external_effects/repo_contract.py",
       "key": "WECOM_CORP_ID",
-      "line": 196
+      "line": 221
     },
     {
       "accessor": "managed_runtime_setting",
@@ -3671,6 +3677,7 @@
     "AICRM_DATA_HEALTH_BROADCAST_RETRYABLE_DUE_MAX_COUNT",
     "AICRM_DATA_HEALTH_BROADCAST_TERMINAL_LOOKBACK_HOURS",
     "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_RETRYABLE_DUE_MAX_COUNT",
+    "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_RETRYABLE_SLA_SECONDS",
     "AICRM_DATA_HEALTH_EXTERNAL_EFFECT_TERMINAL_LOOKBACK_HOURS",
     "AICRM_DATA_HEALTH_PROJECTION_FRESHNESS_MAX_MINUTES",
     "AICRM_DYNAMIC_MINIPROGRAM_CARD_V1_ENABLED",
@@ -4894,7 +4901,7 @@
     }
   ],
   "migration_heads": [
-    "0169_operation_cycle_codex_actions"
+    "0170_release_governance_foundation"
   ],
   "openapi_components": {
     "schemas": {
@@ -53718,6 +53725,19 @@
       ],
       "table": "schema_migrations",
       "write_owner": "legacy.production_runtime"
+    },
+    {
+      "domain": "platform_foundation",
+      "drop_candidate": false,
+      "lifecycle": "audit",
+      "migration_source": "0170_release_governance_foundation",
+      "pii_level": "none",
+      "read_owners": [
+        "aicrm_next.platform.platform_foundation.readiness",
+        "trusted release governance"
+      ],
+      "table": "schema_release_compatibility",
+      "write_owner": "migrations.versions"
     },
     {
       "domain": "campaign",

@@ -64,7 +64,7 @@ jobs:
 
             from aicrm_next.insights.data_health.checks import (
                 _customer_360_freshness_guard,
-                _external_effect_failed_retryable_backlog,
+                _external_effect_delivery_checks,
                 _wecom_media_lease_health,
             )
             from aicrm_next.platform.shared.db_session import get_session_factory
@@ -443,7 +443,9 @@ jobs:
             print(
                 json.dumps(
                     {
-                        "external_effect_health": payload(_external_effect_failed_retryable_backlog()),
+                        "external_effect_health": [
+                            payload(item) for item in _external_effect_delivery_checks()
+                        ],
                         "customer_360_freshness": payload(_customer_360_freshness_guard()),
                         "wecom_media_lease_health": payload(_wecom_media_lease_health()),
                         "recent_external_effect_groups": grouped,

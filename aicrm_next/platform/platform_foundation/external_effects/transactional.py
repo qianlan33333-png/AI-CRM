@@ -8,7 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from .models import DEFAULT_TENANT_ID, ExternalEffectCreateRequest, ExternalEffectJob, public_datetime, utcnow
-from .repo import _execution_lane, _idempotency_key, _initial_status, _payload_summary, _public_job, _rate_scope_key
+from .repo import _execution_lane, _idempotency_key, _initial_status, _payload_summary, _public_job, _rate_scope_key, _release_sha
 
 
 def _json(value: Any) -> str:
@@ -42,7 +42,8 @@ def enqueue_transactional_external_effect_job(conn: Any, request: ExternalEffect
             ordering_key, fairness_key, rate_scope_key, policy_version,
             actor_id, actor_type, risk_level, requires_approval, execution_mode,
             payload_json, payload_summary_json, status, priority, scheduled_at,
-            attempt_count, max_attempts, created_at, updated_at
+            attempt_count, max_attempts, created_release_sha, processed_release_sha,
+            created_at, updated_at
         ) VALUES (
             %s, %s, %s, %s, %s, %s,
             %s, %s, %s, %s, %s,
@@ -52,7 +53,7 @@ def enqueue_transactional_external_effect_job(conn: Any, request: ExternalEffect
             (SELECT policy_version FROM queue_runtime_control WHERE singleton = TRUE FOR SHARE),
             %s, %s, %s, %s, %s,
             %s::jsonb, %s::jsonb, %s, %s, %s::timestamptz,
-            0, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            0, %s, %s, 'unknown', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
         )
         ON CONFLICT (tenant_id, idempotency_key) DO NOTHING
         RETURNING *
@@ -92,6 +93,7 @@ def enqueue_transactional_external_effect_job(conn: Any, request: ExternalEffect
             int(request.priority or 100),
             public_datetime(scheduled_at),
             int(request.max_attempts or 5),
+            _release_sha(),
         ),
     ).fetchone()
     if not row:
@@ -156,6 +158,7 @@ def enqueue_external_effect_job_in_session(session: Session, request: ExternalEf
         "priority": int(request.priority or 100),
         "scheduled_at": public_datetime(scheduled_at),
         "max_attempts": int(request.max_attempts or 5),
+        "created_release_sha": _release_sha(),
     }
     row = (
         session.execute(
@@ -169,7 +172,8 @@ def enqueue_external_effect_job_in_session(session: Session, request: ExternalEf
                     ordering_key, fairness_key, rate_scope_key, policy_version,
                     actor_id, actor_type, risk_level, requires_approval, execution_mode,
                     payload_json, payload_summary_json, status, priority, scheduled_at,
-                    attempt_count, max_attempts, created_at, updated_at
+                    attempt_count, max_attempts, created_release_sha, processed_release_sha,
+                    created_at, updated_at
                 ) VALUES (
                     :tenant_id, :effect_type, :adapter_name, :operation, :target_type, :target_id,
                     :business_type, :business_id, :source_module, :source_route, :source_event_id,
@@ -180,6 +184,7 @@ def enqueue_external_effect_job_in_session(session: Session, request: ExternalEf
                     :actor_id, :actor_type, :risk_level, :requires_approval, :execution_mode,
                     CAST(:payload_json AS jsonb), CAST(:payload_summary_json AS jsonb), :status,
                     :priority, CAST(:scheduled_at AS timestamptz), 0, :max_attempts,
+                    :created_release_sha, 'unknown',
                     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
                 )
                 ON CONFLICT (tenant_id, idempotency_key) DO NOTHING

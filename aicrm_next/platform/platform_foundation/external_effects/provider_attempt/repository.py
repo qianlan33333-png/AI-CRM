@@ -9,7 +9,7 @@ from sqlalchemy import text
 from aicrm_next.platform.platform_foundation.external_calls import scrub_summary
 
 from ..models import ExternalEffectAttempt, ExternalEffectJob
-from ..repo_contract import _json_dumps, _public_attempt, _public_job, _text
+from ..repo_contract import _json_dumps, _public_attempt, _public_job, _release_sha, _text
 from ..settlement_events import enqueue_external_effect_terminal_events_in_session
 
 
@@ -77,12 +77,12 @@ class ExternalEffectProviderAttemptRepositoryMixin:
                             attempt_id, job_id, adapter_name, adapter_mode, operation, trace_id,
                             request_id, lease_token, request_hash, provider_call_started_at,
                             worker_generation, status, request_summary_json, response_summary_json,
-                            error_code, error_message, started_at, completed_at
+                            error_code, error_message, processed_release_sha, started_at, completed_at
                         ) VALUES (
                             :attempt_id, :job_id, :adapter_name, :adapter_mode, :operation, :trace_id,
                             :request_id, :lease_token, :request_hash, CURRENT_TIMESTAMP,
                             :worker_generation, 'dispatching', CAST(:request_summary AS jsonb), '{}'::jsonb,
-                            '', '', CURRENT_TIMESTAMP, NULL
+                            '', '', :processed_release_sha, CURRENT_TIMESTAMP, NULL
                         )
                         RETURNING *
                         """
@@ -99,6 +99,7 @@ class ExternalEffectProviderAttemptRepositoryMixin:
                         "request_hash": request_hash,
                         "worker_generation": int(current.get("worker_generation") or job.worker_generation or 0),
                         "request_summary": _json_dumps(summary),
+                        "processed_release_sha": _release_sha(),
                     },
                 )
                 .mappings()
@@ -151,6 +152,8 @@ class ExternalEffectProviderAttemptRepositoryMixin:
                             reconciliation_required = FALSE,
                             last_error_code = 'provider_deadline_elapsed',
                             last_error_message = 'Provider deadline elapsed before dispatch; replay is prohibited.',
+                            processed_release_sha = :processed_release_sha,
+                            health_classification_code = 'provider_deadline_expired',
                             result_summary_json = result_summary_json || jsonb_build_object(
                                 'provider_deadline_elapsed', TRUE,
                                 'provider_boundary_crossed', FALSE,
@@ -170,7 +173,11 @@ class ExternalEffectProviderAttemptRepositoryMixin:
                         RETURNING *
                         """
                     ),
-                    {"job_id": int(job.id), "lease_token": lease_token},
+                    {
+                        "job_id": int(job.id),
+                        "lease_token": lease_token,
+                        "processed_release_sha": _release_sha(),
+                    },
                 )
                 .mappings()
                 .fetchone()

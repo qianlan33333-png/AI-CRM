@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 from aicrm_next.platform.shared.runtime import production_repository_required
 from aicrm_next.platform.shared.safe_logging import safe_log_exception
+from aicrm_next.platform.release_governance.manifest import data_health_registry_digest, load_release_gate_manifest
 
 from .checks import run_all_checks
 from .dto import DataHealthCheckResult, DataHealthSummary
@@ -62,14 +63,22 @@ def data_health_summary(
         return resolved
     checks = resolved
     counts = {"ok": 0, "warn": 0, "fail": 0, "not_applicable": 0}
+    gate_counts = {"pass": 0, "warn": 0, "block": 0}
     for check in checks:
         counts[check.status] += 1
-    overall_status = "fail" if counts["fail"] else "warn" if counts["warn"] else "ok"
+        gate_counts[str(check.gate_decision)] += 1
+    manifest = load_release_gate_manifest()
+    actual_ids = tuple(sorted(check.check_id for check in checks))
+    registry_matches = actual_ids == manifest.data_health_check_ids
+    overall_status = "fail" if gate_counts["block"] or not registry_matches else "warn" if gate_counts["warn"] else "ok"
     return DataHealthSummary(
-        ok=counts["fail"] == 0,
+        ok=gate_counts["block"] == 0 and registry_matches,
         overall_status=overall_status,
         counts=counts,
         checks=list(checks),
+        gate_counts=gate_counts,
+        registry_sha256=data_health_registry_digest(actual_ids),
+        registry_matches_manifest=registry_matches,
     ).model_dump()
 
 
@@ -82,9 +91,13 @@ def data_health_checks(
     if isinstance(resolved, dict):
         return resolved
     checks = resolved
+    manifest = load_release_gate_manifest()
+    actual_ids = tuple(sorted(check.check_id for check in checks))
     return {
-        "ok": all(check.status != "fail" for check in checks),
+        "ok": all(check.gate_decision != "block" for check in checks) and actual_ids == manifest.data_health_check_ids,
         "checks": [check.model_dump() for check in checks],
+        "registry_sha256": data_health_registry_digest(actual_ids),
+        "registry_matches_manifest": actual_ids == manifest.data_health_check_ids,
     }
 
 
@@ -105,4 +118,4 @@ def data_health_check_detail(
             "error_code": "data_health_check_not_found",
             "check_id": check_id,
         }
-    return {"ok": result.status != "fail", "check": result.model_dump()}
+    return {"ok": result.gate_decision != "block", "check": result.model_dump()}

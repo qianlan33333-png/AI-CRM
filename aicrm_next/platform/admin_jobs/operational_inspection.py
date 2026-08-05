@@ -388,12 +388,20 @@ def _external_flow_sql() -> str:
 
 def _external_health_snapshot_sql() -> str:
     return """
-        SELECT item.check_item -> 'evidence' AS evidence,
+        SELECT jsonb_object_agg(
+                   item.check_item ->> 'check_id',
+                   item.check_item -> 'evidence'
+               ) AS evidence_by_check,
                snapshot.captured_at
         FROM data_health_snapshot snapshot
         CROSS JOIN LATERAL jsonb_array_elements(snapshot.checks_json) AS item(check_item)
         WHERE snapshot.singleton IS TRUE
-          AND item.check_item ->> 'check_id' = 'external_effect_failed_retryable_backlog'
+          AND item.check_item ->> 'check_id' IN (
+              'external_effect_due_retryable_backlog',
+              'external_effect_unclassified_terminal_recent',
+              'external_effect_unclassified_blocked_recent'
+          )
+        GROUP BY snapshot.captured_at
         LIMIT 1
     """
 
@@ -468,7 +476,24 @@ def _normalize_external(
     *,
     window_end: datetime,
 ) -> dict[str, Any]:
-    evidence = health_snapshot.get("evidence") or {}
+    evidence_by_check = health_snapshot.get("evidence_by_check") or {}
+    if isinstance(evidence_by_check, str):
+        try:
+            evidence_by_check = json.loads(evidence_by_check)
+        except ValueError:
+            evidence_by_check = {}
+    if isinstance(evidence_by_check, dict) and evidence_by_check:
+        evidence = {}
+        for check_id in (
+            "external_effect_due_retryable_backlog",
+            "external_effect_unclassified_terminal_recent",
+            "external_effect_unclassified_blocked_recent",
+        ):
+            value = evidence_by_check.get(check_id)
+            if isinstance(value, dict):
+                evidence.update(value)
+    else:
+        evidence = health_snapshot.get("evidence") or {}
     if isinstance(evidence, str):
         try:
             evidence = json.loads(evidence)

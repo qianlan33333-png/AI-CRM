@@ -38,6 +38,8 @@ class ExternalEffectCanaryAuthorizationRepositoryMixin:
                         TRUE
                     ),
                     status = CASE WHEN status = 'blocked' THEN 'queued' ELSE status END,
+                    processed_release_sha = CASE WHEN status = 'blocked' THEN 'unknown' ELSE processed_release_sha END,
+                    health_classification_code = CASE WHEN status = 'blocked' THEN '' ELSE health_classification_code END,
                     last_error_code = CASE WHEN status = 'blocked' THEN '' ELSE last_error_code END,
                     last_error_message = CASE WHEN status = 'blocked' THEN '' ELSE last_error_message END,
                     completed_at = CASE WHEN status = 'blocked' THEN NULL ELSE completed_at END,

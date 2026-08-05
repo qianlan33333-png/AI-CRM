@@ -92,6 +92,7 @@ CAPABILITY_SPECS: tuple[CapabilitySpec, ...] = (
             "external_push",
             "navigation_target",
             "platform_foundation",
+            "release_governance",
             "shared",
         ),
         route_groups=(

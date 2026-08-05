@@ -27,6 +27,8 @@ def connect_operation_members_db() -> Any | None:
 
 
 ConnectionFactory = Callable[[str], AbstractContextManager[Any]]
+READINESS_STATEMENT_TIMEOUT_MS = 5_000
+READINESS_LOCK_TIMEOUT_MS = 1_000
 
 
 def _connect_readiness_db(database_url: str) -> AbstractContextManager[Any]:
@@ -37,6 +39,10 @@ def _connect_readiness_db(database_url: str) -> AbstractContextManager[Any]:
         _psycopg_url(database_url),
         autocommit=True,
         connect_timeout=3,
+        options=(
+            f"-c statement_timeout={READINESS_STATEMENT_TIMEOUT_MS} "
+            f"-c lock_timeout={READINESS_LOCK_TIMEOUT_MS}"
+        ),
         row_factory=dict_row,
     )
 
@@ -65,6 +71,17 @@ class RuntimeReadinessRepository:
     def migration_revisions(self) -> tuple[str, ...]:
         rows = self._execute("SELECT version_num FROM alembic_version ORDER BY version_num").fetchall()
         return tuple(sorted(str(row.get("version_num") or "").strip() for row in rows if row.get("version_num")))
+
+    def migration_compatibility_rows(self) -> tuple[dict[str, Any], ...]:
+        rows = self._execute(
+            """
+            SELECT revision, parent_revision, change_kind, compatibility_epoch,
+                   previous_runtime_compatible, downgrade_policy
+            FROM schema_release_compatibility
+            ORDER BY applied_at ASC, revision ASC
+            """
+        ).fetchall()
+        return tuple(dict(row) for row in rows)
 
     def queue_metrics(
         self,
