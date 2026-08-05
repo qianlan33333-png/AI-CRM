@@ -24,6 +24,7 @@ RUNTIME_SETTING_KEYS = frozenset(
         "AICRM_READINESS_MAX_TERMINAL_COUNT",
     }
 )
+QUEUE_PROBE_BUDGET_ERROR_CLASSES = frozenset({"LockNotAvailable", "QueryCanceled"})
 
 
 def _component(status: str, *, critical: bool, **details: Any) -> dict[str, Any]:
@@ -212,7 +213,29 @@ def runtime_readiness_payload(
                 try:
                     components["queues"] = _probe_queues(repository)
                 except Exception as exc:
-                    components["queues"] = _component("failed", critical=True, metrics={}, warnings=[], error_class=_safe_error(exc))
+                    error_class = _safe_error(exc)
+                    if error_class in QUEUE_PROBE_BUDGET_ERROR_CLASSES:
+                        components["queues"] = _component(
+                            "warning",
+                            critical=True,
+                            metrics={},
+                            warnings=["queue_probe_budget_exhausted"],
+                            reason_code="queue_probe_budget_exhausted",
+                            error_class=error_class,
+                            candidate_related=False,
+                            authoritative_gate="data_health_registry",
+                            remediation="run the read-only data-health release gate",
+                        )
+                    else:
+                        components["queues"] = _component(
+                            "failed",
+                            critical=True,
+                            metrics={},
+                            warnings=[],
+                            reason_code="queue_probe_failed",
+                            error_class=error_class,
+                            candidate_related="unknown",
+                        )
         except Exception as exc:
             failure = _component("failed", critical=True, error_class=_safe_error(exc))
             components["database"] = dict(failure, ping=False)

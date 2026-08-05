@@ -749,7 +749,7 @@ jobs:
               exit 1
             fi
             python3 scripts/ops/manage_production_runtime_units.py --phase verify-staged-runtime --execute
-            curl -sSf http://127.0.0.1:5001/api/system/health \
+            python3 scripts/ops/check_runtime_readiness.py --base-url http://127.0.0.1:5001 \
               | tee /tmp/aicrm-runtime-readiness.json
             # Count-only R06 reconciliation. This command never repairs rows or executes consumers/providers.
             python scripts/ops/reconcile_internal_event_outbox.py \
