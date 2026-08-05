@@ -159,6 +159,16 @@ class CloudPlanRepository(Protocol):
         operator: str,
         requires_review: bool = False,
     ) -> dict[str, Any]: ...
+    def create_or_reuse_batch_send_plan(
+        self,
+        *,
+        external_event_id: str,
+        package_key: str,
+        recipients: list[dict[str, Any]],
+        content_package: dict[str, Any],
+        operator: str,
+        display_name: str,
+    ) -> dict[str, Any]: ...
     def approve_recipient(self, plan_id: str, recipient_id: int, *, operator: str) -> dict[str, Any]: ...
     def reject_recipient(self, plan_id: str, recipient_id: int, *, operator: str, reason: str = "") -> dict[str, Any]: ...
     def update_recipient_message(
@@ -1107,6 +1117,157 @@ class PostgresCloudPlanRepository(CloudLegacyPostgresRepositoryMixin):
             "recipient_id": recipient_id,
             "message_id": message_id,
             "downstream_status": "send_plan_pending",
+            "push_center_job_id": f"cloud_plan:{plan_id}",
+        }
+
+    def create_or_reuse_batch_send_plan(
+        self,
+        *,
+        external_event_id: str,
+        package_key: str,
+        recipients: list[dict[str, Any]],
+        content_package: dict[str, Any],
+        operator: str,
+        display_name: str,
+    ) -> dict[str, Any]:
+        normalized_event_id = _text(external_event_id)
+        if not normalized_event_id:
+            return {"status": "skipped", "reason": "missing_external_event_id"}
+        normalized_recipients: list[dict[str, str]] = []
+        seen_unionids: set[str] = set()
+        for recipient in recipients:
+            unionid = _text(recipient.get("unionid"))
+            owner_userid = _text(recipient.get("owner_userid"))
+            if not unionid or not owner_userid or unionid in seen_unionids:
+                continue
+            seen_unionids.add(unionid)
+            normalized_recipients.append(
+                {
+                    "unionid": unionid,
+                    "owner_userid": owner_userid,
+                    "display_name": _text(recipient.get("customer_name")) or unionid,
+                }
+            )
+        if not normalized_recipients:
+            return {"status": "skipped", "reason": "missing_audience"}
+
+        plan_id = _agent_plan_id(normalized_event_id)
+        content_payload = _content_payload_for_package(content_package)
+        projection = build_cloud_broadcast_projection_write_port()
+        with self._connect() as conn:
+            existing_plan = conn.execute(
+                "SELECT * FROM cloud_broadcast_plans WHERE plan_id = %s FOR UPDATE",
+                (plan_id,),
+            ).fetchone()
+            if existing_plan:
+                counts = conn.execute(
+                    """
+                    SELECT
+                        (SELECT COUNT(*) FROM cloud_broadcast_plan_recipients WHERE plan_id = %s) AS recipient_count,
+                        (SELECT COUNT(*) FROM cloud_broadcast_plan_recipient_messages WHERE plan_id = %s) AS message_count,
+                        (SELECT COUNT(*) FROM broadcast_jobs WHERE source_type = 'cloud_plan' AND source_id LIKE %s) AS broadcast_job_count
+                    """,
+                    (plan_id, plan_id, f"{plan_id}:%"),
+                ).fetchone()
+                return {
+                    "status": "reused",
+                    "plan_id": plan_id,
+                    "review_status": _text(existing_plan.get("review_status")),
+                    "run_status": _text(existing_plan.get("run_status")),
+                    "recipient_count": int((counts or {}).get("recipient_count") or 0),
+                    "message_count": int((counts or {}).get("message_count") or 0),
+                    "broadcast_job_count": int((counts or {}).get("broadcast_job_count") or 0),
+                }
+
+            owner_userids = sorted({item["owner_userid"] for item in normalized_recipients})
+            conn.execute(
+                """
+                INSERT INTO cloud_broadcast_plans (
+                    plan_id, trace_id, session_id, operator, intent, display_name, owner_userid,
+                    selection_json, content_strategy, max_recipients, candidate_count,
+                    explanation_json, status, review_status, run_status, created_at, updated_at
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s,
+                    %s::jsonb, 'agent_generated_batch', %s, %s,
+                    %s::jsonb, 'draft', 'pending_review', 'draft', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                )
+                """,
+                (
+                    plan_id,
+                    normalized_event_id,
+                    normalized_event_id,
+                    _text(operator) or "admin",
+                    f"User ops batch review plan {normalized_event_id}",
+                    _text(display_name) or f"AI 助手群发审批 · {len(normalized_recipients)} 人",
+                    owner_userids[0] if len(owner_userids) == 1 else "",
+                    _json_dump(
+                        {
+                            "source": "user_ops_batch_send",
+                            "package_key": _text(package_key),
+                            "external_event_id": normalized_event_id,
+                            "owner_userids": owner_userids,
+                        }
+                    ),
+                    len(normalized_recipients),
+                    len(normalized_recipients),
+                    _json_dump(
+                        {
+                            "review_required": True,
+                            "auto_approve_allowed": False,
+                            "direct_external_effect_allowed": False,
+                        }
+                    ),
+                ),
+            )
+            message_ids: list[int] = []
+            for item in normalized_recipients:
+                recipient = projection.upsert_agent_recipient_dbapi(
+                    conn,
+                    plan_id=plan_id,
+                    unionid=item["unionid"],
+                    owner_userid=item["owner_userid"],
+                    display_name=item["display_name"],
+                    approval_status="pending",
+                )
+                recipient_id = int((recipient or {}).get("id") or 0)
+                if recipient_id <= 0:
+                    raise RuntimeError("review_plan_recipient_create_failed")
+                message_ids.append(
+                    projection.upsert_agent_message_dbapi(
+                        conn,
+                        plan_id=plan_id,
+                        recipient_id=recipient_id,
+                        unionid=item["unionid"],
+                        content_text=_text(content_package.get("content_text")),
+                        content_payload_json=_json_dump(content_payload),
+                    )
+                )
+            self._audit(
+                conn,
+                operator=_text(operator) or "admin",
+                action_type="user_ops_batch_review_plan_create",
+                target_type="cloud_broadcast_plan",
+                target_id=plan_id,
+                before={},
+                after={
+                    "plan_id": plan_id,
+                    "recipient_count": len(normalized_recipients),
+                    "message_count": len([item for item in message_ids if item > 0]),
+                    "review_status": "pending_review",
+                    "run_status": "draft",
+                    "broadcast_job_count": 0,
+                },
+            )
+            conn.commit()
+        return {
+            "status": "created",
+            "plan_id": plan_id,
+            "review_status": "pending_review",
+            "run_status": "draft",
+            "recipient_count": len(normalized_recipients),
+            "message_count": len([item for item in message_ids if item > 0]),
+            "broadcast_job_count": 0,
+            "downstream_status": "review_plan_pending",
             "push_center_job_id": f"cloud_plan:{plan_id}",
         }
 
