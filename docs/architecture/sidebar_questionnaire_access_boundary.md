@@ -6,9 +6,9 @@
 
 | Surface | 入口数 | 认证与授权 | PII 风险 | R04 决策 |
 | --- | ---: | --- | --- | --- |
-| Sidebar bootstrap（JSSDK、OAuth start/callback） | 3 | 企微 OAuth；callback 再查当前 owner/follow | 员工、客户标识 | 只允许 OAuth viewer session 签发 v2 context |
-| Sidebar read | 16 | v2 signed context + OAuth session + customer + corp + 当前 owner/follow | 手机号、标签、问卷摘要、订单 | 无可信 viewer 或关系即 401/403；不返回 PII |
-| Sidebar write | 9 | 与 read 相同，并在 CommandBus 前再次查询当前关系 | 客户资料和状态修改 | actor/owner 固定来自可信 context；body/query 只能一致，不能覆盖 |
+| Sidebar bootstrap（JSSDK、OAuth start/callback、context-token） | 4 | 企微 OAuth session + 短期客户绑定 token | 员工、客户标识 | token 签发不查询 owner/follow 投影 |
+| Sidebar read | 16 | v2 signed context + OAuth session + customer + corp | 手机号、标签、问卷摘要、订单 | 无可信 viewer 或 token 作用域不一致即 401/403；不返回 PII |
+| Sidebar write | 9 | 可信 token；CommandBus 前保留操作级 owner 准入 | 客户资料和状态修改 | actor/owner 固定来自可信 context；body/query 只能一致，不能覆盖 |
 | Customer read/detail（external、unionid、mobile） | 13 | 后台入口走 admin session capability；sidebar 入口走 staff owner scope | 手机号、unionid、标签、答案与消息 | identity resolve 仅定位，不代表授权；读数据前仍校验 capability/scope |
 | Public questionnaire result | 1 | 随机 result token + 短期 HttpOnly grant cookie | 答案、身份与评分 | URL 单独不再是 bearer；跨浏览器、过期、tamper、顺序 ID 均为 403 |
 | Admin questionnaire result/submission | 2 | admin session + `admin_read` capability | 问卷答案与身份 | 保留后台合法读取，不复用公共 grant |
@@ -17,12 +17,12 @@ Sidebar 页面 `/sidebar/bind-mobile` 保持原 URL。前端继续从 JSSDK boot
 
 ## 唯一可信链
 
-1. OAuth callback 取得企微员工 userid。
-2. 服务端查询目标 external contact 当前有效 follow、identity map 或 canonical owner 关系；历史 first/last owner 不参与授权。
-3. 服务端写入 HttpOnly viewer session，包含 corp、customer、随机 session id。
-4. JSSDK bootstrap 签发 15 分钟 v2 context，绑定 viewer、customer、corp 与 session-id 指纹。
-5. 中间件和 endpoint 都只从 header + cookie 读取可信 context；query token、query/header viewer、admin session 代替 sidebar OAuth 均被拒绝。
-6. read model 在 identity resolve 后再次核对当前 owner/follow；write model 在命令执行前再次查询关系，因此已撤权关系不能靠旧 token 重放。
+1. OAuth callback 取得企微员工 userid，并写入含 employee、corp 与随机 session id 的 HttpOnly viewer session。
+2. 当前企微侧边栏客户由 `POST /api/sidebar/context-token` 提供；服务端只在 session、corp 与输入完整性通过后签发该客户的短期 token，不查询 owner/follow 投影。
+3. token 绑定 viewer、customer、corp 与 session-id 指纹。
+4. 中间件和 read endpoint 只从 header + cookie 读取可信 context；query token、query/header viewer、admin session 代替 sidebar OAuth 均被拒绝。
+5. read model 可读取客户投影用于展示，但不得把 owner/follow 同步结果作为已签发 trusted context 的二次授权条件。
+6. 写操作仍在 CommandBus 前执行各自的 operation-level 准入；这不是侧边栏读取授权的来源。
 
 ## 已删除路径
 
@@ -72,12 +72,12 @@ python scripts/ops/check_sidebar_questionnaire_access.py \
 
 | 场景 | 结果 |
 | --- | --- |
-| 合法 viewer + customer + session + current relation | 正常读写 |
+| 合法 viewer + customer + session（即使 follow 投影尚未同步） | 正常读取 |
 | forged owner/actor | 403，无 PII |
 | 跨员工、跨客户、跨 corp | 403，无 PII |
 | token tamper、purpose mismatch、过期 | 401/403，无 PII |
 | token 在新 OAuth session 重放 | 403，无 PII |
-| follow relation 在签发后撤销 | write 前重查并 403 |
+| follow relation 在签发后变化 | 不影响已签发 token 的读取；写操作按各自 operation-level 准入处理 |
 | result 顺序 submission id | 403 |
 | result URL 复制到另一浏览器 | 403 |
 | result grant tamper/过期 | 403 |

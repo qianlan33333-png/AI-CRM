@@ -7,6 +7,8 @@ from time import time
 import pytest
 
 from aicrm_next.crm.customer_read_model import admin_business_profile, api as customer_read_api
+from aicrm_next.crm.customer_read_model.application import _assert_customer_owner_scope
+from aicrm_next.crm.customer_read_model.errors import CustomerScopeForbiddenError
 from aicrm_next.crm.customer_tags.mutation_commands import PlanWeComTagMarkCommand
 from aicrm_next.crm.identity_contact.domain import (
     normalize_identity_request,
@@ -16,9 +18,9 @@ from aicrm_next.crm.identity_contact.domain import (
 )
 from aicrm_next.crm.identity_contact.dto import BindMobileToExternalContactRequest, ResolvePersonIdentityRequest
 from aicrm_next.crm.identity_contact.sidebar_authorization import SidebarAuthorizationService
-from aicrm_next.crm.customer_read_model.sidebar_v2 import SidebarQuestionnaireReadModel
+from aicrm_next.crm.customer_read_model.sidebar_v2 import SidebarQuestionnaireReadModel, SidebarWorkbenchReadModel, _assert_snapshot_owner_scope
 from aicrm_next.crm.sidebar_write.commands import BindMobileCommand
-from aicrm_next.platform.shared.errors import ContractError
+from aicrm_next.platform.shared.errors import ContractError, NotFoundError
 from aicrm_next.platform.shared.signed_context import build_sidebar_owner_context_token, validate_sidebar_owner_context
 from aicrm_next.platform.shared.signed_session import sign_session_payload
 
@@ -179,3 +181,64 @@ def test_viewer_session_can_switch_customers_without_cross_customer_token_replay
     assert replay["ok"] is False
     assert replay["status"].endswith("scope_forbidden")
     assert replay["context"] == {}
+
+
+def test_trusted_sidebar_context_skips_lagging_follow_relation_projections() -> None:
+    customer = {"identity": {"follow_user_userid": "staff-from-stale-projection"}}
+    with pytest.raises(CustomerScopeForbiddenError):
+        _assert_customer_owner_scope(customer, "staff-in-oauth-session", require_owner=True)
+    _assert_customer_owner_scope(
+        customer,
+        "staff-in-oauth-session",
+        require_owner=True,
+        owner_verified=True,
+    )
+
+    class SnapshotRepository:
+        def get_contact_owner_userids(self, _external_userid: str) -> list[str]:
+            return ["staff-from-stale-projection"]
+
+    with pytest.raises(CustomerScopeForbiddenError):
+        _assert_snapshot_owner_scope(
+            repo=SnapshotRepository(),
+            external_userid="external-a",
+            owner_userid="staff-in-oauth-session",
+            owner_verified=False,
+            contact={},
+            identity={},
+            binding={},
+        )
+    _assert_snapshot_owner_scope(
+        repo=SnapshotRepository(),
+        external_userid="external-a",
+        owner_userid="staff-in-oauth-session",
+        owner_verified=True,
+        contact={},
+        identity={},
+        binding={},
+    )
+
+
+def test_trusted_sidebar_context_can_use_live_customer_source_when_projection_is_missing() -> None:
+    def missing_projection(_request: object) -> dict:
+        raise NotFoundError("customer not found")
+
+    class LiveSource:
+        def get_customer(self, external_userid: str) -> dict:
+            return {"external_userid": external_userid, "customer_name": "当前企微客户"}
+
+    model = SidebarWorkbenchReadModel(context_query=missing_projection, live_source_repo=LiveSource())
+    context, diagnostics = model._context(
+        "external-a",
+        owner_userid="staff-in-oauth-session",
+        owner_verified=True,
+    )
+    assert context["customer"]["external_userid"] == "external-a"
+    assert diagnostics["context_source_status"] == "live_source"
+
+    with pytest.raises(NotFoundError):
+        model._context(
+            "external-a",
+            owner_userid="staff-in-oauth-session",
+            owner_verified=False,
+        )

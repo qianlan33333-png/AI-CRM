@@ -17,6 +17,7 @@ from aicrm_next.main import create_app
 from aicrm_next.platform.admin_auth.action_token import issue_action_token, validate_action_token
 from aicrm_next.platform.admin_auth.capabilities import capabilities_for_roles
 from aicrm_next.platform.platform_foundation.auth_platform.context import AuthContext, PrincipalType
+from aicrm_next.platform.shared.signed_context import validate_sidebar_owner_context
 from aicrm_next.platform.shared.signed_session import sign_session_payload, sign_state_payload, verify_session_payload
 
 
@@ -117,20 +118,19 @@ def test_action_token_rejects_expiry_tampering_and_safe_methods() -> None:
         )
 
 
-def test_sidebar_context_token_uses_http_only_viewer_identity_and_follow_relation(
+def test_sidebar_context_token_uses_http_only_viewer_identity_without_follow_relation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("WECOM_CORP_ID", "corp-a")
-    captured: list[dict[str, str]] = []
 
     class RelationService:
         def authorize(self, **kwargs) -> bool:
-            captured.append(dict(kwargs))
-            return kwargs["external_userid"] == "external-a"
+            raise AssertionError(f"context-token must not query follow relation: {kwargs}")
 
     monkeypatch.setattr(
         "aicrm_next.crm.identity_contact.sidebar_jssdk.build_sidebar_authorization_service",
         lambda: RelationService(),
+        raising=False,
     )
     client = TestClient(create_app(), raise_server_exceptions=False)
     client.cookies.set(
@@ -146,12 +146,35 @@ def test_sidebar_context_token_uses_http_only_viewer_identity_and_follow_relatio
         ),
     )
     issued = client.post("/api/sidebar/context-token", json={"external_userid": "external-a"})
-    denied = client.post("/api/sidebar/context-token", json={"external_userid": "external-b"})
+    switched = client.post("/api/sidebar/context-token", json={"external_userid": "external-b"})
     assert issued.status_code == 200
     assert issued.json()["sidebar_owner_token_status"] == "issued"
-    assert denied.status_code == 403
-    assert denied.json()["error_code"] == "sidebar_customer_scope_forbidden"
-    assert captured[0] == {"corp_id": "corp-a", "user_id": "staff-a", "external_userid": "external-a"}
+    assert issued.json()["sidebar_owner_context"]["source"] == "sidebar_context_token_oauth_session"
+    assert switched.status_code == 200
+    assert switched.json()["sidebar_owner_token_status"] == "issued"
+    assert issued.json()["sidebar_owner_token"] != switched.json()["sidebar_owner_token"]
+
+    viewer_session = client.cookies.get(SIDEBAR_VIEWER_COOKIE)
+    assert validate_sidebar_owner_context(
+        token=issued.json()["sidebar_owner_token"],
+        viewer_session_cookie=viewer_session,
+        external_userid="external-a",
+        expected_corp_id="corp-a",
+    )["ok"]
+    assert validate_sidebar_owner_context(
+        token=switched.json()["sidebar_owner_token"],
+        viewer_session_cookie=viewer_session,
+        external_userid="external-b",
+        expected_corp_id="corp-a",
+    )["ok"]
+    replay = validate_sidebar_owner_context(
+        token=issued.json()["sidebar_owner_token"],
+        viewer_session_cookie=viewer_session,
+        external_userid="external-b",
+        expected_corp_id="corp-a",
+    )
+    assert replay["ok"] is False
+    assert replay["status"] == "sidebar_customer_scope_forbidden"
 
 
 def test_sidebar_oauth_cookie_is_employee_scoped_and_callback_url_is_clean(
