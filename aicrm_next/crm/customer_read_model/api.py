@@ -220,7 +220,10 @@ def _questionnaire_answer_text(row: dict) -> str:
         answer = "、".join(str(item) for item in selected if str(item or "").strip())
     else:
         answer = str(selected or "").strip()
-    return answer or str(row.get("text_value") or "").strip()
+    detail = str(row.get("text_value") or "").strip()
+    if answer and detail:
+        return f"{answer}（{detail}）"
+    return answer or detail
 
 
 def _profile_questionnaire_answers_from_submissions(*, external_userid: str, mobile: str = "") -> list[dict]:
