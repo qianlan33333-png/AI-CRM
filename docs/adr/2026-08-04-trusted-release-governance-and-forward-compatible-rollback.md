@@ -60,6 +60,11 @@ PR 上只更新一条合并决策评论，并明确区分：
 只有候选 `processed_release_sha` 新产生或新处理出的 blocker，以及启动、路由、
 schema、owner 或 exact-SHA 回归，才能触发回切。
 
+候选 `/api/system/health` 的同步队列聚合只提供有界观测，不重复承担 data-health
+发布判定。该查询因 statement/lock budget 耗尽时输出
+`queue_probe_budget_exhausted` warning，并指向已在切换前执行的
+`data_health_registry` 权威门禁；未知 SQL、连接、schema 错误仍 fail-closed。
+
 ## Migration 与回滚
 
 `deploy/migration_compatibility.json` 和 `schema_release_compatibility` 共同定义线性

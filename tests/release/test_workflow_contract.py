@@ -51,3 +51,5 @@ def test_promotion_and_deploy_preserve_exact_sha_lock_health_and_rollback() -> N
     assert "x-aicrm-release-sha" in deploy.lower()
     assert "cleanup_deploy" in deploy
     assert "before_sha" in deploy
+    assert "scripts/ops/check_runtime_readiness.py" in deploy
+    assert "tee /tmp/aicrm-runtime-readiness.json" in deploy
