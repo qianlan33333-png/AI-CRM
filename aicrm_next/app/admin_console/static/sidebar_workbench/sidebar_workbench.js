@@ -106,6 +106,8 @@
     jssdkConfigRequests: new Map(),
     jssdkConfigCache: new Map(),
     contextTokenRequests: new Map(),
+    weComSdkReady: null,
+    weComSdkInitPromise: null,
     bootDeadline: 0,
     timelineRequestVersion: 0,
     materialRequestVersion: 0,
@@ -365,13 +367,13 @@
     return Math.max(1, Math.min(fallbackMs || SDK_TIMEOUT_MS, state.bootDeadline - Date.now()));
   }
 
-  async function requestJssdkConfig() {
+  async function requestJssdkConfig(timeoutMs) {
     const url = jssdkConfigUrl();
     const cached = readJssdkConfigCache(url);
     if (cached) return cached;
     const pending = state.jssdkConfigRequests.get(url);
     if (pending) return pending;
-    const request = requestJson(url, { timeoutMs: remainingStartupBudget(SDK_TIMEOUT_MS), retryCount: 0 })
+    const request = requestJson(url, { timeoutMs: Math.max(1, Number(timeoutMs) || SDK_TIMEOUT_MS), retryCount: 0 })
       .then((payload) => {
         writeJssdkConfigCache(url, payload);
         return payload;
@@ -1634,10 +1636,25 @@
     throw new Error(String((res || {}).errmsg || errMsg || "发送失败"));
   }
 
+  function weComSendUnavailableMessage(sdkReady) {
+    const reason = String((sdkReady || {}).reason || "");
+    if (reason === "jssdk_config_failed" && sdkReady && sdkReady.error) return String(sdkReady.error);
+    if (reason === "wx_config_failed" || reason === "agentConfig_failed") {
+      return "企微侧边栏授权失败，请关闭后重新打开";
+    }
+    if (reason === "sdk_timeout") return "企微侧边栏授权超时，请重试";
+    if (reason === "wx_missing" || reason === "agentConfig_missing" || reason === "wx_invoke_missing") {
+      return "企微发送能力未加载，请从企微客户侧边栏重新打开";
+    }
+    return "企微发送能力暂不可用，请重试";
+  }
+
   async function sendLinkToCurrentChat(payload) {
     const sdkReady = await initWeComSdk();
     if (!sdkReady.ok || !window.wx || typeof window.wx.invoke !== "function") {
-      throw new Error("请在企微侧边栏内发送");
+      throw new Error(weComSendUnavailableMessage(
+        sdkReady.ok ? { ok: false, reason: "wx_invoke_missing" } : sdkReady
+      ));
     }
     const res = await invokeWeCom("sendChatMessage", {
       msgtype: "news",
@@ -1656,7 +1673,9 @@
   async function sendImageToCurrentChat(mediaId) {
     const sdkReady = await initWeComSdk();
     if (!sdkReady.ok || !window.wx || typeof window.wx.invoke !== "function") {
-      throw new Error("请在企微侧边栏内发送");
+      throw new Error(weComSendUnavailableMessage(
+        sdkReady.ok ? { ok: false, reason: "wx_invoke_missing" } : sdkReady
+      ));
     }
     const res = await invokeWeCom("sendChatMessage", {
       msgtype: "image",
@@ -1722,69 +1741,83 @@
     return Boolean(state.external_userid);
   }
 
-  async function initWeComSdk() {
+  async function initWeComSdk(options) {
+    if (state.weComSdkReady) return state.weComSdkReady;
+    if (state.weComSdkInitPromise) return state.weComSdkInitPromise;
     if (!window.wx) return { ok: false, status: WORKBENCH_STATES.sdk_unavailable, reason: "wx_missing" };
-    let configPayload;
-    try {
-      configPayload = await requestJssdkConfig();
-      applySidebarOwnerToken(configPayload);
-      writeDebug("jssdk config response", {
-        has_config: Boolean(configPayload && configPayload.config),
-        has_agent_config: Boolean(configPayload && configPayload.agent_config),
-        owner_token_status: state.sidebar_owner_token_status,
-      });
-    } catch (error) {
-      writeDebug("jssdk config error", { message: error.message || String(error) });
-      return { ok: false, status: WORKBENCH_STATES.sdk_unavailable, reason: "jssdk_config_failed", error: error.message || String(error) };
-    }
-    return await new Promise((resolve) => {
-      let resolved = false;
-      const timer = window.setTimeout(() => finish(false, "sdk_timeout"), remainingStartupBudget(SDK_TIMEOUT_MS));
-      const finish = (ok, reason) => {
-        if (!resolved) {
-          resolved = true;
-          window.clearTimeout(timer);
-          resolve({ ok, status: ok ? WORKBENCH_STATES.identifying_customer : WORKBENCH_STATES.sdk_unavailable, reason: reason || "" });
-        }
-      };
-      window.wx.config({
-        beta: true,
-        debug: false,
-        appId: configPayload.corp_id,
-        timestamp: Number(configPayload.config.timestamp),
-        nonceStr: configPayload.config.nonceStr,
-        signature: configPayload.config.signature,
-        jsApiList: ["sendChatMessage"],
-      });
-      window.wx.ready(function () {
-        writeDebug("wx.config success", { url: configPayload.config.url });
-        if (typeof window.wx.agentConfig !== "function") {
-          finish(false, "agentConfig_missing");
-          return;
-        }
-        window.wx.agentConfig({
-          corpid: configPayload.corp_id,
-          agentid: String(configPayload.agent_id),
-          timestamp: Number(configPayload.agent_config.timestamp),
-          nonceStr: configPayload.agent_config.nonceStr,
-          signature: configPayload.agent_config.signature,
-          jsApiList: ["getCurExternalContact", "sendChatMessage"],
-          success: function (res) {
-            writeDebug("wx.agentConfig success", res || {});
-            applyWeComViewerIdentity(res || {}, "agentConfig", { allowUserId: true });
-            finish(true, "");
-          },
-          fail: function (err) {
-            writeDebug("wx.agentConfig fail", err || {});
-            finish(false, "agentConfig_failed");
-          },
+    const useStartupBudget = Boolean(options && options.useStartupBudget);
+    const timeoutForStage = () => useStartupBudget ? remainingStartupBudget(SDK_TIMEOUT_MS) : SDK_TIMEOUT_MS;
+    const initialize = async () => {
+      let configPayload;
+      try {
+        configPayload = await requestJssdkConfig(timeoutForStage());
+        applySidebarOwnerToken(configPayload);
+        writeDebug("jssdk config response", {
+          has_config: Boolean(configPayload && configPayload.config),
+          has_agent_config: Boolean(configPayload && configPayload.agent_config),
+          owner_token_status: state.sidebar_owner_token_status,
+        });
+      } catch (error) {
+        writeDebug("jssdk config error", { message: error.message || String(error) });
+        return { ok: false, status: WORKBENCH_STATES.sdk_unavailable, reason: "jssdk_config_failed", error: error.message || String(error) };
+      }
+      return await new Promise((resolve) => {
+        let resolved = false;
+        const timer = window.setTimeout(() => finish(false, "sdk_timeout"), timeoutForStage());
+        const finish = (ok, reason) => {
+          if (!resolved) {
+            resolved = true;
+            window.clearTimeout(timer);
+            resolve({ ok, status: ok ? WORKBENCH_STATES.identifying_customer : WORKBENCH_STATES.sdk_unavailable, reason: reason || "" });
+          }
+        };
+        window.wx.config({
+          beta: true,
+          debug: false,
+          appId: configPayload.corp_id,
+          timestamp: Number(configPayload.config.timestamp),
+          nonceStr: configPayload.config.nonceStr,
+          signature: configPayload.config.signature,
+          jsApiList: ["sendChatMessage"],
+        });
+        window.wx.ready(function () {
+          writeDebug("wx.config success", { url: configPayload.config.url });
+          if (typeof window.wx.agentConfig !== "function") {
+            finish(false, "agentConfig_missing");
+            return;
+          }
+          window.wx.agentConfig({
+            corpid: configPayload.corp_id,
+            agentid: String(configPayload.agent_id),
+            timestamp: Number(configPayload.agent_config.timestamp),
+            nonceStr: configPayload.agent_config.nonceStr,
+            signature: configPayload.agent_config.signature,
+            jsApiList: ["getCurExternalContact", "sendChatMessage"],
+            success: function (res) {
+              writeDebug("wx.agentConfig success", res || {});
+              applyWeComViewerIdentity(res || {}, "agentConfig", { allowUserId: true });
+              finish(true, "");
+            },
+            fail: function (err) {
+              writeDebug("wx.agentConfig fail", err || {});
+              finish(false, "agentConfig_failed");
+            },
+          });
+        });
+        window.wx.error(function (err) {
+          writeDebug("wx.config fail", err || {});
+          finish(false, "wx_config_failed");
         });
       });
-      window.wx.error(function (err) {
-        writeDebug("wx.config fail", err || {});
-        finish(false, "wx_config_failed");
-      });
-    });
+    };
+    state.weComSdkInitPromise = initialize();
+    try {
+      const result = await state.weComSdkInitPromise;
+      if (result.ok) state.weComSdkReady = result;
+      return result;
+    } finally {
+      state.weComSdkInitPromise = null;
+    }
   }
 
   function invokeWeCom(method, payload, timeoutMs) {
@@ -1811,7 +1844,7 @@
   }
 
   async function resolveContextFromWeCom() {
-    const sdkReady = await initWeComSdk();
+    const sdkReady = await initWeComSdk({ useStartupBudget: true });
     if (!sdkReady.ok || !window.wx || typeof window.wx.invoke !== "function") return sdkReady;
     try {
       const res = await invokeWeCom("getCurExternalContact", {}, remainingStartupBudget(SDK_TIMEOUT_MS));
