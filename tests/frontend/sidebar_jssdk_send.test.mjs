@@ -165,6 +165,12 @@ test("product send reports an authorization failure instead of claiming it is ou
 });
 
 
-test("sidebar page invalidates the cached script for the product-send fix", () => {
-  assert.match(templateSource, /sidebar_workbench\.js\?v=20260805-token-customer-race/);
+test("sidebar page invalidates the cached script for the OAuth retry fix", () => {
+  assert.match(templateSource, /sidebar_workbench\.js\?v=20260805-oauth-retry/);
+});
+
+
+test("retry explicitly forces a new sidebar OAuth authorization attempt", () => {
+  assert.match(source, /boot\(\{ forceSidebarOAuth: true \}\)/);
+  assert.match(source, /侧边栏授权未完成，请点击重试重新授权/);
 });
