@@ -68,6 +68,7 @@
     owner_userid: "",
     bind_by_userid: "",
     sidebar_owner_token: "",
+    sidebar_owner_token_external_userid: "",
     sidebar_owner_token_status: "",
     sidebar_oauth_url: "",
     sidebar_oauth_started: false,
@@ -226,14 +227,52 @@
     };
   }
 
-  function applySidebarOwnerToken(payload) {
+  function clearSidebarOwnerToken(status) {
+    state.sidebar_owner_token = "";
+    state.sidebar_owner_token_external_userid = "";
+    if (status) state.sidebar_owner_token_status = String(status);
+  }
+
+  function setExternalUserid(value) {
+    const nextExternalUserid = String(value || "").trim();
+    if (nextExternalUserid === state.external_userid) return nextExternalUserid;
+    state.external_userid = nextExternalUserid;
+    if (state.sidebar_owner_token_external_userid !== nextExternalUserid) {
+      clearSidebarOwnerToken(nextExternalUserid ? "customer_changed" : "external_userid_missing");
+    }
+    return nextExternalUserid;
+  }
+
+  function applySidebarOwnerToken(payload, expectedExternalUserid) {
     const token = String((payload && payload.sidebar_owner_token) || "").trim();
-    if (payload && Object.prototype.hasOwnProperty.call(payload, "sidebar_owner_token")) state.sidebar_owner_token = token;
+    const hasTokenField = Boolean(payload && Object.prototype.hasOwnProperty.call(payload, "sidebar_owner_token"));
+    const context = (payload && payload.sidebar_owner_context) || {};
+    const contextExternalUserid = String(context.external_userid || "").trim();
+    const expected = String(expectedExternalUserid || "").trim();
+    if (token) {
+      const staleResponse = Boolean(
+        !contextExternalUserid ||
+        (state.external_userid && contextExternalUserid !== state.external_userid) ||
+        (expected && contextExternalUserid !== expected) ||
+        (expected && state.external_userid !== expected)
+      );
+      if (staleResponse) {
+        writeDebug("stale sidebar owner token discarded", {
+          expected_external_userid: expected,
+          context_external_userid: contextExternalUserid,
+          current_external_userid: state.external_userid,
+        });
+        return false;
+      }
+      state.sidebar_owner_token = token;
+      state.sidebar_owner_token_external_userid = contextExternalUserid;
+    } else if (hasTokenField && (!expected || !state.external_userid || state.external_userid === expected)) {
+      clearSidebarOwnerToken((payload && payload.sidebar_owner_token_status) || "missing");
+    }
     state.sidebar_owner_token_status = String((payload && payload.sidebar_owner_token_status) || state.sidebar_owner_token_status || "").trim();
     if (payload && Object.prototype.hasOwnProperty.call(payload, "sidebar_oauth_url")) {
       state.sidebar_oauth_url = String(payload.sidebar_oauth_url || "").trim();
     }
-    const context = (payload && payload.sidebar_owner_context) || {};
     const owner = String(context.owner_userid || context.viewer_userid || "").trim();
     if (owner) state.owner_userid = owner;
     const bindBy = String(context.bind_by_userid || "").trim();
@@ -245,6 +284,7 @@
         // Ignore storage cleanup failures; the fresh owner token is the source of truth.
       }
     }
+    return Boolean(token && state.sidebar_owner_token_external_userid === contextExternalUserid);
   }
 
   function firstPayloadValue(payload, keys) {
@@ -383,25 +423,32 @@
     return request;
   }
 
-  async function refreshSidebarOwnerToken() {
-    if (!state.external_userid) return false;
-    const key = String(state.external_userid);
+  async function refreshSidebarOwnerToken(externalUserid) {
+    const key = String(externalUserid || state.external_userid || "").trim();
+    if (!key) return false;
     const pending = state.contextTokenRequests.get(key);
     if (pending) return pending;
     const request = (async () => {
     try {
       const payload = await requestJson(endpoint("contextTokenUrl"), {
         method: "POST",
-        body: JSON.stringify({ external_userid: state.external_userid }),
+        body: JSON.stringify({ external_userid: key }),
         timeoutMs: remainingStartupBudget(SDK_TIMEOUT_MS),
         retryCount: 0,
+        omitSidebarOwnerToken: true,
+        skipSidebarTokenRecovery: true,
       });
-      applySidebarOwnerToken(payload);
-      writeDebug("sidebar owner token refreshed", { status: state.sidebar_owner_token_status, has_token: Boolean(state.sidebar_owner_token) });
-      return Boolean(state.sidebar_owner_token);
+      const applied = applySidebarOwnerToken(payload, key);
+      writeDebug("sidebar owner token refreshed", {
+        status: state.sidebar_owner_token_status,
+        has_token: Boolean(state.sidebar_owner_token),
+        external_userid: key,
+        applied,
+      });
+      return applied;
     } catch (error) {
-      applySidebarOwnerToken((error && error.payload) || {});
-      writeDebug("sidebar owner token refresh failed", { message: error.message || String(error) });
+      if (state.external_userid === key) applySidebarOwnerToken((error && error.payload) || {}, key);
+      writeDebug("sidebar owner token refresh failed", { message: error.message || String(error), external_userid: key });
       return false;
     }
     })().finally(() => state.contextTokenRequests.delete(key));
@@ -490,15 +537,61 @@
     return error.status >= 500;
   }
 
+  function isSidebarCustomerScopeError(error) {
+    const payload = (error && error.payload) || {};
+    return Number(error && error.status) === 403 && String(payload.error || "").trim() === "sidebar_customer_scope_forbidden";
+  }
+
+  function requestExternalUserid(url, options) {
+    try {
+      const parsed = new URL(url, window.location.origin);
+      const queryExternal = ["external_userid", "externalUserid", "externalUserId", "user_id", "userId"]
+        .map((key) => String(parsed.searchParams.get(key) || "").trim())
+        .find(Boolean);
+      if (queryExternal) return queryExternal;
+    } catch (_error) {
+      // The request wrapper will report malformed URLs; context recovery simply stays disabled.
+    }
+    const body = options && options.body;
+    if (typeof body !== "string" || !body.trim()) return "";
+    try {
+      const payload = JSON.parse(body);
+      return String((payload && (payload.external_userid || payload.user_id)) || "").trim();
+    } catch (_error) {
+      return "";
+    }
+  }
+
   async function requestJson(url, options) {
     const retryCount = Math.max(0, Number((options && options.retryCount) || 0));
     const retryDelayMs = Math.max(0, Number((options && options.retryDelayMs) || 320));
+    const targetExternalUserid = requestExternalUserid(url, options) || state.external_userid;
+    const allowSidebarTokenRecovery = !(options && options.skipSidebarTokenRecovery);
+    let sidebarTokenRecoveryAttempted = false;
     let lastError = null;
     for (let attempt = 0; attempt <= retryCount; attempt += 1) {
       try {
         return await requestJsonOnce(url, options || {});
       } catch (error) {
         lastError = error;
+        if (
+          allowSidebarTokenRecovery &&
+          !sidebarTokenRecoveryAttempted &&
+          isSidebarCustomerScopeError(error) &&
+          targetExternalUserid &&
+          targetExternalUserid === state.external_userid
+        ) {
+          sidebarTokenRecoveryAttempted = true;
+          clearSidebarOwnerToken("scope_refresh_required");
+          const refreshed = await refreshSidebarOwnerToken(targetExternalUserid);
+          if (refreshed && targetExternalUserid === state.external_userid) {
+            try {
+              return await requestJsonOnce(url, { ...(options || {}), skipSidebarTokenRecovery: true });
+            } catch (retryError) {
+              throw retryError;
+            }
+          }
+        }
         if (attempt >= retryCount || !shouldRetryRequest(error)) break;
         await sleep(retryDelayMs * (attempt + 1));
       }
@@ -522,20 +615,29 @@
     const timer = controller
       ? window.setTimeout(() => controller.abort(), timeoutMs)
       : null;
+    const requestTargetExternalUserid = requestExternalUserid(url, options);
+    const canAttachSidebarOwnerToken = Boolean(
+      !(options && options.omitSidebarOwnerToken) &&
+      state.sidebar_owner_token &&
+      state.sidebar_owner_token_external_userid &&
+      (!requestTargetExternalUserid || state.sidebar_owner_token_external_userid === requestTargetExternalUserid)
+    );
     const finalOptions = {
       cache: "no-store",
+      ...(options || {}),
       headers: {
         Accept: "application/json",
         ...(options && options.body ? { "Content-Type": "application/json" } : {}),
-        ...(state.sidebar_owner_token ? { "X-AICRM-Sidebar-Owner-Token": state.sidebar_owner_token } : {}),
+        ...(canAttachSidebarOwnerToken ? { "X-AICRM-Sidebar-Owner-Token": state.sidebar_owner_token } : {}),
         ...((options && options.headers) || {}),
       },
-      ...(options || {}),
       ...(controller ? { signal: controller.signal } : {}),
     };
     delete finalOptions.timeoutMs;
     delete finalOptions.retryCount;
     delete finalOptions.retryDelayMs;
+    delete finalOptions.omitSidebarOwnerToken;
+    delete finalOptions.skipSidebarTokenRecovery;
     try {
       const response = await fetch(url, finalOptions);
       const text = await response.text();
@@ -1285,19 +1387,27 @@
   }
 
   async function loadWorkbench() {
-    setWorkbenchState(WORKBENCH_STATES.loading_workbench, { external_userid: state.external_userid });
+    const requestedExternalUserid = state.external_userid;
+    setWorkbenchState(WORKBENCH_STATES.loading_workbench, { external_userid: requestedExternalUserid });
     const payload = await requestPanelJson(
       "workbench",
       queryUrl(endpoint("workbenchUrl"), {
-        external_userid: state.external_userid,
+        external_userid: requestedExternalUserid,
         owner_userid: state.owner_userid,
       }),
       { timeoutMs: PANEL_TIMEOUT_MS.workbench }
     );
+    if (state.external_userid !== requestedExternalUserid) {
+      writeDebug("stale workbench response discarded", {
+        requested_external_userid: requestedExternalUserid,
+        current_external_userid: state.external_userid,
+      });
+      return;
+    }
     writeDebug("workbench response", payload);
     state.workbench = payload;
     const customer = payload.customer || {};
-    state.external_userid = customer.external_userid || state.external_userid;
+    setExternalUserid(customer.external_userid || state.external_userid);
     state.owner_userid = customer.owner_userid || state.owner_userid;
     if (!state.bind_by_userid) state.bind_by_userid = state.owner_userid;
     setWorkbenchState(payload.diagnostics && payload.diagnostics.context_source_status === "error" ? WORKBENCH_STATES.degraded_ready : WORKBENCH_STATES.ready, payload.diagnostics || {});
@@ -1786,7 +1896,7 @@
   }
 
   async function resolveContextFromQuery() {
-    state.external_userid = firstQueryValue(["external_userid", "externalUserid", "externalUserId", "user_id", "userId"]);
+    setExternalUserid(firstQueryValue(["external_userid", "externalUserid", "externalUserId", "user_id", "userId"]));
     writeDebug("query context", {
       has_external_userid: Boolean(state.external_userid),
       has_owner_token: Boolean(state.sidebar_owner_token),
@@ -1906,7 +2016,7 @@
       if (!externalUserid) {
         return { ok: false, status: WORKBENCH_STATES.context_missing, reason: "external_userid_missing" };
       }
-      state.external_userid = externalUserid;
+      setExternalUserid(externalUserid);
       applyWeComViewerIdentity(res || {}, "getCurExternalContact");
       if (!state.bind_by_userid) state.bind_by_userid = state.owner_userid;
       await refreshSidebarOwnerToken();

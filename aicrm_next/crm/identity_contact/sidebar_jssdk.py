@@ -115,6 +115,8 @@ async def sidebar_context_token(request: Request) -> Response:
     except (TypeError, ValueError):
         body = {}
     external_userid = str((body or {}).get("external_userid") or "").strip()
+    # The OAuth session is employee-scoped. Ignore a legacy customer field in
+    # the cookie and bind the new token to the current request instead.
     if not external_userid:
         return JSONResponse(
             {
@@ -345,22 +347,13 @@ def _with_sidebar_owner_context(request: Request, payload: dict) -> dict:
             external_userid=external_userid,
             source="sidebar_jssdk_viewer_required",
         )
-    session_external = str(viewer_session.get("external_userid") or "").strip()
-    if not session_external:
+    if not external_userid:
         return _without_sidebar_owner_token(
             request,
             result,
             status="context_token_required",
             external_userid=external_userid,
             source="sidebar_context_token_required",
-        )
-    if session_external != external_userid:
-        return _without_sidebar_owner_token(
-            request,
-            result,
-            status="viewer_session_customer_mismatch",
-            external_userid=external_userid,
-            source="sidebar_jssdk_viewer_scope_rejected",
         )
     ttl_seconds = sidebar_owner_context_ttl_seconds()
     result["sidebar_owner_token"] = build_sidebar_owner_context_token(

@@ -118,7 +118,7 @@ def test_action_token_rejects_expiry_tampering_and_safe_methods() -> None:
         )
 
 
-def test_sidebar_context_token_uses_http_only_viewer_identity_without_follow_relation(
+def test_sidebar_context_token_supports_legacy_customer_cookie_without_follow_relation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("WECOM_CORP_ID", "corp-a")
@@ -139,6 +139,9 @@ def test_sidebar_context_token_uses_http_only_viewer_identity_without_follow_rel
             {
                 "auth_source": "wecom_sidebar_oauth",
                 "wecom_userid": "staff-a",
+                # Cookies issued before the employee-scoped session migration carried
+                # the customer that initiated OAuth. They remain valid for eight hours.
+                "external_userid": "external-a",
                 "corp_id": "corp-a",
                 "session_id": "session-a",
                 "iat": int(time()),
