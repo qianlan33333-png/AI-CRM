@@ -316,7 +316,7 @@
       if (type === "link" && !/^https?:\/\//i.test(payload.original_url)) throw new Error("请输入合法 http/https 外部链接");
       if (type !== "link" && !payload.media_item_id) throw new Error("请选择或上传素材");
       const url = mode === "edit" ? `/api/admin/radar-links/${linkId}` : "/api/admin/radar-links";
-      const result = await fetchJson(url, {method: mode === "edit" ? "PATCH" : "POST", body: JSON.stringify(payload)});
+      const result = await fetchJson(url, {method: mode === "edit" ? "PATCH" : "POST", body: payload});
       toast("已保存内容雷达");
       window.setTimeout(() => { window.location.href = "/admin/radar-links"; }, 500);
     } catch (error) {
