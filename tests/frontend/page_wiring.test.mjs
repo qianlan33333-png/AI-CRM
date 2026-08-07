@@ -64,6 +64,17 @@ test("product editor wires configurable WeCom tagging through the shared picker"
 });
 
 
+test("radar create form delegates JSON encoding to the shared request client", () => {
+  const template = path.join(
+    root,
+    "aicrm_next/extensions/radar/radar_links/templates/admin_console/radar_link_form.html",
+  );
+  const source = readFileSync(template, "utf8");
+  assert.match(source, /fetchJson\(url, \{method: mode === "edit" \? "PATCH" : "POST", body: payload\}\)/);
+  assert.doesNotMatch(source, /fetchJson\(url, \{method: mode === "edit" \? "PATCH" : "POST", body: JSON\.stringify\(payload\)\}\)/);
+});
+
+
 test("all media entrypoints share five-item lazy loading and bounded image downloads", () => {
   const loader = readFileSync(path.join(root, "aicrm_next/app/admin_console/static/admin_console/image_resource_loader.js"), "utf8");
   const picker = readFileSync(path.join(root, "aicrm_next/app/admin_console/static/admin_console/image_picker.js"), "utf8");
