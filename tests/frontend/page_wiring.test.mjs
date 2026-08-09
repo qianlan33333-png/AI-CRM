@@ -98,6 +98,21 @@ test("questionnaire editor uses shared write security and bounded three-column s
 });
 
 
+test("questionnaire management list keeps newly created drafts visible and searchable by id", () => {
+  const template = readFileSync(
+    path.join(root, "aicrm_next/extensions/forms/questionnaire/templates/admin_console/questionnaires.html"),
+    "utf8",
+  );
+
+  assert.match(template, /placeholder="按问卷名称或 ID 搜索"/);
+  assert.match(template, /String\(item\.id \|\| ''\)\.includes\(idKeyword\)/);
+  assert.match(template, /const createdAtDiff = normalizeDateValue\(right\.created_at\) - normalizeDateValue\(left\.created_at\)/);
+  assert.match(template, /return Number\(right\.id \|\| 0\) - Number\(left\.id \|\| 0\)/);
+  assert.match(template, /class="questionnaire-id">#\$\{escapeHtml\(String\(item\.id \|\| ''\)\)\}/);
+  assert.doesNotMatch(template, /const statusDiff = Number\(Boolean\(left\.is_disabled\)\)/);
+});
+
+
 test("all media entrypoints share five-item lazy loading and bounded image downloads", () => {
   const loader = readFileSync(path.join(root, "aicrm_next/app/admin_console/static/admin_console/image_resource_loader.js"), "utf8");
   const picker = readFileSync(path.join(root, "aicrm_next/app/admin_console/static/admin_console/image_picker.js"), "utf8");

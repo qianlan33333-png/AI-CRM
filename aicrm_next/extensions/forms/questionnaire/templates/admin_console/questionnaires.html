@@ -35,6 +35,13 @@
     font-weight: 600;
   }
 
+  .questionnaire-id {
+    color: var(--muted);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
   .questionnaire-type-chip {
     display: inline-flex;
     align-items: center;
@@ -252,7 +259,7 @@
   <div class="questionnaire-filter-row">
     <label class="admin-field">
       <span>搜索问卷</span>
-      <input id="questionnaire-search" type="text" placeholder="按问卷名称搜索">
+      <input id="questionnaire-search" type="text" placeholder="按问卷名称或 ID 搜索">
     </label>
     <label class="admin-field admin-field--compact">
       <span>状态筛选</span>
@@ -383,18 +390,20 @@
 
   function filteredQuestionnaires() {
     const keyword = state.query.trim().toLowerCase();
+    const idKeyword = keyword.replace(/^#/, '');
     return [...state.questionnaires]
       .filter((item) => {
         if (state.status === 'enabled' && item.is_disabled) return false;
         if (state.status === 'disabled' && !item.is_disabled) return false;
         if (!keyword) return true;
         return questionnaireDisplayName(item).toLowerCase().includes(keyword)
-          || String(item.name || '').toLowerCase().includes(keyword);
+          || String(item.name || '').toLowerCase().includes(keyword)
+          || String(item.id || '').includes(idKeyword);
       })
       .sort((left, right) => {
-        const statusDiff = Number(Boolean(left.is_disabled)) - Number(Boolean(right.is_disabled));
-        if (statusDiff !== 0) return statusDiff;
-        return normalizeDateValue(right.created_at) - normalizeDateValue(left.created_at);
+        const createdAtDiff = normalizeDateValue(right.created_at) - normalizeDateValue(left.created_at);
+        if (createdAtDiff !== 0) return createdAtDiff;
+        return Number(right.id || 0) - Number(left.id || 0);
       });
   }
 
@@ -506,6 +515,7 @@
         <td>
           <div class="questionnaire-name-line">
             <span class="questionnaire-name-main">${escapeHtml(questionnaireDisplayName(item))}</span>
+            <span class="questionnaire-id">#${escapeHtml(String(item.id || ''))}</span>
             ${item.assessment_enabled ? '<span class="questionnaire-type-chip">多维测评</span>' : ''}
             <span class="admin-inline-chip${item.is_disabled ? ' admin-inline-chip--danger' : ' admin-inline-chip--ok'}">
               ${item.is_disabled ? '已停用' : '启用中'}
