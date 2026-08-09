@@ -75,6 +75,29 @@ test("radar create form delegates JSON encoding to the shared request client", (
 });
 
 
+test("questionnaire editor uses shared write security and bounded three-column scrolling", () => {
+  const template = readFileSync(
+    path.join(root, "aicrm_next/extensions/forms/questionnaire/templates/admin_questionnaires.html"),
+    "utf8",
+  );
+  const script = readFileSync(
+    path.join(root, "aicrm_next/extensions/forms/questionnaire/static/admin_questionnaire_editor.js"),
+    "utf8",
+  );
+  const stylesheet = readFileSync(
+    path.join(root, "aicrm_next/extensions/forms/questionnaire/static/admin_questionnaire_editor.css"),
+    "utf8",
+  );
+
+  assert.match(template, /id="aicrmAdminActionGrants"/);
+  assert.match(template, /admin_console\/admin_api_client\.js/);
+  assert.match(script, /window\.AdminApi\.requestJson\(url, options\)/);
+  assert.match(stylesheet, /grid-template-rows:\s*minmax\(0, 1fr\)/);
+  assert.match(stylesheet, /body:not\(\.assessment-template-mode\) \.preview-column\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?max-height:\s*100%;[\s\S]*?overflow:\s*hidden;/);
+  assert.match(stylesheet, /body:not\(\.assessment-template-mode\) \.phone-stage\s*\{[\s\S]*?max-height:\s*100%;[\s\S]*?overflow:\s*auto;/);
+});
+
+
 test("all media entrypoints share five-item lazy loading and bounded image downloads", () => {
   const loader = readFileSync(path.join(root, "aicrm_next/app/admin_console/static/admin_console/image_resource_loader.js"), "utf8");
   const picker = readFileSync(path.join(root, "aicrm_next/app/admin_console/static/admin_console/image_picker.js"), "utf8");

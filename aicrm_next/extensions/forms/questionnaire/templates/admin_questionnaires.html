@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ editor_page_title or "问卷编辑" }}</title>
   <link rel="stylesheet" href="/static/admin_console/wecom_tag_picker.css?v=unified-tag-picker-20260608">
-  <link rel="stylesheet" href="/static/questionnaire/admin_questionnaire_editor.css?v=lark-template-20260803">
+  <link rel="stylesheet" href="/static/questionnaire/admin_questionnaire_editor.css?v=questionnaire-editor-save-scroll-20260809">
 </head>
 <body class="{% if editor_default_assessment %}assessment-template-mode{% endif %}">
   <div class="shell">
@@ -114,6 +114,8 @@
 
     <div id="toast" class="toast hidden"></div>
   </div>
+  <script id="aicrmAdminActionGrants" type="application/json">{{ (admin_action_tokens or {}) | tojson }}</script>
+  <script src="/static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
   <script src="/static/admin_console/wecom_tag_picker.js?v=unified-tag-picker-20260608"></script>
   <script id="questionnaire-editor-config" type="application/json">
     {{ {
@@ -126,6 +128,6 @@
       "initialQuestionnaireId": initial_questionnaire_id
     } | tojson }}
   </script>
-  <script src="/static/questionnaire/admin_questionnaire_editor.js?v=20260715-operations-only"></script>
+  <script src="/static/questionnaire/admin_questionnaire_editor.js?v=questionnaire-editor-save-scroll-20260809"></script>
 </body>
 </html>

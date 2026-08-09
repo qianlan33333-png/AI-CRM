@@ -130,15 +130,21 @@ def _questionnaire_editor_response(
         "配置测评题目、维度分型和结果页规则，保存后可作为普通问卷的整组引用模板。" if default_assessment else "从空白模板开始搭建题目、标签和分数规则。"
     )
     edit_subtitle = "维护这个测评模板的题目、维度分型和结果页规则。" if default_assessment else "维护当前问卷的题目、分数规则和发布设置。"
-    return templates.TemplateResponse(
-        request,
-        "admin_questionnaires.html",
+    editor_page_title = (
+        (questionnaire or {}).get("title")
+        or (questionnaire or {}).get("name")
+        or (edit_heading if questionnaire_id is not None else new_heading)
+    )
+    context = shell_context(
+        request=request,
+        page_title=editor_page_title,
+        page_summary=edit_subtitle if questionnaire_id is not None else new_subtitle,
+        active_endpoint="api.admin_questionnaires",
+    )
+    context.update(
         {
-            "request": request,
             "editor_mode": "edit" if questionnaire_id is not None else "new",
-            "editor_page_title": (questionnaire or {}).get("title")
-            or (questionnaire or {}).get("name")
-            or (edit_heading if questionnaire_id is not None else new_heading),
+            "editor_page_title": editor_page_title,
             "editor_heading": edit_heading if questionnaire_id is not None else new_heading,
             "editor_subtitle": edit_subtitle if questionnaire_id is not None else new_subtitle,
             "editor_back_href": "/admin/questionnaires",
@@ -146,7 +152,12 @@ def _questionnaire_editor_response(
             "initial_questionnaire": questionnaire,
             "initial_questionnaire_id": questionnaire_id,
             "page_error": page_error,
-        },
+        }
+    )
+    return templates.TemplateResponse(
+        request,
+        "admin_questionnaires.html",
+        context,
     )
 
 
