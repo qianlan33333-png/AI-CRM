@@ -1278,12 +1278,10 @@ function filteredQuestionnaires() {
 }
 
 async function fetchJson(url, options = {}) {
-  const response = await fetch(url, options);
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok || data.ok === false) {
-    throw new Error(humanizeErrorMessage(extractErrorMessage(data), '请求失败，请稍后重试'));
+  if (!window.AdminApi || typeof window.AdminApi.requestJson !== 'function') {
+    throw new Error('后台请求能力未加载，请刷新页面后重试');
   }
-  return data;
+  return window.AdminApi.requestJson(url, options);
 }
 
 async function loadAvailableTags() {
