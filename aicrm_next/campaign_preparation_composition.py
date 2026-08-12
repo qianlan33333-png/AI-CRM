@@ -4,6 +4,9 @@ from .automation.background_jobs.broadcast_queue_worker import (
     configure_content_package_attachment_resolver,
     configure_dynamic_miniprogram_attachment_resolver,
 )
+from .platform.platform_foundation.background_jobs.immediate_broadcast_delegate import (
+    configure_broadcast_material_plan_resolver,
+)
 from .crm.identity_contact.campaign_admission_port import build_campaign_admission_port
 from .engagement.media_library.dynamic_card_port import build_dynamic_card_media_port
 from .engagement.media_library.broadcast_effect_port import build_broadcast_material_plan_port
@@ -29,8 +32,10 @@ def configure_campaign_preparation_dependencies() -> None:
             command_port=build_campaign_preparation_command_port(),
         )
     )
+    material_plan_port = build_broadcast_material_plan_port()
     configure_dynamic_miniprogram_attachment_resolver(media_port.resolve_attachment)
-    configure_content_package_attachment_resolver(build_broadcast_material_plan_port().plan)
+    configure_content_package_attachment_resolver(material_plan_port.plan)
+    configure_broadcast_material_plan_resolver(material_plan_port.plan)
 
 
 __all__ = ["configure_campaign_preparation_dependencies"]
