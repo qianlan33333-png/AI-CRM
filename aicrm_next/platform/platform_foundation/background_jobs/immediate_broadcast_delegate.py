@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, Callable
 
 from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
 from aicrm_next.platform.platform_foundation.external_effects import (
+    WECOM_MEDIA_UPLOAD,
     WECOM_MESSAGE_PRIVATE_SEND,
 )
 from aicrm_next.platform.platform_foundation.external_effects.service import (
     ExternalEffectService,
 )
-
 from .broadcast_job_write_port import build_broadcast_job_write_port
 from .cloud_broadcast_projection_write_port import (
     build_cloud_broadcast_projection_write_port,
@@ -31,6 +31,135 @@ def _json_list(value: Any) -> list[Any]:
             return []
         return list(parsed) if isinstance(parsed, list) else []
     return []
+
+
+_broadcast_material_plan_resolver: Callable[[dict[str, Any]], dict[str, Any]] | None = None
+
+
+def configure_broadcast_material_plan_resolver(
+    resolver: Callable[[dict[str, Any]], dict[str, Any]] | None,
+) -> None:
+    global _broadcast_material_plan_resolver
+    _broadcast_material_plan_resolver = resolver
+
+
+def _json_dict(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return dict(value)
+    if isinstance(value, str) and value.strip():
+        try:
+            parsed = json.loads(value)
+        except ValueError:
+            return {}
+        return dict(parsed) if isinstance(parsed, dict) else {}
+    return {}
+
+
+def _merge_content_package(target: dict[str, Any], source: Any) -> None:
+    source_dict = _json_dict(source)
+    if not source_dict:
+        return
+    for nested_key in ("content_payload_json", "content_package_json", "content_package"):
+        nested = _json_dict(source_dict.get(nested_key))
+        if nested:
+            _merge_content_package(target, nested)
+    for key in (
+        "image_library_ids",
+        "miniprogram_library_ids",
+        "attachment_library_ids",
+        "group_invite_library_ids",
+    ):
+        values = _json_list(source_dict.get(key))
+        if values:
+            existing = list(target.get(key) or [])
+            for value in values:
+                if value not in existing:
+                    existing.append(value)
+            target[key] = existing
+    field_by_media_kind = {
+        "image": "image_library_ids",
+        "miniprogram": "miniprogram_library_ids",
+        "file": "attachment_library_ids",
+        "attachment": "attachment_library_ids",
+        "link": "group_invite_library_ids",
+        "group_invite": "group_invite_library_ids",
+    }
+    for media_ref in _json_list(source_dict.get("media_refs")):
+        if not isinstance(media_ref, dict):
+            continue
+        field = field_by_media_kind.get(_text(media_ref.get("kind")).lower())
+        try:
+            library_id = int(media_ref.get("library_id") or 0)
+        except (TypeError, ValueError):
+            library_id = 0
+        if not field or library_id <= 0:
+            continue
+        existing = list(target.get(field) or [])
+        if library_id not in existing:
+            existing.append(library_id)
+            target[field] = existing
+    card = source_dict.get("dynamic_miniprogram_card")
+    if isinstance(card, dict) and card:
+        target["dynamic_miniprogram_card"] = dict(card)
+
+
+def _content_package(value: Any) -> dict[str, Any]:
+    package: dict[str, Any] = {}
+    _merge_content_package(package, value)
+    return package
+
+
+def _dedupe_private_attachments(attachments: list[Any]) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for item in attachments:
+        if not isinstance(item, dict):
+            raise ValueError("private_message_attachment_must_be_object")
+        key = json.dumps(item, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        if key not in seen:
+            seen.add(key)
+            result.append(dict(item))
+    return result
+
+
+def _materialized_attachments(
+    *,
+    content_payload: Any,
+    direct_attachments: list[Any],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    package = _content_package(content_payload)
+    has_library_materials = any(
+        _json_list(package.get(field))
+        for field in (
+            "image_library_ids",
+            "miniprogram_library_ids",
+            "attachment_library_ids",
+            "group_invite_library_ids",
+        )
+    ) or isinstance(package.get("dynamic_miniprogram_card"), dict)
+    if not has_library_materials:
+        attachments = _dedupe_private_attachments(direct_attachments)
+        if len(attachments) > 9:
+            raise ValueError("private_message_attachments_exceed_limit")
+        return attachments, []
+    resolver = _broadcast_material_plan_resolver
+    if resolver is None:
+        raise ValueError("broadcast_material_plan_resolver_not_configured")
+    material_plan = resolver(package)
+    resolved = [
+        dict(item)
+        for item in _json_list(material_plan.get("attachments"))
+        if isinstance(item, dict)
+    ]
+    attachments = _dedupe_private_attachments([*direct_attachments, *resolved])
+    if len(attachments) > 9:
+        raise ValueError("private_message_attachments_exceed_limit")
+    uploads = [
+        dict(item)
+        for item in _json_list(material_plan.get("uploads"))
+        if isinstance(item, dict)
+    ]
+    return attachments, uploads
 
 
 class AiAssistantImmediateBroadcastDelegate:
@@ -80,7 +209,7 @@ class AiAssistantImmediateBroadcastDelegate:
             }
         message = executor.execute(
             """
-            SELECT id, content_text, attachments_json
+            SELECT id, content_text, content_payload_json, attachments_json
             FROM cloud_broadcast_plan_recipient_messages
             WHERE plan_id = %s
               AND recipient_id = %s
@@ -92,7 +221,10 @@ class AiAssistantImmediateBroadcastDelegate:
             (_text(plan.get("plan_id")), int(recipient.get("id") or 0)),
         ).fetchone()
         content_text = _text((message or {}).get("content_text"))
-        attachments = _json_list((message or {}).get("attachments_json"))
+        attachments, material_uploads = _materialized_attachments(
+            content_payload=(message or {}).get("content_payload_json"),
+            direct_attachments=_json_list((message or {}).get("attachments_json")),
+        )
         sender = _text(recipient.get("owner_userid"))
         if not sender:
             return {"status": "not_materialized", "reason": "sender_userid_missing"}
@@ -139,7 +271,7 @@ class AiAssistantImmediateBroadcastDelegate:
             ),
             source_module="platform.background_jobs.immediate_broadcast_delegate",
             source_command_id=str(job_id),
-            status="queued",
+            status="planned" if material_uploads else "queued",
             idempotency_key=f"broadcast-effect:{job_id}:private:{external_userid}",
             parent_execution_id=_text(job.get("execution_id")),
             lane="wecom_ai_assistant_bulk",
@@ -147,6 +279,52 @@ class AiAssistantImmediateBroadcastDelegate:
             fairness_key=f"broadcast:{sender}:{batch_key}",
         )
         effect_id = int(effect["id"])
+        for upload in material_uploads:
+            material_key = _text(upload.get("material_key"))
+            material_kind = _text(upload.get("material_kind"))
+            material_id = int(upload.get("material_id") or 0)
+            upload_kind = _text(upload.get("upload_kind"))
+            if not material_key or not material_kind or material_id <= 0 or not upload_kind:
+                raise ValueError("broadcast_material_dependency_invalid")
+            self._effect_service.plan_effect(
+                connection=executor,
+                effect_type=WECOM_MEDIA_UPLOAD,
+                adapter_name="wecom_media_upload",
+                operation="refresh_temporary_media",
+                target_type="media_library_material",
+                target_id=f"{material_kind}:{material_id}:{upload_kind}",
+                business_type="broadcast_material_dependency",
+                business_id=str(job_id),
+                payload={
+                    "material_key": material_key,
+                    "material_kind": material_kind,
+                    "material_id": material_id,
+                    "upload_kind": upload_kind,
+                    "force_refresh": False,
+                    "broadcast_job_id": int(job_id),
+                },
+                payload_summary={
+                    "broadcast_job_id": int(job_id),
+                    "material_key": material_key,
+                    "material_kind": material_kind,
+                    "material_id": material_id,
+                },
+                context=CommandContext(
+                    actor_id=_text(operator) or "cloud_plan_approval",
+                    actor_type="system",
+                    request_id=_text(job.get("idempotency_key")),
+                    trace_id=_text(job.get("trace_id")),
+                    source_route="cloud_plan_approval_transaction",
+                ),
+                source_module="platform.background_jobs.immediate_broadcast_delegate",
+                source_command_id=str(job_id),
+                status="queued",
+                idempotency_key=f"broadcast-effect:{job_id}:material:{material_key}",
+                parent_execution_id=_text(job.get("execution_id")),
+                lane="wecom_media",
+                ordering_key=f"broadcast_material:{job_id}:{material_key}",
+                fairness_key=f"broadcast:{sender}:{batch_key}",
+            )
         delegated = build_broadcast_job_write_port().delegate_external_effect_dbapi(
             executor,
             job_id=int(job_id),
@@ -168,4 +346,7 @@ class AiAssistantImmediateBroadcastDelegate:
         }
 
 
-__all__ = ["AiAssistantImmediateBroadcastDelegate"]
+__all__ = [
+    "AiAssistantImmediateBroadcastDelegate",
+    "configure_broadcast_material_plan_resolver",
+]
