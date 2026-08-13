@@ -1197,7 +1197,7 @@ class InMemoryExternalEffectRepository(ExternalEffectRepository):
             for row in self._jobs
             if int(row.get("attempt_count") or 0) == 0
             and row.get("status") not in {"succeeded", "failed_retryable", "failed_terminal", "cancelled", "expired", "dispatching"}
-            and (row.get("execution_mode") in {"shadow", "plan_only", "disabled", "execute_dryrun"} or row.get("status") == "planned")
+            and row.get("execution_mode") in {"shadow", "plan_only", "disabled", "execute_dryrun"}
         ]
         rows.sort(key=lambda row: (row.get("created_at") or "", int(row.get("id") or 0)))
         return [job for row in rows[: max(1, min(int(limit or 100), 1000))] if (job := _public_job(row)) is not None]
