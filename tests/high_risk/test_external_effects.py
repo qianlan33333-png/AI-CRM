@@ -13,6 +13,7 @@ from aicrm_next.platform.platform_foundation.external_effects import (
     InMemoryExternalEffectRepository,
 )
 from aicrm_next.platform.platform_foundation.external_effects.adapters import DisabledAdapter, WeComContactTagAdapter
+from aicrm_next.platform.platform_foundation.external_effects.repo import SQLAlchemyExternalEffectRepository
 from aicrm_next.platform.platform_foundation.external_effects.retry_policy import (
     classify_error_code,
     next_retry_at,
@@ -50,6 +51,74 @@ def test_effect_planning_is_idempotent_and_approval_gated() -> None:
     assert first["status"] == "planned"
     assert approved is not None and approved.status == "queued"
     assert total == 1 and len(jobs) == 1
+
+
+def test_record_only_reconciliation_never_completes_a_planned_execute_job() -> None:
+    repository = InMemoryExternalEffectRepository()
+    service = ExternalEffectService(repository)
+    planned = service.plan_effect(
+        effect_type=WEBHOOK_GENERIC_PUSH,
+        adapter_name="outbound_webhook",
+        operation="post",
+        target_type="customer",
+        target_id="customer-awaiting-material",
+        payload={"message": "wait for material dependency"},
+        business_type="broadcast_job",
+        business_id="broadcast-awaiting-material",
+        execution_mode="execute",
+        status="planned",
+        idempotency_key="planned-execute-must-not-be-record-only",
+    )
+
+    result = service.complete_record_only(dry_run=False, limit=10, operator="pytest")
+    unchanged = service.get(int(planned["id"]))
+
+    assert result["candidate_count"] == 0
+    assert result["completed_count"] == 0
+    assert unchanged is not None
+    assert unchanged.status == "planned"
+    assert unchanged.execution_mode == "execute"
+    assert unchanged.attempt_count == 0
+
+
+def test_record_only_reconciliation_still_completes_shadow_jobs() -> None:
+    repository = InMemoryExternalEffectRepository()
+    service = ExternalEffectService(repository)
+    shadow = service.plan_effect(
+        effect_type=WEBHOOK_GENERIC_PUSH,
+        adapter_name="outbound_webhook",
+        operation="post",
+        target_type="customer",
+        target_id="customer-shadow",
+        payload={"message": "record only"},
+        execution_mode="shadow",
+        status="planned",
+        idempotency_key="shadow-record-only",
+    )
+
+    result = service.complete_record_only(dry_run=False, limit=10, operator="pytest")
+    completed = service.get(int(shadow["id"]))
+
+    assert result["candidate_count"] == 1
+    assert result["completed_count"] == 1
+    assert completed is not None
+    assert completed.status == "simulated"
+    assert completed.attempt_count == 1
+
+
+def test_postgres_record_only_query_excludes_planned_execute_jobs() -> None:
+    repository = SQLAlchemyExternalEffectRepository(lambda: None)
+    captured: dict[str, str] = {}
+
+    def capture(statement: str, _params: dict[str, object] | None = None) -> list[dict[str, object]]:
+        captured["statement"] = " ".join(statement.split())
+        return []
+
+    repository._all = capture  # type: ignore[method-assign]
+
+    assert repository.list_record_only_jobs(limit=10) == []
+    assert "execution_mode IN ('shadow', 'plan_only', 'disabled', 'execute_dryrun')" in captured["statement"]
+    assert "OR status = 'planned'" not in captured["statement"]
 
 
 def test_unregistered_adapter_records_a_terminal_non_execution() -> None:

@@ -1378,10 +1378,7 @@ class SQLAlchemyExternalEffectRepository(
             FROM external_effect_job
             WHERE attempt_count = 0
               AND status NOT IN ('succeeded', 'failed_retryable', 'failed_terminal', 'cancelled', 'expired', 'dispatching')
-              AND (
-                    execution_mode IN ('shadow', 'plan_only', 'disabled', 'execute_dryrun')
-                 OR status = 'planned'
-              )
+              AND execution_mode IN ('shadow', 'plan_only', 'disabled', 'execute_dryrun')
             ORDER BY created_at ASC, id ASC
             LIMIT :limit
             """,
