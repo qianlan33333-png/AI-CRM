@@ -16,6 +16,9 @@ except ModuleNotFoundError:  # pragma: no cover - direct script execution
 
 ensure_repo_root_on_path()
 
+from aicrm_next.campaign_preparation_composition import (
+    configure_campaign_preparation_dependencies,
+)
 from aicrm_next.channel_entry_composition import build_wecom_callback_inbox_worker_factory
 from aicrm_next.channels.channel_entry.realtime_contract import WECOM_WELCOME_FALLBACK_SECONDS
 from aicrm_next.deployment_profile import DeploymentProfile, deployment_profile_from_environment
@@ -211,6 +214,10 @@ def _service(
 
 
 def _build_services(args: argparse.Namespace) -> tuple[QueueRuntimeService, ...]:
+    # The execution runtime can prepare outbound messages without importing the
+    # HTTP router registry. Initialise the same campaign/media dependencies as
+    # the web process before any consumer claims an automation-agent item.
+    configure_campaign_preparation_dependencies()
     services: list[QueueRuntimeService] = []
     profile = deployment_profile_from_environment()
     for queue_kind in _selected_queue_kinds(args):
