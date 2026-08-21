@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Channel Code Center · 客户管理后台</title>
+  <link rel="stylesheet" href="../static/admin_console/admin_console.css?v=operation-member-picker-fix-20260527&amp;design=lark-20260803">
+  <script src="../static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
+  <script src="../static/admin_console/image_resource_loader.js?v=resource-governance-v2-pending-retry"></script>
+  
+<link rel="stylesheet" href="/static/automation-engine/admin_console/channel_admission_pages.css">
+
+  <script defer src="../static/admin_console/admin_console.js?v=lark-design-package-20260803"></script>
+  <script defer src="../static/admin_console/operation_member_picker.js?v=operation-member-picker-wecom-sync-20260709"></script>
+</head>
+<body class="admin-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="admin-brand-mark">CRM</div>
+        <div class="admin-brand-copy">
+          <div class="admin-brand-title">客户管理后台</div>
+          <div class="admin-brand-subtitle">ADMIN CONSOLE</div>
+        </div>
+      </div>
+
+      <nav class="admin-nav" aria-label="客户管理后台导航">
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">运营</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化运营"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_conversion.svg" alt="">
+              <span class="admin-nav-label">自动化运营</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="运营闭环"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/operation_cycles.svg" alt="">
+              <span class="admin-nav-label">运营闭环</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="群运营计划"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/group_ops.svg" alt="">
+              <span class="admin-nav-label">群运营计划</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="渠道码中心"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/channels.svg" alt="">
+              <span class="admin-nav-label">渠道码中心</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="AI 助手"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/cloud_orchestrator.svg" alt="">
+              <span class="admin-nav-label">AI 助手</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="客户激活 / 客户列表"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/customers.svg" alt="">
+              <span class="admin-nav-label">客户激活 / 客户列表</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="漏斗 / 数据看板"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/user_ops_funnel.svg" alt="">
+              <span class="admin-nav-label">漏斗 / 数据看板</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="问卷"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/questionnaires.svg" alt="">
+              <span class="admin-nav-label">问卷</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="内容雷达"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/radar_links.svg" alt="">
+              <span class="admin-nav-label">内容雷达</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="企微标签管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wecom_tags.svg" alt="">
+              <span class="admin-nav-label">企微标签管理</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">交易</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="交易管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_transactions.svg" alt="">
+              <span class="admin-nav-label">交易管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_products.svg" alt="">
+              <span class="admin-nav-label">商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="周期商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/service_period_products.svg" alt="">
+              <span class="admin-nav-label">周期商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="优惠券"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/coupons.svg" alt="">
+              <span class="admin-nav-label">优惠券</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">素材</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="图片素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/image_library.svg" alt="">
+              <span class="admin-nav-label">图片素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="小程序素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/miniprogram_library.svg" alt="">
+              <span class="admin-nav-label">小程序素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="附件素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/attachment_library.svg" alt="">
+              <span class="admin-nav-label">附件素材库</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">配置及后台</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化话术"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_agents.svg" alt="">
+              <span class="admin-nav-label">自动化话术</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="负责人迁移"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/owner_migration.svg" alt="">
+              <span class="admin-nav-label">负责人迁移</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="配置"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/config.svg" alt="">
+              <span class="admin-nav-label">配置</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="API 文档"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/api_docs.svg" alt="">
+              <span class="admin-nav-label">API 文档</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+      </nav>
+
+      
+      <div class="admin-sidebar-user">
+        <div class="admin-sidebar-user__avatar">
+          示
+        </div>
+        <div class="admin-sidebar-user__meta">
+          <div class="admin-sidebar-user__name">
+            示例管理员
+          </div>
+          <a class="admin-sidebar-user__logout" href="#">退出登录</a>
+        </div>
+      </div>
+      
+    </aside>
+
+    <div class="admin-main-wrap">
+      
+      
+      
+      
+      
+      
+      <header class="admin-topbar">
+        
+        <div class="admin-topbar-head">
+          <nav class="admin-breadcrumbs" aria-label="当前位置">
+            
+            
+            <a href="#">客户管理后台</a>
+            
+            
+          </nav>
+          <div>
+            <h1 class="admin-page-title">Channel Code Center</h1>
+            <p class="admin-page-summary">页面功能预览（示例数据）</p>
+          </div>
+        </div>
+        
+
+        
+      </header>
+      
+
+      <main class="admin-page">
+        
+        <section class="admin-alert admin-alert--success">示例</section>
+        
+        
+        <section class="admin-alert admin-alert--error">示例</section>
+        
+        
+
+<div
+  class="channel-page"
+  data-channel-admission-page="channel-center"
+  data-api-channels="示例"
+>
+  <script type="application/json" data-channel-bootstrap>{}</script>
+
+  <section class="channel-metric-grid" data-channel-metrics>
+    <article class="channel-metric">
+      <span>渠道总数</span>
+      <strong data-channel-metric="total">0</strong>
+      <em>独立获客资源</em>
+    </article>
+    <article class="channel-metric">
+      <span>渠道资产</span>
+      <strong data-channel-metric="standalone">0</strong>
+      <em>二维码 / 链接资源</em>
+    </article>
+    <article class="channel-metric">
+      <span>企微获客助手链接</span>
+      <strong data-channel-metric="link">0</strong>
+      <em>复制 / 分享链接</em>
+    </article>
+    <article class="channel-metric">
+      <span>渠道用户</span>
+      <strong data-channel-metric="entered">0</strong>
+      <em>渠道进入记录</em>
+    </article>
+  </section>
+
+  <section class="admin-card channel-section">
+    <div class="admin-card-head admin-card-head--tight">
+      <div>
+        <h2>渠道码列表</h2>
+        <p>渠道码中心只管理渠道资产、渠道用户、欢迎语、标签和客服分配。</p>
+      </div>
+      <div class="channel-actions">
+        <input class="channel-search" type="search" data-channel-search placeholder="搜索渠道名称">
+        <a class="admin-button admin-button--primary" href="#">新建渠道</a>
+      </div>
+    </div>
+
+    <div class="admin-table-wrap">
+      <table class="admin-table channel-table">
+        <thead>
+          <tr>
+            <th>渠道</th>
+            <th>类型</th>
+            <th>状态</th>
+            <th>欢迎/素材/标签</th>
+            <th>渠道用户</th>
+            <th class="channel-actions-heading" aria-label="行操作"></th>
+          </tr>
+        </thead>
+        <tbody data-channel-list>
+          <tr><td colspan="6">加载中...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <aside class="channel-drawer" data-channel-drawer hidden>
+    <div class="channel-drawer__panel">
+      <button class="channel-drawer__close" type="button" data-close-channel-drawer>关闭</button>
+      <h2>渠道详情</h2>
+      <p class="channel-muted">查看渠道用户列表、二维码/链接状态和渠道进入记录。</p>
+      <div data-channel-drawer-body></div>
+    </div>
+  </aside>
+</div>
+
+      </main>
+    </div>
+  </div>
+  <script id="aicrmAdminActionGrants" type="application/json">{}</script>
+  
+<script defer src="../static/admin_console/admin_download.js?v=channel-jpg-20260729"></script>
+<script defer src="/static/automation-engine/admin_console/channel_code_center_next.js?v=remove-recent-entry-20260608"></script>
+
+</body>
+</html>

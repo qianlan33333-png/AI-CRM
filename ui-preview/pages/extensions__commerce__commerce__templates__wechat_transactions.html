@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wechat Transactions · 客户管理后台</title>
+  <link rel="stylesheet" href="../static/admin_console/admin_console.css?v=operation-member-picker-fix-20260527&amp;design=lark-20260803">
+  <script src="../static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
+  <script src="../static/admin_console/image_resource_loader.js?v=resource-governance-v2-pending-retry"></script>
+  
+<style>
+  .commerce-admin {
+    display: grid;
+    gap: 18px;
+  }
+
+  .commerce-card-body {
+    display: grid;
+    gap: 16px;
+  }
+
+  .commerce-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px 16px;
+  }
+
+  .commerce-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .commerce-field span,
+  .commerce-kv-label {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .commerce-field input,
+  .commerce-field select {
+    min-height: 42px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fffdf8;
+    color: var(--text);
+  }
+
+  .commerce-table-wrap {
+    min-height: 360px;
+  }
+
+  .commerce-table {
+    min-width: 1100px;
+  }
+
+  .commerce-summary,
+  .commerce-toast,
+  .commerce-sub,
+  .commerce-muted {
+    color: var(--muted);
+  }
+
+  .commerce-summary {
+    min-height: 21px;
+  }
+
+  .commerce-toast {
+    min-height: 22px;
+    font-weight: 700;
+  }
+
+  .commerce-mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .commerce-strong {
+    font-weight: 800;
+  }
+
+  .commerce-sub {
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .commerce-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #eef2f7;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .commerce-pill.paid {
+    background: #e7f8ee;
+    color: #0f7a43;
+  }
+
+  .commerce-pill.pending {
+    background: #fff4d6;
+    color: #8a5a00;
+  }
+
+  .commerce-pill.failed {
+    background: #fee2e2;
+    color: #b91c1c;
+  }
+
+  .commerce-pill.refund_processing {
+    background: #f3e8ff;
+    color: #9333ea;
+  }
+
+  .commerce-pill.partial_refunded {
+    background: #e7efff;
+    color: #1d4ed8;
+  }
+
+  .commerce-empty {
+    display: none;
+    min-height: 120px;
+    padding: 28px;
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--radius-md);
+    color: var(--muted);
+    text-align: center;
+    font-weight: 800;
+  }
+
+  .commerce-empty.is-visible {
+    display: grid;
+    place-items: center;
+  }
+
+  .commerce-detail-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 18px;
+    align-items: start;
+  }
+
+  .commerce-kv {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr);
+    gap: 12px 18px;
+  }
+
+  .commerce-kv-value {
+    font-weight: 800;
+    word-break: break-all;
+  }
+
+  .commerce-refund-form {
+    display: grid;
+    gap: 14px;
+  }
+
+  .commerce-checkline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text);
+    font-weight: 700;
+  }
+
+  .commerce-pager {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+  }
+
+  @media (max-width: 1100px) {
+    .commerce-filter-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 840px) {
+    .commerce-detail-grid,
+    .commerce-filter-grid,
+    .commerce-kv {
+      grid-template-columns: 1fr;
+    }
+  }
+  /* Supplied AI-CRM design package: compact transaction filters and table. */
+  .commerce-admin,.commerce-card-body{gap:12px}
+  .commerce-filter-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+  .commerce-field{gap:6px}
+  .commerce-field span,.commerce-kv-label{color:#646a73;font-size:12px;font-weight:400}
+  .commerce-field input,.commerce-field select{min-height:34px;padding:6px 10px;border-color:#dee0e3;border-radius:6px;background:#fff}
+  .commerce-pill{min-height:22px;padding:2px 8px;border-radius:4px;font-weight:500}
+  .commerce-pill.paid{background:#ebf9ec;color:#2ea121}.commerce-pill.pending{background:#fff6e9;color:#d9730d}.commerce-pill.failed{background:#fff5f5;color:#d83931}
+  @media(max-width:1200px){.commerce-filter-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+</style>
+
+  <script defer src="../static/admin_console/admin_console.js?v=lark-design-package-20260803"></script>
+  <script defer src="../static/admin_console/operation_member_picker.js?v=operation-member-picker-wecom-sync-20260709"></script>
+</head>
+<body class="admin-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="admin-brand-mark">CRM</div>
+        <div class="admin-brand-copy">
+          <div class="admin-brand-title">客户管理后台</div>
+          <div class="admin-brand-subtitle">ADMIN CONSOLE</div>
+        </div>
+      </div>
+
+      <nav class="admin-nav" aria-label="客户管理后台导航">
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">运营</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化运营"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_conversion.svg" alt="">
+              <span class="admin-nav-label">自动化运营</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="运营闭环"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/operation_cycles.svg" alt="">
+              <span class="admin-nav-label">运营闭环</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="群运营计划"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/group_ops.svg" alt="">
+              <span class="admin-nav-label">群运营计划</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="渠道码中心"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/channels.svg" alt="">
+              <span class="admin-nav-label">渠道码中心</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="AI 助手"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/cloud_orchestrator.svg" alt="">
+              <span class="admin-nav-label">AI 助手</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="客户激活 / 客户列表"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/customers.svg" alt="">
+              <span class="admin-nav-label">客户激活 / 客户列表</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="漏斗 / 数据看板"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/user_ops_funnel.svg" alt="">
+              <span class="admin-nav-label">漏斗 / 数据看板</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="问卷"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/questionnaires.svg" alt="">
+              <span class="admin-nav-label">问卷</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="内容雷达"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/radar_links.svg" alt="">
+              <span class="admin-nav-label">内容雷达</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="企微标签管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wecom_tags.svg" alt="">
+              <span class="admin-nav-label">企微标签管理</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">交易</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="交易管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_transactions.svg" alt="">
+              <span class="admin-nav-label">交易管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_products.svg" alt="">
+              <span class="admin-nav-label">商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="周期商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/service_period_products.svg" alt="">
+              <span class="admin-nav-label">周期商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="优惠券"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/coupons.svg" alt="">
+              <span class="admin-nav-label">优惠券</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">素材</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="图片素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/image_library.svg" alt="">
+              <span class="admin-nav-label">图片素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="小程序素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/miniprogram_library.svg" alt="">
+              <span class="admin-nav-label">小程序素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="附件素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/attachment_library.svg" alt="">
+              <span class="admin-nav-label">附件素材库</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">配置及后台</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化话术"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_agents.svg" alt="">
+              <span class="admin-nav-label">自动化话术</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="负责人迁移"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/owner_migration.svg" alt="">
+              <span class="admin-nav-label">负责人迁移</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="配置"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/config.svg" alt="">
+              <span class="admin-nav-label">配置</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="API 文档"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/api_docs.svg" alt="">
+              <span class="admin-nav-label">API 文档</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+      </nav>
+
+      
+      <div class="admin-sidebar-user">
+        <div class="admin-sidebar-user__avatar">
+          示
+        </div>
+        <div class="admin-sidebar-user__meta">
+          <div class="admin-sidebar-user__name">
+            示例管理员
+          </div>
+          <a class="admin-sidebar-user__logout" href="#">退出登录</a>
+        </div>
+      </div>
+      
+    </aside>
+
+    <div class="admin-main-wrap">
+      
+      
+      
+      
+      
+      
+      <header class="admin-topbar">
+        
+        <div class="admin-topbar-head">
+          <nav class="admin-breadcrumbs" aria-label="当前位置">
+            
+            
+            <a href="#">客户管理后台</a>
+            
+            
+          </nav>
+          <div>
+            <h1 class="admin-page-title">Wechat Transactions</h1>
+            <p class="admin-page-summary">页面功能预览（示例数据）</p>
+          </div>
+        </div>
+        
+
+        
+      </header>
+      
+
+      <main class="admin-page">
+        
+        <section class="admin-alert admin-alert--success">示例</section>
+        
+        
+        <section class="admin-alert admin-alert--error">示例</section>
+        
+        
+<div class="commerce-admin" data-next-commerce-admin="示例-transactions">
+  
+  <section class="admin-card">
+    <div class="commerce-card-body">
+      <div class="commerce-empty is-visible">示例</div>
+      <p><a class="admin-button admin-button--ghost" href="/admin/wechat-pay/transactions">返回交易管理</a></p>
+    </div>
+  </section>
+  
+</div>
+
+      </main>
+    </div>
+  </div>
+  <script id="aicrmAdminActionGrants" type="application/json">{}</script>
+  
+<script>
+  const listApiUrl = {};
+  const exportApiUrl = {};
+  const fixedProvider = {};
+  const state = {offset: 0, total: 0, limit: 20};
+  const $ = (id) => document.getElementById(id);
+  const esc = (value) => String(value || "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const moneyCents = (value) => Math.round(Number(value || 0) * 100);
+  const refundForm = $("refundForm");
+  if (refundForm) {
+    refundForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const result = $("refundResult");
+      const refundAmountTotal = moneyCents($("refundAmount").value);
+      const maxRefundTotal = Number(refundForm.dataset.maxRefundTotal || 0);
+      result.textContent = "正在提交退款申请...";
+      if (!Number.isFinite(refundAmountTotal) || refundAmountTotal <= 0) {
+        result.textContent = "退款金额必须大于 0";
+        return;
+      }
+      if (maxRefundTotal > 0 && refundAmountTotal > maxRefundTotal) {
+        result.textContent = `退款金额不能超过可退款金额 ¥${(maxRefundTotal / 100).toFixed(2)}`;
+        return;
+      }
+      const provider = refundForm.dataset.provider || "wechat";
+      const endpoint = provider === "wechat_shop" ? "/api/admin/refunds" : `/api/admin/wechat-pay/orders/${encodeURIComponent(refundForm.dataset.orderId)}/refunds`;
+      const body = provider === "wechat_shop" ? {
+          provider: "wechat_shop",
+          order_no: refundForm.dataset.orderNo,
+          reason: $("refundReason").value,
+          order_no_confirmation: $("transactionConfirm").value,
+          checked: $("refundChecked").checked
+        } : {
+          refund_amount_total: refundAmountTotal,
+          reason: $("refundReason").value,
+          transaction_id_confirmation: $("transactionConfirm").value,
+          checked: $("refundChecked").checked
+        };
+      try {
+        const data = await window.AdminApi.requestJson(endpoint, { method: "POST", body });
+        result.textContent = `退款申请已提交，当前订单状态：${data.order.status_label}，退款处理中 ¥${data.order.active_refund_amount_yuan}，已退款 ¥${data.order.refunded_amount_yuan}，可退款 ¥${data.order.refundable_amount_yuan}`;
+        if (Number(data.order.refundable_amount_total || 0) <= 0) {
+          refundForm.querySelectorAll("input, select, button").forEach((node) => { node.disabled = true; });
+        }
+      } catch (error) {
+        result.textContent = window.AdminApi.errorMessage(error, "退款申请提交失败");
+      }
+    });
+  }
+  if ($("rows")) {
+    function filters() {
+      return {
+        mobile: $("mobile").value, identity: $("identity").value, transaction_id: $("transaction").value,
+        product_code: $("product").value, created_from: $("createdFrom").value, created_to: $("createdTo").value,
+        status: $("status").value
+      };
+    }
+    function params() {
+      const out = new URLSearchParams();
+      if (fixedProvider) out.set("provider", fixedProvider);
+      Object.entries(filters()).forEach(([key, value]) => { if (String(value || "").trim()) out.set(key, value); });
+      out.set("limit", $("limit").value || "20");
+      out.set("offset", String(state.offset));
+      return out;
+    }
+    function renderLoading() {
+      $("rows").innerHTML = '<tr><td colspan="7" class="commerce-muted">正在加载订单...</td></tr>';
+      $("empty").classList.remove("is-visible");
+    }
+    function render(items) {
+      $("rows").innerHTML = items.map((row) => `<tr>
+        <td>${esc(row.created_at)}</td>
+        <td><span class="commerce-mono">${esc(row.merchant_order_no || row.out_trade_no || row.id)}</span><div class="commerce-sub">${esc(row.platform_transaction_no || row.transaction_id)}</div></td>
+        <td><div class="commerce-strong">${esc(row.payer_name)}</div><div class="commerce-sub">${esc(row.mobile || "未记录手机号")} · ${esc(row.userid || row.external_userid || row.unionid || "-")}</div></td>
+        <td><div class="commerce-strong">${esc(row.product_name)}</div><div class="commerce-sub">${esc(row.product_code)}</div></td>
+        <td class="commerce-strong">¥${esc(row.amount_yuan)}</td>
+        <td><span class="commerce-pill ${esc(row.status)}">${esc(row.status_label)}</span></td>
+        <td><a class="admin-button admin-button--ghost" href="${esc(row.detail_url)}">查看详情</a></td>
+      </tr>`).join("");
+      $("empty").classList.toggle("is-visible", !items.length);
+    }
+    async function load() {
+      $("summary").textContent = "正在加载订单...";
+      renderLoading();
+      try {
+        const data = await window.AdminApi.requestJson(`${listApiUrl}?${params().toString()}`);
+        state.total = data.total || 0;
+        state.limit = data.limit || Number($("limit").value || 20);
+        render(data.items || []);
+        $("summary").textContent = `当前页 ${(data.items || []).length} 条 / 筛选结果 ${state.total} 条`;
+        $("pageHint").textContent = `第 ${Math.floor(state.offset / state.limit) + 1} 页`;
+        $("prevBtn").disabled = state.offset <= 0;
+        $("nextBtn").disabled = !data.has_more;
+      } catch (error) {
+        $("summary").textContent = window.AdminApi.errorMessage(error, "订单加载失败，请稍后重试");
+        render([]);
+      }
+    }
+    function resetPage() { state.offset = 0; load(); }
+    $("searchBtn").addEventListener("click", resetPage);
+    $("refreshBtn").addEventListener("click", load);
+    $("limit").addEventListener("change", resetPage);
+    $("resetBtn").addEventListener("click", () => {
+      ["mobile","identity","transaction","product","status"].forEach((id) => { $(id).value = ""; });
+      resetPage();
+    });
+    $("prevBtn").addEventListener("click", () => { state.offset = Math.max(0, state.offset - state.limit); load(); });
+    $("nextBtn").addEventListener("click", () => { state.offset += state.limit; load(); });
+    if ($("exportBtn") && exportApiUrl) $("exportBtn").addEventListener("click", async () => {
+      $("notice").textContent = "正在生成导出文件...";
+      try {
+        const response = await fetch(exportApiUrl, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({resource: "orders", filters: {...filters(), provider: fixedProvider}, format: "csv"})});
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          throw new Error(window.AdminApi.responseErrorMessage(response, payload, "导出失败"));
+        }
+        let blob;
+        if (exportApiUrl === "/api/admin/exports") {
+          const data = await response.json();
+          if (data.ok === false) throw new Error(window.AdminApi.responseErrorMessage(response, data, "导出失败"));
+          const exported = await window.AdminApi.requestJson(data.job.download_url);
+          blob = new Blob([exported.content_text || ""], {type: "text/csv;charset=utf-8"});
+        } else {
+          blob = await response.blob();
+        }
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url; link.download = "wechat-pay-orders.csv"; link.click();
+        URL.revokeObjectURL(url);
+        $("notice").textContent = "导出文件已生成。";
+      } catch (error) {
+        $("notice").textContent = window.AdminApi.errorMessage(error, "导出失败，请稍后重试");
+      }
+    });
+    load();
+  }
+</script>
+
+</body>
+</html>

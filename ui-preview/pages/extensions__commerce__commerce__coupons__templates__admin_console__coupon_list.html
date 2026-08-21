@@ -1,0 +1,916 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Coupon List · 客户管理后台</title>
+  <link rel="stylesheet" href="../static/admin_console/admin_console.css?v=operation-member-picker-fix-20260527&amp;design=lark-20260803">
+  
+<style>
+  .coupon-admin {
+    display: grid;
+    gap: 16px;
+    min-width: 0;
+  }
+  .coupon-toolbar,
+  .coupon-actions,
+  .coupon-inline,
+  .coupon-pagination,
+  .coupon-dialog-head,
+  .coupon-dialog-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .coupon-toolbar,
+  .coupon-dialog-head { justify-content: space-between; }
+  .coupon-table { min-width: 1120px; }
+  .coupon-muted,
+  .coupon-help,
+  .coupon-toast { color: var(--muted); }
+  .coupon-toast { min-height: 22px; font-weight: 700; }
+  .coupon-toast.is-error { color: #b42318; }
+  .coupon-help { margin: 0; font-size: 12px; line-height: 1.6; }
+  .coupon-status {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #f2f4f7;
+    color: #475467;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  .coupon-status.active,
+  .coupon-status.published,
+  .coupon-status.available { background: #ecfdf3; color: #067647; }
+  .coupon-status.scheduled,
+  .coupon-status.reserved { background: #eff8ff; color: #175cd3; }
+  .coupon-status.sold_out,
+  .coupon-status.ended,
+  .coupon-status.expired { background: #fffaeb; color: #b54708; }
+  .coupon-status.stopped,
+  .coupon-status.archived,
+  .coupon-status.consumed { background: #f2f4f7; color: #475467; }
+  .coupon-amount { color: #f53f3f; font-size: 18px; font-weight: 900; white-space: nowrap; }
+  .coupon-type-list { display: grid; gap: 4px; min-width: 120px; }
+  .coupon-summary-grid,
+  .coupon-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .coupon-stat {
+    display: grid;
+    gap: 6px;
+    min-height: 88px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fff;
+  }
+  .coupon-stat span { color: var(--muted); font-size: 12px; font-weight: 700; }
+  .coupon-stat strong { color: var(--text); font-size: 24px; font-weight: 900; }
+  .coupon-form { display: grid; gap: 16px; }
+  .coupon-section { padding: 22px 24px; }
+  .coupon-section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f0f1f2;
+  }
+  .coupon-section-head h2 { margin: 0; font-size: 18px; font-weight: 900; }
+  .coupon-section-head p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+  .coupon-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .coupon-field { display: grid; gap: 8px; min-width: 0; }
+  .coupon-field.full { grid-column: 1 / -1; }
+  .coupon-field label,
+  .coupon-field legend { color: #667085; font-size: 13px; font-weight: 800; }
+  .coupon-field input,
+  .coupon-field select,
+  .coupon-field textarea,
+  .coupon-search {
+    width: 100%;
+    min-height: 42px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--text);
+    font: inherit;
+    outline: none;
+  }
+  .coupon-field textarea { min-height: 118px; resize: vertical; }
+  .coupon-field input:focus,
+  .coupon-field select:focus,
+  .coupon-field textarea:focus,
+  .coupon-search:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(51, 112, 255, .12); }
+  .coupon-field input:disabled,
+  .coupon-field select:disabled,
+  .coupon-field textarea:disabled { background: #f5f6f7; color: #8a94a6; cursor: not-allowed; }
+  .coupon-required { color: #f53f3f; }
+  .coupon-money-input { display: grid; grid-template-columns: auto minmax(0, 260px) auto; align-items: center; gap: 12px; }
+  .coupon-money-input strong { font-size: 16px; }
+  .coupon-radio-row { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+  .coupon-radio-row label { display: inline-flex; align-items: center; gap: 8px; color: var(--text); cursor: pointer; }
+  .coupon-radio-row input { width: 18px; min-height: 18px; padding: 0; accent-color: var(--brand); }
+  .coupon-freeze-notice {
+    padding: 12px 14px;
+    border: 1px solid #fedf89;
+    border-radius: 10px;
+    background: #fffaeb;
+    color: #93370d;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .coupon-picker-summary {
+    display: grid;
+    gap: 10px;
+    min-height: 88px;
+    padding: 14px;
+    border: 1px dashed #b8c4d6;
+    border-radius: 10px;
+    background: #fafbfc;
+  }
+  .coupon-selected-list { display: flex; gap: 8px; flex-wrap: wrap; }
+  .coupon-selected-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    max-width: 100%;
+    padding: 6px 9px;
+    border: 1px solid #d6e4ff;
+    border-radius: 8px;
+    background: #f5f8ff;
+    color: #1849a9;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .coupon-selected-item button { border: 0; background: transparent; color: inherit; cursor: pointer; font-size: 16px; }
+  .coupon-form-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 20px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .96);
+    box-shadow: 0 -8px 24px rgba(15, 23, 42, .07);
+    backdrop-filter: blur(8px);
+  }
+  .coupon-dialog[hidden] { display: none !important; }
+  .coupon-dialog {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: rgba(15, 23, 42, .42);
+  }
+  .coupon-dialog-panel {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    width: min(860px, 100%);
+    max-height: min(760px, calc(100vh - 48px));
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 24px 72px rgba(15, 23, 42, .24);
+  }
+  .coupon-dialog-head,
+  .coupon-dialog-actions { padding: 16px 20px; border-bottom: 1px solid var(--line); }
+  .coupon-dialog-head h2 { margin: 0; font-size: 18px; }
+  .coupon-dialog-actions { justify-content: flex-end; border-top: 1px solid var(--line); border-bottom: 0; }
+  .coupon-dialog-body { min-height: 0; overflow: auto; padding: 18px 20px; }
+  .coupon-picker-tools { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; margin-bottom: 14px; }
+  .coupon-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .coupon-tab {
+    min-height: 40px;
+    padding: 8px 14px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    color: #475467;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 800;
+  }
+  .coupon-tab.is-active { border-color: #b2ccff; background: #eff4ff; color: #1849a9; }
+  .coupon-option-list { display: grid; gap: 8px; }
+  .coupon-option {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding: 13px 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+  }
+  .coupon-option input { width: 18px; height: 18px; accent-color: var(--brand); }
+  .coupon-option-title { display: grid; gap: 4px; min-width: 0; }
+  .coupon-option-title strong { overflow-wrap: anywhere; }
+  .coupon-option-title span { color: var(--muted); font-size: 12px; }
+  .coupon-empty { display: grid; place-items: center; min-height: 130px; color: var(--muted); text-align: center; }
+  .coupon-share-panel { width: min(520px, 100%); }
+  .coupon-share-body { display: grid; gap: 16px; justify-items: center; }
+  .coupon-share-qr { width: 220px; height: 220px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; object-fit: contain; }
+  .coupon-share-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; width: 100%; }
+  .coupon-identity { display: grid; gap: 4px; min-width: 180px; }
+  .coupon-identity strong { overflow-wrap: anywhere; }
+  .coupon-identity span { color: var(--muted); font-size: 12px; }
+  @media (max-width: 980px) {
+    .coupon-summary-grid,
+    .coupon-stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .coupon-form-grid,
+    .coupon-picker-tools { grid-template-columns: 1fr; }
+    .coupon-field.full { grid-column: auto; }
+  }
+  @media (max-width: 640px) {
+    .coupon-section { padding: 18px; }
+    .coupon-money-input { grid-template-columns: auto minmax(0, 1fr) auto; }
+    .coupon-dialog { padding: 0; }
+    .coupon-dialog-panel { width: 100%; max-height: 100vh; height: 100vh; border-radius: 0; }
+  }
+  /* Supplied AI-CRM design package: compact coupon list and editor. */
+  .coupon-admin,.coupon-form{gap:12px}
+  .coupon-status{min-height:22px;padding:2px 8px;border-radius:4px;font-weight:500}
+  .coupon-status.active,.coupon-status.published,.coupon-status.available{background:#ebf9ec;color:#2ea121}
+  .coupon-status.scheduled,.coupon-status.reserved{background:#eff4ff;color:#245bdb}
+  .coupon-status.sold_out,.coupon-status.ended,.coupon-status.expired{background:#fff6e9;color:#d9730d}
+  .coupon-stat{min-height:72px;padding:12px 14px;border-color:#dee0e3;border-radius:8px}
+  .coupon-stat span{font-weight:400}.coupon-stat strong{font-size:22px;font-weight:600}
+  .coupon-section{padding:18px}
+  .coupon-section-head{margin-bottom:16px;padding-bottom:14px;border-color:#eff0f1}
+  .coupon-section-head h2{font-size:15px;font-weight:600}
+  .coupon-form-grid{gap:16px}
+  .coupon-field{gap:6px}.coupon-field label,.coupon-field legend{color:#646a73;font-size:12px;font-weight:400}
+  .coupon-field input,.coupon-field select,.coupon-field textarea,.coupon-search{min-height:36px;padding:8px 10px;border-color:#dee0e3;border-radius:6px}
+  .coupon-field input:focus,.coupon-field select:focus,.coupon-field textarea:focus,.coupon-search:focus{border-color:#3370ff;box-shadow:0 0 0 2px rgba(51,112,255,.12)}
+  .coupon-form-actions{padding:10px 16px;border-radius:8px;box-shadow:none;backdrop-filter:none}
+  .coupon-dialog{background:rgba(31,35,41,.46)}
+  .coupon-dialog-panel{border-radius:10px;box-shadow:0 12px 36px rgba(31,35,41,.24)}
+  .coupon-tab{min-height:32px;padding:0 12px;border-radius:6px;font-weight:500}
+  .coupon-option{padding:10px 12px;border-radius:8px}
+
+  /* Supplied HTML: coupon editor is an independent two-column secondary page. */
+  .coupon-editor-head{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    min-height:54px;padding:10px 14px;border:1px solid #dee0e3;border-radius:8px;background:#fff
+  }
+  .coupon-editor-title,.coupon-editor-title-row,.coupon-editor-actions{display:flex;align-items:center;gap:8px;min-width:0}
+  .coupon-editor-title-row{margin-top:2px}
+  .coupon-editor-title-row h2{margin:0;color:#1f2329;font-size:16px;font-weight:600;line-height:22px}
+  .coupon-editor-breadcrumb{color:#8f959e;font-size:11px;line-height:14px}
+  .coupon-back{display:grid;place-items:center;width:30px;height:30px;border:1px solid #dee0e3;border-radius:6px;color:#646a73;font-size:23px;line-height:1;text-decoration:none}
+  .coupon-editor-actions{justify-content:flex-end;flex:none}
+  .coupon-editor-actions .admin-button{min-height:32px;padding:0 12px}
+  .coupon-editor-actions .coupon-toast:empty{display:none}
+  .coupon-editor-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px;align-items:start}
+  .coupon-editor-main{display:grid;gap:12px;min-width:0}
+  .coupon-editor-main .coupon-section,.coupon-preview-card{padding:0;overflow:hidden;border-color:#dee0e3;border-radius:8px;box-shadow:none}
+  .coupon-editor-main .coupon-section-head,.coupon-preview-card .coupon-section-head{
+    min-height:44px;margin:0;padding:11px 16px;border-bottom:1px solid #eff0f1
+  }
+  .coupon-editor-main .coupon-section-head h2,.coupon-preview-card .coupon-section-head h2{font-size:14px;font-weight:600}
+  .coupon-editor-main .coupon-form-grid{padding:16px;gap:14px}
+  .coupon-editor-main .coupon-field{gap:6px}
+  .coupon-editor-main .coupon-field input,.coupon-editor-main .coupon-field textarea{min-height:34px}
+  .coupon-editor-main .coupon-field textarea{min-height:88px;line-height:20px}
+  .coupon-picker-summary{min-height:0;padding:14px 16px;border:0;border-radius:0;background:#fff}
+  .coupon-product-summary{justify-content:space-between}
+  .coupon-selected-list{display:grid;gap:8px}
+  .coupon-selected-item{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;
+    min-height:42px;padding:8px 12px;border:1px solid #dee0e3;border-radius:8px;background:#fff;color:#1f2329;font-weight:400
+  }
+  .coupon-selected-copy{display:grid;gap:2px;min-width:0}
+  .coupon-selected-copy strong{overflow:hidden;font-size:13px;font-weight:500;text-overflow:ellipsis;white-space:nowrap}
+  .coupon-selected-copy small{overflow:hidden;color:#a6aab0;font:11px ui-monospace,SFMono-Regular,Menlo,monospace;text-overflow:ellipsis;white-space:nowrap}
+  .coupon-selected-item button{flex:none;color:#8f959e;font-size:12px}
+  .coupon-validity-fieldset{padding:10px 14px 14px!important;border:1px solid #dee0e3!important;border-radius:8px}
+  .coupon-validity-fieldset legend{padding:0 6px}
+  .coupon-validity-fieldset .coupon-radio-row{display:grid;gap:10px}
+  .coupon-validity-fieldset .coupon-radio-row label{min-height:30px;font-weight:400}
+  .coupon-validity-fieldset .coupon-relative-days{width:58px;min-height:28px;padding:4px 8px;text-align:center}
+  .coupon-fixed-range{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+  .coupon-preview-card{position:sticky;top:12px}
+  .coupon-preview-body{padding:16px}
+  .coupon-preview-ticket{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:10px;background:linear-gradient(135deg,#3370ff,#245bdb);color:#fff}
+  .coupon-preview-amount{display:grid;justify-items:center;flex:none}
+  .coupon-preview-amount span{font-size:12px;opacity:.85}
+  .coupon-preview-amount strong{font-size:28px;font-weight:700;line-height:32px}
+  .coupon-preview-divider{width:1px;height:44px;background:rgba(255,255,255,.3)}
+  .coupon-preview-copy{display:grid;gap:4px;min-width:0}
+  .coupon-preview-copy strong{overflow:hidden;font-size:14px;font-weight:600;text-overflow:ellipsis;white-space:nowrap}
+  .coupon-preview-copy span{font-size:11px;line-height:17px;opacity:.85}
+  .coupon-preview-body>p{margin:12px 0 0;color:#8f959e;font-size:12px;line-height:19px}
+  @media (max-width:1100px){
+    .coupon-editor-layout{grid-template-columns:1fr}
+    .coupon-preview-card{position:static;grid-row:1}
+  }
+  @media (max-width:720px){
+    .coupon-editor-head{align-items:flex-start;flex-direction:column}
+    .coupon-editor-actions{width:100%;justify-content:flex-end}
+    .coupon-fixed-range{grid-template-columns:1fr}
+  }
+</style>
+
+  <script src="../static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
+  <script defer src="../static/admin_console/admin_console.js?v=lark-design-package-20260803"></script>
+  <script defer src="../static/admin_console/operation_member_picker.js?v=operation-member-picker-wecom-sync-20260709"></script>
+</head>
+<body
+  class="admin-shell"
+  data-admin-shell-source="next_admin_shell"
+>
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="admin-brand-mark">CRM</div>
+        <div class="admin-brand-copy">
+          <div class="admin-brand-title">客户管理后台</div>
+          <div class="admin-brand-subtitle">ADMIN CONSOLE</div>
+        </div>
+      </div>
+
+      <nav class="admin-nav" aria-label="客户管理后台导航">
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">运营</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="自动化运营"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_conversion.svg" alt="">
+              <span class="admin-nav-label">自动化运营</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="运营闭环"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/operation_cycles.svg" alt="">
+              <span class="admin-nav-label">运营闭环</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="群运营计划"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/group_ops.svg" alt="">
+              <span class="admin-nav-label">群运营计划</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="渠道码中心"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/channels.svg" alt="">
+              <span class="admin-nav-label">渠道码中心</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="AI 助手"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/cloud_orchestrator.svg" alt="">
+              <span class="admin-nav-label">AI 助手</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="客户激活 / 客户列表"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/customers.svg" alt="">
+              <span class="admin-nav-label">客户激活 / 客户列表</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="漏斗 / 数据看板"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/user_ops_funnel.svg" alt="">
+              <span class="admin-nav-label">漏斗 / 数据看板</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="问卷"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/questionnaires.svg" alt="">
+              <span class="admin-nav-label">问卷</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="内容雷达"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/radar_links.svg" alt="">
+              <span class="admin-nav-label">内容雷达</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="企微标签管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wecom_tags.svg" alt="">
+              <span class="admin-nav-label">企微标签管理</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">交易</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="交易管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_transactions.svg" alt="">
+              <span class="admin-nav-label">交易管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_products.svg" alt="">
+              <span class="admin-nav-label">商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="周期商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/service_period_products.svg" alt="">
+              <span class="admin-nav-label">周期商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="优惠券"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/coupons.svg" alt="">
+              <span class="admin-nav-label">优惠券</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">素材</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="图片素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/image_library.svg" alt="">
+              <span class="admin-nav-label">图片素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="小程序素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/miniprogram_library.svg" alt="">
+              <span class="admin-nav-label">小程序素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="附件素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/attachment_library.svg" alt="">
+              <span class="admin-nav-label">附件素材库</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">配置及后台</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="自动化话术"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_agents.svg" alt="">
+              <span class="admin-nav-label">自动化话术</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="负责人迁移"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/owner_migration.svg" alt="">
+              <span class="admin-nav-label">负责人迁移</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="配置"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/config.svg" alt="">
+              <span class="admin-nav-label">配置</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="API 文档"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/api_docs.svg" alt="">
+              <span class="admin-nav-label">API 文档</span>
+            </a>
+            
+          </div>
+        </section>
+        
+      </nav>
+
+      
+      <div class="admin-sidebar-user">
+        <div class="admin-sidebar-user__avatar">
+          示
+        </div>
+        <div class="admin-sidebar-user__meta">
+          <div class="admin-sidebar-user__name">
+            示例管理员
+          </div>
+          <a class="admin-sidebar-user__logout" href="#">退出登录</a>
+        </div>
+      </div>
+      
+    </aside>
+
+    <div class="admin-main-wrap">
+      
+      
+      
+      
+      <header class="admin-topbar">
+        
+        <div class="admin-topbar-head">
+          <nav class="admin-breadcrumbs" aria-label="当前位置">
+            
+            
+            <a href="#">客户管理后台</a>
+            
+            
+          </nav>
+          <div>
+            <h1 class="admin-page-title">Coupon List</h1>
+            <p class="admin-page-summary">页面功能预览（示例数据）</p>
+          </div>
+        </div>
+        
+
+        
+      </header>
+      
+
+      <main class="admin-page">
+        
+        <section class="admin-alert admin-alert--success">示例</section>
+        
+        
+        <section class="admin-alert admin-alert--error">示例</section>
+        
+        
+
+<div class="coupon-admin" data-coupon-list>
+  <section class="admin-card">
+    <div class="coupon-toolbar">
+      <div class="coupon-toast" id="couponListToast">共 示例 张优惠券</div>
+      <div class="coupon-inline">
+        <label class="coupon-field" style="min-width:220px;">
+          <span class="sr-only">搜索优惠券</span>
+          <input class="coupon-search" id="couponListSearch" type="search" maxlength="80" placeholder="搜索优惠券名称">
+        </label>
+        <label class="coupon-field" style="min-width:140px;">
+          <span class="sr-only">状态筛选</span>
+          <select id="couponListStatus">
+            <option value="">全部状态</option>
+            <option value="draft">草稿</option>
+            <option value="scheduled">待开始</option>
+            <option value="active">领取中</option>
+            <option value="sold_out">已领完</option>
+            <option value="ended">已结束</option>
+            <option value="stopped">已停止</option>
+            <option value="archived">已归档</option>
+          </select>
+        </label>
+        <button class="admin-button admin-button--ghost" id="couponListFilter" type="button">查询</button>
+      </div>
+    </div>
+    <div class="admin-table-wrap" style="margin-top:14px;">
+      <table class="admin-table coupon-table">
+        <thead>
+          <tr>
+            <th>优惠券名称</th>
+            <th>减免金额</th>
+            <th>适用商品</th>
+            <th>领取时间（北京时间）</th>
+            <th>发行 / 使用</th>
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="couponListRows">
+          
+          
+          
+          
+            
+            
+          
+            
+            
+          
+            
+            
+          
+          <tr data-coupon-row data-name="示例" data-status="示例">
+            <td>
+              <div class="coupon-identity">
+                <strong>示例</strong>
+                <span>无门槛固定减免券</span>
+              </div>
+            </td>
+            <td><span class="coupon-amount">¥1.00</span></td>
+            <td>
+              <div class="coupon-type-list">
+                <strong>示例 个商品</strong>
+                <span class="coupon-muted">
+                  普通商品、周期商品
+                  
+                </span>
+              </div>
+            </td>
+            <td>
+              <div class="coupon-type-list">
+                <span>示例</span>
+                <span class="coupon-muted">至 示例</span>
+              </div>
+            </td>
+            <td>示例 / 示例 · 已用 示例</td>
+            <td><span class="coupon-status 示例">示例</span></td>
+            <td>
+              <div class="coupon-actions">
+                <a class="admin-button admin-button--ghost" href="/admin/coupons/示例/edit">编辑</a>
+                <a class="admin-button admin-button--ghost" href="/admin/coupons/示例/data">数据</a>
+                <button class="admin-button admin-button--ghost" data-coupon-action="share" data-coupon-id="示例" type="button">分享</button>
+                <button class="admin-button admin-button--ghost" data-coupon-action="copy" data-coupon-id="示例" type="button">复制</button>
+                
+              </div>
+            </td>
+          </tr>
+          
+          
+          
+          
+            
+            
+          
+            
+            
+          
+            
+            
+          
+          <tr data-coupon-row data-name="示例" data-status="示例">
+            <td>
+              <div class="coupon-identity">
+                <strong>示例</strong>
+                <span>无门槛固定减免券</span>
+              </div>
+            </td>
+            <td><span class="coupon-amount">¥1.00</span></td>
+            <td>
+              <div class="coupon-type-list">
+                <strong>示例 个商品</strong>
+                <span class="coupon-muted">
+                  普通商品、周期商品
+                  
+                </span>
+              </div>
+            </td>
+            <td>
+              <div class="coupon-type-list">
+                <span>示例</span>
+                <span class="coupon-muted">至 示例</span>
+              </div>
+            </td>
+            <td>示例 / 示例 · 已用 示例</td>
+            <td><span class="coupon-status 示例">示例</span></td>
+            <td>
+              <div class="coupon-actions">
+                <a class="admin-button admin-button--ghost" href="/admin/coupons/示例/edit">编辑</a>
+                <a class="admin-button admin-button--ghost" href="/admin/coupons/示例/data">数据</a>
+                <button class="admin-button admin-button--ghost" data-coupon-action="share" data-coupon-id="示例" type="button">分享</button>
+                <button class="admin-button admin-button--ghost" data-coupon-action="copy" data-coupon-id="示例" type="button">复制</button>
+                
+              </div>
+            </td>
+          </tr>
+          
+          
+          
+          
+            
+            
+          
+            
+            
+          
+            
+            
+          
+          <tr data-coupon-row data-name="示例" data-status="示例">
+            <td>
+              <div class="coupon-identity">
+                <strong>示例</strong>
+                <span>无门槛固定减免券</span>
+              </div>
+            </td>
+            <td><span class="coupon-amount">¥1.00</span></td>
+            <td>
+              <div class="coupon-type-list">
+                <strong>示例 个商品</strong>
+                <span class="coupon-muted">
+                  普通商品、周期商品
+                  
+                </span>
+              </div>
+            </td>
+            <td>
+              <div class="coupon-type-list">
+                <span>示例</span>
+                <span class="coupon-muted">至 示例</span>
+              </div>
+            </td>
+            <td>示例 / 示例 · 已用 示例</td>
+            <td><span class="coupon-status 示例">示例</span></td>
+            <td>
+              <div class="coupon-actions">
+                <a class="admin-button admin-button--ghost" href="/admin/coupons/示例/edit">编辑</a>
+                <a class="admin-button admin-button--ghost" href="/admin/coupons/示例/data">数据</a>
+                <button class="admin-button admin-button--ghost" data-coupon-action="share" data-coupon-id="示例" type="button">分享</button>
+                <button class="admin-button admin-button--ghost" data-coupon-action="copy" data-coupon-id="示例" type="button">复制</button>
+                
+              </div>
+            </td>
+          </tr>
+          
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<div class="coupon-dialog" id="couponShareDialog" role="dialog" aria-modal="true" aria-labelledby="couponShareTitle" hidden>
+  <section class="coupon-dialog-panel coupon-share-panel">
+    <header class="coupon-dialog-head">
+      <h2 id="couponShareTitle">分享优惠券</h2>
+      <button class="admin-button admin-button--ghost" data-close-share type="button" aria-label="关闭分享弹窗">关闭</button>
+    </header>
+    <div class="coupon-dialog-body coupon-share-body">
+      <img class="coupon-share-qr" id="couponShareQr" alt="优惠券领取二维码">
+      <div class="coupon-share-row">
+        <input class="coupon-search" id="couponShareUrl" readonly aria-label="优惠券领取链接">
+        <button class="admin-button admin-button--primary" id="couponCopyShareUrl" type="button">复制链接</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+      </main>
+    </div>
+  </div>
+  <script id="aicrmAdminActionGrants" type="application/json">{}</script>
+  
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    "use strict";
+    const api = window.AdminApi && window.AdminApi.requestJson;
+    const toast = document.getElementById("couponListToast");
+    const shareDialog = document.getElementById("couponShareDialog");
+    const shareUrl = document.getElementById("couponShareUrl");
+    const shareQr = document.getElementById("couponShareQr");
+
+    function notify(message, isError) {
+      toast.textContent = message;
+      toast.classList.toggle("is-error", Boolean(isError));
+    }
+
+    function filterRows() {
+      const query = document.getElementById("couponListSearch").value.trim().toLowerCase();
+      const status = document.getElementById("couponListStatus").value;
+      document.querySelectorAll("[data-coupon-row]").forEach((row) => {
+        row.hidden = Boolean((query && !row.dataset.name.includes(query)) || (status && row.dataset.status !== status));
+      });
+    }
+
+    async function mutate(couponId, action) {
+      if (!api) throw new Error("管理端请求组件未加载");
+      const messages = {
+        publish: "确定发布这张优惠券吗？发布后可以通过链接和二维码领取。",
+        stop: "确定停止领取吗？已领取且有效的优惠券仍可使用。",
+        archive: "确定归档这张优惠券吗？",
+        delete: "确定删除这张草稿优惠券吗？",
+      };
+      if (messages[action] && !window.confirm(messages[action])) return;
+      notify("正在处理…", false);
+      const method = action === "delete" ? "DELETE" : "POST";
+      const suffix = action === "delete" ? "" : `/${action}`;
+      const payload = await api(`/api/admin/coupons/${encodeURIComponent(couponId)}${suffix}`, { method });
+      if (action === "copy") {
+        const copied = payload.coupon || payload.item || {};
+        window.location.href = `/admin/coupons/${encodeURIComponent(copied.id)}/edit`;
+        return;
+      }
+      window.location.reload();
+    }
+
+    async function openShare(couponId) {
+      if (!api) throw new Error("管理端请求组件未加载");
+      notify("正在生成分享信息…", false);
+      const payload = await api(`/api/admin/coupons/${encodeURIComponent(couponId)}/share`);
+      const share = payload.share || payload;
+      shareUrl.value = String(share.url || share.share_url || "");
+      shareQr.src = String(share.qr_data_url || share.qr_code_data_url || "");
+      shareDialog.hidden = false;
+      notify("分享信息已生成", false);
+    }
+
+    document.getElementById("couponListFilter").addEventListener("click", filterRows);
+    document.getElementById("couponListSearch").addEventListener("input", filterRows);
+    document.getElementById("couponListStatus").addEventListener("change", filterRows);
+    document.addEventListener("click", async (event) => {
+      const button = event.target.closest("[data-coupon-action]");
+      if (!button) return;
+      button.disabled = true;
+      try {
+        if (button.dataset.couponAction === "share") await openShare(button.dataset.couponId);
+        else await mutate(button.dataset.couponId, button.dataset.couponAction);
+      } catch (error) {
+        notify(error.message || "操作失败，请重试。", true);
+      } finally {
+        button.disabled = false;
+      }
+    });
+    document.querySelector("[data-close-share]").addEventListener("click", () => { shareDialog.hidden = true; });
+    shareDialog.addEventListener("click", (event) => { if (event.target === shareDialog) shareDialog.hidden = true; });
+    document.getElementById("couponCopyShareUrl").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(shareUrl.value);
+        notify("领取链接已复制", false);
+      } catch (_error) {
+        shareUrl.select();
+        document.execCommand("copy");
+        notify("领取链接已复制", false);
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>漏斗 / 数据看板 · 多维表格方向稿</title>
+<style>
+:root{--accent:#3370ff;--accent-hover:#245BDB;--accent-soft:#EFF4FF;--ink:#1F2329;--sub:#646A73;--muted:#8F959E;--faint:#A6AAB0;--line:#DEE0E3;--line-soft:#EFF0F1;--bg:#F5F6F7;--ok:#2EA121;--ok-bg:#EBF9EC;--warn:#D97917;--warn-bg:#FFF7E8;--red:#D83931;--red-bg:#FDECEE;--purple:#7F3BF5;--purple-bg:#F4EDFF}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",-apple-system,sans-serif;background:var(--bg);color:var(--ink);font-size:13px;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font-family:inherit}
+a{text-decoration:none;color:inherit}
+.layout{display:flex;min-height:100vh}
+.side{width:208px;flex:none;background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:10px;height:52px;padding:0 14px;border-bottom:1px solid var(--line-soft)}
+.brand-mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#4E83FD,#3370ff);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.brand-title{font-size:14px;font-weight:600;line-height:16px}
+.brand-sub{font-size:10px;color:var(--faint);letter-spacing:.08em;margin-top:2px}
+.nav{flex:1;overflow:auto;padding:8px 0}
+.nav-grp{padding:14px 18px 5px;font-size:12px;color:var(--faint)}
+.nav-item{display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;margin:0 8px 2px;border-radius:6px;font-size:13px;cursor:pointer}
+.nav-item:hover{background:#F7F8FA}
+.nav-item.on{background:var(--accent-soft);color:var(--accent-hover);font-weight:600}
+.main{flex:1;min-width:0;padding:22px 26px 60px}
+.crumb{font-size:12px;color:var(--muted);margin-bottom:6px}
+.crumb b{color:var(--ink);font-weight:500}
+.page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}
+.page-title{font-size:20px;font-weight:700}
+.page-desc{font-size:12px;color:var(--muted);margin-top:4px}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 14px;border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--ink);font-size:13px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:#BBBFC4;background:#F7F8FA}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:500}
+.btn.primary:hover{background:var(--accent-hover)}
+.btn.sm{height:26px;padding:0 10px;font-size:12px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.chip{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:4px;font-size:12px;white-space:nowrap}
+.chip.blue{background:var(--accent-soft);color:var(--accent-hover)}
+.chip.ok{background:var(--ok-bg);color:var(--ok)}
+.chip.warn{background:var(--warn-bg);color:var(--warn)}
+.chip.red{background:var(--red-bg);color:var(--red)}
+.chip.gray{background:#F2F3F5;color:var(--sub)}
+.input,.select{height:30px;padding:0 10px;border:1px solid var(--line);border-radius:6px;font-size:12px;background:#fff;color:var(--ink);outline:none}
+.input:focus,.select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(51,112,255,.12)}
+.muted{color:var(--muted)}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--sub)}
+/* ——— 漏斗统计 ——— */
+.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.stat{padding:14px 16px;border-left:3px solid #DEE0E3}
+.stat.ok{border-left-color:#34C19B}.stat.warn{border-left-color:#F7BA1E}.stat.blue{border-left-color:#3370ff}.stat.gray{border-left-color:#C4C7CC}.stat.purple{border-left-color:#7F3BF5}
+.stat-l{font-size:12px;color:var(--muted)}
+.stat-v{font-size:24px;font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums}
+.stat-s{font-size:11px;color:var(--faint);margin-top:4px}
+/* ——— 视图栏（bitable 风格） ——— */
+.viewbar{display:flex;align-items:center;gap:4px;padding:0 8px;border-bottom:1px solid var(--line-soft);background:#fff;border-radius:10px 10px 0 0;position:relative}
+.vtab{display:flex;align-items:center;gap:6px;height:42px;padding:0 14px;font-size:13px;color:var(--sub);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.vtab:hover{color:var(--ink)}
+.vtab.on{color:var(--accent-hover);font-weight:600;border-bottom-color:var(--accent)}
+.vtab-add{width:28px;height:28px;border:0;border-radius:6px;background:none;color:var(--muted);cursor:pointer;font-size:16px}
+.vtab-add:hover{background:#F2F3F5;color:var(--ink)}
+.vtab-menu{margin-left:auto}
+.icon-btn{width:28px;height:28px;border:0;border-radius:6px;background:none;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:16px}
+.icon-btn:hover{background:#F2F3F5;color:var(--ink)}
+.menu-pop{position:absolute;top:46px;right:70px;z-index:40;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 28px rgba(15,23,42,.14);padding:4px;min-width:140px;display:none}
+.menu-pop.open{display:block}
+.menu-pop div{padding:7px 12px;font-size:13px;border-radius:5px;cursor:pointer}
+.menu-pop div:hover{background:#F5F6F7}
+.menu-pop div.red{color:var(--red)}
+/* ——— 工具栏 ——— */
+.grid-toolbar{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line-soft);background:#fff;flex-wrap:wrap}
+.tool-btn{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border:1px solid var(--line);border-radius:6px;background:#fff;font-size:12px;cursor:pointer;color:var(--ink)}
+.tool-btn:hover{border-color:#BBBFC4}
+.tool-btn.on{border-color:var(--accent);color:var(--accent-hover);background:var(--accent-soft)}
+.tool-count{background:var(--accent);color:#fff;border-radius:8px;font-size:10px;padding:1px 5px;min-width:16px;text-align:center}
+.draft{margin-left:auto;display:flex;align-items:center;gap:10px}
+.draft-text{font-size:12px;color:var(--warn)}
+/* ——— 配置面板 ——— */
+.config-panel{border-bottom:1px solid var(--line-soft);background:#FAFBFC;padding:12px 16px;display:none}
+.config-panel.open{display:block}
+.cond-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.cond-row .select{min-width:150px}
+.cond-row .input{min-width:170px}
+.cond-add{border:0;background:none;color:var(--accent);font-size:12px;cursor:pointer;padding:4px 0}
+.panel-title{font-size:12px;color:var(--muted);margin-bottom:10px}
+/* ——— 网格 ——— */
+.grid-meta{padding:8px 16px;font-size:12px;color:var(--muted);background:#fff;display:flex;justify-content:space-between;border-bottom:1px solid var(--line-soft)}
+.grid-scroll{overflow:auto;max-height:calc(100vh - 390px);background:#fff;border-radius:0 0 10px 10px}
+.grid{border-collapse:separate;border-spacing:0;font-size:12px;min-width:100%}
+.grid th{position:sticky;top:0;z-index:5;background:#FAFBFC;color:var(--muted);font-weight:500;text-align:left;padding:9px 12px;border-bottom:1px solid var(--line-soft);border-right:1px solid #F5F6F7;white-space:nowrap;cursor:pointer;user-select:none}
+.grid th .sort-mark{color:var(--accent);margin-left:4px}
+.grid td{padding:9px 12px;border-bottom:1px solid #F5F6F7;border-right:1px solid #F7F8FA;white-space:nowrap;background:#fff}
+.grid tr.zebra td{background:#FCFCFD}
+.grid tbody tr:hover td{background:#F5F9FF}
+.grid td.frozen,.grid th.frozen{position:sticky;z-index:4;box-shadow:2px 0 0 #F0F1F3}
+.grid th.frozen{z-index:6}
+.grid td.f0,th.f0{left:0}
+.grid td.f1,th.f1{left:120px}
+.grid td.f2,th.f2{left:248px}
+.grid .ghead td{background:#F2F6FF!important;color:var(--accent-hover);font-weight:600;cursor:pointer;position:sticky;left:0}
+.grid .ghead td .gtri{display:inline-block;transition:transform .15s;margin-right:6px}
+.grid .ghead.collapsed .gtri{transform:rotate(-90deg)}
+.tick-ok{color:#34C19B;font-weight:700}
+.tick-no{color:#D9DBDF}
+.num{font-variant-numeric:tabular-nums}
+.row-check{width:14px;height:14px;accent-color:var(--accent)}
+/* ——— 浮窗 ——— */
+.mask{position:fixed;inset:0;background:rgba(15,23,42,.34);z-index:80;display:none;align-items:center;justify-content:center;padding:24px}
+.mask.open{display:flex}
+.modal{width:min(520px,100%);background:#fff;border-radius:12px;box-shadow:0 24px 64px rgba(15,23,42,.22);overflow:hidden;max-height:88vh;display:flex;flex-direction:column}
+.modal-head{display:flex;align-items:center;justify-content:space-between;height:54px;padding:0 18px;border-bottom:1px solid var(--line-soft);font-size:15px;font-weight:600;flex:none}
+.modal-x{width:28px;height:28px;border:0;border-radius:6px;background:none;font-size:18px;color:var(--muted);cursor:pointer}
+.modal-x:hover{background:#F2F3F5}
+.modal-body{padding:18px;overflow:auto}
+.modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 18px;border-top:1px solid var(--line-soft);flex:none}
+.share-eyebrow{font-size:11px;color:var(--faint);letter-spacing:.06em}
+.share-sec{padding:14px 0;border-bottom:1px solid var(--line-soft)}
+.share-sec:last-child{border-bottom:0}
+.share-sec h3{font-size:14px;font-weight:600;margin-bottom:4px}
+.share-sec p{font-size:12px;color:var(--muted);line-height:1.6}
+.collab{display:flex;align-items:center;gap:10px;padding:8px 0}
+.collab-av{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#4E83FD,#3370ff);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;flex:none}
+.sw{position:relative;width:36px;height:20px;border-radius:10px;background:#DEE0E3;cursor:pointer;flex:none;transition:background .15s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 2px rgba(0,0,0,.18)}
+.sw.on{background:var(--accent)}
+.sw.on::after{left:18px}
+.toast{position:fixed;right:22px;bottom:22px;z-index:99;background:#1F2329;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;box-shadow:0 12px 28px rgba(15,23,42,.25);display:none}
+.toast.show{display:block}
+@media(max-width:960px){.side{display:none}.stats{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="side">
+    <div class="brand"><div class="brand-mark">CRM</div><div><div class="brand-title">客户管理后台</div><div class="brand-sub">ADMIN CONSOLE</div></div></div>
+    <nav class="nav">
+      <div class="nav-grp">运营</div>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 8a5.5 5.5 0 0 1 9.4-3.9M13.5 8a5.5 5.5 0 0 1-9.4 3.9"/><path d="M11.5 1.9v2.4h-2.4M4.5 14.1v-2.4h2.4"/></svg>自动化运营</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="5.6"/><path d="M8 4.6V8l2.3 1.4"/></svg>运营闭环</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="6" cy="6" r="2.3"/><path d="M2 13.2c.4-2.2 2-3.4 4-3.4s3.6 1.2 4 3.4"/><path d="M11 4.2a2.2 2.2 0 0 1 0 4.2"/></svg>群运营计划</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.4" y="2.4" width="4.6" height="4.6" rx="1"/><rect x="9" y="2.4" width="4.6" height="4.6" rx="1"/><rect x="2.4" y="9" width="4.6" height="4.6" rx="1"/></svg>渠道码中心</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2.2l1.5 3.4L13 7l-3.5 1.4L8 11.8 6.5 8.4 3 7l3.5-1.4z"/></svg>AI 助手</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="5.4" r="2.6"/><path d="M3 13.4c.6-2.6 2.5-4 5-4s4.4 1.4 5 4"/></svg>客户激活 / 客户列表</a>
+      <a class="nav-item on"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.6 3.2h10.8L9.4 8v4.6L6.6 14V8z"/></svg>漏斗 / 数据看板</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="2.2" width="10" height="11.6" rx="1.6"/><path d="M5.6 5.6h4.8M5.6 8h4.8M5.6 10.4h3"/></svg>问卷</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="5.6"/><circle cx="8" cy="8" r="2.2"/><path d="M8 8l3.6-3.6"/></svg>内容雷达</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8.2 2.4H13v4.8l-6 6-4.8-4.8z"/><circle cx="10.4" cy="5" r=".9"/></svg>企微标签管理</a>
+      <div class="nav-grp">交易</div>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.2" y="4" width="11.6" height="8.4" rx="1.6"/><path d="M2.2 6.8h11.6"/></svg>交易管理</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.6 5.4L8 2.6l5.4 2.8v5.2L8 13.4l-5.4-2.8z"/></svg>商品管理</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="5.6"/><path d="M8 4.8V8l2.4 1.2"/></svg>周期商品管理</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.4 5.2a1 1 0 0 1 1-1h9.2a1 1 0 0 1 1 1v1.4a1.4 1.4 0 0 0 0 2.8v1.4a1 1 0 0 1-1 1H3.4a1 1 0 0 1-1-1V9.4a1.4 1.4 0 0 0 0-2.8z"/></svg>优惠券</a>
+      <div class="nav-grp">素材</div>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.4" y="3.2" width="11.2" height="9.6" rx="1.6"/><circle cx="6" cy="6.4" r="1.1"/><path d="M2.8 11.2l3.2-3 2.4 2.2 2-1.8 3.2 2.8"/></svg>图片素材库</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="4" y="2.2" width="8" height="11.6" rx="1.8"/><path d="M6.8 11.6h2.4"/></svg>小程序素材库</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M11.4 7.2l-4 4a2.4 2.4 0 0 1-3.4-3.4l4.6-4.6a1.6 1.6 0 1 1 2.2 2.2l-4.6 4.6"/></svg>附件素材库</a>
+      <div class="nav-grp">配置及后台</div>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.6" y="4.4" width="10.8" height="7.4" rx="2"/><path d="M8 4.4V2.6M5.6 8v1M10.4 8v1"/></svg>自动化话术</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="2.1"/><path d="M8 1.8l1 1.7 1.9-.4.4 1.9 1.7 1-1 1.6 1 1.6-1.7 1-.4 1.9-1.9-.4-1 1.7-1-1.7-1.9.4-.4-1.9-1.7-1 1-1.6-1-1.6 1.7-1 .4-1.9 1.9.4z"/></svg>配置</a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <div class="crumb">客户管理后台 / 运营 / <b>漏斗 / 数据看板</b></div>
+    <div class="page-head">
+      <div><div class="page-title">漏斗 / 数据看板</div><div class="page-desc">借鉴周期商品「会员数据表」的多维视图能力：视图 / 筛选 / 分组 / 排序 / 分享 · 每行 = 1 个手机号</div></div>
+      <button class="btn primary" id="btnRefresh">立即刷新</button>
+    </div>
+
+    <!-- 漏斗统计 -->
+    <div class="stats">
+      <div class="card stat"><div class="stat-l">总数（基础人群）</div><div class="stat-v">18,204</div><div class="stat-s">CRM 三表手机号并集</div></div>
+      <div class="card stat ok"><div class="stat-l">已激活并打开</div><div class="stat-v" style="color:var(--ok)">6,412</div><div class="stat-s">会员开通 + 真打开过小程序</div></div>
+      <div class="card stat warn"><div class="stat-l">仅激活未打开（拉回重点）</div><div class="stat-v" style="color:var(--warn)">1,286</div><div class="stat-s">有会员资格 / 从未登录</div></div>
+      <div class="card stat blue"><div class="stat-l">注册但无会员</div><div class="stat-v" style="color:var(--red)">143</div><div class="stat-s">异常：登录过但会员缺失</div></div>
+      <div class="card stat gray"><div class="stat-l">未激活</div><div class="stat-v" style="color:var(--sub)">10,363</div><div class="stat-s">在 CRM 但未开通</div></div>
+    </div>
+
+    <!-- 多维表格 -->
+    <div class="card" style="padding:0">
+      <div class="viewbar">
+        <div id="viewTabs" style="display:flex;align-items:center;gap:2px;overflow:auto"></div>
+        <button class="vtab-add" id="btnAddView" title="新建视图">＋</button>
+        <button class="icon-btn" id="btnViewMenu" title="当前视图菜单">···</button>
+        <button class="btn sm" id="btnShare" style="margin-left:6px">🌐 分享</button>
+        <div class="menu-pop" id="viewMenu">
+          <div id="vmRename">重命名视图</div>
+          <div id="vmDup">另存为副本</div>
+          <div class="red" id="vmDel">删除视图</div>
+        </div>
+      </div>
+
+      <div class="grid-toolbar">
+        <button class="tool-btn" id="btnFilter">⏷ 筛选 <span class="tool-count" id="cFilter" hidden></span></button>
+        <button class="tool-btn" id="btnGroup">▦ 分组 <span class="tool-count" id="cGroup" hidden>1</span></button>
+        <button class="tool-btn" id="btnSort">↕ 排序 <span class="tool-count" id="cSort" hidden>1</span></button>
+        <div class="draft">
+          <span class="draft-text" id="draftText" hidden>有未保存的视图修改</span>
+          <button class="btn sm" id="btnSaveAs" hidden>另存为</button>
+          <button class="btn sm primary" id="btnSaveView" hidden>保存视图</button>
+        </div>
+      </div>
+
+      <!-- 筛选面板 -->
+      <div class="config-panel" id="panelFilter">
+        <div class="panel-title">满足以下所有条件的行才会显示：</div>
+        <div id="condList"></div>
+        <button class="cond-add" id="btnAddCond">＋ 添加条件</button>
+      </div>
+      <!-- 分组面板 -->
+      <div class="config-panel" id="panelGroup">
+        <div class="panel-title">按字段分组（组可折叠）：</div>
+        <div class="cond-row">
+          <select class="select" id="groupField"><option value="">不分组</option></select>
+          <span class="muted" style="font-size:12px">分组后按组名排序，组头显示行数</span>
+        </div>
+      </div>
+      <!-- 排序面板 -->
+      <div class="config-panel" id="panelSort">
+        <div class="panel-title">排序规则：</div>
+        <div class="cond-row">
+          <select class="select" id="sortField"></select>
+          <select class="select" id="sortDir" style="min-width:90px"><option value="desc">从高到低</option><option value="asc">从低到高</option></select>
+          <button class="link-btn cond-add" id="btnClearSort" style="color:var(--red)">清除排序</button>
+        </div>
+      </div>
+
+      <div class="grid-meta">
+        <span id="resultSummary">—</span>
+        <span>上次刷新: <b>2026-08-05 02:10</b> · 状态: <b style="color:var(--ok)">success</b> · 列可横向滚动，前 3 列冻结</span>
+      </div>
+      <div class="grid-scroll" id="gridScroll">
+        <table class="grid" id="grid">
+          <thead id="gridHead"></thead>
+          <tbody id="gridBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 底部操作 -->
+    <div class="card" style="margin-top:14px;padding:12px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <input class="input" id="globalSearch" placeholder="全局搜索（姓名 / 昵称 / 手机尾号 / 企微 ID…）" style="width:280px">
+      <span class="muted" style="font-size:12px" id="selInfo">未选中行</span>
+      <div style="flex:1"></div>
+      <button class="btn primary" id="btnBroadcast">群发选中用户</button>
+      <button class="btn" id="btnSenders">发送人管理</button>
+      <button class="btn" id="btnCsv">导出 CSV（筛选后）</button>
+    </div>
+  </main>
+</div>
+
+<!-- 视图命名浮窗 -->
+<div class="mask" id="nameMask">
+  <div class="modal" style="width:min(400px,100%)">
+    <div class="modal-head"><span id="nameTitle">新建视图</span><button class="modal-x" data-close>×</button></div>
+    <div class="modal-body"><div style="display:grid;gap:6px"><label style="font-size:12px;color:var(--sub)">视图名称</label><input class="input" id="viewNameInput" maxlength="30" placeholder="例如：本周拉回名单"></div></div>
+    <div class="modal-foot"><button class="btn" data-close>取消</button><button class="btn primary" id="nameOk">确认</button></div>
+  </div>
+</div>
+
+<!-- 分享浮窗 -->
+<div class="mask" id="shareMask">
+  <div class="modal">
+    <div class="modal-head"><div><div class="share-eyebrow">漏斗数据工作区</div><span>分享数据</span></div><button class="modal-x" data-close>×</button></div>
+    <div class="modal-body" style="padding-top:6px">
+      <div class="share-sec">
+        <h3>邀请协作者</h3><p>从已同步的企微员工目录邀请，可设置为可查看或可编辑。</p>
+        <div style="display:flex;gap:8px;margin-top:10px"><input class="input" id="inviteInput" placeholder="搜索企微员工" style="flex:1"><button class="btn" id="btnInvite">邀请</button></div>
+        <div id="collabList" style="margin-top:8px">
+          <div class="collab"><div class="collab-av">黄</div><div style="flex:1"><b style="font-size:13px">HuangYouCan</b><div class="muted" style="font-size:12px">所有者</div></div><span class="chip gray">可编辑</span></div>
+          <div class="collab"><div class="collab-av" style="background:linear-gradient(135deg,#34C19B,#00A870)">林</div><div style="flex:1"><b style="font-size:13px">林小楷 LinKaiYan</b><div class="muted" style="font-size:12px">增长顾问</div></div><span class="chip blue">可查看</span></div>
+        </div>
+      </div>
+      <div class="share-sec">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <div><h3>外部分享</h3><p>获得链接的人可免登录查看数据与视图，无法编辑或改筛选。</p></div>
+          <div class="sw" id="swShare"></div>
+        </div>
+        <div id="shareLinkRow" hidden style="margin-top:12px;display:flex;gap:8px">
+          <input class="input" id="shareUrl" readonly style="flex:1"><button class="btn" id="btnCopyShare">复制链接</button>
+        </div>
+        <p id="shareHint" style="margin-top:8px">外部分享未开启</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 群发浮窗 -->
+<div class="mask" id="bcMask">
+  <div class="modal">
+    <div class="modal-head"><span>群发选中用户</span><button class="modal-x" data-close>×</button></div>
+    <div class="modal-body" style="display:grid;gap:14px">
+      <div class="muted" id="bcInfo" style="font-size:12px;line-height:1.7">—</div>
+      <div style="display:grid;gap:6px"><label style="font-size:12px;color:var(--sub)">文本内容</label>
+        <textarea class="input" id="bcText" rows="4" style="height:auto;padding:10px;resize:vertical" placeholder="支持 {{客户名}} 等变量插入"></textarea></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn sm" data-mat="图片素材库">＋ 图片</button>
+        <button class="btn sm" data-mat="小程序素材库">＋ 小程序</button>
+        <button class="btn sm" data-mat="附件素材库">＋ 附件</button>
+      </div>
+      <div class="muted" style="font-size:12px">发送人：HuangYouCan（在「发送人管理」中可调整优先级）</div>
+    </div>
+    <div class="modal-foot"><button class="btn" data-close>取消</button><button class="btn primary" id="bcOk">创建群发任务</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= 字段定义（与生产 Tabulator 列对齐，取代表性子集） ================= */
+const FIELDS=[
+  {key:"mobile_masked",title:"脱敏手机号",type:"text",w:120,frozen:0},
+  {key:"customer_name",title:"客户名",type:"text",w:128,frozen:1},
+  {key:"funnel_label",title:"漏斗状态",type:"enum",w:130,frozen:2},
+  {key:"external_userid",title:"企微外部联系人ID",type:"text",w:170},
+  {key:"owner_userid",title:"企微跟进人",type:"enum",w:110},
+  {key:"in_lead_pool",title:"在销售线索池",type:"bool",w:100},
+  {key:"in_questionnaire",title:"填过激活问卷",type:"bool",w:110},
+  {key:"questionnaire_count",title:"问卷提交次数",type:"number",w:110},
+  {key:"last_questionnaire_at",title:"最近一次提交问卷",type:"date",w:150},
+  {key:"is_wecom_added",title:"是否已加企微",type:"bool",w:100},
+  {key:"class_term_label",title:"班期标签",type:"enum",w:120},
+  {key:"first_entry_source",title:"首次入口来源",type:"enum",w:130},
+  {key:"crm_hxc_state",title:"CRM 标注激活态",type:"enum",w:130},
+  {key:"hxc_member_status",title:"用户会员状态",type:"enum",w:110},
+  {key:"membership_type",title:"会员类型",type:"enum",w:100},
+  {key:"membership_days_left",title:"会员剩余天数",type:"number",w:110},
+  {key:"hxc_silent_days",title:"沉默天数",type:"number",w:90},
+  {key:"msg_user",title:"用户消息数",type:"number",w:100},
+  {key:"msg_ai",title:"AI 回复数",type:"number",w:100},
+  {key:"last_msg_at",title:"最后活跃时间",type:"date",w:140},
+];
+const ENUMS={
+  funnel_label:["已激活并打开","仅激活未打开","注册但无会员","未激活"],
+  owner_userid:["LinKaiYan","ZhangMin","LiYou","HuangYouCan","—"],
+  class_term_label:["8.6 期","8.13 期","8.20 期","体验营",""],
+  first_entry_source:["视频号","公众号","雷达链接","好友推荐","直播","线下"],
+  crm_hxc_state:["已激活","未激活","疑似激活"],
+  hxc_member_status:["正常","过期","未开通",""],
+  membership_type:["年卡","季卡","月卡","体验卡",""],
+};
+const FUNNEL_TONE={"已激活并打开":"ok","仅激活未打开":"warn","注册但无会员":"red","未激活":"gray"};
+
+/* ================= 造数（确定性伪随机，120 行） ================= */
+let seed=42;const rnd=()=>((seed=(seed*1103515245+12345)>>>0)/4294967296);
+const SURN="林陈刘王张李周吴赵孙钱冯褚卫蒋沈韩杨朱秦尤许何吕".split("");
+const GIVN=["晓","默","靖","恺","敏","由","航","桐","一","可","远","夏","东","晴","朗","佳","欢","琳"];
+const pick=a=>a[Math.floor(rnd()*a.length)];
+const fmtD=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const ROWS=[];
+for(let i=0;i<120;i++){
+  const fs=pick(ENUMS.funnel_label);
+  const hasMember=fs==="已激活并打开"||fs==="仅激活未打开";
+  const hasUser=fs==="已激活并打开"||fs==="注册但无会员";
+  const d=new Date(2026,7-Math.floor(rnd()*3),1+Math.floor(rnd()*28));
+  ROWS.push({
+    mobile_masked:"1"+pick(["38","39","31","37","35"])+"****"+String(1000+Math.floor(rnd()*9000)),
+    customer_name:pick(SURN)+pick(GIVN)+(rnd()>.7?pick(GIVN):""),
+    funnel_label:fs,
+    external_userid:hasMember&&rnd()>.2?"wmXk3ABBAA_"+Math.random().toString(36).slice(2,7):(rnd()>.6?"wmXk3ABBAA_"+Math.random().toString(36).slice(2,7):""),
+    owner_userid:pick(ENUMS.owner_userid),
+    in_lead_pool:rnd()>.25?"✓":"✗",
+    in_questionnaire:rnd()>.5?"✓":"✗",
+    questionnaire_count:Math.floor(rnd()*6),
+    last_questionnaire_at:rnd()>.4?fmtD(d):"",
+    is_wecom_added:hasMember||rnd()>.4?"✓":"✗",
+    class_term_label:pick(ENUMS.class_term_label),
+    first_entry_source:pick(ENUMS.first_entry_source),
+    crm_hxc_state:hasMember?"已激活":pick(ENUMS.crm_hxc_state),
+    hxc_member_status:hasMember?(rnd()>.85?"过期":"正常"):(hasUser?"":pick(["未开通",""])),
+    membership_type:hasMember?pick(["年卡","季卡","月卡","体验卡"]):"",
+    membership_days_left:hasMember?Math.floor(rnd()*360):0,
+    hxc_silent_days:Math.floor(rnd()*90),
+    msg_user:Math.floor(rnd()*rnd()*300),
+    msg_ai:Math.floor(rnd()*rnd()*400),
+    last_msg_at:rnd()>.2?fmtD(d):"",
+  });
+}
+
+/* ================= 视图系统（借鉴周期商品 member_grid） ================= */
+const OPS={text:["包含","等于","不等于"],enum:["等于","不等于"],bool:["等于"],number:["≥","≤","等于"],date:["晚于","早于"]};
+let views=[
+  {name:"全部人群",filters:[],group:"",sort:{field:"msg_user",dir:"desc"}},
+  {name:"拉回重点 · 仅激活未打开",filters:[{field:"funnel_label",op:"等于",value:"仅激活未打开"}],group:"owner_userid",sort:{field:"msg_user",dir:"desc"}},
+  {name:"高价值会员",filters:[{field:"funnel_label",op:"等于",value:"已激活并打开"},{field:"msg_user",op:"≥",value:"50"}],group:"membership_type",sort:{field:"membership_days_left",dir:"asc"}},
+];
+let cur=0, draft=null, openPanel="", collapsed=new Set(), selected=new Set(), search="";
+const $=s=>document.querySelector(s);
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let tt=null;function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("show"),2400);}
+const cfg=()=>draft||(draft=JSON.parse(JSON.stringify(views[cur])));
+function dirty(){return JSON.stringify(draft)!==JSON.stringify(views[cur]);}
+
+/* ---------- 视图栏 ---------- */
+function renderTabs(){
+  $("#viewTabs").innerHTML=views.map((v,i)=>`<div class="vtab ${i===cur?"on":""}" data-tab="${i}">${esc(v.name)}</div>`).join("");
+  const d=dirty();
+  $("#draftText").hidden=!d;$("#btnSaveView").hidden=!d;$("#btnSaveAs").hidden=!d;
+  $("#cFilter").hidden=!cfg().filters.length;$("#cFilter").textContent=cfg().filters.length;
+  $("#cGroup").hidden=!cfg().group;
+  $("#cSort").hidden=!cfg().sort;
+  $("#btnFilter").classList.toggle("on",!!cfg().filters.length);
+  $("#btnGroup").classList.toggle("on",!!cfg().group);
+  $("#btnSort").classList.toggle("on",!!cfg().sort);
+}
+$("#btnAddView").addEventListener("click",()=>{$("#nameTitle").textContent="新建视图";$("#viewNameInput").value="";nameCb=n=>{views.push({name:n,filters:[],group:"",sort:null});cur=views.length-1;draft=null;collapsed.clear();sync();};$("#nameMask").classList.add("open");$("#viewNameInput").focus();});
+let nameCb=null;
+$("#nameOk").addEventListener("click",()=>{const n=$("#viewNameInput").value.trim();if(!n)return toast("请输入视图名称");$("#nameMask").classList.remove("open");nameCb&&nameCb(n);});
+$("#btnViewMenu").addEventListener("click",e=>{e.stopPropagation();$("#viewMenu").classList.toggle("open");});
+document.addEventListener("click",()=>$("#viewMenu").classList.remove("open"));
+$("#vmRename").addEventListener("click",()=>{$("#nameTitle").textContent="重命名视图";$("#viewNameInput").value=views[cur].name;nameCb=n=>{views[cur].name=n;sync();};$("#nameMask").classList.add("open");});
+$("#vmDup").addEventListener("click",()=>{views.splice(cur+1,0,JSON.parse(JSON.stringify({...views[cur],name:views[cur].name+" 副本"})));cur++;draft=null;sync();toast("已创建副本");});
+$("#vmDel").addEventListener("click",()=>{if(views.length<=1)return toast("至少保留一个视图");views.splice(cur,1);cur=Math.max(0,cur-1);draft=null;sync();});
+$("#btnSaveView").addEventListener("click",()=>{views[cur]=JSON.parse(JSON.stringify(draft));draft=null;sync();toast("视图已保存");});
+$("#btnSaveAs").addEventListener("click",()=>{$("#nameTitle").textContent="另存为新视图";$("#viewNameInput").value=views[cur].name+" 副本";nameCb=n=>{views.push(JSON.parse(JSON.stringify({...cfg(),name:n})));cur=views.length-1;draft=null;sync();};$("#nameMask").classList.add("open");});
+
+/* ---------- 面板开关 ---------- */
+function togglePanel(which){
+  openPanel=openPanel===which?"":which;
+  $("#panelFilter").classList.toggle("open",openPanel==="filter");
+  $("#panelGroup").classList.toggle("open",openPanel==="group");
+  $("#panelSort").classList.toggle("open",openPanel==="sort");
+  if(openPanel==="filter")renderConds();
+  if(openPanel==="group")renderGroupPanel();
+  if(openPanel==="sort")renderSortPanel();
+}
+$("#btnFilter").addEventListener("click",()=>togglePanel("filter"));
+$("#btnGroup").addEventListener("click",()=>togglePanel("group"));
+$("#btnSort").addEventListener("click",()=>togglePanel("sort"));
+
+function fieldOptions(sel){return FIELDS.filter(f=>!f.frozen||true).map(f=>`<option value="${f.key}" ${sel===f.key?"selected":""}>${f.title}</option>`).join("");}
+function renderConds(){
+  const c=cfg();
+  $("#condList").innerHTML=c.filters.map((f,i)=>{
+    const fd=FIELDS.find(x=>x.key===f.field);const ops=OPS[fd.type]||OPS.text;
+    const valueInput=fd.type==="enum"
+      ?`<select class="select" data-cv="${i}"><option value="">（空）</option>${ENUMS[f.field].map(v=>`<option ${v===f.value?"selected":""}>${v}</option>`).join("")}</select>`
+      :fd.type==="bool"
+      ?`<select class="select" data-cv="${i}"><option ${f.value==="✓"?"selected":""}>✓</option><option ${f.value==="✗"?"selected":""}>✗</option></select>`
+      :`<input class="input" data-cv="${i}" value="${esc(f.value)}" placeholder="${fd.type==="date"?"YYYY-MM-DD":"值"}">`;
+    return `<div class="cond-row">
+      <select class="select" data-cf="${i}">${fieldOptions(f.field)}</select>
+      <select class="select" data-co="${i}" style="min-width:80px">${ops.map(o=>`<option ${o===f.op?"selected":""}>${o}</option>`).join("")}</select>
+      ${valueInput}
+      <button class="icon-btn" data-cd="${i}" title="删除">×</button>
+    </div>`;}).join("")||'<div class="muted" style="font-size:12px;margin-bottom:8px">暂无条件</div>';
+}
+$("#btnAddCond").addEventListener("click",()=>{cfg().filters.push({field:"funnel_label",op:"等于",value:""});renderConds();applyDraft();});
+document.addEventListener("change",e=>{
+  const cf=e.target.closest("[data-cf]"),co=e.target.closest("[data-co]"),cv=e.target.closest("[data-cv]");
+  if(cf){cfg().filters[Number(cf.dataset.cf)].field=cf.value;cfg().filters[Number(cf.dataset.cf)].op=OPS[FIELDS.find(x=>x.key===cf.value).type][0];cfg().filters[Number(cf.dataset.cf)].value="";renderConds();applyDraft();}
+  if(co){cfg().filters[Number(co.dataset.co)].op=co.value;applyDraft();}
+  if(cv){cfg().filters[Number(cv.dataset.cv)].value=cv.value;applyDraft();}
+});
+document.addEventListener("input",e=>{const cv=e.target.closest("[data-cv]");if(cv&&cv.tagName==="INPUT"){cfg().filters[Number(cv.dataset.cv)].value=cv.value;applyDraft();}});
+document.addEventListener("click",e=>{const cd=e.target.closest("[data-cd]");if(cd){cfg().filters.splice(Number(cd.dataset.cd),1);renderConds();applyDraft();}});
+
+function renderGroupPanel(){$("#groupField").innerHTML='<option value="">不分组</option>'+FIELDS.map(f=>`<option value="${f.key}" ${cfg().group===f.key?"selected":""}>${f.title}</option>`).join("");}
+$("#groupField").addEventListener("change",e=>{cfg().group=e.target.value;applyDraft();});
+function renderSortPanel(){$("#sortField").innerHTML=FIELDS.map(f=>`<option value="${f.key}" ${cfg().sort?.field===f.key?"selected":""}>${f.title}</option>`).join("");$("#sortDir").value=cfg().sort?.dir||"desc";}
+$("#sortField").addEventListener("change",e=>{cfg().sort={field:e.target.value,dir:$("#sortDir").value};applyDraft();});
+$("#sortDir").addEventListener("change",e=>{if(cfg().sort){cfg().sort.dir=e.target.value;applyDraft();}});
+$("#btnClearSort").addEventListener("click",()=>{cfg().sort=null;renderSortPanel();applyDraft();});
+
+/* ---------- 数据管道 ---------- */
+function match(r,f){
+  const v=r[f.field];const fd=FIELDS.find(x=>x.key===f.field);
+  if(f.value===""&&fd.type!=="enum")return true;
+  switch(f.op){
+    case"包含":return String(v||"").includes(f.value);
+    case"等于":return String(v??"")===String(f.value);
+    case"不等于":return String(v??"")!==String(f.value);
+    case"≥":return Number(v||0)>=Number(f.value);
+    case"≤":return Number(v||0)<=Number(f.value);
+    case"晚于":return String(v||"")>=f.value;
+    case"早于":return String(v||"")<=f.value&&v!=="";
+  }
+  return true;
+}
+function pipeline(){
+  let rows=ROWS.filter(r=>cfg().filters.every(f=>match(r,f)));
+  if(search)rows=rows.filter(r=>Object.values(r).some(x=>String(x??"").toLowerCase().includes(search)));
+  const s=cfg().sort;
+  if(s){const fd=FIELDS.find(x=>x.key===s.field);rows=[...rows].sort((a,b)=>{
+    const va=a[s.field],vb=b[s.field];
+    const cmp=fd.type==="number"?(Number(va||0)-Number(vb||0)):String(va??"").localeCompare(String(vb??""),"zh");
+    return s.dir==="asc"?cmp:-cmp;});}
+  return rows;
+}
+
+/* ---------- 渲染网格 ---------- */
+function cellHtml(f,r){
+  const v=r[f.key];
+  if(f.key==="funnel_label")return`<span class="chip ${FUNNEL_TONE[v]||"gray"}">${esc(v)}</span>`;
+  if(f.type==="bool")return v==="✓"?'<span class="tick-ok">✓</span>':'<span class="tick-no">✗</span>';
+  if(f.type==="number")return`<span class="num">${Number(v||0).toLocaleString()}</span>`;
+  return esc(v)||'<span class="muted">—</span>';
+}
+function renderGrid(){
+  const rows=pipeline();
+  const s=cfg().sort;
+  $("#gridHead").innerHTML=`<tr>${FIELDS.map(f=>`<th class="${f.frozen!=null?"frozen f"+f.frozen:""}" style="min-width:${f.w}px" data-th="${f.key}">${f.title}${s&&s.field===f.key?`<span class="sort-mark">${s.dir==="asc"?"↑":"↓"}</span>`:""}</th>`).join("")}</tr>`;
+  let html="";
+  if(cfg().group){
+    const gf=cfg().group;const gtitle=FIELDS.find(f=>f.key===gf).title;
+    const groups={};rows.forEach(r=>{const k=String(r[gf]||"（空）");(groups[k]=groups[k]||[]).push(r);});
+    Object.keys(groups).sort((a,b)=>a.localeCompare(b,"zh")).forEach(k=>{
+      const gid=gf+"::"+k;const isC=collapsed.has(gid);
+      html+=`<tr class="ghead ${isC?"collapsed":""}" data-g="${esc(gid)}"><td colspan="${FIELDS.length}"><span class="gtri">▾</span>${esc(gtitle)}：${esc(k)}<span class="muted" style="font-weight:400">（${groups[k].length} 行）</span></td></tr>`;
+      if(!isC)groups[k].forEach((r,i)=>html+=rowHtml(r,i));
+    });
+  }else{
+    html=rows.map((r,i)=>rowHtml(r,i)).join("");
+  }
+  $("#gridBody").innerHTML=html||`<tr><td colspan="${FIELDS.length}" style="text-align:center;padding:40px;color:var(--muted)">没有符合当前视图条件的数据</td></tr>`;
+  $("#resultSummary").textContent=`共 ${rows.length} 行 · ${cfg().group?"已按「"+FIELDS.find(f=>f.key===cfg().group).title+"」分组":"未分组"}`;
+  $("#selInfo").textContent=selected.size?`已选 ${selected.size} 行`:"点击行可选中（用于群发）";
+}
+function rowHtml(r,i){
+  const rid=r.mobile_masked;
+  return`<tr class="${i%2?"zebra":""} ${selected.has(rid)?"sel":""}" data-row="${esc(rid)}" style="${selected.has(rid)?"--x":""}">
+    ${FIELDS.map(f=>{const c=cellHtml(f,r);
+      const first=f.key==="mobile_masked"?`<input type="checkbox" class="row-check" data-ck="${esc(rid)}" ${selected.has(rid)?"checked":""} style="margin-right:8px;vertical-align:-2px">`:"";
+      return`<td class="${f.frozen!=null?"frozen f"+f.frozen:""}">${first}${c}</td>`;}).join("")}
+  </tr>`;
+}
+
+/* ---------- 交互绑定 ---------- */
+document.addEventListener("click",e=>{
+  const tab=e.target.closest("[data-tab]");
+  if(tab){if(dirty()){if(!confirm("当前视图有未保存的修改，切换将放弃。继续？"))return;}cur=Number(tab.dataset.tab);draft=null;collapsed.clear();openPanel="";togglePanel("");sync();return;}
+  const g=e.target.closest("[data-g]");
+  if(g){const k=g.dataset.g;collapsed.has(k)?collapsed.delete(k):collapsed.add(k);renderGrid();return;}
+  const th=e.target.closest("[data-th]");
+  if(th){const f=th.dataset.th;const c=cfg();if(c.sort&&c.sort.field===f)c.sort.dir=c.sort.dir==="desc"?"asc":"desc";else c.sort={field:f,dir:"desc"};applyDraft();return;}
+});
+document.addEventListener("change",e=>{
+  const ck=e.target.closest("[data-ck]");
+  if(ck){ck.checked?selected.add(ck.dataset.ck):selected.delete(ck.dataset.ck);renderGrid();}
+});
+function applyDraft(){renderTabs();renderGrid();}
+function sync(){renderTabs();renderGrid();}
+
+$("#globalSearch").addEventListener("input",e=>{search=e.target.value.trim().toLowerCase();renderGrid();});
+$("#btnRefresh").addEventListener("click",()=>{const b=$("#btnRefresh");b.disabled=true;b.textContent="刷新中…";setTimeout(()=>{b.disabled=false;b.textContent="立即刷新";toast("刷新成功");},700);});
+
+/* ---------- 导出 ---------- */
+$("#btnCsv").addEventListener("click",()=>{
+  const rows=pipeline();
+  const csv="﻿"+[FIELDS.map(f=>f.title).join(","),...rows.map(r=>FIELDS.map(f=>String(r[f.key]??"").replace(/,/g," ")).join(","))].join("\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="hxc-dashboard-filtered.csv";a.click();
+  toast(`已导出 ${rows.length} 行`);
+});
+
+/* ---------- 分享 ---------- */
+$("#btnShare").addEventListener("click",()=>$("#shareMask").classList.add("open"));
+$("#swShare").addEventListener("click",()=>{
+  const on=$("#swShare").classList.toggle("on");
+  $("#shareLinkRow").hidden=!on;
+  if(on)$("#shareUrl").value="https://crm.example.com/share/funnel/v_"+Math.random().toString(36).slice(2,8);
+  $("#shareHint").textContent=on?"外部分享已开启 · 链接 7 天后自动失效":"外部分享未开启";
+});
+$("#btnCopyShare").addEventListener("click",()=>{navigator.clipboard?.writeText($("#shareUrl").value);toast("已复制链接");});
+$("#btnInvite").addEventListener("click",()=>{const n=$("#inviteInput").value.trim();if(!n)return;$("#collabList").insertAdjacentHTML("beforeend",`<div class="collab"><div class="collab-av" style="background:linear-gradient(135deg,#F7BA1E,#D97917)">${esc(n[0])}</div><div style="flex:1"><b style="font-size:13px">${esc(n)}</b><div class="muted" style="font-size:12px">企微员工</div></div><span class="chip blue">可查看</span></div>`);$("#inviteInput").value="";toast("已邀请 "+n);});
+
+/* ---------- 群发 ---------- */
+$("#btnSenders").addEventListener("click",()=>toast("跳转到 /admin/hxc-send-config（演示）"));
+$("#btnBroadcast").addEventListener("click",()=>{
+  const rows=pipeline().filter(r=>selected.has(r.mobile_masked));
+  const usable=rows.filter(r=>r.external_userid);
+  if(!selected.size)return toast("请先在表格中勾选要群发的行");
+  $("#bcInfo").innerHTML=`选中 <b>${selected.size}</b> 行 · 有企微外部联系人 ID 可发送 <b style="color:var(--accent-hover)">${usable.length}</b> 人 · 跳过 ${selected.size-usable.length} 人（缺少 ID / 免打扰）`;
+  $("#bcMask").classList.add("open");
+});
+document.querySelectorAll("[data-mat]").forEach(b=>b.addEventListener("click",()=>toast("打开"+b.dataset.mat+"选择器（演示）")));
+$("#bcOk").addEventListener("click",()=>{
+  $("#bcMask").classList.remove("open");
+  const rows=pipeline().filter(r=>selected.has(r.mobile_masked)&&r.external_userid);
+  toast(`群发任务已创建 · 可发送 ${rows.length} 人 · 派发状态: queued`);
+});
+$("#btnSenders").addEventListener("click",()=>{});
+
+/* ---------- 通用 ---------- */
+document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>b.closest(".mask").classList.remove("open")));
+document.querySelectorAll(".mask").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)m.classList.remove("open");}));
+document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".mask.open").forEach(m=>m.classList.remove("open"));});
+
+sync();
+</script>
+</body>
+</html>

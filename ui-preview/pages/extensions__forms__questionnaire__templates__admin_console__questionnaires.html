@@ -1,0 +1,993 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Questionnaires · 客户管理后台</title>
+  <link rel="stylesheet" href="../static/admin_console/admin_console.css?v=operation-member-picker-fix-20260527&amp;design=lark-20260803">
+  
+<style>
+  .questionnaire-filter-row,
+  .questionnaire-row-actions,
+  .questionnaire-name-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  #questionnaire-empty-state[hidden],
+  #questionnaire-table-wrap[hidden],
+  #questionnaire-share-modal[hidden] {
+    display: none !important;
+  }
+
+  .questionnaire-filter-row {
+    align-items: end;
+    margin-bottom: 12px;
+  }
+
+  .questionnaire-filter-row .admin-field {
+    flex: 1 1 220px;
+    margin: 0;
+  }
+
+  .questionnaire-filter-row .admin-field--compact {
+    flex: 0 0 180px;
+  }
+
+  .questionnaire-name-main {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .questionnaire-id {
+    color: var(--muted);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .questionnaire-type-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 0 8px;
+    border-radius: 4px;
+    background: #f4edff;
+    color: #7f3bf5;
+    font-size: 12px;
+    font-weight: 400;
+    white-space: nowrap;
+  }
+
+  .questionnaire-row-muted {
+    color: var(--muted);
+    margin-top: 3px;
+    font-size: 12px;
+  }
+
+  .questionnaire-row-disabled {
+    color: #a6aab0;
+    background: #fafafb;
+  }
+
+  .questionnaire-row-disabled .questionnaire-row-muted,
+  .questionnaire-row-disabled .questionnaire-name-main {
+    color: #a6aab0;
+  }
+
+  .questionnaire-row-actions {
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
+  .questionnaire-row-actions .admin-button {
+    min-height: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    color: #245bdb;
+    background: transparent;
+    font-size: 12px;
+  }
+
+  .questionnaire-row-actions .admin-button[disabled] {
+    cursor: not-allowed;
+  }
+
+  .questionnaire-table td:last-child,
+  .questionnaire-table th:last-child {
+    text-align: right;
+  }
+
+  .questionnaire-table td {
+    vertical-align: middle;
+  }
+
+  .questionnaire-toast {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 60;
+    min-width: 220px;
+    max-width: 320px;
+    padding: 14px 16px;
+    border-radius: 8px;
+    background: rgba(31, 35, 41, 0.92);
+    color: #fff;
+    box-shadow: var(--shadow);
+  }
+
+  .questionnaire-toast.is-busy {
+    padding-left: 44px;
+    border: 1px solid rgba(147, 197, 253, 0.88);
+    background: rgba(29, 78, 216, 0.96);
+    box-shadow: 0 18px 48px rgba(37, 99, 235, 0.28);
+    font-weight: 850;
+  }
+
+  .questionnaire-toast.is-busy::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 16px;
+    width: 14px;
+    height: 14px;
+    margin-top: -7px;
+    border: 2px solid rgba(255, 255, 255, 0.46);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: questionnaire-toast-spin 0.8s linear infinite;
+  }
+
+  .questionnaire-toast.is-error {
+    background: rgba(173, 80, 55, 0.96);
+  }
+
+  @keyframes questionnaire-toast-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .questionnaire-share-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(15, 23, 42, 0.34);
+  }
+
+  .questionnaire-share-panel {
+    width: min(520px, 100%);
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 24px 72px rgba(15, 23, 42, 0.22);
+  }
+
+  .questionnaire-share-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 58px;
+    padding: 0 18px;
+    border-bottom: 1px solid var(--line);
+    font-size: 18px;
+    font-weight: 900;
+  }
+
+  .questionnaire-share-close {
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  .questionnaire-share-body {
+    display: grid;
+    gap: 18px;
+    padding: 18px;
+  }
+
+  .questionnaire-share-label {
+    margin-bottom: 8px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 850;
+  }
+
+  .questionnaire-share-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  .questionnaire-share-input {
+    min-width: 0;
+    height: 42px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fbfcff;
+    color: var(--text);
+    padding: 0 12px;
+  }
+
+  .questionnaire-share-qr-wrap {
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+  }
+
+  .questionnaire-share-qr {
+    width: 220px;
+    height: 220px;
+    object-fit: contain;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: #fff;
+    padding: 12px;
+  }
+
+  @media (max-width: 960px) {
+    .questionnaire-row-actions {
+      justify-content: flex-start;
+    }
+
+    .questionnaire-share-row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+  <script src="../static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
+  <script defer src="../static/admin_console/admin_console.js?v=lark-design-package-20260803"></script>
+  <script defer src="../static/admin_console/operation_member_picker.js?v=operation-member-picker-wecom-sync-20260709"></script>
+</head>
+<body
+  class="admin-shell"
+  data-admin-shell-source="next_admin_shell"
+>
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="admin-brand-mark">CRM</div>
+        <div class="admin-brand-copy">
+          <div class="admin-brand-title">客户管理后台</div>
+          <div class="admin-brand-subtitle">ADMIN CONSOLE</div>
+        </div>
+      </div>
+
+      <nav class="admin-nav" aria-label="客户管理后台导航">
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">运营</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="自动化运营"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_conversion.svg" alt="">
+              <span class="admin-nav-label">自动化运营</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="运营闭环"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/operation_cycles.svg" alt="">
+              <span class="admin-nav-label">运营闭环</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="群运营计划"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/group_ops.svg" alt="">
+              <span class="admin-nav-label">群运营计划</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="渠道码中心"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/channels.svg" alt="">
+              <span class="admin-nav-label">渠道码中心</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="AI 助手"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/cloud_orchestrator.svg" alt="">
+              <span class="admin-nav-label">AI 助手</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="客户激活 / 客户列表"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/customers.svg" alt="">
+              <span class="admin-nav-label">客户激活 / 客户列表</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="漏斗 / 数据看板"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/user_ops_funnel.svg" alt="">
+              <span class="admin-nav-label">漏斗 / 数据看板</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="问卷"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/questionnaires.svg" alt="">
+              <span class="admin-nav-label">问卷</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="内容雷达"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/radar_links.svg" alt="">
+              <span class="admin-nav-label">内容雷达</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="企微标签管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wecom_tags.svg" alt="">
+              <span class="admin-nav-label">企微标签管理</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">交易</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="交易管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_transactions.svg" alt="">
+              <span class="admin-nav-label">交易管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_products.svg" alt="">
+              <span class="admin-nav-label">商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="周期商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/service_period_products.svg" alt="">
+              <span class="admin-nav-label">周期商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="优惠券"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/coupons.svg" alt="">
+              <span class="admin-nav-label">优惠券</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">素材</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="图片素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/image_library.svg" alt="">
+              <span class="admin-nav-label">图片素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="小程序素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/miniprogram_library.svg" alt="">
+              <span class="admin-nav-label">小程序素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="附件素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/attachment_library.svg" alt="">
+              <span class="admin-nav-label">附件素材库</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">配置及后台</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="自动化话术"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_agents.svg" alt="">
+              <span class="admin-nav-label">自动化话术</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="负责人迁移"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/owner_migration.svg" alt="">
+              <span class="admin-nav-label">负责人迁移</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="配置"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/config.svg" alt="">
+              <span class="admin-nav-label">配置</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="API 文档"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/api_docs.svg" alt="">
+              <span class="admin-nav-label">API 文档</span>
+            </a>
+            
+          </div>
+        </section>
+        
+      </nav>
+
+      
+      <div class="admin-sidebar-user">
+        <div class="admin-sidebar-user__avatar">
+          示
+        </div>
+        <div class="admin-sidebar-user__meta">
+          <div class="admin-sidebar-user__name">
+            示例管理员
+          </div>
+          <a class="admin-sidebar-user__logout" href="#">退出登录</a>
+        </div>
+      </div>
+      
+    </aside>
+
+    <div class="admin-main-wrap">
+      
+      
+      
+      
+      <header class="admin-topbar">
+        
+        <div class="admin-topbar-head">
+          <nav class="admin-breadcrumbs" aria-label="当前位置">
+            
+            
+            <a href="#">客户管理后台</a>
+            
+            
+          </nav>
+          <div>
+            <h1 class="admin-page-title">Questionnaires</h1>
+            <p class="admin-page-summary">页面功能预览（示例数据）</p>
+          </div>
+        </div>
+        
+
+        
+      </header>
+      
+
+      <main class="admin-page">
+        
+        <section class="admin-alert admin-alert--success">示例</section>
+        
+        
+        <section class="admin-alert admin-alert--error">示例</section>
+        
+        
+<section class="admin-card">
+  <div
+    id="questionnaire-read-model-status"
+    data-route-owner="示例"
+    data-source-status="示例"
+    data-read-model-status="示例"
+    data-fallback-used="true"
+    data-degraded="true"
+    hidden
+  ></div>
+  <div class="questionnaire-filter-row">
+    <label class="admin-field">
+      <span>搜索问卷</span>
+      <input id="questionnaire-search" type="text" placeholder="按问卷名称或 ID 搜索">
+    </label>
+    <label class="admin-field admin-field--compact">
+      <span>状态筛选</span>
+      <select id="questionnaire-status-filter">
+        <option value="all">全部</option>
+        <option value="enabled">启用中</option>
+        <option value="disabled">已停用</option>
+      </select>
+    </label>
+  </div>
+
+  <div id="questionnaire-empty-state" class="admin-state" hidden>
+    <strong>还没有问卷</strong>
+    <span>点击「创建新问卷」或「创建测评问卷模板」开始搭建。</span>
+  </div>
+
+  <div id="questionnaire-table-wrap" class="admin-table-wrap">
+    <table class="admin-table questionnaire-table">
+      <thead>
+        <tr>
+          <th>问卷名称</th>
+          <th>提交后动作</th>
+          <th>创建时间</th>
+          <th>提交数</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="questionnaire-table-body">
+        <tr>
+          <td colspan="5">问卷列表加载中...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+<div id="questionnaire-toast" class="questionnaire-toast" role="status" aria-live="polite" hidden></div>
+<div id="questionnaire-share-modal" class="questionnaire-share-modal" aria-hidden="true" hidden>
+  <div class="questionnaire-share-panel" role="dialog" aria-modal="true" aria-labelledby="questionnaire-share-title">
+    <div class="questionnaire-share-head">
+      <span id="questionnaire-share-title">分享问卷</span>
+      <button id="questionnaire-share-close" class="questionnaire-share-close" type="button" aria-label="关闭">×</button>
+    </div>
+    <div class="questionnaire-share-body">
+      <div>
+        <div class="questionnaire-share-label">问卷链接</div>
+        <div class="questionnaire-share-row">
+          <input id="questionnaire-share-url" class="questionnaire-share-input" readonly>
+          <button id="questionnaire-share-copy" class="admin-button admin-button--secondary" type="button">复制链接</button>
+        </div>
+      </div>
+      <div>
+        <div class="questionnaire-share-label">问卷二维码</div>
+        <div class="questionnaire-share-qr-wrap">
+          <img id="questionnaire-share-qr" class="questionnaire-share-qr" alt="问卷二维码">
+          <a id="questionnaire-share-download" class="admin-button admin-button--secondary" href="#" download="问卷二维码.jpg">保存二维码</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+      </main>
+    </div>
+  </div>
+  <script id="aicrmAdminActionGrants" type="application/json">{}</script>
+  
+<script>
+  const initialQuestionnaires = {};
+  const tableWrapEl = document.getElementById('questionnaire-table-wrap');
+  const tableBodyEl = document.getElementById('questionnaire-table-body');
+  const emptyStateEl = document.getElementById('questionnaire-empty-state');
+  const searchEl = document.getElementById('questionnaire-search');
+  const statusFilterEl = document.getElementById('questionnaire-status-filter');
+  const toastEl = document.getElementById('questionnaire-toast');
+  const shareModalEl = document.getElementById('questionnaire-share-modal');
+  const shareUrlEl = document.getElementById('questionnaire-share-url');
+  const shareQrEl = document.getElementById('questionnaire-share-qr');
+  const shareDownloadEl = document.getElementById('questionnaire-share-download');
+  const shareCloseEl = document.getElementById('questionnaire-share-close');
+  const shareCopyEl = document.getElementById('questionnaire-share-copy');
+
+  const state = {
+    questionnaires: [],
+    query: '',
+    status: 'all',
+  };
+  let toastTimer = null;
+  let activeShareUrl = '';
+
+  function attachDerivedLinks(item) {
+    const publicPath = String(item.public_path || (item.slug ? `/s/${item.slug}` : '')).trim();
+    return {
+      ...item,
+      public_path: publicPath,
+      public_url: String(item.public_url || '').trim() || (publicPath ? `${window.location.origin}${publicPath}` : ''),
+    };
+  }
+
+  function normalizeDateValue(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return 0;
+    const normalized = raw.includes('T') ? raw : raw.replace(' ', 'T');
+    const timestamp = new Date(normalized).getTime();
+    return Number.isNaN(timestamp) ? 0 : timestamp;
+  }
+
+  function questionnaireDisplayName(item) {
+    const title = String(item?.title || '').trim();
+    const name = String(item?.name || '').trim();
+    return title || name || '未命名问卷';
+  }
+
+  function formatDateTime(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '-';
+    const normalized = raw.includes('T') ? raw : raw.replace(' ', 'T');
+    const date = new Date(normalized);
+    if (Number.isNaN(date.getTime())) return raw;
+    const pad = (number) => String(number).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
+  function completionTargetLabel(item) {
+    const target = item.completion_target || {};
+    if (!target.enabled && item.lead_channel_id) return '展示渠道二维码';
+    if (!target.enabled) return '沿用原跳转';
+    if (target.target_type === 'mini_program') return '打开微信小程序';
+    if (target.target_type === 'url_link') return '打开小程序 URL Link';
+    return '跳转 H5 页面';
+  }
+
+  function filteredQuestionnaires() {
+    const keyword = state.query.trim().toLowerCase();
+    const idKeyword = keyword.replace(/^#/, '');
+    return [...state.questionnaires]
+      .filter((item) => {
+        if (state.status === 'enabled' && item.is_disabled) return false;
+        if (state.status === 'disabled' && !item.is_disabled) return false;
+        if (!keyword) return true;
+        return questionnaireDisplayName(item).toLowerCase().includes(keyword)
+          || String(item.name || '').toLowerCase().includes(keyword)
+          || String(item.id || '').includes(idKeyword);
+      })
+      .sort((left, right) => {
+        const createdAtDiff = normalizeDateValue(right.created_at) - normalizeDateValue(left.created_at);
+        if (createdAtDiff !== 0) return createdAtDiff;
+        return Number(right.id || 0) - Number(left.id || 0);
+      });
+  }
+
+  async function fetchJson(url, options = {}) {
+    return window.AdminApi.requestJson(url, options);
+  }
+
+  async function copyText(text) {
+    if (!text) return false;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        window.prompt('请复制以下链接', text);
+      }
+      return true;
+    } catch (error) {
+      window.prompt('请手动复制以下链接', text);
+      return true;
+    }
+  }
+
+  function showToast(message, isError = false, options = {}) {
+    if (!message) return;
+    const isBusy = Boolean(options.busy);
+    const isPersistent = Boolean(options.persistent);
+    toastEl.textContent = message;
+    toastEl.hidden = false;
+    toastEl.className = `questionnaire-toast${isError ? ' is-error' : ''}${isBusy ? ' is-busy' : ''}`;
+    clearTimeout(toastTimer);
+    if (!isPersistent) {
+      toastTimer = window.setTimeout(() => {
+        toastEl.hidden = true;
+        toastEl.className = 'questionnaire-toast';
+      }, isError ? 5600 : 3200);
+    }
+  }
+
+  function setExportButtonBusy(button, isBusy) {
+    if (!button) return;
+    if (isBusy) {
+      button.dataset.originalLabel = button.textContent;
+      button.disabled = true;
+      button.textContent = '导出中...';
+      return;
+    }
+    button.disabled = false;
+    button.textContent = button.dataset.originalLabel || '下载数据';
+    delete button.dataset.originalLabel;
+  }
+
+  function safeDownloadName(value) {
+    return `${String(value || '问卷').trim().replace(/[\\/:*?"<>|]+/g, '_') || '问卷'}二维码.jpg`;
+  }
+
+  function openShareModal(share, item) {
+    activeShareUrl = String(share?.url || item?.public_url || '').trim();
+    if (!activeShareUrl) {
+      showToast('当前问卷还没有可分享链接', true);
+      return;
+    }
+    shareUrlEl.value = activeShareUrl;
+    shareQrEl.src = String(share?.qr_data_url || '');
+    shareDownloadEl.href = String(share?.qr_data_url || '#');
+    shareDownloadEl.download = safeDownloadName(questionnaireDisplayName(item));
+    shareModalEl.hidden = false;
+    shareModalEl.setAttribute('aria-hidden', 'false');
+    shareCopyEl.focus();
+  }
+
+  function closeShareModal() {
+    shareModalEl.hidden = true;
+    shareModalEl.setAttribute('aria-hidden', 'true');
+    activeShareUrl = '';
+  }
+
+  async function openQuestionnaireShare(item) {
+    if (!item?.id) return;
+    const payload = await fetchJson(`/api/admin/questionnaires/${item.id}/share`);
+    openShareModal(payload.share || {}, item);
+  }
+
+  function renderEmptyState(title, body = '') {
+    emptyStateEl.innerHTML = body
+      ? `<strong>${escapeHtml(title)}</strong><span>${escapeHtml(body)}</span>`
+      : `<strong>${escapeHtml(title)}</strong>`;
+    emptyStateEl.hidden = false;
+  }
+
+  function renderTable() {
+    const items = filteredQuestionnaires();
+    const hasAny = state.questionnaires.length > 0;
+    if (!hasAny) {
+      renderEmptyState('还没有问卷', '点击「创建新问卷」或「创建测评问卷模板」开始搭建。');
+      tableBodyEl.innerHTML = '';
+      tableWrapEl.hidden = true;
+      return;
+    }
+    if (!items.length) {
+      renderEmptyState('没有匹配的问卷，请调整搜索词或筛选条件');
+      tableBodyEl.innerHTML = '';
+      tableWrapEl.hidden = true;
+      return;
+    }
+    emptyStateEl.hidden = true;
+    tableWrapEl.hidden = false;
+    tableBodyEl.innerHTML = items.map((item) => `
+      <tr class="${item.is_disabled ? 'questionnaire-row-disabled' : ''}" data-questionnaire-id="${item.id}">
+        <td>
+          <div class="questionnaire-name-line">
+            <span class="questionnaire-name-main">${escapeHtml(questionnaireDisplayName(item))}</span>
+            <span class="questionnaire-id">#${escapeHtml(String(item.id || ''))}</span>
+            ${item.assessment_enabled ? '<span class="questionnaire-type-chip">多维测评</span>' : ''}
+            <span class="admin-inline-chip${item.is_disabled ? ' admin-inline-chip--danger' : ' admin-inline-chip--ok'}">
+              ${item.is_disabled ? '已停用' : '启用中'}
+            </span>
+          </div>
+        </td>
+        <td><span class="questionnaire-row-muted">${escapeHtml(completionTargetLabel(item))}</span></td>
+        <td><span class="questionnaire-row-muted">${escapeHtml(formatDateTime(item.created_at))}</span></td>
+        <td>${escapeHtml(String(item.submission_count || 0))}</td>
+        <td>
+          <div class="questionnaire-row-actions">
+            <a class="admin-button admin-button--secondary" href="/admin/questionnaires/${item.id}">编辑</a>
+            ${item.is_assessment_template_asset ? '' : `<a class="admin-button admin-button--secondary" href="/admin/questionnaires/${item.id}/operations">运营配置</a>`}
+            <button type="button" class="admin-button admin-button--ghost" data-action="duplicate">复制</button>
+            <button type="button" class="admin-button admin-button--ghost" data-action="toggle">
+              ${item.is_disabled ? '启用' : '停用'}
+            </button>
+            <button type="button" class="admin-button admin-button--ghost" data-action="share">分享</button>
+            <button type="button" class="admin-button admin-button--ghost" data-action="export">下载数据</button>
+            <button
+              type="button"
+              class="admin-button admin-button--ghost"
+              data-action="delete"
+              ${item.is_disabled ? '' : 'disabled'}
+              title="${item.is_disabled ? '删除后不可恢复' : '请先停用后删除'}"
+            >
+              删除
+            </button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  async function reloadList() {
+    const data = await fetchJson('/api/admin/questionnaires');
+    state.questionnaires = (data.questionnaires || []).map(attachDerivedLinks);
+    renderTable();
+  }
+
+  async function toggleQuestionnaire(questionnaireId) {
+    const item = state.questionnaires.find((entry) => Number(entry.id) === Number(questionnaireId));
+    if (!item) return;
+    const data = await fetchJson(`/api/admin/questionnaires/${item.id}/disable`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_disabled: !item.is_disabled }),
+    });
+    const updated = attachDerivedLinks(data.questionnaire || {});
+    state.questionnaires = state.questionnaires.map((entry) => (
+      Number(entry.id) === Number(item.id) ? { ...entry, ...updated } : entry
+    ));
+    renderTable();
+    showToast(item.is_disabled ? '问卷已启用' : '问卷已停用');
+  }
+
+  async function duplicateQuestionnaire(questionnaireId) {
+    const item = state.questionnaires.find((entry) => Number(entry.id) === Number(questionnaireId));
+    if (!item) return;
+    if (!window.confirm(`复制问卷“${questionnaireDisplayName(item)}”？复制后会生成一份默认停用的新问卷。`)) return;
+    const data = await fetchJson(`/api/admin/questionnaires/${item.id}/duplicate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    const copied = data.questionnaire || {};
+    showToast('问卷已复制，默认停用');
+    await reloadList();
+    if (copied.id) {
+      window.location.assign(`/admin/questionnaires/${copied.id}`);
+    }
+  }
+
+  async function deleteQuestionnaire(questionnaireId) {
+    const item = state.questionnaires.find((entry) => Number(entry.id) === Number(questionnaireId));
+    if (!item) return;
+    if (!window.confirm('删除后不可恢复，确认删除该问卷吗？')) return;
+    await fetchJson(`/api/admin/questionnaires/${item.id}`, { method: 'DELETE' });
+    showToast('问卷已删除');
+    await reloadList();
+  }
+
+  function downloadFilenameFromResponse(response, fallback) {
+    const disposition = response.headers.get('Content-Disposition') || '';
+    const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+    if (utf8Match) return decodeURIComponent(utf8Match[1]);
+    const asciiMatch = disposition.match(/filename="?([^";]+)"?/i);
+    return asciiMatch ? asciiMatch[1] : fallback;
+  }
+
+  async function downloadQuestionnaireData(questionnaireId, button) {
+    setExportButtonBusy(button, true);
+    showToast('导出中，请稍候...', false, { persistent: true, busy: true });
+    try {
+      const response = await fetch(`/api/admin/questionnaires/${questionnaireId}/export`);
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(window.AdminApi.responseErrorMessage(response, data, '下载失败，请稍后重试'));
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = downloadFilenameFromResponse(response, `questionnaire-${questionnaireId}-submissions.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      showToast('下载已开始');
+    } finally {
+      setExportButtonBusy(button, false);
+    }
+  }
+
+  searchEl.addEventListener('input', (event) => {
+    state.query = event.target.value || '';
+    renderTable();
+  });
+
+  statusFilterEl.addEventListener('change', (event) => {
+    state.status = event.target.value || 'all';
+    renderTable();
+  });
+
+  tableBodyEl.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-action]');
+    if (!button) return;
+    const row = event.target.closest('[data-questionnaire-id]');
+    if (!row) return;
+    const questionnaireId = row.dataset.questionnaireId;
+    const item = state.questionnaires.find((entry) => String(entry.id) === String(questionnaireId));
+    if (!item) return;
+    if (button.dataset.action === 'toggle') {
+      toggleQuestionnaire(questionnaireId).catch((error) => showToast(window.AdminApi.errorMessage(error, '问卷状态更新失败，请稍后重试'), true));
+      return;
+    }
+    if (button.dataset.action === 'share') {
+      openQuestionnaireShare(item).catch((error) => showToast(window.AdminApi.errorMessage(error, '分享信息加载失败，请稍后重试'), true));
+      return;
+    }
+    if (button.dataset.action === 'duplicate') {
+      duplicateQuestionnaire(questionnaireId).catch((error) => showToast(window.AdminApi.errorMessage(error, '复制失败，请稍后重试'), true));
+      return;
+    }
+    if (button.dataset.action === 'delete') {
+      deleteQuestionnaire(questionnaireId).catch((error) => showToast(window.AdminApi.errorMessage(error, '删除失败，请稍后重试'), true));
+      return;
+    }
+    if (button.dataset.action === 'export') {
+      downloadQuestionnaireData(item.id, button).catch((error) => showToast(window.AdminApi.errorMessage(error, '下载失败，请稍后重试'), true));
+    }
+  });
+
+  shareCloseEl.addEventListener('click', closeShareModal);
+  shareCopyEl.addEventListener('click', () => {
+    copyText(activeShareUrl).then((copied) => {
+      if (copied) showToast('分享链接已复制');
+    });
+  });
+  shareModalEl.addEventListener('click', (event) => {
+    if (event.target === shareModalEl) closeShareModal();
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !shareModalEl.hidden) closeShareModal();
+  });
+
+  state.questionnaires = initialQuestionnaires.map(attachDerivedLinks);
+  renderTable();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Channel Code Form · 客户管理后台</title>
+  <link rel="stylesheet" href="../static/admin_console/admin_console.css?v=operation-member-picker-fix-20260527&amp;design=lark-20260803">
+  <script src="../static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
+  <script src="../static/admin_console/image_resource_loader.js?v=resource-governance-v2-pending-retry"></script>
+  
+<link rel="stylesheet" href="/static/automation-engine/admin_console/channel_admission_pages.css?v=group-chat-selector-20260715">
+<link rel="stylesheet" href="../static/admin_console/group_chat_picker.css?v=group-chat-direct-select-20260715">
+<link rel="stylesheet" href="../static/admin_console/material_picker.css?v=group-chat-direct-select-20260715">
+<link rel="stylesheet" href="../static/admin_console/send_content_composer.css?v=channel-welcome-cursor-20260803">
+<link rel="stylesheet" href="../static/admin_console/wecom_tag_picker.css?v=channel-tag-picker-wide-20260803">
+
+  <script defer src="../static/admin_console/admin_console.js?v=lark-design-package-20260803"></script>
+  <script defer src="../static/admin_console/operation_member_picker.js?v=operation-member-picker-wecom-sync-20260709"></script>
+</head>
+<body class="admin-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="admin-brand-mark">CRM</div>
+        <div class="admin-brand-copy">
+          <div class="admin-brand-title">客户管理后台</div>
+          <div class="admin-brand-subtitle">ADMIN CONSOLE</div>
+        </div>
+      </div>
+
+      <nav class="admin-nav" aria-label="客户管理后台导航">
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">运营</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化运营"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_conversion.svg" alt="">
+              <span class="admin-nav-label">自动化运营</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="运营闭环"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/operation_cycles.svg" alt="">
+              <span class="admin-nav-label">运营闭环</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="群运营计划"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/group_ops.svg" alt="">
+              <span class="admin-nav-label">群运营计划</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="渠道码中心"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/channels.svg" alt="">
+              <span class="admin-nav-label">渠道码中心</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="AI 助手"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/cloud_orchestrator.svg" alt="">
+              <span class="admin-nav-label">AI 助手</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="客户激活 / 客户列表"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/customers.svg" alt="">
+              <span class="admin-nav-label">客户激活 / 客户列表</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="漏斗 / 数据看板"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/user_ops_funnel.svg" alt="">
+              <span class="admin-nav-label">漏斗 / 数据看板</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="问卷"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/questionnaires.svg" alt="">
+              <span class="admin-nav-label">问卷</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="内容雷达"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/radar_links.svg" alt="">
+              <span class="admin-nav-label">内容雷达</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="企微标签管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wecom_tags.svg" alt="">
+              <span class="admin-nav-label">企微标签管理</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">交易</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="交易管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_transactions.svg" alt="">
+              <span class="admin-nav-label">交易管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_products.svg" alt="">
+              <span class="admin-nav-label">商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="周期商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/service_period_products.svg" alt="">
+              <span class="admin-nav-label">周期商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="优惠券"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/coupons.svg" alt="">
+              <span class="admin-nav-label">优惠券</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">素材</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="图片素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/image_library.svg" alt="">
+              <span class="admin-nav-label">图片素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="小程序素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/miniprogram_library.svg" alt="">
+              <span class="admin-nav-label">小程序素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="附件素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/attachment_library.svg" alt="">
+              <span class="admin-nav-label">附件素材库</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">配置及后台</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化话术"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_agents.svg" alt="">
+              <span class="admin-nav-label">自动化话术</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="负责人迁移"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/owner_migration.svg" alt="">
+              <span class="admin-nav-label">负责人迁移</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="配置"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/config.svg" alt="">
+              <span class="admin-nav-label">配置</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="API 文档"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/api_docs.svg" alt="">
+              <span class="admin-nav-label">API 文档</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+      </nav>
+
+      
+      <div class="admin-sidebar-user">
+        <div class="admin-sidebar-user__avatar">
+          示
+        </div>
+        <div class="admin-sidebar-user__meta">
+          <div class="admin-sidebar-user__name">
+            示例管理员
+          </div>
+          <a class="admin-sidebar-user__logout" href="#">退出登录</a>
+        </div>
+      </div>
+      
+    </aside>
+
+    <div class="admin-main-wrap">
+      
+      
+      
+      
+      
+      
+      <header class="admin-topbar">
+        
+        <div class="admin-topbar-head">
+          <nav class="admin-breadcrumbs" aria-label="当前位置">
+            
+            
+            <a href="#">客户管理后台</a>
+            
+            
+          </nav>
+          <div>
+            <h1 class="admin-page-title">Channel Code Form</h1>
+            <p class="admin-page-summary">页面功能预览（示例数据）</p>
+          </div>
+        </div>
+        
+
+        
+      </header>
+      
+
+      <main class="admin-page">
+        
+        <section class="admin-alert admin-alert--success">示例</section>
+        
+        
+        <section class="admin-alert admin-alert--error">示例</section>
+        
+        
+
+
+
+
+<div
+  class="channel-page channel-form-v3"
+  data-channel-admission-page="channel-form"
+  data-is-edit="1"
+  data-api-create="示例"
+  data-api-detail="示例"
+  data-api-qrcode-download="示例"
+  data-admin-token="示例"
+>
+  <script type="application/json" data-channel-bootstrap>{}</script>
+
+  <header class="topbar">
+    <div class="crumb">客户管理后台 / 渠道码中心 / 编辑渠道</div>
+    <h1>渠道码中心</h1>
+  </header>
+
+  <section class="card summary-card">
+    <div class="summary-head">
+      <h2 data-summary-channel-name>示例</h2>
+      <div class="btns">
+        <a class="btn soft" href="#">返回渠道码中心</a>
+        <button class="btn primary" type="button" data-save-channel>保存当前维度</button>
+      </div>
+    </div>
+    <div class="summary-grid">
+      <div class="mini">
+        <div class="label">渠道类型</div>
+        <div class="value" data-summary-channel-type>普通二维码</div>
+      </div>
+      <div class="mini">
+        <div class="label">状态</div>
+        <div class="value" data-summary-channel-status>示例</div>
+      </div>
+      <div class="mini">
+        <div class="label">渠道用户</div>
+        <div class="value">示例</div>
+      </div>
+      <div class="mini">
+        <div class="label">客服分配</div>
+        <div class="value" data-summary-assignee-count>示例 人</div>
+      </div>
+    </div>
+    <div class="save-feedback" data-channel-save-feedback role="status" aria-live="polite" hidden></div>
+  </section>
+
+  <section class="workspace">
+    <nav class="card side-nav" aria-label="渠道配置维度">
+      <button class="active" type="button" data-channel-panel="basic">
+        <span class="index">1</span>
+        <span class="nav-label">基础配置</span>
+      </button>
+      <button type="button" data-channel-panel="carrier">
+        <span class="index">2</span>
+        <span class="nav-label">渠道载体</span>
+      </button>
+      <button type="button" data-channel-panel="assignee">
+        <span class="index">3</span>
+        <span class="nav-label">客服分配</span>
+      </button>
+      <button type="button" data-channel-panel="welcome">
+        <span class="index">4</span>
+        <span class="nav-label">欢迎语素材</span>
+      </button>
+      <button type="button" data-channel-panel="tag">
+        <span class="index">5</span>
+        <span class="nav-label">入渠标签</span>
+      </button>
+    </nav>
+
+    <form class="card channel-panel-card" data-channel-form>
+      <section class="panel active" data-channel-panel-content="basic">
+        <div class="panel-title-row">
+          <h3>基础配置</h3>
+        </div>
+        <div class="form-grid">
+          <label class="field">
+            <span>渠道名称</span>
+            <input name="channel_name" value="示例" required>
+          </label>
+          <label class="field">
+            <span>渠道编码</span>
+            <input name="channel_code" value="示例" placeholder="留空将自动生成唯一编码">
+          </label>
+          <label class="field">
+            <span>状态</span>
+            <select name="status" data-channel-status-select>
+              <option value="active" >启用</option>
+              <option value="inactive" >停用</option>
+              <option value="archived" >归档</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="panel" data-channel-panel-content="carrier">
+        <div class="panel-title-row">
+          <h3>渠道载体</h3>
+          <span class="pill blue" data-carrier-pill>普通二维码</span>
+        </div>
+
+        <div class="type-grid" data-channel-type-cards>
+          <label class="type-card active" data-channel-type-card="qrcode">
+            <input type="radio" name="channel_type" value="qrcode" checked data-channel-type-option>
+            <span class="type-title">普通二维码</span>
+          </label>
+          <label class="type-card " data-channel-type-card="wecom_customer_acquisition">
+            <input type="radio" name="channel_type" value="wecom_customer_acquisition"  data-channel-type-option>
+            <span class="type-title">渠道获客链接</span>
+          </label>
+        </div>
+
+        <section data-qrcode-section >
+          <label class="auto-pass-card">
+            <input type="checkbox" name="auto_accept_friend" value="1" checked>
+            <span>扫码添加成员时自动通过好友申请</span>
+          </label>
+          <p class="hint">保存后重新生成二维码时会透传为企微 skip_verify。</p>
+          
+          <div class="summary-box">
+            <div class="summary-row">
+              <strong>历史回调 State</strong>
+              <span>示例, 示例, 示例</span>
+            </div>
+          </div>
+          
+          
+          <div class="carrier-actions">
+            
+            <button class="btn soft" type="button" data-download-channel-qrcode data-download-url="示例">下载二维码</button>
+            
+            <button class="btn primary" type="button" data-generate-form-qrcode>生成二维码</button>
+          </div>
+          
+        </section>
+
+        <section class="form-grid" data-link-section hidden>
+          <label class="field" data-link-field>
+            <span>渠道参数</span>
+            <input name="customer_channel" value="示例" placeholder="wca_p1001_xxx">
+          </label>
+          <label class="field" data-link-field>
+            <span>原始链接</span>
+            <input name="link_url" value="示例" placeholder="https://work.weixin.qq.com/ca/cawcde...">
+          </label>
+          <label class="field full" data-link-field>
+            <span>最终分享链接</span>
+            <div class="link-line">
+              <span class="tag">LINK</span>
+              <input name="final_url" value="示例" data-link-preview>
+              <button class="btn primary" type="button" data-copy-form-link>复制链接</button>
+            </div>
+          </label>
+          <div class="field full link-actions" data-link-section hidden>
+            <button class="btn soft" type="button" data-share-form-link>分享链接</button>
+          </div>
+        </section>
+      </section>
+
+      <section class="panel" data-channel-panel-content="assignee">
+        <section class="channel-assignment" data-channel-assignment>
+          <div class="panel-title-row">
+            <h3>客服分配</h3>
+            <button class="btn primary" type="button" data-add-channel-assignee>添加客服</button>
+          </div>
+
+          <div class="strategy-grid" data-assignment-strategies>
+            <label class="strategy-card" data-strategy-card="ratio">
+              <input type="radio" name="assignment_strategy" value="ratio" data-assignment-strategy checked>
+              <span>
+                <strong>按比例分配</strong>
+                <small>按每个客服设置的百分比分配；50% / 50% 就是均分。比例合计必须等于 100%。</small>
+              </span>
+            </label>
+            <label class="strategy-card" data-strategy-card="cap_switch">
+              <input type="radio" name="assignment_strategy" value="cap_switch" data-assignment-strategy>
+              <span>
+                <strong>满额切换</strong>
+                <small>按列表顺序承接；当前客服 24 小时达到上限后，自动切换到下一个客服。</small>
+              </span>
+            </label>
+          </div>
+
+          <div class="assignee-panel">
+            <div class="assignee-head">
+              <span data-assignee-mode-title>客服比例</span>
+              <div class="btns">
+                <span class="pill blue" data-assignee-count>0 / 5</span>
+                <button class="btn" type="button" data-add-channel-assignee>添加客服</button>
+              </div>
+            </div>
+            <div class="assignee-table" data-assignee-list></div>
+            <div class="assignee-footer" data-assignment-validation>
+              <span data-assignment-validation-text>比例合计 100%，可以保存。</span>
+              <span class="pill" data-assignment-validation-pill>100%</span>
+            </div>
+          </div>
+          <input type="hidden" name="owner_staff_id" value="示例" data-channel-owner-staff-id>
+        </section>
+      </section>
+
+      <section class="panel" data-channel-panel-content="welcome">
+        <div data-welcome-composer-inline></div>
+        <input type="hidden" name="welcome_message" data-welcome-message value="示例">
+        <input type="hidden" name="welcome_image_library_ids" data-image-ids value="示例,示例,示例">
+        <input type="hidden" name="welcome_miniprogram_library_ids" data-miniprogram-ids value="示例,示例,示例">
+        <input type="hidden" name="welcome_attachment_library_ids" data-attachment-ids value="示例,示例,示例">
+        <input type="hidden" name="welcome_group_invite_library_ids" data-group-invite-ids value="示例,示例,示例">
+      </section>
+
+      <section class="panel" data-channel-panel-content="tag">
+        <div class="panel-title-row">
+          <h3>入渠标签</h3>
+          <button class="btn primary" type="button" data-open-tag-picker>选择标签</button>
+        </div>
+        <div class="summary-box">
+          <div class="summary-row">
+            <strong>当前标签</strong>
+            <span class="muted" data-tag-selected>
+              
+                示例 / 示例
+              
+            </span>
+          </div>
+        </div>
+        <input type="hidden" name="entry_tag_id" value="示例" data-entry-tag-id>
+        <input type="hidden" name="entry_tag_name" value="示例" data-entry-tag-name>
+        <input type="hidden" name="entry_tag_group_name" value="示例" data-entry-tag-group-name>
+      </section>
+    </form>
+  </section>
+</div>
+
+      </main>
+    </div>
+  </div>
+  <script id="aicrmAdminActionGrants" type="application/json">{}</script>
+  
+<script defer src="../static/admin_console/admin_download.js?v=channel-jpg-20260729"></script>
+<script defer src="../static/admin_console/group_chat_picker.js?v=group-chat-direct-select-20260715"></script>
+<script defer src="../static/admin_console/material_picker.js?v=group-chat-direct-select-20260715"></script>
+<script defer src="../static/admin_console/send_content_composer.js?v=channel-welcome-cursor-20260803"></script>
+<script defer src="../static/admin_console/wecom_tag_picker.js?v=channel-tag-picker-wide-20260803"></script>
+<script defer src="/static/automation-engine/admin_console/channel_admission_pages.js?v=channel-welcome-cursor-20260803"></script>
+
+</body>
+</html>

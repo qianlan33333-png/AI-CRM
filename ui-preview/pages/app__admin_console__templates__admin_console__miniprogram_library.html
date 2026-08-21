@@ -1,0 +1,968 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Miniprogram Library · 客户管理后台</title>
+  <link rel="stylesheet" href="../static/admin_console/admin_console.css?v=operation-member-picker-fix-20260527&amp;design=lark-20260803">
+  <script src="../static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
+  <script src="../static/admin_console/image_resource_loader.js?v=resource-governance-v2-pending-retry"></script>
+  
+<script src="../static/admin_console/image_upload_client.js"></script>
+<script src="../static/admin_console/image_picker.js?v=resource-governance-v2-pending-retry"></script>
+<style>
+  /* ========== 顶部工具栏 ========== */
+  .mp-toolbar {
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    padding:12px 14px; background:#fff;
+    border:1px solid #e5e7eb; border-radius:10px;
+    margin-top:14px;
+  }
+  .mp-toolbar .mp-create-btn {
+    background:#2c5cdb; color:#fff; border:none;
+    padding:8px 16px; border-radius:6px; font-size:13px; font-weight:500;
+    cursor:pointer; transition:background 0.15s;
+  }
+  .mp-toolbar .mp-create-btn:hover { background:#1e4bc4; }
+  .mp-toolbar .mp-create-btn::before { content:"+"; margin-right:6px; font-weight:600; }
+
+  .mp-filters-inline { display:flex; align-items:center; gap:8px; flex-wrap:wrap; flex:1; }
+  .mp-filters-inline input[type=search] {
+    padding:6px 10px; border:1px solid #d1d5db; border-radius:6px; font-size:12px;
+    background:#fff; color:#1f2937; min-width:240px;
+  }
+  .mp-filters-inline label.checkbox {
+    display:inline-flex; align-items:center; gap:4px; font-size:12px;
+    color:#5b626f; cursor:pointer;
+  }
+  .mp-filters-inline .reset-btn {
+    font-size:11px; color:#a02929; background:transparent; border:none;
+    cursor:pointer; padding:6px 8px;
+  }
+  .mp-filters-inline .reset-btn:hover { text-decoration:underline; }
+
+  /* ========== 网格 + 卡片 ========== */
+  .mp-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+    gap:14px; margin-top:14px;
+  }
+  .mp-card {
+    border:1px solid #e5e7eb; border-radius:10px; overflow:hidden;
+    background:#fff; cursor:pointer; position:relative;
+    transition:transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  }
+  .mp-card:hover {
+    transform:translateY(-2px);
+    box-shadow:0 4px 12px rgba(0,0,0,0.08);
+    border-color:#c7d2fe;
+  }
+  .mp-card.disabled .mp-thumb img { filter:grayscale(0.85) opacity(0.65); }
+  .mp-card.disabled::after {
+    content:"已停用";
+    position:absolute; top:8px; right:8px;
+    background:rgba(254,226,226,0.95); color:#991b1b;
+    font-size:10px; padding:2px 8px; border-radius:10px;
+    pointer-events:none;
+  }
+  .mp-thumb {
+    width:100%; aspect-ratio:5/4;
+    background:#f5f6f8;
+    display:flex; align-items:center; justify-content:center;
+    color:#bbb; overflow:hidden;
+  }
+  .mp-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .mp-card-body { padding:10px 12px; }
+  .mp-card-title {
+    font-size:13px; font-weight:500; color:#111827;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    margin-bottom:4px;
+  }
+  .mp-card-meta {
+    font-size:11px; color:#6b7280; line-height:1.5;
+    display:flex; flex-direction:column; gap:1px;
+  }
+  .mp-card-meta .name { color:#5b626f; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mp-card-meta .appid { font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:10px; color:#9ca3af; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mp-card-meta .cached { color:#059669; font-size:10px; }
+  .mp-card-meta .uncached { color:#a16207; font-size:10px; }
+  .mp-empty { padding:32px 14px; text-align:center; color:#9ca3af; font-size:13px; }
+
+  /* ========== Modal 通用 ========== */
+  .mp-modal[hidden] { display:none; }
+  .mp-modal {
+    position:fixed; inset:0; z-index:50;
+    background:rgba(15,23,42,0.55);
+    display:grid; place-items:center;
+    padding:20px;
+  }
+  .mp-modal-card {
+    background:#fff; border-radius:14px;
+    box-shadow:0 20px 50px rgba(15,23,42,0.25);
+    overflow:hidden; position:relative;
+  }
+  .mp-modal-close {
+    position:absolute; top:12px; right:12px; z-index:2;
+    background:rgba(255,255,255,0.92); border:1px solid #e5e7eb;
+    border-radius:50%; width:30px; height:30px;
+    font-size:16px; line-height:1; cursor:pointer; color:#5b626f;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .mp-modal-close:hover { background:#fee2e2; border-color:#fca5a5; color:#991b1b; }
+  .mp-modal-status { font-size:12px; min-height:16px; margin-top:8px; }
+  .mp-modal-status.error { color:#a02929; }
+  .mp-modal-status.success { color:#059669; }
+  .mp-modal-status.busy { color:#5b626f; }
+
+  .mp-modal label {
+    display:block; font-size:12px; color:#5b626f; margin:10px 0 4px;
+    font-weight:500;
+  }
+  .mp-modal input[type=text] {
+    width:100%; padding:7px 10px; border:1px solid #d1d5db; border-radius:6px;
+    box-sizing:border-box; font-family:inherit; font-size:13px;
+    background:#fff; color:#1f2937;
+  }
+  .mp-modal input[type=text]:focus {
+    outline:none; border-color:#2c5cdb; box-shadow:0 0 0 3px rgba(44,92,219,0.1);
+  }
+
+  /* ========== 新增 Modal ========== */
+  .mp-create-card { width:min(560px, 100%); padding:24px 24px 20px; }
+  .mp-create-card h3 { margin:0 0 14px; font-size:16px; color:#111827; }
+  .mp-form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .mp-modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:18px; }
+  .mp-modal-actions button {
+    padding:8px 18px; border-radius:6px; font-size:13px;
+    cursor:pointer; border:1px solid #d1d5db; background:#fff;
+  }
+  .mp-modal-actions .primary { background:#2c5cdb; color:#fff; border-color:#2c5cdb; }
+  .mp-modal-actions .primary:hover { background:#1e4bc4; }
+  .mp-modal-actions .primary:disabled { background:#9ca3af; cursor:not-allowed; }
+
+  /* ========== 编辑 / 详情 Modal（大）========== */
+  .mp-edit-card {
+    width:min(1280px, 95vw); height:min(820px, 90vh);
+    display:flex; flex-direction:column; padding:0;
+  }
+  .mp-edit-layout {
+    display:grid; grid-template-columns:1.2fr 1fr;
+    height:100%; min-height:0;
+  }
+  .mp-edit-image {
+    background:#1f2937;
+    display:flex; align-items:center; justify-content:center;
+    overflow:auto; padding:16px;
+  }
+  .mp-edit-image img {
+    max-width:100%; max-height:100%; object-fit:contain;
+    box-shadow:0 6px 18px rgba(0,0,0,0.3); border-radius:4px;
+  }
+  .mp-edit-image .empty { color:#6b7280; font-size:13px; }
+  .mp-edit-meta {
+    padding:24px 24px 20px;
+    display:flex; flex-direction:column;
+    overflow:auto;
+  }
+  .mp-edit-meta h3 {
+    margin:0 0 4px; font-size:16px; color:#111827;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    padding-right:30px;
+  }
+  .mp-edit-subtitle { font-size:11px; color:#9ca3af; margin-bottom:8px; }
+  .mp-edit-actions {
+    display:flex; gap:8px; justify-content:flex-end; margin-top:16px;
+    padding-top:14px; border-top:1px solid #e5e7eb; flex-wrap:wrap;
+  }
+  .mp-edit-actions button {
+    padding:7px 14px; border-radius:6px; font-size:12px; cursor:pointer;
+    border:1px solid #d1d5db; background:#fff;
+  }
+  .mp-edit-actions .primary { background:#2c5cdb; color:#fff; border-color:#2c5cdb; }
+  .mp-edit-actions .primary:hover { background:#1e4bc4; }
+  .mp-edit-actions .danger { color:#a02929; border-color:#fecaca; }
+  .mp-edit-actions .danger:hover { background:#fee2e2; }
+  .mp-edit-actions .secondary:hover { background:#f3f4f6; }
+
+  @media (max-width: 768px) {
+    .mp-edit-layout { grid-template-columns:1fr; grid-template-rows:auto 1fr; }
+    .mp-edit-image { max-height:40vh; }
+    .mp-edit-card { height:95vh; }
+    .mp-form-row { grid-template-columns:1fr; }
+  }
+</style>
+
+  <script defer src="../static/admin_console/admin_console.js?v=lark-design-package-20260803"></script>
+  <script defer src="../static/admin_console/operation_member_picker.js?v=operation-member-picker-wecom-sync-20260709"></script>
+</head>
+<body class="admin-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="admin-brand-mark">CRM</div>
+        <div class="admin-brand-copy">
+          <div class="admin-brand-title">客户管理后台</div>
+          <div class="admin-brand-subtitle">ADMIN CONSOLE</div>
+        </div>
+      </div>
+
+      <nav class="admin-nav" aria-label="客户管理后台导航">
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">运营</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化运营"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_conversion.svg" alt="">
+              <span class="admin-nav-label">自动化运营</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="运营闭环"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/operation_cycles.svg" alt="">
+              <span class="admin-nav-label">运营闭环</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="群运营计划"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/group_ops.svg" alt="">
+              <span class="admin-nav-label">群运营计划</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="渠道码中心"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/channels.svg" alt="">
+              <span class="admin-nav-label">渠道码中心</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="AI 助手"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/cloud_orchestrator.svg" alt="">
+              <span class="admin-nav-label">AI 助手</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="客户激活 / 客户列表"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/customers.svg" alt="">
+              <span class="admin-nav-label">客户激活 / 客户列表</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="漏斗 / 数据看板"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/user_ops_funnel.svg" alt="">
+              <span class="admin-nav-label">漏斗 / 数据看板</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="问卷"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/questionnaires.svg" alt="">
+              <span class="admin-nav-label">问卷</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="内容雷达"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/radar_links.svg" alt="">
+              <span class="admin-nav-label">内容雷达</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="企微标签管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wecom_tags.svg" alt="">
+              <span class="admin-nav-label">企微标签管理</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">交易</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="交易管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_transactions.svg" alt="">
+              <span class="admin-nav-label">交易管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_products.svg" alt="">
+              <span class="admin-nav-label">商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="周期商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/service_period_products.svg" alt="">
+              <span class="admin-nav-label">周期商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="优惠券"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/coupons.svg" alt="">
+              <span class="admin-nav-label">优惠券</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">素材</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="图片素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/image_library.svg" alt="">
+              <span class="admin-nav-label">图片素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="小程序素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/miniprogram_library.svg" alt="">
+              <span class="admin-nav-label">小程序素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="附件素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/attachment_library.svg" alt="">
+              <span class="admin-nav-label">附件素材库</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">配置及后台</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化话术"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_agents.svg" alt="">
+              <span class="admin-nav-label">自动化话术</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="负责人迁移"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/owner_migration.svg" alt="">
+              <span class="admin-nav-label">负责人迁移</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="配置"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/config.svg" alt="">
+              <span class="admin-nav-label">配置</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="API 文档"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/api_docs.svg" alt="">
+              <span class="admin-nav-label">API 文档</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+      </nav>
+
+      
+      <div class="admin-sidebar-user">
+        <div class="admin-sidebar-user__avatar">
+          示
+        </div>
+        <div class="admin-sidebar-user__meta">
+          <div class="admin-sidebar-user__name">
+            示例管理员
+          </div>
+          <a class="admin-sidebar-user__logout" href="#">退出登录</a>
+        </div>
+      </div>
+      
+    </aside>
+
+    <div class="admin-main-wrap">
+      
+      
+      
+      
+      
+      
+      <header class="admin-topbar">
+        
+        <div class="admin-topbar-head">
+          <nav class="admin-breadcrumbs" aria-label="当前位置">
+            
+            
+            <a href="#">客户管理后台</a>
+            
+            
+          </nav>
+          <div>
+            <h1 class="admin-page-title">Miniprogram Library</h1>
+            <p class="admin-page-summary">页面功能预览（示例数据）</p>
+          </div>
+        </div>
+        
+
+        
+      </header>
+      
+
+      <main class="admin-page">
+        
+        <section class="admin-alert admin-alert--success">示例</section>
+        
+        
+        <section class="admin-alert admin-alert--error">示例</section>
+        
+        
+<section data-mp-root>
+  <!-- 标题 / 副标题已经由 admin shell（面包屑 + page header）渲染，这里不再重复 -->
+
+  <div class="mp-toolbar">
+    <button class="mp-create-btn" id="mp-open-create" type="button">新增小程序</button>
+    <div class="mp-filters-inline">
+      <input type="search" id="mp-q" placeholder="搜索名称 / 标题 / appid">
+      <label class="checkbox"><input type="checkbox" id="mp-include-disabled"> 含已停用</label>
+      <button class="reset-btn" id="mp-reset" type="button">重置</button>
+    </div>
+  </div>
+
+  <div id="mp-list-wrap" class="mp-grid">
+    <p class="mp-empty">加载中…</p>
+  </div>
+</section>
+
+<!-- ========== 新增 Modal ========== -->
+<div class="mp-modal" id="mp-create-modal" hidden>
+  <div class="mp-modal-card mp-create-card">
+    <button class="mp-modal-close" id="mp-create-close" type="button" aria-label="关闭">×</button>
+    <h3>新增小程序素材</h3>
+
+    <div class="mp-form-row">
+      <div>
+        <label>素材名（内部备注）</label>
+        <input type="text" id="mp-create-name" placeholder="如：1v1 体验课卡片">
+      </div>
+      <div>
+        <label>appid</label>
+        <input type="text" id="mp-create-appid" placeholder="wxXXXXXXXXXXXXXXXX">
+      </div>
+    </div>
+
+    <label>页面路径 pagepath</label>
+    <input type="text" id="mp-create-pagepath" placeholder="pages/index?from=crm">
+
+    <label>卡片标题 title</label>
+    <input type="text" id="mp-create-title" placeholder="点这里预约 1v1 体验课">
+
+    <label>缩略图（从图片素材库选 / 上传 / 外链）</label>
+    <div id="mp-create-thumb-picker"></div>
+
+    <div class="mp-modal-status" id="mp-create-status"></div>
+
+    <div class="mp-modal-actions">
+      <button type="button" id="mp-create-cancel">取消</button>
+      <button type="button" class="primary" id="mp-create-submit">新增</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 编辑 / 详情 Modal（大） ========== -->
+<div class="mp-modal" id="mp-edit-modal" hidden>
+  <div class="mp-modal-card mp-edit-card">
+    <button class="mp-modal-close" id="mp-edit-close" type="button" aria-label="关闭">×</button>
+    <div class="mp-edit-layout">
+      <div class="mp-edit-image" id="mp-edit-image-wrap">
+        <span class="empty">加载中…</span>
+      </div>
+      <div class="mp-edit-meta">
+        <h3 id="mp-edit-heading">编辑小程序素材</h3>
+        <div class="mp-edit-subtitle" id="mp-edit-subtitle"></div>
+
+        <label>素材名（内部备注）</label>
+        <input type="text" id="mp-edit-name">
+
+        <label>appid</label>
+        <input type="text" id="mp-edit-appid">
+
+        <label>页面路径 pagepath</label>
+        <input type="text" id="mp-edit-pagepath">
+
+        <label>卡片标题 title（客户看到的）</label>
+        <input type="text" id="mp-edit-card-title">
+
+        <label>缩略图</label>
+        <div id="mp-edit-thumb-picker"></div>
+
+        <div class="mp-modal-status" id="mp-edit-status"></div>
+
+        <div class="mp-edit-actions">
+          <button type="button" class="danger" id="mp-edit-delete">删除</button>
+          <button type="button" class="secondary" id="mp-edit-resolve">刷新缩略图</button>
+          <button type="button" class="secondary" id="mp-edit-toggle">停用</button>
+          <button type="button" class="primary" id="mp-edit-save">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  // ---------- 工具 ---------- //
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function errorText(value, fallback) { return window.AdminApi?.formatErrorValue(value) || fallback; }
+  function requestJSON(url, options) {
+    var client = window.ImageUploadClient || {};
+    var fn = client.requestJsonWithTimeout || client.requestJson;
+    if (!fn) return Promise.reject(new Error('图片上传客户端未加载，请刷新页面后重试'));
+    return fn.call(client, url, options || {});
+  }
+  function getJSON(url) {
+    return requestJSON(url);
+  }
+  function postJSON(url, body) {
+    return requestJSON(url, {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body || {}),
+    });
+  }
+  function putJSON(url, body) {
+    return requestJSON(url, {
+      method: 'PUT', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body || {}),
+    });
+  }
+  function deleteReq(url) {
+    return requestJSON(url, { method: 'DELETE', credentials: 'same-origin' });
+  }
+
+  // ---------- 状态 ---------- //
+  var STATE = {
+    items: [],
+    filters: { q:'', includeDisabled:false },
+  };
+
+  // ---------- 客户端过滤 ---------- //
+  function filteredItems() {
+    var q = STATE.filters.q.trim().toLowerCase();
+    return STATE.items.filter(function (it) {
+      if (!STATE.filters.includeDisabled && !it.enabled) return false;
+      if (!q) return true;
+      var hay = (
+        (it.name || '') + ' ' + (it.title || '') + ' ' + (it.appid || '') + ' ' + (it.pagepath || '')
+      ).toLowerCase();
+      return hay.indexOf(q) >= 0;
+    });
+  }
+
+  // ---------- 缩略图：优先使用后端变体 URL，不再批量拉原图 base64 ---------- //
+  function thumbnailUrl(item, variant) {
+    if (variant === 'preview' && item.preview_url) return item.preview_url;
+    if (item.thumb_320_url) return item.thumb_320_url;
+    if (item.thumb_url) return item.thumb_url;
+    if (item.thumb_160_url) return item.thumb_160_url;
+    if (item.thumb_image_url) {
+      return item.thumb_image_url;
+    }
+    if (item.thumb_image_base64) {
+      return 'data:image/png;base64,' + item.thumb_image_base64;
+    }
+    return '';
+  }
+
+  // ---------- 网格渲染 ---------- //
+  function renderGrid() {
+    var wrap = document.getElementById('mp-list-wrap');
+    var items = filteredItems();
+    if (!items.length) {
+      var msg = STATE.items.length
+        ? '没有匹配的小程序卡片。试试调整搜索词。'
+        : '还没有小程序素材。点左上角「新增小程序」添加一条。';
+      wrap.innerHTML = '<p class="mp-empty">' + msg + '</p>';
+      return;
+    }
+    wrap.innerHTML = items.map(function (it) {
+      var disabledCls = it.enabled ? '' : ' disabled';
+      var cardTitle = escapeHtml(it.title || it.name || ('#' + it.id));
+      var nameLine = it.name && it.title ? '<span class="name">备注：' + escapeHtml(it.name) + '</span>' : '';
+      var appLine = '<span class="appid">' + escapeHtml(it.appid || '-') + '</span>';
+      var cacheLine = it.thumb_media_id
+        ? '<span class="cached">● 企微缓存已就绪</span>'
+        : '<span class="uncached">● 缩略图未上传企微</span>';
+      return '<div class="mp-card' + disabledCls + '" data-id="' + it.id + '" title="' + cardTitle + '">'
+        + '<div class="mp-thumb">…</div>'
+        + '<div class="mp-card-body">'
+        + '<div class="mp-card-title">' + cardTitle + '</div>'
+        + '<div class="mp-card-meta">' + nameLine + appLine + cacheLine + '</div>'
+        + '</div></div>';
+    }).join('');
+
+    // 填缩略图：列表 item 已带 thumb_320_url / thumb_160_url
+    items.forEach(function (it) {
+      var url = thumbnailUrl(it);
+      var cell = wrap.querySelector('.mp-card[data-id="' + it.id + '"] .mp-thumb');
+      if (cell && url) cell.innerHTML = '<img src="' + escapeHtml(url) + '" srcset="' + escapeHtml(it.thumb_160_url || url) + ' 160w, ' + escapeHtml(it.thumb_320_url || url) + ' 320w" sizes="220px" loading="lazy" decoding="async" width="320" height="256" alt="">';
+      else if (cell) cell.textContent = '(无图)';
+    });
+
+    // 整张卡片点击 → 编辑 modal
+    wrap.querySelectorAll('.mp-card').forEach(function (card) {
+      var id = String(card.dataset.id);
+      card.addEventListener('click', function () {
+        var item = STATE.items.find(function (x) { return String(x.id) === id; });
+        if (item) openEditModal(item);
+      });
+    });
+  }
+
+  // ---------- 数据加载 ---------- //
+  async function loadList() {
+    var wrap = document.getElementById('mp-list-wrap');
+    wrap.innerHTML = '<p class="mp-empty">加载中…</p>';
+    try {
+      var d = await getJSON('/api/admin/miniprogram-library?enabled_only=false');
+      if (!d.ok) {
+        wrap.innerHTML = '<p class="mp-empty">加载失败：' + escapeHtml(errorText(d, '请稍后重试')) + '</p>';
+        return;
+      }
+      STATE.items = d.items || [];
+      renderGrid();
+    } catch (e) {
+      wrap.innerHTML = '<p class="mp-empty">加载失败：' + escapeHtml(window.AdminApi.errorMessage(e, '请稍后重试')) + '</p>';
+    }
+  }
+
+  // ===================================================================
+  // 新增 Modal
+  // ===================================================================
+  var $createModal = document.getElementById('mp-create-modal');
+  var $createStatus = document.getElementById('mp-create-status');
+  var createPicker = null;
+
+  function setCreateStatus(text, kind) {
+    $createStatus.textContent = text || '';
+    $createStatus.className = 'mp-modal-status' + (kind ? ' ' + kind : '');
+  }
+
+  function openCreateModal() {
+    document.getElementById('mp-create-name').value = '';
+    document.getElementById('mp-create-appid').value = '';
+    document.getElementById('mp-create-pagepath').value = '';
+    document.getElementById('mp-create-title').value = '';
+    setCreateStatus('', '');
+
+    // 每次打开重新挂载 picker（保证状态干净）
+    var pickerHost = document.getElementById('mp-create-thumb-picker');
+    pickerHost.innerHTML = '';
+    createPicker = window.mountImagePicker(pickerHost, { mode: 'single', value: 0 });
+
+    $createModal.hidden = false;
+  }
+  function closeCreateModal() { $createModal.hidden = true; }
+  function refreshListInBackground() {
+    loadList().catch(function (e) {
+      document.body.dataset.miniprogramRefreshError = e.message || 'refresh failed';
+    });
+  }
+
+  document.getElementById('mp-open-create').addEventListener('click', openCreateModal);
+  document.getElementById('mp-create-close').addEventListener('click', closeCreateModal);
+  document.getElementById('mp-create-cancel').addEventListener('click', closeCreateModal);
+  $createModal.addEventListener('click', function (e) {
+    if (e.target === $createModal) closeCreateModal();
+  });
+
+  document.getElementById('mp-create-submit').addEventListener('click', async function () {
+    var btn = this;
+    var thumbId = createPicker ? createPicker.getValue() : 0;
+    if (!thumbId) {
+      setCreateStatus('请先选择或上传缩略图', 'error');
+      return;
+    }
+    btn.disabled = true;
+    setCreateStatus('提交中…', 'busy');
+    try {
+      var d = await postJSON('/api/admin/miniprogram-library', {
+        name: document.getElementById('mp-create-name').value.trim(),
+        appid: document.getElementById('mp-create-appid').value.trim(),
+        pagepath: document.getElementById('mp-create-pagepath').value.trim(),
+        title: document.getElementById('mp-create-title').value.trim(),
+        thumb_image_id: thumbId,
+      });
+      if (d.ok) {
+        setCreateStatus('已新增 #' + d.item.id, 'success');
+        refreshListInBackground();
+        setTimeout(closeCreateModal, 600);
+      } else {
+        setCreateStatus('失败：' + errorText(d, '请稍后重试'), 'error');
+      }
+    } catch (e) {
+      setCreateStatus('失败：' + window.AdminApi.errorMessage(e, '请稍后重试'), 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ===================================================================
+  // 编辑 / 详情 Modal
+  // ===================================================================
+  var $editModal = document.getElementById('mp-edit-modal');
+  var $editStatus = document.getElementById('mp-edit-status');
+  var $editToggleBtn = document.getElementById('mp-edit-toggle');
+  var editPicker = null;
+  var editingItem = null;
+
+  function setEditStatus(text, kind) {
+    $editStatus.textContent = text || '';
+    $editStatus.className = 'mp-modal-status' + (kind ? ' ' + kind : '');
+  }
+
+  async function openEditModal(item) {
+    editingItem = item;
+    document.getElementById('mp-edit-heading').textContent = item.title || item.name || ('#' + item.id);
+    document.getElementById('mp-edit-subtitle').textContent =
+      'id=' + item.id + ' · appid=' + (item.appid || '-')
+      + (item.thumb_media_id ? ' · 企微缓存已就绪' : ' · 缩略图未上传企微');
+    document.getElementById('mp-edit-name').value = item.name || '';
+    document.getElementById('mp-edit-appid').value = item.appid || '';
+    document.getElementById('mp-edit-pagepath').value = item.pagepath || '';
+    document.getElementById('mp-edit-card-title').value = item.title || '';
+    $editToggleBtn.textContent = item.enabled ? '停用' : '启用';
+
+    // 重新挂载缩略图 picker，bind 当前 thumb_image_id
+    var pickerHost = document.getElementById('mp-edit-thumb-picker');
+    pickerHost.innerHTML = '';
+    editPicker = window.mountImagePicker(pickerHost, {
+      mode: 'single',
+      value: item.thumb_image_id || 0,
+    });
+
+    setEditStatus('', '');
+    $editModal.hidden = false;
+
+    // 加载左栏大图
+    var imgWrap = document.getElementById('mp-edit-image-wrap');
+    imgWrap.innerHTML = '<span class="empty">加载中…</span>';
+    var url = thumbnailUrl(item, 'preview');
+    if (url) {
+      imgWrap.innerHTML = '<img src="' + escapeHtml(url) + '" loading="lazy" decoding="async" alt="">';
+    } else {
+      imgWrap.innerHTML = '<span class="empty">无缩略图</span>';
+    }
+  }
+
+  function closeEditModal() {
+    editingItem = null;
+    $editModal.hidden = true;
+  }
+  document.getElementById('mp-edit-close').addEventListener('click', closeEditModal);
+  $editModal.addEventListener('click', function (e) {
+    if (e.target === $editModal) closeEditModal();
+  });
+
+  // 保存
+  document.getElementById('mp-edit-save').addEventListener('click', async function () {
+    if (!editingItem) return;
+    var btn = this;
+    btn.disabled = true;
+    setEditStatus('保存中…', 'busy');
+    var newThumbId = editPicker ? editPicker.getValue() : 0;
+    var payload = {
+      name: document.getElementById('mp-edit-name').value,
+      appid: document.getElementById('mp-edit-appid').value,
+      pagepath: document.getElementById('mp-edit-pagepath').value,
+      title: document.getElementById('mp-edit-card-title').value,
+    };
+    if (newThumbId && newThumbId !== editingItem.thumb_image_id) {
+      payload.thumb_image_id = newThumbId;
+    }
+    try {
+      var d = await putJSON('/api/admin/miniprogram-library/' + editingItem.id, payload);
+      if (d.ok) {
+        setEditStatus('已保存', 'success');
+        refreshListInBackground();
+        setTimeout(closeEditModal, 500);
+      } else {
+        setEditStatus('保存失败：' + errorText(d, '请稍后重试'), 'error');
+      }
+    } catch (e) {
+      setEditStatus('保存失败：' + window.AdminApi.errorMessage(e, '请稍后重试'), 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // 启用 / 停用
+  $editToggleBtn.addEventListener('click', async function () {
+    if (!editingItem) return;
+    setEditStatus('切换中…', 'busy');
+    try {
+      var d = await putJSON('/api/admin/miniprogram-library/' + editingItem.id, { enabled: !editingItem.enabled });
+      if (d.ok) {
+        editingItem.enabled = d.item.enabled;
+        $editToggleBtn.textContent = editingItem.enabled ? '停用' : '启用';
+        setEditStatus(editingItem.enabled ? '已启用' : '已停用', 'success');
+        await loadList();
+      } else {
+        setEditStatus('切换失败：' + errorText(d, '请稍后重试'), 'error');
+      }
+    } catch (e) {
+      setEditStatus('切换失败：' + window.AdminApi.errorMessage(e, '请稍后重试'), 'error');
+    }
+  });
+
+  // 手动刷新缩略图（重传企微）
+  document.getElementById('mp-edit-resolve').addEventListener('click', async function () {
+    if (!editingItem) return;
+    setEditStatus('刷新中…', 'busy');
+    try {
+      var d = await postJSON('/api/admin/miniprogram-library/' + editingItem.id + '/test-resolve', {});
+      if (d.ok) {
+        setEditStatus('已刷新，thumb_media_id=' + (d.thumb_media_id || ''), 'success');
+        await loadList();
+      } else {
+        setEditStatus('刷新失败：' + errorText(d, '请稍后重试'), 'error');
+      }
+    } catch (e) {
+      setEditStatus('刷新失败：' + window.AdminApi.errorMessage(e, '请稍后重试'), 'error');
+    }
+  });
+
+  // 删除（小程序库 backend 是软删，不像图片库做了硬删 + 引用检查）
+  document.getElementById('mp-edit-delete').addEventListener('click', async function () {
+    if (!editingItem) return;
+    var id = editingItem.id;
+    if (!confirm('确认删除（停用）这条小程序素材？引用了它的群发将无法发送。')) return;
+    setEditStatus('删除中…', 'busy');
+    try {
+      var d = await deleteReq('/api/admin/miniprogram-library/' + id);
+      if (d.ok) {
+        setEditStatus('已删除', 'success');
+        await loadList();
+        setTimeout(closeEditModal, 500);
+      } else {
+        setEditStatus('删除失败：' + errorText(d, '请稍后重试'), 'error');
+      }
+    } catch (e) {
+      setEditStatus('删除失败：' + window.AdminApi.errorMessage(e, '请稍后重试'), 'error');
+    }
+  });
+
+  // ===================================================================
+  // 筛选事件
+  // ===================================================================
+  var qInput = document.getElementById('mp-q');
+  var qDebounce = null;
+  qInput.addEventListener('input', function () {
+    clearTimeout(qDebounce);
+    qDebounce = setTimeout(function () {
+      STATE.filters.q = qInput.value.trim();
+      renderGrid();
+    }, 200);
+  });
+  document.getElementById('mp-include-disabled').addEventListener('change', function (e) {
+    STATE.filters.includeDisabled = e.target.checked;
+    renderGrid();
+  });
+  document.getElementById('mp-reset').addEventListener('click', function () {
+    STATE.filters = { q:'', includeDisabled:false };
+    qInput.value = '';
+    document.getElementById('mp-include-disabled').checked = false;
+    renderGrid();
+  });
+
+  // ESC 关任何打开的 modal
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (!$editModal.hidden) closeEditModal();
+    else if (!$createModal.hidden) closeCreateModal();
+  });
+
+  // ---------- 启动 ---------- //
+  loadList();
+})();
+</script>
+
+      </main>
+    </div>
+  </div>
+  <script id="aicrmAdminActionGrants" type="application/json">{}</script>
+  
+</body>
+</html>

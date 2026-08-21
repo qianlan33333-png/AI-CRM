@@ -1,0 +1,666 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Questionnaire External Push Logs · 客户管理后台</title>
+  <link rel="stylesheet" href="../static/admin_console/admin_console.css?v=operation-member-picker-fix-20260527&amp;design=lark-20260803">
+  
+  <script src="../static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
+  <script defer src="../static/admin_console/admin_console.js?v=lark-design-package-20260803"></script>
+  <script defer src="../static/admin_console/operation_member_picker.js?v=operation-member-picker-wecom-sync-20260709"></script>
+</head>
+<body
+  class="admin-shell"
+  data-admin-shell-source="next_admin_shell"
+>
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="admin-brand-mark">CRM</div>
+        <div class="admin-brand-copy">
+          <div class="admin-brand-title">客户管理后台</div>
+          <div class="admin-brand-subtitle">ADMIN CONSOLE</div>
+        </div>
+      </div>
+
+      <nav class="admin-nav" aria-label="客户管理后台导航">
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">运营</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="自动化运营"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_conversion.svg" alt="">
+              <span class="admin-nav-label">自动化运营</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="运营闭环"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/operation_cycles.svg" alt="">
+              <span class="admin-nav-label">运营闭环</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="群运营计划"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/group_ops.svg" alt="">
+              <span class="admin-nav-label">群运营计划</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="渠道码中心"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/channels.svg" alt="">
+              <span class="admin-nav-label">渠道码中心</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="AI 助手"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/cloud_orchestrator.svg" alt="">
+              <span class="admin-nav-label">AI 助手</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="客户激活 / 客户列表"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/customers.svg" alt="">
+              <span class="admin-nav-label">客户激活 / 客户列表</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="漏斗 / 数据看板"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/user_ops_funnel.svg" alt="">
+              <span class="admin-nav-label">漏斗 / 数据看板</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="问卷"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/questionnaires.svg" alt="">
+              <span class="admin-nav-label">问卷</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="内容雷达"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/radar_links.svg" alt="">
+              <span class="admin-nav-label">内容雷达</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="企微标签管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wecom_tags.svg" alt="">
+              <span class="admin-nav-label">企微标签管理</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">交易</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="交易管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_transactions.svg" alt="">
+              <span class="admin-nav-label">交易管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_products.svg" alt="">
+              <span class="admin-nav-label">商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="周期商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/service_period_products.svg" alt="">
+              <span class="admin-nav-label">周期商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="优惠券"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/coupons.svg" alt="">
+              <span class="admin-nav-label">优惠券</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">素材</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="图片素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/image_library.svg" alt="">
+              <span class="admin-nav-label">图片素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="小程序素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/miniprogram_library.svg" alt="">
+              <span class="admin-nav-label">小程序素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="附件素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/attachment_library.svg" alt="">
+              <span class="admin-nav-label">附件素材库</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">配置及后台</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="自动化话术"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_agents.svg" alt="">
+              <span class="admin-nav-label">自动化话术</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="负责人迁移"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/owner_migration.svg" alt="">
+              <span class="admin-nav-label">负责人迁移</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="配置"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/config.svg" alt="">
+              <span class="admin-nav-label">配置</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="API 文档"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/api_docs.svg" alt="">
+              <span class="admin-nav-label">API 文档</span>
+            </a>
+            
+          </div>
+        </section>
+        
+      </nav>
+
+      
+      <div class="admin-sidebar-user">
+        <div class="admin-sidebar-user__avatar">
+          示
+        </div>
+        <div class="admin-sidebar-user__meta">
+          <div class="admin-sidebar-user__name">
+            示例管理员
+          </div>
+          <a class="admin-sidebar-user__logout" href="#">退出登录</a>
+        </div>
+      </div>
+      
+    </aside>
+
+    <div class="admin-main-wrap">
+      
+      
+      
+      
+      <header class="admin-topbar">
+        
+        <div class="admin-topbar-head">
+          <nav class="admin-breadcrumbs" aria-label="当前位置">
+            
+            
+            <a href="#">客户管理后台</a>
+            
+            
+          </nav>
+          <div>
+            <h1 class="admin-page-title">Questionnaire External Push Logs</h1>
+            <p class="admin-page-summary">页面功能预览（示例数据）</p>
+          </div>
+        </div>
+        
+
+        
+      </header>
+      
+
+      <main class="admin-page">
+        
+        <section class="admin-alert admin-alert--success">示例</section>
+        
+        
+        <section class="admin-alert admin-alert--error">示例</section>
+        
+        
+<section class="admin-card">
+  <div class="admin-card-head">
+    <div>
+      <h2>
+        
+        全局问卷外部推送总览
+        
+      </h2>
+      <p>
+        
+        只读查看已退休同步外推链路留下的历史结果。
+        
+      </p>
+    </div>
+    <div class="admin-toolbar">
+      
+      <a class="admin-button admin-button--ghost" href="#">返回问卷管理</a>
+      
+    </div>
+  </div>
+  <div class="admin-card-grid">
+    <article class="admin-card admin-stat-card admin-stat-card--nested">
+      <div class="admin-card-label">已开启外推问卷</div>
+      <div class="admin-card-value admin-card-value--compact">示例</div>
+      <p class="admin-card-copy">当前已开启问卷外推的问卷数 / 共 示例 份问卷。</p>
+    </article>
+    <article class="admin-card admin-stat-card admin-stat-card--nested">
+      <div class="admin-card-label">外推日志总数</div>
+      <div class="admin-card-value admin-card-value--compact">示例</div>
+      <p class="admin-card-copy">跨全部问卷累计写入的外推日志总量。</p>
+    </article>
+    <article class="admin-card admin-stat-card admin-stat-card--nested">
+      <div class="admin-card-label">历史失败线程</div>
+      <div class="admin-card-value admin-card-value--compact">示例</div>
+      <p class="admin-card-copy">旧链路最终状态仍为失败的历史线程数。</p>
+    </article>
+    
+    <article class="admin-card admin-stat-card admin-stat-card--nested">
+      <div class="admin-card-label">最近 24h 成功</div>
+      <div class="admin-card-value admin-card-value--compact">示例</div>
+      <p class="admin-card-copy">最近 24 小时写入的 success 日志条数。</p>
+    </article>
+    <article class="admin-card admin-stat-card admin-stat-card--nested">
+      <div class="admin-card-label">最近 24h 失败</div>
+      <div class="admin-card-value admin-card-value--compact">示例</div>
+      <p class="admin-card-copy">最近 24 小时写入的 failed 日志条数。</p>
+    </article>
+    <article class="admin-card admin-stat-card admin-stat-card--nested">
+      <div class="admin-card-label">全局总开关</div>
+      <div class="admin-card-value admin-card-value--compact">示例</div>
+      <p class="admin-card-copy">紧急止损优先于单问卷开关。可在 <a href="#">系统设置</a> 调整。</p>
+    </article>
+    
+  </div>
+</section>
+
+<section class="admin-card">
+  <div class="admin-card-head">
+    <div>
+      <h2>筛选</h2>
+      <p>可按旧链路的历史结果筛选排查。</p>
+    </div>
+  </div>
+  <form method="get" class="admin-grid-4">
+    
+    <label class="admin-field">
+      <span>问卷 ID</span>
+      <input type="number" name="questionnaire_id" min="1" value="示例">
+    </label>
+    <label class="admin-field">
+      <span>问卷标题</span>
+      <input type="text" name="questionnaire_title" value="示例" placeholder="按标题筛选">
+    </label>
+    
+    <label class="admin-field">
+      <span>状态</span>
+      <select name="status">
+        
+        <option value="示例" >示例</option>
+        
+        <option value="示例" >示例</option>
+        
+        <option value="示例" >示例</option>
+        
+      </select>
+    </label>
+    
+    <label class="admin-field">
+      <span>用户 ID</span>
+      <input type="text" name="user_id" value="示例" placeholder="按 user_id 筛选">
+    </label>
+    <label class="admin-field">
+      <span>目标地址</span>
+      <input type="text" name="target_url" value="示例" placeholder="按 URL 筛选">
+    </label>
+    
+    <label class="admin-field">
+      <span>显示数量</span>
+      <input type="number" name="limit" min="1" max="200" value="示例">
+    </label>
+    <div class="admin-toolbar">
+      <button class="admin-button admin-button--primary" type="submit">应用筛选</button>
+      <a class="admin-button admin-button--ghost" href="示例">重置</a>
+    </div>
+  </form>
+</section>
+
+<section class="admin-card">
+  <div class="admin-card-head">
+    <div>
+      <h2>外部推送记录</h2>
+      <p>这里只保留旧同步外推记录的只读排查入口；新链路由 Internal Event 与 External Effect 队列统一重试。</p>
+    </div>
+    <div class="admin-toolbar">
+      <span class="admin-chip admin-chip--muted">旧补发入口已退休</span>
+    </div>
+  </div>
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>问卷</th>
+          <th>ID</th>
+          <th>当前结果</th>
+          <th>首次结果</th>
+          <th>用户 ID</th>
+          <th>目标地址</th>
+          <th>最近响应码</th>
+          <th>最近失败原因</th>
+          <th>补发次数</th>
+          <th>最近时间</th>
+          <th>操作 / 详情</th>
+        </tr>
+      </thead>
+      <tbody>
+        
+        <tr>
+          
+          <td>
+            <a href="示例">示例</a>
+          </td>
+          
+          <td>#示例</td>
+          <td>
+            <span class="admin-inline-chip admin-inline-chip--示例">
+              示例
+            </span>
+          </td>
+          <td>
+            <span class="admin-inline-chip admin-inline-chip--示例">
+              示例
+            </span>
+          </td>
+          <td><code>示例</code></td>
+          <td>示例</td>
+          <td>示例</td>
+          <td>示例</td>
+          <td>示例</td>
+          <td>示例</td>
+          <td>
+            <details class="admin-details-block">
+              <summary>展开</summary>
+              <dl class="admin-definition-list">
+                <div><dt>问卷标题快照</dt><dd>示例</dd></div>
+                <div><dt>提交记录 ID</dt><dd>示例</dd></div>
+                <div><dt>目标地址</dt><dd>示例</dd></div>
+                <div><dt>原始请求体</dt><dd><pre class="admin-code-block">{}</pre></dd></div>
+                <div><dt>首次响应体</dt><dd><pre class="admin-code-block">示例</pre></dd></div>
+                <div><dt>首次失败原因</dt><dd>示例</dd></div>
+                <div><dt>首次时间</dt><dd>示例</dd></div>
+                <div><dt>最近结果</dt><dd>示例</dd></div>
+                <div><dt>最近响应体</dt><dd><pre class="admin-code-block">示例</pre></dd></div>
+                <div><dt>最近失败原因</dt><dd>示例</dd></div>
+                <div><dt>补发次数</dt><dd>示例</dd></div>
+                
+                <div>
+                  <dt>补发记录</dt>
+                  <dd>
+                    <ul class="admin-bullet-list">
+                      
+                      <li>
+                        #示例 · 第 示例 次补发 · 示例 ·
+                        响应码 示例 ·
+                        示例 ·
+                        示例
+                      </li>
+                      
+                      <li>
+                        #示例 · 第 示例 次补发 · 示例 ·
+                        响应码 示例 ·
+                        示例 ·
+                        示例
+                      </li>
+                      
+                      <li>
+                        #示例 · 第 示例 次补发 · 示例 ·
+                        响应码 示例 ·
+                        示例 ·
+                        示例
+                      </li>
+                      
+                    </ul>
+                  </dd>
+                </div>
+                
+              </dl>
+            </details>
+          </td>
+        </tr>
+        
+        <tr>
+          
+          <td>
+            <a href="示例">示例</a>
+          </td>
+          
+          <td>#示例</td>
+          <td>
+            <span class="admin-inline-chip admin-inline-chip--示例">
+              示例
+            </span>
+          </td>
+          <td>
+            <span class="admin-inline-chip admin-inline-chip--示例">
+              示例
+            </span>
+          </td>
+          <td><code>示例</code></td>
+          <td>示例</td>
+          <td>示例</td>
+          <td>示例</td>
+          <td>示例</td>
+          <td>示例</td>
+          <td>
+            <details class="admin-details-block">
+              <summary>展开</summary>
+              <dl class="admin-definition-list">
+                <div><dt>问卷标题快照</dt><dd>示例</dd></div>
+                <div><dt>提交记录 ID</dt><dd>示例</dd></div>
+                <div><dt>目标地址</dt><dd>示例</dd></div>
+                <div><dt>原始请求体</dt><dd><pre class="admin-code-block">{}</pre></dd></div>
+                <div><dt>首次响应体</dt><dd><pre class="admin-code-block">示例</pre></dd></div>
+                <div><dt>首次失败原因</dt><dd>示例</dd></div>
+                <div><dt>首次时间</dt><dd>示例</dd></div>
+                <div><dt>最近结果</dt><dd>示例</dd></div>
+                <div><dt>最近响应体</dt><dd><pre class="admin-code-block">示例</pre></dd></div>
+                <div><dt>最近失败原因</dt><dd>示例</dd></div>
+                <div><dt>补发次数</dt><dd>示例</dd></div>
+                
+                <div>
+                  <dt>补发记录</dt>
+                  <dd>
+                    <ul class="admin-bullet-list">
+                      
+                      <li>
+                        #示例 · 第 示例 次补发 · 示例 ·
+                        响应码 示例 ·
+                        示例 ·
+                        示例
+                      </li>
+                      
+                      <li>
+                        #示例 · 第 示例 次补发 · 示例 ·
+                        响应码 示例 ·
+                        示例 ·
+                        示例
+                      </li>
+                      
+                      <li>
+                        #示例 · 第 示例 次补发 · 示例 ·
+                        响应码 示例 ·
+                        示例 ·
+                        示例
+                      </li>
+                      
+                    </ul>
+                  </dd>
+                </div>
+                
+              </dl>
+            </details>
+          </td>
+        </tr>
+        
+        <tr>
+          
+          <td>
+            <a href="示例">示例</a>
+          </td>
+          
+          <td>#示例</td>
+          <td>
+            <span class="admin-inline-chip admin-inline-chip--示例">
+              示例
+            </span>
+          </td>
+          <td>
+            <span class="admin-inline-chip admin-inline-chip--示例">
+              示例
+            </span>
+          </td>
+          <td><code>示例</code></td>
+          <td>示例</td>
+          <td>示例</td>
+          <td>示例</td>
+          <td>示例</td>
+          <td>示例</td>
+          <td>
+            <details class="admin-details-block">
+              <summary>展开</summary>
+              <dl class="admin-definition-list">
+                <div><dt>问卷标题快照</dt><dd>示例</dd></div>
+                <div><dt>提交记录 ID</dt><dd>示例</dd></div>
+                <div><dt>目标地址</dt><dd>示例</dd></div>
+                <div><dt>原始请求体</dt><dd><pre class="admin-code-block">{}</pre></dd></div>
+                <div><dt>首次响应体</dt><dd><pre class="admin-code-block">示例</pre></dd></div>
+                <div><dt>首次失败原因</dt><dd>示例</dd></div>
+                <div><dt>首次时间</dt><dd>示例</dd></div>
+                <div><dt>最近结果</dt><dd>示例</dd></div>
+                <div><dt>最近响应体</dt><dd><pre class="admin-code-block">示例</pre></dd></div>
+                <div><dt>最近失败原因</dt><dd>示例</dd></div>
+                <div><dt>补发次数</dt><dd>示例</dd></div>
+                
+                <div>
+                  <dt>补发记录</dt>
+                  <dd>
+                    <ul class="admin-bullet-list">
+                      
+                      <li>
+                        #示例 · 第 示例 次补发 · 示例 ·
+                        响应码 示例 ·
+                        示例 ·
+                        示例
+                      </li>
+                      
+                      <li>
+                        #示例 · 第 示例 次补发 · 示例 ·
+                        响应码 示例 ·
+                        示例 ·
+                        示例
+                      </li>
+                      
+                      <li>
+                        #示例 · 第 示例 次补发 · 示例 ·
+                        响应码 示例 ·
+                        示例 ·
+                        示例
+                      </li>
+                      
+                    </ul>
+                  </dd>
+                </div>
+                
+              </dl>
+            </details>
+          </td>
+        </tr>
+        
+      </tbody>
+    </table>
+  </div>
+</section>
+
+      </main>
+    </div>
+  </div>
+  <script id="aicrmAdminActionGrants" type="application/json">{}</script>
+  
+</body>
+</html>

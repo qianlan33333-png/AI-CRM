@@ -1,0 +1,1379 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Owner Migration · 客户管理后台</title>
+  <link rel="stylesheet" href="../static/admin_console/admin_console.css?v=operation-member-picker-fix-20260527&amp;design=lark-20260803">
+  <script src="../static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
+  <script src="../static/admin_console/image_resource_loader.js?v=resource-governance-v2-pending-retry"></script>
+  
+<style>
+  .admin-topbar { display: none; }
+  .owner-migration-page {
+    --om-bg: #f6f7fb;
+    --om-panel: #fff;
+    --om-border: #d8dee9;
+    --om-text: #1f2937;
+    --om-muted: #6b7280;
+    --om-primary: #2563eb;
+    --om-primary-dark: #1d4ed8;
+    --om-danger: #dc2626;
+    --om-warning: #d97706;
+    --om-success: #059669;
+    --om-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    max-width: 1440px;
+    margin: 0 auto;
+    color: var(--om-text);
+  }
+  .owner-migration-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 18px;
+  }
+  .owner-migration-header h1 {
+    margin: 0 0 8px;
+    font-size: 24px;
+    line-height: 1.25;
+  }
+  .owner-migration-subtitle {
+    color: var(--om-muted);
+    margin: 0;
+    font-size: 14px;
+  }
+  .owner-migration-status-bar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .owner-migration-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 28px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: #3730a3;
+    font-size: 12px;
+    font-weight: 700;
+    border: 1px solid #c7d2fe;
+  }
+  .owner-migration-pill--success { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+  .owner-migration-pill--warn { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+  .owner-migration-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .owner-migration-card {
+    background: var(--om-panel);
+    border: 1px solid var(--om-border);
+    border-radius: 12px;
+    box-shadow: var(--om-shadow);
+    overflow: hidden;
+  }
+  .owner-migration-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--om-border);
+  }
+  .owner-migration-card-title {
+    margin: 0;
+    font-size: 16px;
+  }
+  .owner-migration-card-body { padding: 18px; }
+  .owner-migration-form-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 14px;
+  }
+  .owner-migration-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .owner-migration-col-3 { grid-column: span 3; }
+  .owner-migration-col-4 { grid-column: span 4; }
+  .owner-migration-col-6 { grid-column: span 6; }
+  .owner-migration-col-12 { grid-column: span 12; }
+  .owner-migration-label {
+    font-size: 13px;
+    color: #374151;
+    font-weight: 700;
+  }
+  .owner-migration-input,
+  .owner-migration-textarea {
+    width: 100%;
+    border: 1px solid var(--om-border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .owner-migration-input:focus,
+  .owner-migration-textarea:focus {
+    border-color: var(--om-primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  }
+  .owner-migration-input[readonly] { background: #fafafa; }
+  .owner-migration-textarea { min-height: 74px; resize: vertical; }
+  .owner-migration-input-with-button {
+    display: flex;
+    gap: 8px;
+  }
+  .owner-migration-input-with-button .owner-migration-input { flex: 1; }
+  .owner-migration-hint {
+    color: var(--om-muted);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .owner-migration-switch-line {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid var(--om-border);
+    border-radius: 10px;
+    background: #fafafa;
+  }
+  .owner-migration-switch-line input { width: auto; }
+  .owner-migration-btn {
+    border: 1px solid var(--om-border);
+    background: #fff;
+    color: var(--om-text);
+    border-radius: 10px;
+    padding: 9px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 700;
+    transition: 0.15s;
+    white-space: nowrap;
+  }
+  .owner-migration-btn:hover { background: #f9fafb; }
+  .owner-migration-btn--primary { background: var(--om-primary); border-color: var(--om-primary); color: #fff; }
+  .owner-migration-btn--primary:hover { background: var(--om-primary-dark); }
+  .owner-migration-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .owner-migration-btn-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .owner-migration-segmented {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .owner-migration-segment {
+    min-width: 230px;
+    flex: 1;
+    border: 1px solid var(--om-border);
+    border-radius: 12px;
+    padding: 14px;
+    cursor: pointer;
+    background: #fff;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .owner-migration-segment input {
+    width: auto;
+    margin-top: 3px;
+  }
+  .owner-migration-segment.is-active {
+    border-color: var(--om-primary);
+    background: #eff6ff;
+  }
+  .owner-migration-segment strong {
+    display: block;
+    margin-bottom: 4px;
+  }
+  .owner-migration-upload {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+  }
+  .owner-migration-stats {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(120px, 1fr));
+    gap: 10px;
+    margin: 14px 0;
+  }
+  .owner-migration-stat {
+    border: 1px solid var(--om-border);
+    border-radius: 12px;
+    padding: 12px;
+    background: #fff;
+  }
+  .owner-migration-stat-value {
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1.1;
+  }
+  .owner-migration-stat-label {
+    color: var(--om-muted);
+    font-size: 12px;
+    margin-top: 6px;
+  }
+  .owner-migration-alert {
+    border-radius: 12px;
+    padding: 12px;
+    margin: 12px 0;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  .owner-migration-alert--warn { border: 1px solid #fde68a; background: #fffbeb; color: #92400e; }
+  .owner-migration-alert--ok { border: 1px solid #a7f3d0; background: #ecfdf5; color: #065f46; }
+  .owner-migration-alert--error { border: 1px solid #fecaca; background: #fef2f2; color: #991b1b; }
+  .owner-migration-table-wrap {
+    border: 1px solid var(--om-border);
+    border-radius: 12px;
+    overflow: auto;
+    max-height: 430px;
+  }
+  .owner-migration-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+  }
+  .owner-migration-table th,
+  .owner-migration-table td {
+    border-bottom: 1px solid #e5e7eb;
+    padding: 10px;
+    text-align: left;
+    font-size: 13px;
+    vertical-align: top;
+  }
+  .owner-migration-table th {
+    background: #f9fafb;
+    color: #374151;
+    font-weight: 700;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  .owner-migration-status {
+    display: inline-flex;
+    border-radius: 999px;
+    padding: 3px 8px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .owner-migration-status--ready { background: #dcfce7; color: #166534; }
+  .owner-migration-status--skip { background: #f3f4f6; color: #374151; }
+  .owner-migration-status--block { background: #fee2e2; color: #991b1b; }
+  .owner-migration-status--warn { background: #fef3c7; color: #92400e; }
+  .owner-migration-confirm-panel {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: end;
+  }
+  .owner-migration-execution-log {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 12px;
+    background: #111827;
+    color: #e5e7eb;
+    border-radius: 12px;
+    padding: 12px;
+    white-space: pre-wrap;
+    min-height: 90px;
+    margin-top: 12px;
+  }
+  .owner-migration-section-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 12px;
+  }
+  .owner-migration-empty {
+    color: var(--om-muted);
+    padding: 18px;
+    text-align: center;
+  }
+  [hidden] { display: none !important; }
+  @media (max-width: 980px) {
+    .owner-migration-col-3,
+    .owner-migration-col-4,
+    .owner-migration-col-6 { grid-column: span 12; }
+    .owner-migration-stats { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+    .owner-migration-confirm-panel,
+    .owner-migration-upload { grid-template-columns: 1fr; }
+    .owner-migration-header { flex-direction: column; }
+    .owner-migration-status-bar { justify-content: flex-start; }
+  }
+</style>
+
+  <script defer src="../static/admin_console/admin_console.js?v=lark-design-package-20260803"></script>
+  <script defer src="../static/admin_console/operation_member_picker.js?v=operation-member-picker-wecom-sync-20260709"></script>
+</head>
+<body class="admin-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="admin-brand-mark">CRM</div>
+        <div class="admin-brand-copy">
+          <div class="admin-brand-title">客户管理后台</div>
+          <div class="admin-brand-subtitle">ADMIN CONSOLE</div>
+        </div>
+      </div>
+
+      <nav class="admin-nav" aria-label="客户管理后台导航">
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">运营</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化运营"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_conversion.svg" alt="">
+              <span class="admin-nav-label">自动化运营</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="运营闭环"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/operation_cycles.svg" alt="">
+              <span class="admin-nav-label">运营闭环</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="群运营计划"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/group_ops.svg" alt="">
+              <span class="admin-nav-label">群运营计划</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="渠道码中心"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/channels.svg" alt="">
+              <span class="admin-nav-label">渠道码中心</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="AI 助手"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/cloud_orchestrator.svg" alt="">
+              <span class="admin-nav-label">AI 助手</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="客户激活 / 客户列表"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/customers.svg" alt="">
+              <span class="admin-nav-label">客户激活 / 客户列表</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="漏斗 / 数据看板"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/user_ops_funnel.svg" alt="">
+              <span class="admin-nav-label">漏斗 / 数据看板</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="问卷"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/questionnaires.svg" alt="">
+              <span class="admin-nav-label">问卷</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="内容雷达"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/radar_links.svg" alt="">
+              <span class="admin-nav-label">内容雷达</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="企微标签管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wecom_tags.svg" alt="">
+              <span class="admin-nav-label">企微标签管理</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">交易</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="交易管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_transactions.svg" alt="">
+              <span class="admin-nav-label">交易管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_products.svg" alt="">
+              <span class="admin-nav-label">商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="周期商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/service_period_products.svg" alt="">
+              <span class="admin-nav-label">周期商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="优惠券"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/coupons.svg" alt="">
+              <span class="admin-nav-label">优惠券</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">素材</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="图片素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/image_library.svg" alt="">
+              <span class="admin-nav-label">图片素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="小程序素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/miniprogram_library.svg" alt="">
+              <span class="admin-nav-label">小程序素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="附件素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/attachment_library.svg" alt="">
+              <span class="admin-nav-label">附件素材库</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">配置及后台</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化话术"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_agents.svg" alt="">
+              <span class="admin-nav-label">自动化话术</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="负责人迁移"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/owner_migration.svg" alt="">
+              <span class="admin-nav-label">负责人迁移</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="配置"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/config.svg" alt="">
+              <span class="admin-nav-label">配置</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="API 文档"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/api_docs.svg" alt="">
+              <span class="admin-nav-label">API 文档</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+      </nav>
+
+      
+      <div class="admin-sidebar-user">
+        <div class="admin-sidebar-user__avatar">
+          示
+        </div>
+        <div class="admin-sidebar-user__meta">
+          <div class="admin-sidebar-user__name">
+            示例管理员
+          </div>
+          <a class="admin-sidebar-user__logout" href="#">退出登录</a>
+        </div>
+      </div>
+      
+    </aside>
+
+    <div class="admin-main-wrap">
+      
+      
+      
+      
+      
+      
+      <header class="admin-topbar">
+        
+        <div class="admin-topbar-head">
+          <nav class="admin-breadcrumbs" aria-label="当前位置">
+            
+            
+            <a href="#">客户管理后台</a>
+            
+            
+          </nav>
+          <div>
+            <h1 class="admin-page-title">Owner Migration</h1>
+            <p class="admin-page-summary">页面功能预览（示例数据）</p>
+          </div>
+        </div>
+        
+
+        
+      </header>
+      
+
+      <main class="admin-page">
+        
+        <section class="admin-alert admin-alert--success">示例</section>
+        
+        
+        <section class="admin-alert admin-alert--error">示例</section>
+        
+        
+<div
+  class="owner-migration-page"
+  data-owner-migration-page
+  data-source-owner-userid="示例"
+  data-target-owner-userid="示例"
+  data-operator="示例"
+  data-transfer-welcome-msg="示例"
+  data-include-wecom-transfer="true"
+>
+  <header class="owner-migration-header">
+    <div>
+      <h1>客户负责人迁移 / 在职继承</h1>
+      <p class="owner-migration-subtitle">先完成企微客户转接，再同步 CRM 本地归属；执行前必须预览。</p>
+    </div>
+    <div class="owner-migration-status-bar">
+      <span class="owner-migration-pill" data-mode-pill>模式：Excel 指定名单</span>
+      <span class="owner-migration-pill owner-migration-pill--success" data-wecom-pill>企微转接：默认开启</span>
+      <span class="owner-migration-pill owner-migration-pill--warn">执行前必须预览</span>
+    </div>
+  </header>
+
+  <main class="owner-migration-grid">
+    <section class="owner-migration-card">
+      <div class="owner-migration-card-head">
+        <h2 class="owner-migration-card-title">① 选择人员与话术</h2>
+      </div>
+      <div class="owner-migration-card-body">
+        <div class="owner-migration-form-grid">
+          <div class="owner-migration-field owner-migration-col-4" data-owner-field="source">
+            <label class="owner-migration-label" for="sourceOwnerLabel">原负责人</label>
+            <div class="owner-migration-input-with-button">
+              <input class="owner-migration-input" id="sourceOwnerLabel" data-owner-label="source" value="示例" readonly>
+              <button class="owner-migration-btn" type="button" data-owner-picker="source">选择</button>
+            </div>
+            <input id="sourceOwnerUserid" name="source_owner_userid" type="hidden" value="示例" data-owner-userid="source">
+            <div class="owner-migration-hint">允许包含离职/停用人员，用于选择原负责人。</div>
+          </div>
+          <div class="owner-migration-field owner-migration-col-4" data-owner-field="target">
+            <label class="owner-migration-label" for="targetOwnerLabel">目标负责人</label>
+            <div class="owner-migration-input-with-button">
+              <input class="owner-migration-input" id="targetOwnerLabel" data-owner-label="target" value="示例" readonly>
+              <button class="owner-migration-btn" type="button" data-owner-picker="target">选择</button>
+            </div>
+            <input id="targetOwnerUserid" name="target_owner_userid" type="hidden" value="示例" data-owner-userid="target">
+            <div class="owner-migration-hint">默认只展示在职可承接人员。</div>
+          </div>
+          <div class="owner-migration-field owner-migration-col-4">
+            <label class="owner-migration-label" for="operator">操作人</label>
+            <input class="owner-migration-input" id="operator" value="示例" readonly>
+            <div class="owner-migration-hint">优先读取登录态；无登录态时使用 crm_console。</div>
+          </div>
+          <div class="owner-migration-field owner-migration-col-12">
+            <label class="owner-migration-label" for="welcomeText">转接欢迎语</label>
+            <textarea class="owner-migration-textarea" id="welcomeText" data-transfer-welcome-msg>示例</textarea>
+            <div class="owner-migration-hint" data-welcome-count>0 字</div>
+          </div>
+          <div class="owner-migration-field owner-migration-col-6">
+            <label class="owner-migration-label">企微转接</label>
+            <label class="owner-migration-switch-line">
+              <input id="includeWecomTransfer" type="checkbox" data-include-wecom-transfer checked>
+              <span>先调用企微官方转接接口；企微成功的客户才同步 CRM。</span>
+            </label>
+            <div class="owner-migration-alert owner-migration-alert--warn" data-local-only-warning hidden>本次仅更新 CRM，不触发企微在职继承。</div>
+          </div>
+          <div class="owner-migration-field owner-migration-col-6">
+            <label class="owner-migration-label">CRM 归属同步</label>
+            <label class="owner-migration-switch-line">
+              <input type="checkbox" checked disabled>
+              <span>固定开启，不提供关闭开关。</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="owner-migration-card">
+      <div class="owner-migration-card-head">
+        <h2 class="owner-migration-card-title">② 选择迁移范围</h2>
+        <div class="owner-migration-btn-row">
+          <button class="owner-migration-btn" type="button" data-download-template>下载 Excel 模板</button>
+          <button class="owner-migration-btn" type="button" data-reset-workbench>重置</button>
+        </div>
+      </div>
+      <div class="owner-migration-card-body">
+        <div class="owner-migration-segmented" role="radiogroup" aria-label="迁移范围">
+          <label class="owner-migration-segment" data-scope-segment="all">
+            <input type="radio" name="scope_type" value="all">
+            <span><strong>全量迁移</strong><span class="owner-migration-hint">迁移原负责人当前全部候选客户。保留现有能力。</span></span>
+          </label>
+          <label class="owner-migration-segment is-active" data-scope-segment="excel_include">
+            <input type="radio" name="scope_type" value="excel_include" checked>
+            <span><strong>Excel 指定名单</strong><span class="owner-migration-hint">只迁移 Excel 中标记为“是”的客户。</span></span>
+          </label>
+        </div>
+
+        <div class="owner-migration-field" data-excel-panel style="margin-top: 14px;">
+          <label class="owner-migration-label" for="ownerMigrationFile">上传 Excel</label>
+          <div class="owner-migration-upload">
+            <input class="owner-migration-input" id="ownerMigrationFile" type="file" accept=".xlsx,.xls,.csv" data-import-file>
+            <button class="owner-migration-btn" type="button" data-upload-file>上传并解析</button>
+          </div>
+          <div class="owner-migration-hint">支持 xlsx/xls/csv；上传时会携带当前选择的原负责人、目标负责人、企微转接和欢迎语。</div>
+        </div>
+
+        <div data-import-summary hidden>
+          <div class="owner-migration-alert owner-migration-alert--ok">
+            <strong data-import-filename>-</strong>
+            <span data-import-session style="margin-left: 8px;"></span>
+          </div>
+          <div class="owner-migration-stats">
+            <div class="owner-migration-stat"><div class="owner-migration-stat-value" data-import-stat="total_rows">0</div><div class="owner-migration-stat-label">总行数</div></div>
+            <div class="owner-migration-stat"><div class="owner-migration-stat-value" data-import-stat="unique_external_userids">0</div><div class="owner-migration-stat-label">去重后客户数</div></div>
+            <div class="owner-migration-stat"><div class="owner-migration-stat-value" data-import-stat="marked_move">0</div><div class="owner-migration-stat-label">标记迁移数</div></div>
+            <div class="owner-migration-stat"><div class="owner-migration-stat-value" data-import-stat="marked_skip">0</div><div class="owner-migration-stat-label">标记不迁移数</div></div>
+            <div class="owner-migration-stat"><div class="owner-migration-stat-value" data-import-stat="duplicate_rows">0</div><div class="owner-migration-stat-label">重复行数</div></div>
+            <div class="owner-migration-stat"><div class="owner-migration-stat-value" data-import-stat="invalid_rows">0</div><div class="owner-migration-stat-label">字段错误数</div></div>
+          </div>
+        </div>
+
+        <div class="owner-migration-section-actions">
+          <div class="owner-migration-hint" data-workbench-notice></div>
+          <button class="owner-migration-btn owner-migration-btn--primary" type="button" data-preview>生成预览</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="owner-migration-card">
+      <div class="owner-migration-card-head">
+        <h2 class="owner-migration-card-title">③ 预览结果</h2>
+        <button class="owner-migration-btn" type="button" data-download-errors disabled>下载不可迁移明细</button>
+      </div>
+      <div class="owner-migration-card-body">
+        <div data-preview-empty class="owner-migration-empty">请先选择人员、迁移范围并生成预览。</div>
+        <div data-preview-content hidden>
+          <div class="owner-migration-alert owner-migration-alert--ok" data-preview-basic>-</div>
+          <div class="owner-migration-stats">
+            <div class="owner-migration-stat"><div class="owner-migration-stat-value" data-preview-stat="total_rows">0</div><div class="owner-migration-stat-label">Excel 总行数</div></div>
+            <div class="owner-migration-stat"><div class="owner-migration-stat-value" data-preview-stat="unique_external_userids">0</div><div class="owner-migration-stat-label">去重后客户数</div></div>
+            <div class="owner-migration-stat"><div class="owner-migration-stat-value" data-preview-stat="ready">0</div><div class="owner-migration-stat-label">可迁移客户</div></div>
+            <div class="owner-migration-stat"><div class="owner-migration-stat-value" data-preview-stat="skipped_by_file">0</div><div class="owner-migration-stat-label">Excel 标记不迁移</div></div>
+            <div class="owner-migration-stat"><div class="owner-migration-stat-value" data-preview-stat="blocked">0</div><div class="owner-migration-stat-label">不可迁移客户</div></div>
+            <div class="owner-migration-stat"><div class="owner-migration-stat-value" data-preview-stat="crm_updates">0</div><div class="owner-migration-stat-label">预计 CRM 更新数</div></div>
+          </div>
+          <div class="owner-migration-alert owner-migration-alert--warn" data-pending-review></div>
+          <div class="owner-migration-table-wrap" style="margin-bottom: 12px;">
+            <table class="owner-migration-table">
+              <thead>
+                <tr>
+                  <th>数据面</th>
+                  <th>预计影响</th>
+                </tr>
+              </thead>
+              <tbody data-surface-counts></tbody>
+            </table>
+          </div>
+          <div class="owner-migration-table-wrap">
+            <table class="owner-migration-table">
+              <thead>
+                <tr>
+                  <th>行号</th>
+                  <th>external_userid</th>
+                  <th>客户备注名</th>
+                  <th>Excel 标记</th>
+                  <th>当前归属</th>
+                  <th>状态</th>
+                  <th>原因</th>
+                </tr>
+              </thead>
+              <tbody data-preview-rows></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="owner-migration-card">
+      <div class="owner-migration-card-head">
+        <h2 class="owner-migration-card-title">④ 二次确认与执行</h2>
+        <button class="owner-migration-btn" type="button" data-download-result disabled>下载结果明细</button>
+      </div>
+      <div class="owner-migration-card-body">
+        <div class="owner-migration-alert owner-migration-alert--warn" data-confirm-hint>执行前必须先生成预览，并逐字输入确认短语。</div>
+        <div class="owner-migration-confirm-panel">
+          <div class="owner-migration-field">
+            <label class="owner-migration-label" for="confirmPhraseInput">确认短语</label>
+            <input class="owner-migration-input" id="confirmPhraseInput" data-confirm-phrase-input placeholder="确认将 0 个客户从 source 迁移到 target">
+            <div class="owner-migration-hint" data-confirm-phrase-display>等待预览生成确认短语。</div>
+          </div>
+          <button class="owner-migration-btn owner-migration-btn--primary" type="button" data-execute disabled>执行迁移</button>
+        </div>
+        <div class="owner-migration-stats" data-execute-stats hidden>
+          <div class="owner-migration-stat"><div class="owner-migration-stat-value" data-execute-stat="requested_external_userids">0</div><div class="owner-migration-stat-label">请求客户数</div></div>
+          <div class="owner-migration-stat"><div class="owner-migration-stat-value" data-execute-stat="wecom_requested">0</div><div class="owner-migration-stat-label">企微请求</div></div>
+          <div class="owner-migration-stat"><div class="owner-migration-stat-value" data-execute-stat="wecom_success">0</div><div class="owner-migration-stat-label">企微成功</div></div>
+          <div class="owner-migration-stat"><div class="owner-migration-stat-value" data-execute-stat="wecom_failed">0</div><div class="owner-migration-stat-label">企微失败</div></div>
+          <div class="owner-migration-stat"><div class="owner-migration-stat-value" data-execute-stat="crm_updated">0</div><div class="owner-migration-stat-label">CRM 已更新</div></div>
+          <div class="owner-migration-stat"><div class="owner-migration-stat-value" data-execute-stat="crm_skipped_due_to_wecom_failure">0</div><div class="owner-migration-stat-label">CRM 跳过</div></div>
+        </div>
+        <div class="owner-migration-execution-log" data-execution-log>尚未执行。</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+      </main>
+    </div>
+  </div>
+  <script id="aicrmAdminActionGrants" type="application/json">{}</script>
+  
+<script>
+(() => {
+  const root = document.querySelector("[data-owner-migration-page]");
+  if (!root) return;
+
+  const DEFAULT_WELCOME = "您好，后续将由新的服务同事继续为您服务。";
+  const SURFACE_KEYS = [
+    "contacts",
+    "external_contact_bindings",
+    "user_ops_lead_pool_current",
+    "wecom_external_contact_follow_users",
+    "customer_list_index_next",
+    "customer_detail_snapshot_next",
+  ];
+  const STATUS_META = {
+    ready: ["可迁移", "ready"],
+    skipped_by_file: ["跳过", "skip"],
+    duplicate: ["重复", "block"],
+    missing_external_userid: ["缺少客户ID", "block"],
+    not_under_source_owner: ["非原负责人客户", "block"],
+    not_found: ["CRM 找不到", "block"],
+    already_target_owner: ["已归属目标负责人", "warn"],
+    invalid_move_flag: ["是否迁移非法", "block"],
+  };
+  const $ = (selector) => root.querySelector(selector);
+  const $$ = (selector) => Array.from(root.querySelectorAll(selector));
+  const text = (value) => String(value ?? "");
+  const intValue = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
+  const escapeHtml = (value) => text(value).replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }[char]));
+
+  const state = {
+    sourceMember: null,
+    targetMember: null,
+    scopeType: "excel_include",
+    sessionId: "",
+    fileHash: "",
+    fileName: "",
+    importResult: null,
+    preview: null,
+    previewSignature: "",
+    previewDirty: false,
+    executeResult: null,
+  };
+
+  function ownerId(kind) {
+    return text($(`[data-owner-userid="${kind}"]`)?.value).trim();
+  }
+
+  function currentParams() {
+    return {
+      scope_type: state.scopeType,
+      source_owner_userid: ownerId("source"),
+      target_owner_userid: ownerId("target"),
+      session_id: state.scopeType === "excel_include" ? state.sessionId : "",
+      file_hash: state.scopeType === "excel_include" ? state.fileHash : "",
+      include_wecom_transfer: Boolean($("[data-include-wecom-transfer]")?.checked),
+      transfer_welcome_msg: text($("[data-transfer-welcome-msg]")?.value || DEFAULT_WELCOME),
+    };
+  }
+
+  function signature() {
+    return JSON.stringify(currentParams());
+  }
+
+  function memberLabel(member, fallback) {
+    if (window.OperationMemberPicker && typeof window.OperationMemberPicker.memberLabel === "function" && member) {
+      return window.OperationMemberPicker.memberLabel(member);
+    }
+    const userId = text((member || {}).user_id || fallback).trim();
+    const displayName = text((member || {}).display_name).trim();
+    return displayName && displayName !== userId ? `${displayName} / ${userId}` : userId;
+  }
+
+  function setNotice(message, tone) {
+    const node = $("[data-workbench-notice]");
+    if (!node) return;
+    node.textContent = message || "";
+    node.style.color = tone === "error" ? "#991b1b" : (tone === "ok" ? "#065f46" : "");
+  }
+
+  function setOwner(kind, member) {
+    const userId = text((member || {}).user_id || (member || {}).userid || "").trim();
+    if (!userId) return;
+    if (kind === "source") state.sourceMember = member;
+    if (kind === "target") state.targetMember = member;
+    const input = $(`[data-owner-userid="${kind}"]`);
+    const label = $(`[data-owner-label="${kind}"]`);
+    if (input) input.value = userId;
+    if (label) label.value = memberLabel(member, userId);
+    invalidatePreview("参数已变化，请重新预览");
+  }
+
+  function invalidatePreview(message) {
+    if (state.preview) {
+      state.preview = null;
+      state.previewSignature = "";
+      state.previewDirty = true;
+      $("[data-preview-empty]").hidden = false;
+      $("[data-preview-content]").hidden = true;
+      $("[data-execute-stats]").hidden = true;
+      $("[data-execution-log]").textContent = "尚未执行。";
+      $("[data-download-errors]").disabled = true;
+      $("[data-download-result]").disabled = true;
+      setNotice(message || "参数已变化，请重新预览", "error");
+    }
+    updateControls();
+  }
+
+  async function apiJson(url, options) {
+    const response = await fetch(url, {
+      credentials: "same-origin",
+      headers: { Accept: "application/json", ...(options && options.body instanceof FormData ? {} : { "Content-Type": "application/json" }) },
+      ...options,
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload.ok === false) {
+      const error = new Error(window.AdminApi.responseErrorMessage(response, payload, "请求失败"));
+      error.payload = payload;
+      throw error;
+    }
+    return payload;
+  }
+
+  async function resolveInitialOwner(kind, includeInactive) {
+    const value = ownerId(kind);
+    const label = $(`[data-owner-label="${kind}"]`);
+    if (!value || !window.OperationMemberPicker || typeof window.OperationMemberPicker.resolve !== "function") {
+      if (label) label.value = value;
+      return;
+    }
+    try {
+      const member = await window.OperationMemberPicker.resolve(value, {
+        scope: "owner_migration",
+        pageSize: 20,
+        includeInactive,
+      });
+      if (member) {
+        if (kind === "source") state.sourceMember = member;
+        if (kind === "target") state.targetMember = member;
+        if (label) label.value = memberLabel(member, value);
+      }
+    } catch (error) {
+      if (label) label.value = value;
+    }
+  }
+
+  function bindOwnerPickers() {
+    $$("[data-owner-picker]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const kind = button.getAttribute("data-owner-picker");
+        if (!window.OperationMemberPicker || typeof window.OperationMemberPicker.open !== "function") {
+          setNotice("人员选择器加载失败，请刷新后重试", "error");
+          return;
+        }
+        window.OperationMemberPicker.open({
+          value: ownerId(kind),
+          selectedMember: kind === "source" ? state.sourceMember : state.targetMember,
+          title: kind === "source" ? "选择原负责人" : "选择目标负责人",
+          scope: "owner_migration",
+          pageSize: 30,
+          includeInactive: kind === "source",
+          onSelect: (member) => setOwner(kind, member),
+        });
+      });
+    });
+  }
+
+  function setScope(scopeType) {
+    state.scopeType = scopeType;
+    $$("[data-scope-segment]").forEach((segment) => {
+      const active = segment.getAttribute("data-scope-segment") === scopeType;
+      segment.classList.toggle("is-active", active);
+      const radio = segment.querySelector("input");
+      if (radio) radio.checked = active;
+    });
+    $("[data-excel-panel]").hidden = scopeType !== "excel_include";
+    $("[data-mode-pill]").textContent = scopeType === "excel_include" ? "模式：Excel 指定名单" : "模式：全量迁移";
+    invalidatePreview("参数已变化，请重新预览");
+  }
+
+  function bindScopeSelector() {
+    $$("[data-scope-segment]").forEach((segment) => {
+      segment.addEventListener("click", () => setScope(segment.getAttribute("data-scope-segment")));
+    });
+  }
+
+  function updateWelcomeCount() {
+    const value = text($("[data-transfer-welcome-msg]")?.value);
+    $("[data-welcome-count]").textContent = `${value.length} 字`;
+  }
+
+  function updateWecomWarning() {
+    const enabled = Boolean($("[data-include-wecom-transfer]")?.checked);
+    $("[data-local-only-warning]").hidden = enabled;
+    $("[data-wecom-pill]").textContent = enabled ? "企微转接：默认开启" : "企微转接：已关闭";
+    $("[data-wecom-pill]").classList.toggle("owner-migration-pill--success", enabled);
+    $("[data-wecom-pill]").classList.toggle("owner-migration-pill--warn", !enabled);
+  }
+
+  async function uploadFile() {
+    const fileInput = $("[data-import-file]");
+    const file = fileInput && fileInput.files ? fileInput.files[0] : null;
+    const params = currentParams();
+    if (!params.source_owner_userid || !params.target_owner_userid) {
+      setNotice("请先选择原负责人和目标负责人", "error");
+      return;
+    }
+    if (params.source_owner_userid === params.target_owner_userid) {
+      setNotice("原负责人和目标负责人不能相同", "error");
+      return;
+    }
+    if (!file) {
+      setNotice("请先选择 Excel/CSV 文件", "error");
+      return;
+    }
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("source_owner_userid", params.source_owner_userid);
+    formData.append("target_owner_userid", params.target_owner_userid);
+    formData.append("include_wecom_transfer", params.include_wecom_transfer ? "true" : "false");
+    formData.append("transfer_welcome_msg", params.transfer_welcome_msg);
+    setNotice("正在上传并解析 Excel...", "");
+    try {
+      const payload = await apiJson("/api/admin/owner-migration/import", { method: "POST", body: formData });
+      state.importResult = payload;
+      state.sessionId = text(payload.session_id).trim();
+      state.fileHash = text(payload.file_hash).trim();
+      state.fileName = file.name;
+      renderImportSummary();
+      invalidatePreview("参数已变化，请重新预览");
+      setNotice("Excel 已解析，请生成预览", "ok");
+    } catch (error) {
+      setNotice(error.message, "error");
+    }
+  }
+
+  function renderImportSummary() {
+    const payload = state.importResult || {};
+    const stats = payload.row_stats || {};
+    $("[data-import-summary]").hidden = false;
+    $("[data-import-filename]").textContent = state.fileName || "已上传文件";
+    $("[data-import-session]").textContent = state.sessionId ? `session_id=${state.sessionId}` : "";
+    ["total_rows", "unique_external_userids", "marked_move", "marked_skip", "duplicate_rows", "invalid_rows"].forEach((key) => {
+      const node = $(`[data-import-stat="${key}"]`);
+      if (node) node.textContent = intValue(stats[key]);
+    });
+  }
+
+  async function previewMigration() {
+    const params = currentParams();
+    if (!params.source_owner_userid || !params.target_owner_userid) {
+      setNotice("请先选择原负责人和目标负责人", "error");
+      return;
+    }
+    if (params.source_owner_userid === params.target_owner_userid) {
+      setNotice("原负责人和目标负责人不能相同", "error");
+      return;
+    }
+    if (params.scope_type === "excel_include" && !params.session_id) {
+      setNotice("Excel 指定名单模式必须先上传并解析 Excel", "error");
+      return;
+    }
+    setNotice("正在生成预览...", "");
+    try {
+      const body = {
+        scope_type: params.scope_type,
+        source_owner_userid: params.source_owner_userid,
+        target_owner_userid: params.target_owner_userid,
+        include_wecom_transfer: params.include_wecom_transfer,
+        transfer_welcome_msg: params.transfer_welcome_msg,
+      };
+      if (params.scope_type === "excel_include") body.session_id = params.session_id;
+      const payload = await apiJson("/api/admin/owner-migration/preview", { method: "POST", body: JSON.stringify(body) });
+      state.preview = payload;
+      state.previewSignature = signature();
+      state.previewDirty = false;
+      state.executeResult = null;
+      $("[data-confirm-phrase-input]").value = "";
+      renderPreview();
+      renderExecuteResult();
+      setNotice("预览已生成", "ok");
+    } catch (error) {
+      setNotice(error.message, "error");
+    }
+  }
+
+  function rowStats() {
+    return (state.preview || {}).row_stats || {};
+  }
+
+  function previewRows() {
+    return Array.isArray((state.preview || {}).rows) ? state.preview.rows : [];
+  }
+
+  function readyCount() {
+    const stats = rowStats();
+    if (stats.ready !== undefined) return intValue(stats.ready);
+    const rows = previewRows();
+    if (rows.length) return rows.filter((row) => row.can_execute === true || row.status === "ready").length;
+    return intValue((state.preview || {}).candidate_count);
+  }
+
+  function blockedCount() {
+    const stats = rowStats();
+    if (stats.blocked !== undefined) return intValue(stats.blocked);
+    return previewRows().filter((row) => row.status && !["ready", "skipped_by_file"].includes(row.status)).length;
+  }
+
+  function confirmPhrase() {
+    if (!state.preview) return "";
+    return text(state.preview.confirm_phrase || `确认将 ${readyCount()} 个客户从 ${ownerId("source")} 迁移到 ${ownerId("target")}`);
+  }
+
+  function renderPreview() {
+    if (!state.preview) {
+      $("[data-preview-empty]").hidden = false;
+      $("[data-preview-content]").hidden = true;
+      updateControls();
+      return;
+    }
+    const payload = state.preview;
+    const stats = rowStats();
+    const rows = previewRows();
+    $("[data-preview-empty]").hidden = true;
+    $("[data-preview-content]").hidden = false;
+    const sourceName = text(payload.source_owner_display_name || ownerId("source"));
+    const targetName = text(payload.target_owner_display_name || ownerId("target"));
+    $("[data-preview-basic]").textContent = `${payload.scope_type || state.scopeType} · ${sourceName} / ${ownerId("source")} → ${targetName} / ${ownerId("target")}`;
+    const previewStatValues = {
+      total_rows: stats.total_rows ?? (state.scopeType === "all" ? payload.candidate_count : 0),
+      unique_external_userids: stats.unique_external_userids ?? payload.candidate_count,
+      ready: readyCount(),
+      skipped_by_file: stats.skipped_by_file ?? stats.marked_skip ?? 0,
+      blocked: blockedCount(),
+      crm_updates: readyCount(),
+    };
+    Object.entries(previewStatValues).forEach(([key, value]) => {
+      const node = $(`[data-preview-stat="${key}"]`);
+      if (node) node.textContent = intValue(value);
+    });
+    renderPendingReview(payload.pending_review || {});
+    renderSurfaceCounts(payload.surface_counts || {});
+    renderPreviewRows(rows);
+    const hasErrors = rows.some((row) => row.status && !["ready", "skipped_by_file"].includes(row.status));
+    $("[data-download-errors]").disabled = !(state.sessionId && hasErrors);
+    $("[data-confirm-phrase-display]").textContent = confirmPhrase() || "等待预览生成确认短语。";
+    updateControls();
+  }
+
+  function renderPendingReview(pending) {
+    const deferred = intValue(pending.pending_user_ops_deferred_jobs ?? pending.user_ops_deferred_jobs);
+    const broadcast = intValue(pending.pending_broadcast_jobs ?? pending.broadcast_jobs);
+    const outbound = intValue(pending.pending_outbound_tasks ?? pending.outbound_tasks);
+    $("[data-pending-review]").textContent = `待复核：user_ops_deferred_jobs=${deferred} · broadcast_jobs=${broadcast} · outbound_tasks=${outbound}。历史消息不自动改写；pending review 只提示，不由前端自动处理。`;
+  }
+
+  function renderSurfaceCounts(counts) {
+    const tbody = $("[data-surface-counts]");
+    tbody.innerHTML = SURFACE_KEYS.map((key) => (
+      `<tr><td><code>${escapeHtml(key)}</code></td><td>${intValue(counts[key])}</td></tr>`
+    )).join("");
+  }
+
+  function renderPreviewRows(rows) {
+    const tbody = $("[data-preview-rows]");
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="owner-migration-empty">暂无行级预览明细</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map((row) => {
+      const status = text(row.status || row.parse_status || "");
+      const meta = STATUS_META[status] || [status || "-", "skip"];
+      const customerName = row.customer_name ?? row.customer_name_in_file ?? "";
+      const owner = row.current_owner_userid ?? row.current_owner_userid_in_file ?? "";
+      return `
+        <tr>
+          <td>${escapeHtml(row.row_number ?? "-")}</td>
+          <td><code>${escapeHtml(row.external_userid ?? "")}</code></td>
+          <td>${escapeHtml(customerName)}</td>
+          <td>${escapeHtml(row.move_flag ?? "")}</td>
+          <td>${escapeHtml(owner)}</td>
+          <td><span class="owner-migration-status owner-migration-status--${meta[1]}">${escapeHtml(meta[0])}</span></td>
+          <td>${escapeHtml(row.reason || row.parse_reason || "-")}</td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  async function executeMigration() {
+    const params = currentParams();
+    if (!state.preview || !state.preview.preview_token || !state.preview.preview_hash) {
+      setNotice("缺少 preview_token 或 preview_hash，请重新预览", "error");
+      return;
+    }
+    if (signature() !== state.previewSignature) {
+      invalidatePreview("参数已变化，请重新预览");
+      return;
+    }
+    const phrase = text($("[data-confirm-phrase-input]").value);
+    if (phrase !== confirmPhrase()) {
+      setNotice("确认短语不匹配", "error");
+      return;
+    }
+    const body = {
+      scope_type: params.scope_type,
+      source_owner_userid: params.source_owner_userid,
+      target_owner_userid: params.target_owner_userid,
+      session_id: params.scope_type === "excel_include" ? params.session_id : "",
+      preview_token: state.preview.preview_token,
+      preview_hash: state.preview.preview_hash,
+      include_wecom_transfer: params.include_wecom_transfer,
+      transfer_welcome_msg: params.transfer_welcome_msg,
+      confirm: true,
+      confirm_phrase: phrase,
+    };
+    setNotice("正在执行迁移...", "");
+    try {
+      state.executeResult = await apiJson("/api/admin/owner-migration/execute", { method: "POST", body: JSON.stringify(body) });
+      renderExecuteResult();
+      setNotice("执行完成，结果以后端返回为准", "ok");
+    } catch (error) {
+      setNotice(error.message, "error");
+    }
+  }
+
+  function renderExecuteResult() {
+    const result = state.executeResult;
+    if (!result) {
+      $("[data-execute-stats]").hidden = true;
+      $("[data-download-result]").disabled = true;
+      updateControls();
+      return;
+    }
+    $("[data-execute-stats]").hidden = false;
+    ["requested_external_userids", "wecom_requested", "wecom_success", "wecom_failed", "crm_updated", "crm_skipped_due_to_wecom_failure"].forEach((key) => {
+      const node = $(`[data-execute-stat="${key}"]`);
+      if (node) node.textContent = intValue(result[key]);
+    });
+    const lines = [
+      `result_id=${result.result_id || "-"}`,
+      `job_id=${result.job_id || "-"}`,
+      `mode=${result.mode || (result.include_wecom_transfer === false ? "local_only" : "-")}`,
+      `requested_external_userids=${intValue(result.requested_external_userids)}`,
+      `wecom_requested=${intValue(result.wecom_requested)}`,
+      `wecom_success=${intValue(result.wecom_success)}`,
+      `wecom_failed=${intValue(result.wecom_failed)}`,
+      `crm_updated=${intValue(result.crm_updated)}`,
+      `crm_skipped_due_to_wecom_failure=${intValue(result.crm_skipped_due_to_wecom_failure)}`,
+    ];
+    $("[data-execution-log]").textContent = lines.join("\n");
+    $("[data-download-result]").disabled = !result.result_id;
+    updateControls();
+  }
+
+  function updateControls() {
+    const params = currentParams();
+    const previewReady = Boolean(state.preview && state.preview.preview_token && state.preview.preview_hash);
+    const changed = previewReady && signature() !== state.previewSignature;
+    const phraseMatches = text($("[data-confirm-phrase-input]").value) === confirmPhrase();
+    const canExecute = previewReady && !changed && readyCount() > 0 && phraseMatches;
+    $("[data-preview]").disabled = !(params.source_owner_userid && params.target_owner_userid && (params.scope_type !== "excel_include" || params.session_id));
+    $("[data-upload-file]").disabled = !(params.source_owner_userid && params.target_owner_userid && $("[data-import-file]").files.length);
+    $("[data-execute]").disabled = !canExecute;
+    if (changed) {
+      $("[data-confirm-hint]").textContent = "参数已变化，请重新预览";
+    } else if (previewReady && readyCount() <= 0) {
+      $("[data-confirm-hint]").textContent = "没有可迁移客户，执行按钮不可用。";
+    } else if (previewReady) {
+      $("[data-confirm-hint]").textContent = "请逐字输入确认短语后执行。";
+    } else {
+      $("[data-confirm-hint]").textContent = "执行前必须先生成预览，并逐字输入确认短语。";
+    }
+  }
+
+  function resetWorkbench() {
+    state.sessionId = "";
+    state.fileHash = "";
+    state.fileName = "";
+    state.importResult = null;
+    state.preview = null;
+    state.previewSignature = "";
+    state.previewDirty = false;
+    state.executeResult = null;
+    const fileInput = $("[data-import-file]");
+    if (fileInput) fileInput.value = "";
+    $("[data-import-summary]").hidden = true;
+    $("[data-preview-empty]").hidden = false;
+    $("[data-preview-content]").hidden = true;
+    $("[data-execute-stats]").hidden = true;
+    $("[data-execution-log]").textContent = "尚未执行。";
+    $("[data-confirm-phrase-input]").value = "";
+    $("[data-confirm-phrase-display]").textContent = "等待预览生成确认短语。";
+    $("[data-download-errors]").disabled = true;
+    $("[data-download-result]").disabled = true;
+    setNotice("", "");
+    updateControls();
+  }
+
+  function bindActions() {
+    $("[data-download-template]").addEventListener("click", () => {
+      window.location.assign("/api/admin/owner-migration/template.xlsx");
+    });
+    $("[data-upload-file]").addEventListener("click", uploadFile);
+    $("[data-import-file]").addEventListener("change", () => {
+      state.sessionId = "";
+      state.fileHash = "";
+      state.importResult = null;
+      $("[data-import-summary]").hidden = true;
+      invalidatePreview("参数已变化，请重新预览");
+      updateControls();
+    });
+    $("[data-preview]").addEventListener("click", previewMigration);
+    $("[data-execute]").addEventListener("click", executeMigration);
+    $("[data-reset-workbench]").addEventListener("click", resetWorkbench);
+    $("[data-confirm-phrase-input]").addEventListener("input", updateControls);
+    $("[data-transfer-welcome-msg]").addEventListener("input", () => {
+      updateWelcomeCount();
+      invalidatePreview("参数已变化，请重新预览");
+    });
+    $("[data-include-wecom-transfer]").addEventListener("change", () => {
+      updateWecomWarning();
+      invalidatePreview("参数已变化，请重新预览");
+    });
+    $("[data-download-errors]").addEventListener("click", () => {
+      if (state.sessionId) window.location.assign(`/api/admin/owner-migration/sessions/${encodeURIComponent(state.sessionId)}/errors.xlsx`);
+    });
+    $("[data-download-result]").addEventListener("click", () => {
+      const resultId = state.executeResult && state.executeResult.result_id;
+      if (resultId) window.location.assign(`/api/admin/owner-migration/results/${encodeURIComponent(resultId)}.xlsx`);
+    });
+  }
+
+  function init() {
+    bindOwnerPickers();
+    bindScopeSelector();
+    bindActions();
+    updateWelcomeCount();
+    updateWecomWarning();
+    setScope("excel_include");
+    resolveInitialOwner("source", true);
+    resolveInitialOwner("target", false);
+    updateControls();
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>周期商品数据 · 只读分享</title>
+  <link rel="stylesheet" href="/static/service-period/admin_console/member_grid.css?v=20260716-sharing-1">
+</head>
+<body class="sp-public-shell">
+  <header class="sp-public-header">
+    <div>
+      <span class="sp-public-kicker">周期商品数据</span>
+      <h1 id="spPublicProductTitle">正在验证分享链接…</h1>
+    </div>
+    <span class="sp-readonly-badge">只读分享</span>
+  </header>
+  <main class="sp-public-main">
+    <section class="sp-grid-page is-public" id="spMemberGrid" data-mode="public" aria-label="周期商品会员数据表">
+      <div class="sp-viewbar">
+        <div class="sp-viewbar__scroll" id="spViewTabs" role="tablist" aria-label="数据视图"></div>
+        <button class="sp-viewbar__add" id="spAddView" type="button" hidden></button>
+        <button class="sp-icon-button sp-viewbar__menu" id="spViewMenuButton" type="button" hidden></button>
+      </div>
+      <div class="sp-grid-toolbar" id="spInternalToolbar" hidden>
+        <div class="sp-grid-toolbar__config">
+          <button id="spFilterButton" type="button" hidden></button><span id="spFilterCount" hidden></span>
+          <button id="spGroupButton" type="button" hidden></button><span id="spGroupCount" hidden></span>
+          <button id="spSortButton" type="button" hidden></button><span id="spSortCount" hidden></span>
+        </div>
+        <div class="sp-grid-toolbar__actions">
+          <span id="spDraftStatus"></span><button id="spSaveAsView" type="button" hidden></button><button id="spSaveView" type="button" hidden></button>
+        </div>
+      </div>
+      <div class="sp-config-panel" id="spConfigPanel" hidden></div>
+      <div class="sp-config-panel sp-view-menu" id="spViewMenu" hidden></div>
+      <div class="sp-grid-meta">
+        <span id="spResultSummary">正在加载共享数据…</span>
+        <span class="sp-grid-meta__readonly" id="spReadonlyNotice">仅可切换视图、滚动浏览和展开分组</span>
+      </div>
+      <div class="sp-grid-shell" id="spGridShell" aria-busy="true">
+        <div class="sp-grid-scroll" id="spGridScroll" tabindex="0">
+          <table class="sp-member-table" aria-label="周期商品会员数据">
+            <thead id="spGridHead"></thead><tbody id="spGridBody"></tbody>
+          </table>
+          <div class="sp-grid-sentinel" id="spGridSentinel" aria-hidden="true"></div>
+        </div>
+        <div class="sp-grid-state" id="spGridState"><span class="sp-spinner" aria-hidden="true"></span><span>正在读取共享数据…</span></div>
+      </div>
+      <div class="sp-toast" id="spGridToast" role="status" aria-live="polite" hidden></div>
+    </section>
+  </main>
+  <script defer src="/static/service-period/admin_console/member_grid_state.js?v=20260716-sharing-1"></script>
+  <script defer src="/static/service-period/admin_console/member_grid.js?v=20260716-sharing-1"></script>
+</body>
+</html>

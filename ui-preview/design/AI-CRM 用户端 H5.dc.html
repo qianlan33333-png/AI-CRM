@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+html,body{margin:0;height:100%}
+body{font-family:"PingFang SC","HarmonyOS Sans SC","Hiragino Sans GB","Microsoft YaHei",-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;color:#1F2329;background:#EBEDF0}
+a{color:#3370ff;text-decoration:none}
+a:hover{color:#245BDB}
+*{box-sizing:border-box}
+input,select,textarea,button{font-family:inherit}
+@keyframes sk{0%{opacity:.55}50%{opacity:1}100%{opacity:.55}}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#D9DBDF;border-radius:6px;border:2px solid transparent;background-clip:content-box}
+</style>
+</helmet>
+
+<div style="{{ vars }}">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;height:44px;padding:0 16px;background:#1F2329;color:#fff;flex:none">
+    <div style="display:flex;align-items:center;gap:10px;min-width:0">
+      <div style="width:20px;height:20px;border-radius:5px;background:var(--accent,#3370ff);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">H5</div>
+      <div style="font-size:13px;font-weight:600;white-space:nowrap">AI-CRM 用户端 · 视觉重做</div>
+      <div style="font-size:12px;color:#8F959E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">问卷填写 6 态 · 周期商品报名 5 态 · 流程与字段完全沿用现有实现</div>
+    </div>
+    <div style="display:flex;padding:2px;border-radius:7px;background:#33373D;flex:none">
+      <button onClick="{{ setBoard }}" style="{{ tabBoard }}">画板</button>
+      <button onClick="{{ setProto }}" style="{{ tabProto }}">单屏</button>
+    </div>
+  </div>
+
+  <div style="{{ picker }}">
+    <sc-for list="{{ chips }}" as="c" hint-placeholder-count="11">
+      <button onClick="{{ c.on }}" style="{{ c.style }}">{{ c.label }}</button>
+    </sc-for>
+  </div>
+
+  <div style="{{ stage }}">
+
+    <div style="{{ sec }}">问卷填写页 · /q/&lt;slug&gt;</div>
+
+    <div style="{{ f.auth }}">
+      <div style="{{ cap }}">Q1 · 微信授权拦截页</div>
+      <div style="{{ phone }}">
+        <div style="display:flex;align-items:center;justify-content:space-between;height:44px;padding:0 22px 0 26px;font-size:13px;font-weight:600;flex:none;background:#fff"><span>9:41</span><svg width="58" height="12" viewBox="0 0 58 12" fill="#1F2329"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="8" rx="1"/><rect x="15" y="1" width="3" height="10" rx="1"/><path d="M26 3.5a8 8 0 0 1 10 0l-1.3 1.6a6 6 0 0 0-7.4 0z"/><path d="M28.4 6.6a4.6 4.6 0 0 1 5.2 0L31 9.8z"/><rect x="42" y="2" width="13" height="8" rx="2" fill="none" stroke="#1F2329" stroke-width="1"/><rect x="43.6" y="3.6" width="9" height="4.8" rx="1"/><rect x="56" y="4.4" width="1.6" height="3.2" rx=".8"/></svg></div>
+        <div style="position:relative;display:flex;align-items:center;justify-content:center;height:44px;background:#fff;border-bottom:1px solid #EDEEF0;flex:none">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="#1F2329" stroke-width="1.6" style="position:absolute;left:14px"><path d="M9.6 3.6L5.2 8l4.4 4.4"/></svg>
+          <span style="font-size:16px;font-weight:600">增长诊断测评</span>
+          <span style="position:absolute;right:16px;letter-spacing:1px;color:#1F2329">···</span>
+        </div>
+        <div style="flex:1;min-height:0;overflow:auto;background:#F5F6F7;display:flex;align-items:center;padding:0 20px">
+          <div style="width:100%;background:#fff;border-radius:16px;padding:32px 24px;text-align:center;box-shadow:0 2px 12px rgba(31,35,41,.05)">
+            <span style="display:inline-flex;align-items:center;height:28px;padding:0 12px;border-radius:999px;background:#EFF4FF;color:var(--accent,#3370ff);font-size:13px;font-weight:600">微信身份验证</span>
+            <h1 style="margin:18px 0 0;font-size:26px;line-height:34px;font-weight:600;letter-spacing:-.01em">完成微信授权后填写</h1>
+            <p style="margin:12px 0 0;font-size:14px;line-height:22px;color:#8F959E">验证 UnionID 后才可填写并提交问卷。授权成功后会自动返回当前问卷。</p>
+            <button style="width:100%;height:48px;margin-top:26px;border:0;border-radius:12px;background:var(--accent,#3370ff);color:#fff;font-size:16px;font-weight:600;cursor:pointer">微信授权后继续</button>
+            <div style="display:flex;gap:8px;align-items:flex-start;margin-top:18px;padding:12px 14px;border-radius:10px;background:#FFF7E8;text-align:left">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="#D97917" stroke-width="1.5" style="flex:none;margin-top:2px"><circle cx="8" cy="8" r="6"/><path d="M8 4.8v4M8 10.6v.6"/></svg>
+              <span style="font-size:13px;line-height:20px;color:#D97917">当前不在微信内打开，请复制链接到微信中继续。</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="{{ f.all }}">
+      <div style="{{ cap }}">Q2 · 整卷平铺（all_in_one）</div>
+      <div style="{{ phone }}">
+        <div style="display:flex;align-items:center;justify-content:space-between;height:44px;padding:0 22px 0 26px;font-size:13px;font-weight:600;flex:none;background:#fff"><span>9:41</span><svg width="58" height="12" viewBox="0 0 58 12" fill="#1F2329"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="8" rx="1"/><rect x="15" y="1" width="3" height="10" rx="1"/><rect x="42" y="2" width="13" height="8" rx="2" fill="none" stroke="#1F2329" stroke-width="1"/><rect x="43.6" y="3.6" width="9" height="4.8" rx="1"/><rect x="56" y="4.4" width="1.6" height="3.2" rx=".8"/></svg></div>
+        <div style="position:relative;display:flex;align-items:center;justify-content:center;height:44px;background:#fff;border-bottom:1px solid #EDEEF0;flex:none">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="#1F2329" stroke-width="1.6" style="position:absolute;left:14px"><path d="M9.6 3.6L5.2 8l4.4 4.4"/></svg>
+          <span style="font-size:16px;font-weight:600">增长诊断测评</span>
+          <span style="position:absolute;right:16px;letter-spacing:1px;color:#1F2329">···</span>
+        </div>
+        <div style="flex:1;min-height:0;overflow:auto;background:#F5F6F7;padding:14px 14px 24px">
+          <div style="background:#fff;border-radius:14px;padding:20px 18px;margin-bottom:12px">
+            <span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;background:#EFF4FF;color:var(--accent,#3370ff);font-size:12px;font-weight:600">问卷入口</span>
+            <h1 style="margin:12px 0 0;font-size:22px;line-height:30px;font-weight:600">3 分钟看清你的增长卡点</h1>
+            <p style="margin:8px 0 0;font-size:14px;line-height:22px;color:#8F959E">共 12 题，约 3 分钟。提交后即可查看你的诊断报告。</p>
+          </div>
+
+          <div style="background:#fff;border-radius:14px;padding:16px 16px 18px;margin-bottom:12px">
+            <div style="font-size:15px;font-weight:600;line-height:22px;margin-bottom:12px">1. 你目前最想解决的问题是？<span style="color:#F54A45;margin-left:2px">*</span></div>
+            <sc-for list="{{ opts.single }}" as="o" hint-placeholder-count="4">
+              <label style="{{ o.style }}"><span style="{{ o.dot }}"></span><span style="font-size:15px;line-height:22px">{{ o.text }}</span></label>
+            </sc-for>
+          </div>
+
+          <div style="background:#fff;border-radius:14px;padding:16px 16px 18px;margin-bottom:12px">
+            <div style="font-size:15px;font-weight:600;line-height:22px;margin-bottom:4px">2. 目前在做哪些渠道？<span style="color:#F54A45;margin-left:2px">*</span></div>
+            <div style="font-size:13px;color:#A6AAB0;margin-bottom:12px">可多选</div>
+            <sc-for list="{{ opts.multi }}" as="o" hint-placeholder-count="5">
+              <label style="{{ o.style }}"><span style="{{ o.box }}"></span><span style="font-size:15px;line-height:22px">{{ o.text }}</span></label>
+            </sc-for>
+            <input placeholder="请填写其它内容" style="width:100%;height:42px;margin-top:2px;border:1px solid #DEE0E3;border-radius:10px;padding:0 12px;font-size:14px;background:#fff">
+          </div>
+
+          <div style="background:#fff;border-radius:14px;padding:16px;margin-bottom:12px">
+            <div style="font-size:15px;font-weight:600;line-height:22px;margin-bottom:12px">3. 你希望我们重点帮你解决什么？</div>
+            <textarea rows="4" placeholder="选填，越具体我们的建议越准确" style="width:100%;border:1px solid #DEE0E3;border-radius:10px;padding:12px;font-size:14px;line-height:22px;background:#fff;resize:none"></textarea>
+          </div>
+
+          <div style="background:#fff;border-radius:14px;padding:16px;margin-bottom:16px">
+            <div style="font-size:15px;font-weight:600;line-height:22px;margin-bottom:12px">4. 手机号<span style="color:#F54A45;margin-left:2px">*</span></div>
+            <input value="138 0000 4021" style="width:100%;height:46px;border:1px solid #DEE0E3;border-radius:10px;padding:0 12px;font-size:16px;background:#fff;font-variant-numeric:tabular-nums">
+            <div style="font-size:12px;color:#A6AAB0;margin-top:8px">仅用于给你发送诊断报告，不会对外提供。</div>
+          </div>
+
+          <button style="width:100%;height:48px;border:0;border-radius:12px;background:var(--accent,#3370ff);color:#fff;font-size:16px;font-weight:600;cursor:pointer">提交</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="{{ f.one }}">
+      <div style="{{ cap }}">Q3 · 逐题作答（one_by_one）</div>
+      <div style="{{ phone }}">
+        <div style="display:flex;align-items:center;justify-content:space-between;height:44px;padding:0 22px 0 26px;font-size:13px;font-weight:600;flex:none;background:#fff"><span>9:41</span><svg width="58" height="12" viewBox="0 0 58 12" fill="#1F2329"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="8" rx="1"/><rect x="15" y="1" width="3" height="10" rx="1"/><rect x="42" y="2" width="13" height="8" rx="2" fill="none" stroke="#1F2329" stroke-width="1"/><rect x="43.6" y="3.6" width="9" height="4.8" rx="1"/><rect x="56" y="4.4" width="1.6" height="3.2" rx=".8"/></svg></div>
+        <div style="position:relative;display:flex;align-items:center;justify-content:center;height:44px;background:#fff;border-bottom:1px solid #EDEEF0;flex:none">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="#1F2329" stroke-width="1.6" style="position:absolute;left:14px"><path d="M9.6 3.6L5.2 8l4.4 4.4"/></svg>
+          <span style="font-size:16px;font-weight:600">增长诊断测评</span>
+          <span style="position:absolute;right:16px;letter-spacing:1px;color:#1F2329">···</span>
+        </div>
+        <div style="flex:1;min-height:0;display:flex;flex-direction:column;background:#F5F6F7">
+          <div style="flex:1;min-height:0;overflow:auto;padding:16px 14px">
+            <div style="background:#fff;border-radius:14px;padding:16px">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px">
+                <span style="font-size:13px;color:#8F959E;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">增长诊断测评</span>
+                <span style="font-size:13px;font-weight:600;color:var(--accent,#3370ff);white-space:nowrap">第 3 / 12 题</span>
+              </div>
+              <div style="height:6px;border-radius:999px;background:#EBEDF0;overflow:hidden"><div style="width:25%;height:100%;border-radius:999px;background:var(--accent,#3370ff)"></div></div>
+              <div style="margin-top:20px;font-size:13px;font-weight:600;color:var(--accent,#3370ff)">第 3 题</div>
+              <div style="margin-top:8px;font-size:19px;line-height:28px;font-weight:600">你的私域客户主要来自哪个渠道？<span style="color:#F54A45;margin-left:2px">*</span></div>
+              <div style="margin-top:16px">
+                <sc-for list="{{ opts.step }}" as="o" hint-placeholder-count="4">
+                  <label style="{{ o.style }}"><span style="{{ o.dot }}"></span><span style="font-size:15px;line-height:22px">{{ o.text }}</span></label>
+                </sc-for>
+              </div>
+              <p style="margin:14px 0 0;font-size:13px;line-height:20px;color:#A6AAB0;text-align:center">普通选项会自动进入下一题；选择「其它」后请先填写内容。</p>
+            </div>
+          </div>
+          <div style="flex:none;display:grid;grid-template-columns:0.8fr 1.2fr;gap:10px;padding:14px 14px 22px;background:#fff;border-top:1px solid #EDEEF0">
+            <button style="height:48px;border:1px solid #DEE0E3;border-radius:12px;background:#fff;font-size:16px;font-weight:600;color:#1F2329;cursor:pointer">上一题</button>
+            <button style="height:48px;border:0;border-radius:12px;background:var(--accent,#3370ff);color:#fff;font-size:16px;font-weight:600;cursor:pointer">下一题</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="{{ f.loading }}">
+      <div style="{{ cap }}">Q4 · 加载中</div>
+      <div style="{{ phone }}">
+        <div style="display:flex;align-items:center;justify-content:space-between;height:44px;padding:0 22px 0 26px;font-size:13px;font-weight:600;flex:none;background:#fff"><span>9:41</span><svg width="58" height="12" viewBox="0 0 58 12" fill="#1F2329"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="8" rx="1"/><rect x="15" y="1" width="3" height="10" rx="1"/><rect x="42" y="2" width="13" height="8" rx="2" fill="none" stroke="#1F2329" stroke-width="1"/><rect x="43.6" y="3.6" width="9" height="4.8" rx="1"/><rect x="56" y="4.4" width="1.6" height="3.2" rx=".8"/></svg></div>
+        <div style="position:relative;display:flex;align-items:center;justify-content:center;height:44px;background:#fff;border-bottom:1px solid #EDEEF0;flex:none">
+          <span style="font-size:16px;font-weight:600;color:#8F959E">正在加载问卷…</span>
+        </div>
+        <div style="flex:1;min-height:0;overflow:hidden;background:#F5F6F7;padding:14px">
+          <div style="background:#fff;border-radius:14px;padding:20px 18px;margin-bottom:12px;animation:sk 1.4s ease-in-out infinite">
+            <div style="width:76px;height:24px;border-radius:999px;background:#EBEDF0"></div>
+            <div style="width:82%;height:22px;border-radius:6px;background:#EBEDF0;margin-top:14px"></div>
+            <div style="width:60%;height:22px;border-radius:6px;background:#EFF0F2;margin-top:8px"></div>
+          </div>
+          <div style="background:#fff;border-radius:14px;padding:18px 16px;margin-bottom:12px;animation:sk 1.4s ease-in-out .15s infinite">
+            <div style="width:70%;height:18px;border-radius:6px;background:#EBEDF0"></div>
+            <div style="height:48px;border-radius:12px;background:#F2F3F5;margin-top:14px"></div>
+            <div style="height:48px;border-radius:12px;background:#F2F3F5;margin-top:10px"></div>
+            <div style="height:48px;border-radius:12px;background:#F5F6F7;margin-top:10px"></div>
+          </div>
+          <div style="background:#fff;border-radius:14px;padding:18px 16px;animation:sk 1.4s ease-in-out .3s infinite">
+            <div style="width:52%;height:18px;border-radius:6px;background:#EBEDF0"></div>
+            <div style="height:48px;border-radius:12px;background:#F2F3F5;margin-top:14px"></div>
+            <div style="height:48px;border-radius:12px;background:#F5F6F7;margin-top:10px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="{{ f.error }}">
+      <div style="{{ cap }}">Q5 · 校验 / 提交报错</div>
+      <div style="{{ phone }}">
+        <div style="display:flex;align-items:center;justify-content:space-between;height:44px;padding:0 22px 0 26px;font-size:13px;font-weight:600;flex:none;background:#fff"><span>9:41</span><svg width="58" height="12" viewBox="0 0 58 12" fill="#1F2329"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="8" rx="1"/><rect x="15" y="1" width="3" height="10" rx="1"/><rect x="42" y="2" width="13" height="8" rx="2" fill="none" stroke="#1F2329" stroke-width="1"/><rect x="43.6" y="3.6" width="9" height="4.8" rx="1"/><rect x="56" y="4.4" width="1.6" height="3.2" rx=".8"/></svg></div>
+        <div style="position:relative;display:flex;align-items:center;justify-content:center;height:44px;background:#fff;border-bottom:1px solid #EDEEF0;flex:none">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="#1F2329" stroke-width="1.6" style="position:absolute;left:14px"><path d="M9.6 3.6L5.2 8l4.4 4.4"/></svg>
+          <span style="font-size:16px;font-weight:600">增长诊断测评</span>
+          <span style="position:absolute;right:16px;letter-spacing:1px;color:#1F2329">···</span>
+        </div>
+        <div style="flex:1;min-height:0;overflow:auto;background:#F5F6F7;padding:14px">
+          <div style="display:flex;gap:8px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:#FDECEE;margin-bottom:12px">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#D83931" stroke-width="1.5" style="flex:none;margin-top:2px"><circle cx="8" cy="8" r="6"/><path d="M8 4.8v4M8 10.6v.6"/></svg>
+            <span style="font-size:14px;line-height:21px;color:#D83931">请完成必填题：「你的私域客户主要来自哪个渠道？」</span>
+          </div>
+          <div style="background:#fff;border-radius:14px;padding:16px;border:1px solid #F98E8B;margin-bottom:12px">
+            <div style="font-size:15px;font-weight:600;line-height:22px;margin-bottom:12px">3. 你的私域客户主要来自哪个渠道？<span style="color:#F54A45;margin-left:2px">*</span></div>
+            <sc-for list="{{ opts.blank }}" as="o" hint-placeholder-count="3">
+              <label style="{{ o.style }}"><span style="{{ o.dot }}"></span><span style="font-size:15px;line-height:22px">{{ o.text }}</span></label>
+            </sc-for>
+            <div style="font-size:13px;color:#D83931;margin-top:8px">这是必答题，请选择一项。</div>
+          </div>
+          <div style="background:#fff;border-radius:14px;padding:16px;margin-bottom:12px">
+            <div style="font-size:15px;font-weight:600;line-height:22px;margin-bottom:12px">4. 手机号<span style="color:#F54A45;margin-left:2px">*</span></div>
+            <input value="1380000" style="width:100%;height:46px;border:1px solid #F98E8B;border-radius:10px;padding:0 12px;font-size:16px;background:#fff;font-variant-numeric:tabular-nums;color:#1F2329">
+            <div style="font-size:13px;color:#D83931;margin-top:8px">请输入 11 位有效手机号。</div>
+          </div>
+          <button style="width:100%;height:48px;border:0;border-radius:12px;background:#A8C3FF;color:#fff;font-size:16px;font-weight:600;margin-bottom:12px">提交中…</button>
+          <div style="text-align:center;font-size:13px;line-height:20px;color:#8F959E">提交失败，请稍后重试。<br>如持续异常请关闭页面后重新进入（请求 ID：req_8f21c4）。</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="{{ f.result }}">
+      <div style="{{ cap }}">Q6 · 测评结果页</div>
+      <div style="{{ phone }}">
+        <div style="display:flex;align-items:center;justify-content:space-between;height:44px;padding:0 22px 0 26px;font-size:13px;font-weight:600;flex:none;background:#fff"><span>9:41</span><svg width="58" height="12" viewBox="0 0 58 12" fill="#1F2329"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="8" rx="1"/><rect x="15" y="1" width="3" height="10" rx="1"/><rect x="42" y="2" width="13" height="8" rx="2" fill="none" stroke="#1F2329" stroke-width="1"/><rect x="43.6" y="3.6" width="9" height="4.8" rx="1"/><rect x="56" y="4.4" width="1.6" height="3.2" rx=".8"/></svg></div>
+        <div style="position:relative;display:flex;align-items:center;justify-content:center;height:44px;background:#fff;border-bottom:1px solid #EDEEF0;flex:none">
+          <span style="font-size:16px;font-weight:600">测评结果</span>
+          <span style="position:absolute;right:16px;letter-spacing:1px;color:#1F2329">···</span>
+        </div>
+        <div style="flex:1;min-height:0;overflow:auto;background:#F5F6F7;padding:14px 14px 24px">
+          <div style="border-radius:16px;padding:22px 20px;background:linear-gradient(150deg,#16233A 0%,#25406E 62%,#2C55A8 100%);color:#fff;margin-bottom:12px">
+            <span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;background:rgba(255,255,255,.16);font-size:12px;font-weight:600">测评结果</span>
+            <h1 style="margin:14px 0 0;font-size:24px;line-height:32px;font-weight:600">你的增长基本盘不错，卡在承接</h1>
+            <div style="display:flex;align-items:baseline;gap:8px;margin-top:18px"><span style="font-size:44px;line-height:46px;font-weight:700;font-variant-numeric:tabular-nums">82</span><span style="font-size:14px;color:rgba(255,255,255,.7)">总分 / 100</span></div>
+            <p style="margin:10px 0 0;font-size:14px;line-height:22px;color:rgba(255,255,255,.78)">流量端已经跑通，问题集中在线索承接与首触转化，建议先补齐 24 小时内的跟进动作。</p>
+            <button style="width:100%;height:44px;margin-top:18px;border:0;border-radius:10px;background:#fff;color:#1F2329;font-size:15px;font-weight:600;cursor:pointer">查看推荐课程</button>
+          </div>
+
+          <div style="background:#fff;border-radius:14px;padding:16px;margin-bottom:12px">
+            <div style="font-size:16px;font-weight:600;margin-bottom:12px">优势与短板</div>
+            <div style="font-size:13px;color:#8F959E;margin-bottom:8px">优势项</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+              <span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:6px;background:#EBF9EC;color:#2EA121;font-size:13px">流量获取</span>
+              <span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:6px;background:#EBF9EC;color:#2EA121;font-size:13px">内容产出</span>
+            </div>
+            <div style="font-size:13px;color:#8F959E;margin-bottom:8px">劣势项</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:6px;background:#FFF7E8;color:#D97917;font-size:13px">线索承接</span>
+              <span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:6px;background:#FFF7E8;color:#D97917;font-size:13px">复购运营</span>
+            </div>
+          </div>
+
+          <div style="background:#fff;border-radius:14px;padding:16px;margin-bottom:12px">
+            <div style="font-size:16px;font-weight:600;margin-bottom:6px">维度详情</div>
+            <sc-for list="{{ dims }}" as="d" hint-placeholder-count="3">
+              <div style="padding:14px 0;border-top:1px solid #F2F3F5">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+                  <span style="font-size:15px;font-weight:600">{{ d.name }}</span>
+                  <span style="{{ d.scoreStyle }}">{{ d.score }} 分</span>
+                </div>
+                <div style="height:6px;border-radius:999px;background:#F2F3F5;margin-top:10px;overflow:hidden"><div style="{{ d.bar }}"></div></div>
+                <p style="margin:10px 0 0;font-size:14px;line-height:22px;color:#8F959E">{{ d.desc }}</p>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="background:#fff;border-radius:14px;padding:16px">
+            <div style="font-size:16px;font-weight:600;margin-bottom:4px">推荐动作</div>
+            <div style="padding:14px 0 0">
+              <div style="font-size:15px;font-weight:600">把首触响应压到 30 分钟内</div>
+              <p style="margin:6px 0 0;font-size:14px;line-height:22px;color:#8F959E">给新客渠道配置自动化首触话术，先发资料再约沟通。</p>
+              <button style="height:38px;margin-top:12px;padding:0 16px;border:0;border-radius:8px;background:var(--accent,#3370ff);color:#fff;font-size:14px;font-weight:600;cursor:pointer">查看详情</button>
+            </div>
+            <div style="padding:14px 0 0;margin-top:14px;border-top:1px solid #F2F3F5">
+              <div style="font-size:15px;font-weight:600">建立到期前 7 天的续费提醒</div>
+              <p style="margin:6px 0 0;font-size:14px;line-height:22px;color:#8F959E">周期商品到期前主动触达，复购率平均提升 18%。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="{{ f.done }}">
+      <div style="{{ cap }}">Q7 · 已提交 + 渠道二维码</div>
+      <div style="{{ phone }}">
+        <div style="display:flex;align-items:center;justify-content:space-between;height:44px;padding:0 22px 0 26px;font-size:13px;font-weight:600;flex:none;background:#fff"><span>9:41</span><svg width="58" height="12" viewBox="0 0 58 12" fill="#1F2329"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="8" rx="1"/><rect x="15" y="1" width="3" height="10" rx="1"/><rect x="42" y="2" width="13" height="8" rx="2" fill="none" stroke="#1F2329" stroke-width="1"/><rect x="43.6" y="3.6" width="9" height="4.8" rx="1"/><rect x="56" y="4.4" width="1.6" height="3.2" rx=".8"/></svg></div>
+        <div style="position:relative;display:flex;align-items:center;justify-content:center;height:44px;background:#fff;border-bottom:1px solid #EDEEF0;flex:none">
+          <span style="font-size:16px;font-weight:600">已经提交</span>
+          <span style="position:absolute;right:16px;letter-spacing:1px;color:#1F2329">···</span>
+        </div>
+        <div style="flex:1;min-height:0;overflow:auto;background:#F5F6F7;display:flex;align-items:center;padding:20px">
+          <div style="width:100%;background:#fff;border-radius:16px;padding:32px 22px;text-align:center">
+            <div style="width:56px;height:56px;margin:0 auto;border-radius:50%;background:#EBF9EC;display:flex;align-items:center;justify-content:center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2EA121" stroke-width="2.2"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+            <h1 style="margin:18px 0 0;font-size:26px;line-height:32px;font-weight:600">已经提交</h1>
+            <p style="margin:10px 0 0;font-size:15px;color:#8F959E">感谢填写，诊断报告已生成</p>
+            <div style="margin-top:24px;padding-top:24px;border-top:1px solid #F2F3F5">
+              <div style="font-size:16px;font-weight:600">增长顾问 · 小敏</div>
+              <div style="width:200px;height:200px;margin:14px auto 0;border-radius:14px;border:1px solid #EDEEF0;padding:10px;background:#fff"><div style="width:100%;height:100%;background:repeating-conic-gradient(#1F2329 0% 25%,#fff 0% 50%) 50%/13px 13px;border-radius:4px"></div></div>
+              <p style="margin:12px 0 0;font-size:13px;line-height:20px;color:#8F959E">长按识别二维码，继续后续服务</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="{{ sec }}">周期商品报名页 · /s/&lt;code&gt;</div>
+
+    <div style="{{ f.signup }}">
+      <div style="{{ cap }}">S1 · 未开通（立即报名）</div>
+      <div style="{{ phone }}">
+        <div style="display:flex;align-items:center;justify-content:space-between;height:44px;padding:0 22px 0 26px;font-size:13px;font-weight:600;flex:none;background:#fff"><span>9:41</span><svg width="58" height="12" viewBox="0 0 58 12" fill="#1F2329"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="8" rx="1"/><rect x="15" y="1" width="3" height="10" rx="1"/><rect x="42" y="2" width="13" height="8" rx="2" fill="none" stroke="#1F2329" stroke-width="1"/><rect x="43.6" y="3.6" width="9" height="4.8" rx="1"/><rect x="56" y="4.4" width="1.6" height="3.2" rx=".8"/></svg></div>
+        <div style="position:relative;display:flex;align-items:center;justify-content:center;height:44px;background:#fff;border-bottom:1px solid #EDEEF0;flex:none">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="#1F2329" stroke-width="1.6" style="position:absolute;left:14px"><path d="M9.6 3.6L5.2 8l4.4 4.4"/></svg>
+          <span style="font-size:16px;font-weight:600">增长陪跑 · 90 天</span>
+          <span style="position:absolute;right:16px;letter-spacing:1px;color:#1F2329">···</span>
+        </div>
+        <div style="flex:1;min-height:0;overflow:auto;background:#fff">
+          <div style="padding:24px 20px 26px;background:linear-gradient(150deg,#16233A 0%,#25406E 62%,#2C55A8 100%);color:#fff">
+            <span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;background:rgba(255,255,255,.16);font-size:12px;font-weight:600">周期服务</span>
+            <h1 style="margin:14px 0 0;font-size:25px;line-height:33px;font-weight:600">增长陪跑 · 90 天</h1>
+            <p style="margin:10px 0 0;font-size:14px;line-height:22px;color:rgba(255,255,255,.75)">1 对 1 顾问 + 每周复盘 + 素材库全量开放</p>
+          </div>
+          <div style="margin:-16px 14px 0;position:relative;background:#fff;border:1px solid #EDEEF0;border-radius:14px;padding:18px 16px;box-shadow:0 4px 16px rgba(31,35,41,.06)">
+            <div style="display:flex;align-items:baseline;gap:3px"><span style="font-size:18px;font-weight:600">¥</span><span style="font-size:36px;line-height:38px;font-weight:700;font-variant-numeric:tabular-nums">2,980</span><span style="font-size:14px;color:#8F959E;margin-left:8px">.00</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0 0;margin-top:14px;border-top:1px solid #F2F3F5"><span style="font-size:14px;color:#8F959E">有效期</span><span style="font-size:15px;font-weight:600">90 天</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px"><span style="font-size:14px;color:#8F959E">服务开始</span><span style="font-size:15px;font-weight:600">付款后立即生效</span></div>
+          </div>
+          <div style="padding:18px 14px 24px">
+            <div style="font-size:15px;font-weight:600;margin-bottom:12px">服务详情</div>
+            <div style="border-radius:12px;overflow:hidden;display:flex;flex-direction:column;gap:8px">
+              <div style="height:180px;background:linear-gradient(135deg,#DCE7FF,#B9CDFF);border-radius:12px"></div>
+              <div style="height:210px;background:linear-gradient(135deg,#EADCFF,#CFB6FF);border-radius:12px"></div>
+              <div style="height:150px;background:linear-gradient(135deg,#D8F5DE,#AEE7BD);border-radius:12px"></div>
+            </div>
+          </div>
+        </div>
+        <div style="flex:none;display:grid;grid-template-columns:minmax(0,1fr) 132px;gap:12px;align-items:center;padding:10px 14px 22px;background:#fff;border-top:1px solid #EDEEF0">
+          <div style="min-width:0"><div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">增长陪跑 · 90 天</div><div style="font-size:12px;color:#8F959E;margin-top:3px">¥2,980.00 / 90 天</div></div>
+          <button style="height:50px;border:0;border-radius:12px;background:var(--accent,#3370ff);color:#fff;font-size:16px;font-weight:600;cursor:pointer">立即报名</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="{{ f.active }}">
+      <div style="{{ cap }}">S2 · 生效中（剩余天数 + 添加企微）</div>
+      <div style="{{ phone }}">
+        <div style="display:flex;align-items:center;justify-content:space-between;height:44px;padding:0 22px 0 26px;font-size:13px;font-weight:600;flex:none;background:#fff"><span>9:41</span><svg width="58" height="12" viewBox="0 0 58 12" fill="#1F2329"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="8" rx="1"/><rect x="15" y="1" width="3" height="10" rx="1"/><rect x="42" y="2" width="13" height="8" rx="2" fill="none" stroke="#1F2329" stroke-width="1"/><rect x="43.6" y="3.6" width="9" height="4.8" rx="1"/><rect x="56" y="4.4" width="1.6" height="3.2" rx=".8"/></svg></div>
+        <div style="position:relative;display:flex;align-items:center;justify-content:center;height:44px;background:#fff;border-bottom:1px solid #EDEEF0;flex:none">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="#1F2329" stroke-width="1.6" style="position:absolute;left:14px"><path d="M9.6 3.6L5.2 8l4.4 4.4"/></svg>
+          <span style="font-size:16px;font-weight:600">增长陪跑 · 90 天</span>
+          <span style="position:absolute;right:16px;letter-spacing:1px;color:#1F2329">···</span>
+        </div>
+        <div style="flex:1;min-height:0;overflow:auto;background:#fff">
+          <div style="padding:24px 20px 26px;background:linear-gradient(150deg,#16233A 0%,#25406E 62%,#2C55A8 100%);color:#fff">
+            <span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;background:rgba(52,199,36,.22);font-size:12px;font-weight:600"><span style="width:6px;height:6px;border-radius:50%;background:#57D45A"></span>服务中</span>
+            <h1 style="margin:14px 0 0;font-size:25px;line-height:33px;font-weight:600">增长陪跑 · 90 天</h1>
+          </div>
+          <div style="margin:-16px 14px 0;position:relative;background:#fff;border:1px solid #EDEEF0;border-radius:14px;padding:18px 16px;box-shadow:0 4px 16px rgba(31,35,41,.06)">
+            <div style="font-size:13px;color:#8F959E">剩余有效期</div>
+            <div style="display:flex;align-items:baseline;gap:6px;margin-top:4px"><span style="font-size:40px;line-height:44px;font-weight:700;font-variant-numeric:tabular-nums">62</span><span style="font-size:16px;font-weight:600">天</span></div>
+            <div style="height:6px;border-radius:999px;background:#F2F3F5;margin-top:14px;overflow:hidden"><div style="width:69%;height:100%;border-radius:999px;background:var(--accent,#3370ff)"></div></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0 0;margin-top:12px;border-top:1px solid #F2F3F5"><span style="font-size:14px;color:#8F959E">到期日</span><span style="font-size:15px;font-weight:600;font-variant-numeric:tabular-nums">2026-10-04</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px"><span style="font-size:14px;color:#8F959E">续费价格 / 有效期</span><span style="font-size:15px;font-weight:600">¥2,980.00 / 90 天</span></div>
+          </div>
+          <div style="padding:14px 14px 0;display:flex;justify-content:flex-end">
+            <button style="min-width:180px;height:44px;padding:0 18px;border:1px solid #A9C3FF;border-radius:999px;background:#EFF4FF;color:#245BDB;font-size:15px;font-weight:600;cursor:pointer">添加企微账号</button>
+          </div>
+          <div style="padding:18px 14px 24px">
+            <div style="font-size:15px;font-weight:600;margin-bottom:12px">服务详情</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="height:180px;background:linear-gradient(135deg,#DCE7FF,#B9CDFF);border-radius:12px"></div>
+              <div style="height:210px;background:linear-gradient(135deg,#EADCFF,#CFB6FF);border-radius:12px"></div>
+            </div>
+          </div>
+        </div>
+        <div style="flex:none;display:grid;grid-template-columns:minmax(0,1fr) 132px;gap:12px;align-items:center;padding:10px 14px 22px;background:#fff;border-top:1px solid #EDEEF0">
+          <div style="min-width:0"><div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">增长陪跑 · 90 天</div><div style="font-size:12px;color:#8F959E;margin-top:3px">剩余 62 天</div></div>
+          <button style="height:50px;border:0;border-radius:12px;background:var(--accent,#3370ff);color:#fff;font-size:16px;font-weight:600;cursor:pointer">续费</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="{{ f.expired }}">
+      <div style="{{ cap }}">S3 · 已过期（重新开通）</div>
+      <div style="{{ phone }}">
+        <div style="display:flex;align-items:center;justify-content:space-between;height:44px;padding:0 22px 0 26px;font-size:13px;font-weight:600;flex:none;background:#fff"><span>9:41</span><svg width="58" height="12" viewBox="0 0 58 12" fill="#1F2329"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="8" rx="1"/><rect x="15" y="1" width="3" height="10" rx="1"/><rect x="42" y="2" width="13" height="8" rx="2" fill="none" stroke="#1F2329" stroke-width="1"/><rect x="43.6" y="3.6" width="9" height="4.8" rx="1"/><rect x="56" y="4.4" width="1.6" height="3.2" rx=".8"/></svg></div>
+        <div style="position:relative;display:flex;align-items:center;justify-content:center;height:44px;background:#fff;border-bottom:1px solid #EDEEF0;flex:none">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="#1F2329" stroke-width="1.6" style="position:absolute;left:14px"><path d="M9.6 3.6L5.2 8l4.4 4.4"/></svg>
+          <span style="font-size:16px;font-weight:600">增长陪跑 · 90 天</span>
+          <span style="position:absolute;right:16px;letter-spacing:1px;color:#1F2329">···</span>
+        </div>
+        <div style="flex:1;min-height:0;overflow:auto;background:#fff">
+          <div style="padding:24px 20px 26px;background:linear-gradient(150deg,#2A2E36 0%,#3B4250 100%);color:#fff">
+            <span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;background:rgba(255,255,255,.16);font-size:12px;font-weight:600">已过期</span>
+            <h1 style="margin:14px 0 0;font-size:25px;line-height:33px;font-weight:600">增长陪跑 · 90 天</h1>
+            <p style="margin:10px 0 0;font-size:14px;line-height:22px;color:rgba(255,255,255,.72)">服务期已结束，重新开通后历史记录会继续保留</p>
+          </div>
+          <div style="margin:-16px 14px 0;position:relative;background:#fff;border:1px solid #EDEEF0;border-radius:14px;padding:18px 16px;box-shadow:0 4px 16px rgba(31,35,41,.06)">
+            <div style="font-size:30px;line-height:36px;font-weight:700;color:#646A73">已过期</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0 0;margin-top:12px;border-top:1px solid #F2F3F5"><span style="font-size:14px;color:#8F959E">上次到期日</span><span style="font-size:15px;font-weight:600;font-variant-numeric:tabular-nums">2026-07-11</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px"><span style="font-size:14px;color:#8F959E">重新开通价格 / 有效期</span><span style="font-size:15px;font-weight:600">¥2,980.00 / 90 天</span></div>
+          </div>
+          <div style="padding:18px 14px 24px">
+            <div style="font-size:15px;font-weight:600;margin-bottom:12px">服务详情</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="height:180px;background:linear-gradient(135deg,#E9EBEF,#CFD3DA);border-radius:12px"></div>
+              <div style="height:200px;background:linear-gradient(135deg,#EFF1F4,#DDE0E5);border-radius:12px"></div>
+            </div>
+          </div>
+        </div>
+        <div style="flex:none;display:grid;grid-template-columns:minmax(0,1fr) 132px;gap:12px;align-items:center;padding:10px 14px 22px;background:#fff;border-top:1px solid #EDEEF0">
+          <div style="min-width:0"><div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">增长陪跑 · 90 天</div><div style="font-size:12px;color:#8F959E;margin-top:3px">¥2,980.00 / 90 天</div></div>
+          <button style="height:50px;border:0;border-radius:12px;background:var(--accent,#3370ff);color:#fff;font-size:16px;font-weight:600;cursor:pointer">重新开通</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="{{ f.pay }}">
+      <div style="{{ cap }}">S4 · 支付落地页</div>
+      <div style="{{ phone }}">
+        <div style="display:flex;align-items:center;justify-content:space-between;height:44px;padding:0 22px 0 26px;font-size:13px;font-weight:600;flex:none;background:#fff"><span>9:41</span><svg width="58" height="12" viewBox="0 0 58 12" fill="#1F2329"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="8" rx="1"/><rect x="15" y="1" width="3" height="10" rx="1"/><rect x="42" y="2" width="13" height="8" rx="2" fill="none" stroke="#1F2329" stroke-width="1"/><rect x="43.6" y="3.6" width="9" height="4.8" rx="1"/><rect x="56" y="4.4" width="1.6" height="3.2" rx=".8"/></svg></div>
+        <div style="position:relative;display:flex;align-items:center;justify-content:center;height:44px;background:#fff;border-bottom:1px solid #EDEEF0;flex:none">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="#1F2329" stroke-width="1.6" style="position:absolute;left:14px"><path d="M9.6 3.6L5.2 8l4.4 4.4"/></svg>
+          <span style="font-size:16px;font-weight:600">确认订单</span>
+          <span style="position:absolute;right:16px;letter-spacing:1px;color:#1F2329">···</span>
+        </div>
+        <div style="flex:1;min-height:0;overflow:auto;background:#F5F6F7;padding:14px">
+          <div style="background:#fff;border-radius:14px;padding:16px;margin-bottom:12px;display:flex;gap:12px">
+            <div style="width:64px;height:64px;border-radius:10px;background:linear-gradient(135deg,#DCE7FF,#B9CDFF);flex:none"></div>
+            <div style="min-width:0;flex:1">
+              <div style="font-size:15px;font-weight:600">增长陪跑 · 90 天</div>
+              <div style="font-size:13px;color:#8F959E;margin-top:4px">服务周期 90 天 · 付款后立即生效</div>
+              <div style="font-size:16px;font-weight:600;margin-top:8px;font-variant-numeric:tabular-nums">¥2,980.00</div>
+            </div>
+          </div>
+          <div style="background:#fff;border-radius:14px;padding:4px 16px;margin-bottom:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid #F2F3F5"><span style="font-size:14px;color:#646A73">商品金额</span><span style="font-size:14px;font-variant-numeric:tabular-nums">¥2,980.00</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid #F2F3F5"><span style="font-size:14px;color:#646A73">优惠券</span><span style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:4px;background:#FDECEE;color:#D83931;font-size:12px">新客立减 100</span><span style="font-size:14px;color:#D83931;font-variant-numeric:tabular-nums">-¥100.00</span></span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0"><span style="font-size:14px;color:#646A73">实付金额</span><span style="font-size:18px;font-weight:700;color:#D83931;font-variant-numeric:tabular-nums">¥2,880.00</span></div>
+          </div>
+          <div style="background:#fff;border-radius:14px;padding:4px 16px">
+            <div style="font-size:13px;color:#8F959E;padding:14px 0 6px">支付方式</div>
+            <label style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #F2F3F5;cursor:pointer">
+              <span style="width:30px;height:30px;border-radius:8px;background:#07C160;display:flex;align-items:center;justify-content:center;flex:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M9.2 4C5.2 4 2 6.8 2 10.2c0 1.9 1 3.6 2.7 4.8L4 17.4l2.6-1.3c.8.2 1.7.4 2.6.4h.6a5.6 5.6 0 0 1-.2-1.5c0-3.3 3.1-5.9 7-5.9h.6C16.6 6 13.3 4 9.2 4z"/><path d="M22 15c0-2.7-2.6-4.9-5.9-4.9S10.2 12.3 10.2 15s2.6 4.9 5.9 4.9c.7 0 1.4-.1 2-.3l1.9 1-.5-1.7c1.5-.9 2.5-2.3 2.5-3.9z"/></svg></span>
+              <span style="flex:1;font-size:15px">微信支付</span>
+              <span style="width:18px;height:18px;border-radius:50%;border:5px solid var(--accent,#3370ff);background:#fff;flex:none"></span>
+            </label>
+            <label style="display:flex;align-items:center;gap:12px;padding:12px 0 16px;cursor:pointer">
+              <span style="width:30px;height:30px;border-radius:8px;background:#1677FF;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;flex:none">支</span>
+              <span style="flex:1;font-size:15px;color:#646A73">支付宝</span>
+              <span style="width:18px;height:18px;border-radius:50%;border:1px solid #C4C7CC;background:#fff;flex:none"></span>
+            </label>
+          </div>
+          <p style="margin:14px 4px 0;font-size:12px;line-height:19px;color:#A6AAB0">提交即视为同意《周期服务协议》。服务期内如需退款，请联系你的专属顾问。</p>
+        </div>
+        <div style="flex:none;display:grid;grid-template-columns:minmax(0,1fr) 140px;gap:12px;align-items:center;padding:10px 14px 22px;background:#fff;border-top:1px solid #EDEEF0">
+          <div style="min-width:0"><div style="font-size:12px;color:#8F959E">实付</div><div style="font-size:19px;font-weight:700;color:#D83931;font-variant-numeric:tabular-nums;line-height:24px">¥2,880.00</div></div>
+          <button style="height:50px;border:0;border-radius:12px;background:var(--accent,#3370ff);color:#fff;font-size:16px;font-weight:600;cursor:pointer">立即支付</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="{{ f.qr }}">
+      <div style="{{ cap }}">S5 · 企微二维码弹层</div>
+      <div style="{{ phone }}">
+        <div style="display:flex;align-items:center;justify-content:space-between;height:44px;padding:0 22px 0 26px;font-size:13px;font-weight:600;flex:none;background:#fff"><span>9:41</span><svg width="58" height="12" viewBox="0 0 58 12" fill="#1F2329"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="8" rx="1"/><rect x="15" y="1" width="3" height="10" rx="1"/><rect x="42" y="2" width="13" height="8" rx="2" fill="none" stroke="#1F2329" stroke-width="1"/><rect x="43.6" y="3.6" width="9" height="4.8" rx="1"/><rect x="56" y="4.4" width="1.6" height="3.2" rx=".8"/></svg></div>
+        <div style="position:relative;display:flex;align-items:center;justify-content:center;height:44px;background:#fff;border-bottom:1px solid #EDEEF0;flex:none">
+          <span style="font-size:16px;font-weight:600">增长陪跑 · 90 天</span>
+          <span style="position:absolute;right:16px;letter-spacing:1px;color:#1F2329">···</span>
+        </div>
+        <div style="flex:1;min-height:0;overflow:hidden;background:#fff;position:relative">
+          <div style="padding:24px 20px 26px;background:linear-gradient(150deg,#16233A 0%,#25406E 62%,#2C55A8 100%);color:#fff">
+            <span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;background:rgba(52,199,36,.22);font-size:12px;font-weight:600"><span style="width:6px;height:6px;border-radius:50%;background:#57D45A"></span>服务中</span>
+            <h1 style="margin:14px 0 0;font-size:25px;line-height:33px;font-weight:600">增长陪跑 · 90 天</h1>
+          </div>
+          <div style="margin:-16px 14px 0;position:relative;background:#fff;border:1px solid #EDEEF0;border-radius:14px;padding:18px 16px">
+            <div style="font-size:13px;color:#8F959E">剩余有效期</div>
+            <div style="display:flex;align-items:baseline;gap:6px;margin-top:4px"><span style="font-size:40px;line-height:44px;font-weight:700;font-variant-numeric:tabular-nums">62</span><span style="font-size:16px;font-weight:600">天</span></div>
+          </div>
+          <div style="position:absolute;inset:0;background:rgba(20,24,31,.55);display:flex;align-items:center;justify-content:center;padding:24px">
+            <div style="width:100%;background:#fff;border-radius:16px;padding:24px 20px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.24)">
+              <div style="font-size:17px;font-weight:600">添加你的专属顾问</div>
+              <p style="margin:8px 0 0;font-size:13px;line-height:20px;color:#8F959E">长按识别二维码，进入服务群</p>
+              <div style="width:206px;height:206px;margin:16px auto 0;border-radius:14px;border:1px solid #EDEEF0;padding:10px"><div style="width:100%;height:100%;background:repeating-conic-gradient(#1F2329 0% 25%,#fff 0% 50%) 50%/13px 13px;border-radius:4px"></div></div>
+              <button style="width:100%;height:44px;margin-top:18px;border:1px solid #DEE0E3;border-radius:10px;background:#fff;font-size:15px;font-weight:600;color:#646A73;cursor:pointer">关闭</button>
+            </div>
+          </div>
+        </div>
+        <div style="flex:none;display:grid;grid-template-columns:minmax(0,1fr) 132px;gap:12px;align-items:center;padding:10px 14px 22px;background:#fff;border-top:1px solid #EDEEF0">
+          <div style="min-width:0"><div style="font-size:14px;font-weight:600">增长陪跑 · 90 天</div><div style="font-size:12px;color:#8F959E;margin-top:3px">剩余 62 天</div></div>
+          <button style="height:50px;border:0;border-radius:12px;background:var(--accent,#3370ff);color:#fff;font-size:16px;font-weight:600;cursor:pointer">续费</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;画板&quot;,&quot;单屏&quot;],&quot;default&quot;:&quot;画板&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;演示&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#3370ff&quot;,&quot;#245BDB&quot;,&quot;#07C160&quot;,&quot;#7F3BF5&quot;],&quot;default&quot;:&quot;#3370ff&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;主题&quot;}}">
+class Component extends DCLogic {
+  state = { mode: null, sel: 'auth' };
+
+  get mode() { return this.state.mode ?? (this.props.mode === '单屏' ? 'proto' : 'board'); }
+
+  opt(text, on, kind, accent) {
+    const style = {
+      display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '13px 14px', marginBottom: '10px',
+      borderRadius: '12px', cursor: 'pointer',
+      background: on ? '#F2F7FF' : '#F7F8FA',
+      border: on ? '1px solid ' + accent : '1px solid transparent',
+      boxShadow: on ? '0 0 0 3px rgba(51,112,255,.08)' : 'none',
+      color: '#1F2329',
+    };
+    const mark = kind === 'box'
+      ? { width: '18px', height: '18px', borderRadius: '5px', flex: 'none', marginTop: '2px', border: on ? '5px solid ' + accent : '1px solid #C4C7CC', background: '#fff' }
+      : { width: '18px', height: '18px', borderRadius: '50%', flex: 'none', marginTop: '2px', border: on ? '5px solid ' + accent : '1px solid #C4C7CC', background: '#fff' };
+    return { text, style, dot: mark, box: mark };
+  }
+
+  renderVals() {
+    const board = this.mode === 'board';
+    const accent = this.props.accent || '#3370ff';
+    const sel = this.state.sel;
+    const KEYS = ['auth', 'all', 'one', 'loading', 'error', 'result', 'done', 'signup', 'active', 'expired', 'pay', 'qr'];
+    const LABELS = {
+      auth: '授权拦截', all: '整卷平铺', one: '逐题作答', loading: '加载中', error: '报错态', result: '测评结果', done: '已提交',
+      signup: '未开通', active: '生效中', expired: '已过期', pay: '支付落地', qr: '企微弹层',
+    };
+
+    const f = {};
+    KEYS.forEach((k) => {
+      f[k] = board
+        ? { display: 'flex', flexDirection: 'column' }
+        : { display: sel === k ? 'flex' : 'none', flexDirection: 'column' };
+    });
+
+    const chips = KEYS.map((k) => ({
+      label: LABELS[k],
+      on: () => this.setState({ sel: k }),
+      style: {
+        height: '28px', padding: '0 14px', borderRadius: '999px', cursor: 'pointer', fontSize: '13px', flex: 'none',
+        border: '1px solid ' + (sel === k ? accent : '#DEE0E3'),
+        background: sel === k ? '#EFF4FF' : '#fff',
+        color: sel === k ? accent : '#646A73',
+        fontWeight: sel === k ? 600 : 400,
+      },
+    }));
+
+    const seg = (on) => ({ height: '26px', padding: '0 14px', border: 0, borderRadius: '5px', background: on ? '#fff' : 'transparent', color: on ? '#1F2329' : '#C4C7CC', fontSize: '12px', fontWeight: on ? 600 : 400, cursor: 'pointer' });
+    const O = (t, on, kind) => this.opt(t, on, kind, accent);
+
+    const dim = (name, score, max, desc, tone) => ({
+      name, score, desc,
+      scoreStyle: { fontSize: '15px', fontWeight: 600, color: tone === 'ok' ? '#2EA121' : tone === 'warn' ? '#D97917' : accent, fontVariantNumeric: 'tabular-nums' },
+      bar: { width: Math.round((score / max) * 100) + '%', height: '100%', borderRadius: '999px', background: tone === 'ok' ? '#2EA121' : tone === 'warn' ? '#FF8800' : accent },
+    });
+
+    return {
+      vars: { display: 'flex', flexDirection: 'column', minHeight: '100vh', '--accent': accent },
+      setBoard: () => this.setState({ mode: 'board' }),
+      setProto: () => this.setState({ mode: 'proto' }),
+      tabBoard: seg(board),
+      tabProto: seg(!board),
+      picker: board
+        ? { display: 'none' }
+        : { display: 'flex', gap: '8px', padding: '12px 16px', background: '#fff', borderBottom: '1px solid #DEE0E3', overflowX: 'auto', flex: 'none' },
+      chips,
+      stage: board
+        ? { flex: 1, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, 390px)', gap: '30px 24px', padding: '26px', alignContent: 'start', justifyContent: 'start', background: '#EBEDF0' }
+        : { flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'flex-start', padding: '32px', background: '#EBEDF0' },
+      sec: board
+        ? { gridColumn: '1 / -1', margin: '0 0 -14px', fontSize: '13px', fontWeight: 600, color: '#646A73', letterSpacing: '.02em' }
+        : { display: 'none' },
+      cap: board ? { display: 'block', margin: '0 0 8px', fontSize: '12px', fontWeight: 600, color: '#646A73' } : { display: 'none' },
+      phone: {
+        width: '390px', height: '844px', borderRadius: '30px', border: '1px solid #DEE0E3', background: '#fff',
+        overflow: 'hidden', display: 'flex', flexDirection: 'column', flex: 'none',
+        boxShadow: '0 6px 24px rgba(31,35,41,.10)',
+      },
+      f,
+      opts: {
+        single: [O('获客成本太高', true), O('转化率上不去', false), O('老客复购少', false), O('团队执行不下去', false)],
+        multi: [O('抖音 / 视频号', true, 'box'), O('小红书', false, 'box'), O('私域社群', true, 'box'), O('线下活动', false, 'box'), O('其它', true, 'box')],
+        step: [O('视频号直播', true), O('小红书内容', false), O('公众号文章', false), O('线下门店', false), O('其它', false)],
+        blank: [O('视频号直播', false), O('小红书内容', false), O('公众号文章', false)],
+      },
+      dims: [
+        dim('流量获取', 34, 40, '渠道数量与内容频次都达标，直播是当前最稳的来源。', 'ok'),
+        dim('线索承接', 16, 30, '首触平均 4.2 小时，超过一半线索在 24 小时内没有被跟进。', 'warn'),
+        dim('复购运营', 18, 30, '到期提醒没有固定动作，续费主要靠客户主动询问。', 'warn'),
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

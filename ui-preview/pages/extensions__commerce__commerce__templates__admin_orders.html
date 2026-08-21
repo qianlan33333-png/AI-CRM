@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Orders · 客户管理后台</title>
+  <link rel="stylesheet" href="../static/admin_console/admin_console.css?v=operation-member-picker-fix-20260527&amp;design=lark-20260803">
+  <script src="../static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
+  <script src="../static/admin_console/image_resource_loader.js?v=resource-governance-v2-pending-retry"></script>
+  
+<style>
+  .orders-admin {
+    display: grid;
+    gap: 18px;
+  }
+
+  .orders-card-body {
+    display: grid;
+    gap: 16px;
+  }
+
+  .orders-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px 16px;
+  }
+
+  .orders-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .orders-field span {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .orders-field input,
+  .orders-field select {
+    min-height: 42px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fffdf8;
+    color: var(--text);
+  }
+
+  .orders-table {
+    min-width: 1180px;
+  }
+
+  .orders-summary,
+  .orders-muted,
+  .orders-toast {
+    color: var(--muted);
+  }
+
+  .orders-toast,
+  .orders-summary {
+    min-height: 22px;
+    font-weight: 700;
+  }
+
+  .orders-mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .orders-strong {
+    font-weight: 800;
+  }
+
+  .orders-sub {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .orders-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #eef2f7;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .orders-pill.paid {
+    background: #e7f8ee;
+    color: #0f7a43;
+  }
+
+  .orders-pill.pending {
+    background: #fff4d6;
+    color: #8a5a00;
+  }
+
+  .orders-pill.refund_processing {
+    background: #f3e8ff;
+    color: #9333ea;
+  }
+
+  .orders-pill.partial_refunded,
+  .orders-pill.full_refunded {
+    background: #e7efff;
+    color: #1d4ed8;
+  }
+
+  .orders-empty {
+    display: none;
+    min-height: 120px;
+    padding: 28px;
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--radius-md);
+    color: var(--muted);
+    text-align: center;
+    font-weight: 800;
+  }
+
+  .orders-empty.is-visible {
+    display: grid;
+    place-items: center;
+  }
+
+  .orders-pager {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+  }
+
+  @media (max-width: 1100px) {
+    .orders-filter-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 760px) {
+    .orders-filter-grid,
+    .orders-pager {
+      grid-template-columns: 1fr;
+      align-items: stretch;
+    }
+  }
+  /* Supplied AI-CRM design package: compact order filters and table. */
+  .orders-admin,.orders-card-body{gap:12px}
+  .orders-filter-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+  .orders-field{gap:6px}
+  .orders-field span{color:#646a73;font-size:12px;font-weight:400}
+  .orders-field input,.orders-field select{min-height:34px;padding:6px 10px;border-color:#dee0e3;border-radius:6px;background:#fff}
+  .orders-pill{min-height:22px;padding:2px 8px;border-radius:4px;font-weight:500}
+  .orders-pill.paid{background:#ebf9ec;color:#2ea121}.orders-pill.pending{background:#fff6e9;color:#d9730d}
+  @media(max-width:1200px){.orders-filter-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+</style>
+
+  <script defer src="../static/admin_console/admin_console.js?v=lark-design-package-20260803"></script>
+  <script defer src="../static/admin_console/operation_member_picker.js?v=operation-member-picker-wecom-sync-20260709"></script>
+</head>
+<body class="admin-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="admin-brand-mark">CRM</div>
+        <div class="admin-brand-copy">
+          <div class="admin-brand-title">客户管理后台</div>
+          <div class="admin-brand-subtitle">ADMIN CONSOLE</div>
+        </div>
+      </div>
+
+      <nav class="admin-nav" aria-label="客户管理后台导航">
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">运营</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化运营"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_conversion.svg" alt="">
+              <span class="admin-nav-label">自动化运营</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="运营闭环"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/operation_cycles.svg" alt="">
+              <span class="admin-nav-label">运营闭环</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="群运营计划"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/group_ops.svg" alt="">
+              <span class="admin-nav-label">群运营计划</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="渠道码中心"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/channels.svg" alt="">
+              <span class="admin-nav-label">渠道码中心</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="AI 助手"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/cloud_orchestrator.svg" alt="">
+              <span class="admin-nav-label">AI 助手</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="客户激活 / 客户列表"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/customers.svg" alt="">
+              <span class="admin-nav-label">客户激活 / 客户列表</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="漏斗 / 数据看板"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/user_ops_funnel.svg" alt="">
+              <span class="admin-nav-label">漏斗 / 数据看板</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="问卷"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/questionnaires.svg" alt="">
+              <span class="admin-nav-label">问卷</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="内容雷达"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/radar_links.svg" alt="">
+              <span class="admin-nav-label">内容雷达</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="企微标签管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wecom_tags.svg" alt="">
+              <span class="admin-nav-label">企微标签管理</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">交易</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="交易管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_transactions.svg" alt="">
+              <span class="admin-nav-label">交易管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_products.svg" alt="">
+              <span class="admin-nav-label">商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="周期商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/service_period_products.svg" alt="">
+              <span class="admin-nav-label">周期商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="优惠券"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/coupons.svg" alt="">
+              <span class="admin-nav-label">优惠券</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">素材</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="图片素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/image_library.svg" alt="">
+              <span class="admin-nav-label">图片素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="小程序素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/miniprogram_library.svg" alt="">
+              <span class="admin-nav-label">小程序素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="附件素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/attachment_library.svg" alt="">
+              <span class="admin-nav-label">附件素材库</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">配置及后台</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化话术"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_agents.svg" alt="">
+              <span class="admin-nav-label">自动化话术</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="负责人迁移"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/owner_migration.svg" alt="">
+              <span class="admin-nav-label">负责人迁移</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="配置"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/config.svg" alt="">
+              <span class="admin-nav-label">配置</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="API 文档"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/api_docs.svg" alt="">
+              <span class="admin-nav-label">API 文档</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+      </nav>
+
+      
+      <div class="admin-sidebar-user">
+        <div class="admin-sidebar-user__avatar">
+          示
+        </div>
+        <div class="admin-sidebar-user__meta">
+          <div class="admin-sidebar-user__name">
+            示例管理员
+          </div>
+          <a class="admin-sidebar-user__logout" href="#">退出登录</a>
+        </div>
+      </div>
+      
+    </aside>
+
+    <div class="admin-main-wrap">
+      
+      
+      
+      
+      
+      
+      <header class="admin-topbar">
+        
+        <div class="admin-topbar-head">
+          <nav class="admin-breadcrumbs" aria-label="当前位置">
+            
+            
+            <a href="#">客户管理后台</a>
+            
+            
+          </nav>
+          <div>
+            <h1 class="admin-page-title">Admin Orders</h1>
+            <p class="admin-page-summary">页面功能预览（示例数据）</p>
+          </div>
+        </div>
+        
+
+        
+      </header>
+      
+
+      <main class="admin-page">
+        
+        <section class="admin-alert admin-alert--success">示例</section>
+        
+        
+        <section class="admin-alert admin-alert--error">示例</section>
+        
+        
+<div class="orders-admin" data-next-commerce-admin="unified-orders">
+  <section class="admin-card">
+    <div class="admin-card-head">
+      <div>
+        <h2>筛选</h2>
+        <p>按支付渠道、订单号、商品、手机号和状态筛选订单。</p>
+      </div>
+      <div class="admin-form-actions">
+        <button class="admin-button admin-button--primary" id="searchBtn" type="button">查询</button>
+        <button class="admin-button admin-button--secondary" id="exportBtn" type="button">导出筛选结果</button>
+        <button class="admin-button admin-button--ghost" id="resetBtn" type="button">重置</button>
+      </div>
+    </div>
+    <div class="orders-card-body">
+      <div class="orders-filter-grid">
+        <label class="orders-field" for="provider"><span>支付渠道</span><select id="provider"><option value="示例">示例</option><option value="示例">示例</option><option value="示例">示例</option></select></label>
+        <label class="orders-field" for="orderNo"><span>订单号</span><input id="orderNo" placeholder="微信单号 / 支付宝单号 / 小店订单号"></label>
+        <label class="orders-field" for="mobile"><span>手机号</span><input id="mobile" placeholder="输入手机号"></label>
+        <label class="orders-field" for="product"><span>商品编码</span><input id="product" placeholder="subscription_trial_month"></label>
+        <label class="orders-field" for="createdFrom"><span>订单创建开始</span><input id="createdFrom" type="datetime-local" value="示例"></label>
+        <label class="orders-field" for="createdTo"><span>订单创建结束</span><input id="createdTo" type="datetime-local" value="示例"></label>
+        <label class="orders-field" for="status"><span>状态</span><select id="status"><option value="">全部</option><option value="示例">示例</option><option value="示例">示例</option><option value="示例">示例</option></select></label>
+      </div>
+      <div class="orders-toast" id="notice"></div>
+    </div>
+  </section>
+
+  <section class="admin-card">
+    <div class="admin-card-head">
+      <div>
+        <h2>订单列表</h2>
+        <p class="orders-summary" id="summary">正在加载订单...</p>
+      </div>
+      <div class="admin-form-actions">
+        <select class="admin-button" id="limit" aria-label="每页条数"><option value="20">每页 20 条</option><option value="50">每页 50 条</option><option value="100">每页 100 条</option></select>
+        <button class="admin-button admin-button--ghost" id="refreshBtn" type="button">刷新</button>
+      </div>
+    </div>
+    <div class="orders-card-body">
+      <div class="admin-table-wrap">
+        <table class="admin-table orders-table">
+          <thead><tr><th>创建时间</th><th>微信/平台单号</th><th>付款人 / 客户身份</th><th>商品名</th><th>金额</th><th>状态</th><th>支付渠道</th><th>操作</th></tr></thead>
+          <tbody id="rows">
+            <tr><td colspan="8" class="orders-muted">正在加载订单...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="orders-empty" id="empty">暂无符合条件的订单。</div>
+      <div class="orders-pager">
+        <div class="orders-muted" id="pageHint">服务端分页。</div>
+        <div class="admin-form-actions"><button class="admin-button admin-button--ghost" id="prevBtn" type="button">上一页</button><button class="admin-button admin-button--secondary" id="nextBtn" type="button">下一页</button></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+      </main>
+    </div>
+  </div>
+  <script id="aicrmAdminActionGrants" type="application/json">{}</script>
+  
+<script>
+  const listApiUrl = {};
+  const exportApiUrl = {};
+  const state = {offset: 0, total: 0, limit: 20};
+  const $ = (id) => document.getElementById(id);
+  const esc = (value) => String(value || "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+  function filters() {
+    return {
+      provider: $("provider").value,
+      order_no: $("orderNo").value,
+      mobile: $("mobile").value,
+      product_code: $("product").value,
+      created_from: $("createdFrom").value,
+      created_to: $("createdTo").value,
+      status: $("status").value
+    };
+  }
+
+  function params() {
+    const out = new URLSearchParams();
+    Object.entries(filters()).forEach(([key, value]) => { if (String(value || "").trim()) out.set(key, value); });
+    out.set("limit", $("limit").value || "20");
+    out.set("offset", String(state.offset));
+    return out;
+  }
+
+  function renderLoading() {
+    $("rows").innerHTML = '<tr><td colspan="8" class="orders-muted">正在加载订单...</td></tr>';
+    $("empty").classList.remove("is-visible");
+  }
+
+  function payerName(row) {
+    const customer = row.customer || {};
+    return row.payer_name || customer.name || "未记录付款人";
+  }
+
+  function customerIdentityLine(row) {
+    const customer = row.customer || {};
+    const mobile = row.mobile || customer.mobile || "未记录手机号";
+    const identity = row.userid || row.external_userid || row.unionid || customer.userid || customer.external_userid || customer.unionid || "-";
+    return `${mobile} · ${identity}`;
+  }
+
+  function render(items) {
+    $("rows").innerHTML = items.map((row) => `<tr>
+      <td>${esc(row.created_at)}</td>
+      <td><span class="orders-mono">${esc(row.merchant_order_no || row.out_trade_no || row.order_no)}</span><div class="orders-sub">${esc(row.platform_transaction_no || row.transaction_id || "")}</div></td>
+      <td><div class="orders-strong">${esc(payerName(row))}</div><div class="orders-sub">${esc(customerIdentityLine(row))}</div></td>
+      <td>${esc(row.product_name)}</td>
+      <td class="orders-mono">¥${esc(row.amount_yuan)}</td>
+      <td><span class="orders-pill ${esc(row.status)}">${esc(row.status_label)}</span></td>
+      <td>${esc(row.provider_label || row.provider)}</td>
+      <td><a class="admin-button admin-button--ghost" href="${esc(row.detail_url)}">查看详情</a></td>
+    </tr>`).join("");
+    $("empty").classList.toggle("is-visible", !items.length);
+  }
+
+  async function load() {
+    $("summary").textContent = "正在加载订单...";
+    renderLoading();
+    try {
+      const data = await window.AdminApi.requestJson(`${listApiUrl}?${params().toString()}`);
+      state.total = data.total || 0;
+      state.limit = data.limit || Number($("limit").value || 20);
+      render(data.items || []);
+      $("summary").textContent = `当前页 ${(data.items || []).length} 条 / 筛选结果 ${state.total} 条`;
+      $("pageHint").textContent = `第 ${Math.floor(state.offset / state.limit) + 1} 页`;
+      $("prevBtn").disabled = state.offset <= 0;
+      $("nextBtn").disabled = !data.has_more;
+    } catch (error) {
+      $("summary").textContent = window.AdminApi.errorMessage(error, "订单加载失败，请稍后重试");
+      render([]);
+    }
+  }
+
+  function resetPage() { state.offset = 0; load(); }
+  $("searchBtn").addEventListener("click", resetPage);
+  $("refreshBtn").addEventListener("click", load);
+  $("limit").addEventListener("change", resetPage);
+  $("provider").addEventListener("change", resetPage);
+  $("resetBtn").addEventListener("click", () => {
+    ["orderNo","mobile","product","status"].forEach((id) => { $(id).value = ""; });
+    $("provider").value = "all";
+    resetPage();
+  });
+  $("prevBtn").addEventListener("click", () => { state.offset = Math.max(0, state.offset - state.limit); load(); });
+  $("nextBtn").addEventListener("click", () => { state.offset += state.limit; load(); });
+  $("exportBtn").addEventListener("click", async () => {
+    $("notice").textContent = "正在生成导出文件...";
+    try {
+      const data = await window.AdminApi.requestJson(exportApiUrl, {method:"POST", body:{resource: "orders", filters: filters(), format: "csv"}});
+      const exported = await window.AdminApi.requestJson(data.job.download_url);
+      const blob = new Blob([exported.content_text || ""], {type: "text/csv;charset=utf-8"});
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url; link.download = "orders.csv"; link.click();
+      URL.revokeObjectURL(url);
+      $("notice").textContent = "导出文件已生成。";
+    } catch (error) {
+      $("notice").textContent = window.AdminApi.errorMessage(error, "导出失败，请稍后重试");
+    }
+  });
+  load();
+</script>
+
+</body>
+</html>

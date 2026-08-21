@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;font-family:"PingFang SC","HarmonyOS Sans SC","Hiragino Sans GB","Microsoft YaHei",-apple-system,sans-serif;color:#1F2329;-webkit-font-smoothing:antialiased}
+doc-page:not(:defined){visibility:hidden}
+a{color:#3370ff;text-decoration:none}
+a:hover{color:#245BDB}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;background:#F5F6F7;border-radius:4px;padding:1px 5px;color:#245BDB}
+</style>
+<script src="./doc-page.js"></script>
+</helmet>
+
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#EBEDF0"/><rect x="46" y="34" width="108" height="132" rx="10" fill="#fff"/><rect x="62" y="56" width="60" height="9" rx="4" fill="#3370ff"/><rect x="62" y="78" width="76" height="6" rx="3" fill="#DEE0E3"/><rect x="62" y="94" width="58" height="6" rx="3" fill="#DEE0E3"/><rect x="62" y="110" width="68" height="6" rx="3" fill="#DEE0E3"/><rect x="62" y="132" width="40" height="16" rx="5" fill="#EFF4FF"/></svg></template>
+
+<doc-page margin="0.75in">
+
+  <div style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;letter-spacing:.16em;color:#8F959E">AI-CRM · VISUAL REBUILD SPEC · v1 · 2026-08-03</div>
+  <h1 style="margin:10px 0 6px;font-size:30px;font-weight:700;line-height:1.25">AI-CRM 视觉重做说明书</h1>
+  <p style="margin:0 0 22px;font-size:13px;color:#646A73;line-height:1.85">目标仓库 <code>qianlan333/AI-CRM</code>（<code>main</code>）。本次只做视觉重做：<strong>不新增功能、不改动路由 / 接口 / 数据模型 / 模板变量 / 类名结构</strong>。设计稿：<code>AI-CRM 后台.dc.html</code>（9 个一级页 + 6 个二级页）、<code>AI-CRM 用户端 H5.dc.html</code>（问卷 6 态 + 周期商品报名 5 态）。风格基准：飞书（Lark）控制台。</p>
+
+  <div style="background:#EFF4FF;border:1px solid #D3E1FF;border-radius:8px;padding:12px 14px;margin:0 0 24px">
+    <div style="font-size:13px;font-weight:600;color:#245BDB;margin-bottom:4px">一句话口径</div>
+    <div style="font-size:13px;line-height:1.8;color:#245BDB">改 <code>:root</code> 令牌 + 组件样式，模板 HTML 结构与 Jinja 变量原样保留；凡是需要动到 <code>.py</code> 里查询、字段或路由的，都不在本次范围内。</div>
+  </div>
+
+  <h2 style="margin:0 0 12px;font-size:20px;font-weight:700;border-bottom:1px solid #DEE0E3;padding-bottom:8px">1. 设计令牌</h2>
+
+  <h3 style="margin:16px 0 8px;font-size:14px;font-weight:700">1.1 颜色</h3>
+  <p style="margin:0 0 10px;font-size:13px;color:#646A73;line-height:1.8"><code>admin_console.css</code> 顶部 <code>:root</code>（第 3–23 行）的暖色板 <code>#f3efe7 / #fbf8f2 / #271d10 / #7a6a52</code> 全部删除；文件里已存在的第二套（约第 1884 行）升级为唯一主题：</p>
+  <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+    <thead><tr>
+      <th style="text-align:left;padding:7px 10px;background:#F5F6F7;border-bottom:1px solid #DEE0E3;font-size:11px;color:#8F959E;font-weight:500">变量</th>
+      <th style="text-align:left;padding:7px 10px;background:#F5F6F7;border-bottom:1px solid #DEE0E3;font-size:11px;color:#8F959E;font-weight:500">色值</th>
+      <th style="text-align:left;padding:7px 10px;background:#F5F6F7;border-bottom:1px solid #DEE0E3;font-size:11px;color:#8F959E;font-weight:500">用途</th>
+    </tr></thead>
+    <tbody>
+      <sc-for list="{{ tokens }}" as="t" hint-placeholder-count="14">
+        <tr>
+          <td style="padding:6px 10px;border-bottom:1px solid #F2F3F5;font-family:ui-monospace,Menlo,monospace">{{ t.k }}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #F2F3F5;font-family:ui-monospace,Menlo,monospace"><span style="{{ t.sw }}"></span>{{ t.v }}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #F2F3F5;color:#646A73">{{ t.u }}</td>
+        </tr>
+      </sc-for>
+    </tbody>
+  </table>
+  <p style="margin:10px 0 0;font-size:12px;color:#8F959E;line-height:1.8">状态一律「底色 + 文字色」成对使用：成功 <code>#EBF9EC / #2EA121</code>，提醒 <code>#FFF7E8 / #D97917</code>，失败 <code>#FDECEE / #D83931</code>，中性 <code>#F2F3F5 / #646A73</code>，AI / 智能 <code>#F4EDFF / #7F3BF5</code>。状态永远同时带文字，不允许只用颜色区分。</p>
+
+  <h3 style="margin:20px 0 8px;font-size:14px;font-weight:700">1.2 字体与字号</h3>
+  <p style="margin:0 0 8px;font-size:13px;color:#3F4247;line-height:1.9">全站字体栈：<code>"PingFang SC","HarmonyOS Sans SC","Hiragino Sans GB","Microsoft YaHei",-apple-system,sans-serif</code>；ID / 单号 / 时间 / URL 用 <code>ui-monospace,SFMono-Regular,Menlo,monospace</code>，数字列加 <code>font-variant-numeric:tabular-nums</code>。<br>后台：页面标题 16px/600、卡片标题 14px/600、正文 13px、次要 12px、表头 12px（<code>#8F959E</code>，不加字距、不大写）。<br>H5：页面主标题 22–26px/600、卡片标题 15–16px/600、正文 14–15px、辅助 12–13px。行高统一 1.5–1.6。</p>
+
+  <h3 style="margin:20px 0 8px;font-size:14px;font-weight:700">1.3 形状 · 阴影 · 间距</h3>
+  <p style="margin:0 0 8px;font-size:13px;color:#3F4247;line-height:1.9">圆角：后台卡片 8px、控件 6px、徽标 4px；H5 卡片 14–16px、按钮 12px、胶囊 999px。<br>描边一律 1px：卡片外框 <code>#DEE0E3</code>，卡内分隔 <code>#EFF0F1</code>，表格行线 <code>#F2F3F5</code>。<br>阴影只给浮层和 H5 卡片：<code>0 2px 12px rgba(31,35,41,.06)</code>；弹层 <code>0 12px 40px rgba(0,0,0,.24)</code>。后台平铺卡片不要阴影。<br>后台页面内边距 16px 20px，卡片内 12–16px，表格单元 <code>10px 12px</code>（紧凑模式，首末列 16px）；控件高度 32px，行内按钮 30px，分页按钮 28px。</p>
+
+  <h2 style="margin:26px 0 12px;font-size:20px;font-weight:700;border-bottom:1px solid #DEE0E3;padding-bottom:8px">2. 组件规范（后台）</h2>
+  <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+    <thead><tr>
+      <th style="text-align:left;padding:7px 10px;background:#F5F6F7;border-bottom:1px solid #DEE0E3;font-size:11px;color:#8F959E;font-weight:500;width:26%">类名</th>
+      <th style="text-align:left;padding:7px 10px;background:#F5F6F7;border-bottom:1px solid #DEE0E3;font-size:11px;color:#8F959E;font-weight:500">重做要点</th>
+    </tr></thead>
+    <tbody>
+      <sc-for list="{{ comps }}" as="c" hint-placeholder-count="12">
+        <tr>
+          <td style="padding:7px 10px;border-bottom:1px solid #F2F3F5;font-family:ui-monospace,Menlo,monospace;vertical-align:top">{{ c.k }}</td>
+          <td style="padding:7px 10px;border-bottom:1px solid #F2F3F5;color:#3F4247;line-height:1.75">{{ c.v }}</td>
+        </tr>
+      </sc-for>
+    </tbody>
+  </table>
+
+  <h2 style="margin:26px 0 12px;font-size:20px;font-weight:700;border-bottom:1px solid #DEE0E3;padding-bottom:8px">3. 后台逐页改动</h2>
+  <sc-for list="{{ pages }}" as="p" hint-placeholder-count="15">
+    <div style="border:1px solid #DEE0E3;border-radius:8px;padding:12px 14px;margin:0 0 10px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+        <div style="font-size:13.5px;font-weight:700">{{ p.name }}</div>
+        <div style="font-size:11px;color:#8F959E;font-family:ui-monospace,Menlo,monospace;text-align:right">{{ p.file }}</div>
+      </div>
+      <div style="font-size:12.5px;color:#3F4247;line-height:1.8;margin-top:6px">{{ p.note }}</div>
+    </div>
+  </sc-for>
+
+  <h2 style="margin:26px 0 12px;font-size:20px;font-weight:700;border-bottom:1px solid #DEE0E3;padding-bottom:8px">4. 用户端 H5</h2>
+  <sc-for list="{{ h5 }}" as="p" hint-placeholder-count="11">
+    <div style="border:1px solid #DEE0E3;border-radius:8px;padding:12px 14px;margin:0 0 10px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+        <div style="font-size:13.5px;font-weight:700">{{ p.name }}</div>
+        <div style="font-size:11px;color:#8F959E;font-family:ui-monospace,Menlo,monospace;text-align:right">{{ p.file }}</div>
+      </div>
+      <div style="font-size:12.5px;color:#3F4247;line-height:1.8;margin-top:6px">{{ p.note }}</div>
+    </div>
+  </sc-for>
+
+  <h2 style="margin:26px 0 12px;font-size:20px;font-weight:700;border-bottom:1px solid #DEE0E3;padding-bottom:8px">5. 不要做的事</h2>
+  <ul style="margin:0 0 8px;padding-left:18px;font-size:13px;color:#3F4247;line-height:1.95">
+    <li>不要新增页面、字段、筛选项、列或按钮；设计稿里出现的每一列都能在现有模板中找到。</li>
+    <li><strong>更不要减</strong>：行操作按钮、分步导航、页头按钮全部按现状 1:1 保留，只换样式与排布；按钮多到换行是可以接受的。</li>
+    <li>不要改动 Jinja 变量名、<code>data-*</code> 钩子、元素 <code>id</code>，前端 JS 全部依赖它们。</li>
+    <li>不要引入 Tailwind / 组件库 / 图标字体；图标用内联 SVG（16px，<code>stroke-width:1.4</code>，<code>currentColor</code>）。</li>
+    <li>不要保留任何暖色残留：<code>#f3efe7</code>、<code>#fbf8f2</code>、<code>#271d10</code>、<code>#7a6a52</code>、<code>#2563eb</code>。</li>
+    <li>不要用渐变做后台背景；渐变只出现在 H5 的 hero 与优惠券卡。</li>
+    <li>不要动 webhook 契约、支付链路、OAuth、幂等规则、外部推送重试。</li>
+  </ul>
+
+  <h2 style="margin:26px 0 12px;font-size:20px;font-weight:700;border-bottom:1px solid #DEE0E3;padding-bottom:8px">6. 验收标准</h2>
+  <ol style="margin:0;padding-left:18px;font-size:13px;color:#3F4247;line-height:1.95">
+    <li>全仓搜索不到 <code>#f3efe7</code> / <code>#fbf8f2</code> / <code>#271d10</code> / <code>#7a6a52</code>。</li>
+    <li>侧边栏 4 组 21 项与 <code>ADMIN_NAV_GROUPS</code> 完全一致；每项有图标，可收起为 56px 窄栏。</li>
+    <li>1440 宽下所有一级页无横向滚动；表格列不换行、不截断关键字段。</li>
+    <li>二级页均有返回按钮 + 面包屑，且面包屑首级可点回一级页。</li>
+    <li>每个列表页的空态 / 加载骨架 / 错误态三套样式来自同一组类，视觉一致。</li>
+    <li>问卷 H5 的 6 个状态与周期商品报名页的 5 个状态逐一对照设计稿走查。</li>
+    <li><code>python -m pytest</code> 与 <code>ruff check</code> 全绿；模板测试（<code>tests/test_admin_*</code>）不需要修改断言。</li>
+  </ol>
+
+</doc-page>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const sw = (v) => ({ display: 'inline-block', width: '10px', height: '10px', borderRadius: '3px', background: v, border: '1px solid rgba(31,35,41,.12)', marginRight: '7px', verticalAlign: 'middle' });
+    const T = (k, v, u) => ({ k, v, u, sw: sw(v) });
+    return {
+      tokens: [
+        T('--brand', '#3370ff', '主色：主按钮、当前态、链接、进度'),
+        T('--brand-strong', '#245BDB', '主色按下 / 深一级文字'),
+        T('--brand-soft', '#EFF4FF', '当前导航底、主色标签底'),
+        T('--text', '#1F2329', '主文字'),
+        T('--text-2', '#646A73', '次要文字、表单标签'),
+        T('--muted', '#8F959E', '弱文字、表头、说明'),
+        T('--placeholder', '#BBBFC4', '占位与禁用文字'),
+        T('--bg', '#F5F6F7', '页面内容区底'),
+        T('--bg-canvas', '#EBEDF0', '画板 / 最外层底'),
+        T('--panel', '#FFFFFF', '卡片、侧边栏、页头'),
+        T('--fill', '#F2F3F5', '悬停填充、中性徽标底'),
+        T('--line', '#DEE0E3', '卡片与表头描边'),
+        T('--line-soft', '#F2F3F5', '表格行线'),
+        T('--ok', '#2EA121', '成功'),
+        T('--warn', '#D97917', '提醒 / 处理中'),
+        T('--danger', '#D83931', '失败 / 危险操作'),
+      ],
+      comps: [
+        { k: '.admin-sidebar', v: '白底 + 右侧 1px #DEE0E3，宽 208px；每项高 34px、圆角 6px、左内边距 10px、图标 16px + 文字 13px；当前项 #EFF4FF 底 + 主色文字 + 600；分组标题 12px #A6AAB0。新增收起态：宽 56px，只留图标，分组标题隐藏。' },
+        { k: '.admin-brand', v: '28px 圆角 8px 蓝色渐变方块「CRM」+ 名称 14px/600 + ADMIN CONSOLE 10px #A6AAB0。' },
+        { k: '.admin-topbar', v: '高 52px、白底、下边 1px；上行面包屑 12px #8F959E，下行页面标题 16px/600；右侧操作按钮组。二级页在标题左侧加 28px 方形返回按钮。' },
+        { k: '.admin-card', v: '白底 + 1px #DEE0E3 + 圆角 8px，无阴影；卡头 12px 16px，下边 1px #EFF0F1，标题 14px/600 + 说明 12px #8F959E。' },
+        { k: '.admin-table', v: '表头 #FAFAFB 底、12px #8F959E、不大写不加字距；单元 10px 12px、13px；行线 #F2F3F5；行 hover #FAFBFC；金额与数量右对齐并 tabular-nums；主 ID 下方补 12px #A6AAB0 等宽副标识。' },
+        { k: '.admin-button', v: '统一高 30/32px、圆角 6px、13px；主要=主色实心白字；次要=白底 1px #DEE0E3；文字按钮=主色无底；危险=白底 1px #F98E8B + #D83931 文字。行内操作一律用文字按钮，间距 12px。' },
+        { k: 'input / select / textarea', v: '高 32px、1px #DEE0E3、圆角 6px、13px；聚焦 <code>border:#3370ff</code> + <code>box-shadow:0 0 0 3px rgba(51,112,255,.12)</code>；标签在控件上方，12px #646A73，间距 6px。' },
+        { k: '.admin-chip / 徽标', v: '高 22px、圆角 4px、12px，底色 + 文字色成对；不用边框、不用圆点单独表意。' },
+        { k: '.cc-switch', v: '34×18 轨道，圆点 14px，开=主色，关=#DEE0E3，过渡 .16s。' },
+        { k: '.admin-pagination', v: '左「第 X – Y 条，共 N 条」12px #8F959E；右侧按钮 28px、圆角 6px，当前页主色实心，不可用页 #BBBFC4。' },
+        { k: '.admin-state（空 / 加载 / 错误）', v: '空态：卡内居中，标题 14px/600 + 一句原因 13px #8F959E + 一个主按钮。加载：骨架条 #EBEDF0 / #F2F3F5 两级，1.4s 呼吸，禁止全屏转圈。错误：#FDECEE 圆形感叹号 + 人话原因 + 等宽请求 ID + 重试按钮。' },
+        { k: '.admin-alert', v: '圆角 8px、1px 同色描边、左侧 16px 图标 + 13px 正文；信息 #EFF4FF/#D3E1FF/#245BDB，成功 / 警告 / 错误同构。' },
+      ],
+      pages: [
+        { name: '全局壳', file: 'templates/admin_console/base.html · admin_shell/base.html · admin_console.css', note: '两个 base 的骨架保持一致，只换样式；侧边栏每项按 ADMIN_NAV_GROUPS 顺序补 16px 内联 SVG 图标；新增收起态（一个 body 级 class + localStorage 记忆即可，不涉及后端）。' },
+        { name: '客户列表（一级）', file: 'admin_console/customers.html', note: '筛选区四个字段并排、按钮右侧；表格保留「客户 / 负责人 / 手机号 / 查看档案」四列不变；客户名下补等宽 external_userid；分页沿用现有 offset 逻辑，只换样式。' },
+        { name: '客户档案（二级）', file: 'admin_console/customer_detail.html', note: '顶部 5 字段档案条改为一行 5 列；下方左右分栏：左＝实时标签 + 已填写问卷及答案，右＝聊天记录；聊天记录改气泡（客户左灰、我方右主色），加载态用骨架而非文字。' },
+        { name: '问卷（一级）', file: 'forms/questionnaire/templates/admin_console/questionnaires.html', note: '页面只有一张卡：搜索问卷 + 状态筛选（全部 / 启用中 / 已停用）+ 五列表格。问卷名称格内保留「多维测评」chip 与「启用中 / 已停用」chip，停用行整行降级为灰字 + #FAFAFB 底。行操作七个全部保留：编辑 / 运营配置 / 复制 / 停用（启用）/ 分享 / 下载数据 / 删除（未停用时禁用）。页头两个按钮：创建测评问卷模板、创建新问卷。不要加统计卡、不要加查询清空按钮。' },
+        { name: '问卷编辑器（二级 · 独立页）', file: 'forms/questionnaire/templates/admin_questionnaires.html + static/admin_questionnaire_editor.css', note: '这是真正给人编辑问卷的页面，不在后台 shell 内，有自己的 topbar：返回问卷管理 + 标题 + 「未保存修改」提示 + 分享 / 复制问卷 / 下载数据 / 重置当前 / 保存问卷。下方三栏固定：左 270px「添加题目」六张工具卡（单选题 / 多选题 / 文本题 / 手机号题 / 添加多维测评模板 / 分数规则，28px 圆角方块字标 + 标题 + 说明）；中间手机预览（372px 机身、24px 圆角、当前选中卡 1px 主色 + 3px 光晕，底部保留「点击预览中的题目或分数规则即可在右侧编辑。」）；右 340px 配置区（问卷设置：问卷名称 / 问卷标题 / 问卷说明 / 答题展示方式 / 分享标识 + 停用问卷；多维测评模板卡；删除此问卷危险卡）。抽屉、toast、企微标签选择器沿用现有 JS，只换样式。' },
+        { name: '渠道码中心（一级）', file: 'automation_engine/templates/admin_console/channel_code_center.html', note: '四张统计卡保留副标签（独立获客资源 / 二维码 · 链接资源 / 复制 · 分享链接 / 渠道进入记录）；下方是一张全宽渠道码列表卡，卡头保留说明文案 + 搜索渠道名称 + 新建渠道。行操作五个按钮一个都不能少：下载二维码（未生成时为生成二维码）/ 查看 / 编辑 / 下架 / 删除，窄屏折成两行。不要加右侧详情面板、不要做二维码预览。' },
+        { name: '渠道码 新建 / 编辑（二级）', file: 'admin_console/channel_code_form.html', note: '保留原有的分步结构：顶部摘要卡（渠道名 + 返回渠道码中心 / 保存当前维度 + 渠道类型 / 状态 / 渠道用户 / 客服分配 四格），下方左侧 226px 步骤栏（1 基础配置 / 2 渠道载体 / 3 客服分配 / 4 欢迎语素材 / 5 入渠标签，当前项 #EFF4FF 底 + 主色实心序号），右侧一次只渲染当前一步。序号圆点 22px，步骤项高 44px。五个维度的内容按 channel_code_form.html 原样保留：① 基础配置＝渠道名称 / 渠道编码（留空自动生成）/ 状态（启用·停用·归档）；② 渠道载体＝两张类型单选卡（普通二维码 / 渠道获客链接）+「扫码添加成员时自动通过好友申请」勾选卡 + skip_verify 说明 + 右下「下载二维码 / 生成二维码」，选链接时切换出渠道参数 / 原始链接 / 最终分享链接（LINK 前缀 + 复制链接）；③ 客服分配＝右上「添加客服」+ 两张策略卡（按比例分配 / 满额切换，各带说明）+ 客服比例面板（1/5 计数 chip、成员行含分配比例输入 + 上移 + 删除、底部「比例合计 100%，可以保存。」+ 百分比 chip）；④ 欢迎语素材＝send_content_composer（话术文本域 + 插入客户名 + ＋图片 / ＋小程序 / ＋附件 / ＋选择群聊 + 已选内容区 + 右侧实时预览气泡，头部右侧「已选 N / 9 个素材 · 图片 · 小程序 · 附件 · 客户群」计数）；⑤ 入渠标签＝右上「选择标签」+「当前标签」摘要行。不要改成一页长表单，也不要加二维码预览面板。' },
+        { name: '交易管理（一级）', file: 'commerce/templates/admin_orders.html', note: '筛选五项一行；订单表八列全部保留，单号 / 时间等宽，金额右对齐加粗；卡头右侧显示已支付 / 退款中 / 成交额三个只读汇总（用模板已有数据，没有就不加）。' },
+        { name: '订单详情（二级）', file: 'commerce/templates/wechat_transactions.html（detail 区块）', note: '左右分栏：左＝「订单详情」键值区（微信单号 / 商户单号 / 商品 / 订单创建时间 / 支付时间 / 付款人 / 手机号 / 客户身份 / 金额 / 状态 / 原始状态 / 已退款 / 退款处理中 / 可退款，四列 label-value 网格，单号与时间等宽字体）+「事件时间线」表（时间 / 事件 / 状态）；右＝「申请退款」表单（退款金额 / 退款原因 / 再次完整输入微信单号 / 核对勾选 / 提交退款申请），不可退款时整卡替换为「当前订单状态不可申请退款。」。字段与校验文案全部沿用模板。' },
+        { name: '周期商品管理（一级）', file: 'service_period/templates/service_period_products.html（page_mode = list）', note: '不是左列表右编辑区，就是一张 admin-card：卡头左侧 <code>servicePeriodListSummary</code>「共 N 个周期商品」+ 右侧主按钮「创建周期商品」。表七列照原样：商品编码（等宽 800 字重）/ 商品名称 / 价格（<code>金额 CNY / N 天</code> 一格里带有效期）/ 状态（已上架·草稿·已下架 三态 pill）/ 已售卖数量 / 更新时间 / 操作。行操作是六个，一个都不能少：编辑 · 数据 · 分享 · 复制 · 上架下架 · 删除，其中「数据」是 secondary 底色、「删除」是 danger。表 min-width 1040px，窄屏横向滚动而不是压缩。空态 colspan=7「暂无周期商品」。分享走 share 弹层（商品链接 + 复制链接 + 220px 二维码 + 保存二维码）。' },
+        { name: '周期商品 创建 / 编辑（二级）', file: 'service_period/templates/service_period_products.html（page_mode = new / edit）', note: '不是四张平铺卡，是「摘要卡 + 左维度导航 + 右单面板」：顶部 <code>service-period-summary-card</code>＝标题（创建周期商品 / 编辑周期商品）+ 等宽灰字 <code>summaryProductCode</code>，右侧四个按钮 返回列表 · 复制链接 · 打开预览 · 保存当前维度，下面四个 mini：价格（<code>0.00 / 0 天</code>）· 商品状态 · 页面素材（<code>n / 10</code>）· 外部推送。左侧 226px sticky 维度导航四项：1 售卖信息 · 2 页面素材 · 3 购买后动作 · 4 外部推送，当前项 <code>--brand-soft</code> 底 + 主色实心序号；右侧一次只显示一个 panel，每个 panel 底部一个自己的主按钮（保存售卖信息 / 保存页面素材 / 保存购买后动作 / 保存外部推送）。字段照原样：① 售卖信息＝商品名称 / 商品编码 / 价格 / 有效期 / 绑定会员设置(select) / 商品状态(select) / 手机号要求(select) / 商品描述；② 页面素材＝虚线 upload-row「上传长图切片（最大 2MB）」+ 上传图片按钮，下面是切片行（32px 拖拽把手 ⠿ + 缩略图 + 文件名/序号 + 移除），卡头右上一枚 <code>n / 10 张</code> 灰 pill；③ 购买后动作＝标题右侧一个 switch（未启用 / 已启用，关时整块 hidden），开后先是两张单选卡「支付后展示引流二维码」「支付完成后直接跳转」，选前者显示 引流渠道码(select 全宽) / 二维码主标题（占位「留空沿用：报名成功」）/ 二维码副标题（占位「留空沿用：扫码添加企微领取后续资料」），选后者显示 completion_target 区：跳转类型（H5 跳转地址 · 动态 URL Link 接口）/ H5 跳转地址 / 动态 URL Link 接口 / 响应字段（默认 url_link），校验失败时在区块底部显示红字 warning；④ 外部推送＝同样一个 switch，开后是 推送地址 / remark（这里就叫 remark，不要改成「备注」）/ push_type / expires_at_ts / day / frequency + custom_params 的 key-value 行 + 新增参数 / 测试推送 两个次按钮 + 结果 toast。周期商品没有「企微标签」卡，不要补。数据表相关的弹层（新建视图 / 视图名称 / 分享数据 / 邀请协作者 / 外部分享）属于 service_period_member_grid.html，本次未出稿，改造时沿用现有结构。' },
+        { name: '优惠券（一级）', file: 'coupons/templates/admin_console/coupon_list.html', note: '七列不变；减免金额用 #D83931 加粗；操作列三个文字按钮（编辑 / 数据 / 分享）。' },
+        { name: '优惠券 新建 / 编辑（二级）', file: 'coupons/templates/admin_console/coupon_form.html', note: '四个 h2 分节改成四张卡；适用商品改成可删列表行；「使用有效期」保留 fieldset + legend，单选改自定义圆点；右侧新增只读「用户端预览」卡（纯 CSS，不取接口）。' },
+        { name: '图片素材库（一级）', file: 'admin_console/image_library.html', note: '工具条：搜索 + 标签 chip 组 + 含已停用 + 重置 + 上传；网格 4 列，卡片 = 104px 缩略图 + 文件名 + 尺寸/体积 + 标签 chip。' },
+        { name: '自动化话术（一级）', file: 'ai/automation_agents/templates/admin_console/automation_agent_list.html', note: '卡头右侧两个主按钮：新增 Agent、新增固定话术。五列不变（现有表头「自动化类类型」是错字，改为「自动化类型」）；自动化名称格内补一行等宽 agent code；自动化类型与固定素材各用一枚中性 chip（「Agent 机器人」「0 图片 / 0 小程序 / 0 PDF / 0 群邀请」）；状态用启用中 / 已停止成对色；行操作四个：编辑 / 复制 / 停止 / 删除（删除为浅红描边）。' },
+        { name: 'Agent / 固定话术 编辑（二级）', file: 'admin_console/automation_agent_edit.html', note: '面包屑 客户管理后台 / 配置及后台 / Agent / 编辑。<strong>采用与渠道码编辑一致的分块结构</strong>（原来四张卡挤在一屏，可读性差）：顶部摘要卡＝Agent 名称 + 状态 chip + 返回自动化列表 / 保存，下面四格摘要（自动化类型 / 状态 / 绑定人群包 / Prompt 版本）；下方左侧 226px 维度栏（1 基本信息 · 2 绑定人群包 · 3 Prompt 配置 · 4 固定素材，样式与渠道码步骤栏完全相同），右侧一次只渲染当前一块。① 基本信息＝Agent 名称 / 自动化类类型 / 状态；② 绑定人群包＝只读输入框 + 「绑定关系请在人群包详情的『自动化话术能力』中管理。」；③ Prompt 配置＝角色提示词 role_prompt 与任务提示词 task_prompt 各自独立成子卡（文本域 + 四个插入变量按钮）+「当前字段依赖自动识别」四枚 chip + 底部版本行（<code>草稿版本：vN</code> / <code>已发布版本：vN</code> 两枚 chip + 保存草稿 / 发布 / 载入已发布版本，顺序照原样）；④ 固定素材＝右上主按钮「配置固定素材」+ 虚线空态「暂无配置固定素材」；点开是弹层「配置固定素材」，标题右侧计数 pill <code>已选 n 图片 / n 小程序 / n PDF / n 客户群</code>，左栏四个添加按钮 +图片 · +小程序 · +附件 · +选择群聊 与「已选素材列表」（空时「还没有选择素材」），右栏「发送任务预览」（Agent 类型时显示「AI 文本由 Agent 动态生成」），底部 取消 / 保存素材。字段、按钮、文案与接口一个不增不减。类型选「固定话术」时，左下卡换成「固定话术 · 话术正文」文本域，其余结构不变。' },
+        { name: '配置（一级）', file: 'admin_console/config_center.html', note: '顶部一条信息提示；四列表格不变；状态徽标 + 开关同排，配置入口为文字按钮。' },
+        { name: '配置中心子页（二级）', file: 'admin_console/config_category_detail.html', note: '标题 / 状态 / 开关移到页头；字段表保留 th + td 两列结构，th 宽 220px、#FAFBFC 底；密钥字段占位写「已设置 / 未设置」；底部动作条右对齐，取消 / 检查 / 保存。' },
+        { name: '自动化运营（一级）＝ AI 自动化运营 · 人群包', file: 'extensions/ai/ai_audience_ops/templates/admin_console/ai_audience_package_list.html', note: '/admin/automation-conversion 这一页的真身是「AI 自动化运营」人群包页，不是快捷入口。左 270px 粘顶卡＝人群包分组（标题 + 新增 + 「共 N 个自定义分组」+ 分组行：名称 + 右侧包数，选中 #EEF4FF + #528BFF 描边 + #1849A9 文字）；右卡＝卡头（当前组名 + 「N 个人群包 · 每页 20 个」+ 编辑组名 / 删除组，虚拟分组时两个按钮隐藏）+ 四列表格（人群包名称 / 人数 / 最后一次刷新时间 / 刷新方式 / 操作）+ 底部分页（「第 X / Y 页，共 N 个」+ 上一页 / 下一页）。人群包名称格内是「状态圆点 + 蓝色可点名称」两行结构，下面挂一枚 template_label 胶囊（默认「历史配置」）；刷新方式手动为灰胶囊、其余为蓝胶囊；操作五个按钮顺序不能改：编辑（soft 蓝）/ 复制 / 停止或启用 / 删除（红）/ 群发（主色实心）。表格外层保留 overflow-x:auto + min-width，窄屏横滑而不是压缩列。新增 / 编辑分组弹层＝标题 + 「分组名称」输入 + 取消 / 保存。' },
+        { name: '运营闭环（一级）', file: 'admin_shell/operation_cycles_list.html', note: '一张「任务列表」卡 + 卡头右侧「共 N 个」。三列：任务名称（状态圆点 + 标题 + cadence 副行）/ 本周进度（把 progress.steps 渲染成一排 8px 圆点 + 12px 文字，done 绿 / active 主色 / todo #C4C7CC）/ 操作（当前动作主按钮 + 查看详情文字链）。current_action.enabled 为假时按钮置灰并保留 disabled_reason 作 title。空态保留原文案「暂无运营任务 / 策略完成首次上报后会显示在这里。」。' },
+        { name: '群运营计划（一级）', file: 'automation_engine/group_ops/static/admin_console/group_ops.js · renderList()（模板 group_ops.html 只是容器）', note: '页面全部由 group_ops.js 渲染，改样式改 group_ops.css 与 JS 里的类名，不动 data-page-mode / data-plan-id。顶部一行两个按钮：查看所有群（次）、创建计划（主，展开内联创建面板：计划名称 / 计划类型 标准编排计划·Webhook 接收计划 / 运营成员选择器 + 保存计划·取消）。四张 metric 卡文案照原样：运营计划 · 已绑定群 · 今日预估 · 通知排队队列。表格七列不多不少：计划名称 / 类型 / 运营成员 / 绑定群 / 今日预估 / 状态 / 操作；状态 active 为绿 chip、其余中性 chip；行操作三个：编辑（主色，跳详情）/ 停用或启用 / 删除（红）。空态 colspan=7「暂无数据」。' },
+        { name: '群运营计划 · 计划详情（二级）', file: 'group_ops.js · renderDetail / renderDetailNav / renderBasicPanel / renderNodes / renderWebhook', note: '顶部摘要卡＝计划名 h2 + 返回列表 / 保存当前维度，下面四格 statCard：运营成员 · 绑定群 · 外部联系人 · 状态。左侧 226px 维度导航就是 renderDetailNav 的四项，序号与文案照原样：1 基础配置 · 2 绑定群 · 3 Webhook · 4 标准编排（当前项 #EFF4FF 底 + 主色实心序号）。① 基础配置＝运营成员（整行，用 operation_member_picker，按钮文案「更换运营成员」）/ 状态（草稿·启用·停用）/ 计划名称 / 计划类型（标准编排计划·Webhook 接收计划）+ 底部「刷新该成员的群」与「保存基础配置」，标题右侧一枚「可保存」胶囊。② 绑定群＝标题右侧「选择群」+ 已绑定群列表。③ Webhook＝标准编排计划时整块替换为空态「标准编排计划无需配置 Webhook」；Webhook 计划时是 POST chip + webhook_url + 复制地址 + 「认证方式 HTTP Message Signatures」。④ 标准编排＝六列表：第几天 / 发送时间 / 动作标题 / 标准话术摘要 / 素材标签 / 操作；动作弹层字段为 第几天 / 发送时间(select) / 动作标题 / 排序 / 状态(启用·草稿) + 右侧 send_content_composer 内容区。所有群/群聊选择沿用 group_chat_picker，不要自造字段。' },
+        { name: 'AI 助手（一级）＝ 运营计划审阅', file: 'admin_console/cloud_plan_review.html（page_mode=list）+ static/admin_console/cloud_plan_review.js', note: '页面标题「AI 助手 · 运营计划审阅」。① 工具条：搜索框（占位「搜索计划名称、发送人」）+ 状态下拉（全部状态 / 待审批 / 已批准 / 已拒绝 / 执行中）+ 刷新。② 四张统计卡，文案与顺序照原样：待审批计划 / 今日预计触达 / 执行中计划 / 一级页加载人员，数字 24px/600。③ 列表沿用原来的 cloud-plan-row 六列网格（不是 table）：计划名称 minmax(280px,1.6fr) / 创建人 / 发送人 / 更新时间 / 目标人数 / 状态 / 查看详情，表头行为无边框灰字；每行一张 8px 圆角白卡；计划名称含长 external_userid，要 word-break 换行不省略；状态 chip 三色：已批准绿 / 已拒绝红 / 待审批橙。980px 以下按原 media query 退化为单列并隐藏表头。不要加统计图表、不要动「查看详情」入口。' },
+        { name: 'AI 助手 · 计划详情（二级，本次未出稿）', file: 'cloud_plan_review.html（page_mode=detail）', note: '结构已确认，改造时照此保留：顶部操作条（状态文案 + 确认并发送 / 拒绝计划 / 返回一级页）；下方 280px 左栏「计划信息」六个字段（计划名称 / 计划编号 / 发送人 / 更新时间 / 目标人数 / 状态）+ 右侧「目标人员」表六列（目标人员 / 发送人 / 更新时间 / 话术次数 / 发送状态 / 操作）+ 底部加载条（「已加载 N / M 人」+ 进度条 + 继续加载 50 人）；右侧抽屉 620px：人员详情四字段（目标人员名称 / external_userid / 发送人 / 共几次话术任务）+ 批准这个人发送 / 拒绝这个人 + 话术任务卡。' },
+        { name: '漏斗 / 数据看板（一级）', file: 'admin_console/hxc_dashboard.html（Tabulator 6.3）· hxc_send_config.html', note: '整页就是一张 admin-card：卡头「漏斗状态汇总」+ 副标题原文「每行 = 1 个手机号; "仅激活未打开" 是重点拉回人群.」+ 右上「立即刷新」。stat 卡是五张（不是四张），文案与副行照原样：总数 (基础人群)/CRM 三表手机号并集、已激活并打开/会员开通 + 真打开过小程序、仅激活未打开 (拉回重点)/有会员资格 / 从未登录、注册但无会员/异常: 登录过但会员缺失、未激活/在 CRM 但未开通。工具条：全局搜索（占位「全局搜索 (姓名/昵称/手机尾号/企微 ID...)」）+ 群发选中用户（主）+ 发送人管理（链接到 /admin/hxc-send-config）+ 导出 CSV (筛选后) + 导出 Excel + 右侧「上次刷新: … · 状态: …」。表格是 Tabulator 共 37 列，movableColumns、每列带 headerFilter，只改皮不改列：前三列冻结＝脱敏手机号(120) / 客户名(120) / 漏斗状态(130，居中，funnelTag 彩色 chip)，之后依次为 企微外部联系人ID(200) / 企微跟进人(140) / 在销售线索池(100) / 在人员主表(90) / 填过激活问卷(100) / 填过的问卷名称(220) / 问卷提交次数(100) / 最近一次提交问卷(140) / 是否已加企微(90) / 是否已绑手机(90) / 班期标签(120) / 首次入口来源 / 最近入口来源 / CRM 标注激活态 / CRM 建档日期 / 已激活会员 / 已注册打开 / 黄小璨昵称 / 用户会员状态 / 会员类型 / 会员剩余天数 / 咨询使用·上限 / 会员开通来源 / 沉默天数 / 黄小璨注册时间 / 黄小璨最后登录 / 对话会话数 / 咨询会话数 / 日课会话数 / 用户消息数 / AI 回复数 / 完成咨询数 / 咨询平均轮次 / 最后活跃时间。二值列用 tick formatter（✓ 绿 / ✗ 灰）居中；筛选控件四类保持不变：文本 input、单选 list、多选 multiSelectEditor、数字与日期区间。表格高度沿用 calc(100vh - 360px)。' },
+        { name: '发送人管理（子页）', file: 'admin_console/hxc_send_config.html', note: '七列原样保留：成员 / 企微 UserID / 职位 / 发送人 / 优先级 (越小越优先) / 状态 / 操作；页头保留「← 返回漏斗看板」。' },
+        { name: '内容雷达（一级）', file: 'radar/radar_links/templates/admin_console/radar_links.html', note: '八列全保留：内容名称 / 类型 / 状态 / PV / UV / 查看 / 最近查看 / 操作。PV·UV·查看右对齐等宽；类型用中性蓝 chip，状态启用 / 停用成对色；行操作四个：详情 / 复制链接 / 编辑 / 删除。页头一个主按钮「新建雷达链接」。' },
+        { name: '企微标签管理（一级）', file: 'crm/customer_tags/templates/admin_console/config_wecom_tags.html', note: '一张「标签库与标签组」卡，内部 220px 左栏（标签组列表，选中 #EFF4FF + 主色 + 右侧计数）+ 右栏（当前组名 + 重命名 / 新建标签 + 四列表格：标签名 / 使用人数 / 最近同步 / 操作）。页头两个按钮：同步企微标签（次）、新建标签组（主）。标签名列给固定宽度，避免中文竖排。' },
+        { name: '商品管理（一级）', file: 'commerce/commerce/templates/wechat_products.html', note: '卡头左侧 <code>productToast</code>「共 N 个商品」+ 右侧主按钮「创建商品」。七列原样：商品编码（等宽）/ 商品名称 / 价格（<code>金额 CNY</code>，这里没有天数）/ 状态（已上架·草稿·已下架）/ 已售卖数量 / 更新时间 / 操作。行操作五个：编辑 · 分享 · 复制 · 上架下架 · 删除（比周期商品少一个「数据」，不要补）。表 min-width 1040px。' },
+        { name: '商品 创建 / 编辑（二级）', file: 'wechat_products.html（product_page_mode = new / edit）', note: '结构与周期商品编辑页同构（摘要卡 + 226px 维度导航 + 右单面板），差别只在多一个维度和多一个 mini。摘要卡：标题（创建商品 / 编辑商品）+ 等宽 <code>summaryProductCode</code> + 返回列表 · 复制链接 · 打开预览 · 保存当前维度，五个 mini：价格 · 商品状态 · 页面素材 · 企微标签 · 外部推送。维度导航五项：1 售卖信息 · 2 页面素材 · 3 购买后动作 · 4 企微标签 · 5 外部推送，每个 panel 底部各自的保存按钮。字段与顺序一个不动：① 售卖信息＝商品名称 / 价格 / 购买按钮文案 / 手机号要求(select) / 商品状态(select) / 商品编码 / 商品描述(textarea)；② 页面素材＝上传图片主按钮 + 104px 缩略图排列 + 虚线「＋ 上传」位；③ 购买后动作＝「购买后展示引流二维码」开关行 + 引流渠道码(select) / 二维码主标题（占位「留空沿用：报名成功」）/ 二维码副标题（占位「留空沿用：扫码添加企微领取后续资料」），再一条「购买后跳转」开关行 + 跳转类型 / H5 跳转地址 / 动态 URL Link 接口 / 响应字段（默认 url_link）；④ 企微标签＝标题右侧 switch，开后是已选标签区（<code>wecomTaggingSelected</code>，空时「暂未选择标签」）+ 主按钮「选择企微标签」+ 次按钮「清空」+ 原文说明「用户报名并支付成功后，系统会给其企微外部联系人打上所选标签。用户未在企微中、没有外部联系人 ID 或没有有效跟进关系时，会直接跳过且不进入重试队列。」；⑤ 外部推送＝switch + 推送地址 / 备注（商品这里叫「备注」，周期商品叫 remark，两边各自照旧）/ push_type / expires_at_ts / day / frequency + custom_params 的 key-value 行（含删除 / 新增参数）。表单一律左标签上、控件下，两列网格。' },
+        { name: '小程序素材库（一级）', file: 'admin_console/miniprogram_library.html', note: '四列卡片网格：112px 缩略图 + 卡片标题（mp-card-title）+ 企微缓存状态行（「● 企微缓存已就绪」绿 / 「● 缩略图未上传企微」橙，文案沿用模板）+ 三个文字操作。工具条只有搜索 + 重置，页头「新建小程序卡片」。缩略图三种来源（从图片素材库选 / 上传 / 外链）的选择器沿用现有 JS。' },
+        { name: '附件素材库（一级）', file: 'admin_console/attachment_library.html', note: '页头「上传附件」主按钮；列表五列：附件名（26px PDF 方标 + 名称）/ 类型 / 大小 / 上传时间 / 操作（发送测试 / 重命名 / 删除）。空态文案保持原文「还没有附件素材。点左上角「上传附件」添加一条。」，改成虚线卡。' },
+        { name: '负责人迁移（一级）', file: 'admin_console/owner_migration.html', note: '四个原有分节改四张卡，序号沿用 ① ② ③ ④：① 选择人员与话术（原负责人 / 目标负责人 用「选择客服」选择器 + 同时发起企微转接勾选 + 转接欢迎语）；② 选择迁移范围（Excel 指定名单 / 原负责人全部客户 两个单选 + 上传 Excel + 上传并解析 + 原提示「支持 xlsx/xls/csv；上传时会携带当前选择的原负责人、目标负责人、企微转接和欢迎语。」）；③ 预览结果（数据面 / 预计影响 两列表 + 行号 / external_userid / 客户备注名 / Excel 标记 / 当前归属 / 状态 / 原因 七列表，状态用 可迁移·跳过·失败 三色 chip，原因列不做省略）；④ 二次确认与执行（确认勾选 + 导出预览结果 / 执行迁移）。卡片最大宽 1000px。' },
+        { name: 'API 文档（一级）', file: 'admin_console/api_docs.html', note: '左 200px 模块栏 + 右侧两张卡：接口列表（方法 / 路径 / 说明 / 认证 / 模块，方法用 GET 绿 · PUT 蓝 · POST 紫 chip，路径等宽）与参数表（参数名 / 类型 / 必填 / 说明，必填「是」用 #D83931）。给路径与说明列固定宽度，避免说明列被挤成竖排。' },
+      ],
+      h5: [
+        { name: '企微侧边栏 · 壳与核心画像', file: 'templates/sidebar_customer_workbench.html + static/sidebar_workbench/sidebar_workbench.css/.js', note: '<strong>本轮重点：提高信息密度。</strong>① 顶部客户卡：姓名 + 手机号已绑定 / 未绑定 chip + 换手机号 压到一行；手机号与外部联系人 ID 合并成一行 11px 灰字（原来两行）；workflow.title 仍是独立胶囊。② tabs 由 3 列换行网格（7 项 = 3 行 ≈ 110px）改成单行横滑 28px 胶囊（≈32px），首屏净赚约 78px；未 ready 时非「核心画像」项仍 disabled。③ panel 内边距 10→8、卡片圆角 15→8、卡间距 10→7。④ 核心画像四个字段（用户来源 / 行业信息 / 行业具体描述 / 需求、卡点、跟进状态）保持 textarea + 520ms 防抖 PUT /api/sidebar/v2/profile，字段名不变。' },
+        { name: '企微侧边栏 · 周期订单（密度重点）', file: 'sidebar_workbench.js · periodicOrderCards()', note: '同样 7 个指标 + 备注，纵向从 268px 压到 176px。标题 / 剩余天数 chip / 金额同一行；订单号 · 支付时间 · 周期合并成一行等宽灰字；正式登录 / token 消耗 / 学习计划进度 / 近 7 天打开次数 / 最后打开时间 改 3 列指标网格（7 行 → 3 行），标签 10px 灰 + 值 12px/600；备注从 3 行 textarea 改单行输入，仍走 PUT /api/sidebar/v2/periodic-orders/{id}/remark 与 520ms 防抖；详情按钮与备注同行。字段一个不减。' },
+        { name: '企微侧边栏 · 问卷 / 商品 / 普通订单 / 优惠券', file: 'sidebar_workbench.js · renderQuestionnaires / renderProducts / regularOrderCards / renderCoupons', note: '问卷卡：标题 + n/m 题 chip + 查看答案按钮同一行，提交时间独立灰行，展开区保留虚线分隔与 question/answer 结构。商品卡：标题 + 价格 + 发送同一行，周期性商品的「有效期 N 天」作副行。普通订单：状态 chip 与金额上行，单号 · 时间 + 详情按钮下行（原来 kv 两行）。优惠券：名称 + 折扣 chip + 复制链接一行，适用商品 / 领取截止改 2 列指标格。' },
+        { name: '企微侧边栏 · 素材 / 雷达 / 其他客服聊天', file: 'sidebar_workbench.js · renderMaterials / renderRadarLinks / renderOtherStaffMessages', note: '素材：seg（图片素材 / 雷达链接）+ 搜索表单 + 最多 5 个快捷关键词胶囊；图片行 56px 缩略图（原 64）+ 标签区 + 44px 发送按钮，懒加载与「等待加载 / 正在生成 / 正在重试 / 点击重试 / 预览不可用」状态文案全部保留。雷达行：类型方标 + 两行标题 + 复制。其他客服聊天：msg 卡三行（时间·场景 / 标题 / 正文），图片消息保留 36px 图标行，仍只取最近 20 条 text·image。' },
+        { name: '企微侧边栏 · 状态与弹层', file: 'sidebar_workbench.js · WORKBENCH_STATES / renderRetryPanel / renderOwnerPendingWorkbench', note: '识别中 / 加载中＝顶部卡显示「识别中」+ 灰 chip「加载中…」+ panel 内三行骨架 + 「正在识别当前客户…」。未识别到客户＝红底提示卡，文案保持「企微 SDK 暂不可用，请确认从企微侧边栏打开，或带 external_userid 参数重试。」+ 重试按钮。员工身份待确认＝橙底卡，原文案保留，换手机号按钮 disabled、其他 tab 不可点。更换手机号弹层：白卡 12px 圆角 + 手机号输入（占位「请输入 11 位手机号」）+ 取消 / 保存，仍走 /api/sidebar/bind-mobile。' },
+        { name: '问卷 · 微信授权拦截', file: 'templates/questionnaire_h5_page.html（mode=auth_gate）', note: '去掉双径向渐变背景，改 #F5F6F7 纯底 + 白卡；胶囊 eyebrow #EFF4FF/#3370ff；主按钮改 12px 圆角实心（不要渐变按钮和大投影）；环境提示改 #FFF7E8 提示条 + 图标。' },
+        { name: '问卷 · 整卷平铺', file: 'questionnaire_h5_page.html（all_in_one）', note: 'hero 卡 + 每题一张白卡（14px 圆角）；选项 = #F7F8FA 底 12px 圆角行，选中 #F2F7FF + 1px 主色 + 3px 主色 8% 光晕；单选圆点 / 多选圆角方块统一 18px；「其它」输入框贴在选项组下方；提交按钮 48px 主色。' },
+        { name: '问卷 · 逐题作答', file: 'questionnaire_h5_page.html（one_by_one）', note: '进度头 = 问卷名 + 「第 N / M 题」主色；进度条 6px 圆角，主色实心；题干 19px/600；底部固定两按钮（0.8fr / 1.2fr），上一题为白底描边。自动进入下一题的 450ms 逻辑不改。' },
+        { name: '问卷 · 加载态', file: 'questionnaire_h5_page.html', note: '把「正在加载问卷...」纯文字改为三张骨架卡（#EBEDF0 / #F2F3F5 两级 + 1.4s 呼吸），导航标题同步显示加载文案。' },
+        { name: '问卷 · 校验 / 提交报错', file: 'questionnaire_h5_page.html', note: '顶部 #FDECEE 报错条（沿用 setState 文案）；出错题卡描边改 #F98E8B 并在下方补一行 13px 红字原因；提交中按钮置灰 #A8C3FF；底部补请求 ID，文案保持人话。' },
+        { name: '问卷 · 测评结果', file: 'templates/questionnaire_h5_result.html', note: '整页从暖色 #f7f3ee 体系换成 #F5F6F7 + 白卡；hero 改深蓝渐变卡（#16233A→#2C55A8），总分 44px/700；优势短板 chip 用成功 / 提醒两色；维度详情每项加一条进度条；推荐动作 CTA 用主色按钮。' },
+        { name: '问卷 · 已提交 + 二维码', file: 'templates/questionnaire_h5_submitted.html', note: '去渐变背景；加 56px 成功图标圆；标题 26px；二维码 200px + 10px 内白边 + 1px 描边，下方一行说明。' },
+        { name: '报名页 · 未开通', file: 'service_period/public.py · render_service_period_public_page', note: 'hero 渐变由 #121a2b→#2e3851 换成 #16233A→#25406E→#2C55A8；状态卡上移 -16px 压住 hero，加 4px 16px 阴影；价格 36px/700 + tabular-nums；详情图之间留 8px 间距、12px 圆角；底部栏保持 1fr/132px 网格，按钮 50px 圆角 12px。' },
+        { name: '报名页 · 生效中', file: 'public.py（status=active）', note: 'hero 徽标改「服务中」+ 绿点；剩余天数 40px/700，下方补一条剩余比例进度条（纯展示，用 remaining_days / duration_days 计算，不新增接口）；「添加企微账号」按钮改 #EFF4FF 底 + #A9C3FF 描边胶囊。' },
+        { name: '报名页 · 已过期', file: 'public.py（status=expired）', note: 'hero 改中性深灰渐变（#2A2E36→#3B4250），徽标「已过期」；卡内「已过期」30px #646A73；详情图降饱和；按钮文案沿用 cta_text。' },
+        { name: '报名页 · 支付落地 + 企微弹层', file: 'public_product/service.py · render_pay_landing / render_lead_qr_modal', note: '落地页 = 商品条 + 金额三行（商品金额 / 优惠券 / 实付）+ 支付方式单选 + 底部实付与立即支付；实付 #D83931。二维码弹层：遮罩 rgba(20,24,31,.55)，白卡 16px 圆角，二维码 206px，底部关闭按钮 44px。' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

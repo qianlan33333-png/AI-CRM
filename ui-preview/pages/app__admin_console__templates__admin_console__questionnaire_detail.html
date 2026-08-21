@@ -1,0 +1,691 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Questionnaire Detail · 客户管理后台</title>
+  <link rel="stylesheet" href="../static/admin_console/admin_console.css?v=operation-member-picker-fix-20260527&amp;design=lark-20260803">
+  <script src="../static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
+  <script src="../static/admin_console/image_resource_loader.js?v=resource-governance-v2-pending-retry"></script>
+  
+<style>
+  .target-card {
+    max-width: 760px;
+    border: 1px solid #e5e6eb;
+    border-radius: 12px;
+    background: #ffffff;
+    padding: 20px;
+  }
+  .target-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 18px; }
+  .target-title { margin: 0; font-size: 18px; font-weight: 800; }
+  .switch { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; color: #1f2329; font-weight: 700; font-size: 14px; cursor: pointer; }
+  .switch input { width: 18px; height: 18px; }
+  .target-body[hidden],
+  [data-h5-url-fields][hidden],
+  [data-url-link-fields][hidden] { display: none !important; }
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .target-card .field { display: grid; gap: 7px; }
+  .target-card .field.full { grid-column: 1 / -1; }
+  .target-card .field label { color: #1f2329; font-size: 13px; font-weight: 700; }
+  .target-card .field small { color: #86909c; line-height: 1.5; }
+  .target-card input, .target-card select, .target-card textarea {
+    width: 100%;
+    min-height: 40px;
+    border: 1px solid #e5e6eb;
+    border-radius: 8px;
+    padding: 9px 10px;
+    background: #fff;
+    color: #1f2329;
+    font: inherit;
+    outline: none;
+  }
+  .target-card textarea { min-height: 72px; resize: vertical; }
+  .target-card input:focus, .target-card select:focus, .target-card textarea:focus {
+    border-color: #3370ff;
+    box-shadow: 0 0 0 3px rgba(51, 112, 255, .12);
+  }
+  .warning { margin-top: 12px; color: #f53f3f; font-size: 13px; line-height: 1.6; }
+  @media (max-width: 720px) {
+    .field-grid { grid-template-columns: 1fr; }
+    .target-head { flex-direction: column; }
+  }
+</style>
+
+  <script defer src="../static/admin_console/admin_console.js?v=lark-design-package-20260803"></script>
+  <script defer src="../static/admin_console/operation_member_picker.js?v=operation-member-picker-wecom-sync-20260709"></script>
+</head>
+<body class="admin-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="admin-brand-mark">CRM</div>
+        <div class="admin-brand-copy">
+          <div class="admin-brand-title">客户管理后台</div>
+          <div class="admin-brand-subtitle">ADMIN CONSOLE</div>
+        </div>
+      </div>
+
+      <nav class="admin-nav" aria-label="客户管理后台导航">
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">运营</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化运营"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_conversion.svg" alt="">
+              <span class="admin-nav-label">自动化运营</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="运营闭环"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/operation_cycles.svg" alt="">
+              <span class="admin-nav-label">运营闭环</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="群运营计划"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/group_ops.svg" alt="">
+              <span class="admin-nav-label">群运营计划</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="渠道码中心"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/channels.svg" alt="">
+              <span class="admin-nav-label">渠道码中心</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="AI 助手"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/cloud_orchestrator.svg" alt="">
+              <span class="admin-nav-label">AI 助手</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="客户激活 / 客户列表"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/customers.svg" alt="">
+              <span class="admin-nav-label">客户激活 / 客户列表</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="漏斗 / 数据看板"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/user_ops_funnel.svg" alt="">
+              <span class="admin-nav-label">漏斗 / 数据看板</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="问卷"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/questionnaires.svg" alt="">
+              <span class="admin-nav-label">问卷</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="内容雷达"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/radar_links.svg" alt="">
+              <span class="admin-nav-label">内容雷达</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="企微标签管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wecom_tags.svg" alt="">
+              <span class="admin-nav-label">企微标签管理</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">交易</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="交易管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_transactions.svg" alt="">
+              <span class="admin-nav-label">交易管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_products.svg" alt="">
+              <span class="admin-nav-label">商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="周期商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/service_period_products.svg" alt="">
+              <span class="admin-nav-label">周期商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="优惠券"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/coupons.svg" alt="">
+              <span class="admin-nav-label">优惠券</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">素材</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="图片素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/image_library.svg" alt="">
+              <span class="admin-nav-label">图片素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="小程序素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/miniprogram_library.svg" alt="">
+              <span class="admin-nav-label">小程序素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="附件素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/attachment_library.svg" alt="">
+              <span class="admin-nav-label">附件素材库</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">配置及后台</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化话术"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_agents.svg" alt="">
+              <span class="admin-nav-label">自动化话术</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="负责人迁移"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/owner_migration.svg" alt="">
+              <span class="admin-nav-label">负责人迁移</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="配置"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/config.svg" alt="">
+              <span class="admin-nav-label">配置</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="API 文档"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/api_docs.svg" alt="">
+              <span class="admin-nav-label">API 文档</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+      </nav>
+
+      
+      <div class="admin-sidebar-user">
+        <div class="admin-sidebar-user__avatar">
+          示
+        </div>
+        <div class="admin-sidebar-user__meta">
+          <div class="admin-sidebar-user__name">
+            示例管理员
+          </div>
+          <a class="admin-sidebar-user__logout" href="#">退出登录</a>
+        </div>
+      </div>
+      
+    </aside>
+
+    <div class="admin-main-wrap">
+      
+      
+      
+      
+      
+      
+      <header class="admin-topbar">
+        
+        <div class="admin-topbar-head">
+          <nav class="admin-breadcrumbs" aria-label="当前位置">
+            
+            
+            <a href="#">客户管理后台</a>
+            
+            
+          </nav>
+          <div>
+            <h1 class="admin-page-title">Questionnaire Detail</h1>
+            <p class="admin-page-summary">页面功能预览（示例数据）</p>
+          </div>
+        </div>
+        
+
+        
+      </header>
+      
+
+      <main class="admin-page">
+        
+        <section class="admin-alert admin-alert--success">示例</section>
+        
+        
+        <section class="admin-alert admin-alert--error">示例</section>
+        
+        
+<section class="admin-card">
+  <div class="admin-card-head">
+    <div>
+      <h2>访问与状态</h2>
+      <p>这里可以查看问卷访问地址、提交情况和当前启用状态。</p>
+    </div>
+    <div class="admin-toolbar">
+      <a class="admin-button admin-button--secondary" href="示例">打开问卷</a>
+      <a class="admin-button admin-button--ghost" href="示例">打开提交成功页</a>
+      <a class="admin-button admin-button--ghost" href="/api/admin/questionnaires/示例/export">导出提交</a>
+    </div>
+  </div>
+  <section class="admin-stat-inline-grid">
+    <article class="admin-mini-stat">
+      <div class="admin-card-label">访问地址</div>
+      <div class="admin-mini-stat-value"><code>示例</code></div>
+    </article>
+    <article class="admin-mini-stat">
+      <div class="admin-card-label">提交成功页</div>
+      <div class="admin-mini-stat-value"><code>示例</code></div>
+    </article>
+    <article class="admin-mini-stat">
+      <div class="admin-card-label">提交总数</div>
+      <div class="admin-mini-stat-value">示例</div>
+    </article>
+    <article class="admin-mini-stat">
+      <div class="admin-card-label">最近提交</div>
+      <div class="admin-mini-stat-value">示例</div>
+    </article>
+  </section>
+</section>
+
+<section class="admin-grid-2">
+  <article class="admin-card">
+    <div class="admin-card-head">
+      <div>
+        <h2>问卷内容</h2>
+        <p>在这里维护问卷的基本信息、题目和评分规则。</p>
+      </div>
+    </div>
+    <form method="post" action="#" class="admin-form-stack">
+      <label class="admin-field"><span>名称</span><input type="text" name="name" value="示例"></label>
+      <label class="admin-field"><span>访问标识</span><input type="text" name="slug" value="示例"></label>
+      <label class="admin-field"><span>标题</span><input type="text" name="title" value="示例"></label>
+      <label class="admin-field"><span>说明</span><textarea name="description" rows="3">示例</textarea></label>
+      <input type="hidden" name="redirect_url" value="示例">
+      <input type="hidden" name="completion_target" id="completion-target-json">
+      
+      <section class="target-card" data-completion-target-config>
+        <div class="target-head">
+          <div>
+            <h2 class="target-title">提交后跳转</h2>
+          </div>
+          <label class="switch">
+            <input type="checkbox" name="completion_target_enabled" data-target-enabled checked>
+            启用
+          </label>
+        </div>
+
+        <div class="target-body" data-target-body hidden>
+          <div class="field-grid">
+            <div class="field full">
+              <label>跳转类型</label>
+              <select name="completion_target_type">
+                <option value="h5" selected>H5 跳转地址</option>
+                <option value="url_link">动态 URL Link 接口</option>
+              </select>
+            </div>
+            <div class="field full" data-h5-url-fields>
+              <label>H5 跳转地址</label>
+              <input name="completion_h5_url" placeholder="https://example.com/landing 或 /internal/path" value="示例">
+              <small>提交成功后直接进入该 H5 地址。</small>
+            </div>
+            <div class="field full" data-url-link-fields>
+              <label>动态 URL Link 接口</label>
+              <input name="completion_url_link_source_url" placeholder="https://ip.lhbl.com.cn/api/wxlink?from=qianlan_pay" value="示例">
+              <small>提交成功后先访问该接口，从 JSON 里取微信官方 URL Link 后再跳转。</small>
+            </div>
+            <div class="field" data-url-link-fields>
+              <label>响应字段</label>
+              <input name="completion_url_link_response_key" placeholder="url_link" value="示例">
+            </div>
+          </div>
+          <div class="warning" data-validation-warning hidden></div>
+        </div>
+      </section>
+      <label class="admin-check-line">
+        <input type="checkbox" name="is_disabled" value="1" checked>
+        <span>保存后保持停用</span>
+      </label>
+      <label class="admin-field">
+        <span>题目内容</span>
+        <textarea name="questions_json" rows="14">示例</textarea>
+      </label>
+      <label class="admin-field">
+        <span>评分规则</span>
+        <textarea name="score_rules_json" rows="10">示例</textarea>
+      </label>
+      <button class="admin-button admin-button--primary" type="submit">保存问卷内容</button>
+    </form>
+  </article>
+
+  <article class="admin-card">
+    <div class="admin-card-head">
+      <div>
+        <h2>发布设置</h2>
+        <p>在这里控制问卷是否对外可用。</p>
+      </div>
+    </div>
+    <form method="post" action="#" class="admin-form-stack">
+      <input type="hidden" name="toggle_action" value="enable">
+      <button class="admin-button admin-button--primary" type="submit">
+        启用问卷
+      </button>
+    </form>
+    <div class="admin-card-copy">
+      状态：<strong>已停用</strong>
+    </div>
+    <details class="admin-details-block">
+      <summary>高级信息</summary>
+      <div class="admin-card-head admin-card-head--tight">
+        <div>
+          <h2>最近提交调试</h2>
+        </div>
+      </div>
+      
+      <pre class="admin-code-block">{}</pre>
+      
+    </details>
+  </article>
+</section>
+
+<section class="admin-card">
+  <div class="admin-card-head"><h2>最近提交</h2></div>
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>提交时间</th>
+          <th>客户编号</th>
+          <th>匹配方式</th>
+          <th>总分</th>
+          <th>最终标签</th>
+        </tr>
+      </thead>
+      <tbody>
+        
+        <tr>
+          <td>示例</td>
+          <td><code>示例</code></td>
+          <td>示例</td>
+          <td>示例</td>
+          <td>
+            <div class="admin-token-list admin-token-list--wrap">
+              
+              <span class="admin-token">示例</span>
+              
+              <span class="admin-token">示例</span>
+              
+              <span class="admin-token">示例</span>
+              
+            </div>
+          </td>
+        </tr>
+        
+        <tr>
+          <td>示例</td>
+          <td><code>示例</code></td>
+          <td>示例</td>
+          <td>示例</td>
+          <td>
+            <div class="admin-token-list admin-token-list--wrap">
+              
+              <span class="admin-token">示例</span>
+              
+              <span class="admin-token">示例</span>
+              
+              <span class="admin-token">示例</span>
+              
+            </div>
+          </td>
+        </tr>
+        
+        <tr>
+          <td>示例</td>
+          <td><code>示例</code></td>
+          <td>示例</td>
+          <td>示例</td>
+          <td>
+            <div class="admin-token-list admin-token-list--wrap">
+              
+              <span class="admin-token">示例</span>
+              
+              <span class="admin-token">示例</span>
+              
+              <span class="admin-token">示例</span>
+              
+            </div>
+          </td>
+        </tr>
+        
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="admin-card">
+  <div class="admin-card-head"><h2>提交处理结果</h2></div>
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>时间</th>
+          <th>提交编号</th>
+          <th>客户编号</th>
+          <th>状态</th>
+          <th>错误</th>
+        </tr>
+      </thead>
+      <tbody>
+        
+        <tr>
+          <td>示例</td>
+          <td>#示例</td>
+          <td><code>示例</code></td>
+          <td>示例</td>
+          <td>示例</td>
+        </tr>
+        
+        <tr>
+          <td>示例</td>
+          <td>#示例</td>
+          <td><code>示例</code></td>
+          <td>示例</td>
+          <td>示例</td>
+        </tr>
+        
+        <tr>
+          <td>示例</td>
+          <td>#示例</td>
+          <td><code>示例</code></td>
+          <td>示例</td>
+          <td>示例</td>
+        </tr>
+        
+      </tbody>
+    </table>
+  </div>
+</section>
+
+      </main>
+    </div>
+  </div>
+  <script id="aicrmAdminActionGrants" type="application/json">{}</script>
+  
+<script>
+  function mountCompletionTargetConfig(root) {
+    const enabledEl = root.querySelector('[data-target-enabled]');
+    const bodyEl = root.querySelector('[data-target-body]');
+    const warningEl = root.querySelector('[data-validation-warning]');
+    const typeEl = root.querySelector('[name="completion_target_type"]');
+    const h5UrlEl = root.querySelector('[name="completion_h5_url"]');
+    const sourceUrlEl = root.querySelector('[name="completion_url_link_source_url"]');
+    const responseKeyEl = root.querySelector('[name="completion_url_link_response_key"]');
+
+    function syncVisibility() {
+      bodyEl.hidden = !enabledEl.checked;
+      const isUrlLink = typeEl && typeEl.value === 'url_link';
+      root.querySelectorAll('[data-h5-url-fields]').forEach((el) => {
+        el.hidden = isUrlLink;
+      });
+      root.querySelectorAll('[data-url-link-fields]').forEach((el) => {
+        el.hidden = !isUrlLink;
+      });
+    }
+
+    root.collectCompletionTarget = function collectCompletionTarget() {
+      const enabled = enabledEl.checked;
+      const targetType = typeEl && typeEl.value === 'url_link' ? 'url_link' : 'h5';
+      const h5Url = targetType === 'h5' ? h5UrlEl.value.trim() : '';
+      const sourceUrl = sourceUrlEl ? sourceUrlEl.value.trim() : '';
+      const responseUrlKey = responseKeyEl ? responseKeyEl.value.trim() || 'url_link' : 'url_link';
+      const payload = {
+        enabled,
+        target_type: targetType,
+        open_strategy: targetType === 'url_link' ? 'url_link' : 'h5_redirect',
+        h5_url: h5Url,
+        fallback_url: '',
+        mini_program: {
+          appid: '',
+          username: '',
+          path: '',
+          query: '',
+          env_version: 'release'
+        },
+        url_link: {
+          enabled: targetType === 'url_link' && Boolean(sourceUrl),
+          url: '',
+          source_url: sourceUrl,
+          response_url_key: responseUrlKey
+        }
+      };
+      warningEl.hidden = true;
+      warningEl.textContent = '';
+      if (enabled && targetType === 'h5' && !h5Url) {
+        warningEl.textContent = '请填写 H5 跳转地址。';
+        warningEl.hidden = false;
+        throw new Error(warningEl.textContent);
+      }
+      if (enabled && targetType === 'url_link' && !sourceUrl) {
+        warningEl.textContent = '请填写动态 URL Link 接口。';
+        warningEl.hidden = false;
+        throw new Error(warningEl.textContent);
+      }
+      return payload;
+    };
+
+    enabledEl.addEventListener('change', syncVisibility);
+    if (typeEl) typeEl.addEventListener('change', syncVisibility);
+    syncVisibility();
+  }
+
+  document.querySelectorAll('[data-completion-target-config]').forEach((root) => {
+    mountCompletionTargetConfig(root);
+    const form = root.closest('form');
+    if (!form) return;
+    form.addEventListener('submit', (event) => {
+      try {
+        const target = root.collectCompletionTarget();
+        const hidden = document.getElementById('completion-target-json');
+        if (hidden) hidden.value = JSON.stringify(target);
+        if (target.target_type === 'h5') {
+          const redirectInput = form.querySelector('[name="redirect_url"]');
+          if (redirectInput) redirectInput.value = target.h5_url || '';
+        }
+      } catch (error) {
+        event.preventDefault();
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

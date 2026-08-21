@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Config Wecom Tags · 客户管理后台</title>
+  <link rel="stylesheet" href="../static/admin_console/admin_console.css?v=operation-member-picker-fix-20260527&amp;design=lark-20260803">
+  <script src="../static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
+  <script src="../static/admin_console/image_resource_loader.js?v=resource-governance-v2-pending-retry"></script>
+  
+<style>
+  .wecom-tags-shell { display: grid; gap: 14px; }
+  .wecom-tags-toolbar {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) minmax(240px, 320px);
+    gap: 14px;
+    align-items: stretch;
+  }
+  .wecom-tags-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+  .wecom-tags-search input {
+    width: 100%;
+    min-height: 42px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    padding: 9px 12px;
+    color: var(--text);
+    background: #fff;
+  }
+  .wecom-tags-capacity {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 11px 12px;
+    background: var(--bg-soft);
+  }
+  .wecom-tags-capacity-main { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--muted); }
+  .wecom-tags-capacity-main strong { color: var(--text); font-size: 16px; }
+  .wecom-tags-bar { height: 8px; margin-top: 9px; border-radius: 999px; background: rgba(73, 55, 29, 0.12); overflow: hidden; }
+  .wecom-tags-bar span { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--ok); transition: width 0.18s ease; }
+  .wecom-tags-bar.is-warn span { background: var(--warn); }
+  .wecom-tags-bar.is-danger span { background: var(--danger); }
+  .wecom-tags-layout {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+  }
+  .wecom-tags-groups {
+    max-height: calc(100vh - 330px);
+    min-height: 360px;
+    overflow: auto;
+    display: grid;
+    align-content: start;
+    gap: 8px;
+    padding-right: 4px;
+  }
+  .wecom-tags-group {
+    width: 100%;
+    display: grid;
+    gap: 4px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 11px 12px;
+    background: #fff;
+    color: var(--text);
+    text-align: left;
+    cursor: pointer;
+  }
+  .wecom-tags-group.is-active { border-color: var(--brand); background: var(--brand-soft); }
+  .wecom-tags-group-row { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+  .wecom-tags-group-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+  .wecom-tags-group-count { flex: 0 0 auto; color: var(--muted); font-size: 12px; }
+  .wecom-tags-table-actions { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+  .wecom-tags-table-actions .admin-button { min-height: 30px; padding: 5px 8px; font-size: 12px; }
+  .wecom-tags-empty {
+    padding: 28px 16px;
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--radius-md);
+    color: var(--muted);
+    text-align: center;
+    background: rgba(255,255,255,0.64);
+  }
+  .wecom-tags-feedback[hidden] { display: none; }
+  .wecom-tags-feedback { margin: 0; }
+  .wecom-tags-modal[hidden] { display: none; }
+  .wecom-tags-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 22px;
+    background: rgba(39, 29, 16, 0.38);
+  }
+  .wecom-tags-modal-card {
+    width: min(560px, 100%);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: #fff;
+    box-shadow: var(--shadow-hover);
+  }
+  .wecom-tags-modal-head,
+  .wecom-tags-modal-body { padding: 16px; }
+  .wecom-tags-modal-head { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); }
+  .wecom-tags-modal-head h3 { margin: 0; font-size: 18px; }
+  .wecom-tags-form { display: grid; gap: 12px; }
+  .wecom-tags-form label { display: grid; gap: 6px; font-size: 13px; font-weight: 700; }
+  .wecom-tags-form input,
+  .wecom-tags-form select {
+    width: 100%;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    padding: 10px 11px;
+    color: var(--text);
+    background: #fff;
+  }
+  .wecom-tags-detail { display: grid; gap: 8px; margin-bottom: 14px; }
+  .wecom-tags-detail-row { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .wecom-tags-detail-row span { overflow-wrap: anywhere; }
+  .wecom-tags-pager { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 12px; color: var(--muted); }
+  @media (max-width: 1080px) {
+    .wecom-tags-toolbar,
+    .wecom-tags-layout { grid-template-columns: 1fr; }
+    .wecom-tags-actions { justify-content: flex-start; }
+    .wecom-tags-groups { max-height: 360px; min-height: 220px; }
+  }
+</style>
+
+  <script defer src="../static/admin_console/admin_console.js?v=lark-design-package-20260803"></script>
+  <script defer src="../static/admin_console/operation_member_picker.js?v=operation-member-picker-wecom-sync-20260709"></script>
+</head>
+<body class="admin-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="admin-brand-mark">CRM</div>
+        <div class="admin-brand-copy">
+          <div class="admin-brand-title">客户管理后台</div>
+          <div class="admin-brand-subtitle">ADMIN CONSOLE</div>
+        </div>
+      </div>
+
+      <nav class="admin-nav" aria-label="客户管理后台导航">
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">运营</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化运营"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_conversion.svg" alt="">
+              <span class="admin-nav-label">自动化运营</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="运营闭环"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/operation_cycles.svg" alt="">
+              <span class="admin-nav-label">运营闭环</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="群运营计划"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/group_ops.svg" alt="">
+              <span class="admin-nav-label">群运营计划</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="渠道码中心"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/channels.svg" alt="">
+              <span class="admin-nav-label">渠道码中心</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="AI 助手"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/cloud_orchestrator.svg" alt="">
+              <span class="admin-nav-label">AI 助手</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="客户激活 / 客户列表"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/customers.svg" alt="">
+              <span class="admin-nav-label">客户激活 / 客户列表</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="漏斗 / 数据看板"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/user_ops_funnel.svg" alt="">
+              <span class="admin-nav-label">漏斗 / 数据看板</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="问卷"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/questionnaires.svg" alt="">
+              <span class="admin-nav-label">问卷</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="内容雷达"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/radar_links.svg" alt="">
+              <span class="admin-nav-label">内容雷达</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="企微标签管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wecom_tags.svg" alt="">
+              <span class="admin-nav-label">企微标签管理</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">交易</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="交易管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_transactions.svg" alt="">
+              <span class="admin-nav-label">交易管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_products.svg" alt="">
+              <span class="admin-nav-label">商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="周期商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/service_period_products.svg" alt="">
+              <span class="admin-nav-label">周期商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="优惠券"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/coupons.svg" alt="">
+              <span class="admin-nav-label">优惠券</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">素材</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="图片素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/image_library.svg" alt="">
+              <span class="admin-nav-label">图片素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="小程序素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/miniprogram_library.svg" alt="">
+              <span class="admin-nav-label">小程序素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="附件素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/attachment_library.svg" alt="">
+              <span class="admin-nav-label">附件素材库</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">配置及后台</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化话术"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_agents.svg" alt="">
+              <span class="admin-nav-label">自动化话术</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="负责人迁移"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/owner_migration.svg" alt="">
+              <span class="admin-nav-label">负责人迁移</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="配置"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/config.svg" alt="">
+              <span class="admin-nav-label">配置</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="API 文档"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/api_docs.svg" alt="">
+              <span class="admin-nav-label">API 文档</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+      </nav>
+
+      
+      <div class="admin-sidebar-user">
+        <div class="admin-sidebar-user__avatar">
+          示
+        </div>
+        <div class="admin-sidebar-user__meta">
+          <div class="admin-sidebar-user__name">
+            示例管理员
+          </div>
+          <a class="admin-sidebar-user__logout" href="#">退出登录</a>
+        </div>
+      </div>
+      
+    </aside>
+
+    <div class="admin-main-wrap">
+      
+      
+      
+      
+      
+      
+      <header class="admin-topbar">
+        
+        <div class="admin-topbar-head">
+          <nav class="admin-breadcrumbs" aria-label="当前位置">
+            
+            
+            <a href="#">客户管理后台</a>
+            
+            
+          </nav>
+          <div>
+            <h1 class="admin-page-title">Config Wecom Tags</h1>
+            <p class="admin-page-summary">页面功能预览（示例数据）</p>
+          </div>
+        </div>
+        
+
+        
+      </header>
+      
+
+      <main class="admin-page">
+        
+        <section class="admin-alert admin-alert--success">示例</section>
+        
+        
+        <section class="admin-alert admin-alert--error">示例</section>
+        
+        
+<section
+  class="wecom-tags-shell"
+  data-wecom-tags-page
+  data-api-tags="/api/admin/wecom/tags"
+  data-api-groups="/api/admin/wecom/tag-groups"
+  data-api-sync="/api/admin/wecom/tags/sync"
+>
+  <section class="admin-card">
+    <div class="admin-card-head">
+      <div>
+        <h2>标签库与标签组</h2>
+        <p>集中管理企业客户标签：同步、搜索、新增、编辑、删除和复制 tag_id。</p>
+      </div>
+      <div class="wecom-tags-actions">
+        <button class="admin-button admin-button--secondary" type="button" data-action="sync">同步企微标签</button>
+        <button class="admin-button admin-button--ghost" type="button" data-action="create-group">新增标签组</button>
+        <button class="admin-button admin-button--primary" type="button" data-action="create-tag">新增标签</button>
+      </div>
+    </div>
+    <div class="wecom-tags-toolbar">
+      <div class="wecom-tags-search">
+        <input type="search" data-role="query" placeholder="搜索标签组 / 标签 / tag_id" autocomplete="off">
+      </div>
+      <div class="wecom-tags-capacity" aria-label="标签容量">
+        <div class="wecom-tags-capacity-main">
+          <span>标签容量</span>
+          <strong data-role="capacity-text">0 / 1000</strong>
+        </div>
+        <div class="wecom-tags-bar" data-role="capacity-bar"><span></span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wecom-tags-feedback admin-alert" data-role="feedback" hidden></div>
+
+  <main class="wecom-tags-layout">
+    <aside class="admin-card">
+      <div class="admin-card-head admin-card-head--tight">
+        <div>
+          <h2>标签组</h2>
+          <p data-role="group-summary">共 0 个标签组</p>
+        </div>
+      </div>
+      <div class="wecom-tags-groups" data-role="group-list"></div>
+    </aside>
+
+    <section class="admin-card">
+      <div class="admin-card-head">
+        <div>
+          <h2 data-role="current-group-name">标签组</h2>
+          <p data-role="current-group-meta">当前组标签列表</p>
+        </div>
+        <div class="wecom-tags-actions">
+          <button class="admin-button admin-button--ghost" type="button" data-action="edit-group">编辑组名</button>
+          <button class="admin-button admin-button--ghost" type="button" data-action="delete-group">删除组</button>
+        </div>
+      </div>
+      <div data-role="capacity-warning" class="admin-alert admin-alert--error" hidden></div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>标签名</th>
+              <th>使用人数</th>
+              <th>最近同步</th>
+              <th style="text-align:right;">操作</th>
+            </tr>
+          </thead>
+          <tbody data-role="tag-rows"></tbody>
+        </table>
+      </div>
+      <div class="wecom-tags-empty" data-role="empty" hidden>没有匹配到标签</div>
+      <div class="wecom-tags-pager" data-role="pager">
+        <span data-role="pager-text">第 1 / 1 页，共 0 个</span>
+        <div class="wecom-tags-actions">
+          <button class="admin-button admin-button--ghost" type="button" data-action="prev-page">上一页</button>
+          <button class="admin-button admin-button--ghost" type="button" data-action="next-page">下一页</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="wecom-tags-modal" data-role="modal" hidden>
+    <div class="wecom-tags-modal-card" role="dialog" aria-modal="true" aria-labelledby="wecom-tags-modal-title">
+      <div class="wecom-tags-modal-head">
+        <h3 id="wecom-tags-modal-title" data-role="modal-title">标签详情</h3>
+        <button class="admin-button admin-button--ghost" type="button" data-action="close-modal">关闭</button>
+      </div>
+      <div class="wecom-tags-modal-body" data-role="modal-body"></div>
+    </div>
+  </div>
+</section>
+
+      </main>
+    </div>
+  </div>
+  <script id="aicrmAdminActionGrants" type="application/json">{}</script>
+  
+
+<script defer src="/static/customer-tags/admin_console/wecom_tag_management.js"></script>
+
+</body>
+</html>

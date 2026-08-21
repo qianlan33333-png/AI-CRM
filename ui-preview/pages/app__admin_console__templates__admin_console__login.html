@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login · 客户管理后台</title>
+  <link rel="stylesheet" href="../static/admin_console/admin_console.css">
+</head>
+<body class="admin-shell">
+  <main class="admin-page admin-auth-page">
+    
+    <section class="admin-alert admin-alert--success">示例</section>
+    
+    
+    <section class="admin-alert admin-alert--error">示例</section>
+    
+
+    <section class="admin-page-hero admin-page-hero--auth">
+      <div class="admin-page-hero__head">
+        <div>
+          <div class="admin-eyebrow">后台登录</div>
+          <h1>企业微信登录</h1>
+          <p>后台主认证方式为企业微信登录，客户管理后台本地只维护授权角色、登录审计与角色权限。</p>
+        </div>
+        <div class="admin-page-hero__meta">
+          <span class="admin-chip admin-chip--neutral">企业微信登录</span>
+          <span class="admin-chip admin-chip--neutral">角色权限</span>
+        </div>
+      </div>
+      <div class="admin-auth-grid">
+        <article class="admin-card admin-auth-panel">
+          <div class="admin-card-head admin-card-head--tight">
+            <div>
+              <h2>登录入口</h2>
+            <p>电脑浏览器走扫码登录，企业微信内打开时走应用授权登录。</p>
+            </div>
+          </div>
+          <div class="admin-form-actions">
+            <a class="admin-button admin-button--primary" href="示例">
+              企业微信扫码登录
+            </a>
+            <a class="admin-button admin-button--secondary" href="示例">
+              企业微信内打开
+            </a>
+          </div>
+          <div class="admin-state admin-state--inline">
+            <strong>当前登录方式</strong>
+            <span>企业微信负责“你是谁”，客户管理后台负责“你能干什么”。</span>
+          </div>
+        </article>
+
+        <article class="admin-card admin-auth-panel">
+          <div class="admin-card-head admin-card-head--tight">
+            <div>
+              <h2>认证快照</h2>
+              <p>用于核对当前环境是否已具备后台登录条件。</p>
+            </div>
+          </div>
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <tbody>
+                <tr>
+                  <th>认证模式</th>
+                  <td><code>示例</code></td>
+                </tr>
+                <tr>
+                  <th>企业微信企业 ID</th>
+                  <td><code>示例</code></td>
+                </tr>
+                <tr>
+                  <th>企业微信应用 ID</th>
+                  <td><code>示例</code></td>
+                </tr>
+                <tr>
+                  <th>当前已授权成员数</th>
+                  <td>示例</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="admin-card">
+      <div class="admin-card-head admin-card-head--tight">
+        <div>
+          <h2>登录说明</h2>
+          <p>企业微信负责“你是谁”，客户管理后台负责“你能干什么”。</p>
+        </div>
+      </div>
+      <ul class="admin-list">
+        <li>扫码或应用授权成功后，系统会拿到企微 <code>UserId</code>。</li>
+        <li>只有已经在“配置 &gt; 后台访问”中授权的企微成员，才能进入后台。</li>
+        <li><code>viewer</code> 只能读，不能执行后台写操作。</li>
+      </ul>
+    </section>
+
+    <section class="admin-card">
+      <div class="admin-card-head admin-card-head--tight">
+        <div>
+          <h2>统一人类身份入口</h2>
+          <p>后台仅接受企业微信 OAuth 登录，成功后由服务端 Session、RBAC、CSRF 和 Action Token 继续授权。</p>
+        </div>
+      </div>
+      <div class="admin-state admin-state--empty">
+        <strong>不提供本地账密入口</strong>
+        <span>请使用上方扫码或企微应用授权入口。</span>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

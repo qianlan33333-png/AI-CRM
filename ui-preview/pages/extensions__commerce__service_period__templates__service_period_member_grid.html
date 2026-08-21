@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Service Period Member Grid · 周期商品数据</title>
+  <link rel="stylesheet" href="../static/admin_console/admin_console.css?v=operation-member-picker-fix-20260527">
+  
+<link rel="stylesheet" href="/static/service-period/admin_console/member_grid.css?v=20260716-sharing-1">
+
+  <script src="../static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
+</head>
+<body class="sp-compact-admin-shell">
+  <header class="sp-compact-header">
+    <div>
+      <span class="sp-compact-kicker">周期商品数据工作区</span>
+      <h1>Service Period Member Grid</h1>
+    </div>
+    <div class="sp-compact-header__actions">
+      <span class="sp-readonly-badge">受限协作</span>
+      <a href="#">退出登录</a>
+    </div>
+  </header>
+  <main class="sp-compact-main">
+    <section class="admin-alert admin-alert--error">示例</section>
+    
+<section
+  class="sp-grid-page"
+  id="spMemberGrid"
+  data-service-product-id="示例"
+  data-mode="internal"
+  aria-label="周期商品会员数据表"
+>
+  <div class="sp-viewbar">
+    <div class="sp-viewbar__scroll" id="spViewTabs" role="tablist" aria-label="数据视图"></div>
+    <button class="sp-viewbar__add" id="spAddView" type="button" hidden>
+      <img class="sp-button-icon" src="/static/service-period/icons/plus.svg" alt=""><span>新建视图</span>
+    </button>
+    <button class="sp-icon-button sp-viewbar__menu" id="spViewMenuButton" type="button" aria-label="当前视图菜单" aria-haspopup="menu" aria-expanded="false">
+      <img src="/static/service-period/icons/ellipsis-horizontal.svg" alt="">
+    </button>
+    <button class="sp-share-button" id="spShareButton" type="button" hidden aria-haspopup="dialog">
+      <img src="/static/service-period/icons/globe-alt.svg" alt=""><span>分享</span>
+    </button>
+  </div>
+
+  <div class="sp-grid-toolbar" role="toolbar" aria-label="视图配置">
+    <div class="sp-grid-toolbar__config">
+      <button class="sp-tool-button" id="spFilterButton" type="button" aria-haspopup="dialog" aria-expanded="false">
+        <img src="/static/service-period/icons/funnel.svg" alt="">
+        <span>筛选</span><span class="sp-tool-button__count" id="spFilterCount" hidden></span>
+      </button>
+      <button class="sp-tool-button" id="spGroupButton" type="button" aria-haspopup="dialog" aria-expanded="false">
+        <img src="/static/service-period/icons/rectangle-group.svg" alt="">
+        <span>分组</span><span class="sp-tool-button__count" id="spGroupCount" hidden></span>
+      </button>
+      <button class="sp-tool-button" id="spSortButton" type="button" aria-haspopup="dialog" aria-expanded="false">
+        <img src="/static/service-period/icons/bars-arrow-down.svg" alt="">
+        <span>排序</span><span class="sp-tool-button__count" id="spSortCount" hidden></span>
+      </button>
+    </div>
+    <div class="sp-grid-toolbar__actions">
+      <span class="sp-draft-status" id="spDraftStatus" aria-live="polite">正在加载视图…</span>
+      <button class="sp-secondary-button" id="spSaveAsView" type="button" hidden>另存为</button>
+      <button class="sp-primary-button" id="spSaveView" type="button" hidden disabled>保存视图</button>
+    </div>
+  </div>
+
+  <div class="sp-config-panel" id="spConfigPanel" role="dialog" aria-modal="false" hidden></div>
+  <div class="sp-config-panel sp-view-menu" id="spViewMenu" role="menu" hidden></div>
+
+  <div class="sp-grid-meta">
+    <span id="spResultSummary">加载数据中…</span>
+    <span class="sp-grid-meta__readonly" id="spReadonlyNotice" hidden>只读模式：可临时筛选、排序和分组</span>
+  </div>
+
+  <div class="sp-grid-shell" id="spGridShell" aria-busy="true">
+    <div class="sp-grid-scroll" id="spGridScroll" tabindex="0">
+      <table class="sp-member-table" aria-label="周期商品会员数据">
+        <thead id="spGridHead"></thead>
+        <tbody id="spGridBody"></tbody>
+      </table>
+      <div class="sp-grid-sentinel" id="spGridSentinel" aria-hidden="true"></div>
+    </div>
+    <div class="sp-grid-state" id="spGridState">
+      <span class="sp-spinner" aria-hidden="true"></span><span>正在读取真实会员数据…</span>
+    </div>
+  </div>
+
+  <div class="sp-toast" id="spGridToast" role="status" aria-live="polite" hidden></div>
+</section>
+
+<dialog class="sp-dialog" id="spNameDialog">
+  <form method="dialog" class="sp-dialog__surface" id="spNameDialogForm">
+    <header>
+      <h2 id="spNameDialogTitle">新建视图</h2>
+      <button class="sp-icon-button" value="cancel" aria-label="关闭" type="submit" formnovalidate><img src="/static/service-period/icons/x-mark.svg" alt=""></button>
+    </header>
+    <label class="sp-field-label" for="spViewNameInput">视图名称</label>
+    <input class="sp-text-input" id="spViewNameInput" name="name" maxlength="60" autocomplete="off" required>
+    <p class="sp-dialog__hint" id="spNameDialogHint"></p>
+    <footer>
+      <button class="sp-secondary-button" value="cancel" type="submit" formnovalidate>取消</button>
+      <button class="sp-primary-button" id="spNameDialogSubmit" value="default" type="submit">确认</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog class="sp-dialog" id="spUnsavedDialog">
+  <form method="dialog" class="sp-dialog__surface">
+    <header><h2>当前视图有未保存的修改</h2></header>
+    <p class="sp-dialog__copy">筛选、排序或分组只保存在当前草稿中。你可以先保存，再继续切换或离开。</p>
+    <footer class="sp-dialog__footer--three">
+      <button class="sp-secondary-button" value="cancel">取消</button>
+      <button class="sp-secondary-button sp-button--danger-text" value="discard">放弃修改</button>
+      <button class="sp-primary-button" value="save">保存并继续</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog class="sp-dialog" id="spConfirmDialog">
+  <form method="dialog" class="sp-dialog__surface">
+    <header><h2 id="spConfirmTitle">确认操作</h2></header>
+    <p class="sp-dialog__copy" id="spConfirmCopy"></p>
+    <footer>
+      <button class="sp-secondary-button" value="cancel">取消</button>
+      <button class="sp-danger-button" value="confirm">确认删除</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog class="sp-dialog" id="spConflictDialog">
+  <form method="dialog" class="sp-dialog__surface">
+    <header><h2>视图已被其他管理员更新</h2></header>
+    <p class="sp-dialog__copy">为避免覆盖他人的修改，请加载共享视图的最新版本，或把当前草稿另存为新视图。</p>
+    <footer class="sp-dialog__footer--three">
+      <button class="sp-secondary-button" value="cancel">取消</button>
+      <button class="sp-secondary-button" value="save-as">另存为新视图</button>
+      <button class="sp-primary-button" value="reload">加载最新版</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog class="sp-share-dialog" id="spShareDialog" aria-labelledby="spShareDialogTitle">
+  <div class="sp-share-dialog__surface" tabindex="-1">
+    <header class="sp-share-dialog__header">
+      <div>
+        <span class="sp-share-dialog__eyebrow">周期商品数据工作区</span>
+        <h2 id="spShareDialogTitle">分享数据</h2>
+      </div>
+      <button class="sp-share-dialog__close" id="spShareDialogClose" type="button" aria-label="关闭">
+        <img src="/static/service-period/icons/x-mark.svg" alt="">
+      </button>
+    </header>
+
+    <section class="sp-share-section" aria-labelledby="spCollaboratorTitle">
+      <div class="sp-share-section__head">
+        <div>
+          <h3 id="spCollaboratorTitle">邀请协作者</h3>
+          <p>从已同步的企微员工目录邀请，可设置为可查看或可编辑。</p>
+        </div>
+      </div>
+      <button class="sp-collaborator-invite" id="spInviteCollaborator" type="button">
+        <img src="/static/service-period/icons/user-plus.svg" alt="">
+        <span>搜索企微员工并邀请</span>
+        <span class="sp-collaborator-invite__plus" aria-hidden="true"><img src="/static/service-period/icons/plus.svg" alt=""></span>
+      </button>
+      <div class="sp-collaborator-list" id="spCollaboratorList" aria-live="polite"></div>
+    </section>
+
+    <section class="sp-share-section sp-external-share" aria-labelledby="spExternalShareTitle">
+      <div class="sp-share-section__head">
+        <div>
+          <h3 id="spExternalShareTitle">外部分享</h3>
+          <p>任何获得链接的人都能免登录查看全部字段和保存视图，无法编辑或配置筛选。</p>
+        </div>
+        <label class="sp-share-switch">
+          <input id="spExternalShareToggle" type="checkbox" aria-label="开启外部分享">
+          <span></span>
+        </label>
+      </div>
+      <div class="sp-external-link" id="spExternalLinkRow" hidden>
+        <img src="/static/service-period/icons/link.svg" alt="">
+        <input id="spExternalShareUrl" type="text" readonly aria-label="外部分享链接">
+        <button id="spCopyExternalShareUrl" type="button">复制链接</button>
+      </div>
+      <p class="sp-external-share__status" id="spExternalShareStatus">外部分享未开启</p>
+    </section>
+  </div>
+</dialog>
+
+  </main>
+  <script id="aicrmAdminActionGrants" type="application/json">{}</script>
+  
+<script defer src="/static/service-period/admin_console/member_grid_state.js?v=20260716-sharing-1"></script>
+<script defer src="/static/service-period/admin_console/member_grid_share.js?v=20260716-sharing-1"></script>
+<script defer src="/static/service-period/admin_console/member_grid.js?v=20260716-sharing-1"></script>
+
+</body>
+</html>

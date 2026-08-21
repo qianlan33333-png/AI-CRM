@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cloud Observability · 客户管理后台</title>
+  <link rel="stylesheet" href="../static/admin_console/admin_console.css?v=operation-member-picker-fix-20260527&amp;design=lark-20260803">
+  <script src="../static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
+  <script src="../static/admin_console/image_resource_loader.js?v=resource-governance-v2-pending-retry"></script>
+  
+  <script defer src="../static/admin_console/admin_console.js?v=lark-design-package-20260803"></script>
+  <script defer src="../static/admin_console/operation_member_picker.js?v=operation-member-picker-wecom-sync-20260709"></script>
+</head>
+<body class="admin-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="admin-brand-mark">CRM</div>
+        <div class="admin-brand-copy">
+          <div class="admin-brand-title">客户管理后台</div>
+          <div class="admin-brand-subtitle">ADMIN CONSOLE</div>
+        </div>
+      </div>
+
+      <nav class="admin-nav" aria-label="客户管理后台导航">
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">运营</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化运营"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_conversion.svg" alt="">
+              <span class="admin-nav-label">自动化运营</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="运营闭环"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/operation_cycles.svg" alt="">
+              <span class="admin-nav-label">运营闭环</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="群运营计划"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/group_ops.svg" alt="">
+              <span class="admin-nav-label">群运营计划</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="渠道码中心"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/channels.svg" alt="">
+              <span class="admin-nav-label">渠道码中心</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="AI 助手"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/cloud_orchestrator.svg" alt="">
+              <span class="admin-nav-label">AI 助手</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="客户激活 / 客户列表"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/customers.svg" alt="">
+              <span class="admin-nav-label">客户激活 / 客户列表</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="漏斗 / 数据看板"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/user_ops_funnel.svg" alt="">
+              <span class="admin-nav-label">漏斗 / 数据看板</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="问卷"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/questionnaires.svg" alt="">
+              <span class="admin-nav-label">问卷</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="内容雷达"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/radar_links.svg" alt="">
+              <span class="admin-nav-label">内容雷达</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="企微标签管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wecom_tags.svg" alt="">
+              <span class="admin-nav-label">企微标签管理</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">交易</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="交易管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_transactions.svg" alt="">
+              <span class="admin-nav-label">交易管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_products.svg" alt="">
+              <span class="admin-nav-label">商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="周期商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/service_period_products.svg" alt="">
+              <span class="admin-nav-label">周期商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="优惠券"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/coupons.svg" alt="">
+              <span class="admin-nav-label">优惠券</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">素材</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="图片素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/image_library.svg" alt="">
+              <span class="admin-nav-label">图片素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="小程序素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/miniprogram_library.svg" alt="">
+              <span class="admin-nav-label">小程序素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="附件素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/attachment_library.svg" alt="">
+              <span class="admin-nav-label">附件素材库</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">配置及后台</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化话术"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_agents.svg" alt="">
+              <span class="admin-nav-label">自动化话术</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="负责人迁移"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/owner_migration.svg" alt="">
+              <span class="admin-nav-label">负责人迁移</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="配置"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/config.svg" alt="">
+              <span class="admin-nav-label">配置</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="API 文档"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/api_docs.svg" alt="">
+              <span class="admin-nav-label">API 文档</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+      </nav>
+
+      
+      <div class="admin-sidebar-user">
+        <div class="admin-sidebar-user__avatar">
+          示
+        </div>
+        <div class="admin-sidebar-user__meta">
+          <div class="admin-sidebar-user__name">
+            示例管理员
+          </div>
+          <a class="admin-sidebar-user__logout" href="#">退出登录</a>
+        </div>
+      </div>
+      
+    </aside>
+
+    <div class="admin-main-wrap">
+      
+      
+      
+      
+      
+      
+      <header class="admin-topbar">
+        
+        <div class="admin-topbar-head">
+          <nav class="admin-breadcrumbs" aria-label="当前位置">
+            
+            
+            <a href="#">客户管理后台</a>
+            
+            
+          </nav>
+          <div>
+            <h1 class="admin-page-title">Cloud Observability</h1>
+            <p class="admin-page-summary">页面功能预览（示例数据）</p>
+          </div>
+        </div>
+        
+
+        
+      </header>
+      
+
+      <main class="admin-page">
+        
+        <section class="admin-alert admin-alert--success">示例</section>
+        
+        
+        <section class="admin-alert admin-alert--error">示例</section>
+        
+        
+<div class="cloud-obs-page" data-cloud-obs-root>
+  <section class="admin-card">
+    <header class="admin-card-head">
+      <h2 class="admin-card-title">Cloud Orchestrator · 可观察性</h2>
+      <p class="admin-card-summary">trace_id 贯穿 CRM 端 / 话术端 / 群发端，出错按 trace 一查到底。</p>
+      <div class="cloud-obs-toolbar">
+        <input id="cloud-obs-trace" class="admin-input" placeholder="按 trace_id 过滤审计日志…">
+        <input id="cloud-obs-session" class="admin-input" placeholder="按 session_id 过滤…">
+        <button class="admin-button admin-button--primary" id="cloud-obs-refresh">刷新</button>
+      </div>
+      <div class="cloud-obs-notice" id="cloud-obs-notice" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+    </header>
+  </section>
+
+  <section class="cloud-obs-grid">
+    <div class="admin-card">
+      <h3 class="admin-card-title">7 天计划漏斗</h3>
+      <table class="admin-table"><tbody id="cloud-obs-funnel"><tr><td>加载中…</td></tr></tbody></table>
+    </div>
+    <div class="admin-card">
+      <h3 class="admin-card-title">24 小时审计状态</h3>
+      <table class="admin-table"><tbody id="cloud-obs-audit-status"><tr><td>加载中…</td></tr></tbody></table>
+    </div>
+    <div class="admin-card cloud-obs-card-wide">
+      <h3 class="admin-card-title">24 小时 Tool 调用</h3>
+      <table class="admin-table">
+        <thead><tr><th>Tool</th><th>调用</th><th>平均延迟 (ms)</th><th>错误数</th></tr></thead>
+        <tbody id="cloud-obs-tool-stats"><tr><td colspan="4">加载中…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="admin-card cloud-obs-card-wide">
+      <h3 class="admin-card-title">最近错误</h3>
+      <table class="admin-table">
+        <thead><tr><th>时间</th><th>tool</th><th>trace_id</th><th>错误</th></tr></thead>
+        <tbody id="cloud-obs-errors"><tr><td colspan="4">加载中…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="admin-card cloud-obs-card-wide">
+      <h3 class="admin-card-title">审计日志（按筛选）</h3>
+      <table class="admin-table">
+        <thead><tr><th>时间</th><th>tool</th><th>状态</th><th>延迟 (ms)</th><th>session</th><th>trace</th><th>结果摘要</th></tr></thead>
+        <tbody id="cloud-obs-audit-list"><tr><td colspan="7">输入 trace_id 或 session_id 过滤后点刷新</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+<style>
+.cloud-obs-toolbar { display:flex; gap:8px; margin-top:8px; }
+.cloud-obs-toolbar input { flex:1; max-width:280px; }
+.cloud-obs-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:16px; }
+.cloud-obs-card-wide { grid-column: 1 / -1; }
+.cloud-obs-notice { margin-top:10px; border:1px solid #fecdca; border-radius:8px; background:#fff1f3; color:#b42318; padding:9px 11px; font-weight:750; }
+@media (max-width:960px) { .cloud-obs-grid { grid-template-columns:1fr; } }
+</style>
+<script>
+(function () {
+  const root = document.querySelector('[data-cloud-obs-root]');
+  if (!root) return;
+  const traceInput = root.querySelector('#cloud-obs-trace');
+  const sessionInput = root.querySelector('#cloud-obs-session');
+  const refreshBtn = root.querySelector('#cloud-obs-refresh');
+  const funnelTbody = root.querySelector('#cloud-obs-funnel');
+  const auditStatusTbody = root.querySelector('#cloud-obs-audit-status');
+  const toolTbody = root.querySelector('#cloud-obs-tool-stats');
+  const errTbody = root.querySelector('#cloud-obs-errors');
+  const auditTbody = root.querySelector('#cloud-obs-audit-list');
+  const noticeEl = root.querySelector('#cloud-obs-notice');
+
+  const fmt = (s) => (s == null ? '' : String(s));
+  const esc = (s) => window.AdminApi.escapeHtml(fmt(s));
+  const showError = (error, fallback) => {
+    const message = window.AdminApi.errorMessage(error, fallback);
+    noticeEl.textContent = message;
+    noticeEl.hidden = false;
+    noticeEl.setAttribute('role', 'alert');
+    noticeEl.setAttribute('aria-live', 'assertive');
+    return message;
+  };
+  const clearError = () => {
+    noticeEl.textContent = '';
+    noticeEl.hidden = true;
+    noticeEl.setAttribute('role', 'status');
+    noticeEl.setAttribute('aria-live', 'polite');
+  };
+
+  async function loadObservability() {
+    try {
+      const data = await window.AdminApi.requestJson('/api/admin/cloud-orchestrator/observability');
+      funnelTbody.innerHTML = Object.entries(data.plan_funnel_7d || {}).map(([k, v]) =>
+        `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('') || '<tr><td>无</td></tr>';
+      auditStatusTbody.innerHTML = Object.entries(data.audit_status_1d || {}).map(([k, v]) =>
+        `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('') || '<tr><td>无</td></tr>';
+      toolTbody.innerHTML = (data.tool_stats_1d || []).map(s =>
+        `<tr><td><code>${esc(s.tool)}</code></td><td>${esc(s.count)}</td><td>${esc(s.avg_latency_ms)}</td><td>${esc(s.error_count)}</td></tr>`
+      ).join('') || '<tr><td colspan="4">无</td></tr>';
+      errTbody.innerHTML = (data.recent_errors || []).map(e =>
+        `<tr><td>${esc(e.created_at)}</td><td><code>${esc(e.tool_name)}</code></td><td><code>${esc(fmt(e.trace_id).slice(0,16))}…</code></td><td>${esc(fmt(e.error_message).slice(0,200))}</td></tr>`
+      ).join('') || '<tr><td colspan="4">无</td></tr>';
+    } catch (error) {
+      const message = showError(error, '可观察性数据加载失败，请稍后重试');
+      funnelTbody.innerHTML = `<tr><td>${esc(message)}</td></tr>`;
+      auditStatusTbody.innerHTML = `<tr><td>${esc(message)}</td></tr>`;
+      toolTbody.innerHTML = `<tr><td colspan="4">${esc(message)}</td></tr>`;
+      errTbody.innerHTML = `<tr><td colspan="4">${esc(message)}</td></tr>`;
+    }
+  }
+
+  async function loadAudit() {
+    const trace = (traceInput.value || '').trim();
+    const session = (sessionInput.value || '').trim();
+    const params = new URLSearchParams();
+    if (trace) params.set('trace_id', trace);
+    if (session) params.set('session_id', session);
+    if (!trace && !session) {
+      auditTbody.innerHTML = '<tr><td colspan="7">输入 trace_id 或 session_id 过滤后点刷新</td></tr>';
+      return;
+    }
+    try {
+      const data = await window.AdminApi.requestJson('/api/admin/cloud-orchestrator/audit?' + params.toString());
+      auditTbody.innerHTML = (data.audit || []).map(a =>
+        `<tr>
+          <td>${esc(a.created_at)}</td>
+          <td><code>${esc(a.tool_name)}</code></td>
+          <td>${esc(a.status)}</td>
+          <td>${esc(a.latency_ms)}</td>
+          <td><code>${esc(fmt(a.session_id).slice(0,16))}…</code></td>
+          <td><code>${esc(fmt(a.trace_id).slice(0,16))}…</code></td>
+          <td>${esc(fmt(a.result_summary).slice(0,200))}</td>
+        </tr>`
+      ).join('') || '<tr><td colspan="7">无审计</td></tr>';
+    } catch (error) {
+      const message = showError(error, '审计日志加载失败，请稍后重试');
+      auditTbody.innerHTML = `<tr><td colspan="7">${esc(message)}</td></tr>`;
+    }
+  }
+
+  refreshBtn.addEventListener('click', async () => {
+    refreshBtn.disabled = true;
+    clearError();
+    await Promise.allSettled([loadObservability(), loadAudit()]);
+    refreshBtn.disabled = false;
+  });
+  loadObservability();
+})();
+</script>
+
+      </main>
+    </div>
+  </div>
+  <script id="aicrmAdminActionGrants" type="application/json">{}</script>
+  
+</body>
+</html>

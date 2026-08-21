@@ -1,0 +1,4632 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Api Docs · 客户管理后台</title>
+  <link rel="stylesheet" href="../static/admin_console/admin_console.css?v=operation-member-picker-fix-20260527&amp;design=lark-20260803">
+  <script src="../static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
+  <script src="../static/admin_console/image_resource_loader.js?v=resource-governance-v2-pending-retry"></script>
+  
+<style>
+  /* ── Layout ── */
+  .apidoc-shell {
+    display: grid;
+    grid-template-columns: 250px minmax(0, 1fr);
+    gap: 0;
+    align-items: start;
+  }
+
+  /* ── Sidebar ── */
+  .apidoc-sidenav {
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 60px);
+    overflow-y: auto;
+    padding-right: 16px;
+    scrollbar-width: thin;
+  }
+
+  .apidoc-sidenav-group { margin-bottom: 18px; }
+
+  .apidoc-sidenav-title {
+    padding: 0 8px;
+    margin-bottom: 4px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .apidoc-sidenav-links {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .apidoc-sidenav-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--text);
+    transition: background 0.15s ease;
+    overflow: hidden;
+    text-decoration: none;
+  }
+
+  .apidoc-sidenav-link:hover { background: rgba(157, 99, 48, 0.08); }
+
+  .apidoc-sidenav-link-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .apidoc-sidenav-special {
+    display: block;
+    padding: 6px 8px;
+    margin-bottom: 2px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--brand-strong);
+    text-decoration: none;
+    transition: background 0.15s ease;
+  }
+
+  .apidoc-sidenav-special:hover { background: rgba(157, 99, 48, 0.08); }
+
+  /* ── Main ── */
+  .apidoc-main {
+    padding-left: 28px;
+    border-left: 1px solid var(--line);
+  }
+
+  /* ── Search ── */
+  .apidoc-search-container {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--panel-strong);
+    padding: 12px 0 16px;
+    margin-bottom: 8px;
+  }
+
+  .apidoc-search-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font-size: 14px;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .apidoc-search-input:focus { border-color: var(--brand-strong); }
+
+  .apidoc-search-input::placeholder { color: var(--muted); }
+
+  /* ── Agent Guide ── */
+  .apidoc-guide {
+    margin-bottom: 40px;
+    padding: 24px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--panel-strong);
+  }
+
+  .apidoc-guide h2 {
+    margin: 0 0 16px;
+    font-size: 20px;
+    font-weight: 800;
+  }
+
+  .apidoc-guide h3 {
+    margin: 20px 0 8px;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .apidoc-guide p, .apidoc-guide li {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text);
+  }
+
+  .apidoc-guide ul { padding-left: 20px; margin: 4px 0; }
+
+  .apidoc-guide code {
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(15, 23, 42, 0.06);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+  }
+
+  /* ── Quick Reference Table ── */
+  .apidoc-quickref { margin-bottom: 48px; }
+
+  .apidoc-quickref h2 {
+    margin: 0 0 12px;
+    font-size: 20px;
+    font-weight: 800;
+  }
+
+  .apidoc-quickref-wrap {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    max-height: 600px;
+    overflow-y: auto;
+  }
+
+  .apidoc-quickref-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  .apidoc-quickref-table th {
+    text-align: left;
+    padding: 8px 10px;
+    background: rgba(248, 242, 233, 0.7);
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--line);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  .apidoc-quickref-table td {
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: middle;
+  }
+
+  .apidoc-quickref-table tr:last-child td { border-bottom: none; }
+
+  .apidoc-quickref-table tr:hover td { background: rgba(157, 99, 48, 0.04); }
+
+  .apidoc-quickref-table a {
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .apidoc-quickref-table a:hover { text-decoration: underline; }
+
+  .apidoc-qr-path {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  /* ── Method Badges ── */
+  .apidoc-method {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 5px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  .apidoc-method--get { color: #166534; background: #dcfce7; }
+  .apidoc-method--post { color: #1e40af; background: #dbeafe; }
+  .apidoc-method--put { color: #92400e; background: #fef3c7; }
+  .apidoc-method--delete { color: #991b1b; background: #fee2e2; }
+
+  /* ── Auth Badges ── */
+  .apidoc-auth-badge {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+  }
+
+  .apidoc-auth-badge--session { color: #5b21b6; background: #ede9fe; }
+  .apidoc-auth-badge--bearer { color: #92400e; background: #fef3c7; }
+  .apidoc-auth-badge--public { color: #374151; background: #f3f4f6; }
+  .apidoc-auth-badge--signature { color: #9f1239; background: #ffe4e6; }
+  .apidoc-auth-badge--legacy_proxy { color: #075985; background: #e0f2fe; }
+
+  /* ── Groups & Subsections ── */
+  .apidoc-group { margin-bottom: 48px; }
+
+  .apidoc-group-title {
+    margin: 0 0 6px;
+    font-size: 20px;
+    font-weight: 800;
+  }
+
+  .apidoc-group-desc {
+    margin: 0 0 20px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.65;
+  }
+
+  .apidoc-subsection { margin-bottom: 28px; }
+
+  .apidoc-subsection-title {
+    margin: 0 0 12px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* ── Endpoint Cards (details/summary) ── */
+  .apidoc-endpoint {
+    margin-bottom: 8px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--panel-strong);
+    overflow: hidden;
+  }
+
+  .apidoc-endpoint[open] {
+    box-shadow: 0 4px 12px rgba(60, 45, 24, 0.04);
+  }
+
+  .apidoc-endpoint-summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    flex-wrap: wrap;
+  }
+
+  .apidoc-endpoint-summary::-webkit-details-marker { display: none; }
+
+  .apidoc-endpoint-summary:hover { background: rgba(157, 99, 48, 0.03); }
+
+  .apidoc-endpoint-path {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    word-break: break-all;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .apidoc-endpoint-label {
+    font-size: 13px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .apidoc-endpoint-chevron {
+    width: 16px;
+    height: 16px;
+    color: var(--muted);
+    transition: transform 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .apidoc-endpoint[open] .apidoc-endpoint-chevron { transform: rotate(90deg); }
+
+  .apidoc-endpoint-body {
+    padding: 0 16px 16px;
+    border-top: 1px solid var(--line);
+  }
+
+  .apidoc-desc {
+    margin: 14px 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.65;
+  }
+
+  /* ── Params Table ── */
+  .apidoc-section { margin-top: 14px; }
+
+  .apidoc-section-label {
+    margin-bottom: 8px;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+
+  .apidoc-params-wrap {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .apidoc-params-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .apidoc-params-table th {
+    text-align: left;
+    padding: 8px 12px;
+    background: rgba(248, 242, 233, 0.7);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .apidoc-params-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+
+  .apidoc-params-table tr:last-child td { border-bottom: none; }
+
+  .apidoc-param-name {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--brand-strong);
+  }
+
+  .apidoc-param-type { color: var(--muted); font-size: 12px; font-style: italic; }
+
+  .apidoc-param-required {
+    display: inline-flex;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #991b1b;
+    background: #fee2e2;
+  }
+
+  .apidoc-param-optional { color: var(--muted); font-size: 12px; }
+
+  /* ── Code Blocks ── */
+  .apidoc-code-wrap { position: relative; }
+
+  .apidoc-code-block {
+    margin: 0;
+    padding: 14px 16px;
+    padding-right: 48px;
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.04);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.65;
+    color: var(--text);
+  }
+
+  .apidoc-copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+
+  .apidoc-copy-btn:hover { border-color: var(--brand-strong); color: var(--brand-strong); }
+
+  .apidoc-copy-btn svg { width: 14px; height: 14px; }
+
+  .apidoc-copy-btn--copied {
+    color: #16a34a;
+    border-color: #16a34a;
+  }
+
+  /* ── Markdown Copy Buttons (for AI consumption) ── */
+  .apidoc-md-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .apidoc-md-btn:hover {
+    border-color: var(--brand-strong);
+    color: var(--brand-strong);
+    background: rgba(157, 99, 48, 0.04);
+  }
+
+  .apidoc-md-btn--copied {
+    color: #16a34a !important;
+    border-color: #16a34a !important;
+    background: #f0fdf4 !important;
+  }
+
+  .apidoc-md-btn svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+  }
+
+  /* Endpoint header copy-md button — small text */
+  .apidoc-md-btn--inline {
+    padding: 2px 8px;
+    font-size: 10px;
+  }
+
+  /* Group header copy-md button */
+  .apidoc-group-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+  }
+
+  .apidoc-group-header h2 {
+    margin: 0;
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Hero copy-all banner */
+  .apidoc-copyall-banner {
+    margin: 16px 0 0;
+    padding: 14px 18px;
+    border: 1px dashed var(--brand-strong);
+    border-radius: 12px;
+    background: rgba(157, 99, 48, 0.04);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .apidoc-copyall-banner-text {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  .apidoc-copyall-banner-text strong {
+    color: var(--brand-strong);
+  }
+
+  .apidoc-md-btn--primary {
+    padding: 8px 16px;
+    font-size: 13px;
+    background: var(--brand-strong);
+    color: #fff;
+    border-color: var(--brand-strong);
+  }
+
+  .apidoc-md-btn--primary:hover {
+    background: #7a4f24;
+    border-color: #7a4f24;
+    color: #fff;
+  }
+
+  .apidoc-md-btn--primary.apidoc-md-btn--copied {
+    background: #16a34a !important;
+    border-color: #16a34a !important;
+    color: #fff !important;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .apidoc-shell { grid-template-columns: 1fr; }
+    .apidoc-sidenav {
+      position: static;
+      max-height: none;
+      padding-right: 0;
+      margin-bottom: 24px;
+    }
+    .apidoc-main {
+      padding-left: 0;
+      border-left: none;
+      border-top: 1px solid var(--line);
+      padding-top: 24px;
+    }
+  }
+</style>
+
+  <script defer src="../static/admin_console/admin_console.js?v=lark-design-package-20260803"></script>
+  <script defer src="../static/admin_console/operation_member_picker.js?v=operation-member-picker-wecom-sync-20260709"></script>
+</head>
+<body class="admin-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="admin-brand-mark">CRM</div>
+        <div class="admin-brand-copy">
+          <div class="admin-brand-title">客户管理后台</div>
+          <div class="admin-brand-subtitle">ADMIN CONSOLE</div>
+        </div>
+      </div>
+
+      <nav class="admin-nav" aria-label="客户管理后台导航">
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">运营</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化运营"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_conversion.svg" alt="">
+              <span class="admin-nav-label">自动化运营</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="运营闭环"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/operation_cycles.svg" alt="">
+              <span class="admin-nav-label">运营闭环</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="群运营计划"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/group_ops.svg" alt="">
+              <span class="admin-nav-label">群运营计划</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="渠道码中心"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/channels.svg" alt="">
+              <span class="admin-nav-label">渠道码中心</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="AI 助手"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/cloud_orchestrator.svg" alt="">
+              <span class="admin-nav-label">AI 助手</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="客户激活 / 客户列表"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/customers.svg" alt="">
+              <span class="admin-nav-label">客户激活 / 客户列表</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="漏斗 / 数据看板"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/user_ops_funnel.svg" alt="">
+              <span class="admin-nav-label">漏斗 / 数据看板</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="问卷"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/questionnaires.svg" alt="">
+              <span class="admin-nav-label">问卷</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="内容雷达"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/radar_links.svg" alt="">
+              <span class="admin-nav-label">内容雷达</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="企微标签管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wecom_tags.svg" alt="">
+              <span class="admin-nav-label">企微标签管理</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">交易</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="交易管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_transactions.svg" alt="">
+              <span class="admin-nav-label">交易管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_products.svg" alt="">
+              <span class="admin-nav-label">商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="周期商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/service_period_products.svg" alt="">
+              <span class="admin-nav-label">周期商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="优惠券"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/coupons.svg" alt="">
+              <span class="admin-nav-label">优惠券</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">素材</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="图片素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/image_library.svg" alt="">
+              <span class="admin-nav-label">图片素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="小程序素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/miniprogram_library.svg" alt="">
+              <span class="admin-nav-label">小程序素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="附件素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/attachment_library.svg" alt="">
+              <span class="admin-nav-label">附件素材库</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">配置及后台</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化话术"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_agents.svg" alt="">
+              <span class="admin-nav-label">自动化话术</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="负责人迁移"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/owner_migration.svg" alt="">
+              <span class="admin-nav-label">负责人迁移</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="配置"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/config.svg" alt="">
+              <span class="admin-nav-label">配置</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="API 文档"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/api_docs.svg" alt="">
+              <span class="admin-nav-label">API 文档</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+      </nav>
+
+      
+      <div class="admin-sidebar-user">
+        <div class="admin-sidebar-user__avatar">
+          示
+        </div>
+        <div class="admin-sidebar-user__meta">
+          <div class="admin-sidebar-user__name">
+            示例管理员
+          </div>
+          <a class="admin-sidebar-user__logout" href="#">退出登录</a>
+        </div>
+      </div>
+      
+    </aside>
+
+    <div class="admin-main-wrap">
+      
+      
+      
+      
+      
+      
+      <header class="admin-topbar">
+        
+        <div class="admin-topbar-head">
+          <nav class="admin-breadcrumbs" aria-label="当前位置">
+            
+            
+            <a href="#">客户管理后台</a>
+            
+            
+          </nav>
+          <div>
+            <h1 class="admin-page-title">Api Docs</h1>
+            <p class="admin-page-summary">页面功能预览（示例数据）</p>
+          </div>
+        </div>
+        
+
+        
+      </header>
+      
+
+      <main class="admin-page">
+        
+        <section class="admin-alert admin-alert--success">示例</section>
+        
+        
+        <section class="admin-alert admin-alert--error">示例</section>
+        
+        
+
+
+<script type="application/json" id="apidoc-md-data">{}</script>
+
+
+
+
+<div class="apidoc-shell">
+
+  
+  <nav class="apidoc-sidenav" aria-label="API 文档导航">
+    <div class="apidoc-sidenav-group">
+      <a class="apidoc-sidenav-special" href="#agent-guide">Agent 接入指南</a>
+      <a class="apidoc-sidenav-special" href="#quick-reference">API 快速索引</a>
+    </div>
+    
+    <div class="apidoc-sidenav-group">
+      <div class="apidoc-sidenav-title">示例</div>
+      <div class="apidoc-sidenav-links">
+        
+          
+          <a class="apidoc-sidenav-link" href="#sub-示例" style="font-weight:600; color:var(--muted);">
+            <span class="apidoc-sidenav-link-label">示例</span>
+          </a>
+          
+          <a class="apidoc-sidenav-link" href="#sub-示例" style="font-weight:600; color:var(--muted);">
+            <span class="apidoc-sidenav-link-label">示例</span>
+          </a>
+          
+          <a class="apidoc-sidenav-link" href="#sub-示例" style="font-weight:600; color:var(--muted);">
+            <span class="apidoc-sidenav-link-label">示例</span>
+          </a>
+          
+        
+      </div>
+    </div>
+    
+    <div class="apidoc-sidenav-group">
+      <div class="apidoc-sidenav-title">示例</div>
+      <div class="apidoc-sidenav-links">
+        
+          
+          <a class="apidoc-sidenav-link" href="#sub-示例" style="font-weight:600; color:var(--muted);">
+            <span class="apidoc-sidenav-link-label">示例</span>
+          </a>
+          
+          <a class="apidoc-sidenav-link" href="#sub-示例" style="font-weight:600; color:var(--muted);">
+            <span class="apidoc-sidenav-link-label">示例</span>
+          </a>
+          
+          <a class="apidoc-sidenav-link" href="#sub-示例" style="font-weight:600; color:var(--muted);">
+            <span class="apidoc-sidenav-link-label">示例</span>
+          </a>
+          
+        
+      </div>
+    </div>
+    
+    <div class="apidoc-sidenav-group">
+      <div class="apidoc-sidenav-title">示例</div>
+      <div class="apidoc-sidenav-links">
+        
+          
+          <a class="apidoc-sidenav-link" href="#sub-示例" style="font-weight:600; color:var(--muted);">
+            <span class="apidoc-sidenav-link-label">示例</span>
+          </a>
+          
+          <a class="apidoc-sidenav-link" href="#sub-示例" style="font-weight:600; color:var(--muted);">
+            <span class="apidoc-sidenav-link-label">示例</span>
+          </a>
+          
+          <a class="apidoc-sidenav-link" href="#sub-示例" style="font-weight:600; color:var(--muted);">
+            <span class="apidoc-sidenav-link-label">示例</span>
+          </a>
+          
+        
+      </div>
+    </div>
+    
+  </nav>
+
+  
+  <div class="apidoc-main">
+
+    
+    <div class="apidoc-search-container">
+      <input type="search" class="apidoc-search-input" id="apidocSearch" placeholder="搜索 API（路径、名称、关键词）..." autocomplete="off">
+    </div>
+
+    
+    <section class="apidoc-guide" id="agent-guide">
+      <h2>Agent 接入指南</h2>
+      <p>本文档面向开发者和 AI Agent（如 Claude Code）。Agent 可直接阅读本页面并调用所有 API。</p>
+
+      <h3>Base URL</h3>
+      <p><code>https://&lt;your-domain&gt;</code> — 所有路径均相对于此域名。</p>
+
+      <h3>认证方式</h3>
+      <ul>
+        <li><span class="apidoc-auth-badge apidoc-auth-badge--session">登录态</span> 大部分接口使用 Session Cookie 认证。先通过 <code>GET /login</code> 或 <code>POST /login</code> 获取 session，后续请求携带 Cookie 即可。</li>
+        <li><span class="apidoc-auth-badge apidoc-auth-badge--public">公开</span> 问卷前台提交、企微回调等不需要认证。</li>
+        <li>写操作需在请求参数中传 <code>admin_action_token</code>（从 session 获取）或 <code>confirm=true</code> 防止误触发。</li>
+      </ul>
+
+      <h3>请求约定</h3>
+      <ul>
+        <li>请求体使用 <code>Content-Type: application/json</code></li>
+        <li>所有响应格式统一：<code>{"ok": true, ...payload}</code> 或 <code>{"ok": false, "error": "..."}</code></li>
+        <li>分页使用 <code>limit</code> + <code>cursor</code> 或 <code>limit</code> + <code>offset</code></li>
+        <li>路径参数用 <code>&lt;param&gt;</code> 标记，如 <code>/api/customers/&lt;external_userid&gt;</code></li>
+      </ul>
+
+      <h3>Agent 调用建议</h3>
+      <ul>
+        <li>先查看下方「API 快速索引」定位所需接口</li>
+        <li>点击展开接口卡片查看参数和 curl 示例</li>
+        <li>每个接口的 curl 示例可直接复制执行</li>
+      </ul>
+
+      <h3>把文档发给 AI</h3>
+      <ul>
+        <li>每个接口卡片右侧的「复制 MD」按钮 — 复制单个接口的 Markdown 给 AI</li>
+        <li>每个分组标题旁的「复制此分组」按钮 — 复制整组接口</li>
+        <li>下方「复制全部 API 文档」按钮 — 复制全部 示例 个接口的完整 Markdown，粘贴到 AI 对话即可</li>
+      </ul>
+
+      <div class="apidoc-copyall-banner">
+        <div class="apidoc-copyall-banner-text">
+          <strong>📋 复制全部 API 文档</strong> — 一键复制所有接口的 Markdown 格式文档（约 示例），粘贴给 Claude / ChatGPT 等 AI 即可调用。
+        </div>
+        <button type="button" class="apidoc-md-btn apidoc-md-btn--primary" data-md-id="full" onclick="apidocCopyMd(event, this)">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+          复制全部 API 文档
+        </button>
+      </div>
+    </section>
+
+    
+    <section class="apidoc-quickref" id="quick-reference">
+      <h2>API 快速索引</h2>
+      <div class="apidoc-quickref-wrap">
+        <table class="apidoc-quickref-table" id="apidocQuickRefTable">
+          <thead>
+            <tr>
+              <th style="width:60px">方法</th>
+              <th>路径</th>
+              <th>说明</th>
+              <th style="width:60px">认证</th>
+              <th style="width:80px">模块</th>
+            </tr>
+          </thead>
+          <tbody>
+            
+            <tr data-search="示例 示例 示例 示例" data-auth="示例">
+              <td><span class="apidoc-method apidoc-method--示例">示例</span></td>
+              <td><a href="#示例" class="apidoc-qr-path">示例</a></td>
+              <td>示例</td>
+              <td>
+                <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+                  公开
+                </span>
+              </td>
+              <td style="font-size:11px; color:var(--muted);">示例</td>
+            </tr>
+            
+            <tr data-search="示例 示例 示例 示例" data-auth="示例">
+              <td><span class="apidoc-method apidoc-method--示例">示例</span></td>
+              <td><a href="#示例" class="apidoc-qr-path">示例</a></td>
+              <td>示例</td>
+              <td>
+                <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+                  公开
+                </span>
+              </td>
+              <td style="font-size:11px; color:var(--muted);">示例</td>
+            </tr>
+            
+            <tr data-search="示例 示例 示例 示例" data-auth="示例">
+              <td><span class="apidoc-method apidoc-method--示例">示例</span></td>
+              <td><a href="#示例" class="apidoc-qr-path">示例</a></td>
+              <td>示例</td>
+              <td>
+                <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+                  公开
+                </span>
+              </td>
+              <td style="font-size:11px; color:var(--muted);">示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    
+    
+    <section class="apidoc-group" id="group-示例">
+      <div class="apidoc-group-header">
+        <h2 class="apidoc-group-title">示例</h2>
+        
+        <button type="button" class="apidoc-md-btn" data-md-id="group:示例" onclick="apidocCopyMd(event, this)" title="复制本分组所有接口的 Markdown 文档">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+          复制此分组（MD）
+        </button>
+        
+      </div>
+      <p class="apidoc-group-desc">示例</p>
+
+      
+      
+        
+        <div class="apidoc-subsection" id="sub-示例">
+          <h3 class="apidoc-subsection-title">示例</h3>
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+        </div>
+        
+        <div class="apidoc-subsection" id="sub-示例">
+          <h3 class="apidoc-subsection-title">示例</h3>
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+        </div>
+        
+        <div class="apidoc-subsection" id="sub-示例">
+          <h3 class="apidoc-subsection-title">示例</h3>
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+        </div>
+        
+      
+
+      
+      
+        
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+      
+        
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+      
+        
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+      
+    </section>
+    
+    <section class="apidoc-group" id="group-示例">
+      <div class="apidoc-group-header">
+        <h2 class="apidoc-group-title">示例</h2>
+        
+        <button type="button" class="apidoc-md-btn" data-md-id="group:示例" onclick="apidocCopyMd(event, this)" title="复制本分组所有接口的 Markdown 文档">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+          复制此分组（MD）
+        </button>
+        
+      </div>
+      <p class="apidoc-group-desc">示例</p>
+
+      
+      
+        
+        <div class="apidoc-subsection" id="sub-示例">
+          <h3 class="apidoc-subsection-title">示例</h3>
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+        </div>
+        
+        <div class="apidoc-subsection" id="sub-示例">
+          <h3 class="apidoc-subsection-title">示例</h3>
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+        </div>
+        
+        <div class="apidoc-subsection" id="sub-示例">
+          <h3 class="apidoc-subsection-title">示例</h3>
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+        </div>
+        
+      
+
+      
+      
+        
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+      
+        
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+      
+        
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+      
+    </section>
+    
+    <section class="apidoc-group" id="group-示例">
+      <div class="apidoc-group-header">
+        <h2 class="apidoc-group-title">示例</h2>
+        
+        <button type="button" class="apidoc-md-btn" data-md-id="group:示例" onclick="apidocCopyMd(event, this)" title="复制本分组所有接口的 Markdown 文档">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+          复制此分组（MD）
+        </button>
+        
+      </div>
+      <p class="apidoc-group-desc">示例</p>
+
+      
+      
+        
+        <div class="apidoc-subsection" id="sub-示例">
+          <h3 class="apidoc-subsection-title">示例</h3>
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+        </div>
+        
+        <div class="apidoc-subsection" id="sub-示例">
+          <h3 class="apidoc-subsection-title">示例</h3>
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+        </div>
+        
+        <div class="apidoc-subsection" id="sub-示例">
+          <h3 class="apidoc-subsection-title">示例</h3>
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+            
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+          
+        </div>
+        
+      
+
+      
+      
+        
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+      
+        
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+      
+        
+<details class="apidoc-endpoint" id="示例" data-search="示例 示例 示例">
+  <summary class="apidoc-endpoint-summary">
+    
+    <span class="apidoc-method apidoc-method--示例">示例</span>
+    
+    <span class="apidoc-endpoint-path">示例</span>
+    <span class="apidoc-endpoint-label">示例</span>
+    
+    <span class="apidoc-auth-badge apidoc-auth-badge--示例">
+      公开
+    </span>
+    <button type="button" class="apidoc-md-btn apidoc-md-btn--inline" data-md-id="ep:示例" onclick="apidocCopyMd(event, this)" title="复制此接口的 Markdown 文档（给 AI 看）">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg>
+      复制 MD
+    </button>
+    
+    <svg class="apidoc-endpoint-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4l4 4-4 4"/></svg>
+  </summary>
+  <div class="apidoc-endpoint-body">
+    
+    <p class="apidoc-desc">示例</p>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求参数</div>
+      <div class="apidoc-params-wrap">
+        <table class="apidoc-params-table">
+          <thead><tr><th>参数名</th><th>类型</th><th>必填</th><th>说明</th></tr></thead>
+          <tbody>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><span class="apidoc-param-name">示例</span></td>
+              <td><span class="apidoc-param-type">示例</span></td>
+              <td><span class="apidoc-param-required">必填</span></td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">请求示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">响应示例</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+
+    
+    <div class="apidoc-section">
+      <div class="apidoc-section-label">curl</div>
+      <div class="apidoc-code-wrap">
+        <pre class="apidoc-code-block"><code>示例</code></pre>
+        <button class="apidoc-copy-btn" onclick="apidocCopy(this)" aria-label="复制"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 012 9.5v-6A1.5 1.5 0 013.5 2h6A1.5 1.5 0 0111 3.5V5"/></svg></button>
+      </div>
+    </div>
+    
+  </div>
+</details>
+
+      
+    </section>
+    
+
+  </div>
+</div>
+
+<script>
+// Search / filter
+(function() {
+  var input = document.getElementById('apidocSearch');
+  if (!input) return;
+
+  input.addEventListener('input', function() {
+    var q = this.value.toLowerCase().trim();
+
+    // Filter quick-reference rows
+    var rows = document.querySelectorAll('#apidocQuickRefTable tbody tr');
+    rows.forEach(function(row) {
+      var text = (row.getAttribute('data-search') || '').toLowerCase();
+      row.style.display = (!q || text.indexOf(q) !== -1) ? '' : 'none';
+    });
+
+    // Filter endpoint cards
+    var cards = document.querySelectorAll('.apidoc-endpoint[data-search]');
+    cards.forEach(function(card) {
+      var text = (card.getAttribute('data-search') || '').toLowerCase();
+      card.style.display = (!q || text.indexOf(q) !== -1) ? '' : 'none';
+    });
+
+    // Hide empty groups
+    var groups = document.querySelectorAll('.apidoc-group');
+    groups.forEach(function(group) {
+      var visible = group.querySelectorAll('.apidoc-endpoint[data-search]:not([style*="display: none"])');
+      var title = group.querySelector('.apidoc-group-title');
+      var desc = group.querySelector('.apidoc-group-desc');
+      if (!q) {
+        if (title) title.style.display = '';
+        if (desc) desc.style.display = '';
+        group.style.display = '';
+      } else {
+        var show = visible.length > 0;
+        if (title) title.style.display = show ? '' : 'none';
+        if (desc) desc.style.display = show ? '' : 'none';
+        group.style.display = show ? '' : 'none';
+      }
+    });
+
+    // Hide empty subsections
+    var subs = document.querySelectorAll('.apidoc-subsection');
+    subs.forEach(function(sub) {
+      var visible = sub.querySelectorAll('.apidoc-endpoint[data-search]:not([style*="display: none"])');
+      sub.style.display = (!q || visible.length > 0) ? '' : 'none';
+    });
+  });
+})();
+
+// Copy to clipboard (single code block)
+function apidocCopy(btn) {
+  var code = btn.parentElement.querySelector('code');
+  if (!code) return;
+  navigator.clipboard.writeText(code.textContent).then(function() {
+    btn.classList.add('apidoc-copy-btn--copied');
+    setTimeout(function() { btn.classList.remove('apidoc-copy-btn--copied'); }, 1200);
+  });
+}
+
+// Copy markdown documentation (for AI consumption)
+// data-md-id format: "ep:<endpoint_id>" | "group:<group_id>" | "full"
+(function() {
+  var _mdData = null;
+  function getMdData() {
+    if (_mdData) return _mdData;
+    var el = document.getElementById('apidoc-md-data');
+    if (!el) return null;
+    try {
+      _mdData = JSON.parse(el.textContent);
+    } catch (e) {
+      el.dataset.parseError = e.message || 'parse failed';
+      return null;
+    }
+    return _mdData;
+  }
+
+  window.apidocCopyMd = function(event, btn) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    var data = getMdData();
+    if (!data) return;
+    var id = btn.getAttribute('data-md-id') || '';
+    var md = null;
+    if (id === 'full') {
+      md = data.full;
+    } else if (id.indexOf('ep:') === 0) {
+      md = (data.endpoints || {})[id.slice(3)];
+    } else if (id.indexOf('group:') === 0) {
+      md = (data.groups || {})[id.slice(6)];
+    }
+    if (!md) {
+      btn.dataset.missingMarkdown = id;
+      return;
+    }
+
+    // Cache original innerHTML for reliable restoration
+    if (!btn.dataset.origHtml) {
+      btn.dataset.origHtml = btn.innerHTML;
+    }
+    var doneLabel = '已复制';
+    if (id === 'full') doneLabel = '✓ 已复制全部文档';
+    else if (id.indexOf('group:') === 0) doneLabel = '✓ 已复制此分组';
+    else doneLabel = '✓ 已复制';
+
+    navigator.clipboard.writeText(md).then(function() {
+      btn.classList.add('apidoc-md-btn--copied');
+      btn.textContent = doneLabel;
+      setTimeout(function() {
+        btn.classList.remove('apidoc-md-btn--copied');
+        btn.innerHTML = btn.dataset.origHtml;
+      }, 1500);
+    }).catch(function(err) {
+      alert('复制失败：' + err.message);
+    });
+  };
+})();
+
+// Open card when navigating via anchor
+(function() {
+  function openAnchor() {
+    var hash = location.hash;
+    if (!hash) return;
+    var el = document.querySelector(hash);
+    if (el && el.tagName === 'DETAILS' && !el.open) {
+      el.open = true;
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+  window.addEventListener('hashchange', openAnchor);
+  if (location.hash) setTimeout(openAnchor, 100);
+})();
+</script>
+
+      </main>
+    </div>
+  </div>
+  <script id="aicrmAdminActionGrants" type="application/json">{}</script>
+  
+</body>
+</html>

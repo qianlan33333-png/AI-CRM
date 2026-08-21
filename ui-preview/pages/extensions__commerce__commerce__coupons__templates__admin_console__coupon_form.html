@@ -1,0 +1,1109 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Coupon Form · 客户管理后台</title>
+  <link rel="stylesheet" href="../static/admin_console/admin_console.css?v=operation-member-picker-fix-20260527&amp;design=lark-20260803">
+  
+<style>
+  .coupon-admin {
+    display: grid;
+    gap: 16px;
+    min-width: 0;
+  }
+  .coupon-toolbar,
+  .coupon-actions,
+  .coupon-inline,
+  .coupon-pagination,
+  .coupon-dialog-head,
+  .coupon-dialog-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .coupon-toolbar,
+  .coupon-dialog-head { justify-content: space-between; }
+  .coupon-table { min-width: 1120px; }
+  .coupon-muted,
+  .coupon-help,
+  .coupon-toast { color: var(--muted); }
+  .coupon-toast { min-height: 22px; font-weight: 700; }
+  .coupon-toast.is-error { color: #b42318; }
+  .coupon-help { margin: 0; font-size: 12px; line-height: 1.6; }
+  .coupon-status {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #f2f4f7;
+    color: #475467;
+    font-size: 12px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  .coupon-status.active,
+  .coupon-status.published,
+  .coupon-status.available { background: #ecfdf3; color: #067647; }
+  .coupon-status.scheduled,
+  .coupon-status.reserved { background: #eff8ff; color: #175cd3; }
+  .coupon-status.sold_out,
+  .coupon-status.ended,
+  .coupon-status.expired { background: #fffaeb; color: #b54708; }
+  .coupon-status.stopped,
+  .coupon-status.archived,
+  .coupon-status.consumed { background: #f2f4f7; color: #475467; }
+  .coupon-amount { color: #f53f3f; font-size: 18px; font-weight: 900; white-space: nowrap; }
+  .coupon-type-list { display: grid; gap: 4px; min-width: 120px; }
+  .coupon-summary-grid,
+  .coupon-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .coupon-stat {
+    display: grid;
+    gap: 6px;
+    min-height: 88px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fff;
+  }
+  .coupon-stat span { color: var(--muted); font-size: 12px; font-weight: 700; }
+  .coupon-stat strong { color: var(--text); font-size: 24px; font-weight: 900; }
+  .coupon-form { display: grid; gap: 16px; }
+  .coupon-section { padding: 22px 24px; }
+  .coupon-section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f0f1f2;
+  }
+  .coupon-section-head h2 { margin: 0; font-size: 18px; font-weight: 900; }
+  .coupon-section-head p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+  .coupon-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .coupon-field { display: grid; gap: 8px; min-width: 0; }
+  .coupon-field.full { grid-column: 1 / -1; }
+  .coupon-field label,
+  .coupon-field legend { color: #667085; font-size: 13px; font-weight: 800; }
+  .coupon-field input,
+  .coupon-field select,
+  .coupon-field textarea,
+  .coupon-search {
+    width: 100%;
+    min-height: 42px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--text);
+    font: inherit;
+    outline: none;
+  }
+  .coupon-field textarea { min-height: 118px; resize: vertical; }
+  .coupon-field input:focus,
+  .coupon-field select:focus,
+  .coupon-field textarea:focus,
+  .coupon-search:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(51, 112, 255, .12); }
+  .coupon-field input:disabled,
+  .coupon-field select:disabled,
+  .coupon-field textarea:disabled { background: #f5f6f7; color: #8a94a6; cursor: not-allowed; }
+  .coupon-required { color: #f53f3f; }
+  .coupon-money-input { display: grid; grid-template-columns: auto minmax(0, 260px) auto; align-items: center; gap: 12px; }
+  .coupon-money-input strong { font-size: 16px; }
+  .coupon-radio-row { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+  .coupon-radio-row label { display: inline-flex; align-items: center; gap: 8px; color: var(--text); cursor: pointer; }
+  .coupon-radio-row input { width: 18px; min-height: 18px; padding: 0; accent-color: var(--brand); }
+  .coupon-freeze-notice {
+    padding: 12px 14px;
+    border: 1px solid #fedf89;
+    border-radius: 10px;
+    background: #fffaeb;
+    color: #93370d;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .coupon-picker-summary {
+    display: grid;
+    gap: 10px;
+    min-height: 88px;
+    padding: 14px;
+    border: 1px dashed #b8c4d6;
+    border-radius: 10px;
+    background: #fafbfc;
+  }
+  .coupon-selected-list { display: flex; gap: 8px; flex-wrap: wrap; }
+  .coupon-selected-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    max-width: 100%;
+    padding: 6px 9px;
+    border: 1px solid #d6e4ff;
+    border-radius: 8px;
+    background: #f5f8ff;
+    color: #1849a9;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .coupon-selected-item button { border: 0; background: transparent; color: inherit; cursor: pointer; font-size: 16px; }
+  .coupon-form-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 20px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .96);
+    box-shadow: 0 -8px 24px rgba(15, 23, 42, .07);
+    backdrop-filter: blur(8px);
+  }
+  .coupon-dialog[hidden] { display: none !important; }
+  .coupon-dialog {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: rgba(15, 23, 42, .42);
+  }
+  .coupon-dialog-panel {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    width: min(860px, 100%);
+    max-height: min(760px, calc(100vh - 48px));
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 24px 72px rgba(15, 23, 42, .24);
+  }
+  .coupon-dialog-head,
+  .coupon-dialog-actions { padding: 16px 20px; border-bottom: 1px solid var(--line); }
+  .coupon-dialog-head h2 { margin: 0; font-size: 18px; }
+  .coupon-dialog-actions { justify-content: flex-end; border-top: 1px solid var(--line); border-bottom: 0; }
+  .coupon-dialog-body { min-height: 0; overflow: auto; padding: 18px 20px; }
+  .coupon-picker-tools { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; margin-bottom: 14px; }
+  .coupon-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .coupon-tab {
+    min-height: 40px;
+    padding: 8px 14px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    color: #475467;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 800;
+  }
+  .coupon-tab.is-active { border-color: #b2ccff; background: #eff4ff; color: #1849a9; }
+  .coupon-option-list { display: grid; gap: 8px; }
+  .coupon-option {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding: 13px 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+  }
+  .coupon-option input { width: 18px; height: 18px; accent-color: var(--brand); }
+  .coupon-option-title { display: grid; gap: 4px; min-width: 0; }
+  .coupon-option-title strong { overflow-wrap: anywhere; }
+  .coupon-option-title span { color: var(--muted); font-size: 12px; }
+  .coupon-empty { display: grid; place-items: center; min-height: 130px; color: var(--muted); text-align: center; }
+  .coupon-share-panel { width: min(520px, 100%); }
+  .coupon-share-body { display: grid; gap: 16px; justify-items: center; }
+  .coupon-share-qr { width: 220px; height: 220px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; object-fit: contain; }
+  .coupon-share-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; width: 100%; }
+  .coupon-identity { display: grid; gap: 4px; min-width: 180px; }
+  .coupon-identity strong { overflow-wrap: anywhere; }
+  .coupon-identity span { color: var(--muted); font-size: 12px; }
+  @media (max-width: 980px) {
+    .coupon-summary-grid,
+    .coupon-stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .coupon-form-grid,
+    .coupon-picker-tools { grid-template-columns: 1fr; }
+    .coupon-field.full { grid-column: auto; }
+  }
+  @media (max-width: 640px) {
+    .coupon-section { padding: 18px; }
+    .coupon-money-input { grid-template-columns: auto minmax(0, 1fr) auto; }
+    .coupon-dialog { padding: 0; }
+    .coupon-dialog-panel { width: 100%; max-height: 100vh; height: 100vh; border-radius: 0; }
+  }
+  /* Supplied AI-CRM design package: compact coupon list and editor. */
+  .coupon-admin,.coupon-form{gap:12px}
+  .coupon-status{min-height:22px;padding:2px 8px;border-radius:4px;font-weight:500}
+  .coupon-status.active,.coupon-status.published,.coupon-status.available{background:#ebf9ec;color:#2ea121}
+  .coupon-status.scheduled,.coupon-status.reserved{background:#eff4ff;color:#245bdb}
+  .coupon-status.sold_out,.coupon-status.ended,.coupon-status.expired{background:#fff6e9;color:#d9730d}
+  .coupon-stat{min-height:72px;padding:12px 14px;border-color:#dee0e3;border-radius:8px}
+  .coupon-stat span{font-weight:400}.coupon-stat strong{font-size:22px;font-weight:600}
+  .coupon-section{padding:18px}
+  .coupon-section-head{margin-bottom:16px;padding-bottom:14px;border-color:#eff0f1}
+  .coupon-section-head h2{font-size:15px;font-weight:600}
+  .coupon-form-grid{gap:16px}
+  .coupon-field{gap:6px}.coupon-field label,.coupon-field legend{color:#646a73;font-size:12px;font-weight:400}
+  .coupon-field input,.coupon-field select,.coupon-field textarea,.coupon-search{min-height:36px;padding:8px 10px;border-color:#dee0e3;border-radius:6px}
+  .coupon-field input:focus,.coupon-field select:focus,.coupon-field textarea:focus,.coupon-search:focus{border-color:#3370ff;box-shadow:0 0 0 2px rgba(51,112,255,.12)}
+  .coupon-form-actions{padding:10px 16px;border-radius:8px;box-shadow:none;backdrop-filter:none}
+  .coupon-dialog{background:rgba(31,35,41,.46)}
+  .coupon-dialog-panel{border-radius:10px;box-shadow:0 12px 36px rgba(31,35,41,.24)}
+  .coupon-tab{min-height:32px;padding:0 12px;border-radius:6px;font-weight:500}
+  .coupon-option{padding:10px 12px;border-radius:8px}
+
+  /* Supplied HTML: coupon editor is an independent two-column secondary page. */
+  .coupon-editor-head{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    min-height:54px;padding:10px 14px;border:1px solid #dee0e3;border-radius:8px;background:#fff
+  }
+  .coupon-editor-title,.coupon-editor-title-row,.coupon-editor-actions{display:flex;align-items:center;gap:8px;min-width:0}
+  .coupon-editor-title-row{margin-top:2px}
+  .coupon-editor-title-row h2{margin:0;color:#1f2329;font-size:16px;font-weight:600;line-height:22px}
+  .coupon-editor-breadcrumb{color:#8f959e;font-size:11px;line-height:14px}
+  .coupon-back{display:grid;place-items:center;width:30px;height:30px;border:1px solid #dee0e3;border-radius:6px;color:#646a73;font-size:23px;line-height:1;text-decoration:none}
+  .coupon-editor-actions{justify-content:flex-end;flex:none}
+  .coupon-editor-actions .admin-button{min-height:32px;padding:0 12px}
+  .coupon-editor-actions .coupon-toast:empty{display:none}
+  .coupon-editor-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px;align-items:start}
+  .coupon-editor-main{display:grid;gap:12px;min-width:0}
+  .coupon-editor-main .coupon-section,.coupon-preview-card{padding:0;overflow:hidden;border-color:#dee0e3;border-radius:8px;box-shadow:none}
+  .coupon-editor-main .coupon-section-head,.coupon-preview-card .coupon-section-head{
+    min-height:44px;margin:0;padding:11px 16px;border-bottom:1px solid #eff0f1
+  }
+  .coupon-editor-main .coupon-section-head h2,.coupon-preview-card .coupon-section-head h2{font-size:14px;font-weight:600}
+  .coupon-editor-main .coupon-form-grid{padding:16px;gap:14px}
+  .coupon-editor-main .coupon-field{gap:6px}
+  .coupon-editor-main .coupon-field input,.coupon-editor-main .coupon-field textarea{min-height:34px}
+  .coupon-editor-main .coupon-field textarea{min-height:88px;line-height:20px}
+  .coupon-picker-summary{min-height:0;padding:14px 16px;border:0;border-radius:0;background:#fff}
+  .coupon-product-summary{justify-content:space-between}
+  .coupon-selected-list{display:grid;gap:8px}
+  .coupon-selected-item{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;
+    min-height:42px;padding:8px 12px;border:1px solid #dee0e3;border-radius:8px;background:#fff;color:#1f2329;font-weight:400
+  }
+  .coupon-selected-copy{display:grid;gap:2px;min-width:0}
+  .coupon-selected-copy strong{overflow:hidden;font-size:13px;font-weight:500;text-overflow:ellipsis;white-space:nowrap}
+  .coupon-selected-copy small{overflow:hidden;color:#a6aab0;font:11px ui-monospace,SFMono-Regular,Menlo,monospace;text-overflow:ellipsis;white-space:nowrap}
+  .coupon-selected-item button{flex:none;color:#8f959e;font-size:12px}
+  .coupon-validity-fieldset{padding:10px 14px 14px!important;border:1px solid #dee0e3!important;border-radius:8px}
+  .coupon-validity-fieldset legend{padding:0 6px}
+  .coupon-validity-fieldset .coupon-radio-row{display:grid;gap:10px}
+  .coupon-validity-fieldset .coupon-radio-row label{min-height:30px;font-weight:400}
+  .coupon-validity-fieldset .coupon-relative-days{width:58px;min-height:28px;padding:4px 8px;text-align:center}
+  .coupon-fixed-range{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+  .coupon-preview-card{position:sticky;top:12px}
+  .coupon-preview-body{padding:16px}
+  .coupon-preview-ticket{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:10px;background:linear-gradient(135deg,#3370ff,#245bdb);color:#fff}
+  .coupon-preview-amount{display:grid;justify-items:center;flex:none}
+  .coupon-preview-amount span{font-size:12px;opacity:.85}
+  .coupon-preview-amount strong{font-size:28px;font-weight:700;line-height:32px}
+  .coupon-preview-divider{width:1px;height:44px;background:rgba(255,255,255,.3)}
+  .coupon-preview-copy{display:grid;gap:4px;min-width:0}
+  .coupon-preview-copy strong{overflow:hidden;font-size:14px;font-weight:600;text-overflow:ellipsis;white-space:nowrap}
+  .coupon-preview-copy span{font-size:11px;line-height:17px;opacity:.85}
+  .coupon-preview-body>p{margin:12px 0 0;color:#8f959e;font-size:12px;line-height:19px}
+  @media (max-width:1100px){
+    .coupon-editor-layout{grid-template-columns:1fr}
+    .coupon-preview-card{position:static;grid-row:1}
+  }
+  @media (max-width:720px){
+    .coupon-editor-head{align-items:flex-start;flex-direction:column}
+    .coupon-editor-actions{width:100%;justify-content:flex-end}
+    .coupon-fixed-range{grid-template-columns:1fr}
+  }
+</style>
+
+  <script src="../static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
+  <script defer src="../static/admin_console/admin_console.js?v=lark-design-package-20260803"></script>
+  <script defer src="../static/admin_console/operation_member_picker.js?v=operation-member-picker-wecom-sync-20260709"></script>
+</head>
+<body
+  class="admin-shell"
+  data-admin-shell-source="next_admin_shell"
+>
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="admin-brand-mark">CRM</div>
+        <div class="admin-brand-copy">
+          <div class="admin-brand-title">客户管理后台</div>
+          <div class="admin-brand-subtitle">ADMIN CONSOLE</div>
+        </div>
+      </div>
+
+      <nav class="admin-nav" aria-label="客户管理后台导航">
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">运营</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="自动化运营"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_conversion.svg" alt="">
+              <span class="admin-nav-label">自动化运营</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="运营闭环"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/operation_cycles.svg" alt="">
+              <span class="admin-nav-label">运营闭环</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="群运营计划"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/group_ops.svg" alt="">
+              <span class="admin-nav-label">群运营计划</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="渠道码中心"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/channels.svg" alt="">
+              <span class="admin-nav-label">渠道码中心</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="AI 助手"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/cloud_orchestrator.svg" alt="">
+              <span class="admin-nav-label">AI 助手</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="客户激活 / 客户列表"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/customers.svg" alt="">
+              <span class="admin-nav-label">客户激活 / 客户列表</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="漏斗 / 数据看板"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/user_ops_funnel.svg" alt="">
+              <span class="admin-nav-label">漏斗 / 数据看板</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="问卷"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/questionnaires.svg" alt="">
+              <span class="admin-nav-label">问卷</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="内容雷达"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/radar_links.svg" alt="">
+              <span class="admin-nav-label">内容雷达</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="企微标签管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wecom_tags.svg" alt="">
+              <span class="admin-nav-label">企微标签管理</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">交易</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="交易管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_transactions.svg" alt="">
+              <span class="admin-nav-label">交易管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_products.svg" alt="">
+              <span class="admin-nav-label">商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="周期商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/service_period_products.svg" alt="">
+              <span class="admin-nav-label">周期商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="优惠券"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/coupons.svg" alt="">
+              <span class="admin-nav-label">优惠券</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">素材</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="图片素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/image_library.svg" alt="">
+              <span class="admin-nav-label">图片素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="小程序素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/miniprogram_library.svg" alt="">
+              <span class="admin-nav-label">小程序素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="附件素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/attachment_library.svg" alt="">
+              <span class="admin-nav-label">附件素材库</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">配置及后台</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="自动化话术"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_agents.svg" alt="">
+              <span class="admin-nav-label">自动化话术</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="负责人迁移"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/owner_migration.svg" alt="">
+              <span class="admin-nav-label">负责人迁移</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="配置"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/config.svg" alt="">
+              <span class="admin-nav-label">配置</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="API 文档"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/api_docs.svg" alt="">
+              <span class="admin-nav-label">API 文档</span>
+            </a>
+            
+          </div>
+        </section>
+        
+      </nav>
+
+      
+      <div class="admin-sidebar-user">
+        <div class="admin-sidebar-user__avatar">
+          示
+        </div>
+        <div class="admin-sidebar-user__meta">
+          <div class="admin-sidebar-user__name">
+            示例管理员
+          </div>
+          <a class="admin-sidebar-user__logout" href="#">退出登录</a>
+        </div>
+      </div>
+      
+    </aside>
+
+    <div class="admin-main-wrap">
+      
+      
+      
+      
+      <header class="admin-topbar">
+        
+        <div class="admin-topbar-head">
+          <nav class="admin-breadcrumbs" aria-label="当前位置">
+            
+            
+            <a href="#">客户管理后台</a>
+            
+            
+          </nav>
+          <div>
+            <h1 class="admin-page-title">Coupon Form</h1>
+            <p class="admin-page-summary">页面功能预览（示例数据）</p>
+          </div>
+        </div>
+        
+
+        
+      </header>
+      
+
+      <main class="admin-page">
+        
+        <section class="admin-alert admin-alert--success">示例</section>
+        
+        
+        <section class="admin-alert admin-alert--error">示例</section>
+        
+        
+<div class="coupon-admin" data-coupon-form-mode="示例" data-coupon-id="示例">
+  <header class="coupon-editor-head">
+    <div class="coupon-editor-title">
+      <a class="coupon-back" href="/admin/coupons" aria-label="返回优惠券管理">‹</a>
+      <div>
+        <div class="coupon-editor-breadcrumb">优惠券 / 编辑优惠券</div>
+        <div class="coupon-editor-title-row">
+          <h2>编辑优惠券</h2>
+          <span class="coupon-status draft" id="couponStatusLabel">草稿</span>
+        </div>
+      </div>
+    </div>
+    <div class="coupon-editor-actions">
+      <span class="coupon-toast" id="couponFormToast" role="status"></span>
+      <a class="admin-button admin-button--ghost" href="/admin/coupons">取消</a>
+      <button class="admin-button admin-button--primary" id="saveCoupon" form="couponForm" type="submit">保存优惠券</button>
+    </div>
+  </header>
+
+  <div class="coupon-freeze-notice" id="couponFreezeNotice" hidden>
+    这张优惠券已经有人领取。减免金额、适用商品、领取与使用时间、有效期模式和每人限领量已冻结；可以修改名称、说明或增加发行量。
+  </div>
+
+  <form class="coupon-form coupon-editor-layout" id="couponForm" novalidate>
+    <div class="coupon-editor-main">
+      <section class="admin-card coupon-section">
+        <header class="coupon-section-head"><h2>基本信息</h2><span class="coupon-help">无门槛固定减免券</span></header>
+        <div class="coupon-form-grid">
+          <div class="coupon-field full">
+            <label for="couponName">优惠券名称 <span class="coupon-required">*</span></label>
+            <input id="couponName" maxlength="45" required autocomplete="off" value="示例" placeholder="展示给用户的名称，如「新客立减 100」">
+          </div>
+          <div class="coupon-field">
+            <label for="couponAmount">减免金额（元） <span class="coupon-required">*</span></label>
+            <input id="couponAmount" data-rule-field type="number" min="0.01" step="0.01" inputmode="decimal" required placeholder="输入金额">
+          </div>
+          <div class="coupon-field">
+            <label for="couponIssueLimit">发行总量 <span class="coupon-required">*</span></label>
+            <input id="couponIssueLimit" type="number" min="1" step="1" inputmode="numeric" required>
+            <p class="coupon-help">发布后只允许增加，不允许低于已领取数量。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-card coupon-section">
+        <header class="coupon-section-head">
+          <h2>适用商品</h2>
+          <button class="admin-button admin-button--ghost" id="openProductSelector" data-rule-field type="button">选择商品</button>
+        </header>
+        <div class="coupon-picker-summary">
+          <div class="coupon-inline coupon-product-summary"><strong id="selectedProductCount">已选 0 个商品</strong><span class="coupon-help">至少选择一个</span></div>
+          <div class="coupon-selected-list" id="selectedProductList">
+            
+            <span class="coupon-selected-item"><span>示例</span></span>
+            
+            <span class="coupon-selected-item"><span>示例</span></span>
+            
+            <span class="coupon-selected-item"><span>示例</span></span>
+            
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-card coupon-section">
+        <header class="coupon-section-head"><h2>领取与有效期</h2></header>
+        <div class="coupon-form-grid coupon-validity-grid">
+          <div class="coupon-field">
+            <label for="couponClaimStart">领取开始（北京时间） <span class="coupon-required">*</span></label>
+            <input id="couponClaimStart" data-rule-field type="datetime-local" required>
+          </div>
+          <div class="coupon-field">
+            <label for="couponClaimEnd">领取结束（北京时间） <span class="coupon-required">*</span></label>
+            <input id="couponClaimEnd" data-rule-field type="datetime-local" required>
+          </div>
+          <fieldset class="coupon-field full coupon-validity-fieldset">
+            <legend>使用有效期 <span class="coupon-required">*</span></legend>
+            <div class="coupon-radio-row">
+              <label><input data-rule-field type="radio" name="couponValidityMode" value="relative_days"> 领取后 <input id="couponRelativeDays" data-rule-field class="coupon-relative-days" type="number" min="1" max="3650" step="1" inputmode="numeric" value="1"> 天内可用</label>
+              <label><input data-rule-field type="radio" name="couponValidityMode" value="fixed_range" checked> 固定日期区间</label>
+            </div>
+            <div class="coupon-fixed-range" data-fixed-validity>
+              <div class="coupon-field">
+                <label for="couponUseStart">使用开始时间 <span class="coupon-required">*</span></label>
+                <input id="couponUseStart" data-rule-field type="datetime-local">
+              </div>
+              <div class="coupon-field">
+                <label for="couponUseEnd">使用结束时间 <span class="coupon-required">*</span></label>
+                <input id="couponUseEnd" data-rule-field type="datetime-local">
+              </div>
+            </div>
+            <p class="coupon-help" data-relative-validity hidden>领取当天为第 1 天，第 N 天 24:00 失效。</p>
+          </fieldset>
+          <div class="coupon-field">
+            <label for="couponPerUserLimit">每人限领 <span class="coupon-required">*</span></label>
+            <input id="couponPerUserLimit" data-rule-field type="number" min="1" step="1" inputmode="numeric" value="1" required>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-card coupon-section">
+        <header class="coupon-section-head"><h2>使用说明</h2></header>
+        <div class="coupon-field">
+          <textarea id="couponInstructions" maxlength="200" placeholder="请输入优惠券使用说明"></textarea>
+          <p class="coupon-help"><span id="couponInstructionsCount">0</span> / 200</p>
+        </div>
+      </section>
+    </div>
+
+    <aside class="admin-card coupon-preview-card" aria-label="用户端预览">
+      <header class="coupon-section-head"><h2>用户端预览</h2></header>
+      <div class="coupon-preview-body">
+        <div class="coupon-preview-ticket">
+          <div class="coupon-preview-amount"><span>立减</span><strong id="couponPreviewAmount">¥0</strong></div>
+          <div class="coupon-preview-divider"></div>
+          <div class="coupon-preview-copy">
+            <strong id="couponPreviewName">优惠券名称</strong>
+            <span id="couponPreviewValidity">领取及有效期将在保存后展示</span>
+          </div>
+        </div>
+        <p>用户在报名页与支付落地页看到的样式。名称超过 12 字会自动截断。</p>
+      </div>
+    </aside>
+  </form>
+</div>
+
+<div class="coupon-dialog" id="couponProductDialog" role="dialog" aria-modal="true" aria-labelledby="couponProductDialogTitle" hidden>
+  <section class="coupon-dialog-panel">
+    <header class="coupon-dialog-head">
+      <div>
+        <h2 id="couponProductDialogTitle">选择适用商品</h2>
+        <p class="coupon-help">支持普通商品和周期商品，可跨页多选。</p>
+      </div>
+      <button class="admin-button admin-button--ghost" data-close-product-dialog type="button">关闭</button>
+    </header>
+    <div class="coupon-dialog-body">
+      <div class="coupon-picker-tools">
+        <div class="coupon-tabs" role="tablist" aria-label="商品类型">
+          <button class="coupon-tab is-active" data-product-type="all" type="button">全部</button>
+          <button class="coupon-tab" data-product-type="standard_product" type="button">普通商品</button>
+          <button class="coupon-tab" data-product-type="service_period" type="button">周期商品</button>
+        </div>
+        <div class="coupon-inline">
+          <input class="coupon-search" id="couponProductSearch" type="search" maxlength="80" placeholder="搜索商品名称">
+          <button class="admin-button admin-button--ghost" id="couponProductSearchButton" type="button">搜索</button>
+        </div>
+      </div>
+      <div class="coupon-option-list" id="couponProductOptions" aria-live="polite"></div>
+      <div class="coupon-pagination" style="justify-content:space-between;margin-top:14px;">
+        <span class="coupon-help" id="couponProductPageSummary">第 1 页</span>
+        <div class="coupon-inline">
+          <button class="admin-button admin-button--ghost" id="couponProductPrev" type="button">上一页</button>
+          <button class="admin-button admin-button--ghost" id="couponProductNext" type="button">下一页</button>
+        </div>
+      </div>
+    </div>
+    <footer class="coupon-dialog-actions">
+      <span class="coupon-help" id="couponProductSelectionCount">已选 0 个</span>
+      <button class="admin-button admin-button--ghost" data-close-product-dialog type="button">取消</button>
+      <button class="admin-button admin-button--primary" id="confirmProductSelection" type="button">确认选择</button>
+    </footer>
+  </section>
+</div>
+
+<script id="couponInitialData" type="application/json">{}</script>
+
+      </main>
+    </div>
+  </div>
+  <script id="aicrmAdminActionGrants" type="application/json">{}</script>
+  
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    "use strict";
+    const root = document.querySelector("[data-coupon-form-mode]");
+    const form = document.getElementById("couponForm");
+    const api = window.AdminApi && window.AdminApi.requestJson;
+    const initial = window.AdminApi.safeJsonParse(document.getElementById("couponInitialData").textContent) || {};
+    const mode = root.dataset.couponFormMode;
+    const couponId = root.dataset.couponId;
+    const toast = document.getElementById("couponFormToast");
+    const dialog = document.getElementById("couponProductDialog");
+    const pageSize = 20;
+    let pickerOffset = 0;
+    let pickerTotal = 0;
+    let pickerType = "all";
+    let selectedProducts = new Map();
+    let draftProducts = new Map();
+
+    const statusLabels = { draft: "草稿", published: "已发布", scheduled: "待开始", active: "领取中", sold_out: "已领完", ended: "已结束", stopped: "已停止", archived: "已归档" };
+    const typeLabels = { standard_product: "普通商品", service_period: "周期商品" };
+
+    function notify(message, isError) {
+      toast.textContent = message;
+      toast.classList.toggle("is-error", Boolean(isError));
+    }
+
+    function productType(item) {
+      return String(item.product_type || item.type || "standard_product");
+    }
+
+    function productRef(item) {
+      return String(item.target_ref || "");
+    }
+
+    function productPrice(item) {
+      return Number(item.price_cents || item.amount_total || 0);
+    }
+
+    function normalizedProduct(item) {
+      return {
+        target_ref: productRef(item),
+        product_type: productType(item),
+        title: String(item.title || item.name || "未命名商品"),
+        price_cents: productPrice(item),
+        currency: String(item.currency || "CNY"),
+        status: String(item.status || "active"),
+        duration_days: Number(item.duration_days || 0),
+      };
+    }
+
+    function yuan(cents) {
+      return `¥${(Number(cents || 0) / 100).toFixed(2)}`;
+    }
+
+    function toDatetimeLocal(value) {
+      if (!value) return "";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "";
+      const shanghai = new Date(date.getTime() + 8 * 60 * 60 * 1000);
+      return shanghai.toISOString().slice(0, 16);
+    }
+
+    function toIso(value) {
+      const matched = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+      if (!matched) return null;
+      const [, year, month, day, hour, minute] = matched.map(Number);
+      return new Date(Date.UTC(year, month - 1, day, hour - 8, minute)).toISOString();
+    }
+
+    function validityMode() {
+      return document.querySelector('input[name="couponValidityMode"]:checked').value;
+    }
+
+    function renderValidityMode() {
+      const relative = validityMode() === "relative_days";
+      document.querySelectorAll("[data-fixed-validity]").forEach((node) => { node.hidden = relative; });
+      document.querySelectorAll("[data-relative-validity]").forEach((node) => { node.hidden = !relative; });
+    }
+
+    function renderSelectedProducts() {
+      const list = document.getElementById("selectedProductList");
+      const frozen = Boolean(initial.rules_frozen || initial.first_claim_at);
+      document.getElementById("selectedProductCount").textContent = `已选 ${selectedProducts.size} 个商品`;
+      if (!selectedProducts.size) {
+        list.innerHTML = '<span class="coupon-help">尚未选择商品</span>';
+        return;
+      }
+      list.innerHTML = Array.from(selectedProducts.values()).map((item) => `
+        <span class="coupon-selected-item">
+          <span class="coupon-selected-copy">
+            <strong>${window.AdminApi.escapeHtml(item.title)}</strong>
+            <small>${window.AdminApi.escapeHtml(typeLabels[item.product_type] || item.product_type)} · ${window.AdminApi.escapeHtml(item.target_ref)} · ${yuan(item.price_cents)}</small>
+          </span>
+          ${frozen ? "" : `<button type="button" data-remove-product="${window.AdminApi.escapeHtml(item.target_ref)}" aria-label="移除 ${window.AdminApi.escapeHtml(item.title)}">移除</button>`}
+        </span>
+      `).join("");
+    }
+
+    function previewDate(value) {
+      const matched = String(value || "").match(/^\d{4}-(\d{2})-(\d{2})/);
+      return matched ? `${matched[1]}-${matched[2]}` : "--";
+    }
+
+    function renderCouponPreview() {
+      const rawName = document.getElementById("couponName").value.trim() || "优惠券名称";
+      const amount = Number(document.getElementById("couponAmount").value || 0);
+      const claimStart = previewDate(document.getElementById("couponClaimStart").value);
+      const claimEnd = previewDate(document.getElementById("couponClaimEnd").value);
+      const validity = validityMode() === "relative_days"
+        ? `领后 ${document.getElementById("couponRelativeDays").value || 1} 天有效`
+        : `${previewDate(document.getElementById("couponUseStart").value)} – ${previewDate(document.getElementById("couponUseEnd").value)} 可用`;
+      document.getElementById("couponPreviewName").textContent = rawName;
+      document.getElementById("couponPreviewAmount").textContent = `¥${Number.isFinite(amount) ? amount.toFixed(amount % 1 ? 2 : 0) : "0"}`;
+      document.getElementById("couponPreviewValidity").textContent = `${claimStart} – ${claimEnd} 可领 · ${validity}`;
+    }
+
+    function initialize() {
+      document.getElementById("couponName").value = initial.name || "";
+      document.getElementById("couponAmount").value = initial.discount_amount_total ? (Number(initial.discount_amount_total) / 100).toFixed(2) : "";
+      document.getElementById("couponClaimStart").value = toDatetimeLocal(initial.claim_starts_at);
+      document.getElementById("couponClaimEnd").value = toDatetimeLocal(initial.claim_ends_at);
+      document.getElementById("couponUseStart").value = toDatetimeLocal(initial.use_starts_at);
+      document.getElementById("couponUseEnd").value = toDatetimeLocal(initial.use_ends_at);
+      document.getElementById("couponRelativeDays").value = initial.relative_validity_days || 1;
+      document.getElementById("couponIssueLimit").value = initial.total_issue_limit || "";
+      document.getElementById("couponIssueLimit").min = Math.max(
+        1,
+        Number(initial.first_claim_at ? initial.total_issue_limit : initial.issued_count || 0),
+      );
+      document.getElementById("couponPerUserLimit").value = initial.per_user_issue_limit || 1;
+      document.getElementById("couponInstructions").value = initial.instructions || "";
+      document.getElementById("couponInstructionsCount").textContent = String((initial.instructions || "").length);
+      const configuredMode = initial.validity_mode || "fixed_range";
+      const modeInput = document.querySelector(`input[name="couponValidityMode"][value="${configuredMode}"]`);
+      if (modeInput) modeInput.checked = true;
+      const products = initial.products || initial.targets || initial.product_options || [];
+      products.forEach((item) => {
+        const normalized = normalizedProduct(item);
+        if (normalized.target_ref) selectedProducts.set(normalized.target_ref, normalized);
+      });
+      if (!selectedProducts.size && Array.isArray(initial.target_refs)) {
+        initial.target_refs.forEach((targetRef) => selectedProducts.set(String(targetRef), normalizedProduct({ target_ref: targetRef, title: "已选商品" })));
+      }
+      const viewStatus = initial.view_status || initial.derived_status || initial.display_state || initial.status || "draft";
+      const status = document.getElementById("couponStatusLabel");
+      status.textContent = statusLabels[viewStatus] || viewStatus;
+      status.className = `coupon-status ${viewStatus}`;
+      const frozen = Boolean(initial.rules_frozen || initial.first_claim_at);
+      document.getElementById("couponFreezeNotice").hidden = !frozen;
+      if (frozen) document.querySelectorAll("[data-rule-field]").forEach((field) => { field.disabled = true; });
+      renderValidityMode();
+      renderSelectedProducts();
+      renderCouponPreview();
+    }
+
+    function pickerSummary() {
+      document.getElementById("couponProductSelectionCount").textContent = `已选 ${draftProducts.size} 个`;
+      const page = Math.floor(pickerOffset / pageSize) + 1;
+      const pages = Math.max(1, Math.ceil(pickerTotal / pageSize));
+      document.getElementById("couponProductPageSummary").textContent = `第 ${page} / ${pages} 页，共 ${pickerTotal} 个商品`;
+      document.getElementById("couponProductPrev").disabled = pickerOffset <= 0;
+      document.getElementById("couponProductNext").disabled = pickerOffset + pageSize >= pickerTotal;
+    }
+
+    async function loadProductOptions() {
+      if (!api) throw new Error("管理端请求组件未加载");
+      const list = document.getElementById("couponProductOptions");
+      list.innerHTML = '<div class="coupon-empty">正在加载商品…</div>';
+      const params = new URLSearchParams({
+        q: document.getElementById("couponProductSearch").value.trim(),
+        product_type: pickerType,
+        limit: String(pageSize),
+        offset: String(pickerOffset),
+      });
+      try {
+        const payload = await api(`/api/admin/coupons/product-options?${params.toString()}`);
+        const items = (payload.items || []).map(normalizedProduct).filter((item) => item.target_ref);
+        pickerTotal = Number(payload.total || items.length);
+        if (!items.length) {
+          list.innerHTML = '<div class="coupon-empty">没有匹配的商品，请调整搜索词或商品类型。</div>';
+        } else {
+          list.innerHTML = items.map((item) => `
+            <label class="coupon-option">
+              <input type="checkbox" data-product-option="${window.AdminApi.escapeHtml(item.target_ref)}" ${draftProducts.has(item.target_ref) ? "checked" : ""}>
+              <span class="coupon-option-title">
+                <strong>${window.AdminApi.escapeHtml(item.title)}</strong>
+                <span>${window.AdminApi.escapeHtml(typeLabels[item.product_type] || item.product_type)}${item.duration_days ? ` · ${item.duration_days} 天` : ""} · ${window.AdminApi.escapeHtml(item.status)}</span>
+              </span>
+              <strong>${yuan(item.price_cents)}</strong>
+            </label>
+          `).join("");
+          items.forEach((item) => {
+            const checkbox = list.querySelector(`[data-product-option="${CSS.escape(item.target_ref)}"]`);
+            checkbox.addEventListener("change", () => {
+              if (checkbox.checked) draftProducts.set(item.target_ref, item);
+              else draftProducts.delete(item.target_ref);
+              pickerSummary();
+            });
+          });
+        }
+        pickerSummary();
+      } catch (error) {
+        pickerTotal = 0;
+        list.innerHTML = `<div class="coupon-empty">${window.AdminApi.escapeHtml(error.message || "商品加载失败，请重试。")}</div>`;
+        pickerSummary();
+      }
+    }
+
+    function openProductDialog() {
+      draftProducts = new Map(selectedProducts);
+      pickerOffset = 0;
+      dialog.hidden = false;
+      loadProductOptions();
+      document.getElementById("couponProductSearch").focus();
+    }
+
+    function closeProductDialog() {
+      dialog.hidden = true;
+    }
+
+    function validateForm() {
+      if (!form.reportValidity()) return "请补充所有必填项。";
+      if (!selectedProducts.size) return "请至少选择一个适用商品。";
+      const amountCents = Math.round(Number(document.getElementById("couponAmount").value || 0) * 100);
+      if (amountCents <= 0) return "减免金额必须大于 0。";
+      const invalidProduct = Array.from(selectedProducts.values()).find((item) => item.price_cents > 0 && amountCents >= item.price_cents);
+      if (invalidProduct) return `减免金额必须小于“${invalidProduct.title}”的当前售价。`;
+      const claimStart = new Date(document.getElementById("couponClaimStart").value);
+      const claimEnd = new Date(document.getElementById("couponClaimEnd").value);
+      if (claimStart >= claimEnd) return "领取结束时间必须晚于领取开始时间。";
+      if (validityMode() === "fixed_range") {
+        const useStart = new Date(document.getElementById("couponUseStart").value);
+        const useEnd = new Date(document.getElementById("couponUseEnd").value);
+        if (Number.isNaN(useStart.getTime()) || Number.isNaN(useEnd.getTime())) return "请选择使用开始和结束时间。";
+        if (useStart >= useEnd) return "使用结束时间必须晚于使用开始时间。";
+        if (claimEnd > useEnd) return "领取结束时间不能晚于使用结束时间。";
+      }
+      return "";
+    }
+
+    function requestBody() {
+      const fixed = validityMode() === "fixed_range";
+      return {
+        name: document.getElementById("couponName").value.trim(),
+        discount_amount_total: Math.round(Number(document.getElementById("couponAmount").value) * 100),
+        total_issue_limit: Number(document.getElementById("couponIssueLimit").value),
+        per_user_issue_limit: Number(document.getElementById("couponPerUserLimit").value),
+        claim_starts_at: toIso(document.getElementById("couponClaimStart").value),
+        claim_ends_at: toIso(document.getElementById("couponClaimEnd").value),
+        validity_mode: validityMode(),
+        use_starts_at: fixed ? toIso(document.getElementById("couponUseStart").value) : null,
+        use_ends_at: fixed ? toIso(document.getElementById("couponUseEnd").value) : null,
+        relative_validity_days: fixed ? null : Number(document.getElementById("couponRelativeDays").value),
+        instructions: document.getElementById("couponInstructions").value.trim(),
+        target_refs: Array.from(selectedProducts.keys()),
+      };
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const errorMessage = validateForm();
+      if (errorMessage) { notify(errorMessage, true); return; }
+      if (!api) { notify("管理端请求组件未加载，请刷新页面。", true); return; }
+      const button = document.getElementById("saveCoupon");
+      button.disabled = true;
+      notify("正在保存…", false);
+      try {
+        const endpoint = mode === "new" ? "/api/admin/coupons" : `/api/admin/coupons/${encodeURIComponent(couponId)}`;
+        const payload = await api(endpoint, { method: mode === "new" ? "POST" : "PUT", body: requestBody() });
+        const coupon = payload.coupon || payload.item || {};
+        notify("优惠券已保存", false);
+        window.location.href = coupon.id ? `/admin/coupons/${encodeURIComponent(coupon.id)}/edit` : "/admin/coupons";
+      } catch (error) {
+        notify(error.message || "保存失败，请检查配置后重试。", true);
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    document.querySelectorAll('input[name="couponValidityMode"]').forEach((radio) => radio.addEventListener("change", () => {
+      renderValidityMode();
+      renderCouponPreview();
+    }));
+    for (const id of ("couponName couponAmount couponClaimStart couponClaimEnd couponUseStart couponUseEnd couponRelativeDays".split(" "))) {
+      document.getElementById(id).addEventListener("input", renderCouponPreview);
+    }
+    document.getElementById("couponInstructions").addEventListener("input", (event) => {
+      document.getElementById("couponInstructionsCount").textContent = String(event.target.value.length);
+    });
+    document.getElementById("openProductSelector").addEventListener("click", openProductDialog);
+    document.querySelectorAll("[data-close-product-dialog]").forEach((button) => button.addEventListener("click", closeProductDialog));
+    dialog.addEventListener("click", (event) => { if (event.target === dialog) closeProductDialog(); });
+    document.querySelectorAll("[data-product-type]").forEach((button) => button.addEventListener("click", () => {
+      pickerType = button.dataset.productType;
+      pickerOffset = 0;
+      document.querySelectorAll("[data-product-type]").forEach((item) => item.classList.toggle("is-active", item === button));
+      loadProductOptions();
+    }));
+    document.getElementById("couponProductSearchButton").addEventListener("click", () => { pickerOffset = 0; loadProductOptions(); });
+    document.getElementById("couponProductSearch").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") { event.preventDefault(); pickerOffset = 0; loadProductOptions(); }
+    });
+    document.getElementById("couponProductPrev").addEventListener("click", () => { pickerOffset = Math.max(0, pickerOffset - pageSize); loadProductOptions(); });
+    document.getElementById("couponProductNext").addEventListener("click", () => { pickerOffset += pageSize; loadProductOptions(); });
+    document.getElementById("confirmProductSelection").addEventListener("click", () => {
+      selectedProducts = new Map(draftProducts);
+      renderSelectedProducts();
+      closeProductDialog();
+    });
+    document.getElementById("selectedProductList").addEventListener("click", (event) => {
+      const button = event.target.closest("[data-remove-product]");
+      if (!button) return;
+      selectedProducts.delete(button.dataset.removeProduct);
+      renderSelectedProducts();
+    });
+
+    initialize();
+  });
+</script>
+
+</body>
+</html>

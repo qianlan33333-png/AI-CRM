@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>示例 · 测评结果</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f6f7;
+      --surface: #ffffff;
+      --text: #1f2329;
+      --muted: #646a73;
+      --line: #dee0e3;
+      --accent: #3370ff;
+      --accent-soft: #eff4ff;
+      --ok: #2ea121;
+      --warn: #d9730d;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "PingFang SC", "HarmonyOS Sans SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+    }
+    .page {
+      width: min(100%, 720px);
+      margin: 0 auto;
+      padding: 28px 18px 40px;
+    }
+    .hero {
+      padding: 24px 20px;
+      background: linear-gradient(135deg, #3370ff, #245bdb);
+      border: 0;
+      border-radius: 16px;
+      box-shadow: none;
+      color: #fff;
+    }
+    .eyebrow {
+      margin: 0 0 10px;
+      color: rgba(255,255,255,.76);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+    .score {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin: 22px 0 8px;
+    }
+    .score strong {
+      font-size: 44px;
+      line-height: 1;
+    }
+    .score span {
+      color: rgba(255,255,255,.72);
+      font-size: 14px;
+    }
+    .summary {
+      margin: 10px 0 0;
+      color: var(--muted);
+    }
+    .hero .summary{color:rgba(255,255,255,.82)}
+    .section {
+      margin-top: 18px;
+      padding: 18px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+    .section h2 {
+      margin: 0 0 14px;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 5px 10px;
+      border-radius: 4px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 650;
+    }
+    .chip.strength{background:#ebf9ec;color:#2ea121}
+    .chip.weakness{background:#fff6e9;color:#d9730d}
+    .dimension {
+      padding: 14px 0;
+      border-top: 1px solid var(--line);
+    }
+    .dimension:first-of-type {
+      border-top: 0;
+      padding-top: 0;
+    }
+    .dimension-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+    .dimension-name {
+      font-weight: 750;
+      font-size: 16px;
+    }
+    .dimension-score {
+      flex: 0 0 auto;
+      color: var(--warn);
+      font-weight: 750;
+    }
+    .dimension-progress{height:6px;margin:8px 0 10px;border-radius:999px;background:#eff0f1;overflow:hidden}
+    .dimension-progress span{display:block;height:100%;border-radius:inherit;background:#3370ff}
+    .meta {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .type-name {
+      color: var(--ok);
+      font-weight: 700;
+    }
+    .recommendation {
+      padding: 12px 0;
+      border-top: 1px solid var(--line);
+    }
+    .recommendation:first-of-type {
+      padding-top: 0;
+      border-top: 0;
+    }
+    .recommendation p {
+      margin: 4px 0 0;
+      color: var(--muted);
+    }
+    .cta {
+      display: inline-flex;
+      margin-top: 10px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .weapp-launch-panel[hidden] { display: none; }
+    .weapp-launch-panel {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface);
+    }
+    .fallback-link {
+      display: inline-flex;
+      color: #3370ff;
+      font-size: 14px;
+      font-weight: 800;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  
+  
+  <main class="page">
+    <section class="hero">
+      <p class="eyebrow">测评结果</p>
+      <h1>示例</h1>
+      <div class="score">
+        <strong>1</strong>
+        <span>总分 / 1</span>
+      </div>
+      
+        <p class="summary">示例</p>
+      
+      
+        <p class="summary">示例</p>
+      
+      
+        <p class="summary">示例</p>
+      
+      
+        <p class="summary">示例</p>
+      
+      
+        <a class="cta" href="示例">示例</a>
+      
+    </section>
+
+    <section class="section">
+      <h2>优势与短板</h2>
+      <p class="meta">优势项</p>
+      <div class="chips">
+        
+          <span class="chip strength">示例</span>
+        
+          <span class="chip strength">示例</span>
+        
+          <span class="chip strength">示例</span>
+        
+      </div>
+      <p class="meta" style="margin-top:14px;">劣势项</p>
+      <div class="chips">
+        
+          <span class="chip weakness">示例</span>
+        
+          <span class="chip weakness">示例</span>
+        
+          <span class="chip weakness">示例</span>
+        
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>维度详情</h2>
+      
+        
+        <article class="dimension">
+          <div class="dimension-head">
+            <div>
+              <div class="dimension-name">示例</div>
+              
+                <p class="meta">当前类型：<span class="type-name">示例</span></p>
+              
+            </div>
+            <div class="dimension-score">1分</div>
+          </div>
+          <div class="dimension-progress" aria-label="示例得分"><span style="width:示例%"></span></div>
+          
+            <p class="meta">示例：示例</p>
+          
+          
+            <p class="meta">示例</p>
+          
+          
+            <p class="meta">示例</p>
+          
+          
+            <p class="meta">示例</p>
+          
+          
+            <p class="meta">示例</p>
+          
+          
+            <a class="cta" href="示例">示例</a>
+          
+        </article>
+        
+      
+        
+        <article class="dimension">
+          <div class="dimension-head">
+            <div>
+              <div class="dimension-name">示例</div>
+              
+                <p class="meta">当前类型：<span class="type-name">示例</span></p>
+              
+            </div>
+            <div class="dimension-score">1分</div>
+          </div>
+          <div class="dimension-progress" aria-label="示例得分"><span style="width:示例%"></span></div>
+          
+            <p class="meta">示例：示例</p>
+          
+          
+            <p class="meta">示例</p>
+          
+          
+            <p class="meta">示例</p>
+          
+          
+            <p class="meta">示例</p>
+          
+          
+            <p class="meta">示例</p>
+          
+          
+            <a class="cta" href="示例">示例</a>
+          
+        </article>
+        
+      
+        
+        <article class="dimension">
+          <div class="dimension-head">
+            <div>
+              <div class="dimension-name">示例</div>
+              
+                <p class="meta">当前类型：<span class="type-name">示例</span></p>
+              
+            </div>
+            <div class="dimension-score">1分</div>
+          </div>
+          <div class="dimension-progress" aria-label="示例得分"><span style="width:示例%"></span></div>
+          
+            <p class="meta">示例：示例</p>
+          
+          
+            <p class="meta">示例</p>
+          
+          
+            <p class="meta">示例</p>
+          
+          
+            <p class="meta">示例</p>
+          
+          
+            <p class="meta">示例</p>
+          
+          
+            <a class="cta" href="示例">示例</a>
+          
+        </article>
+        
+      
+    </section>
+
+    
+      <section class="section">
+        <h2>推荐动作</h2>
+        
+          <article class="recommendation">
+            <strong>示例</strong>
+            <p>示例</p>
+            
+              <a class="cta" href="示例">示例</a>
+            
+          </article>
+        
+          <article class="recommendation">
+            <strong>示例</strong>
+            <p>示例</p>
+            
+              <a class="cta" href="示例">示例</a>
+            
+          </article>
+        
+          <article class="recommendation">
+            <strong>示例</strong>
+            <p>示例</p>
+            
+              <a class="cta" href="示例">示例</a>
+            
+          </article>
+        
+      </section>
+    
+
+    
+    
+      <section class="section">
+        <h2>示例</h2>
+        
+          <p class="meta">示例</p>
+        
+        
+          <p class="meta">示例</p>
+        
+        
+          <a class="cta" href="示例">示例</a>
+        
+      </section>
+    
+    <section id="weapp-launch-panel" class="weapp-launch-panel" hidden>
+      <strong>正在打开小程序</strong>
+      <p class="meta" id="weapp-launch-desc">请点击下方按钮继续。</p>
+      <div id="weapp-launch-host"></div>
+      <a id="weapp-fallback-link" class="fallback-link" href="#">无法打开？点击备用链接</a>
+    </section>
+  </main>
+  <script>
+    const resultCompletionTarget = {};
+    function isSafeRedirectUrl(url) {
+      return /^https:\/\//.test(url) || /^\/(?!\/)[^\s\\]*$/.test(url);
+    }
+    function dynamicUrlLinkResolverUrl(target, fallbackUrl) {
+      const urlLink = target && target.url_link ? target.url_link : {};
+      const sourceUrl = String(urlLink.source_url || '').trim();
+      if (!/^https:\/\/[^\s\\]+$/i.test(sourceUrl)) return '';
+      const params = new URLSearchParams();
+      params.set('source_url', sourceUrl);
+      params.set('response_url_key', String(urlLink.response_url_key || 'url_link'));
+      if (fallbackUrl && isSafeRedirectUrl(fallbackUrl)) params.set('fallback_url', fallbackUrl);
+      return `/api/h5/navigation-target/url-link/resolve?${params.toString()}`;
+    }
+    function handleCompletionTarget(target, fallbackUrl) {
+      const panel = document.getElementById('weapp-launch-panel');
+      const host = document.getElementById('weapp-launch-host');
+      const desc = document.getElementById('weapp-launch-desc');
+      const link = document.getElementById('weapp-fallback-link');
+      const safeFallback = isSafeRedirectUrl(fallbackUrl || '') ? fallbackUrl : window.location.href;
+      if (!target || !target.enabled) return;
+      if (target.target_type === 'h5') {
+        const h5Url = target.h5_url || safeFallback;
+        if (isSafeRedirectUrl(h5Url)) window.location.href = h5Url;
+        return;
+      }
+      if (target.target_type === 'url_link') {
+        const resolverUrl = dynamicUrlLinkResolverUrl(target, safeFallback);
+        if (resolverUrl) {
+          window.location.href = resolverUrl;
+          return;
+        }
+        const url = target.url_link && target.url_link.url;
+        if (url && isSafeRedirectUrl(url)) window.location.href = url;
+        return;
+      }
+      if (target.target_type !== 'mini_program') return;
+      const mini = target.mini_program || {};
+      const fallback = target.fallback_url || target.h5_url || safeFallback;
+      if (!/MicroMessenger/i.test(navigator.userAgent || '') || !mini.username || !mini.path) {
+        if (isSafeRedirectUrl(fallback)) window.location.href = fallback;
+        return;
+      }
+      panel.hidden = false;
+      link.href = isSafeRedirectUrl(fallback) ? fallback : safeFallback;
+      host.innerHTML = `
+        <wx-open-launch-weapp
+          id="launch-weapp"
+          username="${mini.username.replace(/"/g, '&quot;')}"
+          path="${(String(mini.path || '/') + (mini.query ? '?' + mini.query : '')).replace(/"/g, '&quot;')}">
+          <template>
+            <style>
+              .weapp-launch-button {
+                width: 100%;
+                height: 48px;
+                border: 0;
+                border-radius: 8px;
+                background: #3370ff;
+                color: #fff;
+                font-size: 16px;
+                font-weight: 800;
+              }
+            </style>
+            <button class="weapp-launch-button">打开小程序</button>
+          </template>
+        </wx-open-launch-weapp>
+      `;
+      const launcher = host.querySelector('#launch-weapp');
+      if (launcher) launcher.addEventListener('error', () => { desc.textContent = '无法直接打开，点击备用链接。'; });
+    }
+  </script>
+</body>
+</html>

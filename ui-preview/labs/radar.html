@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>内容雷达 · 编辑与详情二级页 · 方向稿</title>
+<style>
+:root{--accent:#3370ff;--accent-hover:#245BDB;--accent-soft:#EFF4FF;--ink:#1F2329;--sub:#646A73;--muted:#8F959E;--faint:#A6AAB0;--line:#DEE0E3;--line-soft:#EFF0F1;--bg:#F5F6F7;--ok:#2EA121;--ok-bg:#EBF9EC;--warn:#D97917;--warn-bg:#FFF7E8;--red:#D83931;--red-bg:#FDECEE;--purple:#7F3BF5;--purple-bg:#F4EDFF}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",-apple-system,sans-serif;background:var(--bg);color:var(--ink);font-size:13px;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font-family:inherit}
+a{text-decoration:none;color:inherit}
+.layout{display:flex;min-height:100vh}
+/* ——— 侧栏 ——— */
+.side{width:208px;flex:none;background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:10px;height:52px;padding:0 14px;border-bottom:1px solid var(--line-soft)}
+.brand-mark{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#4E83FD,#3370ff);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.brand-title{font-size:14px;font-weight:600;line-height:16px}
+.brand-sub{font-size:10px;color:var(--faint);letter-spacing:.08em;margin-top:2px}
+.nav{flex:1;overflow:auto;padding:8px 0}
+.nav-grp{padding:14px 18px 5px;font-size:12px;color:var(--faint)}
+.nav-item{display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;margin:0 8px 2px;border-radius:6px;font-size:13px;cursor:pointer;color:var(--ink)}
+.nav-item:hover{background:#F7F8FA}
+.nav-item.on{background:var(--accent-soft);color:var(--accent-hover);font-weight:600}
+.nav-item svg{flex:none;opacity:.9}
+/* ——— 主区 ——— */
+.main{flex:1;min-width:0;padding:22px 26px 60px}
+.crumb{font-size:12px;color:var(--muted);margin-bottom:6px}
+.crumb b{color:var(--ink);font-weight:500}
+.page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px}
+.page-title{font-size:20px;font-weight:700}
+.page-desc{font-size:12px;color:var(--muted);margin-top:4px}
+/* ——— 通用组件 ——— */
+.card{background:#fff;border:1px solid var(--line);border-radius:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 14px;border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--ink);font-size:13px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:#BBBFC4;background:#F7F8FA}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:500}
+.btn.primary:hover{background:var(--accent-hover)}
+.btn.danger-text{color:var(--red)}
+.btn.sm{height:26px;padding:0 10px;font-size:12px}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+.chip{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:4px;font-size:12px;white-space:nowrap}
+.chip.blue{background:var(--accent-soft);color:var(--accent-hover)}
+.chip.ok{background:var(--ok-bg);color:var(--ok)}
+.chip.warn{background:var(--warn-bg);color:var(--warn)}
+.chip.red{background:var(--red-bg);color:var(--red)}
+.chip.gray{background:#F2F3F5;color:var(--sub)}
+.chip.purple{background:var(--purple-bg);color:var(--purple)}
+.input,.select{height:32px;padding:0 10px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:#fff;color:var(--ink);outline:none}
+.input:focus,.select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(51,112,255,.12)}
+.field{display:grid;gap:6px}
+.field>label{font-size:12px;color:var(--sub);font-weight:500}
+.field .help{font-size:12px;color:var(--muted);line-height:1.6}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--sub)}
+.muted{color:var(--muted)}
+/* ——— 列表页 ——— */
+.toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:14px 16px;margin-bottom:14px}
+.filters{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{padding:11px 16px;text-align:left;font-size:12px;color:var(--muted);font-weight:500;background:#FAFBFC;border-bottom:1px solid var(--line-soft)}
+.tbl td{padding:14px 16px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:0}
+.tbl tr.row-off{background:#FAFBFC}
+.tbl tr:hover td{background:#F7F8FA}
+.row-title{font-size:14px;font-weight:600}
+.row-sub{font-size:12px;color:var(--muted);margin-top:3px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row-actions{display:flex;gap:4px;flex-wrap:wrap}
+.link-btn{border:0;background:none;color:var(--accent);font-size:13px;cursor:pointer;padding:4px 6px;border-radius:4px}
+.link-btn:hover{background:var(--accent-soft)}
+.link-btn.red{color:var(--red)}
+.link-btn.red:hover{background:var(--red-bg)}
+.num{font-variant-numeric:tabular-nums}
+/* ——— 详情页 ——— */
+.detail-hero{padding:18px 20px;margin-bottom:14px;display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.hero-name{font-size:18px;font-weight:700;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hero-meta{display:flex;gap:18px;margin-top:10px;flex-wrap:wrap;font-size:12px;color:var(--sub)}
+.hero-url{margin-top:10px;display:flex;align-items:center;gap:8px;background:#F7F8FA;border:1px solid var(--line-soft);border-radius:6px;padding:7px 10px;max-width:560px}
+.hero-url span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--sub)}
+.stat-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.stat{padding:14px 16px}
+.stat-l{font-size:12px;color:var(--muted)}
+.stat-v{font-size:24px;font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums}
+.stat-s{font-size:11px;color:var(--faint);margin-top:4px}
+.filter-bar{display:flex;align-items:flex-end;gap:10px;padding:14px 16px;margin-bottom:14px;flex-wrap:wrap}
+/* ——— 表单页 ——— */
+.form-wrap{max-width:860px;display:grid;gap:14px}
+.panel-head{padding:14px 18px;border-bottom:1px solid var(--line-soft)}
+.panel-head h2{font-size:15px;font-weight:600}
+.panel-head p{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.6}
+.panel-body{padding:18px;display:grid;gap:16px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.type-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.type-card{border:1px solid var(--line);border-radius:8px;padding:12px;cursor:pointer;display:grid;gap:6px}
+.type-card:hover{border-color:#BBBFC4}
+.type-card.on{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 1px var(--accent) inset}
+.type-card b{font-size:13px}
+.type-card span{font-size:12px;color:var(--sub);line-height:1.5}
+.sw-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border:1px solid var(--line-soft);border-radius:8px;background:#FAFBFC}
+.sw-row b{font-size:13px;font-weight:500}
+.sw-row span{font-size:12px;color:var(--muted);display:block;margin-top:2px}
+.sw{position:relative;width:36px;height:20px;border-radius:10px;background:#DEE0E3;cursor:pointer;flex:none;transition:background .15s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 2px rgba(0,0,0,.18)}
+.sw.on{background:var(--accent)}
+.sw.on::after{left:18px}
+.media-box{border:1px dashed #9CC0FF;border-radius:10px;background:#F5F9FF;padding:14px;display:grid;gap:10px}
+.media-picked{background:#fff;border:1px solid var(--line-soft);border-radius:8px;padding:10px 12px;display:flex;align-items:center;gap:12px}
+.media-thumb{width:40px;height:40px;border-radius:6px;background:linear-gradient(135deg,#E8F1FF,#D6E4FF);display:flex;align-items:center;justify-content:center;font-size:16px;flex:none}
+.form-actions{display:flex;justify-content:flex-end;gap:10px;padding:14px 18px;border-top:1px solid var(--line-soft);background:#FAFBFC;border-radius:0 0 10px 10px}
+/* ——— 浮窗 / 抽屉 / toast ——— */
+.mask{position:fixed;inset:0;background:rgba(15,23,42,.34);z-index:60;display:none;align-items:center;justify-content:center;padding:24px}
+.mask.open{display:flex}
+.modal{width:min(480px,100%);background:#fff;border-radius:12px;box-shadow:0 24px 64px rgba(15,23,42,.22);overflow:hidden}
+.modal-head{display:flex;align-items:center;justify-content:space-between;height:54px;padding:0 18px;border-bottom:1px solid var(--line-soft);font-size:15px;font-weight:600}
+.modal-x{width:28px;height:28px;border:0;border-radius:6px;background:none;font-size:18px;color:var(--muted);cursor:pointer}
+.modal-x:hover{background:#F2F3F5}
+.modal-body{padding:18px;display:grid;gap:16px}
+.qr{width:180px;height:180px;border:1px solid var(--line-soft);border-radius:12px;padding:10px;background:#fff}
+.toast{position:fixed;right:22px;bottom:22px;z-index:99;background:#1F2329;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;box-shadow:0 12px 28px rgba(15,23,42,.25);display:none}
+.toast.err{background:var(--red)}
+.toast.show{display:block}
+@media(max-width:900px){.side{display:none}.stat-row{grid-template-columns:1fr 1fr}.grid-2,.type-cards{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="side">
+    <div class="brand"><div class="brand-mark">CRM</div><div><div class="brand-title">客户管理后台</div><div class="brand-sub">ADMIN CONSOLE</div></div></div>
+    <nav class="nav">
+      <div class="nav-grp">运营</div>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.5 8a5.5 5.5 0 0 1 9.4-3.9M13.5 8a5.5 5.5 0 0 1-9.4 3.9"/><path d="M11.5 1.9v2.4h-2.4M4.5 14.1v-2.4h2.4"/></svg>自动化运营</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="5.6"/><path d="M8 4.6V8l2.3 1.4"/></svg>运营闭环</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="6" cy="6" r="2.3"/><path d="M2 13.2c.4-2.2 2-3.4 4-3.4s3.6 1.2 4 3.4"/><path d="M11 4.2a2.2 2.2 0 0 1 0 4.2"/></svg>群运营计划</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.4" y="2.4" width="4.6" height="4.6" rx="1"/><rect x="9" y="2.4" width="4.6" height="4.6" rx="1"/><rect x="2.4" y="9" width="4.6" height="4.6" rx="1"/></svg>渠道码中心</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2.2l1.5 3.4L13 7l-3.5 1.4L8 11.8 6.5 8.4 3 7l3.5-1.4z"/></svg>AI 助手</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="5.4" r="2.6"/><path d="M3 13.4c.6-2.6 2.5-4 5-4s4.4 1.4 5 4"/></svg>客户激活 / 客户列表</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.6 3.2h10.8L9.4 8v4.6L6.6 14V8z"/></svg>漏斗 / 数据看板</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="2.2" width="10" height="11.6" rx="1.6"/><path d="M5.6 5.6h4.8M5.6 8h4.8M5.6 10.4h3"/></svg>问卷</a>
+      <a class="nav-item on"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="5.6"/><circle cx="8" cy="8" r="2.2"/><path d="M8 8l3.6-3.6"/></svg>内容雷达</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8.2 2.4H13v4.8l-6 6-4.8-4.8z"/><circle cx="10.4" cy="5" r=".9"/></svg>企微标签管理</a>
+      <div class="nav-grp">交易</div>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.2" y="4" width="11.6" height="8.4" rx="1.6"/><path d="M2.2 6.8h11.6"/></svg>交易管理</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.6 5.4L8 2.6l5.4 2.8v5.2L8 13.4l-5.4-2.8z"/></svg>商品管理</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="5.6"/><path d="M8 4.8V8l2.4 1.2"/></svg>周期商品管理</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2.4 5.2a1 1 0 0 1 1-1h9.2a1 1 0 0 1 1 1v1.4a1.4 1.4 0 0 0 0 2.8v1.4a1 1 0 0 1-1 1H3.4a1 1 0 0 1-1-1V9.4a1.4 1.4 0 0 0 0-2.8z"/></svg>优惠券</a>
+      <div class="nav-grp">素材</div>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.4" y="3.2" width="11.2" height="9.6" rx="1.6"/><circle cx="6" cy="6.4" r="1.1"/><path d="M2.8 11.2l3.2-3 2.4 2.2 2-1.8 3.2 2.8"/></svg>图片素材库</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="4" y="2.2" width="8" height="11.6" rx="1.8"/><path d="M6.8 11.6h2.4"/></svg>小程序素材库</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M11.4 7.2l-4 4a2.4 2.4 0 0 1-3.4-3.4l4.6-4.6a1.6 1.6 0 1 1 2.2 2.2l-4.6 4.6"/></svg>附件素材库</a>
+      <div class="nav-grp">配置及后台</div>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2.6" y="4.4" width="10.8" height="7.4" rx="2"/><path d="M8 4.4V2.6M5.6 8v1M10.4 8v1"/></svg>自动化话术</a>
+      <a class="nav-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="2.1"/><path d="M8 1.8l1 1.7 1.9-.4.4 1.9 1.7 1-1 1.6 1 1.6-1.7 1-.4 1.9-1.9-.4-1 1.7-1-1.7-1.9.4-.4-1.9-1.7-1 1-1.6-1-1.6 1.7-1 .4-1.9 1.9.4z"/></svg>配置</a>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <!-- ============ 列表视图 ============ -->
+    <section id="view-list">
+      <div class="crumb">客户管理后台 / 运营 / <b>内容雷达</b></div>
+      <div class="page-head">
+        <div><div class="page-title">内容雷达</div><div class="page-desc">给外部内容套上可追踪的中转链接，授权后记录谁看过 · 逻辑与生产环境一致</div></div>
+        <button class="btn primary" id="btnNew">＋ 新建雷达链接</button>
+      </div>
+      <div class="card toolbar">
+        <div class="filters">
+          <div class="field"><label>搜索内容</label><input class="input" id="fKeyword" placeholder="按名称、链接、文件名搜索" style="width:220px"></div>
+          <div class="field"><label>类型</label><select class="select" id="fType"><option value="all">全部</option><option value="link">链接</option><option value="image">图片</option><option value="pdf">PDF</option></select></div>
+          <div class="field"><label>状态</label><select class="select" id="fStatus"><option value="all">全部</option><option value="enabled">启用</option><option value="disabled">停用</option></select></div>
+        </div>
+        <button class="btn" id="fRefresh">刷新</button>
+      </div>
+      <div class="card">
+        <table class="tbl">
+          <thead><tr><th>内容名称</th><th>类型</th><th>状态</th><th>PV</th><th>UV</th><th>查看</th><th>最近查看</th><th style="width:230px">操作</th></tr></thead>
+          <tbody id="listRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ 详情视图（二级页） ============ -->
+    <section id="view-detail" hidden>
+      <div class="crumb">客户管理后台 / 运营 / <a href="#" id="crumbBack1" style="color:var(--accent)">内容雷达</a> / <b id="crumbTitle">详情</b></div>
+      <div class="page-head"><div class="page-title" id="dPageTitle">雷达详情</div></div>
+
+      <div class="card detail-hero">
+        <div style="min-width:0">
+          <div class="hero-name"><span id="dTitle">—</span><span class="chip blue" id="dType">链接</span><span class="chip ok" id="dStatus">启用</span></div>
+          <div class="hero-meta">
+            <span>内容：<b id="dSource" style="font-weight:500;color:var(--ink)">—</b></span>
+            <span>需要授权：<b id="dAuth" style="font-weight:500;color:var(--ink)">—</b></span>
+            <span>创建人：<b id="dStaff" style="font-weight:500;color:var(--ink)">—</b></span>
+          </div>
+          <div class="hero-url"><span id="dUrl">—</span><button class="link-btn" id="dCopyInline">复制</button></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" id="dBack">返回列表</button>
+          <button class="btn" id="dCopy">复制链接</button>
+          <button class="btn" id="dExport">导出 CSV</button>
+          <button class="btn primary" id="dEdit">编辑</button>
+        </div>
+      </div>
+
+      <div class="stat-row">
+        <div class="card stat"><div class="stat-l">PV · 中转页到达</div><div class="stat-v" id="sPv">0</div><div class="stat-s">wrapper 页加载次数</div></div>
+        <div class="card stat"><div class="stat-l">UV · 授权用户</div><div class="stat-v" id="sUv">0</div><div class="stat-s">完成微信授权的去重人数</div></div>
+        <div class="card stat"><div class="stat-l">查看次数</div><div class="stat-v" id="sView">0</div><div class="stat-s">授权后实际查看内容次数</div></div>
+        <div class="card stat"><div class="stat-l">授权转化率</div><div class="stat-v" id="sRate">0%</div><div class="stat-s">UV / PV</div></div>
+      </div>
+
+      <div class="card filter-bar">
+        <div class="field" style="flex:1;min-width:200px"><label>搜索用户</label><input class="input" id="dKeyword" placeholder="unionid / 外部联系人 ID"></div>
+        <div class="field"><label>开始时间</label><input class="input" id="dStart" type="datetime-local"></div>
+        <div class="field"><label>结束时间</label><input class="input" id="dEnd" type="datetime-local"></div>
+        <button class="btn" id="dRefresh">刷新</button>
+      </div>
+
+      <div class="card">
+        <table class="tbl">
+          <thead><tr><th>unionid</th><th>外部联系人 ID</th><th>查看时间</th></tr></thead>
+          <tbody id="dRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ 新建 / 编辑视图（二级页） ============ -->
+    <section id="view-form" hidden>
+      <div class="crumb">客户管理后台 / 运营 / <a href="#" id="crumbBack2" style="color:var(--accent)">内容雷达</a> / <b id="fCrumb">新建</b></div>
+      <div class="page-head"><div class="page-title" id="fTitle">新建雷达链接</div></div>
+
+      <div class="form-wrap">
+        <div class="card">
+          <div class="panel-head"><h2>基础信息</h2><p>保存后生成 /r/{code} 中转链接；图片和 PDF 授权后进入云端在线预览。</p></div>
+          <div class="panel-body">
+            <div class="field"><label>内容名称 *</label><input class="input" id="fName" placeholder="例如：课程介绍 PDF"></div>
+            <div class="field"><label>内容类型 *</label>
+              <div class="type-cards" id="typeCards">
+                <div class="type-card on" data-t="link"><b>外部链接</b><span>跳转到任意 http/https 页面，到达即记录</span></div>
+                <div class="type-card" data-t="image"><b>图片预览</b><span>授权后在云端预览单张图片，JPG / PNG / WEBP ≤ 10MB</span></div>
+                <div class="type-card" data-t="pdf"><b>PDF 预览</b><span>授权后在线翻页预览，≤ 50MB，大文件分片上传</span></div>
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="sw-row"><div><b>启用</b><span>停用的雷达链接访问时提示已失效</span></div><div class="sw on" id="swEnabled"></div></div>
+              <div class="sw-row"><div><b>需要授权</b><span>访问者需微信授权后才可查看，用于记录 UV</span></div><div class="sw on" id="swAuth"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="panel-head"><h2>内容配置</h2></div>
+          <div class="panel-body">
+            <div class="field" id="cfgUrl"><label>外部链接 *</label><input class="input" id="fUrl" placeholder="https://example.com/page"><div class="help">仅允许合法 http/https 外部链接，禁止 localhost、内网 IP 和脚本协议。</div></div>
+            <div class="field" id="cfgMedia" hidden><label id="fMediaLabel">素材 *</label>
+              <div class="media-box">
+                <div class="media-picked" id="mediaPicked" hidden>
+                  <div class="media-thumb" id="mediaThumb">📄</div>
+                  <div style="min-width:0;flex:1"><b id="mediaName" style="font-size:13px">—</b><div class="muted" id="mediaMeta" style="font-size:12px;margin-top:2px">—</div></div>
+                  <button class="link-btn red" id="mediaRemove">移除</button>
+                </div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                  <button class="btn" id="btnPick">从素材库选择</button>
+                  <button class="btn" id="btnUpload">上传新素材</button>
+                </div>
+                <div class="help" id="mediaHelp"></div>
+              </div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn" id="fCancel">返回列表</button>
+            <button class="btn primary" id="fSave">保存内容雷达</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- 分享浮窗 -->
+<div class="mask" id="shareMask">
+  <div class="modal">
+    <div class="modal-head"><span>分享内容雷达</span><button class="modal-x" data-close>×</button></div>
+    <div class="modal-body">
+      <div><div style="font-size:12px;color:var(--sub);margin-bottom:8px;font-weight:500">雷达链接</div>
+        <div style="display:flex;gap:8px"><input class="input" id="shareUrl" readonly style="flex:1"><button class="btn" id="shareCopy">复制链接</button></div></div>
+      <div><div style="font-size:12px;color:var(--sub);margin-bottom:8px;font-weight:500">二维码</div>
+        <div style="display:grid;justify-items:center;gap:10px"><div class="qr" id="shareQr"></div><button class="btn" id="shareDl">保存二维码</button></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ 模拟数据（字段与生产 API 对齐） ============ */
+const LINKS = [
+  {id:1,title:"AI 增长陪跑详情页 · 追踪版",target_type:"link",original_url:"https://www.xinliushangye.com/peipao?utm=radar",file_name_snapshot:"",media_item_id:"",enabled:true,auth_required:true,staff_id:"HuangYouCan",code:"a8f3k2",total_landings:1284,authorized_users:912,view_count:412,last_viewed_at:"2026-08-05 09:41"},
+  {id:2,title:"共学营开营通知（可追踪）",target_type:"link",original_url:"https://mp.weixin.qq.com/s/gongxueying-kaiying",file_name_snapshot:"",media_item_id:"",enabled:true,auth_required:true,staff_id:"HuangYouCan",code:"h5gx92",total_landings:642,authorized_users:508,view_count:188,last_viewed_at:"2026-08-04 22:10"},
+  {id:3,title:"课程试听页",target_type:"link",original_url:"https://www.xinliushangye.com/trial",file_name_snapshot:"",media_item_id:"",enabled:false,auth_required:true,staff_id:"WangWei",code:"tri1x0",total_landings:218,authorized_users:196,view_count:54,last_viewed_at:"2026-07-28 16:32"},
+  {id:4,title:"5天沙龙课程大纲.pdf",target_type:"pdf",original_url:"",file_name_snapshot:"5天沙龙课程大纲.pdf",media_item_id:"att_9021",enabled:true,auth_required:true,staff_id:"LinKaiYan",code:"pdf77a",total_landings:396,authorized_users:301,view_count:276,last_viewed_at:"2026-08-05 08:15",pdf_processing_status:"ready",pdf_page_count:18},
+  {id:5,title:"陪跑营学员案例长图",target_type:"image",original_url:"",file_name_snapshot:"case-poster.png",media_item_id:"img_3382",enabled:true,auth_required:false,staff_id:"ZhangMin",code:"img55c",total_landings:175,authorized_users:0,view_count:163,last_viewed_at:"2026-08-03 19:02"},
+];
+const EVENTS = [];
+const UNION = ["oX9q****3kFm","oX9q****8tQw","oX9q****c2Lp","oX9q****77Hs","oX9q****mK41","oX9q****z09P","oX9q****Qw8e","oX9q****pL3d","oX9q****66Ty","oX9q****nB52","oX9q****88Ua","oX9q****kE19"];
+const EXT = ["wmXk3ABBAA_2f9Qn","wmXk3ABBAA_7hTzR","wmXk3ABBAA_1k0pM","wmXk3ABBAA_9qWe2","wmXk3ABBAA_4rTy8","wmXk3ABBAA_6yUi3","wmXk3ABBAA_3eWd7","wmXk3ABBAA_5tYu1"];
+for(let i=0;i<24;i++){const d=new Date(2026,7,5,9,41-i*37);EVENTS.push({unionid_masked:UNION[i%UNION.length],external_userid:EXT[i%EXT.length],created_at:d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")});}
+const TL = {link:"链接",image:"图片",pdf:"PDF"};
+const PSL = {pending:"未处理",processing:"处理中",ready:"可预览",failed:"处理失败"};
+
+let state = {view:"list", current:null, formMode:"new", form:{type:"link",enabled:true,auth:true,media:null}};
+const $ = (s)=>document.querySelector(s);
+const esc = (v)=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ============ toast ============ */
+let tt=null;
+function toast(msg,err){const t=$("#toast");t.textContent=msg;t.className="toast show"+(err?" err":"");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("show"),2400);}
+
+/* ============ 视图切换 ============ */
+function show(view){state.view=view;$("#view-list").hidden=view!=="list";$("#view-detail").hidden=view!=="detail";$("#view-form").hidden=view!=="form";window.scrollTo(0,0);}
+
+/* ============ 列表 ============ */
+function renderList(){
+  const kw=$("#fKeyword").value.trim().toLowerCase(),tp=$("#fType").value,st=$("#fStatus").value;
+  const list=LINKS.filter(i=>{
+    if(tp!=="all"&&i.target_type!==tp)return false;
+    if(st==="enabled"&&!i.enabled)return false;
+    if(st==="disabled"&&i.enabled)return false;
+    if(!kw)return true;
+    return (i.title||"").toLowerCase().includes(kw)||(i.original_url||"").toLowerCase().includes(kw)||(i.file_name_snapshot||"").toLowerCase().includes(kw);
+  });
+  $("#listRows").innerHTML=list.length?list.map(i=>`
+    <tr class="${i.enabled?"":"row-off"}">
+      <td><div class="row-title">${esc(i.title)}</div>
+          <div class="row-sub">${esc(i.file_name_snapshot||i.original_url||i.media_item_id||"-")}</div>
+          ${i.target_type==="pdf"?`<div class="row-sub">PDF 状态：${PSL[i.pdf_processing_status]||"未处理"}${i.pdf_page_count?" · "+i.pdf_page_count+" 页":""}</div>`:""}</td>
+      <td><span class="chip ${i.target_type==="link"?"blue":i.target_type==="image"?"ok":"red"}">${TL[i.target_type]}</span></td>
+      <td><span class="chip ${i.enabled?"ok":"gray"}">${i.enabled?"启用":"停用"}</span></td>
+      <td class="num">${i.total_landings.toLocaleString()}</td>
+      <td class="num">${i.authorized_users.toLocaleString()}</td>
+      <td class="num">${i.view_count.toLocaleString()}</td>
+      <td class="muted">${i.last_viewed_at.slice(5)}</td>
+      <td><div class="row-actions">
+        <button class="link-btn" data-share="${i.id}">分享</button>
+        <button class="link-btn" data-detail="${i.id}">详情</button>
+        <button class="link-btn" data-edit="${i.id}">编辑</button>
+        <button class="link-btn ${i.enabled?"red":""}" data-toggle="${i.id}">${i.enabled?"停用":"启用"}</button>
+      </div></td>
+    </tr>`).join(""):`<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--muted)">没有匹配的内容雷达</td></tr>`;
+}
+["#fKeyword","#fType","#fStatus"].forEach(s=>$(s).addEventListener("input",renderList));
+$("#fRefresh").addEventListener("click",()=>{renderList();toast("已刷新");});
+
+/* ============ 详情 ============ */
+function openDetail(id){
+  const it=LINKS.find(x=>x.id===id);if(!it)return;state.current=it;
+  $("#crumbTitle").textContent=it.title;$("#dPageTitle").textContent="雷达详情";
+  $("#dTitle").textContent=it.title;
+  $("#dType").textContent=TL[it.target_type];$("#dType").className="chip "+(it.target_type==="link"?"blue":it.target_type==="image"?"ok":"red");
+  $("#dStatus").textContent=it.enabled?"启用":"停用";$("#dStatus").className="chip "+(it.enabled?"ok":"gray");
+  $("#dSource").textContent=it.file_name_snapshot||it.original_url||it.media_item_id||"-";
+  $("#dAuth").textContent=it.auth_required?"是":"否";
+  $("#dStaff").textContent=it.staff_id||"-";
+  $("#dUrl").textContent="https://crm.example.com/r/"+it.code;
+  $("#sPv").textContent=it.total_landings.toLocaleString();
+  $("#sUv").textContent=it.authorized_users.toLocaleString();
+  $("#sView").textContent=it.view_count.toLocaleString();
+  $("#sRate").textContent=it.total_landings?Math.round(it.authorized_users/it.total_landings*100)+"%":"0%";
+  $("#dKeyword").value="";$("#dStart").value="";$("#dEnd").value="";
+  renderDetailRows();show("detail");
+}
+function renderDetailRows(){
+  const kw=$("#dKeyword").value.trim().toLowerCase();
+  const list=EVENTS.filter(e=>!kw||(e.external_userid||"").toLowerCase().includes(kw)||(e.unionid_masked||"").toLowerCase().includes(kw));
+  $("#dRows").innerHTML=list.length?list.map(e=>`<tr><td class="mono">${esc(e.unionid_masked)}</td><td class="mono">${esc(e.external_userid)}</td><td>${esc(e.created_at)}</td></tr>`).join(""):`<tr><td colspan="3" style="text-align:center;padding:36px;color:var(--muted)">暂无已授权访问记录</td></tr>`;
+}
+["#dKeyword","#dStart","#dEnd"].forEach(s=>$(s).addEventListener("input",renderDetailRows));
+$("#dRefresh").addEventListener("click",()=>{renderDetailRows();toast("已刷新");});
+$("#dBack").addEventListener("click",()=>show("list"));
+$("#crumbBack1").addEventListener("click",e=>{e.preventDefault();show("list");});
+$("#dEdit").addEventListener("click",()=>openForm("edit",state.current?.id));
+$("#dExport").addEventListener("click",()=>{
+  const rows=[["unionid","外部联系人ID","时间"],...EVENTS.map(e=>[e.unionid_masked,e.external_userid,e.created_at])];
+  const csv="﻿"+rows.map(r=>r.join(",")).join("\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="radar-events.csv";a.click();
+  toast("已导出 CSV");
+});
+function copyText(v){navigator.clipboard?.writeText(v).then(()=>toast("已复制链接")).catch(()=>{prompt("请复制以下链接",v);});}
+$("#dCopy").addEventListener("click",()=>copyText($("#dUrl").textContent));
+$("#dCopyInline").addEventListener("click",()=>copyText($("#dUrl").textContent));
+
+/* ============ 新建 / 编辑 ============ */
+function openForm(mode,id){
+  state.formMode=mode;
+  const it=mode==="edit"?LINKS.find(x=>x.id===id):null;
+  state.editing=it||null;
+  state.form={type:it?.target_type||"link",enabled:it?it.enabled!==false:true,auth:it?it.auth_required!==false:true,media:it&&it.media_item_id?{name:it.file_name_snapshot||it.media_item_id,meta:(it.target_type==="pdf"?"application/pdf":"image/png")+" · 已存在素材"}:null};
+  $("#fTitle").textContent=mode==="edit"?"编辑雷达链接":"新建雷达链接";
+  $("#fCrumb").textContent=mode==="edit"?"编辑":"新建";
+  $("#fName").value=it?.title||"";$("#fUrl").value=it?.original_url||"";
+  syncForm();show("form");
+}
+function syncForm(){
+  document.querySelectorAll("#typeCards .type-card").forEach(c=>c.classList.toggle("on",c.dataset.t===state.form.type));
+  $("#swEnabled").classList.toggle("on",state.form.enabled);
+  $("#swAuth").classList.toggle("on",state.form.auth);
+  $("#cfgUrl").hidden=state.form.type!=="link";
+  $("#cfgMedia").hidden=state.form.type==="link";
+  $("#fMediaLabel").textContent=state.form.type==="image"?"图片素材 *":"PDF 素材 *";
+  $("#mediaHelp").textContent=state.form.type==="image"?"可从图片素材库选择，或上传 JPG/PNG/WEBP，最大 10MB。":"可从附件素材库选择 PDF，或上传 PDF，最大 50MB，超过 1MB 自动分片上传。";
+  const m=state.form.media;
+  $("#mediaPicked").hidden=!m;
+  if(m){$("#mediaName").textContent=m.name;$("#mediaMeta").textContent=m.meta;$("#mediaThumb").textContent=state.form.type==="image"?"🖼️":"📄";}
+}
+document.querySelectorAll("#typeCards .type-card").forEach(c=>c.addEventListener("click",()=>{state.form.type=c.dataset.t;syncForm();}));
+$("#swEnabled").addEventListener("click",()=>{state.form.enabled=!state.form.enabled;syncForm();});
+$("#swAuth").addEventListener("click",()=>{state.form.auth=!state.form.auth;syncForm();});
+$("#btnPick").addEventListener("click",()=>{
+  // 模拟素材选择器
+  state.form.media=state.form.type==="image"?{name:"沙龙主视觉-终版.png",meta:"image/png · 1.8 MB · media_item_id: img_3382"}:{name:"5天沙龙课程大纲.pdf",meta:"application/pdf · 6.4 MB · 处理状态：可预览 · 18 页"};
+  syncForm();toast("已选择素材");
+});
+$("#btnUpload").addEventListener("click",()=>{
+  state.form.media=state.form.type==="image"?{name:"新上传图片.jpg",meta:"image/jpeg · 保存时上传"}:{name:"新上传文档.pdf",meta:"application/pdf · 保存时上传（>1MB 走分片）"};
+  syncForm();toast("已暂存待上传文件");
+});
+$("#mediaRemove").addEventListener("click",()=>{state.form.media=null;syncForm();});
+$("#fCancel").addEventListener("click",()=>show("list"));
+$("#crumbBack2").addEventListener("click",e=>{e.preventDefault();show("list");});
+$("#fSave").addEventListener("click",()=>{
+  const name=$("#fName").value.trim();
+  if(!name)return toast("请输入内容名称",true);
+  if(state.form.type==="link"){const u=$("#fUrl").value.trim();if(!/^https?:\/\//i.test(u))return toast("请输入合法 http/https 外部链接",true);}
+  else if(!state.form.media)return toast("请选择或上传素材",true);
+  if(state.formMode==="edit"&&state.editing){
+    Object.assign(state.editing,{title:name,target_type:state.form.type,original_url:state.form.type==="link"?$("#fUrl").value.trim():"",enabled:state.form.enabled,auth_required:state.form.auth,file_name_snapshot:state.form.media?.name||state.editing.file_name_snapshot});
+  }else{
+    LINKS.unshift({id:Date.now(),title:name,target_type:state.form.type,original_url:state.form.type==="link"?$("#fUrl").value.trim():"",file_name_snapshot:state.form.media?.name||"",media_item_id:state.form.media?"att_new":"",enabled:state.form.enabled,auth_required:state.form.auth,staff_id:"HuangYouCan",code:Math.random().toString(36).slice(2,8),total_landings:0,authorized_users:0,view_count:0,last_viewed_at:"-"});
+  }
+  toast("已保存内容雷达");renderList();setTimeout(()=>show("list"),450);
+});
+$("#btnNew").addEventListener("click",()=>openForm("new"));
+
+/* ============ 分享浮窗 ============ */
+function fakeQr(el,seed){let h=0;for(const c of seed)h=(h*31+c.charCodeAt(0))>>>0;let cells="";const n=21,sz=180/n;for(let y=0;y<n;y++)for(let x=0;x<n;x++){h=(h*1103515245+12345)>>>0;const finder=(x<7&&y<7)||(x>n-8&&y<7)||(x<7&&y>n-8);if(finder){const fx=x% (n-7),inOuter=(x===0||x===6||y===0||y===6||(x>=n-7&&(x===n-7||x===n-1))||(y>=n-7&&(y===n-7||y===n-1)));const inner=(x>=2&&x<=4&&y>=2&&y<=4)||(x>=n-5&&x<=n-3&&y>=2&&y<=4)||(x>=2&&x<=4&&y>=n-5&&y<=n-3);if(inOuter||inner)cells+=`<rect x="${x*sz}" y="${y*sz}" width="${sz}" height="${sz}"/>`;}else if((h>>3)%3===0)cells+=`<rect x="${x*sz}" y="${y*sz}" width="${sz}" height="${sz}"/>`;}
+  el.innerHTML=`<svg viewBox="0 0 180 180" width="100%" height="100%" fill="#1F2329">${cells}</svg>`;}
+let shareLink="";
+function openShare(id){
+  const it=LINKS.find(x=>x.id===id);if(!it)return;
+  shareLink="https://crm.example.com/r/"+it.code;
+  $("#shareUrl").value=shareLink;fakeQr($("#shareQr"),it.code);
+  $("#shareMask").classList.add("open");
+}
+$("#shareCopy").addEventListener("click",()=>copyText(shareLink));
+$("#shareDl").addEventListener("click",()=>toast("二维码已保存（演示）"));
+document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>b.closest(".mask").classList.remove("open")));
+document.querySelectorAll(".mask").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)m.classList.remove("open");}));
+document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".mask.open").forEach(m=>m.classList.remove("open"));});
+
+/* ============ 行操作委托 ============ */
+document.addEventListener("click",e=>{
+  const d=e.target.closest("[data-detail]"),s=e.target.closest("[data-share]"),ed=e.target.closest("[data-edit]"),tg=e.target.closest("[data-toggle]");
+  if(d)openDetail(Number(d.dataset.detail));
+  if(s)openShare(Number(s.dataset.share));
+  if(ed)openForm("edit",Number(ed.dataset.edit));
+  if(tg){const it=LINKS.find(x=>x.id===Number(tg.dataset.toggle));if(it){it.enabled=!it.enabled;renderList();toast("状态已更新");}}
+});
+
+renderList();
+</script>
+</body>
+</html>

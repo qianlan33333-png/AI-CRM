@@ -1,0 +1,853 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cloud Plan Review · 客户管理后台</title>
+  <link rel="stylesheet" href="../static/admin_console/admin_console.css?v=operation-member-picker-fix-20260527&amp;design=lark-20260803">
+  <script src="../static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
+  <script src="../static/admin_console/image_resource_loader.js?v=resource-governance-v2-pending-retry"></script>
+  
+<link rel="stylesheet" href="../static/admin_console/group_chat_picker.css?v=group-chat-direct-select-20260715">
+<link rel="stylesheet" href="../static/admin_console/material_picker.css?v=group-chat-direct-select-20260715">
+<link rel="stylesheet" href="../static/admin_console/send_content_composer.css?v=group-chat-selector-20260715">
+<link rel="stylesheet" href="../static/admin_console/send_content_readonly_detail.css?v=20260801-send-records">
+<style>
+  .cloud-plan-page {
+    --plan-ink: #172033;
+    --plan-muted: #667085;
+    --plan-line: #d8dee8;
+    --plan-soft: #f5f7fb;
+    --plan-blue: #2563eb;
+    --plan-green: #0f9f6e;
+    --plan-red: #d92d20;
+    color: var(--plan-ink);
+  }
+
+  .cloud-plan-toolbar,
+  .cloud-plan-detail-head,
+  .cloud-plan-stats,
+  .cloud-plan-layout,
+  .cloud-plan-list,
+  .cloud-plan-table-wrap {
+    margin-bottom: 16px;
+  }
+
+  .cloud-plan-toolbar,
+  .cloud-plan-detail-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .cloud-plan-filters,
+  .cloud-plan-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .cloud-plan-input,
+  .cloud-plan-select {
+    min-height: 38px;
+    border: 1px solid var(--plan-line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--plan-ink);
+    padding: 0 12px;
+    font-size: 14px;
+  }
+
+  .cloud-plan-input {
+    min-width: min(320px, 78vw);
+  }
+
+  .cloud-plan-button {
+    min-height: 38px;
+    border: 1px solid var(--plan-line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--plan-ink);
+    padding: 0 14px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .cloud-plan-button:hover:not([disabled]) {
+    border-color: #b8c1d1;
+    background: #f8fafc;
+  }
+
+  .cloud-plan-button:focus-visible {
+    outline: 3px solid rgba(37, 99, 235, .24);
+    outline-offset: 2px;
+  }
+
+  .cloud-plan-button[disabled],
+  .cloud-plan-button[disabled]:hover {
+    border-color: #d0d5dd;
+    background: #f2f4f7;
+    color: #98a2b3;
+    cursor: not-allowed;
+    opacity: 1;
+  }
+
+  .cloud-plan-button--primary {
+    border-color: var(--plan-blue);
+    background: var(--plan-blue);
+    color: #fff;
+  }
+
+  .cloud-plan-button--primary:hover:not([disabled]) {
+    border-color: #1d4ed8;
+    background: #1d4ed8;
+    color: #fff;
+  }
+
+  .cloud-plan-button--danger {
+    border-color: #f2b8b5;
+    color: var(--plan-red);
+  }
+
+  .cloud-plan-button--danger:hover:not([disabled]) {
+    border-color: #fda29b;
+    background: #fff1f3;
+    color: #b42318;
+  }
+
+  .cloud-plan-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .cloud-plan-stat,
+  .cloud-plan-panel,
+  .cloud-plan-row,
+  .cloud-plan-drawer {
+    border: 1px solid var(--plan-line);
+    border-radius: 8px;
+    background: #fff;
+  }
+
+  .cloud-plan-stat {
+    padding: 14px;
+  }
+
+  .cloud-plan-stat-label,
+  .cloud-plan-field-label,
+  .cloud-plan-state,
+  .cloud-plan-task-meta {
+    color: var(--plan-muted);
+    font-size: 12px;
+  }
+
+  .cloud-plan-stat-value {
+    margin-top: 6px;
+    font-size: 24px;
+    font-weight: 800;
+  }
+
+  .cloud-plan-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .cloud-plan-row {
+    display: grid;
+    grid-template-columns: minmax(280px, 1.6fr) minmax(140px, .8fr) minmax(150px, .8fr) minmax(100px, .5fr) minmax(92px, .5fr) minmax(110px, .5fr);
+    gap: 12px;
+    align-items: center;
+    padding: 14px;
+  }
+
+  .cloud-plan-row--head {
+    border: 0;
+    background: transparent;
+    color: var(--plan-muted);
+    font-size: 12px;
+    font-weight: 700;
+    padding-bottom: 0;
+  }
+
+  .cloud-plan-name {
+    font-weight: 800;
+  }
+
+  .cloud-plan-code,
+  .cloud-plan-cell-muted {
+    color: var(--plan-muted);
+    font-size: 13px;
+  }
+
+  .cloud-plan-badge {
+    border: 1px solid var(--plan-line);
+    border-radius: 999px;
+    padding: 4px 9px;
+    width: fit-content;
+    background: var(--plan-soft);
+    color: #344054;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .cloud-plan-badge--ok {
+    border-color: #9de4c4;
+    background: #ecfdf3;
+    color: #057a55;
+  }
+
+  .cloud-plan-badge--warn {
+    border-color: #fedf89;
+    background: #fffaeb;
+    color: #b54708;
+  }
+
+  .cloud-plan-badge--bad {
+    border-color: #fecdca;
+    background: #fff1f3;
+    color: #b42318;
+  }
+
+  .cloud-plan-layout {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .cloud-plan-panel {
+    padding: 16px;
+  }
+
+  .cloud-plan-panel-title {
+    margin: 0 0 14px;
+    font-size: 16px;
+  }
+
+  .cloud-plan-field {
+    padding: 10px 0;
+    border-bottom: 1px solid #edf1f7;
+  }
+
+  .cloud-plan-field:last-child {
+    border-bottom: 0;
+  }
+
+  .cloud-plan-field-value {
+    margin-top: 4px;
+    font-weight: 700;
+    word-break: break-word;
+  }
+
+  .cloud-plan-table-wrap {
+    overflow-x: auto;
+  }
+
+  .cloud-plan-table {
+    width: 100%;
+    min-width: 760px;
+    border-collapse: collapse;
+  }
+
+  .cloud-plan-table th,
+  .cloud-plan-table td {
+    border-bottom: 1px solid #edf1f7;
+    padding: 12px 10px;
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  .cloud-plan-table th {
+    color: var(--plan-muted);
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .cloud-plan-table td {
+    font-size: 14px;
+  }
+
+  .cloud-plan-progress {
+    height: 8px;
+    border-radius: 999px;
+    background: #e7ebf2;
+    overflow: hidden;
+    flex: 1 1 180px;
+  }
+
+  .cloud-plan-progress span {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: var(--plan-green);
+  }
+
+  .cloud-plan-loadbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .cloud-plan-empty,
+  .cloud-plan-error,
+  .cloud-plan-loading {
+    border: 1px dashed var(--plan-line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--plan-muted);
+    padding: 20px;
+    text-align: center;
+  }
+
+  .cloud-plan-error {
+    color: var(--plan-red);
+    border-color: #fecdca;
+    background: #fff8f7;
+  }
+
+  .cloud-plan-drawer-mask {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: none;
+    background: rgba(15, 23, 42, .32);
+  }
+
+  .cloud-plan-drawer-mask.is-open {
+    display: block;
+  }
+
+  .cloud-plan-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: 81;
+    display: none;
+    width: min(620px, 96vw);
+    height: 100vh;
+    overflow: auto;
+    border-radius: 0;
+    padding: 20px;
+    box-shadow: -18px 0 40px rgba(15, 23, 42, .18);
+  }
+
+  .cloud-plan-drawer.is-open {
+    display: block;
+  }
+
+  .cloud-plan-drawer-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .cloud-plan-drawer-title {
+    margin: 0;
+    font-size: 20px;
+  }
+
+  .cloud-plan-task {
+    border: 1px solid var(--plan-line);
+    border-radius: 8px;
+    padding: 14px;
+    margin-top: 12px;
+  }
+
+  .cloud-plan-task-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .cloud-plan-task-text {
+    margin-top: 10px;
+    white-space: pre-wrap;
+    line-height: 1.7;
+  }
+
+  .cloud-plan-task-content-summary {
+    display: grid;
+    gap: 6px;
+    margin-top: 10px;
+    color: #344054;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .cloud-plan-task-content-summary strong {
+    color: var(--plan-ink);
+  }
+
+  .cloud-plan-task-edit-note {
+    margin-top: 10px;
+  }
+
+  .cloud-plan-toast {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: 90;
+    display: none;
+    max-width: min(360px, 86vw);
+    border: 1px solid var(--plan-line);
+    border-radius: 8px;
+    background: #111827;
+    color: #fff;
+    padding: 12px 14px;
+    box-shadow: 0 16px 32px rgba(15, 23, 42, .18);
+  }
+
+  .cloud-plan-toast.is-open {
+    display: block;
+  }
+
+  @media (max-width: 980px) {
+    .cloud-plan-stats,
+    .cloud-plan-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .cloud-plan-row {
+      grid-template-columns: 1fr;
+    }
+
+    .cloud-plan-row--head {
+      display: none;
+    }
+  }
+</style>
+
+  <script defer src="../static/admin_console/admin_console.js?v=lark-design-package-20260803"></script>
+  <script defer src="../static/admin_console/operation_member_picker.js?v=operation-member-picker-wecom-sync-20260709"></script>
+</head>
+<body class="admin-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="admin-brand-mark">CRM</div>
+        <div class="admin-brand-copy">
+          <div class="admin-brand-title">客户管理后台</div>
+          <div class="admin-brand-subtitle">ADMIN CONSOLE</div>
+        </div>
+      </div>
+
+      <nav class="admin-nav" aria-label="客户管理后台导航">
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">运营</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化运营"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_conversion.svg" alt="">
+              <span class="admin-nav-label">自动化运营</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="运营闭环"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/operation_cycles.svg" alt="">
+              <span class="admin-nav-label">运营闭环</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="群运营计划"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/group_ops.svg" alt="">
+              <span class="admin-nav-label">群运营计划</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="渠道码中心"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/channels.svg" alt="">
+              <span class="admin-nav-label">渠道码中心</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="AI 助手"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/cloud_orchestrator.svg" alt="">
+              <span class="admin-nav-label">AI 助手</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="客户激活 / 客户列表"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/customers.svg" alt="">
+              <span class="admin-nav-label">客户激活 / 客户列表</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="漏斗 / 数据看板"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/user_ops_funnel.svg" alt="">
+              <span class="admin-nav-label">漏斗 / 数据看板</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="问卷"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/questionnaires.svg" alt="">
+              <span class="admin-nav-label">问卷</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="内容雷达"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/radar_links.svg" alt="">
+              <span class="admin-nav-label">内容雷达</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="企微标签管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wecom_tags.svg" alt="">
+              <span class="admin-nav-label">企微标签管理</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">交易</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="交易管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_transactions.svg" alt="">
+              <span class="admin-nav-label">交易管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_products.svg" alt="">
+              <span class="admin-nav-label">商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="周期商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/service_period_products.svg" alt="">
+              <span class="admin-nav-label">周期商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="优惠券"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/coupons.svg" alt="">
+              <span class="admin-nav-label">优惠券</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">素材</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="图片素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/image_library.svg" alt="">
+              <span class="admin-nav-label">图片素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="小程序素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/miniprogram_library.svg" alt="">
+              <span class="admin-nav-label">小程序素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="附件素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/attachment_library.svg" alt="">
+              <span class="admin-nav-label">附件素材库</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">配置及后台</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化话术"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_agents.svg" alt="">
+              <span class="admin-nav-label">自动化话术</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="负责人迁移"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/owner_migration.svg" alt="">
+              <span class="admin-nav-label">负责人迁移</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="配置"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/config.svg" alt="">
+              <span class="admin-nav-label">配置</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="API 文档"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/api_docs.svg" alt="">
+              <span class="admin-nav-label">API 文档</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+      </nav>
+
+      
+      <div class="admin-sidebar-user">
+        <div class="admin-sidebar-user__avatar">
+          示
+        </div>
+        <div class="admin-sidebar-user__meta">
+          <div class="admin-sidebar-user__name">
+            示例管理员
+          </div>
+          <a class="admin-sidebar-user__logout" href="#">退出登录</a>
+        </div>
+      </div>
+      
+    </aside>
+
+    <div class="admin-main-wrap">
+      
+      
+      
+      
+      
+      
+      <header class="admin-topbar">
+        
+        <div class="admin-topbar-head">
+          <nav class="admin-breadcrumbs" aria-label="当前位置">
+            
+            
+            <a href="#">客户管理后台</a>
+            
+            
+          </nav>
+          <div>
+            <h1 class="admin-page-title">Cloud Plan Review</h1>
+            <p class="admin-page-summary">页面功能预览（示例数据）</p>
+          </div>
+        </div>
+        
+
+        
+      </header>
+      
+
+      <main class="admin-page">
+        
+        <section class="admin-alert admin-alert--success">示例</section>
+        
+        
+        <section class="admin-alert admin-alert--error">示例</section>
+        
+        
+<div
+  class="cloud-plan-page"
+  data-cloud-plan-root
+  data-page-mode="示例"
+  data-plan-id="示例"
+  data-admin-action-token="示例"
+>
+  
+  <section class="cloud-plan-detail-head" aria-label="计划操作">
+    <div class="cloud-plan-state" data-plan-detail-state>计划信息加载中</div>
+    <div class="cloud-plan-actions">
+      <button class="cloud-plan-button cloud-plan-button--primary" type="button" data-plan-approve>确认并发送</button>
+      <button class="cloud-plan-button cloud-plan-button--danger" type="button" data-plan-reject>拒绝计划</button>
+      <a class="cloud-plan-button" href="/admin/cloud-orchestrator/plans">返回一级页</a>
+    </div>
+  </section>
+
+  <section class="cloud-plan-layout">
+    <aside class="cloud-plan-panel" aria-label="计划信息">
+      <h2 class="cloud-plan-panel-title">计划信息</h2>
+      <div class="cloud-plan-field">
+        <div class="cloud-plan-field-label">计划名称</div>
+        <div class="cloud-plan-field-value" data-plan-name>--</div>
+      </div>
+      <div class="cloud-plan-field">
+        <div class="cloud-plan-field-label">计划编号</div>
+        <div class="cloud-plan-field-value" data-plan-code>--</div>
+      </div>
+      <div class="cloud-plan-field">
+        <div class="cloud-plan-field-label">发送人</div>
+        <div class="cloud-plan-field-value" data-plan-owner>--</div>
+      </div>
+      <div class="cloud-plan-field">
+        <div class="cloud-plan-field-label">更新时间</div>
+        <div class="cloud-plan-field-value" data-plan-updated>--</div>
+      </div>
+      <div class="cloud-plan-field">
+        <div class="cloud-plan-field-label">目标人数</div>
+        <div class="cloud-plan-field-value" data-plan-target-count>--</div>
+      </div>
+      <div class="cloud-plan-field">
+        <div class="cloud-plan-field-label">状态</div>
+        <div class="cloud-plan-field-value" data-plan-status-label>--</div>
+      </div>
+    </aside>
+
+    <section class="cloud-plan-panel" aria-label="目标人员">
+      <h2 class="cloud-plan-panel-title">目标人员</h2>
+      <div class="cloud-plan-table-wrap">
+        <table class="cloud-plan-table">
+          <thead>
+            <tr>
+              <th>目标人员</th>
+              <th>发送人</th>
+              <th>更新时间</th>
+              <th>话术次数</th>
+              <th>发送状态</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody data-recipient-list>
+            <tr><td colspan="6" class="cloud-plan-state">目标人员加载中</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="cloud-plan-loadbar">
+        <div class="cloud-plan-state" data-recipient-loaded>已加载 0 / 0 人</div>
+        <div class="cloud-plan-progress" aria-hidden="true"><span data-recipient-progress></span></div>
+        <button class="cloud-plan-button" type="button" data-recipient-load-more>继续加载 50 人</button>
+      </div>
+    </section>
+  </section>
+
+  <div class="cloud-plan-drawer-mask" data-drawer-mask></div>
+  <aside class="cloud-plan-drawer" data-recipient-drawer aria-label="人员详情">
+    <div class="cloud-plan-drawer-head">
+      <div>
+        <h2 class="cloud-plan-drawer-title" data-drawer-name>人员详情</h2>
+        <div class="cloud-plan-state" data-drawer-subtitle>人员详情加载中</div>
+      </div>
+      <button class="cloud-plan-button" type="button" data-drawer-close>关闭</button>
+    </div>
+    <div class="cloud-plan-actions">
+      <button class="cloud-plan-button cloud-plan-button--primary" type="button" data-drawer-approve>批准这个人发送</button>
+      <button class="cloud-plan-button cloud-plan-button--danger" type="button" data-drawer-reject>拒绝这个人</button>
+    </div>
+    <div class="cloud-plan-panel" style="margin-top: 14px;">
+      <div class="cloud-plan-field">
+        <div class="cloud-plan-field-label">目标人员名称</div>
+        <div class="cloud-plan-field-value" data-drawer-target-name>--</div>
+      </div>
+      <div class="cloud-plan-field">
+        <div class="cloud-plan-field-label">external_userid</div>
+        <div class="cloud-plan-field-value" data-drawer-external-userid>--</div>
+      </div>
+      <div class="cloud-plan-field">
+        <div class="cloud-plan-field-label">发送人</div>
+        <div class="cloud-plan-field-value" data-drawer-owner>--</div>
+      </div>
+      <div class="cloud-plan-field">
+        <div class="cloud-plan-field-label">共几次话术任务</div>
+        <div class="cloud-plan-field-value" data-drawer-message-count>--</div>
+      </div>
+    </div>
+    <div data-drawer-tasks>
+      <div class="cloud-plan-loading">人员详情加载中</div>
+    </div>
+  </aside>
+  
+
+  <div class="cloud-plan-toast" data-plan-toast role="status" aria-live="polite"></div>
+</div>
+
+      </main>
+    </div>
+  </div>
+  <script id="aicrmAdminActionGrants" type="application/json">{}</script>
+  
+<script src="../static/admin_console/group_chat_picker.js?v=group-chat-direct-select-20260715"></script>
+<script src="../static/admin_console/material_picker.js?v=group-chat-direct-select-20260715"></script>
+<script src="../static/admin_console/send_content_composer.js?v=group-chat-selector-20260715"></script>
+<script src="../static/admin_console/send_content_readonly_detail.js?v=20260801-send-records"></script>
+<script src="../static/admin_console/cloud_plan_review.js?v=group-chat-selector-20260715"></script>
+
+</body>
+</html>

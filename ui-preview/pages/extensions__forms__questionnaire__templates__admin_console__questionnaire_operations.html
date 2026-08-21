@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Questionnaire Operations · 客户管理后台</title>
+  <link rel="stylesheet" href="../static/admin_console/admin_console.css?v=operation-member-picker-fix-20260527&amp;design=lark-20260803">
+  
+<link rel="stylesheet" href="/static/questionnaire/questionnaire_operations.css?v=20260714">
+<script defer src="/static/navigation-target/completion_target_config.js?v=20260714"></script>
+<script defer src="/static/questionnaire/questionnaire_operations.js?v=20260714.2"></script>
+
+  <script src="../static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
+  <script defer src="../static/admin_console/admin_console.js?v=lark-design-package-20260803"></script>
+  <script defer src="../static/admin_console/operation_member_picker.js?v=operation-member-picker-wecom-sync-20260709"></script>
+</head>
+<body
+  class="admin-shell"
+  data-admin-shell-source="next_admin_shell"
+>
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="admin-brand-mark">CRM</div>
+        <div class="admin-brand-copy">
+          <div class="admin-brand-title">客户管理后台</div>
+          <div class="admin-brand-subtitle">ADMIN CONSOLE</div>
+        </div>
+      </div>
+
+      <nav class="admin-nav" aria-label="客户管理后台导航">
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">运营</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="自动化运营"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_conversion.svg" alt="">
+              <span class="admin-nav-label">自动化运营</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="运营闭环"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/operation_cycles.svg" alt="">
+              <span class="admin-nav-label">运营闭环</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="群运营计划"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/group_ops.svg" alt="">
+              <span class="admin-nav-label">群运营计划</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="渠道码中心"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/channels.svg" alt="">
+              <span class="admin-nav-label">渠道码中心</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="AI 助手"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/cloud_orchestrator.svg" alt="">
+              <span class="admin-nav-label">AI 助手</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="客户激活 / 客户列表"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/customers.svg" alt="">
+              <span class="admin-nav-label">客户激活 / 客户列表</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="漏斗 / 数据看板"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/user_ops_funnel.svg" alt="">
+              <span class="admin-nav-label">漏斗 / 数据看板</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="问卷"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/questionnaires.svg" alt="">
+              <span class="admin-nav-label">问卷</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="内容雷达"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/radar_links.svg" alt="">
+              <span class="admin-nav-label">内容雷达</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="企微标签管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wecom_tags.svg" alt="">
+              <span class="admin-nav-label">企微标签管理</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">交易</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="交易管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_transactions.svg" alt="">
+              <span class="admin-nav-label">交易管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_products.svg" alt="">
+              <span class="admin-nav-label">商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="周期商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/service_period_products.svg" alt="">
+              <span class="admin-nav-label">周期商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="优惠券"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/coupons.svg" alt="">
+              <span class="admin-nav-label">优惠券</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">素材</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="图片素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/image_library.svg" alt="">
+              <span class="admin-nav-label">图片素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="小程序素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/miniprogram_library.svg" alt="">
+              <span class="admin-nav-label">小程序素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="附件素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/attachment_library.svg" alt="">
+              <span class="admin-nav-label">附件素材库</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">配置及后台</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="自动化话术"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_agents.svg" alt="">
+              <span class="admin-nav-label">自动化话术</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="负责人迁移"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/owner_migration.svg" alt="">
+              <span class="admin-nav-label">负责人迁移</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="配置"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/config.svg" alt="">
+              <span class="admin-nav-label">配置</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="API 文档"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/api_docs.svg" alt="">
+              <span class="admin-nav-label">API 文档</span>
+            </a>
+            
+          </div>
+        </section>
+        
+      </nav>
+
+      
+      <div class="admin-sidebar-user">
+        <div class="admin-sidebar-user__avatar">
+          示
+        </div>
+        <div class="admin-sidebar-user__meta">
+          <div class="admin-sidebar-user__name">
+            示例管理员
+          </div>
+          <a class="admin-sidebar-user__logout" href="#">退出登录</a>
+        </div>
+      </div>
+      
+    </aside>
+
+    <div class="admin-main-wrap">
+      
+      
+      
+      
+      <header class="admin-topbar">
+        
+        <div class="admin-topbar-head">
+          <nav class="admin-breadcrumbs" aria-label="当前位置">
+            
+            
+            <a href="#">客户管理后台</a>
+            
+            
+          </nav>
+          <div>
+            <h1 class="admin-page-title">Questionnaire Operations</h1>
+            <p class="admin-page-summary">页面功能预览（示例数据）</p>
+          </div>
+        </div>
+        
+
+        
+      </header>
+      
+
+      <main class="admin-page">
+        
+        <section class="admin-alert admin-alert--success">示例</section>
+        
+        
+        <section class="admin-alert admin-alert--error">示例</section>
+        
+        
+<div class="qo-page" data-questionnaire-id="示例">
+  <section class="qo-card qo-summary" aria-labelledby="qo-summary-title">
+    <div class="qo-summary-head">
+      <div class="qo-summary-copy">
+        <a class="qo-back" href="/admin/questionnaires">返回问卷管理</a>
+        <h1 id="qo-summary-title">示例</h1>
+        <div class="qo-code">问卷 ID · 示例</div>
+      </div>
+      <div class="qo-actions">
+        <button class="qo-button qo-button--secondary" id="qo-copy-public-url" type="button">复制公开地址</button>
+        <a class="qo-button qo-button--secondary" href="示例" target="_blank" rel="noopener">打开公开页</a>
+        <button class="qo-button qo-button--primary" id="qo-save-current" type="button">保存当前维度</button>
+      </div>
+    </div>
+    <div class="qo-summary-grid">
+      <div class="qo-metric">
+        <span>问卷状态</span>
+        <strong id="qo-summary-status">已停用</strong>
+      </div>
+      <div class="qo-metric">
+        <span>提交量</span>
+        <strong>示例</strong>
+      </div>
+      <div class="qo-metric">
+        <span>提交后动作</span>
+        <strong id="qo-summary-completion">未启用</strong>
+      </div>
+      <div class="qo-metric">
+        <span>外部推送</span>
+        <strong id="qo-summary-push">未启用</strong>
+      </div>
+    </div>
+    <div class="qo-toast" id="qo-toast" role="status" aria-live="polite"></div>
+  </section>
+
+  <section class="qo-workspace">
+    <nav class="qo-card qo-nav" aria-label="问卷运营配置维度">
+      <button class="is-active" data-qo-panel="completion" type="button">
+        <span class="qo-index">1</span><span>提交后动作</span>
+      </button>
+      <button data-qo-panel="external-push" type="button">
+        <span class="qo-index">2</span><span>外部推送</span>
+      </button>
+    </nav>
+
+    <div class="qo-card qo-panels">
+      <section class="qo-panel is-active" data-qo-panel-content="completion">
+        <div class="qo-panel-head">
+          <div>
+            <h2>提交后动作</h2>
+            <p>仅在提交成功，或已通过身份机制识别为提交过时执行。</p>
+          </div>
+          <label class="qo-switch-line">
+            <span id="qo-completion-enabled-text">未启用</span>
+            <input id="qo-completion-enabled" type="checkbox" role="switch">
+          </label>
+        </div>
+
+        <div id="qo-completion-body" class="qo-panel-body" hidden>
+          <div class="qo-option-grid" role="group" aria-label="提交后动作类型">
+            <button class="qo-option is-active" data-qo-completion-mode="lead_qr" type="button">
+              <span class="qo-radio" aria-hidden="true"></span>
+              <span><strong>展示渠道二维码</strong><small>提交完成后展示所绑定渠道的实时二维码。</small></span>
+            </button>
+            <button class="qo-option" data-qo-completion-mode="redirect" type="button">
+              <span class="qo-radio" aria-hidden="true"></span>
+              <span><strong>直接跳转</strong><small>支持 H5 或小程序动态 URL Link。</small></span>
+            </button>
+          </div>
+
+          <div id="qo-lead-fields" class="qo-config-card">
+            <label class="qo-field">
+              <span>绑定渠道码</span>
+              <select id="qo-lead-channel"><option value="">正在加载可用渠道…</option></select>
+              <small>仅可选择启用中、二维码载体且已有可用二维码的渠道。</small>
+            </label>
+            <div class="qo-field-grid">
+              <label class="qo-field">
+                <span>二维码主标题</span>
+                <input id="qo-lead-qr-title" maxlength="40" placeholder="留空沿用渠道名称或“扫码继续”">
+              </label>
+              <label class="qo-field">
+                <span>二维码副标题</span>
+                <input id="qo-lead-qr-subtitle" maxlength="100" placeholder="留空沿用现有长按识别提示">
+              </label>
+            </div>
+            <div id="qo-channel-preview" class="qo-channel-preview" hidden>
+              <img id="qo-channel-preview-image" alt="渠道二维码预览">
+              <div><strong id="qo-channel-preview-name"></strong><small>展示时实时解析渠道当前二维码</small></div>
+            </div>
+          </div>
+
+            <div id="qo-redirect-fields" hidden>
+              <div id="qo-legacy-target" class="qo-alert" hidden>
+                <strong>当前是旧版原生小程序配置，仅只读保留。</strong>
+                <span>请选择 H5 或动态 URL Link 后保存，即可显式转换。</span>
+                <dl class="qo-legacy-summary">
+                  <div><dt>AppID</dt><dd id="qo-legacy-appid">未记录</dd></div>
+                  <div><dt>Username</dt><dd id="qo-legacy-username">未记录</dd></div>
+                  <div><dt>页面路径</dt><dd id="qo-legacy-path">未记录</dd></div>
+                  <div><dt>环境</dt><dd id="qo-legacy-env">release</dd></div>
+                  <div class="qo-legacy-summary--full"><dt>Query</dt><dd id="qo-legacy-query">未记录</dd></div>
+                </dl>
+              </div>
+            <section class="qo-config-card qo-target" data-completion-target-config>
+              <input class="qo-hidden" type="checkbox" data-target-enabled>
+              <div data-target-body>
+                <div class="qo-field-grid">
+                  <label class="qo-field">
+                    <span>跳转类型</span>
+                    <select name="completion_target_type">
+                      <option value="h5">H5 跳转地址</option>
+                      <option value="url_link">动态 URL Link 接口</option>
+                    </select>
+                  </label>
+                  <label class="qo-field qo-field--full" data-h5-url-fields>
+                    <span>H5 跳转地址</span>
+                    <input name="completion_h5_url" placeholder="https://example.com/landing 或 /internal/path">
+                  </label>
+                  <label class="qo-field qo-field--full" data-url-link-fields hidden>
+                    <span>动态 URL Link 接口</span>
+                    <input name="completion_url_link_source_url" placeholder="https://example.com/api/wxlink">
+                    <small>提交成功后请求该接口，并从响应中读取微信官方 URL Link。</small>
+                  </label>
+                  <label class="qo-field" data-url-link-fields hidden>
+                    <span>响应字段</span>
+                    <input name="completion_url_link_response_key" value="url_link" placeholder="url_link">
+                  </label>
+                </div>
+              </div>
+              <div class="qo-warning" data-validation-warning hidden></div>
+            </section>
+          </div>
+        </div>
+        <div class="qo-panel-actions">
+          <button class="qo-button qo-button--primary" id="qo-save-completion" type="button">保存提交后动作</button>
+        </div>
+      </section>
+
+      <section class="qo-panel" data-qo-panel-content="external-push">
+        <div class="qo-panel-head">
+          <div>
+            <h2>外部推送</h2>
+            <p>提交完成后仅入 External Effect 异步队列，不在提交请求中直连 Webhook。</p>
+          </div>
+          <label class="qo-switch-line">
+            <span id="qo-push-enabled-text">未启用</span>
+            <input id="qo-push-enabled" type="checkbox" role="switch">
+          </label>
+        </div>
+        <div class="qo-field-grid">
+          <label class="qo-field qo-field--full">
+            <span>Webhook 地址</span>
+            <input id="qo-push-url" type="url" placeholder="https://hooks.example.com/questionnaire">
+          </label>
+          <label class="qo-field">
+            <span>订阅类型</span>
+            <select id="qo-push-type">
+              <option value="">不传</option>
+              <option value="subscription">subscription</option>
+              <option value="premium">premium</option>
+              <option value="trial">trial</option>
+            </select>
+          </label>
+          <label class="qo-field">
+            <span>到期时间（秒级时间戳）</span>
+            <input id="qo-push-expires-at" type="number" min="0" step="1">
+          </label>
+          <label class="qo-field">
+            <span>服务周期（天）</span>
+            <input id="qo-push-day" type="number" min="0" step="1">
+          </label>
+          <label class="qo-field">
+            <span>频率</span>
+            <input id="qo-push-frequency" type="number" min="0" step="1">
+          </label>
+          <label class="qo-field qo-field--full">
+            <span>备注</span>
+            <textarea id="qo-push-remark" rows="3" placeholder="推送用途说明"></textarea>
+          </label>
+        </div>
+        <div class="qo-subsection-head">
+          <div><strong>自定义参数</strong><small>随测试与正式异步推送一并发送。</small></div>
+          <button class="qo-button qo-button--secondary" id="qo-add-param" type="button">添加参数</button>
+        </div>
+        <div class="qo-param-list" id="qo-param-list"></div>
+        <div class="qo-capability" id="qo-push-capability"></div>
+        <div class="qo-panel-actions qo-panel-actions--split">
+          <a class="qo-button qo-button--secondary" href="/admin/questionnaires/示例/external-push-logs">查看推送日志</a>
+          <div>
+            <button class="qo-button qo-button--secondary" id="qo-test-push" type="button">测试推送</button>
+            <button class="qo-button qo-button--primary" id="qo-save-push" type="button">保存外部推送</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </section>
+</div>
+<script id="questionnaire-operations-config" type="application/json">{}</script>
+
+      </main>
+    </div>
+  </div>
+  <script id="aicrmAdminActionGrants" type="application/json">{}</script>
+  
+</body>
+</html>

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+html,body{margin:0}
+body{font-family:"PingFang SC","HarmonyOS Sans SC","Hiragino Sans GB","Microsoft YaHei",-apple-system,sans-serif;-webkit-font-smoothing:antialiased;color:#1F2329;background:#EBEDF0}
+*{box-sizing:border-box}
+a{color:#3370ff;text-decoration:none}a:hover{color:#245BDB}
+input,select,textarea,button{font-family:inherit}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:#D9DBDF;border-radius:6px;border:2px solid transparent;background-clip:content-box}
+</style>
+</helmet>
+
+<div style="{{ vars }}">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;height:44px;padding:0 16px;background:#1F2329;color:#fff;flex:none">
+    <div style="display:flex;align-items:center;gap:10px;min-width:0">
+      <div style="width:20px;height:20px;border-radius:5px;background:var(--accent,#3370ff);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">SEL</div>
+      <div style="font-size:13px;font-weight:600;white-space:nowrap">AI-CRM 通用选择器 · 专项板块</div>
+      <div style="font-size:12px;color:#8F959E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">选标签 · 选渠道码 · 选客服人员 · 填写话术 —— 四个跨页面复用的组件，一次定稿，所有调用方共用</div>
+    </div>
+  </div>
+
+  <div style="flex:1;min-height:0;overflow:auto;padding:22px;display:grid;grid-template-columns:minmax(0,1fr);gap:22px;align-content:start">
+
+    <div style="display:flex;align-items:flex-start;gap:10px;background:#EFF4FF;border:1px solid #D3E1FF;border-radius:10px;padding:14px 16px;max-width:1240px">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#245BDB" stroke-width="1.5" style="flex:none;margin-top:2px"><circle cx="8" cy="8" r="6"/><path d="M8 7.2v4M8 5.2v.6"/></svg>
+      <div style="font-size:13px;color:#245BDB;line-height:21px">这四块能力在现有系统里各自散落在渠道码、商品、问卷、自动化话术、群运营等页面，样式和交互都不一致。这里把它们收敛成四个统一组件：静态资源仍是 <span style="font-family:ui-monospace,Menlo,monospace">wecom_tag_picker</span> / <span style="font-family:ui-monospace,Menlo,monospace">material_picker</span> / <span style="font-family:ui-monospace,Menlo,monospace">group_chat_picker</span> / <span style="font-family:ui-monospace,Menlo,monospace">operation_member_picker</span> / <span style="font-family:ui-monospace,Menlo,monospace">send_content_composer</span>，只统一视觉与结构，不改调用方式和字段。</div>
+    </div>
+
+    <div style="max-width:1240px;display:grid;grid-template-columns:minmax(0,1fr);gap:22px;margin-top:-8px">
+
+      <div style="background:#fff;border:1px solid #DEE0E3;border-radius:12px;padding:20px;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start">
+
+        <div style="grid-column:1 / -1;display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:14px;margin-bottom:2px;border-bottom:1px solid #EFF0F1">
+          <div style="display:flex;align-items:baseline;gap:10px">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;background:var(--accent,#3370ff);color:#fff;font-size:13px;font-weight:600;flex:none">1</span>
+            <h2 style="margin:0;font-size:18px;font-weight:600">选标签</h2>
+            <span style="font-size:12px;color:#A6AAB0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace">wecom_tag_picker.js / .css</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px"><span style="display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:5px;background:#F5F6F7;color:#646A73;font-size:12px">渠道码 · 入渠标签</span><span style="display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:5px;background:#F5F6F7;color:#646A73;font-size:12px">问卷运营配置</span><span style="display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:5px;background:#F5F6F7;color:#646A73;font-size:12px">客户档案 · 实时标签</span><span style="display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:5px;background:#F5F6F7;color:#646A73;font-size:12px">企微标签管理</span><span style="display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:5px;background:#F5F6F7;color:#646A73;font-size:12px">AI 人群包 · 圈人</span><span style="display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:5px;background:#F5F6F7;color:#646A73;font-size:12px">群运营计划</span></div>
+        </div>
+        <div style="border:1px solid #DEE0E3;border-radius:10px;overflow:hidden;box-shadow:0 6px 24px rgba(31,35,41,.08)">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #EFF0F1">
+            <div style="font-size:15px;font-weight:600">选择标签</div>
+            <span style="font-size:16px;color:#8F959E;cursor:pointer">×</span>
+          </div>
+          <div style="padding:14px 18px;border-bottom:1px solid #EFF0F1;display:flex;gap:10px">
+            <input placeholder="搜索标签名或标签组" style="height:34px;flex:1;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;background:#fff">
+            <button style="height:34px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;color:#646A73;cursor:pointer">同步企微标签</button>
+          </div>
+          <div style="display:grid;grid-template-columns:190px minmax(0,1fr);min-height:250px">
+            <div style="border-right:1px solid #EFF0F1;padding:8px">
+              <sc-for list="{{ tagGroups }}" as="g" hint-placeholder-count="5">
+                <div style="{{ g.style }}"><span>{{ g.name }}</span><span style="{{ g.countStyle }}">{{ g.count }}</span></div>
+              </sc-for>
+            </div>
+            <div style="padding:14px 16px">
+              <div style="font-size:12px;color:#8F959E;margin-bottom:10px">沙龙来源 · 共 6 个标签</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <sc-for list="{{ tags }}" as="t" hint-placeholder-count="6">
+                  <label style="{{ t.style }}"><span style="{{ t.box }}"></span><span style="font-size:13px">{{ t.name }}</span></label>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;border-top:1px solid #EFF0F1;background:#FAFBFC">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0">
+              <span style="font-size:12px;color:#8F959E;flex:none">已选 2 个</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 8px;border-radius:4px;background:#EFF4FF;color:#245BDB;font-size:12px">沙龙邀约<span style="color:#A9BEF0;cursor:pointer">×</span></span>
+              <span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 8px;border-radius:4px;background:#EFF4FF;color:#245BDB;font-size:12px">共学营<span style="color:#A9BEF0;cursor:pointer">×</span></span>
+            </div>
+            <div style="display:flex;gap:8px;flex:none">
+              <button style="height:32px;padding:0 14px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;cursor:pointer">取消</button>
+              <button style="height:32px;padding:0 16px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer">确定</button>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-content:start">
+          <div style="border:1px solid #DEE0E3;border-radius:10px;padding:14px 16px">
+            <div style="font-size:13px;font-weight:600;margin-bottom:8px">三态</div>
+            <div style="display:grid;grid-template-columns:minmax(0,1fr);gap:8px">
+              <div style="border:1px dashed #DEE0E3;border-radius:8px;padding:12px;font-size:12px;color:#8F959E;line-height:19px">空态：当前企业微信还没有标签组，先去「企微标签管理」创建。</div>
+              <div style="border:1px solid #EFF0F1;border-radius:8px;padding:12px;display:grid;gap:6px"><span style="height:12px;border-radius:4px;background:#EBEDF0"></span><span style="height:12px;width:70%;border-radius:4px;background:#F2F3F5"></span></div>
+              <div style="border:1px solid #FBC4C2;border-radius:8px;background:#FFF5F5;padding:12px;font-size:12px;color:#D83931;line-height:19px">加载失败：当前未获取到企微标签，可稍后重试。</div>
+            </div>
+          </div>
+          <div style="border:1px solid #DEE0E3;border-radius:10px;padding:14px 16px;font-size:12px;color:#646A73;line-height:20px">
+            规则：标签组左栏单选、右栏多选；已选 chip 可就地删除；确定后回写 <span style="font-family:ui-monospace,Menlo,monospace">entry_tag_id / entry_tag_name / entry_tag_group_name</span> 三个隐藏字段，字段名不变。
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#fff;border:1px solid #DEE0E3;border-radius:12px;padding:20px;display:grid;grid-template-columns:440px minmax(0,1fr);gap:20px;align-items:start">
+
+        <div style="grid-column:1 / -1;display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:14px;margin-bottom:2px;border-bottom:1px solid #EFF0F1">
+          <div style="display:flex;align-items:baseline;gap:10px">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;background:var(--accent,#3370ff);color:#fff;font-size:13px;font-weight:600;flex:none">2</span>
+            <h2 style="margin:0;font-size:18px;font-weight:600">选渠道码</h2>
+            <span style="font-size:12px;color:#A6AAB0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace">商品 / 问卷内联 channel select</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px"><span style="display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:5px;background:#F5F6F7;color:#646A73;font-size:12px">商品管理 · 引流渠道码</span><span style="display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:5px;background:#F5F6F7;color:#646A73;font-size:12px">周期商品 · 引流渠道码</span><span style="display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:5px;background:#F5F6F7;color:#646A73;font-size:12px">问卷运营配置 · 绑定渠道码</span><span style="display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:5px;background:#F5F6F7;color:#646A73;font-size:12px">优惠券 · 分享落地</span></div>
+        </div>
+        <div style="border:1px solid #DEE0E3;border-radius:10px;overflow:hidden;box-shadow:0 6px 24px rgba(31,35,41,.08)">
+          <div style="padding:12px 14px;border-bottom:1px solid #EFF0F1"><input placeholder="搜索渠道名称 / 编码" style="height:34px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;background:#fff"></div>
+          <div style="max-height:300px;overflow:auto">
+            <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid #F5F6F7;font-size:13px;color:#646A73;cursor:pointer">不配置引流渠道码</div>
+            <sc-for list="{{ channels }}" as="c" hint-placeholder-count="5">
+              <div style="{{ c.row }}">
+                <div style="min-width:0">
+                  <div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.name }}</div>
+                  <div style="font-size:12px;color:#A6AAB0;font-family:ui-monospace,Menlo,monospace;margin-top:2px">{{ c.code }} · {{ c.users }} 人</div>
+                </div>
+                <span style="{{ c.chip }}">{{ c.type }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="padding:10px 14px;border-top:1px solid #EFF0F1;background:#FAFBFC;font-size:12px;color:#8F959E">共 14 个渠道 · 已停用的不出现在列表里</div>
+        </div>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-content:start">
+          <div style="border:1px solid #DEE0E3;border-radius:10px;padding:14px 16px">
+            <div style="font-size:13px;font-weight:600;margin-bottom:10px">收起态（表单里的样子）</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;height:36px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px">
+              <span style="display:flex;align-items:center;gap:8px;min-width:0"><span style="font-size:13px">扫码添加，邀请你进群共学</span><span style="display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:4px;background:#EFF4FF;color:#245BDB;font-size:12px">普通二维码</span></span>
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#8F959E" stroke-width="1.6" style="flex:none"><path d="M3.6 6l4.4 4.4L12.4 6"/></svg>
+            </div>
+          </div>
+          <div style="border:1px solid #DEE0E3;border-radius:10px;padding:14px 16px;font-size:12px;color:#646A73;line-height:20px">
+            规则：下拉只列启用中的渠道，首项固定「不配置引流渠道码」；行内展示渠道名 + 编码 + 渠道用户数 + 类型 chip，方便同名渠道区分。选中后写回 <span style="font-family:ui-monospace,Menlo,monospace">lead_channel_id</span>，与现有接口一致。
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#fff;border:1px solid #DEE0E3;border-radius:12px;padding:20px;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start">
+
+        <div style="grid-column:1 / -1;display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:14px;margin-bottom:2px;border-bottom:1px solid #EFF0F1">
+          <div style="display:flex;align-items:baseline;gap:10px">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;background:var(--accent,#3370ff);color:#fff;font-size:13px;font-weight:600;flex:none">3</span>
+            <h2 style="margin:0;font-size:18px;font-weight:600">选客服人员</h2>
+            <span style="font-size:12px;color:#A6AAB0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace">operation_member_picker.js</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px"><span style="display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:5px;background:#F5F6F7;color:#646A73;font-size:12px">渠道码 · 客服分配</span><span style="display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:5px;background:#F5F6F7;color:#646A73;font-size:12px">周期商品数据表 · 邀请协作者</span><span style="display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:5px;background:#F5F6F7;color:#646A73;font-size:12px">群运营计划 · 执行人</span><span style="display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:5px;background:#F5F6F7;color:#646A73;font-size:12px">负责人迁移</span></div>
+        </div>
+        <div style="border:1px solid #DEE0E3;border-radius:10px;overflow:hidden;box-shadow:0 6px 24px rgba(31,35,41,.08)">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #EFF0F1">
+            <div><div style="font-size:15px;font-weight:600">选择客服</div><div style="font-size:12px;color:#8F959E;margin-top:2px">来自已同步的企微员工目录</div></div>
+            <button style="height:30px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:12px;color:#646A73;cursor:pointer">同步通讯录</button>
+          </div>
+          <div style="padding:12px 18px;border-bottom:1px solid #EFF0F1"><input placeholder="搜索姓名 / userid" style="height:34px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;background:#fff"></div>
+          <div style="display:grid;grid-template-columns:170px minmax(0,1fr) 210px;min-height:260px">
+            <div style="border-right:1px solid #EFF0F1;padding:8px">
+              <sc-for list="{{ depts }}" as="d" hint-placeholder-count="4">
+                <div style="{{ d.style }}">{{ d.name }}</div>
+              </sc-for>
+            </div>
+            <div style="border-right:1px solid #EFF0F1;padding:8px">
+              <sc-for list="{{ members }}" as="m" hint-placeholder-count="5">
+                <label style="{{ m.style }}">
+                  <span style="{{ m.box }}"></span>
+                  <span style="{{ m.avatar }}">{{ m.initial }}</span>
+                  <span style="min-width:0"><span style="display:block;font-size:13px">{{ m.name }}</span><span style="display:block;font-size:12px;color:#A6AAB0;font-family:ui-monospace,Menlo,monospace">{{ m.uid }}</span></span>
+                </label>
+              </sc-for>
+            </div>
+            <div style="padding:12px 14px">
+              <div style="font-size:12px;color:#8F959E;margin-bottom:10px">已选 2 / 5</div>
+              <div style="display:grid;grid-template-columns:minmax(0,1fr);gap:8px">
+                <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #DEE0E3;border-radius:8px"><span style="width:22px;height:22px;border-radius:50%;background:#EFF4FF;color:#245BDB;display:flex;align-items:center;justify-content:center;font-size:11px;flex:none">林</span><span style="flex:1;font-size:13px;min-width:0">林小楷</span><span style="font-size:12px;color:#8F959E">50%</span></div>
+                <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #DEE0E3;border-radius:8px"><span style="width:22px;height:22px;border-radius:50%;background:#F4EDFF;color:#7F3BF5;display:flex;align-items:center;justify-content:center;font-size:11px;flex:none">张</span><span style="flex:1;font-size:13px;min-width:0">张敏</span><span style="font-size:12px;color:#8F959E">50%</span></div>
+              </div>
+              <div style="margin-top:10px;font-size:12px;color:#A6AAB0;line-height:19px">拖动可调整承接顺序；比例合计需等于 100%。</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid #EFF0F1;background:#FAFBFC">
+            <span style="font-size:12px;color:#8F959E">最多可选 5 人</span>
+            <div style="display:flex;gap:8px"><button style="height:32px;padding:0 14px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;cursor:pointer">取消</button><button style="height:32px;padding:0 16px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer">确定</button></div>
+          </div>
+        </div>
+        <div style="border:1px solid #DEE0E3;border-radius:10px;padding:14px 16px;font-size:12px;color:#646A73;line-height:20px">
+          规则：部门树单选、成员多选；右栏是已选清单，按调用场景显示「比例」或「顺序」；未同步通讯录时整个右侧替换为空态「还没有同步企微员工，点击右上角同步」。回写字段沿用各页面原有的 <span style="font-family:ui-monospace,Menlo,monospace">assignees / owner_staff_id / collaborators</span>。
+        </div>
+      </div>
+
+      <div style="background:#fff;border:1px solid #DEE0E3;border-radius:12px;padding:20px;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start">
+
+        <div style="grid-column:1 / -1;display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:14px;margin-bottom:2px;border-bottom:1px solid #EFF0F1">
+          <div style="display:flex;align-items:baseline;gap:10px">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px;background:var(--accent,#3370ff);color:#fff;font-size:13px;font-weight:600;flex:none">4</span>
+            <h2 style="margin:0;font-size:18px;font-weight:600">填写话术</h2>
+            <span style="font-size:12px;color:#A6AAB0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace">send_content_composer + material_picker + group_chat_picker</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px"><span style="display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:5px;background:#F5F6F7;color:#646A73;font-size:12px">渠道码 · 欢迎语素材</span><span style="display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:5px;background:#F5F6F7;color:#646A73;font-size:12px">自动化话术 · 固定话术/素材</span><span style="display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:5px;background:#F5F6F7;color:#646A73;font-size:12px">群运营计划 · 群发内容</span><span style="display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:5px;background:#F5F6F7;color:#646A73;font-size:12px">AI 人群包 · 外发内容</span></div>
+        </div>
+        <div style="border:1px solid #DEE0E3;border-radius:10px;overflow:hidden">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid #EFF0F1;background:#FAFBFC">
+            <div><div style="font-size:14px;font-weight:600">话术内容</div><div style="font-size:12px;color:#8F959E;margin-top:3px">编辑内容将在页面保存时统一提交</div></div>
+            <div style="font-size:12px;color:#8F959E;flex:none">已选 2 / 9 个素材 · 图片 1 · 小程序 0 · 附件 0 · 客户群 1</div>
+          </div>
+          <div style="padding:16px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px">
+            <textarea rows="6" value="{{ tplText }}" style="border:1px solid #DEE0E3;border-radius:6px;padding:10px 12px;font-size:13px;line-height:21px;background:#fff;width:100%;resize:vertical"></textarea>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <sc-for list="{{ vars2 }}" as="v" hint-placeholder-count="5">
+                <button style="height:30px;padding:0 12px;border:0;border-radius:6px;background:#EFF4FF;color:#245BDB;font-size:12px;cursor:pointer">{{ v.t }}</button>
+              </sc-for>
+            </div>
+            <div style="font-size:12px;color:#646A73">素材与进群</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button style="height:32px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;cursor:pointer">＋图片</button>
+              <button style="height:32px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;cursor:pointer">＋小程序</button>
+              <button style="height:32px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;cursor:pointer">＋附件</button>
+              <button style="height:32px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;cursor:pointer">＋选择群聊</button>
+            </div>
+            <div style="font-size:12px;color:#646A73">已选内容</div>
+            <div style="display:grid;grid-template-columns:minmax(0,1fr);gap:8px">
+              <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid #DEE0E3;border-radius:8px">
+                <span style="width:36px;height:36px;border-radius:6px;background:linear-gradient(135deg,#DCE7FF,#B9CDFF);flex:none"></span>
+                <span style="flex:1;min-width:0"><span style="display:block;font-size:13px">共学营预告主视觉.png</span><span style="display:block;font-size:12px;color:#A6AAB0">图片 · 1080×1920</span></span>
+                <span style="font-size:12px;color:#8F959E;cursor:pointer">移除</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid #DEE0E3;border-radius:8px">
+                <span style="width:36px;height:36px;border-radius:6px;background:#EBF9EC;color:#2EA121;display:flex;align-items:center;justify-content:center;font-size:12px;flex:none">群</span>
+                <span style="flex:1;min-width:0"><span style="display:block;font-size:13px">5 天共学营 · 3 群</span><span style="display:block;font-size:12px;color:#A6AAB0">客户群邀请 · 剩余 118 人</span></span>
+                <span style="font-size:12px;color:#8F959E;cursor:pointer">移除</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-content:start">
+          <div style="border:1px solid #DEE0E3;border-radius:10px;padding:14px 16px">
+            <div style="font-size:13px;font-weight:600;margin-bottom:10px">实时预览</div>
+            <div style="background:#EFF4FF;border-radius:10px;padding:12px 14px;font-size:13px;line-height:21px;white-space:pre-wrap">{{ tplText }}</div>
+            <div style="width:120px;height:120px;border-radius:10px;background:linear-gradient(135deg,#DCE7FF,#B9CDFF);margin-top:10px"></div>
+          </div>
+          <div style="border:1px solid #DEE0E3;border-radius:10px;padding:14px 16px;font-size:12px;color:#646A73;line-height:20px">
+            规则：变量按钮插入到光标处；素材上限 9 个，超出时按钮置灰并提示；预览按企微私聊气泡渲染，文本 + 素材按发送顺序排列。字段仍是 <span style="font-family:ui-monospace,Menlo,monospace">welcome_message</span> 与四组 <span style="font-family:ui-monospace,Menlo,monospace">*_library_ids</span>。
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#3370ff&quot;,&quot;#245BDB&quot;,&quot;#7F3BF5&quot;,&quot;#00A870&quot;],&quot;default&quot;:&quot;#3370ff&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;主题&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent || '#3370ff';
+    const tick = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.4 8.4l3 3 6.2-6.6' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\")";
+    const cbox = (on) => ({
+      width: '16px', height: '16px', borderRadius: '4px', flex: 'none',
+      border: '1px solid ' + (on ? accent : '#C4C7CC'),
+      background: on ? accent + ' ' + tick + ' center/12px 12px no-repeat' : '#fff',
+    });
+    const num = () => ({ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '24px', height: '24px', borderRadius: '7px', background: accent, color: '#fff', fontSize: '13px', fontWeight: 600, flex: 'none' });
+    return {
+      vars: { display: 'flex', flexDirection: 'column', height: '100%', minHeight: '100vh', '--accent': accent },
+      __check: 0,
+      tplText: '{{客户名}} 恭喜你报名成功#5天沙龙邀约破局共学营\n⭕辛苦填一下问卷，让我们更好了解你的需求：\nhttps://www.xinliushangye.com/s/salon-yixiang-gongxueying',
+      tagGroups: [
+        { name: '沙龙来源', count: 6, on: true }, { name: '意向等级', count: 4, on: false },
+        { name: '行业', count: 13, on: false }, { name: '课程偏好', count: 8, on: false }, { name: '运营动作', count: 5, on: false },
+      ].map((g) => ({
+        ...g,
+        style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', height: '34px', padding: '0 10px', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', background: g.on ? '#EFF4FF' : 'transparent', color: g.on ? accent : '#1F2329', fontWeight: g.on ? 600 : 400 },
+        countStyle: { fontSize: '12px', color: g.on ? accent : '#A6AAB0' },
+      })),
+      tags: [
+        { name: '沙龙邀约', on: true }, { name: '共学营', on: true }, { name: '已进群', on: false },
+        { name: '未进群', on: false }, { name: '已到场', on: false }, { name: '爽约', on: false },
+      ].map((t) => ({
+        ...t,
+        style: { display: 'flex', alignItems: 'center', gap: '9px', padding: '9px 11px', borderRadius: '8px', cursor: 'pointer', border: '1px solid ' + (t.on ? accent : '#DEE0E3'), background: t.on ? '#F5F9FF' : '#fff' },
+        box: cbox(t.on),
+      })),
+      channels: [
+        { name: '扫码添加，邀请你进群共学', code: 'shalongyaoyue', users: '0', type: '普通二维码', on: true },
+        { name: '视频号8.8发布会', code: 'sph0808', users: '1', type: '普通二维码', on: false },
+        { name: '加我企业微信，兑换课程', code: 'duihuankecheng', users: '19', type: '普通二维码', on: false },
+        { name: '有赞店铺来源', code: 'youzan', users: '8', type: '获客链接', on: false },
+        { name: '城市会员 3980', code: 'city3980', users: '41', type: '普通二维码', on: false },
+      ].map((c) => ({
+        ...c,
+        row: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '10px 14px', borderBottom: '1px solid #F5F6F7', cursor: 'pointer', background: c.on ? '#F5F9FF' : '#fff' },
+        chip: { display: 'inline-flex', alignItems: 'center', height: '22px', padding: '0 8px', borderRadius: '4px', background: '#EFF4FF', color: '#245BDB', fontSize: '12px', flex: 'none' },
+      })),
+      depts: [
+        { name: '全部成员', on: true }, { name: '增长顾问组', on: false }, { name: '社群运营组', on: false }, { name: '客户成功组', on: false },
+      ].map((d) => ({ ...d, style: { display: 'flex', alignItems: 'center', height: '34px', padding: '0 10px', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', background: d.on ? '#EFF4FF' : 'transparent', color: d.on ? accent : '#1F2329', fontWeight: d.on ? 600 : 400 } })),
+      members: [
+        { name: '林小楷', uid: 'LinKaiYan', on: true }, { name: '张敏', uid: 'ZhangMin', on: true },
+        { name: '李由', uid: 'LiYou', on: false }, { name: '王恺', uid: 'WangKai', on: false }, { name: '陈静', uid: 'ChenJing', on: false },
+      ].map((m) => ({
+        ...m,
+        initial: m.name.slice(0, 1),
+        style: { display: 'flex', alignItems: 'center', gap: '9px', padding: '8px 10px', borderRadius: '8px', cursor: 'pointer', background: m.on ? '#F5F9FF' : 'transparent' },
+        box: cbox(m.on),
+        avatar: { width: '26px', height: '26px', borderRadius: '50%', background: '#F2F3F5', color: '#646A73', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', flex: 'none' },
+      })),
+      vars2: [{ t: '插入客户名' }, { t: '插入 问卷信息' }, { t: '插入 最近20条聊天' }, { t: '插入 用户标签' }, { t: '插入 激活信息' }],
+      blocks: [
+        { num: '1', title: '选标签', asset: 'wecom_tag_picker.js / .css', used: ['渠道码编辑 · 入渠标签', '问卷运营配置 · 打标签', '客户档案 · 实时标签', '企微标签管理', 'AI 人群包 · 圈人条件', '群运营计划 · 人群筛选'] },
+        { num: '2', title: '选渠道码', asset: 'channel 选择（商品 / 问卷内联）', used: ['商品管理 · 引流渠道码', '周期商品 · 引流渠道码', '问卷运营配置 · 绑定渠道码', '优惠券 · 分享落地', '渠道码中心 · 复制 / 分享'] },
+        { num: '3', title: '选客服人员', asset: 'operation_member_picker.js', used: ['渠道码编辑 · 客服分配', '周期商品数据表 · 邀请协作者', '群运营计划 · 执行人', '负责人迁移 · 目标负责人'] },
+        { num: '4', title: '填写话术', asset: 'send_content_composer.js + material_picker + group_chat_picker', used: ['渠道码编辑 · 欢迎语素材', '自动化话术 · 固定话术 / 固定素材', '群运营计划 · 群发内容', 'AI 人群包 · 外发内容'] },
+      ].map((b) => ({ ...b, numStyle: num() })),
+    };
+  }
+}
+</script>
+</body>
+</html>

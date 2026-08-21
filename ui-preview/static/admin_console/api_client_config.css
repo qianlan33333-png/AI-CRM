@@ -1,0 +1,653 @@
+.api-client-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.api-client-list-head {
+  align-items: center;
+}
+
+.api-client-table code {
+  white-space: nowrap;
+}
+
+.api-status {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 3px 9px;
+  background: #f1f3f7;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.api-status.is-enabled {
+  background: #e8f8ef;
+  color: #128a4b;
+}
+
+.api-client-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 20px;
+}
+
+.api-client-form-wide {
+  grid-column: 1 / -1;
+}
+
+.api-client-values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.api-client-values > div {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 18px;
+  border-top: 1px solid #edf1f7;
+}
+
+.api-client-values dt {
+  font-weight: 800;
+  color: #475467;
+}
+
+.api-client-values dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.api-client-secret-card {
+  border-color: #f0bf55;
+  background: #fffdf6;
+}
+
+.api-client-secret-body,
+.api-client-actions {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 18px;
+}
+
+.api-client-secret-body label:first-child,
+.api-client-existing-secret {
+  min-width: min(520px, 100%);
+  flex: 1;
+}
+
+.api-client-secret-body input[data-secret-value] {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.api-client-actions .admin-check-line {
+  align-self: center;
+}
+
+.api-client-reactivate {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(300px, 1.2fr) auto auto;
+  align-items: end;
+  gap: 14px;
+  padding: 20px 26px;
+  border-top: 1px solid #e5e9f0;
+  background: #fbfcfe;
+}
+
+.api-client-reactivate > div:first-child {
+  display: grid;
+  gap: 4px;
+  align-self: center;
+}
+
+.api-client-reactivate strong {
+  color: #162033;
+  font-size: 14px;
+}
+
+.api-client-reactivate > div:first-child span {
+  color: #687386;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.api-client-secret-confirmation {
+  margin-top: 18px;
+}
+
+.api-client-credential-page .direct-api-key-record__actions {
+  min-width: 210px;
+}
+
+.api-client-credential-page .direct-api-key-record__actions .admin-button {
+  white-space: nowrap;
+}
+
+/* Single CRM API Key */
+.direct-api-key-page {
+  --key-blue: #346df1;
+  --key-blue-dark: #2558cf;
+  --key-ink: #162033;
+  --key-muted: #687386;
+  --key-line: #e5e9f0;
+  --key-soft: #f7f9fc;
+}
+
+.direct-api-key-page > .admin-card {
+  overflow: hidden;
+  border-color: var(--key-line);
+  border-radius: 18px;
+  box-shadow: 0 8px 28px rgba(24, 39, 75, 0.05);
+}
+
+.direct-api-key-overview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 28px 30px;
+  background: #fff;
+}
+
+.direct-api-key-overview__copy {
+  max-width: 720px;
+}
+
+.direct-api-key-kicker {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--key-blue-dark);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.direct-api-key-page h2 {
+  margin: 0;
+  color: var(--key-ink);
+  font-size: 20px;
+  line-height: 1.35;
+}
+
+.direct-api-key-overview__copy p,
+.direct-api-key-empty p,
+.direct-api-key-modal__copy {
+  margin: 9px 0 0;
+  color: var(--key-muted);
+  line-height: 1.75;
+}
+
+.direct-api-key-overview__security {
+  display: flex;
+  align-items: center;
+  min-width: 210px;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid #d9e5ff;
+  border-radius: 14px;
+  background: #f5f8ff;
+}
+
+.direct-api-key-overview__security div {
+  display: grid;
+  gap: 2px;
+}
+
+.direct-api-key-overview__security strong {
+  color: var(--key-ink);
+  font-size: 14px;
+}
+
+.direct-api-key-overview__security span:last-child {
+  color: var(--key-muted);
+  font-size: 12px;
+}
+
+.direct-api-key-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 26px 18px;
+  border-bottom: 1px solid var(--key-line);
+}
+
+.direct-api-key-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: #f0f2f5;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.direct-api-key-status > span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.direct-api-key-status.is-enabled {
+  background: #e9f8ef;
+  color: #16864b;
+}
+
+.direct-api-key-record {
+  display: grid;
+  grid-template-columns: minmax(300px, 1.5fr) minmax(260px, 1fr) auto;
+  align-items: center;
+  gap: 28px;
+  padding: 24px 26px;
+}
+
+.direct-api-key-record__identity {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.direct-api-key-record__label {
+  color: var(--key-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.direct-api-key-record__identity code {
+  width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--key-ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.direct-api-key-record__note {
+  color: #9a6700;
+  font-size: 12px;
+}
+
+.direct-api-key-record__meta {
+  display: grid;
+  grid-template-columns: 72px minmax(150px, 1fr);
+  gap: 18px;
+  margin: 0;
+}
+
+.direct-api-key-record__meta div {
+  display: grid;
+  gap: 5px;
+}
+
+.direct-api-key-record__meta dt {
+  color: var(--key-muted);
+  font-size: 12px;
+}
+
+.direct-api-key-record__meta dd {
+  margin: 0;
+  color: var(--key-ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.direct-api-key-record__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+.direct-api-key-empty {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 26px 28px;
+}
+
+.direct-api-key-empty[hidden],
+.direct-api-key-current[hidden] {
+  display: none;
+}
+
+.direct-api-key-empty > div:first-child {
+  flex: 1;
+}
+
+.direct-api-key-usage__values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  padding: 4px 26px 10px;
+}
+
+.direct-api-key-usage__values > div {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 12px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--key-line);
+}
+
+.direct-api-key-usage__values > div:nth-child(odd):not(.direct-api-key-usage__wide) {
+  padding-right: 24px;
+}
+
+.direct-api-key-usage__values > div:nth-child(even) {
+  padding-left: 24px;
+  border-left: 1px solid var(--key-line);
+}
+
+.direct-api-key-usage__values .direct-api-key-usage__wide {
+  grid-column: 1 / -1;
+}
+
+.direct-api-key-usage__values dt {
+  color: var(--key-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.direct-api-key-usage__values dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.direct-api-key-usage__values code {
+  color: var(--key-ink);
+  font-size: 13px;
+}
+
+.direct-api-key-permission {
+  color: var(--key-blue-dark);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+}
+
+.direct-api-key-usage__note {
+  margin: 0;
+  padding: 13px 26px 18px;
+  color: var(--key-muted);
+  font-size: 13px;
+}
+
+.direct-api-key-modal[hidden] {
+  display: none;
+}
+
+.direct-api-key-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.direct-api-key-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+.direct-api-key-modal__dialog {
+  position: relative;
+  width: min(590px, 100%);
+  padding: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.24);
+}
+
+.direct-api-key-modal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.direct-api-key-modal__head > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+[data-api-key-confirm-view] .direct-api-key-modal__head > div {
+  display: block;
+}
+
+.direct-api-key-modal__head h2 {
+  font-size: 22px;
+}
+
+.direct-api-key-modal__close {
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: transparent;
+  color: var(--key-muted);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.direct-api-key-modal__close:hover {
+  background: #f3f4f6;
+}
+
+.direct-api-key-modal__copy {
+  margin-top: 18px;
+  font-size: 15px;
+}
+
+.direct-api-key-secret-field {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.direct-api-key-secret-field span {
+  color: var(--key-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.direct-api-key-secret-field input {
+  width: 100%;
+  min-height: 54px;
+  border: 1px solid #dfe4eb;
+  border-radius: 13px;
+  padding: 0 16px;
+  background: #f6f7f9;
+  color: #141a24;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 15px;
+}
+
+.direct-api-key-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.direct-api-key-modal__actions .admin-button {
+  min-width: 112px;
+}
+
+.direct-api-key-toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  z-index: 1100;
+  transform: translate(-50%, -18px);
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: #20252f;
+  color: #fff;
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.2);
+  font-size: 14px;
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.direct-api-key-toast.is-visible {
+  transform: translate(-50%, 0);
+  opacity: 1;
+}
+
+body.has-api-key-modal {
+  overflow: hidden;
+}
+
+@media (max-width: 1000px) {
+  .direct-api-key-record {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .direct-api-key-record__meta {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .api-client-reactivate {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 800px) {
+  .api-client-form,
+  .api-client-values {
+    grid-template-columns: 1fr;
+  }
+
+  .api-client-values > div {
+    grid-template-columns: 1fr;
+  }
+
+  .api-client-form-wide {
+    grid-column: auto;
+  }
+
+  .api-client-reactivate {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .api-client-reactivate .admin-button {
+    width: 100%;
+  }
+
+  .direct-api-key-overview {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .direct-api-key-overview__security {
+    width: 100%;
+  }
+
+  .direct-api-key-usage__values {
+    grid-template-columns: 1fr;
+  }
+
+  .direct-api-key-usage__values .direct-api-key-usage__wide {
+    grid-column: auto;
+  }
+
+  .direct-api-key-usage__values > div:nth-child(odd):not(.direct-api-key-usage__wide),
+  .direct-api-key-usage__values > div:nth-child(even) {
+    padding-right: 0;
+    padding-left: 0;
+    border-left: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .direct-api-key-overview,
+  .direct-api-key-empty {
+    padding: 22px 20px;
+  }
+
+  .direct-api-key-empty {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .direct-api-key-empty .admin-button {
+    width: 100%;
+  }
+
+  .direct-api-key-section-head {
+    align-items: flex-start;
+    padding: 20px;
+  }
+
+  .direct-api-key-record {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 22px 20px;
+  }
+
+  .direct-api-key-record__meta {
+    grid-column: auto;
+    grid-row: auto;
+    grid-template-columns: 1fr;
+  }
+
+  .direct-api-key-record__actions {
+    justify-content: stretch;
+  }
+
+  .api-client-credential-page .direct-api-key-record__actions {
+    min-width: 0;
+  }
+
+  .direct-api-key-record__actions .admin-button {
+    flex: 1;
+  }
+
+  .direct-api-key-usage__values {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+
+  .direct-api-key-usage__values > div {
+    grid-template-columns: 1fr;
+  }
+
+  .direct-api-key-usage__note {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+
+  .direct-api-key-modal {
+    padding: 14px;
+  }
+
+  .direct-api-key-modal__dialog {
+    padding: 24px 20px;
+    border-radius: 20px;
+  }
+
+  .direct-api-key-modal__actions .admin-button {
+    flex: 1;
+    min-width: 0;
+  }
+}

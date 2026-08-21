@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Audit · 客户管理后台</title>
+  <link rel="stylesheet" href="../static/admin_console/admin_console.css?v=operation-member-picker-fix-20260527&amp;design=lark-20260803">
+  <script src="../static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
+  <script src="../static/admin_console/image_resource_loader.js?v=resource-governance-v2-pending-retry"></script>
+  
+  <script defer src="../static/admin_console/admin_console.js?v=lark-design-package-20260803"></script>
+  <script defer src="../static/admin_console/operation_member_picker.js?v=operation-member-picker-wecom-sync-20260709"></script>
+</head>
+<body class="admin-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="admin-brand-mark">CRM</div>
+        <div class="admin-brand-copy">
+          <div class="admin-brand-title">客户管理后台</div>
+          <div class="admin-brand-subtitle">ADMIN CONSOLE</div>
+        </div>
+      </div>
+
+      <nav class="admin-nav" aria-label="客户管理后台导航">
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">运营</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化运营"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_conversion.svg" alt="">
+              <span class="admin-nav-label">自动化运营</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="运营闭环"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/operation_cycles.svg" alt="">
+              <span class="admin-nav-label">运营闭环</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="群运营计划"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/group_ops.svg" alt="">
+              <span class="admin-nav-label">群运营计划</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="渠道码中心"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/channels.svg" alt="">
+              <span class="admin-nav-label">渠道码中心</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="AI 助手"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/cloud_orchestrator.svg" alt="">
+              <span class="admin-nav-label">AI 助手</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="客户激活 / 客户列表"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/customers.svg" alt="">
+              <span class="admin-nav-label">客户激活 / 客户列表</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="漏斗 / 数据看板"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/user_ops_funnel.svg" alt="">
+              <span class="admin-nav-label">漏斗 / 数据看板</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="问卷"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/questionnaires.svg" alt="">
+              <span class="admin-nav-label">问卷</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="内容雷达"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/radar_links.svg" alt="">
+              <span class="admin-nav-label">内容雷达</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="企微标签管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wecom_tags.svg" alt="">
+              <span class="admin-nav-label">企微标签管理</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">交易</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="交易管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_transactions.svg" alt="">
+              <span class="admin-nav-label">交易管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_products.svg" alt="">
+              <span class="admin-nav-label">商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="周期商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/service_period_products.svg" alt="">
+              <span class="admin-nav-label">周期商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="优惠券"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/coupons.svg" alt="">
+              <span class="admin-nav-label">优惠券</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">素材</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="图片素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/image_library.svg" alt="">
+              <span class="admin-nav-label">图片素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="小程序素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/miniprogram_library.svg" alt="">
+              <span class="admin-nav-label">小程序素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="附件素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/attachment_library.svg" alt="">
+              <span class="admin-nav-label">附件素材库</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">配置及后台</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化话术"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_agents.svg" alt="">
+              <span class="admin-nav-label">自动化话术</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="负责人迁移"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/owner_migration.svg" alt="">
+              <span class="admin-nav-label">负责人迁移</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="配置"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/config.svg" alt="">
+              <span class="admin-nav-label">配置</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="API 文档"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/api_docs.svg" alt="">
+              <span class="admin-nav-label">API 文档</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+      </nav>
+
+      
+      <div class="admin-sidebar-user">
+        <div class="admin-sidebar-user__avatar">
+          示
+        </div>
+        <div class="admin-sidebar-user__meta">
+          <div class="admin-sidebar-user__name">
+            示例管理员
+          </div>
+          <a class="admin-sidebar-user__logout" href="#">退出登录</a>
+        </div>
+      </div>
+      
+    </aside>
+
+    <div class="admin-main-wrap">
+      
+      
+      
+      
+      
+      
+      <header class="admin-topbar">
+        
+        <div class="admin-topbar-head">
+          <nav class="admin-breadcrumbs" aria-label="当前位置">
+            
+            
+            <a href="#">客户管理后台</a>
+            
+            
+          </nav>
+          <div>
+            <h1 class="admin-page-title">Audit</h1>
+            <p class="admin-page-summary">页面功能预览（示例数据）</p>
+          </div>
+        </div>
+        
+
+        
+      </header>
+      
+
+      <main class="admin-page">
+        
+        <section class="admin-alert admin-alert--success">示例</section>
+        
+        
+        <section class="admin-alert admin-alert--error">示例</section>
+        
+        
+<section class="admin-card-grid">
+  
+  <article class="admin-card admin-stat-card admin-stat-card--nested">
+    <div class="admin-card-label">示例</div>
+    <div class="admin-card-value admin-card-value--compact">示例</div>
+    <p class="admin-card-copy">示例</p>
+  </article>
+  
+  <article class="admin-card admin-stat-card admin-stat-card--nested">
+    <div class="admin-card-label">示例</div>
+    <div class="admin-card-value admin-card-value--compact">示例</div>
+    <p class="admin-card-copy">示例</p>
+  </article>
+  
+  <article class="admin-card admin-stat-card admin-stat-card--nested">
+    <div class="admin-card-label">示例</div>
+    <div class="admin-card-value admin-card-value--compact">示例</div>
+    <p class="admin-card-copy">示例</p>
+  </article>
+  
+</section>
+
+<section class="admin-card">
+  <div class="admin-card-head">
+    <div>
+      <h2>筛选条件</h2>
+      <p>可以按关键词、模块、操作人和时间查看记录。</p>
+    </div>
+    <div class="admin-toolbar">
+      <a class="admin-button admin-button--secondary" href="示例">复制当前筛选链接</a>
+    </div>
+  </div>
+  <form class="admin-filter-bar admin-form-grid admin-form-grid--audit" method="get" action="/admin/audit">
+    <label>
+      <span>全文检索</span>
+      <input type="text" name="q" value="示例" placeholder="操作人 / 动作 / 对象">
+    </label>
+    <label>
+      <span>模块</span>
+      <select name="target_type">
+        <option value="">全部</option>
+        
+        <option value="示例" >示例</option>
+        
+        <option value="示例" >示例</option>
+        
+        <option value="示例" >示例</option>
+        
+      </select>
+    </label>
+    <label>
+      <span>操作</span>
+      <select name="action_type">
+        <option value="">全部</option>
+        
+        <option value="示例" >示例</option>
+        
+        <option value="示例" >示例</option>
+        
+        <option value="示例" >示例</option>
+        
+      </select>
+    </label>
+    <label>
+      <span>操作人</span>
+      <select name="operator">
+        <option value="">全部</option>
+        
+        <option value="示例" >示例</option>
+        
+        <option value="示例" >示例</option>
+        
+        <option value="示例" >示例</option>
+        
+      </select>
+    </label>
+    <label>
+      <span>查看对象</span>
+      <input type="text" name="target_id" value="示例" placeholder="客户编号 / 工具名 / 配置项">
+    </label>
+    <label>
+      <span>每页数量</span>
+      <select name="page_size">
+        
+        <option value="10" >10</option>
+        
+        <option value="20" >20</option>
+        
+        <option value="50" >50</option>
+        
+        <option value="100" >100</option>
+        
+      </select>
+    </label>
+    <input type="hidden" name="sort_by" value="示例">
+    <input type="hidden" name="sort_dir" value="示例">
+    <div class="admin-form-actions">
+      <button class="admin-button admin-button--primary" type="submit">应用筛选</button>
+      <a class="admin-button admin-button--ghost" href="/admin/audit">重置</a>
+    </div>
+  </form>
+</section>
+
+<section class="admin-card">
+  <div class="admin-card-head">
+    <div>
+      <h2>操作记录列表</h2>
+      <p>点击对象可以跳到对应页面，点击查看详情可查看修改前后内容。</p>
+    </div>
+  </div>
+  <div class="admin-table-wrap">
+    <table class="admin-table admin-table--audit">
+      <thead>
+        <tr>
+          
+          <th>
+            <a class="admin-table-sort-link" href="示例">示例</a>
+          </th>
+          
+          <th>
+            <a class="admin-table-sort-link" href="示例">示例</a>
+          </th>
+          
+          <th>
+            <a class="admin-table-sort-link" href="示例">示例</a>
+          </th>
+          
+          <th>修改前</th>
+          <th>修改后</th>
+          <th>跳转</th>
+        </tr>
+      </thead>
+      <tbody>
+        
+        <tr>
+          <td>示例</td>
+          <td>示例</td>
+          <td>示例</td>
+          <td>示例</td>
+          <td><code>示例</code></td>
+          <td><pre class="admin-json-inline">示例</pre></td>
+          <td><pre class="admin-json-inline">示例</pre></td>
+          <td>
+            <a class="admin-inline-link admin-inline-link--compact" href="示例">查看对象</a>
+            <a class="admin-inline-link admin-inline-link--compact" href="示例">查看详情</a>
+          </td>
+        </tr>
+        
+        <tr>
+          <td>示例</td>
+          <td>示例</td>
+          <td>示例</td>
+          <td>示例</td>
+          <td><code>示例</code></td>
+          <td><pre class="admin-json-inline">示例</pre></td>
+          <td><pre class="admin-json-inline">示例</pre></td>
+          <td>
+            <a class="admin-inline-link admin-inline-link--compact" href="示例">查看对象</a>
+            <a class="admin-inline-link admin-inline-link--compact" href="示例">查看详情</a>
+          </td>
+        </tr>
+        
+        <tr>
+          <td>示例</td>
+          <td>示例</td>
+          <td>示例</td>
+          <td>示例</td>
+          <td><code>示例</code></td>
+          <td><pre class="admin-json-inline">示例</pre></td>
+          <td><pre class="admin-json-inline">示例</pre></td>
+          <td>
+            <a class="admin-inline-link admin-inline-link--compact" href="示例">查看对象</a>
+            <a class="admin-inline-link admin-inline-link--compact" href="示例">查看详情</a>
+          </td>
+        </tr>
+        
+      </tbody>
+    </table>
+  </div>
+  <div class="admin-pagination">
+    
+    <a class="admin-button admin-button--ghost" href="示例">上一页</a>
+    
+    
+    <a class="admin-pagination-link is-active" href="示例">示例</a>
+    
+    <a class="admin-pagination-link is-active" href="示例">示例</a>
+    
+    <a class="admin-pagination-link is-active" href="示例">示例</a>
+    
+    
+    <a class="admin-button admin-button--ghost" href="示例">下一页</a>
+    
+  </div>
+</section>
+
+<section class="admin-split-grid">
+  <article class="admin-card">
+    <div class="admin-card-head">
+      <div>
+        <h2>详情</h2>
+        <p>这里展示单条记录的完整变更内容。</p>
+      </div>
+    </div>
+    
+    <div class="admin-state admin-state--inline">
+      <strong>#示例 · 示例</strong>
+      <span>示例 · 示例</span>
+      <span>示例 / 示例</span>
+    </div>
+    <div class="admin-code-panel">
+      <h3>修改前</h3>
+      <pre class="admin-code-block">示例</pre>
+    </div>
+    <div class="admin-code-panel">
+      <h3>修改后</h3>
+      <pre class="admin-code-block">示例</pre>
+    </div>
+    
+  </article>
+</section>
+
+      </main>
+    </div>
+  </div>
+  <script id="aicrmAdminActionGrants" type="application/json">{}</script>
+  
+</body>
+</html>

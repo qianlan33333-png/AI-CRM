@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Config Api Client Detail · 客户管理后台</title>
+  <link rel="stylesheet" href="../static/admin_console/admin_console.css?v=operation-member-picker-fix-20260527&amp;design=lark-20260803">
+  <script src="../static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
+  <script src="../static/admin_console/image_resource_loader.js?v=resource-governance-v2-pending-retry"></script>
+  
+<link rel="stylesheet" href="../static/admin_console/api_client_config.css?v=api-client-secret-status-v2">
+
+  <script defer src="../static/admin_console/admin_console.js?v=lark-design-package-20260803"></script>
+  <script defer src="../static/admin_console/operation_member_picker.js?v=operation-member-picker-wecom-sync-20260709"></script>
+</head>
+<body class="admin-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="admin-brand-mark">CRM</div>
+        <div class="admin-brand-copy">
+          <div class="admin-brand-title">客户管理后台</div>
+          <div class="admin-brand-subtitle">ADMIN CONSOLE</div>
+        </div>
+      </div>
+
+      <nav class="admin-nav" aria-label="客户管理后台导航">
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">运营</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化运营"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_conversion.svg" alt="">
+              <span class="admin-nav-label">自动化运营</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="运营闭环"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/operation_cycles.svg" alt="">
+              <span class="admin-nav-label">运营闭环</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="群运营计划"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/group_ops.svg" alt="">
+              <span class="admin-nav-label">群运营计划</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="渠道码中心"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/channels.svg" alt="">
+              <span class="admin-nav-label">渠道码中心</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="AI 助手"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/cloud_orchestrator.svg" alt="">
+              <span class="admin-nav-label">AI 助手</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="客户激活 / 客户列表"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/customers.svg" alt="">
+              <span class="admin-nav-label">客户激活 / 客户列表</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="漏斗 / 数据看板"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/user_ops_funnel.svg" alt="">
+              <span class="admin-nav-label">漏斗 / 数据看板</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="问卷"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/questionnaires.svg" alt="">
+              <span class="admin-nav-label">问卷</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="内容雷达"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/radar_links.svg" alt="">
+              <span class="admin-nav-label">内容雷达</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="企微标签管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wecom_tags.svg" alt="">
+              <span class="admin-nav-label">企微标签管理</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">交易</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="交易管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_transactions.svg" alt="">
+              <span class="admin-nav-label">交易管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_products.svg" alt="">
+              <span class="admin-nav-label">商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="周期商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/service_period_products.svg" alt="">
+              <span class="admin-nav-label">周期商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="优惠券"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/coupons.svg" alt="">
+              <span class="admin-nav-label">优惠券</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">素材</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="图片素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/image_library.svg" alt="">
+              <span class="admin-nav-label">图片素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="小程序素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/miniprogram_library.svg" alt="">
+              <span class="admin-nav-label">小程序素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="附件素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/attachment_library.svg" alt="">
+              <span class="admin-nav-label">附件素材库</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">配置及后台</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化话术"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_agents.svg" alt="">
+              <span class="admin-nav-label">自动化话术</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="负责人迁移"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/owner_migration.svg" alt="">
+              <span class="admin-nav-label">负责人迁移</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="配置"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/config.svg" alt="">
+              <span class="admin-nav-label">配置</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="API 文档"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/api_docs.svg" alt="">
+              <span class="admin-nav-label">API 文档</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+      </nav>
+
+      
+      <div class="admin-sidebar-user">
+        <div class="admin-sidebar-user__avatar">
+          示
+        </div>
+        <div class="admin-sidebar-user__meta">
+          <div class="admin-sidebar-user__name">
+            示例管理员
+          </div>
+          <a class="admin-sidebar-user__logout" href="#">退出登录</a>
+        </div>
+      </div>
+      
+    </aside>
+
+    <div class="admin-main-wrap">
+      
+      
+      
+      
+      
+      
+      <header class="admin-topbar">
+        
+        <div class="admin-topbar-head">
+          <nav class="admin-breadcrumbs" aria-label="当前位置">
+            
+            
+            <a href="#">客户管理后台</a>
+            
+            
+          </nav>
+          <div>
+            <h1 class="admin-page-title">Config Api Client Detail</h1>
+            <p class="admin-page-summary">页面功能预览（示例数据）</p>
+          </div>
+        </div>
+        
+
+        
+      </header>
+      
+
+      <main class="admin-page">
+        
+        <section class="admin-alert admin-alert--success">示例</section>
+        
+        
+        <section class="admin-alert admin-alert--error">示例</section>
+        
+        
+<section class="admin-card admin-module-banner">
+  <div class="admin-section-header admin-section-header--compact">
+    <div>
+      <div class="admin-eyebrow">配置中心</div>
+      <div class="admin-card-label">统一后台配置模式</div>
+      <p class="admin-muted">当前统一采用「列表 + 编辑区 / 抽屉」的后台模式，保留现有接口语义与写入逻辑。</p>
+    </div>
+  </div>
+  <nav class="admin-subnav" aria-label="配置导航">
+    
+    <a class="admin-subnav-link is-active" href="示例">示例</a>
+    
+    <a class="admin-subnav-link is-active" href="示例">示例</a>
+    
+    <a class="admin-subnav-link is-active" href="示例">示例</a>
+    
+  </nav>
+</section>
+
+<div class="config-stack">
+  
+<section
+  class="api-client-page direct-api-key-page api-client-credential-page"
+  data-api-client-page
+  data-mode="示例"
+  data-client-id="示例"
+  data-can-manage="true"
+>
+  <div class="admin-alert admin-alert--error" data-api-client-alert hidden></div>
+
+  
+  <div class="admin-alert">这是系统预置客户端。页面只展示状态，修改仍由部署 bootstrap 与运行环境 Secret 管理。</div>
+  
+
+  
+  <section class="admin-card api-client-current" data-client-current>
+    <div class="direct-api-key-section-head">
+      <div>
+        <span class="direct-api-key-kicker">当前凭证</span>
+        <h2>当前 Client Secret</h2>
+      </div>
+      <span class="direct-api-key-status is-enabled" data-client-status-badge>
+        <span aria-hidden="true"></span><b data-client-status-label>正在使用</b>
+      </span>
+    </div>
+    <div class="direct-api-key-record">
+      <div class="direct-api-key-record__identity">
+        <span class="direct-api-key-record__label">示例</span>
+        <code data-client-credential-hint>示例</code>
+        <span class="direct-api-key-record__note" data-client-hint-note hidden>
+          旧 Secret 暂无尾号标识，下次轮换后自动补齐
+        </span>
+      </div>
+      <dl class="direct-api-key-record__meta">
+        <div><dt>认证版本</dt><dd>v<span data-client-auth-version>示例</span></dd></div>
+        <div><dt>最近轮换</dt><dd data-client-rotated-at>示例</dd></div>
+      </dl>
+      
+      <div class="direct-api-key-record__actions">
+        <button class="admin-button admin-button--secondary" type="button" data-rotate-secret>轮换 Secret</button>
+        <button class="admin-button admin-button--danger" type="button" data-disable-client >停用</button>
+      </div>
+      
+    </div>
+    
+    <div class="api-client-reactivate" data-reactivate-panel hidden>
+      <div>
+        <strong>使用已保存的 Secret 重新启用</strong>
+        <span>Secret 仅用于本次内存自检，不会保存或回显。</span>
+      </div>
+      <label class="api-client-existing-secret"><span>Client Secret</span><input type="password" data-existing-secret autocomplete="off" placeholder="粘贴已保存的 Secret"></label>
+      <label class="admin-check-line"><input type="checkbox" data-existing-secret-confirm><span>我确认已安全持有此 Secret</span></label>
+      <button class="admin-button admin-button--primary" type="button" data-activate-existing>自检并启用</button>
+    </div>
+    
+  </section>
+  
+
+  <section class="admin-card">
+    <div class="admin-card-head">
+      <div>
+        <h2>基础配置</h2>
+        <p>权限只能从固定模板选择；Client ID、类型和权限在创建后不可修改。</p>
+      </div>
+      <a class="admin-button admin-button--ghost" href="/admin/config/api-clients">返回列表</a>
+    </div>
+    <form class="admin-form-grid api-client-form" data-api-client-form>
+      <label>
+        <span>显示名称</span>
+        <input name="display_name" maxlength="120" value="示例" required disabled>
+      </label>
+      <label>
+        <span>Client ID</span>
+        <input name="client_id" value="示例" pattern="[a-z][a-z0-9._-]{2,63}" required disabled>
+        <small>3–64 位，以小写字母开头，仅允许小写字母、数字、点、下划线和短横线。</small>
+      </label>
+      <label>
+        <span>客户端类型</span>
+        
+        <input value="示例 · 示例" disabled>
+        
+      </label>
+      <label>
+        <span>Token 有效期</span>
+        <select name="token_ttl_minutes" disabled>
+          
+          <option value="15" >15 分钟</option>
+          
+          <option value="30" >30 分钟</option>
+          
+          <option value="60" >60 分钟</option>
+          
+        </select>
+      </label>
+      <label class="api-client-form-wide">
+        <span>CIDR 白名单（可选）</span>
+        <textarea name="allowed_cidrs" rows="4" placeholder="每行一个，例如 203.0.113.10/32" disabled>示例
+示例
+示例</textarea>
+        <small>留空表示不限制来源 IP；最多 20 条。</small>
+      </label>
+      
+    </form>
+  </section>
+
+  <section class="admin-card">
+    <div class="admin-card-head"><div><h2>认证参数</h2><p>这些是客户端接入时使用的固定值，不包含任何 Secret 或 Access Token。</p></div></div>
+    <dl class="api-client-values" data-auth-values>
+      <div><dt>Base URL</dt><dd data-value="base_url">示例</dd></div>
+      <div><dt>Token URL</dt><dd data-value="token_url">示例</dd></div>
+      <div><dt>API / MCP 地址</dt><dd data-value="resource_url">示例</dd></div>
+      <div><dt>grant type</dt><dd>client_credentials</dd></div>
+      <div><dt>audience</dt><dd data-value="audience">示例</dd></div>
+      <div><dt>scope</dt><dd data-value="scopes">示例 示例 示例</dd></div>
+      <div><dt>capability</dt><dd data-value="capabilities">示例 示例 示例</dd></div>
+      
+      <div><dt>状态</dt><dd>示例</dd></div>
+      <div><dt>认证版本</dt><dd>v示例</dd></div>
+      <div><dt>最后轮换</dt><dd>示例</dd></div>
+      
+    </dl>
+  </section>
+
+  
+  <div class="direct-api-key-modal" data-client-secret-modal hidden>
+    <div class="direct-api-key-modal__backdrop" aria-hidden="true"></div>
+    <section class="direct-api-key-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="client-secret-modal-title">
+      <div data-client-confirm-view>
+        <div class="direct-api-key-modal__head">
+          <div>
+            <span class="direct-api-key-kicker">安全确认</span>
+            <h2 id="client-secret-modal-title" data-client-confirm-title>轮换 Client Secret</h2>
+          </div>
+          <button class="direct-api-key-modal__close" type="button" data-client-modal-cancel>关闭</button>
+        </div>
+        <p class="direct-api-key-modal__copy" data-client-confirm-copy></p>
+        <div class="direct-api-key-modal__actions">
+          <button class="admin-button admin-button--secondary" type="button" data-client-modal-cancel>取消</button>
+          <button class="admin-button admin-button--primary" type="button" data-client-modal-confirm>确认轮换</button>
+        </div>
+      </div>
+
+      <div data-client-secret-view hidden>
+        <div class="direct-api-key-modal__head">
+          <div><h2 data-client-secret-title>Client Secret 已生成</h2></div>
+          <button class="direct-api-key-modal__close" type="button" data-client-secret-close>关闭</button>
+        </div>
+        <p class="direct-api-key-modal__copy">请立即保存在安全位置。关闭后无法再次查看完整值，只能重新轮换。</p>
+        <label class="direct-api-key-secret-field">
+          <span>CLIENT_SECRET</span>
+          <input type="text" readonly autocomplete="off" spellcheck="false" data-secret-value>
+        </label>
+        <label class="admin-check-line api-client-secret-confirmation">
+          <input type="checkbox" data-secret-copied><span>我确认已复制并安全保存 Secret</span>
+        </label>
+        <div class="direct-api-key-modal__actions">
+          <button class="admin-button admin-button--secondary" type="button" data-client-secret-close>稍后启用</button>
+          <button class="admin-button admin-button--secondary" type="button" data-copy-secret>复制 Secret</button>
+          <button class="admin-button admin-button--primary" type="button" data-activate-secret disabled>自检并启用</button>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="direct-api-key-toast" role="status" aria-live="polite" data-client-secret-toast></div>
+  
+</section>
+
+</div>
+
+      </main>
+    </div>
+  </div>
+  <script id="aicrmAdminActionGrants" type="application/json">{}</script>
+  
+<script defer src="../static/admin_console/api_client_config.js?v=api-client-secret-status-v2"></script>
+
+</body>
+</html>

@@ -1,0 +1,1415 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ai Audience Package Detail · 客户管理后台</title>
+  <link rel="stylesheet" href="../static/admin_console/admin_console.css?v=operation-member-picker-fix-20260527&amp;design=lark-20260803">
+  <script src="../static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
+  <script src="../static/admin_console/image_resource_loader.js?v=resource-governance-v2-pending-retry"></script>
+  
+<link rel="stylesheet" href="../static/admin_console/automation_capability_selector.css?v=20260801">
+<link rel="stylesheet" href="../static/admin_console/send_content_readonly_detail.css?v=20260801-send-records">
+<link rel="stylesheet" href="../static/admin_console/ai_audience_send_records.css?v=20260801-send-records">
+<style>
+  :root {
+    --ai-bg: #f6f8fb;
+    --ai-panel: #fff;
+    --ai-line: #e7ebf2;
+    --ai-line2: #eef2f7;
+    --ai-text: #101828;
+    --ai-muted: #667085;
+    --ai-muted2: #98a2b3;
+    --ai-blue: #2563eb;
+    --ai-blue2: #eaf2ff;
+    --ai-danger: #d92d20;
+    --ai-danger2: #fff1f3;
+    --ai-green: #079455;
+    --ai-green2: #ecfdf3;
+    --ai-shadow: 0 14px 34px rgba(16, 24, 40, .06);
+    --ai-r: 16px;
+  }
+
+  .admin-page-summary { display: none; }
+
+  .admin-page {
+    background: var(--ai-bg);
+  }
+
+  .ai-page {
+    min-width: 1180px;
+    color: var(--ai-text);
+  }
+
+  .ai-topbar {
+    margin: -24px -28px 22px;
+    padding: 22px 28px;
+    border: 1px solid var(--ai-line);
+    border-radius: 0 0 18px 18px;
+    background: #fff;
+  }
+
+  .ai-crumb {
+    margin-bottom: 4px;
+    color: var(--ai-muted2);
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .ai-topbar h1 {
+    margin: 0;
+    font-size: 24px;
+    line-height: 1.2;
+  }
+
+  .ai-card {
+    border: 1px solid var(--ai-line);
+    border-radius: var(--ai-r);
+    background: var(--ai-panel);
+    box-shadow: var(--ai-shadow);
+  }
+
+  .ai-summary-card {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 18px;
+    padding: 22px;
+  }
+
+  .ai-summary-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .ai-summary-head h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 900;
+  }
+
+  .ai-btns {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .ai-btn {
+    min-height: 38px;
+    border: 1px solid #d0d5dd;
+    border-radius: 10px;
+    background: #fff;
+    color: #344054;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 850;
+    padding: 8px 14px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .ai-btn:hover {
+    border-color: #98a2b3;
+  }
+
+  .ai-btn:disabled {
+    cursor: not-allowed;
+    opacity: .58;
+  }
+
+  .ai-btn.primary {
+    border-color: var(--ai-blue);
+    background: var(--ai-blue);
+    color: #fff;
+  }
+
+  .ai-btn.soft {
+    border-color: #d6e4ff;
+    background: #f5f8ff;
+    color: #1849a9;
+  }
+
+  .ai-btn.danger {
+    border-color: #fecdca;
+    background: var(--ai-danger2);
+    color: var(--ai-danger);
+  }
+
+  .ai-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .ai-mini {
+    display: grid;
+    min-height: 84px;
+    align-content: center;
+    gap: 6px;
+    padding: 16px 18px;
+    border: 1px solid var(--ai-line);
+    border-radius: 14px;
+    background: #fff;
+  }
+
+  .ai-mini .label {
+    color: #8a94a6;
+    font-size: 13px;
+    font-weight: 850;
+  }
+
+  .ai-mini .value {
+    overflow-wrap: anywhere;
+    color: var(--ai-text);
+    font-size: 20px;
+    font-weight: 900;
+  }
+
+  .ai-workspace {
+    display: grid;
+    grid-template-columns: 196px minmax(0, 1fr);
+    align-items: start;
+    gap: 18px;
+  }
+
+  .ai-side-nav {
+    position: sticky;
+    top: 18px;
+    padding: 10px;
+  }
+
+  .ai-side-nav button {
+    display: grid;
+    width: 100%;
+    min-height: 56px;
+    grid-template-columns: 28px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    border: 0;
+    border-radius: 13px;
+    background: #fff;
+    color: #344054;
+    cursor: pointer;
+    font: inherit;
+    padding: 10px 12px;
+    text-align: left;
+  }
+
+  .ai-side-nav button + button {
+    margin-top: 8px;
+  }
+
+  .ai-side-nav button.active {
+    background: var(--ai-blue2);
+    color: #1456f0;
+  }
+
+  .ai-index {
+    display: grid;
+    width: 26px;
+    height: 26px;
+    place-items: center;
+    border-radius: 999px;
+    background: #eef2f7;
+    color: #667085;
+    font-weight: 900;
+  }
+
+  .ai-side-nav button.active .ai-index {
+    background: var(--ai-blue);
+    color: #fff;
+  }
+
+  .ai-nav-label {
+    font-size: 16px;
+    font-weight: 900;
+  }
+
+  .ai-panel {
+    display: none;
+    min-height: 420px;
+    padding: 24px;
+  }
+
+  .ai-panel.active {
+    display: block;
+  }
+
+  .ai-panel-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--ai-line2);
+  }
+
+  .ai-panel-title-row h3 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 900;
+  }
+
+  .ai-pill {
+    display: inline-flex;
+    min-height: 30px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #abefc6;
+    border-radius: 999px;
+    background: var(--ai-green2);
+    color: #067647;
+    font-size: 13px;
+    font-weight: 850;
+    padding: 4px 12px;
+    white-space: nowrap;
+  }
+
+  .ai-pill.gray {
+    border-color: #eaecf0;
+    background: #f2f4f7;
+    color: #475467;
+  }
+
+  .ai-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .ai-field {
+    display: grid;
+    gap: 8px;
+  }
+
+  .ai-field.full {
+    grid-column: 1 / -1;
+  }
+
+  .ai-label {
+    color: #667085;
+    font-size: 13px;
+    font-weight: 850;
+  }
+
+  .ai-input,
+  .ai-select,
+  .ai-textarea {
+    width: 100%;
+    border: 1px solid #d0d5dd;
+    border-radius: 10px;
+    background: #fff;
+    color: #1d2939;
+    font: inherit;
+    outline: none;
+    padding: 11px 13px;
+  }
+
+  .ai-textarea {
+    min-height: 116px;
+    resize: vertical;
+  }
+
+  .ai-codebox {
+    display: flex;
+    min-height: 52px;
+    align-items: center;
+    overflow-wrap: anywhere;
+    border: 1px solid #d0d5dd;
+    border-radius: 10px;
+    background: #f8fafc;
+    color: #344054;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    padding: 14px;
+  }
+
+  .ai-panel-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--ai-line2);
+  }
+
+  .ai-table-wrap {
+    overflow: auto;
+    border: 1px solid var(--ai-line2);
+    border-radius: 14px;
+  }
+
+  .ai-table {
+    width: 100%;
+    min-width: 720px;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .ai-table th,
+  .ai-table td {
+    padding: 15px 18px;
+    border-bottom: 1px solid var(--ai-line2);
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  .ai-table th {
+    background: #fafbfc;
+    color: #8993a4;
+    font-size: 13px;
+    font-weight: 850;
+  }
+
+  .ai-table tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .ai-empty {
+    padding: 34px 12px;
+    color: var(--ai-muted);
+    font-weight: 750;
+    text-align: center;
+  }
+
+  .ai-mono {
+    color: var(--ai-muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+  }
+
+  .ai-sender-person {
+    display: grid;
+    gap: 4px;
+    min-width: 220px;
+  }
+
+  .ai-sender-person strong {
+    color: var(--ai-text);
+    font-weight: 900;
+  }
+
+  .ai-status-line {
+    min-height: 20px;
+    margin-top: 8px;
+    color: var(--ai-muted);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .ai-status-line.success {
+    color: #067647;
+  }
+
+  .ai-status-line.error {
+    color: var(--ai-danger);
+  }
+
+  .template-config-card {
+    display: grid;
+    gap: 16px;
+    margin-top: 22px;
+    padding: 18px;
+    border: 1px solid #dbe5f3;
+    border-radius: 14px;
+    background: #f8fbff;
+  }
+
+  .template-config-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .template-config-head h4 { margin: 0; font-size: 17px; }
+  .template-parameter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .template-parameter-field:has(.template-condition-list),
+  .template-parameter-field:has(.template-list-input) { grid-column: 1 / -1; }
+  .template-parameter-help { color: var(--ai-muted); font-size: 12px; }
+  .template-list-input { min-height: 76px; }
+  .template-multi-select { min-height: 92px; }
+  .template-condition-list, .template-condition-rows { display: grid; gap: 10px; }
+  .template-condition-row { display: grid; grid-template-columns: minmax(180px,.8fr) minmax(260px,1.2fr) auto; gap: 10px; align-items: start; padding: 12px; border: 1px solid var(--ai-line); border-radius: 12px; background: #fff; }
+  .template-condition-row .ai-textarea { min-height: 72px; }
+  .template-switch { display: inline-flex; min-height: 42px; align-items: center; gap: 6px; color: #344054; font-weight: 800; }
+  .template-history-note { border: 1px solid #fedf89; border-radius: 10px; background: #fffaeb; color: #93370d; padding: 11px 13px; font-size: 13px; font-weight: 750; }
+  .template-preview-box { display: grid; gap: 6px; border: 1px solid var(--ai-line); border-radius: 10px; background: #fff; color: #344054; padding: 12px 14px; }
+  .template-preview-box[hidden], .template-history-note[hidden] { display: none; }
+
+  @media (max-width: 960px) {
+    .ai-page {
+      min-width: 0;
+    }
+
+    .ai-summary-grid,
+    .ai-workspace,
+    .ai-form-grid,
+    .template-parameter-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .template-condition-row { grid-template-columns: 1fr; }
+
+    .ai-side-nav {
+      position: static;
+    }
+  }
+</style>
+
+  <script defer src="../static/admin_console/admin_console.js?v=lark-design-package-20260803"></script>
+  <script defer src="../static/admin_console/operation_member_picker.js?v=operation-member-picker-wecom-sync-20260709"></script>
+</head>
+<body class="admin-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="admin-brand-mark">CRM</div>
+        <div class="admin-brand-copy">
+          <div class="admin-brand-title">客户管理后台</div>
+          <div class="admin-brand-subtitle">ADMIN CONSOLE</div>
+        </div>
+      </div>
+
+      <nav class="admin-nav" aria-label="客户管理后台导航">
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">运营</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化运营"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_conversion.svg" alt="">
+              <span class="admin-nav-label">自动化运营</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="运营闭环"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/operation_cycles.svg" alt="">
+              <span class="admin-nav-label">运营闭环</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="群运营计划"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/group_ops.svg" alt="">
+              <span class="admin-nav-label">群运营计划</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="渠道码中心"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/channels.svg" alt="">
+              <span class="admin-nav-label">渠道码中心</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="AI 助手"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/cloud_orchestrator.svg" alt="">
+              <span class="admin-nav-label">AI 助手</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="客户激活 / 客户列表"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/customers.svg" alt="">
+              <span class="admin-nav-label">客户激活 / 客户列表</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="漏斗 / 数据看板"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/user_ops_funnel.svg" alt="">
+              <span class="admin-nav-label">漏斗 / 数据看板</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="问卷"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/questionnaires.svg" alt="">
+              <span class="admin-nav-label">问卷</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="内容雷达"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/radar_links.svg" alt="">
+              <span class="admin-nav-label">内容雷达</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="企微标签管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wecom_tags.svg" alt="">
+              <span class="admin-nav-label">企微标签管理</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">交易</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="交易管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_transactions.svg" alt="">
+              <span class="admin-nav-label">交易管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_products.svg" alt="">
+              <span class="admin-nav-label">商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="周期商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/service_period_products.svg" alt="">
+              <span class="admin-nav-label">周期商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="优惠券"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/coupons.svg" alt="">
+              <span class="admin-nav-label">优惠券</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">素材</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="图片素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/image_library.svg" alt="">
+              <span class="admin-nav-label">图片素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="小程序素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/miniprogram_library.svg" alt="">
+              <span class="admin-nav-label">小程序素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="附件素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/attachment_library.svg" alt="">
+              <span class="admin-nav-label">附件素材库</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">配置及后台</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化话术"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_agents.svg" alt="">
+              <span class="admin-nav-label">自动化话术</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="负责人迁移"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/owner_migration.svg" alt="">
+              <span class="admin-nav-label">负责人迁移</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="配置"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/config.svg" alt="">
+              <span class="admin-nav-label">配置</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="API 文档"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/api_docs.svg" alt="">
+              <span class="admin-nav-label">API 文档</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+      </nav>
+
+      
+      <div class="admin-sidebar-user">
+        <div class="admin-sidebar-user__avatar">
+          示
+        </div>
+        <div class="admin-sidebar-user__meta">
+          <div class="admin-sidebar-user__name">
+            示例管理员
+          </div>
+          <a class="admin-sidebar-user__logout" href="#">退出登录</a>
+        </div>
+      </div>
+      
+    </aside>
+
+    <div class="admin-main-wrap">
+      
+      
+      
+      
+      
+      
+      <header class="admin-topbar">
+        
+        <div class="admin-topbar-head">
+          <nav class="admin-breadcrumbs" aria-label="当前位置">
+            
+            
+            <a href="#">客户管理后台</a>
+            
+            
+          </nav>
+          <div>
+            <h1 class="admin-page-title">Ai Audience Package Detail</h1>
+            <p class="admin-page-summary">页面功能预览（示例数据）</p>
+          </div>
+        </div>
+        
+
+        
+      </header>
+      
+
+      <main class="admin-page">
+        
+        <section class="admin-alert admin-alert--success">示例</section>
+        
+        
+        <section class="admin-alert admin-alert--error">示例</section>
+        
+        
+<main class="ai-page">
+  <section class="ai-card ai-summary-card" aria-label="人群包基础摘要">
+    <div class="ai-summary-head">
+      <h2 id="packageTitle">加载中</h2>
+      <div class="ai-btns">
+        <a class="ai-btn soft" href="/admin/automation-conversion">返回列表</a>
+        <button class="ai-btn" id="manualRefreshBtn" type="button">手动刷新</button>
+        <button class="ai-btn primary" id="saveCurrentDimensionBtn" type="button">保存当前维度</button>
+      </div>
+    </div>
+    <div class="ai-summary-grid">
+      <div class="ai-mini"><div class="label">当前人数</div><div class="value" id="summaryCount">-</div></div>
+      <div class="ai-mini"><div class="label">最后一次刷新</div><div class="value" id="summaryRefresh">-</div></div>
+      <div class="ai-mini"><div class="label">刷新方式</div><div class="value" id="summaryMode">-</div></div>
+      <div class="ai-mini"><div class="label">状态</div><div class="value" id="summaryStatus">-</div></div>
+    </div>
+  </section>
+
+  <section class="ai-workspace">
+    <nav class="ai-card ai-side-nav" aria-label="人群包配置维度">
+      <button class="active" type="button" data-panel="basic"><span class="ai-index">1</span><span class="ai-nav-label">基础配置</span></button>
+      <button type="button" data-panel="automation"><span class="ai-index">2</span><span class="ai-nav-label">自动化话术能力</span></button>
+      <button type="button" data-panel="senders"><span class="ai-index">3</span><span class="ai-nav-label">发送人白名单</span></button>
+      <button type="button" data-panel="members"><span class="ai-index">4</span><span class="ai-nav-label">成员列表</span></button>
+      <button type="button" data-panel="records"><span class="ai-index">5</span><span class="ai-nav-label">发送记录</span></button>
+    </nav>
+
+    <div class="ai-card">
+      <section class="ai-panel active" id="panel-basic">
+        <div class="ai-panel-title-row">
+          <h3>基础配置</h3>
+          <span class="ai-pill">可保存</span>
+        </div>
+        <div class="ai-form-grid">
+          <div class="ai-field full">
+            <label class="ai-label" for="packageNameInput">人群包名称</label>
+            <input class="ai-input" id="packageNameInput" value="">
+          </div>
+          <div class="ai-field full">
+            <label class="ai-label" for="packageDefinitionInput">筛选逻辑简述</label>
+            <textarea class="ai-textarea" id="packageDefinitionInput"></textarea>
+          </div>
+          <div class="ai-field full">
+            <label class="ai-label" for="packageGroupSelect">所属分组</label>
+            <select class="ai-select" id="packageGroupSelect"><option value="ungrouped">未分组</option></select>
+          </div>
+          <div class="ai-field">
+            <label class="ai-label" for="incrementalSelect">增量刷新</label>
+            <select class="ai-select" id="incrementalSelect">
+              <option value="off">关闭</option>
+              <option value="incremental_3m">每 3 分钟</option>
+            </select>
+          </div>
+          <div class="ai-field">
+            <label class="ai-label" for="dailySelect">每日快照</label>
+            <select class="ai-select" id="dailySelect">
+              <option value="off">关闭</option>
+              <option value="daily_0200">每日 2:00</option>
+            </select>
+          </div>
+        </div>
+        <section class="template-config-card" aria-label="模板筛选条件">
+          <div class="template-config-head">
+            <h4>模板与筛选条件</h4>
+            <span class="ai-pill gray" id="templateVersionBadge">历史配置</span>
+          </div>
+          <div class="template-history-note" id="templateHistoryNote" hidden>这是由旧 SQL/Markdown 创建的历史人群包。停止后可选择模板保存为新版本；原版本仍可回看和运行。</div>
+          <div class="ai-field">
+            <label class="ai-label" for="templateSelect">人群模板</label>
+            <select class="ai-select" id="templateSelect"><option value="">请选择模板</option></select>
+          </div>
+          <div class="template-parameter-grid" id="templateParameterForm"></div>
+          <label class="template-switch"><input id="templateAllowEmpty" type="checkbox"> 允许创建 0 人结果（仅在确认业务需要时勾选）</label>
+          <div class="template-preview-box" id="templatePreviewBox" hidden></div>
+          <div class="ai-btns">
+            <button class="ai-btn soft" id="templatePreviewBtn" type="button">重新预览</button>
+            <button class="ai-btn primary" id="templateSaveBtn" type="button">保存新版本</button>
+          </div>
+          <div class="ai-status-line" id="templateStatusLine"></div>
+        </section>
+        <div class="ai-panel-actions">
+          <button class="ai-btn primary" id="savePackageBtn" type="button">保存基础配置</button>
+        </div>
+        <div class="ai-status-line" id="packageStatusLine"></div>
+      </section>
+
+      <section class="ai-panel" id="panel-automation">
+        <div class="ai-panel-title-row">
+          <h3>自动化话术能力</h3>
+          <span class="ai-pill">一对一绑定</span>
+        </div>
+        <p class="ai-label">从已有自动化列表中选择一个能力。已停止或被其他人群包占用的能力不可选。</p>
+        <div id="automationCapabilitySelector"></div>
+        <div class="ai-panel-actions">
+          <button class="ai-btn danger" id="unbindAutomationBtn" type="button">解除绑定</button>
+          <button class="ai-btn primary" id="saveAutomationBtn" type="button">保存绑定</button>
+        </div>
+        <div class="ai-status-line" id="automationStatusLine"></div>
+      </section>
+
+      <section class="ai-panel" id="panel-senders">
+        <div class="ai-panel-title-row">
+          <h3>发送人白名单</h3>
+          <button class="ai-btn soft" id="addSenderBtn" type="button">添加发送人</button>
+        </div>
+        <div class="ai-table-wrap">
+          <table class="ai-table">
+            <thead>
+              <tr>
+                <th>优先级</th>
+                <th>发送人</th>
+                <th>规则</th>
+                <th>状态</th>
+                <th style="text-align:right">操作</th>
+              </tr>
+            </thead>
+            <tbody id="senderRows">
+              <tr><td class="ai-empty" colspan="5">加载中</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="ai-panel-actions">
+          <button class="ai-btn primary" id="saveSendersBtn" type="button">保存发送人白名单</button>
+        </div>
+        <div class="ai-status-line" id="senderStatusLine"></div>
+      </section>
+
+      <section class="ai-panel" id="panel-members">
+        <div class="ai-panel-title-row">
+          <h3>成员列表</h3>
+          <div class="ai-btns">
+            <span class="ai-pill" id="memberTotal">加载中</span>
+            <button class="ai-btn soft" id="refreshMembersBtn" type="button">刷新列表</button>
+          </div>
+        </div>
+        <div class="ai-table-wrap">
+          <table class="ai-table">
+            <thead>
+              <tr>
+                <th>昵称</th>
+                <th>外部联系人 ID</th>
+                <th>进入时间</th>
+              </tr>
+            </thead>
+            <tbody id="memberRows">
+              <tr><td class="ai-empty" colspan="3">加载中</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="ai-panel" id="panel-records" data-send-records-api-url="示例">
+        <div class="ai-panel-title-row">
+          <h3>发送记录</h3>
+          <span class="ai-pill gray" id="sendRecordTotal">尚未加载</span>
+        </div>
+        <div class="ai-table-wrap">
+          <table class="ai-table" style="min-width:1080px">
+            <thead>
+              <tr>
+                <th>昵称</th>
+                <th>外部联系人 ID</th>
+                <th>发送来源</th>
+                <th>发送状态</th>
+                <th>发送时间</th>
+                <th>失败原因</th>
+                <th>发送明细</th>
+              </tr>
+            </thead>
+            <tbody id="sendRecordRows">
+              <tr><td class="ai-empty" colspan="7">进入本板块后加载发送记录</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="ai-pagination">
+          <span id="sendRecordPageLabel">第 0 / 0 页</span>
+          <div class="ai-btns">
+            <button class="ai-btn" id="sendRecordPrevBtn" type="button" disabled>上一页</button>
+            <button class="ai-btn" id="sendRecordNextBtn" type="button" disabled>下一页</button>
+          </div>
+        </div>
+        <div class="ai-status-line" id="sendRecordStatusLine"></div>
+      </section>
+    </div>
+  </section>
+</main>
+
+<div class="ai-drawer-mask" id="sendRecordDrawerMask"></div>
+<aside class="ai-record-drawer" id="sendRecordDrawer" role="dialog" aria-modal="true" aria-label="发送明细" aria-hidden="true" tabindex="-1">
+  <div class="ai-drawer-head">
+    <div>
+      <h3>发送明细</h3>
+      <p id="sendRecordDrawerSubtitle">加载中</p>
+    </div>
+    <button class="ai-btn" id="closeSendRecordDrawerBtn" type="button">关闭</button>
+  </div>
+  <div class="ai-detail-grid" id="sendRecordMeta"></div>
+  <div id="sendRecordContentDetail"><div class="ai-empty">加载中</div></div>
+</aside>
+
+      </main>
+    </div>
+  </div>
+  <script id="aicrmAdminActionGrants" type="application/json">{}</script>
+  
+<script src="../static/admin_console/send_content_readonly_detail.js?v=20260801-send-records"></script>
+<script src="../static/admin_console/ai_audience_send_records.js?v=20260801-send-records"></script>
+<script src="../static/admin_console/automation_capability_selector.js?v=20260801"></script>
+<script src="../static/admin_console/template_parameter_form.js?v=20260801"></script>
+<script>
+  (() => {
+    const packageApiUrl = {};
+    const groupsApiUrl = {};
+    const membersApiUrl = {};
+    const bindingApiUrl = {};
+    const automationAgentsApiUrl = {};
+    const sendersApiUrl = {};
+    const templatesApiUrl = "/api/admin/ai-audience/templates";
+    const templatePreviewApiUrl = `${packageApiUrl}/template-preview`;
+    const templateConfigApiUrl = `${packageApiUrl}/template-config`;
+
+    const els = {
+      packageTitle: document.getElementById("packageTitle"),
+      summaryCount: document.getElementById("summaryCount"),
+      summaryRefresh: document.getElementById("summaryRefresh"),
+      summaryMode: document.getElementById("summaryMode"),
+      summaryStatus: document.getElementById("summaryStatus"),
+      packageNameInput: document.getElementById("packageNameInput"),
+      packageDefinitionInput: document.getElementById("packageDefinitionInput"),
+      packageGroupSelect: document.getElementById("packageGroupSelect"),
+      incrementalSelect: document.getElementById("incrementalSelect"),
+      dailySelect: document.getElementById("dailySelect"),
+      savePackageBtn: document.getElementById("savePackageBtn"),
+      packageStatusLine: document.getElementById("packageStatusLine"),
+      automationCapabilitySelector: document.getElementById("automationCapabilitySelector"),
+      saveAutomationBtn: document.getElementById("saveAutomationBtn"),
+      unbindAutomationBtn: document.getElementById("unbindAutomationBtn"),
+      automationStatusLine: document.getElementById("automationStatusLine"),
+      addSenderBtn: document.getElementById("addSenderBtn"),
+      saveSendersBtn: document.getElementById("saveSendersBtn"),
+      senderRows: document.getElementById("senderRows"),
+      senderStatusLine: document.getElementById("senderStatusLine"),
+      memberRows: document.getElementById("memberRows"),
+      memberTotal: document.getElementById("memberTotal"),
+      refreshMembersBtn: document.getElementById("refreshMembersBtn"),
+      manualRefreshBtn: document.getElementById("manualRefreshBtn"),
+      saveCurrentDimensionBtn: document.getElementById("saveCurrentDimensionBtn"),
+      templateSelect: document.getElementById("templateSelect"),
+      templateVersionBadge: document.getElementById("templateVersionBadge"),
+      templateHistoryNote: document.getElementById("templateHistoryNote"),
+      templateParameterForm: document.getElementById("templateParameterForm"),
+      templateAllowEmpty: document.getElementById("templateAllowEmpty"),
+      templatePreviewBox: document.getElementById("templatePreviewBox"),
+      templatePreviewBtn: document.getElementById("templatePreviewBtn"),
+      templateSaveBtn: document.getElementById("templateSaveBtn"),
+      templateStatusLine: document.getElementById("templateStatusLine")
+    };
+
+    let senderItems = [];
+    let currentPanel = "basic";
+    let currentPackage = null;
+    let automationBindingController = null;
+    let templateConfigController = null;
+
+    const escapeHtml = (value) => String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll("\"", "&quot;")
+      .replaceAll("'", "&#039;");
+
+    const formatNumber = (value) => new Intl.NumberFormat("zh-CN").format(Number(value || 0));
+
+    const formatTime = (value) => {
+      if (!value) return "-";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return escapeHtml(value);
+      const parts = new Intl.DateTimeFormat("zh-CN", {
+        timeZone: "Asia/Shanghai",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+      }).formatToParts(date).reduce((acc, item) => {
+        acc[item.type] = item.value;
+        return acc;
+      }, {});
+      return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
+    };
+
+    const statusLabel = (status) => {
+      if (status === "active") return "运行中";
+      if (status === "paused") return "已停止";
+      if (status === "draft") return "草稿";
+      if (status === "archived") return "已归档";
+      return status || "-";
+    };
+
+    const setStatus = (el, text, tone = "") => {
+      el.textContent = text;
+      el.className = tone ? `ai-status-line ${tone}` : "ai-status-line";
+    };
+
+    const fetchJson = async (url, options = {}) => {
+      return window.AdminApi.requestJson(url, { cache: "no-store", ...options });
+    };
+
+    const applyRefreshMode = (mode) => {
+      els.incrementalSelect.value = mode === "incremental_3m" || mode === "incremental_3m_plus_daily_0200"
+        ? "incremental_3m"
+        : "off";
+      els.dailySelect.value = mode === "daily_0200" || mode === "incremental_3m_plus_daily_0200"
+        ? "daily_0200"
+        : "off";
+    };
+
+    const selectedRefreshMode = () => {
+      const incrementalOn = els.incrementalSelect.value === "incremental_3m";
+      const dailyOn = els.dailySelect.value === "daily_0200";
+      if (incrementalOn && dailyOn) return "incremental_3m_plus_daily_0200";
+      if (incrementalOn) return "incremental_3m";
+      if (dailyOn) return "daily_0200";
+      return "manual";
+    };
+
+    const renderPackage = (packageInfo) => {
+      currentPackage = packageInfo;
+      const name = packageInfo.name || "未命名人群包";
+      els.packageTitle.textContent = name;
+      els.summaryCount.textContent = formatNumber(packageInfo.member_count);
+      els.summaryRefresh.textContent = formatTime(packageInfo.last_refreshed_at);
+      els.summaryMode.textContent = packageInfo.refresh_mode_label || "手动";
+      els.summaryStatus.textContent = statusLabel(packageInfo.status);
+      els.packageNameInput.value = name;
+      els.packageDefinitionInput.value = packageInfo.natural_language_definition || "";
+      els.packageGroupSelect.value = packageInfo.group_id == null ? "ungrouped" : String(packageInfo.group_id);
+      applyRefreshMode(packageInfo.refresh_mode || "manual");
+      if (templateConfigController?.hasTemplates()) templateConfigController.render(packageInfo);
+    };
+
+    const loadGroups = async () => {
+      const payload = await fetchJson(`${groupsApiUrl}?_=${Date.now()}`);
+      const groups = (payload.items || []).filter((item) => !item.is_virtual);
+      els.packageGroupSelect.innerHTML = '<option value="ungrouped">未分组</option>' + groups.map((item) => `<option value="${Number(item.id)}">${escapeHtml(item.name)}</option>`).join("");
+      if (currentPackage) els.packageGroupSelect.value = currentPackage.group_id == null ? "ungrouped" : String(currentPackage.group_id);
+    };
+
+    const loadPackage = async () => {
+      const payload = await fetchJson(`${packageApiUrl}?_=${Date.now()}`);
+      renderPackage(payload.package || {});
+    };
+
+    const savePackage = async () => {
+      setStatus(els.packageStatusLine, "保存中...");
+      const payload = await fetchJson(packageApiUrl, {
+        method: "PATCH",
+        body: {
+          name: els.packageNameInput.value.trim(),
+          natural_language_definition: els.packageDefinitionInput.value.trim(),
+          refresh_mode: selectedRefreshMode(),
+          group_id: els.packageGroupSelect.value === "ungrouped" ? null : Number(els.packageGroupSelect.value)
+        }
+      });
+      renderPackage(payload.package || {});
+      setStatus(els.packageStatusLine, "基础配置已保存", "success");
+    };
+
+    const getAutomationBindingController = () => {
+      if (!window.AutomationCapabilitySelector) throw new Error("自动化能力选择器加载失败");
+      if (!automationBindingController) automationBindingController = window.AutomationCapabilitySelector.createBindingController(els.automationCapabilitySelector, {
+        bindingApiUrl, automationAgentsApiUrl, fetchJson,
+        currentPackageId: {},
+        unbindButton: els.unbindAutomationBtn,
+        setStatus: (message, tone) => setStatus(els.automationStatusLine, message, tone)
+      });
+      return automationBindingController;
+    };
+    const loadAutomationBinding = () => getAutomationBindingController().load();
+    const saveAutomationBinding = () => getAutomationBindingController().save();
+    const unbindAutomation = () => getAutomationBindingController().unbind();
+
+    const normalizeSenders = (items) => items.map((item, index) => ({
+      sender_userid: (item.sender_userid || "").trim(),
+      display_name: (item.display_name || item.sender_userid || "").trim(),
+      priority: index + 1,
+      status: item.status === "paused" ? "paused" : "active"
+    }));
+
+    const saveSenders = async (items) => {
+      const normalized = normalizeSenders(items);
+      if (normalized.some((item) => !item.sender_userid)) {
+        throw new Error("请先填写发送人");
+      }
+      const seen = new Set();
+      if (normalized.some((item) => {
+        if (seen.has(item.sender_userid)) return true;
+        seen.add(item.sender_userid);
+        return false;
+      })) {
+        throw new Error("发送人不能重复");
+      }
+      setStatus(els.senderStatusLine, "保存中...");
+      const payload = await fetchJson(sendersApiUrl, {
+        method: "PUT",
+        body: { items: normalized }
+      });
+      senderItems = payload.items || [];
+      renderSenders();
+      setStatus(els.senderStatusLine, "发送人白名单已保存", "success");
+    };
+
+    const senderMemberFromItem = (item) => ({
+      user_id: (item.sender_userid || "").trim(),
+      display_name: (item.display_name || item.sender_userid || "").trim()
+    });
+
+    const appendSelectedSenders = (members) => {
+      const seen = new Set(senderItems.map((item) => (item.sender_userid || "").trim()).filter(Boolean));
+      const nextItems = [...senderItems];
+      members.forEach((member) => {
+        const userId = (member.user_id || member.staff_id || "").trim();
+        if (!userId || seen.has(userId)) return;
+        seen.add(userId);
+        nextItems.push({
+          sender_userid: userId,
+          display_name: (member.display_name || userId).trim(),
+          status: "active"
+        });
+      });
+      senderItems = nextItems;
+      renderSenders();
+      setStatus(els.senderStatusLine, "已选择发送人，请保存白名单", "success");
+    };
+
+    const openSenderPicker = (index = null) => {
+      if (!window.OperationMemberPicker || typeof window.OperationMemberPicker.open !== "function") {
+        setStatus(els.senderStatusLine, "运营人员选择器加载失败，请刷新页面后重试", "error");
+        return;
+      }
+      const disabledUserIds = senderItems
+        .map((item, itemIndex) => (itemIndex === index ? "" : item.sender_userid || "").trim())
+        .filter(Boolean);
+      if (index === null) {
+        if (disabledUserIds.length >= 5) {
+          setStatus(els.senderStatusLine, "发送人白名单最多 5 个", "error");
+          return;
+        }
+        const remaining = Math.max(1, 5 - disabledUserIds.length);
+        window.OperationMemberPicker.open({
+          title: "选择发送人",
+          scope: "ai_audience",
+          pageSize: 100,
+          multiple: true,
+          max: remaining,
+          disabledUserIds,
+          onSelect: appendSelectedSenders
+        });
+        return;
+      }
+      const current = senderItems[index] || {};
+      window.OperationMemberPicker.open({
+        title: "选择发送人",
+        scope: "ai_audience",
+        pageSize: 100,
+        selectedMember: senderMemberFromItem(current),
+        disabledUserIds,
+        onSelect: (member) => {
+          const userId = (member.user_id || member.staff_id || "").trim();
+          if (!userId) return;
+          senderItems[index] = {
+            ...current,
+            sender_userid: userId,
+            display_name: (member.display_name || userId).trim(),
+            status: current.status === "paused" ? "paused" : "active"
+          };
+          renderSenders();
+          setStatus(els.senderStatusLine, "已选择发送人，请保存白名单", "success");
+        }
+      });
+    };
+
+    const updateSenderFromInputs = () => {};
+
+    const renderSenders = () => {
+      if (!senderItems.length) {
+        els.senderRows.innerHTML = '<tr><td class="ai-empty" colspan="5">暂无发送人</td></tr>';
+        return;
+      }
+      els.senderRows.innerHTML = senderItems.map((item, index) => {
+        const active = item.status === "active";
+        const rule = index === 0 ? "命中时优先发送" : "备选发送人";
+        return `
+          <tr>
+            <td>${index + 1}</td>
+            <td>
+              <div class="ai-sender-person">
+                <strong>${escapeHtml(item.display_name || item.sender_userid || "未选择发送人")}</strong>
+                <span class="ai-mono">${escapeHtml(item.sender_userid || "请点击选择")}</span>
+              </div>
+            </td>
+            <td>${escapeHtml(rule)}</td>
+            <td><span class="ai-pill ${active ? "" : "gray"}">${active ? "启用" : "停用"}</span></td>
+            <td>
+              <div class="ai-btns">
+                <button class="ai-btn soft" type="button" data-sender-action="choose" data-index="${index}">更换</button>
+                <button class="ai-btn" type="button" data-sender-action="up" data-index="${index}" ${index === 0 ? "disabled" : ""}>上移</button>
+                <button class="ai-btn" type="button" data-sender-action="down" data-index="${index}" ${index === senderItems.length - 1 ? "disabled" : ""}>下移</button>
+                <button class="ai-btn" type="button" data-sender-action="toggle" data-index="${index}">${active ? "停用" : "启用"}</button>
+                <button class="ai-btn danger" type="button" data-sender-action="delete" data-index="${index}">删除</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      els.senderRows.querySelectorAll("[data-sender-action]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const index = Number(button.dataset.index);
+          const action = button.dataset.senderAction;
+          if (action === "choose") {
+            openSenderPicker(index);
+            return;
+          }
+          const next = senderItems.map((item) => ({ ...item }));
+          if (action === "up" && index > 0) {
+            [next[index - 1], next[index]] = [next[index], next[index - 1]];
+          } else if (action === "down" && index < next.length - 1) {
+            [next[index], next[index + 1]] = [next[index + 1], next[index]];
+          } else if (action === "toggle") {
+            next[index].status = next[index].status === "active" ? "paused" : "active";
+          } else if (action === "delete") {
+            next.splice(index, 1);
+          }
+          try {
+            updateSenderFromInputs();
+            await saveSenders(next);
+          } catch (error) {
+            setStatus(els.senderStatusLine, window.AdminApi.errorMessage(error, "保存失败"), "error");
+          }
+        });
+      });
+    };
+
+    const loadSenders = async () => {
+      const payload = await fetchJson(`${sendersApiUrl}?_=${Date.now()}`);
+      senderItems = payload.items || [];
+      renderSenders();
+    };
+
+    const addSender = () => {
+      updateSenderFromInputs();
+      openSenderPicker();
+    };
+
+    const renderMembers = (payload) => {
+      const items = payload.items || [];
+      els.memberTotal.textContent = `共 ${formatNumber(payload.total || items.length)} 人`;
+      if (!items.length) {
+        els.memberRows.innerHTML = '<tr><td class="ai-empty" colspan="3">暂无成员</td></tr>';
+        return;
+      }
+      els.memberRows.innerHTML = items.map((item) => `
+        <tr>
+          <td>${escapeHtml(item.nickname || "未命名客户")}</td>
+          <td class="ai-mono">${escapeHtml(item.external_userid || "-")}</td>
+          <td>${formatTime(item.entered_at)}</td>
+        </tr>
+      `).join("");
+    };
+
+    const loadMembers = async () => {
+      const payload = await fetchJson(`${membersApiUrl}?limit=50&offset=0&_=${Date.now()}`);
+      renderMembers(payload);
+    };
+
+    const updateCurrentAction = () => {
+      els.saveCurrentDimensionBtn.textContent = ["members", "records"].includes(currentPanel) ? "刷新列表" : "保存当前维度"; els.manualRefreshBtn.hidden = currentPanel === "records";
+    };
+
+    const showPanel = (key) => {
+      currentPanel = key;
+      document.querySelectorAll("[data-panel]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.panel === key);
+      });
+      document.querySelectorAll(".ai-panel").forEach((panel) => {
+        panel.classList.toggle("active", panel.id === `panel-${key}`);
+      });
+      updateCurrentAction(); if (key === "records") window.AICRMAudienceSendRecords.enter();
+    };
+
+    const refreshCurrentPanel = async () => {
+      if (currentPanel === "basic") return loadPackage();
+      if (currentPanel === "automation") return loadAutomationBinding();
+      if (currentPanel === "senders") return loadSenders();
+      return currentPanel === "records" ? window.AICRMAudienceSendRecords.refresh() : loadMembers();
+    };
+
+    const saveCurrentPanel = async () => {
+      if (currentPanel === "basic") return savePackage();
+      if (currentPanel === "automation") return saveAutomationBinding();
+      if (currentPanel === "senders") {
+        updateSenderFromInputs();
+        return saveSenders(senderItems);
+      }
+      return currentPanel === "records" ? window.AICRMAudienceSendRecords.refresh() : loadMembers();
+    };
+
+    document.querySelectorAll("[data-panel]").forEach((button) => {
+      button.addEventListener("click", () => showPanel(button.dataset.panel));
+    });
+    els.savePackageBtn.addEventListener("click", () => {
+      savePackage().catch((error) => setStatus(els.packageStatusLine, window.AdminApi.errorMessage(error, "保存失败"), "error"));
+    });
+    els.saveAutomationBtn.addEventListener("click", () => {
+      saveAutomationBinding().catch((error) => setStatus(els.automationStatusLine, window.AdminApi.errorMessage(error, "保存失败"), "error"));
+    });
+    els.unbindAutomationBtn.addEventListener("click", () => {
+      unbindAutomation().catch((error) => setStatus(els.automationStatusLine, window.AdminApi.errorMessage(error, "解除失败"), "error"));
+    });
+    els.addSenderBtn.addEventListener("click", () => {
+      addSender();
+    });
+    els.saveSendersBtn.addEventListener("click", () => {
+      updateSenderFromInputs();
+      saveSenders(senderItems).catch((error) => setStatus(els.senderStatusLine, window.AdminApi.errorMessage(error, "保存失败"), "error"));
+    });
+    els.refreshMembersBtn.addEventListener("click", () => {
+      loadMembers().catch((error) => {
+        els.memberTotal.textContent = "加载失败";
+        setStatus(els.packageStatusLine, window.AdminApi.errorMessage(error, "成员列表加载失败"), "error");
+      });
+    });
+    els.manualRefreshBtn.addEventListener("click", () => {
+      refreshCurrentPanel().catch((error) => setStatus(els.packageStatusLine, window.AdminApi.errorMessage(error, "加载失败"), "error"));
+    });
+    els.saveCurrentDimensionBtn.addEventListener("click", () => {
+      saveCurrentPanel().catch((error) => {
+        const statusEl = currentPanel === "automation"
+          ? els.automationStatusLine
+          : currentPanel === "senders"
+            ? els.senderStatusLine
+            : els.packageStatusLine;
+        setStatus(statusEl, window.AdminApi.errorMessage(error, "操作失败"), "error");
+      });
+    });
+    templateConfigController = window.TemplateParameterForm.createPackageController({ elements: els, fetchJson, templatesApiUrl, templatePreviewApiUrl, templateConfigApiUrl, setStatus, getPackage: () => currentPackage, getRefreshMode: selectedRefreshMode, renderPackage });
+    templateConfigController.bind();
+
+    showPanel("basic");
+    Promise.all([templateConfigController.loadTemplates().then(loadGroups).then(loadPackage), loadAutomationBinding(), loadSenders(), loadMembers()]).catch((error) => {
+      setStatus(els.packageStatusLine, window.AdminApi.errorMessage(error, "加载失败"), "error");
+    });
+  })();
+</script>
+
+</body>
+</html>

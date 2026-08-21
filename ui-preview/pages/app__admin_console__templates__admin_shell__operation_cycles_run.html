@@ -1,0 +1,979 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Operation Cycles Run · 客户管理后台</title>
+  <link rel="stylesheet" href="../static/admin_console/admin_console.css?v=operation-member-picker-fix-20260527&amp;design=lark-20260803">
+  
+
+<link rel="stylesheet" href="/static/operation-cycles/operation_cycles.css?v=20260804-v1">
+
+  <script src="../static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
+  <script defer src="../static/admin_console/admin_console.js?v=lark-design-package-20260803"></script>
+  <script defer src="../static/admin_console/operation_member_picker.js?v=operation-member-picker-wecom-sync-20260709"></script>
+</head>
+<body
+  class="admin-shell"
+  data-admin-shell-source="next_admin_shell"
+>
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="admin-brand-mark">CRM</div>
+        <div class="admin-brand-copy">
+          <div class="admin-brand-title">客户管理后台</div>
+          <div class="admin-brand-subtitle">ADMIN CONSOLE</div>
+        </div>
+      </div>
+
+      <nav class="admin-nav" aria-label="客户管理后台导航">
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">运营</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="自动化运营"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_conversion.svg" alt="">
+              <span class="admin-nav-label">自动化运营</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="运营闭环"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/operation_cycles.svg" alt="">
+              <span class="admin-nav-label">运营闭环</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="群运营计划"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/group_ops.svg" alt="">
+              <span class="admin-nav-label">群运营计划</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="渠道码中心"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/channels.svg" alt="">
+              <span class="admin-nav-label">渠道码中心</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="AI 助手"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/cloud_orchestrator.svg" alt="">
+              <span class="admin-nav-label">AI 助手</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="客户激活 / 客户列表"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/customers.svg" alt="">
+              <span class="admin-nav-label">客户激活 / 客户列表</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="漏斗 / 数据看板"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/user_ops_funnel.svg" alt="">
+              <span class="admin-nav-label">漏斗 / 数据看板</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="问卷"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/questionnaires.svg" alt="">
+              <span class="admin-nav-label">问卷</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="内容雷达"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/radar_links.svg" alt="">
+              <span class="admin-nav-label">内容雷达</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="企微标签管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wecom_tags.svg" alt="">
+              <span class="admin-nav-label">企微标签管理</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">交易</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="交易管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_transactions.svg" alt="">
+              <span class="admin-nav-label">交易管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_products.svg" alt="">
+              <span class="admin-nav-label">商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="周期商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/service_period_products.svg" alt="">
+              <span class="admin-nav-label">周期商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="优惠券"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/coupons.svg" alt="">
+              <span class="admin-nav-label">优惠券</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">素材</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="图片素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/image_library.svg" alt="">
+              <span class="admin-nav-label">图片素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="小程序素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/miniprogram_library.svg" alt="">
+              <span class="admin-nav-label">小程序素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="附件素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/attachment_library.svg" alt="">
+              <span class="admin-nav-label">附件素材库</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">配置及后台</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="自动化话术"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_agents.svg" alt="">
+              <span class="admin-nav-label">自动化话术</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="负责人迁移"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/owner_migration.svg" alt="">
+              <span class="admin-nav-label">负责人迁移</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="配置"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/config.svg" alt="">
+              <span class="admin-nav-label">配置</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="示例"
+              title="API 文档"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/api_docs.svg" alt="">
+              <span class="admin-nav-label">API 文档</span>
+            </a>
+            
+          </div>
+        </section>
+        
+      </nav>
+
+      
+      <div class="admin-sidebar-user">
+        <div class="admin-sidebar-user__avatar">
+          示
+        </div>
+        <div class="admin-sidebar-user__meta">
+          <div class="admin-sidebar-user__name">
+            示例管理员
+          </div>
+          <a class="admin-sidebar-user__logout" href="#">退出登录</a>
+        </div>
+      </div>
+      
+    </aside>
+
+    <div class="admin-main-wrap">
+      
+      
+      
+      
+      <header class="admin-topbar">
+        
+        <div class="admin-topbar-head">
+          <nav class="admin-breadcrumbs" aria-label="当前位置">
+            
+            
+            <a href="#">客户管理后台</a>
+            
+            
+          </nav>
+          <div>
+            <h1 class="admin-page-title">Operation Cycles Run</h1>
+            <p class="admin-page-summary">页面功能预览（示例数据）</p>
+          </div>
+        </div>
+        
+
+        
+      </header>
+      
+
+      <main class="admin-page">
+        
+        <section class="admin-alert admin-alert--success">示例</section>
+        
+        
+        <section class="admin-alert admin-alert--error">示例</section>
+        
+        
+
+
+
+
+
+
+<div class="operation-cycle operation-cycle--run" data-operation-cycle-surface="run-detail" data-readonly="true">
+  <section class="operation-cycle-run-hero">
+    <div>
+      <span class="operation-cycle-kicker">RUN DOSSIER · 单次运行档案</span>
+      <h2>示例</h2>
+      <p>示例</p>
+    </div>
+    <div class="operation-cycle-run-hero__meta">
+      <span>示例</span>
+      <strong>示例</strong>
+      <small>快照修订 示例</small>
+    </div>
+    <span class="operation-cycle-readonly" title="本页面不触发审批、发送、重试或模板修改">只读映射</span>
+    <div class="operation-cycle-axes" aria-label="复合状态">
+    
+      <span class="operation-cycle-status operation-cycle-status--neutral"><span>示例</span><strong>示例</strong>
+  </span>
+    
+      <span class="operation-cycle-status operation-cycle-status--neutral"><span>示例</span><strong>示例</strong>
+  </span>
+    
+      <span class="operation-cycle-status operation-cycle-status--neutral"><span>示例</span><strong>示例</strong>
+  </span>
+    
+  </div>
+  </section>
+
+  <nav class="operation-cycle-step-index" aria-label="运行档案章节">
+    <a href="#cycle-step-1"><span>01</span>任务</a>
+    <a href="#cycle-step-2"><span>02</span>尝试</a>
+    <a href="#cycle-step-3"><span>03</span>人群</a>
+    <a href="#cycle-step-4"><span>04</span>人审</a>
+    <a href="#cycle-step-5"><span>05</span>发送</a>
+    <a href="#cycle-step-6"><span>06</span>结果</a>
+    <a href="#cycle-step-7"><span>07</span>复盘</a>
+    <a href="#cycle-step-8"><span>08</span>优化</a>
+  </nav>
+
+  <section class="operation-cycle-step" id="cycle-step-1">
+    <header class="operation-cycle-step__head">
+      <span>01</span>
+      <div><small>TASK DEFINITION</small><h2>任务目标与时间</h2></div>
+    </header>
+    <div class="operation-cycle-step__body operation-cycle-step__body--facts">
+      <div class="operation-cycle-definition">
+        <span>目标</span><strong>示例</strong>
+      </div>
+      <div class="operation-cycle-definition">
+        <span>目标人群</span><strong>示例</strong>
+      </div>
+      <div class="operation-cycle-time-grid">
+        <dl><dt>意图发送时间</dt><dd>示例</dd></dl>
+        <dl><dt>计划排期时间</dt><dd>示例</dd></dl>
+        <dl><dt>首次实际发送</dt><dd>示例</dd></dl>
+        <dl><dt>最后实际发送</dt><dd>示例</dd></dl>
+      </div>
+    </div>
+  </section>
+
+  <section class="operation-cycle-step" id="cycle-step-2">
+    <header class="operation-cycle-step__head">
+      <span>02</span>
+      <div><small>ATTEMPTS &amp; PREFLIGHT</small><h2>前置检查与执行尝试</h2></div>
+    </header>
+    <div class="operation-cycle-step__body">
+      
+      <ol class="operation-cycle-attempts">
+        
+        <li class="operation-cycle-attempt operation-cycle-attempt--示例">
+          <div class="operation-cycle-attempt__rail"><i></i><span>01</span></div>
+          <div class="operation-cycle-attempt__content">
+            <div class="operation-cycle-attempt__title">
+              <div>
+                <strong>示例</strong>
+                <small>恢复自 示例</small>
+              </div>
+              <span class="operation-cycle-status operation-cycle-status--neutral"><strong>示例</strong>
+  </span>
+            </div>
+            <p>示例</p>
+            <div class="operation-cycle-attempt__meta">
+              <span>开始 示例</span>
+              <span>结束 示例</span>
+            </div>
+            
+            
+            <div class="operation-cycle-stage-strip">
+              
+              <span data-stage-status="示例">
+                <i></i>示例
+              </span>
+              
+              <span data-stage-status="示例">
+                <i></i>示例
+              </span>
+              
+              <span data-stage-status="示例">
+                <i></i>示例
+              </span>
+              
+            </div>
+            
+          </div>
+        </li>
+        
+        <li class="operation-cycle-attempt operation-cycle-attempt--示例">
+          <div class="operation-cycle-attempt__rail"><i></i><span>02</span></div>
+          <div class="operation-cycle-attempt__content">
+            <div class="operation-cycle-attempt__title">
+              <div>
+                <strong>示例</strong>
+                <small>恢复自 示例</small>
+              </div>
+              <span class="operation-cycle-status operation-cycle-status--neutral"><strong>示例</strong>
+  </span>
+            </div>
+            <p>示例</p>
+            <div class="operation-cycle-attempt__meta">
+              <span>开始 示例</span>
+              <span>结束 示例</span>
+            </div>
+            
+            
+            <div class="operation-cycle-stage-strip">
+              
+              <span data-stage-status="示例">
+                <i></i>示例
+              </span>
+              
+              <span data-stage-status="示例">
+                <i></i>示例
+              </span>
+              
+              <span data-stage-status="示例">
+                <i></i>示例
+              </span>
+              
+            </div>
+            
+          </div>
+        </li>
+        
+        <li class="operation-cycle-attempt operation-cycle-attempt--示例">
+          <div class="operation-cycle-attempt__rail"><i></i><span>03</span></div>
+          <div class="operation-cycle-attempt__content">
+            <div class="operation-cycle-attempt__title">
+              <div>
+                <strong>示例</strong>
+                <small>恢复自 示例</small>
+              </div>
+              <span class="operation-cycle-status operation-cycle-status--neutral"><strong>示例</strong>
+  </span>
+            </div>
+            <p>示例</p>
+            <div class="operation-cycle-attempt__meta">
+              <span>开始 示例</span>
+              <span>结束 示例</span>
+            </div>
+            
+            
+            <div class="operation-cycle-stage-strip">
+              
+              <span data-stage-status="示例">
+                <i></i>示例
+              </span>
+              
+              <span data-stage-status="示例">
+                <i></i>示例
+              </span>
+              
+              <span data-stage-status="示例">
+                <i></i>示例
+              </span>
+              
+            </div>
+            
+          </div>
+        </li>
+        
+      </ol>
+      
+
+      
+      <div class="operation-cycle-stage-register">
+        
+        <div>
+          <span>01</span>
+          <strong>示例</strong>
+          <span class="operation-cycle-status operation-cycle-status--neutral"><strong>示例</strong>
+  </span>
+          <small>示例</small>
+        </div>
+        
+        <div>
+          <span>02</span>
+          <strong>示例</strong>
+          <span class="operation-cycle-status operation-cycle-status--neutral"><strong>示例</strong>
+  </span>
+          <small>示例</small>
+        </div>
+        
+        <div>
+          <span>03</span>
+          <strong>示例</strong>
+          <span class="operation-cycle-status operation-cycle-status--neutral"><strong>示例</strong>
+  </span>
+          <small>示例</small>
+        </div>
+        
+      </div>
+      
+    </div>
+  </section>
+
+  <section class="operation-cycle-step" id="cycle-step-3">
+    <header class="operation-cycle-step__head">
+      <span>03</span>
+      <div><small>AUDIENCE DECISION</small><h2>人群分层与去留判断</h2></div>
+    </header>
+    <div class="operation-cycle-step__body">
+      <div class="operation-cycle-funnel" aria-label="核心漏斗">
+    
+    
+      <div class="operation-cycle-funnel__step">
+        <span class="operation-cycle-funnel__index">01</span>
+        <div class="operation-cycle-metric operation-cycle-metric--compact" data-value-state="示例">
+    <span class="operation-cycle-metric__label">示例</span>
+    
+      <strong class="operation-cycle-metric__empty">示例</strong>
+    
+    
+      <span class="operation-cycle-metric__note">口径 示例 / 示例</span>
+    
+    
+      <span class="operation-cycle-metric__note">示例</span>
+    
+    
+      <span class="operation-cycle-metric__note">示例；示例；示例</span>
+    
+  </div>
+      </div>
+    
+      <div class="operation-cycle-funnel__step">
+        <span class="operation-cycle-funnel__index">02</span>
+        <div class="operation-cycle-metric operation-cycle-metric--compact" data-value-state="示例">
+    <span class="operation-cycle-metric__label">示例</span>
+    
+      <strong class="operation-cycle-metric__empty">示例</strong>
+    
+    
+      <span class="operation-cycle-metric__note">口径 示例 / 示例</span>
+    
+    
+      <span class="operation-cycle-metric__note">示例</span>
+    
+    
+      <span class="operation-cycle-metric__note">示例；示例；示例</span>
+    
+  </div>
+      </div>
+    
+      <div class="operation-cycle-funnel__step">
+        <span class="operation-cycle-funnel__index">03</span>
+        <div class="operation-cycle-metric operation-cycle-metric--compact" data-value-state="示例">
+    <span class="operation-cycle-metric__label">示例</span>
+    
+      <strong class="operation-cycle-metric__empty">示例</strong>
+    
+    
+      <span class="operation-cycle-metric__note">口径 示例 / 示例</span>
+    
+    
+      <span class="operation-cycle-metric__note">示例</span>
+    
+    
+      <span class="operation-cycle-metric__note">示例；示例；示例</span>
+    
+  </div>
+      </div>
+    
+    
+  </div>
+      <p class="operation-cycle-callout">示例</p>
+    </div>
+  </section>
+
+  <section class="operation-cycle-step" id="cycle-step-4">
+    <header class="operation-cycle-step__head">
+      <span>04</span>
+      <div><small>HUMAN REVIEW</small><h2>人审与计划版本</h2></div>
+    </header>
+    <div class="operation-cycle-step__body operation-cycle-review-grid">
+      <dl><dt>人审状态</dt><dd><span class="operation-cycle-status operation-cycle-status--neutral"><strong>示例</strong>
+  </span></dd></dl>
+      <dl><dt>计划版本</dt><dd>示例</dd></dl>
+      <dl><dt>计划状态</dt><dd>示例<small>示例</small></dd></dl>
+      
+      <dl><dt>目标人数</dt><dd>示例</dd></dl>
+      
+      <div class="operation-cycle-risk-note">
+        <span>事实待核对</span>
+        <strong>示例</strong>
+        <p>计划元数据与发送事实同时保留，页面不会静默覆盖任一来源。</p>
+      </div>
+      
+    </div>
+  </section>
+
+  <section class="operation-cycle-step" id="cycle-step-5">
+    <header class="operation-cycle-step__head">
+      <span>05</span>
+      <div><small>DELIVERY FACT</small><h2>实际发送事实</h2></div>
+    </header>
+    <div class="operation-cycle-step__body">
+      
+      
+      <div class="operation-cycle-delivery-facts">
+        <div class="operation-cycle-metric" data-value-state="示例">
+    <span class="operation-cycle-metric__label">有效发送</span>
+    
+      <strong class="operation-cycle-metric__empty">示例</strong>
+    
+    
+    
+      <span class="operation-cycle-metric__note">示例</span>
+    
+    
+  </div>
+        <div class="operation-cycle-metric" data-value-state="示例">
+    <span class="operation-cycle-metric__label">发送失败</span>
+    
+      <strong class="operation-cycle-metric__empty">示例</strong>
+    
+    
+    
+      <span class="operation-cycle-metric__note">示例</span>
+    
+    
+  </div>
+        <div class="operation-cycle-metric" data-value-state="示例">
+    <span class="operation-cycle-metric__label">可重试失败</span>
+    
+      <strong class="operation-cycle-metric__empty">示例</strong>
+    
+    
+    
+    
+  </div>
+        <div class="operation-cycle-metric" data-value-state="示例">
+    <span class="operation-cycle-metric__label">发送完成率</span>
+    
+      <strong class="operation-cycle-metric__empty">示例</strong>
+    
+    
+    
+    
+  </div>
+      </div>
+      <div class="operation-cycle-delivery-register">
+        <div><span>发送状态</span><strong>示例</strong></div>
+        <div><span>事实来源</span><strong>示例</strong></div>
+        <div><span>首条发送</span><strong>示例</strong></div>
+        <div><span>末条发送</span><strong>示例</strong></div>
+      </div>
+      <p class="operation-cycle-callout operation-cycle-callout--risk">示例</p>
+    </div>
+  </section>
+
+  <section class="operation-cycle-step" id="cycle-step-6">
+    <header class="operation-cycle-step__head">
+      <span>06</span>
+      <div><small>OBSERVATION WINDOWS</small><h2>分窗口结果</h2></div>
+    </header>
+    <div class="operation-cycle-step__body">
+      
+      <div class="operation-cycle-windows">
+        
+        <article class="operation-cycle-window" data-window-state="示例">
+          <header>
+            <div><span>01</span><strong>示例</strong></div>
+            <span class="operation-cycle-status operation-cycle-status--neutral"><strong>示例</strong>
+  </span>
+          </header>
+          <div class="operation-cycle-window__metrics">
+            
+              <div class="operation-cycle-metric operation-cycle-metric--compact" data-value-state="示例">
+    <span class="operation-cycle-metric__label">示例</span>
+    
+      <strong class="operation-cycle-metric__empty">示例</strong>
+    
+    
+      <span class="operation-cycle-metric__note">口径 示例 / 示例</span>
+    
+    
+      <span class="operation-cycle-metric__note">示例</span>
+    
+    
+      <span class="operation-cycle-metric__note">示例；示例；示例</span>
+    
+  </div>
+            
+              <div class="operation-cycle-metric operation-cycle-metric--compact" data-value-state="示例">
+    <span class="operation-cycle-metric__label">示例</span>
+    
+      <strong class="operation-cycle-metric__empty">示例</strong>
+    
+    
+      <span class="operation-cycle-metric__note">口径 示例 / 示例</span>
+    
+    
+      <span class="operation-cycle-metric__note">示例</span>
+    
+    
+      <span class="operation-cycle-metric__note">示例；示例；示例</span>
+    
+  </div>
+            
+              <div class="operation-cycle-metric operation-cycle-metric--compact" data-value-state="示例">
+    <span class="operation-cycle-metric__label">示例</span>
+    
+      <strong class="operation-cycle-metric__empty">示例</strong>
+    
+    
+      <span class="operation-cycle-metric__note">口径 示例 / 示例</span>
+    
+    
+      <span class="operation-cycle-metric__note">示例</span>
+    
+    
+      <span class="operation-cycle-metric__note">示例；示例；示例</span>
+    
+  </div>
+            
+          </div>
+          <dl class="operation-cycle-window__definition">
+            <div><dt>观察范围</dt><dd>示例 → 示例</dd></div>
+            <div><dt>数据质量</dt><dd>示例</dd></div>
+            <div><dt>口径限制</dt><dd>示例</dd></div>
+          </dl>
+          <p class="operation-cycle-noncausal">观察信号 · 不作为因果提升结论</p>
+        </article>
+        
+        <article class="operation-cycle-window" data-window-state="示例">
+          <header>
+            <div><span>02</span><strong>示例</strong></div>
+            <span class="operation-cycle-status operation-cycle-status--neutral"><strong>示例</strong>
+  </span>
+          </header>
+          <div class="operation-cycle-window__metrics">
+            
+              <div class="operation-cycle-metric operation-cycle-metric--compact" data-value-state="示例">
+    <span class="operation-cycle-metric__label">示例</span>
+    
+      <strong class="operation-cycle-metric__empty">示例</strong>
+    
+    
+      <span class="operation-cycle-metric__note">口径 示例 / 示例</span>
+    
+    
+      <span class="operation-cycle-metric__note">示例</span>
+    
+    
+      <span class="operation-cycle-metric__note">示例；示例；示例</span>
+    
+  </div>
+            
+              <div class="operation-cycle-metric operation-cycle-metric--compact" data-value-state="示例">
+    <span class="operation-cycle-metric__label">示例</span>
+    
+      <strong class="operation-cycle-metric__empty">示例</strong>
+    
+    
+      <span class="operation-cycle-metric__note">口径 示例 / 示例</span>
+    
+    
+      <span class="operation-cycle-metric__note">示例</span>
+    
+    
+      <span class="operation-cycle-metric__note">示例；示例；示例</span>
+    
+  </div>
+            
+              <div class="operation-cycle-metric operation-cycle-metric--compact" data-value-state="示例">
+    <span class="operation-cycle-metric__label">示例</span>
+    
+      <strong class="operation-cycle-metric__empty">示例</strong>
+    
+    
+      <span class="operation-cycle-metric__note">口径 示例 / 示例</span>
+    
+    
+      <span class="operation-cycle-metric__note">示例</span>
+    
+    
+      <span class="operation-cycle-metric__note">示例；示例；示例</span>
+    
+  </div>
+            
+          </div>
+          <dl class="operation-cycle-window__definition">
+            <div><dt>观察范围</dt><dd>示例 → 示例</dd></div>
+            <div><dt>数据质量</dt><dd>示例</dd></div>
+            <div><dt>口径限制</dt><dd>示例</dd></div>
+          </dl>
+          <p class="operation-cycle-noncausal">观察信号 · 不作为因果提升结论</p>
+        </article>
+        
+        <article class="operation-cycle-window" data-window-state="示例">
+          <header>
+            <div><span>03</span><strong>示例</strong></div>
+            <span class="operation-cycle-status operation-cycle-status--neutral"><strong>示例</strong>
+  </span>
+          </header>
+          <div class="operation-cycle-window__metrics">
+            
+              <div class="operation-cycle-metric operation-cycle-metric--compact" data-value-state="示例">
+    <span class="operation-cycle-metric__label">示例</span>
+    
+      <strong class="operation-cycle-metric__empty">示例</strong>
+    
+    
+      <span class="operation-cycle-metric__note">口径 示例 / 示例</span>
+    
+    
+      <span class="operation-cycle-metric__note">示例</span>
+    
+    
+      <span class="operation-cycle-metric__note">示例；示例；示例</span>
+    
+  </div>
+            
+              <div class="operation-cycle-metric operation-cycle-metric--compact" data-value-state="示例">
+    <span class="operation-cycle-metric__label">示例</span>
+    
+      <strong class="operation-cycle-metric__empty">示例</strong>
+    
+    
+      <span class="operation-cycle-metric__note">口径 示例 / 示例</span>
+    
+    
+      <span class="operation-cycle-metric__note">示例</span>
+    
+    
+      <span class="operation-cycle-metric__note">示例；示例；示例</span>
+    
+  </div>
+            
+              <div class="operation-cycle-metric operation-cycle-metric--compact" data-value-state="示例">
+    <span class="operation-cycle-metric__label">示例</span>
+    
+      <strong class="operation-cycle-metric__empty">示例</strong>
+    
+    
+      <span class="operation-cycle-metric__note">口径 示例 / 示例</span>
+    
+    
+      <span class="operation-cycle-metric__note">示例</span>
+    
+    
+      <span class="operation-cycle-metric__note">示例；示例；示例</span>
+    
+  </div>
+            
+          </div>
+          <dl class="operation-cycle-window__definition">
+            <div><dt>观察范围</dt><dd>示例 → 示例</dd></div>
+            <div><dt>数据质量</dt><dd>示例</dd></div>
+            <div><dt>口径限制</dt><dd>示例</dd></div>
+          </dl>
+          <p class="operation-cycle-noncausal">观察信号 · 不作为因果提升结论</p>
+        </article>
+        
+      </div>
+      
+    </div>
+  </section>
+
+  <section class="operation-cycle-step" id="cycle-step-7">
+    <header class="operation-cycle-step__head">
+      <span>07</span>
+      <div><small>POSTMORTEM</small><h2>结果复盘与限制</h2></div>
+    </header>
+    <div class="operation-cycle-step__body operation-cycle-retrospective">
+      <div class="operation-cycle-retrospective__statement">
+        <span>复盘结论</span>
+        <strong>示例</strong>
+        <p>示例</p>
+      </div>
+      <div class="operation-cycle-retrospective__lists">
+        <div>
+          <h3>已确认发现</h3>
+          <ul>
+            <li>示例</li><li>示例</li><li>示例</li>
+          </ul>
+        </div>
+        <div>
+          <h3>限制与缺口</h3>
+          <ul>
+            <li>示例</li><li>示例</li><li>示例</li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="operation-cycle-callout operation-cycle-callout--risk">
+        <strong>事实冲突</strong>
+        <span>示例</span><span>示例</span><span>示例</span>
+      </div>
+      
+    </div>
+  </section>
+
+  <section class="operation-cycle-step" id="cycle-step-8">
+    <header class="operation-cycle-step__head">
+      <span>08</span>
+      <div><small>NEXT ITERATION</small><h2>下一轮优化</h2></div>
+    </header>
+    <div class="operation-cycle-step__body operation-cycle-next">
+      <div class="operation-cycle-next__status">
+        <span class="operation-cycle-status operation-cycle-status--neutral"><span>优化状态</span><strong>示例</strong>
+  </span>
+        <strong>示例</strong>
+        <p>示例</p>
+      </div>
+      <dl class="operation-cycle-next__facts">
+        <div><dt>确认时间</dt><dd>示例</dd></div>
+        <div><dt>应用版本</dt><dd>示例</dd></div>
+        <div><dt>确认说明</dt><dd>示例</dd></div>
+      </dl>
+      
+      <ol class="operation-cycle-change-list">
+        <li><span>01</span><p>示例</p></li><li><span>02</span><p>示例</p></li><li><span>03</span><p>示例</p></li>
+      </ol>
+      
+    </div>
+  </section>
+
+  <section class="operation-cycle-evidence">
+    <div class="operation-cycle-section-head">
+      <div><span class="operation-cycle-kicker">EVIDENCE INDEX · 证据索引</span><h2>关联只读事实</h2></div>
+      <span class="operation-cycle-count">3 条</span>
+    </div>
+    
+    <div class="operation-cycle-evidence-grid">
+      
+    <a class="operation-cycle-evidence-link" href="示例">
+      <span>示例</span>
+      <strong>示例</strong>
+      <small>示例</small>
+    </a>
+  
+    <a class="operation-cycle-evidence-link" href="示例">
+      <span>示例</span>
+      <strong>示例</strong>
+      <small>示例</small>
+    </a>
+  
+    <a class="operation-cycle-evidence-link" href="示例">
+      <span>示例</span>
+      <strong>示例</strong>
+      <small>示例</small>
+    </a>
+  
+    </div>
+    
+  </section>
+</div>
+
+      </main>
+    </div>
+  </div>
+  <script id="aicrmAdminActionGrants" type="application/json">{}</script>
+  
+</body>
+</html>

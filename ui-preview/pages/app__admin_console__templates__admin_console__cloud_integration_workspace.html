@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cloud Integration Workspace · 客户管理后台</title>
+  <link rel="stylesheet" href="../static/admin_console/admin_console.css?v=operation-member-picker-fix-20260527&amp;design=lark-20260803">
+  <script src="../static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
+  <script src="../static/admin_console/image_resource_loader.js?v=resource-governance-v2-pending-retry"></script>
+  
+  <script defer src="../static/admin_console/admin_console.js?v=lark-design-package-20260803"></script>
+  <script defer src="../static/admin_console/operation_member_picker.js?v=operation-member-picker-wecom-sync-20260709"></script>
+</head>
+<body class="admin-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="admin-brand-mark">CRM</div>
+        <div class="admin-brand-copy">
+          <div class="admin-brand-title">客户管理后台</div>
+          <div class="admin-brand-subtitle">ADMIN CONSOLE</div>
+        </div>
+      </div>
+
+      <nav class="admin-nav" aria-label="客户管理后台导航">
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">运营</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化运营"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_conversion.svg" alt="">
+              <span class="admin-nav-label">自动化运营</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="运营闭环"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/operation_cycles.svg" alt="">
+              <span class="admin-nav-label">运营闭环</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="群运营计划"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/group_ops.svg" alt="">
+              <span class="admin-nav-label">群运营计划</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="渠道码中心"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/channels.svg" alt="">
+              <span class="admin-nav-label">渠道码中心</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="AI 助手"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/cloud_orchestrator.svg" alt="">
+              <span class="admin-nav-label">AI 助手</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="客户激活 / 客户列表"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/customers.svg" alt="">
+              <span class="admin-nav-label">客户激活 / 客户列表</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="漏斗 / 数据看板"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/user_ops_funnel.svg" alt="">
+              <span class="admin-nav-label">漏斗 / 数据看板</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="问卷"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/questionnaires.svg" alt="">
+              <span class="admin-nav-label">问卷</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="内容雷达"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/radar_links.svg" alt="">
+              <span class="admin-nav-label">内容雷达</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="企微标签管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wecom_tags.svg" alt="">
+              <span class="admin-nav-label">企微标签管理</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">交易</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="交易管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_transactions.svg" alt="">
+              <span class="admin-nav-label">交易管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_products.svg" alt="">
+              <span class="admin-nav-label">商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="周期商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/service_period_products.svg" alt="">
+              <span class="admin-nav-label">周期商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="优惠券"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/coupons.svg" alt="">
+              <span class="admin-nav-label">优惠券</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">素材</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="图片素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/image_library.svg" alt="">
+              <span class="admin-nav-label">图片素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="小程序素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/miniprogram_library.svg" alt="">
+              <span class="admin-nav-label">小程序素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="附件素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/attachment_library.svg" alt="">
+              <span class="admin-nav-label">附件素材库</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">配置及后台</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化话术"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_agents.svg" alt="">
+              <span class="admin-nav-label">自动化话术</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="负责人迁移"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/owner_migration.svg" alt="">
+              <span class="admin-nav-label">负责人迁移</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="配置"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/config.svg" alt="">
+              <span class="admin-nav-label">配置</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="API 文档"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/api_docs.svg" alt="">
+              <span class="admin-nav-label">API 文档</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+      </nav>
+
+      
+      <div class="admin-sidebar-user">
+        <div class="admin-sidebar-user__avatar">
+          示
+        </div>
+        <div class="admin-sidebar-user__meta">
+          <div class="admin-sidebar-user__name">
+            示例管理员
+          </div>
+          <a class="admin-sidebar-user__logout" href="#">退出登录</a>
+        </div>
+      </div>
+      
+    </aside>
+
+    <div class="admin-main-wrap">
+      
+      
+      
+      
+      
+      
+      <header class="admin-topbar">
+        
+        <div class="admin-topbar-head">
+          <nav class="admin-breadcrumbs" aria-label="当前位置">
+            
+            
+            <a href="#">客户管理后台</a>
+            
+            
+          </nav>
+          <div>
+            <h1 class="admin-page-title">Cloud Integration Workspace</h1>
+            <p class="admin-page-summary">页面功能预览（示例数据）</p>
+          </div>
+        </div>
+        
+
+        
+      </header>
+      
+
+      <main class="admin-page">
+        
+        <section class="admin-alert admin-alert--success">示例</section>
+        
+        
+        <section class="admin-alert admin-alert--error">示例</section>
+        
+        
+<div class="cloud-int-page">
+  <section class="admin-card">
+    <header class="admin-card-head">
+      <h2 class="admin-card-title">Claude Code · 接入凭证</h2>
+      <p class="admin-card-summary">把下面的连接信息粘到你的 Claude Code MCP 配置里，重启就能用 AI 直接驱动 CRM。</p>
+    </header>
+
+    <h3>① MCP 端点</h3>
+    <pre id="cloud-int-endpoint">https://&lt;your-crm-host&gt;/mcp</pre>
+
+    <h3>② Bearer Token</h3>
+    <p>在 CRM 的 <code>app_settings.MCP_BEARER_TOKEN</code> 里配置（运维负责）。请从工程师那里获取。</p>
+    <pre>Authorization: Bearer &lt;TOKEN&gt;</pre>
+
+    <h3>③ Claude Code 配置示例</h3>
+    <p>编辑你的 Claude Code MCP 配置文件（<code>~/.config/claude-code/mcp.json</code> 或当前项目的 <code>.mcp.json</code>）：</p>
+<pre>{
+  "mcpServers": {
+    "crm": {
+      "type": "http",
+      "url": "https://&lt;your-crm-host&gt;/mcp",
+      "headers": {
+        "Authorization": "Bearer &lt;TOKEN&gt;"
+      }
+    }
+  }
+}</pre>
+
+    <h3>④ 喂给 Claude Code 的方法论文档（重要）</h3>
+    <p>把下面 4 个文档整段粘到你项目的 <code>CLAUDE.md</code>，让 Claude Code 一开机就知道怎么用 CRM：</p>
+    <ul>
+      <li><code>docs/claude_code_integration/README.md</code> — 接入总览 + 立即可用的 5 句话场景</li>
+      <li><code>docs/claude_code_integration/tools.md</code> — 21 个工具的标准用法</li>
+      <li><code>docs/claude_code_integration/patterns.md</code> — 9 个典型运营场景方法论</li>
+      <li><code>docs/claude_code_integration/rules.md</code> — 8 条必守规则（防骚扰 / 互斥 / token / 人工 review）</li>
+      <li><code>docs/claude_code_integration/troubleshooting.md</code> — 排错速查</li>
+    </ul>
+
+    <h3>⑤ 试一下</h3>
+    <p>在 Claude Code 里输入：</p>
+    <pre>列一下当前所有等待审阅的 Campaign，告诉我每个的目标和候选人数。</pre>
+    <p>Claude Code 应当：调 <code>list_campaigns</code> → 调 <code>get_campaign</code> 看每条详情 → 用业务语言回报你。</p>
+
+    <h3>三端协作图</h3>
+    <pre>
+                 ┌──────────────────────┐
+                 │  Claude Code（你）   │  ← 提目标、写策略、调工具
+                 └──────────┬───────────┘
+                            │ MCP HTTP
+                ┌───────────▼────────────┐
+                │  CRM（能力服务方）      │  ← 池子、画像、互动、调度、发送
+                └─────────┬──────────────┘
+                          │ 工单
+                ┌─────────▼───────────────┐
+                │  话术 AI（DeepSeek）    │  ← 写多变体话术
+                └─────────────────────────┘
+    </pre>
+
+    <h3>必读三件事</h3>
+    <ol>
+      <li><strong>真发只能在 CRM 后台</strong>。Claude Code 永远只能 propose，最后那一下"启动"必须在 <code>/admin/cloud-orchestrator/campaigns</code> 页人工点击。</li>
+      <li><strong>互斥保障是数据库 UNIQUE 约束</strong>。同一个用户哪怕被 N 个分层命中，在同一个 Campaign 内只占 1 条节奏。Claude Code 给每个 segment 设 priority 决定谁优先抢人。</li>
+      <li><strong>每次操作带 trace_id</strong>。出问题在 <a href="/admin/cloud-orchestrator/observability">可观察性页</a> 输 trace_id 一查到底。</li>
+    </ol>
+  </section>
+</div>
+<style>
+.cloud-int-page pre { background:#f7f7f8; padding:12px; border-radius:6px; overflow:auto; font-size:12.5px; line-height:1.5; }
+.cloud-int-page h3 { margin-top:24px; font-size:15px; }
+.cloud-int-page code { background:#f4f4f5; padding:1px 4px; border-radius:3px; font-size:12.5px; }
+.cloud-int-page ol li, .cloud-int-page ul li { margin:6px 0; }
+</style>
+
+      </main>
+    </div>
+  </div>
+  <script id="aicrmAdminActionGrants" type="application/json">{}</script>
+  
+</body>
+</html>

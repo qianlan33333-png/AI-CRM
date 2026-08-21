@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>示例</title>
+  <link rel="stylesheet" href="/static/admin_console/wecom_tag_picker.css?v=unified-tag-picker-20260608">
+  <link rel="stylesheet" href="/static/questionnaire/admin_questionnaire_editor.css?v=questionnaire-editor-save-scroll-20260809">
+</head>
+<body class="assessment-template-mode">
+  <div class="shell">
+    <header class="topbar">
+      <div class="topbar-meta-wrap">
+        <div class="topbar-copy">
+          <a id="back-link" class="back-link" href="示例">返回问卷管理</a>
+          <div class="topbar-title-row">
+            <h1 id="topbar-title">示例</h1>
+            <span id="draft-indicator" class="draft-indicator hidden">未保存修改</span>
+          </div>
+          <p id="topbar-subtitle" class="topbar-subtitle">示例</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <div id="editor-secondary-actions" class="header-actions"></div>
+        <button id="reset-btn" type="button" class="btn ghost">保存草稿</button>
+        <button id="save-btn" type="button" class="btn primary">创建测评问卷模板</button>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <aside class="sidebar">
+        <section class="card section-card">
+          <div class="section-head">
+            <div>
+              <h3>添加题目</h3>
+              <p class="section-subtitle">这是专门创建测评模板的页面，左侧只放模板建设需要的动作。</p>
+            </div>
+          </div>
+          <div id="tag-catalog-message" class="inline-alert hidden" style="margin-bottom:12px;">当前未获取到企微标签，可稍后重试</div>
+          <div class="tool-grid">
+            <button id="add-single" type="button" class="tool-card">
+              <span class="tool-mark">单</span>
+              <span><strong>单选测评题</strong><span>每个选项配置分数和类型</span></span>
+            </button>
+            <button id="add-multi" type="button" class="tool-card">
+              <span class="tool-mark">多</span>
+              <span><strong>多选题</strong><span>可以选多个。</span></span>
+            </button>
+            <button id="add-textarea" type="button" class="tool-card">
+              <span class="tool-mark">文</span>
+              <span><strong>文本题</strong><span>开放回答。</span></span>
+            </button>
+            <button id="add-mobile" type="button" class="tool-card">
+              <span class="tool-mark">模</span>
+              <span><strong>填入示例模板</strong><span>小 IP 商业力 25 题</span></span>
+            </button>
+            <button id="open-assessment-settings" type="button" class="tool-card">
+              <span class="tool-mark">维</span>
+              <span>
+                <strong>添加维度</strong>
+                <span>维度不限数量，可继续追加</span>
+              </span>
+            </button>
+            <button id="add-rule" type="button" class="tool-card">
+              <span class="tool-mark">结</span>
+              <span><strong>结果页配置</strong><span>综合分层、维度分层、类型反馈</span></span>
+            </button>
+          </div>
+          
+            <div class="assessment-template-note">这里创建的是“测评模板”，不会直接生成公开问卷。公开问卷需要在普通问卷里引用它。</div>
+          
+        </section>
+      </aside>
+
+      <main class="preview-column">
+        <section class="card phone-stage">
+          <div class="phone-frame">
+            <div class="phone-topbar"><div class="phone-notch"></div></div>
+            <div class="phone-screen">
+              <div id="preview-head" class="preview-head"></div>
+              <div id="preview-questions" class="preview-stack"></div>
+              <div id="preview-rules-wrap" class="preview-stack"></div>
+              <div class="preview-footer-note">点击预览中的题目或分数规则即可在右侧编辑。</div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <aside class="inspector-column">
+        <section class="card inspector-card">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">配置区</div>
+              <h2 id="inspector-title" style="margin:8px 0 0;font-size:18px;font-weight:700;">问卷设置</h2>
+              <p id="inspector-subtitle" class="section-subtitle">编辑当前选中项的属性。</p>
+            </div>
+          </div>
+          <div id="inspector-body"></div>
+        </section>
+      </aside>
+    </div>
+
+    <div id="drawer-overlay" class="drawer-overlay hidden">
+      <div class="drawer-panel">
+        <div class="section-head">
+          <div>
+            <h3 id="drawer-title">面板</h3>
+          </div>
+          <button id="drawer-close" type="button" class="btn ghost">关闭</button>
+        </div>
+        <div id="drawer-body"></div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+  </div>
+  <script id="aicrmAdminActionGrants" type="application/json">{}</script>
+  <script src="/static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
+  <script src="/static/admin_console/wecom_tag_picker.js?v=unified-tag-picker-20260608"></script>
+  <script id="questionnaire-editor-config" type="application/json">
+    {}
+  </script>
+  <script src="/static/questionnaire/admin_questionnaire_editor.js?v=questionnaire-editor-save-scroll-20260809"></script>
+</body>
+</html>

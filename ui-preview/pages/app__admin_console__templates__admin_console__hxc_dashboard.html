@@ -1,0 +1,862 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hxc Dashboard · 客户管理后台</title>
+  <link rel="stylesheet" href="../static/admin_console/admin_console.css?v=operation-member-picker-fix-20260527&amp;design=lark-20260803">
+  <script src="../static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
+  <script src="../static/admin_console/image_resource_loader.js?v=resource-governance-v2-pending-retry"></script>
+  
+<link rel="stylesheet" href="https://unpkg.com/tabulator-tables@6.3.0/dist/css/tabulator_simple.min.css">
+<link rel="stylesheet" href="../static/admin_console/group_chat_picker.css?v=group-chat-direct-select-20260715">
+<link rel="stylesheet" href="../static/admin_console/material_picker.css?v=group-chat-direct-select-20260715">
+<link rel="stylesheet" href="../static/admin_console/send_content_composer.css?v=group-chat-selector-20260715">
+<style>
+  /* —— stat 卡片 (4 漏斗) —— */
+  .hxc-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .hxc-stat {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 14px 16px;
+    border-left: 4px solid #d1d5db;
+  }
+  .hxc-stat--member-and-user { border-left-color: #10b981; }
+  .hxc-stat--only-member     { border-left-color: #f59e0b; }
+  .hxc-stat--user-no-member  { border-left-color: #3b82f6; }
+  .hxc-stat--inactive        { border-left-color: #9ca3af; }
+  .hxc-stat-label { font-size: 12px; color: #6b7280; margin-bottom: 6px; }
+  .hxc-stat-value { font-size: 22px; font-weight: 600; color: #111827; }
+  .hxc-stat-sub   { font-size: 11px; color: #9ca3af; margin-top: 4px; }
+
+  /* —— 工具栏 —— */
+  .hxc-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .hxc-toolbar input.hxc-search {
+    flex: 1;
+    min-width: 220px;
+    max-width: 320px;
+    padding: 7px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  .hxc-toolbar input.hxc-search:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: -1px;
+    border-color: #3b82f6;
+  }
+  .hxc-toolbar .hxc-spacer { flex: 1; }
+  .hxc-toolbar .admin-button { font-size: 13px; }
+  .hxc-meta {
+    font-size: 12px;
+    color: #6b7280;
+    margin-left: auto;
+    padding-right: 4px;
+  }
+  .hxc-meta b { color: #111827; }
+
+  /* —— 表格 —— */
+  .hxc-table { font-size: 12px; background: #fff; }
+  .tabulator { border: 1px solid #e5e7eb; border-radius: 8px; }
+  .tabulator .tabulator-header {
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    font-weight: 500;
+  }
+  .tabulator .tabulator-header .tabulator-col {
+    background: #f9fafb;
+    border-right: 1px solid #f3f4f6;
+  }
+  .tabulator-row.tabulator-row-even { background-color: #fafafa; }
+  .tabulator-row:hover { background-color: #f3f4f6 !important; }
+
+  /* 状态色 */
+  .hxc-tag {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .hxc-tag--hit   { background: #d1fae5; color: #047857; }
+  .hxc-tag--warn  { background: #fef3c7; color: #b45309; }
+  .hxc-tag--info  { background: #dbeafe; color: #1e40af; }
+  .hxc-tag--miss  { background: #f3f4f6; color: #6b7280; }
+  .hxc-tick--hit  { color: #10b981; font-weight: bold; }
+  .hxc-tick--miss { color: #cbd5e1; }
+
+  /* —— 区间筛选 (数字 / 日期) —— */
+  .hxc-range { display: flex; flex-direction: column; gap: 2px; width: 100%; }
+  .hxc-range input {
+    width: 100%; box-sizing: border-box; padding: 2px 4px;
+    font-size: 11px; border: 1px solid #d1d5db; border-radius: 3px;
+  }
+  .hxc-range input:focus { outline: 1px solid #3b82f6; border-color: #3b82f6; }
+  .hxc-range input[type=date] { font-size: 10px; padding: 1px 2px; }
+
+  /* —— 多选下拉 —— */
+  .hxc-ms { position: relative; width: 100%; }
+  .hxc-ms-display {
+    cursor: pointer; padding: 2px 4px; border: 1px solid #d1d5db; border-radius: 3px;
+    font-size: 11px; background: #fff; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; user-select: none;
+  }
+  .hxc-ms-display:hover { border-color: #9ca3af; }
+  .hxc-ms-dropdown {
+    display: none; position: absolute; top: 100%; left: -4px; min-width: 140px;
+    background: #fff; border: 1px solid #d1d5db; border-radius: 4px;
+    max-height: 240px; overflow-y: auto; z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-top: 2px;
+  }
+  .hxc-ms-dropdown.open { display: block; }
+  .hxc-ms-dropdown label {
+    display: block; padding: 3px 8px; font-size: 11px; cursor: pointer; white-space: nowrap;
+  }
+  .hxc-ms-dropdown label:hover { background: #f3f4f6; }
+  .hxc-ms-dropdown input[type=checkbox] { margin-right: 4px; vertical-align: middle; }
+  .hxc-ms-actions {
+    display: flex; gap: 8px; padding: 4px 8px; border-bottom: 1px solid #e5e7eb; font-size: 11px;
+  }
+  .hxc-ms-action { color: #3b82f6; cursor: pointer; }
+  .hxc-ms-action:hover { text-decoration: underline; }
+
+</style>
+
+  <script defer src="../static/admin_console/admin_console.js?v=lark-design-package-20260803"></script>
+  <script defer src="../static/admin_console/operation_member_picker.js?v=operation-member-picker-wecom-sync-20260709"></script>
+</head>
+<body class="admin-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="admin-brand-mark">CRM</div>
+        <div class="admin-brand-copy">
+          <div class="admin-brand-title">客户管理后台</div>
+          <div class="admin-brand-subtitle">ADMIN CONSOLE</div>
+        </div>
+      </div>
+
+      <nav class="admin-nav" aria-label="客户管理后台导航">
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">运营</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化运营"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_conversion.svg" alt="">
+              <span class="admin-nav-label">自动化运营</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="运营闭环"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/operation_cycles.svg" alt="">
+              <span class="admin-nav-label">运营闭环</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="群运营计划"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/group_ops.svg" alt="">
+              <span class="admin-nav-label">群运营计划</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="渠道码中心"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/channels.svg" alt="">
+              <span class="admin-nav-label">渠道码中心</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="AI 助手"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/cloud_orchestrator.svg" alt="">
+              <span class="admin-nav-label">AI 助手</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="客户激活 / 客户列表"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/customers.svg" alt="">
+              <span class="admin-nav-label">客户激活 / 客户列表</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="漏斗 / 数据看板"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/user_ops_funnel.svg" alt="">
+              <span class="admin-nav-label">漏斗 / 数据看板</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="问卷"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/questionnaires.svg" alt="">
+              <span class="admin-nav-label">问卷</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="内容雷达"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/radar_links.svg" alt="">
+              <span class="admin-nav-label">内容雷达</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="企微标签管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wecom_tags.svg" alt="">
+              <span class="admin-nav-label">企微标签管理</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">交易</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="交易管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_transactions.svg" alt="">
+              <span class="admin-nav-label">交易管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_products.svg" alt="">
+              <span class="admin-nav-label">商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="周期商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/service_period_products.svg" alt="">
+              <span class="admin-nav-label">周期商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="优惠券"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/coupons.svg" alt="">
+              <span class="admin-nav-label">优惠券</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">素材</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="图片素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/image_library.svg" alt="">
+              <span class="admin-nav-label">图片素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="小程序素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/miniprogram_library.svg" alt="">
+              <span class="admin-nav-label">小程序素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="附件素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/attachment_library.svg" alt="">
+              <span class="admin-nav-label">附件素材库</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">配置及后台</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化话术"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_agents.svg" alt="">
+              <span class="admin-nav-label">自动化话术</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="负责人迁移"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/owner_migration.svg" alt="">
+              <span class="admin-nav-label">负责人迁移</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="配置"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/config.svg" alt="">
+              <span class="admin-nav-label">配置</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="API 文档"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/api_docs.svg" alt="">
+              <span class="admin-nav-label">API 文档</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+      </nav>
+
+      
+      <div class="admin-sidebar-user">
+        <div class="admin-sidebar-user__avatar">
+          示
+        </div>
+        <div class="admin-sidebar-user__meta">
+          <div class="admin-sidebar-user__name">
+            示例管理员
+          </div>
+          <a class="admin-sidebar-user__logout" href="#">退出登录</a>
+        </div>
+      </div>
+      
+    </aside>
+
+    <div class="admin-main-wrap">
+      
+      
+      
+      
+      
+      
+      <header class="admin-topbar">
+        
+        <div class="admin-topbar-head">
+          <nav class="admin-breadcrumbs" aria-label="当前位置">
+            
+            
+            <a href="#">客户管理后台</a>
+            
+            
+          </nav>
+          <div>
+            <h1 class="admin-page-title">Hxc Dashboard</h1>
+            <p class="admin-page-summary">页面功能预览（示例数据）</p>
+          </div>
+        </div>
+        
+
+        
+      </header>
+      
+
+      <main class="admin-page">
+        
+        <section class="admin-alert admin-alert--success">示例</section>
+        
+        
+        <section class="admin-alert admin-alert--error">示例</section>
+        
+        
+<section class="admin-card">
+  <div class="admin-card-head">
+    <div>
+      <h2>漏斗状态汇总</h2>
+      <p>每行 = 1 个手机号; "仅激活未打开" 是重点拉回人群.</p>
+    </div>
+    <div class="admin-toolbar">
+      <button class="admin-button admin-button--primary" id="hxc-refresh-btn" type="button">立即刷新</button>
+    </div>
+  </div>
+
+  <div class="hxc-stats">
+    <div class="hxc-stat">
+      <div class="hxc-stat-label">总数 (基础人群)</div>
+      <div class="hxc-stat-value">示例</div>
+      <div class="hxc-stat-sub">CRM 三表手机号并集</div>
+    </div>
+    <div class="hxc-stat hxc-stat--member-and-user">
+      <div class="hxc-stat-label">已激活并打开</div>
+      <div class="hxc-stat-value">示例</div>
+      <div class="hxc-stat-sub">会员开通 + 真打开过小程序</div>
+    </div>
+    <div class="hxc-stat hxc-stat--only-member">
+      <div class="hxc-stat-label">仅激活未打开 (拉回重点)</div>
+      <div class="hxc-stat-value">示例</div>
+      <div class="hxc-stat-sub">有会员资格 / 从未登录</div>
+    </div>
+    <div class="hxc-stat hxc-stat--user-no-member">
+      <div class="hxc-stat-label">注册但无会员</div>
+      <div class="hxc-stat-value">示例</div>
+      <div class="hxc-stat-sub">异常: 登录过但会员缺失</div>
+    </div>
+    <div class="hxc-stat hxc-stat--inactive">
+      <div class="hxc-stat-label">未激活</div>
+      <div class="hxc-stat-value">示例</div>
+      <div class="hxc-stat-sub">在 CRM 但未开通</div>
+    </div>
+  </div>
+
+  <div class="hxc-toolbar">
+    <input id="hxc-search" class="hxc-search" placeholder="全局搜索 (姓名/昵称/手机尾号/企微 ID...)">
+    <div class="hxc-spacer"></div>
+    <button class="admin-button admin-button--primary" type="button" id="hxc-broadcast-btn">群发选中用户</button>
+    <a class="admin-button admin-button--secondary" href="/admin/hxc-send-config">发送人管理</a>
+    <button class="admin-button admin-button--ghost" type="button" id="hxc-export-csv">导出 CSV (筛选后)</button>
+    <button class="admin-button admin-button--ghost" type="button" id="hxc-export-xlsx">导出 Excel</button>
+    <div class="hxc-meta">
+      上次刷新:
+      <b>示例</b>
+      &nbsp;·&nbsp;状态:
+      <b>示例</b>
+    </div>
+  </div>
+
+  <div id="hxc-table" class="hxc-table"></div>
+
+
+</section>
+
+      </main>
+    </div>
+  </div>
+  <script id="aicrmAdminActionGrants" type="application/json">{}</script>
+  
+<script src="https://unpkg.com/tabulator-tables@6.3.0/dist/js/tabulator.min.js"></script>
+<script src="https://oss.sheetjs.com/sheetjs/xlsx.full.min.js"></script>
+<script src="../static/admin_console/group_chat_picker.js?v=group-chat-direct-select-20260715"></script>
+<script src="../static/admin_console/material_picker.js?v=group-chat-direct-select-20260715"></script>
+<script src="../static/admin_console/send_content_composer.js?v=group-chat-selector-20260715"></script>
+<script id="hxc-dashboard-data" type="application/json">{}</script>
+<script id="hxc-send-config-data" type="application/json">{}</script>
+<script>
+(function(){
+  const data = JSON.parse(document.getElementById('hxc-dashboard-data').textContent);
+
+  function tick(cell){
+    const v = cell.getValue();
+    if (v === '✓') return '<span class="hxc-tick--hit">✓</span>';
+    if (v === '✗') return '<span class="hxc-tick--miss">✗</span>';
+    return v || '';
+  }
+
+  function funnelTag(cell){
+    const row = cell.getRow().getData();
+    const label = row.funnel_label || cell.getValue();
+    const state = row.funnel_state;
+    let cls = 'hxc-tag--miss';
+    if (state === 'member_and_user') cls = 'hxc-tag--hit';
+    else if (state === 'only_member') cls = 'hxc-tag--warn';
+    else if (state === 'user_no_member') cls = 'hxc-tag--info';
+    return '<span class="hxc-tag '+cls+'">'+label+'</span>';
+  }
+
+  // ── 区间数字筛选 ──
+  function rangeNumEditor(cell, onRendered, success){
+    const c = document.createElement('span'); c.className = 'hxc-range';
+    const lo = document.createElement('input'); lo.type='number'; lo.placeholder='最小';
+    const hi = document.createElement('input'); hi.type='number'; hi.placeholder='最大';
+    c.append(lo, hi);
+    function emit(){ success({lo:lo.value, hi:hi.value}); }
+    lo.addEventListener('change', emit); lo.addEventListener('keyup', emit);
+    hi.addEventListener('change', emit); hi.addEventListener('keyup', emit);
+    return c;
+  }
+  function rangeNumFilter(hv, rv){
+    if(!hv) return true;
+    if(hv.lo===''&&hv.hi==='') return true;
+    const v = rv!=null ? Number(rv) : NaN;
+    if(isNaN(v)) return hv.lo===''&&hv.hi==='';
+    if(hv.lo!=='' && v<Number(hv.lo)) return false;
+    if(hv.hi!=='' && v>Number(hv.hi)) return false;
+    return true;
+  }
+  function rangeEmpty(v){ return !v||(v.lo===''&&v.hi==='')||(v.from===''&&v.to===''); }
+
+  // ── 区间日期筛选 ──
+  function rangeDateEditor(cell, onRendered, success){
+    const c = document.createElement('span'); c.className = 'hxc-range';
+    const lo = document.createElement('input'); lo.type='date';
+    const hi = document.createElement('input'); hi.type='date';
+    c.append(lo, hi);
+    function emit(){ success({from:lo.value, to:hi.value}); }
+    lo.addEventListener('change', emit); hi.addEventListener('change', emit);
+    return c;
+  }
+  function rangeDateFilter(hv, rv){
+    if(!hv) return true;
+    if(!hv.from&&!hv.to) return true;
+    const v = (rv||'').slice(0,10);
+    if(!v) return false;
+    if(hv.from && v<hv.from) return false;
+    if(hv.to && v>hv.to) return false;
+    return true;
+  }
+
+  // ── 多选下拉筛选 ──
+  function _uniqueVals(field){
+    const s = new Set();
+    data.forEach(r=>{ const v=r[field]; if(v!=null&&v!=='') s.add(String(v)); });
+    return [...s].sort();
+  }
+  function multiSelectEditor(cell, onRendered, success){
+    const field = cell.getColumn().getField();
+    const values = _uniqueVals(field);
+    const sel = new Set();
+    const c = document.createElement('div'); c.className='hxc-ms';
+    const disp = document.createElement('div'); disp.className='hxc-ms-display'; disp.textContent='全部 ▾';
+    const dd = document.createElement('div'); dd.className='hxc-ms-dropdown';
+    const acts = document.createElement('div'); acts.className='hxc-ms-actions';
+    const aAll = document.createElement('span'); aAll.className='hxc-ms-action'; aAll.textContent='全选';
+    const aClr = document.createElement('span'); aClr.className='hxc-ms-action'; aClr.textContent='清除';
+    acts.append(aAll, aClr); dd.append(acts);
+    dd.addEventListener('click', e=>e.stopPropagation());
+    const cbs = [];
+    values.forEach(val=>{
+      const lbl = document.createElement('label');
+      const cb = document.createElement('input'); cb.type='checkbox'; cb.value=val;
+      cbs.push(cb);
+      lbl.append(cb, document.createTextNode(' '+val)); dd.append(lbl);
+      cb.addEventListener('change', ()=>{ if(cb.checked) sel.add(val); else sel.delete(val); upd(); });
+    });
+    function upd(){
+      disp.textContent = sel.size===0 ? '全部 ▾' : sel.size+' 项 ▾';
+      success(sel.size>0 ? [...sel] : '');
+    }
+    aAll.addEventListener('click', e=>{ e.stopPropagation(); cbs.forEach(cb=>{cb.checked=true; sel.add(cb.value);}); upd(); });
+    aClr.addEventListener('click', e=>{ e.stopPropagation(); cbs.forEach(cb=>{cb.checked=false;}); sel.clear(); upd(); });
+    disp.addEventListener('click', e=>{
+      e.stopPropagation();
+      document.querySelectorAll('.hxc-ms-dropdown.open').forEach(d=>{ if(d!==dd) d.classList.remove('open'); });
+      dd.classList.toggle('open');
+    });
+    c.append(disp, dd);
+    return c;
+  }
+  function multiSelectFilter(hv, rv){
+    if(!hv||!hv.length) return true;
+    return hv.includes(String(rv));
+  }
+  function msEmpty(v){ return !v||v.length===0; }
+
+  // close all multi-select dropdowns on outside click
+  document.addEventListener('click', ()=>{ document.querySelectorAll('.hxc-ms-dropdown.open').forEach(d=>d.classList.remove('open')); });
+
+  const table = new Tabulator("#hxc-table", {
+    data: data,
+    height: "calc(100vh - 360px)",
+    layout: "fitDataStretch",
+    movableColumns: true,
+    columnDefaults: { resizable: true, headerSortStartingDir: "desc", tooltip: true },
+    initialSort: [{column: "msg_user", dir: "desc"}],
+    columns: [
+      // ── 冻结列 (文本搜索 / 多选) ──
+      {title:"脱敏手机号",     field:"mobile_masked",  frozen:true, width:120, headerFilter:"input"},
+      {title:"客户名",         field:"customer_name",  frozen:true, width:120, headerFilter:"input"},
+      {title:"漏斗状态",       field:"funnel_label",   frozen:true, width:130, hozAlign:"center",
+        headerFilter:multiSelectEditor, headerFilterFunc:multiSelectFilter, headerFilterEmptyCheck:msEmpty,
+        formatter: funnelTag},
+      // ── 企微 ──
+      {title:"企微外部联系人ID", field:"external_userid", width:200, headerFilter:"input"},
+      {title:"企微跟进人",      field:"owner_userid",   width:140,
+        headerFilter:multiSelectEditor, headerFilterFunc:multiSelectFilter, headerFilterEmptyCheck:msEmpty},
+      // ── CRM 来源 (二值用单选, 多值用多选) ──
+      {title:"在销售线索池",    field:"in_lead_pool", width:100, hozAlign:"center",
+        headerFilter:"list", headerFilterParams:{valuesLookup:true, clearable:true}, formatter: tick},
+      {title:"在人员主表",      field:"in_people", width:90, hozAlign:"center",
+        headerFilter:"list", headerFilterParams:{valuesLookup:true, clearable:true}, formatter: tick},
+      {title:"填过激活问卷",    field:"in_questionnaire", width:100, hozAlign:"center",
+        headerFilter:"list", headerFilterParams:{valuesLookup:true, clearable:true}, formatter: tick},
+      {title:"填过的问卷名称",  field:"questionnaires", width:220, headerFilter:"input"},
+      // ── 问卷 (数字区间 + 日期区间) ──
+      {title:"问卷提交次数",    field:"questionnaire_count", width:100, sorter:"number",
+        headerFilter:rangeNumEditor, headerFilterFunc:rangeNumFilter, headerFilterEmptyCheck:rangeEmpty},
+      {title:"最近一次提交问卷",field:"last_questionnaire_at", width:140,
+        headerFilter:rangeDateEditor, headerFilterFunc:rangeDateFilter, headerFilterEmptyCheck:rangeEmpty},
+      // ── 二值列 ──
+      {title:"是否已加企微",    field:"is_wecom_added", width:90, hozAlign:"center",
+        headerFilter:"list", headerFilterParams:{valuesLookup:true, clearable:true}, formatter: tick},
+      {title:"是否已绑手机",    field:"is_mobile_bound", width:90, hozAlign:"center",
+        headerFilter:"list", headerFilterParams:{valuesLookup:true, clearable:true}, formatter: tick},
+      // ── 多值枚举 → 多选 ──
+      {title:"班期标签",        field:"class_term_label", width:120,
+        headerFilter:multiSelectEditor, headerFilterFunc:multiSelectFilter, headerFilterEmptyCheck:msEmpty},
+      {title:"首次入口来源",    field:"first_entry_source", width:140,
+        headerFilter:multiSelectEditor, headerFilterFunc:multiSelectFilter, headerFilterEmptyCheck:msEmpty},
+      {title:"最近入口来源",    field:"last_entry_source", width:140,
+        headerFilter:multiSelectEditor, headerFilterFunc:multiSelectFilter, headerFilterEmptyCheck:msEmpty},
+      {title:"CRM 标注激活态",  field:"crm_hxc_state", width:120,
+        headerFilter:multiSelectEditor, headerFilterFunc:multiSelectFilter, headerFilterEmptyCheck:msEmpty},
+      // ── 日期区间 ──
+      {title:"CRM 建档日期",    field:"crm_created_at", width:140,
+        headerFilter:rangeDateEditor, headerFilterFunc:rangeDateFilter, headerFilterEmptyCheck:rangeEmpty},
+      // ── 二值列 ──
+      {title:"已激活会员",      field:"hxc_member_hit", width:90, hozAlign:"center",
+        headerFilter:"list", headerFilterParams:{valuesLookup:true, clearable:true}, formatter: tick},
+      {title:"已注册打开",      field:"hxc_user_hit", width:90, hozAlign:"center",
+        headerFilter:"list", headerFilterParams:{valuesLookup:true, clearable:true}, formatter: tick},
+      // ── 黄小璨用户 ──
+      {title:"黄小璨昵称",      field:"hxc_nickname", width:140, headerFilter:"input"},
+      {title:"用户会员状态",    field:"hxc_member_status", width:100,
+        headerFilter:multiSelectEditor, headerFilterFunc:multiSelectFilter, headerFilterEmptyCheck:msEmpty},
+      {title:"会员类型",        field:"membership_type", width:100,
+        headerFilter:multiSelectEditor, headerFilterFunc:multiSelectFilter, headerFilterEmptyCheck:msEmpty},
+      {title:"会员剩余天数",    field:"membership_days_left", width:100, sorter:"number",
+        headerFilter:rangeNumEditor, headerFilterFunc:rangeNumFilter, headerFilterEmptyCheck:rangeEmpty},
+      {title:"咨询使用/上限",   field:"consult_usage", width:100},
+      {title:"会员开通来源",    field:"membership_source", width:130,
+        headerFilter:multiSelectEditor, headerFilterFunc:multiSelectFilter, headerFilterEmptyCheck:msEmpty},
+      // ── 活跃度 (数字区间) ──
+      {title:"沉默天数",        field:"hxc_silent_days", width:100, sorter:"number",
+        headerFilter:rangeNumEditor, headerFilterFunc:rangeNumFilter, headerFilterEmptyCheck:rangeEmpty},
+      {title:"黄小璨注册时间",  field:"hxc_registered_at", width:140,
+        headerFilter:rangeDateEditor, headerFilterFunc:rangeDateFilter, headerFilterEmptyCheck:rangeEmpty},
+      {title:"黄小璨最后登录",  field:"hxc_last_login_at", width:140,
+        headerFilter:rangeDateEditor, headerFilterFunc:rangeDateFilter, headerFilterEmptyCheck:rangeEmpty},
+      {title:"对话会话数",      field:"conv_chat", width:100, sorter:"number",
+        headerFilter:rangeNumEditor, headerFilterFunc:rangeNumFilter, headerFilterEmptyCheck:rangeEmpty},
+      {title:"咨询会话数",      field:"conv_consult", width:100, sorter:"number",
+        headerFilter:rangeNumEditor, headerFilterFunc:rangeNumFilter, headerFilterEmptyCheck:rangeEmpty},
+      {title:"日课会话数",      field:"conv_lesson", width:100, sorter:"number",
+        headerFilter:rangeNumEditor, headerFilterFunc:rangeNumFilter, headerFilterEmptyCheck:rangeEmpty},
+      {title:"用户消息数",      field:"msg_user", width:100, sorter:"number",
+        headerFilter:rangeNumEditor, headerFilterFunc:rangeNumFilter, headerFilterEmptyCheck:rangeEmpty},
+      {title:"AI 回复数",       field:"msg_ai", width:100, sorter:"number",
+        headerFilter:rangeNumEditor, headerFilterFunc:rangeNumFilter, headerFilterEmptyCheck:rangeEmpty},
+      {title:"完成咨询数",      field:"consult_completed", width:100, sorter:"number",
+        headerFilter:rangeNumEditor, headerFilterFunc:rangeNumFilter, headerFilterEmptyCheck:rangeEmpty},
+      {title:"咨询平均轮次",    field:"consult_avg_turn", width:100, sorter:"number",
+        headerFilter:rangeNumEditor, headerFilterFunc:rangeNumFilter, headerFilterEmptyCheck:rangeEmpty},
+      {title:"最后活跃时间",    field:"last_msg_at", width:150,
+        headerFilter:rangeDateEditor, headerFilterFunc:rangeDateFilter, headerFilterEmptyCheck:rangeEmpty},
+    ],
+  });
+
+  // —— 全局搜索 ——
+  document.getElementById("hxc-search").addEventListener("input", e => {
+    const v = (e.target.value || "").trim().toLowerCase();
+    if (!v) { table.clearFilter(true); return; }
+    table.setFilter(row => {
+      return Object.values(row).some(x => x != null && String(x).toLowerCase().includes(v));
+    });
+  });
+
+  // —— 导出 (筛选后行) ——
+  const ts = () => new Date().toISOString().slice(0,16).replace(/[-:T]/g, "");
+  document.getElementById("hxc-export-csv").addEventListener("click", () => {
+    table.download("csv", "hxc-dashboard-" + ts() + ".csv", {bom: true});
+  });
+  document.getElementById("hxc-export-xlsx").addEventListener("click", () => {
+    table.download("xlsx", "hxc-dashboard-" + ts() + ".xlsx", {sheetName: "激活漏斗"});
+  });
+
+  // —— 立即刷新 ——
+  document.getElementById("hxc-refresh-btn").addEventListener("click", async () => {
+    const btn = document.getElementById("hxc-refresh-btn");
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "刷新中…";
+    try {
+      const resp = await fetch("/api/admin/hxc-dashboard/refresh", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({trigger_source: "admin"}),
+      });
+      const result = await resp.json();
+      if (resp.ok && result.ok) {
+        btn.textContent = "刷新成功, 重载中…";
+        setTimeout(() => window.location.reload(), 600);
+      } else {
+        btn.textContent = original;
+        btn.disabled = false;
+        alert("刷新失败: " + window.AdminApi.responseErrorMessage(resp, result, "请稍后重试"));
+      }
+    } catch (err) {
+      btn.textContent = original;
+      btn.disabled = false;
+      alert("刷新失败: " + window.AdminApi.errorMessage(err, "请稍后重试"));
+    }
+  });
+
+  const senderConfigs = JSON.parse(document.getElementById('hxc-send-config-data').textContent);
+  function hxcIdempotencyKey(){
+    if(window.crypto && typeof window.crypto.randomUUID === 'function'){
+      return window.crypto.randomUUID();
+    }
+    return 'hxc-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+  }
+  function hxcSelectedCustomerIds(rows){
+    const seen = new Set();
+    const ids = [];
+    rows.forEach((row)=>{
+      const externalUserid = String(row.external_userid || '').trim();
+      if(externalUserid && !seen.has(externalUserid)){
+        seen.add(externalUserid);
+        ids.push(externalUserid);
+      }
+    });
+    return ids;
+  }
+  function hxcAudienceFilter(rows){
+    return {
+      source: 'hxc_dashboard_tabulator_active_filter',
+      filtered_count: rows.length,
+      header_filters: typeof table.getHeaderFilters === 'function' ? table.getHeaderFilters() : [],
+    };
+  }
+  function hxcStatusLabel(status){
+    if(status === 'created') return '已创建';
+    if(status === 'degraded') return '已降级创建';
+    if(status === ['production', 'unavailable'].join('_')) return '生产数据不可用';
+    return status || '未知状态';
+  }
+  function hxcSkipSummary(skippedByReason){
+    const labels = {
+      missing_external_userid: '缺少企微外部联系人 ID',
+      do_not_disturb: '免打扰',
+    };
+    return Object.entries(skippedByReason || {})
+      .filter(([, count])=>Number(count || 0) > 0)
+      .map(([key, count])=>(labels[key] || key) + ' ' + count + ' 人')
+      .join('；') || '无';
+  }
+  document.getElementById('hxc-broadcast-btn').addEventListener('click', ()=>{
+    const filtered = table.getData("active");
+    const rowsWithContact = filtered.filter(r=>r.external_userid && r.external_userid.trim());
+    const activeSenders = senderConfigs.filter(s=>s.is_active).map(s=>s.sender_userid);
+
+    if(!rowsWithContact.length){
+      alert('当前筛选结果中没有企微外部联系人 ID，暂不能生成群发内容包');
+      return;
+    }
+    if(!activeSenders.length){
+      alert('请先在「发送人管理」中添加至少一个启用的发送人');
+      return;
+    }
+    if(!window.AICRMSendContentComposer || typeof window.AICRMSendContentComposer.open !== 'function'){
+      alert('标准发送内容组件加载失败，请刷新页面后重试');
+      return;
+    }
+
+    window.AICRMSendContentComposer.open({
+      title: 'HXC 群发内容',
+      textEnabled: true,
+      value: {
+        content_text: '',
+        image_library_ids: [],
+        miniprogram_library_ids: [],
+        attachment_library_ids: [],
+        group_invite_library_ids: [],
+      },
+      onConfirm(contentPackage) {
+        const payload = {
+          source_type: 'hxc_dashboard_broadcast',
+          source_id: 'hxc-dashboard',
+          idempotency_key: hxcIdempotencyKey(),
+          sender_userid: activeSenders[0],
+          audience_filter: hxcAudienceFilter(filtered),
+          selected_customer_ids: hxcSelectedCustomerIds(rowsWithContact),
+          content_package: contentPackage,
+          dry_run: false,
+        };
+        fetch('/api/admin/hxc-dashboard/broadcast-tasks', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload),
+        })
+          .then(async (resp)=>{
+            const result = await resp.json().catch(()=>({}));
+            if(!resp.ok || !result.ok){
+              throw new Error(window.AdminApi.responseErrorMessage(resp, result, '创建 HXC 群发任务失败'));
+            }
+            const task = result.task || {};
+            alert(
+              'HXC 群发任务' + hxcStatusLabel(task.status) +
+              '\n筛选总数: ' + Number(task.audience_total || 0) +
+              '\n可发送: ' + Number(task.eligible_count || 0) +
+              '\n跳过: ' + Number(task.skipped_count || 0) +
+              '\n跳过原因: ' + hxcSkipSummary(task.skipped_by_reason) +
+              (task.dispatch_status ? '\n派发状态: ' + task.dispatch_status : '')
+            );
+          })
+          .catch((err)=>{
+            alert('HXC 群发任务创建失败：' + err.message);
+          });
+      },
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

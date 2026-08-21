@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Config App Settings · 客户管理后台</title>
+  <link rel="stylesheet" href="../static/admin_console/admin_console.css?v=operation-member-picker-fix-20260527&amp;design=lark-20260803">
+  <script src="../static/admin_console/admin_api_client.js?v=admin-error-messages-v1-20260729"></script>
+  <script src="../static/admin_console/image_resource_loader.js?v=resource-governance-v2-pending-retry"></script>
+  
+  <script defer src="../static/admin_console/admin_console.js?v=lark-design-package-20260803"></script>
+  <script defer src="../static/admin_console/operation_member_picker.js?v=operation-member-picker-wecom-sync-20260709"></script>
+</head>
+<body class="admin-shell">
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="admin-brand">
+        <div class="admin-brand-mark">CRM</div>
+        <div class="admin-brand-copy">
+          <div class="admin-brand-title">客户管理后台</div>
+          <div class="admin-brand-subtitle">ADMIN CONSOLE</div>
+        </div>
+      </div>
+
+      <nav class="admin-nav" aria-label="客户管理后台导航">
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">运营</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化运营"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_conversion.svg" alt="">
+              <span class="admin-nav-label">自动化运营</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="运营闭环"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/operation_cycles.svg" alt="">
+              <span class="admin-nav-label">运营闭环</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="群运营计划"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/group_ops.svg" alt="">
+              <span class="admin-nav-label">群运营计划</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="渠道码中心"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/channels.svg" alt="">
+              <span class="admin-nav-label">渠道码中心</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="AI 助手"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/cloud_orchestrator.svg" alt="">
+              <span class="admin-nav-label">AI 助手</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="客户激活 / 客户列表"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/customers.svg" alt="">
+              <span class="admin-nav-label">客户激活 / 客户列表</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="漏斗 / 数据看板"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/user_ops_funnel.svg" alt="">
+              <span class="admin-nav-label">漏斗 / 数据看板</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="问卷"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/questionnaires.svg" alt="">
+              <span class="admin-nav-label">问卷</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="内容雷达"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/radar_links.svg" alt="">
+              <span class="admin-nav-label">内容雷达</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="企微标签管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wecom_tags.svg" alt="">
+              <span class="admin-nav-label">企微标签管理</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">交易</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="交易管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_transactions.svg" alt="">
+              <span class="admin-nav-label">交易管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/wechat_pay_products.svg" alt="">
+              <span class="admin-nav-label">商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="周期商品管理"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/service_period_products.svg" alt="">
+              <span class="admin-nav-label">周期商品管理</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="优惠券"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/coupons.svg" alt="">
+              <span class="admin-nav-label">优惠券</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">素材</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="图片素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/image_library.svg" alt="">
+              <span class="admin-nav-label">图片素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="小程序素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/miniprogram_library.svg" alt="">
+              <span class="admin-nav-label">小程序素材库</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="附件素材库"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/attachment_library.svg" alt="">
+              <span class="admin-nav-label">附件素材库</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+        
+        <section class="admin-nav-section">
+          <div class="admin-nav-section-title">配置及后台</div>
+          <div class="admin-nav-section-list">
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="自动化话术"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/automation_agents.svg" alt="">
+              <span class="admin-nav-label">自动化话术</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="负责人迁移"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/owner_migration.svg" alt="">
+              <span class="admin-nav-label">负责人迁移</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="配置"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/config.svg" alt="">
+              <span class="admin-nav-label">配置</span>
+            </a>
+            
+            <a
+              class="admin-nav-link"
+              href="#"
+              title="API 文档"
+            >
+              <img class="admin-nav-icon" src="../static/admin_console/nav-icons/api_docs.svg" alt="">
+              <span class="admin-nav-label">API 文档</span>
+            </a>
+            
+          </div>
+        </section>
+        
+        
+      </nav>
+
+      
+      <div class="admin-sidebar-user">
+        <div class="admin-sidebar-user__avatar">
+          示
+        </div>
+        <div class="admin-sidebar-user__meta">
+          <div class="admin-sidebar-user__name">
+            示例管理员
+          </div>
+          <a class="admin-sidebar-user__logout" href="#">退出登录</a>
+        </div>
+      </div>
+      
+    </aside>
+
+    <div class="admin-main-wrap">
+      
+      
+      
+      
+      
+      
+      <header class="admin-topbar">
+        
+        <div class="admin-topbar-head">
+          <nav class="admin-breadcrumbs" aria-label="当前位置">
+            
+            
+            <a href="#">客户管理后台</a>
+            
+            
+          </nav>
+          <div>
+            <h1 class="admin-page-title">Config App Settings</h1>
+            <p class="admin-page-summary">页面功能预览（示例数据）</p>
+          </div>
+        </div>
+        
+
+        
+      </header>
+      
+
+      <main class="admin-page">
+        
+        <section class="admin-alert admin-alert--success">示例</section>
+        
+        
+        <section class="admin-alert admin-alert--error">示例</section>
+        
+        
+<section class="admin-card admin-module-banner">
+  <div class="admin-section-header admin-section-header--compact">
+    <div>
+      <div class="admin-eyebrow">配置中心</div>
+      <div class="admin-card-label">统一后台配置模式</div>
+      <p class="admin-muted">当前统一采用「列表 + 编辑区 / 抽屉」的后台模式，保留现有接口语义与写入逻辑。</p>
+    </div>
+  </div>
+  <nav class="admin-subnav" aria-label="配置导航">
+    
+    <a class="admin-subnav-link is-active" href="示例">示例</a>
+    
+    <a class="admin-subnav-link is-active" href="示例">示例</a>
+    
+    <a class="admin-subnav-link is-active" href="示例">示例</a>
+    
+  </nav>
+</section>
+
+<div class="config-stack">
+  
+<section class="admin-card-grid">
+  
+  <article class="admin-card admin-stat-card admin-stat-card--nested">
+    <div class="admin-card-label">示例</div>
+    <div class="admin-card-value">示例</div>
+    <p class="admin-card-copy">示例</p>
+  </article>
+  
+  <article class="admin-card admin-stat-card admin-stat-card--nested">
+    <div class="admin-card-label">示例</div>
+    <div class="admin-card-value">示例</div>
+    <p class="admin-card-copy">示例</p>
+  </article>
+  
+  <article class="admin-card admin-stat-card admin-stat-card--nested">
+    <div class="admin-card-label">示例</div>
+    <div class="admin-card-value">示例</div>
+    <p class="admin-card-copy">示例</p>
+  </article>
+  
+</section>
+
+<section class="admin-card">
+  <form class="admin-filter-bar admin-form-grid admin-form-grid--filters" method="get">
+    <label>
+      <span>筛选</span>
+      <input type="text" name="q" value="示例" placeholder="设置项 / 名称 / 说明">
+    </label>
+    <label>
+      <span>查看范围</span>
+      <select name="scope">
+        <option value="" >全部</option>
+        <option value="editable" >可直接编辑</option>
+        <option value="masked" >敏感信息</option>
+      </select>
+    </label>
+    <div class="admin-form-actions">
+      <button class="admin-button admin-button--primary" type="submit">应用筛选</button>
+      <a class="admin-button admin-button--ghost" href="/admin/config/app-settings">重置</a>
+    </div>
+  </form>
+</section>
+
+<section class="admin-card">
+  <div class="config-editor-layout">
+    <div class="config-list-stack">
+      <div class="admin-card-head">
+        <div>
+          <h2>设置快照</h2>
+          <p>这里展示当前正在生效的设置值和来源。</p>
+        </div>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>设置项</th>
+              <th>名称</th>
+              <th>类型</th>
+              <th>当前值</th>
+              <th>来源</th>
+              <th>最近修改人</th>
+            </tr>
+          </thead>
+          <tbody>
+            
+            <tr>
+              <td><code>示例</code></td>
+              <td>示例</td>
+              <td>敏感信息</td>
+              <td>示例</td>
+              <td>配置文件</td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><code>示例</code></td>
+              <td>示例</td>
+              <td>敏感信息</td>
+              <td>示例</td>
+              <td>配置文件</td>
+              <td>示例</td>
+            </tr>
+            
+            <tr>
+              <td><code>示例</code></td>
+              <td>示例</td>
+              <td>敏感信息</td>
+              <td>示例</td>
+              <td>配置文件</td>
+              <td>示例</td>
+            </tr>
+            
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <aside class="config-editor-aside">
+      <div class="admin-card-head">
+        <div>
+          <h2>编辑系统设置</h2>
+          <p>这些内容可以直接修改。保存后会记录操作人和时间。</p>
+        </div>
+      </div>
+      <form class="admin-form-grid admin-form-grid--stacked" method="post" action="/admin/config/app-settings/save">
+        <input type="hidden" name="admin_action_token" value="示例">
+        
+        <label>
+          <span>示例 <code>示例</code></span>
+          
+          <input type="示例" name="setting__示例" value="示例">
+          
+          <small>示例 · 来源：配置文件 · 最近修改：示例 示例</small>
+        </label>
+        
+        <label>
+          <span>示例 <code>示例</code></span>
+          
+          <input type="示例" name="setting__示例" value="示例">
+          
+          <small>示例 · 来源：配置文件 · 最近修改：示例 示例</small>
+        </label>
+        
+        <label>
+          <span>示例 <code>示例</code></span>
+          
+          <input type="示例" name="setting__示例" value="示例">
+          
+          <small>示例 · 来源：配置文件 · 最近修改：示例 示例</small>
+        </label>
+        
+
+        <div class="admin-card-head admin-card-head--tight">
+          <div>
+            <h2>敏感信息</h2>
+            <p>页面不会显示完整内容；留空表示保持原值。</p>
+          </div>
+        </div>
+
+        
+        <label>
+          <span>示例 <code>示例</code></span>
+          <input type="password" name="setting__示例" placeholder="当前状态：示例">
+          <small>示例 · 当前已配置 · 最近修改：示例 示例</small>
+        </label>
+        
+        <label>
+          <span>示例 <code>示例</code></span>
+          <input type="password" name="setting__示例" placeholder="当前状态：示例">
+          <small>示例 · 当前已配置 · 最近修改：示例 示例</small>
+        </label>
+        
+        <label>
+          <span>示例 <code>示例</code></span>
+          <input type="password" name="setting__示例" placeholder="当前状态：示例">
+          <small>示例 · 当前已配置 · 最近修改：示例 示例</small>
+        </label>
+        
+
+        <label>
+          <span>操作人</span>
+          <input type="text" name="operator" placeholder="填写本次修改人">
+        </label>
+        <label class="admin-check-line">
+          <input type="checkbox" name="confirm" value="1">
+          <span>我确认保存本次系统设置修改</span>
+        </label>
+        <div class="admin-form-actions">
+          <button class="admin-button admin-button--primary" type="submit">保存系统设置</button>
+        </div>
+      </form>
+    </aside>
+  </div>
+</section>
+
+<section class="admin-card">
+  <div class="admin-card-head">
+    <div>
+      <h2>最近审计</h2>
+      <p>这里展示系统设置最近的修改记录。</p>
+    </div>
+  </div>
+  <div class="admin-audit-list">
+    
+    <div class="admin-audit-item">
+      <strong>示例</strong>
+      <span>示例 · 示例 · 示例</span>
+    </div>
+    
+    <div class="admin-audit-item">
+      <strong>示例</strong>
+      <span>示例 · 示例 · 示例</span>
+    </div>
+    
+    <div class="admin-audit-item">
+      <strong>示例</strong>
+      <span>示例 · 示例 · 示例</span>
+    </div>
+    
+  </div>
+</section>
+
+</div>
+
+      </main>
+    </div>
+  </div>
+  <script id="aicrmAdminActionGrants" type="application/json">{}</script>
+  
+</body>
+</html>
