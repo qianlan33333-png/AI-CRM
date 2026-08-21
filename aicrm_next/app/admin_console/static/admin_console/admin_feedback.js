@@ -118,6 +118,13 @@
     bar.innerHTML = "<i></i><em>文件上传中，请稍候…</em>";
     document.body.appendChild(bar);
   }
+  function updateUploadBarText(text) {
+    var bar = document.getElementById("afb-upbar");
+    if (bar) {
+      var em = bar.querySelector("em");
+      if (em) em.textContent = text;
+    }
+  }
   function hideUploadBar() {
     var bar = document.getElementById("afb-upbar");
     if (bar) bar.remove();
@@ -133,6 +140,75 @@
     var name = input.files.length === 1 ? input.files[0].name : input.files.length + " 个文件";
     toast("已选择：" + name + "（" + sizeText + "）");
   });
+
+  /* ---------- AJAX 上传全局进度（fetch / XHR 携带 FormData 文件时触发） ---------- */
+  var afbUpCount = 0;
+  var afbUpTimer = null;
+  function formDataHasFile(body) {
+    if (typeof FormData === "undefined" || !(body instanceof FormData)) return false;
+    var has = false;
+    body.forEach(function (v) { if (v instanceof File || v instanceof Blob) has = true; });
+    return has;
+  }
+  function uploadStart() {
+    afbUpCount += 1;
+    showUploadBar();
+    clearTimeout(afbUpTimer);
+    afbUpTimer = setTimeout(function () { afbUpCount = 0; hideUploadBar(); }, 60000);
+  }
+  function uploadDone(ok) {
+    afbUpCount = Math.max(0, afbUpCount - 1);
+    if (afbUpCount === 0) {
+      hideUploadBar();
+      clearTimeout(afbUpTimer);
+      if (ok) toast("上传完成");
+    }
+  }
+
+  // fetch 钩子：包在 AdminApi 安全封装之外，仅观测不动数据
+  if (typeof window.fetch === "function" && !window.fetch.__afbWrapped) {
+    var prevFetch = window.fetch;
+    var wrappedFetch = function (input, options) {
+      if (!formDataHasFile(options && options.body)) return prevFetch.apply(this, arguments);
+      uploadStart();
+      return prevFetch.apply(this, arguments).then(
+        function (resp) { uploadDone(!!(resp && resp.ok)); return resp; },
+        function (err) { uploadDone(false); throw err; }
+      );
+    };
+    wrappedFetch.__afbWrapped = true;
+    window.fetch = wrappedFetch;
+  }
+
+  // XHR 钩子：带 upload.onprogress，可显示真实百分比
+  if (window.XMLHttpRequest && !XMLHttpRequest.prototype.send.__afbWrapped) {
+    var prevSend = XMLHttpRequest.prototype.send;
+    var wrappedSend = function (body) {
+      if (formDataHasFile(body)) {
+        var xhr = this;
+        uploadStart();
+        var settled = false;
+        var done = function (ok) {
+          if (settled) return;
+          settled = true;
+          uploadDone(ok);
+        };
+        if (xhr.upload && xhr.upload.addEventListener) {
+          xhr.upload.addEventListener("progress", function (ev) {
+            if (ev.lengthComputable && ev.total > 0) {
+              updateUploadBarText("文件上传中… " + Math.round((ev.loaded / ev.total) * 100) + "%");
+            }
+          });
+        }
+        xhr.addEventListener("load", function () { done(xhr.status >= 200 && xhr.status < 300); });
+        xhr.addEventListener("error", function () { done(false); });
+        xhr.addEventListener("abort", function () { done(false); });
+      }
+      return prevSend.apply(this, arguments);
+    };
+    wrappedSend.__afbWrapped = true;
+    XMLHttpRequest.prototype.send = wrappedSend;
+  }
 
   /* ---------- 危险操作确认 ---------- */
   var DANGER_RE = /删除|下架|停用|禁用|驳回|拒绝|作废|清空/;
