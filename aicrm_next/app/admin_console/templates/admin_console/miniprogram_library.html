@@ -609,7 +609,7 @@
   document.getElementById('mp-edit-delete').addEventListener('click', async function () {
     if (!editingItem) return;
     var id = editingItem.id;
-    if (!confirm('确认删除（停用）这条小程序素材？引用了它的群发将无法发送。')) return;
+    if (!(await window.AdminFb.confirm({ title: '确认删除', body: '确认删除（停用）这条小程序素材？引用了它的群发将无法发送。', okLabel: '确认删除', danger: true }))) return;
     setEditStatus('删除中…', 'busy');
     try {
       var d = await deleteReq('/api/admin/miniprogram-library/' + id);

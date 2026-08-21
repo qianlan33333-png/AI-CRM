@@ -416,7 +416,7 @@
         window.location.href = editPath(item.id);
         return;
       }
-      if (action === "delete" && !window.confirm(`确认删除「${item.agent_name || item.agent_code || "Agent"}」？`)) {
+      if (action === "delete" && !(await window.AdminFb.confirm({ title: '确认删除', body: `确认删除「${item.agent_name || item.agent_code || "Agent"}」？`, okLabel: '确认删除', danger: true }))) {
         return;
       }
       const actionUrls = {

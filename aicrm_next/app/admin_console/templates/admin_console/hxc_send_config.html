@@ -223,7 +223,7 @@
 
   async function removeSender(idx){
     const m = members[idx];
-    if(!confirm('确定移除发送人 ' + m.display_name + ' (' + m.wecom_userid + ') ?')) return;
+    if (!(await window.AdminFb.confirm({ title: '确认移除', body: '确定移除发送人 ' + m.display_name + ' (' + m.wecom_userid + ') ?', okLabel: '确认移除', danger: true }))) return;
     m.is_sender = false;
     m.is_active = true;
     m.priority = 100;

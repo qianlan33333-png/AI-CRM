@@ -708,7 +708,7 @@
   document.getElementById('il-edit-delete').addEventListener('click', async function () {
     if (!editingItem) return;
     var id = editingItem.id;
-    if (!confirm('永久删除这张图（id=' + id + '），操作不可恢复。确认继续？')) return;
+    if (!(await window.AdminFb.confirm({ title: '确认删除', body: '永久删除这张图（id=' + id + '），操作不可恢复。确认继续？', okLabel: '确认删除', danger: true }))) return;
     setEditStatus('删除中…', 'busy');
     var d = await deleteReq('/api/admin/image-library/' + id);
     if (d.ok) {
@@ -724,7 +724,7 @@
       if (minis) lines.push('· ' + minis + ' 个小程序卡片（thumb_image_id 会被置 NULL）');
       if (steps) lines.push('· ' + steps + ' 个群发步骤（image_library_ids 数组里会移除）');
       lines.push('', '强制删除会先清空这些引用，再删图。继续？');
-      if (!confirm(lines.join('\n'))) {
+      if (!(await window.AdminFb.confirm({ title: '确认强制删除', body: lines.join('\n'), okLabel: '强制删除', danger: true }))) {
         setEditStatus('已取消', '');
         return;
       }

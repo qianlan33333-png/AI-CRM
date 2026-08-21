@@ -153,7 +153,7 @@
         archive: "确定归档这张优惠券吗？",
         delete: "确定删除这张草稿优惠券吗？",
       };
-      if (messages[action] && !window.confirm(messages[action])) return;
+      if (messages[action] && !(await window.AdminFb.confirm({ title: '操作确认', body: messages[action], okLabel: '确认', danger: action !== 'publish' }))) return;
       notify("正在处理…", false);
       const method = action === "delete" ? "DELETE" : "POST";
       const suffix = action === "delete" ? "" : `/${action}`;

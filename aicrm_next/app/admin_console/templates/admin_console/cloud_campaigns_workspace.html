@@ -447,7 +447,7 @@
         ev.stopPropagation();
         const gcode = batchBtn.dataset.batchStart;
         const draftCount = g.campaigns.filter(c => ['draft', 'pending_review'].includes(c.review_status) && ['draft', 'paused'].includes(c.run_status)).length;
-        if (!confirm(`将批量审批并启动 ${draftCount} 个 sub-Campaign，确认？`)) return;
+        if (!(await window.AdminFb.confirm({ title: '确认批量启动', body: `将批量审批并启动 ${draftCount} 个 sub-Campaign，确认？`, okLabel: '确认启动', danger: false }))) return;
         const operator = (window.prompt('确认人（仅做审计标记）', 'ui_user') || '').trim();
         if (!operator) return;
         batchBtn.disabled = true;
@@ -618,7 +618,7 @@
     detailBody.querySelectorAll('.cloud-camp-step-delete').forEach(btn => {
       btn.addEventListener('click', async () => {
         const stepIndex = btn.dataset.stepIndex;
-        if (!confirm(`确认删除 step ${stepIndex}？此操作不可撤销。`)) return;
+        if (!(await window.AdminFb.confirm({ title: '确认删除', body: `确认删除 step ${stepIndex}？此操作不可撤销。`, okLabel: '确认删除', danger: true }))) return;
         const resp = await fetch(`/api/admin/cloud-orchestrator/campaigns/${encodeURIComponent(currentCode)}/steps/${encodeURIComponent(stepIndex)}`, {
           method: 'DELETE', headers: commandHeaders('step-delete'),
         });
@@ -675,7 +675,7 @@
   startBtn.addEventListener('click', async () => {
     if (CAMPAIGN_WRITE_DISABLED) { alert(CAMPAIGN_WRITE_DISABLED_MESSAGE); return; }
     if (!currentCode) return;
-    if (!confirm(`确认生成这个 Campaign 的启动计划吗？本操作只写 CommandBus/AuditLedger/SideEffectPlan，不会真实发送。`)) return;
+    if (!(await window.AdminFb.confirm({ title: '确认生成启动计划', body: `确认生成这个 Campaign 的启动计划吗？本操作只写 CommandBus/AuditLedger/SideEffectPlan，不会真实发送。`, okLabel: '确认生成', danger: false }))) return;
     const operator = (window.prompt('确认人（仅做审计标记，可填昵称或工号）', 'ui_user') || '').trim();
     if (!operator) return;
     startBtn.disabled = true;
@@ -740,7 +740,7 @@
     if (CAMPAIGN_WRITE_DISABLED) { alert(CAMPAIGN_WRITE_DISABLED_MESSAGE); return; }
     if (!currentCode) return;
     morePop.hidden = true;
-    if (!confirm('永久删除这个 Campaign？包含所有节奏、命中成员、待发批次都会一并清空，且不可恢复。')) return;
+    if (!(await window.AdminFb.confirm({ title: '确认删除', body: '永久删除这个 Campaign？包含所有节奏、命中成员、待发批次都会一并清空，且不可恢复。', okLabel: '永久删除', danger: true }))) return;
     const resp = await fetch(`/api/admin/cloud-orchestrator/campaigns/${encodeURIComponent(currentCode)}`, {
       method: 'DELETE', headers: commandHeaders('delete'),
     });

@@ -140,7 +140,7 @@
 
   async function deleteGroup(){
     const group=selectedGroup(); if(!group||group.is_virtual) return;
-    if(!window.confirm(`确认删除分组「${group.name}」？非空分组不会被删除。`)) return;
+    if (!(await window.AdminFb.confirm({ title: '确认删除分组', body: `确认删除分组「${group.name}」？非空分组不会被删除。`, okLabel: '确认删除', danger: true }))) return;
     await request(`${groupsUrl}/${encodeURIComponent(group.id)}`,{method:"DELETE"});
     state.selectedId="ungrouped"; state.page=1; notice("分组已删除"); await loadGroups(); await loadPackages();
   }
@@ -168,7 +168,7 @@
     const item=state.items[Number(button.dataset.index)]; const action=button.dataset.action; if(!item) return;
     if(action==="edit"){ window.location.href=`/admin/automation-conversion/packages/${encodeURIComponent(item.id)}`; return; }
     if(action==="send"){ if(!window.UserOpsBatchSendModal){notice("标准群发组件加载失败",true);return;} window.UserOpsBatchSendModal.open({targetSource:"ai_audience_package",targetSourceId:item.id,targetLabel:`AI 人群包：${item.name}（当前 ${number(item.member_count)} 人）`,previewUrl:"/api/admin/user-ops/batch-send/preview",executeUrl:"/api/admin/user-ops/batch-send/execute",operator:"admin"}); return; }
-    if(action==="delete"&&!window.confirm(`确认删除「${item.name}」？`)) return;
+    if (action === "delete" && !(await window.AdminFb.confirm({ title: '确认删除', body: `确认删除「${item.name}」？`, okLabel: '确认删除', danger: true }))) return;
     button.disabled=true;
     try{ const suffix={copy:"copy",pause:"pause",activate:"activate"}[action]; await request(suffix?`${packagesUrl}/${item.id}/${suffix}`:`${packagesUrl}/${item.id}`,{method:action==="delete"?"DELETE":"POST"}); notice("操作已完成"); await loadGroups(); await loadPackages(); }
     catch(error){ notice(window.AdminApi.errorMessage(error,"操作失败"),true); }

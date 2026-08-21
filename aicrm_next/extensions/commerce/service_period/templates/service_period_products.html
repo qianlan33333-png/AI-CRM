@@ -857,7 +857,7 @@
         await api(`/api/admin/service-period-products/${encodeURIComponent(id)}/copy`, {method: "POST"});
         await refreshList();
       } else if (action === "delete") {
-        if (!window.confirm("确认删除这个周期商品吗？已有订单或服务期凭证的商品请下架保留。")) return;
+        if (!(await window.AdminFb.confirm({ title: '确认删除', body: '确认删除这个周期商品吗？已有订单或服务期凭证的商品请下架保留。', okLabel: '确认删除', danger: true }))) return;
         await api(`/api/admin/service-period-products/${encodeURIComponent(id)}`, {method: "DELETE"});
         await refreshList();
       } else if (action === "share") {

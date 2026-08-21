@@ -20,7 +20,7 @@
     "#afb-mask{position:fixed;inset:0;background:rgba(15,23,42,.34);z-index:9998;display:flex;align-items:center;justify-content:center;padding:24px;animation:afb-in .15s ease-out}",
     "#afb-card{width:min(440px,100%);background:#fff;border-radius:12px;box-shadow:0 24px 64px rgba(15,23,42,.22);overflow:hidden}",
     "#afb-title{padding:18px 18px 0;font-size:15px;font-weight:600;color:#1F2329}",
-    "#afb-body{padding:10px 18px 18px;font-size:13px;color:#646A73;line-height:1.8}",
+    "#afb-body{padding:10px 18px 18px;font-size:13px;color:#646A73;line-height:1.8;white-space:pre-wrap}",
     "#afb-btns{display:flex;justify-content:flex-end;gap:10px;padding:0 18px 18px}",
     "#afb-btns button{height:32px;padding:0 14px;border-radius:6px;font-size:13px;cursor:pointer}",
     "#afb-cancel{border:1px solid #DEE0E3;background:#fff;color:#1F2329}",

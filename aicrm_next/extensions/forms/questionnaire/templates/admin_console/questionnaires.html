@@ -584,7 +584,7 @@
   async function duplicateQuestionnaire(questionnaireId) {
     const item = state.questionnaires.find((entry) => Number(entry.id) === Number(questionnaireId));
     if (!item) return;
-    if (!window.confirm(`复制问卷“${questionnaireDisplayName(item)}”？复制后会生成一份默认停用的新问卷。`)) return;
+    if (!(await window.AdminFb.confirm({ title: '确认复制', body: `复制问卷“${questionnaireDisplayName(item)}”？复制后会生成一份默认停用的新问卷。`, okLabel: '确认复制', danger: false }))) return;
     const data = await fetchJson(`/api/admin/questionnaires/${item.id}/duplicate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -601,7 +601,7 @@
   async function deleteQuestionnaire(questionnaireId) {
     const item = state.questionnaires.find((entry) => Number(entry.id) === Number(questionnaireId));
     if (!item) return;
-    if (!window.confirm('删除后不可恢复，确认删除该问卷吗？')) return;
+    if (!(await window.AdminFb.confirm({ title: '确认删除', body: '删除后不可恢复，确认删除该问卷吗？', okLabel: '确认删除', danger: true }))) return;
     await fetchJson(`/api/admin/questionnaires/${item.id}`, { method: 'DELETE' });
     showToast('问卷已删除');
     await reloadList();
