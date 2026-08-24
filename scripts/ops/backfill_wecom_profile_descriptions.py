@@ -244,7 +244,7 @@ def _candidate_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "candidate_contact_count": len(rows),
         "candidate_relation_count": relation_count,
         "target_set_digest": hasher.hexdigest(),
-        "contains_raw_target_identifiers": False,
+        "pii_included": False,
     }
 
 
@@ -374,7 +374,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "population_after": after_population,
         "database_write_executed": args.action == "enqueue" and enqueue_result["created_detail_job_count"] > 0,
         "real_external_call_executed": False,
-        "contains_raw_target_identifiers": False,
+        "pii_included": False,
     }
 
 
@@ -389,7 +389,7 @@ def main(argv: list[str] | None = None) -> int:
             "run_id": PROFILE_DESCRIPTION_BACKFILL_RUN_ID,
             "error": exc.__class__.__name__,
             "real_external_call_executed": False,
-            "contains_raw_target_identifiers": False,
+            "pii_included": False,
         }
     print_json(payload)
     return 0 if payload.get("ok") else 1

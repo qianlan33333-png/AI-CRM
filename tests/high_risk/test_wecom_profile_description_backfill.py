@@ -176,5 +176,5 @@ def test_enqueue_requires_exact_authorization_and_candidate_summary_redacts_targ
     )
     assert summary["candidate_contact_count"] == 1
     assert summary["candidate_relation_count"] == 1
-    assert summary["contains_raw_target_identifiers"] is False
+    assert summary["pii_included"] is False
     assert "wm-secret" not in str(summary)

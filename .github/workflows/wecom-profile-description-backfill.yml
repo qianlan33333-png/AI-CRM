@@ -107,7 +107,7 @@ jobs:
             assert report["ok"] is True
             assert report["action"] == sys.argv[2]
             assert report["run_id"] == "wecom-profile-description-empty-v1"
-            assert report["contains_raw_target_identifiers"] is False
+            assert report["pii_included"] is False
             assert report["real_external_call_executed"] is False
             if sys.argv[2] == "enqueue":
                 assert report["database_write_executed"] is True
