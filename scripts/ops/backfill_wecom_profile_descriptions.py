@@ -220,7 +220,7 @@ def _remaining_breakdown(session: Any) -> dict[str, int]:
              AND profile.payload_json->>'follow_user_userid' = follow.user_id
             WHERE follow.relation_status = 'active'
               AND BTRIM(COALESCE(follow.description, '')) = ''
-            GROUP BY state
+            GROUP BY 1
             ORDER BY state
             """
         ),
