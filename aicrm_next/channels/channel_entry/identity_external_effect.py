@@ -22,6 +22,14 @@ from aicrm_next.platform.platform_foundation.internal_events import InternalEven
 from aicrm_next.platform.shared.db_session import get_session_factory
 
 from .identity_bridge_service import build_identity_bridge_service
+from .profile_description_backfill import (
+    PROFILE_DESCRIPTION_BACKFILL_DETAIL_BUSINESS_TYPE,
+    PROFILE_DESCRIPTION_BACKFILL_UPDATE_BUSINESS_TYPE,
+    is_profile_description_backfill_detail,
+    is_profile_description_backfill_settlement,
+    run_profile_description_backfill_detail,
+    settle_profile_description_backfill,
+)
 
 
 IDENTITY_RESOLVED_EVENT_TYPE = "identity.resolved"
@@ -144,6 +152,8 @@ def plan_profile_description_update(
 
 
 def _matches(job, _result) -> bool:
+    if is_profile_description_backfill_detail(job):
+        return True
     return (
         job.effect_type == WECOM_EXTERNAL_CONTACT_DETAIL_FETCH
         and _text(job.business_type) == IDENTITY_RESOLUTION_BUSINESS_TYPE
@@ -152,10 +162,19 @@ def _matches(job, _result) -> bool:
 
 
 def _matches_terminal_identity(job, result) -> bool:
-    return _matches(job, result) and job.status != "succeeded"
+    if is_profile_description_backfill_settlement(job):
+        return True
+    return (
+        job.effect_type == WECOM_EXTERNAL_CONTACT_DETAIL_FETCH
+        and _text(job.business_type) == IDENTITY_RESOLUTION_BUSINESS_TYPE
+        and _identity_resolution_queue_id(job) > 0
+        and job.status != "succeeded"
+    )
 
 
 def _settle_terminal_identity(job, _dispatch_result) -> dict[str, Any]:
+    if _text(job.business_type) == PROFILE_DESCRIPTION_BACKFILL_UPDATE_BUSINESS_TYPE:
+        return settle_profile_description_backfill(job, _dispatch_result)
     queue_id = _identity_resolution_queue_id(job)
     if queue_id <= 0:
         return {"ok": False, "error": "identity_resolution_queue_id_missing"}
@@ -208,6 +227,8 @@ def _settle_terminal_identity(job, _dispatch_result) -> dict[str, Any]:
 
 def _run(job, dispatch_result) -> dict[str, Any]:
     try:
+        if _text(job.business_type) == PROFILE_DESCRIPTION_BACKFILL_DETAIL_BUSINESS_TYPE:
+            return run_profile_description_backfill_detail(job, dispatch_result)
         return _run_private(job, dispatch_result)
     except Exception:
         # The raw provider detail is deliberately in scope here. Never allow an
