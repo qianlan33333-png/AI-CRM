@@ -87,7 +87,7 @@ def test_empty_description_backfill_plans_only_live_empty_relation_idempotently(
         "follow_user_userid": "owner-empty",
         "description": "wm_backfill_001",
     }
-    assert jobs[0].priority == 300
+    assert jobs[0].priority == 200
     assert jobs[0].fairness_key == "wecom-profile-description-backfill"
 
 
