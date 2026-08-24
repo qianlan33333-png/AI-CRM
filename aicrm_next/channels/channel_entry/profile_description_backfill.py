@@ -30,6 +30,13 @@ def _target_digest(*values: str) -> str:
     return sha256(material.encode("utf-8")).hexdigest()[:32]
 
 
+def _stage_failure(stage: str, exc: Exception) -> dict[str, Any]:
+    exception_type = exc.__class__.__name__.lower()
+    sqlstate = _text(getattr(getattr(exc, "orig", None), "sqlstate", ""))
+    suffix = f"_{sqlstate.lower()}" if sqlstate else ""
+    return {"ok": False, "error": f"profile_backfill_{stage}_failed_{exception_type}{suffix}"}
+
+
 def is_profile_description_backfill_detail(job: Any) -> bool:
     payload = dict(getattr(job, "payload_json", {}) or {})
     return (
@@ -196,26 +203,35 @@ def run_profile_description_backfill_detail(job: Any, dispatch_result: Any) -> d
         for owner in candidate_owners
         if owner in follow_by_owner
     }
-    projection_refreshed_count = _sync_live_nonempty_descriptions(
-        external_userid=external,
-        descriptions_by_owner=live_descriptions,
-    )
+    try:
+        projection_refreshed_count = _sync_live_nonempty_descriptions(
+            external_userid=external,
+            descriptions_by_owner=live_descriptions,
+        )
+    except Exception as exc:
+        return _stage_failure("projection", exc)
 
     service = ExternalEffectService()
-    planned = [
-        plan_empty_profile_description_update(
-            parent_job=job,
-            provider_detail=provider_detail,
-            external_userid=external,
-            owner_userid=owner,
-            service=service,
+    try:
+        planned = [
+            plan_empty_profile_description_update(
+                parent_job=job,
+                provider_detail=provider_detail,
+                external_userid=external,
+                owner_userid=owner,
+                service=service,
+            )
+            for owner in candidate_owners
+        ]
+    except Exception as exc:
+        return _stage_failure("planning", exc)
+    try:
+        consumed = build_external_effect_repository().consume_attempt_provider_result(
+            attempt_id,
+            job_id=int(getattr(job, "id", 0) or 0),
         )
-        for owner in candidate_owners
-    ]
-    consumed = build_external_effect_repository().consume_attempt_provider_result(
-        attempt_id,
-        job_id=int(getattr(job, "id", 0) or 0),
-    )
+    except Exception as exc:
+        return _stage_failure("provider_result_consume", exc)
     return {
         "ok": True,
         "candidate_relation_count": len(candidate_owners),
