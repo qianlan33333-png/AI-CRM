@@ -10,8 +10,13 @@ from .crm_port import (
     build_identity_resolution_queue_port,
 )
 from aicrm_next.platform.platform_foundation.command_bus.models import CommandContext
-from aicrm_next.platform.platform_foundation.external_effects import WECOM_EXTERNAL_CONTACT_DETAIL_FETCH
+from aicrm_next.platform.platform_foundation.external_effects import (
+    WECOM_EXTERNAL_CONTACT_DETAIL_FETCH,
+    WECOM_PROFILE_UPDATE,
+    ExternalEffectService,
+)
 from aicrm_next.platform.platform_foundation.external_effects.continuations import ExternalEffectContinuation
+from aicrm_next.platform.platform_foundation.external_effects.realtime import wake_external_effect_job
 from aicrm_next.platform.platform_foundation.external_effects.repo import build_external_effect_repository
 from aicrm_next.platform.platform_foundation.internal_events import InternalEventService
 from aicrm_next.platform.shared.db_session import get_session_factory
@@ -42,6 +47,100 @@ def _identity_resolution_queue_id(job) -> int:
     if payload_queue_id and business_queue_id and payload_queue_id != business_queue_id:
         return 0
     return payload_queue_id or business_queue_id
+
+
+def _owner_description(provider_detail: dict[str, Any], owner_userid: str) -> tuple[str, str, bool]:
+    owner = _text(owner_userid)
+    follow_users = [dict(item or {}) for item in list(provider_detail.get("follow_user") or [])]
+    if not owner:
+        owner = next((_text(item.get("userid")) for item in follow_users if _text(item.get("userid"))), "")
+    for item in follow_users:
+        if _text(item.get("userid")) == owner:
+            return owner, _text(item.get("description")), True
+    return owner, "", False
+
+
+def plan_profile_description_update(
+    *,
+    parent_job,
+    queue_id: int,
+    event_log_id: int | None,
+    provider_detail: dict[str, Any],
+    external_userid: str,
+    owner_userid: str,
+    service: ExternalEffectService | None = None,
+) -> dict[str, Any]:
+    external = _text(external_userid)
+    if not external:
+        return {"status": "skipped", "reason": "external_userid_missing", "description_source": "external_userid"}
+    owner, current_description, owner_relationship_present = _owner_description(provider_detail, owner_userid)
+    if not owner:
+        return {"status": "skipped", "reason": "owner_userid_missing", "description_source": "external_userid"}
+    if not owner_relationship_present:
+        return {"status": "skipped", "reason": "owner_relationship_missing", "description_source": "external_userid"}
+    if external in current_description:
+        return {
+            "status": "skipped",
+            "reason": "external_userid_already_present",
+            "description_source": "external_userid",
+        }
+
+    desired_description = f"{current_description}\n{external}" if current_description else external
+    planned = (service or ExternalEffectService()).plan_effect(
+        effect_type=WECOM_PROFILE_UPDATE,
+        adapter_name="wecom_profile",
+        operation="update_description",
+        target_type="external_user",
+        target_id=external,
+        payload={
+            "external_userid": external,
+            "follow_user_userid": owner,
+            "description": desired_description,
+        },
+        payload_summary={
+            "external_userid_present": True,
+            "owner_userid_present": True,
+            "existing_description_present": bool(current_description),
+            "description_appended": bool(current_description),
+            "description_source": "external_userid",
+            "real_external_call_executed": False,
+        },
+        context=CommandContext(
+            actor_id="identity_resolution_continuation",
+            actor_type="system",
+            request_id=str(event_log_id or queue_id),
+            trace_id=_text(getattr(parent_job, "trace_id", "")) or f"identity-resolution-{queue_id}",
+            source_route="external_effect.completed/identity_profile_description",
+        ),
+        business_type="identity_resolution_profile_description",
+        business_id=str(queue_id),
+        source_module="aicrm_next.channels.channel_entry.identity_external_effect",
+        source_event_id=str(event_log_id or ""),
+        source_command_id=str(int(getattr(parent_job, "id", 0) or 0)),
+        risk_level="medium",
+        execution_mode="execute",
+        status="queued",
+        idempotency_key=f"identity-resolution:queue:{queue_id}:profile-description:v1",
+        execution_id=f"exe_identity_profile_{uuid4().hex}",
+        parent_execution_id=_text(getattr(parent_job, "execution_id", "")),
+        lane="wecom_interactive",
+        ordering_key=f"external_user:{external}",
+    )
+    job_id = _positive_int(planned.get("id"))
+    wake_scheduled = wake_external_effect_job(
+        job_id,
+        reason="identity_profile_description",
+        effect_type=WECOM_PROFILE_UPDATE,
+    )
+    return {
+        "status": "queued",
+        "description_source": "external_userid",
+        "external_effect_job_id": job_id,
+        "created": bool(planned.get("created_on_plan")),
+        "description_appended": bool(current_description),
+        "immediate_dispatch_scheduled": wake_scheduled,
+        "real_external_call_executed": False,
+    }
 
 
 def _matches(job, _result) -> bool:
@@ -162,6 +261,15 @@ def _run_private(job, dispatch_result) -> dict[str, Any]:
         }
 
     event_log_id = int(payload.get("event_log_id") or 0) or None
+    profile_description = plan_profile_description_update(
+        parent_job=job,
+        queue_id=queue_id,
+        event_log_id=event_log_id,
+        provider_detail=provider_detail,
+        external_userid=external_userid,
+        owner_userid=_text(payload.get("owner_userid")),
+    )
+    result["profile_description"] = profile_description
     queue_payload = dict(queue_row.get("payload_json") or {})
     from . import application
 
@@ -206,6 +314,8 @@ def _run_private(job, dispatch_result) -> dict[str, Any]:
         "result_status": "resolved" if result_status == "success" else "conflict",
         "diagnostic_ok": bool(diagnostic.get("ok")),
         "canonical_status": _text(canonical.get("status")),
+        "profile_description_status": _text(profile_description.get("status")),
+        "profile_description_job_id": _positive_int(profile_description.get("external_effect_job_id")) or None,
         "provider_result_consumed": consumed,
         "real_external_call_executed": False,
     }
@@ -300,6 +410,11 @@ def _json_summary(result: dict[str, Any]) -> str:
             "unionid_present": bool(_text(result.get("unionid"))),
             "openid_present": bool(result.get("openid_present")),
             "provider_result_applied": bool(result.get("provider_result_applied")),
+            "profile_description_status": _text((result.get("profile_description") or {}).get("status")),
+            "profile_description_job_present": _positive_int(
+                (result.get("profile_description") or {}).get("external_effect_job_id")
+            )
+            > 0,
         },
         ensure_ascii=False,
         separators=(",", ":"),
@@ -324,4 +439,5 @@ __all__ = [
     "IDENTITY_EXTERNAL_CONTACT_DETAIL_CONTINUATION",
     "IDENTITY_EXTERNAL_EFFECT_SETTLEMENT_CONTINUATION",
     "IDENTITY_RESOLVED_EVENT_TYPE",
+    "plan_profile_description_update",
 ]

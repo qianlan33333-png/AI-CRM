@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from inspect import getsource
 
 import pytest
 
+from aicrm_next.channels.channel_entry import identity_external_effect as identity_effect
+from aicrm_next.channels.channel_entry.identity_external_effect import plan_profile_description_update
 from aicrm_next.channels.integration_gateway.wecom_channel_entry_client import WeComApiError
 from aicrm_next.platform.platform_foundation.external_effects import (
     WEBHOOK_GENERIC_PUSH,
     WECOM_CONTACT_TAG_MARK,
+    WECOM_EXTERNAL_CONTACT_DETAIL_FETCH,
+    WECOM_PROFILE_UPDATE,
     ExternalEffectJob,
     ExternalEffectService,
     InMemoryExternalEffectRepository,
@@ -24,6 +29,89 @@ from aicrm_next.platform.shared.wecom_runtime import classify_wecom_provider_err
 
 
 pytestmark = pytest.mark.high_risk
+
+
+def test_identity_detail_plans_idempotent_profile_update_without_overwriting_description() -> None:
+    repository = InMemoryExternalEffectRepository()
+    service = ExternalEffectService(repository)
+    parent = ExternalEffectJob(
+        id=501,
+        effect_type=WECOM_EXTERNAL_CONTACT_DETAIL_FETCH,
+        business_type="identity_resolution_queue",
+        business_id="701",
+        execution_id="exe-parent-501",
+        trace_id="trace-parent-501",
+        request_id="request-parent-501",
+    )
+    provider_detail = {
+        "external_contact": {"external_userid": "wm_profile_001"},
+        "follow_user": [
+            {
+                "userid": "owner-profile",
+                "description": "已有业务描述",
+            }
+        ],
+    }
+
+    first = plan_profile_description_update(
+        parent_job=parent,
+        queue_id=701,
+        event_log_id=801,
+        provider_detail=provider_detail,
+        external_userid="wm_profile_001",
+        owner_userid="owner-profile",
+        service=service,
+    )
+    duplicate = plan_profile_description_update(
+        parent_job=parent,
+        queue_id=701,
+        event_log_id=801,
+        provider_detail=provider_detail,
+        external_userid="wm_profile_001",
+        owner_userid="owner-profile",
+        service=service,
+    )
+    jobs, total = service.list_jobs(limit=10)
+
+    assert first["status"] == "queued"
+    assert first["external_effect_job_id"] == duplicate["external_effect_job_id"]
+    assert first["created"] is True
+    assert duplicate["created"] is False
+    assert total == 1
+    assert jobs[0].effect_type == WECOM_PROFILE_UPDATE
+    assert jobs[0].adapter_name == "wecom_profile"
+    assert jobs[0].operation == "update_description"
+    assert jobs[0].payload_json == {
+        "external_userid": "wm_profile_001",
+        "follow_user_userid": "owner-profile",
+        "description": "已有业务描述\nwm_profile_001",
+    }
+    assert jobs[0].parent_execution_id == "exe-parent-501"
+    assert jobs[0].ordering_key == "external_user:wm_profile_001"
+    already_present = plan_profile_description_update(
+        parent_job=ExternalEffectJob(id=502, execution_id="exe-parent-502"),
+        queue_id=702,
+        event_log_id=802,
+        provider_detail={
+            "external_contact": {"external_userid": "wm_profile_002"},
+            "follow_user": [
+                {
+                    "userid": "owner-profile",
+                    "description": "已有业务描述\nwm_profile_002",
+                }
+            ],
+        },
+        external_userid="wm_profile_002",
+        owner_userid="owner-profile",
+        service=service,
+    )
+    assert already_present == {
+        "status": "skipped",
+        "reason": "external_userid_already_present",
+        "description_source": "external_userid",
+    }
+    assert service.list_jobs(limit=10)[1] == 1
+    assert "plan_profile_description_update(" in getsource(identity_effect._run_private)
 
 
 def test_effect_planning_is_idempotent_and_approval_gated() -> None:
