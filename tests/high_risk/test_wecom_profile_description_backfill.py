@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from inspect import getsource
+from types import SimpleNamespace
 
 import pytest
 
@@ -178,3 +179,31 @@ def test_enqueue_requires_exact_authorization_and_candidate_summary_redacts_targ
     assert summary["candidate_relation_count"] == 1
     assert summary["pii_included"] is False
     assert "wm-secret" not in str(summary)
+
+
+def test_detail_continuation_reports_safe_stage_specific_projection_failure(monkeypatch) -> None:
+    def fail_projection(**_kwargs):
+        raise RuntimeError("must-not-leak")
+
+    monkeypatch.setattr(backfill, "_sync_live_nonempty_descriptions", fail_projection)
+    job = ExternalEffectJob(
+        id=902,
+        last_attempt_id="attempt-902",
+        effect_type=WECOM_EXTERNAL_CONTACT_DETAIL_FETCH,
+        business_type=backfill.PROFILE_DESCRIPTION_BACKFILL_DETAIL_BUSINESS_TYPE,
+        payload_json={
+            "external_userid": "wm_backfill_004",
+            "owner_userids": ["owner-c"],
+        },
+    )
+    dispatch_result = SimpleNamespace(
+        provider_result={
+            "external_contact": {"external_userid": "wm_backfill_004"},
+            "follow_user": [{"userid": "owner-c", "description": ""}],
+        }
+    )
+
+    result = backfill.run_profile_description_backfill_detail(job, dispatch_result)
+
+    assert result == {"ok": False, "error": "profile_backfill_projection_failed_runtimeerror"}
+    assert "must-not-leak" not in str(result)
