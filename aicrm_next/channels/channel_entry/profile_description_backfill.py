@@ -82,9 +82,9 @@ def _sync_live_nonempty_descriptions(
                     text(
                         """
                         UPDATE wecom_external_contact_follow_users
-                        SET description = :description,
+                        SET description = CAST(:description AS text),
                             raw_follow_user = COALESCE(raw_follow_user, '{}'::jsonb)
-                                || jsonb_build_object('description', :description),
+                                || jsonb_build_object('description', CAST(:description AS text)),
                             updated_at = CURRENT_TIMESTAMP
                         WHERE external_userid = :external_userid
                           AND user_id = :owner_userid

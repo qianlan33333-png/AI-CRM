@@ -156,6 +156,7 @@ def test_successful_profile_update_settlement_projects_description_only_into_emp
     sql = str(executed[0][0])
     assert "relation_status = 'active'" in sql
     assert "BTRIM(COALESCE(description, '')) = ''" in sql
+    assert "CAST(:description AS text)" in getsource(backfill._sync_live_nonempty_descriptions)
 
 
 def test_enqueue_requires_exact_authorization_and_candidate_summary_redacts_targets(monkeypatch) -> None:
