@@ -165,7 +165,7 @@ def plan_empty_profile_description_update(
         risk_level="medium",
         execution_mode="execute",
         status="queued",
-        priority=300,
+        priority=200,
         max_attempts=5,
         idempotency_key=f"wecom-profile-description-empty:{target_digest}:v1",
         execution_id=f"exe_profile_description_backfill_{uuid4().hex}",
