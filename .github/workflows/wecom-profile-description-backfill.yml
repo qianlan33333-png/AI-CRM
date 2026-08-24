@@ -1,0 +1,115 @@
+name: WeCom Profile Description Backfill
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Exact deployed AI-CRM main SHA
+        required: true
+        type: string
+      action:
+        description: Preview, enqueue the durable backfill, or inspect aggregate status
+        required: true
+        type: choice
+        options:
+          - preview
+          - enqueue
+          - status
+      confirmation:
+        description: Exact confirmation required by the selected action
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aicrm-production-wecom-profile-description-backfill
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout exact deployed release
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0 (Node 24)
+        with:
+          ref: ${{ inputs.release_sha }}
+          fetch-depth: 0
+
+      - name: Verify immutable release and authorization
+        env:
+          RELEASE_SHA: ${{ inputs.release_sha }}
+          BACKFILL_ACTION: ${{ inputs.action }}
+          BACKFILL_CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -e
+          set -o pipefail
+          printf '%s' "$RELEASE_SHA" | grep -Eq '^[0-9a-f]{40}$'
+          test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+          git fetch --no-tags origin main
+          test "$(git rev-parse FETCH_HEAD)" = "$RELEASE_SHA"
+          if [ "$BACKFILL_ACTION" = "enqueue" ]; then
+            test "$BACKFILL_CONFIRMATION" = 'EXECUTE_WECOM_PROFILE_DESCRIPTION_EMPTY_BACKFILL_V1'
+          else
+            test "$BACKFILL_CONFIRMATION" = "INSPECT_WECOM_PROFILE_DESCRIPTION_BACKFILL_${RELEASE_SHA}"
+          fi
+          curl -sSf -D /tmp/aicrm-profile-backfill-health.headers \
+            https://www.youcangogogo.com/health \
+            -o /tmp/aicrm-profile-backfill-health.json
+          public_sha="$(awk 'tolower($1) == "x-aicrm-release-sha:" {gsub("\\r", "", $2); print $2}' /tmp/aicrm-profile-backfill-health.headers)"
+          test "$public_sha" = "$RELEASE_SHA"
+
+  operate:
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Run redacted production backfill operation
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        env:
+          RELEASE_SHA: ${{ inputs.release_sha }}
+          BACKFILL_ACTION: ${{ inputs.action }}
+          BACKFILL_CONFIRMATION: ${{ inputs.confirmation }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          command_timeout: 30m
+          envs: RELEASE_SHA,BACKFILL_ACTION,BACKFILL_CONFIRMATION
+          script: |
+            set -e
+            set -o pipefail
+            cd '/home/ubuntu/极简 crm'
+            test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+            test "$(tr -d '\r\n' < .release-sha)" = "$RELEASE_SHA"
+            set -a
+            source /home/ubuntu/.openclaw-wecom-pg.env
+            set +a
+            source /home/ubuntu/venvs/openclaw/bin/activate
+            if [ "$BACKFILL_ACTION" = "enqueue" ]; then
+              export AICRM_PROFILE_DESCRIPTION_BACKFILL_AUTHORIZED=1
+            fi
+            audit_path="/home/ubuntu/aicrm-prod-exports/wecom-profile-description-empty-backfill-v1-${BACKFILL_ACTION}.json"
+            python3 scripts/ops/backfill_wecom_profile_descriptions.py \
+              --action "$BACKFILL_ACTION" \
+              --confirmation "$BACKFILL_CONFIRMATION" \
+              --limit 25000 \
+              --batch-size 500 \
+              --operator github-actions-profile-description-backfill \
+              | tee "$audit_path"
+            python3 - "$audit_path" "$BACKFILL_ACTION" <<'PY'
+            import json
+            import sys
+
+            report = json.load(open(sys.argv[1], encoding="utf-8"))
+            assert report["ok"] is True
+            assert report["action"] == sys.argv[2]
+            assert report["run_id"] == "wecom-profile-description-empty-v1"
+            assert report["contains_raw_target_identifiers"] is False
+            assert report["real_external_call_executed"] is False
+            if sys.argv[2] == "enqueue":
+                assert report["database_write_executed"] is True
+                assert report["enqueue"]["created_detail_job_count"] > 0
+            PY
