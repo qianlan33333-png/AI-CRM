@@ -8,6 +8,7 @@ from aicrm_next.insights.data_health.checks import _static_guard_result
 from aicrm_next.insights.data_health.dto import DataHealthCheckResult, DataHealthSummary
 from aicrm_next.insights.data_health.external_effect_provenance import (
     external_effect_backlog_sql,
+    wecom_profile_backfill_business_rejection_sql,
     wecom_welcome_window_closed_business_rejection_sql,
 )
 from aicrm_next.platform.platform_foundation.external_effects.repo_contract import (
@@ -72,6 +73,32 @@ def test_external_effect_health_counts_welcome_41051_as_business_outcome() -> No
     assert "AS wecom_welcome_window_closed_business_rejection" in query
     assert "AND NOT wecom_welcome_window_closed_business_rejection" in query
     assert "AS wecom_welcome_window_closed_business_rejection_count" in query
+
+
+def test_profile_backfill_business_rejection_requires_strict_provider_provenance() -> None:
+    predicate = " ".join(
+        wecom_profile_backfill_business_rejection_sql("job").split()
+    )
+
+    assert "wecom_profile_description_backfill_detail" in predicate
+    assert "scripts.ops.backfill_wecom_profile_descriptions" in predicate
+    assert "external_contact_relationship_absent" in predicate
+    assert "wecom_error_40096" in predicate
+    assert "wm_auto_assign_%" in predicate
+    assert "job.attempt_count = 1" in predicate
+    assert "job.provider_result_received IS TRUE" in predicate
+    assert "profile_backfill_absence_attempt.response_summary_json ->> 'errcode'" in predicate
+    assert "THEN '84061'" in predicate
+    assert "THEN '40096'" in predicate
+    assert "wecom_external_contact_detail_executed" in predicate
+
+
+def test_external_effect_health_counts_profile_backfill_rejections_as_business_outcome() -> None:
+    query = " ".join(external_effect_backlog_sql(terminal_lookback_hours=24).split())
+
+    assert "AS wecom_profile_backfill_business_rejection" in query
+    assert "AND NOT wecom_profile_backfill_business_rejection" in query
+    assert "AS wecom_profile_backfill_business_rejection_count" in query
 
 
 class _MappingsResult:
