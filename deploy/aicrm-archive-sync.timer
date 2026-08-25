@@ -1,8 +1,8 @@
 [Unit]
-Description=Run AI-CRM Next WeCom archive sync every five minutes
+Description=Run AI-CRM Next WeCom archive sync every three minutes
 
 [Timer]
-OnCalendar=*-*-* *:00/5:00
+OnCalendar=*-*-* *:00/3:00
 Persistent=true
 Unit=aicrm-archive-sync.service
 
