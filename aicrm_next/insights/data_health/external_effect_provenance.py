@@ -248,6 +248,86 @@ def wecom_welcome_window_closed_business_rejection_sql(alias: str) -> str:
     """
 
 
+def wecom_profile_backfill_business_rejection_sql(alias: str) -> str:
+    """Return strict proof that a description backfill target cannot be read."""
+
+    return f"""
+        COALESCE({alias}.status, '') = 'failed_terminal'
+        AND COALESCE({alias}.last_error_code, '') IN (
+            'external_contact_relationship_absent',
+            'wecom_error_40096'
+        )
+        AND (
+            COALESCE({alias}.last_error_code, '') <> 'wecom_error_40096'
+            OR COALESCE({alias}.target_id, '') LIKE 'wm_auto_assign_%'
+        )
+        AND COALESCE({alias}.execution_mode, '') = 'execute'
+        AND COALESCE({alias}.effect_type, '') = 'wecom.external_contact.detail.fetch'
+        AND COALESCE({alias}.adapter_name, '') = 'wecom_external_contact_detail'
+        AND COALESCE({alias}.operation, '') = 'get_external_contact_detail'
+        AND COALESCE({alias}.target_type, '') = 'external_user'
+        AND COALESCE({alias}.business_type, '') =
+            'wecom_profile_description_backfill_detail'
+        AND COALESCE({alias}.source_module, '') =
+            'scripts.ops.backfill_wecom_profile_descriptions'
+        AND COALESCE({alias}.source_route, '') =
+            'scripts/ops/backfill_wecom_profile_descriptions.py'
+        AND {alias}.attempt_count = 1
+        AND {alias}.max_attempts = 5
+        AND {alias}.worker_generation = 1
+        AND COALESCE({alias}.policy_version, '') = 'queue-v2-production-all-g1'
+        AND {alias}.side_effect_executed IS TRUE
+        AND {alias}.provider_result_received IS TRUE
+        AND {alias}.provider_call_started_at IS NOT NULL
+        AND {alias}.reconciliation_required IS FALSE
+        AND 1 = (
+            SELECT COUNT(*)
+            FROM external_effect_attempt profile_backfill_absence_attempt_count
+            WHERE profile_backfill_absence_attempt_count.job_id = {alias}.id
+        )
+        AND EXISTS (
+            SELECT 1
+            FROM external_effect_attempt profile_backfill_absence_attempt
+            WHERE profile_backfill_absence_attempt.job_id = {alias}.id
+              AND profile_backfill_absence_attempt.attempt_id =
+                    COALESCE({alias}.last_attempt_id, '')
+              AND profile_backfill_absence_attempt.status = 'failed_terminal'
+              AND profile_backfill_absence_attempt.error_code = {alias}.last_error_code
+              AND profile_backfill_absence_attempt.adapter_name =
+                    'wecom_external_contact_detail'
+              AND profile_backfill_absence_attempt.operation =
+                    'get_external_contact_detail'
+              AND profile_backfill_absence_attempt.adapter_mode = 'execute'
+              AND profile_backfill_absence_attempt.worker_generation = 1
+              AND profile_backfill_absence_attempt.provider_call_started_at IS NOT NULL
+              AND profile_backfill_absence_attempt.completed_at IS NOT NULL
+              AND COALESCE(
+                    profile_backfill_absence_attempt.response_summary_json ->> 'errcode',
+                    ''
+                  ) = CASE {alias}.last_error_code
+                        WHEN 'external_contact_relationship_absent' THEN '84061'
+                        WHEN 'wecom_error_40096' THEN '40096'
+                        ELSE ''
+                      END
+              AND COALESCE(
+                    profile_backfill_absence_attempt.response_summary_json
+                        ->> 'real_external_call_executed',
+                    'false'
+                  ) = 'true'
+              AND COALESCE(
+                    profile_backfill_absence_attempt.response_summary_json
+                        ->> 'provider_result_received',
+                    'false'
+                  ) = 'true'
+              AND COALESCE(
+                    profile_backfill_absence_attempt.response_summary_json
+                        ->> 'wecom_external_contact_detail_executed',
+                    'true'
+                  ) = 'false'
+        )
+    """
+
+
 def callback_welcome_failure_sql(alias: str) -> str:
     """Return a fail-closed predicate for a mirrored one-time welcome canary.
 
@@ -1045,6 +1125,8 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                        AS wecom_content_validation_business_rejection,
                    ({wecom_welcome_window_closed_business_rejection_sql("job")})
                        AS wecom_welcome_window_closed_business_rejection,
+                   ({wecom_profile_backfill_business_rejection_sql("job")})
+                       AS wecom_profile_backfill_business_rejection,
                    ({external_contact_relationship_absent_terminal_sql(job_alias="job")})
                        AS expected_contact_absence,
                    ({private_message_contact_relationship_absent_terminal_sql(job_alias="job")})
@@ -1091,6 +1173,7 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                   AND NOT refund_not_enough_business_rejection
                   AND NOT wecom_content_validation_business_rejection
                   AND NOT wecom_welcome_window_closed_business_rejection
+                  AND NOT wecom_profile_backfill_business_rejection
                   AND NOT expected_contact_absence
                   AND NOT private_message_contact_absence
                   AND status = 'failed_terminal'
@@ -1210,6 +1293,10 @@ def external_effect_backlog_sql(*, terminal_lookback_hours: int) -> str:
                 WHERE wecom_welcome_window_closed_business_rejection
                   AND status = 'failed_terminal'
             ) AS wecom_welcome_window_closed_business_rejection_count,
+            COUNT(*) FILTER (
+                WHERE wecom_profile_backfill_business_rejection
+                  AND status = 'failed_terminal'
+            ) AS wecom_profile_backfill_business_rejection_count,
             COUNT(*) FILTER (WHERE expected_contact_absence) AS expected_contact_absence_count,
             COUNT(*) FILTER (
                 WHERE private_message_contact_absence
