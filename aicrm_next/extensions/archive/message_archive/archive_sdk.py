@@ -24,8 +24,7 @@ def _run_sdk_helper(operation: str, payload: dict[str, Any], *, timeout: int) ->
     try:
         completed = subprocess.run(
             [sys.executable, "-m", SDK_HELPER_MODULE, operation],
-            input=json.dumps(payload, ensure_ascii=False, separators=(",", ":")),
-            text=True,
+            input=json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8"),
             capture_output=True,
             timeout=max(1, int(timeout)),
             check=False,
@@ -35,14 +34,16 @@ def _run_sdk_helper(operation: str, payload: dict[str, Any], *, timeout: int) ->
     except OSError as exc:
         raise WeComArchiveError(f"isolated SDK {operation} could not start") from exc
 
-    framed = [line for line in completed.stdout.splitlines() if line.startswith(SDK_RESULT_PREFIX)]
+    stdout = completed.stdout if isinstance(completed.stdout, bytes) else str(completed.stdout).encode("utf-8")
+    prefix = SDK_RESULT_PREFIX.encode("ascii")
+    framed = [line for line in stdout.splitlines() if line.startswith(prefix)]
     if not framed:
         raise WeComArchiveError(
             f"isolated SDK {operation} exited without a result (exit={completed.returncode})"
         )
     try:
-        result = json.loads(framed[-1][len(SDK_RESULT_PREFIX) :])
-    except json.JSONDecodeError as exc:
+        result = json.loads(framed[-1][len(prefix) :].decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise WeComArchiveError(f"isolated SDK {operation} returned an invalid result") from exc
     if not isinstance(result, dict) or not result.get("ok"):
         error_code = str((result or {}).get("error_code") or "sdk_helper_failed")

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import json
+import subprocess
+from unittest.mock import patch
 
 from aicrm_next.extensions.archive.message_archive.archive_sdk import (
+    _run_sdk_helper,
     extract_archive_record,
     extract_text_record,
 )
@@ -34,6 +37,22 @@ def test_extract_archive_record_keeps_image_reference_without_binary() -> None:
     raw = json.loads(row["raw_payload"])
     assert raw["decrypted_message"]["image"]["sdkfileid"] == "sdk-image-1"
     assert extract_text_record(31, {"seq": 31}, image_payload()) is None
+
+
+@patch("aicrm_next.extensions.archive.message_archive.archive_sdk.subprocess.run")
+def test_sdk_result_parser_ignores_non_utf8_native_stdout(run) -> None:
+    run.return_value = subprocess.CompletedProcess(
+        args=[],
+        returncode=0,
+        stdout=b"native-noise-\xa3\nAICRM_SDK_RESULT={\"ok\":true,\"value\":31}\n",
+        stderr=b"",
+    )
+
+    result = _run_sdk_helper("fetch", {"safe": "value"}, timeout=3)
+
+    assert result == {"ok": True, "value": 31}
+    assert isinstance(run.call_args.kwargs["input"], bytes)
+    assert "text" not in run.call_args.kwargs
 
 
 def test_extract_archive_record_rejects_image_without_sdkfileid() -> None:
