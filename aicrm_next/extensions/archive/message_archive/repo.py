@@ -621,6 +621,16 @@ def _message_matches_with_user(row: JsonDict, with_userid: str) -> bool:
     }
 
 
+def _archive_media_id(raw_payload: dict[str, Any]) -> str:
+    decrypted = raw_payload.get("decrypted_message")
+    if not isinstance(decrypted, dict) or str(decrypted.get("msgtype") or "").strip().lower() != "image":
+        return ""
+    image = decrypted.get("image")
+    if not isinstance(image, dict):
+        return ""
+    return str(image.get("sdkfileid") or "").strip()
+
+
 def _project_external_chat_record(row: JsonDict) -> JsonDict:
     raw_payload = _json_payload(row.get("raw_payload"))
     chat_id = str(row.get("chat_id") or row.get("roomid") or raw_payload.get("roomid") or raw_payload.get("chat_id") or "").strip()
@@ -638,6 +648,7 @@ def _project_external_chat_record(row: JsonDict) -> JsonDict:
         "group_name": str(row.get("group_name") or raw_payload.get("group_name") or "").strip(),
         "msgtype": str(row.get("msgtype") or "text").strip() or "text",
         "content": str(row.get("content") or "").strip(),
+        "media_id": _archive_media_id(raw_payload),
         "send_time": str(row.get("send_time") or "").strip(),
         "source_id": str(row.get("id") or row.get("seq") or "").strip(),
     }
