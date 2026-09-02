@@ -185,7 +185,23 @@ def extract_text_record(
     decrypted_payload: dict[str, Any],
     fallback_owner_userid: str = "",
 ) -> dict[str, Any] | None:
-    if decrypted_payload.get("msgtype") != "text":
+    record = extract_archive_record(
+        seq,
+        encrypted_record,
+        decrypted_payload,
+        fallback_owner_userid=fallback_owner_userid,
+    )
+    return record if record and record.get("msgtype") == "text" else None
+
+
+def extract_archive_record(
+    seq: int,
+    encrypted_record: dict[str, Any],
+    decrypted_payload: dict[str, Any],
+    fallback_owner_userid: str = "",
+) -> dict[str, Any] | None:
+    msgtype = str(decrypted_payload.get("msgtype") or "").strip().lower()
+    if msgtype not in {"text", "image"}:
         return None
 
     sender = str(decrypted_payload.get("from") or "")
@@ -201,8 +217,13 @@ def extract_text_record(
     owner_userid = sender if sender and not is_external_userid(sender) else first_non_empty(internal_candidates)
     owner_userid = owner_userid or fallback_owner_userid
     content = str(((decrypted_payload.get("text") or {}).get("content") or "")).strip()
+    if msgtype == "image":
+        image_payload = decrypted_payload.get("image")
+        if not isinstance(image_payload, dict) or not str(image_payload.get("sdkfileid") or "").strip():
+            return None
+        content = ""
 
-    if not owner_userid or not content:
+    if not owner_userid or (msgtype == "text" and not content):
         return None
 
     combined_payload = {
@@ -219,7 +240,7 @@ def extract_text_record(
         "owner_userid": owner_userid,
         "sender": sender,
         "receiver": ",".join(str(item or "") for item in tolist),
-        "msgtype": "text",
+        "msgtype": msgtype,
         "content": content,
         "send_time": normalize_timestamp(decrypted_payload.get("msgtime") or decrypted_payload.get("send_time")),
         "raw_payload": json.dumps(combined_payload, ensure_ascii=False),

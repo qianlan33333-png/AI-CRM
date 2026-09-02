@@ -11,7 +11,7 @@ from .archive_sdk import (
     WeComArchiveError,
     decrypt_chat_payload,
     decrypt_chat_payloads,
-    extract_text_record,
+    extract_archive_record,
     fetch_chatdata_page,
 )
 from .repo import ArchiveSyncRepository, build_archive_sync_repository
@@ -187,7 +187,12 @@ def execute_archive_sync(
                 seq = int(record.get("seq") or 0)
                 seq_to = max(seq_to, seq)
                 max_seq = max(max_seq, seq)
-                normalized = extract_text_record(seq, record, decrypted, fallback_owner_userid=str(request["owner_userid"]))
+                normalized = extract_archive_record(
+                    seq,
+                    record,
+                    decrypted,
+                    fallback_owner_userid=str(request["owner_userid"]),
+                )
                 if not normalized:
                     continue
                 if str(normalized["send_time"]) < str(request["start_time"]) or str(normalized["send_time"]) > str(request["end_time"]):
